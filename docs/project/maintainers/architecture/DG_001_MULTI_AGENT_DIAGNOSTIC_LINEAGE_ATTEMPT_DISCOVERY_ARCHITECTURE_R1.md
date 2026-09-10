@@ -1,12 +1,12 @@
 # DG-001 — Multi-agent diagnostic lineage attempt discovery architecture (R1)
 
-> **Task:** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ATTEMPT-DISCOVERY-ARCHITECTURE-R1-ROLLOUT-CORRECTION`  
+> **Task:** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ATTEMPT-DISCOVERY-ARCHITECTURE-R1-LEGACY-COVERAGE-CORRECTION`  
 > **Mode:** docs-only architecture — **no production implementation**  
 > **Branch:** `development`  
-> **START_HEAD:** `dcc7b60ad5b9635759dd2c2ac5c9d91dfe5012db`  
-> **Ancestry verified:** `8ac2b40d86a46b0568c3814bc3f8323d8ee7f375` · `156f1defb42235fb5c3d720a41f1fcb873ad542e` · `c8225da1aa40dd82195070f9ab193d66631bba1a`  
+> **START_HEAD:** `bf944912d97bdc47cc6601d20a8fe95883224843`  
+> **Ancestry verified:** `4a91ecc85c39f36326cddb3acb2e425c581acb50` · `8ac2b40d86a46b0568c3814bc3f8323d8ee7f375` · `156f1defb42235fb5c3d720a41f1fcb873ad542e` · `c8225da1aa40dd82195070f9ab193d66631bba1a`  
 > **READ_INTEGRATION_BASE:** `c8225da1aa40dd82195070f9ab193d66631bba1a`  
-> **Supersedes attempt-discovery claim in:** `docs/project/maintainers/qualification/DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_READ_INTEGRATION_R1.md`
+> **Supersedes:** attempt-discovery claim in `docs/project/maintainers/qualification/DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_READ_INTEGRATION_R1.md`; candidate-union claim in rollout-correction §18.1
 
 ---
 
@@ -280,11 +280,36 @@ Minimal durable projection metadata:
 ```text
 ExecutionLineageDiscoveryRunState
     run_scope: ExecutionLineageRunScope
-    generation: int              # monotonic; advances on every successful position allocation
-    next_discovery_position: int   # next position to assign; >= 1
+    generation: int                    # monotonic; advances on every successful position allocation
+    next_discovery_position: int       # next position to assign; >= 1
+    coverage_contract_version: int | None   # optional; see §8.1
+    coverage_origin: CoverageOrigin | None   # optional; see §8.1
+```
+
+```text
+CoverageOrigin
+    FROM_RUN_START    # durable proof that discovery coverage began at run creation
 ```
 
 This is **discovery projection coordination state** only. It is **not** attempt lifecycle, execution status, or retry authority.
+
+### 8.1 Discovery run state ≠ proof of full run coverage
+
+`ExecutionLineageDiscoveryRunState { generation, next_discovery_position }` proves only:
+
+```text
+stable indexed projection from the point the run discovery state was created
+```
+
+It does **not** automatically prove:
+
+```text
+full run history from first attempt
+```
+
+A run discovery state created lazily for A2 in a mixed legacy run proves indexed coverage **from A2 onward only** — not from A1 or any hidden lineage-only predecessor.
+
+`coverage_origin == FROM_RUN_START` with `coverage_contract_version == 1` is the **only** durable architecture marker that may support `attempt_discovery_completeness = COMPLETE`. It must be durable **before** the first post-v1 attempt state for that run (§20.4). See §20 for run-start seam audit — this marker is **not currently provable** from existing production write paths without a new universal run-start boundary.
 
 Logical meta row key (architecture contract): deterministic run-scoped key equivalent to `meta:discovery_run_state` within the run discovery partition.
 
@@ -334,6 +359,45 @@ always integrity error
 That would be false corruption for data created before discovery-v1 deployment.
 
 **Correct rule:** absence of a discovery row alone does **not** distinguish legacy from corruption. The distinction must come from an explicit durable attempt contract marker (§11).
+
+### 10.1 Legacy lineage-only counterexample — undiscoverable without migration
+
+Pre-discovery-v1 rollout, the run discovery projection did not exist. A legal execution path may therefore leave:
+
+```text
+open_attempt(A1)          # durable ExecutionLineageAttemptState(A1)
+open_segment(A1)          # durable segment + attempt state
+PROCESS CRASH             # before root admission / delegate / observability publication
+```
+
+**Post-crash durable facts:**
+
+| Store | A1 present? |
+| ----- | ----------- |
+| ExecutionLineagePersistence (per-attempt partition) | **YES** — attempt meta + OPEN segment |
+| ExecutionLineagePersistence (run discovery partition) | **NO** — projection did not exist at write time |
+| RuntimeEventPersistence | **NO** |
+| CausalEvidencePersistence | **NO** |
+
+After discovery-v1 rollout, `list_attempts_for_run()` cannot find A1 because no discovery row was ever created. The current DIAG-2 union (`RuntimeEvent ∪ CausalEvidence`) also cannot find A1.
+
+No existing canonical authority provides run-scoped enumeration of per-attempt lineage partitions without:
+
+```text
+cross-partition scan
+checkpoint discovery
+timestamp inference
+lexical inference
+full-history migration
+```
+
+**Verdict:**
+
+```text
+LEGACY_LINEAGE_ONLY_ATTEMPT_DISCOVERABLE: NO
+```
+
+A hidden pre-index lineage-only attempt is **forensically real** (durable attempt state exists) but **diagnostically niewykrywalny** under bounded read contracts. Architecture must represent this explicitly and forbid false completeness.
 
 ---
 
@@ -582,8 +646,26 @@ same AttemptId · new root ExecutionId
 
 Does **not** create a new discovery entry.
 
+**Legacy same-attempt resume after discovery rollout:**
+
+```text
+legacy A1 (discovery_contract_version=None)
+same AttemptId resume after discovery-v1 deployment
+```
+
+`discovery_contract_version` **remains `None` for the entire lifetime of that AttemptId**:
+
+```text
+LEGACY_SAME_ATTEMPT_RESUME: None → None   # never None → 1
+```
+
+Rationale: the marker describes the contract under which the attempt was **created**, not the contract active at resume time. Promoting `None → 1` on resume would mix two forensic contract epochs in one attempt history and could create false index-first invariants for historical segments/admissions written before rollout.
+
+Optional discovery row registration on legacy resume is **not** required and does **not** change `discovery_contract_version`.
+
 ```text
 SAME_ATTEMPT_RESUME_NEW_DISCOVERY_ROW: NO
+LEGACY_SAME_ATTEMPT_RESUME_PROMOTES_TO_V1: NO
 ```
 
 ### 15.3 Concurrent first registration of same attempt
@@ -674,23 +756,66 @@ RUN_SNAPSHOT ≠ ATTEMPT_SNAPSHOT: separate generation contracts
 
 ---
 
-## 18. Ordering contract for ExecutionReconstruction.attempts
+## 18. Candidate discovery union and legacy enrichment
 
-### 18.1 Candidate set (union)
+### 18.1 Final implementable candidate set (union)
 
 ```text
-ATTEMPT_DISCOVERY_UNION:
+FINAL_ATTEMPT_CANDIDATE_UNION:
   RuntimeEvent attempts
   ∪ CausalEvidence attempts
-  ∪ indexed discovery attempts (from stable list_attempts_for_run snapshot)
-  ∪ legacy lineage attempts (discovery_contract_version is None, with or without runtime/causal facts)
+  ∪ stable indexed discovery-v1 attempt rows (from generation-guarded list_attempts_for_run snapshot)
+```
+
+**Forbidden as independent enumeration sources:**
+
+```text
+legacy lineage-only attempts without runtime/causal/discovery evidence
+cross-partition attempt partition scan
+checkpoint-derived attempt lists
+timestamp / lexical inference
 ```
 
 **Exclude** from union: discovery-only stale candidates (discovery row without attempt state, RuntimeEvent, or CausalEvidence) — §14.1.
 
 Duplicate `attempt_id` across sources → single `ReconstructedAttempt`.
 
-### 18.2 Presentation order — explicitly non-chronological (OPTION 1)
+### 18.2 Legacy lineage = enrichment, not enumeration
+
+For each `AttemptId` in the candidate union:
+
+```text
+read_attempt_lineage_state(attempt_scope)
+```
+
+If durable `ExecutionLineageAttemptState` exists:
+
+- `discovery_contract_version is None` → enrich with legacy lineage (segments, admissions, seal)
+- `discovery_contract_version == 1` → enrich with v1 lineage; matching discovery row required (§11.3)
+
+Absence of discovery row for a **legacy-discovered** attempt (`discovery_contract_version is None`) is **LEGAL**.
+
+```text
+LEGACY_LINEAGE_IS_INDEPENDENT_ENUMERATION_SOURCE: NO
+LEGACY_DISCOVERED_ATTEMPT_LINEAGE_ENRICHMENT: YES
+```
+
+### 18.3 Hard invariant — legacy lineage-only undiscoverable
+
+```text
+legacy lineage-only attempt
+  without runtime/causal/discovery evidence
+cannot be enumerated after rollout
+without migration or unbounded scan
+```
+
+Architecture must **not** invent `AttemptId`, scan all attempt partitions, use checkpoints, timestamps, or lexical IDs to recover hidden lineage-only attempts.
+
+```text
+NO_FALSE_COMPLETE: COMPLETE attempt discovery forbidden unless durable run-level facts prove discovery coverage from run start (§19)
+```
+
+### 18.4 Presentation order — explicitly non-chronological (OPTION 1)
 
 No canonical comparable order exists between legacy attempts and discovery-v1 indexed attempts. **Do not** present `ExecutionReconstruction.attempts` tuple order as execution chronology.
 
@@ -701,13 +826,12 @@ Sort keys are **stable display order** only:
 | Indexed discovery-v1 (`discovery_contract_version == 1`) | `(0, discovery_position)` | `str(attempt_id)` |
 | Legacy / runtime (`discovery_contract_version is None`, RuntimeEvent present) | `(1, first ExecutionEventPosition)` | `str(attempt_id)` |
 | Legacy / causal only | `(2, recorded_at, evidence_id)` | per `causal_evidence_query_order_key` |
-| Legacy lineage-only (state present, no runtime/causal) | `(3, str(attempt_id))` | — |
 
 **Mixed rollout consequence:** indexed A2 may sort **before** legacy A1 in display order. This is legal and expected — not lifecycle truth.
 
 DIAG-3 / DIAG-4 must **not** use tuple order as lifecycle or retry authority.
 
-Optional typed provenance (implementation may add if consumer value exists): `DISCOVERY_POSITION` · `RUNTIME_EVENT_POSITION` · `CAUSAL_EVIDENCE_ORDER` · `LEGACY_LINEAGE_ONLY`. Not required for decoration alone.
+Optional typed provenance (implementation may add if consumer value exists): `DISCOVERY_POSITION` · `RUNTIME_EVENT_POSITION` · `CAUSAL_EVIDENCE_ORDER`. Not required for decoration alone.
 
 **Critical separation:**
 
@@ -721,9 +845,10 @@ Lexical `AttemptId` ordering is **never** semantic truth.
 
 ```text
 MIXED_ATTEMPT_ORDER_SEMANTICS: stable non-chronological display classes; not execution chronology
+ATTEMPT_TUPLE_ORDER_IS_CHRONOLOGY: NO
 ```
 
-### 18.3 Mixed rollout canonical example
+### 18.5 Mixed rollout canonical example
 
 ```text
 Run R1
@@ -736,15 +861,17 @@ A3: discovery_position=2, discovery_contract_version=1
 
 | Concern | Behavior |
 | ------- | -------- |
-| Candidate union | A1 from RuntimeEvent (+ legacy lineage enrichment); A2/A3 from discovery index + lineage; no stale-only rows |
+| Candidate union | A1 from RuntimeEvent (+ legacy lineage enrichment); A2/A3 from discovery index + lineage; no stale-only rows; hidden lineage-only A0 **not discoverable** |
+| Run coverage | `attempt_discovery_completeness = LEGACY_UNKNOWN` unless durable `FROM_RUN_START` proof exists (§19) — even when A1 is visible |
 | Lineage validation | A1: legacy without index → legal; A2/A3: post-v1 requires matching discovery row |
 | Presentation order | A2 (class 0, pos 1), A3 (class 0, pos 2), A1 (class 1, event position) — **A2 may appear before A1** |
 
 ```text
 MIXED_RUN_SUPPORTED: YES
+MIXED_RUN_ATTEMPT_DISCOVERY_COMPLETENESS: LEGACY_UNKNOWN   # unless FROM_RUN_START proof
 ```
 
-### 18.4 Historical backward compatibility — final
+### 18.6 Historical backward compatibility — final
 
 ```text
 legacy attempt without discovery row = legal
@@ -766,7 +893,197 @@ HISTORICAL_BACKWARD_COMPATIBILITY: explicit discovery_contract_version marker; n
 
 ---
 
-## 19. Checkpoint non-authority
+## 19. Run-level attempt discovery completeness
+
+### 19.1 Typed derived read concept
+
+Three **independent** diagnostic dimensions — do not merge:
+
+```text
+RuntimeHistoryCompleteness          # runtime event store pagination
+ExecutionAttemptDiscoveryCompleteness   # run-level attempt candidate set coverage
+ExecutionLineageCompleteness        # per-attempt lineage forensic snapshot
+```
+
+```text
+ExecutionAttemptDiscoveryCompleteness
+    COMPLETE          # durable proof: discovery coverage from run start (§19.3)
+    LEGACY_UNKNOWN    # all discoverable attempts reconstructed; hidden pre-index lineage-only may exist
+    TRUNCATED         # bounded discovery read stopped before stable complete indexed set loaded
+```
+
+**Availability** remains separate:
+
+```text
+ExecutionAttemptDiscoveryReadStatus
+    AVAILABLE
+    UNAVAILABLE       # operational backend failure — not LEGACY_UNKNOWN, not TRUNCATED
+```
+
+Coverage status is **derived diagnostic read metadata**. It is **not** attempt lifecycle, run lifecycle, execution status, or retry authority.
+
+### 19.2 Semantics
+
+**`COMPLETE`** — **very hard condition.** Legal only when:
+
+```text
+system possesses durable proof that run-scoped discovery contract
+obeyed from the beginning of lineage history for this run
+```
+
+Not sufficient:
+
+```text
+run discovery state exists              # may have been created lazily for A2
+no legacy attempt was found             # hidden lineage-only attempt may be undiscoverable
+stable indexed snapshot loaded          # without FROM_RUN_START proof
+```
+
+**`LEGACY_UNKNOWN`:**
+
+```text
+all currently discoverable attempts have been reconstructed,
+but one or more pre-index lineage-only attempts may be undiscoverable
+```
+
+Does **not** mean: known corruption, backend unavailable, or pagination truncated.
+
+**`TRUNCATED`:**
+
+```text
+candidate discovery was bounded before stable complete indexed set was loaded
+```
+
+Examples: configured max reached, persistent generation churn, bounded retry exhausted per contract. Do **not** mix with legacy uncertainty.
+
+### 19.3 COMPLETE requires durable FROM_RUN_START proof
+
+```text
+COMPLETE_REQUIRES_FROM_RUN_START_PROOF: YES
+NO_PROOF_SEMANTICS: LEGACY_UNKNOWN
+```
+
+When `ExecutionLineageDiscoveryRunState.coverage_origin == FROM_RUN_START` and `coverage_contract_version == 1` is durable **before** the first post-v1 attempt state for that run, and a stable generation-guarded discovery snapshot is loaded:
+
+```text
+attempt_discovery_completeness = COMPLETE
+```
+
+### 19.4 Run coverage scenarios
+
+| Scenario | `attempt_discovery_completeness` |
+| -------- | ------------------------------ |
+| Pure legacy run (no run discovery state; RuntimeEvent/Causal attempts exist) | `LEGACY_UNKNOWN` |
+| Mixed run (A1 legacy + A2/A3 indexed; no `FROM_RUN_START` proof) | `LEGACY_UNKNOWN` — even if A1 visible via RuntimeEvent; hidden A0 possible |
+| Discovery-v1 run with proven `FROM_RUN_START` + stable indexed snapshot | `COMPLETE` |
+| Discovery read bounded / generation churn exhausted | `TRUNCATED` |
+| Discovery backend operationally unavailable | `UNAVAILABLE` (separate status) |
+
+**Per-attempt** `ExecutionLineageCompleteness` remains independent. Example: run `LEGACY_UNKNOWN` while A1 and A2 each have lineage `COMPLETE` — both statements are simultaneously valid.
+
+### 19.5 Stale discovery entry and completeness
+
+Stale discovery-only row (no attempt state, runtime, causal) → no `ReconstructedAttempt`. Stale candidate alone does **not** lower completeness when discovery index coverage is proven `COMPLETE` and snapshot is stable (legal: index registered → crash before `open_attempt`).
+
+```text
+STALE_DISCOVERY_ONLY_SURFACED_AS_REAL_ATTEMPT: NO
+```
+
+### 19.6 Read model exposure
+
+```text
+ExecutionReconstruction
+    attempt_discovery_completeness: ExecutionAttemptDiscoveryCompleteness
+
+DiagnosticExecutionLineageView
+    attempt_discovery_completeness: ExecutionAttemptDiscoveryCompleteness
+```
+
+Operator must know whether the visible candidate set is provably complete.
+
+---
+
+## 20. Run-start seam audit
+
+### 20.1 Legal root/run creation paths audited
+
+| Path | Entry | RunId source |
+| ---- | ----- | ------------ |
+| `resolve_root_task_identity` | `intergrax/runtime/execution/orchestration.py` | explicit `run_id` **or** `mint_run_id()` via `mint_root_execution_identity` |
+| `HostTaskExecution.execute` | `intergrax/runtime/execution/host_task.py` | passes through `resolve_root_task_identity(run_id=...)` |
+| `execute_root_task` | `intergrax/runtime/execution/orchestration.py` | receives pre-resolved `RootTaskIdentity` |
+| `ExecutionRuntime.execute` | `intergrax/runtime/execution/runtime.py` | `resolve_root_execution_context` → `mint_root_execution_identity(run_id=options.run_id)` |
+| `UnifiedTaskRunner.run_task` | `intergrax/runtime/task/unified_task_runner.py` | optional explicit `run_id`; `run_runtime_request` passes `request.run_id` |
+| Queue / worker root execution | `QueuedHostTaskExecutionAdapter`, `HostTaskExecutionRunAdapter` | adapter-dependent; may supply explicit RunId |
+| Background root execution | `mint_background_transport_identity` | always mints new `run_id` — but no durable run-start fact written |
+| Retry path | `ExecutionAttemptRetryService` | reuses existing `run_id`, mints new `attempt_id` |
+| Resume path | `resolve_root_task_identity(resume_checkpoint=...)` | restores checkpoint `run_id` |
+
+### 20.2 Verdict — no universal run-start seam today
+
+**Question:** Does one public typed fact reliably mean “this RunId is being created for the first time”?
+
+**Answer: NO.**
+
+Evidence:
+
+- `run_id is None` is **not** sufficient — callers may pass a freshly minted explicit `RunId` before any execution (`UnifiedTaskRunner.run_runtime_request`, tests, queue adapters).
+- `mint_root_execution_identity` mints when omitted but accepts pre-supplied IDs.
+- No durable `RunCreated` / `FROM_RUN_START` fact is written at identity resolution time.
+- Resume and retry paths intentionally reuse existing `run_id`.
+
+```text
+RUN_START_PROOF_AVAILABLE: NO
+RUN_START_PROOF: NONE
+```
+
+### 20.3 Conservative architecture consequence
+
+Without a proven universal run-start boundary, architecture **must not** invent heuristics. Default:
+
+```text
+attempt_discovery_completeness = LEGACY_UNKNOWN
+```
+
+for any run lacking durable `ExecutionLineageDiscoveryRunState.coverage_origin == FROM_RUN_START`.
+
+Enterprise forensic read model may be conservative; it must not be falsely complete.
+
+### 20.4 Future FROM_RUN_START write contract (implementation prerequisite for COMPLETE)
+
+When a universal run-start durable boundary is established in a **future** write-path task, the discovery rollout must:
+
+```text
+1. create ExecutionLineageDiscoveryRunState with:
+       coverage_contract_version = 1
+       coverage_origin = FROM_RUN_START
+   durable BEFORE first post-v1 open_attempt for that run
+
+2. only then allow attempt_discovery_completeness = COMPLETE
+   after stable indexed snapshot load
+```
+
+This task does **not** implement that write seam.
+
+---
+
+## 21. Existing consumer audit — tuple order authority
+
+| Consumer | Uses `reconstruction.attempts` tuple order as lifecycle chronology? | Evidence |
+| -------- | ------------------------------------------------------------------- | -------- |
+| `LifecycleAnomalyAnalyzer` | **NO** | Per-attempt evidence checks iterate attempts; lifecycle violations use `_sorted_positioned_events` by `ExecutionEventPosition` (`lifecycle_analysis.py`) |
+| `DiagnosticAssessmentBuilder` | **NO** | Scope validation only; no attempt-order lifecycle inference (`diagnostic_assessment.py`) |
+| `DiagnosticReadService` | **NO** | Orchestrates reconstruction; no tuple-order lifecycle use (`diagnostic_read_service.py`) |
+| `diagnostic_lineage_projection` | **NO** | Maps attempts to operator view; no chronology authority (`diagnostic_lineage_projection.py`) |
+
+```text
+DIAG3_DIAG4_USE_TUPLE_AS_LIFECYCLE_AUTHORITY: NO
+ATTEMPT_TUPLE_ORDER_IS_CHRONOLOGY: NO
+```
+
+---
+
+## 22. Checkpoint non-authority
 
 ```text
 CHECKPOINT_AS_ATTEMPT_DISCOVERY_AUTHORITY: NO
@@ -777,7 +1094,7 @@ Checkpoints may not exist; they remain resume projections only.
 
 ---
 
-## 20. RuntimeEvent and CausalEvidence admission options
+## 23. RuntimeEvent and CausalEvidence admission options
 
 **OPTION_D (mandatory pre-admission RuntimeEvent):** Would make observability persistence availability a structural execution admission dependency. Violates separation of concerns; observability is not universal admission authority.
 
@@ -785,11 +1102,11 @@ Checkpoints may not exist; they remain resume projections only.
 
 ---
 
-## 21. READ_INTEGRATION_R1 correction items
+## 24. READ_INTEGRATION_R1 correction items
 
 The following implement defects in current read integration must be corrected in the next implementation task.
 
-### 21.1 Truncation semantics
+### 24.1 Truncation semantics
 
 ```text
 TRUNCATION_SEMANTICS:
@@ -799,7 +1116,7 @@ TRUNCATION_SEMANTICS:
 
 When `segments_truncated` or `admissions_truncated`, structural validation applies only to **loaded** records; completeness → `TRUNCATED`, not integrity failure for unseen tail.
 
-### 21.2 Per-attempt stable snapshot semantics
+### 24.2 Per-attempt stable snapshot semantics
 
 ```text
 STABLE_SNAPSHOT_SEMANTICS:
@@ -820,7 +1137,7 @@ PER_ATTEMPT_STABLE_SNAPSHOT:
 
 Run discovery stable snapshot (§17) uses **separate** `ExecutionLineageDiscoveryRunState.generation` — not interchangeable.
 
-### 21.3 State / seal consistency
+### 24.3 State / seal consistency
 
 After stable snapshot:
 
@@ -842,7 +1159,7 @@ Mismatch after stable snapshot → **INTEGRITY ERROR** (not PARTIAL, not OPEN).
 
 Current `_derive_completeness` does not enforce seal/state field equality — correction required.
 
-### 21.4 Provider error translation
+### 24.4 Provider error translation
 
 ```text
 PROVIDER_ERROR_TRANSLATION:
@@ -852,7 +1169,7 @@ PROVIDER_ERROR_TRANSLATION:
     → ExecutionLineageIntegrityError (unchanged)
 ```
 
-### 21.5 Partial vs corruption
+### 24.5 Partial vs corruption
 
 ```text
 missing fact because history is known degraded/truncated  →  PARTIAL or TRUNCATED
@@ -865,7 +1182,7 @@ examples:
   stable state unsealed but seal exists  →  INTEGRITY ERROR
 ```
 
-### 21.6 Root-admission crash window (read semantics)
+### 24.6 Root-admission crash window (read semantics)
 
 ```text
 OPEN segment without root admission + unsealed attempt  →  OPEN transitional / PARTIAL degraded crash history
@@ -876,7 +1193,7 @@ Do not treat missing root admission alone as corruption without lifecycle contex
 
 ---
 
-## 22. No second authority
+## 25. No second authority
 
 ```text
 NEW ATTEMPT IDENTITY AUTHORITY: NO
@@ -894,7 +1211,7 @@ ATTEMPT_LIFECYCLE_AUTHORITY_CHANGED: NO
 
 ---
 
-## 23. Implementation test scenarios (frozen)
+## 26. Implementation test scenarios (frozen)
 
 | ID | Scenario |
 | -- | -------- |
@@ -912,9 +1229,29 @@ ATTEMPT_LIFECYCLE_AUTHORITY_CHANGED: NO
 | D12 | Persistent discovery writer churn → DISCOVERY_READ_TRUNCATED |
 | D13 | Stale discovery-only candidate not surfaced as forensic attempt |
 
+### 26.1 Read integration coverage test matrix (frozen)
+
+| ID | Scenario |
+| -- | -------- |
+| C1 | Pure legacy runtime/causal attempt → discovered; coverage `LEGACY_UNKNOWN` |
+| C2 | Legacy discovered attempt + legacy lineage state → lineage enrichment works |
+| C3 | Hidden legacy lineage-only attempt → not discoverable; coverage must prevent `COMPLETE` |
+| C4 | Mixed A1 legacy + A2/A3 indexed → coverage `LEGACY_UNKNOWN` |
+| C5 | Post-v1 indexed attempt missing discovery row → integrity error |
+| C6 | Discovery-only stale row → no `ReconstructedAttempt` |
+| C7 | Stable indexed run candidate snapshot |
+| C8 | Discovery generation churn → bounded `TRUNCATED` |
+| C9 | Per-attempt stable snapshot |
+| C10 | Per-attempt page truncation without false integrity |
+| C11 | State/seal contradiction → integrity |
+| C12 | Backend unavailable → unavailable, not integrity |
+| C13 | Same legacy AttemptId resume → `discovery_contract_version` stays `None` |
+| C14 | New post-v1 AttemptId inside legacy run → indexed-v1; run remains `LEGACY_UNKNOWN` |
+| C15 | `COMPLETE` only when durable `FROM_RUN_START` proof exists |
+
 ---
 
-## 24. Next implementation task
+## 27. Next implementation task
 
 ```text
 NEXT_TASK: DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION
@@ -926,16 +1263,18 @@ That task implements together:
 attempt discovery (OPTION_C)
 discovery_contract_version marker + attempt-state codec v2
 run discovery atomic registration + stable snapshot
+ExecutionAttemptDiscoveryCompleteness derived read (LEGACY_UNKNOWN default)
 truncation-safe reconstruction
 per-attempt stable snapshot retry
 state/seal consistency
 production provider error translation
 legacy vs post-v1 integrity rules
+legacy lineage enrichment for discovered attempts only
 ```
 
 ---
 
-## 25. Final decision block
+## 28. Final decision block
 
 ```text
 STATUS: PASS
@@ -946,6 +1285,17 @@ DISCOVERY_AUTHORITY: ExecutionLineagePersistence run-scoped discovery projection
 
 DISCOVERY_IS_ATTEMPT_LIFECYCLE_AUTHORITY: NO
 
+LEGACY_LINEAGE_ONLY_ATTEMPT_DISCOVERABLE: NO
+
+LEGACY_LINEAGE_ONLY_DISCOVERABLE: NO
+
+LEGACY_LINEAGE_IS_INDEPENDENT_ENUMERATION_SOURCE: NO
+
+FINAL_ATTEMPT_CANDIDATE_UNION:
+  RuntimeEvent attempts
+  ∪ CausalEvidence attempts
+  ∪ stable indexed discovery-v1 attempt rows
+
 LEGACY_DISCOVERY_DISTINCTION: ExecutionLineageAttemptState.discovery_contract_version (None = legacy, 1 = discovery-v1)
 
 POST_V1_INDEX_REQUIRED: YES
@@ -954,25 +1304,51 @@ DISCOVERY_CONTRACT_VERSION: None = LEGACY_ATTEMPT; 1 = DISCOVERY_V1_REQUIRED_ATT
 
 INDEX_FIRST: register_discovery_entry BEFORE open_attempt(discovery_contract_version=1); discovery failure blocks open_attempt
 
-DISCOVERY_RUN_STATE: ExecutionLineageDiscoveryRunState { run_scope, generation, next_discovery_position }
+DISCOVERY_RUN_STATE: ExecutionLineageDiscoveryRunState { run_scope, generation, next_discovery_position, coverage_contract_version?, coverage_origin? }
+
+DISCOVERY_RUN_STATE_PROVES_FULL_HISTORY: NO   # coordination only unless coverage_origin == FROM_RUN_START
 
 DISCOVERY_ATOMICITY: discovery row + position counter = one partition-atomic operation (PartitionAtomicDocumentStore)
 
 DISCOVERY_POSITION: monotonic per run projection; not retry_number / lifecycle generation / event position / timestamp
 
-RUN_DISCOVERY_STABLE_SNAPSHOT: generation-guarded bounded retry; DISCOVERY_READ_TRUNCATED on persistent churn
+RUN_DISCOVERY_STABLE_SNAPSHOT: generation-guarded bounded retry; TRUNCATED on persistent churn
 
-STALE_DISCOVERY_ENTRY: legal candidate-only
+RUN_START_PROOF_AVAILABLE: NO
 
-STALE_DISCOVERY_ONLY_VISIBLE_AS_REAL_ATTEMPT: NO
+RUN_START_PROOF: NONE
 
-LEGACY_ATTEMPT_WITHOUT_INDEX: LEGAL
+ATTEMPT_DISCOVERY_COMPLETENESS: ExecutionAttemptDiscoveryCompleteness { COMPLETE, LEGACY_UNKNOWN, TRUNCATED }
 
-POST_V1_ATTEMPT_WITHOUT_INDEX: INTEGRITY_ERROR
+ATTEMPT_DISCOVERY_READ_STATUS: ExecutionAttemptDiscoveryReadStatus { AVAILABLE, UNAVAILABLE }
+
+COMPLETE_REQUIRES_FROM_RUN_START_PROOF: YES
+
+NO_PROOF_SEMANTICS: LEGACY_UNKNOWN
+
+PURE_LEGACY_RUN: LEGACY_UNKNOWN
+
+MIXED_RUN: LEGACY_UNKNOWN
+
+POST_V1_RUN_WITH_PROVEN_FULL_COVERAGE: COMPLETE   # only when durable FROM_RUN_START proof exists; NOT_CURRENTLY_PROVABLE at write time
+
+STALE_DISCOVERY_ONLY_REAL_ATTEMPT: NO
+
+LEGACY_DISCOVERED_ATTEMPT_LINEAGE_ENRICHMENT: YES
+
+POST_V1_MISSING_DISCOVERY_ROW: INTEGRITY_ERROR
+
+LEGACY_SAME_ATTEMPT_RESUME: None → None (legacy for whole AttemptId lifetime; no promotion to v1)
+
+NEW_POST_V1_ATTEMPT_IN_LEGACY_RUN: indexed-v1; run coverage remains LEGACY_UNKNOWN
 
 MIXED_RUN_SUPPORTED: YES
 
-MIXED_ATTEMPT_ORDER_SEMANTICS: stable non-chronological display classes (indexed class 0, legacy runtime class 1, causal class 2, legacy lineage-only class 3); not execution chronology
+MIXED_ATTEMPT_ORDER_SEMANTICS: stable non-chronological display classes; not execution chronology
+
+ATTEMPT_TUPLE_ORDER_IS_CHRONOLOGY: NO
+
+DIAG3_DIAG4_USE_TUPLE_AS_LIFECYCLE_AUTHORITY: NO
 
 SAME_ATTEMPT_RESUME_NEW_DISCOVERY_ROW: NO
 
@@ -981,6 +1357,12 @@ ATTEMPT_LIFECYCLE_AUTHORITY_CHANGED: NO
 CHECKPOINT_AUTHORITY: NO
 
 UNBOUNDED_SCAN: NO
+
+MIGRATION_REQUIRED_FOR_SAFE_READ: NO
+
+MIGRATION_REQUIRED_FOR_FULL_LEGACY_DISCOVERY: YES
+
+NEW_ATTEMPT_LIFECYCLE_AUTHORITY: NO
 
 NEW_LINEAGE_STORE: NO
 

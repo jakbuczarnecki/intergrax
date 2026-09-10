@@ -37,6 +37,13 @@ BLOCKED_PENDING_ATTEMPT_DISCOVERY_ARCHITECTURE
 
 **Current verdict:** `EXISTING_DIAG2_DISCOVERY_COMPLETE: NO`. Rollout semantics (legacy `discovery_contract_version=None` vs post-v1 index-first, atomic registration, run discovery stable snapshot) defined in attempt-discovery architecture R1 rollout correction. Implementation deferred to `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION`.
 
+> **Correction (2026-09-10):** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ATTEMPT-DISCOVERY-ARCHITECTURE-R1-LEGACY-COVERAGE-CORRECTION`  
+> **Audit trail:** `LEGACY_DISCOVERY_COVERAGE_CORRECTION`
+
+Pre-index lineage-only attempts (durable `ExecutionLineageAttemptState` without RuntimeEvent, CausalEvidence, or discovery row) are **not discoverable** under bounded read contracts. Architecture corrects the invalid candidate union that treated legacy lineage as an independent enumeration source. Run-level `ExecutionAttemptDiscoveryCompleteness` (`COMPLETE` / `LEGACY_UNKNOWN` / `TRUNCATED`) is defined; `COMPLETE` requires durable `FROM_RUN_START` proof — **not currently provable** from existing write paths (`RUN_START_PROOF: NONE`). Default conservative semantics: `LEGACY_UNKNOWN`.
+
+**Topology implementation exists**, but final R1 remains **blocked** until honest attempt-discovery coverage semantics are implemented in `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION`.
+
 ## Read-only port
 
 - `ExecutionLineageReader` ABC with:
@@ -119,9 +126,20 @@ Architecture `DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_ATTEMPT_DISCOVERY_ARCHITECTU
 | State/seal consistency | `sealed` / `closure_kind` / `degraded` equality across state and seal after stable snapshot |
 | Provider error translation | DocumentStore operational failures → `ExecutionLineageUnavailableError` |
 | Legacy vs post-v1 | `discovery_contract_version is None` without index → legal; `== 1` without index → integrity error |
+| Attempt discovery completeness | `ExecutionAttemptDiscoveryCompleteness`; `COMPLETE` only with `FROM_RUN_START` proof; default `LEGACY_UNKNOWN` |
+| Legacy lineage enumeration | Legacy lineage enriches discovered attempts only; lineage-only hidden attempts not enumerable without migration |
+
+## Audit trail — LEGACY_DISCOVERY_COVERAGE_CORRECTION
+
+| Date | Task | Outcome |
+| ---- | ---- | ------- |
+| 2026-09-10 | `DG-001-...-ROLLOUT-CORRECTION` | OPTION_C selected; index-first; mixed rollout |
+| 2026-09-10 | `DG-001-...-LEGACY-COVERAGE-CORRECTION` | `LEGACY_LINEAGE_ONLY_DISCOVERABLE: NO`; candidate union corrected; `ExecutionAttemptDiscoveryCompleteness` defined; `RUN_START_PROOF: NONE` |
+
+Historical PASS (forensic topology) **retained**. Attempt-discovery remains **BLOCKED** pending implementation correction.
 
 ## Final verdict
 
 **PASS (forensic topology read path)** — canonical diagnostics read-side reconstructs durable forensic parent topology and segment continuity as derived read models without checkpoint authority or write-side coupling.
 
-**BLOCKED (attempt discovery)** — `READ_INTEGRATION_R1: BLOCKED_PENDING_ATTEMPT_DISCOVERY_ARCHITECTURE` until `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION` lands per attempt-discovery architecture R1.
+**BLOCKED (attempt discovery)** — `READ_INTEGRATION_R1: BLOCKED_PENDING_ATTEMPT_DISCOVERY_ARCHITECTURE` until `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION` lands per attempt-discovery architecture R1, including honest `ExecutionAttemptDiscoveryCompleteness` semantics (`LEGACY_UNKNOWN` default; no false `COMPLETE`).
