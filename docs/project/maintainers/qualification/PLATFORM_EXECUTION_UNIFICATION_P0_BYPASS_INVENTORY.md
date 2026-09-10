@@ -24,23 +24,23 @@
 | Metric | Count |
 | --- | ---: |
 | Total execution-capable entrypoints inventoried | 22 |
-| CANONICAL | 11 |
-| CANONICAL WITH GAP | 4 |
-| LEGACY BUT NON-PRODUCTION | 3 |
+| CANONICAL | 14 |
+| CANONICAL WITH GAP | 3 |
+| LEGACY BUT NON-PRODUCTION | 2 |
 | UNSUPPORTED / DEAD | 0 |
-| BYPASS | 3 |
+| BYPASS | 2 |
 | AMBIGUOUS | 1 |
-| Supported execution bypasses (production) | 3 |
+| Supported execution bypasses (production) | 2 |
 | Direct child execution bypasses | 1 |
 | Direct tool / side-effect bypasses | 1 |
-| Governance bypasses (proven) | 1 |
+| Governance bypasses (proven) | 0 |
 | Authority bypasses (proven) | 0 |
 | Nexus scheduling bypasses | 0 |
 | Uncontrolled parallel execution paths (execution-relevant) | 0 (bounded fan-out under coordination tests) |
 | P0 bypasses | 1 |
-| P1 bypasses | 2 |
-| P2 gaps | 4 |
-| P3 legacy cleanups | 3 |
+| P1 bypasses | 1 |
+| P2 gaps | 3 |
+| P3 legacy cleanups | 2 |
 
 ## Central inventory
 
@@ -93,15 +93,25 @@ drain_pending_compensation_jobs
 
 Missing: **`ExecutionRuntime` / host task / background execution identity admission** before side effect.
 
-### BY-03 (P1) — work-stage tool port (when implemented off-platform)
+## Ambiguous execution paths requiring owner decision
+
+Not counted as proven bypass in Metrics or supported production bypass totals.
+
+### EP-17 — work-stage tool port
+
+| Field | Value |
+| --- | --- |
+| ID | EP-17 |
+| VERDICT | AMBIGUOUS — REQUIRES OWNER DECISION |
+| NOT COUNTED AS PROVEN BYPASS | Yes |
 
 ```text
 WorkStageCapabilityLoop.run
   → WorkStageToolExecutionPort.execute
-  → (implementation may bypass RuntimeToolInvoker)
+  → (no proven production implementation path that skips RuntimeToolInvoker / execution boundary)
 ```
 
-Missing boundary **depends on port implementation** — owner decision required (EP-17).
+Owner decision required before classification as bypass or canonical (see central inventory row EP-17).
 
 ## Direct `ChildExecutionRunner` import surface (production)
 
