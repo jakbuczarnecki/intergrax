@@ -209,81 +209,21 @@ def observation_from_scenario_execution_exception(
     boundary: DecisionFailureBoundary = DecisionFailureBoundary.HOST_EXECUTION,
 ) -> DecisionQualificationObservation:
     """Map structured scenario execution exceptions to qualification observations."""
-    from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
-        CompletionReconciliationError,
-    )
-    from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
-        PreReconciliationValidationError,
-    )
-    from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
-        TERMINAL_STATE_NOT_ACCEPTED,
+    from testing_support.decision_e2e.scenario_exception_qualification import (
+        observation_from_scenario_execution_exception as _map_scenario_exception,
     )
 
-    if isinstance(exc, PreReconciliationValidationError):
-        return DecisionQualificationObservation(
-            boundary=DecisionFailureBoundary.PHASE_VALIDATION,
-            platform_contract=PlatformContractQualificationSignal(trace_finalized=True),
-            model_behavior=ModelBehaviorQualificationSignal(
-                unsupported_completion=True,
-                behavior_boundary=DecisionFailureBoundary.PHASE_VALIDATION,
-            ),
-            evaluator=EvaluatorQualificationSignal(passed=False),
-            provider=ProviderQualificationSignal(),
-            environment=EnvironmentQualificationSignal(),
-            observability=ObservabilityQualificationSignal(),
-        )
-
-    if isinstance(exc, CompletionReconciliationError):
-        return DecisionQualificationObservation(
-            boundary=DecisionFailureBoundary.COMPLETION_RECONCILIATION,
-            platform_contract=PlatformContractQualificationSignal(trace_finalized=True),
-            model_behavior=ModelBehaviorQualificationSignal(
-                unsupported_completion=True,
-                behavior_boundary=DecisionFailureBoundary.COMPLETION_RECONCILIATION,
-            ),
-            evaluator=EvaluatorQualificationSignal(passed=False),
-            provider=ProviderQualificationSignal(),
-            environment=EnvironmentQualificationSignal(),
-            observability=ObservabilityQualificationSignal(),
-        )
-
-    if isinstance(exc, RuntimeError) and TERMINAL_STATE_NOT_ACCEPTED in str(exc):
-        return DecisionQualificationObservation(
-            boundary=DecisionFailureBoundary.TERMINAL_ACCEPTANCE,
-            platform_contract=PlatformContractQualificationSignal(
-                terminal_acceptance_contract_violation=True,
-                violation_boundary=DecisionFailureBoundary.TERMINAL_ACCEPTANCE,
-            ),
-            model_behavior=ModelBehaviorQualificationSignal(),
-            evaluator=EvaluatorQualificationSignal(passed=False),
-            provider=ProviderQualificationSignal(),
-            environment=EnvironmentQualificationSignal(),
-            observability=ObservabilityQualificationSignal(),
-        )
-
-    facts = provider_infrastructure_facts_from_execution_error(
-        error_type=type(exc).__name__,
-    )
-    return observation_from_provider_infrastructure_facts(facts, boundary=boundary)
+    return _map_scenario_exception(exc, boundary=boundary)
 
 
 def provider_infrastructure_facts_from_execution_error(
     *,
-    error_type: str,
+    exc: BaseException,
     http_status: int | None = None,
-) -> ProviderInfrastructureFacts:
+) -> ProviderInfrastructureFacts | None:
     """Map structured execution error facts to provider infrastructure signals."""
-    if http_status == 429:
-        return ProviderInfrastructureFacts(rate_limit=True)
-    if http_status is not None and 500 <= http_status <= 599:
-        return ProviderInfrastructureFacts(server_error=True)
-    lowered = error_type.lower()
-    if "timeout" in lowered:
-        return ProviderInfrastructureFacts(timeout=True)
-    if any(token in lowered for token in ("connection", "network", "unreachable")):
-        return ProviderInfrastructureFacts(network_failure=True)
-    if any(token in lowered for token in ("protocol", "parse", "json")):
-        return ProviderInfrastructureFacts(protocol_error=True)
-    if http_status is not None and http_status >= 400:
-        return ProviderInfrastructureFacts(protocol_error=True)
-    return ProviderInfrastructureFacts(network_failure=True)
+    from testing_support.decision_e2e.scenario_exception_qualification import (
+        provider_infrastructure_facts_from_execution_error as _map_provider_facts,
+    )
+
+    return _map_provider_facts(exc=exc, http_status=http_status)
