@@ -179,7 +179,7 @@ Historical table below retained from initial correction landing; verdict superse
 
 > **Task:** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-FINAL-CORRECTION-AND-QUALIFICATION`
 > **Initial implementation SHA:** `1ab3771f8c49e13de0f85c47473522c7521f201a`
-> **Final correction SHA:** `aa80ed3581d4fb278e0b99adeac3d15d490e6e63`
+> **Final correction SHA:** `42cb94ec080eddbd7106af86c96d78d17f5e34b7`
 > **Verdict:** **PASS**
 
 | Matrix | Result |
