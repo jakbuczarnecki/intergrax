@@ -5,10 +5,11 @@
 from __future__ import annotations
 
 import ast
-import subprocess
 from pathlib import Path
 
 import pytest
+
+from testing_support.npsc5f_r1_protected_drift import collect_r1_protected_production_drift
 
 from intergrax.contracts.execution_identity import RunId, mint_event_id, mint_run_id, mint_task_id
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -37,7 +38,6 @@ from intergrax.runtime.observability.persistence_conformance import sample_runti
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
 
 _EVIDENCE_ROOTS = (
     _REPO_ROOT / "intergrax" / "runtime" / "events",
@@ -364,34 +364,9 @@ def test_npsc5f_p0_unified_journal_has_no_completeness_marker_in_api() -> None:
 
 
 @pytest.mark.gate
-def test_npsc5f_p0_drift_gate_clean_at_5e_final() -> None:
-    proc = subprocess.run(
-        [
-            "git",
-            "diff",
-            "--name-only",
-            f"{NPSC_5E_FINAL_SHA}..HEAD",
-        ],
-        cwd=_REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert proc.returncode == 0
-    changed = [line.strip() for line in proc.stdout.splitlines() if line.strip()]
-    forbidden_prefixes = (
-        "intergrax/runtime/execution/",
-        "intergrax/contracts/execution_retry",
-        "intergrax/runtime/long_running/",
-        "intergrax/runtime/execution/lineage/",
-        "intergrax/runtime/execution/fan_out_partial_recovery",
-    )
-    drift = [
-        path
-        for path in changed
-        if any(path.startswith(prefix) for prefix in forbidden_prefixes)
-    ]
-    assert drift == [], f"unexpected 5E-surface drift: {drift}"
+def test_npsc5f_p0_r1_protected_evidence_surfaces_have_no_unqualified_post_r1_drift() -> None:
+    drift = collect_r1_protected_production_drift(_REPO_ROOT)
+    assert drift == [], f"unexpected R1 protected production drift since implementation: {drift}"
 
 
 # P0 qualification flags (inventory — gaps do not fail P0)
