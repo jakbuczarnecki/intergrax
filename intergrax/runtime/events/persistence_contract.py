@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from threading import Lock
-from typing import List, Optional
+from typing import List, Optional, Sequence, Tuple
 
 from intergrax.contracts.execution_identity import (
     EventId,
@@ -40,6 +40,18 @@ class EvidenceTenantRoutingMismatchError(RuntimeEventPersistenceIntegrityError):
 
 class MandatoryEvidencePersistenceError(RuntimeEventPersistenceIntegrityError):
     """Raised when mandatory execution evidence could not be durably committed."""
+
+
+@dataclass(frozen=True, slots=True)
+class TaskRuntimeEventRuns:
+    """
+    Task-scoped events grouped by run.
+
+    Each run group is ordered by ``ExecutionEventPosition`` (run-local only).
+    Run groups are ordered by canonical ``run_id`` — not task-global chronology.
+    """
+
+    runs: Tuple[Tuple[RunId, Tuple[PositionedRuntimeEvent, ...]], ...]
 
 
 EVENT_ID_OWNERSHIP_SCHEMA_V1 = "runtime_event.event_id_ownership.v1"
@@ -270,8 +282,13 @@ class RuntimeEventPersistence(ABC):
         tenant_id: str,
         limit: int = 1000,
         through: ExecutionEventPosition | None = None,
+        after: ExecutionEventPosition | None = None,
     ) -> List[PositionedRuntimeEvent]:
-        """Return positioned events for a run (oldest execution position first)."""
+        """
+        Return positioned events for a run (oldest execution position first).
+
+        ``after`` is exclusive; ``through`` is inclusive. Positions are run-local.
+        """
 
     def list_for_run(
         self,
@@ -298,7 +315,21 @@ class RuntimeEventPersistence(ABC):
         tenant_id: str,
         limit: int = 1000,
     ) -> List[RuntimeEvent]:
-        """Return events for a task scoped by tenant (canonical execution order)."""
+        """
+        Return events for a task scoped by tenant.
+
+        Ordering is stable ``(run_id, execution_position)`` — not task-global chronology.
+        """
+
+    @abstractmethod
+    def list_positioned_for_task_grouped_by_run(
+        self,
+        task_id: str,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+    ) -> TaskRuntimeEventRuns:
+        """Return task events grouped by run with run-local execution order."""
 
     @abstractmethod
     def get_by_event_id(
@@ -322,6 +353,7 @@ class RuntimeEventPersistence(ABC):
             tenant_id=tenant_id,
             limit=limit,
             through=boundary.position,
+            after=None,
         )
 
     def close(self) -> None:
@@ -363,8 +395,9 @@ class NullRuntimeEventPersistence(RuntimeEventPersistence):
         tenant_id: str,
         limit: int = 1000,
         through: ExecutionEventPosition | None = None,
+        after: ExecutionEventPosition | None = None,
     ) -> List[PositionedRuntimeEvent]:
-        _ = run_id, tenant_id, limit, through
+        _ = run_id, tenant_id, limit, through, after
         return []
 
     def list_for_task(
@@ -376,6 +409,16 @@ class NullRuntimeEventPersistence(RuntimeEventPersistence):
     ) -> List[RuntimeEvent]:
         _ = task_id, tenant_id, limit
         return []
+
+    def list_positioned_for_task_grouped_by_run(
+        self,
+        task_id: str,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+    ) -> TaskRuntimeEventRuns:
+        _ = task_id, tenant_id, limit
+        return TaskRuntimeEventRuns(runs=())
 
     def get_by_event_id(
         self,
@@ -435,3 +478,53 @@ def _validate_through_limit(
     if through is None:
         return limit, None
     return limit, validate_execution_event_position(through)
+
+
+def _validate_run_list_params(
+    *,
+    limit: int,
+    through: ExecutionEventPosition | None,
+    after: ExecutionEventPosition | None,
+) -> tuple[int, ExecutionEventPosition | None, ExecutionEventPosition | None]:
+    limit, through = _validate_through_limit(limit=limit, through=through)
+    if after is None:
+        return limit, through, None
+    validated_after = validate_execution_event_position(after)
+    if through is not None and validated_after.value >= through.value:
+        raise ValueError("after must be strictly before through")
+    return limit, through, validated_after
+
+
+def _filter_positioned_run_rows(
+    rows: Sequence[PositionedRuntimeEvent],
+    *,
+    after: ExecutionEventPosition | None,
+    through: ExecutionEventPosition | None,
+    limit: int,
+) -> List[PositionedRuntimeEvent]:
+    filtered = list(rows)
+    if after is not None:
+        filtered = [row for row in filtered if row.position.value > after.value]
+    if through is not None:
+        filtered = [row for row in filtered if row.position.value <= through.value]
+    return filtered[:limit]
+
+
+def _group_positioned_task_rows(
+    rows: Sequence[PositionedRuntimeEvent],
+    *,
+    limit: int,
+) -> TaskRuntimeEventRuns:
+    if type(limit) is not int or isinstance(limit, bool) or limit <= 0:
+        raise ValueError("limit must be > 0")
+    ordered = sorted(rows, key=lambda row: (str(row.event.run_id), row.position.value))
+    selected = ordered[:limit]
+    grouped: dict[str, list[PositionedRuntimeEvent]] = defaultdict(list)
+    for row in selected:
+        grouped[str(row.event.run_id)].append(row)
+    runs: list[tuple[RunId, tuple[PositionedRuntimeEvent, ...]]] = []
+    for run_key in sorted(grouped):
+        run_rows = grouped[run_key]
+        run_rows.sort(key=lambda row: row.position.value)
+        runs.append((validate_run_id(run_key), tuple(run_rows)))
+    return TaskRuntimeEventRuns(runs=tuple(runs))

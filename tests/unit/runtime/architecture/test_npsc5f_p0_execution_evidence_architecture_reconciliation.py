@@ -139,9 +139,9 @@ def test_npsc5f_p0_build_unified_run_journal_silent_truncation_gap(tmp_path: Pat
     journal = build_unified_run_journal(
         _persisted_run(run_id, tenant_id),
         runtime_store=store,
-        limit=3,
+        page_size=3,
     )
-    assert len(journal) == 3
+    assert len(journal) == 5
     store.close()
 
 
@@ -305,11 +305,24 @@ def test_npsc5f_p0_bus_mandatory_persistence_failure_is_fail_closed() -> None:
         def append(self, event, *, tenant_id: str):
             raise RuntimeError("sink down")
 
-        def list_positioned_for_run(self, run_id, *, tenant_id: str, limit: int = 1000, through=None):
+        def list_positioned_for_run(
+            self,
+            run_id,
+            *,
+            tenant_id: str,
+            limit: int = 1000,
+            through=None,
+            after=None,
+        ):
             return []
 
         def list_for_task(self, task_id, *, tenant_id: str, limit: int = 1000):
             return []
+
+        def list_positioned_for_task_grouped_by_run(self, task_id, *, tenant_id: str, limit: int = 1000):
+            from intergrax.runtime.events.persistence_contract import TaskRuntimeEventRuns
+
+            return TaskRuntimeEventRuns(runs=())
 
         def get_by_event_id(self, *, tenant_id: str, event_id):
             return None
@@ -327,11 +340,24 @@ def test_npsc5f_p0_bus_best_effort_persistence_failure_allows_record() -> None:
         def append(self, event, *, tenant_id: str):
             raise RuntimeError("sink down")
 
-        def list_positioned_for_run(self, run_id, *, tenant_id: str, limit: int = 1000, through=None):
+        def list_positioned_for_run(
+            self,
+            run_id,
+            *,
+            tenant_id: str,
+            limit: int = 1000,
+            through=None,
+            after=None,
+        ):
             return []
 
         def list_for_task(self, task_id, *, tenant_id: str, limit: int = 1000):
             return []
+
+        def list_positioned_for_task_grouped_by_run(self, task_id, *, tenant_id: str, limit: int = 1000):
+            from intergrax.runtime.events.persistence_contract import TaskRuntimeEventRuns
+
+            return TaskRuntimeEventRuns(runs=())
 
         def get_by_event_id(self, *, tenant_id: str, event_id):
             return None
@@ -355,12 +381,15 @@ def test_npsc5f_p0_bus_best_effort_persistence_failure_allows_record() -> None:
 
 
 @pytest.mark.gate
-def test_npsc5f_p0_unified_journal_has_no_completeness_marker_in_api() -> None:
+def test_npsc5f_p0_unified_journal_exposes_explicit_completeness_contract() -> None:
     source = (
         _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
     ).read_text(encoding="utf-8")
-    assert "is_complete" not in source
-    assert "next_cursor" not in source
+    assert "class RunJournalReadPage" in source
+    assert "is_complete" in source
+    assert "next_cursor" in source
+    assert "read_run_journal_page" in source
+    assert "load_complete_run_journal" in source
 
 
 @pytest.mark.gate
@@ -372,8 +401,8 @@ def test_npsc5f_p0_r1_protected_evidence_surfaces_have_no_unqualified_post_r1_dr
 # P0 qualification flags (inventory — gaps do not fail P0)
 SAME_EVENT_ID_DIFFERENT_PAYLOAD = "BLOCKED"
 TENANT_ROUTING_EXPLICIT_VS_EVENT = "BLOCKED"
-FULL_RUN_READ = "TRUNCATION_GAP"
-STREAM_COMPLETENESS_EXPLICIT = "NO"
+FULL_RUN_READ = "FIXED_R2"
+STREAM_COMPLETENESS_EXPLICIT = "YES"
 RAW_EXPORT_BYPASS = "GAP"
 EVIDENCE_PERSISTENCE_FAILURE = "FAIL_CLOSED_MANDATORY"
 CROSS_PROCESS_EVIDENCE = "PASS"

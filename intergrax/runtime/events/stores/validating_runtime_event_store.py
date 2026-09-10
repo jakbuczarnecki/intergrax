@@ -12,7 +12,10 @@ from intergrax.runtime.events.execution_position import (
     ExecutionEventPosition,
     PositionedRuntimeEvent,
 )
-from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.events.persistence_contract import (
+    RuntimeEventPersistence,
+    TaskRuntimeEventRuns,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.events.schema_guard import assert_runtime_event_schema
 
@@ -34,12 +37,14 @@ class ValidatingRuntimeEventPersistence(RuntimeEventPersistence):
         tenant_id: str,
         limit: int = 1000,
         through: ExecutionEventPosition | None = None,
+        after: ExecutionEventPosition | None = None,
     ) -> List[PositionedRuntimeEvent]:
         return self._inner.list_positioned_for_run(
             run_id,
             tenant_id=tenant_id,
             limit=limit,
             through=through,
+            after=after,
         )
 
     def list_for_task(
@@ -50,6 +55,19 @@ class ValidatingRuntimeEventPersistence(RuntimeEventPersistence):
         limit: int = 1000,
     ) -> List[RuntimeEvent]:
         return self._inner.list_for_task(task_id, tenant_id=tenant_id, limit=limit)
+
+    def list_positioned_for_task_grouped_by_run(
+        self,
+        task_id: str,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+    ) -> TaskRuntimeEventRuns:
+        return self._inner.list_positioned_for_task_grouped_by_run(
+            task_id,
+            tenant_id=tenant_id,
+            limit=limit,
+        )
 
     def get_by_event_id(
         self,

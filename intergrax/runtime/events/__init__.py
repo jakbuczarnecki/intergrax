@@ -34,6 +34,7 @@ from intergrax.runtime.events.execution_position import (
 from intergrax.runtime.events.persistence_contract import (
     NullRuntimeEventPersistence,
     RuntimeEventPersistence,
+    TaskRuntimeEventRuns,
 )
 from intergrax.runtime.events.store import (
     DEFAULT_RUNTIME_EVENTS_DB,
@@ -75,9 +76,15 @@ from intergrax.runtime.events.asof_projection import (
 
 from intergrax.runtime.events.unified_run_journal import (
     JOURNAL_SCHEMA_VERSION,
+    JournalCursorScopeMismatchError,
+    JournalReadLimitExceededError,
     PositionedJournalPrefixTruncatedError,
+    RunJournalContinuationCursor,
+    RunJournalReadPage,
     build_unified_run_journal,
+    load_complete_run_journal,
     load_positioned_run_journal_through,
+    read_run_journal_page,
 )
 
 if TYPE_CHECKING:
@@ -102,6 +109,8 @@ __all__ = [
     "HistoricalEventReference",
     "InMemoryRuntimeEventStore",
     "InvalidRunExecutionHistoryError",
+    "JournalCursorScopeMismatchError",
+    "JournalReadLimitExceededError",
     "JOURNAL_SCHEMA_VERSION",
     "NullRuntimeEventPersistence",
     "PositionedJournalPrefixTruncatedError",
@@ -118,7 +127,10 @@ __all__ = [
     "RuntimeEvent",
     "RuntimeEventBus",
     "RuntimeEventPayload",
+    "RunJournalContinuationCursor",
+    "RunJournalReadPage",
     "RuntimeEventPersistence",
+    "TaskRuntimeEventRuns",
     "RuntimeEventType",
     "category_for_event_kind",
     "category_for_spine_type",
@@ -126,7 +138,9 @@ __all__ = [
     "emit_platform_event",
     "get_catalog_entry",
     "get_payload_schema",
+    "load_complete_run_journal",
     "load_positioned_run_journal_through",
+    "read_run_journal_page",
     "ops_filter_hint_for_event",
     "phase_for_event",
     "project_run_execution_as_of",

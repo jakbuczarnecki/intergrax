@@ -11,13 +11,22 @@ reconstruct identity from Plane B trace tags, payload, or active ContextVar.
 
 from __future__ import annotations
 
-from intergrax.contracts.execution_identity import validate_run_id
-from intergrax.runtime.events.execution_position import AsOfBoundary, PositionedRuntimeEvent
+from dataclasses import dataclass
+
+from intergrax.contracts.execution_identity import RunId, validate_run_id
+from intergrax.runtime.events.execution_position import (
+    AsOfBoundary,
+    ExecutionEventPosition,
+    PositionedRuntimeEvent,
+)
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
 
 JOURNAL_SCHEMA_VERSION = "unified_run_journal.v1"
+JOURNAL_READ_DEFAULT_MAX_EVENTS = 2_000_000
+JOURNAL_READ_DEFAULT_PAGE_SIZE = 2000
+JOURNAL_SNAPSHOT_PROBE_PAGE_SIZE = 1000
 
 
 class PositionedJournalPrefixTruncatedError(Exception):
@@ -26,6 +35,45 @@ class PositionedJournalPrefixTruncatedError(Exception):
 
 class PositionedJournalBoundaryNotFoundError(Exception):
     """Raised when canonical history has no accepted event at the requested boundary position."""
+
+
+class JournalReadLimitExceededError(Exception):
+    """Raised when a complete journal read exceeds ``max_events``."""
+
+
+class JournalReadIncompleteError(Exception):
+    """Raised when a complete journal read cannot prove exhaustiveness."""
+
+
+class JournalCursorScopeMismatchError(Exception):
+    """Raised when a continuation cursor does not match the requested tenant/run scope."""
+
+
+@dataclass(frozen=True, slots=True)
+class RunJournalSnapshotBoundary:
+    """Inclusive terminal execution position frozen at the start of a paginated read."""
+
+    run_id: RunId
+    terminal_position: ExecutionEventPosition | None
+
+
+@dataclass(frozen=True, slots=True)
+class RunJournalContinuationCursor:
+    """Position-based continuation scoped to one tenant + run stream."""
+
+    tenant_id: str
+    run_id: RunId
+    exclusive_after: ExecutionEventPosition
+    snapshot_through: ExecutionEventPosition | None
+
+
+@dataclass(frozen=True, slots=True)
+class RunJournalReadPage:
+    """Bounded journal page with explicit completeness within the frozen snapshot."""
+
+    events: tuple[RuntimeEvent, ...]
+    is_complete: bool
+    next_cursor: RunJournalContinuationCursor | None
 
 
 def load_positioned_run_journal_through(
@@ -88,27 +136,173 @@ def load_positioned_run_journal_through(
         limit = min(limit * 2, max_limit)
 
 
+def read_run_journal_page(
+    runtime_store: RuntimeEventPersistence,
+    *,
+    tenant_id: str,
+    run_id: str,
+    page_size: int,
+    cursor: RunJournalContinuationCursor | None = None,
+) -> RunJournalReadPage:
+    """
+    Return one bounded journal page with explicit completeness within a snapshot boundary.
+
+    Snapshot semantics: the inclusive terminal position is frozen on the first page of a
+    sequence (``cursor is None``). Events appended after that snapshot are excluded from
+    later pages in the same sequence.
+    """
+    scope_tenant = _require_tenant_id(tenant_id)
+    scope_run = validate_run_id(run_id)
+    _validate_journal_limit(page_size)
+
+    if cursor is None:
+        snapshot = _resolve_run_journal_snapshot_boundary(
+            runtime_store,
+            tenant_id=scope_tenant,
+            run_id=scope_run,
+        )
+        exclusive_after = None
+        snapshot_through = snapshot.terminal_position
+    else:
+        _validate_cursor_scope(
+            cursor,
+            tenant_id=scope_tenant,
+            run_id=scope_run,
+        )
+        exclusive_after = cursor.exclusive_after
+        snapshot_through = cursor.snapshot_through
+
+    positioned = runtime_store.list_positioned_for_run(
+        scope_run,
+        tenant_id=scope_tenant,
+        limit=page_size + 1,
+        through=snapshot_through,
+        after=exclusive_after,
+    )
+    page_rows = tuple(positioned[:page_size])
+    events = tuple(row.event for row in page_rows)
+
+    if not page_rows:
+        return RunJournalReadPage(events=(), is_complete=True, next_cursor=None)
+
+    has_more_in_snapshot = len(positioned) > page_size
+    if not has_more_in_snapshot:
+        return RunJournalReadPage(events=events, is_complete=True, next_cursor=None)
+
+    last_row = page_rows[-1]
+    next_cursor = RunJournalContinuationCursor(
+        tenant_id=scope_tenant,
+        run_id=scope_run,
+        exclusive_after=last_row.position,
+        snapshot_through=snapshot_through,
+    )
+    return RunJournalReadPage(
+        events=events,
+        is_complete=False,
+        next_cursor=next_cursor,
+    )
+
+
+def load_complete_run_journal(
+    runtime_store: RuntimeEventPersistence,
+    *,
+    tenant_id: str,
+    run_id: str,
+    max_events: int = JOURNAL_READ_DEFAULT_MAX_EVENTS,
+    page_size: int = JOURNAL_READ_DEFAULT_PAGE_SIZE,
+) -> tuple[RuntimeEvent, ...]:
+    """Load the full run journal or fail closed when bounds are exceeded."""
+    _validate_journal_limit(max_events)
+    _validate_journal_limit(page_size)
+
+    collected: list[RuntimeEvent] = []
+    cursor: RunJournalContinuationCursor | None = None
+    while True:
+        page = read_run_journal_page(
+            runtime_store,
+            tenant_id=tenant_id,
+            run_id=run_id,
+            page_size=page_size,
+            cursor=cursor,
+        )
+        collected.extend(page.events)
+        if len(collected) > max_events:
+            raise JournalReadLimitExceededError(
+                f"run journal for {run_id!r} exceeds max_events={max_events}"
+            )
+        if page.is_complete:
+            return tuple(collected)
+        if page.next_cursor is None:
+            raise JournalReadIncompleteError(
+                f"run journal for {run_id!r} ended without completeness proof"
+            )
+        cursor = page.next_cursor
+
+
 def build_unified_run_journal(
     persisted: PersistedRun,
     *,
     runtime_store: RuntimeEventPersistence,
-    limit: int = 2000,
+    max_events: int = JOURNAL_READ_DEFAULT_MAX_EVENTS,
+    page_size: int = JOURNAL_READ_DEFAULT_PAGE_SIZE,
 ) -> list[RuntimeEvent]:
     """
-    Return the canonical journal for one persisted run.
+    Return the complete canonical journal for one persisted run.
 
     Identity is read from already-canonical ``RuntimeEvent`` records.
     Plane B ``TraceEvent`` rows on ``PersistedRun`` are not converted here.
     """
-    _validate_journal_limit(limit)
     tenant_id = _require_tenant_id(persisted.metadata.tenant_id)
     run_id = validate_run_id(persisted.metadata.run_id)
-    positioned = runtime_store.list_positioned_for_run(
-        run_id,
-        tenant_id=tenant_id,
-        limit=limit,
+    return list(
+        load_complete_run_journal(
+            runtime_store,
+            tenant_id=tenant_id,
+            run_id=run_id,
+            max_events=max_events,
+            page_size=page_size,
+        )
     )
-    return [row.event for row in positioned]
+
+
+def _resolve_run_journal_snapshot_boundary(
+    runtime_store: RuntimeEventPersistence,
+    *,
+    tenant_id: str,
+    run_id: RunId,
+) -> RunJournalSnapshotBoundary:
+    """Prove the inclusive terminal execution position at read start (snapshot boundary)."""
+    exclusive_after: ExecutionEventPosition | None = None
+    terminal: ExecutionEventPosition | None = None
+    while True:
+        batch = runtime_store.list_positioned_for_run(
+            run_id,
+            tenant_id=tenant_id,
+            limit=JOURNAL_SNAPSHOT_PROBE_PAGE_SIZE,
+            after=exclusive_after,
+        )
+        if not batch:
+            return RunJournalSnapshotBoundary(run_id=run_id, terminal_position=terminal)
+        terminal = batch[-1].position
+        if len(batch) < JOURNAL_SNAPSHOT_PROBE_PAGE_SIZE:
+            return RunJournalSnapshotBoundary(run_id=run_id, terminal_position=terminal)
+        exclusive_after = terminal
+
+
+def _validate_cursor_scope(
+    cursor: RunJournalContinuationCursor,
+    *,
+    tenant_id: str,
+    run_id: RunId,
+) -> None:
+    if cursor.tenant_id != tenant_id:
+        raise JournalCursorScopeMismatchError(
+            "journal continuation cursor tenant does not match read scope",
+        )
+    if cursor.run_id != run_id:
+        raise JournalCursorScopeMismatchError(
+            "journal continuation cursor run_id does not match read scope",
+        )
 
 
 def _validate_journal_limit(limit: int) -> None:
@@ -122,5 +316,3 @@ def _require_tenant_id(tenant_id: str) -> str:
     if not tenant_id.strip():
         raise ValueError("tenant_id is required")
     return tenant_id
-
-

@@ -38,11 +38,24 @@ class _FailingPersistence(RuntimeEventPersistence):
     def append(self, event, *, tenant_id: str):
         raise RuntimeError("sink down")
 
-    def list_positioned_for_run(self, run_id, *, tenant_id: str, limit: int = 1000, through=None):
+    def list_positioned_for_run(
+        self,
+        run_id,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+        through=None,
+        after=None,
+    ):
         return []
 
     def list_for_task(self, task_id, *, tenant_id: str, limit: int = 1000):
         return []
+
+    def list_positioned_for_task_grouped_by_run(self, task_id, *, tenant_id: str, limit: int = 1000):
+        from intergrax.runtime.events.persistence_contract import TaskRuntimeEventRuns
+
+        return TaskRuntimeEventRuns(runs=())
 
     def get_by_event_id(self, *, tenant_id: str, event_id):
         return None

@@ -124,11 +124,24 @@ class _FailingPersistence(RuntimeEventPersistence):
     def append(self, event, *, tenant_id: str):
         raise RuntimeError("sink down")
 
-    def list_positioned_for_run(self, run_id, *, tenant_id: str, limit: int = 1000, through=None):
+    def list_positioned_for_run(
+        self,
+        run_id,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+        through=None,
+        after=None,
+    ):
         return []
 
     def list_for_task(self, task_id, *, tenant_id: str, limit: int = 1000):
         return []
+
+    def list_positioned_for_task_grouped_by_run(self, task_id, *, tenant_id: str, limit: int = 1000):
+        from intergrax.runtime.events.persistence_contract import TaskRuntimeEventRuns
+
+        return TaskRuntimeEventRuns(runs=())
 
     def get_by_event_id(self, *, tenant_id: str, event_id):
         return None
@@ -143,16 +156,32 @@ class _CountingPersistence(RuntimeEventPersistence):
         self.append_calls += 1
         return self._inner.append(event, tenant_id=tenant_id)
 
-    def list_positioned_for_run(self, run_id, *, tenant_id: str, limit: int = 1000, through=None):
+    def list_positioned_for_run(
+        self,
+        run_id,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+        through=None,
+        after=None,
+    ):
         return self._inner.list_positioned_for_run(
             run_id,
             tenant_id=tenant_id,
             limit=limit,
             through=through,
+            after=after,
         )
 
     def list_for_task(self, task_id, *, tenant_id: str, limit: int = 1000):
         return self._inner.list_for_task(task_id, tenant_id=tenant_id, limit=limit)
+
+    def list_positioned_for_task_grouped_by_run(self, task_id, *, tenant_id: str, limit: int = 1000):
+        return self._inner.list_positioned_for_task_grouped_by_run(
+            task_id,
+            tenant_id=tenant_id,
+            limit=limit,
+        )
 
     def get_by_event_id(self, *, tenant_id: str, event_id):
         return self._inner.get_by_event_id(tenant_id=tenant_id, event_id=event_id)
@@ -170,11 +199,32 @@ def test_r1_final_mandatory_success_persist_before_subscriber() -> None:
             order.append("persist")
             return inner.append(event, tenant_id=tenant_id)
 
-        def list_positioned_for_run(self, run_id, *, tenant_id: str, limit: int = 1000, through=None):
-            return inner.list_positioned_for_run(run_id, tenant_id=tenant_id, limit=limit, through=through)
+        def list_positioned_for_run(
+            self,
+            run_id,
+            *,
+            tenant_id: str,
+            limit: int = 1000,
+            through=None,
+            after=None,
+        ):
+            return inner.list_positioned_for_run(
+                run_id,
+                tenant_id=tenant_id,
+                limit=limit,
+                through=through,
+                after=after,
+            )
 
         def list_for_task(self, task_id, *, tenant_id: str, limit: int = 1000):
             return inner.list_for_task(task_id, tenant_id=tenant_id, limit=limit)
+
+        def list_positioned_for_task_grouped_by_run(self, task_id, *, tenant_id: str, limit: int = 1000):
+            return inner.list_positioned_for_task_grouped_by_run(
+                task_id,
+                tenant_id=tenant_id,
+                limit=limit,
+            )
 
         def get_by_event_id(self, *, tenant_id: str, event_id):
             return inner.get_by_event_id(tenant_id=tenant_id, event_id=event_id)

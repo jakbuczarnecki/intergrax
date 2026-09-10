@@ -52,6 +52,7 @@ class _RecordingStore(InMemoryRuntimeEventStore):
         tenant_id: str,
         limit: int = 1000,
         through=None,
+        after=None,
     ):
         self.list_positioned_for_run_calls.append((run_id, tenant_id, limit))
         return super().list_positioned_for_run(
@@ -59,6 +60,7 @@ class _RecordingStore(InMemoryRuntimeEventStore):
             tenant_id=tenant_id,
             limit=limit,
             through=through,
+            after=after,
         )
 
 
@@ -369,7 +371,8 @@ def test_unified_journal_queries_exact_persisted_tenant() -> None:
     )
     journal = build_unified_run_journal(_persisted_run(run_id=run_id), runtime_store=store)
     assert len(journal) == 1
-    assert store.list_positioned_for_run_calls == [(run_id, _TENANT, 2000)]
+    assert store.list_positioned_for_run_calls
+    assert all(call[0] == run_id and call[1] == _TENANT for call in store.list_positioned_for_run_calls)
 
 
 def test_unified_journal_rejects_empty_tenant() -> None:
@@ -380,13 +383,13 @@ def test_unified_journal_rejects_empty_tenant() -> None:
         )
 
 
-def test_unified_journal_rejects_non_positive_limit() -> None:
+def test_unified_journal_rejects_non_positive_max_events() -> None:
     persisted = _persisted_run(run_id=mint_run_id())
     store = InMemoryRuntimeEventStore()
     with pytest.raises(ValueError, match="journal limit must be > 0"):
-        build_unified_run_journal(persisted, runtime_store=store, limit=0)
+        build_unified_run_journal(persisted, runtime_store=store, max_events=0)
     with pytest.raises(ValueError, match="journal limit must be > 0"):
-        build_unified_run_journal(persisted, runtime_store=store, limit=-1)
+        build_unified_run_journal(persisted, runtime_store=store, max_events=-1)
 
 
 def test_unified_journal_does_not_use_active_execution_identity() -> None:

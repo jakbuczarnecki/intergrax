@@ -169,14 +169,14 @@ See qualification doc for severity. Summary:
 | OBS-01 | Bus fail-open on persist error | **FIXED by R1** (mandatory tier fail-closed) |
 | OBS-02 | EventId content conflict | **FIXED** (reconcile + tests) |
 | OBS-03 | Journal export raw `model_dump` | STILL PRESENT |
-| OBS-04 | `build_unified_run_journal` silent truncation | STILL PRESENT |
+| OBS-04 | `build_unified_run_journal` silent truncation | **FIXED by R2** (`RunJournalReadPage`, `load_complete_run_journal`) |
 | OBS-05 | Route vs event tenant mismatch | **FIXED by R1** (equality enforced, zero write) |
-| OBS-06 | Task ordering via run-local position | STILL PRESENT |
+| OBS-06 | Task ordering via run-local position | **FIXED by R2** (grouped task API + `(run_id, position)` ordering) |
 
 ## Implementation roadmap (proposed)
 
 1. **5F/R1** — **FROZEN / PASS** at `455d3b216f0ad56ea9cdf9db6e0f760b50063a81` (durable evidence contract hardening + R1 Final qualification; P0 drift sentinel scoped to R1 protected surfaces).
-2. **5F/R2** — Journal completeness, scoped ordering documentation/API (`is_complete` / pagination), gap detection.
+2. **5F/R2** — **IMPLEMENTATION COMPLETE** (pending R2 Final freeze) — `read_run_journal_page` / `RunJournalReadPage` (`is_complete`, `next_cursor`), `load_complete_run_journal`, snapshot-bounded pagination, `list_positioned_for_task_grouped_by_run`.
 3. **5F/R3** — Governed export: align `journal_export` with `ObservabilityExportEnvelope`; remove raw payload bypass.
 4. **5F/R4** — Reconstruction quality model, as-of/bitemporal public query alignment (build on TRACE slices).
 5. **5F Final** — Platform evidence plane qualification & freeze.

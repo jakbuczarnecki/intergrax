@@ -20,6 +20,7 @@ from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.events.unified_run_journal import (
     JOURNAL_SCHEMA_VERSION,
     build_unified_run_journal,
+    read_run_journal_page,
 )
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
 
@@ -77,7 +78,13 @@ def build_journal_ref(
     limit: int = 2000,
 ) -> JournalRef | None:
     """Build a lightweight journal reference for terminal runtime events."""
-    journal = build_unified_run_journal(persisted, runtime_store=runtime_store, limit=limit)
+    page = read_run_journal_page(
+        runtime_store,
+        tenant_id=persisted.metadata.tenant_id,
+        run_id=persisted.metadata.run_id,
+        page_size=limit,
+    )
+    journal = list(page.events)
     if not journal and not persisted.events:
         return None
     return JournalRef(
@@ -109,7 +116,13 @@ def build_journal_export_snapshot(
     limit: int = 2000,
 ) -> JournalExportSnapshot:
     """Serialize the unified journal for export sinks."""
-    journal = build_unified_run_journal(persisted, runtime_store=runtime_store, limit=limit)
+    page = read_run_journal_page(
+        runtime_store,
+        tenant_id=persisted.metadata.tenant_id,
+        run_id=persisted.metadata.run_id,
+        page_size=limit,
+    )
+    journal = list(page.events)
     return JournalExportSnapshot(
         schema_version=JOURNAL_EXPORT_SCHEMA_VERSION,
         journal_schema_version=JOURNAL_SCHEMA_VERSION,
