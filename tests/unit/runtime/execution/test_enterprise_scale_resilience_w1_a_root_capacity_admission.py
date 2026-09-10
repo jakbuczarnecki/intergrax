@@ -12,9 +12,11 @@ from pydantic import ValidationError
 
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_capacity_admission import (
+    ExecutionCapacityAdmissionRequest,
     ExecutionCapacityAdmissionTimeoutError,
     ExecutionCapacityExceededError,
     ExecutionCapacityOverloadMode,
+    ExecutionCapacityPermit,
     ExecutionCapacityPolicy,
 )
 from intergrax.contracts.execution_identity import (
@@ -94,6 +96,16 @@ def _root_context(*, execution_id=None) -> RootExecutionContext:
         authority=_AUTHORITY,
         tenant_id="tenant-a",
         task_id=mint_task_id(),
+    )
+
+
+def _admission_request() -> ExecutionCapacityAdmissionRequest:
+    return ExecutionCapacityAdmissionRequest(
+        tenant_id="t",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
 
 
@@ -250,19 +262,149 @@ def test_invalid_policy_values() -> None:
 async def test_local_permit_idempotent_release() -> None:
     policy = ExecutionCapacityPolicy(max_concurrent_root_executions=1)
     admission = LocalExecutionCapacityAdmission(policy)
-    from intergrax.contracts.execution_capacity_admission import (
-        ExecutionCapacityAdmissionRequest,
-    )
-
-    request = ExecutionCapacityAdmissionRequest(
-        tenant_id="t",
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
-    )
+    request = _admission_request()
     permit = await admission.acquire(request)
     await permit.release()
     await permit.release()
     permit_b = await admission.acquire(request)
     await permit_b.release()
+
+
+@pytest.mark.asyncio
+async def test_reject_concurrent_acquire_capacity_one_atomic() -> None:
+    """Regression: REJECT must atomically reserve or fail (no TOCTOU wait on semaphore)."""
+    policy = ExecutionCapacityPolicy(
+        max_concurrent_root_executions=1,
+        overload_mode=ExecutionCapacityOverloadMode.REJECT,
+    )
+    admission = LocalExecutionCapacityAdmission(policy)
+    request = _admission_request()
+    contender_count = 32
+    start_barrier = asyncio.Barrier(contender_count)
+    permits: list[ExecutionCapacityPermit] = []
+    errors: list[ExecutionCapacityExceededError] = []
+    permits_lock = asyncio.Lock()
+
+    async def contender() -> None:
+        await start_barrier.wait()
+        try:
+            permit = await admission.acquire(request)
+        except ExecutionCapacityExceededError as exc:
+            async with permits_lock:
+                errors.append(exc)
+            return
+        async with permits_lock:
+            permits.append(permit)
+
+    tasks = [asyncio.create_task(contender()) for _ in range(contender_count)]
+    try:
+        await asyncio.wait_for(asyncio.gather(*tasks), timeout=2.0)
+    finally:
+        for permit in permits:
+            await permit.release()
+
+    assert len(permits) == 1
+    assert len(errors) == contender_count - 1
+
+
+@pytest.mark.asyncio
+async def test_reject_concurrent_acquire_capacity_three() -> None:
+    policy = ExecutionCapacityPolicy(
+        max_concurrent_root_executions=3,
+        overload_mode=ExecutionCapacityOverloadMode.REJECT,
+    )
+    admission = LocalExecutionCapacityAdmission(policy)
+    request = _admission_request()
+    contender_count = 10
+    start_barrier = asyncio.Barrier(contender_count)
+    permits: list[ExecutionCapacityPermit] = []
+    errors: list[ExecutionCapacityExceededError] = []
+    permits_lock = asyncio.Lock()
+
+    async def contender() -> None:
+        await start_barrier.wait()
+        try:
+            permit = await admission.acquire(request)
+        except ExecutionCapacityExceededError as exc:
+            async with permits_lock:
+                errors.append(exc)
+            return
+        async with permits_lock:
+            permits.append(permit)
+
+    tasks = [asyncio.create_task(contender()) for _ in range(contender_count)]
+    try:
+        await asyncio.wait_for(asyncio.gather(*tasks), timeout=2.0)
+    finally:
+        for permit in permits:
+            await permit.release()
+
+    assert len(permits) == 3
+    assert len(errors) == contender_count - 3
+
+    permit_extra = await admission.acquire(request)
+    await permit_extra.release()
+
+
+@pytest.mark.asyncio
+async def test_reject_does_not_enqueue_waiter_when_saturated() -> None:
+    policy = ExecutionCapacityPolicy(
+        max_concurrent_root_executions=1,
+        overload_mode=ExecutionCapacityOverloadMode.REJECT,
+    )
+    admission = LocalExecutionCapacityAdmission(policy)
+    request = _admission_request()
+    holder = await admission.acquire(request)
+    reject_count = 16
+    start_barrier = asyncio.Barrier(reject_count)
+
+    async def reject_attempt() -> None:
+        await start_barrier.wait()
+        with pytest.raises(ExecutionCapacityExceededError):
+            await admission.acquire(request)
+
+    tasks = [asyncio.create_task(reject_attempt()) for _ in range(reject_count)]
+    await asyncio.wait_for(asyncio.gather(*tasks), timeout=2.0)
+    await holder.release()
+
+
+@pytest.mark.asyncio
+async def test_wait_with_timeout_acquires_after_release() -> None:
+    hold = asyncio.Event()
+    delegate = ConcurrencyObservingDelegate(hold=hold)
+    policy = ExecutionCapacityPolicy(
+        max_concurrent_root_executions=1,
+        overload_mode=ExecutionCapacityOverloadMode.WAIT_WITH_TIMEOUT,
+        wait_timeout_seconds=5.0,
+    )
+    runtime = ExecutionRuntime(
+        delegate,
+        execution_capacity_admission=LocalExecutionCapacityAdmission(policy),
+    )
+    ctx_a = _root_context()
+    ctx_b = _root_context()
+    task_a = asyncio.create_task(
+        runtime.execute(ProbeRequest(label="a"), ctx_a),
+    )
+    while delegate.active < 1:
+        await asyncio.sleep(0.001)
+    task_b = asyncio.create_task(
+        runtime.execute(ProbeRequest(label="b"), ctx_b),
+    )
+    await asyncio.sleep(0.05)
+    hold.set()
+    result_b = await task_b
+    await task_a
+    assert result_b.label == "b"
+    assert delegate.enter_count == 2
+
+
+@pytest.mark.asyncio
+async def test_local_permit_concurrent_double_release() -> None:
+    policy = ExecutionCapacityPolicy(max_concurrent_root_executions=1)
+    admission = LocalExecutionCapacityAdmission(policy)
+    request = _admission_request()
+    permit = await admission.acquire(request)
+    await asyncio.gather(permit.release(), permit.release())
+    replacement = await admission.acquire(request)
+    await replacement.release()
