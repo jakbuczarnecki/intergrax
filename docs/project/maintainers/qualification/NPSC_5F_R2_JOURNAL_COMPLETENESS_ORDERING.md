@@ -1,6 +1,6 @@
 # NPSC-5F/R2 — Journal Completeness & Ordering
 
-> **Status:** IMPLEMENTATION COMPLETE (not FROZEN — await R2 Final qualification)
+> **Status:** FROZEN / PASS — see `NPSC_5F_R2_FINAL_JOURNAL_COMPLETENESS_ORDERING_QUALIFICATION_AND_FREEZE.md`
 
 ## Purpose
 

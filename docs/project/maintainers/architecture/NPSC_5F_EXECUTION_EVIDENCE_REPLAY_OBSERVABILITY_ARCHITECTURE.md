@@ -1,6 +1,6 @@
 # NPSC-5F — Execution Evidence, Replay & Observability Architecture
 
-> **Status:** NPSC-5F **ACTIVE** — P0 reconciled; **NPSC-5F/R1** **FROZEN / PASS** at implementation `455d3b216f0ad56ea9cdf9db6e0f760b50063a81` (R1 Final qualification and ownership-scoped drift sentinel)  
+> **Status:** NPSC-5F **ACTIVE** — P0 reconciled; **NPSC-5F/R1** **FROZEN / PASS** at `455d3b216f0ad56ea9cdf9db6e0f760b50063a81`; **NPSC-5F/R2** **FROZEN / PASS** at `632507420f0ab8360aede43a2740e8fccc44efb4` (journal completeness & ordering Final)  
 > **Frozen execution baseline:** NPSC-5E Final `fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7` (behavioral regression via NPSC-5E Final gate, not broad post-5E path immutability)  
 > **R1 qualification:** [`NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md)  
 > **Canonical domain doc:** [`docs/project/architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)  
@@ -168,15 +168,15 @@ See qualification doc for severity. Summary:
 | -- | ----- | ----- |
 | OBS-01 | Bus fail-open on persist error | **FIXED by R1** (mandatory tier fail-closed) |
 | OBS-02 | EventId content conflict | **FIXED** (reconcile + tests) |
-| OBS-03 | Journal export raw `model_dump` | STILL PRESENT |
-| OBS-04 | `build_unified_run_journal` silent truncation | **FIXED by R2** (`RunJournalReadPage`, `load_complete_run_journal`) |
+| OBS-03 | Journal export raw `model_dump` | STILL PRESENT (R3) |
+| OBS-04 | `build_unified_run_journal` silent truncation | **FIXED / FROZEN R2** (`RunJournalReadPage`, `load_complete_run_journal`) |
 | OBS-05 | Route vs event tenant mismatch | **FIXED by R1** (equality enforced, zero write) |
-| OBS-06 | Task ordering via run-local position | **FIXED by R2** (grouped task API + `(run_id, position)` ordering) |
+| OBS-06 | Task ordering via run-local position | **FIXED / FROZEN R2** (grouped task API + `(run_id, position)` ordering) |
 
 ## Implementation roadmap (proposed)
 
 1. **5F/R1** — **FROZEN / PASS** at `455d3b216f0ad56ea9cdf9db6e0f760b50063a81` (durable evidence contract hardening + R1 Final qualification; P0 drift sentinel scoped to R1 protected surfaces).
-2. **5F/R2** — **IMPLEMENTATION COMPLETE** (pending R2 Final freeze) — `read_run_journal_page` / `RunJournalReadPage` (`is_complete`, `next_cursor`), `load_complete_run_journal`, snapshot-bounded pagination, `list_positioned_for_task_grouped_by_run`.
+2. **5F/R2** — **FROZEN / PASS** at `632507420f0ab8360aede43a2740e8fccc44efb4` — `read_run_journal_page` / `RunJournalReadPage` (`is_complete`, `next_cursor`), `load_complete_run_journal`, snapshot-bounded pagination, `list_positioned_for_task_grouped_by_run` (R2 Final qualification).
 3. **5F/R3** — Governed export: align `journal_export` with `ObservabilityExportEnvelope`; remove raw payload bypass.
 4. **5F/R4** — Reconstruction quality model, as-of/bitemporal public query alignment (build on TRACE slices).
 5. **5F Final** — Platform evidence plane qualification & freeze.
