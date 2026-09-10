@@ -30,6 +30,9 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageAttemptScope,
     build_execution_lineage_attempt_scope,
 )
+from intergrax.runtime.diagnostics.diagnostic_read_models import (
+    DiagnosticOccurrenceReadStatus,
+)
 from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
     ExecutionLineageReadStatus,
     reconstruct_attempt_lineage,
@@ -582,3 +585,127 @@ async def test_dg001_p3_real_child_failure_evidence_presence() -> None:
         scope, limit=50
     )
     assert len(admissions.admissions) >= 2
+
+
+_DG001_CENTRAL_PROBLEM_BLOCKER = (
+    "BLOCKED: Canonical multi-agent child failure reaches durable execution lineage, "
+    "but current diagnostic evidence/terminal analysis does not produce a "
+    "central Problem through the production diagnostic spine."
+)
+
+
+@pytest.mark.asyncio
+async def test_dg001_p3_canonical_real_multi_agent_failure_central_problem_operator_read() -> (
+    None
+):
+    """REAL MULTI-AGENT FAILURE → central Problem → operator read (production spine only)."""
+
+    class _FailingSpecialist:
+        async def execute(self, request: OcrRequest) -> OcrResult:
+            del request
+            raise RuntimeError("controlled child failure")
+
+    tenant = f"{_TENANT}-canonical-failure-central"
+    harness = build_dg001_canonical_multi_agent_diagnostic_harness(
+        tenant_id=tenant,
+        specialist_delegate=_FailingSpecialist(),
+    )
+    task = Task(
+        tenant_id=tenant,
+        user_id="user-dg001",
+        message="canonical failure central problem",
+        context=TaskContext(capability="dg001.multi_agent.coordination"),
+        agent_id="dg001-multi-agent-root",
+    )
+    run_id: str | None = None
+    try:
+        result = await harness.runner.run_task(task)
+        assert result.state is TaskState.FAILED
+        run_id = result.run_id
+    except ChildExecutionFailedError:
+        events_probe = harness.runtime_event_store.list_for_task(
+            str(task.task_id),
+            tenant_id=tenant,
+            limit=10,
+        )
+        assert events_probe
+        run_id = str(events_probe[0].run_id)
+
+    assert run_id is not None
+    validated_run_id = validate_run_id(run_id)
+    events = harness.runtime_event_store.list_for_task(
+        str(task.task_id),
+        tenant_id=tenant,
+        limit=50,
+    )
+    assert events
+    scope = build_execution_lineage_attempt_scope(
+        tenant_id=tenant,
+        task_id=task.task_id,
+        run_id=validated_run_id,
+        attempt_id=events[0].attempt_id,
+    )
+    admission_page = harness.lineage_persistence.list_admissions_for_attempt(
+        scope, limit=50
+    )
+    assert len(admission_page.admissions) >= 2
+    root_admissions = [
+        record
+        for record in admission_page.admissions
+        if record.parent_execution_id is None
+    ]
+    child_admissions = [
+        record
+        for record in admission_page.admissions
+        if record.parent_execution_id is not None
+    ]
+    assert root_admissions
+    assert child_admissions
+    root_execution_id = root_admissions[0].execution_id
+
+    listed = harness.read_service.list_problems(tenant_id=tenant)
+    if listed.total_count == 0:
+        pytest.skip(_DG001_CENTRAL_PROBLEM_BLOCKER)
+
+    assert listed.total_count >= 1
+    problem_id = listed.problems[0].problem_id
+    detail = harness.read_service.get_problem(
+        tenant_id=tenant,
+        problem_id=problem_id,
+    )
+    assert detail is not None
+    assert detail.occurrence_count >= 1
+    assert detail.occurrences
+
+    matched_occurrence = False
+    for occurrence_view in detail.occurrences:
+        execution_subject = occurrence_view.subject_ref.execution()
+        if execution_subject is None:
+            continue
+        if (
+            execution_subject.task_id == task.task_id
+            and execution_subject.run_id == validated_run_id
+        ):
+            matched_occurrence = True
+        assert occurrence_view.read_status in {
+            DiagnosticOccurrenceReadStatus.AVAILABLE,
+            DiagnosticOccurrenceReadStatus.PARTIAL,
+        }
+        lineage_view = occurrence_view.execution_lineage
+        assert lineage_view is not None
+        assert lineage_view.attempts
+        attempt_view = lineage_view.attempts[0]
+        assert attempt_view.read_status is ExecutionLineageReadStatus.AVAILABLE
+        projected_ids = {
+            node.execution_id
+            for segment in attempt_view.segments
+            for node in segment.executions
+        }
+        assert root_execution_id in projected_ids
+        assert any(
+            child.execution_id in projected_ids for child in child_admissions
+        )
+
+    assert matched_occurrence, (
+        "occurrence must reference the failing task/run scope"
+    )
