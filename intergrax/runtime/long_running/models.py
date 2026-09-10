@@ -25,6 +25,7 @@ class TaskCheckpoint(BaseModel):
     progress_message: str = ""
     notify_channel: Optional[str] = None
     created_at_utc: str = ""
+    store_sequence: int | None = None
     schema_version: str = "task_checkpoint.v1"
     runtime: Optional[RuntimeCheckpoint] = None
 

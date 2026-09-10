@@ -1,6 +1,6 @@
 # NPSC-5E/R2 — Checkpoint & Durable Resume Hardening
 
-**Status:** `PASS` (implementation qualification; not frozen)
+**Status:** `CORRECTION REQUIRED` → closed by R2-H1 (`NPSC_5E_R2_H1_AUTHORITATIVE_RESUME_AUTHORITY_STALE_CHECKPOINT_CLOSURE.md`)
 
 **Date:** 2026-09-09
 
@@ -57,6 +57,8 @@ Harden canonical checkpoint/resume so durable resume after process interruption 
 | Missing required durable lineage | BLOCKED |
 | Authority narrowing on restore | PASS |
 | Authority expansion via checkpoint | BLOCKED |
+| **R2-H1 defect:** checkpoint authority fallback on restore (`restored.execution_authority`) | **FIXED** (H1) |
+| **R2-H1 defect:** timestamp-only stale ordering | **FIXED** (`store_sequence` / `rowid`) |
 | Cross-process SQLite resume | PASS |
 | Concurrent scheduler claim (one winner) | PASS |
 | Completed node output retained | PASS |
@@ -78,6 +80,13 @@ Harden canonical checkpoint/resume so durable resume after process interruption 
 | `test_budget_ticks` | identity binding (recorded R1) |
 
 ---
+
+## R2-H1 correction provenance
+
+| Defect | Correction |
+| ------ | ---------- |
+| `coordinator.py` restored checkpoint `execution_authority` when current task authority was `None` | Removed; `validate_checkpoint_resume_authority` + `resolve_resume_execution_authority` only narrow authoritative current |
+| `validate_checkpoint_not_stale` allowed equal/missing timestamp ambiguity | `store_sequence` (`rowid`) canonical ordering on append-only SQLite store |
 
 ## Next
 

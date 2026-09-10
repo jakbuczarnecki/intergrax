@@ -201,8 +201,18 @@ Non-durable parent guard (DG_001 / `a18e65c`) preserved by lineage admission; re
 ### Governance / authority freshness
 
 - Stored checkpoint policy is historical only; current `PolicyDecision` may deny resume (`REJECT_GOVERNANCE`).
+- Checkpoint authority is **historical constraint / provenance only** — never an effective authority source.
+- Authoritative current authority is `Task.execution_authority` on the resuming task (no checkpoint rehydration path).
+- Effective resume authority formula (R2-H1):
+
+```text
+effective resume authority
+= narrow(authoritative current authority, historical checkpoint authority)
+```
+
 - Checkpoint cannot expand authority: `validate_checkpoint_authority_expansion` blocks wider historical authority application.
-- `resolve_resume_execution_authority` applies narrowed current authority on coordinator restore.
+- `resolve_resume_execution_authority` narrows authoritative current authority; malformed historical provenance fails closed (`REJECT_MALFORMED` / `REJECT_AUTHORITY`).
+- Current authority missing while checkpoint historical authority exists: `REJECT_AUTHORITY` (fail closed).
 
 ### Budget / attempt continuity
 
@@ -210,8 +220,10 @@ Checkpoint resume does not mint `AttemptId` and does not reset attempt lifecycle
 
 ### Stale checkpoint semantics
 
-- Restore by superseded `created_at_utc` vs store `get_latest`: `REJECT_STALE`
-- Store remains append-only; newer checkpoint wins; no stale clobber (CAS via new rows + latest selection)
+- Canonical checkpoint ordering key: SQLite append-only `store_sequence` (`rowid`); `get_latest` orders `rowid DESC`.
+- `created_at_utc` is auxiliary only; equal/missing timestamps resolve via `store_sequence`, not accidental allow.
+- Superseded checkpoint vs store `get_latest`: `REJECT_STALE`
+- Store remains append-only; newer durable sequence wins; stale late-writer timestamps cannot clobber canonical latest
 
 ### Duplicate / concurrent resume
 

@@ -211,6 +211,39 @@ def validate_checkpoint_identity_binding(
     )
 
 
+def _checkpoint_store_sequence(checkpoint: TaskCheckpoint) -> int | None:
+    return checkpoint.store_sequence
+
+
+def _checkpoint_is_superseded_by(
+    checkpoint: TaskCheckpoint,
+    latest_checkpoint: TaskCheckpoint,
+) -> bool:
+    if checkpoint.checkpoint_id == latest_checkpoint.checkpoint_id:
+        return False
+    checkpoint_sequence = _checkpoint_store_sequence(checkpoint)
+    latest_sequence = _checkpoint_store_sequence(latest_checkpoint)
+    if checkpoint_sequence is not None and latest_sequence is not None:
+        return checkpoint_sequence < latest_sequence
+    if (
+        checkpoint.created_at_utc
+        and latest_checkpoint.created_at_utc
+        and checkpoint.created_at_utc < latest_checkpoint.created_at_utc
+    ):
+        return True
+    if (
+        checkpoint.created_at_utc
+        and latest_checkpoint.created_at_utc
+        and checkpoint.created_at_utc > latest_checkpoint.created_at_utc
+    ):
+        return False
+    if latest_sequence is not None and checkpoint_sequence is None:
+        return True
+    if latest_checkpoint.created_at_utc and not checkpoint.created_at_utc:
+        return True
+    return checkpoint.checkpoint_id != latest_checkpoint.checkpoint_id
+
+
 def validate_checkpoint_not_stale(
     checkpoint: TaskCheckpoint,
     latest_checkpoint: TaskCheckpoint | None,
@@ -219,24 +252,16 @@ def validate_checkpoint_not_stale(
         return CheckpointResumeValidationResult(
             eligibility=CheckpointResumeEligibility.ALLOW_RESUME,
         )
-    if latest_checkpoint.checkpoint_id == checkpoint.checkpoint_id:
+    if not _checkpoint_is_superseded_by(checkpoint, latest_checkpoint):
         return CheckpointResumeValidationResult(
             eligibility=CheckpointResumeEligibility.ALLOW_RESUME,
         )
-    if (
-        checkpoint.created_at_utc
-        and latest_checkpoint.created_at_utc
-        and checkpoint.created_at_utc < latest_checkpoint.created_at_utc
-    ):
-        return CheckpointResumeValidationResult(
-            eligibility=CheckpointResumeEligibility.REJECT_STALE,
-            reason=(
-                "checkpoint superseded by newer durable checkpoint "
-                f"{latest_checkpoint.checkpoint_id!r}"
-            ),
-        )
     return CheckpointResumeValidationResult(
-        eligibility=CheckpointResumeEligibility.ALLOW_RESUME,
+        eligibility=CheckpointResumeEligibility.REJECT_STALE,
+        reason=(
+            "checkpoint superseded by newer durable checkpoint "
+            f"{latest_checkpoint.checkpoint_id!r}"
+        ),
     )
 
 
@@ -320,24 +345,102 @@ def _authority_does_not_exceed_current(
     return checkpoint_scopes <= current_scopes
 
 
+def _parse_checkpoint_historical_authority(
+    checkpoint: TaskCheckpoint,
+) -> CheckpointResumeValidationResult | ParentExecutionAuthority:
+    try:
+        snapshot_task = Task.model_validate(checkpoint.task_snapshot)
+    except ValidationError as exc:
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.REJECT_MALFORMED,
+            reason=str(exc),
+        )
+    if snapshot_task.execution_authority is None:
+        return ParentExecutionAuthority.unknown()
+    return snapshot_task.execution_authority
+
+
+def narrow_resume_execution_authority(
+    current_authority: ParentExecutionAuthority,
+    historical_authority: ParentExecutionAuthority,
+) -> ParentExecutionAuthority:
+    """Monotonic narrowing: authoritative current ∩ historical checkpoint bound."""
+    if historical_authority.is_unknown:
+        return current_authority
+    if current_authority.is_unknown:
+        return ParentExecutionAuthority.unknown()
+    if historical_authority.unrestricted and current_authority.unrestricted:
+        return ParentExecutionAuthority.unrestricted_root()
+    if historical_authority.unrestricted:
+        return current_authority
+    if current_authority.unrestricted:
+        return historical_authority
+    common = tuple(
+        sorted(
+            set(current_authority.permission_scopes)
+            & set(historical_authority.permission_scopes),
+        ),
+    )
+    return ParentExecutionAuthority.scoped(common)
+
+
 def resolve_resume_execution_authority(
     checkpoint: TaskCheckpoint,
     current_task: Task | None,
 ) -> ParentExecutionAuthority | None:
-    """Apply narrowed current authority over historical checkpoint authority."""
+    """Narrow authoritative current authority by historical checkpoint constraint."""
     if current_task is None:
         return None
     current_authority = current_task.execution_authority
     if current_authority is None:
         return None
-    try:
-        snapshot_task = Task.model_validate(checkpoint.task_snapshot)
-    except ValidationError:
-        return current_authority
-    checkpoint_authority = snapshot_task.execution_authority or ParentExecutionAuthority.unknown()
-    if _authority_does_not_exceed_current(checkpoint_authority, current_authority):
-        return checkpoint_authority
-    return current_authority
+    historical_result = _parse_checkpoint_historical_authority(checkpoint)
+    if isinstance(historical_result, CheckpointResumeValidationResult):
+        raise CheckpointResumeValidationError(historical_result)
+    return narrow_resume_execution_authority(current_authority, historical_result)
+
+
+def validate_checkpoint_resume_authority(
+    checkpoint: TaskCheckpoint,
+    current_task: Task | None,
+) -> CheckpointResumeValidationResult:
+    historical_result = _parse_checkpoint_historical_authority(checkpoint)
+    if isinstance(historical_result, CheckpointResumeValidationResult):
+        return historical_result
+    historical_authority = historical_result
+    if current_task is None:
+        if not historical_authority.is_unknown:
+            return CheckpointResumeValidationResult(
+                eligibility=CheckpointResumeEligibility.REJECT_AUTHORITY,
+                reason="authoritative current task authority required for resume",
+            )
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.ALLOW_RESUME,
+        )
+    current_authority = current_task.execution_authority
+    if current_authority is None:
+        if not historical_authority.is_unknown:
+            return CheckpointResumeValidationResult(
+                eligibility=CheckpointResumeEligibility.REJECT_AUTHORITY,
+                reason="authoritative current authority required; checkpoint cannot grant authority",
+            )
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.ALLOW_RESUME,
+        )
+    narrowed = narrow_resume_execution_authority(current_authority, historical_authority)
+    if not _authority_does_not_exceed_current(narrowed, historical_authority):
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.REJECT_AUTHORITY,
+            reason="resume authority exceeds historical checkpoint bound",
+        )
+    if not _authority_does_not_exceed_current(narrowed, current_authority):
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.REJECT_AUTHORITY,
+            reason="resume authority exceeds authoritative current bound",
+        )
+    return CheckpointResumeValidationResult(
+        eligibility=CheckpointResumeEligibility.ALLOW_RESUME,
+    )
 
 
 def validate_checkpoint_authority_expansion(
@@ -490,6 +593,10 @@ def evaluate_checkpoint_resume_eligibility(
     result = _merge_failure(
         result,
         validate_checkpoint_governance_freshness(policy_decision),
+    )
+    result = _merge_failure(
+        result,
+        validate_checkpoint_resume_authority(checkpoint, current_task),
     )
     return result
 

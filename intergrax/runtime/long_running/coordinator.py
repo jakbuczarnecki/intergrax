@@ -122,15 +122,12 @@ class LongRunningCoordinator:
         if incoming_human.verdict is not None or incoming_human.response_text is not None:
             task.options.human = incoming_human
         if incoming_authority is not None:
-            authority_context = task.model_copy(
-                update={"execution_authority": incoming_authority},
-            )
             task.execution_authority = resolve_resume_execution_authority(
                 checkpoint,
-                authority_context,
+                task,
             )
-        elif restored.execution_authority is not None:
-            task.execution_authority = restored.execution_authority
+        else:
+            task.execution_authority = None
         task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
         task.runtime.orchestration.resume_token = checkpoint.resume_token
         task.runtime.orchestration.progress_message = checkpoint.progress_message

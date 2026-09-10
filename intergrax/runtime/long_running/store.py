@@ -222,7 +222,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
 
     def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
         with self._connection() as conn:
-            conn.execute(
+            cursor = conn.execute(
                 """
                 INSERT INTO task_checkpoints (
                     checkpoint_id, task_id, tenant_id, resume_token, task_state,
@@ -245,15 +245,18 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                     else None,
                 ),
             )
-        return checkpoint
+            if cursor.lastrowid is None:
+                raise RuntimeError("checkpoint save did not yield durable store_sequence")
+            store_sequence = int(cursor.lastrowid)
+        return checkpoint.model_copy(update={"store_sequence": store_sequence})
 
     def get_latest(self, task_id: str, tenant_id: str) -> Optional[TaskCheckpoint]:
         with self._connection() as conn:
             row = conn.execute(
                 """
-                SELECT * FROM task_checkpoints
+                SELECT rowid, * FROM task_checkpoints
                 WHERE task_id = ? AND tenant_id = ?
-                ORDER BY created_at_utc DESC
+                ORDER BY rowid DESC
                 LIMIT 1
                 """,
                 (task_id, tenant_id),
@@ -269,9 +272,9 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         with self._connection() as conn:
             row = conn.execute(
                 """
-                SELECT * FROM task_checkpoints
+                SELECT rowid, * FROM task_checkpoints
                 WHERE task_id = ? AND tenant_id = ? AND resume_token = ?
-                ORDER BY created_at_utc DESC
+                ORDER BY rowid DESC
                 LIMIT 1
                 """,
                 (task_id, tenant_id, resume_token),
@@ -282,9 +285,9 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         with self._connection() as conn:
             rows = conn.execute(
                 """
-                SELECT * FROM task_checkpoints
+                SELECT rowid, * FROM task_checkpoints
                 WHERE task_id = ? AND tenant_id = ?
-                ORDER BY created_at_utc ASC
+                ORDER BY rowid ASC
                 """,
                 (task_id, tenant_id),
             ).fetchall()
@@ -294,16 +297,16 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         paused_states = _PAUSED_TASK_STATES
         placeholders = ",".join("?" for _ in paused_states)
         query = f"""
-            SELECT c.* FROM task_checkpoints c
+            SELECT c.rowid, c.* FROM task_checkpoints c
             INNER JOIN (
-                SELECT task_id, tenant_id, MAX(created_at_utc) AS max_created
+                SELECT task_id, tenant_id, MAX(rowid) AS max_rowid
                 FROM task_checkpoints
                 WHERE task_state IN ({placeholders})
                 GROUP BY task_id, tenant_id
             ) latest
             ON c.task_id = latest.task_id
             AND c.tenant_id = latest.tenant_id
-            AND c.created_at_utc = latest.max_created
+            AND c.rowid = latest.max_rowid
             WHERE c.task_state IN ({placeholders})
         """
         params = paused_states + paused_states
@@ -657,6 +660,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             progress_message=row["progress_message"],
             notify_channel=row["notify_channel"],
             created_at_utc=row["created_at_utc"],
+            store_sequence=int(row["rowid"]),
             runtime=runtime,
         )
 
