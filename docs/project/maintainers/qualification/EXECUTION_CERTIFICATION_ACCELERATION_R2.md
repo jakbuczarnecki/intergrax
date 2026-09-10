@@ -47,7 +47,7 @@ Entry test: `test_mandatory_frozen_suites_pass_via_parallel_qualification`
 
 ## Parallelism
 
-`max_parallel = 2` (`NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL`)
+Qualified default `max_parallel = 2` (`EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL` / `NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL`). Operators may override via explicit `max_parallel` or `INTERGRAX_EXECUTION_QUALIFICATION_MAX_PARALLEL` (explicit wins over ENV).
 
 ---
 

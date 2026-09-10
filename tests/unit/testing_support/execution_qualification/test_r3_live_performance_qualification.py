@@ -22,7 +22,7 @@ from tests.unit.runtime.architecture import (
     test_npsc5e_r3_final_child_fanout_partial_recovery_qualification as r3_final,
 )
 from tests.unit.runtime.architecture.npsc5e_r3_final_execution_qualification import (
-    NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL,
+    NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL,
     build_npsc5e_r3_mandatory_projections,
     run_npsc5e_r3_mandatory_qualification_measured,
 )
@@ -124,7 +124,7 @@ def test_r3_full_matrix_production_parallelism() -> None:
         r3_final._MANDATORY_SUITES,
         _REPO_ROOT,
         run_id="r3-full-mp2-baseline",
-        max_parallel=NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL,
+        max_parallel=NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL,
     )
     _record_measured_run("full-mp2-baseline", r3_final._MANDATORY_SUITES, measured)
 

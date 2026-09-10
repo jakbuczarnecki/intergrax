@@ -22,6 +22,10 @@ from testing_support.execution_qualification.performance_snapshot import (
     ExecutionQualificationMeasuredRun,
 )
 from testing_support.execution_qualification.failure_report import assert_execution_qualification_pass
+from testing_support.execution_qualification.configuration import (
+    EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL,
+    resolve_execution_qualification_max_parallel,
+)
 from testing_support.execution_qualification.frozen_pytest_adapter import (
     AdaptedMandatorySuite,
     FrozenPytestSuiteSource,
@@ -31,7 +35,9 @@ from testing_support.execution_qualification.frozen_pytest_adapter import (
 
 NPSC5E_R3_CROSS_DB_EXCLUSIVE_RESOURCE_ID = "npsc5e-r3-cross-db"
 
-NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL = 2
+NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL = (
+    EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL
+)
 
 # Full-matrix suites may be long-running; bounded coordinator requires a positive timeout.
 NPSC5E_R3_EXECUTION_QUALIFICATION_SUITE_TIMEOUT_SECONDS = 6 * 3600.0
@@ -91,10 +97,8 @@ def npsc5e_r3_qualification_run_config(
 ) -> QualificationRunConfig:
     resolved_run_id = run_id if run_id is not None else f"npsc5e-r3-{uuid.uuid4().hex}"
     artifact_root = repo_root / "build" / "qualification" / resolved_run_id
-    resolved_parallel = (
-        max_parallel
-        if max_parallel is not None
-        else NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL
+    resolved_parallel = resolve_execution_qualification_max_parallel(
+        explicit_value=max_parallel,
     )
     return QualificationRunConfig(
         repo_root=repo_root,

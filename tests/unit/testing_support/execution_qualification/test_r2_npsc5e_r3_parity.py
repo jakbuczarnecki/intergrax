@@ -24,7 +24,7 @@ from tests.unit.runtime.architecture import (
 )
 from tests.unit.runtime.architecture.npsc5e_r3_final_execution_qualification import (
     NPSC5E_R3_CROSS_DB_EXCLUSIVE_RESOURCE_ID,
-    NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL,
+    NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL,
     NPSC5E_R3_MANDATORY_LABEL_TO_SUITE_ID,
     build_npsc5e_r3_mandatory_projections,
     label_by_suite_id_from_projections,
@@ -141,7 +141,15 @@ def test_failure_projection_lists_all_non_pass_in_manifest_order(repo_root: Path
     assert "log=" in message
 
 
-def test_real_frozen_subset_parallel_qualification(repo_root: Path) -> None:
+def test_real_frozen_subset_parallel_qualification(
+    repo_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from testing_support.execution_qualification.configuration import (
+        EXECUTION_QUALIFICATION_MAX_PARALLEL_ENV,
+    )
+
+    monkeypatch.delenv(EXECUTION_QUALIFICATION_MAX_PARALLEL_ENV, raising=False)
     source = (
         (
             "Terminal",
@@ -165,4 +173,4 @@ def test_real_frozen_subset_parallel_qualification(repo_root: Path) -> None:
     for log_path in log_paths:
         assert log_path.is_file()
         assert str(config.run_artifact_root) in str(log_path)
-    assert config.max_parallel == NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL
+    assert config.max_parallel == NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL

@@ -30,7 +30,7 @@ from testing_support.execution_qualification.performance_snapshot import (
 )
 from testing_support.execution_qualification.frozen_pytest_adapter import adapt_frozen_pytest_suites
 from tests.unit.runtime.architecture.npsc5e_r3_final_execution_qualification import (
-    NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL,
+    NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL,
     NPSC5E_R3_MANDATORY_LABEL_TO_SUITE_ID,
 )
 from tests.unit.testing_support.execution_qualification.fake_executor import (
@@ -221,8 +221,8 @@ def test_max_parallel_two_demonstrates_overlap_with_fake_parallel_work(
     )
     assert measured.performance.max_parallel == 2
     assert measured.performance.observed_overlap_ratio > 1.0
-    assert NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL == 2
+    assert NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL == 2
 
 
-def test_qualified_max_parallel_policy_remains_two() -> None:
-    assert NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL == 2
+def test_qualified_default_max_parallel_remains_two() -> None:
+    assert NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL == 2
