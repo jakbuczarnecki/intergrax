@@ -1,6 +1,6 @@
 # NPSC-5E — Recovery, Checkpoint & Retry Architecture
 
-> **Stage:** P0 + P0A qualified; **R1 FROZEN / PASS**; **R2 FROZEN / PASS**; **R3 ACTIVE**
+> **Stage:** P0 + P0A qualified; **R1 FROZEN / PASS**; **R2 FROZEN / PASS**; **R3 FROZEN / PASS**; **NPSC-5E ACTIVE**
 
 ## P0 inventory
 
@@ -269,7 +269,7 @@ See: `docs/project/maintainers/qualification/NPSC_5E_R2_FINAL_CHECKPOINT_DURABLE
 
 ## R3 — Child & Fan-Out Partial Recovery
 
-**Status:** `ACTIVE` (2026-09-10)
+**Status:** `FROZEN / PASS` (2026-09-10)
 
 Qualified modules: `intergrax/contracts/partial_recovery.py`, `intergrax/runtime/long_running/topology_recovery_snapshot.py`, `intergrax/runtime/execution/fan_out_partial_recovery.py`.
 
@@ -310,6 +310,14 @@ Lineage                                → ExecutionLineagePersistence
 - No second recovery runtime, scheduler, checkpoint framework, or retry engine
 
 See: `docs/project/maintainers/qualification/NPSC_5E_R3_CHILD_FANOUT_PARTIAL_RECOVERY.md`
+
+### R3 Final freeze (2026-09-10)
+
+**Status:** `FROZEN / PASS`
+
+Final qualification composes R3 implementation gate with cross-layer E2E scenarios (single/multiple slot recovery, sibling preservation, cross-process, stale writer CAS, policy/authority/trust deny, HITL boundary, R1 retry interop, re-selection prohibition, fan-in order/cardinality).
+
+See: `docs/project/maintainers/qualification/NPSC_5E_R3_FINAL_CHILD_FANOUT_PARTIAL_RECOVERY_QUALIFICATION_AND_FREEZE.md`
 
 ## Deferred / out of scope
 
