@@ -68,7 +68,19 @@ from platform_proofs.scenarios.verified_product_identification.application.verif
     ProductIdentificationVerificationRequest,
     build_product_identification_verification_service,
 )
+from platform_proofs.scenarios.verified_product_identification.application.clarification.answerability_policy import (
+    ClarificationAnswerabilityClass,
+    ClarificationAnswerabilityPolicy,
+)
+from platform_proofs.scenarios.verified_product_identification.application.clarification.materiality_policy import (
+    ClarificationMaterialityPolicy,
+)
+from platform_proofs.scenarios.verified_product_identification.application.contracts.identification_context import (
+    NegativeAttributeConstraint,
+)
 from platform_proofs.scenarios.verified_product_identification.application.verification.contracts import (
+    HypothesisVerificationState,
+    IdentityHypothesisVerification,
     ProductIdentificationDecision,
     ProductIdentificationDecisionReasonCode,
 )
@@ -167,6 +179,40 @@ def _constraint(name: str, value: str) -> StructuredAttributeConstraint:
     )
 
 
+def _ordered_refs(
+    left_ref: SourceRecordRef,
+    right_ref: SourceRecordRef,
+) -> tuple[SourceRecordRef, SourceRecordRef]:
+    return tuple(sorted((left_ref, right_ref), key=source_ref_sort_key))
+
+
+def _evidence(
+    left_ref: SourceRecordRef,
+    right_ref: SourceRecordRef,
+    *,
+    evidence_type: IdentityEvidenceType,
+    attribute_key: str,
+    normalized_value: str,
+    identifier_type: ProductIdentifierType | None = None,
+    strength_class: IdentityEvidenceStrengthClass = IdentityEvidenceStrengthClass.STRONG,
+) -> IdentityEvidence:
+    ordered = _ordered_refs(left_ref, right_ref)
+    return IdentityEvidence(
+        evidence_type=evidence_type,
+        source_refs=ordered,
+        attribute_key=attribute_key,
+        normalized_value=normalized_value,
+        strength_class=strength_class,
+        identifier_type=identifier_type,
+        provenance=IdentityEvidenceProvenance(
+            left_source_ref=ordered[0],
+            right_source_ref=ordered[1],
+            source_field=f"test|{attribute_key}",
+            normalization_rule="test/v1",
+        ),
+    )
+
+
 def _verify(
     ranked: RankedIdentityHypothesisCollection,
     query: ProductIdentificationQueryContext,
@@ -182,12 +228,39 @@ def _verify(
     return outcome.decision
 
 
+def _supported_verification_row(hypothesis_id: str) -> IdentityHypothesisVerification:
+    return IdentityHypothesisVerification(
+        hypothesis_id=hypothesis_id,
+        eligible_for_verification=True,
+        verification_state=HypothesisVerificationState.SUPPORTED,
+        supported_requirements=(),
+        contradicted_requirements=(),
+        missing_requirements=(),
+        blocking_contradictions=(),
+        identity_evidence_sufficient=True,
+    )
+
+
+def _verification_rows_for_hypotheses(
+    *hypotheses: ProductIdentityHypothesis,
+) -> tuple[IdentityHypothesisVerification, ...]:
+    return tuple(
+        sorted(
+            (_supported_verification_row(item.hypothesis_id) for item in hypotheses),
+            key=lambda row: row.hypothesis_id,
+        )
+    )
+
+
 def _ambiguous_decision(
     *hypotheses: ProductIdentityHypothesis,
     reason: ProductIdentificationDecisionReasonCode = ProductIdentificationDecisionReasonCode.MULTIPLE_VIABLE_IDENTITIES,
+    ambiguity_candidates: tuple[str, ...] | None = None,
 ) -> ProductIdentificationDecision:
     ranked = _ranked(*hypotheses)
-    candidate_ids = tuple(sorted(item.hypothesis.hypothesis_id for item in ranked.hypotheses))
+    candidate_ids = ambiguity_candidates or tuple(
+        sorted(item.hypothesis.hypothesis_id for item in ranked.hypotheses)
+    )
     return ProductIdentificationDecision(
         outcome=ProductIdentificationOutcome.AMBIGUOUS,
         verified_hypothesis_id=None,
@@ -199,6 +272,9 @@ def _ambiguous_decision(
         missing_requirements=(),
         ambiguity_candidates=candidate_ids,
         decision_reason_code=reason,
+        hypothesis_verifications=_verification_rows_for_hypotheses(
+            *(item.hypothesis for item in ranked.hypotheses)
+        ),
     )
 
 
@@ -717,3 +793,361 @@ def test_identifier_vs_attribute_prefers_capacity() -> None:
     result = _select(decision, ProductIdentificationQueryContext())
     assert result.primary_requirement is not None
     assert result.primary_requirement.attribute_name.casefold() == "capacity"
+
+
+def _three_way_unresolved_competing_query() -> ProductIdentificationQueryContext:
+    return ProductIdentificationQueryContext(
+        required_constraints=(
+            _constraint("capacity", "2TB"),
+            _constraint("interface", "NVMe"),
+        )
+    )
+
+
+def _three_way_unresolved_competing_hypotheses() -> tuple[ProductIdentityHypothesis, ...]:
+    ref_a, ref_b = _source_ref(OFFER_A), _source_ref(OFFER_B)
+    ref_c, ref_d = _source_ref(OFFER_C), _source_ref(OFFER_D)
+    ref_e, ref_f = _source_ref(ProductOfferId("offer-e")), _source_ref(ProductOfferId("offer-f"))
+    h1 = _pair_hypothesis_with_facts(
+        mpn="MZ-V9P2T0",
+        capacity="2TB",
+        interface="NVMe",
+        refs=(ref_a, ref_b),
+    )
+    h2 = _hypothesis(
+        (ref_c, ref_d),
+        source_identity_facts=(),
+        evidence=(
+            _evidence(
+                ref_c,
+                ref_d,
+                evidence_type=IdentityEvidenceType.MODEL_NUMBER_MATCH,
+                attribute_key="mpn",
+                normalized_value="MZ-V9P2T0",
+                identifier_type=ProductIdentifierType.MPN,
+            ),
+            _evidence(
+                ref_c,
+                ref_d,
+                evidence_type=IdentityEvidenceType.STRUCTURED_ATTRIBUTE_MATCH,
+                attribute_key="capacity",
+                normalized_value="2TB",
+            ),
+        ),
+    )
+    h3 = _pair_hypothesis_with_facts(
+        mpn="MZ-V9P1T0",
+        capacity="1TB",
+        interface="SATA",
+        refs=(ref_e, ref_f),
+    )
+    return h1, h2, h3
+
+
+def _assert_h3_excluded_from_clarification(
+    result: ClarificationSelectionResult,
+    h3_id: str,
+) -> None:
+    if result.primary_requirement is not None:
+        assert h3_id not in result.primary_requirement.provenance.affected_hypothesis_ids
+        assert "SATA" not in result.primary_requirement.candidate_values
+    for alternate in result.alternate_requirements:
+        assert h3_id not in alternate.provenance.affected_hypothesis_ids
+        assert "SATA" not in alternate.candidate_values
+
+
+def test_rejected_competitor_excluded_from_unresolved_scope() -> None:
+    h1, h2, h3 = _three_way_unresolved_competing_hypotheses()
+    query = _three_way_unresolved_competing_query()
+    decision = _verify(_ranked(h1, h2, h3), query)
+    assert decision.decision_reason_code is ProductIdentificationDecisionReasonCode.UNRESOLVED_COMPETING_IDENTITY
+    contradicted = {
+        row.hypothesis_id
+        for row in decision.hypothesis_verifications
+        if row.verification_state is HypothesisVerificationState.CONTRADICTED
+    }
+    assert h3.hypothesis_id in contradicted
+    result = _select(decision, query)
+    _assert_h3_excluded_from_clarification(result, h3.hypothesis_id)
+    if result.clarification_required and result.primary_requirement is not None:
+        affected = set(result.primary_requirement.provenance.affected_hypothesis_ids)
+        assert h1.hypothesis_id in affected or h2.hypothesis_id in affected
+        assert h3.hypothesis_id not in affected
+
+
+def test_contradicted_competitor_cannot_fabricate_interface_discriminator() -> None:
+    h1, h2, h3 = _three_way_unresolved_competing_hypotheses()
+    query = _three_way_unresolved_competing_query()
+    decision = _verify(_ranked(h1, h2, h3), query)
+    result = _select(decision, query)
+    if result.primary_requirement is not None:
+        assert (
+            result.primary_requirement.attribute_name.casefold() != "interface"
+            or "SATA" not in result.primary_requirement.candidate_values
+        )
+    _assert_h3_excluded_from_clarification(result, h3.hypothesis_id)
+    assert result.no_clarification_reason in (
+        None,
+        NoClarificationReason.NO_DISCRIMINATOR_AVAILABLE,
+        NoClarificationReason.NO_USER_ANSWERABLE_REQUIREMENT,
+        NoClarificationReason.NO_DISCRIMINATING_FACT,
+    )
+
+
+def test_negative_constraint_contradicted_excluded_from_scope() -> None:
+    ref_a, ref_b = _source_ref(OFFER_A), _source_ref(OFFER_B)
+    ref_c, ref_d = _source_ref(OFFER_C), _source_ref(OFFER_D)
+    ref_e, ref_f = _source_ref(ProductOfferId("offer-e")), _source_ref(ProductOfferId("offer-f"))
+    h1 = _pair_hypothesis_with_facts(
+        mpn="A",
+        capacity="2TB",
+        interface="NVMe",
+        refs=(ref_a, ref_b),
+    )
+    h2 = _hypothesis(
+        (ref_c, ref_d),
+        source_identity_facts=(),
+        evidence=(
+            _evidence(
+                ref_c,
+                ref_d,
+                evidence_type=IdentityEvidenceType.MODEL_NUMBER_MATCH,
+                attribute_key="mpn",
+                normalized_value="B",
+                identifier_type=ProductIdentifierType.MPN,
+            ),
+            _evidence(
+                ref_c,
+                ref_d,
+                evidence_type=IdentityEvidenceType.STRUCTURED_ATTRIBUTE_MATCH,
+                attribute_key="capacity",
+                normalized_value="2TB",
+            ),
+        ),
+    )
+    h3 = _pair_hypothesis_with_facts(
+        mpn="C",
+        capacity="2TB",
+        interface="SATA",
+        refs=(ref_e, ref_f),
+    )
+    query = ProductIdentificationQueryContext(
+        required_constraints=(_constraint("capacity", "2TB"),),
+        negative_constraints=(
+            NegativeAttributeConstraint(
+                attribute_name="interface",
+                operator=StructuredConstraintOperator.EQUALS,
+                excluded_value="SATA",
+            ),
+        ),
+    )
+    decision = _verify(_ranked(h1, h2, h3), query)
+    assert any(
+        row.hypothesis_id == h3.hypothesis_id
+        and row.verification_state is HypothesisVerificationState.CONTRADICTED
+        for row in decision.hypothesis_verifications
+    )
+    result = _select(decision, query)
+    _assert_h3_excluded_from_clarification(result, h3.hypothesis_id)
+
+
+def test_ambiguous_scope_uses_only_ambiguity_candidates() -> None:
+    h1 = _pair_hypothesis_with_facts(
+        mpn="A",
+        capacity="1TB",
+        interface="NVMe",
+        refs=(_source_ref(OFFER_A), _source_ref(OFFER_B)),
+    )
+    h2 = _pair_hypothesis_with_facts(
+        mpn="B",
+        capacity="2TB",
+        interface="NVMe",
+        refs=(_source_ref(OFFER_C), _source_ref(OFFER_D)),
+    )
+    h3 = _pair_hypothesis_with_facts(
+        mpn="C",
+        capacity="4TB",
+        interface="NVMe",
+        refs=(_source_ref(ProductOfferId("offer-e")), _source_ref(ProductOfferId("offer-f"))),
+    )
+    h4 = _pair_hypothesis_with_facts(
+        mpn="D",
+        capacity="8TB",
+        interface="NVMe",
+        refs=(_source_ref(ProductOfferId("offer-g")), _source_ref(ProductOfferId("offer-h"))),
+    )
+    decision = _ambiguous_decision(
+        h1,
+        h2,
+        h3,
+        h4,
+        ambiguity_candidates=(h1.hypothesis_id, h2.hypothesis_id),
+    )
+    result = _select(decision, ProductIdentificationQueryContext())
+    assert result.clarification_required is True
+    assert result.primary_requirement is not None
+    affected = set(result.primary_requirement.provenance.affected_hypothesis_ids)
+    assert h3.hypothesis_id not in affected
+    assert h4.hypothesis_id not in affected
+    assert result.primary_requirement.candidate_values == ("1TB", "2TB")
+
+
+class _CapacityNotAnswerablePolicy:
+    def classify_attribute(self, attribute_name: str) -> ClarificationAnswerabilityClass:
+        if attribute_name.casefold() == "capacity":
+            return ClarificationAnswerabilityClass.NOT_USER_ANSWERABLE
+        return ClarificationAnswerabilityClass.USER_NATIVE
+
+    def classify_identifier(
+        self,
+        identifier_type: ProductIdentifierType,
+        *,
+        query_context: ProductIdentificationQueryContext,
+    ) -> ClarificationAnswerabilityClass:
+        return ClarificationAnswerabilityClass.NOT_USER_ANSWERABLE
+
+    def is_selectable(self, answerability: ClarificationAnswerabilityClass) -> bool:
+        return answerability in (
+            ClarificationAnswerabilityClass.USER_NATIVE,
+            ClarificationAnswerabilityClass.TECHNICAL_BUT_REASONABLE,
+        )
+
+
+class _CapacityNonMaterialPolicy:
+    def is_material_attribute(self, attribute_name: str) -> bool:
+        return attribute_name.casefold() != "capacity"
+
+
+class _FormFactorMaterialUserNativePolicy:
+    def is_material_attribute(self, attribute_name: str) -> bool:
+        return attribute_name.casefold() in {"form_factor", "interface"}
+
+    def classify_attribute(self, attribute_name: str) -> ClarificationAnswerabilityClass:
+        if attribute_name.casefold() == "form_factor":
+            return ClarificationAnswerabilityClass.USER_NATIVE
+        return ClarificationAnswerabilityClass.NOT_USER_ANSWERABLE
+
+    def classify_identifier(
+        self,
+        identifier_type: ProductIdentifierType,
+        *,
+        query_context: ProductIdentificationQueryContext,
+    ) -> ClarificationAnswerabilityClass:
+        return ClarificationAnswerabilityClass.NOT_USER_ANSWERABLE
+
+    def is_selectable(self, answerability: ClarificationAnswerabilityClass) -> bool:
+        return answerability is ClarificationAnswerabilityClass.USER_NATIVE
+
+
+def test_custom_answerability_policy_controls_user_missing_path() -> None:
+    hypothesis = _pair_hypothesis_with_facts(
+        mpn="MZ",
+        capacity="2TB",
+        interface="NVMe",
+        refs=(_source_ref(OFFER_A), _source_ref(OFFER_B)),
+    )
+    query = ProductIdentificationQueryContext(
+        required_constraints=(_constraint("interface", "NVMe"),),
+        missing_user_distinguishing_requirements=(
+            MissingDistinguishingRequirement(
+                attribute_name="capacity",
+                origin=MissingRequirementOrigin.USER,
+                requirement_id="user:capacity",
+            ),
+        ),
+    )
+    decision = _verify(_ranked(hypothesis), query)
+    service = build_clarification_requirement_selection_service(
+        answerability_policy=_CapacityNotAnswerablePolicy(),
+    )
+    result = service.select(ClarificationSelectionRequest(decision=decision, query_context=query))
+    if result.primary_requirement is not None:
+        assert result.primary_requirement.attribute_name.casefold() != "capacity"
+
+
+def test_custom_materiality_policy_controls_user_and_fact_paths() -> None:
+    h1 = _pair_hypothesis_with_facts(
+        mpn="A",
+        capacity="1TB",
+        interface="NVMe",
+        refs=(_source_ref(OFFER_A), _source_ref(OFFER_B)),
+    )
+    h2 = _pair_hypothesis_with_facts(
+        mpn="B",
+        capacity="2TB",
+        interface="NVMe",
+        refs=(_source_ref(OFFER_C), _source_ref(OFFER_D)),
+    )
+    query = ProductIdentificationQueryContext(
+        missing_user_distinguishing_requirements=(
+            MissingDistinguishingRequirement(
+                attribute_name="capacity",
+                origin=MissingRequirementOrigin.USER,
+                requirement_id="user:capacity",
+            ),
+        ),
+    )
+    decision = _verify(_ranked(h1, h2), query)
+    service = build_clarification_requirement_selection_service(
+        materiality_policy=_CapacityNonMaterialPolicy(),
+    )
+    result = service.select(ClarificationSelectionRequest(decision=decision, query_context=query))
+    if result.primary_requirement is not None:
+        assert result.primary_requirement.attribute_name.casefold() != "capacity"
+    for alternate in result.alternate_requirements:
+        assert alternate.attribute_name.casefold() != "capacity"
+
+
+def test_custom_positive_material_answerability_policy() -> None:
+    ref_a, ref_b = _source_ref(OFFER_A), _source_ref(OFFER_B)
+    ref_c, ref_d = _source_ref(OFFER_C), _source_ref(OFFER_D)
+    h1 = _hypothesis(
+        (ref_a,),
+        source_identity_facts=(
+            _fact(ref_a, attribute_key="form_factor", normalized_value="M.2"),
+            _fact(ref_a, attribute_key="interface", normalized_value="NVMe"),
+        ),
+    )
+    h2 = _hypothesis(
+        (ref_c,),
+        source_identity_facts=(
+            _fact(ref_c, attribute_key="form_factor", normalized_value="2.5"),
+            _fact(ref_c, attribute_key="interface", normalized_value="NVMe"),
+        ),
+    )
+    decision = _ambiguous_decision(h1, h2)
+    service = build_clarification_requirement_selection_service(
+        answerability_policy=_FormFactorMaterialUserNativePolicy(),
+        materiality_policy=_FormFactorMaterialUserNativePolicy(),
+    )
+    result = service.select(
+        ClarificationSelectionRequest(decision=decision, query_context=ProductIdentificationQueryContext())
+    )
+    assert result.clarification_required is True
+    assert result.primary_requirement is not None
+    assert result.primary_requirement.attribute_name.casefold() == "form_factor"
+
+
+def test_verification_row_order_does_not_change_clarification() -> None:
+    h1, h2, h3 = _three_way_unresolved_competing_hypotheses()
+    query = _three_way_unresolved_competing_query()
+    base = _verify(_ranked(h1, h2, h3), query)
+    shuffled_rows = tuple(reversed(base.hypothesis_verifications))
+    with pytest.raises(ValueError, match="hypothesis_verifications must be sorted"):
+        ProductIdentificationDecision(
+            outcome=base.outcome,
+            verified_hypothesis_id=base.verified_hypothesis_id,
+            verified_member_refs=base.verified_member_refs,
+            evaluated_hypotheses=tuple(reversed(base.evaluated_hypotheses)),
+            decision_evidence=base.decision_evidence,
+            decision_contradicted_requirements=base.decision_contradicted_requirements,
+            decision_contradictions=base.decision_contradictions,
+            missing_requirements=base.missing_requirements,
+            ambiguity_candidates=base.ambiguity_candidates,
+            decision_reason_code=base.decision_reason_code,
+            hypothesis_verifications=shuffled_rows,
+        )
+    first = _select(base, query)
+    second = _select(_verify(_ranked(h3, h1, h2), query), query)
+    assert first.primary_requirement == second.primary_requirement
+    assert first.alternate_requirements == second.alternate_requirements

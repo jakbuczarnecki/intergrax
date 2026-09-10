@@ -22,7 +22,6 @@ from platform_proofs.scenarios.verified_product_identification.application.ident
 )
 from platform_proofs.scenarios.verified_product_identification.application.clarification.answerability_policy import (
     ClarificationAnswerabilityPolicy,
-    DeterministicClarificationAnswerabilityPolicy,
 )
 from platform_proofs.scenarios.verified_product_identification.application.clarification.contracts import (
     ClarificationDiscriminationMetrics,
@@ -32,7 +31,6 @@ from platform_proofs.scenarios.verified_product_identification.application.clari
 )
 from platform_proofs.scenarios.verified_product_identification.application.clarification.materiality_policy import (
     ClarificationMaterialityPolicy,
-    DeterministicClarificationMaterialityPolicy,
 )
 
 
@@ -63,10 +61,6 @@ def _user_supplied_attribute_keys(query_context: ProductIdentificationQueryConte
     return frozenset(keys)
 
 
-def _is_hypothesis_eliminated(evaluated: EvaluatedIdentityHypothesis) -> bool:
-    return evaluated.ranking_key.has_internal_blocking_contradiction
-
-
 def unresolved_hypothesis_ids(
     *,
     competing_ids: tuple[str, ...],
@@ -75,16 +69,10 @@ def unresolved_hypothesis_ids(
     eligible = [item for item in competing_ids if item.strip()]
     if not eligible:
         return ()
-    by_id = {item.hypothesis.hypothesis_id: item for item in evaluated_hypotheses}
-    ordered: list[str] = []
-    for hypothesis_id in sorted(eligible):
-        evaluated = by_id.get(hypothesis_id)
-        if evaluated is None:
-            continue
-        if _is_hypothesis_eliminated(evaluated):
-            continue
-        ordered.append(hypothesis_id)
-    return tuple(ordered)
+    by_id = {item.hypothesis.hypothesis_id for item in evaluated_hypotheses}
+    return tuple(
+        hypothesis_id for hypothesis_id in sorted(eligible) if hypothesis_id in by_id
+    )
 
 
 def build_fact_groups(
@@ -215,12 +203,6 @@ def requirements_from_fact_groups(
     origin: MissingRequirementOrigin | None,
     reason: str,
 ) -> tuple[ClarificationRequirement, ...]:
-    resolved_answerability = answerability_policy
-    if isinstance(answerability_policy, DeterministicClarificationAnswerabilityPolicy):
-        selectable_policy = answerability_policy
-    else:
-        selectable_policy = DeterministicClarificationAnswerabilityPolicy()
-
     candidates: list[ClarificationRequirement] = []
     for state in groups:
         metrics = _metrics_for_group(state, hypothesis_ids=hypothesis_ids)
@@ -230,13 +212,13 @@ def requirements_from_fact_groups(
         if key.kind is ClarificationRequirementKind.IDENTIFIER_VALUE:
             if key.identifier_type is None:
                 continue
-            answerability = resolved_answerability.classify_identifier(
+            answerability = answerability_policy.classify_identifier(
                 key.identifier_type,
                 query_context=query_context,
             )
         else:
-            answerability = resolved_answerability.classify_attribute(key.attribute_name)
-        if not selectable_policy.is_selectable(answerability):
+            answerability = answerability_policy.classify_attribute(key.attribute_name)
+        if not answerability_policy.is_selectable(answerability):
             continue
 
         affected = tuple(

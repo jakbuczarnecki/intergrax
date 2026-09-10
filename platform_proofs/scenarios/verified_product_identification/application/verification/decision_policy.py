@@ -91,6 +91,7 @@ class DeterministicProductIdentificationDecisionPolicy:
                 missing_requirements=unresolved,
                 ambiguity_candidates=supported_ids,
                 decision_reason_code=ProductIdentificationDecisionReasonCode.MULTIPLE_VIABLE_IDENTITIES,
+                hypothesis_verifications=_verification_handoff_rows(verification_rows),
             )
 
         if len(supported_ids) == 1:
@@ -118,6 +119,7 @@ class DeterministicProductIdentificationDecisionPolicy:
                 missing_requirements=(),
                 ambiguity_candidates=(),
                 decision_reason_code=ProductIdentificationDecisionReasonCode.UNIQUE_IDENTITY_SUPPORTED,
+                hypothesis_verifications=_verification_handoff_rows(verification_rows),
             )
 
         return _insufficient_decision(
@@ -145,6 +147,7 @@ def _decide_empty_input(
             missing_requirements=(),
             ambiguity_candidates=(),
             decision_reason_code=ProductIdentificationDecisionReasonCode.ALL_HYPOTHESES_CONTRADICTED,
+            hypothesis_verifications=(),
             catalog_rejection_evidence=empty_input_rejection_evidence,
         )
 
@@ -169,6 +172,7 @@ def _decide_empty_input(
         missing_requirements=missing,
         ambiguity_candidates=(),
         decision_reason_code=ProductIdentificationDecisionReasonCode.EMPTY_INPUT_WITHOUT_REJECTION_EVIDENCE,
+        hypothesis_verifications=(),
     )
 
 
@@ -196,6 +200,7 @@ def _no_match_decision(
         missing_requirements=(),
         ambiguity_candidates=(),
         decision_reason_code=reason,
+        hypothesis_verifications=_verification_handoff_rows(verification_rows),
     )
 
 
@@ -249,7 +254,14 @@ def _insufficient_decision(
         missing_requirements=tuple(_dedupe_missing(missing)),
         ambiguity_candidates=(),
         decision_reason_code=reason,
+        hypothesis_verifications=_verification_handoff_rows(verification_rows),
     )
+
+
+def _verification_handoff_rows(
+    verification_rows: tuple[IdentityHypothesisVerification, ...],
+) -> tuple[IdentityHypothesisVerification, ...]:
+    return tuple(sorted(verification_rows, key=lambda row: row.hypothesis_id))
 
 
 def _missing_from_query_context(

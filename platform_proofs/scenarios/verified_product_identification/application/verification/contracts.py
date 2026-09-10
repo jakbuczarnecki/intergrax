@@ -159,6 +159,7 @@ class ProductIdentificationDecision:
     missing_requirements: tuple[MissingRequirement, ...]
     ambiguity_candidates: tuple[str, ...]
     decision_reason_code: ProductIdentificationDecisionReasonCode
+    hypothesis_verifications: tuple[IdentityHypothesisVerification, ...]
     catalog_rejection_evidence: tuple[HypothesisRejectionEvidence, ...] = ()
     detail_message: str | None = None
 
@@ -177,6 +178,8 @@ class ProductIdentificationDecision:
             raise TypeError("missing_requirements must be a tuple")
         if not isinstance(self.ambiguity_candidates, tuple):
             raise TypeError("ambiguity_candidates must be a tuple")
+        if not isinstance(self.hypothesis_verifications, tuple):
+            raise TypeError("hypothesis_verifications must be a tuple")
         if not isinstance(self.catalog_rejection_evidence, tuple):
             raise TypeError("catalog_rejection_evidence must be a tuple")
         _validate_decision_invariants(self)
@@ -208,6 +211,7 @@ class ProductIdentificationVerificationOutcome:
 
 
 def _validate_decision_invariants(decision: ProductIdentificationDecision) -> None:
+    _validate_hypothesis_verification_handoff(decision)
     outcome = decision.outcome
     verified_id = decision.verified_hypothesis_id
 
@@ -218,6 +222,9 @@ def _validate_decision_invariants(decision: ProductIdentificationDecision) -> No
             raise ValueError("VERIFIED requires verified_member_refs")
         if decision.ambiguity_candidates:
             raise ValueError("VERIFIED must not include ambiguity_candidates")
+        verified_row = _verification_row_for_id(decision, verified_id)
+        if verified_row.verification_state is not HypothesisVerificationState.SUPPORTED:
+            raise ValueError("VERIFIED hypothesis must have SUPPORTED verification state")
         return
 
     if verified_id is not None:
@@ -228,6 +235,12 @@ def _validate_decision_invariants(decision: ProductIdentificationDecision) -> No
     if outcome is ProductIdentificationOutcome.AMBIGUOUS:
         if len(decision.ambiguity_candidates) < 2:
             raise ValueError("AMBIGUOUS requires at least two ambiguity_candidates")
+        for candidate_id in decision.ambiguity_candidates:
+            row = _verification_row_for_id(decision, candidate_id)
+            if row.verification_state is HypothesisVerificationState.CONTRADICTED:
+                raise ValueError("CONTRADICTED hypothesis cannot be ambiguity candidate")
+            if row.verification_state is not HypothesisVerificationState.SUPPORTED:
+                raise ValueError("AMBIGUOUS candidates must be SUPPORTED")
         return
 
     if outcome is ProductIdentificationOutcome.NO_MATCH:
@@ -243,3 +256,36 @@ def _validate_decision_invariants(decision: ProductIdentificationDecision) -> No
     if outcome is ProductIdentificationOutcome.INSUFFICIENT_INFORMATION:
         if not decision.missing_requirements:
             raise ValueError("INSUFFICIENT_INFORMATION requires missing_requirements")
+
+
+def _verification_row_for_id(
+    decision: ProductIdentificationDecision,
+    hypothesis_id: str,
+) -> IdentityHypothesisVerification:
+    for row in decision.hypothesis_verifications:
+        if row.hypothesis_id == hypothesis_id:
+            return row
+    raise ValueError("hypothesis_id missing from hypothesis_verifications")
+
+
+def _validate_hypothesis_verification_handoff(decision: ProductIdentificationDecision) -> None:
+    rows = decision.hypothesis_verifications
+    seen_ids: set[str] = set()
+    for row in rows:
+        if row.hypothesis_id in seen_ids:
+            raise ValueError("hypothesis_verifications must have unique hypothesis_id")
+        seen_ids.add(row.hypothesis_id)
+
+    sorted_rows = tuple(sorted(rows, key=lambda item: item.hypothesis_id))
+    if rows != sorted_rows:
+        raise ValueError("hypothesis_verifications must be sorted by hypothesis_id")
+
+    evaluated_ids = {item.hypothesis.hypothesis_id for item in decision.evaluated_hypotheses}
+    for row in rows:
+        if evaluated_ids and row.hypothesis_id not in evaluated_ids:
+            raise ValueError("verification row must reference evaluated hypothesis")
+
+    for candidate_id in decision.ambiguity_candidates:
+        if candidate_id not in evaluated_ids:
+            raise ValueError("ambiguity_candidate must reference evaluated hypothesis")
+        _verification_row_for_id(decision, candidate_id)

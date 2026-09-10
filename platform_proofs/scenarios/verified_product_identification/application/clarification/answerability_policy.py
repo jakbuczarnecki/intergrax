@@ -34,6 +34,9 @@ class ClarificationAnswerabilityPolicy(Protocol):
     ) -> ClarificationAnswerabilityClass:
         """Classify whether an identifier clarification is appropriate."""
 
+    def is_selectable(self, answerability: ClarificationAnswerabilityClass) -> bool:
+        """Return whether a classified requirement may be offered to the user."""
+
 
 _NON_ANSWERABLE_ATTRIBUTE_KEYS = frozenset(
     {

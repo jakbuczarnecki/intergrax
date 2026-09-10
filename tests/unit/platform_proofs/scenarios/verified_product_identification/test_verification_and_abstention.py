@@ -825,6 +825,7 @@ def test_verified_invariants_reject_invalid() -> None:
             missing_requirements=(),
             ambiguity_candidates=(),
             decision_reason_code=ProductIdentificationDecisionReasonCode.UNIQUE_IDENTITY_SUPPORTED,
+            hypothesis_verifications=(),
         )
 
 

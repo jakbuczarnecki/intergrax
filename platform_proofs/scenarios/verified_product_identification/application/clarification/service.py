@@ -6,10 +6,10 @@ from dataclasses import dataclass
 
 from platform_proofs.scenarios.verified_product_identification.application.contracts.identification_context import (
     MissingRequirementOrigin,
+    ProductIdentificationQueryContext,
 )
 from platform_proofs.scenarios.verified_product_identification.application.clarification.answerability_policy import (
     ClarificationAnswerabilityPolicy,
-    DeterministicClarificationAnswerabilityPolicy,
 )
 from platform_proofs.scenarios.verified_product_identification.application.clarification.contracts import (
     ClarificationDiscriminationMetrics,
@@ -27,13 +27,14 @@ from platform_proofs.scenarios.verified_product_identification.application.clari
 )
 from platform_proofs.scenarios.verified_product_identification.application.clarification.materiality_policy import (
     ClarificationMaterialityPolicy,
-    DeterministicClarificationMaterialityPolicy,
 )
 from platform_proofs.scenarios.verified_product_identification.application.clarification.selection_strategy import (
     ClarificationRequirementSelectionStrategy,
-    DeterministicClarificationRequirementSelectionStrategy,
 )
 from platform_proofs.scenarios.verified_product_identification.application.verification.contracts import (
+    HypothesisVerificationState,
+    IdentityHypothesisVerification,
+    ProductIdentificationDecision,
     ProductIdentificationDecisionReasonCode,
     ProductIdentificationOutcome,
 )
@@ -83,7 +84,12 @@ class ClarificationRequirementSelectionService:
 
         competing_ids = _competing_hypothesis_ids(decision)
         if len(competing_ids) < 2:
-            user_missing = _user_missing_requirements(decision, query_context)
+            user_missing = _user_missing_requirements(
+                decision,
+                query_context,
+                answerability_policy=self.answerability_policy,
+                materiality_policy=self.materiality_policy,
+            )
             if user_missing:
                 primary = user_missing[0]
                 alternates = user_missing[1:]
@@ -114,7 +120,12 @@ class ClarificationRequirementSelectionService:
 
         candidates: list[ClarificationRequirement] = []
         candidates.extend(
-            _user_missing_requirements(decision, query_context),
+            _user_missing_requirements(
+                decision,
+                query_context,
+                answerability_policy=self.answerability_policy,
+                materiality_policy=self.materiality_policy,
+            ),
         )
 
         groups = build_fact_groups(
@@ -173,24 +184,34 @@ class ClarificationRequirementSelectionService:
         )
 
 
-def _competing_hypothesis_ids(decision) -> tuple[str, ...]:
+def _competing_hypothesis_ids(decision: ProductIdentificationDecision) -> tuple[str, ...]:
     if decision.outcome is ProductIdentificationOutcome.AMBIGUOUS:
         return tuple(sorted(decision.ambiguity_candidates))
     if (
         decision.decision_reason_code
         is ProductIdentificationDecisionReasonCode.UNRESOLVED_COMPETING_IDENTITY
     ):
-        return tuple(
-            sorted(
-                item.hypothesis.hypothesis_id
-                for item in decision.evaluated_hypotheses
-                if not item.ranking_key.has_internal_blocking_contradiction
-            )
-        )
+        return _surviving_unresolved_hypothesis_ids(decision.hypothesis_verifications)
     return ()
 
 
-def _no_competitor_reason(decision) -> NoClarificationReason:
+def _surviving_unresolved_hypothesis_ids(
+    verification_rows: tuple[IdentityHypothesisVerification, ...],
+) -> tuple[str, ...]:
+    return tuple(
+        sorted(
+            row.hypothesis_id
+            for row in verification_rows
+            if row.verification_state
+            in (
+                HypothesisVerificationState.SUPPORTED,
+                HypothesisVerificationState.INCOMPLETE,
+            )
+        )
+    )
+
+
+def _no_competitor_reason(decision: ProductIdentificationDecision) -> NoClarificationReason:
     if (
         decision.decision_reason_code
         is ProductIdentificationDecisionReasonCode.MISSING_REQUIRED_CATALOG_EVIDENCE
@@ -209,14 +230,17 @@ def _origin_for_reason(
     return None
 
 
-def _user_known_keys(query_context) -> frozenset[str]:
+def _user_known_keys(query_context: ProductIdentificationQueryContext) -> frozenset[str]:
     keys: set[str] = set()
     for item in query_context.required_constraints:
         keys.add(item.attribute_name.casefold())
     return frozenset(keys)
 
 
-def _is_catalog_evidence_only_gap(decision, query_context) -> bool:
+def _is_catalog_evidence_only_gap(
+    decision: ProductIdentificationDecision,
+    query_context: ProductIdentificationQueryContext,
+) -> bool:
     if decision.outcome is not ProductIdentificationOutcome.INSUFFICIENT_INFORMATION:
         return False
     user_known = _user_known_keys(query_context)
@@ -239,11 +263,12 @@ def _is_catalog_evidence_only_gap(decision, query_context) -> bool:
 
 
 def _user_missing_requirements(
-    decision,
-    query_context,
+    decision: ProductIdentificationDecision,
+    query_context: ProductIdentificationQueryContext,
+    *,
+    answerability_policy: ClarificationAnswerabilityPolicy,
+    materiality_policy: ClarificationMaterialityPolicy,
 ) -> tuple[ClarificationRequirement, ...]:
-    answerability = DeterministicClarificationAnswerabilityPolicy()
-    materiality = DeterministicClarificationMaterialityPolicy()
     user_known = _user_known_keys(query_context)
     items: list[ClarificationRequirement] = []
 
@@ -255,9 +280,10 @@ def _user_missing_requirements(
             continue
         if key in user_known:
             continue
-        if not materiality.is_material_attribute(missing.attribute_name):
+        if not materiality_policy.is_material_attribute(missing.attribute_name):
             continue
-        if not answerability.is_selectable(answerability.classify_attribute(missing.attribute_name)):
+        answerability = answerability_policy.classify_attribute(missing.attribute_name)
+        if not answerability_policy.is_selectable(answerability):
             continue
         metrics = ClarificationDiscriminationMetrics(
             known_hypothesis_count=0,
@@ -287,9 +313,10 @@ def _user_missing_requirements(
         key = item.attribute_name.casefold()
         if key in user_known or key in _NON_SELECTABLE_MISSING_KEYS:
             continue
-        if not materiality.is_material_attribute(item.attribute_name):
+        if not materiality_policy.is_material_attribute(item.attribute_name):
             continue
-        if not answerability.is_selectable(answerability.classify_attribute(item.attribute_name)):
+        answerability = answerability_policy.classify_attribute(item.attribute_name)
+        if not answerability_policy.is_selectable(answerability):
             continue
         metrics = ClarificationDiscriminationMetrics(
             known_hypothesis_count=0,

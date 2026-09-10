@@ -734,6 +734,19 @@ def test_clarification_layer_has_no_reflection() -> None:
         assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
 
 
+def test_clarification_service_does_not_construct_canonical_policies() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    forbidden_fragments = (
+        "DeterministicClarificationAnswerabilityPolicy(",
+        "DeterministicClarificationMaterialityPolicy(",
+    )
+    for relative in ("service.py", "discriminator_discovery.py"):
+        path = clarification_root / relative
+        source = path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {path}"
+
+
 def test_clarification_layer_has_no_weak_contracts() -> None:
     clarification_root = _VPI_ROOT / "application/clarification"
     forbidden_fragments = (
