@@ -30,6 +30,11 @@ from intergrax.integrations.providers.relational_store.sqlite import (
 )
 from intergrax.runtime.long_running.checkpoint_builder import build_task_checkpoint
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+from intergrax.runtime.long_running.checkpoint_revision import (
+    CheckpointIdConflictError,
+    CheckpointRevisionRequiredError,
+    StaleCheckpointWriteError,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -62,15 +67,20 @@ _GENERIC_RUNTIME_FILES = (
 class _FakeCheckpointStore(TaskCheckpointPersistence):
     def __init__(self) -> None:
         self.saved: list[TaskCheckpoint] = []
+        self._by_id: Dict[str, TaskCheckpoint] = {}
         self._by_token: Dict[tuple[str, str, str], TaskCheckpoint] = {}
         self._latest: Dict[tuple[str, str], TaskCheckpoint] = {}
+        self._sequence = 0
 
     def list_for_task(self, task_id: str, tenant_id: str) -> List[TaskCheckpoint]:
-        return [
-            checkpoint
-            for checkpoint in self.saved
-            if checkpoint.task_id == task_id and checkpoint.tenant_id == tenant_id
-        ]
+        return sorted(
+            [
+                checkpoint
+                for checkpoint in self.saved
+                if checkpoint.task_id == task_id and checkpoint.tenant_id == tenant_id
+            ],
+            key=lambda checkpoint: checkpoint.revision or 0,
+        )
 
     def get_latest(self, task_id: str, tenant_id: str) -> Optional[TaskCheckpoint]:
         return self._latest.get((task_id, tenant_id))
@@ -81,18 +91,75 @@ class _FakeCheckpointStore(TaskCheckpointPersistence):
         tenant_id: str,
         resume_token: str,
     ) -> Optional[TaskCheckpoint]:
-        return self._by_token.get((task_id, tenant_id, resume_token))
+        matches = [
+            checkpoint
+            for checkpoint in self.saved
+            if (
+                checkpoint.task_id == task_id
+                and checkpoint.tenant_id == tenant_id
+                and checkpoint.resume_token == resume_token
+            )
+        ]
+        if not matches:
+            return None
+        return max(matches, key=lambda checkpoint: checkpoint.revision or 0)
 
     def list_paused(self) -> List[TaskCheckpoint]:
         return []
 
-    def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
-        self.saved.append(checkpoint)
-        self._latest[(checkpoint.task_id, checkpoint.tenant_id)] = checkpoint
+    def save(
+        self,
+        checkpoint: TaskCheckpoint,
+        *,
+        expected_revision: int | None = None,
+    ) -> TaskCheckpoint:
+        existing = self._by_id.get(checkpoint.checkpoint_id)
+        if existing is not None:
+            if existing.model_dump() != checkpoint.model_dump():
+                raise CheckpointIdConflictError(
+                    checkpoint_id=checkpoint.checkpoint_id,
+                    task_id=checkpoint.task_id,
+                    tenant_id=checkpoint.tenant_id,
+                )
+            return existing
+        stream_key = (checkpoint.task_id, checkpoint.tenant_id)
+        current = self._latest.get(stream_key)
+        current_revision = current.revision if current is not None else None
+        if current_revision is None:
+            if expected_revision is not None:
+                raise StaleCheckpointWriteError(
+                    task_id=checkpoint.task_id,
+                    tenant_id=checkpoint.tenant_id,
+                    expected_revision=expected_revision,
+                    actual_revision=None,
+                )
+            next_revision = 1
+        else:
+            if expected_revision is None:
+                raise CheckpointRevisionRequiredError(
+                    task_id=checkpoint.task_id,
+                    tenant_id=checkpoint.tenant_id,
+                    actual_revision=current_revision,
+                )
+            if expected_revision != current_revision:
+                raise StaleCheckpointWriteError(
+                    task_id=checkpoint.task_id,
+                    tenant_id=checkpoint.tenant_id,
+                    expected_revision=expected_revision,
+                    actual_revision=current_revision,
+                )
+            next_revision = current_revision + 1
+        self._sequence += 1
+        stored = checkpoint.model_copy(
+            update={"revision": next_revision, "store_sequence": self._sequence},
+        )
+        self.saved.append(stored)
+        self._by_id[stored.checkpoint_id] = stored
+        self._latest[stream_key] = stored
         self._by_token[
-            (checkpoint.task_id, checkpoint.tenant_id, checkpoint.resume_token)
-        ] = checkpoint
-        return checkpoint
+            (stored.task_id, stored.tenant_id, stored.resume_token)
+        ] = stored
+        return stored
 
 
 def _long_running_task(*, resume_token: str | None = None) -> Task:

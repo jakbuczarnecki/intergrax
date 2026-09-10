@@ -49,13 +49,14 @@ No `CheckpointAuthorityResolver` / `ResumeAuthorityEngine` introduced.
 
 ---
 
-## Stale ordering
+## Stale ordering (H1 scope — superseded for write path by R2-H2)
 
 | Key | Contract |
 | --- | -------- |
-| `TaskCheckpoint.store_sequence` | Populated from SQLite `rowid` on save/load |
-| `SQLiteTaskCheckpointStore.get_latest` | `ORDER BY rowid DESC` |
-| Timestamp | Auxiliary; equal/missing timestamps defer to `store_sequence` |
+| `TaskCheckpoint.store_sequence` | Physical persistence sequence from SQLite `rowid` (diagnostics only) |
+| `TaskCheckpoint.revision` | Canonical logical checkpoint version (R2-H2 owner: `TaskCheckpointPersistence`) |
+| `SQLiteTaskCheckpointStore.get_latest` | H1 interim: `rowid DESC`; **H2:** `checkpoint_revision DESC` |
+| Timestamp | Auxiliary metadata only; cannot determine canonical state |
 
 ---
 
@@ -73,11 +74,11 @@ No `CheckpointAuthorityResolver` / `ResumeAuthorityEngine` introduced.
 | Both unrestricted | PASS |
 | Malformed snapshot authority | BLOCKED |
 | Stale earlier timestamp | BLOCKED |
-| Same timestamp different revision | BLOCKED (`store_sequence`) |
-| Missing timestamp | BLOCKED via `store_sequence` |
+| Same timestamp different revision | BLOCKED (logical `revision` since H2) |
+| Missing timestamp | BLOCKED via logical `revision` since H2 |
 | Latest identical checkpoint | ALLOW |
 | Stale resume token | BLOCKED |
-| Stale write race (late old timestamp) | Canonical latest = higher `rowid` |
+| Stale write race (late old timestamp) | H1: higher `rowid`; **H2:** stale writer CAS blocked |
 | AST: no `restored.execution_authority` fallback | PASS |
 | R2 original gate | PASS |
 | R1 final regression | PASS |

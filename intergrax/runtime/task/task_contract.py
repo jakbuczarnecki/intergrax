@@ -156,6 +156,7 @@ class TaskOrchestrationState(BaseModel):
     graph_id: Optional[str] = None
     needs_more_information: bool = False
     checkpoint_id: Optional[str] = None
+    checkpoint_revision: Optional[int] = None
     resume_token: Optional[str] = None
     progress_message: str = ""
     runtime_checkpoint: Optional["RuntimeCheckpoint"] = None

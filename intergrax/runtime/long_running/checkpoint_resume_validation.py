@@ -211,8 +211,8 @@ def validate_checkpoint_identity_binding(
     )
 
 
-def _checkpoint_store_sequence(checkpoint: TaskCheckpoint) -> int | None:
-    return checkpoint.store_sequence
+def _checkpoint_logical_revision(checkpoint: TaskCheckpoint) -> int | None:
+    return checkpoint.revision
 
 
 def _checkpoint_is_superseded_by(
@@ -221,26 +221,14 @@ def _checkpoint_is_superseded_by(
 ) -> bool:
     if checkpoint.checkpoint_id == latest_checkpoint.checkpoint_id:
         return False
-    checkpoint_sequence = _checkpoint_store_sequence(checkpoint)
-    latest_sequence = _checkpoint_store_sequence(latest_checkpoint)
-    if checkpoint_sequence is not None and latest_sequence is not None:
-        return checkpoint_sequence < latest_sequence
-    if (
-        checkpoint.created_at_utc
-        and latest_checkpoint.created_at_utc
-        and checkpoint.created_at_utc < latest_checkpoint.created_at_utc
-    ):
+    checkpoint_revision = _checkpoint_logical_revision(checkpoint)
+    latest_revision = _checkpoint_logical_revision(latest_checkpoint)
+    if checkpoint_revision is not None and latest_revision is not None:
+        return checkpoint_revision < latest_revision
+    if latest_revision is not None and checkpoint_revision is None:
         return True
-    if (
-        checkpoint.created_at_utc
-        and latest_checkpoint.created_at_utc
-        and checkpoint.created_at_utc > latest_checkpoint.created_at_utc
-    ):
+    if checkpoint_revision is not None and latest_revision is None:
         return False
-    if latest_sequence is not None and checkpoint_sequence is None:
-        return True
-    if latest_checkpoint.created_at_utc and not checkpoint.created_at_utc:
-        return True
     return checkpoint.checkpoint_id != latest_checkpoint.checkpoint_id
 
 

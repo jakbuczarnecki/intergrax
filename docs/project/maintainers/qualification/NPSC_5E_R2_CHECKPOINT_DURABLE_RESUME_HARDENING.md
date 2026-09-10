@@ -58,7 +58,7 @@ Harden canonical checkpoint/resume so durable resume after process interruption 
 | Authority narrowing on restore | PASS |
 | Authority expansion via checkpoint | BLOCKED |
 | **R2-H1 defect:** checkpoint authority fallback on restore (`restored.execution_authority`) | **FIXED** (H1) |
-| **R2-H1 defect:** timestamp-only stale ordering | **FIXED** (`store_sequence` / `rowid`) |
+| **R2-H1 defect:** timestamp-only stale ordering | **FIXED** (H1 physical sequence; superseded by H2 logical revision CAS) |
 | Cross-process SQLite resume | PASS |
 | Concurrent scheduler claim (one winner) | PASS |
 | Completed node output retained | PASS |
@@ -86,7 +86,8 @@ Harden canonical checkpoint/resume so durable resume after process interruption 
 | Defect | Correction |
 | ------ | ---------- |
 | `coordinator.py` restored checkpoint `execution_authority` when current task authority was `None` | Removed; `validate_checkpoint_resume_authority` + `resolve_resume_execution_authority` only narrow authoritative current |
-| `validate_checkpoint_not_stale` allowed equal/missing timestamp ambiguity | `store_sequence` (`rowid`) canonical ordering on append-only SQLite store |
+| `validate_checkpoint_not_stale` allowed equal/missing timestamp ambiguity | H1: `store_sequence` interim ordering; **H2:** `checkpoint_revision` canonical ordering + CAS |
+| Stale writer race (late physical insert resurrects old state) | **FIXED** (R2-H2 durable revision CAS — `NPSC_5E_R2_H2_DURABLE_CHECKPOINT_REVISION_STALE_WRITER_PROTECTION.md`) |
 
 ## Next
 

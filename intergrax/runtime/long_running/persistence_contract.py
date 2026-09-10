@@ -46,7 +46,18 @@ class TaskCheckpointPersistence(TaskCheckpointReader, ScheduledResumePersistence
     """Append-only checkpoint store with optional scheduler tables."""
 
     @abstractmethod
-    def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
+    def save(
+        self,
+        checkpoint: TaskCheckpoint,
+        *,
+        expected_revision: int | None = None,
+    ) -> TaskCheckpoint:
+        """
+        Persist checkpoint with revision compare-and-set.
+
+        Create: ``expected_revision=None`` when no checkpoint exists for the stream.
+        Update: ``expected_revision=N`` succeeds only when canonical revision is ``N``.
+        """
         ...
 
 

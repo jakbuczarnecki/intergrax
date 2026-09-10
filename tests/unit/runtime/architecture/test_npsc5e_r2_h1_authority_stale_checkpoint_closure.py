@@ -87,6 +87,15 @@ def _paused_checkpoint(
     )
 
 
+def _save_next(
+    store: SQLiteTaskCheckpointStore,
+    checkpoint: TaskCheckpoint,
+    *,
+    base: TaskCheckpoint,
+) -> TaskCheckpoint:
+    return store.save(checkpoint, expected_revision=base.revision)
+
+
 def _resume_task(
     checkpoint: TaskCheckpoint,
     *,
@@ -254,9 +263,11 @@ def test_same_timestamp_different_revision_blocked(tmp_path: Path) -> None:
             "created_at_utc": "2026-09-09T12:00:00+00:00",
         },
     )
-    newer = store.save(newer)
+    newer = _save_next(store, newer, base=older)
     result = validate_checkpoint_not_stale(older, newer)
     assert result.eligibility is CheckpointResumeEligibility.REJECT_STALE
+    assert older.revision == 1
+    assert newer.revision == 2
     assert older.store_sequence is not None
     assert newer.store_sequence is not None
     assert older.store_sequence < newer.store_sequence
@@ -276,7 +287,7 @@ def test_missing_timestamp_uses_store_sequence_not_accidental_allow(tmp_path: Pa
             "progress_message": "later",
         },
     )
-    newer = store.save(newer)
+    newer = _save_next(store, newer, base=older)
     result = validate_checkpoint_not_stale(older, store.get_latest(older.task_id, _TENANT))
     assert result.eligibility is CheckpointResumeEligibility.REJECT_STALE
 
@@ -290,13 +301,15 @@ def test_latest_identical_checkpoint_allowed() -> None:
 def test_stale_checkpoint_token_blocked(tmp_path: Path) -> None:
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "stale-token.db")
     older = store.save(_paused_checkpoint(checkpoint_id="ckpt_old", resume_token="rt-old"))
-    newer = store.save(
+    newer = _save_next(
+        store,
         _paused_checkpoint(
             task_id=older.task_id,
             checkpoint_id="ckpt_new",
             resume_token="rt-new",
             created_at_utc="2026-09-09T13:00:00+00:00",
         ),
+        base=older,
     )
     task = _resume_task(older)
     task.options.long_running.resume_token = older.resume_token
@@ -311,19 +324,21 @@ def test_stale_checkpoint_token_blocked(tmp_path: Path) -> None:
 def test_newer_checkpoint_wins(tmp_path: Path) -> None:
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "newer-wins.db")
     older = store.save(_paused_checkpoint(checkpoint_id="ckpt_old"))
-    newer = store.save(
+    newer = _save_next(
+        store,
         _paused_checkpoint(
             task_id=older.task_id,
             checkpoint_id="ckpt_new",
             created_at_utc="2026-09-09T14:00:00+00:00",
         ),
+        base=older,
     )
     latest = store.get_latest(older.task_id, _TENANT)
     assert latest is not None
     assert latest.checkpoint_id == newer.checkpoint_id
 
 
-def test_stale_write_race_rowid_ordering_wins(tmp_path: Path) -> None:
+def test_stale_write_race_logical_revision_ordering_wins(tmp_path: Path) -> None:
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "stale-write.db")
     first = store.save(
         _paused_checkpoint(
@@ -331,16 +346,20 @@ def test_stale_write_race_rowid_ordering_wins(tmp_path: Path) -> None:
             created_at_utc="2026-09-09T14:00:00+00:00",
         ),
     )
-    second = store.save(
+    second = _save_next(
+        store,
         _paused_checkpoint(
             task_id=first.task_id,
             checkpoint_id="ckpt_second",
             created_at_utc="2026-09-09T10:00:00+00:00",
         ),
+        base=first,
     )
     latest = store.get_latest(first.task_id, _TENANT)
     assert latest is not None
     assert latest.checkpoint_id == second.checkpoint_id
+    assert first.revision == 1
+    assert second.revision == 2
     assert second.store_sequence is not None
     assert first.store_sequence is not None
     assert second.store_sequence > first.store_sequence

@@ -129,6 +129,7 @@ class LongRunningCoordinator:
         else:
             task.execution_authority = None
         task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
+        task.runtime.orchestration.checkpoint_revision = checkpoint.revision
         task.runtime.orchestration.resume_token = checkpoint.resume_token
         task.runtime.orchestration.progress_message = checkpoint.progress_message
         if checkpoint.runtime is not None:
@@ -164,13 +165,17 @@ class LongRunningCoordinator:
             resume_token=existing_token,
             runtime=runtime,
         )
-        store.save(checkpoint)
-        task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
-        task.runtime.orchestration.resume_token = checkpoint.resume_token
-        task.runtime.orchestration.progress_message = progress_message or checkpoint.progress_message
+        saved = store.save(
+            checkpoint,
+            expected_revision=task.runtime.orchestration.checkpoint_revision,
+        )
+        task.runtime.orchestration.checkpoint_id = saved.checkpoint_id
+        task.runtime.orchestration.checkpoint_revision = saved.revision
+        task.runtime.orchestration.resume_token = saved.resume_token
+        task.runtime.orchestration.progress_message = progress_message or saved.progress_message
         apply_runtime_checkpoint_to_task(task, runtime)
         task.sync_metadata()
-        return checkpoint
+        return saved
 
     @staticmethod
     async def notify_progress(

@@ -220,10 +220,13 @@ Checkpoint resume does not mint `AttemptId` and does not reset attempt lifecycle
 
 ### Stale checkpoint semantics
 
-- Canonical checkpoint ordering key: SQLite append-only `store_sequence` (`rowid`); `get_latest` orders `rowid DESC`.
-- `created_at_utc` is auxiliary only; equal/missing timestamps resolve via `store_sequence`, not accidental allow.
+- Canonical checkpoint ordering key: durable logical `checkpoint_revision` per `(tenant_id, task_id)` stream; `get_latest` / `get_by_token` order `checkpoint_revision DESC`.
+- `store_sequence` / SQLite `rowid` is physical persistence sequence only — not canonical logical version.
+- `created_at_utc` is auxiliary metadata only; timestamps cannot determine canonical checkpoint state.
+- `TaskCheckpointPersistence.save(..., expected_revision=N)` performs atomic compare-and-set: successor revision `N+1` commits only when canonical revision is `N`.
+- A checkpoint writer based on superseded logical revision cannot commit a new canonical checkpoint revision (`StaleCheckpointWriteError`).
 - Superseded checkpoint vs store `get_latest`: `REJECT_STALE`
-- Store remains append-only; newer durable sequence wins; stale late-writer timestamps cannot clobber canonical latest
+- Store remains append-only history; canonical latest follows validated revision chain; stale late-writer physical insert order cannot resurrect old state
 
 ### Duplicate / concurrent resume
 

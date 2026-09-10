@@ -233,25 +233,27 @@ def test_malformed_checkpoint_missing_runtime_blocked() -> None:
 
 
 def test_stale_checkpoint_blocked() -> None:
-    older = _paused_checkpoint()
-    newer = _paused_checkpoint(task_id=older.task_id)
-    newer = newer.model_copy(update={"created_at_utc": "2026-09-09T13:00:00+00:00"})
+    older = _paused_checkpoint().model_copy(update={"revision": 1})
+    newer = _paused_checkpoint(task_id=older.task_id).model_copy(
+        update={"revision": 2, "created_at_utc": "2026-09-09T13:00:00+00:00"},
+    )
     result = validate_checkpoint_not_stale(older, newer)
     assert result.eligibility is CheckpointResumeEligibility.REJECT_STALE
 
 
 def test_newer_checkpoint_wins(tmp_path: Path) -> None:
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "newer.db")
-    older = _paused_checkpoint()
-    store.save(older)
-    newer = older.model_copy(
-        update={
-            "checkpoint_id": "ckpt_newer",
-            "created_at_utc": "2026-09-09T14:00:00+00:00",
-            "progress_message": "step 2",
-        },
+    older = store.save(_paused_checkpoint())
+    newer = store.save(
+        older.model_copy(
+            update={
+                "checkpoint_id": "ckpt_newer",
+                "created_at_utc": "2026-09-09T14:00:00+00:00",
+                "progress_message": "step 2",
+            },
+        ),
+        expected_revision=older.revision,
     )
-    store.save(newer)
     latest = store.get_latest(older.task_id, _TENANT)
     assert latest is not None
     assert latest.checkpoint_id == "ckpt_newer"
