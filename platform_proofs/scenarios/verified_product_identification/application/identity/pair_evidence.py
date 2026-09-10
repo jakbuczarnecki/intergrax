@@ -35,13 +35,6 @@ from platform_proofs.scenarios.verified_product_identification.application.ident
     structured_normalization_rule,
 )
 
-_STRONG_IDENTIFIER_TYPES: tuple[ProductIdentifierType, ...] = (
-    ProductIdentifierType.GTIN,
-    ProductIdentifierType.MPN,
-    ProductIdentifierType.SKU,
-    ProductIdentifierType.PRODUCT_ID,
-)
-
 
 @dataclass(frozen=True, slots=True)
 class OfferPairIdentityAssessment:
@@ -82,8 +75,7 @@ def assess_offer_pair(
             key=source_ref_sort_key,
         )
     )
-    left_ref, right_ref = ordered_refs
-    left_is_first = left_profile.source_ref == left_ref
+    left_is_first = left_profile.source_ref == ordered_refs[0]
     left_data = left_profile if left_is_first else right_profile
     right_data = right_profile if left_is_first else left_profile
     left_candidate = left_fused if left_is_first else right_fused
@@ -92,13 +84,28 @@ def assess_offer_pair(
     evidence_items: list[IdentityEvidence] = []
     contradiction_items: list[IdentityContradiction] = []
 
-    _assess_identifiers(
+    _assess_gtin_identifiers(
         left_data,
         right_data,
         ordered_refs=ordered_refs,
         evidence_items=evidence_items,
         contradiction_items=contradiction_items,
     )
+    _assess_mpn_identifiers(
+        left_data,
+        right_data,
+        ordered_refs=ordered_refs,
+        evidence_items=evidence_items,
+        contradiction_items=contradiction_items,
+    )
+    _assess_source_local_sku_identifiers(
+        left_data,
+        right_data,
+        ordered_refs=ordered_refs,
+        evidence_items=evidence_items,
+        contradiction_items=contradiction_items,
+    )
+
     _assess_brand(
         left_data,
         right_data,
@@ -134,18 +141,19 @@ def pair_has_grouping_eligibility(
     left_profile: SourceOfferIdentityProfile,
     right_profile: SourceOfferIdentityProfile,
 ) -> bool:
-    """Discrete eligibility — strong identifier, MPN+brand, or multiple structured matches."""
+    """Discrete eligibility — global GTIN, MPN+brand, or multiple structured matches."""
 
     if assessment.has_contradiction:
         return False
 
-    strong_identifiers = [
+    strong_global_identifiers = [
         item
         for item in assessment.evidence
         if item.evidence_type is IdentityEvidenceType.EXACT_IDENTIFIER_MATCH
         and item.strength_class is IdentityEvidenceStrengthClass.STRONG
+        and item.identifier_type is ProductIdentifierType.GTIN
     ]
-    if strong_identifiers:
+    if strong_global_identifiers:
         return True
 
     has_mpn_match = any(
@@ -174,7 +182,7 @@ def pair_has_grouping_eligibility(
     return len(unique_keys) >= 2
 
 
-def _assess_identifiers(
+def _assess_gtin_identifiers(
     left_profile: SourceOfferIdentityProfile,
     right_profile: SourceOfferIdentityProfile,
     *,
@@ -182,69 +190,215 @@ def _assess_identifiers(
     evidence_items: list[IdentityEvidence],
     contradiction_items: list[IdentityContradiction],
 ) -> None:
-    for identifier_type in _STRONG_IDENTIFIER_TYPES:
-        left_values = left_profile.identifiers_by_type(identifier_type)
-        right_values = right_profile.identifiers_by_type(identifier_type)
-        if not left_values and not right_values:
-            continue
-        if not left_values or not right_values:
-            continue
+    left_values = left_profile.identifiers_by_type(ProductIdentifierType.GTIN)
+    right_values = right_profile.identifiers_by_type(ProductIdentifierType.GTIN)
+    explicit_values = _explicit_both_sides_identifier_values(left_values, right_values)
+    if explicit_values is None:
+        return
 
-        left_set = {item.normalized_value for item in left_values}
-        right_set = {item.normalized_value for item in right_values}
-        intersection = left_set.intersection(right_set)
-        if intersection:
-            matched_value = sorted(intersection)[0]
-            left_field = _first_field_for_value(left_values, matched_value)
-            right_field = _first_field_for_value(right_values, matched_value)
-            evidence_type = (
-                IdentityEvidenceType.MODEL_NUMBER_MATCH
-                if identifier_type is ProductIdentifierType.MPN
-                else IdentityEvidenceType.EXACT_IDENTIFIER_MATCH
-            )
-            evidence_items.append(
-                IdentityEvidence(
-                    evidence_type=evidence_type,
-                    source_refs=ordered_refs,
-                    attribute_key=identifier_type.value,
-                    normalized_value=matched_value,
-                    strength_class=IdentityEvidenceStrengthClass.STRONG,
-                    identifier_type=identifier_type,
-                    provenance=IdentityEvidenceProvenance(
-                        left_source_ref=ordered_refs[0],
-                        right_source_ref=ordered_refs[1],
-                        source_field=f"{left_field}|{right_field}",
-                        normalization_rule=identifier_normalization_rule(),
-                    ),
-                )
-            )
-            continue
+    left_set, right_set = explicit_values
+    intersection = left_set.intersection(right_set)
+    if intersection:
+        matched_value = sorted(intersection)[0]
+        _append_identifier_match_evidence(
+            identifier_type=ProductIdentifierType.GTIN,
+            matched_value=matched_value,
+            left_values=left_values,
+            right_values=right_values,
+            ordered_refs=ordered_refs,
+            evidence_items=evidence_items,
+            evidence_type=IdentityEvidenceType.EXACT_IDENTIFIER_MATCH,
+        )
+        return
 
-        left_value = sorted(left_set)[0]
-        right_value = sorted(right_set)[0]
-        left_field = _first_field_for_value(left_values, left_value)
-        right_field = _first_field_for_value(right_values, right_value)
-        contradiction_type = (
-            IdentityContradictionType.MODEL_NUMBER_CONFLICT
-            if identifier_type is ProductIdentifierType.MPN
-            else IdentityContradictionType.IDENTIFIER_CONFLICT
+    left_value = sorted(left_set)[0]
+    right_value = sorted(right_set)[0]
+    _append_identifier_conflict(
+        identifier_type=ProductIdentifierType.GTIN,
+        left_value=left_value,
+        right_value=right_value,
+        left_values=left_values,
+        right_values=right_values,
+        ordered_refs=ordered_refs,
+        contradiction_items=contradiction_items,
+        contradiction_type=IdentityContradictionType.IDENTIFIER_CONFLICT,
+    )
+
+
+def _assess_mpn_identifiers(
+    left_profile: SourceOfferIdentityProfile,
+    right_profile: SourceOfferIdentityProfile,
+    *,
+    ordered_refs: tuple[SourceRecordRef, SourceRecordRef],
+    evidence_items: list[IdentityEvidence],
+    contradiction_items: list[IdentityContradiction],
+) -> None:
+    left_values = left_profile.identifiers_by_type(ProductIdentifierType.MPN)
+    right_values = right_profile.identifiers_by_type(ProductIdentifierType.MPN)
+    explicit_values = _explicit_both_sides_identifier_values(left_values, right_values)
+    if explicit_values is None:
+        return
+
+    left_set, right_set = explicit_values
+    intersection = left_set.intersection(right_set)
+    if intersection:
+        matched_value = sorted(intersection)[0]
+        _append_identifier_match_evidence(
+            identifier_type=ProductIdentifierType.MPN,
+            matched_value=matched_value,
+            left_values=left_values,
+            right_values=right_values,
+            ordered_refs=ordered_refs,
+            evidence_items=evidence_items,
+            evidence_type=IdentityEvidenceType.MODEL_NUMBER_MATCH,
         )
-        contradiction_items.append(
-            IdentityContradiction(
-                contradiction_type=contradiction_type,
-                source_refs=ordered_refs,
-                attribute_key=identifier_type.value,
-                left_normalized_value=left_value,
-                right_normalized_value=right_value,
-                identifier_type=identifier_type,
-                provenance=IdentityEvidenceProvenance(
-                    left_source_ref=ordered_refs[0],
-                    right_source_ref=ordered_refs[1],
-                    source_field=f"{left_field}|{right_field}",
-                    normalization_rule=identifier_normalization_rule(),
-                ),
-            )
+        return
+
+    if not _manufacturer_context_compatible(left_profile, right_profile):
+        return
+
+    left_value = sorted(left_set)[0]
+    right_value = sorted(right_set)[0]
+    _append_identifier_conflict(
+        identifier_type=ProductIdentifierType.MPN,
+        left_value=left_value,
+        right_value=right_value,
+        left_values=left_values,
+        right_values=right_values,
+        ordered_refs=ordered_refs,
+        contradiction_items=contradiction_items,
+        contradiction_type=IdentityContradictionType.MODEL_NUMBER_CONFLICT,
+    )
+
+
+def _assess_source_local_sku_identifiers(
+    left_profile: SourceOfferIdentityProfile,
+    right_profile: SourceOfferIdentityProfile,
+    *,
+    ordered_refs: tuple[SourceRecordRef, SourceRecordRef],
+    evidence_items: list[IdentityEvidence],
+    contradiction_items: list[IdentityContradiction],
+) -> None:
+    if left_profile.source_ref.catalog_id != right_profile.source_ref.catalog_id:
+        return
+
+    left_values = left_profile.identifiers_by_type(ProductIdentifierType.SKU)
+    right_values = right_profile.identifiers_by_type(ProductIdentifierType.SKU)
+    explicit_values = _explicit_both_sides_identifier_values(left_values, right_values)
+    if explicit_values is None:
+        return
+
+    left_set, right_set = explicit_values
+    intersection = left_set.intersection(right_set)
+    if intersection:
+        matched_value = sorted(intersection)[0]
+        _append_identifier_match_evidence(
+            identifier_type=ProductIdentifierType.SKU,
+            matched_value=matched_value,
+            left_values=left_values,
+            right_values=right_values,
+            ordered_refs=ordered_refs,
+            evidence_items=evidence_items,
+            evidence_type=IdentityEvidenceType.EXACT_IDENTIFIER_MATCH,
         )
+        return
+
+    left_value = sorted(left_set)[0]
+    right_value = sorted(right_set)[0]
+    _append_identifier_conflict(
+        identifier_type=ProductIdentifierType.SKU,
+        left_value=left_value,
+        right_value=right_value,
+        left_values=left_values,
+        right_values=right_values,
+        ordered_refs=ordered_refs,
+        contradiction_items=contradiction_items,
+        contradiction_type=IdentityContradictionType.IDENTIFIER_CONFLICT,
+    )
+
+
+def _explicit_both_sides_identifier_values(
+    left_values: tuple[IdentityTypedIdentifier, ...],
+    right_values: tuple[IdentityTypedIdentifier, ...],
+) -> tuple[set[str], set[str]] | None:
+    if not left_values or not right_values:
+        return None
+    return (
+        {item.normalized_value for item in left_values},
+        {item.normalized_value for item in right_values},
+    )
+
+
+def _manufacturer_context_compatible(
+    left_profile: SourceOfferIdentityProfile,
+    right_profile: SourceOfferIdentityProfile,
+) -> bool:
+    left_brand = left_profile.brand
+    right_brand = right_profile.brand
+    if left_brand is None or right_brand is None:
+        return True
+    return left_brand == right_brand
+
+
+def _append_identifier_match_evidence(
+    *,
+    identifier_type: ProductIdentifierType,
+    matched_value: str,
+    left_values: tuple[IdentityTypedIdentifier, ...],
+    right_values: tuple[IdentityTypedIdentifier, ...],
+    ordered_refs: tuple[SourceRecordRef, SourceRecordRef],
+    evidence_items: list[IdentityEvidence],
+    evidence_type: IdentityEvidenceType,
+) -> None:
+    left_field = _first_field_for_value(left_values, matched_value)
+    right_field = _first_field_for_value(right_values, matched_value)
+    evidence_items.append(
+        IdentityEvidence(
+            evidence_type=evidence_type,
+            source_refs=ordered_refs,
+            attribute_key=identifier_type.value,
+            normalized_value=matched_value,
+            strength_class=IdentityEvidenceStrengthClass.STRONG,
+            identifier_type=identifier_type,
+            provenance=IdentityEvidenceProvenance(
+                left_source_ref=ordered_refs[0],
+                right_source_ref=ordered_refs[1],
+                source_field=f"{left_field}|{right_field}",
+                normalization_rule=identifier_normalization_rule(),
+            ),
+        )
+    )
+
+
+def _append_identifier_conflict(
+    *,
+    identifier_type: ProductIdentifierType,
+    left_value: str,
+    right_value: str,
+    left_values: tuple[IdentityTypedIdentifier, ...],
+    right_values: tuple[IdentityTypedIdentifier, ...],
+    ordered_refs: tuple[SourceRecordRef, SourceRecordRef],
+    contradiction_items: list[IdentityContradiction],
+    contradiction_type: IdentityContradictionType,
+) -> None:
+    left_field = _first_field_for_value(left_values, left_value)
+    right_field = _first_field_for_value(right_values, right_value)
+    contradiction_items.append(
+        IdentityContradiction(
+            contradiction_type=contradiction_type,
+            source_refs=ordered_refs,
+            attribute_key=identifier_type.value,
+            left_normalized_value=left_value,
+            right_normalized_value=right_value,
+            identifier_type=identifier_type,
+            provenance=IdentityEvidenceProvenance(
+                left_source_ref=ordered_refs[0],
+                right_source_ref=ordered_refs[1],
+                source_field=f"{left_field}|{right_field}",
+                normalization_rule=identifier_normalization_rule(),
+            ),
+        )
+    )
 
 
 def _assess_brand(

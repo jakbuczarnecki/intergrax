@@ -25,12 +25,27 @@ An offer candidate is one source offer. An identity hypothesis is one possible r
 - **Input:** `FusedOfferCandidateCollection` from 5C7 (bounded, default `max_candidates=20`).
 - **Output:** `ProductIdentityHypothesisCollection` with typed `IdentityEvidence` and `IdentityContradiction` rows.
 
+## Identifier scope (retrieval vs identity)
+
+Exact retrieval and cross-offer product identity use different comparability rules:
+
+| Identifier | Exact retrieval (5C6B) | Cross-offer identity scope |
+|---|---|---|
+| GTIN | supported | **global** — strong support or contradiction when both sides explicit |
+| MPN | supported | **manufacturer-scoped** — requires compatible brand/manufacturer context |
+| SKU | supported | **source-local** — never compared across catalogs; same-catalog only |
+| PRODUCT_ID | supported | **source-local / conservative** — excluded from cross-catalog identity unless an explicit namespace contract exists (none in VPI today) |
+
+**Invariant:** an identifier used for exact lookup is not automatically globally comparable for product identity.
+
+Missing identifier values on one or both sides are **unknown**, not conflicting — especially for source-local families where absence of intersection must not imply contradiction across catalogs.
+
 ## Evidence model
 
 Evidence is typed and provenance-bearing:
 
-- `EXACT_IDENTIFIER_MATCH` — GTIN / SKU / product_id intersection (strong)
-- `MODEL_NUMBER_MATCH` — normalized MPN intersection (strong)
+- `EXACT_IDENTIFIER_MATCH` — global GTIN intersection, or same-catalog SKU intersection (strong)
+- `MODEL_NUMBER_MATCH` — normalized MPN intersection with manufacturer context (strong; grouping still requires compatible brand)
 - `BRAND_MATCH` — normalized brand equality when both sides present (strong)
 - `STRUCTURED_ATTRIBUTE_MATCH` — same canonical key + normalized value (strong)
 - `TITLE_TOKEN_SUPPORT` — lexical channel recall context only (weak)
@@ -60,9 +75,11 @@ Canonical strategy: `DeterministicEvidenceIdentityHypothesisStrategy`.
 
 Eligible strong support (discrete rules):
 
-1. matching strong identifier, or
+1. matching global GTIN, or
 2. matching MPN + compatible brand (match or missing brand), or
 3. two or more matching structured identity attributes.
+
+Source-local identifier mismatch (SKU / PRODUCT_ID across catalogs) does **not** block valid GTIN or manufacturer-scoped MPN grouping.
 
 ## Hypothesis identity
 

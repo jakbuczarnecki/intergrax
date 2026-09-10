@@ -45,14 +45,19 @@ from platform_proofs.scenarios.verified_product_identification.application.ident
 pytestmark = pytest.mark.unit
 
 CATALOG_ID = "catalog-alpha"
+CATALOG_BETA = "catalog-beta"
 OFFER_A = ProductOfferId("offer-a")
 OFFER_B = ProductOfferId("offer-b")
 OFFER_C = ProductOfferId("offer-c")
 OFFER_D = ProductOfferId("offer-d")
 
 
-def _source_ref(offer_id: ProductOfferId) -> SourceRecordRef:
-    return SourceRecordRef(offer_id=offer_id, catalog_id=CATALOG_ID)
+def _source_ref(
+    offer_id: ProductOfferId,
+    *,
+    catalog_id: str = CATALOG_ID,
+) -> SourceRecordRef:
+    return SourceRecordRef(offer_id=offer_id, catalog_id=catalog_id)
 
 
 def _wdc_payload(
@@ -61,6 +66,8 @@ def _wdc_payload(
     brand: str | None = None,
     mpn: str | None = None,
     gtin: str | None = None,
+    sku: str | None = None,
+    product_id: str | None = None,
     capacity: str | None = None,
     color: str | None = None,
 ) -> str:
@@ -72,6 +79,10 @@ def _wdc_payload(
         identifiers.append({"mpn": mpn})
     if gtin is not None:
         identifiers.append({"/gtin13": gtin})
+    if sku is not None:
+        identifiers.append({"sku": sku})
+    if product_id is not None:
+        identifiers.append({"productId": product_id})
     if identifiers:
         payload["identifiers"] = identifiers
     key_value_pairs: dict[str, str] = {}
@@ -103,12 +114,13 @@ def _fused(
     *,
     fused_rank: int,
     channels: tuple[RetrievalChannel, ...] = (),
+    catalog_id: str = CATALOG_ID,
 ) -> FusedOfferCandidate:
     evidence = tuple(_channel_evidence(channel) for channel in channels)
     if not evidence:
         evidence = (_channel_evidence(RetrievalChannel.EXACT),)
     return FusedOfferCandidate(
-        source_ref=_source_ref(offer_id),
+        source_ref=_source_ref(offer_id, catalog_id=catalog_id),
         offer_id=offer_id,
         fused_rank=fused_rank,
         fusion_score=float(len(evidence)) / 61.0,
@@ -695,3 +707,331 @@ def test_golden_fixture_samsung_ssd_hypotheses() -> None:
         if ref_c in item.source_refs
     ]
     assert cross_contradictions
+
+
+def test_same_gtin_across_catalogs_supports_grouping() -> None:
+    ref_a = _source_ref(OFFER_A, catalog_id=CATALOG_ID)
+    ref_b = _source_ref(OFFER_B, catalog_id=CATALOG_BETA)
+    gtin = "8806096660507"
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value, gtin=gtin),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, gtin=gtin),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0, catalog_id=CATALOG_ID),
+                    _fused(OFFER_B, fused_rank=1, catalog_id=CATALOG_BETA),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 1
+
+
+def test_conflicting_gtin_across_catalogs_records_contradiction() -> None:
+    ref_a = _source_ref(OFFER_A, catalog_id=CATALOG_ID)
+    ref_b = _source_ref(OFFER_B, catalog_id=CATALOG_BETA)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value, gtin="8806096660507"),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, gtin="0123456789012"),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0, catalog_id=CATALOG_ID),
+                    _fused(OFFER_B, fused_rank=1, catalog_id=CATALOG_BETA),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 2
+    assert any(
+        item.contradiction_type is IdentityContradictionType.IDENTIFIER_CONFLICT
+        for hypothesis in result.hypotheses
+        for item in hypothesis.contradictions
+    )
+
+
+def test_different_mpn_same_brand_records_model_conflict() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value, brand="Samsung", mpn="MZ-V9P2T0"),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, brand="Samsung", mpn="MZ-V9P1T0"),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0),
+                    _fused(OFFER_B, fused_rank=1),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 2
+    assert any(
+        item.contradiction_type is IdentityContradictionType.MODEL_NUMBER_CONFLICT
+        for hypothesis in result.hypotheses
+        for item in hypothesis.contradictions
+    )
+
+
+def test_same_sku_across_catalogs_does_not_support_grouping() -> None:
+    ref_a = _source_ref(OFFER_A, catalog_id=CATALOG_ID)
+    ref_b = _source_ref(OFFER_B, catalog_id=CATALOG_BETA)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value, sku="RETAIL-001"),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, sku="RETAIL-001"),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0, catalog_id=CATALOG_ID),
+                    _fused(OFFER_B, fused_rank=1, catalog_id=CATALOG_BETA),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 2
+    assert not any(
+        item.evidence_type is IdentityEvidenceType.EXACT_IDENTIFIER_MATCH
+        for hypothesis in result.hypotheses
+        for item in hypothesis.evidence
+    )
+
+
+def test_different_sku_across_catalogs_does_not_contradict() -> None:
+    ref_a = _source_ref(OFFER_A, catalog_id=CATALOG_ID)
+    ref_b = _source_ref(OFFER_B, catalog_id=CATALOG_BETA)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value, sku="RETAIL-001"),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, sku="RETAIL-999"),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0, catalog_id=CATALOG_ID),
+                    _fused(OFFER_B, fused_rank=1, catalog_id=CATALOG_BETA),
+                )
+            ),
+        )
+    )
+    assert not any(
+        item.contradiction_type is IdentityContradictionType.IDENTIFIER_CONFLICT
+        for hypothesis in result.hypotheses
+        for item in hypothesis.contradictions
+    )
+
+
+def test_same_product_id_across_catalogs_does_not_support_grouping() -> None:
+    ref_a = _source_ref(OFFER_A, catalog_id=CATALOG_ID)
+    ref_b = _source_ref(OFFER_B, catalog_id=CATALOG_BETA)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value, product_id="pid-100"),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, product_id="pid-100"),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0, catalog_id=CATALOG_ID),
+                    _fused(OFFER_B, fused_rank=1, catalog_id=CATALOG_BETA),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 2
+    assert not any(
+        item.evidence_type is IdentityEvidenceType.EXACT_IDENTIFIER_MATCH
+        for hypothesis in result.hypotheses
+        for item in hypothesis.evidence
+    )
+
+
+def test_different_product_id_across_catalogs_does_not_contradict() -> None:
+    ref_a = _source_ref(OFFER_A, catalog_id=CATALOG_ID)
+    ref_b = _source_ref(OFFER_B, catalog_id=CATALOG_BETA)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value, product_id="pid-100"),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, product_id="pid-200"),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0, catalog_id=CATALOG_ID),
+                    _fused(OFFER_B, fused_rank=1, catalog_id=CATALOG_BETA),
+                )
+            ),
+        )
+    )
+    assert not any(
+        item.contradiction_type is IdentityContradictionType.IDENTIFIER_CONFLICT
+        for hypothesis in result.hypotheses
+        for item in hypothesis.contradictions
+    )
+
+
+def test_same_sku_with_vector_similarity_does_not_force_merge() -> None:
+    ref_a = _source_ref(OFFER_A, catalog_id=CATALOG_ID)
+    ref_b = _source_ref(OFFER_B, catalog_id=CATALOG_BETA)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value, sku="RETAIL-001"),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, sku="RETAIL-001"),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(
+                        OFFER_A,
+                        fused_rank=0,
+                        channels=(RetrievalChannel.VECTOR,),
+                        catalog_id=CATALOG_ID,
+                    ),
+                    _fused(
+                        OFFER_B,
+                        fused_rank=1,
+                        channels=(RetrievalChannel.VECTOR,),
+                        catalog_id=CATALOG_BETA,
+                    ),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 2
+
+
+def test_gtin_support_not_cancelled_by_cross_catalog_sku_mismatch() -> None:
+    ref_a = _source_ref(OFFER_A, catalog_id=CATALOG_ID)
+    ref_b = _source_ref(OFFER_B, catalog_id=CATALOG_BETA)
+    gtin = "8806096660507"
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value, gtin=gtin, sku="SKU-A"),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, gtin=gtin, sku="SKU-B"),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0, catalog_id=CATALOG_ID),
+                    _fused(OFFER_B, fused_rank=1, catalog_id=CATALOG_BETA),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 1
+
+
+def test_different_retailer_skus_groupable_via_gtin() -> None:
+    ref_a = _source_ref(OFFER_A, catalog_id=CATALOG_ID)
+    ref_b = _source_ref(OFFER_B, catalog_id=CATALOG_BETA)
+    gtin = "8806096660507"
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(
+                offer_id=OFFER_A.value,
+                gtin=gtin,
+                sku="RETAILER-A-SKU",
+            ),
+            ref_b: _wdc_payload(
+                offer_id=OFFER_B.value,
+                gtin=gtin,
+                sku="RETAILER-B-SKU",
+            ),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0, catalog_id=CATALOG_ID),
+                    _fused(OFFER_B, fused_rank=1, catalog_id=CATALOG_BETA),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 1
+
+
+def test_different_retailer_skus_groupable_via_mpn_and_brand() -> None:
+    ref_a = _source_ref(OFFER_A, catalog_id=CATALOG_ID)
+    ref_b = _source_ref(OFFER_B, catalog_id=CATALOG_BETA)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(
+                offer_id=OFFER_A.value,
+                brand="Samsung",
+                mpn="MZ-V9P2T0",
+                sku="RETAILER-A-SKU",
+            ),
+            ref_b: _wdc_payload(
+                offer_id=OFFER_B.value,
+                brand="Samsung",
+                mpn="MZ-V9P2T0",
+                sku="RETAILER-B-SKU",
+            ),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0, catalog_id=CATALOG_ID),
+                    _fused(OFFER_B, fused_rank=1, catalog_id=CATALOG_BETA),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 1
+
+
+def test_missing_identifiers_remain_unknown_not_conflicting() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, gtin="8806096660507"),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0),
+                    _fused(OFFER_B, fused_rank=1),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 2
+    assert not any(
+        item.contradiction_type is IdentityContradictionType.IDENTIFIER_CONFLICT
+        for hypothesis in result.hypotheses
+        for item in hypothesis.contradictions
+    )
