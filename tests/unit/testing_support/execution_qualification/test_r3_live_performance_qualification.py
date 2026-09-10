@@ -84,16 +84,16 @@ def _record_measured_run(
             "sum_child_duration_seconds": measured.performance.sum_child_duration_seconds,
             "max_child_duration_seconds": measured.performance.max_child_duration_seconds,
             "observed_overlap_ratio": measured.performance.observed_overlap_ratio,
-            "artifact_root": measured.performance.artifact_root,
+            "artifact_root": str(measured.performance.artifact_root),
         },
         "suite_rows": [
             {
                 "suite_id": row.suite_id,
                 "display_label": row.display_label,
-                "status": row.status,
-                "outcome_kind": row.outcome_kind,
+                "status": row.status.value,
+                "outcome_kind": row.outcome_kind.value,
                 "duration_seconds": row.duration_seconds,
-                "log_path": row.log_path,
+                "log_path": str(row.log_path),
                 "child_duration_share": row.child_duration_share,
             }
             for row in rows
@@ -102,7 +102,10 @@ def _record_measured_run(
     _write_evidence(f"{prefix}-summary.txt", summary)
     _write_evidence(f"{prefix}-suites.md", table)
     _write_evidence(f"{prefix}-bottleneck.md", bottleneck)
-    _write_evidence(f"{prefix}-evidence.json", json.dumps(payload, indent=2, sort_keys=True))
+    _write_evidence(
+        f"{prefix}-evidence.json",
+        json.dumps(payload, indent=2, sort_keys=True, allow_nan=False),
+    )
 
 
 @pytest.mark.parametrize("max_parallel", [1, 2, 3, 4])

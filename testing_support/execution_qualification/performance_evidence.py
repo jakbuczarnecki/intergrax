@@ -23,8 +23,8 @@ def format_suite_timing_table(rows: tuple[QualificationSuiteTimingRow, ...]) -> 
             else "n/a"
         )
         lines.append(
-            f"| {row.display_label} | {row.duration_seconds:.2f} | {row.status} | "
-            f"{row.outcome_kind} | {share} |"
+            f"| {row.display_label} | {row.duration_seconds:.2f} | {row.status.value} | "
+            f"{row.outcome_kind.value} | {share} |"
         )
     return "\n".join(lines)
 
@@ -40,7 +40,7 @@ def format_performance_summary(snapshot: QualificationPerformanceSnapshot) -> st
             f"sum_child_duration_seconds={snapshot.sum_child_duration_seconds:.2f}",
             f"max_child_duration_seconds={snapshot.max_child_duration_seconds:.2f}",
             f"observed_overlap_ratio={snapshot.observed_overlap_ratio:.3f}",
-            f"artifact_root={snapshot.artifact_root}",
+            f"artifact_root={snapshot.artifact_root!s}",
         ]
     )
 

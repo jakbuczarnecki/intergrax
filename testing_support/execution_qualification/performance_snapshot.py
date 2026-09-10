@@ -4,26 +4,45 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 from testing_support.execution_qualification.contracts import (
     ExecutionQualificationRunResult,
     ExecutionQualificationSuiteResult,
     QualificationRunStatus,
+    QualificationSuiteOutcomeKind,
+    QualificationSuiteStatus,
 )
 from testing_support.execution_qualification.frozen_pytest_adapter import AdaptedMandatorySuite
+
+
+def _require_finite_non_negative(name: str, value: float) -> None:
+    if not math.isfinite(value):
+        raise ValueError(f"{name} must be finite")
+    if value < 0:
+        raise ValueError(f"{name} must be non-negative")
 
 
 @dataclass(frozen=True, slots=True)
 class QualificationSuiteTimingRow:
     suite_id: str
     display_label: str
-    status: str
-    outcome_kind: str
+    status: QualificationSuiteStatus
+    outcome_kind: QualificationSuiteOutcomeKind
     duration_seconds: float
-    log_path: str
+    log_path: Path
     child_duration_share: float | None
+
+    def __post_init__(self) -> None:
+        _require_finite_non_negative("duration_seconds", self.duration_seconds)
+        if self.child_duration_share is not None:
+            if not math.isfinite(self.child_duration_share):
+                raise ValueError("child_duration_share must be finite")
+            if self.child_duration_share < 0:
+                raise ValueError("child_duration_share must be non-negative")
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,21 +57,30 @@ class QualificationPerformanceSnapshot:
     sum_child_duration_seconds: float
     max_child_duration_seconds: float
     observed_overlap_ratio: float
-    artifact_root: str
+    artifact_root: Path
 
     def __post_init__(self) -> None:
-        if self.wall_duration_seconds < 0:
-            raise ValueError("wall_duration_seconds must be non-negative")
-        if self.sum_child_duration_seconds < 0:
-            raise ValueError("sum_child_duration_seconds must be non-negative")
-        if self.max_child_duration_seconds < 0:
-            raise ValueError("max_child_duration_seconds must be non-negative")
+        _require_finite_non_negative("wall_duration_seconds", self.wall_duration_seconds)
+        _require_finite_non_negative(
+            "sum_child_duration_seconds",
+            self.sum_child_duration_seconds,
+        )
+        _require_finite_non_negative(
+            "max_child_duration_seconds",
+            self.max_child_duration_seconds,
+        )
+        _require_finite_non_negative(
+            "observed_overlap_ratio",
+            self.observed_overlap_ratio,
+        )
         if self.max_parallel < 1:
             raise ValueError("max_parallel must be >= 1")
         if self.suite_count < 1:
             raise ValueError("suite_count must be >= 1")
-        if self.observed_overlap_ratio < 0:
-            raise ValueError("observed_overlap_ratio must be non-negative")
+        if self.max_child_duration_seconds > self.sum_child_duration_seconds:
+            raise ValueError(
+                "max_child_duration_seconds must not exceed sum_child_duration_seconds"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,10 +122,10 @@ def build_suite_timing_rows(
             QualificationSuiteTimingRow(
                 suite_id=suite_id,
                 display_label=label,
-                status=suite_result.status.value,
-                outcome_kind=suite_result.outcome_kind.value,
+                status=suite_result.status,
+                outcome_kind=suite_result.outcome_kind,
                 duration_seconds=suite_result.duration_seconds,
-                log_path=str(suite_result.log_path),
+                log_path=suite_result.log_path,
                 child_duration_share=share,
             )
         )
@@ -114,8 +142,12 @@ def compute_observed_overlap_ratio(
     sum_child_duration_seconds: float,
     wall_duration_seconds: float,
 ) -> float:
+    if sum_child_duration_seconds == 0 and wall_duration_seconds == 0:
+        return 0.0
     if wall_duration_seconds <= 0:
-        return 0.0 if sum_child_duration_seconds <= 0 else float("inf")
+        raise ValueError(
+            "wall_duration_seconds must be positive when child work duration is non-zero"
+        )
     return sum_child_duration_seconds / wall_duration_seconds
 
 
@@ -124,7 +156,7 @@ def build_performance_snapshot(
     *,
     wall_duration_seconds: float,
     max_parallel: int,
-    artifact_root: str,
+    artifact_root: Path,
 ) -> QualificationPerformanceSnapshot:
     durations = tuple(row.duration_seconds for row in result.suite_results)
     sum_child = sum(durations)
@@ -148,7 +180,7 @@ def attach_performance_snapshot(
     *,
     wall_duration_seconds: float,
     max_parallel: int,
-    artifact_root: str,
+    artifact_root: Path,
 ) -> ExecutionQualificationMeasuredRun:
     performance = build_performance_snapshot(
         result,

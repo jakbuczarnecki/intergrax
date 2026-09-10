@@ -95,7 +95,7 @@ class QualificationCoordinator:
             result,
             wall_duration_seconds=wall_duration,
             max_parallel=config.max_parallel,
-            artifact_root=str(config.run_artifact_root),
+            artifact_root=config.run_artifact_root,
         )
 
     def _run_inner(

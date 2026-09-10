@@ -18,8 +18,12 @@ from testing_support.execution_qualification.contracts import (
     QualificationSuiteOutcomeKind,
     QualificationSuiteStatus,
 )
-from testing_support.execution_qualification.coordinator import validate_and_run_measured
+from testing_support.execution_qualification.coordinator import (
+    QualificationCoordinator,
+    validate_and_run_measured,
+)
 from testing_support.execution_qualification.performance_snapshot import (
+    QualificationPerformanceSnapshot,
     build_performance_snapshot,
     build_suite_timing_rows,
     compute_observed_overlap_ratio,
@@ -36,6 +40,17 @@ from tests.unit.testing_support.execution_qualification.fake_executor import (
 
 def test_compute_observed_overlap_ratio_serial_equivalent() -> None:
     assert compute_observed_overlap_ratio(100.0, 100.0) == 1.0
+
+
+def test_compute_observed_overlap_ratio_both_zero() -> None:
+    assert compute_observed_overlap_ratio(0.0, 0.0) == 0.0
+
+
+def test_compute_observed_overlap_ratio_rejects_non_positive_wall_with_child_work() -> None:
+    with pytest.raises(ValueError, match="wall_duration_seconds must be positive"):
+        compute_observed_overlap_ratio(10.0, 0.0)
+    with pytest.raises(ValueError, match="wall_duration_seconds must be positive"):
+        compute_observed_overlap_ratio(10.0, -1.0)
 
 
 def test_compute_observed_overlap_ratio_with_parallel_child_work() -> None:
@@ -71,13 +86,14 @@ def test_build_performance_snapshot_fields() -> None:
         result,
         wall_duration_seconds=80.0,
         max_parallel=2,
-        artifact_root="build/qualification/run-1",
+        artifact_root=Path("build/qualification/run-1"),
     )
     assert snapshot.sum_child_duration_seconds == 100.0
     assert snapshot.max_child_duration_seconds == 70.0
     assert snapshot.observed_overlap_ratio == 1.25
     assert snapshot.wall_duration_seconds == 80.0
     assert snapshot.suite_count == 2
+    assert isinstance(snapshot.artifact_root, Path)
 
 
 def test_suite_timing_rows_manifest_order_and_shares() -> None:
@@ -124,6 +140,61 @@ def test_suite_timing_rows_manifest_order_and_shares() -> None:
     assert rows[1].duration_seconds == 30.0
     assert rows[0].child_duration_share == pytest.approx(0.25)
     assert rows[1].child_duration_share == pytest.approx(0.75)
+    assert rows[0].status is QualificationSuiteStatus.PASS
+    assert rows[0].outcome_kind is QualificationSuiteOutcomeKind.COMPLETED
+    assert isinstance(rows[0].log_path, Path)
+
+
+def _minimal_snapshot(**overrides: float) -> QualificationPerformanceSnapshot:
+    base = dict(
+        run_id="run",
+        run_status=QualificationRunStatus.PASS,
+        max_parallel=2,
+        suite_count=1,
+        wall_duration_seconds=10.0,
+        sum_child_duration_seconds=10.0,
+        max_child_duration_seconds=10.0,
+        observed_overlap_ratio=1.0,
+        artifact_root=Path("build/run"),
+    )
+    base.update(overrides)
+    return QualificationPerformanceSnapshot(**base)
+
+
+def test_performance_snapshot_rejects_non_finite_wall() -> None:
+    with pytest.raises(ValueError, match="wall_duration_seconds must be finite"):
+        _minimal_snapshot(wall_duration_seconds=float("nan"))
+    with pytest.raises(ValueError, match="wall_duration_seconds must be finite"):
+        _minimal_snapshot(wall_duration_seconds=float("inf"))
+
+
+def test_performance_snapshot_rejects_non_finite_child_sum() -> None:
+    with pytest.raises(ValueError, match="sum_child_duration_seconds must be finite"):
+        _minimal_snapshot(sum_child_duration_seconds=float("nan"))
+
+
+def test_performance_snapshot_rejects_non_finite_overlap() -> None:
+    with pytest.raises(ValueError, match="observed_overlap_ratio must be finite"):
+        _minimal_snapshot(observed_overlap_ratio=float("inf"))
+
+
+def test_qualification_coordinator_run_returns_execution_qualification_run_result(
+    repo_root: Path,
+) -> None:
+    manifest = QualificationRunManifest(
+        suites=(QualificationSuite(suite_id="only", pytest_arguments=("x",)),),
+    )
+    config = QualificationRunConfig(
+        repo_root=repo_root,
+        max_parallel=1,
+        run_artifact_root=repo_root / "build" / "qualification" / "r3-run-compat",
+        suite_timeout_seconds=60.0,
+        run_id="r3-run-compat",
+    )
+    result = QualificationCoordinator(
+        executor=FakeQualificationSuiteExecutor({}),
+    ).run(manifest, config)
+    assert isinstance(result, ExecutionQualificationRunResult)
 
 
 def test_max_parallel_two_demonstrates_overlap_with_fake_parallel_work(

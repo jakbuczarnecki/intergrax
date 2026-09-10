@@ -134,7 +134,7 @@ Observed full-matrix wall **892.31 s** ≈ parallel overlap of the two dominant 
 | Item | Change |
 | --- | --- |
 | Wall-clock measurement | `QualificationCoordinator.run_measured` + `validate_and_run_measured` |
-| Performance snapshot | `QualificationPerformanceSnapshot`, suite timing rows, overlap ratio |
+| Performance snapshot | `QualificationPerformanceSnapshot` (`Path` artifact root; finite non-negative metrics), `QualificationSuiteTimingRow` (`QualificationSuiteStatus`, `QualificationSuiteOutcomeKind`, `Path` log path), overlap ratio |
 | Evidence Markdown/JSON | `performance_evidence.py`; opt-in live tests |
 | Scheduler | **Unchanged** (no starvation evidence) |
 | `max_parallel` production constant | **Unchanged (`2`)** — full-matrix `max_parallel=3` wall improvement **2.7%** vs `max_parallel=2` (below 10% qualification threshold) |
