@@ -30,8 +30,11 @@ class _LocalRootCapacityState:
 
     async def release_one(self) -> None:
         async with self._condition:
-            if self._active > 0:
-                self._active -= 1
+            if self._active <= 0:
+                raise RuntimeError(
+                    "root execution capacity release without matching acquisition"
+                )
+            self._active -= 1
             self._condition.notify()
 
     async def acquire_reject(self) -> None:
@@ -57,17 +60,34 @@ class _LocalExecutionCapacityPermit:
         self._released = False
         self._release_guard = asyncio.Lock()
 
+    async def _await_release_task(self, release_task: asyncio.Task[None]) -> None:
+        while not release_task.done():
+            try:
+                await asyncio.shield(release_task)
+            except asyncio.CancelledError:
+                continue
+        if release_task.cancelled():
+            raise RuntimeError("invariant: capacity release task cancelled")
+        exc = release_task.exception()
+        if exc is not None:
+            raise exc
+
     async def release(self) -> None:
         async with self._release_guard:
             if self._released:
                 return
-            slot_returned = False
+            release_task = asyncio.create_task(
+                self._capacity_state.release_one(),
+            )
+            cancelled = False
             try:
-                await asyncio.shield(self._capacity_state.release_one())
-                slot_returned = True
-            finally:
-                if slot_returned:
-                    self._released = True
+                await asyncio.shield(release_task)
+            except asyncio.CancelledError:
+                cancelled = True
+            await self._await_release_task(release_task)
+            self._released = True
+            if cancelled:
+                raise asyncio.CancelledError()
 
 
 class LocalExecutionCapacityAdmission(ExecutionCapacityAdmissionPort):
