@@ -15,7 +15,13 @@ from platform_proofs.scenarios.verified_product_identification.application.contr
     StructuredAttributeConstraint,
     StructuredConstraintOperator,
 )
+from platform_proofs.scenarios.verified_product_identification.application.contracts.source_identity_fact import (
+    SourceIdentityFact,
+    SourceIdentityFactKind,
+    SourceIdentityFactProvenance,
+)
 from platform_proofs.scenarios.verified_product_identification.application.domain import (
+    ProductIdentifier,
     ProductIdentifierType,
     ProductOfferId,
     RetrievalChannel,
@@ -139,11 +145,38 @@ def _contradiction(
     )
 
 
+def _fact(
+    source_ref: SourceRecordRef,
+    *,
+    attribute_key: str,
+    normalized_value: str,
+    identifier_type: ProductIdentifierType | None = None,
+) -> SourceIdentityFact:
+    kind = (
+        SourceIdentityFactKind.IDENTIFIER
+        if identifier_type is not None
+        else SourceIdentityFactKind.STRUCTURED_ATTRIBUTE
+    )
+    return SourceIdentityFact(
+        source_ref=source_ref,
+        fact_kind=kind,
+        attribute_key=attribute_key,
+        normalized_value=normalized_value,
+        identifier_type=identifier_type,
+        provenance=SourceIdentityFactProvenance(
+            source_field=f"test|{attribute_key}",
+            normalization_rule="test/v1",
+            source_value=normalized_value,
+        ),
+    )
+
+
 def _hypothesis(
     member_refs: tuple[SourceRecordRef, ...],
     *,
     evidence: tuple[IdentityEvidence, ...] = (),
     contradictions: tuple[IdentityContradiction, ...] = (),
+    source_identity_facts: tuple[SourceIdentityFact, ...] | None = None,
 ) -> ProductIdentityHypothesis:
     ordered_refs = tuple(sorted(member_refs, key=source_ref_sort_key))
     members = tuple(
@@ -159,6 +192,7 @@ def _hypothesis(
         members=members,
         evidence=evidence,
         contradictions=contradictions,
+        source_identity_facts=source_identity_facts or (),
     )
 
 
@@ -236,6 +270,242 @@ def _mpn_hypothesis(
             )
         )
     return _hypothesis((ref_a, ref_b), evidence=tuple(evidence))
+
+
+def _singleton_gtin_hypothesis(
+    gtin: str,
+    *,
+    capacity: str | None = None,
+    interface: str | None = None,
+    offer: ProductOfferId = OFFER_A,
+) -> ProductIdentityHypothesis:
+    ref = _source_ref(offer)
+    facts: list[SourceIdentityFact] = [
+        _fact(ref, attribute_key="gtin", normalized_value=gtin, identifier_type=ProductIdentifierType.GTIN),
+    ]
+    if capacity is not None:
+        facts.append(_fact(ref, attribute_key="capacity", normalized_value=capacity))
+    if interface is not None:
+        facts.append(_fact(ref, attribute_key="interface", normalized_value=interface))
+    return _hypothesis((ref,), source_identity_facts=tuple(facts))
+
+
+def test_golden_singleton_gtin_direct_verified() -> None:
+    query = ProductIdentificationQueryContext(
+        requested_identifiers=(
+            ProductIdentifier(
+                identifier_type=ProductIdentifierType.GTIN,
+                value="8806096660507",
+            ),
+        ),
+        required_constraints=(
+            _constraint("capacity", "2TB"),
+            _constraint("interface", "NVMe"),
+        ),
+    )
+    hypothesis = _singleton_gtin_hypothesis(
+        "8806096660507",
+        capacity="2TB",
+        interface="NVMe",
+    )
+    decision = _verify(_ranked(hypothesis), query)
+    assert decision.outcome is ProductIdentificationOutcome.VERIFIED
+
+
+def test_golden_false_uniqueness_supported_plus_incomplete() -> None:
+    ref_a, ref_b = _source_ref(OFFER_A), _source_ref(OFFER_B)
+    ref_c, ref_d = _source_ref(OFFER_C), _source_ref(OFFER_D)
+    h1 = _mpn_hypothesis("MZ-V9P2T0", capacity="2TB", interface="NVMe", refs=(ref_a, ref_b))
+    h2 = _hypothesis(
+        (ref_c, ref_d),
+        evidence=(
+            _evidence(
+                ref_c,
+                ref_d,
+                evidence_type=IdentityEvidenceType.MODEL_NUMBER_MATCH,
+                attribute_key="mpn",
+                normalized_value="MZ-V9P2T0",
+                identifier_type=ProductIdentifierType.MPN,
+            ),
+            _evidence(
+                ref_c,
+                ref_d,
+                evidence_type=IdentityEvidenceType.STRUCTURED_ATTRIBUTE_MATCH,
+                attribute_key="capacity",
+                normalized_value="2TB",
+            ),
+        ),
+    )
+    query = ProductIdentificationQueryContext(
+        required_constraints=(
+            _constraint("capacity", "2TB"),
+            _constraint("interface", "NVMe"),
+        )
+    )
+    decision = _verify(_ranked(h1, h2), query)
+    assert decision.outcome is ProductIdentificationOutcome.INSUFFICIENT_INFORMATION
+    assert decision.decision_reason_code is ProductIdentificationDecisionReasonCode.UNRESOLVED_COMPETING_IDENTITY
+
+
+def test_ambiguous_does_not_fabricate_variant_attribute() -> None:
+    h1 = _mpn_hypothesis("MZ-V9P2T0", capacity="2TB", interface="NVMe")
+    h2 = _mpn_hypothesis(
+        "MZ-V9P2T0B",
+        capacity="2TB",
+        interface="NVMe",
+        refs=(_source_ref(OFFER_C), _source_ref(OFFER_D)),
+    )
+    decision = _verify(
+        _ranked(h1, h2),
+        ProductIdentificationQueryContext(
+            required_constraints=(
+                _constraint("capacity", "2TB"),
+                _constraint("interface", "NVMe"),
+            )
+        ),
+    )
+    assert decision.outcome is ProductIdentificationOutcome.AMBIGUOUS
+    assert all(item.attribute_name != "variant" for item in decision.missing_requirements)
+
+
+def test_requested_gtin_contradiction() -> None:
+    ref = _source_ref(OFFER_A)
+    hypothesis = _hypothesis(
+        (ref,),
+        source_identity_facts=(
+            _fact(
+                ref,
+                attribute_key="gtin",
+                normalized_value="8806096660507",
+                identifier_type=ProductIdentifierType.GTIN,
+            ),
+        ),
+    )
+    decision = _verify(
+        _ranked(hypothesis),
+        ProductIdentificationQueryContext(
+            requested_identifiers=(
+                ProductIdentifier(
+                    identifier_type=ProductIdentifierType.GTIN,
+                    value="8806096660506",
+                ),
+            ),
+        ),
+    )
+    assert decision.outcome is ProductIdentificationOutcome.NO_MATCH
+
+
+def test_requested_gtin_missing_incomplete() -> None:
+    ref = _source_ref(OFFER_A)
+    hypothesis = _hypothesis((ref,), source_identity_facts=())
+    decision = _verify(
+        _ranked(hypothesis),
+        ProductIdentificationQueryContext(
+            requested_identifiers=(
+                ProductIdentifier(
+                    identifier_type=ProductIdentifierType.GTIN,
+                    value="8806096660507",
+                ),
+            ),
+        ),
+    )
+    assert decision.outcome is ProductIdentificationOutcome.INSUFFICIENT_INFORMATION
+
+
+def test_singleton_direct_constraint_support() -> None:
+    ref = _source_ref(OFFER_A)
+    hypothesis = _hypothesis(
+        (ref,),
+        source_identity_facts=(
+            _fact(ref, attribute_key="capacity", normalized_value="2TB"),
+            _fact(
+                ref,
+                attribute_key="gtin",
+                normalized_value="8806096660507",
+                identifier_type=ProductIdentifierType.GTIN,
+            ),
+        ),
+    )
+    decision = _verify(
+        _ranked(hypothesis),
+        ProductIdentificationQueryContext(
+            requested_identifiers=(
+                ProductIdentifier(
+                    identifier_type=ProductIdentifierType.GTIN,
+                    value="8806096660507",
+                ),
+            ),
+            required_constraints=(_constraint("capacity", "2TB"),),
+        ),
+    )
+    assert decision.outcome is ProductIdentificationOutcome.VERIFIED
+
+
+def test_top_rank_incomplete_blocks_second_supported() -> None:
+    ref_a, ref_b = _source_ref(OFFER_A), _source_ref(OFFER_B)
+    ref_c, ref_d = _source_ref(OFFER_C), _source_ref(OFFER_D)
+    incomplete_top = _hypothesis(
+        (ref_a, ref_b),
+        evidence=(
+            _evidence(
+                ref_a,
+                ref_b,
+                evidence_type=IdentityEvidenceType.MODEL_NUMBER_MATCH,
+                attribute_key="mpn",
+                normalized_value="MZ-V9P2T0",
+                identifier_type=ProductIdentifierType.MPN,
+            ),
+            _evidence(
+                ref_a,
+                ref_b,
+                evidence_type=IdentityEvidenceType.STRUCTURED_ATTRIBUTE_MATCH,
+                attribute_key="capacity",
+                normalized_value="2TB",
+            ),
+        ),
+    )
+    supported_second = _mpn_hypothesis(
+        "MZ-V9P2T0",
+        capacity="2TB",
+        interface="NVMe",
+        refs=(ref_c, ref_d),
+    )
+    query = ProductIdentificationQueryContext(
+        required_constraints=(
+            _constraint("capacity", "2TB"),
+            _constraint("interface", "NVMe"),
+        )
+    )
+    decision = _verify(_ranked(incomplete_top, supported_second), query)
+    assert decision.outcome is ProductIdentificationOutcome.INSUFFICIENT_INFORMATION
+
+
+def test_mixed_contradicted_incomplete_not_no_match() -> None:
+    h1 = _mpn_hypothesis("A", capacity="1TB", interface="SATA")
+    h2 = _hypothesis(
+        (_source_ref(OFFER_C), _source_ref(OFFER_D)),
+        evidence=(
+            _evidence(
+                _source_ref(OFFER_C),
+                _source_ref(OFFER_D),
+                evidence_type=IdentityEvidenceType.MODEL_NUMBER_MATCH,
+                attribute_key="mpn",
+                normalized_value="B",
+                identifier_type=ProductIdentifierType.MPN,
+            ),
+        ),
+    )
+    decision = _verify(
+        _ranked(h1, h2),
+        ProductIdentificationQueryContext(
+            required_constraints=(
+                _constraint("capacity", "2TB"),
+                _constraint("interface", "NVMe"),
+            )
+        ),
+    )
+    assert decision.outcome is ProductIdentificationOutcome.INSUFFICIENT_INFORMATION
+    assert decision.outcome is not ProductIdentificationOutcome.NO_MATCH
 
 
 def test_golden_verified_samsung_990_pro() -> None:

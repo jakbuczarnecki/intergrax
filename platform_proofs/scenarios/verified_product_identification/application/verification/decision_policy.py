@@ -58,26 +58,25 @@ class DeterministicProductIdentificationDecisionPolicy:
                 empty_input_rejection_evidence=empty_input_rejection_evidence,
             )
 
-        viable = tuple(
-            row.hypothesis_id
-            for row in verification_rows
-            if row.eligible_for_verification
+        supported_ids = _hypothesis_ids_in_state(
+            verification_rows,
+            HypothesisVerificationState.SUPPORTED,
         )
         contradicted_all = bool(verification_rows) and all(
             row.verification_state is HypothesisVerificationState.CONTRADICTED
             for row in verification_rows
         )
 
-        if not viable and contradicted_all:
+        if not supported_ids and contradicted_all:
             return _no_match_decision(
                 evaluated_hypotheses=evaluated_hypotheses,
                 verification_rows=verification_rows,
                 reason=ProductIdentificationDecisionReasonCode.ALL_HYPOTHESES_CONTRADICTED,
             )
 
-        if len(viable) >= 2:
+        if len(supported_ids) >= 2:
             unresolved = _unresolved_distinguishing_requirements(
-                viable_ids=viable,
+                supported_ids=supported_ids,
                 evaluated_hypotheses=evaluated_hypotheses,
                 query_context=query_context,
             )
@@ -90,12 +89,22 @@ class DeterministicProductIdentificationDecisionPolicy:
                 decision_contradicted_requirements=(),
                 decision_contradictions=(),
                 missing_requirements=unresolved,
-                ambiguity_candidates=viable,
+                ambiguity_candidates=supported_ids,
                 decision_reason_code=ProductIdentificationDecisionReasonCode.MULTIPLE_VIABLE_IDENTITIES,
             )
 
-        if len(viable) == 1:
-            verified_id = viable[0]
+        if len(supported_ids) == 1:
+            if _has_unresolved_incomplete_competitors(
+                supported_id=supported_ids[0],
+                verification_rows=verification_rows,
+            ):
+                return _insufficient_decision(
+                    evaluated_hypotheses=evaluated_hypotheses,
+                    verification_rows=verification_rows,
+                    query_context=query_context,
+                    reason=ProductIdentificationDecisionReasonCode.UNRESOLVED_COMPETING_IDENTITY,
+                )
+            verified_id = supported_ids[0]
             verified_evaluated = _find_evaluated(evaluated_hypotheses, verified_id)
             row = _find_verification_row(verification_rows, verified_id)
             return ProductIdentificationDecision(
@@ -115,6 +124,7 @@ class DeterministicProductIdentificationDecisionPolicy:
             evaluated_hypotheses=evaluated_hypotheses,
             verification_rows=verification_rows,
             query_context=query_context,
+            reason=ProductIdentificationDecisionReasonCode.NO_VIABLE_HYPOTHESIS,
         )
 
 
@@ -194,21 +204,31 @@ def _insufficient_decision(
     evaluated_hypotheses: tuple[EvaluatedIdentityHypothesis, ...],
     verification_rows: tuple[IdentityHypothesisVerification, ...],
     query_context: ProductIdentificationQueryContext,
+    reason: ProductIdentificationDecisionReasonCode,
 ) -> ProductIdentificationDecision:
     missing: list[MissingRequirement] = []
     for row in verification_rows:
         missing.extend(row.missing_requirements)
     missing.extend(_missing_from_query_context(query_context))
 
-    reason = ProductIdentificationDecisionReasonCode.NO_VIABLE_HYPOTHESIS
-    if any(
-        row.verification_state is HypothesisVerificationState.INCOMPLETE
-        and row.missing_requirements
-        for row in verification_rows
-    ):
-        reason = ProductIdentificationDecisionReasonCode.MISSING_REQUIRED_CATALOG_EVIDENCE
-    if query_context.missing_user_distinguishing_requirements:
-        reason = ProductIdentificationDecisionReasonCode.MISSING_DISTINGUISHING_FACT
+    if reason is ProductIdentificationDecisionReasonCode.NO_VIABLE_HYPOTHESIS:
+        if any(
+            row.verification_state is HypothesisVerificationState.INCOMPLETE
+            and row.missing_requirements
+            for row in verification_rows
+        ):
+            reason = ProductIdentificationDecisionReasonCode.MISSING_REQUIRED_CATALOG_EVIDENCE
+        if query_context.missing_user_distinguishing_requirements:
+            reason = ProductIdentificationDecisionReasonCode.MISSING_DISTINGUISHING_FACT
+    if reason is ProductIdentificationDecisionReasonCode.UNRESOLVED_COMPETING_IDENTITY:
+        missing.append(
+            MissingRequirement(
+                attribute_name="competing_identity",
+                origin=MissingRequirementOrigin.CATALOG,
+                requirement_id="unresolved_competing_identity",
+            )
+        )
+
     if not missing:
         missing.append(
             MissingRequirement(
@@ -247,7 +267,7 @@ def _missing_from_query_context(
 
 def _unresolved_distinguishing_requirements(
     *,
-    viable_ids: tuple[str, ...],
+    supported_ids: tuple[str, ...],
     evaluated_hypotheses: tuple[EvaluatedIdentityHypothesis, ...],
     query_context: ProductIdentificationQueryContext,
 ) -> tuple[MissingRequirement, ...]:
@@ -256,10 +276,44 @@ def _unresolved_distinguishing_requirements(
         return user_missing
     return (
         MissingRequirement(
-            attribute_name="variant",
+            attribute_name="competing_identity",
             origin=MissingRequirementOrigin.CATALOG,
             requirement_id="unresolved_competing_identity",
         ),
+    )
+
+
+def _has_unresolved_incomplete_competitors(
+    *,
+    supported_id: str,
+    verification_rows: tuple[IdentityHypothesisVerification, ...],
+) -> bool:
+    for row in verification_rows:
+        if row.hypothesis_id == supported_id:
+            continue
+        if _is_unresolved_competing_identity(row):
+            return True
+    return False
+
+
+def _is_unresolved_competing_identity(row: IdentityHypothesisVerification) -> bool:
+    if row.verification_state is not HypothesisVerificationState.INCOMPLETE:
+        return False
+    if row.identity_evidence_sufficient:
+        return True
+    if row.supported_requirements:
+        return True
+    return False
+
+
+def _hypothesis_ids_in_state(
+    verification_rows: tuple[IdentityHypothesisVerification, ...],
+    state: HypothesisVerificationState,
+) -> tuple[str, ...]:
+    return tuple(
+        row.hypothesis_id
+        for row in verification_rows
+        if row.verification_state is state
     )
 
 

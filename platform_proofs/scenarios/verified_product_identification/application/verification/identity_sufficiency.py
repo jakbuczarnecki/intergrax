@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from platform_proofs.scenarios.verified_product_identification.application.contracts.identification_context import (
+    ProductIdentificationQueryContext,
+)
 from platform_proofs.scenarios.verified_product_identification.application.domain.identifiers import (
     ProductIdentifierIdentityScope,
     ProductIdentifierType,
@@ -15,22 +18,65 @@ from platform_proofs.scenarios.verified_product_identification.application.ident
 from platform_proofs.scenarios.verified_product_identification.application.identity_evaluation.contracts import (
     IdentityEvidenceProfile,
 )
+from platform_proofs.scenarios.verified_product_identification.application.verification.direct_source_evidence import (
+    direct_global_gtin_supported,
+    direct_manufacturer_mpn_present,
+    evaluate_requested_identifier,
+    facts_for_hypothesis,
+)
 
 
 def identity_evidence_materially_sufficient(
     hypothesis: ProductIdentityHypothesis,
     evidence_profile: IdentityEvidenceProfile,
+    query_context: ProductIdentificationQueryContext,
 ) -> bool:
-    if evidence_profile.global_gtin_pair_coverage.supported_pair_count > 0:
+    facts = facts_for_hypothesis(hypothesis)
+
+    requested_global = [
+        item
+        for item in query_context.requested_identifiers
+        if identity_scope_for_identifier_type(item.identifier_type)
+        is ProductIdentifierIdentityScope.GLOBAL
+    ]
+    requested_manufacturer = [
+        item
+        for item in query_context.requested_identifiers
+        if identity_scope_for_identifier_type(item.identifier_type)
+        is ProductIdentifierIdentityScope.MANUFACTURER_SCOPED
+    ]
+
+    if requested_global or requested_manufacturer:
+        for requested in query_context.requested_identifiers:
+            scope = identity_scope_for_identifier_type(requested.identifier_type)
+            if scope is ProductIdentifierIdentityScope.SOURCE_LOCAL:
+                continue
+            status, _, bad_row, _ = evaluate_requested_identifier(
+                requested=requested,
+                facts=facts,
+            )
+            if bad_row is not None or status in ("missing", "contradicted"):
+                return False
         return True
-    if evidence_profile.manufacturer_mpn_pair_coverage.supported_pair_count > 0:
-        return True
+
     if _has_strong_brand_only(hypothesis):
         return False
     if _has_only_weak_context(evidence_profile):
         return False
     if _has_source_local_identifier_only(hypothesis):
         return False
+
+    for requested in query_context.requested_identifiers:
+        if requested.identifier_type is ProductIdentifierType.GTIN:
+            if direct_global_gtin_supported(requested_gtin=requested, facts=facts):
+                return True
+
+    if evidence_profile.global_gtin_pair_coverage.supported_pair_count > 0:
+        return True
+    if evidence_profile.manufacturer_mpn_pair_coverage.supported_pair_count > 0:
+        return True
+    if direct_manufacturer_mpn_present(facts):
+        return True
     return False
 
 

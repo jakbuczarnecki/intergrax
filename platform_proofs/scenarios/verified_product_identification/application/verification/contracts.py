@@ -39,6 +39,7 @@ class ProductIdentificationDecisionReasonCode(StrEnum):
     ALL_HYPOTHESES_CONTRADICTED = "all_hypotheses_contradicted"
     REQUIRED_CONSTRAINT_CONFLICT = "required_constraint_conflict"
     NO_VIABLE_HYPOTHESIS = "no_viable_hypothesis"
+    UNRESOLVED_COMPETING_IDENTITY = "unresolved_competing_identity"
     EMPTY_INPUT_WITHOUT_REJECTION_EVIDENCE = "empty_input_without_rejection_evidence"
 
 

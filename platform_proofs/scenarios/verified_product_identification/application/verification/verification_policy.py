@@ -22,6 +22,10 @@ from platform_proofs.scenarios.verified_product_identification.application.verif
     MissingRequirement,
     VerifiedRequirementEvidence,
 )
+from platform_proofs.scenarios.verified_product_identification.application.verification.direct_source_evidence import (
+    evaluate_requested_identifier,
+    facts_for_hypothesis,
+)
 from platform_proofs.scenarios.verified_product_identification.application.verification.identity_sufficiency import (
     identity_evidence_materially_sufficient,
 )
@@ -46,10 +50,23 @@ class DeterministicIdentityVerificationPolicy:
     ) -> IdentityHypothesisVerification:
         hypothesis = evaluated.hypothesis
         blocking = evaluated.contradiction_evaluation.internal_blocking
+        facts = facts_for_hypothesis(hypothesis)
 
         supported: list[VerifiedRequirementEvidence] = []
         contradicted: list[ContradictedRequirementEvidence] = []
         missing: list[MissingRequirement] = []
+
+        for requested in query_context.requested_identifiers:
+            status, ok_row, bad_row, miss_row = evaluate_requested_identifier(
+                requested=requested,
+                facts=facts,
+            )
+            if status == "supported" and ok_row is not None:
+                supported.append(ok_row)
+            elif status == "contradicted" and bad_row is not None:
+                contradicted.append(bad_row)
+            elif status == "missing" and miss_row is not None:
+                missing.append(miss_row)
 
         for constraint in query_context.required_constraints:
             status, ok_row, bad_row, miss_row = evaluate_required_constraint(
@@ -80,6 +97,7 @@ class DeterministicIdentityVerificationPolicy:
         identity_ok = identity_evidence_materially_sufficient(
             hypothesis,
             evaluated.evidence_profile,
+            query_context,
         )
 
         if blocking or contradicted:

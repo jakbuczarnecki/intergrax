@@ -10,6 +10,9 @@ from platform_proofs.scenarios.verified_product_identification.application.contr
     StructuredAttributeConstraint,
     StructuredConstraintOperator,
 )
+from platform_proofs.scenarios.verified_product_identification.application.contracts.source_identity_fact import (
+    SourceIdentityFact,
+)
 from platform_proofs.scenarios.verified_product_identification.application.identity.contracts import (
     IdentityContradiction,
     IdentityContradictionType,
@@ -24,6 +27,10 @@ from platform_proofs.scenarios.verified_product_identification.application.verif
     MissingRequirement,
     VerifiedRequirementEvidence,
 )
+from platform_proofs.scenarios.verified_product_identification.application.verification.direct_source_evidence import (
+    facts_for_hypothesis,
+    structured_facts_for_attribute,
+)
 
 
 def evaluate_required_constraint(
@@ -37,6 +44,15 @@ def evaluate_required_constraint(
 ]:
     attribute_key = constraint.attribute_name.casefold()
     expected = constraint.value.strip()
+    facts = facts_for_hypothesis(hypothesis)
+    direct_facts = structured_facts_for_attribute(facts, attribute_key=attribute_key)
+    if direct_facts:
+        return _evaluate_required_from_direct_facts(
+            constraint=constraint,
+            expected=expected,
+            direct_facts=direct_facts,
+        )
+
     supporting, contradicting_values = _structured_values_for_attribute(
         hypothesis,
         attribute_key=attribute_key,
@@ -64,7 +80,7 @@ def evaluate_required_constraint(
             None,
             MissingRequirement(
                 attribute_name=constraint.attribute_name,
-                origin=_missing_origin_for_attribute(constraint.attribute_name),
+                origin=MissingRequirementOrigin.CATALOG,
                 requirement_id=f"required:{attribute_key}",
             ),
         )
@@ -121,7 +137,7 @@ def evaluate_required_constraint(
         None,
         MissingRequirement(
             attribute_name=constraint.attribute_name,
-            origin=_missing_origin_for_attribute(constraint.attribute_name),
+            origin=MissingRequirementOrigin.CATALOG,
             requirement_id=f"required:{attribute_key}",
         ),
     )
@@ -136,6 +152,27 @@ def evaluate_negative_constraint(
 ]:
     attribute_key = constraint.attribute_name.casefold()
     excluded = constraint.excluded_value.strip()
+    facts = facts_for_hypothesis(hypothesis)
+    direct_facts = structured_facts_for_attribute(facts, attribute_key=attribute_key)
+    if direct_facts:
+        for fact in direct_facts:
+            if _constraint_value_matches(
+                catalog_value=fact.normalized_value,
+                constraint_value=excluded,
+                operator=constraint.operator,
+            ):
+                return (
+                    ConstraintRequirementStatus.CONTRADICTED,
+                    ContradictedRequirementEvidence(
+                        attribute_name=constraint.attribute_name,
+                        expected_value=f"not:{excluded}",
+                        catalog_value=fact.normalized_value,
+                        contradicting_evidence=(),
+                        contradicting_contradictions=(),
+                    ),
+                )
+        return (ConstraintRequirementStatus.SUPPORTED, None)
+
     supporting, contradicting_values = _structured_values_for_attribute(
         hypothesis,
         attribute_key=attribute_key,
@@ -163,6 +200,53 @@ def evaluate_negative_constraint(
                 ),
             )
     return (ConstraintRequirementStatus.SUPPORTED, None)
+
+
+def _evaluate_required_from_direct_facts(
+    *,
+    constraint: StructuredAttributeConstraint,
+    expected: str,
+    direct_facts: tuple[SourceIdentityFact, ...],
+) -> tuple[
+    ConstraintRequirementStatus,
+    VerifiedRequirementEvidence | None,
+    ContradictedRequirementEvidence | None,
+    MissingRequirement | None,
+]:
+    matched = tuple(
+        fact
+        for fact in direct_facts
+        if _constraint_value_matches(
+            catalog_value=fact.normalized_value,
+            constraint_value=expected,
+            operator=constraint.operator,
+        )
+    )
+    if matched:
+        return (
+            ConstraintRequirementStatus.SUPPORTED,
+            VerifiedRequirementEvidence(
+                attribute_name=constraint.attribute_name,
+                expected_value=expected,
+                catalog_value=matched[0].normalized_value,
+                supporting_evidence=(),
+            ),
+            None,
+            None,
+        )
+    catalog_value = direct_facts[0].normalized_value
+    return (
+        ConstraintRequirementStatus.CONTRADICTED,
+        None,
+        ContradictedRequirementEvidence(
+            attribute_name=constraint.attribute_name,
+            expected_value=expected,
+            catalog_value=catalog_value,
+            contradicting_evidence=(),
+            contradicting_contradictions=(),
+        ),
+        None,
+    )
 
 
 def _structured_values_for_attribute(

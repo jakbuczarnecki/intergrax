@@ -15,6 +15,9 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
 from platform_proofs.scenarios.verified_product_identification.application.domain.source_identity import (
     source_ref_set_sha256,
 )
+from platform_proofs.scenarios.verified_product_identification.application.contracts.source_identity_fact import (
+    SourceIdentityFact,
+)
 from platform_proofs.scenarios.verified_product_identification.application.fusion.contracts import (
     FusedOfferCandidateCollection,
     OfferChannelEvidence,
@@ -139,6 +142,7 @@ class ProductIdentityHypothesis:
     members: tuple[IdentityHypothesisMember, ...]
     evidence: tuple[IdentityEvidence, ...]
     contradictions: tuple[IdentityContradiction, ...]
+    source_identity_facts: tuple[SourceIdentityFact, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.hypothesis_id.strip():
@@ -149,6 +153,8 @@ class ProductIdentityHypothesis:
             raise TypeError("evidence must be a tuple")
         if not isinstance(self.contradictions, tuple):
             raise TypeError("contradictions must be a tuple")
+        if not isinstance(self.source_identity_facts, tuple):
+            raise TypeError("source_identity_facts must be a tuple")
         member_refs = [member.source_ref for member in self.members]
         if len(set(member_refs)) != len(member_refs):
             raise ValueError("members must be unique by source_ref")

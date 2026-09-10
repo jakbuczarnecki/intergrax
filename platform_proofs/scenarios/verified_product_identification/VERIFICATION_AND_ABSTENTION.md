@@ -18,6 +18,17 @@
 | 5C9 identity evaluation | Which hypotheses deserve attention first; evidence/contradiction profile |
 | 5C10 verification | Whether one identity is uniquely defensible under request constraints |
 
+## Direct query-to-source evidence
+
+5C8 projects **`SourceIdentityFact`** rows onto each `ProductIdentityHypothesis` (`source_identity_facts`): one immutable fact per source offer (identifiers, structured attributes, brand) with `SourceRecordRef`, normalized value, and provenance.
+
+5C10 compares the user request to those facts:
+
+- `ProductIdentificationQueryContext.requested_identifiers` are operational (GTIN/MPN support, contradiction, or missing).
+- Required and negative constraints prefer direct per-offer facts; pairwise `IdentityEvidence` remains a fallback when facts were not projected.
+
+**Cross-offer pair evidence** (GTIN match between two offers) is **corroboration**, not a prerequisite for singleton verification. A single-offer hypothesis with matching requested GTIN and direct attribute facts can reach `VERIFIED` without internal pairs.
+
 ## Constraint semantics
 
 Each required hard constraint is classified **exactly one** of:
@@ -30,27 +41,29 @@ Negative constraints exclude values (e.g. user says not SATA; catalog shows SATA
 
 Soft preferences may influence upstream ranking and diagnostics but **never** prove identity.
 
-## `VERIFIED`
+## Unique defensible identity (`VERIFIED`)
 
-Exactly one hypothesis is materially viable:
+Exactly one hypothesis is in state **`SUPPORTED`**:
 
 - no internal **blocking** contradiction
 - all required constraints `SUPPORTED`
 - no violated negative constraints
-- identity evidence materially sufficient (GTIN/MPN authority from 5C8/5C9 — not lexical/vector/brand-only)
-- no competing viable identity remains
+- identity evidence materially sufficient (direct requested identifiers and/or authoritative pair corroboration — not lexical/vector/brand-only)
+- **every other hypothesis is materially eliminated (`CONTRADICTED`) or not an unresolved competing identity**
+
+An **`INCOMPLETE`** competitor that already shows partial identity support or satisfied required fields (but lacks a material discriminator) prevents `VERIFIED` → `INSUFFICIENT_INFORMATION` with `UNRESOLVED_COMPETING_IDENTITY`. Weak non-competing incompletes do not block a uniquely supported alternative.
 
 ## `AMBIGUOUS`
 
-At least two hypotheses are materially viable and evidence cannot distinguish them. **Not** score-margin ambiguity.
+At least two hypotheses are **`SUPPORTED`**. **Not** score-margin ambiguity. Unresolved multi-way identity uses typed `competing_identity` missing requirements — not a fabricated `variant` attribute.
 
 ## `INSUFFICIENT_INFORMATION`
 
-Required distinguishing knowledge is missing (user request and/or catalog fields). Distinct from rejection.
+Required distinguishing knowledge is missing (user request and/or catalog fields), or an unresolved competing identity remains. Distinct from rejection.
 
 ## `NO_MATCH`
 
-Positive rejection: every evaluated hypothesis is materially contradicted, or typed rejection evidence is supplied for an empty ranked set. Empty retrieval alone is **not** `NO_MATCH`.
+Positive rejection: every evaluated hypothesis is **`CONTRADICTED`**, or typed rejection evidence is supplied for an empty ranked set. A mix of `CONTRADICTED` and `INCOMPLETE` is **not** `NO_MATCH`. Empty retrieval alone is **not** `NO_MATCH`.
 
 ## Failures vs business outcomes
 
@@ -62,7 +75,7 @@ Deterministic rule policy only: no confidence scores, thresholds, weighted sums,
 
 ## Provenance
 
-Support and contradiction rows reference existing `IdentityEvidence` / `IdentityContradiction` provenance from 5C8/5C9.
+Support and contradiction decisions retain catalog provenance via `SourceIdentityFact` and, when used, existing `IdentityEvidence` / `IdentityContradiction` rows from 5C8/5C9.
 
 ## 5C11 handoff
 

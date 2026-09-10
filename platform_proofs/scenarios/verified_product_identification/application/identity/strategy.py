@@ -29,6 +29,9 @@ from platform_proofs.scenarios.verified_product_identification.application.ident
 from platform_proofs.scenarios.verified_product_identification.application.identity.profile import (
     SourceOfferIdentityProfile,
 )
+from platform_proofs.scenarios.verified_product_identification.application.identity.source_identity_facts import (
+    project_source_identity_facts,
+)
 
 
 class ProductIdentityHypothesisStrategy(Protocol):
@@ -83,6 +86,7 @@ class DeterministicEvidenceIdentityHypothesisStrategy:
                 candidates=candidate_by_ref,
                 pair_assessments=pair_assessments,
                 all_candidate_refs=tuple(candidate.source_ref for candidate in ordered_candidates),
+                profiles=profiles,
             )
             for group_refs in groups
         )
@@ -129,6 +133,7 @@ def _build_hypothesis(
     candidates: dict[SourceRecordRef, FusedOfferCandidate],
     pair_assessments: dict[tuple[SourceRecordRef, SourceRecordRef], OfferPairIdentityAssessment],
     all_candidate_refs: tuple[SourceRecordRef, ...],
+    profiles: dict[SourceRecordRef, SourceOfferIdentityProfile],
 ) -> ProductIdentityHypothesis:
     members = tuple(
         IdentityHypothesisMember(
@@ -161,6 +166,7 @@ def _build_hypothesis(
         members=members,
         evidence=_dedupe_evidence(evidence),
         contradictions=_dedupe_contradictions(contradictions),
+        source_identity_facts=project_source_identity_facts(member_refs, profiles),
     )
 
 
