@@ -12,23 +12,23 @@ HITL = human authority · 5E = recovery · 5F = evidence (owned elsewhere)
 
 ---
 
-## Proposed entry point (PROPOSED)
+## Maintainer entry point (CANONICAL)
 
-Single maintainer hub (future, not forced move in P0):
+Single maintainer hub — navigation and status only (`MAINTAINER_HUB`):
 
 ```text
-docs/project/maintainers/architecture/EXECUTION_ENGINE.md  (future)
+docs/project/maintainers/architecture/EXECUTION_ENGINE.md
 ├─ Execution Runtime      → UNIFIED_EXECUTION_RUNTIME.md
-├─ Governance & Authority → DECISION_APPROVAL_GOVERNANCE + NPSC-5D/5 docs
+├─ Governance & Authority → GOVERNED_EXECUTION.md + DECISION_APPROVAL_GOVERNANCE.md + NPSC-5D docs
 ├─ Nexus                  → NEXUS_EXECUTION_FLOW.md
 ├─ Child Execution        → UEA + NPSC-5B maintainers docs
 ├─ Multi-Agent            → NPSC_5_MULTI_AGENT_PRODUCTION_ARCHITECTURE.md
 ├─ Recovery               → NPSC_5E_RECOVERY_CHECKPOINT_RETRY_ARCHITECTURE.md
-├─ Evidence               → NPSC_5F_* (active parallel session — reference only)
-└─ Scale / Resilience     → ELASTIC_CAPACITY_AND_SCALING.md (platform)
+├─ Evidence               → NPSC_5F_* + OBSERVABILITY.md
+└─ Scale / Resilience     → ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md
 ```
 
-Do not create a god-document; hub links to canonical owners only.
+Hub links to canonical owners only; it does not own normative semantics (see hub §Purpose).
 
 ---
 
@@ -103,15 +103,30 @@ Do not create a god-document; hub links to canonical owners only.
 | --- | --- | --- |
 | `docs/project/architecture/OBSERVABILITY.md` | **CANONICAL** | Observability spine |
 | `docs/project/architecture/assets/fullsize/observability-evidence-spine.md` | **CANONICAL** (diagram asset) | Evidence spine diagram |
-| `docs/project/maintainers/architecture/NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md` | **FUTURE / PLANNED** (parallel session) | 5F active elsewhere — do not edit in P0 |
-| `docs/project/technical/platform/execution_evidence_*.md` | **FUTURE / PLANNED** | Implementation plans |
+| `docs/project/maintainers/architecture/NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md` | **CANONICAL** | 5F evidence plane; R1 **FROZEN / PASS**; R2 active |
+| `docs/project/maintainers/qualification/NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md` | **CANONICAL** (freeze) | 5F/R1 Final |
+| `docs/project/maintainers/qualification/NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md` | **ACTIVE** | R2 implemented; await R2 Final freeze |
+| `docs/project/technical/platform/execution_evidence_*.md` | **SUPPORTING** / **PLANNED** | Implementation plans where present |
+
+### Scale / resilience
+
+| Document | Classification | Rationale |
+| --- | --- | --- |
+| `docs/project/maintainers/architecture/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md` | **CANONICAL** | Maintainer scale/resilience architecture |
+| `docs/project/maintainers/qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_P0_INVENTORY.md` | **CANONICAL** (qual) | P0 inventory |
+| `docs/project/maintainers/qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W0_GUARDRAILS.md` | **CANONICAL** (qual) | W0 guardrails |
+| `docs/project/maintainers/qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md` | **CANONICAL** (qual) | W1 admission / deadline |
 
 ### Qualification acceleration (this initiative)
 
 | Document | Classification |
 | --- | --- |
+| `docs/project/maintainers/architecture/EXECUTION_ENGINE.md` | **CANONICAL** (`MAINTAINER_HUB`) |
 | `EXECUTION_CERTIFICATION_ACCELERATION_P0.md` | **CANONICAL** (P0 inventory) |
-| `EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md` | **PROPOSED** (R1) |
+| `EXECUTION_CERTIFICATION_ACCELERATION_R1.md` | **CANONICAL** (qual) — R1 **QUALIFIED** |
+| `EXECUTION_CERTIFICATION_ACCELERATION_R2.md` | **CANONICAL** (qual) — R2 **QUALIFIED** |
+| `EXECUTION_CERTIFICATION_ACCELERATION_R3.md` | **CANONICAL** (qual) — R3 **QUALIFIED** |
+| `EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md` | **CANONICAL** (supporting architecture) — **R3 QUALIFIED**; R3A ENV contract |
 
 ---
 
@@ -144,5 +159,6 @@ No **CONTRADICTORY** pair identified among current `docs/project/architecture` c
 
 ## Cross-links
 
+- Maintainer hub: [`EXECUTION_ENGINE.md`](EXECUTION_ENGINE.md)
 - Acceleration P0: [`EXECUTION_CERTIFICATION_ACCELERATION_P0.md`](../qualification/EXECUTION_CERTIFICATION_ACCELERATION_P0.md)
-- R1 architecture: [`EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md`](EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md)
+- Qualification acceleration architecture: [`EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md`](EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md)
