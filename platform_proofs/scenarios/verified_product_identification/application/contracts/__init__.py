@@ -4,6 +4,13 @@ from platform_proofs.scenarios.verified_product_identification.application.contr
     CatalogSearchFailure,
     CatalogSearchFailureKind,
 )
+from platform_proofs.scenarios.verified_product_identification.application.contracts.identification_context import (
+    HypothesisRejectionEvidence,
+    MissingDistinguishingRequirement,
+    MissingRequirementOrigin,
+    NegativeAttributeConstraint,
+    ProductIdentificationQueryContext,
+)
 from platform_proofs.scenarios.verified_product_identification.application.contracts.queries import (
     ExactIdentifierQuery,
     LexicalSearchQuery,
@@ -21,6 +28,11 @@ from platform_proofs.scenarios.verified_product_identification.application.contr
 )
 
 __all__ = (
+    "HypothesisRejectionEvidence",
+    "MissingDistinguishingRequirement",
+    "MissingRequirementOrigin",
+    "NegativeAttributeConstraint",
+    "ProductIdentificationQueryContext",
     "CatalogSearchFailure",
     "CatalogSearchFailureKind",
     "ExactIdentifierLookupResult",
