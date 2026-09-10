@@ -13,10 +13,10 @@ from intergrax.agents.persistence.compensation_queue_store import CompensationJo
 from intergrax.agents.persistence.compensation_tool_invoke_session import (
     bound_compensation_tool_invoke_session,
 )
-from intergrax.agents.persistence.declarative_tool_executor import (
-    CallableDeclarativeToolInvoker,
-    DeclarativeToolInvokeResult,
+from tests.unit.agents.persistence.compensation_execution_test_support import (
+    RecordingExecutionBoundDeclarativeToolInvoker,
 )
+from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvokeResult
 from intergrax.contracts.compensation_side_effect_execution import CompensationSideEffectInput
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
@@ -73,16 +73,17 @@ async def test_u2_compensation_tool_runs_under_active_execution_identity() -> No
         assert kwargs["idempotency_key"] == "comp:acp:u2"
         return DeclarativeToolInvokeResult(status="success")
 
+    invoker = RecordingExecutionBoundDeclarativeToolInvoker(_invoke)
     execution = build_runtime_compensation_side_effect_execution(
-        tool_session=bound_compensation_tool_invoke_session(
-            CallableDeclarativeToolInvoker(_invoke),
-        ),
+        tool_session=bound_compensation_tool_invoke_session(invoker),
         authority=ParentExecutionAuthority.unrestricted_root(),
     )
     work = _sample_input()
     result = await execution.execute(work)
     assert result.status == "success"
     assert observed_run_id == [work.run_id]
+    assert invoker.bound_run_id == work.run_id
+    assert invoker.bound_task_id == work.task_id
 
 
 @pytest.mark.asyncio
@@ -96,7 +97,7 @@ async def test_u2_authority_unknown_denies_before_tool_invoke() -> None:
 
     execution = build_runtime_compensation_side_effect_execution(
         tool_session=bound_compensation_tool_invoke_session(
-            CallableDeclarativeToolInvoker(_invoke),
+            RecordingExecutionBoundDeclarativeToolInvoker(_invoke),
         ),
         authority=ParentExecutionAuthority.unknown(),
     )
@@ -112,7 +113,7 @@ async def test_u2_governance_denial_surfaces_as_failed_claim_semantics() -> None
 
     execution = build_runtime_compensation_side_effect_execution(
         tool_session=bound_compensation_tool_invoke_session(
-            CallableDeclarativeToolInvoker(_invoke),
+            RecordingExecutionBoundDeclarativeToolInvoker(_invoke),
         ),
         authority=ParentExecutionAuthority.unrestricted_root(),
     )
@@ -143,7 +144,7 @@ async def test_u2_production_wiring_builds_admitted_execution_port() -> None:
 
     port = build_compensation_side_effect_execution(
         _NexusStub(),  # type: ignore[arg-type]
-        CallableDeclarativeToolInvoker(_invoke),
+        RecordingExecutionBoundDeclarativeToolInvoker(_invoke),
     )
     assert isinstance(port, CompensationSideEffectExecutionPort)
     work = _sample_input()
@@ -162,7 +163,7 @@ async def test_u2_lineage_preserves_parent_run_id() -> None:
 
     execution = build_runtime_compensation_side_effect_execution(
         tool_session=bound_compensation_tool_invoke_session(
-            CallableDeclarativeToolInvoker(_invoke),
+            RecordingExecutionBoundDeclarativeToolInvoker(_invoke),
         ),
         authority=ParentExecutionAuthority.unrestricted_root(),
     )

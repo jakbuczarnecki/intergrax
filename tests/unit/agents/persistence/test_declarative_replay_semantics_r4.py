@@ -358,6 +358,7 @@ async def test_r4_10_pcm_03_regression() -> None:
     from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
     from intergrax.contracts.side_effect import CompensationRequest
     from tests.unit.agents.persistence.compensation_execution_test_support import (
+        RecordingExecutionBoundDeclarativeToolInvoker,
         build_test_admitted_compensation_side_effect_execution,
     )
 
@@ -404,7 +405,7 @@ async def test_r4_10_pcm_03_regression() -> None:
         store,
         tenant_id=TENANT,
         side_effect_execution=build_test_admitted_compensation_side_effect_execution(
-            CallableDeclarativeToolInvoker(_counting_invoke),
+            RecordingExecutionBoundDeclarativeToolInvoker(_counting_invoke),
         ),
         owner_id="worker-2",
         limit=1,

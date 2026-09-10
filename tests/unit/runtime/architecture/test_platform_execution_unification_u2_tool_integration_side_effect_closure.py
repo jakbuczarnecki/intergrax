@@ -35,6 +35,13 @@ _COMPENSATION_SIDE_EFFECT_WIRING = (
     / "_shared"
     / "compensation_side_effect_wiring.py"
 )
+_CALLABLE_DECLARATIVE_INVOKER = (
+    _REPO_ROOT
+    / "intergrax"
+    / "agents"
+    / "persistence"
+    / "declarative_tool_executor.py"
+)
 _U2_COMPENSATION_CONTRACT = (
     _REPO_ROOT / "intergrax" / "contracts" / "compensation_side_effect_execution.py"
 )
@@ -117,3 +124,23 @@ def test_u2_compensation_wiring_requires_execution_bound_invoker() -> None:
     stripped = source.replace("ExecutionBoundDeclarativeToolInvoker", "")
     assert "DeclarativeToolInvoker" not in stripped
     assert "ExecutionBoundDeclarativeToolInvoker" in source
+
+
+def _class_method_names(tree: ast.Module, class_name: str) -> set[str]:
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            return {
+                child.name
+                for child in node.body
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef))
+            }
+    return set()
+
+
+def test_u2_callable_declarative_invoker_must_not_fake_execution_binding() -> None:
+    source = _CALLABLE_DECLARATIVE_INVOKER.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    methods = _class_method_names(tree, "CallableDeclarativeToolInvoker")
+    assert "bind_execution_identity" not in methods, (
+        "CallableDeclarativeToolInvoker must not implement fake execution-bound binding"
+    )

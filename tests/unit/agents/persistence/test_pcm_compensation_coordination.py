@@ -28,6 +28,7 @@ from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.contracts.side_effect import CompensationRequest
 from tests.unit.agents.persistence.compensation_execution_test_support import (
+    RecordingExecutionBoundDeclarativeToolInvoker,
     build_test_admitted_compensation_side_effect_execution,
 )
 
@@ -86,7 +87,7 @@ async def test_b2_second_worker_does_not_invoke() -> None:
         invoked.append(kwargs["tool_id"])
         return DeclarativeToolInvokeResult(status="success")
 
-    invoker = CallableDeclarativeToolInvoker(_invoke)
+    invoker = RecordingExecutionBoundDeclarativeToolInvoker(_invoke)
     store.claim_pending("tenant-a", "worker-a", lease_seconds=30, limit=1)
     await drain_pending_compensation_jobs(
         store,
@@ -122,7 +123,7 @@ async def test_a1_crash_after_compensation_effect_becomes_uncertain() -> None:
         invoked.append(kwargs["tool_id"])
         return DeclarativeToolInvokeResult(status="success")
 
-    invoker = CallableDeclarativeToolInvoker(_invoke)
+    invoker = RecordingExecutionBoundDeclarativeToolInvoker(_invoke)
     claim = store.claim_pending("tenant-a", "worker-a", lease_seconds=1, limit=1)[0]
     await invoker.invoke(
         tool_id=claim.job.request.compensation_tool_id,
@@ -290,7 +291,7 @@ async def test_b10_idempotency_key_is_not_ownership() -> None:
         store,
         tenant_id="tenant-a",
         side_effect_execution=build_test_admitted_compensation_side_effect_execution(
-            CallableDeclarativeToolInvoker(_invoke),
+            RecordingExecutionBoundDeclarativeToolInvoker(_invoke),
         ),
         owner_id="worker-b",
         limit=1,

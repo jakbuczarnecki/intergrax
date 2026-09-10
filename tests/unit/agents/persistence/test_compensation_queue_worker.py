@@ -5,13 +5,11 @@ import pytest
 from intergrax.agents.persistence.compensation_enqueue import build_compensation_idempotency_key
 from intergrax.agents.persistence.compensation_queue_store import CompensationJob, InMemoryCompensationQueueStore
 from intergrax.agents.persistence.compensation_queue_worker import drain_pending_compensation_jobs
-from intergrax.agents.persistence.declarative_tool_executor import (
-    CallableDeclarativeToolInvoker,
-    DeclarativeToolInvokeResult,
-)
+from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvokeResult
 from intergrax.contracts.side_effect import CompensationRequest
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from tests.unit.agents.persistence.compensation_execution_test_support import (
+    RecordingExecutionBoundDeclarativeToolInvoker,
     build_test_admitted_compensation_side_effect_execution,
 )
 
@@ -47,7 +45,7 @@ async def test_drain_pending_compensation_jobs_marks_completed() -> None:
         store,
         tenant_id="tenant-a",
         side_effect_execution=build_test_admitted_compensation_side_effect_execution(
-            CallableDeclarativeToolInvoker(_invoke),
+            RecordingExecutionBoundDeclarativeToolInvoker(_invoke),
         ),
     )
     assert invoked == ["email.recall"]
