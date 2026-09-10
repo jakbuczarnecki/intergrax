@@ -57,7 +57,11 @@ def test_r1_best_effort_classification_for_debug_spine() -> None:
     event = sample_runtime_event(tenant_id="t1").model_copy(
         update={"event_type": RuntimeEventType.TASK_PROGRESS, "phase": ExecutionPhase.STEP_EXECUTION},
     )
-    assert evidence_persistence_requirement(event) is EvidencePersistenceRequirement.BEST_EFFORT
+    event_id = mint_event_id()
+    while not should_persist_event(event.model_copy(update={"event_id": event_id})):
+        event_id = mint_event_id()
+    sampled = event.model_copy(update={"event_id": event_id})
+    assert evidence_persistence_requirement(sampled) is EvidencePersistenceRequirement.BEST_EFFORT
 
 
 def test_r1_not_persisted_when_sampling_skips() -> None:
@@ -100,8 +104,9 @@ def test_r1_tenant_resolution_matrix() -> None:
     with pytest.raises(EvidenceTenantRoutingMismatchError):
         resolve_event_tenant_id(event, "T2")
     assert resolve_event_tenant_id(event, None) == "T1"
-    assert resolve_event_tenant_id(sample_runtime_event(tenant_id=None), "T1") == "T1"
-    assert resolve_event_tenant_id(sample_runtime_event(tenant_id=None), None) == ""
+    no_tenant_event = sample_runtime_event(tenant_id="T1").model_copy(update={"tenant_id": None})
+    assert resolve_event_tenant_id(no_tenant_event, "T1") == "T1"
+    assert resolve_event_tenant_id(no_tenant_event, None) == ""
 
 
 def test_r1_same_event_id_different_routing_tenant_blocked() -> None:

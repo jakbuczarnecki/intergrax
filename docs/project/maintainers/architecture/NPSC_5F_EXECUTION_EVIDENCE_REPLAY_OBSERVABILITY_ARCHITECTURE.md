@@ -1,7 +1,8 @@
 # NPSC-5F — Execution Evidence, Replay & Observability Architecture
 
-> **Status:** P0 reconciliation (inventory + contracts; no new evidence framework)  
+> **Status:** NPSC-5F **ACTIVE** — P0 reconciled; **NPSC-5F/R1** implementation frozen at `455d3b21`; **R1 Final sign-off BLOCKED** (P0 parallel drift gate; see R1 Final qualification doc)  
 > **Frozen execution baseline:** NPSC-5E Final `fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7`  
+> **R1 qualification:** [`NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md)  
 > **Canonical domain doc:** [`docs/project/architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)  
 > **P0 qualification:** [`NPSC_5F_P0_EXECUTION_EVIDENCE_ARCHITECTURE_RECONCILIATION.md`](../qualification/NPSC_5F_P0_EXECUTION_EVIDENCE_ARCHITECTURE_RECONCILIATION.md)
 
@@ -174,7 +175,7 @@ See qualification doc for severity. Summary:
 
 ## Implementation roadmap (proposed)
 
-1. **5F/R1** — **Done:** durable evidence contract hardening (`evidence_durability.py`, bus fail-closed mandatory tier, tenant equality at `resolve_event_tenant_id` / store scope).
+1. **5F/R1** — **Implementation frozen** at `455d3b216f0ad56ea9cdf9db6e0f760b50063a81` (durable evidence contract hardening). **Final freeze:** pending P0 parallel-session drift gate reconciliation.
 2. **5F/R2** — Journal completeness, scoped ordering documentation/API (`is_complete` / pagination), gap detection.
 3. **5F/R3** — Governed export: align `journal_export` with `ObservabilityExportEnvelope`; remove raw payload bypass.
 4. **5F/R4** — Reconstruction quality model, as-of/bitemporal public query alignment (build on TRACE slices).
