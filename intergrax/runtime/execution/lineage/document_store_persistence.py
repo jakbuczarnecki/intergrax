@@ -15,6 +15,7 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageConfigurationError,
     ExecutionLineagePersistence,
     ExecutionLineageSealRecord,
+    ExecutionLineageSegmentPage,
     ExecutionLineageSegmentRecord,
 )
 from intergrax.integrations.contracts.document_store import (
@@ -252,6 +253,14 @@ class DocumentStoreExecutionLineagePersistence(ExecutionLineagePersistence):
         cursor: str | None = None,
     ) -> ExecutionLineageAdmissionPage:
         return self._logic.list_admissions_for_attempt(scope, limit, cursor=cursor)
+
+    def list_segments_for_attempt(
+        self,
+        scope: ExecutionLineageAttemptScope,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ExecutionLineageSegmentPage:
+        return self._logic.list_segments_for_attempt(scope, limit, cursor=cursor)
 
     def read_attempt_lineage_state(
         self,

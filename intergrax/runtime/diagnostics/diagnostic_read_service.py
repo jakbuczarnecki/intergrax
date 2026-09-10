@@ -6,12 +6,10 @@
 from __future__ import annotations
 
 from intergrax.runtime.diagnostics.diagnostic_assessment import (
-    DiagnosticAssessment,
     DiagnosticAssessmentBuilder,
     DiagnosticAssessmentIntegrityError,
 )
 from intergrax.runtime.diagnostics.diagnostic_read_models import (
-    DiagnosticGroupingProvenance,
     DiagnosticOccurrenceReadStatus,
     DiagnosticProblemDetail,
     DiagnosticProblemListResult,
@@ -20,6 +18,9 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticReadIntegrityError,
     DiagnosticReadUnavailableReason,
     grouping_provenance_from_problem_provenance,
+)
+from intergrax.runtime.diagnostics.diagnostic_lineage_projection import (
+    project_execution_lineage_view,
 )
 from intergrax.runtime.diagnostics.execution_reconstruction import (
     ExecutionReconstruction,
@@ -129,7 +130,9 @@ class DiagnosticReadService:
                 "persisted Problem tenant_id does not match lookup tenant scope",
             )
 
-        grouping_provenance = grouping_provenance_from_problem_provenance(problem.provenance)
+        grouping_provenance = grouping_provenance_from_problem_provenance(
+            problem.provenance
+        )
         occurrence_page = self._occurrence_persistence.query_occurrences(
             tenant_id=tenant_id,
             problem_id=problem_id,
@@ -203,7 +206,9 @@ def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:
         first_seen_at=problem.first_seen_at,
         last_seen_at=problem.last_seen_at,
         occurrence_count=problem.occurrence_count,
-        grouping_provenance=grouping_provenance_from_problem_provenance(problem.provenance),
+        grouping_provenance=grouping_provenance_from_problem_provenance(
+            problem.provenance
+        ),
         occurrence_aggregate_health=problem.occurrence_aggregate_health,
     )
 
@@ -263,6 +268,8 @@ def _reconstruct_occurrence_view(
     except ExecutionReconstructionIntegrityError as exc:
         raise DiagnosticReadIntegrityError(str(exc)) from exc
 
+    lineage_view = project_execution_lineage_view(reconstruction)
+
     if _is_execution_evidence_unavailable(reconstruction):
         return DiagnosticProblemOccurrenceView(
             subject_ref=subject_ref,
@@ -273,6 +280,7 @@ def _reconstruct_occurrence_view(
             read_status=DiagnosticOccurrenceReadStatus.UNAVAILABLE,
             assessment=None,
             unavailable_reason=DiagnosticReadUnavailableReason.EXECUTION_EVIDENCE_UNAVAILABLE,
+            execution_lineage=lineage_view,
         )
 
     try:
@@ -293,6 +301,7 @@ def _reconstruct_occurrence_view(
         read_status=DiagnosticOccurrenceReadStatus.AVAILABLE,
         assessment=assessment,
         unavailable_reason=None,
+        execution_lineage=lineage_view,
     )
 
 

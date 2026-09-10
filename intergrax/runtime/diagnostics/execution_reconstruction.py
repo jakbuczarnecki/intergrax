@@ -16,6 +16,14 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.contracts.execution_lineage import ExecutionLineageReader
+from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
+    ExecutionLineageCompleteness,
+    ExecutionLineageReadStatus,
+    ExecutionLineageReconstructionIntegrityError,
+    ReconstructedAttemptLineage,
+    reconstruct_attempt_lineage,
+)
 from intergrax.runtime.events.execution_position import PositionedRuntimeEvent
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
@@ -43,6 +51,7 @@ class ReconstructedAttempt:
     attempt_id: AttemptId
     causal_evidence: tuple[PlatformCausalEvidence, ...]
     positioned_events: tuple[PositionedRuntimeEvent, ...]
+    lineage: ReconstructedAttemptLineage | None = None
 
     @property
     def has_transport_evidence(self) -> bool:
@@ -85,22 +94,54 @@ class ExecutionReconstruction:
     def is_runtime_history_complete(self) -> bool:
         return self.runtime_history_completeness is RuntimeHistoryCompleteness.COMPLETE
 
+    @property
+    def has_lineage_evidence(self) -> bool:
+        return any(
+            attempt.lineage is not None
+            and attempt.lineage.read_status is ExecutionLineageReadStatus.AVAILABLE
+            for attempt in self.attempts
+        )
+
+    @property
+    def has_complete_lineage(self) -> bool:
+        return any(
+            attempt.lineage is not None
+            and attempt.lineage.completeness is ExecutionLineageCompleteness.COMPLETE
+            for attempt in self.attempts
+        )
+
+    @property
+    def has_partial_lineage(self) -> bool:
+        return any(
+            attempt.lineage is not None
+            and attempt.lineage.completeness is ExecutionLineageCompleteness.PARTIAL
+            for attempt in self.attempts
+        )
+
 
 class ExecutionReconstructor:
     """
     Platform-owned deterministic reconstruction from canonical persistence only.
 
     Depends on ``RuntimeEventPersistence`` (execution truth) and
-    ``CausalEvidencePersistence`` (relation truth). Does not write or cache.
+    ``CausalEvidencePersistence`` (relation truth). Optional
+    ``ExecutionLineageReader`` enriches forensic parent topology.
     """
 
     def __init__(
         self,
         runtime_events: RuntimeEventPersistence,
         causal_evidence: CausalEvidencePersistence,
+        execution_lineage: ExecutionLineageReader | None = None,
+        *,
+        initial_lineage_page_limit: int = 100,
+        max_lineage_records: int = 10_000,
     ) -> None:
         self._runtime_events = runtime_events
         self._causal_evidence = causal_evidence
+        self._execution_lineage = execution_lineage
+        self._initial_lineage_page_limit = initial_lineage_page_limit
+        self._max_lineage_records = max_lineage_records
 
     def reconstruct_execution(
         self,
@@ -147,7 +188,16 @@ class ExecutionReconstructor:
                 run_id=run_id,
             )
 
-        attempts = _build_attempts(causal, positioned)
+        attempts = _build_attempts(
+            causal,
+            positioned,
+            execution_lineage=self._execution_lineage,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            initial_lineage_page_limit=self._initial_lineage_page_limit,
+            max_lineage_records=self._max_lineage_records,
+        )
         return ExecutionReconstruction(
             tenant_id=tenant_id,
             task_id=task_id,
@@ -192,6 +242,13 @@ def _load_positioned_events_for_run(
 def _build_attempts(
     causal: tuple[PlatformCausalEvidence, ...],
     positioned: tuple[PositionedRuntimeEvent, ...],
+    *,
+    execution_lineage: ExecutionLineageReader | None,
+    tenant_id: str,
+    task_id: TaskId,
+    run_id: RunId,
+    initial_lineage_page_limit: int,
+    max_lineage_records: int,
 ) -> tuple[ReconstructedAttempt, ...]:
     causal_by_attempt: dict[AttemptId, list[PlatformCausalEvidence]] = {}
     for evidence in causal:
@@ -213,12 +270,52 @@ def _build_attempts(
     )
 
     return tuple(
-        ReconstructedAttempt(
+        _build_reconstructed_attempt(
             attempt_id=attempt_id,
-            causal_evidence=tuple(causal_by_attempt.get(attempt_id, ())),
-            positioned_events=tuple(events_by_attempt.get(attempt_id, ())),
+            causal_by_attempt=causal_by_attempt,
+            events_by_attempt=events_by_attempt,
+            execution_lineage=execution_lineage,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            initial_lineage_page_limit=initial_lineage_page_limit,
+            max_lineage_records=max_lineage_records,
         )
         for attempt_id in attempt_ids
+    )
+
+
+def _build_reconstructed_attempt(
+    *,
+    attempt_id: AttemptId,
+    causal_by_attempt: dict[AttemptId, list[PlatformCausalEvidence]],
+    events_by_attempt: dict[AttemptId, list[PositionedRuntimeEvent]],
+    execution_lineage: ExecutionLineageReader | None,
+    tenant_id: str,
+    task_id: TaskId,
+    run_id: RunId,
+    initial_lineage_page_limit: int,
+    max_lineage_records: int,
+) -> ReconstructedAttempt:
+    lineage: ReconstructedAttemptLineage | None = None
+    if execution_lineage is not None:
+        try:
+            lineage = reconstruct_attempt_lineage(
+                execution_lineage,
+                tenant_id=tenant_id,
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                initial_lineage_page_limit=initial_lineage_page_limit,
+                max_lineage_records=max_lineage_records,
+            )
+        except ExecutionLineageReconstructionIntegrityError as exc:
+            raise ExecutionReconstructionIntegrityError(str(exc)) from exc
+    return ReconstructedAttempt(
+        attempt_id=attempt_id,
+        causal_evidence=tuple(causal_by_attempt.get(attempt_id, ())),
+        positioned_events=tuple(events_by_attempt.get(attempt_id, ())),
+        lineage=lineage,
     )
 
 

@@ -22,7 +22,8 @@ from intergrax.contracts.execution_identity import (
 )
 
 _SCHEMA_VERSION = 1
-_MAX_ADMISSION_PAGE_LIMIT = 1000
+_MAX_LINEAGE_PAGE_LIMIT = 1000
+_MAX_ADMISSION_PAGE_LIMIT = _MAX_LINEAGE_PAGE_LIMIT
 
 
 class ExecutionLineageSegmentLifecycle(StrEnum):
@@ -161,8 +162,15 @@ class ExecutionLineageAdmissionPage(BaseModel):
     next_cursor: str | None = None
 
 
-def validate_admission_page_limit(
-    limit: int, *, hard_maximum: int = _MAX_ADMISSION_PAGE_LIMIT
+class ExecutionLineageSegmentPage(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    segments: tuple[ExecutionLineageSegmentRecord, ...]
+    next_cursor: str | None = None
+
+
+def validate_lineage_page_limit(
+    limit: int, *, hard_maximum: int = _MAX_LINEAGE_PAGE_LIMIT
 ) -> int:
     if type(limit) is not int or isinstance(limit, bool) or limit < 1:
         raise ValueError("limit must be a positive int")
@@ -171,7 +179,49 @@ def validate_admission_page_limit(
     return limit
 
 
-class ExecutionLineagePersistence(ABC):
+def validate_admission_page_limit(
+    limit: int, *, hard_maximum: int = _MAX_ADMISSION_PAGE_LIMIT
+) -> int:
+    return validate_lineage_page_limit(limit, hard_maximum=hard_maximum)
+
+
+class ExecutionLineageReader(ABC):
+    """Read-only execution lineage port for diagnostics and derived projections."""
+
+    @abstractmethod
+    def list_admissions_for_attempt(
+        self,
+        scope: ExecutionLineageAttemptScope,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ExecutionLineageAdmissionPage:
+        """Bounded admission history for one attempt."""
+
+    @abstractmethod
+    def list_segments_for_attempt(
+        self,
+        scope: ExecutionLineageAttemptScope,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ExecutionLineageSegmentPage:
+        """Bounded segment history for one attempt."""
+
+    @abstractmethod
+    def read_attempt_lineage_state(
+        self,
+        scope: ExecutionLineageAttemptScope,
+    ) -> ExecutionLineageAttemptState | None:
+        """Read durable attempt coordination state."""
+
+    @abstractmethod
+    def read_seal(
+        self,
+        scope: ExecutionLineageAttemptScope,
+    ) -> ExecutionLineageSealRecord | None:
+        """Read durable attempt seal when present."""
+
+
+class ExecutionLineagePersistence(ExecutionLineageReader, ABC):
     """Provider-neutral durable execution lineage write authority."""
 
     @property
@@ -241,29 +291,6 @@ class ExecutionLineagePersistence(ABC):
     ) -> ExecutionLineageSealRecord:
         """Seal attempt and close active segment when required."""
 
-    @abstractmethod
-    def list_admissions_for_attempt(
-        self,
-        scope: ExecutionLineageAttemptScope,
-        limit: int,
-        cursor: str | None = None,
-    ) -> ExecutionLineageAdmissionPage:
-        """Bounded admission history for one attempt."""
-
-    @abstractmethod
-    def read_attempt_lineage_state(
-        self,
-        scope: ExecutionLineageAttemptScope,
-    ) -> ExecutionLineageAttemptState | None:
-        """Read durable attempt coordination state."""
-
-    @abstractmethod
-    def read_seal(
-        self,
-        scope: ExecutionLineageAttemptScope,
-    ) -> ExecutionLineageSealRecord | None:
-        """Read durable attempt seal when present."""
-
 
 __all__ = [
     "ExecutionLineageAdmissionPage",
@@ -276,10 +303,13 @@ __all__ = [
     "ExecutionLineageIntegrityError",
     "ExecutionLineagePersistence",
     "ExecutionLineagePersistenceProvider",
+    "ExecutionLineageReader",
     "ExecutionLineageSealRecord",
     "ExecutionLineageSegmentLifecycle",
+    "ExecutionLineageSegmentPage",
     "ExecutionLineageSegmentRecord",
     "ExecutionLineageUnavailableError",
     "build_execution_lineage_attempt_scope",
     "validate_admission_page_limit",
+    "validate_lineage_page_limit",
 ]

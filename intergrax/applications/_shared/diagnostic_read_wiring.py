@@ -13,6 +13,7 @@ from intergrax.applications._shared.harness_host_runtime import HarnessHostRunti
 from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_runtime_event_persistence,
 )
+from intergrax.contracts.execution_lineage import ExecutionLineageReader
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
 from intergrax.runtime.diagnostics.diagnostic_scope_discovery_service import (
@@ -21,20 +22,32 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_service import (
 from intergrax.runtime.diagnostics.document_store_problem_occurrence_persistence import (
     wire_problem_occurrence_persistence,
 )
-from intergrax.runtime.diagnostics.document_store_problem_persistence import wire_problem_persistence
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
-from intergrax.runtime.diagnostics.problem_occurrence_persistence import ProblemOccurrencePersistence
+from intergrax.runtime.diagnostics.document_store_problem_persistence import (
+    wire_problem_persistence,
+)
+from intergrax.runtime.diagnostics.execution_reconstruction import (
+    ExecutionReconstructor,
+)
+from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
+    ProblemOccurrencePersistence,
+)
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
 from intergrax.runtime.diagnostics.providers.causal_transport_scope_provider import (
-    CAUSAL_TRANSPORT_SCOPE_PROVIDER_ID,
     CausalTransportScopeProvider,
 )
-from intergrax.runtime.diagnostics.providers.problem_scope_provider import ProblemScopeProvider
+from intergrax.runtime.diagnostics.providers.problem_scope_provider import (
+    ProblemScopeProvider,
+)
 from intergrax.runtime.diagnostics.providers.runtime_event_scope_provider import (
     RuntimeEventScopeProvider,
 )
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
-from intergrax.runtime.observability.causal_evidence_persistence import CausalEvidencePersistence
+from intergrax.runtime.execution.lineage.wiring import (
+    resolve_execution_lineage_persistence,
+)
+from intergrax.runtime.observability.causal_evidence_persistence import (
+    CausalEvidencePersistence,
+)
 from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
     wire_causal_evidence_persistence,
 )
@@ -48,6 +61,7 @@ class HostDiagnosticReadDependencies:
     occurrence_persistence: ProblemOccurrencePersistence
     runtime_event_persistence: RuntimeEventPersistence
     causal_evidence_persistence: CausalEvidencePersistence
+    execution_lineage_reader: ExecutionLineageReader | None = None
 
 
 def resolve_host_diagnostic_read_dependencies(
@@ -75,6 +89,11 @@ def resolve_host_diagnostic_read_dependencies(
             "harness observability wiring",
         )
 
+    execution_lineage_reader = resolve_execution_lineage_persistence(
+        document_store=document_store,
+        provider=runtime.environment.reliability_profile.execution_lineage_persistence_provider,
+    )
+
     return HostDiagnosticReadDependencies(
         problem_persistence=wire_problem_persistence(
             document_store=document_store,
@@ -88,6 +107,7 @@ def resolve_host_diagnostic_read_dependencies(
         causal_evidence_persistence=wire_causal_evidence_persistence(
             document_store=document_store,
         ),
+        execution_lineage_reader=execution_lineage_reader,
     )
 
 
@@ -101,6 +121,7 @@ def build_diagnostic_read_service(
         execution_reconstructor=ExecutionReconstructor(
             runtime_events=dependencies.runtime_event_persistence,
             causal_evidence=dependencies.causal_evidence_persistence,
+            execution_lineage=dependencies.execution_lineage_reader,
         ),
     )
 
@@ -129,7 +150,9 @@ def resolve_host_diagnostic_read_service(
     runtime: HarnessHostRuntime,
 ) -> DiagnosticReadService:
     """Resolve shared DiagnosticReadService for product host observability surfaces."""
-    return build_diagnostic_read_service(resolve_host_diagnostic_read_dependencies(runtime))
+    return build_diagnostic_read_service(
+        resolve_host_diagnostic_read_dependencies(runtime)
+    )
 
 
 __all__ = [

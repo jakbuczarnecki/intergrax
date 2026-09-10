@@ -20,9 +20,11 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineagePersistence,
     ExecutionLineageSealRecord,
     ExecutionLineageSegmentLifecycle,
+    ExecutionLineageSegmentPage,
     ExecutionLineageSegmentRecord,
     ExecutionLineageUnavailableError,
     validate_admission_page_limit,
+    validate_lineage_page_limit,
 )
 from intergrax.runtime.execution.lineage.codecs import (
     decode_execution_lineage_admission_record,
@@ -489,6 +491,29 @@ class _ExecutionLineageStoreLogic:
             admissions=admissions, next_cursor=next_cursor
         )
 
+    def list_segments_for_attempt(
+        self,
+        scope: ExecutionLineageAttemptScope,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ExecutionLineageSegmentPage:
+        validated_limit = validate_lineage_page_limit(limit)
+        partition = execution_lineage_partition_key(scope)
+        rows, next_cursor = self._store.list_rows(
+            partition,
+            row_key_prefix=_SEGMENT_ROW_PREFIX,
+            limit=validated_limit,
+            cursor=cursor,
+            sort_path="root_execution_id",
+        )
+        segments = tuple(
+            decode_execution_lineage_segment_record(row.data) for row in rows
+        )
+        segments = tuple(
+            sorted(segments, key=lambda item: str(item.root_execution_id)),
+        )
+        return ExecutionLineageSegmentPage(segments=segments, next_cursor=next_cursor)
+
     def read_attempt_lineage_state(
         self,
         scope: ExecutionLineageAttemptScope,
@@ -855,11 +880,16 @@ class _InMemoryPartitionAtomicRowStore:
                 for (partition, _), row in self._rows.items()
                 if partition == partition_key and row.row_key.startswith(row_key_prefix)
             ]
-        rows.sort(
-            key=lambda row: (
-                decode_execution_lineage_admission_record(row.data).admission_position
-            ),
-        )
+        if row_key_prefix == _SEGMENT_ROW_PREFIX:
+            rows.sort(key=lambda row: row.row_key)
+        else:
+            rows.sort(
+                key=lambda row: (
+                    decode_execution_lineage_admission_record(
+                        row.data
+                    ).admission_position
+                ),
+            )
         start = 0
         if cursor is not None:
             for index, row in enumerate(rows):
@@ -1015,6 +1045,14 @@ class InMemoryExecutionLineagePersistence(ExecutionLineagePersistence):
         cursor: str | None = None,
     ) -> ExecutionLineageAdmissionPage:
         return self._logic.list_admissions_for_attempt(scope, limit, cursor=cursor)
+
+    def list_segments_for_attempt(
+        self,
+        scope: ExecutionLineageAttemptScope,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ExecutionLineageSegmentPage:
+        return self._logic.list_segments_for_attempt(scope, limit, cursor=cursor)
 
     def read_attempt_lineage_state(
         self,
