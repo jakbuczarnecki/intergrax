@@ -673,6 +673,83 @@ def test_verification_layer_has_no_reflection() -> None:
         assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
 
 
+def test_clarification_layer_has_no_dataset_or_infrastructure_imports() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    forbidden_fragments = (
+        ".dataset.",
+        ".data_pack.",
+        ".storage_bootstrap.",
+        ".integrations.providers.",
+    )
+    violations: list[str] = []
+    for module_path in sorted(clarification_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_clarification_layer_has_no_provider_imports() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    forbidden = frozenset(
+        {
+            "psycopg",
+            "asyncpg",
+            "sqlalchemy",
+            "mysql",
+            "qdrant",
+            "qdrant_client",
+            "pgvector",
+            "torch",
+            "sentence_transformers",
+            "transformers",
+        }
+    )
+    violations: list[str] = []
+    for module_path in sorted(clarification_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            root = imported.split(".")[0]
+            if root in forbidden:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_clarification_layer_has_no_cluster_id_usage() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    for path in _iter_production_python_files(clarification_root):
+        source = path.read_text(encoding="utf-8")
+        assert "cluster_id" not in source, f"cluster_id found in {path}"
+
+
+def test_clarification_layer_has_no_reflection() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    forbidden_names = {"getattr", "setattr", "hasattr", "inspect"}
+    for path in _iter_production_python_files(clarification_root):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names = {
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
+
+
+def test_clarification_layer_has_no_weak_contracts() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    forbidden_fragments = (
+        "dict[str, Any]",
+        ": Any",
+        "dict[str, object]",
+        "Mapping[str, object]",
+        ": object",
+        "type: ignore",
+    )
+    for path in _iter_production_python_files(clarification_root):
+        source = path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {path}"
+
+
 def test_verification_layer_has_no_weak_contracts() -> None:
     verification_root = _VPI_ROOT / "application/verification"
     forbidden_fragments = (
