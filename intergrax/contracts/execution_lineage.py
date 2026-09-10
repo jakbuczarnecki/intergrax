@@ -145,6 +145,86 @@ class ExecutionLineageAttemptState(BaseModel):
     degraded: bool = False
     sealed: bool = False
     closure_kind: ExecutionLineageAttemptClosureKind | None = None
+    discovery_contract_version: int | None = None
+
+    def __init__(self, **data: object) -> None:
+        super().__init__(**data)
+        marker = self.discovery_contract_version
+        if marker is not None and marker != 1:
+            raise ValueError(
+                "discovery_contract_version must be None or 1",
+            )
+
+
+class ExecutionLineageRunScope(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    tenant_id: str
+    task_id: TaskId
+    run_id: RunId
+
+    def __init__(self, **data: object) -> None:
+        super().__init__(**data)
+        if not self.tenant_id or not self.tenant_id.strip():
+            raise ValueError("tenant_id must be non-empty")
+        if self.tenant_id != self.tenant_id.strip():
+            raise ValueError("tenant_id must be trimmed")
+
+
+def build_execution_lineage_run_scope(
+    *,
+    tenant_id: str,
+    task_id: TaskId | str,
+    run_id: RunId | str,
+) -> ExecutionLineageRunScope:
+    normalized_tenant = tenant_id.strip()
+    if not normalized_tenant:
+        raise ValueError("tenant_id must be non-empty")
+    return ExecutionLineageRunScope(
+        tenant_id=normalized_tenant,
+        task_id=validate_task_id(task_id),
+        run_id=validate_run_id(run_id),
+    )
+
+
+class ExecutionLineageDiscoveryCoverageOrigin(StrEnum):
+    FROM_RUN_START = "FROM_RUN_START"
+
+
+class ExecutionLineageAttemptDiscoveryRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    run_scope: ExecutionLineageRunScope
+    attempt_id: AttemptId
+    discovery_position: int = Field(ge=1)
+
+
+class ExecutionLineageDiscoveryRunState(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    run_scope: ExecutionLineageRunScope
+    generation: int = Field(ge=0)
+    next_discovery_position: int = Field(ge=1)
+    coverage_contract_version: int | None = None
+    coverage_origin: ExecutionLineageDiscoveryCoverageOrigin | None = None
+
+    def __init__(self, **data: object) -> None:
+        super().__init__(**data)
+        if (
+            self.coverage_origin
+            is ExecutionLineageDiscoveryCoverageOrigin.FROM_RUN_START
+            and self.coverage_contract_version != 1
+        ):
+            raise ValueError(
+                "coverage_origin FROM_RUN_START requires coverage_contract_version == 1",
+            )
+
+
+class ExecutionLineageAttemptDiscoveryPage(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True, strict=True)
+
+    attempts: tuple[ExecutionLineageAttemptDiscoveryRecord, ...]
+    next_cursor: str | None = None
 
 
 class ExecutionLineageSealRecord(BaseModel):
@@ -220,6 +300,30 @@ class ExecutionLineageReader(ABC):
     ) -> ExecutionLineageSealRecord | None:
         """Read durable attempt seal when present."""
 
+    @abstractmethod
+    def read_discovery_run_state(
+        self,
+        run_scope: ExecutionLineageRunScope,
+    ) -> ExecutionLineageDiscoveryRunState | None:
+        """Read durable run-scoped discovery coordination state."""
+
+    @abstractmethod
+    def list_attempts_for_run(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ExecutionLineageAttemptDiscoveryPage:
+        """Bounded paginated attempt discovery for one run."""
+
+    @abstractmethod
+    def read_attempt_discovery_record(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        attempt_id: AttemptId,
+    ) -> ExecutionLineageAttemptDiscoveryRecord | None:
+        """Point read for one attempt discovery record within a run."""
+
 
 class ExecutionLineagePersistence(ExecutionLineageReader, ABC):
     """Provider-neutral durable execution lineage write authority."""
@@ -231,9 +335,20 @@ class ExecutionLineagePersistence(ExecutionLineageReader, ABC):
 
     @abstractmethod
     def open_attempt(
-        self, scope: ExecutionLineageAttemptScope
+        self,
+        scope: ExecutionLineageAttemptScope,
+        *,
+        discovery_contract_version: int | None = None,
     ) -> ExecutionLineageAttemptState:
         """Open attempt coordination state idempotently."""
+
+    @abstractmethod
+    def register_attempt_for_run(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        attempt_id: AttemptId,
+    ) -> ExecutionLineageAttemptDiscoveryRecord:
+        """Register one attempt in the run discovery projection."""
 
     @abstractmethod
     def open_segment(
@@ -296,20 +411,26 @@ __all__ = [
     "ExecutionLineageAdmissionPage",
     "ExecutionLineageAdmissionRecord",
     "ExecutionLineageAttemptClosureKind",
+    "ExecutionLineageAttemptDiscoveryPage",
+    "ExecutionLineageAttemptDiscoveryRecord",
     "ExecutionLineageAttemptScope",
     "ExecutionLineageAttemptState",
     "ExecutionLineageConfigurationError",
+    "ExecutionLineageDiscoveryCoverageOrigin",
+    "ExecutionLineageDiscoveryRunState",
     "ExecutionLineageError",
     "ExecutionLineageIntegrityError",
     "ExecutionLineagePersistence",
     "ExecutionLineagePersistenceProvider",
     "ExecutionLineageReader",
+    "ExecutionLineageRunScope",
     "ExecutionLineageSealRecord",
     "ExecutionLineageSegmentLifecycle",
     "ExecutionLineageSegmentPage",
     "ExecutionLineageSegmentRecord",
     "ExecutionLineageUnavailableError",
     "build_execution_lineage_attempt_scope",
+    "build_execution_lineage_run_scope",
     "validate_admission_page_limit",
     "validate_lineage_page_limit",
 ]

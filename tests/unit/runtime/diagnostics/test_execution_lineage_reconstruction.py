@@ -16,9 +16,11 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageAdmissionPage,
     ExecutionLineageAdmissionRecord,
     ExecutionLineageAttemptClosureKind,
+    ExecutionLineageAttemptDiscoveryPage,
     ExecutionLineageAttemptScope,
     ExecutionLineageAttemptState,
     ExecutionLineageReader,
+    ExecutionLineageRunScope,
     ExecutionLineageSegmentPage,
     ExecutionLineageSegmentRecord,
     ExecutionLineageSealRecord,
@@ -36,6 +38,7 @@ from intergrax.runtime.diagnostics.execution_reconstruction import (
 )
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.execution.lineage.persistence import InMemoryExecutionLineagePersistence
+from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 from intergrax.runtime.observability.causal_evidence import (
     CausalRelationKind,
     MessageBusTaskRef,
@@ -109,7 +112,7 @@ def test_single_segment_parent_chain() -> None:
     lineage = InMemoryExecutionLineagePersistence()
     scope = _scope(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
     e1, e2, e3 = mint_execution_id(), mint_execution_id(), mint_execution_id()
-    lineage.open_attempt(scope)
+    register_v1_attempt(lineage, scope)
     lineage.open_segment(scope, e1)
     lineage.admit_root(scope, e1, e1)
     lineage.admit_child(scope, e1, e2, e1)
@@ -139,7 +142,7 @@ def test_multi_segment_resume_topology() -> None:
     lineage = InMemoryExecutionLineagePersistence()
     scope = _scope(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
     e1, e2, e3, e4, e5 = [mint_execution_id() for _ in range(5)]
-    lineage.open_attempt(scope)
+    register_v1_attempt(lineage, scope)
     lineage.open_segment(scope, e1)
     lineage.admit_root(scope, e1, e1)
     lineage.admit_child(scope, e1, e2, e1)
@@ -170,7 +173,7 @@ def test_nested_fan_out_parents() -> None:
     lineage = InMemoryExecutionLineagePersistence()
     scope = _scope(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
     e1, e2, e3, e4 = [mint_execution_id() for _ in range(4)]
-    lineage.open_attempt(scope)
+    register_v1_attempt(lineage, scope)
     lineage.open_segment(scope, e1)
     lineage.admit_root(scope, e1, e1)
     lineage.admit_child(scope, e1, e2, e1)
@@ -196,7 +199,7 @@ def test_degraded_attempt_is_partial() -> None:
     lineage = InMemoryExecutionLineagePersistence()
     scope = _scope(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
     root = mint_execution_id()
-    lineage.open_attempt(scope)
+    register_v1_attempt(lineage, scope)
     lineage.open_segment(scope, root)
     lineage.admit_root(scope, root, root)
     lineage.mark_degraded(scope, "test")
@@ -217,7 +220,7 @@ def test_failed_execution_can_be_complete_lineage() -> None:
     lineage = InMemoryExecutionLineagePersistence()
     scope = _scope(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
     root = mint_execution_id()
-    lineage.open_attempt(scope)
+    register_v1_attempt(lineage, scope)
     lineage.open_segment(scope, root)
     lineage.admit_root(scope, root, root)
     lineage.seal_attempt(scope, ExecutionLineageAttemptClosureKind.FAILED)
@@ -239,7 +242,7 @@ def test_truncated_when_max_records_exceeded() -> None:
     lineage = InMemoryExecutionLineagePersistence()
     scope = _scope(task_id=task_id, run_id=run_id, attempt_id=attempt_id)
     root = mint_execution_id()
-    lineage.open_attempt(scope)
+    register_v1_attempt(lineage, scope)
     lineage.open_segment(scope, root)
     lineage.admit_root(scope, root, root)
     for _ in range(4):
@@ -336,6 +339,27 @@ def test_duplicate_execution_admission_integrity_error() -> None:
             self,
             scope: ExecutionLineageAttemptScope,
         ) -> ExecutionLineageSealRecord | None:
+            return None
+
+        def read_discovery_run_state(
+            self,
+            run_scope: ExecutionLineageRunScope,
+        ) -> None:
+            return None
+
+        def list_attempts_for_run(
+            self,
+            run_scope: ExecutionLineageRunScope,
+            limit: int,
+            cursor: str | None = None,
+        ) -> ExecutionLineageAttemptDiscoveryPage:
+            return ExecutionLineageAttemptDiscoveryPage(attempts=())
+
+        def read_attempt_discovery_record(
+            self,
+            run_scope: ExecutionLineageRunScope,
+            attempt_id: object,
+        ) -> None:
             return None
 
     with pytest.raises(ExecutionReconstructionIntegrityError):

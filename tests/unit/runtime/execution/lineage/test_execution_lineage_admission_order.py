@@ -41,6 +41,7 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
+from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 
 @pytest.mark.asyncio
@@ -118,7 +119,7 @@ async def test_child_lineage_hook_auto_attached() -> None:
         run_id=identity.run_id,
         attempt_id=identity.attempt_id,
     )
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, root)
     persistence.admit_root(scope, root, root)
     _, lineage_token, degradation_token = activate_root_execution_lineage(

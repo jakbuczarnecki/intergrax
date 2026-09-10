@@ -70,6 +70,7 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 )
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
+from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -403,7 +404,7 @@ def test_lineage_match_passes() -> None:
         attempt_id=checkpoint.runtime.attempt_id,
     )
     root = checkpoint.runtime.execution_tree.entries[0].execution_id
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, root)
     persistence.admit_root(scope, root, root)
     assert (
@@ -423,7 +424,7 @@ def test_lineage_mismatch_blocked() -> None:
         attempt_id=checkpoint.runtime.attempt_id,
     )
     other_root = mint_execution_id()
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, other_root)
     persistence.admit_root(scope, other_root, other_root)
     assert (

@@ -14,6 +14,7 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageAttemptClosureKind,
     ExecutionLineageUnavailableError,
     build_execution_lineage_attempt_scope,
+    build_execution_lineage_run_scope,
 )
 from intergrax.runtime.execution.lineage.persistence import (
     _ExecutionLineageStoreLogic,
@@ -69,13 +70,23 @@ def _logic(
     return _ExecutionLineageStoreLogic(store or _FaultInjectingPartitionStore())
 
 
+def _open_v1(logic: _ExecutionLineageStoreLogic, scope: object) -> object:
+    run_scope = build_execution_lineage_run_scope(
+        tenant_id=scope.tenant_id,
+        task_id=scope.task_id,
+        run_id=scope.run_id,
+    )
+    logic.register_attempt_for_run(run_scope, scope.attempt_id)
+    return logic.open_attempt(scope, discovery_contract_version=1)
+
+
 def test_a1_admission_conflict_leaves_no_partial_admission() -> None:
     scope = _scope()
     root = mint_execution_id()
     child = mint_execution_id()
     store = _FaultInjectingPartitionStore()
     logic = _logic(store)
-    logic.open_attempt(scope)
+    _open_v1(logic, scope)
     logic.open_segment(scope, root)
     logic.admit_root(scope, root, root)
     store.fail_primary_prefix = "admission:"
@@ -93,7 +104,7 @@ def test_a2_segment_open_conflict_leaves_no_partial_segment() -> None:
     root = mint_execution_id()
     store = _FaultInjectingPartitionStore()
     logic = _logic(store)
-    logic.open_attempt(scope)
+    _open_v1(logic, scope)
     store.fail_primary_prefix = "segment:"
     with pytest.raises(ExecutionLineageUnavailableError):
         logic.open_segment(scope, root)
@@ -108,7 +119,7 @@ def test_a3_predecessor_unclean_conflict_is_all_or_nothing() -> None:
     e4 = mint_execution_id()
     store = _FaultInjectingPartitionStore()
     logic = _logic(store)
-    logic.open_attempt(scope)
+    _open_v1(logic, scope)
     logic.open_segment(scope, e1)
     store.fail_primary_prefix = "segment:"
     with pytest.raises(ExecutionLineageUnavailableError):
@@ -134,7 +145,7 @@ def test_a4_seal_conflict_leaves_no_partial_seal() -> None:
     root = mint_execution_id()
     store = _FaultInjectingPartitionStore()
     logic = _logic(store)
-    logic.open_attempt(scope)
+    _open_v1(logic, scope)
     logic.open_segment(scope, root)
     logic.admit_root(scope, root, root)
     store.fail_primary_prefix = "meta:seal"
@@ -151,7 +162,7 @@ def test_a5_seal_with_segment_close_conflict_is_all_or_nothing() -> None:
     root = mint_execution_id()
     store = _FaultInjectingPartitionStore()
     logic = _logic(store)
-    logic.open_attempt(scope)
+    _open_v1(logic, scope)
     logic.open_segment(scope, root)
     logic.admit_root(scope, root, root)
     store.fail_primary_prefix = "meta:seal"

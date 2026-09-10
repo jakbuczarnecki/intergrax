@@ -52,6 +52,7 @@ from intergrax.runtime.execution.retry import (
 from intergrax.runtime.execution.retry.policy import project_resilience_failure_kind
 from intergrax.runtime.reliability.step_retry_budget import StepRetryBudget
 from intergrax.runtime.resilience.policy_resolver import resolve_failure_action
+from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -511,7 +512,7 @@ def test_r1_attempt_lineage_retry_superseded_seal() -> None:
         run_id=run_id,
         attempt_id=attempt_a1,
     )
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     lifecycle.record_initial_attempt(tenant_id=tenant_id, run_id=run_id, attempt_id=attempt_a1)
     transition = service.transition_for_retry(
         tenant_id=tenant_id,

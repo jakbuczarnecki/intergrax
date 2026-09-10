@@ -19,6 +19,10 @@ from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
     ExecutionLineageCompleteness,
     ExecutionLineageReadStatus,
 )
+from intergrax.runtime.diagnostics.execution_reconstruction import (
+    ExecutionAttemptDiscoveryCompleteness,
+    ExecutionAttemptDiscoveryReadStatus,
+)
 from intergrax.runtime.diagnostics.deterministic_problem_reconciliation import (
     DeterministicProblemReconciliationKey,
 )
@@ -120,6 +124,8 @@ class DiagnosticAttemptLineageView:
 @dataclass(frozen=True, slots=True)
 class DiagnosticExecutionLineageView:
     attempts: tuple[DiagnosticAttemptLineageView, ...]
+    attempt_discovery_read_status: ExecutionAttemptDiscoveryReadStatus | None = None
+    attempt_discovery_completeness: ExecutionAttemptDiscoveryCompleteness | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -5,18 +5,23 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.execution_identity import ExecutionId
+from intergrax.contracts.execution_identity import AttemptId, ExecutionId
 from intergrax.contracts.execution_lineage import (
     ExecutionLineageAdmissionPage,
     ExecutionLineageAdmissionRecord,
     ExecutionLineageAttemptClosureKind,
+    ExecutionLineageAttemptDiscoveryPage,
+    ExecutionLineageAttemptDiscoveryRecord,
     ExecutionLineageAttemptScope,
     ExecutionLineageAttemptState,
     ExecutionLineageConfigurationError,
+    ExecutionLineageDiscoveryRunState,
     ExecutionLineagePersistence,
+    ExecutionLineageRunScope,
     ExecutionLineageSealRecord,
     ExecutionLineageSegmentPage,
     ExecutionLineageSegmentRecord,
+    ExecutionLineageUnavailableError,
 )
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
@@ -94,7 +99,10 @@ class _DocumentStorePartitionAtomicRowStore:
         self._query_cursor_codec = query_cursor_codec
 
     def get_row(self, partition_key: str, row_key: str) -> _PartitionRow | None:
-        record = self._document_store.get(partition_key, row_key)
+        try:
+            record = self._document_store.get(partition_key, row_key)
+        except RuntimeError as exc:
+            raise ExecutionLineageUnavailableError(str(exc)) from exc
         if record is None:
             return None
         return _document_to_row(record)
@@ -119,13 +127,16 @@ class _DocumentStorePartitionAtomicRowStore:
         cursor: str | None,
         sort_path: str,
     ) -> tuple[tuple[_PartitionRow, ...], str | None]:
-        page = self._document_store.query(
-            partition_key,
-            limit=limit,
-            row_key_prefix=row_key_prefix,
-            cursor=cursor,
-            sort=(DocumentDataSort(path=sort_path, direction="asc"),),
-        )
+        try:
+            page = self._document_store.query(
+                partition_key,
+                limit=limit,
+                row_key_prefix=row_key_prefix,
+                cursor=cursor,
+                sort=(DocumentDataSort(path=sort_path, direction="asc"),),
+            )
+        except RuntimeError as exc:
+            raise ExecutionLineageUnavailableError(str(exc)) from exc
         rows = tuple(_document_to_row(document) for document in page.documents)
         return rows, page.next_cursor
 
@@ -179,9 +190,22 @@ class DocumentStoreExecutionLineagePersistence(ExecutionLineagePersistence):
         return True
 
     def open_attempt(
-        self, scope: ExecutionLineageAttemptScope
+        self,
+        scope: ExecutionLineageAttemptScope,
+        *,
+        discovery_contract_version: int | None = None,
     ) -> ExecutionLineageAttemptState:
-        return self._logic.open_attempt(scope)
+        return self._logic.open_attempt(
+            scope,
+            discovery_contract_version=discovery_contract_version,
+        )
+
+    def register_attempt_for_run(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        attempt_id: AttemptId,
+    ) -> ExecutionLineageAttemptDiscoveryRecord:
+        return self._logic.register_attempt_for_run(run_scope, attempt_id)
 
     def open_segment(
         self,
@@ -272,3 +296,24 @@ class DocumentStoreExecutionLineagePersistence(ExecutionLineagePersistence):
         self, scope: ExecutionLineageAttemptScope
     ) -> ExecutionLineageSealRecord | None:
         return self._logic.read_seal(scope)
+
+    def read_discovery_run_state(
+        self,
+        run_scope: ExecutionLineageRunScope,
+    ) -> ExecutionLineageDiscoveryRunState | None:
+        return self._logic.read_discovery_run_state(run_scope)
+
+    def list_attempts_for_run(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ExecutionLineageAttemptDiscoveryPage:
+        return self._logic.list_attempts_for_run(run_scope, limit, cursor=cursor)
+
+    def read_attempt_discovery_record(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        attempt_id: AttemptId,
+    ) -> ExecutionLineageAttemptDiscoveryRecord | None:
+        return self._logic.read_attempt_discovery_record(run_scope, attempt_id)

@@ -51,6 +51,7 @@ from intergrax.runtime.execution.retry import (
     evaluate_execution_retry_eligibility,
 )
 from intergrax.runtime.reliability.step_retry_budget import StepRetryBudget
+from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -353,7 +354,7 @@ def test_r1_final_cross_layer_transient_fail_then_success() -> None:
         run_id=run_id,
         attempt_id=attempt_a1,
     )
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     lifecycle.record_initial_attempt(tenant_id=tenant_id, run_id=run_id, attempt_id=attempt_a1)
     token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_a1, execution_id=mint_execution_id())
     try:

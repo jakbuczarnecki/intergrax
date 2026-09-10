@@ -9,6 +9,7 @@ from intergrax.contracts.execution_lineage import ExecutionLineagePersistence, b
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.execution.lineage.document_store_persistence import DocumentStoreExecutionLineagePersistence
 from intergrax.runtime.execution.lineage.persistence import InMemoryExecutionLineagePersistence
+from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 
 def _scope() -> object:
@@ -32,7 +33,7 @@ def test_list_segments_for_attempt_bounded_pagination(
 ) -> None:
     scope = _scope()
     roots = [mint_execution_id() for _ in range(3)]
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     predecessor: str | None = None
     for root in roots:
         persistence.open_segment(scope, root, predecessor)
@@ -72,7 +73,7 @@ def test_list_segments_tenant_isolation(
         attempt_id=scope_a.attempt_id,
     )
     root = mint_execution_id()
-    persistence.open_attempt(scope_a)
+    register_v1_attempt(persistence, scope_a)
     persistence.open_segment(scope_a, root)
     persistence.admit_root(scope_a, root, root)
 

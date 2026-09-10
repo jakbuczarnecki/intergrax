@@ -8,15 +8,19 @@ from __future__ import annotations
 from contextvars import Token
 
 from intergrax.contracts.execution_identity import (
+    AttemptId,
     ExecutionId,
+    RunId,
     TaskId,
     validate_execution_id,
 )
 from intergrax.contracts.execution_lineage import (
     ExecutionLineageAttemptScope,
     ExecutionLineageConfigurationError,
+    ExecutionLineageIntegrityError,
     ExecutionLineagePersistence,
     build_execution_lineage_attempt_scope,
+    build_execution_lineage_run_scope,
 )
 from intergrax.runtime.execution.lineage.active_lineage import (
     ActiveExecutionLineageState,
@@ -35,14 +39,18 @@ def validate_root_lineage_inputs(
     *,
     tenant_id: str | None,
     task_id: TaskId | None,
-    run_id: object,
-    attempt_id: object,
+    run_id: RunId | str | None,
+    attempt_id: AttemptId | str | None,
     execution_id: ExecutionId,
 ) -> ExecutionLineageAttemptScope:
     if tenant_id is None or not tenant_id.strip():
         raise ExecutionLineageConfigurationError("lineage requires tenant_id")
     if task_id is None:
         raise ExecutionLineageConfigurationError("lineage requires task_id")
+    if run_id is None:
+        raise ExecutionLineageConfigurationError("lineage requires run_id")
+    if attempt_id is None:
+        raise ExecutionLineageConfigurationError("lineage requires attempt_id")
     return build_execution_lineage_attempt_scope(
         tenant_id=tenant_id,
         task_id=task_id,
@@ -64,7 +72,21 @@ def activate_root_execution_lineage(
         if predecessor_root_execution_id is not None
         else None
     )
-    persistence.open_attempt(scope)
+    existing_state = persistence.read_attempt_lineage_state(scope)
+    if existing_state is None:
+        run_scope = build_execution_lineage_run_scope(
+            tenant_id=scope.tenant_id,
+            task_id=scope.task_id,
+            run_id=scope.run_id,
+        )
+        persistence.register_attempt_for_run(run_scope, scope.attempt_id)
+        persistence.open_attempt(scope, discovery_contract_version=1)
+    elif existing_state.discovery_contract_version is None:
+        persistence.open_attempt(scope, discovery_contract_version=None)
+    elif existing_state.discovery_contract_version == 1:
+        persistence.open_attempt(scope, discovery_contract_version=1)
+    else:
+        raise ExecutionLineageIntegrityError("invalid discovery contract marker")
     persistence.open_segment(scope, root, predecessor)
     durable_attempt_state = persistence.read_attempt_lineage_state(scope)
     if durable_attempt_state is None:

@@ -27,6 +27,7 @@ from intergrax.runtime.execution.lineage.document_store_persistence import (
 from intergrax.runtime.execution.lineage.persistence import (
     InMemoryExecutionLineagePersistence,
 )
+from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 
 def _scope(
@@ -53,15 +54,15 @@ def persistence(request: pytest.FixtureRequest) -> ExecutionLineagePersistence:
 
 def test_open_attempt_idempotent(persistence: ExecutionLineagePersistence) -> None:
     scope = _scope()
-    first = persistence.open_attempt(scope)
-    second = persistence.open_attempt(scope)
+    first = register_v1_attempt(persistence, scope)
+    second = persistence.open_attempt(scope, discovery_contract_version=1)
     assert first == second
 
 
 def test_root_and_child_admissions(persistence: ExecutionLineagePersistence) -> None:
     scope = _scope()
     root = mint_execution_id()
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, root)
     persistence.admit_root(scope, root, root)
     child = mint_execution_id()
@@ -78,7 +79,7 @@ def test_duplicate_identical_child_is_idempotent(
     scope = _scope()
     root = mint_execution_id()
     child = mint_execution_id()
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, root)
     persistence.admit_root(scope, root, root)
     first = persistence.admit_child(scope, root, child, root)
@@ -93,7 +94,7 @@ def test_conflicting_parent_fails_closed(
     root = mint_execution_id()
     child = mint_execution_id()
     other_parent = mint_execution_id()
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, root)
     persistence.admit_root(scope, root, root)
     persistence.admit_child(scope, root, child, root)
@@ -107,7 +108,7 @@ def test_resume_segment_with_predecessor(
     scope = _scope()
     e1 = mint_execution_id()
     e4 = mint_execution_id()
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, e1)
     persistence.admit_root(scope, e1, e1)
     persistence.close_segment_for_resume(scope, e1)
@@ -121,7 +122,7 @@ def test_unclean_resume_marks_degraded(
     scope = _scope()
     e1 = mint_execution_id()
     e4 = mint_execution_id()
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, e1)
     persistence.open_segment(scope, e4, e1)
     state = persistence.read_attempt_lineage_state(scope)
@@ -133,7 +134,7 @@ def test_unclean_resume_marks_degraded(
 def test_seal_blocks_writes(persistence: ExecutionLineagePersistence) -> None:
     scope = _scope()
     root = mint_execution_id()
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, root)
     persistence.admit_root(scope, root, root)
     persistence.seal_attempt(scope, ExecutionLineageAttemptClosureKind.COMPLETED)
@@ -146,7 +147,7 @@ def test_concurrent_sibling_admissions(
 ) -> None:
     scope = _scope()
     root = mint_execution_id()
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, root)
     persistence.admit_root(scope, root, root)
 
@@ -168,7 +169,7 @@ def test_concurrent_sibling_admissions(
 def test_pagination_stable_ordering(persistence: ExecutionLineagePersistence) -> None:
     scope = _scope()
     root = mint_execution_id()
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, root)
     persistence.admit_root(scope, root, root)
     for _ in range(5):

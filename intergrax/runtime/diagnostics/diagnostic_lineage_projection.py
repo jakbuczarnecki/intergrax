@@ -23,7 +23,14 @@ from intergrax.runtime.diagnostics.execution_reconstruction import (
 def project_execution_lineage_view(
     reconstruction: ExecutionReconstruction,
 ) -> DiagnosticExecutionLineageView | None:
-    if not any(attempt.lineage is not None for attempt in reconstruction.attempts):
+    has_attempt_lineage = any(
+        attempt.lineage is not None for attempt in reconstruction.attempts
+    )
+    has_discovery_metadata = (
+        reconstruction.attempt_discovery_read_status is not None
+        or reconstruction.attempt_discovery_completeness is not None
+    )
+    if not has_attempt_lineage and not has_discovery_metadata:
         return None
     return DiagnosticExecutionLineageView(
         attempts=tuple(
@@ -31,6 +38,8 @@ def project_execution_lineage_view(
             for attempt in reconstruction.attempts
             if attempt.lineage is not None
         ),
+        attempt_discovery_read_status=reconstruction.attempt_discovery_read_status,
+        attempt_discovery_completeness=reconstruction.attempt_discovery_completeness,
     )
 
 

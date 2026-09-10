@@ -66,6 +66,7 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
+from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -233,7 +234,7 @@ def _wire_lineage(checkpoint: TaskCheckpoint, persistence: InMemoryExecutionLine
         attempt_id=checkpoint.runtime.attempt_id,
     )
     root = checkpoint.runtime.execution_tree.entries[0].execution_id
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, root)
     persistence.admit_root(scope, root, root)
 
@@ -406,7 +407,7 @@ def test_final_lineage_mismatch_scenario() -> None:
         attempt_id=checkpoint.runtime.attempt_id,
     )
     other_root = mint_execution_id()
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, other_root)
     persistence.admit_root(scope, other_root, other_root)
     result = evaluate_checkpoint_resume_eligibility(

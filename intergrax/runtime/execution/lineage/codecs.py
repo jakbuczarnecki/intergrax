@@ -18,15 +18,23 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.execution_lineage import (
     ExecutionLineageAdmissionRecord,
     ExecutionLineageAttemptClosureKind,
+    ExecutionLineageAttemptDiscoveryRecord,
     ExecutionLineageAttemptScope,
     ExecutionLineageAttemptState,
+    ExecutionLineageDiscoveryCoverageOrigin,
+    ExecutionLineageDiscoveryRunState,
     ExecutionLineageError,
+    ExecutionLineageRunScope,
     ExecutionLineageSegmentLifecycle,
     ExecutionLineageSegmentRecord,
     ExecutionLineageSealRecord,
     build_execution_lineage_attempt_scope,
+    build_execution_lineage_run_scope,
 )
 
+_ATTEMPT_STATE_SCHEMA_V1 = 1
+_ATTEMPT_STATE_SCHEMA_V2 = 2
+_DISCOVERY_SCHEMA_V1 = 1
 _SCHEMA_VERSION = 1
 
 
@@ -73,7 +81,7 @@ def encode_execution_lineage_attempt_state(
     state: ExecutionLineageAttemptState,
 ) -> dict[str, Any]:
     return {
-        "schema_version": _SCHEMA_VERSION,
+        "schema_version": _ATTEMPT_STATE_SCHEMA_V2,
         "scope": encode_execution_lineage_attempt_scope(state.scope),
         "generation": state.generation,
         "next_admission_position": state.next_admission_position,
@@ -87,15 +95,16 @@ def encode_execution_lineage_attempt_state(
         "closure_kind": (
             state.closure_kind.value if state.closure_kind is not None else None
         ),
+        "discovery_contract_version": state.discovery_contract_version,
     }
 
 
 def decode_execution_lineage_attempt_state(
     payload: Mapping[str, Any],
 ) -> ExecutionLineageAttemptState:
-    _reject_unknown_keys(
-        payload,
-        frozenset(
+    schema_version = payload.get("schema_version")
+    if schema_version == _ATTEMPT_STATE_SCHEMA_V1:
+        allowed = frozenset(
             {
                 "schema_version",
                 "scope",
@@ -106,12 +115,31 @@ def decode_execution_lineage_attempt_state(
                 "sealed",
                 "closure_kind",
             },
-        ),
-    )
-    if payload.get("schema_version") != _SCHEMA_VERSION:
-        raise ExecutionLineageError(
-            "unsupported execution lineage attempt state schema version"
         )
+        discovery_contract_version = None
+    elif schema_version == _ATTEMPT_STATE_SCHEMA_V2:
+        allowed = frozenset(
+            {
+                "schema_version",
+                "scope",
+                "generation",
+                "next_admission_position",
+                "active_segment_root_execution_id",
+                "degraded",
+                "sealed",
+                "closure_kind",
+                "discovery_contract_version",
+            },
+        )
+        marker = payload.get("discovery_contract_version")
+        if marker is not None and marker != 1:
+            raise ExecutionLineageError("invalid discovery_contract_version marker")
+        discovery_contract_version = marker
+    else:
+        raise ExecutionLineageError(
+            "unsupported execution lineage attempt state schema version",
+        )
+    _reject_unknown_keys(payload, allowed)
     closure_raw = payload.get("closure_kind")
     closure_kind = (
         ExecutionLineageAttemptClosureKind(closure_raw)
@@ -134,6 +162,7 @@ def decode_execution_lineage_attempt_state(
         degraded=bool(payload.get("degraded")),
         sealed=bool(payload.get("sealed")),
         closure_kind=closure_kind,
+        discovery_contract_version=discovery_contract_version,
     )
 
 
@@ -299,3 +328,128 @@ def _require_positive_int(raw: object, *, label: str) -> int:
     if not isinstance(raw, int) or isinstance(raw, bool) or raw < 1:
         raise ExecutionLineageError(f"invalid execution lineage {label}")
     return raw
+
+
+def _require_non_negative_int(raw: object, *, label: str) -> int:
+    if not isinstance(raw, int) or isinstance(raw, bool) or raw < 0:
+        raise ExecutionLineageError(f"invalid execution lineage {label}")
+    return raw
+
+
+def encode_execution_lineage_run_scope(
+    run_scope: ExecutionLineageRunScope,
+) -> dict[str, Any]:
+    return {
+        "schema_version": _DISCOVERY_SCHEMA_V1,
+        "tenant_id": run_scope.tenant_id,
+        "task_id": str(run_scope.task_id),
+        "run_id": str(run_scope.run_id),
+    }
+
+
+def decode_execution_lineage_run_scope(
+    payload: Mapping[str, Any],
+) -> ExecutionLineageRunScope:
+    _reject_unknown_keys(
+        payload,
+        frozenset({"schema_version", "tenant_id", "task_id", "run_id"}),
+    )
+    if payload.get("schema_version") != _DISCOVERY_SCHEMA_V1:
+        raise ExecutionLineageError(
+            "unsupported execution lineage run scope schema version"
+        )
+    return build_execution_lineage_run_scope(
+        tenant_id=str(payload["tenant_id"]),
+        task_id=validate_task_id(payload["task_id"]),
+        run_id=validate_run_id(payload["run_id"]),
+    )
+
+
+def encode_execution_lineage_attempt_discovery_record(
+    record: ExecutionLineageAttemptDiscoveryRecord,
+) -> dict[str, Any]:
+    return {
+        "schema_version": _DISCOVERY_SCHEMA_V1,
+        "run_scope": encode_execution_lineage_run_scope(record.run_scope),
+        "attempt_id": str(record.attempt_id),
+        "discovery_position": record.discovery_position,
+    }
+
+
+def decode_execution_lineage_attempt_discovery_record(
+    payload: Mapping[str, Any],
+) -> ExecutionLineageAttemptDiscoveryRecord:
+    _reject_unknown_keys(
+        payload,
+        frozenset({"schema_version", "run_scope", "attempt_id", "discovery_position"}),
+    )
+    if payload.get("schema_version") != _DISCOVERY_SCHEMA_V1:
+        raise ExecutionLineageError(
+            "unsupported execution lineage attempt discovery schema version",
+        )
+    return ExecutionLineageAttemptDiscoveryRecord(
+        run_scope=decode_execution_lineage_run_scope(payload["run_scope"]),
+        attempt_id=validate_attempt_id(payload["attempt_id"]),
+        discovery_position=_require_positive_int(
+            payload.get("discovery_position"),
+            label="discovery_position",
+        ),
+    )
+
+
+def encode_execution_lineage_discovery_run_state(
+    state: ExecutionLineageDiscoveryRunState,
+) -> dict[str, Any]:
+    return {
+        "schema_version": _DISCOVERY_SCHEMA_V1,
+        "run_scope": encode_execution_lineage_run_scope(state.run_scope),
+        "generation": state.generation,
+        "next_discovery_position": state.next_discovery_position,
+        "coverage_contract_version": state.coverage_contract_version,
+        "coverage_origin": (
+            state.coverage_origin.value if state.coverage_origin is not None else None
+        ),
+    }
+
+
+def decode_execution_lineage_discovery_run_state(
+    payload: Mapping[str, Any],
+) -> ExecutionLineageDiscoveryRunState:
+    _reject_unknown_keys(
+        payload,
+        frozenset(
+            {
+                "schema_version",
+                "run_scope",
+                "generation",
+                "next_discovery_position",
+                "coverage_contract_version",
+                "coverage_origin",
+            },
+        ),
+    )
+    if payload.get("schema_version") != _DISCOVERY_SCHEMA_V1:
+        raise ExecutionLineageError(
+            "unsupported execution lineage discovery run state schema version",
+        )
+    coverage_raw = payload.get("coverage_origin")
+    coverage_origin = (
+        ExecutionLineageDiscoveryCoverageOrigin(coverage_raw)
+        if coverage_raw is not None
+        else None
+    )
+    coverage_version = payload.get("coverage_contract_version")
+    return ExecutionLineageDiscoveryRunState(
+        run_scope=decode_execution_lineage_run_scope(payload["run_scope"]),
+        generation=_require_non_negative_int(
+            payload.get("generation"), label="generation"
+        ),
+        next_discovery_position=_require_positive_int(
+            payload.get("next_discovery_position"),
+            label="next_discovery_position",
+        ),
+        coverage_contract_version=(
+            int(coverage_version) if coverage_version is not None else None
+        ),
+        coverage_origin=coverage_origin,
+    )

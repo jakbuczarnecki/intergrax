@@ -67,6 +67,8 @@ class ReconstructedAttemptLineage:
     degraded: bool | None
     closure_kind: ExecutionLineageAttemptClosureKind | None
     segments: tuple[ReconstructedLineageSegment, ...]
+    discovery_contract_version: int | None = None
+    discovery_position: int | None = None
 
 
 def reconstruct_attempt_lineage(
@@ -78,7 +80,10 @@ def reconstruct_attempt_lineage(
     attempt_id: AttemptId,
     initial_lineage_page_limit: int,
     max_lineage_records: int,
+    max_lineage_snapshot_retries: int = 8,
 ) -> ReconstructedAttemptLineage:
+    if max_lineage_snapshot_retries <= 0:
+        raise ValueError("max_lineage_snapshot_retries must be > 0")
     scope = build_execution_lineage_attempt_scope(
         tenant_id=tenant_id,
         task_id=task_id,
@@ -86,7 +91,7 @@ def reconstruct_attempt_lineage(
         attempt_id=attempt_id,
     )
     try:
-        attempt_state = reader.read_attempt_lineage_state(scope)
+        attempt_state_before = reader.read_attempt_lineage_state(scope)
     except ExecutionLineageUnavailableError:
         return ReconstructedAttemptLineage(
             attempt_id=attempt_id,
@@ -96,7 +101,7 @@ def reconstruct_attempt_lineage(
             closure_kind=None,
             segments=(),
         )
-    if attempt_state is None:
+    if attempt_state_before is None:
         return ReconstructedAttemptLineage(
             attempt_id=attempt_id,
             read_status=ExecutionLineageReadStatus.ABSENT,
@@ -106,32 +111,81 @@ def reconstruct_attempt_lineage(
             segments=(),
         )
 
-    try:
-        segments_raw, segments_truncated = _load_all_segments(
-            reader,
-            scope,
-            page_limit=initial_lineage_page_limit,
-            max_records=max_lineage_records,
-        )
-        admissions_raw, admissions_truncated = _load_all_admissions(
-            reader,
-            scope,
-            page_limit=initial_lineage_page_limit,
-            max_records=max_lineage_records,
-        )
-        seal = reader.read_seal(scope)
-    except ExecutionLineageUnavailableError:
-        return ReconstructedAttemptLineage(
-            attempt_id=attempt_id,
-            read_status=ExecutionLineageReadStatus.UNAVAILABLE,
-            completeness=None,
-            degraded=None,
-            closure_kind=None,
-            segments=(),
-        )
-    except ExecutionLineageIntegrityError as exc:
-        raise ExecutionLineageReconstructionIntegrityError(str(exc)) from exc
+    for _ in range(max_lineage_snapshot_retries):
+        try:
+            segments_raw, segments_truncated = _load_all_segments(
+                reader,
+                scope,
+                page_limit=initial_lineage_page_limit,
+                max_records=max_lineage_records,
+            )
+            admissions_raw, admissions_truncated = _load_all_admissions(
+                reader,
+                scope,
+                page_limit=initial_lineage_page_limit,
+                max_records=max_lineage_records,
+            )
+            seal = reader.read_seal(scope)
+            attempt_state_after = reader.read_attempt_lineage_state(scope)
+        except ExecutionLineageUnavailableError:
+            return ReconstructedAttemptLineage(
+                attempt_id=attempt_id,
+                read_status=ExecutionLineageReadStatus.UNAVAILABLE,
+                completeness=None,
+                degraded=None,
+                closure_kind=None,
+                segments=(),
+            )
+        except ExecutionLineageIntegrityError as exc:
+            raise ExecutionLineageReconstructionIntegrityError(str(exc)) from exc
 
+        if attempt_state_after is None:
+            raise ExecutionLineageReconstructionIntegrityError(
+                "attempt state disappeared during snapshot",
+            )
+        if (
+            not _scopes_match(scope, attempt_state_before.scope)
+            or attempt_state_before.generation != attempt_state_after.generation
+        ):
+            attempt_state_before = attempt_state_after
+            continue
+
+        truncated = segments_truncated or admissions_truncated
+        return _project_stable_attempt_lineage(
+            scope=scope,
+            attempt_state=attempt_state_after,
+            segments_raw=segments_raw,
+            admissions_raw=admissions_raw,
+            seal=seal,
+            segments_truncated=segments_truncated,
+            admissions_truncated=admissions_truncated,
+            truncated=truncated,
+            attempt_id=attempt_id,
+        )
+
+    return ReconstructedAttemptLineage(
+        attempt_id=attempt_id,
+        read_status=ExecutionLineageReadStatus.AVAILABLE,
+        completeness=ExecutionLineageCompleteness.TRUNCATED,
+        degraded=attempt_state_before.degraded,
+        closure_kind=attempt_state_before.closure_kind,
+        segments=(),
+        discovery_contract_version=attempt_state_before.discovery_contract_version,
+    )
+
+
+def _project_stable_attempt_lineage(
+    *,
+    scope: ExecutionLineageAttemptScope,
+    attempt_state: ExecutionLineageAttemptState,
+    segments_raw: tuple[ExecutionLineageSegmentRecord, ...],
+    admissions_raw: tuple[ExecutionLineageAdmissionRecord, ...],
+    seal: ExecutionLineageSealRecord | None,
+    segments_truncated: bool,
+    admissions_truncated: bool,
+    truncated: bool,
+    attempt_id: AttemptId,
+) -> ReconstructedAttemptLineage:
     _validate_lineage_scope(
         scope,
         attempt_state=attempt_state,
@@ -139,33 +193,67 @@ def reconstruct_attempt_lineage(
         admissions=admissions_raw,
         seal=seal,
     )
+    _validate_state_seal_consistency(attempt_state=attempt_state, seal=seal)
     _validate_execution_id_uniqueness(admissions_raw)
-    _validate_segment_roots(segments_raw, admissions_raw)
-    _validate_admission_segment_membership(segments_raw, admissions_raw)
-    _validate_parent_edges(segments_raw, admissions_raw)
-    ordered_segments = _order_segments_by_continuity(segments_raw)
-    _validate_segment_continuity(ordered_segments)
-    segments = _build_reconstructed_segments(ordered_segments, admissions_raw)
 
-    truncated = segments_truncated or admissions_truncated
-    completeness = _derive_completeness(
-        attempt_state=attempt_state,
-        seal=seal,
-        segments=segments_raw,
-        truncated=truncated,
-    )
-    closure_kind = attempt_state.closure_kind
-    if seal is not None:
-        closure_kind = seal.closure_kind
+    if segments_truncated:
+        completeness = ExecutionLineageCompleteness.TRUNCATED
+        if not admissions_truncated:
+            _validate_admission_segment_membership(segments_raw, admissions_raw)
+            _validate_parent_edges_under_prefix(segments_raw, admissions_raw)
+        return ReconstructedAttemptLineage(
+            attempt_id=attempt_id,
+            read_status=ExecutionLineageReadStatus.AVAILABLE,
+            completeness=completeness,
+            degraded=attempt_state.degraded,
+            closure_kind=_closure_kind(attempt_state, seal),
+            segments=(),
+            discovery_contract_version=attempt_state.discovery_contract_version,
+        )
+
+    _validate_admission_segment_membership(segments_raw, admissions_raw)
+    _validate_parent_edges_under_prefix(segments_raw, admissions_raw)
+
+    if truncated:
+        ordered_segments = _order_segments_by_continuity(segments_raw)
+        segments = _build_reconstructed_segments(ordered_segments, admissions_raw)
+        completeness = ExecutionLineageCompleteness.TRUNCATED
+    else:
+        _validate_segment_roots(segments_raw, admissions_raw)
+        ordered_segments = _order_segments_by_continuity(segments_raw)
+        _validate_segment_continuity(ordered_segments)
+        _validate_unclean_degraded_consistency(attempt_state, ordered_segments)
+        _validate_root_admission_topology(
+            attempt_state=attempt_state,
+            ordered_segments=ordered_segments,
+            admissions=admissions_raw,
+        )
+        segments = _build_reconstructed_segments(ordered_segments, admissions_raw)
+        completeness = _derive_completeness(
+            attempt_state=attempt_state,
+            seal=seal,
+            segments=segments_raw,
+            truncated=False,
+        )
 
     return ReconstructedAttemptLineage(
         attempt_id=attempt_id,
         read_status=ExecutionLineageReadStatus.AVAILABLE,
         completeness=completeness,
         degraded=attempt_state.degraded,
-        closure_kind=closure_kind,
+        closure_kind=_closure_kind(attempt_state, seal),
         segments=segments,
+        discovery_contract_version=attempt_state.discovery_contract_version,
     )
+
+
+def _closure_kind(
+    attempt_state: ExecutionLineageAttemptState,
+    seal: ExecutionLineageSealRecord | None,
+) -> ExecutionLineageAttemptClosureKind | None:
+    if seal is not None:
+        return seal.closure_kind
+    return attempt_state.closure_kind
 
 
 def _load_all_admissions(
@@ -221,7 +309,7 @@ def _load_bounded_pages(
         if cursor is not None:
             if cursor in seen_cursors:
                 raise ExecutionLineageReconstructionIntegrityError(
-                    "lineage cursor cycle"
+                    "lineage cursor cycle",
                 )
             seen_cursors.add(cursor)
         page = load_page(cursor)
@@ -240,6 +328,35 @@ def _load_bounded_pages(
     return tuple(collected), truncated
 
 
+def _validate_state_seal_consistency(
+    *,
+    attempt_state: ExecutionLineageAttemptState,
+    seal: ExecutionLineageSealRecord | None,
+) -> None:
+    if attempt_state.sealed != (seal is not None):
+        raise ExecutionLineageReconstructionIntegrityError(
+            "attempt seal state mismatch",
+        )
+    if attempt_state.sealed and seal is not None:
+        if attempt_state.closure_kind is None:
+            raise ExecutionLineageReconstructionIntegrityError(
+                "sealed attempt missing closure_kind",
+            )
+        if attempt_state.closure_kind != seal.closure_kind:
+            raise ExecutionLineageReconstructionIntegrityError(
+                "attempt closure_kind mismatch",
+            )
+        if attempt_state.degraded != seal.degraded:
+            raise ExecutionLineageReconstructionIntegrityError(
+                "attempt degraded mismatch",
+            )
+    if not attempt_state.sealed:
+        if attempt_state.closure_kind is not None or seal is not None:
+            raise ExecutionLineageReconstructionIntegrityError(
+                "unsealed attempt has seal artifacts",
+            )
+
+
 def _validate_lineage_scope(
     scope: ExecutionLineageAttemptScope,
     *,
@@ -250,7 +367,7 @@ def _validate_lineage_scope(
 ) -> None:
     if not _scopes_match(scope, attempt_state.scope):
         raise ExecutionLineageReconstructionIntegrityError(
-            "attempt state scope mismatch"
+            "attempt state scope mismatch",
         )
     for segment in segments:
         if not _scopes_match(scope, segment.scope):
@@ -258,7 +375,7 @@ def _validate_lineage_scope(
     for admission in admissions:
         if not _scopes_match(scope, admission.scope):
             raise ExecutionLineageReconstructionIntegrityError(
-                "admission scope mismatch"
+                "admission scope mismatch",
             )
     if seal is not None and not _scopes_match(scope, seal.scope):
         raise ExecutionLineageReconstructionIntegrityError("seal scope mismatch")
@@ -296,7 +413,23 @@ def _validate_segment_roots(
             and admission.execution_id == segment.root_execution_id
             and admission.segment_root_execution_id == segment.root_execution_id
         ]
-        if len(roots) != 1:
+        child_admissions = [
+            admission
+            for admission in segment_admissions
+            if admission.parent_execution_id is not None
+        ]
+        if child_admissions and not roots:
+            raise ExecutionLineageReconstructionIntegrityError(
+                "segment child admission without root",
+            )
+        if (
+            segment.lifecycle is ExecutionLineageSegmentLifecycle.SEGMENT_CLOSED_CLEAN
+            and not roots
+        ):
+            raise ExecutionLineageReconstructionIntegrityError(
+                "closed clean segment missing root admission",
+            )
+        if len(roots) > 1:
             raise ExecutionLineageReconstructionIntegrityError(
                 "segment root admission invalid",
             )
@@ -314,7 +447,7 @@ def _validate_admission_segment_membership(
             )
 
 
-def _validate_parent_edges(
+def _validate_parent_edges_under_prefix(
     segments: tuple[ExecutionLineageSegmentRecord, ...],
     admissions: tuple[ExecutionLineageAdmissionRecord, ...],
 ) -> None:
@@ -336,8 +469,70 @@ def _validate_parent_edges(
                 continue
             if parent_id not in segment_map:
                 raise ExecutionLineageReconstructionIntegrityError(
-                    "child admission parent missing in segment history",
+                    "child admission parent missing in loaded admission prefix",
                 )
+            parent = segment_map[parent_id]
+            if parent.admission_position >= admission.admission_position:
+                raise ExecutionLineageReconstructionIntegrityError(
+                    "child admission parent order invalid",
+                )
+
+
+def _validate_root_admission_topology(
+    *,
+    attempt_state: ExecutionLineageAttemptState,
+    ordered_segments: tuple[ExecutionLineageSegmentRecord, ...],
+    admissions: tuple[ExecutionLineageAdmissionRecord, ...],
+) -> None:
+    admissions_by_segment: dict[ExecutionId, list[ExecutionLineageAdmissionRecord]] = {}
+    for admission in admissions:
+        admissions_by_segment.setdefault(
+            admission.segment_root_execution_id,
+            [],
+        ).append(admission)
+
+    for segment in ordered_segments:
+        segment_admissions = admissions_by_segment.get(segment.root_execution_id, ())
+        roots = [
+            admission
+            for admission in segment_admissions
+            if admission.parent_execution_id is None
+            and admission.execution_id == segment.root_execution_id
+        ]
+        if roots:
+            continue
+        if (
+            segment.lifecycle is ExecutionLineageSegmentLifecycle.SEGMENT_OPEN
+            and not attempt_state.sealed
+            and len(segment_admissions) == 0
+        ):
+            continue
+        if (
+            segment.lifecycle is ExecutionLineageSegmentLifecycle.SEGMENT_UNCLEAN
+            and attempt_state.degraded
+            and len(segment_admissions) == 0
+        ):
+            continue
+        if segment.lifecycle is ExecutionLineageSegmentLifecycle.SEGMENT_CLOSED_CLEAN:
+            raise ExecutionLineageReconstructionIntegrityError(
+                "closed clean segment missing root admission",
+            )
+
+
+def _validate_unclean_degraded_consistency(
+    attempt_state: ExecutionLineageAttemptState,
+    ordered_segments: tuple[ExecutionLineageSegmentRecord, ...],
+) -> None:
+    if (
+        any(
+            segment.lifecycle is ExecutionLineageSegmentLifecycle.SEGMENT_UNCLEAN
+            for segment in ordered_segments
+        )
+        and not attempt_state.degraded
+    ):
+        raise ExecutionLineageReconstructionIntegrityError(
+            "unclean segment requires degraded attempt",
+        )
 
 
 def _order_segments_by_continuity(
@@ -357,7 +552,7 @@ def _order_segments_by_continuity(
     while current is not None:
         if current.root_execution_id in visited:
             raise ExecutionLineageReconstructionIntegrityError(
-                "segment continuity cycle"
+                "segment continuity cycle",
             )
         visited.add(current.root_execution_id)
         ordered.append(current)
@@ -365,7 +560,7 @@ def _order_segments_by_continuity(
         current = successor
     if len(visited) != len(segments):
         raise ExecutionLineageReconstructionIntegrityError(
-            "segment predecessor missing"
+            "segment predecessor missing",
         )
     return tuple(ordered)
 
@@ -399,11 +594,11 @@ def _validate_segment_continuity(
         predecessor = segment.predecessor_root_execution_id
         if predecessor is None:
             raise ExecutionLineageReconstructionIntegrityError(
-                "segment predecessor missing"
+                "segment predecessor missing",
             )
         if predecessor == segment.root_execution_id:
             raise ExecutionLineageReconstructionIntegrityError(
-                "segment continuity cycle"
+                "segment continuity cycle",
             )
         previous = ordered_segments[index - 1]
         if predecessor != previous.root_execution_id:
@@ -460,7 +655,7 @@ def _derive_completeness(
         return ExecutionLineageCompleteness.PARTIAL
     if not attempt_state.sealed:
         return ExecutionLineageCompleteness.OPEN
-    if seal is None or attempt_state.degraded:
+    if seal is None:
         return ExecutionLineageCompleteness.PARTIAL
     return ExecutionLineageCompleteness.COMPLETE
 

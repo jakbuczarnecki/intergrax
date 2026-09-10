@@ -6,44 +6,65 @@
 from __future__ import annotations
 
 import threading
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Protocol, TypeVar
 
-from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    validate_attempt_id,
+    validate_execution_id,
+)
 from intergrax.contracts.execution_lineage import (
     ExecutionLineageAdmissionPage,
     ExecutionLineageAdmissionRecord,
     ExecutionLineageAttemptClosureKind,
+    ExecutionLineageAttemptDiscoveryPage,
+    ExecutionLineageAttemptDiscoveryRecord,
     ExecutionLineageAttemptScope,
     ExecutionLineageAttemptState,
+    ExecutionLineageConfigurationError,
+    ExecutionLineageDiscoveryRunState,
+    ExecutionLineageError,
     ExecutionLineageIntegrityError,
     ExecutionLineagePersistence,
+    ExecutionLineageRunScope,
     ExecutionLineageSealRecord,
     ExecutionLineageSegmentLifecycle,
     ExecutionLineageSegmentPage,
     ExecutionLineageSegmentRecord,
     ExecutionLineageUnavailableError,
+    build_execution_lineage_run_scope,
     validate_admission_page_limit,
     validate_lineage_page_limit,
 )
 from intergrax.runtime.execution.lineage.codecs import (
     decode_execution_lineage_admission_record,
+    decode_execution_lineage_attempt_discovery_record,
     decode_execution_lineage_attempt_state,
+    decode_execution_lineage_discovery_run_state,
     decode_execution_lineage_segment_record,
     decode_execution_lineage_seal_record,
     encode_execution_lineage_admission_record,
+    encode_execution_lineage_attempt_discovery_record,
     encode_execution_lineage_attempt_state,
+    encode_execution_lineage_discovery_run_state,
     encode_execution_lineage_segment_record,
     encode_execution_lineage_seal_record,
 )
 
 _PARTITION_PREFIX = "intergrax.execution_lineage.v1"
 _META_ROW = "meta:attempt"
+_DISCOVERY_RUN_META_ROW = "meta:discovery_run"
+_DISCOVERY_ATTEMPT_ROW_PREFIX = "attempt:"
 _SEAL_ROW = "meta:seal"
 _SEGMENT_ROW_PREFIX = "segment:"
 _ADMISSION_ROW_PREFIX = "admission:"
 _MAX_ATOMIC_RETRIES = 256
 _MAX_ON_CREATED_OPS = 4
+_LIST_ROW_SORT_EXTRACTORS: dict[str, Callable[[dict[str, object]], object]] = {}
+_DecodedPayload = TypeVar("_DecodedPayload")
 
 
 def execution_lineage_partition_key(scope: ExecutionLineageAttemptScope) -> str:
@@ -51,6 +72,26 @@ def execution_lineage_partition_key(scope: ExecutionLineageAttemptScope) -> str:
         f"{_PARTITION_PREFIX}:tenant:{scope.tenant_id}:task:{scope.task_id}:"
         f"run:{scope.run_id}:attempt:{scope.attempt_id}"
     )
+
+
+def execution_lineage_discovery_partition_key(
+    run_scope: ExecutionLineageRunScope,
+) -> str:
+    return (
+        f"{_PARTITION_PREFIX}:tenant:{run_scope.tenant_id}:task:{run_scope.task_id}:"
+        f"run:{run_scope.run_id}:discovery"
+    )
+
+
+def _discovery_attempt_row_key(attempt_id: AttemptId) -> str:
+    return f"{_DISCOVERY_ATTEMPT_ROW_PREFIX}{attempt_id}"
+
+
+def _register_list_row_sort_extractor(
+    sort_path: str,
+    extractor: Callable[[dict[str, object]], object],
+) -> None:
+    _LIST_ROW_SORT_EXTRACTORS[sort_path] = extractor
 
 
 def _segment_row_key(root_execution_id: ExecutionId) -> str:
@@ -72,8 +113,20 @@ def _scopes_match(
     )
 
 
+def _run_scopes_match(
+    left: ExecutionLineageRunScope, right: ExecutionLineageRunScope
+) -> bool:
+    return (
+        left.tenant_id == right.tenant_id
+        and left.task_id == right.task_id
+        and left.run_id == right.run_id
+    )
+
+
 def _initial_attempt_state(
     scope: ExecutionLineageAttemptScope,
+    *,
+    discovery_contract_version: int | None = None,
 ) -> ExecutionLineageAttemptState:
     return ExecutionLineageAttemptState(
         scope=scope,
@@ -83,6 +136,19 @@ def _initial_attempt_state(
         degraded=False,
         sealed=False,
         closure_kind=None,
+        discovery_contract_version=discovery_contract_version,
+    )
+
+
+def _initial_discovery_run_state(
+    run_scope: ExecutionLineageRunScope,
+) -> ExecutionLineageDiscoveryRunState:
+    return ExecutionLineageDiscoveryRunState(
+        run_scope=run_scope,
+        generation=1,
+        next_discovery_position=2,
+        coverage_contract_version=None,
+        coverage_origin=None,
     )
 
 
@@ -91,6 +157,19 @@ class _PartitionRow:
     partition_key: str
     row_key: str
     data: dict[str, object]
+
+
+def _extract_list_row_sort_value(
+    row: _PartitionRow,
+    *,
+    sort_path: str,
+) -> object:
+    if sort_path == "root_execution_id":
+        return row.row_key
+    extractor = _LIST_ROW_SORT_EXTRACTORS.get(sort_path)
+    if extractor is None:
+        raise ValueError(f"unsupported list row sort path: {sort_path}")
+    return extractor(row.data)
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,15 +266,36 @@ class _ExecutionLineageStoreLogic:
         self._store = store
 
     def open_attempt(
-        self, scope: ExecutionLineageAttemptScope
+        self,
+        scope: ExecutionLineageAttemptScope,
+        *,
+        discovery_contract_version: int | None = None,
     ) -> ExecutionLineageAttemptState:
+        if discovery_contract_version is not None and discovery_contract_version != 1:
+            raise ExecutionLineageIntegrityError("invalid discovery_contract_version")
         partition = execution_lineage_partition_key(scope)
         existing = self._read_attempt_state(partition)
         if existing is not None:
-            if not _scopes_match(existing.scope, scope):
-                raise ExecutionLineageIntegrityError("attempt scope mismatch")
-            return existing
-        initial = _initial_attempt_state(scope)
+            return self._open_existing_attempt(
+                scope,
+                existing,
+                requested_discovery_contract_version=discovery_contract_version,
+            )
+        if discovery_contract_version is None:
+            raise ExecutionLineageConfigurationError(
+                "new attempt requires discovery_contract_version=1",
+            )
+        run_scope = build_execution_lineage_run_scope(
+            tenant_id=scope.tenant_id,
+            task_id=scope.task_id,
+            run_id=scope.run_id,
+        )
+        discovery = self.read_attempt_discovery_record(run_scope, scope.attempt_id)
+        if discovery is None:
+            raise ExecutionLineageIntegrityError(
+                "post-v1 attempt missing discovery record",
+            )
+        initial = _initial_attempt_state(scope, discovery_contract_version=1)
         created = self._store.put_if_absent(
             _PartitionRow(
                 partition, _META_ROW, encode_execution_lineage_attempt_state(initial)
@@ -206,9 +306,173 @@ class _ExecutionLineageStoreLogic:
         loaded = self._read_attempt_state(partition)
         if loaded is None:
             raise ExecutionLineageUnavailableError(
-                "attempt open race left no durable state"
+                "attempt open race left no durable state",
             )
-        return loaded
+        return self._open_existing_attempt(
+            scope,
+            loaded,
+            requested_discovery_contract_version=discovery_contract_version,
+        )
+
+    def _open_existing_attempt(
+        self,
+        scope: ExecutionLineageAttemptScope,
+        existing: ExecutionLineageAttemptState,
+        *,
+        requested_discovery_contract_version: int | None,
+    ) -> ExecutionLineageAttemptState:
+        if not _scopes_match(existing.scope, scope):
+            raise ExecutionLineageIntegrityError("attempt scope mismatch")
+        existing_marker = existing.discovery_contract_version
+        requested = requested_discovery_contract_version
+        if existing_marker is None and requested is None:
+            return existing
+        if existing_marker == 1 and requested == 1:
+            run_scope = build_execution_lineage_run_scope(
+                tenant_id=scope.tenant_id,
+                task_id=scope.task_id,
+                run_id=scope.run_id,
+            )
+            if self.read_attempt_discovery_record(run_scope, scope.attempt_id) is None:
+                raise ExecutionLineageIntegrityError(
+                    "post-v1 attempt missing discovery record",
+                )
+            return existing
+        if existing_marker is None and requested == 1:
+            raise ExecutionLineageConfigurationError(
+                "legacy attempt cannot be promoted to discovery-v1",
+            )
+        if existing_marker == 1 and requested is None:
+            raise ExecutionLineageIntegrityError(
+                "discovery-v1 attempt requires discovery_contract_version=1",
+            )
+        if existing_marker != requested:
+            raise ExecutionLineageIntegrityError("discovery contract mismatch")
+        return existing
+
+    def register_attempt_for_run(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        attempt_id: AttemptId,
+    ) -> ExecutionLineageAttemptDiscoveryRecord:
+        attempt = validate_attempt_id(attempt_id)
+        partition = execution_lineage_discovery_partition_key(run_scope)
+        row_key = _discovery_attempt_row_key(attempt)
+        existing = self._read_attempt_discovery_record(partition, row_key)
+        if existing is not None:
+            if existing.attempt_id != attempt:
+                raise ExecutionLineageIntegrityError("discovery attempt_id mismatch")
+            if not _run_scopes_match(existing.run_scope, run_scope):
+                raise ExecutionLineageIntegrityError("discovery run scope mismatch")
+            return existing
+        for _ in range(_MAX_ATOMIC_RETRIES):
+            run_state = self._read_discovery_run_state(partition)
+            if run_state is None:
+                position = 1
+                record = ExecutionLineageAttemptDiscoveryRecord(
+                    run_scope=run_scope,
+                    attempt_id=attempt,
+                    discovery_position=position,
+                )
+                initial_run_state = _initial_discovery_run_state(run_scope)
+                batch = _PartitionAtomicRowBatch(
+                    partition_key=partition,
+                    primary_put_if_absent=_PartitionRow(
+                        partition,
+                        row_key,
+                        encode_execution_lineage_attempt_discovery_record(record),
+                    ),
+                    on_created_ops=(
+                        _PartitionPutIfAbsentOnCreated(
+                            row=_PartitionRow(
+                                partition,
+                                _DISCOVERY_RUN_META_ROW,
+                                encode_execution_lineage_discovery_run_state(
+                                    initial_run_state,
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+                if self._execute_discovery_registration_batch(batch):
+                    return record
+                continue
+            position = run_state.next_discovery_position
+            record = ExecutionLineageAttemptDiscoveryRecord(
+                run_scope=run_scope,
+                attempt_id=attempt,
+                discovery_position=position,
+            )
+            updated_run_state = run_state.model_copy(
+                update={
+                    "generation": run_state.generation + 1,
+                    "next_discovery_position": position + 1,
+                },
+            )
+            batch = _PartitionAtomicRowBatch(
+                partition_key=partition,
+                primary_put_if_absent=_PartitionRow(
+                    partition,
+                    row_key,
+                    encode_execution_lineage_attempt_discovery_record(record),
+                ),
+                on_created_ops=(
+                    _PartitionReplaceIfMatchOnCreated(
+                        expected=self._discovery_run_row(partition, run_state),
+                        replacement=self._discovery_run_row(
+                            partition,
+                            updated_run_state,
+                        ),
+                    ),
+                ),
+            )
+            if self._execute_discovery_registration_batch(batch):
+                return record
+        raise ExecutionLineageUnavailableError(
+            "failed to register attempt discovery after bounded retries",
+        )
+
+    def read_discovery_run_state(
+        self,
+        run_scope: ExecutionLineageRunScope,
+    ) -> ExecutionLineageDiscoveryRunState | None:
+        partition = execution_lineage_discovery_partition_key(run_scope)
+        return self._read_discovery_run_state(partition)
+
+    def list_attempts_for_run(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ExecutionLineageAttemptDiscoveryPage:
+        validated_limit = validate_lineage_page_limit(limit)
+        partition = execution_lineage_discovery_partition_key(run_scope)
+        rows, next_cursor = self._store.list_rows(
+            partition,
+            row_key_prefix=_DISCOVERY_ATTEMPT_ROW_PREFIX,
+            limit=validated_limit,
+            cursor=cursor,
+            sort_path="discovery_position",
+        )
+        attempts = tuple(
+            self._decode_attempt_discovery_record(row.data) for row in rows
+        )
+        for record in attempts:
+            if not _run_scopes_match(record.run_scope, run_scope):
+                raise ExecutionLineageIntegrityError("discovery run scope mismatch")
+        return ExecutionLineageAttemptDiscoveryPage(
+            attempts=attempts,
+            next_cursor=next_cursor,
+        )
+
+    def read_attempt_discovery_record(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        attempt_id: AttemptId,
+    ) -> ExecutionLineageAttemptDiscoveryRecord | None:
+        partition = execution_lineage_discovery_partition_key(run_scope)
+        row_key = _discovery_attempt_row_key(validate_attempt_id(attempt_id))
+        return self._read_attempt_discovery_record(partition, row_key)
 
     def open_segment(
         self,
@@ -481,9 +745,7 @@ class _ExecutionLineageStoreLogic:
             cursor=cursor,
             sort_path="admission_position",
         )
-        admissions = tuple(
-            decode_execution_lineage_admission_record(row.data) for row in rows
-        )
+        admissions = tuple(self._decode_admission_record(row.data) for row in rows)
         admissions = tuple(
             sorted(admissions, key=lambda item: item.admission_position),
         )
@@ -506,9 +768,7 @@ class _ExecutionLineageStoreLogic:
             cursor=cursor,
             sort_path="root_execution_id",
         )
-        segments = tuple(
-            decode_execution_lineage_segment_record(row.data) for row in rows
-        )
+        segments = tuple(self._decode_segment_record(row.data) for row in rows)
         segments = tuple(
             sorted(segments, key=lambda item: str(item.root_execution_id)),
         )
@@ -772,13 +1032,110 @@ class _ExecutionLineageStoreLogic:
         except RuntimeError:
             return False
 
+    def _execute_discovery_registration_batch(
+        self,
+        batch: _PartitionAtomicRowBatch,
+    ) -> bool:
+        try:
+            return self._store.execute_partition_atomic_batch(batch).primary_created
+        except RuntimeError:
+            return False
+
+    def _discovery_run_row(
+        self,
+        partition: str,
+        state: ExecutionLineageDiscoveryRunState,
+    ) -> _PartitionRow:
+        return _PartitionRow(
+            partition,
+            _DISCOVERY_RUN_META_ROW,
+            encode_execution_lineage_discovery_run_state(state),
+        )
+
+    def _decode_durable_payload(
+        self,
+        payload: dict[str, object],
+        *,
+        decode: Callable[[dict[str, object]], _DecodedPayload],
+    ) -> _DecodedPayload:
+        try:
+            return decode(payload)
+        except ExecutionLineageIntegrityError:
+            raise
+        except (ExecutionLineageError, ValueError, KeyError, TypeError) as exc:
+            raise ExecutionLineageIntegrityError(str(exc)) from exc
+
+    def _decode_attempt_state(
+        self, payload: dict[str, object]
+    ) -> ExecutionLineageAttemptState:
+        return self._decode_durable_payload(
+            payload,
+            decode=decode_execution_lineage_attempt_state,
+        )
+
+    def _decode_segment_record(
+        self, payload: dict[str, object]
+    ) -> ExecutionLineageSegmentRecord:
+        return self._decode_durable_payload(
+            payload,
+            decode=decode_execution_lineage_segment_record,
+        )
+
+    def _decode_admission_record(
+        self, payload: dict[str, object]
+    ) -> ExecutionLineageAdmissionRecord:
+        return self._decode_durable_payload(
+            payload,
+            decode=decode_execution_lineage_admission_record,
+        )
+
+    def _decode_seal_record(
+        self, payload: dict[str, object]
+    ) -> ExecutionLineageSealRecord:
+        return self._decode_durable_payload(
+            payload,
+            decode=decode_execution_lineage_seal_record,
+        )
+
+    def _decode_attempt_discovery_record(
+        self, payload: dict[str, object]
+    ) -> ExecutionLineageAttemptDiscoveryRecord:
+        return self._decode_durable_payload(
+            payload,
+            decode=decode_execution_lineage_attempt_discovery_record,
+        )
+
+    def _decode_discovery_run_state(
+        self, payload: dict[str, object]
+    ) -> ExecutionLineageDiscoveryRunState:
+        return self._decode_durable_payload(
+            payload,
+            decode=decode_execution_lineage_discovery_run_state,
+        )
+
     def _read_attempt_state(
         self, partition: str
     ) -> ExecutionLineageAttemptState | None:
         row = self._store.get_row(partition, _META_ROW)
         if row is None:
             return None
-        return decode_execution_lineage_attempt_state(row.data)
+        return self._decode_attempt_state(row.data)
+
+    def _read_discovery_run_state(
+        self, partition: str
+    ) -> ExecutionLineageDiscoveryRunState | None:
+        row = self._store.get_row(partition, _DISCOVERY_RUN_META_ROW)
+        if row is None:
+            return None
+        return self._decode_discovery_run_state(row.data)
+
+    def _read_attempt_discovery_record(
+        self, partition: str, row_key: str
+    ) -> ExecutionLineageAttemptDiscoveryRecord | None:
+        row = self._store.get_row(partition, row_key)
+        if row is None:
+            return None
+        return self._decode_attempt_discovery_record(row.data)
 
     def _require_attempt_state(
         self,
@@ -798,7 +1155,7 @@ class _ExecutionLineageStoreLogic:
         row = self._store.get_row(partition, row_key)
         if row is None:
             return None
-        return decode_execution_lineage_segment_record(row.data)
+        return self._decode_segment_record(row.data)
 
     def _read_admission(
         self, partition: str, row_key: str
@@ -806,13 +1163,13 @@ class _ExecutionLineageStoreLogic:
         row = self._store.get_row(partition, row_key)
         if row is None:
             return None
-        return decode_execution_lineage_admission_record(row.data)
+        return self._decode_admission_record(row.data)
 
     def _read_seal(self, partition: str) -> ExecutionLineageSealRecord | None:
         row = self._store.get_row(partition, _SEAL_ROW)
         if row is None:
             return None
-        return decode_execution_lineage_seal_record(row.data)
+        return self._decode_seal_record(row.data)
 
     def _replace_attempt_state(
         self,
@@ -873,23 +1230,18 @@ class _InMemoryPartitionAtomicRowStore:
         cursor: str | None,
         sort_path: str,
     ) -> tuple[tuple[_PartitionRow, ...], str | None]:
-        del sort_path
         with self._lock:
             rows = [
                 row
                 for (partition, _), row in self._rows.items()
                 if partition == partition_key and row.row_key.startswith(row_key_prefix)
             ]
-        if row_key_prefix == _SEGMENT_ROW_PREFIX:
-            rows.sort(key=lambda row: row.row_key)
-        else:
-            rows.sort(
-                key=lambda row: (
-                    decode_execution_lineage_admission_record(
-                        row.data
-                    ).admission_position
-                ),
+        rows.sort(
+            key=lambda row: (
+                _extract_list_row_sort_value(row, sort_path=sort_path),
+                row.row_key,
             )
+        )
         start = 0
         if cursor is not None:
             for index, row in enumerate(rows):
@@ -971,9 +1323,22 @@ class InMemoryExecutionLineagePersistence(ExecutionLineagePersistence):
         return False
 
     def open_attempt(
-        self, scope: ExecutionLineageAttemptScope
+        self,
+        scope: ExecutionLineageAttemptScope,
+        *,
+        discovery_contract_version: int | None = None,
     ) -> ExecutionLineageAttemptState:
-        return self._logic.open_attempt(scope)
+        return self._logic.open_attempt(
+            scope,
+            discovery_contract_version=discovery_contract_version,
+        )
+
+    def register_attempt_for_run(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        attempt_id: AttemptId,
+    ) -> ExecutionLineageAttemptDiscoveryRecord:
+        return self._logic.register_attempt_for_run(run_scope, attempt_id)
 
     def open_segment(
         self,
@@ -1064,3 +1429,40 @@ class InMemoryExecutionLineagePersistence(ExecutionLineagePersistence):
         self, scope: ExecutionLineageAttemptScope
     ) -> ExecutionLineageSealRecord | None:
         return self._logic.read_seal(scope)
+
+    def read_discovery_run_state(
+        self,
+        run_scope: ExecutionLineageRunScope,
+    ) -> ExecutionLineageDiscoveryRunState | None:
+        return self._logic.read_discovery_run_state(run_scope)
+
+    def list_attempts_for_run(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        limit: int,
+        cursor: str | None = None,
+    ) -> ExecutionLineageAttemptDiscoveryPage:
+        return self._logic.list_attempts_for_run(run_scope, limit, cursor=cursor)
+
+    def read_attempt_discovery_record(
+        self,
+        run_scope: ExecutionLineageRunScope,
+        attempt_id: AttemptId,
+    ) -> ExecutionLineageAttemptDiscoveryRecord | None:
+        return self._logic.read_attempt_discovery_record(run_scope, attempt_id)
+
+
+_register_list_row_sort_extractor(
+    "admission_position",
+    lambda payload: (
+        decode_execution_lineage_admission_record(payload).admission_position
+    ),
+)
+_register_list_row_sort_extractor(
+    "discovery_position",
+    lambda payload: (
+        decode_execution_lineage_attempt_discovery_record(
+            payload,
+        ).discovery_position
+    ),
+)

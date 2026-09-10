@@ -35,6 +35,7 @@ from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 
@@ -187,7 +188,7 @@ async def test_host_task_resume_uses_single_canonical_root_execution_id(
         run_id=run_id,
         attempt_id=attempt_id,
     )
-    persistence.open_attempt(scope)
+    register_v1_attempt(persistence, scope)
     persistence.open_segment(scope, checkpoint_root)
     task = Task(
         task_id=task_id,

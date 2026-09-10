@@ -143,3 +143,24 @@ Historical PASS (forensic topology) **retained**. Attempt-discovery remains **BL
 **PASS (forensic topology read path)** — canonical diagnostics read-side reconstructs durable forensic parent topology and segment continuity as derived read models without checkpoint authority or write-side coupling.
 
 **BLOCKED (attempt discovery)** — `READ_INTEGRATION_R1: BLOCKED_PENDING_ATTEMPT_DISCOVERY_ARCHITECTURE` until `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION` lands per attempt-discovery architecture R1, including honest `ExecutionAttemptDiscoveryCompleteness` semantics (`LEGACY_UNKNOWN` default; no false `COMPLETE`).
+
+## READ_INTEGRATION_R1_IMPLEMENTATION_CORRECTION
+
+> **Task:** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION`
+> **Verdict:** **PASS**
+
+| Area | Result |
+| ---- | ------ |
+| Run scope + discovery contracts | `ExecutionLineageRunScope`, discovery record/page/run state |
+| Attempt marker + codec v2 | `discovery_contract_version` None/1; v1 read implicit None; v2 write explicit |
+| Atomic registration | First/subsequent batches via `PartitionAtomicDocumentStore`; idempotent + concurrent |
+| Index-first activation | `register_attempt_for_run` before `open_attempt(..., discovery_contract_version=1)` |
+| Run discovery snapshot | Generation-guarded pagination; `LEGACY_UNKNOWN` default; `COMPLETE` only with `FROM_RUN_START` fixture |
+| Per-attempt stable snapshot | Generation-guarded segments/admissions/seal; bounded retry; churn → TRUNCATED |
+| Truncation matrix | Multi-segment/admission prefix safe; no false corruption on missing tail |
+| State/seal consistency | Fail closed on stable contradiction |
+| Provider errors | DocumentStore get/query → `ExecutionLineageUnavailableError` |
+| Operator projection | `attempt_discovery_read_status` / `attempt_discovery_completeness` on lineage view |
+| Tests | D1–D10 discovery + updated conformance/reconstruction suites |
+
+**Final verdict (post-correction):** **PASS** — bounded run-scoped attempt discovery, honest coverage metadata, stable snapshots, truncation-safe reconstruction, legacy-safe marker semantics, no second store/tree.
