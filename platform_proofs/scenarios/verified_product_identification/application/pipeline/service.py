@@ -50,6 +50,9 @@ from platform_proofs.scenarios.verified_product_identification.application.pipel
     ProductIdentificationVerificationPort,
     ProductIdentityHypothesisPort,
 )
+from platform_proofs.scenarios.verified_product_identification.application.observability.contracts import (
+    ProductIdentificationInputOrigin,
+)
 from platform_proofs.scenarios.verified_product_identification.application.pipeline.observation_mapping import (
     build_clarification_payload,
     build_fusion_payload,
@@ -59,6 +62,9 @@ from platform_proofs.scenarios.verified_product_identification.application.pipel
     build_retrieval_channel_payloads,
     build_terminal_payload,
     build_verification_payload,
+)
+from platform_proofs.scenarios.verified_product_identification.application.pipeline.retrieval_request_builder import (
+    ProductIdentificationRetrievalRequestBuilder,
 )
 from platform_proofs.scenarios.verified_product_identification.application.pipeline.stage_timing import (
     execute_timed_stage,
@@ -100,6 +106,7 @@ def _retrieval_stage_failed(retrieval: MultiChannelRetrievalResult) -> bool:
 @dataclass(frozen=True, slots=True)
 class ProductIdentificationPipelineService:
     retrieval_service: MultiChannelRetrievalPort
+    retrieval_request_builder: ProductIdentificationRetrievalRequestBuilder
     fusion_service: OfferCandidateFusionPort
     identity_service: ProductIdentityHypothesisPort
     identity_evaluation_service: IdentityHypothesisEvaluationPort
@@ -138,9 +145,10 @@ class ProductIdentificationPipelineService:
         run_id: ProductIdentificationRunId,
         recorder: ProductIdentificationObservationRecorder,
     ) -> ProductIdentificationPipelineResult:
+        query = request.query
         query_payload = build_query_context_payload(
-            input_origin=request.input_origin,
-            query_context=request.query_context,
+            input_origin=ProductIdentificationInputOrigin.TYPED_QUERY_CONTEXT,
+            query_context=query.verification_context,
             catalog_content_identity=request.catalog_content_identity,
         )
         recorder.record_payload(
@@ -158,7 +166,9 @@ class ProductIdentificationPipelineService:
             recorder=recorder,
             clock=self.clock,
             stage=ProductIdentificationStage.RETRIEVAL,
-            operation=lambda: self.retrieval_service.retrieve(request.retrieval_request),
+            operation=lambda: self.retrieval_service.retrieve(
+                self.retrieval_request_builder.build(query)
+            ),
         )
         channel_payloads = build_retrieval_channel_payloads(
             retrieval,
@@ -247,7 +257,7 @@ class ProductIdentificationPipelineService:
             operation=lambda: self.verification_service.run(
                 ProductIdentificationVerificationRequest(
                     ranked_hypotheses=ranked,
-                    query_context=request.query_context,
+                    query_context=query.verification_context,
                 )
             ),
         )
@@ -274,7 +284,7 @@ class ProductIdentificationPipelineService:
             operation=lambda: self.clarification_service.select(
                 ClarificationSelectionRequest(
                     decision=decision,
-                    query_context=request.query_context,
+                    query_context=query.verification_context,
                 )
             ),
         )

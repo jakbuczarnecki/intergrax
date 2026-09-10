@@ -29,6 +29,10 @@ from platform_proofs.scenarios.verified_product_identification.application.pipel
     ProductIdentificationPipelineConfiguration,
     ProductIdentityHypothesisPort,
 )
+from platform_proofs.scenarios.verified_product_identification.application.pipeline.retrieval_request_builder import (
+    DeterministicProductIdentificationRetrievalRequestBuilder,
+    ProductIdentificationRetrievalRequestBuilder,
+)
 from platform_proofs.scenarios.verified_product_identification.application.pipeline.service import (
     ProductIdentificationPipelineService,
 )
@@ -64,6 +68,7 @@ def build_product_identification_pipeline(
     clock: MonotonicClockPort | None = None,
     configuration: ProductIdentificationPipelineConfiguration | None = None,
     retrieval_service: MultiChannelRetrievalPort | None = None,
+    retrieval_request_builder: ProductIdentificationRetrievalRequestBuilder | None = None,
     fusion_service: OfferCandidateFusionPort | None = None,
     identity_service: ProductIdentityHypothesisPort | None = None,
     identity_evaluation_service: IdentityHypothesisEvaluationPort | None = None,
@@ -110,9 +115,17 @@ def build_product_identification_pipeline(
     )
     resolved_clock = clock if clock is not None else SystemMonotonicClock()
     resolved_configuration = configuration or ProductIdentificationPipelineConfiguration()
+    resolved_builder = (
+        retrieval_request_builder
+        if retrieval_request_builder is not None
+        else DeterministicProductIdentificationRetrievalRequestBuilder(
+            configuration=resolved_configuration,
+        )
+    )
 
     return ProductIdentificationPipelineService(
         retrieval_service=resolved_retrieval,
+        retrieval_request_builder=resolved_builder,
         fusion_service=resolved_fusion,
         identity_service=resolved_identity,
         identity_evaluation_service=resolved_evaluation,

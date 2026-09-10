@@ -54,8 +54,10 @@ from platform_proofs.scenarios.verified_product_identification.application.obser
     InMemoryProductIdentificationObservationSink,
     ObservationSinkError,
     ProductIdentificationEventKind,
+    ProductIdentificationInputOrigin,
     ProductIdentificationObservationSinkMode,
     ProductIdentificationStage,
+    QueryContextObservedPayload,
     RetrievalChannelObservedPayload,
     TerminalObservedPayload,
 )
@@ -63,6 +65,9 @@ from platform_proofs.scenarios.verified_product_identification.application.pipel
     ProductIdentificationPipelineConfiguration,
     ProductIdentificationPipelineService,
     build_product_identification_pipeline,
+)
+from platform_proofs.scenarios.verified_product_identification.application.pipeline.retrieval_request_builder import (
+    DeterministicProductIdentificationRetrievalRequestBuilder,
 )
 from platform_proofs.scenarios.verified_product_identification.application.pipeline.stage_timing import (
     SystemMonotonicClock,
@@ -90,6 +95,7 @@ from tests.unit.platform_proofs.scenarios.verified_product_identification.vpi_pi
     MapSourcePort,
     build_retrieval_result,
     constraint,
+    default_gtin_identifier,
     evidence_row,
     exact_candidate,
     hypothesis,
@@ -108,10 +114,17 @@ def _pipeline(
     identity: FixedIdentityService | None = None,
     sink: InMemoryProductIdentificationObservationSink,
     fusion_service: object | None = None,
+    configuration: ProductIdentificationPipelineConfiguration | None = None,
 ) -> ProductIdentificationPipelineService:
     identity_service = identity or FixedIdentityService(ProductIdentityHypothesisCollection(hypotheses=()))
+    resolved_configuration = configuration or ProductIdentificationPipelineConfiguration(
+        observation_sink_mode=ProductIdentificationObservationSinkMode.BEST_EFFORT,
+    )
     return ProductIdentificationPipelineService(
         retrieval_service=retrieval,
+        retrieval_request_builder=DeterministicProductIdentificationRetrievalRequestBuilder(
+            configuration=resolved_configuration,
+        ),
         fusion_service=fusion_service or build_offer_candidate_fusion(),
         identity_service=identity_service,
         identity_evaluation_service=build_identity_hypothesis_evaluation_service(),
@@ -119,9 +132,7 @@ def _pipeline(
         clarification_service=build_clarification_requirement_selection_service(),
         observation_sink=sink,
         clock=SystemMonotonicClock(),
-        configuration=ProductIdentificationPipelineConfiguration(
-            observation_sink_mode=ProductIdentificationObservationSinkMode.BEST_EFFORT,
-        ),
+        configuration=resolved_configuration,
     )
 
 
@@ -282,18 +293,10 @@ def test_channel_failure_not_empty_success() -> None:
         sink=sink,
     )
     request = pipeline_request(
-        ProductIdentificationQueryContext(),
-        retrieval=MultiChannelRetrievalRequest(
-            exact_queries=(
-                ExactIdentifierQuery(
-                    identifier=ProductIdentifier(
-                        identifier_type=ProductIdentifierType.GTIN,
-                        value="8806096660507",
-                    )
-                ),
-            ),
-            vector_query=VectorSearchQuery(query_text="ssd"),
+        ProductIdentificationQueryContext(
+            requested_identifiers=(default_gtin_identifier(),),
         ),
+        search_text="ssd",
     )
     result = service.run(request)
     channel_events = [
@@ -349,12 +352,7 @@ def test_retrieval_total_failure_short_circuits() -> None:
     )
     sink = InMemoryProductIdentificationObservationSink()
     service = _pipeline(retrieval=FixedRetrievalService(retrieval), sink=sink)
-    result = service.run(
-        pipeline_request(
-            ProductIdentificationQueryContext(),
-            retrieval=MultiChannelRetrievalRequest(vector_query=VectorSearchQuery(query_text="x")),
-        )
-    )
+    result = service.run(pipeline_request(search_text="x"))
     assert result.stage_failure is not None
     assert result.decision is None
     fusion_events = [
@@ -399,11 +397,30 @@ def test_observability_trace_invariants() -> None:
     assert sequences == list(range(len(sequences)))
     terminals = [item for item in trace if item.kind is ProductIdentificationEventKind.TERMINAL]
     assert len(terminals) == 1
+    query_events = [
+        item.payload
+        for item in trace
+        if item.kind is ProductIdentificationEventKind.QUERY_CONTEXT
+        and isinstance(item.payload, QueryContextObservedPayload)
+    ]
+    assert query_events
+    assert query_events[0].input_origin is ProductIdentificationInputOrigin.TYPED_QUERY_CONTEXT
+    assert ProductIdentificationInputOrigin.RAW_QUERY not in {
+        payload.input_origin
+        for payload in query_events
+        if isinstance(payload, QueryContextObservedPayload)
+    }
 
 
 def test_required_sink_failure_not_silent_success() -> None:
+    configuration = ProductIdentificationPipelineConfiguration(
+        observation_sink_mode=ProductIdentificationObservationSinkMode.REQUIRED,
+    )
     service = ProductIdentificationPipelineService(
         retrieval_service=FixedRetrievalService(build_retrieval_result()),
+        retrieval_request_builder=DeterministicProductIdentificationRetrievalRequestBuilder(
+            configuration=configuration,
+        ),
         fusion_service=build_offer_candidate_fusion(),
         identity_service=FixedIdentityService(ProductIdentityHypothesisCollection(hypotheses=())),
         identity_evaluation_service=build_identity_hypothesis_evaluation_service(),
@@ -411,9 +428,7 @@ def test_required_sink_failure_not_silent_success() -> None:
         clarification_service=build_clarification_requirement_selection_service(),
         observation_sink=FailingProductIdentificationObservationSink(),
         clock=SystemMonotonicClock(),
-        configuration=ProductIdentificationPipelineConfiguration(
-            observation_sink_mode=ProductIdentificationObservationSinkMode.REQUIRED,
-        ),
+        configuration=configuration,
     )
     result = service.run(pipeline_request(ProductIdentificationQueryContext()))
     assert result.stage_failure is not None

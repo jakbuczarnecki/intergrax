@@ -11,6 +11,9 @@ from platform_proofs.scenarios.verified_product_identification.application.contr
     NegativeAttributeConstraint,
     ProductIdentificationQueryContext,
 )
+from platform_proofs.scenarios.verified_product_identification.application.contracts.product_identification_query import (
+    ProductIdentificationQuery,
+)
 from platform_proofs.scenarios.verified_product_identification.application.contracts.queries import (
     ExactIdentifierQuery,
     LexicalSearchQuery,
@@ -33,6 +36,7 @@ __all__ = (
     "MissingRequirementOrigin",
     "NegativeAttributeConstraint",
     "ProductIdentificationQueryContext",
+    "ProductIdentificationQuery",
     "CatalogSearchFailure",
     "CatalogSearchFailureKind",
     "ExactIdentifierLookupResult",

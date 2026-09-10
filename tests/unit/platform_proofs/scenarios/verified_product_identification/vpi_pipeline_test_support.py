@@ -10,7 +10,13 @@ from platform_proofs.scenarios.verified_product_identification.application.contr
     CatalogSearchFailureKind,
 )
 from platform_proofs.scenarios.verified_product_identification.application.contracts.identification_context import (
+    MissingDistinguishingRequirement,
+    MissingRequirementOrigin,
+    NegativeAttributeConstraint,
     ProductIdentificationQueryContext,
+)
+from platform_proofs.scenarios.verified_product_identification.application.contracts.product_identification_query import (
+    ProductIdentificationQuery,
 )
 from platform_proofs.scenarios.verified_product_identification.application.contracts.queries import (
     ExactIdentifierQuery,
@@ -387,24 +393,36 @@ def build_retrieval_result(
     )
 
 
+def default_gtin_identifier() -> ProductIdentifier:
+    return ProductIdentifier(
+        identifier_type=ProductIdentifierType.GTIN,
+        value="8806096660507",
+    )
+
+
 def pipeline_request(
-    query: ProductIdentificationQueryContext,
+    query_context: ProductIdentificationQueryContext | None = None,
     *,
-    retrieval: MultiChannelRetrievalRequest | None = None,
+    search_text: str | None = None,
 ) -> ProductIdentificationPipelineRequest:
-    resolved_retrieval = retrieval or MultiChannelRetrievalRequest(
-        exact_queries=(
-            ExactIdentifierQuery(
-                identifier=ProductIdentifier(
-                    identifier_type=ProductIdentifierType.GTIN,
-                    value="8806096660507",
-                )
-            ),
+    ctx = query_context if query_context is not None else ProductIdentificationQueryContext()
+    if (
+        not ctx.requested_identifiers
+        and not ctx.required_constraints
+        and search_text is None
+    ):
+        ctx = ProductIdentificationQueryContext(
+            requested_identifiers=(default_gtin_identifier(),),
+            negative_constraints=ctx.negative_constraints,
+            missing_user_distinguishing_requirements=ctx.missing_user_distinguishing_requirements,
+            soft_preferences=ctx.soft_preferences,
         )
+    query = ProductIdentificationQuery(
+        verification_context=ctx,
+        search_text=search_text,
     )
     return ProductIdentificationPipelineRequest(
-        query_context=query,
-        retrieval_request=resolved_retrieval,
+        query=query,
         run_id=ProductIdentificationRunId(value="run-test-001"),
     )
 

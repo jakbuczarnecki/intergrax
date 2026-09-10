@@ -4,7 +4,7 @@
 
 - `ProductIdentificationPipelineService.run(request)` — canonical production entry point.
 - `build_product_identification_pipeline(...)` — scenario-owned composition root (constructor injection only).
-- Contracts: `ProductIdentificationPipelineRequest`, `ProductIdentificationPipelineResult`, `ProductIdentificationRunId`.
+- Contracts: `ProductIdentificationPipelineRequest` (field `query: ProductIdentificationQuery`), `ProductIdentificationPipelineResult`, `ProductIdentificationRunId`.
 
 ## Stage order
 
@@ -21,7 +21,17 @@ Infrastructure stage failure short-circuits downstream business stages. Empty su
 
 ## Query boundary today
 
-Production runs start from **`ProductIdentificationQueryContext`** (`TYPED_QUERY_CONTEXT`). Full natural-language query understanding is **not** implemented in 5C12; `RAW_QUERY` is reserved for future Real E2E.
+**Authoritative query:** `ProductIdentificationQuery` (`verification_context` + optional `search_text`).
+
+- **Verification semantics:** `ProductIdentificationQuery.verification_context` (`ProductIdentificationQueryContext`).
+- **Lexical / vector semantics:** explicit `ProductIdentificationQuery.search_text` when present — not synthesized from constraints or identifiers.
+- **Retrieval request:** derived inside the pipeline by `ProductIdentificationRetrievalRequestBuilder` (canonical: `DeterministicProductIdentificationRetrievalRequestBuilder`).
+- **Current input origin:** pipeline observability always reports `TYPED_QUERY_CONTEXT` (caller does not select origin).
+- **`RAW_QUERY`:** not implemented — reserved for future Query Understanding → `ProductIdentificationQuery` → pipeline.
+
+Retrieval and verification cannot receive unrelated query semantics through the public pipeline API.
+
+Full natural-language query understanding is **not** implemented in 5C12-R1.
 
 ## Application vs proof
 
