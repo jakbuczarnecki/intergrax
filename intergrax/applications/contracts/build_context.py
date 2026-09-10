@@ -21,6 +21,7 @@ from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 if TYPE_CHECKING:
     from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
@@ -52,6 +53,7 @@ class ApplicationBuildContext:
     environment: ApplicationEnvironmentProfile | None = None
     prompt_registry: YamlPromptRegistry | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
+    agent_registry: AgentRegistryRead | None = None
 
     @classmethod
     def for_manifest(
@@ -73,6 +75,7 @@ class ApplicationBuildContext:
         environment: ApplicationEnvironmentProfile | None = None,
         prompt_registry: YamlPromptRegistry | None = None,
         boundary_event_buffer: BoundaryEventBuffer | None = None,
+        agent_registry: AgentRegistryRead | None = None,
     ) -> ApplicationBuildContext:
         resolved_profile = integration_profile
         if resolved_profile is None and isinstance(manifest, ApplicationManifest):
@@ -94,4 +97,5 @@ class ApplicationBuildContext:
             environment=environment,
             prompt_registry=prompt_registry,
             boundary_event_buffer=boundary_event_buffer,
+            agent_registry=agent_registry,
         )

@@ -29,6 +29,9 @@ _PRODUCTION_AGENT_SURFACES = (
     _REPO_ROOT / "intergrax" / "agents" / "authoring" / "runtime_tool_helpers.py",
     _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "tools" / "uaep_tool_gateway.py",
 )
+_GOVERNANCE_GRANT_WIRING = (
+    _REPO_ROOT / "intergrax" / "applications" / "_shared" / "agent_runtime_governance_wiring.py"
+)
 
 
 def test_u3_qualification_artifact_present() -> None:
@@ -73,3 +76,19 @@ def test_u3_runtime_config_declares_agent_runtime_governance_field() -> None:
     source = config_path.read_text(encoding="utf-8")
     assert "agent_runtime_governance:" in source
     assert "AgentRuntimeGovernancePort" in source
+
+
+def test_u3_governance_grant_materialization_must_not_instantiate_agent_types() -> None:
+    source = _GOVERNANCE_GRANT_WIRING.read_text(encoding="utf-8")
+    assert "resolved_agent_type()()" not in source
+    assert "resolved_agent_type()" not in source
+    assert "build_agent_from_binding" not in source
+    assert "invoke_agent_factory" not in source
+    assert "resolve_agent_type(" not in source
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id in {"Agent", "resolve_agent_type"}:
+                raise AssertionError(
+                    f"governance grant wiring must not call {node.func.id}() for discovery",
+                )

@@ -72,9 +72,11 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.wiring.policy_runtime_bridge import apply_policy_bundle_to_runtime_config
 from intergrax.applications._shared.agent_runtime_governance_wiring import (
+    AgentRuntimeGovernanceMaterializationError,
     apply_agent_runtime_governance_to_config,
     capability_grants_from_application_manifest,
 )
+from intergrax.contracts.agent_runtime_governance import CapabilityGrant
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
     default_lab_capability_grants,
 )
@@ -213,15 +215,21 @@ def materialize_runtime_config(
     wire_secondary_llm_routing_evaluating(config, env)
     config = apply_policy_bundle_to_runtime_config(config, policy_bundle)
     if config.production_mode:
-        tenant_id = (request.tenant_id or "").strip() or "default-tenant"
-        grants: tuple = ()
+        tenant_id = (request.tenant_id or "").strip()
+        grants: tuple[CapabilityGrant, ...] = ()
         if isinstance(harness_ctx, ApplicationBuildContext) and isinstance(
             harness_ctx.manifest,
             ApplicationManifest,
         ):
+            if harness_ctx.agent_registry is None:
+                raise AgentRuntimeGovernanceMaterializationError(
+                    "production agent runtime governance requires "
+                    "ApplicationBuildContext.agent_registry",
+                )
             grants = capability_grants_from_application_manifest(
                 harness_ctx.manifest,
                 tenant_id=tenant_id,
+                agent_registry=harness_ctx.agent_registry,
             )
         elif isinstance(harness_ctx, LabHarnessContext):
             grants = default_lab_capability_grants(tenant_id)
