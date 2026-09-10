@@ -27,7 +27,7 @@ Most execution-plane limits are **per host process**:
 - `asyncio.Semaphore` for `max_parallel_nodes` / `max_inflight_nodes` on `GraphExecutor` (instance-scoped `_inflight_semaphore`).
 - `ActiveTaskRegistry` (`_LOCK`, in-memory maps) — mid-run cancel lookup; not cross-worker.
 - `IntegrationCircuitBreaker` / registry — in-process state per integration slug.
-- `DeclarativeToolInvoker._execution_pool` — `ThreadPoolExecutor()` with default worker count (unbounded upper bound at OS level).
+- `DeclarativeToolInvoker._execution_pool` — `ThreadPoolExecutor()` with no explicit `max_workers` (stdlib default **bounded** worker concurrency); Integrax does not define a platform-owned capacity/admission contract; overload can accumulate pending work in the executor's internal queue; one **shared** pool per invoker across tool calls (noisy-neighbor risk between tools).
 - `ConcurrentExecutionWork` — `asyncio.gather` over caller-supplied tuple length (no platform cap in module).
 
 ### Cross-process / durable
@@ -60,7 +60,7 @@ Each child: new `ExecutionId`, ledger grant, boundary invoke. No global counter 
 | Graph parallel batch | Optional semaphore wait; `GRAPH_BACKPRESSURE` event when inflight semaphore locked | `GraphExecutor._execute_parallel_batch`, `_emit_backpressure` |
 | Fan-out submission | Reject at validation (invalid request) | `validate_fan_out_request` |
 | Root execution admission | No central bounded queue in ExecutionRuntime | `runtime.py` lifecycle only |
-| Tool invoker | Thread pool queue (implicit); blocking wait | `invoker.py` `_execution_pool` |
+| Tool invoker | Bounded default workers; implicit pending-work queue (no admission shed); blocking wait on shared pool | `invoker.py` `_execution_pool` |
 | Event bus | `create_task` on publish | `event_bus.py` |
 
 Enterprise gap: overload without configured caps tends toward **unbounded task creation** and implicit OS/thread-pool queues rather than reject/shed at execution admission.
