@@ -45,6 +45,38 @@ class InternalPairCoverage:
             raise ValueError("supported_pair_count cannot exceed possible_pair_count")
 
 
+def compare_internal_pair_coverage(
+    left: InternalPairCoverage,
+    right: InternalPairCoverage,
+) -> int:
+    """Compare coverage quality using exact rational ordering.
+
+    Returns -1 if ``left`` ranks higher, 0 if coverage tier ties, 1 if ``right`` ranks higher.
+    ``possible_pair_count`` is denominator context only — never positive evidence.
+    Singleton ``0/0`` carries no positive support and does not outrank actual supported coverage.
+    """
+
+    if left.supported_pair_count > 0 and right.supported_pair_count == 0:
+        return -1
+    if left.supported_pair_count == 0 and right.supported_pair_count > 0:
+        return 1
+    if left.supported_pair_count == 0 and right.supported_pair_count == 0:
+        return 0
+
+    left_cross = left.supported_pair_count * right.possible_pair_count
+    right_cross = right.supported_pair_count * left.possible_pair_count
+    if left_cross > right_cross:
+        return -1
+    if left_cross < right_cross:
+        return 1
+
+    if left.supported_pair_count > right.supported_pair_count:
+        return -1
+    if left.supported_pair_count < right.supported_pair_count:
+        return 1
+    return 0
+
+
 @dataclass(frozen=True, slots=True)
 class IdentityEvidenceProfile:
     """Typed internal identity evidence summary — no raw row counts."""

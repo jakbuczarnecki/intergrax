@@ -37,14 +37,17 @@ from platform_proofs.scenarios.verified_product_identification.application.ident
 )
 from platform_proofs.scenarios.verified_product_identification.application.identity_evaluation import (
     ContradictionRelationScope,
-    DeterministicEvidenceIdentityRankingStrategy,
     EvaluatedIdentityHypothesis,
     EvidenceRelationScope,
     IdentityHypothesisEvaluationBundle,
     IdentityHypothesisEvaluationError,
     IdentityHypothesisEvaluationRequest,
     IdentityHypothesisRankingStrategy,
+    InternalPairCoverage,
     build_identity_hypothesis_evaluation_service,
+)
+from platform_proofs.scenarios.verified_product_identification.application.identity_evaluation.contracts import (
+    compare_internal_pair_coverage,
 )
 from platform_proofs.scenarios.verified_product_identification.application.identity_evaluation.scope import (
     classify_contradiction_scope,
@@ -1130,3 +1133,289 @@ def test_scope_classification_helpers() -> None:
         classify_evidence_scope(external_evidence, member_refs=member_refs)
         is EvidenceRelationScope.EXTERNAL
     )
+
+
+def test_compare_internal_pair_coverage_gtin_one_over_one_outranks_one_over_six() -> None:
+    assert (
+        compare_internal_pair_coverage(
+            InternalPairCoverage(supported_pair_count=1, possible_pair_count=1),
+            InternalPairCoverage(supported_pair_count=1, possible_pair_count=6),
+        )
+        == -1
+    )
+
+
+def test_compare_internal_pair_coverage_gtin_two_over_two_outranks_two_over_six() -> None:
+    assert (
+        compare_internal_pair_coverage(
+            InternalPairCoverage(supported_pair_count=2, possible_pair_count=2),
+            InternalPairCoverage(supported_pair_count=2, possible_pair_count=6),
+        )
+        == -1
+    )
+
+
+def test_compare_internal_pair_coverage_gtin_two_over_three_outranks_one_over_two() -> None:
+    assert (
+        compare_internal_pair_coverage(
+            InternalPairCoverage(supported_pair_count=2, possible_pair_count=3),
+            InternalPairCoverage(supported_pair_count=1, possible_pair_count=2),
+        )
+        == -1
+    )
+
+
+def test_compare_internal_pair_coverage_equal_rational_uses_supported_tie_break() -> None:
+    assert (
+        compare_internal_pair_coverage(
+            InternalPairCoverage(supported_pair_count=1, possible_pair_count=2),
+            InternalPairCoverage(supported_pair_count=2, possible_pair_count=4),
+        )
+        == 1
+    )
+
+
+def test_compare_internal_pair_coverage_complete_equal_rational_prefers_more_supported() -> None:
+    assert (
+        compare_internal_pair_coverage(
+            InternalPairCoverage(supported_pair_count=2, possible_pair_count=2),
+            InternalPairCoverage(supported_pair_count=1, possible_pair_count=1),
+        )
+        == -1
+    )
+
+
+def test_compare_internal_pair_coverage_zero_support_does_not_differentiate() -> None:
+    assert (
+        compare_internal_pair_coverage(
+            InternalPairCoverage(supported_pair_count=0, possible_pair_count=6),
+            InternalPairCoverage(supported_pair_count=0, possible_pair_count=1),
+        )
+        == 0
+    )
+
+
+def test_compare_internal_pair_coverage_singleton_zero_over_zero_has_no_positive_support() -> None:
+    assert (
+        compare_internal_pair_coverage(
+            InternalPairCoverage(supported_pair_count=0, possible_pair_count=0),
+            InternalPairCoverage(supported_pair_count=1, possible_pair_count=1),
+        )
+        == 1
+    )
+
+
+def test_compare_internal_pair_coverage_mpn_one_over_one_outranks_one_over_six() -> None:
+    assert (
+        compare_internal_pair_coverage(
+            InternalPairCoverage(supported_pair_count=1, possible_pair_count=1),
+            InternalPairCoverage(supported_pair_count=1, possible_pair_count=6),
+        )
+        == -1
+    )
+
+
+def test_compare_internal_pair_coverage_is_transitive() -> None:
+    samples = (
+        InternalPairCoverage(supported_pair_count=1, possible_pair_count=1),
+        InternalPairCoverage(supported_pair_count=1, possible_pair_count=6),
+        InternalPairCoverage(supported_pair_count=2, possible_pair_count=3),
+        InternalPairCoverage(supported_pair_count=1, possible_pair_count=2),
+        InternalPairCoverage(supported_pair_count=0, possible_pair_count=0),
+        InternalPairCoverage(supported_pair_count=0, possible_pair_count=3),
+    )
+    for left in samples:
+        for middle in samples:
+            for right in samples:
+                left_middle = compare_internal_pair_coverage(left, middle)
+                middle_right = compare_internal_pair_coverage(middle, right)
+                left_right = compare_internal_pair_coverage(left, right)
+                if left_middle <= 0 and middle_right <= 0:
+                    assert left_right <= 0
+                if left_middle >= 0 and middle_right >= 0:
+                    assert left_right >= 0
+
+
+def _gtin_hypothesis_with_pair_coverage(
+    member_refs: tuple[SourceRecordRef, ...],
+    *,
+    supported_pairs: tuple[tuple[SourceRecordRef, SourceRecordRef], ...],
+    gtin_value: str = "8806096660507",
+) -> ProductIdentityHypothesis:
+    evidence = tuple(
+        _evidence(
+            left_ref,
+            right_ref,
+            evidence_type=IdentityEvidenceType.EXACT_IDENTIFIER_MATCH,
+            attribute_key="gtin",
+            normalized_value=gtin_value,
+            identifier_type=ProductIdentifierType.GTIN,
+        )
+        for left_ref, right_ref in supported_pairs
+    )
+    return _hypothesis(member_refs, evidence=evidence)
+
+
+def _mpn_hypothesis_with_pair_coverage(
+    member_refs: tuple[SourceRecordRef, ...],
+    *,
+    supported_pairs: tuple[tuple[SourceRecordRef, SourceRecordRef], ...],
+    mpn_value: str = "MZ-V9P2T0",
+) -> ProductIdentityHypothesis:
+    evidence = tuple(
+        _evidence(
+            left_ref,
+            right_ref,
+            evidence_type=IdentityEvidenceType.MODEL_NUMBER_MATCH,
+            attribute_key="mpn",
+            normalized_value=mpn_value,
+            identifier_type=ProductIdentifierType.MPN,
+        )
+        for left_ref, right_ref in supported_pairs
+    )
+    return _hypothesis(member_refs, evidence=evidence)
+
+
+def test_gtin_one_over_one_outranks_one_over_six_in_ranking() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    ref_c = _source_ref(OFFER_C)
+    ref_d = _source_ref(OFFER_D)
+    ref_e = _source_ref(OFFER_E)
+    ref_f = _source_ref(OFFER_F)
+    complete = _gtin_hypothesis_with_pair_coverage(
+        (ref_a, ref_b),
+        supported_pairs=((ref_a, ref_b),),
+    )
+    partial = _gtin_hypothesis_with_pair_coverage(
+        (ref_c, ref_d, ref_e, ref_f),
+        supported_pairs=((ref_c, ref_d),),
+    )
+    ranked = _evaluate(partial, complete)
+    assert ranked[0].hypothesis.hypothesis_id == complete.hypothesis_id
+
+
+def test_gtin_two_over_three_outranks_one_over_two_in_ranking() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    ref_c = _source_ref(OFFER_C)
+    ref_d = _source_ref(OFFER_D)
+    ref_e = _source_ref(OFFER_E)
+    ref_f = _source_ref(OFFER_F)
+    stronger = _gtin_hypothesis_with_pair_coverage(
+        (ref_a, ref_b, ref_c),
+        supported_pairs=((ref_a, ref_b), (ref_a, ref_c)),
+    )
+    weaker = _gtin_hypothesis_with_pair_coverage(
+        (ref_d, ref_e, ref_f, _source_ref(ProductOfferId("offer-k"))),
+        supported_pairs=((ref_d, ref_e), (ref_d, ref_f), (ref_e, ref_f)),
+    )
+    ranked = _evaluate(weaker, stronger)
+    assert ranked[0].hypothesis.hypothesis_id == stronger.hypothesis_id
+
+
+def test_gtin_complete_coverage_tie_breaks_on_supported_pairs_without_denominator_bias() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    ref_c = _source_ref(OFFER_C)
+    ref_d = _source_ref(OFFER_D)
+    ref_e = _source_ref(OFFER_E)
+    ref_f = _source_ref(OFFER_F)
+    two_member_complete = _gtin_hypothesis_with_pair_coverage(
+        (ref_a, ref_b),
+        supported_pairs=((ref_a, ref_b),),
+    )
+    three_member_complete = _gtin_hypothesis_with_pair_coverage(
+        (ref_c, ref_d, ref_e),
+        supported_pairs=((ref_c, ref_d), (ref_c, ref_e), (ref_d, ref_e)),
+    )
+    ranked = _evaluate(two_member_complete, three_member_complete)
+    assert ranked[0].hypothesis.hypothesis_id == three_member_complete.hypothesis_id
+
+
+def test_singleton_zero_over_zero_does_not_outrank_actual_gtin_support() -> None:
+    singleton = _hypothesis((_source_ref(OFFER_A),))
+    supported = _gtin_hypothesis_with_pair_coverage(
+        (_source_ref(OFFER_B), _source_ref(OFFER_C)),
+        supported_pairs=((_source_ref(OFFER_B), _source_ref(OFFER_C)),),
+    )
+    ranked = _evaluate(singleton, supported)
+    assert ranked[0].hypothesis.hypothesis_id == supported.hypothesis_id
+
+
+def test_mpn_one_over_one_outranks_one_over_six_in_ranking() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    ref_c = _source_ref(OFFER_C)
+    ref_d = _source_ref(OFFER_D)
+    ref_e = _source_ref(OFFER_E)
+    ref_f = _source_ref(OFFER_F)
+    complete = _mpn_hypothesis_with_pair_coverage(
+        (ref_a, ref_b),
+        supported_pairs=((ref_a, ref_b),),
+    )
+    partial = _mpn_hypothesis_with_pair_coverage(
+        (ref_c, ref_d, ref_e, ref_f),
+        supported_pairs=((ref_c, ref_d),),
+    )
+    ranked = _evaluate(partial, complete)
+    assert ranked[0].hypothesis.hypothesis_id == complete.hypothesis_id
+
+
+def test_anti_size_bias_fixture_h_small_outranks_h_large() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    ref_c = _source_ref(OFFER_C)
+    ref_d = _source_ref(OFFER_D)
+    ref_e = _source_ref(OFFER_E)
+    ref_f = _source_ref(OFFER_F)
+    h_small = _gtin_hypothesis_with_pair_coverage(
+        (ref_a, ref_b),
+        supported_pairs=((ref_a, ref_b),),
+    )
+    h_large = _gtin_hypothesis_with_pair_coverage(
+        (ref_c, ref_d, ref_e, ref_f),
+        supported_pairs=((ref_c, ref_d),),
+    )
+    ranked = _evaluate(h_large, h_small)
+    assert ranked[0].hypothesis.hypothesis_id == h_small.hypothesis_id
+    assert ranked[0].evidence_profile.global_gtin_pair_coverage.supported_pair_count == 1
+    assert ranked[0].evidence_profile.global_gtin_pair_coverage.possible_pair_count == 1
+    assert ranked[1].evidence_profile.global_gtin_pair_coverage.supported_pair_count == 1
+    assert ranked[1].evidence_profile.global_gtin_pair_coverage.possible_pair_count == 6
+
+
+def test_large_denominator_cannot_win_with_equal_supported_pairs_only() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    ref_c = _source_ref(OFFER_C)
+    ref_d = _source_ref(OFFER_D)
+    ref_e = _source_ref(OFFER_E)
+    ref_f = _source_ref(OFFER_F)
+    h_small = _gtin_hypothesis_with_pair_coverage(
+        (ref_a, ref_b),
+        supported_pairs=((ref_a, ref_b),),
+    )
+    h_large = _gtin_hypothesis_with_pair_coverage(
+        (ref_c, ref_d, ref_e, ref_f),
+        supported_pairs=((ref_e, ref_f),),
+    )
+    ranked = _evaluate(h_large, h_small)
+    assert ranked[0].hypothesis.hypothesis_id == h_small.hypothesis_id
+
+
+def test_member_count_remains_late_tie_break_after_equal_gtin_coverage() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    ref_c = _source_ref(OFFER_C)
+    ref_d = _source_ref(OFFER_D)
+    smaller_member_count = _gtin_hypothesis_with_pair_coverage(
+        (ref_a, ref_b),
+        supported_pairs=((ref_a, ref_b),),
+    )
+    larger_member_count = _gtin_hypothesis_with_pair_coverage(
+        (ref_a, ref_b, ref_c, ref_d),
+        supported_pairs=((ref_a, ref_b),),
+    )
+    ranked = _evaluate(larger_member_count, smaller_member_count)
+    assert ranked[0].hypothesis.hypothesis_id == smaller_member_count.hypothesis_id

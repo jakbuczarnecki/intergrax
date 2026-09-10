@@ -9,6 +9,8 @@ from platform_proofs.scenarios.verified_product_identification.application.ident
     IdentityContradictionEvaluation,
     IdentityEvidenceProfile,
     IdentityHypothesisRankingKey,
+    InternalPairCoverage,
+    compare_internal_pair_coverage,
 )
 
 
@@ -38,18 +40,59 @@ def build_ranking_key(
     )
 
 
-def ranking_sort_key(key: IdentityHypothesisRankingKey) -> tuple[bool, int, int, int, int, int, int, int, int, str]:
-    """Canonical lexicographic ordering — lower tuple ranks higher."""
+def compare_ranking_keys(
+    left: IdentityHypothesisRankingKey,
+    right: IdentityHypothesisRankingKey,
+) -> int:
+    """Deterministic ranking comparison — negative if ``left`` ranks higher."""
 
-    return (
-        key.has_internal_blocking_contradiction,
-        -key.global_gtin_supported_pairs,
-        -key.global_gtin_possible_pairs,
-        -key.manufacturer_mpn_supported_pairs,
-        -key.manufacturer_mpn_possible_pairs,
-        -key.structured_distinct_key_count,
-        key.internal_nonblocking_count,
-        key.best_member_fused_rank,
-        key.member_count,
-        key.hypothesis_id,
+    if left.has_internal_blocking_contradiction != right.has_internal_blocking_contradiction:
+        return 1 if left.has_internal_blocking_contradiction else -1
+
+    gtin_cmp = compare_internal_pair_coverage(
+        InternalPairCoverage(
+            supported_pair_count=left.global_gtin_supported_pairs,
+            possible_pair_count=left.global_gtin_possible_pairs,
+        ),
+        InternalPairCoverage(
+            supported_pair_count=right.global_gtin_supported_pairs,
+            possible_pair_count=right.global_gtin_possible_pairs,
+        ),
     )
+    if gtin_cmp != 0:
+        return gtin_cmp
+
+    mpn_cmp = compare_internal_pair_coverage(
+        InternalPairCoverage(
+            supported_pair_count=left.manufacturer_mpn_supported_pairs,
+            possible_pair_count=left.manufacturer_mpn_possible_pairs,
+        ),
+        InternalPairCoverage(
+            supported_pair_count=right.manufacturer_mpn_supported_pairs,
+            possible_pair_count=right.manufacturer_mpn_possible_pairs,
+        ),
+    )
+    if mpn_cmp != 0:
+        return mpn_cmp
+
+    if left.structured_distinct_key_count != right.structured_distinct_key_count:
+        return (
+            1
+            if left.structured_distinct_key_count < right.structured_distinct_key_count
+            else -1
+        )
+
+    if left.internal_nonblocking_count != right.internal_nonblocking_count:
+        return -1 if left.internal_nonblocking_count < right.internal_nonblocking_count else 1
+
+    if left.best_member_fused_rank != right.best_member_fused_rank:
+        return -1 if left.best_member_fused_rank < right.best_member_fused_rank else 1
+
+    if left.member_count != right.member_count:
+        return -1 if left.member_count < right.member_count else 1
+
+    if left.hypothesis_id < right.hypothesis_id:
+        return -1
+    if left.hypothesis_id > right.hypothesis_id:
+        return 1
+    return 0

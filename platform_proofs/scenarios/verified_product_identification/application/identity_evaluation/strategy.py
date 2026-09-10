@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from functools import cmp_to_key
 from typing import Protocol
 
 from platform_proofs.scenarios.verified_product_identification.application.identity_evaluation.contracts import (
@@ -10,7 +11,7 @@ from platform_proofs.scenarios.verified_product_identification.application.ident
     IdentityHypothesisEvaluationBundle,
 )
 from platform_proofs.scenarios.verified_product_identification.application.identity_evaluation.ranking_key import (
-    ranking_sort_key,
+    compare_ranking_keys,
 )
 
 
@@ -35,7 +36,12 @@ class DeterministicEvidenceIdentityRankingStrategy:
         ordered = tuple(
             sorted(
                 bundles,
-                key=lambda bundle: ranking_sort_key(bundle.ranking_key),
+                key=cmp_to_key(
+                    lambda left, right: compare_ranking_keys(
+                        left.ranking_key,
+                        right.ranking_key,
+                    )
+                ),
             )
         )
         return tuple(

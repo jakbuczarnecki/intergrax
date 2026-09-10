@@ -47,8 +47,8 @@ No weighted sum. No confidence / probability / scalar identity score.
 Frozen ordering key (`DeterministicEvidenceIdentityRankingStrategy`):
 
 1. Internal blocking contradiction present: **NO** before **YES**
-2. Global GTIN internal pair coverage: higher supported, then higher possible
-3. Manufacturer MPN internal pair coverage: higher supported, then higher possible
+2. Global GTIN internal pair coverage: exact rational `supported/possible` quality (integer cross-multiplication — no float ratio); hypotheses with zero supported GTIN pairs do not outrank hypotheses with actual GTIN support; equal rational coverage may tie-break on supported pair count only after coverage quality is equal (e.g. `2/2` vs `1/1`); `possible_pair_count` is denominator context only — never positive evidence
+3. Manufacturer MPN internal pair coverage: same rational semantics as GTIN
 4. Structured identity breadth: more distinct internal structured keys first
 5. Internal nonblocking contradiction burden: fewer first
 6. Best member `fused_rank` among hypothesis members: lower first
@@ -59,7 +59,7 @@ Frozen ordering key (`DeterministicEvidenceIdentityRankingStrategy`):
 
 ## Singleton semantics
 
-A one-member hypothesis has `possible_internal_pairs = 0`. Lack of cross-offer support is not negative evidence.
+A one-member hypothesis has `possible_internal_pairs = 0` and GTIN/MPN coverage `0/0`. This means **no cross-offer coverage is available** — it is **not** perfect coverage and carries **no positive identity support**. A singleton must not outrank a hypothesis with actual supported GTIN/MPN pairs. Lack of cross-offer support is not negative evidence.
 
 ## Service boundary
 
