@@ -135,6 +135,54 @@ async def test_bounded_concurrent_work_strict_failure_semantics() -> None:
 
 
 @pytest.mark.asyncio
+async def test_strict_terminal_failure_no_new_work_after_observed_failure() -> None:
+    release = asyncio.Event()
+    started_after_terminal: list[str] = []
+    terminal = False
+    terminal_lock = asyncio.Lock()
+
+    class StrictFailPort(ExecutionWorkPort[str, WorkResult, WorkResult]):
+        async def execute(
+            self,
+            request: ExecutionRequest[str, WorkResult],
+        ) -> WorkResult:
+            nonlocal terminal
+            label = request.input
+            async with terminal_lock:
+                if terminal:
+                    started_after_terminal.append(label)
+                    return WorkResult(value=label)
+            if label == "item-0":
+                async with terminal_lock:
+                    terminal = True
+                raise RuntimeError("failed: item-0")
+            await release.wait()
+            async with terminal_lock:
+                if terminal:
+                    started_after_terminal.append(label)
+            return WorkResult(value=label)
+
+    port = StrictFailPort()
+    labels = tuple(f"item-{index}" for index in range(20))
+    requests = tuple(_request(label) for label in labels)
+    policy = ConcurrentExecutionWorkPolicy(max_concurrency=3)
+
+    task = asyncio.create_task(
+        execute_concurrent_execution_work(port, requests, policy=policy),
+    )
+    for _ in range(200):
+        async with terminal_lock:
+            if terminal:
+                break
+        await asyncio.sleep(0)
+    assert terminal
+    release.set()
+    with pytest.raises(RuntimeError, match="failed: item-0"):
+        await asyncio.wait_for(task, timeout=2.0)
+    assert started_after_terminal == []
+
+
+@pytest.mark.asyncio
 async def test_bounded_concurrent_work_resilient_per_item_failures() -> None:
     class FailPort(ExecutionWorkPort[str, WorkResult, WorkResult]):
         async def execute(

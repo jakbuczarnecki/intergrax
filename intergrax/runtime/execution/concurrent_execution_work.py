@@ -69,41 +69,51 @@ async def _run_bounded_strict(
     count = len(requests)
     worker_count = min(policy.max_concurrency, count)
     results: list[ResultT | None] = [None] * count
-    queue: asyncio.Queue[int | None] = asyncio.Queue()
+    queue: asyncio.Queue[int] = asyncio.Queue()
     for index in range(count):
         queue.put_nowait(index)
 
+    shutdown = asyncio.Event()
+    terminal_failure: BaseException | None = None
+    terminal_lock = asyncio.Lock()
+    workers: list[asyncio.Task[None]] = []
+
     async def worker() -> None:
-        while True:
-            index = await queue.get()
-            if index is None:
-                queue.task_done()
+        nonlocal terminal_failure
+        while not shutdown.is_set():
+            try:
+                index = queue.get_nowait()
+            except asyncio.QueueEmpty:
+                return
+            if shutdown.is_set():
                 return
             try:
                 results[index] = await port.execute(requests[index])
-            except Exception:
+            except asyncio.CancelledError:
                 raise
-            finally:
-                queue.task_done()
+            except Exception as exc:
+                async with terminal_lock:
+                    if terminal_failure is None:
+                        terminal_failure = exc
+                shutdown.set()
+                current = asyncio.current_task()
+                for task in workers:
+                    if task is not current:
+                        task.cancel()
+                return
 
     workers = [asyncio.create_task(worker()) for _ in range(worker_count)]
     try:
-        try:
-            await queue.join()
-        except asyncio.CancelledError:
-            for task in workers:
-                task.cancel()
-            raise
-    finally:
-        for _ in range(worker_count):
-            queue.put_nowait(None)
         await asyncio.gather(*workers, return_exceptions=True)
+    except asyncio.CancelledError:
+        shutdown.set()
+        for task in workers:
+            task.cancel()
+        await asyncio.gather(*workers, return_exceptions=True)
+        raise
 
-    for task in workers:
-        if not task.cancelled():
-            exc = task.exception()
-            if exc is not None:
-                raise exc
+    if terminal_failure is not None:
+        raise terminal_failure
 
     ordered: list[ResultT] = []
     for item in results:

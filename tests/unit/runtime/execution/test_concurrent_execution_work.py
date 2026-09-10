@@ -108,6 +108,47 @@ async def test_concurrent_execution_work_one_failure_raises() -> None:
 
 
 @pytest.mark.asyncio
+async def test_strict_first_failure_max_concurrency_one_no_deadlock() -> None:
+    started: list[str] = []
+    port = _StrictTrackingImmediatePort(
+        started=started,
+        fail_labels=frozenset({"item-0"}),
+    )
+    labels = tuple(f"item-{index}" for index in range(5))
+    requests = tuple(_request(label) for label in labels)
+    policy = ConcurrentExecutionWorkPolicy(max_concurrency=1)
+
+    async def run() -> None:
+        await execute_concurrent_execution_work(port, requests, policy=policy)
+
+    with pytest.raises(RuntimeError, match="failed: item-0"):
+        await asyncio.wait_for(run(), timeout=2.0)
+
+    assert started == ["item-0"]
+
+
+class _StrictTrackingImmediatePort(ExecutionWorkPort[str, WorkResult, WorkResult]):
+    def __init__(
+        self,
+        *,
+        started: list[str],
+        fail_labels: frozenset[str] = frozenset(),
+    ) -> None:
+        self._started = started
+        self._fail_labels = fail_labels
+
+    async def execute(
+        self,
+        request: ExecutionRequest[str, WorkResult],
+    ) -> WorkResult:
+        label = request.input
+        self._started.append(label)
+        if label in self._fail_labels:
+            raise RuntimeError(f"failed: {label}")
+        return WorkResult(value=label)
+
+
+@pytest.mark.asyncio
 async def test_concurrent_execution_work_resilient_all_success() -> None:
     port = ImmediateWorkPort()
     outcomes = await execute_concurrent_execution_work_resilient(
