@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
@@ -25,6 +26,10 @@ from testing_support.execution_qualification.executor import (
     PytestSubprocessSuiteExecutor,
     QualificationSuiteExecutor,
     suite_log_path,
+)
+from testing_support.execution_qualification.performance_snapshot import (
+    ExecutionQualificationMeasuredRun,
+    attach_performance_snapshot,
 )
 
 
@@ -72,6 +77,28 @@ class QualificationCoordinator:
         self._executor = executor if executor is not None else PytestSubprocessSuiteExecutor()
 
     def run(
+        self,
+        manifest: QualificationRunManifest,
+        config: QualificationRunConfig,
+    ) -> ExecutionQualificationRunResult:
+        return self.run_measured(manifest, config).result
+
+    def run_measured(
+        self,
+        manifest: QualificationRunManifest,
+        config: QualificationRunConfig,
+    ) -> ExecutionQualificationMeasuredRun:
+        wall_start = time.monotonic()
+        result = self._run_inner(manifest, config)
+        wall_duration = time.monotonic() - wall_start
+        return attach_performance_snapshot(
+            result,
+            wall_duration_seconds=wall_duration,
+            max_parallel=config.max_parallel,
+            artifact_root=str(config.run_artifact_root),
+        )
+
+    def _run_inner(
         self,
         manifest: QualificationRunManifest,
         config: QualificationRunConfig,
@@ -210,6 +237,16 @@ def validate_and_run(
     executor: QualificationSuiteExecutor | None = None,
 ) -> ExecutionQualificationRunResult:
     """Validate manifest/config then run. Raises ``QualificationManifestError`` before launch."""
+    return validate_and_run_measured(manifest, config, executor=executor).result
+
+
+def validate_and_run_measured(
+    manifest: QualificationRunManifest,
+    config: QualificationRunConfig,
+    *,
+    executor: QualificationSuiteExecutor | None = None,
+) -> ExecutionQualificationMeasuredRun:
+    """Validate manifest/config then run with wall-clock performance evidence."""
     try:
         QualificationRunManifest(suites=manifest.suites)
         QualificationRunConfig(
@@ -223,4 +260,4 @@ def validate_and_run(
         raise QualificationManifestError(str(exc)) from exc
 
     coordinator = QualificationCoordinator(executor=executor)
-    return coordinator.run(manifest, config)
+    return coordinator.run_measured(manifest, config)

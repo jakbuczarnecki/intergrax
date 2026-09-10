@@ -1,6 +1,6 @@
 # Execution Qualification Acceleration — Architecture (R1 Target)
 
-**Status:** `R2 IMPLEMENTED` (NPSC-5E/R3 Final mandatory matrix projects `_MANDATORY_SUITES` → `QualificationRunManifest` → `QualificationCoordinator`; NPSC-5E Final parent topology unchanged)
+**Status:** `R3 QUALIFIED` (performance evidence + `max_parallel=2` retained; measured wall/overlap via `run_measured` / `QualificationPerformanceSnapshot`)
 
 **Scope:** Qualification / certification orchestration for Execution Engine frozen gates.
 
@@ -149,11 +149,12 @@ test_mandatory_frozen_suites_pass_via_parallel_qualification
 
 - **Canonical scope:** `_MANDATORY_SUITES` in `test_npsc5e_r3_final_child_fanout_partial_recovery_qualification.py` only.
 - **Exclusive resource:** `npsc5e-r3-cross-db` on label `R3 implementation gate` (manifest construction; coordinator stays generic).
-- **R3+:** performance tuning, optional deeper flattening of nested finals.
+- **R3:** `QualificationCoordinator.run_measured`, `QualificationPerformanceSnapshot`, `observed_overlap_ratio`; live evidence opt-in (`INTERGRAX_R3_LIVE_PERF=1`). Full-matrix wall at `max_parallel=2`: **892.31 s** (session R3); `max_parallel=3` candidate **868.02 s** (**2.7%** — below change threshold). **Qualified `max_parallel` remains 2.**
 
 ---
 
 ## References
 
 - P0 inventory: [`EXECUTION_CERTIFICATION_ACCELERATION_P0.md`](../qualification/EXECUTION_CERTIFICATION_ACCELERATION_P0.md)
+- R3 record: [`EXECUTION_CERTIFICATION_ACCELERATION_R3.md`](../qualification/EXECUTION_CERTIFICATION_ACCELERATION_R3.md)
 - Doc inventory: [`EXECUTION_ENGINE_DOCUMENTATION_INVENTORY.md`](EXECUTION_ENGINE_DOCUMENTATION_INVENTORY.md)

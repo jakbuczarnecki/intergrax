@@ -14,7 +14,13 @@ from testing_support.execution_qualification.contracts import (
     QualificationRunConfig,
     QualificationRunManifest,
 )
-from testing_support.execution_qualification.coordinator import validate_and_run
+from testing_support.execution_qualification.coordinator import (
+    validate_and_run,
+    validate_and_run_measured,
+)
+from testing_support.execution_qualification.performance_snapshot import (
+    ExecutionQualificationMeasuredRun,
+)
 from testing_support.execution_qualification.failure_report import assert_execution_qualification_pass
 from testing_support.execution_qualification.frozen_pytest_adapter import (
     AdaptedMandatorySuite,
@@ -81,12 +87,18 @@ def npsc5e_r3_qualification_run_config(
     repo_root: Path,
     *,
     run_id: str | None = None,
+    max_parallel: int | None = None,
 ) -> QualificationRunConfig:
     resolved_run_id = run_id if run_id is not None else f"npsc5e-r3-{uuid.uuid4().hex}"
     artifact_root = repo_root / "build" / "qualification" / resolved_run_id
+    resolved_parallel = (
+        max_parallel
+        if max_parallel is not None
+        else NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL
+    )
     return QualificationRunConfig(
         repo_root=repo_root,
-        max_parallel=NPSC5E_R3_EXECUTION_QUALIFICATION_MAX_PARALLEL,
+        max_parallel=resolved_parallel,
         run_artifact_root=artifact_root,
         suite_timeout_seconds=NPSC5E_R3_EXECUTION_QUALIFICATION_SUITE_TIMEOUT_SECONDS,
         run_id=resolved_run_id,
@@ -98,16 +110,37 @@ def run_npsc5e_r3_mandatory_qualification(
     repo_root: Path,
     *,
     run_id: str | None = None,
+    max_parallel: int | None = None,
 ) -> ExecutionQualificationRunResult:
+    measured = run_npsc5e_r3_mandatory_qualification_measured(
+        source,
+        repo_root,
+        run_id=run_id,
+        max_parallel=max_parallel,
+    )
+    return measured.result
+
+
+def run_npsc5e_r3_mandatory_qualification_measured(
+    source: FrozenPytestSuiteSource,
+    repo_root: Path,
+    *,
+    run_id: str | None = None,
+    max_parallel: int | None = None,
+) -> ExecutionQualificationMeasuredRun:
     adapted = build_npsc5e_r3_mandatory_projections(source)
     manifest = manifest_from_adapted_suites(adapted)
-    config = npsc5e_r3_qualification_run_config(repo_root, run_id=run_id)
+    config = npsc5e_r3_qualification_run_config(
+        repo_root,
+        run_id=run_id,
+        max_parallel=max_parallel,
+    )
     label_by_suite_id = label_by_suite_id_from_projections(adapted)
     try:
-        result = validate_and_run(manifest, config)
+        measured = validate_and_run_measured(manifest, config)
     except QualificationManifestError:
         raise
     except QualificationCoordinatorError as exc:
         raise AssertionError(f"execution qualification infrastructure failure: {exc}") from exc
-    assert_execution_qualification_pass(result, label_by_suite_id=label_by_suite_id)
-    return result
+    assert_execution_qualification_pass(measured.result, label_by_suite_id=label_by_suite_id)
+    return measured
