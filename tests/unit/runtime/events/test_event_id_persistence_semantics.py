@@ -12,6 +12,7 @@ from intergrax.contracts.execution_identity import mint_event_id, mint_run_id, m
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.events.persistence_contract import (
     EVENT_ID_OWNERSHIP_SCHEMA_V1,
+    EvidenceTenantRoutingMismatchError,
     NullRuntimeEventPersistence,
     RuntimeEventPersistence,
     RuntimeEventPersistenceIntegrityError,
@@ -78,6 +79,19 @@ def test_wrong_tenant_lookup_returns_none(
     event = sample_runtime_event(tenant_id=tenant_a)
     store.append(event, tenant_id=tenant_a)
     assert store.get_by_event_id(tenant_id=tenant_b, event_id=event.event_id) is None, label
+
+
+def test_routing_tenant_must_match_event_tenant(
+    persistence_backend: tuple[str, RuntimeEventPersistence],
+) -> None:
+    label, store = persistence_backend
+    event = sample_runtime_event(tenant_id=f"{label}-on-event")
+    with pytest.raises(EvidenceTenantRoutingMismatchError, match="tenant"):
+        store.append(event, tenant_id=f"{label}-on-route")
+    assert store.get_by_event_id(
+        tenant_id=f"{label}-on-event",
+        event_id=event.event_id,
+    ) is None, label
 
 
 def test_exact_duplicate_returns_same_positioned_event(

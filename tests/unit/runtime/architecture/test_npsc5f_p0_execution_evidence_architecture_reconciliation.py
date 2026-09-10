@@ -12,7 +12,14 @@ import pytest
 
 from intergrax.contracts.execution_identity import RunId, mint_event_id, mint_run_id, mint_task_id
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.events.evidence_durability import (
+    EvidencePersistenceRequirement,
+    evidence_persistence_requirement,
+)
 from intergrax.runtime.events.persistence_contract import (
+    EvidenceTenantRoutingMismatchError,
+    MandatoryEvidencePersistenceError,
     RuntimeEventPersistence,
     RuntimeEventPersistenceIntegrityError,
 )
@@ -114,15 +121,13 @@ def test_npsc5f_p0_same_event_id_different_payload_blocked() -> None:
 
 
 @pytest.mark.gate
-def test_npsc5f_p0_tenant_routing_explicit_vs_event_mismatch_is_gap() -> None:
-    """P0 records gap: routing tenant may differ from serialized event.tenant_id."""
+def test_npsc5f_p0_tenant_routing_explicit_vs_event_mismatch_blocked() -> None:
     store = InMemoryRuntimeEventStore()
     event = sample_runtime_event(tenant_id="tenant-on-event")
-    positioned = store.append(event, tenant_id="tenant-on-route")
-    assert positioned.event.tenant_id == "tenant-on-event"
-    lookup = store.get_by_event_id(tenant_id="tenant-on-route", event_id=event.event_id)
-    assert lookup is not None
-    assert lookup.event.tenant_id == "tenant-on-event"
+    with pytest.raises(EvidenceTenantRoutingMismatchError, match="tenant"):
+        store.append(event, tenant_id="tenant-on-route")
+    assert store.get_by_event_id(tenant_id="tenant-on-event", event_id=event.event_id) is None
+    assert store.get_by_event_id(tenant_id="tenant-on-route", event_id=event.event_id) is None
 
 
 @pytest.mark.gate
@@ -295,7 +300,7 @@ def test_npsc5f_p0_sqlite_evidence_readable_from_second_store_instance(tmp_path:
 
 
 @pytest.mark.gate
-def test_npsc5f_p0_bus_persistence_failure_is_fail_open() -> None:
+def test_npsc5f_p0_bus_mandatory_persistence_failure_is_fail_closed() -> None:
     class _Failing(RuntimeEventPersistence):
         def append(self, event, *, tenant_id: str):
             raise RuntimeError("sink down")
@@ -311,6 +316,40 @@ def test_npsc5f_p0_bus_persistence_failure_is_fail_open() -> None:
 
     bus = RuntimeEventBus(persistence=_Failing(), record_history=True)
     event = sample_runtime_event(tenant_id="tenant-bus")
+    with pytest.raises(MandatoryEvidencePersistenceError, match="mandatory"):
+        bus.record(event, tenant_id="tenant-bus")
+    assert bus.history == []
+
+
+@pytest.mark.gate
+def test_npsc5f_p0_bus_best_effort_persistence_failure_allows_record() -> None:
+    class _Failing(RuntimeEventPersistence):
+        def append(self, event, *, tenant_id: str):
+            raise RuntimeError("sink down")
+
+        def list_positioned_for_run(self, run_id, *, tenant_id: str, limit: int = 1000, through=None):
+            return []
+
+        def list_for_task(self, task_id, *, tenant_id: str, limit: int = 1000):
+            return []
+
+        def get_by_event_id(self, *, tenant_id: str, event_id):
+            return None
+
+    bus = RuntimeEventBus(persistence=_Failing(), record_history=True)
+    event = sample_runtime_event(tenant_id="tenant-bus").model_copy(
+        update={"event_type": RuntimeEventType.TASK_PROGRESS, "phase": ExecutionPhase.STEP_EXECUTION},
+    )
+    from intergrax.runtime.events.event_catalog import should_persist_event
+
+    event_id = mint_event_id()
+    while not should_persist_event(event.model_copy(update={"event_id": event_id})):
+        event_id = mint_event_id()
+    event = event.model_copy(update={"event_id": event_id})
+    assert (
+        evidence_persistence_requirement(event)
+        is EvidencePersistenceRequirement.BEST_EFFORT
+    )
     bus.record(event, tenant_id="tenant-bus")
     assert bus.history[-1].event_id == event.event_id
 
@@ -357,11 +396,11 @@ def test_npsc5f_p0_drift_gate_clean_at_5e_final() -> None:
 
 # P0 qualification flags (inventory — gaps do not fail P0)
 SAME_EVENT_ID_DIFFERENT_PAYLOAD = "BLOCKED"
-TENANT_ROUTING_EXPLICIT_VS_EVENT = "GAP"
+TENANT_ROUTING_EXPLICIT_VS_EVENT = "BLOCKED"
 FULL_RUN_READ = "TRUNCATION_GAP"
 STREAM_COMPLETENESS_EXPLICIT = "NO"
 RAW_EXPORT_BYPASS = "GAP"
-EVIDENCE_PERSISTENCE_FAILURE = "FAIL_OPEN"
+EVIDENCE_PERSISTENCE_FAILURE = "FAIL_CLOSED_MANDATORY"
 CROSS_PROCESS_EVIDENCE = "PASS"
 CONCURRENT_POSITION_ALLOCATION = "PASS"
 DIRECT_EXECUTION_BYPASSES_FROM_EVIDENCE = 0

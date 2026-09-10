@@ -150,14 +150,14 @@ Reconstructed views must remain read-only — never call execution methods on hy
 
 ## Security model (P0)
 
-- Fail-closed preferred for security-critical evidence persistence (not yet enforced on bus).
+- Fail-closed for **mandatory** execution evidence on the bus (NPSC-5F/R1); best-effort/debug signals remain explicit.
 - No raw secret fields in export allowlists; journal export path is a **P0 blocker** until aligned.
 - Query/export access control: governed at product host layer (not reimplemented in P0).
 
 ## Concurrency / backpressure
 
 - SQLite: transactional position allocation; concurrent append tests in `test_execution_position_asof.py`, `test_event_id_ownership_crash_recovery.py`.
-- Bus: no unbounded durable queue; persistence failure does not block emit (backpressure not fail-closed).
+- Bus: no unbounded durable queue; mandatory persistence failure fails the record/publish boundary (R1); scale/backpressure hardening is Session C.
 
 ## Known gaps / enterprise blockers
 
@@ -165,16 +165,16 @@ See qualification doc for severity. Summary:
 
 | ID | Topic | State |
 | -- | ----- | ----- |
-| OBS-01 | Bus fail-open on persist error | STILL PRESENT |
+| OBS-01 | Bus fail-open on persist error | **FIXED by R1** (mandatory tier fail-closed) |
 | OBS-02 | EventId content conflict | **FIXED** (reconcile + tests) |
 | OBS-03 | Journal export raw `model_dump` | STILL PRESENT |
 | OBS-04 | `build_unified_run_journal` silent truncation | STILL PRESENT |
-| OBS-05 | Route vs event tenant mismatch | STILL PRESENT |
+| OBS-05 | Route vs event tenant mismatch | **FIXED by R1** (equality enforced, zero write) |
 | OBS-06 | Task ordering via run-local position | STILL PRESENT |
 
 ## Implementation roadmap (proposed)
 
-1. **5F/R1** — Durable evidence contract hardening: bus fail-closed tiers, tenant equality on append, mandatory persist classes.
+1. **5F/R1** — **Done:** durable evidence contract hardening (`evidence_durability.py`, bus fail-closed mandatory tier, tenant equality at `resolve_event_tenant_id` / store scope).
 2. **5F/R2** — Journal completeness, scoped ordering documentation/API (`is_complete` / pagination), gap detection.
 3. **5F/R3** — Governed export: align `journal_export` with `ObservabilityExportEnvelope`; remove raw payload bypass.
 4. **5F/R4** — Reconstruction quality model, as-of/bitemporal public query alignment (build on TRACE slices).
@@ -186,7 +186,8 @@ See qualification doc for severity. Summary:
 ExecutionRuntime / Nexus / delegates
   → RuntimeEvent emission (HOS, NexusRuntimeEventPublisher, lifecycle hooks)
   → RuntimeEventBus.publish / record
-  → should_persist_event → RuntimeEventPersistence.append (scoped tenant, run position)
+  → should_persist_event → evidence_persistence_requirement → durable append → subscribers
+  → RuntimeEventPersistence.append (scoped tenant, run position)
   → list_positioned_for_run / load_positioned_run_journal_through
   → build_unified_run_journal (derived)
   → ObservabilityExportEnvelope (canonical export) OR journal_export (parallel path — gap)

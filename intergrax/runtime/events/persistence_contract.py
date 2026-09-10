@@ -34,6 +34,14 @@ class RuntimeEventPersistenceIntegrityError(Exception):
     """Raised when runtime event storage or derived indexes are inconsistent."""
 
 
+class EvidenceTenantRoutingMismatchError(RuntimeEventPersistenceIntegrityError):
+    """Raised when explicit persistence routing tenant disagrees with ``event.tenant_id``."""
+
+
+class MandatoryEvidencePersistenceError(RuntimeEventPersistenceIntegrityError):
+    """Raised when mandatory execution evidence could not be durably committed."""
+
+
 EVENT_ID_OWNERSHIP_SCHEMA_V1 = "runtime_event.event_id_ownership.v1"
 _IDENTITY_FINGERPRINT_HEX_LEN = 64
 
@@ -200,8 +208,19 @@ class AcceptedRuntimeEvent:
 
 
 def resolve_persistence_scope(*, event: RuntimeEvent, tenant_id: str) -> str:
-    """Resolve accepted persistence tenant (explicit > event field > empty)."""
+    """Resolve accepted persistence tenant with routing integrity checks."""
     return resolve_event_tenant_id(event, tenant_id)
+
+
+def _normalized_tenant_token(value: object) -> str | None:
+    if type(value) is not str:
+        return None
+    stripped = value.strip()
+    if not stripped:
+        return None
+    if value != stripped:
+        raise ValueError("tenant_id must not contain leading or trailing whitespace")
+    return stripped
 
 
 def reconcile_idempotent_event_acceptance(
@@ -385,11 +404,24 @@ def _validate_persistence_tenant_id(tenant_id: object) -> str:
 
 
 def resolve_event_tenant_id(event: RuntimeEvent, explicit: Optional[str] = None) -> str:
-    """Resolve tenant scope for persistence (explicit > event field > empty)."""
-    if explicit:
-        return explicit
-    if event.tenant_id:
-        return event.tenant_id
+    """
+    Resolve tenant scope for persistence.
+
+    When both routing and ``event.tenant_id`` are present they must match exactly;
+    otherwise persistence must not proceed (zero write).
+    """
+    route_tenant = _normalized_tenant_token(explicit)
+    event_tenant = _normalized_tenant_token(event.tenant_id)
+    if route_tenant is not None and event_tenant is not None:
+        if route_tenant != event_tenant:
+            raise EvidenceTenantRoutingMismatchError(
+                "persistence routing tenant conflicts with runtime event tenant_id",
+            )
+        return event_tenant
+    if route_tenant is not None:
+        return route_tenant
+    if event_tenant is not None:
+        return event_tenant
     return ""
 
 
