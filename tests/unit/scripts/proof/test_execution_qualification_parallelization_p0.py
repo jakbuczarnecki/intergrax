@@ -206,3 +206,44 @@ def test_p0_doc_inventory_lists_uea_canonical_owner() -> None:
     body = _read_text(_P0_DOC_INVENTORY)
     assert "UNIFIED_EXECUTION_ARCHITECTURE.md" in body
     assert "CANONICAL" in body
+
+
+def test_p0_qualification_status_inventory_qualified() -> None:
+    body = _read_text(_P0_QUAL_DOC)
+    assert "INVENTORY QUALIFIED" in body.splitlines()[2]
+
+
+def test_p0_mandatory_suite_table_has_no_unknown_classification() -> None:
+    body = _read_text(_P0_QUAL_DOC)
+    start = body.index("## R3 Final mandatory subprocess suites")
+    end = body.index("## Safe parallelization groups", start)
+    section = body[start:end]
+    assert "UNKNOWN" not in section
+    assert "ISOLATION SAFETY" in section
+    assert "COMPOSITION / PARITY" in section
+
+
+def test_p0_architecture_doc_separates_isolation_from_composition() -> None:
+    body = _read_text(_P0_ARCH_DOC)
+    assert "ISOLATION SAFETY" in body
+    assert "COMPOSITION" in body
+
+
+def _is_pytest_path_target(target: str) -> bool:
+    if target.startswith("-"):
+        return False
+    return target.startswith("tests/")
+
+
+def test_r3_mandatory_suite_target_paths_exist() -> None:
+    entries = _parse_mandatory_suite_labels(_R3_FINAL_GATE)
+    for entry in entries:
+        for target in entry.targets:
+            if not _is_pytest_path_target(target):
+                continue
+            rel = target.rstrip("/")
+            path = _REPO_ROOT / rel
+            if target.endswith("/"):
+                assert path.is_dir(), f"{entry.label}: missing dir {rel}"
+            else:
+                assert path.is_file(), f"{entry.label}: missing file {rel}"

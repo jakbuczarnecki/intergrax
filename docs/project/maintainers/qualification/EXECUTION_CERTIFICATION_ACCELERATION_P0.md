@@ -68,36 +68,60 @@ This supports **process-level** isolation for parallel leaf invocations; it does
 
 Source: `_MANDATORY_SUITES` in `test_npsc5e_r3_final_child_fanout_partial_recovery_qualification.py`.
 
-| Label | Target(s) | Parallel-safe |
-| --- | --- | --- |
-| R1 Final | `test_npsc5e_r1_final_retry_attempt_qualification.py` | **NO** (nested subprocess + in-process imports; duplicates work if run beside decomposed R1 targets) |
-| R2 Final | `test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py` | **NO** (nested `_run_pytest` tree) |
-| R3 implementation gate | `test_npsc5e_r3_child_fanout_partial_recovery.py` | **NO** (fixed `.tmp/session/npsc5e-r3/cross.db` — PROVEN) |
-| P0A | `test_npsc5e_p0a_execution_lineage_baseline_qualification.py` | **UNKNOWN** |
-| DG_001 | contracts + `tests/unit/runtime/execution/lineage/` | **UNKNOWN** (directory scope) |
-| NPSC-5A | `test_npsc5a_coordination_delegation_e2e.py` | **UNKNOWN** |
-| NPSC-5B Final | `test_npsc5b_final_production_fanout_fanin_qualification.py` | **UNKNOWN** |
-| NPSC-5C | `test_npsc5c_decision_execution_e2e.py` | **UNKNOWN** |
-| NPSC-5D Final | `test_npsc5d_final_multi_agent_governance_qualification.py` | **NO** if parallel with R3 Final (R3 Final already invokes this subprocess) |
-| HITL R3 | `test_npsc5d_r3_governed_continuation.py` | **UNKNOWN** |
-| Attempt lifecycle | multiple paths | **UNKNOWN** |
-| Child execution | multiple paths | **UNKNOWN** |
-| Terminal | `test_p0c6_terminal_outcome_convergence.py` | **UNKNOWN** |
-| Cancellation | filtered pytest args (`-k not survives_process_restart`) | **UNKNOWN** (explicit restart test excluded from matrix but invoked elsewhere in Final gate) |
-| Checkpoint store | `test_checkpoint_store.py` | **UNKNOWN** |
-| Long-running | multiple paths | **UNKNOWN** |
-| Fan-out | `test_bounded_multi_agent_fanout.py` | **UNKNOWN** |
+**ISOLATION SAFETY** = safe as one **isolated** `uv run pytest` child relative to other isolated children (distinct process + invocation basetemp). **COMPOSITION / PARITY** = scope duplication or parent-gate coupling — separate from isolation.
 
-Per-suite filesystem / DB / env (summary):
+| Label | Target(s) | ISOLATION SAFETY | COMPOSITION / PARITY |
+| --- | --- | --- | --- |
+| R1 Final | `test_npsc5e_r1_final_retry_attempt_qualification.py` | **PARALLEL_SAFE** | **SERIAL_ONLY** if a parent gate (R3 Final, NPSC-5E Final) already subprocess-invokes this file — redundant scope |
+| R2 Final | `test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py` | **PARALLEL_SAFE** | **SERIAL_ONLY** if parent gate already invokes this file; internal nested `_run_pytest` is serial **within** the child only |
+| R3 implementation gate | `test_npsc5e_r3_child_fanout_partial_recovery.py` | **REQUIRES_EXCLUSIVE_RESOURCE** | Mutex on `.tmp/session/npsc5e-r3/cross.db`; also duplicated if parent runs same file |
+| P0A | `test_npsc5e_p0a_execution_lineage_baseline_qualification.py` | **PARALLEL_SAFE** | None beyond normal mandatory-matrix single invocation |
+| DG_001 | `test_execution_lineage_contracts.py` + `tests/unit/runtime/execution/lineage/` | **PARALLEL_SAFE** | Directory target is one pytest invocation — no nested gate |
+| NPSC-5A | `test_npsc5a_coordination_delegation_e2e.py` | **PARALLEL_SAFE** | None |
+| NPSC-5B Final | `test_npsc5b_final_production_fanout_fanin_qualification.py` | **PARALLEL_SAFE** | None |
+| NPSC-5C | `test_npsc5c_decision_execution_e2e.py` | **PARALLEL_SAFE** | None |
+| NPSC-5D Final | `test_npsc5d_final_multi_agent_governance_qualification.py` | **PARALLEL_SAFE** | **SERIAL_ONLY** if R3 Final parent already subprocess-invokes this file |
+| HITL R3 | `test_npsc5d_r3_governed_continuation.py` | **PARALLEL_SAFE** | None |
+| Attempt lifecycle | `test_attempt_lifecycle.py`, `test_attempt_lifecycle_durability_gate.py`, `conformance/.../test_attempt_lifecycle.py` | **PARALLEL_SAFE** | None |
+| Child execution | `test_child_execution.py`, `test_child_execution_authority_policy.py` | **PARALLEL_SAFE** | None |
+| Terminal | `test_p0c6_terminal_outcome_convergence.py` | **PARALLEL_SAFE** | None |
+| Cancellation | `test_p0c5_cancellation_continuity.py` (`-k not survives_process_restart`), `test_p0c5a_explicit_terminal_wiring.py`, `test_task_control_governed_resume.py` | **PARALLEL_SAFE** | `survives_process_restart` excluded from this matrix label but may run under other gates — parity only, not isolation |
+| Checkpoint store | `test_checkpoint_store.py` | **PARALLEL_SAFE** | None |
+| Long-running | six files under `tests/unit/runtime/long_running/` (see gate source) | **PARALLEL_SAFE** | None |
+| Fan-out | `test_bounded_multi_agent_fanout.py` | **PARALLEL_SAFE** | None |
+
+### Per-suite isolation facts (frozen matrix — static read)
+
+| Label | Filesystem | SQLite / DB | Environment | Ports | Network | Process-global / nested |
+| --- | --- | --- | --- | --- | --- | --- |
+| R1 Final | `build/pytest/*` basetemp | In-memory / no shared repo DB | No `os.environ` / `monkeypatch.setenv` in file | **NONE OBSERVED** | **NONE OBSERVED** | `importlib` frozen regression in child interpreter only |
+| R2 Final | basetemp; E2E uses `tmp_path`/`cross.db` per test | Per-test `tmp_path` SQLite | No env mutation in gate file | **NONE OBSERVED** | **NONE OBSERVED** | Nested `_run_pytest` inside child only |
+| R3 implementation | **Fixed** `.tmp/session/npsc5e-r3/cross.db` | Shared file path | No env mutation observed | **NONE OBSERVED** | **NONE OBSERVED** | No nested pytest composition |
+| P0A | Read-only repo scans (`rglob`); no repo writes | In-memory lineage stores in tests | No env mutation | **NONE OBSERVED** | `git rev-parse` subprocess (local VCS, not live service) | `importlib` + `contextvars` thread tests — scoped to child process |
+| DG_001 | basetemp | In-memory; lineage dir uses fixture-local `monkeypatch` | Fixture-local patches only | **NONE OBSERVED** | **NONE OBSERVED** | No subprocess gate |
+| NPSC-5A | basetemp | In-memory harness | No env mutation | **NONE OBSERVED** | **NONE OBSERVED** | In-process only |
+| NPSC-5B Final | basetemp | In-memory | `bind_root_execution_budget` / `reset_active_execution_budget` per test | **NONE OBSERVED** | **NONE OBSERVED** | In-process only |
+| NPSC-5C | basetemp | In-memory qualification fixtures | No env mutation | **NONE OBSERVED** | **NONE OBSERVED** | In-process only |
+| NPSC-5D Final | basetemp; AST scans skip `build`/`.tmp` | In-memory proofs | No env mutation | **NONE OBSERVED** | `git cat-file` subprocess (local VCS) | In-process only |
+| HITL R3 | basetemp | In-memory | Contextvar budget bind/reset in tests | **NONE OBSERVED** | **NONE OBSERVED** | In-process only |
+| Attempt lifecycle | basetemp | `InMemory*` stores; conformance uses per-test durable backing fixture | No env mutation | **NONE OBSERVED** | **NONE OBSERVED** | In-process only |
+| Child execution | basetemp | No SQLite observed | No env mutation | **NONE OBSERVED** | **NONE OBSERVED** | In-process only |
+| Terminal | basetemp | `tmp_path` `*.db` | No env mutation | **NONE OBSERVED** | **NONE OBSERVED** | In-process only |
+| Cancellation | basetemp | `tmp_path` `*.db` in filtered files | No env mutation | **NONE OBSERVED** | **NONE OBSERVED** | Restart test excluded by `-k` for this label |
+| Checkpoint store | basetemp | `tmp_path` `ckpt.db` | No env mutation | **NONE OBSERVED** | **NONE OBSERVED** | In-process only |
+| Long-running | basetemp | `tmp_path` per test across files | `monkeypatch` on loop in `test_runtime_checkpoint.py` only (fixture-local) | **NONE OBSERVED** (checkpoint *port* tests are API contracts, not TCP) | **NONE OBSERVED** | Optional `pytest.importorskip("celery")` — skip, not shared resource |
+| Fan-out | basetemp | In-memory coordination harness | No env mutation | **NONE OBSERVED** | **NONE OBSERVED** | In-process only |
+
+### Matrix-wide risk summary (P0 complete for R3 Final mandatory targets)
 
 | Concern | Finding |
 | --- | --- |
-| **Filesystem** | Default: invocation `build/pytest/*` (PROVEN). Exception: **R3 implementation** uses repo `.tmp/session/npsc5e-r3/cross.db` (PROVEN). |
-| **SQLite** | R3 cross-process test uses shared file path above; most unit tests use `tmp_path` (OBSERVED in R2 Final E2E helpers). |
-| **Environment** | Gate tests set `INTERGRAX_HARNESS_API_KEY` via fixtures in root conftest when used; child subprocess inherits parent env unless cleared in R1. |
-| **Ports** | Not systematically audited in P0 — **UNKNOWN** for live-service suites (out of Execution frozen matrix). |
-| **Global state** | R1 Final imports regression modules in **parent interpreter** — **SERIAL ONLY** relative to other tests in same process. |
-| **Network** | Frozen architecture gates: predominantly unit/in-process — **UNKNOWN** for integration proofs not in this matrix. |
+| **Filesystem** | Default: invocation `build/pytest/*` (PROVEN). **Exclusive:** `.tmp/session/npsc5e-r3/cross.db` (R3 implementation gate only). |
+| **SQLite** | Shared repo path above; otherwise `tmp_path` or in-memory (OBSERVED). |
+| **Environment** | No durable `os.environ` mutation in mandatory targets; fixture `monkeypatch` only. R1 runner must still snapshot/restore env **between** children (inheritance hazard), not observed inside leaf files. |
+| **Ports** | **NONE OBSERVED** for live bind/listen across mandatory matrix (static read). |
+| **Global state** | Contextvars / in-process registries reset per test within a child; **cross-suite** hazard is **same-process** parent gates (NPSC-5E Final, R3 Final file) — **SERIAL_ONLY** as composed gates, not leaf isolation. |
+| **Network** | **NONE OBSERVED** (HTTP/TCP); local `git` subprocess only on P0A / NPSC-5D Final provenance checks. |
 
 ---
 
@@ -112,23 +136,17 @@ Per-suite filesystem / DB / env (summary):
 - **R3 implementation gate** alone or parallel with anything touching `.tmp/session/npsc5e-r3/cross.db`
 - Any gate using **in-process** `importlib` frozen regression (R1 Final pattern)
 
-### GROUP A — candidate **leaf subprocess invocations** (R1 only, after per-file audit)
+### GROUP A — **leaf subprocess invocations** (R1 scheduling hypothesis)
 
-Hypothesis: single pytest file targets with **no** `_run_pytest` composition and **no** fixed repo temp paths, each launched as **one** isolated `uv run pytest` with R1-provided env/temp overrides.
+All R3 Final mandatory labels except **R3 implementation gate** are **PARALLEL_SAFE** under isolated-child rules (see table). R1 should still enforce **exclusive lock** on `.tmp/session/npsc5e-r3/cross.db` for the R3 implementation label.
 
-**Evidence required before YES:** per-file static audit (fixed paths, env mutation, ports) — **not completed in P0**.
+**Not in R3 mandatory matrix (separate classification):**
 
-Example candidates for **future** audit (UNKNOWN today):
-
-- `tests/unit/runtime/architecture/test_npsc5a_coordination_delegation_e2e.py`
-- `tests/unit/runtime/architecture/test_npsc5c_decision_execution_e2e.py`
-
-### UNRESOLVED / UNKNOWN
-
-- All other R3 Final labels until R1 file-level isolation audit
-- **DG-001 R1 Final** (monolithic in-process matrix)
-- **NPSC-5D Final**
-- Platform **`run_suite`** proofs (separate certification plane)
+| Suite | ISOLATION SAFETY | Notes |
+| --- | --- | --- |
+| **DG-001 R1 Final** (`test_dg001_lineage_read_integration_r1_final_qualification.py`) | **PARALLEL_SAFE** as isolated child | Large in-process matrix; no fixed repo DB path observed; no nested `_run_pytest` |
+| **NPSC-5E Final** (full file) | **SERIAL_ONLY** | Composes R3 Final + in-process proofs + spot subprocess — parent gate |
+| **Platform `run_suite`** | **UNRESOLVED_ARCHITECTURAL_DECISION** | Separate certification plane; out of Execution frozen matrix — AD-R1-1 / manifest scope |
 
 ---
 
@@ -140,8 +158,8 @@ Example candidates for **future** audit (UNKNOWN today):
 | **SHARED DB** | High | Same path — concurrent writers corrupt cross-process qualification |
 | **GLOBAL STATE** | High | R1 Final `importlib` regression in parent process |
 | **ENVIRONMENT MUTATION** | Medium | Subprocess inherits parent `os.environ`; R1 must snapshot/restore |
-| **PORT** | Unknown | Not inventoried for execution frozen gates |
-| **Nested duplication** | High | Parallelizing R2 + R1 files while R3 Final also runs both → redundant load + race on any shared resource |
+| **PORT** | Low (matrix) | **NONE OBSERVED** for mandatory R3 Final targets |
+| **Nested duplication** | High | **Composition / parity** — parallelizing leaf files while a parent gate already invokes them → redundant load; not an isolation defect for leaves |
 
 **SAFE MAX CONCURRENCY RECOMMENDATION (P0):** **1** for current composed gates; R1 should start with **bounded leaf-only** scheduling after audit, default cap **2–4** until evidence supports more.
 

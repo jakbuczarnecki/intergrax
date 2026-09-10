@@ -65,13 +65,24 @@ P0 inventory seeds mandatory labels from R3 Final `_MANDATORY_SUITES`.
 
 ## Isolation policy
 
+P0 distinguishes **ISOLATION SAFETY** (parallel isolated children) from **COMPOSITION / PARITY** (parent gates that subprocess-invoke the same leaf file). A leaf may be `PARALLEL_SAFE` while still `SERIAL_ONLY` under a composed parent — schedule mutex is a parity rule, not proof of shared temp.
+
 | Layer | Mechanism |
 | --- | --- |
 | Process | `subprocess.run` one pytest invocation per suite |
 | Temp | Inherit repo `apply_invocation_pytest_basetemp`; optional R1 `TMPDIR` under `build/qualification/<run_id>/` |
 | Env | Copy parent env; inject harness keys; restore after child |
-| DB | Treat any suite declaring `requires_exclusive_paths` as **mutex serial group** |
-| Ports | R1 manifest must declare port ranges or `live_service: false` |
+| DB | Treat any suite declaring `requires_exclusive_paths` as **mutex serial group** (P0: `.tmp/session/npsc5e-r3/cross.db` for R3 implementation gate) |
+| Ports | P0 mandatory matrix: **no live port bind observed**; R1 manifest should still declare `live_service: false` or port ranges when adding new suites |
+
+### P0 isolation outcomes (R3 Final mandatory labels)
+
+| Class | Labels |
+| --- | --- |
+| **PARALLEL_SAFE** (isolated child) | All mandatory labels except R3 implementation gate |
+| **REQUIRES_EXCLUSIVE_RESOURCE** | R3 implementation gate (`cross.db` path) |
+| **SERIAL_ONLY** (composition) | NPSC-5E Final, R3 Final full file, R2 Final full file when used as parent gates; leaf labels when parent already invoked same target |
+| **UNRESOLVED_ARCHITECTURAL_DECISION** | Platform `run_suite` plane (manifest owner — AD-R1-1) |
 
 ---
 
