@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from intergrax.contracts.decision_identity import DecisionIdentity
 from intergrax.contracts.decision_lifecycle import (
@@ -15,7 +15,11 @@ from intergrax.contracts.decision_lifecycle import (
     initial_decision_lifecycle_state,
     transition_decision_lifecycle,
 )
-from intergrax.runtime.decision_lifecycle_observability import DecisionLifecycleObserver
+
+if TYPE_CHECKING:
+    from intergrax.runtime.decision_lifecycle_observability import (
+        DecisionLifecycleObserver,
+    )
 
 
 class DecisionLifecycleHost(Protocol):
