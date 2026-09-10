@@ -38,6 +38,17 @@ def _aggregate_run_status(
     return QualificationRunStatus.PASS
 
 
+def _validate_executor_suite_result(
+    suite: QualificationSuite,
+    result: ExecutionQualificationSuiteResult,
+) -> None:
+    if result.suite_id != suite.suite_id:
+        raise QualificationCoordinatorError(
+            "executor result suite_id "
+            f"{result.suite_id!r} does not match requested {suite.suite_id!r}"
+        )
+
+
 def _not_started_result(
     suite: QualificationSuite,
     log_path: Path,
@@ -82,11 +93,14 @@ class QualificationCoordinator:
         held_exclusive: set[str] = set()
         done_count = 0
         done_condition = threading.Condition(lock)
+        infrastructure_failure: QualificationCoordinatorError | None = None
 
         def try_schedule(executor: ThreadPoolExecutor) -> None:
-            nonlocal active_count, done_count
+            nonlocal active_count, done_count, infrastructure_failure
             while True:
                 with lock:
+                    if infrastructure_failure is not None:
+                        return
                     if active_count >= config.max_parallel:
                         return
                     chosen_index: int | None = None
@@ -128,37 +142,50 @@ class QualificationCoordinator:
                     fut: Future[ExecutionQualificationSuiteResult],
                     slot_index: int = index,
                 ) -> None:
-                    nonlocal active_count, done_count
+                    nonlocal active_count, done_count, infrastructure_failure
+                    slot_error: QualificationCoordinatorError | None = None
+                    result: ExecutionQualificationSuiteResult | None = None
                     try:
-                        result = fut.result()
-                    except Exception:
-                        result = ExecutionQualificationSuiteResult(
-                            suite_id=suites[slot_index].suite_id,
-                            command=(),
-                            status=QualificationSuiteStatus.FAIL,
-                            outcome_kind=QualificationSuiteOutcomeKind.LAUNCH_FAILURE,
-                            exit_code=None,
-                            duration_seconds=0.0,
-                            log_path=log_paths[slot_index],
+                        completed = fut.result()
+                        _validate_executor_suite_result(suites[slot_index], completed)
+                        result = completed
+                    except QualificationCoordinatorError as exc:
+                        slot_error = exc
+                    except Exception as exc:
+                        slot_error = QualificationCoordinatorError(
+                            f"unexpected executor failure for suite "
+                            f"{suites[slot_index].suite_id!r}"
                         )
+                        slot_error.__cause__ = exc
 
                     with done_condition:
-                        result_slots[slot_index] = result
+                        if slot_error is not None:
+                            infrastructure_failure = slot_error
+                        elif result is not None:
+                            result_slots[slot_index] = result
                         active_count -= 1
                         done_count += 1
                         exclusive = suites[slot_index].exclusive_resource_id
                         if exclusive is not None:
                             held_exclusive.discard(exclusive)
                         done_condition.notify_all()
-                    try_schedule(executor)
+                    if infrastructure_failure is None:
+                        try_schedule(executor)
 
                 future.add_done_callback(on_done)
 
         with ThreadPoolExecutor(max_workers=config.max_parallel) as pool:
             try_schedule(pool)
             with done_condition:
-                while done_count < len(suites):
+                while True:
+                    if done_count >= len(suites):
+                        break
+                    if infrastructure_failure is not None and active_count == 0:
+                        break
                     done_condition.wait()
+
+        if infrastructure_failure is not None:
+            raise infrastructure_failure
 
         final_results: list[ExecutionQualificationSuiteResult] = []
         for index, suite in enumerate(suites):

@@ -116,6 +116,36 @@ class ExecutionQualificationSuiteResult:
     def __post_init__(self) -> None:
         if self.duration_seconds < 0:
             raise ValueError("duration_seconds must be non-negative")
+        if self.status == QualificationSuiteStatus.PASS:
+            if self.outcome_kind is not QualificationSuiteOutcomeKind.COMPLETED:
+                raise ValueError(
+                    f"PASS requires COMPLETED outcome, got {self.outcome_kind}"
+                )
+            if self.exit_code != 0:
+                raise ValueError("PASS requires exit_code 0")
+        if self.outcome_kind is QualificationSuiteOutcomeKind.COMPLETED:
+            if self.status is not QualificationSuiteStatus.PASS:
+                raise ValueError("COMPLETED requires PASS status")
+            if self.exit_code != 0:
+                raise ValueError("COMPLETED requires exit_code 0")
+        if self.outcome_kind is QualificationSuiteOutcomeKind.PYTEST_NONZERO_EXIT:
+            if self.status is not QualificationSuiteStatus.FAIL:
+                raise ValueError("PYTEST_NONZERO_EXIT requires FAIL status")
+            if self.exit_code is None or self.exit_code == 0:
+                raise ValueError("PYTEST_NONZERO_EXIT requires nonzero exit_code")
+        if self.outcome_kind is QualificationSuiteOutcomeKind.TIMEOUT:
+            if self.status is not QualificationSuiteStatus.FAIL:
+                raise ValueError("TIMEOUT requires FAIL status")
+            if self.exit_code == 0:
+                raise ValueError("TIMEOUT cannot have exit_code 0")
+        if self.outcome_kind is QualificationSuiteOutcomeKind.LAUNCH_FAILURE:
+            if self.status is not QualificationSuiteStatus.FAIL:
+                raise ValueError("LAUNCH_FAILURE requires FAIL status")
+            if self.exit_code == 0:
+                raise ValueError("LAUNCH_FAILURE cannot have exit_code 0")
+        if self.outcome_kind is QualificationSuiteOutcomeKind.NOT_STARTED:
+            if self.status is not QualificationSuiteStatus.SKIP:
+                raise ValueError("NOT_STARTED requires SKIP status")
 
 
 @dataclass(frozen=True, slots=True)
