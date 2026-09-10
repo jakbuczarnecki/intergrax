@@ -8,7 +8,9 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
     RetrievalChannel,
 )
 from platform_proofs.scenarios.verified_product_identification.application.domain.identifiers import (
+    ProductIdentifierIdentityScope,
     ProductIdentifierType,
+    identity_scope_for_identifier_type,
 )
 from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
     SourceRecordRef,
@@ -56,8 +58,12 @@ class OfferPairIdentityAssessment:
         return len(self.contradictions) > 0
 
     @property
+    def has_blocking_contradiction(self) -> bool:
+        return any(is_blocking_identity_contradiction(item) for item in self.contradictions)
+
+    @property
     def is_grouping_compatible(self) -> bool:
-        return self.has_strong_support and not self.has_contradiction
+        return self.has_strong_support and not self.has_blocking_contradiction
 
 
 def assess_offer_pair(
@@ -135,6 +141,23 @@ def assess_offer_pair(
     )
 
 
+def is_blocking_identity_contradiction(contradiction: IdentityContradiction) -> bool:
+    """Return whether a contradiction may veto cross-offer product-identity grouping."""
+
+    if contradiction.contradiction_type is IdentityContradictionType.BRAND_CONFLICT:
+        return True
+    if contradiction.contradiction_type is IdentityContradictionType.STRUCTURED_ATTRIBUTE_CONFLICT:
+        return True
+    if contradiction.contradiction_type is IdentityContradictionType.MODEL_NUMBER_CONFLICT:
+        return True
+    if contradiction.contradiction_type is IdentityContradictionType.IDENTIFIER_CONFLICT:
+        if contradiction.identifier_type is None:
+            return True
+        scope = identity_scope_for_identifier_type(contradiction.identifier_type)
+        return scope is not ProductIdentifierIdentityScope.SOURCE_LOCAL
+    raise ValueError(f"unsupported contradiction type: {contradiction.contradiction_type}")
+
+
 def pair_has_grouping_eligibility(
     assessment: OfferPairIdentityAssessment,
     *,
@@ -143,7 +166,7 @@ def pair_has_grouping_eligibility(
 ) -> bool:
     """Discrete eligibility — global GTIN, MPN+brand, or multiple structured matches."""
 
-    if assessment.has_contradiction:
+    if assessment.has_blocking_contradiction:
         return False
 
     strong_global_identifiers = [

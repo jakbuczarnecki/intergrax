@@ -16,6 +16,7 @@ from platform_proofs.scenarios.verified_product_identification.application.contr
 )
 from platform_proofs.scenarios.verified_product_identification.application.domain import (
     LexicalChannelScore,
+    ProductIdentifierType,
     ProductOfferId,
     ProductSourceProvenance,
     ProductSourceRecord,
@@ -1035,3 +1036,291 @@ def test_missing_identifiers_remain_unknown_not_conflicting() -> None:
         for hypothesis in result.hypotheses
         for item in hypothesis.contradictions
     )
+
+
+def test_same_gtin_different_sku_same_catalog_groups() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    gtin = "8806096660507"
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(offer_id=OFFER_A.value, gtin=gtin, sku="SKU-A"),
+            ref_b: _wdc_payload(offer_id=OFFER_B.value, gtin=gtin, sku="SKU-B"),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0),
+                    _fused(OFFER_B, fused_rank=1),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 1
+
+
+def test_different_gtin_same_sku_same_catalog_does_not_group() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(
+                offer_id=OFFER_A.value,
+                gtin="8806096660507",
+                sku="RETAIL-001",
+            ),
+            ref_b: _wdc_payload(
+                offer_id=OFFER_B.value,
+                gtin="0123456789012",
+                sku="RETAIL-001",
+            ),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0),
+                    _fused(OFFER_B, fused_rank=1),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 2
+
+
+def test_same_mpn_same_brand_different_sku_same_catalog_groups() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(
+                offer_id=OFFER_A.value,
+                brand="Samsung",
+                mpn="MZ-V9P2T0",
+                sku="SKU-A",
+            ),
+            ref_b: _wdc_payload(
+                offer_id=OFFER_B.value,
+                brand="Samsung",
+                mpn="MZ-V9P2T0",
+                sku="SKU-B",
+            ),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0),
+                    _fused(OFFER_B, fused_rank=1),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 1
+
+
+def test_same_mpn_conflicting_brand_same_sku_does_not_group() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(
+                offer_id=OFFER_A.value,
+                brand="Samsung",
+                mpn="MZ-V9P2T0",
+                sku="RETAIL-001",
+            ),
+            ref_b: _wdc_payload(
+                offer_id=OFFER_B.value,
+                brand="Seagate",
+                mpn="MZ-V9P2T0",
+                sku="RETAIL-001",
+            ),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0),
+                    _fused(OFFER_B, fused_rank=1),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 2
+
+
+def test_structured_strong_support_different_sku_same_catalog_groups() -> None:
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    service, _ = _service(
+        {
+            ref_a: _wdc_payload(
+                offer_id=OFFER_A.value,
+                capacity="2TB",
+                color="black",
+                sku="SKU-A",
+            ),
+            ref_b: _wdc_payload(
+                offer_id=OFFER_B.value,
+                capacity="2TB",
+                color="black",
+                sku="SKU-B",
+            ),
+        }
+    )
+    result = service.form_hypotheses(
+        ProductIdentityHypothesisRequest(
+            fused_candidates=FusedOfferCandidateCollection(
+                candidates=(
+                    _fused(OFFER_A, fused_rank=0),
+                    _fused(OFFER_B, fused_rank=1),
+                )
+            ),
+        )
+    )
+    assert len(result.hypotheses) == 1
+
+
+def test_sku_contradiction_preserved_but_nonblocking_for_gtin_grouping() -> None:
+    from platform_proofs.scenarios.verified_product_identification.application.identity.pair_evidence import (
+        assess_offer_pair,
+        is_blocking_identity_contradiction,
+        pair_has_grouping_eligibility,
+    )
+    from platform_proofs.scenarios.verified_product_identification.application.identity.profile import (
+        build_identity_profile,
+    )
+    from platform_proofs.scenarios.verified_product_identification.application.domain.wdc_source_offer import (
+        parse_wdc_source_offer_json,
+    )
+
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    gtin = "8806096660507"
+    profiles = {
+        ref_a: build_identity_profile(
+            parse_wdc_source_offer_json(
+                _wdc_payload(offer_id=OFFER_A.value, gtin=gtin, sku="SKU-A"),
+            ),
+            source_ref=ref_a,
+        ),
+        ref_b: build_identity_profile(
+            parse_wdc_source_offer_json(
+                _wdc_payload(offer_id=OFFER_B.value, gtin=gtin, sku="SKU-B"),
+            ),
+            source_ref=ref_b,
+        ),
+    }
+    assessment = assess_offer_pair(
+        profiles[ref_a],
+        profiles[ref_b],
+        left_fused=_fused(OFFER_A, fused_rank=0),
+        right_fused=_fused(OFFER_B, fused_rank=1),
+    )
+    sku_contradictions = [
+        item
+        for item in assessment.contradictions
+        if item.contradiction_type is IdentityContradictionType.IDENTIFIER_CONFLICT
+        and item.identifier_type is ProductIdentifierType.SKU
+    ]
+    assert assessment.has_contradiction
+    assert sku_contradictions
+    assert all(not is_blocking_identity_contradiction(item) for item in sku_contradictions)
+    assert pair_has_grouping_eligibility(
+        assessment,
+        left_profile=profiles[assessment.left_source_ref],
+        right_profile=profiles[assessment.right_source_ref],
+    )
+
+
+def test_blocking_contradiction_classification_policy() -> None:
+    from platform_proofs.scenarios.verified_product_identification.application.identity.pair_evidence import (
+        assess_offer_pair,
+        is_blocking_identity_contradiction,
+    )
+    from platform_proofs.scenarios.verified_product_identification.application.identity.profile import (
+        build_identity_profile,
+    )
+    from platform_proofs.scenarios.verified_product_identification.application.domain.wdc_source_offer import (
+        parse_wdc_source_offer_json,
+    )
+
+    ref_a = _source_ref(OFFER_A)
+    ref_b = _source_ref(OFFER_B)
+    gtin_assessment = assess_offer_pair(
+        build_identity_profile(
+            parse_wdc_source_offer_json(
+                _wdc_payload(offer_id=OFFER_A.value, gtin="8806096660507"),
+            ),
+            source_ref=ref_a,
+        ),
+        build_identity_profile(
+            parse_wdc_source_offer_json(
+                _wdc_payload(offer_id=OFFER_B.value, gtin="0123456789012"),
+            ),
+            source_ref=ref_b,
+        ),
+        left_fused=_fused(OFFER_A, fused_rank=0),
+        right_fused=_fused(OFFER_B, fused_rank=1),
+    )
+    gtin_conflicts = [
+        item
+        for item in gtin_assessment.contradictions
+        if item.identifier_type is ProductIdentifierType.GTIN
+    ]
+    assert gtin_conflicts
+    assert all(is_blocking_identity_contradiction(item) for item in gtin_conflicts)
+
+    mpn_assessment = assess_offer_pair(
+        build_identity_profile(
+            parse_wdc_source_offer_json(
+                _wdc_payload(offer_id=OFFER_A.value, brand="Samsung", mpn="MZ-V9P2T0"),
+            ),
+            source_ref=ref_a,
+        ),
+        build_identity_profile(
+            parse_wdc_source_offer_json(
+                _wdc_payload(offer_id=OFFER_B.value, brand="Samsung", mpn="MZ-V9P1T0"),
+            ),
+            source_ref=ref_b,
+        ),
+        left_fused=_fused(OFFER_A, fused_rank=0),
+        right_fused=_fused(OFFER_B, fused_rank=1),
+    )
+    mpn_conflicts = [
+        item
+        for item in mpn_assessment.contradictions
+        if item.contradiction_type is IdentityContradictionType.MODEL_NUMBER_CONFLICT
+    ]
+    assert mpn_conflicts
+    assert all(is_blocking_identity_contradiction(item) for item in mpn_conflicts)
+
+    brand_assessment = assess_offer_pair(
+        build_identity_profile(
+            parse_wdc_source_offer_json(
+                _wdc_payload(offer_id=OFFER_A.value, brand="Samsung", mpn="MZ-V9P2T0"),
+            ),
+            source_ref=ref_a,
+        ),
+        build_identity_profile(
+            parse_wdc_source_offer_json(
+                _wdc_payload(offer_id=OFFER_B.value, brand="Seagate", mpn="MZ-V9P2T0"),
+            ),
+            source_ref=ref_b,
+        ),
+        left_fused=_fused(OFFER_A, fused_rank=0),
+        right_fused=_fused(OFFER_B, fused_rank=1),
+    )
+    brand_conflicts = [
+        item
+        for item in brand_assessment.contradictions
+        if item.contradiction_type is IdentityContradictionType.BRAND_CONFLICT
+    ]
+    assert brand_conflicts
+    assert all(is_blocking_identity_contradiction(item) for item in brand_conflicts)

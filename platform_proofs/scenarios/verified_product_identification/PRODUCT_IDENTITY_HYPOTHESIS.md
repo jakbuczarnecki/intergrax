@@ -55,7 +55,7 @@ Weak evidence is recorded but **never** forces grouping.
 
 ## Contradiction model
 
-Contradictions are discrete, first-class, and high priority for downstream verification:
+Contradictions are discrete, first-class, and provenance-bearing:
 
 - `IDENTIFIER_CONFLICT`
 - `MODEL_NUMBER_CONFLICT`
@@ -63,6 +63,25 @@ Contradictions are discrete, first-class, and high priority for downstream verif
 - `STRUCTURED_ATTRIBUTE_CONFLICT`
 
 Missing attribute values are **unknown**, not conflicting.
+
+### Contradiction precedence (authority vs traceability)
+
+**A contradiction existing does not mean it is authoritative enough to veto grouping.**
+
+Grouping eligibility uses **blocking** contradictions only. Nonblocking contradictions remain in the hypothesis for traceability.
+
+| Contradiction | Grouping authority |
+|---|---|
+| GTIN `IDENTIFIER_CONFLICT` | **blocking** |
+| MPN `MODEL_NUMBER_CONFLICT` (compatible manufacturer context) | **blocking** |
+| `BRAND_CONFLICT` | **blocking** |
+| `STRUCTURED_ATTRIBUTE_CONFLICT` | **blocking** (unchanged 5C8 semantics) |
+| same-catalog SKU `IDENTIFIER_CONFLICT` | **nonblocking** — source-local inconsistency |
+| `PRODUCT_ID` conflict | **nonblocking** / not emitted cross-catalog |
+
+Derived policy: identifier-family scope from `identity_scope_for_identifier_type()` — `SOURCE_LOCAL` contradictions are recorded but do not outrank global or manufacturer-scoped identity evidence.
+
+`OfferPairIdentityAssessment.has_contradiction` remains truthful for any contradiction. Use `has_blocking_contradiction` (or `is_blocking_identity_contradiction(...)`) for grouping policy.
 
 ## Grouping safety
 
@@ -79,7 +98,7 @@ Eligible strong support (discrete rules):
 2. matching MPN + compatible brand (match or missing brand), or
 3. two or more matching structured identity attributes.
 
-Source-local identifier mismatch (SKU / PRODUCT_ID across catalogs) does **not** block valid GTIN or manufacturer-scoped MPN grouping.
+Source-local identifier mismatch (SKU / PRODUCT_ID across catalogs) does **not** block valid GTIN or manufacturer-scoped MPN grouping. Same-catalog SKU mismatch is recorded as a nonblocking contradiction and must not veto stronger global or manufacturer-scoped identity evidence.
 
 ## Hypothesis identity
 
