@@ -1,6 +1,6 @@
 # Execution Qualification Acceleration — Architecture (R1 Target)
 
-**Status:** `PROPOSED` (P0 defines inventory; **no implementation** in P0)
+**Status:** `R1 IMPLEMENTED` (bounded coordinator + subprocess executor in `testing_support/execution_qualification/`; gate integration remains R2)
 
 **Scope:** Qualification / certification orchestration for Execution Engine frozen gates.
 
@@ -49,7 +49,7 @@ Qualification Coordinator
 
 ---
 
-## Suite manifest (PROPOSED)
+## Suite manifest (`IMPLEMENTED` — typed Python, R1)
 
 ```text
 suite_id: stable string
@@ -100,7 +100,7 @@ Per suite (align with platform `ProofRunResult` fields where sensible):
 | `status` | PASS \| FAIL \| SKIP |
 | `pre_existing_failure` | optional structured classification |
 
-**Reuse:** extend `intergrax.proof_suite_receipt.v1` pattern or define `intergrax.execution_qualification_run.v1` with shared field names — AD-R1-3.
+**R1:** `ExecutionQualificationSuiteResult` / `ExecutionQualificationRunResult` in `testing_support.execution_qualification.contracts` (platform `SuiteReceipt` unchanged — AD-R1-3).
 
 ---
 
