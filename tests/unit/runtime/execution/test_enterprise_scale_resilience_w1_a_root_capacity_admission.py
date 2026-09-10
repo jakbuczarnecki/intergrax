@@ -27,6 +27,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.runtime.execution.local_execution_capacity_admission import (
     LocalExecutionCapacityAdmission,
+    _LocalRootCapacityState,
 )
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
@@ -408,3 +409,80 @@ async def test_local_permit_concurrent_double_release() -> None:
     await asyncio.gather(permit.release(), permit.release())
     replacement = await admission.acquire(request)
     await replacement.release()
+
+
+@pytest.mark.asyncio
+async def test_local_permit_release_cancel_during_lifecycle_frees_capacity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Cancellation during permit.release() must not leak the slot."""
+    policy = ExecutionCapacityPolicy(max_concurrent_root_executions=1)
+    admission = LocalExecutionCapacityAdmission(policy)
+    request = _admission_request()
+    permit = await admission.acquire(request)
+    release_entered = asyncio.Event()
+    original_release_one = _LocalRootCapacityState.release_one
+
+    async def gated_release_one(self: _LocalRootCapacityState) -> None:
+        release_entered.set()
+        await asyncio.sleep(0)
+        await original_release_one(self)
+
+    monkeypatch.setattr(_LocalRootCapacityState, "release_one", gated_release_one)
+    release_task = asyncio.create_task(permit.release())
+    await release_entered.wait()
+    release_task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await release_task
+    replacement = await admission.acquire(request)
+    await replacement.release()
+
+
+@pytest.mark.asyncio
+async def test_local_permit_concurrent_release_one_cancelled_exactly_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    policy = ExecutionCapacityPolicy(max_concurrent_root_executions=1)
+    admission = LocalExecutionCapacityAdmission(policy)
+    request = _admission_request()
+    permit = await admission.acquire(request)
+    release_started = asyncio.Event()
+    release_unblock = asyncio.Event()
+    original_release_one = _LocalRootCapacityState.release_one
+
+    async def slow_release_one(self: _LocalRootCapacityState) -> None:
+        release_started.set()
+        await release_unblock.wait()
+        await original_release_one(self)
+
+    monkeypatch.setattr(_LocalRootCapacityState, "release_one", slow_release_one)
+    first = asyncio.create_task(permit.release())
+    await release_started.wait()
+    second = asyncio.create_task(permit.release())
+    await asyncio.sleep(0.01)
+    first.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await first
+    release_unblock.set()
+    await second
+    replacement = await admission.acquire(request)
+    await replacement.release()
+
+
+@pytest.mark.asyncio
+async def test_capacity_one_never_two_live_permits_after_release_races() -> None:
+    policy = ExecutionCapacityPolicy(max_concurrent_root_executions=1)
+    admission = LocalExecutionCapacityAdmission(policy)
+    request = _admission_request()
+    permit = await admission.acquire(request)
+    await asyncio.gather(
+        permit.release(),
+        permit.release(),
+        permit.release(),
+    )
+    holder_a = await admission.acquire(request)
+    with pytest.raises(ExecutionCapacityExceededError):
+        await admission.acquire(request)
+    await holder_a.release()
+    holder_b = await admission.acquire(request)
+    await holder_b.release()
