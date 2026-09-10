@@ -84,6 +84,21 @@ class CatalogDeclarativeToolInvoker:
         self.binding.tenant_id = tenant_id
         self.binding.user_id = user_id
 
+    def bind_execution_identity(
+        self,
+        *,
+        tenant_id: str,
+        run_id: str,
+        task_id: str,
+        agent_id: str,
+    ) -> None:
+        self.bind_run(
+            run_id=run_id,
+            task_id=task_id,
+            agent_id=agent_id,
+            tenant_id=tenant_id,
+        )
+
     def _runtime_state(self) -> RuntimeState:
         from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
         from intergrax.prompts.registry.prompt_registry_resolver import (

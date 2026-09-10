@@ -38,9 +38,19 @@ async def drain_pending_compensation_jobs(
     )
     for claim in claims:
         job = claim.job
-        invoke_result = await side_effect_execution.execute(
-            compensation_side_effect_input_from_job(job),
-        )
+        try:
+            work = compensation_side_effect_input_from_job(job)
+        except ValueError as exc:
+            store.fail_claim(claim, str(exc), retryable=False)
+            results.append(
+                CompensationActionResult(
+                    request=job.request,
+                    status="failed",
+                    error=str(exc),
+                ),
+            )
+            continue
+        invoke_result = await side_effect_execution.execute(work)
         if invoke_result.status == "success":
             store.complete_claim(claim)
             results.append(

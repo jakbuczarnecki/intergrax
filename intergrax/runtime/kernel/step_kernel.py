@@ -686,6 +686,7 @@ class HarnessKernel:
             action_args=action_args,
             compensation_queue=kernel_ctx.compensation_queue,
             run_id=kernel_ctx.run_id,
+            task_id=kernel_ctx.task_id,
             tenant_id=kernel_ctx.tenant_id,
             agent_id=kernel_ctx.agent_id,
         )

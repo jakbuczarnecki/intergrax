@@ -5,16 +5,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
-from intergrax.agents.persistence.catalog_declarative_invoker import (
-    CatalogDeclarativeToolInvoker,
+from intergrax.agents.persistence.declarative_tool_executor import (
+    DeclarativeToolInvoker,
+    DeclarativeToolInvokeResult,
 )
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.contracts.compensation_side_effect_execution import (
     CompensationSideEffectInvokeResult,
     CompensationToolInvokeSession,
 )
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
+from intergrax.knowledge.contracts.validation import JsonObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,21 +32,23 @@ class BoundCompensationToolInvokeSession(CompensationToolInvokeSession):
         task_id: str,
         agent_id: str,
         tool_id: str,
-        args: dict[str, Any],
+        args: JsonObject,
         idempotency_key: str,
     ) -> CompensationSideEffectInvokeResult:
-        if isinstance(self._invoker, CatalogDeclarativeToolInvoker):
-            self._invoker.bind_run(
+        if isinstance(self._invoker, ExecutionBoundDeclarativeToolInvoker):
+            self._invoker.bind_execution_identity(
+                tenant_id=tenant_id,
                 run_id=run_id,
                 task_id=task_id,
                 agent_id=agent_id,
-                tenant_id=tenant_id,
             )
         invoke_result = await self._invoker.invoke(
             tool_id=tool_id,
-            args=args,
+            args=dict(args),
             idempotency_key=idempotency_key,
         )
+        if not isinstance(invoke_result, DeclarativeToolInvokeResult):
+            raise TypeError("declarative tool invoker returned unexpected result type")
         return CompensationSideEffectInvokeResult(
             status=invoke_result.status,
             error=invoke_result.error,

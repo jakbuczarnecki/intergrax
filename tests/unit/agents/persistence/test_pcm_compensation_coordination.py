@@ -25,7 +25,7 @@ from intergrax.agents.persistence.declarative_tool_executor import (
     DeclarativeToolInvokeResult,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
-from intergrax.contracts.execution_identity import mint_run_id
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.contracts.side_effect import CompensationRequest
 from tests.unit.agents.persistence.compensation_execution_test_support import (
     build_test_admitted_compensation_side_effect_execution,
@@ -38,6 +38,7 @@ def _sample_job(*, tenant_id: str = "tenant-a", key_suffix: str = "orig") -> Com
     key = build_compensation_idempotency_key(f"acp:{key_suffix}")
     return CompensationJob(
         run_id=str(mint_run_id()),
+        task_id=str(mint_task_id()),
         tenant_id=tenant_id,
         agent_id="agent-a",
         step_index=0,

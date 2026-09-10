@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
+
+from intergrax.knowledge.contracts.validation import JsonObject
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,7 +20,7 @@ class CompensationSideEffectInput:
     step_index: int
     task_id: str
     compensation_tool_id: str
-    args: dict[str, Any]
+    args: JsonObject
     idempotency_key: str
     original_side_effect_id: str
 
@@ -41,7 +43,7 @@ class CompensationToolInvokeSession(Protocol):
         task_id: str,
         agent_id: str,
         tool_id: str,
-        args: dict[str, Any],
+        args: JsonObject,
         idempotency_key: str,
     ) -> CompensationSideEffectInvokeResult:
         ...

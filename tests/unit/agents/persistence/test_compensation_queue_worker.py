@@ -10,7 +10,7 @@ from intergrax.agents.persistence.declarative_tool_executor import (
     DeclarativeToolInvokeResult,
 )
 from intergrax.contracts.side_effect import CompensationRequest
-from intergrax.contracts.execution_identity import mint_run_id
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from tests.unit.agents.persistence.compensation_execution_test_support import (
     build_test_admitted_compensation_side_effect_execution,
 )
@@ -25,6 +25,7 @@ async def test_drain_pending_compensation_jobs_marks_completed() -> None:
     store.enqueue(
         CompensationJob(
             run_id=str(mint_run_id()),
+            task_id=str(mint_task_id()),
             tenant_id="tenant-a",
             agent_id="agent-a",
             step_index=0,
