@@ -12,6 +12,9 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.agent_distribution.multi_agent_coordination import (
+    ChildExecutionFailedError,
+)
 from intergrax.contracts.decision_coordination import DecisionCoordinationShape
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
@@ -27,29 +30,14 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageAttemptScope,
     build_execution_lineage_attempt_scope,
 )
-from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
-    STRATEGY_ID,
-    DeterministicProblemGroupingStrategy,
-)
-from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
-from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
-from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
-    DiagnosticExecutionScope,
-    DiagnosticOrchestrationRequest,
-)
 from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
     ExecutionLineageReadStatus,
     reconstruct_attempt_lineage,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
-from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
-from intergrax.runtime.diagnostics.problem_grouping import (
-    ProblemGroupingEngine,
-    ProblemGroupingStrategyRegistry,
-)
-from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.events.stores.memory_runtime_event_store import (
+    InMemoryRuntimeEventStore,
+)
 from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
     reset_active_execution_budget,
@@ -61,7 +49,9 @@ from intergrax.runtime.execution.boundary import (
 )
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
-from intergrax.runtime.execution.lineage.persistence import InMemoryExecutionLineagePersistence
+from intergrax.runtime.execution.lineage.persistence import (
+    InMemoryExecutionLineagePersistence,
+)
 from intergrax.runtime.execution.lineage.root_activation import (
     activate_root_execution_lineage,
     build_root_lineage_admission_hook,
@@ -72,13 +62,20 @@ from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
     reset_active_execution_authority,
 )
-from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.observability.memory_causal_evidence_persistence import (
-    InMemoryCausalEvidencePersistence,
+from intergrax.contracts.delegation_authority import (
+    resolve_root_parent_execution_authority,
 )
-from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
-from testing_support.agent_distribution.coordination_governance import bound_governed_host_task
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from testing_support.agent_distribution.coordination_governance import (
+    bound_governed_host_task,
+)
+from testing_support.agent_distribution.delegated_subtask_qualification_harness import (
+    DelegatedSubtaskQualificationHarness,
+    OcrQualificationRequest as OcrRequest,
+    OcrQualificationResult as OcrResult,
+    OCR_QUALIFICATION_PACKAGE_ID,
+    build_ocr_qualification_discovery_candidate,
+)
 from testing_support.agent_distribution.decision_coordination_qualification import (
     DecisionCoordinationExecutorFixture,
     accepted_decision,
@@ -87,23 +84,18 @@ from testing_support.agent_distribution.decision_coordination_qualification impo
     decision_contribution,
     project_accepted_decision,
 )
-from tests.unit.agent_distribution.test_delegated_subtasks import (
-    DelegatedHarness,
-    OcrRequest,
-    OcrResult,
-    _OCR_PACKAGE,
-    _discovery_candidate,
-    admin_test_principal,
+from testing_support.agent_distribution.dg001_canonical_multi_agent_diagnostic_harness import (
+    build_dg001_canonical_multi_agent_diagnostic_harness,
 )
-from tests.unit.agent_distribution.test_multi_agent_coordination import _root_identity
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
-    document_store_occurrence_persistence_for_tests,
-    in_memory_document_store_for_problem_tests,
-    read_service_for_tests,
+from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
+    qualification_root_execution_identity_binding,
 )
-from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
-    InMemoryProblemPersistence,
+from testing_support.agent_platform_admin_harness import admin_test_principal
+from intergrax.runtime.diagnostics.persistence_conformance import (
+    query_all_problems_for_tenant,
 )
+from intergrax.contracts.execution_identity import validate_run_id
+from intergrax.runtime.task.task import Task, TaskContext, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -153,10 +145,10 @@ async def _execute_coordination_with_durable_lineage(
 ) -> Dg001DurableLineageRun:
     intent = project_accepted_decision(accepted)
     task_scope = mint_task_id()
-    delegated_harness = cast(DelegatedHarness, fixture.harness)
+    delegated_harness = cast(DelegatedSubtaskQualificationHarness, fixture.harness)
     delegated_harness.task_scope_authority.task_scope_id = task_scope
     binding = coordination_binding(task_scope, contribution_lease_pairs)
-    root = _root_identity()
+    root = qualification_root_execution_identity_binding()
     scope = build_execution_lineage_attempt_scope(
         tenant_id=_TENANT,
         task_id=task_scope,
@@ -247,19 +239,30 @@ def test_dg001_agent_distribution_does_not_instantiate_diagnostic_authority() ->
             continue
         tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
         for node in ast.walk(tree):
-            if isinstance(node, ast.Name) and node.id in _FORBIDDEN_DIAGNOSTIC_AUTHORITY:
+            if (
+                isinstance(node, ast.Name)
+                and node.id in _FORBIDDEN_DIAGNOSTIC_AUTHORITY
+            ):
                 rel = path.relative_to(_REPO_ROOT).as_posix()
                 violations.append(f"{rel}:{node.lineno}:{node.id}")
-            if isinstance(node, ast.Attribute) and node.attr in _FORBIDDEN_DIAGNOSTIC_AUTHORITY:
+            if (
+                isinstance(node, ast.Attribute)
+                and node.attr in _FORBIDDEN_DIAGNOSTIC_AUTHORITY
+            ):
                 rel = path.relative_to(_REPO_ROOT).as_posix()
                 violations.append(f"{rel}:{node.lineno}.{node.attr}")
-    assert violations == [], "agent_distribution must not own diagnostic authority:\n" + "\n".join(
-        violations,
+    assert violations == [], (
+        "agent_distribution must not own diagnostic authority:\n"
+        + "\n".join(
+            violations,
+        )
     )
 
 
 @pytest.mark.asyncio
-async def test_dg001_p3_root_single_child_forensic_topology_via_coordination_intent() -> None:
+async def test_dg001_p3_root_single_child_forensic_topology_via_coordination_intent() -> (
+    None
+):
     specialist_child: ExecutionId | None = None
     specialist_parent: ExecutionId | None = None
 
@@ -272,7 +275,10 @@ async def test_dg001_p3_root_single_child_forensic_topology_via_coordination_int
 
     fixture = build_decision_coordination_executor_fixture(
         candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+            build_ocr_qualification_discovery_candidate(
+                OCR_QUALIFICATION_PACKAGE_ID,
+                capability_ids=("document.ocr",),
+            ),
         ),
         specialist_delegate=_LineageSpecialist(),
         fan_out=False,
@@ -309,7 +315,10 @@ async def test_dg001_p3_root_single_child_forensic_topology_via_coordination_int
 async def test_dg001_p3_fan_out_three_siblings_share_parent_execution() -> None:
     fixture = build_decision_coordination_executor_fixture(
         candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+            build_ocr_qualification_discovery_candidate(
+                OCR_QUALIFICATION_PACKAGE_ID,
+                capability_ids=("document.ocr",),
+            ),
         ),
         fan_out=True,
     )
@@ -337,7 +346,9 @@ async def test_dg001_p3_fan_out_three_siblings_share_parent_execution() -> None:
         assert by_exec[child_id] == run.root.execution_id
     positions = [
         record.admission_position
-        for record in run.persistence.list_admissions_for_attempt(run.scope, limit=50).admissions
+        for record in run.persistence.list_admissions_for_attempt(
+            run.scope, limit=50
+        ).admissions
         if record.parent_execution_id == run.root.execution_id
     ]
     assert len(positions) == 3
@@ -345,7 +356,9 @@ async def test_dg001_p3_fan_out_three_siblings_share_parent_execution() -> None:
 
 
 @pytest.mark.asyncio
-async def test_dg001_p3_nested_specialist_preserves_direct_forensic_parent_chain() -> None:
+async def test_dg001_p3_nested_specialist_preserves_direct_forensic_parent_chain() -> (
+    None
+):
     nested_child: ExecutionId | None = None
     nested_parent: ExecutionId | None = None
     mid_child: ExecutionId | None = None
@@ -363,11 +376,16 @@ async def test_dg001_p3_nested_specialist_preserves_direct_forensic_parent_chain
         async def execute(self, request: OcrRequest) -> OcrResult:
             nonlocal mid_child
             mid_child = require_active_execution_id()
-            return await nested_runner.execute(request=request, delegate=_LeafSpecialist())
+            return await nested_runner.execute(
+                request=request, delegate=_LeafSpecialist()
+            )
 
     fixture = build_decision_coordination_executor_fixture(
         candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+            build_ocr_qualification_discovery_candidate(
+                OCR_QUALIFICATION_PACKAGE_ID,
+                capability_ids=("document.ocr",),
+            ),
         ),
         specialist_delegate=_MidSpecialist(),
         fan_out=False,
@@ -401,7 +419,10 @@ async def test_dg001_p3_partial_sibling_failure_preserves_all_admissions() -> No
 
     fixture = build_decision_coordination_executor_fixture(
         candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
+            build_ocr_qualification_discovery_candidate(
+                OCR_QUALIFICATION_PACKAGE_ID,
+                capability_ids=("document.ocr",),
+            ),
         ),
         specialist_delegate=_PartialFailureSpecialist(),
         fan_out=True,
@@ -431,91 +452,133 @@ async def test_dg001_p3_partial_sibling_failure_preserves_all_admissions() -> No
 
 
 @pytest.mark.asyncio
-async def test_dg001_p3_operator_read_surfaces_multi_agent_lineage_after_orchestrator() -> None:
-    fixture = build_decision_coordination_executor_fixture(
-        candidates=(
-            _discovery_candidate(_OCR_PACKAGE, capability_ids=("document.ocr",)),
-        ),
-        fan_out=False,
+async def test_dg001_p3_canonical_root_clean_multi_agent_no_false_problem() -> None:
+    tenant = f"{_TENANT}-canonical-clean"
+    harness = build_dg001_canonical_multi_agent_diagnostic_harness(tenant_id=tenant)
+    task = Task(
+        tenant_id=tenant,
+        user_id="user-dg001",
+        message="canonical clean multi-agent",
+        context=TaskContext(capability="dg001.multi_agent.coordination"),
+        agent_id="dg001-multi-agent-root",
     )
-    accepted = accepted_decision(
-        DecisionCoordinationShape.SINGLE,
-        (decision_contribution("contrib-ok", document_ref="ok-doc"),),
+    result = await harness.runner.run_task(task)
+    assert result.state is TaskState.COMPLETED
+    assert (
+        query_all_problems_for_tenant(
+            harness.diagnostic_dependencies.problem_persistence,
+            tenant,
+        )
+        == ()
     )
-    run = await _execute_coordination_with_durable_lineage(
-        fixture,
-        accepted=accepted,
-        contribution_lease_pairs=(("contrib-ok", "lease-ok"),),
+    events = harness.runtime_event_store.list_for_task(
+        str(task.task_id),
+        tenant_id=tenant,
+        limit=50,
     )
-    for event_type in (
-        RuntimeEventType.TASK_CREATED,
-        RuntimeEventType.TASK_COMPLETED,
-        RuntimeEventType.RETRY_SCHEDULED,
-    ):
-        event = sample_runtime_event(
-            tenant_id=run.scope.tenant_id,
-            task_id=run.scope.task_id,
-            run_id=run.scope.run_id,
-            attempt_id=run.scope.attempt_id,
-        ).model_copy(update={"event_type": event_type})
-        run.runtime_store.append(event, tenant_id=run.scope.tenant_id)
+    assert events
+    scope = build_execution_lineage_attempt_scope(
+        tenant_id=tenant,
+        task_id=task.task_id,
+        run_id=validate_run_id(result.run_id),
+        attempt_id=events[0].attempt_id,
+    )
+    admissions = harness.lineage_persistence.list_admissions_for_attempt(
+        scope, limit=50
+    )
+    assert len(admissions.admissions) >= 2
 
-    causal = InMemoryCausalEvidencePersistence()
-    reconstructor = ExecutionReconstructor(
-        runtime_events=run.runtime_store,
-        causal_evidence=causal,
-        execution_lineage=run.persistence,
+
+@pytest.mark.asyncio
+async def test_dg001_p3_canonical_runtime_events_persisted_from_execution() -> None:
+    tenant = f"{_TENANT}-canonical-events"
+    harness = build_dg001_canonical_multi_agent_diagnostic_harness(tenant_id=tenant)
+    task = Task(
+        tenant_id=tenant,
+        user_id="user-dg001",
+        message="runtime evidence",
+        context=TaskContext(capability="dg001.multi_agent.coordination"),
+        agent_id="dg001-multi-agent-root",
     )
-    problem_persistence = InMemoryProblemPersistence()
-    occurrence_store = in_memory_document_store_for_problem_tests()
-    occurrence_persistence = document_store_occurrence_persistence_for_tests(occurrence_store)
-    lifecycle = ProblemLifecycleEngine(problem_persistence, occurrence_persistence)
-    registry = ProblemGroupingStrategyRegistry()
-    registry.register(DeterministicProblemGroupingStrategy())
-    orchestrator = DiagnosticOrchestrator(
-        execution_reconstructor=reconstructor,
-        lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
-        assessment_builder=DiagnosticAssessmentBuilder(),
-        grouping_engine=ProblemGroupingEngine(registry),
-        problem_lifecycle_engine=lifecycle,
+    result = await harness.runner.run_task(task)
+    assert result.state is TaskState.COMPLETED
+    assert result.run_id is not None
+    events = harness.runtime_event_store.list_for_task(
+        str(task.task_id),
+        tenant_id=tenant,
+        limit=200,
     )
-    scoped = orchestrator.run(
-        DiagnosticOrchestrationRequest(
-            tenant_id=run.scope.tenant_id,
-            executions=(
-                DiagnosticExecutionScope(
-                    tenant_id=run.scope.tenant_id,
-                    task_id=run.scope.task_id,
-                    run_id=run.scope.run_id,
-                ),
-            ),
-            grouping_strategy_id=STRATEGY_ID,
-            observed_at=_OBSERVED_AT,
-        ),
+    assert events
+    assert any(
+        event.event_type
+        in {RuntimeEventType.TASK_CREATED, RuntimeEventType.TASK_COMPLETED}
+        for event in events
     )
-    assert scoped.execution_results
-    assert scoped.execution_results[0].assessment.has_findings
-    read_service = read_service_for_tests(
-        problem_persistence,
-        reconstructor,
-        occurrence_persistence=occurrence_persistence,
-        document_store=occurrence_store,
+
+
+@pytest.mark.asyncio
+async def test_dg001_p3_canonical_operator_read_after_terminal_trigger() -> None:
+    tenant = f"{_TENANT}-canonical-read"
+    harness = build_dg001_canonical_multi_agent_diagnostic_harness(tenant_id=tenant)
+    task = Task(
+        tenant_id=tenant,
+        user_id="user-dg001",
+        message="operator read",
+        context=TaskContext(capability="dg001.multi_agent.coordination"),
+        agent_id="dg001-multi-agent-root",
     )
-    problems = read_service.list_problems(tenant_id=run.scope.tenant_id)
-    assert problems.total_count is not None and problems.total_count >= 1
-    problem_id = problems.problems[0].problem_id
-    detail = read_service.get_problem(tenant_id=run.scope.tenant_id, problem_id=problem_id)
-    assert detail is not None
-    assert detail.occurrences
-    view = detail.occurrences[0]
-    assert view.execution_lineage is not None
-    assert view.execution_lineage.attempts
-    attempt_view = view.execution_lineage.attempts[0]
-    assert attempt_view.read_status is ExecutionLineageReadStatus.AVAILABLE
-    child_ids = {str(eid) for eid in run.child_execution_ids}
-    exposed_ids = {
-        str(node.execution_id)
-        for segment in attempt_view.segments
-        for node in segment.executions
-    }
-    assert child_ids.issubset(exposed_ids)
+    result = await harness.runner.run_task(task)
+    assert result.state is TaskState.COMPLETED
+    problems = harness.read_service.list_problems(tenant_id=tenant)
+    assert problems.total_count == 0
+
+
+@pytest.mark.asyncio
+async def test_dg001_p3_real_child_failure_evidence_presence() -> None:
+    class _FailingSpecialist:
+        async def execute(self, request: OcrRequest) -> OcrResult:
+            del request
+            raise RuntimeError("controlled child failure")
+
+    tenant = f"{_TENANT}-child-failure"
+    harness = build_dg001_canonical_multi_agent_diagnostic_harness(
+        tenant_id=tenant,
+        specialist_delegate=_FailingSpecialist(),
+    )
+    task = Task(
+        tenant_id=tenant,
+        user_id="user-dg001",
+        message="child failure",
+        context=TaskContext(capability="dg001.multi_agent.coordination"),
+        agent_id="dg001-multi-agent-root",
+    )
+    run_id: str | None = None
+    try:
+        result = await harness.runner.run_task(task)
+        assert result.state is TaskState.FAILED
+        run_id = result.run_id
+    except ChildExecutionFailedError:
+        events_probe = harness.runtime_event_store.list_for_task(
+            str(task.task_id),
+            tenant_id=tenant,
+            limit=10,
+        )
+        assert events_probe
+        run_id = str(events_probe[0].run_id)
+    assert run_id is not None
+    events = harness.runtime_event_store.list_for_task(
+        str(task.task_id),
+        tenant_id=tenant,
+        limit=50,
+    )
+    assert events
+    scope = build_execution_lineage_attempt_scope(
+        tenant_id=tenant,
+        task_id=task.task_id,
+        run_id=validate_run_id(run_id),
+        attempt_id=events[0].attempt_id,
+    )
+    admissions = harness.lineage_persistence.list_admissions_for_attempt(
+        scope, limit=50
+    )
+    assert len(admissions.admissions) >= 2

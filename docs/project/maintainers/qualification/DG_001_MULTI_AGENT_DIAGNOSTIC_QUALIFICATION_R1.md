@@ -155,13 +155,40 @@ Canonical numbering from architecture R1 matrix. Status legend: **PASS** (proof 
 - **Attempt discovery legacy coverage:** see read integration doc; post-v1 index semantics qualified in read integration matrix, not re-opened here.
 - **P4 external infra:** not required for this task.
 
-## Final verdict
+## INDEPENDENT_AUDIT: CORRECTION_REQUIRED (R1-CORRECTION)
+
+Prior R1 report contradictions and gaps (addressed in correction commit on `development`):
+
+- reported `DIRECT_PARENT` must be `f1d62a7da5e9dd5c66827797ce88b701c758c9e4` (not session `START_HEAD` `374ac27a…`)
+- root P3 bypassed canonical root runtime (`activate_root_execution_lineage` + manual identity bind)
+- operator proof injected synthetic `RuntimeEvents` + manual `DiagnosticOrchestrator.run`
+- `testing_support` imported `tests.*` (architecture gate fail)
+- private cross-module test helpers (`_OCR_PACKAGE`, `_discovery_candidate`, `_root_identity`)
+- failure-localization `PASS` contradicted nested root-cause **NOT YET QUALIFIED**
+
+### Correction proofs (canonical P3)
+
+| Proof | Level | Test |
+|---|---|---|
+| `UnifiedTaskRunner` → `execute_root_task` → root lineage → coordination → child | **P3** | `test_dg001_p3_canonical_root_clean_multi_agent_no_false_problem` |
+| Runtime events from execution (no synthetic append) | **P3** | `test_dg001_p3_canonical_runtime_events_persisted_from_execution` |
+| Production terminal trigger → `DiagnosticReadService` | **P3** | `test_dg001_p3_canonical_operator_read_after_terminal_trigger` |
+| Child failure durable lineage evidence | **P3 partial** | `test_dg001_p3_real_child_failure_evidence_presence` |
+| Component lineage (manual root bind) | **P2** | `test_dg001_p3_root_single_child_*`, nested, fan-out, partial sibling |
+
+**Testing support:** `testing_support/agent_distribution/*_qualification_harness.py` — no `tests.*` imports; `test_ac6_architecture_gates::test_testing_support_does_not_import_tests` PASS.
+
+**NESTED_FAILURE_LOCALIZATION / SIBLING_FAILURE_LOCALIZATION:** **NOT_YET_QUALIFIED** (lineage admissions only; no deterministic operator failure boundary without next diagnostic-engine architecture).
+
+## Final verdict (post R1-CORRECTION)
 
 ```text
-STATUS: PASS
-MULTI_AGENT_DIAGNOSTIC_P3: PASS
+STATUS: CORRECTION_REQUIRED → re-validate full diagnostics suite for PASS
+MULTI_AGENT_DIAGNOSTIC_P3: PASS (canonical spine tests above)
 SINGLE_DIAGNOSTIC_AUTHORITY: PASS
 PRODUCTION_CHANGES: NO
+ACTUAL_BASE_DIRECT_PARENT: f1d62a7da5e9dd5c66827797ce88b701c758c9e4
+BASE_QUALIFICATION_SHA: e810d41dbbbad1db7c7ca98b324b2ae1262b89d8
 ```
 
-**Confirmations:** one central Diagnostic Engine; no local multi-agent/application diagnostic authority; no second lineage store; P3 proofs use real `CoordinationIntentExecutor` → `DelegatedSubtaskService` → `ChildExecutionRunner` boundary.
+**Confirmations:** one central Diagnostic Engine; no local multi-agent diagnostic authority; canonical P3 uses production terminal trigger (no manual orchestrator); no synthetic runtime events in canonical P3; `testing_support` does not import `tests.*`.
