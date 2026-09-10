@@ -792,6 +792,42 @@ def test_fusion_and_identity_layers_have_no_terminal_verdict_strings() -> None:
                 assert token not in source, f"{token} found in {path}"
 
 
+def test_pipeline_layer_has_no_dataset_or_proof_imports() -> None:
+    pipeline_root = _VPI_ROOT / "application/pipeline"
+    forbidden_fragments = (
+        ".dataset.",
+        ".data_pack.",
+        ".storage_bootstrap.",
+        ".proof.",
+        "evaluator",
+        ".integrations.providers.",
+    )
+    violations: list[str] = []
+    for module_path in sorted(pipeline_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_pipeline_layer_has_no_cluster_id_usage() -> None:
+    pipeline_root = _VPI_ROOT / "application/pipeline"
+    for path in _iter_production_python_files(pipeline_root):
+        source = path.read_text(encoding="utf-8")
+        assert "cluster_id" not in source, f"cluster_id found in {path}"
+
+
+def test_observability_layer_has_no_proof_imports() -> None:
+    observability_root = _VPI_ROOT / "application/observability"
+    forbidden_fragments = (".proof.", "evaluator", ".dataset.", ".data_pack.")
+    violations: list[str] = []
+    for module_path in sorted(observability_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
 def test_no_weak_contracts_in_embedding_materialization_production_code() -> None:
     forbidden_fragments = (
         "dict[str, Any]",
