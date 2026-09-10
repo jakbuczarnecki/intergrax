@@ -1,6 +1,6 @@
 # NPSC-5E — Recovery, Checkpoint & Retry Architecture
 
-> **Stage:** P0 + P0A qualified; **R1 FROZEN / PASS**; **R2 FROZEN / PASS**; **R3 FROZEN / PASS**; **NPSC-5E ACTIVE**
+> **Stage:** P0 + P0A qualified; **R1 FROZEN / PASS**; **R2 FROZEN / PASS**; **R3 FROZEN / PASS**; **NPSC-5E FROZEN / PASS**
 
 ## P0 inventory
 
@@ -318,6 +318,14 @@ See: `docs/project/maintainers/qualification/NPSC_5E_R3_CHILD_FANOUT_PARTIAL_REC
 Final qualification composes R3 implementation gate with cross-layer E2E scenarios (single/multiple slot recovery, sibling preservation, cross-process, stale writer CAS, policy/authority/trust deny, HITL boundary, R1 retry interop, re-selection prohibition, fan-in order/cardinality).
 
 See: `docs/project/maintainers/qualification/NPSC_5E_R3_FINAL_CHILD_FANOUT_PARTIAL_RECOVERY_QUALIFICATION_AND_FREEZE.md`
+
+## NPSC-5E Final — Recovery plane freeze (2026-09-10)
+
+**Status:** `FROZEN / PASS`
+
+Final qualification unifies R1 + R2 + R3 as one enterprise recovery plane with orthogonal ownership (retry ≠ resume ≠ partial recovery), shared canonical truths (identity, lineage, authority, governance, terminal/cancellation, budget/deadline, Nexus, `ChildExecutionPort`), cross-mechanism composite E2E certification, and mandatory frozen regression matrix.
+
+See: `docs/project/maintainers/qualification/NPSC_5E_FINAL_RECOVERY_PLANE_QUALIFICATION_AND_FREEZE.md`
 
 ## Deferred / out of scope
 
