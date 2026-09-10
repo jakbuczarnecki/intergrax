@@ -13,6 +13,9 @@ from platform_proofs.scenarios.verified_product_identification.application.contr
     MissingRequirementOrigin,
     ProductIdentificationQueryContext,
 )
+from platform_proofs.scenarios.verified_product_identification.application.contracts.source_identity_fact import (
+    SourceIdentityFact,
+)
 from platform_proofs.scenarios.verified_product_identification.application.identity.contracts import (
     IdentityContradiction,
     IdentityEvidence,
@@ -60,13 +63,21 @@ class VerifiedRequirementEvidence:
     attribute_name: str
     expected_value: str
     catalog_value: str
-    supporting_evidence: tuple[IdentityEvidence, ...]
+    supporting_identity_evidence: tuple[IdentityEvidence, ...]
+    supporting_source_facts: tuple[SourceIdentityFact, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.attribute_name.strip():
             raise ValueError("attribute_name must be non-empty")
-        if not isinstance(self.supporting_evidence, tuple):
-            raise TypeError("supporting_evidence must be a tuple")
+        if not isinstance(self.supporting_identity_evidence, tuple):
+            raise TypeError("supporting_identity_evidence must be a tuple")
+        if not isinstance(self.supporting_source_facts, tuple):
+            raise TypeError("supporting_source_facts must be a tuple")
+        if not self.supporting_identity_evidence and not self.supporting_source_facts:
+            raise ValueError(
+                "verified requirement evidence requires supporting_identity_evidence "
+                "or supporting_source_facts"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,16 +85,28 @@ class ContradictedRequirementEvidence:
     attribute_name: str
     expected_value: str
     catalog_value: str
-    contradicting_evidence: tuple[IdentityEvidence, ...]
+    contradicting_identity_evidence: tuple[IdentityEvidence, ...]
     contradicting_contradictions: tuple[IdentityContradiction, ...]
+    contradicting_source_facts: tuple[SourceIdentityFact, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.attribute_name.strip():
             raise ValueError("attribute_name must be non-empty")
-        if not isinstance(self.contradicting_evidence, tuple):
-            raise TypeError("contradicting_evidence must be a tuple")
+        if not isinstance(self.contradicting_identity_evidence, tuple):
+            raise TypeError("contradicting_identity_evidence must be a tuple")
         if not isinstance(self.contradicting_contradictions, tuple):
             raise TypeError("contradicting_contradictions must be a tuple")
+        if not isinstance(self.contradicting_source_facts, tuple):
+            raise TypeError("contradicting_source_facts must be a tuple")
+        if (
+            not self.contradicting_identity_evidence
+            and not self.contradicting_contradictions
+            and not self.contradicting_source_facts
+        ):
+            raise ValueError(
+                "contradicted requirement evidence requires contradicting_identity_evidence, "
+                "contradicting_contradictions, or contradicting_source_facts"
+            )
 
 
 @dataclass(frozen=True, slots=True)

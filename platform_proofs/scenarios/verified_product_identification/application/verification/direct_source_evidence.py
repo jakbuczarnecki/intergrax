@@ -18,6 +18,9 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
     ProductIdentifierType,
     identity_scope_for_identifier_type,
 )
+from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
+    source_ref_sort_key,
+)
 from platform_proofs.scenarios.verified_product_identification.application.identity.contracts import (
     ProductIdentityHypothesis,
 )
@@ -32,6 +35,23 @@ def facts_for_hypothesis(
     hypothesis: ProductIdentityHypothesis,
 ) -> tuple[SourceIdentityFact, ...]:
     return hypothesis.source_identity_facts
+
+
+def sort_source_identity_facts(
+    facts: tuple[SourceIdentityFact, ...],
+) -> tuple[SourceIdentityFact, ...]:
+    return tuple(
+        sorted(
+            facts,
+            key=lambda item: (
+                source_ref_sort_key(item.source_ref),
+                item.attribute_key.casefold(),
+                item.normalized_value,
+                item.provenance.source_field,
+                item.provenance.source_value,
+            ),
+        )
+    )
 
 
 def identifier_facts_by_type(
@@ -102,7 +122,14 @@ def evaluate_requested_identifier(
             )
             return ("supported", evidence_row, None, None)
 
-    contradicted_value = compatible[0].normalized_value
+    contradicting_facts = sort_source_identity_facts(
+        tuple(
+            fact
+            for fact in compatible
+            if fact.normalized_value != normalized_query
+        )
+    )
+    contradicted_value = contradicting_facts[0].normalized_value
     return (
         "contradicted",
         None,
@@ -110,8 +137,9 @@ def evaluate_requested_identifier(
             attribute_name=requested.identifier_type.value,
             expected_value=requested.value,
             catalog_value=contradicted_value,
-            contradicting_evidence=(),
+            contradicting_identity_evidence=(),
             contradicting_contradictions=(),
+            contradicting_source_facts=contradicting_facts,
         ),
         None,
     )
@@ -140,5 +168,6 @@ def _verified_from_fact(
         attribute_name=requested.identifier_type.value,
         expected_value=requested.value,
         catalog_value=catalog_value,
-        supporting_evidence=(),
+        supporting_identity_evidence=(),
+        supporting_source_facts=(fact,),
     )

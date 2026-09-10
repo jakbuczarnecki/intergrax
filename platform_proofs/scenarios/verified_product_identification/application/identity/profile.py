@@ -38,6 +38,7 @@ class IdentityStructuredAttribute:
     normalized_text_value: str
     source_field: str
     source_key: str
+    source_value: str
 
     def __post_init__(self) -> None:
         if not self.canonical_key.strip():
@@ -48,6 +49,8 @@ class IdentityStructuredAttribute:
             raise ValueError("source_field must be non-empty")
         if not self.source_key.strip():
             raise ValueError("source_key must be non-empty")
+        if not self.source_value.strip():
+            raise ValueError("source_value must be non-empty")
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +78,7 @@ class SourceOfferIdentityProfile:
     source_ref: SourceRecordRef
     brand: str | None
     brand_source_field: str | None
+    brand_source_value: str | None
     identifiers: tuple[IdentityTypedIdentifier, ...]
     structured_attributes: tuple[IdentityStructuredAttribute, ...]
 
@@ -101,12 +105,13 @@ def build_identity_profile(
 
     identifiers = _extract_identifiers(source_offer)
     structured_attributes = _extract_structured_attributes(source_offer)
-    brand, brand_source_field = _extract_brand(source_offer)
+    brand, brand_source_field, brand_source_value = _extract_brand(source_offer)
 
     return SourceOfferIdentityProfile(
         source_ref=source_ref,
         brand=brand,
         brand_source_field=brand_source_field,
+        brand_source_value=brand_source_value,
         identifiers=identifiers,
         structured_attributes=structured_attributes,
     )
@@ -124,13 +129,14 @@ def structured_normalization_rule() -> str:
     return _STRUCTURED_NORMALIZATION_RULE
 
 
-def _extract_brand(source_offer: WdcSourceOffer) -> tuple[str | None, str | None]:
+def _extract_brand(source_offer: WdcSourceOffer) -> tuple[str | None, str | None, str | None]:
     if source_offer.brand is None:
-        return None, None
-    normalized = _STRUCTURED_POLICY.normalized_text_value(source_value=source_offer.brand)
+        return None, None, None
+    raw_brand = source_offer.brand
+    normalized = _STRUCTURED_POLICY.normalized_text_value(source_value=raw_brand)
     if not normalized:
-        return None, None
-    return normalized.casefold(), "brand"
+        return None, None, None
+    return normalized.casefold(), "brand", raw_brand
 
 
 def _extract_identifiers(source_offer: WdcSourceOffer) -> tuple[IdentityTypedIdentifier, ...]:
@@ -195,6 +201,7 @@ def _extract_structured_attributes(
                 normalized_text_value=normalized_text_value,
                 source_field="keyValuePairs",
                 source_key=pair.source_key,
+                source_value=pair.source_value,
             )
         )
 
@@ -221,6 +228,7 @@ def _extract_structured_attributes(
                     normalized_text_value=normalized_text_value,
                     source_field="specTableContent",
                     source_key=parsed_attribute.source_key,
+                    source_value=parsed_attribute.source_value,
                 )
             )
 

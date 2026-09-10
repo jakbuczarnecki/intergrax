@@ -310,6 +310,10 @@ def test_golden_singleton_gtin_direct_verified() -> None:
     )
     decision = _verify(_ranked(hypothesis), query)
     assert decision.outcome is ProductIdentificationOutcome.VERIFIED
+    by_attr = {row.attribute_name: row for row in decision.decision_evidence}
+    assert by_attr["gtin"].supporting_source_facts
+    assert by_attr["capacity"].supporting_source_facts
+    assert by_attr["interface"].supporting_source_facts
 
 
 def test_golden_false_uniqueness_supported_plus_incomplete() -> None:

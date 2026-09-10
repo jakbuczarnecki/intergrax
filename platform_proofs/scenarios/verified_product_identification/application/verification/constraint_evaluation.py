@@ -29,6 +29,7 @@ from platform_proofs.scenarios.verified_product_identification.application.verif
 )
 from platform_proofs.scenarios.verified_product_identification.application.verification.direct_source_evidence import (
     facts_for_hypothesis,
+    sort_source_identity_facts,
     structured_facts_for_attribute,
 )
 
@@ -67,7 +68,7 @@ def evaluate_required_constraint(
                 attribute_name=constraint.attribute_name,
                 expected_value=expected,
                 catalog_value=contradictions[0].left_normalized_value,
-                contradicting_evidence=(),
+                contradicting_identity_evidence=(),
                 contradicting_contradictions=contradictions,
             ),
             None,
@@ -96,7 +97,7 @@ def evaluate_required_constraint(
                 attribute_name=constraint.attribute_name,
                 expected_value=expected,
                 catalog_value=matched_evidence[0].normalized_value,
-                supporting_evidence=matched_evidence,
+                supporting_identity_evidence=matched_evidence,
             ),
             None,
             None,
@@ -111,7 +112,7 @@ def evaluate_required_constraint(
                 attribute_name=constraint.attribute_name,
                 expected_value=expected,
                 catalog_value=catalog_value,
-                contradicting_evidence=_evidence_with_values(supporting, catalog_value),
+                contradicting_identity_evidence=_evidence_with_values(supporting, catalog_value),
                 contradicting_contradictions=(),
             ),
             None,
@@ -125,7 +126,10 @@ def evaluate_required_constraint(
                 attribute_name=constraint.attribute_name,
                 expected_value=expected,
                 catalog_value=contradicting_values[0],
-                contradicting_evidence=_evidence_with_values(supporting, contradicting_values[0]),
+                contradicting_identity_evidence=_evidence_with_values(
+                    supporting,
+                    contradicting_values[0],
+                ),
                 contradicting_contradictions=(),
             ),
             None,
@@ -167,8 +171,9 @@ def evaluate_negative_constraint(
                         attribute_name=constraint.attribute_name,
                         expected_value=f"not:{excluded}",
                         catalog_value=fact.normalized_value,
-                        contradicting_evidence=(),
+                        contradicting_identity_evidence=(),
                         contradicting_contradictions=(),
+                        contradicting_source_facts=(fact,),
                     ),
                 )
         return (ConstraintRequirementStatus.SUPPORTED, None)
@@ -195,7 +200,7 @@ def evaluate_negative_constraint(
                     attribute_name=constraint.attribute_name,
                     expected_value=f"not:{excluded}",
                     catalog_value=value,
-                    contradicting_evidence=_evidence_with_values(supporting, value),
+                    contradicting_identity_evidence=_evidence_with_values(supporting, value),
                     contradicting_contradictions=(),
                 ),
             )
@@ -223,18 +228,33 @@ def _evaluate_required_from_direct_facts(
         )
     )
     if matched:
+        supporting_facts = sort_source_identity_facts(matched)
         return (
             ConstraintRequirementStatus.SUPPORTED,
             VerifiedRequirementEvidence(
                 attribute_name=constraint.attribute_name,
                 expected_value=expected,
-                catalog_value=matched[0].normalized_value,
-                supporting_evidence=(),
+                catalog_value=supporting_facts[0].normalized_value,
+                supporting_identity_evidence=(),
+                supporting_source_facts=supporting_facts,
             ),
             None,
             None,
         )
-    catalog_value = direct_facts[0].normalized_value
+    contradicting_facts = sort_source_identity_facts(
+        tuple(
+            fact
+            for fact in direct_facts
+            if not _constraint_value_matches(
+                catalog_value=fact.normalized_value,
+                constraint_value=expected,
+                operator=constraint.operator,
+            )
+        )
+    )
+    if not contradicting_facts:
+        contradicting_facts = sort_source_identity_facts(direct_facts)
+    catalog_value = contradicting_facts[0].normalized_value
     return (
         ConstraintRequirementStatus.CONTRADICTED,
         None,
@@ -242,8 +262,9 @@ def _evaluate_required_from_direct_facts(
             attribute_name=constraint.attribute_name,
             expected_value=expected,
             catalog_value=catalog_value,
-            contradicting_evidence=(),
+            contradicting_identity_evidence=(),
             contradicting_contradictions=(),
+            contradicting_source_facts=contradicting_facts,
         ),
         None,
     )

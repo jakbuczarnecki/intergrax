@@ -54,3 +54,6 @@ class SourceIdentityFact:
         if self.fact_kind is SourceIdentityFactKind.IDENTIFIER:
             if self.identifier_type is None:
                 raise ValueError("identifier facts require identifier_type")
+        elif self.fact_kind is SourceIdentityFactKind.STRUCTURED_ATTRIBUTE:
+            if self.identifier_type is not None:
+                raise ValueError("structured attribute facts must not set identifier_type")

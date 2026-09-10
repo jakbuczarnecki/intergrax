@@ -52,11 +52,15 @@ def project_source_identity_facts(
                     provenance=SourceIdentityFactProvenance(
                         source_field=attribute.source_field,
                         normalization_rule=structured_normalization_rule(),
-                        source_value=attribute.source_key,
+                        source_value=attribute.source_value,
                     ),
                 )
             )
-        if profile.brand is not None and profile.brand_source_field is not None:
+        if (
+            profile.brand is not None
+            and profile.brand_source_field is not None
+            and profile.brand_source_value is not None
+        ):
             facts.append(
                 SourceIdentityFact(
                     source_ref=profile.source_ref,
@@ -67,7 +71,7 @@ def project_source_identity_facts(
                     provenance=SourceIdentityFactProvenance(
                         source_field=profile.brand_source_field,
                         normalization_rule=brand_normalization_rule(),
-                        source_value=profile.brand,
+                        source_value=profile.brand_source_value,
                     ),
                 )
             )
