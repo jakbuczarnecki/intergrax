@@ -25,7 +25,7 @@
 
 ## Attempt discovery decision
 
-> **Correction (2026-09-10):** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ATTEMPT-DISCOVERY-ARCHITECTURE-R1`
+> **Correction (2026-09-10):** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-ATTEMPT-DISCOVERY-ARCHITECTURE-R1-ROLLOUT-CORRECTION`  
 > **Architecture:** `docs/project/maintainers/architecture/DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_ATTEMPT_DISCOVERY_ARCHITECTURE_R1.md`
 
 ```text
@@ -35,7 +35,7 @@ BLOCKED_PENDING_ATTEMPT_DISCOVERY_ARCHITECTURE
 
 **Historical PASS (superseded):** attempt set was declared as `RuntimeEvent attempts UNION CausalEvidence attempts` with lineage as per-attempt enrichment only. Independent audit confirmed a legal counterexample: durable `ExecutionLineagePersistence` attempt state (`open_attempt` / `open_segment`) may exist before any RuntimeEvent or CausalEvidence for that `AttemptId`. That discovery model is **incomplete**.
 
-**Current verdict:** `EXISTING_DIAG2_DISCOVERY_COMPLETE: NO`. Implementation correction deferred to `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION` per attempt-discovery architecture R1 (OPTION_C — lineage-owned run-scoped discovery index).
+**Current verdict:** `EXISTING_DIAG2_DISCOVERY_COMPLETE: NO`. Rollout semantics (legacy `discovery_contract_version=None` vs post-v1 index-first, atomic registration, run discovery stable snapshot) defined in attempt-discovery architecture R1 rollout correction. Implementation deferred to `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION`.
 
 ## Read-only port
 
@@ -112,10 +112,13 @@ Architecture `DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_ATTEMPT_DISCOVERY_ARCHITECTU
 
 | Item | Required semantics |
 | ---- | ------------------ |
+| Attempt discovery | OPTION_C; `discovery_contract_version` legacy/post-v1 marker; index-first via `activate_root_execution_lineage` only |
+| Run discovery snapshot | Run `generation`-guarded pagination; separate from per-attempt `generation` |
 | Truncation | Truncated pages must not be validated as complete forensic snapshots |
-| Stable snapshot | Generation-guarded bounded retry; no torn cross-generation compose |
+| Stable snapshot | Per-attempt generation-guarded bounded retry; no torn cross-generation compose |
 | State/seal consistency | `sealed` / `closure_kind` / `degraded` equality across state and seal after stable snapshot |
 | Provider error translation | DocumentStore operational failures → `ExecutionLineageUnavailableError` |
+| Legacy vs post-v1 | `discovery_contract_version is None` without index → legal; `== 1` without index → integrity error |
 
 ## Final verdict
 
