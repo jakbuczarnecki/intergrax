@@ -9,9 +9,15 @@ from intergrax.contracts.execution_lineage import (
     build_execution_lineage_run_scope,
 )
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.runtime.execution.lineage.codecs import encode_execution_lineage_attempt_scope
-from intergrax.runtime.execution.lineage.persistence import execution_lineage_partition_key
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
+from intergrax.runtime.execution.lineage.codecs import (
+    encode_execution_lineage_attempt_state,
+)
+from intergrax.runtime.execution.lineage.persistence import (
+    execution_lineage_partition_key,
+)
 
 
 def register_v1_attempt(
@@ -41,16 +47,7 @@ def seed_legacy_attempt_state(
         closure_kind=None,
         discovery_contract_version=None,
     )
-    payload = {
-        "schema_version": 1,
-        "scope": encode_execution_lineage_attempt_scope(scope),
-        "generation": state.generation,
-        "next_admission_position": state.next_admission_position,
-        "active_segment_root_execution_id": None,
-        "degraded": False,
-        "sealed": False,
-        "closure_kind": None,
-    }
+    payload = encode_execution_lineage_attempt_state(state)
     document_store.put_if_absent(
         DocumentRecord(
             partition_key=execution_lineage_partition_key(scope),

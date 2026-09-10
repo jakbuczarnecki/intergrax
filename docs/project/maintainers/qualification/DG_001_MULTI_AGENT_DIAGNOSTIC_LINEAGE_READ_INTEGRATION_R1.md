@@ -147,10 +147,22 @@ Historical PASS (forensic topology) **retained**. Attempt-discovery remains **BL
 ## READ_INTEGRATION_R1_IMPLEMENTATION_CORRECTION
 
 > **Task:** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-CORRECTION`
-> **Verdict:** **PASS**
+> **Initial implementation SHA:** `1ab3771f8c49e13de0f85c47473522c7521f201a`
 
-| Area | Result |
-| ---- | ------ |
+### IMPLEMENTATION_CORRECTION_INITIAL_RESULT
+
+**CORRECTION_REQUIRED** — frozen qualification matrix incomplete + audit-discovered runtime defects:
+
+- discovery-only real post-v1 attempt dropped incorrectly
+- discovery `UNAVAILABLE` misclassified as integrity
+- segment truncation false corruption on partial segment sets
+- missing parentless non-root admission integrity
+- discovery public-read identity / row-meta atomic gaps
+
+Historical table below retained from initial correction landing; verdict superseded by final qualification pass.
+
+| Area | Initial landing |
+| ---- | --------------- |
 | Run scope + discovery contracts | `ExecutionLineageRunScope`, discovery record/page/run state |
 | Attempt marker + codec v2 | `discovery_contract_version` None/1; v1 read implicit None; v2 write explicit |
 | Atomic registration | First/subsequent batches via `PartitionAtomicDocumentStore`; idempotent + concurrent |
@@ -163,4 +175,20 @@ Historical PASS (forensic topology) **retained**. Attempt-discovery remains **BL
 | Operator projection | `attempt_discovery_read_status` / `attempt_discovery_completeness` on lineage view |
 | Tests | D1–D10 discovery + updated conformance/reconstruction suites |
 
-**Final verdict (post-correction):** **PASS** — bounded run-scoped attempt discovery, honest coverage metadata, stable snapshots, truncation-safe reconstruction, legacy-safe marker semantics, no second store/tree.
+## READ_INTEGRATION_R1_FINAL_CORRECTION_AND_QUALIFICATION
+
+> **Task:** `DG-001-MULTI-AGENT-DIAGNOSTIC-LINEAGE-READ-INTEGRATION-R1-FINAL-CORRECTION-AND-QUALIFICATION`
+> **Initial implementation SHA:** `1ab3771f8c49e13de0f85c47473522c7521f201a`
+> **Final correction SHA:** `aa80ed3581d4fb278e0b99adeac3d15d490e6e63`
+> **Verdict:** **PASS**
+
+| Matrix | Result |
+| ------ | ------ |
+| D8–D13 attempt discovery | PASS |
+| C1–C15 coverage / integrity | PASS |
+| §69–§73 truncation / outage / seal | PASS |
+| Discovery-only real attempt vs stale | PASS |
+| Discovery unavailable ≠ integrity | PASS |
+| Provider conformance (memory + document store) | PASS |
+
+**Final verdict:** **PASS** — bounded run-scoped attempt discovery, honest coverage metadata, stable snapshots, truncation-safe reconstruction, legacy-safe marker semantics, no second store/tree.

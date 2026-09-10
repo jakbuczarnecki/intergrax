@@ -364,6 +364,8 @@ class _ExecutionLineageStoreLogic:
                 raise ExecutionLineageIntegrityError("discovery attempt_id mismatch")
             if not _run_scopes_match(existing.run_scope, run_scope):
                 raise ExecutionLineageIntegrityError("discovery run scope mismatch")
+            if self._read_discovery_run_state(partition) is None:
+                raise ExecutionLineageIntegrityError("discovery row without run meta")
             return existing
         for _ in range(_MAX_ATOMIC_RETRIES):
             run_state = self._read_discovery_run_state(partition)
@@ -437,7 +439,10 @@ class _ExecutionLineageStoreLogic:
         run_scope: ExecutionLineageRunScope,
     ) -> ExecutionLineageDiscoveryRunState | None:
         partition = execution_lineage_discovery_partition_key(run_scope)
-        return self._read_discovery_run_state(partition)
+        state = self._read_discovery_run_state(partition)
+        if state is not None and not _run_scopes_match(state.run_scope, run_scope):
+            raise ExecutionLineageIntegrityError("discovery run state scope mismatch")
+        return state
 
     def list_attempts_for_run(
         self,
@@ -454,14 +459,17 @@ class _ExecutionLineageStoreLogic:
             cursor=cursor,
             sort_path="discovery_position",
         )
-        attempts = tuple(
-            self._decode_attempt_discovery_record(row.data) for row in rows
-        )
-        for record in attempts:
+        attempts: list[ExecutionLineageAttemptDiscoveryRecord] = []
+        for row in rows:
+            record = self._decode_attempt_discovery_record(row.data)
+            expected_key = _discovery_attempt_row_key(record.attempt_id)
+            if row.row_key != expected_key:
+                raise ExecutionLineageIntegrityError("discovery list row key mismatch")
             if not _run_scopes_match(record.run_scope, run_scope):
                 raise ExecutionLineageIntegrityError("discovery run scope mismatch")
+            attempts.append(record)
         return ExecutionLineageAttemptDiscoveryPage(
-            attempts=attempts,
+            attempts=tuple(attempts),
             next_cursor=next_cursor,
         )
 
@@ -470,9 +478,17 @@ class _ExecutionLineageStoreLogic:
         run_scope: ExecutionLineageRunScope,
         attempt_id: AttemptId,
     ) -> ExecutionLineageAttemptDiscoveryRecord | None:
+        validated_attempt_id = validate_attempt_id(attempt_id)
         partition = execution_lineage_discovery_partition_key(run_scope)
-        row_key = _discovery_attempt_row_key(validate_attempt_id(attempt_id))
-        return self._read_attempt_discovery_record(partition, row_key)
+        row_key = _discovery_attempt_row_key(validated_attempt_id)
+        record = self._read_attempt_discovery_record(partition, row_key)
+        if record is None:
+            return None
+        if record.attempt_id != validated_attempt_id:
+            raise ExecutionLineageIntegrityError("discovery attempt_id mismatch")
+        if not _run_scopes_match(record.run_scope, run_scope):
+            raise ExecutionLineageIntegrityError("discovery run scope mismatch")
+        return record
 
     def open_segment(
         self,

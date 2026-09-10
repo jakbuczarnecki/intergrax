@@ -323,6 +323,10 @@ def _load_run_discovery_snapshot(
             raise ExecutionReconstructionIntegrityError(str(exc)) from exc
 
         if run_state_before is None and run_state_after is None:
+            if records:
+                raise ExecutionReconstructionIntegrityError(
+                    "discovery rows exist without run meta",
+                )
             return _RunDiscoverySnapshot(
                 records=records,
                 run_state_before=None,
@@ -337,6 +341,15 @@ def _load_run_discovery_snapshot(
             and run_state_after is not None
             and run_state_before.generation == run_state_after.generation
         ):
+            if (
+                not records
+                and run_state_after.next_discovery_position > 1
+                and run_state_after.coverage_origin
+                is not ExecutionLineageDiscoveryCoverageOrigin.FROM_RUN_START
+            ):
+                raise ExecutionReconstructionIntegrityError(
+                    "empty discovery snapshot with impossible counter",
+                )
             if truncated or next_cursor is not None:
                 completeness = ExecutionAttemptDiscoveryCompleteness.TRUNCATED
             elif (
@@ -497,17 +510,8 @@ def _build_attempts(
     runtime_or_causal_ids = set(causal_by_attempt) | set(events_by_attempt)
     candidate_ids = runtime_or_causal_ids | set(discovery_by_attempt)
 
-    filtered_ids: set[AttemptId] = set()
-    for attempt_id in candidate_ids:
-        if (
-            attempt_id in discovery_by_attempt
-            and attempt_id not in runtime_or_causal_ids
-        ):
-            continue
-        filtered_ids.add(attempt_id)
-
     attempt_ids = sorted(
-        filtered_ids,
+        candidate_ids,
         key=lambda attempt_id: _attempt_projection_order_key(
             attempt_id,
             causal_by_attempt=causal_by_attempt,
@@ -520,8 +524,14 @@ def _build_attempts(
         ),
     )
 
-    return tuple(
-        _build_reconstructed_attempt(
+    attempts: list[ReconstructedAttempt] = []
+    for attempt_id in attempt_ids:
+        discovery_record = discovery_by_attempt.get(attempt_id)
+        is_discovery_only = (
+            attempt_id in discovery_by_attempt
+            and attempt_id not in runtime_or_causal_ids
+        )
+        reconstructed = _build_reconstructed_attempt(
             attempt_id=attempt_id,
             causal_by_attempt=causal_by_attempt,
             events_by_attempt=events_by_attempt,
@@ -532,11 +542,19 @@ def _build_attempts(
             initial_lineage_page_limit=initial_lineage_page_limit,
             max_lineage_records=max_lineage_records,
             max_lineage_snapshot_retries=max_lineage_snapshot_retries,
-            discovery_record=discovery_by_attempt.get(attempt_id),
+            discovery_record=discovery_record,
             discovery_snapshot=discovery_snapshot,
         )
-        for attempt_id in attempt_ids
-    )
+        if is_discovery_only:
+            lineage = reconstructed.lineage
+            if lineage is None:
+                continue
+            if lineage.read_status is ExecutionLineageReadStatus.ABSENT:
+                continue
+            if lineage.read_status is ExecutionLineageReadStatus.UNAVAILABLE:
+                continue
+        attempts.append(reconstructed)
+    return tuple(attempts)
 
 
 def _build_reconstructed_attempt(
@@ -612,6 +630,11 @@ def _validate_post_v1_discovery_requirements(
 ) -> None:
     if lineage.discovery_contract_version != 1:
         return
+    if (
+        discovery_snapshot.read_status
+        is ExecutionAttemptDiscoveryReadStatus.UNAVAILABLE
+    ):
+        return
     run_scope = build_execution_lineage_run_scope(
         tenant_id=tenant_id,
         task_id=task_id,
@@ -624,8 +647,8 @@ def _validate_post_v1_discovery_requirements(
         ):
             try:
                 point = reader.read_attempt_discovery_record(run_scope, attempt_id)
-            except ExecutionLineageUnavailableError as exc:
-                raise ExecutionReconstructionIntegrityError(str(exc)) from exc
+            except ExecutionLineageUnavailableError:
+                return
             if point is None:
                 raise ExecutionReconstructionIntegrityError(
                     "post-v1 attempt missing discovery record",
@@ -634,7 +657,12 @@ def _validate_post_v1_discovery_requirements(
             raise ExecutionReconstructionIntegrityError(
                 "post-v1 attempt missing discovery record",
             )
-    if discovery_snapshot.run_state_after is None:
+    if (
+        discovery_snapshot.read_status is ExecutionAttemptDiscoveryReadStatus.AVAILABLE
+        and discovery_snapshot.completeness
+        is not ExecutionAttemptDiscoveryCompleteness.TRUNCATED
+        and discovery_snapshot.run_state_after is None
+    ):
         raise ExecutionReconstructionIntegrityError(
             "post-v1 attempt missing discovery run state",
         )

@@ -195,12 +195,33 @@ def _project_stable_attempt_lineage(
     )
     _validate_state_seal_consistency(attempt_state=attempt_state, seal=seal)
     _validate_execution_id_uniqueness(admissions_raw)
+    _validate_parentless_non_root_admissions(admissions_raw)
 
     if segments_truncated:
-        completeness = ExecutionLineageCompleteness.TRUNCATED
-        if not admissions_truncated:
-            _validate_admission_segment_membership(segments_raw, admissions_raw)
-            _validate_parent_edges_under_prefix(segments_raw, admissions_raw)
+        return ReconstructedAttemptLineage(
+            attempt_id=attempt_id,
+            read_status=ExecutionLineageReadStatus.AVAILABLE,
+            completeness=ExecutionLineageCompleteness.TRUNCATED,
+            degraded=attempt_state.degraded,
+            closure_kind=_closure_kind(attempt_state, seal),
+            segments=(),
+            discovery_contract_version=attempt_state.discovery_contract_version,
+        )
+
+    if not segments_raw:
+        if admissions_raw and not admissions_truncated:
+            raise ExecutionLineageReconstructionIntegrityError(
+                "admission references unknown segment",
+            )
+        if admissions_raw and admissions_truncated:
+            completeness = ExecutionLineageCompleteness.TRUNCATED
+        else:
+            completeness = _derive_completeness(
+                attempt_state=attempt_state,
+                seal=seal,
+                segments=(),
+                truncated=False,
+            )
         return ReconstructedAttemptLineage(
             attempt_id=attempt_id,
             read_status=ExecutionLineageReadStatus.AVAILABLE,
@@ -381,6 +402,18 @@ def _validate_lineage_scope(
         raise ExecutionLineageReconstructionIntegrityError("seal scope mismatch")
 
 
+def _validate_parentless_non_root_admissions(
+    admissions: tuple[ExecutionLineageAdmissionRecord, ...],
+) -> None:
+    for admission in admissions:
+        if admission.parent_execution_id is not None:
+            continue
+        if admission.execution_id != admission.segment_root_execution_id:
+            raise ExecutionLineageReconstructionIntegrityError(
+                "parentless non-root admission",
+            )
+
+
 def _validate_execution_id_uniqueness(
     admissions: tuple[ExecutionLineageAdmissionRecord, ...],
 ) -> None:
@@ -513,6 +546,10 @@ def _validate_root_admission_topology(
             and len(segment_admissions) == 0
         ):
             continue
+        if segment_admissions:
+            raise ExecutionLineageReconstructionIntegrityError(
+                "segment admissions without canonical root",
+            )
         if segment.lifecycle is ExecutionLineageSegmentLifecycle.SEGMENT_CLOSED_CLEAN:
             raise ExecutionLineageReconstructionIntegrityError(
                 "closed clean segment missing root admission",
