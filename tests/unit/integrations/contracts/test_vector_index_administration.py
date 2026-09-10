@@ -89,6 +89,7 @@ def test_vector_index_description_rejects_negative_point_count() -> None:
             reachable=True,
             point_count=-1,
             dense_dimension=8,
+            dense_metric="cosine",
             present_capabilities=frozenset({VectorSearchCapability.DENSE}),
             dense_channel_name="dense",
             sparse_lexical_channel_name=None,
@@ -123,6 +124,7 @@ def test_validate_spec_against_description_accepts_compatible_state() -> None:
         reachable=True,
         point_count=10,
         dense_dimension=1024,
+        dense_metric="cosine",
         present_capabilities=frozenset(
             {VectorSearchCapability.DENSE, VectorSearchCapability.SPARSE_LEXICAL}
         ),
@@ -139,6 +141,7 @@ def test_validate_spec_against_description_rejects_dimension_mismatch() -> None:
         reachable=True,
         point_count=10,
         dense_dimension=512,
+        dense_metric="cosine",
         present_capabilities=frozenset(
             {VectorSearchCapability.DENSE, VectorSearchCapability.SPARSE_LEXICAL}
         ),
@@ -156,6 +159,7 @@ def test_validate_spec_against_description_rejects_missing_sparse_capability() -
         reachable=True,
         point_count=0,
         dense_dimension=1024,
+        dense_metric="cosine",
         present_capabilities=frozenset({VectorSearchCapability.DENSE}),
         dense_channel_name="dense",
         sparse_lexical_channel_name=None,
@@ -171,6 +175,7 @@ def test_prepare_result_dtos_are_immutable() -> None:
         reachable=True,
         point_count=0,
         dense_dimension=8,
+        dense_metric="cosine",
         present_capabilities=frozenset({VectorSearchCapability.DENSE}),
         dense_channel_name="dense",
         sparse_lexical_channel_name=None,

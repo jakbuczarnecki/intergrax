@@ -17,12 +17,15 @@ from intergrax.integrations.contracts.vector_index_administration import (
 from intergrax.integrations.providers.vector_store.qdrant.index_administration import (
     build_qdrant_index_spec,
 )
+from intergrax.integrations.providers.vector_store.qdrant.data_plane import (
+    QdrantVectorDataPlaneClient,
+    open_qdrant_vector_data_plane_client,
+)
 from intergrax.integrations.providers.vector_store.qdrant.opens import (
-    _build_qdrant_client,
     open_qdrant_vector_index_administration,
 )
-from intergrax.integrations.providers.vector_store.qdrant.rag_store import (
-    _normalize_point_id,
+from intergrax.integrations.providers.vector_store.qdrant.point_ids import (
+    normalize_qdrant_logical_point_id,
 )
 
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.configuration import (
@@ -106,25 +109,7 @@ class QdrantProviderPoint(Protocol):
     vector: QdrantProviderVectorInput
 
 
-class QdrantDataPlaneClient(Protocol):
-    def retrieve(
-        self,
-        collection_name: str,
-        ids: Sequence[str | int],
-        *,
-        with_payload: bool,
-        with_vectors: bool,
-    ) -> Sequence[QdrantProviderPoint]: ...
-
-    def upsert(
-        self,
-        collection_name: str,
-        points: Sequence[QdrantUpsertPointView],
-    ) -> None: ...
-
-    def get_collection(self, collection_name: str) -> QdrantCollectionInfoView: ...
-
-    def close(self) -> None: ...
+type QdrantDataPlaneClient = QdrantVectorDataPlaneClient
 
 
 @dataclass(frozen=True, slots=True)
@@ -276,7 +261,7 @@ class QdrantVectorStorageAdapter:
             configuration = QdrantBootstrapConfiguration.from_env(
                 logical_collection_name=logical_collection_name,
             )
-        client = _build_qdrant_client(configuration.integration)
+        client = open_qdrant_vector_data_plane_client(configuration.integration)
         index_admin = open_qdrant_vector_index_administration(configuration.integration)
         return cls(
             _client=client,
@@ -451,9 +436,11 @@ class QdrantVectorStorageAdapter:
     ) -> dict[str, QdrantStoredPoint]:
         if not records:
             return {}
-        point_ids = [_normalize_point_id(record.logical_point_id) for record in records]
+        point_ids = [
+            normalize_qdrant_logical_point_id(record.logical_point_id) for record in records
+        ]
         logical_by_point_id = {
-            _normalize_point_id(record.logical_point_id): record.logical_point_id
+            normalize_qdrant_logical_point_id(record.logical_point_id): record.logical_point_id
             for record in records
         }
         stored: dict[str, QdrantStoredPoint] = {}
@@ -484,7 +471,7 @@ class QdrantVectorStorageAdapter:
             return
         if metadata.target != physical.index_identity:
             raise QdrantBootstrapConfigurationError("index metadata target mismatch")
-        point_id = _normalize_point_id(INDEX_METADATA_LOGICAL_POINT_ID)
+        point_id = normalize_qdrant_logical_point_id(INDEX_METADATA_LOGICAL_POINT_ID)
         existing = self._client.retrieve(
             physical.collection_name,
             (point_id,),
@@ -540,7 +527,7 @@ class QdrantVectorStorageAdapter:
     ) -> QdrantUpsertPoint:
         payload = payload_from_record(record).to_provider_payload()
         vector_values = list(normalize_vector_float32(record.dense_embedding))
-        point_id = _normalize_point_id(record.logical_point_id)
+        point_id = normalize_qdrant_logical_point_id(record.logical_point_id)
         if physical.uses_named_dense_vector:
             vector_payload: list[float] | dict[str, list[float]] = {
                 physical.dense_vector_channel_name: vector_values

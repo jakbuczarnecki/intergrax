@@ -65,6 +65,8 @@ class QdrantControlPlaneClient(Protocol):
         sparse_vectors_config: dict[str, SparseVectorParams] | None = ...,
     ) -> bool: ...
 
+    def delete_collection(self, collection_name: str) -> bool: ...
+
     def close(self) -> None: ...
 
 
@@ -105,6 +107,42 @@ def _is_index_not_found(
             return True
         current = current.__cause__
     return False
+
+
+def _distance_label(distance: object) -> str:
+    value = getattr(distance, "value", None)
+    if isinstance(value, str):
+        return value
+    return str(distance)
+
+
+def _metric_from_distance_label(distance_label: str) -> Metric | None:
+    normalized = distance_label.strip().lower()
+    if normalized in {"cosine", "distance.cosine"}:
+        return "cosine"
+    if normalized in {"dot", "distance.dot"}:
+        return "dot"
+    if normalized in {"euclid", "euclidean", "distance.euclid"}:
+        return "euclidean"
+    return None
+
+
+def _dense_metric(
+    collection_info: CollectionInfo,
+    *,
+    dense_channel_name: str,
+) -> Metric | None:
+    vectors = collection_info.config.params.vectors
+    if vectors is None:
+        return None
+    if isinstance(vectors, dict):
+        dense = vectors.get(dense_channel_name)
+        if dense is None and len(vectors) == 1:
+            dense = next(iter(vectors.values()))
+        if dense is None:
+            return None
+        return _metric_from_distance_label(_distance_label(dense.distance))
+    return _metric_from_distance_label(_distance_label(vectors.distance))
 
 
 def _dense_dimension(
@@ -189,11 +227,13 @@ def _description_from_collection(
             reachable=reachable,
             point_count=0,
             dense_dimension=None,
+            dense_metric=None,
             present_capabilities=frozenset(),
             dense_channel_name=None,
             sparse_lexical_channel_name=None,
         )
     dense_dimension = _dense_dimension(collection_info, dense_channel_name=dense_channel_name)
+    dense_metric = _dense_metric(collection_info, dense_channel_name=dense_channel_name)
     sparse_present = _has_sparse_channel(
         collection_info,
         sparse_channel_name=sparse_channel_name,
@@ -204,6 +244,7 @@ def _description_from_collection(
         reachable=reachable,
         point_count=_point_count(collection_info),
         dense_dimension=dense_dimension,
+        dense_metric=dense_metric,
         present_capabilities=_present_capabilities(
             collection_info,
             dense_channel_name=dense_channel_name,

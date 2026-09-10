@@ -2,23 +2,19 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Protocol
 
 from intergrax.integrations.contracts.base import IntegrationDependencyError
 from intergrax.integrations.contracts.vector_index_administration import (
     VectorIndexAdministration,
     VectorIndexIdentity,
 )
+from intergrax.integrations.contracts.vector_index_metadata import VectorIndexMetadataReader
 from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
 from intergrax.integrations.providers.vector_store.qdrant.opens import (
-    _build_qdrant_client,
+    open_qdrant_vector_index_administration,
+    open_qdrant_vector_index_metadata_reader,
 )
-from intergrax.integrations.providers.vector_store.qdrant.rag_store import (
-    _normalize_point_id,
-)
-from intergrax.rag.vectorstore.config.vector_config import Metric
 
 from platform_proofs.scenarios.verified_product_identification.integrations.search_store.vector_index_compatibility import (
     VectorIndexIdentityResolver,
@@ -43,119 +39,14 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     EMBEDDING_REVISION_PAYLOAD_KEY,
     payload_from_provider_dict,
 )
-from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.target_mapping import (
-    physical_collection_name,
-)
-
-type QdrantProviderDistance = str
-type QdrantProviderPayloadInput = Mapping[str, str | int] | None
-
-
-class QdrantVectorParamsView(Protocol):
-    size: int
-    distance: QdrantProviderDistance
-
-
-class QdrantCollectionParamsView(Protocol):
-    vectors: QdrantVectorParamsView | dict[str, QdrantVectorParamsView] | None
-
-
-class QdrantCollectionConfigView(Protocol):
-    params: QdrantCollectionParamsView
-
-
-class QdrantCollectionInfoView(Protocol):
-    config: QdrantCollectionConfigView
-
-
-class QdrantProviderPoint(Protocol):
-    id: str | int
-    payload: QdrantProviderPayloadInput
-
-
-class QdrantIndexProbeClient(Protocol):
-    def get_collection(self, collection_name: str) -> QdrantCollectionInfoView: ...
-
-    def retrieve(
-        self,
-        collection_name: str,
-        ids: Sequence[str | int],
-        *,
-        with_payload: bool,
-        with_vectors: bool,
-    ) -> Sequence[QdrantProviderPoint]: ...
-
-    def scroll(
-        self,
-        collection_name: str,
-        *,
-        limit: int,
-        with_payload: bool,
-        with_vectors: bool,
-    ) -> tuple[Sequence[QdrantProviderPoint], str | int | None]: ...
-
-    def close(self) -> None: ...
-
-
-@dataclass(frozen=True, slots=True)
-class _CollectionVectorShape:
-    dimension: int
-    distance: str
-
-
-def _physical_index_name(identity: VectorIndexIdentity) -> str:
-    return physical_collection_name(identity.logical_name, identity.tenant_id)
-
-
-def _distance_label(distance: QdrantProviderDistance) -> str:
-    return str(distance)
-
-
-def _metric_from_distance_label(distance: str) -> Metric | None:
-    normalized = distance.strip().lower()
-    if normalized in {"cosine", "distance.cosine"}:
-        return "cosine"
-    if normalized in {"dot", "distance.dot"}:
-        return "dot"
-    if normalized in {"euclid", "euclidean", "distance.euclid"}:
-        return "euclidean"
-    return None
-
-
-def _collection_vector_shape(collection_info: QdrantCollectionInfoView) -> _CollectionVectorShape:
-    vectors = collection_info.config.params.vectors
-    if vectors is None:
-        raise ValueError("collection has no dense vector config")
-    if isinstance(vectors, dict):
-        if len(vectors) != 1:
-            raise ValueError("collection dense vector channel is ambiguous")
-        dense = next(iter(vectors.values()))
-    else:
-        dense = vectors
-    return _CollectionVectorShape(
-        dimension=int(dense.size),
-        distance=_distance_label(dense.distance),
-    )
-
-
-def _extract_provider_payload(raw_payload: QdrantProviderPayloadInput) -> dict[str, str | int]:
-    if raw_payload is None:
-        raise ValueError("stored payload missing")
-    converted: dict[str, str | int] = {}
-    for key, value in raw_payload.items():
-        if not isinstance(key, str):
-            continue
-        if isinstance(value, str) or isinstance(value, int):
-            converted[key] = value
-    return converted
 
 
 @dataclass(slots=True)
 class QdrantVectorIndexIdentityResolver:
-    """Resolve Qdrant index identity via administration and typed payload probes."""
+    """Resolve Qdrant index identity via public administration and metadata seams."""
 
     _index_admin: VectorIndexAdministration
-    _probe_client: QdrantIndexProbeClient
+    _metadata_reader: VectorIndexMetadataReader
 
     @classmethod
     def from_qdrant_config(
@@ -163,23 +54,26 @@ class QdrantVectorIndexIdentityResolver:
         config: QdrantIntegrationConfig,
         *,
         index_admin: VectorIndexAdministration | None = None,
+        metadata_reader: VectorIndexMetadataReader | None = None,
     ) -> QdrantVectorIndexIdentityResolver:
-        if index_admin is None:
-            from intergrax.integrations.providers.vector_store.qdrant.opens import (
-                open_qdrant_vector_index_administration,
-            )
-
-            resolved_admin = open_qdrant_vector_index_administration(config)
-        else:
-            resolved_admin = index_admin
+        resolved_admin = (
+            index_admin
+            if index_admin is not None
+            else open_qdrant_vector_index_administration(config)
+        )
+        resolved_reader = (
+            metadata_reader
+            if metadata_reader is not None
+            else open_qdrant_vector_index_metadata_reader(config)
+        )
         return cls(
             _index_admin=resolved_admin,
-            _probe_client=_build_qdrant_client(config),
+            _metadata_reader=resolved_reader,
         )
 
     def close(self) -> None:
         self._index_admin.close()
-        self._probe_client.close()
+        self._metadata_reader.close()
 
     def resolve(
         self,
@@ -202,15 +96,11 @@ class QdrantVectorIndexIdentityResolver:
                 status=VectorIndexIdentityResolutionStatus.INDEX_MISSING,
                 identity=None,
             )
-        try:
-            collection_info = self._probe_client.get_collection(_physical_index_name(expected.target))
-            shape = _collection_vector_shape(collection_info)
-        except (OSError, ConnectionError, TimeoutError, ValueError):
+        if description.dense_dimension is None:
             return VectorIndexIdentityResolution(
                 status=VectorIndexIdentityResolutionStatus.METADATA_UNAVAILABLE,
                 identity=None,
             )
-        metric = _metric_from_distance_label(shape.distance)
         metadata_payload = self._read_index_metadata_payload(expected.target)
         if metadata_payload is not None:
             try:
@@ -235,8 +125,8 @@ class QdrantVectorIndexIdentityResolver:
                     provider=metadata.provider,
                     model=metadata.model,
                     revision=metadata.revision,
-                    dimension=shape.dimension,
-                    metric=metric,
+                    dimension=description.dense_dimension,
+                    metric=description.dense_metric,
                     content_identity=metadata.content_identity,
                 ),
             )
@@ -267,8 +157,8 @@ class QdrantVectorIndexIdentityResolver:
                 provider=payload.embedding_provider,
                 model=payload.embedding_model,
                 revision=payload.embedding_revision,
-                dimension=shape.dimension,
-                metric=metric,
+                dimension=description.dense_dimension,
+                metric=description.dense_metric,
                 content_identity=None,
             ),
         )
@@ -277,39 +167,24 @@ class QdrantVectorIndexIdentityResolver:
         self,
         target: VectorIndexIdentity,
     ) -> dict[str, str | int] | None:
-        point_id = _normalize_point_id(INDEX_METADATA_LOGICAL_POINT_ID)
-        try:
-            points = self._probe_client.retrieve(
-                _physical_index_name(target),
-                (point_id,),
-                with_payload=True,
-                with_vectors=False,
-            )
-        except (OSError, ConnectionError, TimeoutError):
+        record = self._metadata_reader.retrieve_point_by_logical_id(
+            target,
+            INDEX_METADATA_LOGICAL_POINT_ID,
+        )
+        if record is None:
             return None
-        if not points:
-            return None
-        return _extract_provider_payload(points[0].payload)
+        return record.payload
 
     def _read_embedding_probe_payload(
         self,
         target: VectorIndexIdentity,
     ) -> dict[str, str | int] | None:
-        try:
-            points, _offset = self._probe_client.scroll(
-                _physical_index_name(target),
-                limit=1,
-                with_payload=True,
-                with_vectors=False,
-            )
-        except (OSError, ConnectionError, TimeoutError):
+        record = self._metadata_reader.retrieve_first_point_payload(target, limit=1)
+        if record is None:
             return None
-        if not points:
-            return None
-        return _extract_provider_payload(points[0].payload)
+        return record.payload
 
 
 __all__ = [
-    "QdrantIndexProbeClient",
     "QdrantVectorIndexIdentityResolver",
 ]

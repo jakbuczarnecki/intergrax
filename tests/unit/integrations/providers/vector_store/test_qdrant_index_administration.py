@@ -254,6 +254,7 @@ def test_describe_dense_collection() -> None:
     description = _admin(client).describe_index(_identity())
     assert description.exists is True
     assert description.dense_dimension == 1024
+    assert description.dense_metric == "cosine"
     assert description.present_capabilities == frozenset({VectorSearchCapability.DENSE})
     assert description.sparse_lexical_channel_name is None
 

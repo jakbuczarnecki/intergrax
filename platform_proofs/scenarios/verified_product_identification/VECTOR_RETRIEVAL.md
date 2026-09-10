@@ -50,7 +50,8 @@ No configured-catalog fallback. Missing or malformed identity → typed `INVALID
 Before the first provider vector query, `QdrantVectorCandidateSearchAdapter` runs a
 lazy one-time compatibility gate (`VectorIndexCompatibilityGate`):
 
-1. resolve actual index identity from Qdrant administration + typed payload probes;
+1. resolve actual index identity from public provider contracts only
+   (`VectorIndexAdministration`, `VectorIndexMetadataReader`);
 2. compare against expected identity from VPI configuration and Data Pack/bootstrap
    contracts;
 3. fail closed on any mismatch or missing required metadata.
@@ -65,11 +66,14 @@ lazy one-time compatibility gate (`VectorIndexCompatibilityGate`):
 
 **Actual identity source (authoritative):**
 
-- `VectorIndexAdministration.describe_index` — existence, reachability, dense dimension;
-- Qdrant collection config — distance metric (cosine required);
-- durable index metadata point (`vpi:__index_identity_metadata__`) written during
-  storage bootstrap `prepare_target` when Data Pack manifest is bound;
-- fallback probe: first stored vector payload embedding fields (no content identity).
+- `VectorIndexAdministration.describe_index` — existence, reachability, dense dimension,
+  dense metric;
+- `VectorIndexMetadataReader.retrieve_point_by_logical_id` — durable index metadata point
+  (`vpi:__index_identity_metadata__`) written during storage bootstrap `prepare_target`
+  when Data Pack manifest is bound; provider owns logical→physical point ID encoding;
+- bounded fallback via `VectorIndexMetadataReader.retrieve_first_point_payload` — first
+  stored vector payload embedding fields only when metadata point is absent (no content
+  identity).
 
 **Compared fields:** target, provider, model, revision, dimension, metric, content identity
 (when expected).

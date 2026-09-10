@@ -869,6 +869,7 @@ def test_ready_fast_path_validates_persisted_qdrant_without_prepare(tmp_path: Pa
         reachable=True,
         point_count=2,
         dense_dimension=8,
+        dense_metric="cosine",
         present_capabilities=frozenset(
             {VectorSearchCapability.DENSE, VectorSearchCapability.SPARSE_LEXICAL}
         ),
