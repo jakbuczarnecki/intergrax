@@ -25,6 +25,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_UNRESOLVED,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment import (
+    SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
     UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,
 )
@@ -106,6 +109,17 @@ def test_adapter_maps_epistemic_failure_id_without_string_classifier() -> None:
     assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
     assert result.reason is DecisionFailureReason.EPISTEMIC_CONTRADICTION
     assert not result.is_platform_failure
+
+
+def test_adapter_maps_reverse_alignment_failure_to_epistemic_contradiction() -> None:
+    observation = observation_from_ai_incident_evaluation(
+        failures=(SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR,),
+        evaluator_passed=False,
+    )
+    result = classify_decision_failure(observation)
+    assert result is not None
+    assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
+    assert result.reason is DecisionFailureReason.EPISTEMIC_CONTRADICTION
 
 
 def test_adapter_maps_pre_reconciliation_validation_error_to_model_unsupported_completion() -> None:

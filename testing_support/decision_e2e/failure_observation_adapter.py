@@ -17,58 +17,37 @@ from intergrax.decision_system.qualification.signals import (
     ProviderQualificationSignal,
 )
 from intergrax.decision_system.qualification.taxonomy import DecisionFailureBoundary
-
-AI_INCIDENT_EPISTEMIC_FAILURE_ID = (
-    "unsupported_inference:unresolved_with_supported_diagnosis"
-)
-AI_INCIDENT_DIAGNOSTIC_TOOL_TRACE_FAILURE_ID = "tool_runtime_not_exercised"
-
-AI_INCIDENT_INSUFFICIENT_EVIDENCE_FAILURE_IDS: frozenset[str] = frozenset(
-    {
-        "staffing_attendance_not_gathered",
-        "staffing_preliminary_not_gathered",
-        "comparison_evidence_not_gathered",
-        "telemetry_evidence_not_in_graph",
-    }
-)
-AI_INCIDENT_REVISION_FLOW_FAILURE_IDS: frozenset[str] = frozenset(
-    {
-        "telemetry_visible_before_revision",
-        "critic_falsification_missing",
-        "failed_critic_verdict_missing",
-        "evidence_challenge_missing",
-        "bounded_recovery_missing",
-        "follow_up_not_via_tools",
-    }
-)
-AI_INCIDENT_EPISTEMIC_FAILURE_IDS: frozenset[str] = frozenset(
-    {
-        AI_INCIDENT_EPISTEMIC_FAILURE_ID,
-        "h2_not_rejected",
-    }
+from testing_support.decision_e2e.ai_incident_failure_qualification_mapping import (
+    AI_INCIDENT_DIAGNOSTIC_TOOL_TRACE_FAILURE_ID,
+    AI_INCIDENT_EPISTEMIC_FAILURE_ID,
+    AI_INCIDENT_EPISTEMIC_FAILURE_IDS,
+    AI_INCIDENT_INSUFFICIENT_EVIDENCE_FAILURE_IDS,
+    AI_INCIDENT_REVISION_FLOW_FAILURE_IDS,
+    AiIncidentFailureMappingError,
+    AiIncidentQualificationInputError,
+    build_ai_incident_qualification_signals,
 )
 
-
-def _model_behavior_from_ai_incident_failures(
-    failures: tuple[str, ...],
-) -> ModelBehaviorQualificationSignal:
-    failure_set = frozenset(failures)
-    if failure_set.intersection(AI_INCIDENT_INSUFFICIENT_EVIDENCE_FAILURE_IDS):
-        return ModelBehaviorQualificationSignal(
-            insufficient_evidence_gathering=True,
-            behavior_boundary=DecisionFailureBoundary.EVIDENCE_LIFECYCLE,
-        )
-    if failure_set.intersection(AI_INCIDENT_REVISION_FLOW_FAILURE_IDS):
-        return ModelBehaviorQualificationSignal(
-            premature_completion=True,
-            behavior_boundary=DecisionFailureBoundary.COMPLETION_RECONCILIATION,
-        )
-    if failure_set.intersection(AI_INCIDENT_EPISTEMIC_FAILURE_IDS):
-        return ModelBehaviorQualificationSignal(
-            epistemic_contradiction=True,
-            behavior_boundary=DecisionFailureBoundary.COMPLETION_RECONCILIATION,
-        )
-    return ModelBehaviorQualificationSignal()
+__all__ = (
+    "AI_INCIDENT_DIAGNOSTIC_TOOL_TRACE_FAILURE_ID",
+    "AI_INCIDENT_EPISTEMIC_FAILURE_ID",
+    "AI_INCIDENT_EPISTEMIC_FAILURE_IDS",
+    "AI_INCIDENT_INSUFFICIENT_EVIDENCE_FAILURE_IDS",
+    "AI_INCIDENT_REVISION_FLOW_FAILURE_IDS",
+    "AiIncidentFailureMappingError",
+    "AiIncidentQualificationInputError",
+    "EnvironmentQualificationFacts",
+    "ProviderInfrastructureFacts",
+    "observation_for_credential_unavailable",
+    "observation_for_provider_rate_limit",
+    "observation_for_trace_not_finalized",
+    "observation_from_ai_incident_evaluation",
+    "observation_from_environment_facts",
+    "observation_from_platform_trace_readback",
+    "observation_from_provider_infrastructure_facts",
+    "observation_from_scenario_execution_exception",
+    "provider_infrastructure_facts_from_execution_error",
+)
 
 
 def observation_from_ai_incident_evaluation(
@@ -79,17 +58,27 @@ def observation_from_ai_incident_evaluation(
     boundary: DecisionFailureBoundary = DecisionFailureBoundary.HOST_EXECUTION,
 ) -> DecisionQualificationObservation:
     """Map AI Incident scenario evaluator failures to structured observation facts."""
-    model_behavior = _model_behavior_from_ai_incident_failures(failures)
-    platform_contract = PlatformContractQualificationSignal(trace_finalized=trace_finalized)
+    (
+        model_behavior,
+        platform_contract,
+        evaluator,
+        observability,
+        effective_boundary,
+    ) = build_ai_incident_qualification_signals(
+        failures=failures,
+        evaluator_passed=evaluator_passed,
+        trace_finalized=trace_finalized,
+        boundary=boundary,
+    )
 
     return DecisionQualificationObservation(
-        boundary=boundary,
+        boundary=effective_boundary,
         platform_contract=platform_contract,
         model_behavior=model_behavior,
-        evaluator=EvaluatorQualificationSignal(passed=evaluator_passed),
+        evaluator=evaluator,
         provider=ProviderQualificationSignal(),
         environment=EnvironmentQualificationSignal(),
-        observability=ObservabilityQualificationSignal(),
+        observability=observability,
     )
 
 
