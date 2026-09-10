@@ -12,6 +12,7 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
 )
 from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
     SourceRecordRef,
+    source_ref_sort_key,
 )
 from platform_proofs.scenarios.verified_product_identification.application.fusion.contracts import (
     FusedOfferCandidate,
@@ -22,9 +23,6 @@ from platform_proofs.scenarios.verified_product_identification.application.fusio
 )
 from platform_proofs.scenarios.verified_product_identification.application.fusion.errors import (
     OfferCandidateFusionError,
-)
-from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.identity import (
-    source_ref_sort_key,
 )
 
 _CHANNEL_EVIDENCE_ORDER: tuple[RetrievalChannel, ...] = (

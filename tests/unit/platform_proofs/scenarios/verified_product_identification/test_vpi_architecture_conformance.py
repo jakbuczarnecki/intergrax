@@ -319,6 +319,22 @@ def test_no_weak_contracts_in_retrieval_orchestration_production_code() -> None:
             assert fragment not in source, f"{fragment} found in {path}"
 
 
+def test_fusion_layer_has_no_dataset_or_infrastructure_imports() -> None:
+    fusion_root = _VPI_ROOT / "application/fusion"
+    forbidden_fragments = (
+        ".dataset.",
+        ".data_pack.",
+        ".storage_bootstrap.",
+        ".integrations.providers.",
+    )
+    violations: list[str] = []
+    for module_path in sorted(fusion_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
 def test_fusion_layer_has_no_provider_imports() -> None:
     fusion_root = _VPI_ROOT / "application/fusion"
     forbidden = frozenset(
