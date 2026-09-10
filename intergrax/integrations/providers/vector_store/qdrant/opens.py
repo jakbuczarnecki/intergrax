@@ -31,9 +31,14 @@ from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIn
 
 
 def _import_qdrant_client() -> Any:
-    from intergrax.integrations.providers.vector_store.qdrant.client_factory import _import_qdrant_client as _load
-
-    return _load()
+    try:
+        from qdrant_client import QdrantClient
+    except ImportError as exc:
+        raise IntegrationConfigurationError(
+            "Qdrant integration requires qdrant-client. "
+            "Install with: Intergrax-ai[vector-qdrant]."
+        ) from exc
+    return QdrantClient
 
 
 def _build_rag_config(config: QdrantIntegrationConfig) -> Any:
