@@ -24,8 +24,8 @@
 | Metric | Count |
 | --- | ---: |
 | Total execution-capable entrypoints inventoried | 22 |
-| CANONICAL | 15 |
-| CANONICAL WITH GAP | 3 |
+| CANONICAL | 16 |
+| CANONICAL WITH GAP | 2 |
 | LEGACY BUT NON-PRODUCTION | 2 |
 | UNSUPPORTED / DEAD | 0 |
 | BYPASS | 1 |
@@ -39,7 +39,7 @@
 | Uncontrolled parallel execution paths (execution-relevant) | 0 (bounded fan-out under coordination tests) |
 | P0 bypasses | 0 |
 | P1 bypasses | 1 |
-| P2 gaps | 3 |
+| P2 gaps | 2 |
 | P3 legacy cleanups | 2 |
 
 ## Central inventory
@@ -58,7 +58,7 @@
 | EP-10 | Graph orchestration | nexus | `GraphExecutor` → `ChildExecutionRunner` + declarative invoker | Yes | Yes | Yes | Child authority policy | Policy on tools | Child lineage | CANONICAL | — | `graph_executor.py:118,254` | GraphExecutor | — |
 | EP-11 | Execution work port | runtime | `ExecutionWorkPort` → `ChildExecutionRunner` | Yes | Yes | Yes | Yes | Admission hooks | Child | CANONICAL | — | `execution_work_port.py` | ExecutionWorkPort | — |
 | EP-12 | Coordination / fan-out | agent_distribution | `CoordinationIntentExecutor` → `MultiAgentCoordinationService` / `BoundedMultiAgentFanOutService` under `peek_governed_execution_task` | Yes | Delegated child | Under root | Governed coordination port | Multi-agent governance | Fan-out lineage | CANONICAL | — | `coordination_intent_executor.py`, `test_npsc5a_*`, `test_npsc5c_*` | Agent distribution | — |
-| EP-13 | UAEP agent step | agents | `RuntimeExecutionContext.invoke_tool` → catalog gateway → `RuntimeToolInvoker` | Yes when inside Nexus step | Yes | Active execution | Active authority | Agent governance when configured | Under parent | CANONICAL WITH GAP | P2 | `runtime_tool_helpers.py`, `invoker.py` (`agent_runtime_governance` optional) | Agent governance wiring | U3 |
+| EP-13 | UAEP agent step | agents | `RuntimeExecutionContext.invoke_tool` → catalog gateway → `RuntimeToolInvoker` | Yes when inside Nexus step | Yes | Active execution | Active authority | Agent governance mandatory in `production_mode` | Under parent | **CANONICAL** | — | `runtime_tool_helpers.py`, `runtime_context.py`, `invoker.py`, U3 qualification | Agent governance wiring | **U3 closed** |
 | EP-14 | ACP declarative catalog tools | applications / agents | `build_declarative_invoker_from_tool_wiring` → `RuntimeToolInvoker` (no governance param in wiring) | Partial | Yes | When bound to active run | Side-effect auth in invoker | Optional agent governance | When in run | CANONICAL WITH GAP | P2 | `declarative_tool_wiring.py:33-38` | Applications tool wiring | U2 |
 | EP-15 | Default delegated subtask factory | applications / agent_distribution | `DelegatedSubtaskServiceFactory.create` default `as_child_execution_port(ChildExecutionRunner())` | **No** — bypasses `ExecutionWorkPort` / Nexus child scheduling adapter | Child agent work | Child IDs minted in runner | Parent context required | Physical delegation governance only | Child lineage in runner | **BYPASS** | **P1** | `production_agent_capability_runtime.py:163-167` | Applications composition | **U4** |
 | EP-16 | Compensation queue drain | agents / persistence | `drain_pending_compensation_jobs` → `CompensationSideEffectExecutionPort` → `Execution` / `ExecutionRuntime` → `CompensationToolInvokeSession` → `RuntimeToolInvoker` | Yes | Yes (compensation tools) | Yes (root admission; preserves job `run_id`) | Active authority enforced in delegate | Decision lifecycle host + tool policy on invoke | Root segment for job run | **CANONICAL** | — | `compensation_queue_worker.py`, `runtime/execution/compensation_side_effect.py` | Runtime compensation admission | **U2 closed** |

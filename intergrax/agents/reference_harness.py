@@ -29,6 +29,10 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.wiring.harness_governance import create_lab_allow_governance_service
+from intergrax.runtime.wiring.agent_runtime_governance_factory import (
+    build_agent_runtime_governance_boundary,
+    default_lab_capability_grants,
+)
 from intergrax.runtime.wiring.policy_runtime_bridge import apply_policy_bundle_to_runtime_config
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -116,7 +120,12 @@ def build_lab_agent_runtime_config(
         modality_profile=harness.modality_profile,
         tool_wiring_context=harness.tool_wiring_context,
     )
-    return apply_policy_bundle_to_runtime_config(config, harness.policy_bundle)
+    config = apply_policy_bundle_to_runtime_config(config, harness.policy_bundle)
+    if harness.strict_harness:
+        config.agent_runtime_governance = build_agent_runtime_governance_boundary(
+            capability_grants=default_lab_capability_grants(request.tenant_id),
+        )
+    return config
 
 
 def build_lab_agent_runtime_context(

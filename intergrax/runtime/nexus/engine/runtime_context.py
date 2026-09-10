@@ -354,6 +354,7 @@ class RuntimeContext:
             scope_policy=config.tool_scope_policy,
             pre_effect_coordinator=pre_effect_coordinator,
             sandbox_availability=sandbox_availability_provider(wiring_ctx),
+            agent_runtime_governance=config.agent_runtime_governance,
         )
 
         from intergrax.runtime.nexus.tools.planner_bootstrap import wire_catalog_tool_planner_if_enabled
@@ -371,6 +372,10 @@ class RuntimeContext:
         for provider in config.tool_providers:
             provider.register_tools(registry, wiring_ctx)
 
+        if config.production_mode and config.agent_runtime_governance is None:
+            raise ValueError(
+                "agent_runtime_governance is required when production_mode=True."
+            )
         if config.production_mode and governance_service is None:
             raise ValueError(
                 "GovernanceService is required when production_mode=True."

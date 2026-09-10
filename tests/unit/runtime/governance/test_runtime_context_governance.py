@@ -8,6 +8,10 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.wiring.agent_runtime_governance_factory import (
+    build_agent_runtime_governance_boundary,
+    default_lab_capability_grants,
+)
 from testing_support.builder import FakeLLMAdapter
 
 pytestmark = pytest.mark.unit
@@ -20,6 +24,9 @@ def test_runtime_context_requires_governance_in_production_mode():
         enable_websearch=False,
     )
     config.production_mode = True
+    config.agent_runtime_governance = build_agent_runtime_governance_boundary(
+        capability_grants=default_lab_capability_grants("tenant-a"),
+    )
 
     sm = SessionManager(storage=InMemorySessionStorage())
 

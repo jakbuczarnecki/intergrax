@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Optional, Protocol, Type, runtime_checkable
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
+    from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.sandbox.isolation_gate import SandboxAvailabilityProvider
     from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
@@ -102,7 +103,7 @@ class RuntimeToolInvoker:
         scope_policy: Optional[ToolScopePolicy] = None,
         pre_effect_coordinator: Optional[IdempotencyPreEffectCoordinator] = None,
         sandbox_availability: Optional["SandboxAvailabilityProvider"] = None,
-        agent_runtime_governance: Optional[object] = None,
+        agent_runtime_governance: Optional["AgentRuntimeGovernancePort"] = None,
     ) -> None:
         self._registry = registry
         self._executor = executor
@@ -442,9 +443,21 @@ class RuntimeToolInvoker:
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
     ) -> None:
-        """NPSC-4 governance boundary — evaluated before tool execution when configured."""
+        """NPSC-4 governance boundary — mandatory on production tool execution."""
         governance = self._agent_runtime_governance
         if governance is None:
+            if state.context.config.production_mode:
+                from intergrax.runtime.agent_governance.errors import ToolGovernanceDeniedError
+
+                capability = contract.category.strip() or contract.tool_id
+                raise ToolGovernanceDeniedError(
+                    run_id=state.run_id,
+                    agent_id=agent_id,
+                    tool_id=request.tool_id,
+                    capability=capability,
+                    reason="agent_runtime_governance_not_configured",
+                    policy_results=(),
+                )
             return
 
         from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
