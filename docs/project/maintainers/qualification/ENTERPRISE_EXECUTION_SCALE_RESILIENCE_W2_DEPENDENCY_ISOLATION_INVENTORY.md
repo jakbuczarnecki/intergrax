@@ -1,8 +1,8 @@
 # Enterprise Execution Scale & Resilience — W2-A Dependency Isolation Inventory
 
 **Task:** Enterprise Scale & Resilience/W2-A — Dependency Isolation Inventory & Canonical Ownership Qualification  
-**Status:** INVENTORY COMPLETE · **ARCHITECTURAL DECISION REQUIRED** (typed dependency concurrency seam)  
-**Production code changed:** NO (docs + architecture inventory test only)
+**Status:** INVENTORY COMPLETE (W2-A) · **ARCHITECTURAL DECISION RESOLVED BY** [`ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md`](../architecture/ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md) (W2-ADR Accepted) · **W2-B OPEN** (implementation + wiring)
+**Production runtime changed:** NO (W2-A docs only; W2-ADR adds contract module under `intergrax/contracts/` without invocation wiring)
 
 ## Baseline
 
@@ -268,24 +268,15 @@ Integration runtime calls (when identified per slug)
 
 Do **not** add `GlobalBulkheadManager` / `UniversalRateLimiter`.
 
-## ARCHITECTURAL DECISION REQUIRED
+## ARCHITECTURAL DECISION — RESOLVED BY ADR
 
-**Missing contract:** typed **dependency concurrency permit** lifecycle (`acquire` → call → `release`) at **external invocation boundaries**, distinct from:
+**Decision record:** [`ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md`](../architecture/ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md) (**Accepted**).
 
-- `ExecutionCapacityAdmissionPort` (root slots only),
-- circuit breaker (health),
-- rate limit (throughput),
-- `ConcurrentExecutionWorkPolicy` (in-operation fan-in).
+**Contract:** `intergrax/contracts/dependency_concurrency_admission.py` — `DependencyConcurrencyAdmissionPort.acquire` → `DependencyConcurrencyPermit.release` for exactly one in-flight external dependency attempt; overload `REJECT` / `WAIT_WITH_TIMEOUT`; typed `DependencyConcurrencyIdentity` (not arbitrary string keys); `tenant_id` metadata only.
 
-| Proposal field | Guidance |
-|----------------|----------|
-| **Canonical owner** | `intergrax/contracts/` port; implementations in runtime (tools), llm_adapters (provider), integrations (slug) |
-| **Identity keys** | Reuse `tool_id`, provider slug, integration `slug`, `tenant_id` only where fairness policy applies — no parallel string keys |
-| **Minimal seam** | `DependencyConcurrencyAdmissionPort.acquire(DependencyConcurrencyRequest) -> DependencyConcurrencyPermit` with overload modes REJECT / WAIT_WITH_TIMEOUT |
-| **Must NOT include** | retry policy, rate tokens, circuit state, dict/Any identity, global singleton scheduler, cross-domain God service |
-| **Why existing insufficient** | `IntegrationCircuitBreaker.call` has no in-flight cap; `ThreadPoolExecutor` is shared and unbounded queue; LLM resilience has rate/CB but no concurrency; W1 root port ignores tenant for fairness |
+**Distinct from:** `ExecutionCapacityAdmissionPort`, circuit breakers, rate limits, `ConcurrentExecutionWorkPolicy`, retry loops, tenant fairness.
 
-**Status:** W2-A complete; **W2 implementation OPEN** pending ADR on dependency concurrency port(s) per domain (tool vs provider vs integration may be separate ports, not one mega-port).
+**W2-B (OPEN):** process-local implementation (preferred `intergrax/runtime/resilience/`), tool boundary before shared executor enqueue, provider boundary before network/SDK, integration/retriever wiring when canonical seams are owned — no `GlobalBulkheadManager`.
 
 ## Static test
 

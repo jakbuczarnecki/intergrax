@@ -1,6 +1,6 @@
 # Enterprise Execution Scale & Resilience — Architecture (P0 baseline)
 
-**Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1 FINAL (qualified)** — process-local root admission (W1-A), explicit concurrent work policy (W1-B), absolute global deadline into R1 retry (W1-C). Qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md). **W2-A (qualified)** — dependency isolation inventory; **W2 implementation OPEN** — see [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md).
+**Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1 FINAL (qualified)** — process-local root admission (W1-A), explicit concurrent work policy (W1-B), absolute global deadline into R1 retry (W1-C). Qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md). **W2-A (qualified)** — dependency isolation inventory; **W2-ADR (Accepted)** — [`ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md`](ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md) + `intergrax/contracts/dependency_concurrency_admission.py`; **W2-B OPEN** (local implementation + runtime wiring). Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md).
 **Baseline:** `origin/development` at audit start.  
 **Scope:** Execution plane capacity, concurrency ownership, failure domains, process-local vs distributed semantics.
 
@@ -101,12 +101,12 @@ Do not treat `asyncio.Lock` / `Semaphore` on GraphExecutor as protecting resourc
 - **Tool execution:** `RuntimeToolInvoker` — **owner:** Nexus tools; single shared `ThreadPoolExecutor()` per invoker; timeout + contract-level retry; **no** per-`tool_id` concurrency port.
 - **Provider calls:** `LLMAdapter._execute` → `execute_with_resilience` — **owner:** llm_adapters; optional RPM/CB/retry via `LLMCallConfig` (defaults: retry off, CB off); **no** in-flight concurrency cap.
 - **Tenant:** `tenant_id` on runtime request, idempotency, capacity request metadata — **no** per-tenant root slot partitioning (`LocalExecutionCapacityAdmission` ignores tenant).
-- **ADR:** typed dependency concurrency permit at external boundaries required before W2 bulkhead work — details in W2-A qualification doc. **No** new managers/schedulers in W2-A.
+- **W2-ADR (Accepted):** `DependencyConcurrencyAdmissionPort` at external boundaries — acquire → one external attempt → release; typed `DependencyConcurrencyIdentity` (`TOOL`, `LLM_PROVIDER`, `INTEGRATION`, `RETRIEVER`); orthogonal to W1 root admission, W1-B concurrent work, circuit breakers, rate limits, retry, tenant fairness. Tool seam: before shared executor enqueue; provider seam: before SDK/network. **No** production wiring until W2-B. **No** new managers/schedulers.
 
 ## Target problems for follow-on waves (not P0)
 
 1. **Execution admission** — W1-A: bounded process-local root slots via injectable port; distributed/global cap deferred.
 2. ~~**Deadline propagation**~~ — **W1:** `global_deadline_monotonic` wired from active execution budget into `GraphRunner` retry eligibility when root wall-time budget is set.  
-3. **Provider/tool bulkheads** — W2-A inventoried gaps; implement via future typed ports at `LLMAdapter._execute` and `RuntimeToolInvoker` external boundary (not circuit breaker reuse).  
+3. **Provider/tool bulkheads** — W2-ADR defines `DependencyConcurrencyAdmissionPort`; W2-B implements process-local admission and wires `LLMAdapter._execute` and `RuntimeToolInvoker` external boundary (not circuit breaker reuse).
 4. **Distributed rate limiting** — tenant/provider fairness across workers (optional Redis LLM limiter exists; generic platform limiter absent).  
 5. **Checkpoint store scaling** — reduce SQLite hotspot or shard by tenant for write-heavy fleets.
