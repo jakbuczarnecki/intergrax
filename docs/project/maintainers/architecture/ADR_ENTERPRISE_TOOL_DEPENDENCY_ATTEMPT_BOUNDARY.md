@@ -29,7 +29,7 @@ without violating:
 
 Qualification closed the **boundary** analysis; runtime wiring remained **BLOCKED** on sync/async lifecycle ownership.
 
-**Production runtime behavior in this ADR:** unchanged (decision + docs only).
+**Production runtime behavior:** optional per-process `DependencyAttemptExecutionBoundary` on `RuntimeToolInvoker` (composition opt-in; feature off when unset).
 
 ---
 
@@ -482,7 +482,7 @@ Physical retry in `_execute_with_policy` may start attempt N+1 only after attemp
 
 **W2-B2 architecture:** **CLOSED** (this ADR).
 
-**W2-B2 implementation:** **OPEN**.
+**W2-B2 implementation:** **DONE** (process-local; composition opt-in).
 
 ---
 

@@ -180,9 +180,9 @@ Second contract or sync methods on local implementation only.
 
 ## NEXT TASK
 
-**W2-B2 implementation** — `DependencyAttemptExecutionBoundary` + `RuntimeToolInvoker._execute_once` wiring per [`ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md`](../architecture/ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md); then behavioral qualification suite.
+**W2-B2 implementation** — **DONE** · behavioral suite: `tests/unit/runtime/resilience/test_dependency_attempt_execution_boundary.py`, `tests/unit/runtime/nexus/tools/test_runtime_tool_invoker_dependency_admission.py`.
 
 ## ADR resolution (2026-09-11)
 
-- **Selected:** Option B — `DependencyAttemptExecutionBoundary` (`intergrax/runtime/resilience/`, planned).
-- **W2-B2 architecture:** CLOSED · **implementation:** OPEN.
+- **Selected:** Option B — `DependencyAttemptExecutionBoundary` (`intergrax/runtime/resilience/dependency_attempt_execution_boundary.py`).
+- **W2-B2 architecture:** CLOSED · **implementation:** **QUALIFIED** (process-local; composition opt-in).

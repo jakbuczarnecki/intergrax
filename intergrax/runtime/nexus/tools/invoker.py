@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import Future as ConcurrentFuture
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
-from typing import TYPE_CHECKING, Optional, Protocol, Type, runtime_checkable
+from typing import TYPE_CHECKING, Optional, Protocol, Type, cast, runtime_checkable
 
 from pydantic import BaseModel
 
@@ -48,6 +49,17 @@ from intergrax.runtime.sandbox.isolation_gate import (
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.contracts.idempotency_store import ClaimOutcome
+from intergrax.contracts.dependency_concurrency_admission import (
+    DependencyConcurrencyAdmissionRequest,
+    DependencyConcurrencyAdmissionTimeoutError,
+    DependencyConcurrencyExceededError,
+    DependencyConcurrencyIdentity,
+    DependencyConcurrencyKind,
+    DependencyConcurrencyPolicyMissingError,
+)
+from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
+    DependencyAttemptExecutionBoundary,
+)
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.contracts import SideEffectRetrySafety, ToolContract
 from intergrax.tools.execution_models import (
@@ -104,6 +116,7 @@ class RuntimeToolInvoker:
         pre_effect_coordinator: Optional[IdempotencyPreEffectCoordinator] = None,
         sandbox_availability: Optional["SandboxAvailabilityProvider"] = None,
         agent_runtime_governance: Optional["AgentRuntimeGovernancePort"] = None,
+        dependency_attempt_boundary: DependencyAttemptExecutionBoundary | None = None,
     ) -> None:
         self._registry = registry
         self._executor = executor
@@ -111,16 +124,21 @@ class RuntimeToolInvoker:
         self._pre_effect_coordinator = pre_effect_coordinator
         self._sandbox_availability = sandbox_availability
         self._agent_runtime_governance = agent_runtime_governance
+        self._dependency_attempt_boundary = dependency_attempt_boundary
         # Shared pool for timeout-isolated tool execution; default worker count
         # preserves concurrent independent invocations (not max_workers=1).
         self._execution_pool = ThreadPoolExecutor()
         self._execution_pool_closed = False
 
     def close(self) -> None:
-        """Shut down the shared execution pool; waits for active tool calls to finish."""
+        """Shut down admission boundary (when configured) and the execution pool."""
         if self._execution_pool_closed:
             return
+        if self._dependency_attempt_boundary is not None:
+            self._dependency_attempt_boundary.begin_shutdown()
         self._execution_pool.shutdown(wait=True)
+        if self._dependency_attempt_boundary is not None:
+            self._dependency_attempt_boundary.drain_and_close()
         self._execution_pool_closed = True
 
     @property
@@ -610,7 +628,12 @@ class RuntimeToolInvoker:
 
             start_perf = time.perf_counter()
             try:
-                raw_out = self._execute_once(contract, request, boundary=boundary)
+                raw_out = self._execute_once(
+                    state,
+                    contract,
+                    request,
+                    effect_boundary=boundary,
+                )
                 out = self._validate_output(contract.output_schema, raw_out)
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
 
@@ -632,6 +655,41 @@ class RuntimeToolInvoker:
                     ),
                 )
                 result = ToolExecutionResult.ok(out)
+                self._emit_boundary_event(
+                    state=state,
+                    agent_id=agent_id,
+                    contract=contract,
+                    request=request,
+                    result=result,
+                )
+                return result
+
+            except DependencyConcurrencyPolicyMissingError:
+                raise
+
+            except (
+                DependencyConcurrencyExceededError,
+                DependencyConcurrencyAdmissionTimeoutError,
+            ) as exc:
+                duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
+                msg = f"{type(exc).__name__}: {exc}"
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="tool_invocation_error",
+                    message="Tool dependency admission rejected.",
+                    level=TraceLevel.ERROR,
+                    payload=ToolInvocationErrorDiagV1(
+                        tool_id=contract.tool_id,
+                        step_id=str(request.step_id),
+                        error_code=RuntimeErrorCode.DEPENDENCY_ERROR,
+                        error_message=msg,
+                    ),
+                )
+                result = ToolExecutionResult.fail(
+                    RuntimeErrorCode.DEPENDENCY_ERROR,
+                    msg,
+                    effect_certainty=ToolEffectCertainty.NOT_STARTED,
+                )
                 self._emit_boundary_event(
                     state=state,
                     agent_id=agent_id,
@@ -770,23 +828,64 @@ class RuntimeToolInvoker:
 
     def _execute_once(
         self,
+        state: "RuntimeState",
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
         *,
-        boundary: _ExternalEffectBoundary | None = None,
+        effect_boundary: _ExternalEffectBoundary | None = None,
     ) -> BaseModel:
         timeout_s = contract.timeout_ms / 1000.0
-        future = self._execution_pool.submit(self._executor.execute, request)
-        if boundary is not None:
-            boundary.may_have_started = True
-        return future.result(timeout=timeout_s)
+        dep_boundary = self._dependency_attempt_boundary
+
+        if dep_boundary is None:
+            future = self._execution_pool.submit(self._executor.execute, request)
+            if effect_boundary is not None:
+                effect_boundary.may_have_started = True
+            return future.result(timeout=timeout_s)
+
+        admission_request = DependencyConcurrencyAdmissionRequest(
+            dependency=DependencyConcurrencyIdentity(
+                kind=DependencyConcurrencyKind.TOOL,
+                value=contract.tool_id,
+            ),
+            tenant_id=state.tenant_id,
+        )
+        attempt_handle = dep_boundary.acquire(admission_request)
+        try:
+            future = self._execution_pool.submit(self._executor.execute, request)
+        except BaseException:
+            dep_boundary.release_after_submit_failure(attempt_handle)
+            raise
+
+        dep_boundary.bind_worker(
+            attempt_handle,
+            cast(ConcurrentFuture[object], future),
+        )
+        if effect_boundary is not None:
+            effect_boundary.may_have_started = True
+
+        try:
+            result = future.result(timeout=timeout_s)
+        except FuturesTimeoutError:
+            if dep_boundary.detach_if_still_running(attempt_handle):
+                raise
+            dep_boundary.complete_attached(attempt_handle)
+            if future.done():
+                return future.result()
+            raise
+        except BaseException:
+            dep_boundary.complete_attached(attempt_handle)
+            raise
+        else:
+            dep_boundary.complete_attached(attempt_handle)
+            return result
 
     @staticmethod
     def _map_error(contract: ToolContract, exc: Exception) -> RuntimeErrorCode:
         # contract.error_mapping: Mapping[type[Exception], RuntimeErrorCode]
         for exc_type, code in contract.error_mapping.items():
             if isinstance(exc, exc_type):
-                return code
+                return cast(RuntimeErrorCode, code)
         return RuntimeErrorCode.TOOL_ERROR
 
 

@@ -148,7 +148,7 @@ Identity: `TOOL` + canonical `tool_id`.
 
 Do not extend `ToolContract` with `max_concurrent_calls`; capacity is operational policy external to tool semantics.
 
-**W2-B2 execution boundary (Accepted):** sync/async lifecycle, caller timeout vs worker lifetime, shutdown, and error mapping are specified in [`ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md`](ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md). Runtime wiring remains deferred to W2-B2 implementation.
+**W2-B2 execution boundary (Accepted):** implemented per [`ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md`](ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md) (`DependencyAttemptExecutionBoundary` + optional `RuntimeToolInvoker` wiring; process-local).
 
 ---
 
@@ -234,7 +234,7 @@ Also rejected: `BulkheadManager`, `DependencyManager`, `ConcurrencyManager`, `Re
 | W2-A | CLOSED |
 | W2-ADR | CLOSED (Accepted) |
 | W2-B1 | **DONE** — `LocalDependencyConcurrencyAdmission` in `intergrax/runtime/resilience/local_dependency_concurrency_admission.py` (process-local, event-loop-local asyncio state; explicit policy snapshot; no runtime wiring) |
-| W2-B2 | **Architecture CLOSED (Accepted)** — [`ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md`](ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md) (Option B: `DependencyAttemptExecutionBoundary`; implementation OPEN). Qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_B2_TOOL_ADMISSION_BOUNDARY_QUALIFICATION.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_B2_TOOL_ADMISSION_BOUNDARY_QUALIFICATION.md) |
+| W2-B2 | **DONE** — [`ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md`](ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md) (`DependencyAttemptExecutionBoundary`; process-local composition opt-in). Qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_B2_TOOL_ADMISSION_BOUNDARY_QUALIFICATION.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_B2_TOOL_ADMISSION_BOUNDARY_QUALIFICATION.md) |
 | W2-B3 | OPEN — provider runtime wiring after W2-B2 seam decision |
 | W2 complete | Not claimed |
 
