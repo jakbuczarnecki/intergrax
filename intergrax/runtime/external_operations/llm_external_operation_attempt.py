@@ -1,11 +1,18 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""LLM provider external operation lifecycle (W4-C)."""
+"""LLM provider external operation lifecycle (W4-C + admission R1)."""
 
 from __future__ import annotations
 
 from intergrax.contracts.dependency_concurrency_admission import DependencyConcurrencyKind
+from intergrax.contracts.external_operations.attempt import (
+    ExternalOperationAttempt,
+    ExternalOperationAttemptLifecycle,
+)
+from intergrax.contracts.external_operations.safety import (
+    ExternalOperationExecutionForbiddenError,
+)
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
@@ -77,6 +84,7 @@ class LlmExternalOperationAttempt:
         "_termination_port",
         "_capabilities",
         "_revision",
+        "_admission_attempt",
     )
 
     def __init__(
@@ -89,6 +97,7 @@ class LlmExternalOperationAttempt:
         status_port: ExternalOperationStatusPort | None = None,
         termination_port: ExternalOperationTerminationPort | None = None,
         capabilities: ExternalOperationCapabilities | None = None,
+        admission_attempt: ExternalOperationAttempt | None = None,
     ) -> None:
         self._store = store
         self._owner = owner
@@ -98,6 +107,26 @@ class LlmExternalOperationAttempt:
         self._termination_port = termination_port
         self._capabilities = capabilities
         self._revision: int | None = None
+        self._admission_attempt = admission_attempt
+
+    @property
+    def admission_attempt(self) -> ExternalOperationAttempt | None:
+        return self._admission_attempt
+
+    def bind_admission_attempt(self, attempt: ExternalOperationAttempt) -> None:
+        self._admission_attempt = attempt
+
+    def _require_admitted_for_physical(self) -> None:
+        attempt = self._admission_attempt
+        if attempt is None:
+            return
+        if attempt.lifecycle not in {
+            ExternalOperationAttemptLifecycle.ADMITTED,
+            ExternalOperationAttemptLifecycle.EXECUTING,
+        }:
+            raise ExternalOperationExecutionForbiddenError(
+                "physical provider call requires admitted external operation attempt"
+            )
 
     @property
     def enabled(self) -> bool:
@@ -125,6 +154,7 @@ class LlmExternalOperationAttempt:
         return self._store, self._identity, self._owner
 
     def before_physical_call(self) -> None:
+        self._require_admitted_for_physical()
         binding = self._binding()
         if binding is None:
             return
@@ -133,6 +163,11 @@ class LlmExternalOperationAttempt:
         self._revision = record.revision
 
     def mark_running(self) -> None:
+        if self._admission_attempt is not None:
+            if self._admission_attempt.lifecycle is ExternalOperationAttemptLifecycle.ADMITTED:
+                self._admission_attempt = self._admission_attempt.transition(
+                    ExternalOperationAttemptLifecycle.EXECUTING
+                )
         binding = self._binding()
         if binding is None or self._revision is None:
             return
@@ -184,13 +219,33 @@ class LlmExternalOperationAttempt:
             )
             self._revision = finalized.revision
 
+    def _sync_admission_terminal(
+        self, target: ExternalOperationAttemptLifecycle
+    ) -> None:
+        if self._admission_attempt is None:
+            return
+        if self._admission_attempt.lifecycle is ExternalOperationAttemptLifecycle.EXECUTING:
+            self._admission_attempt = self._admission_attempt.transition(target)
+
     def mark_succeeded(self) -> None:
+        self._sync_admission_terminal(ExternalOperationAttemptLifecycle.SUCCEEDED)
         self._terminal(ExternalOperationPhysicalState.SUCCEEDED, finalize_intent=True)
 
     def mark_failed(self) -> None:
+        self._sync_admission_terminal(ExternalOperationAttemptLifecycle.FAILED)
         self._terminal(ExternalOperationPhysicalState.FAILED, finalize_intent=False)
 
     def mark_cancelled(self) -> None:
+        if self._admission_attempt is not None:
+            life = self._admission_attempt.lifecycle
+            if life in {
+                ExternalOperationAttemptLifecycle.CREATED,
+                ExternalOperationAttemptLifecycle.ADMITTED,
+                ExternalOperationAttemptLifecycle.EXECUTING,
+            }:
+                self._admission_attempt = self._admission_attempt.transition(
+                    ExternalOperationAttemptLifecycle.CANCELLED
+                )
         self._terminal(ExternalOperationPhysicalState.CANCELLED, finalize_intent=True)
 
     def complete_cancellation_after_termination(

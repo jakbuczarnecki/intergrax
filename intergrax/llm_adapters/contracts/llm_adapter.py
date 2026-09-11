@@ -47,6 +47,10 @@ if TYPE_CHECKING:
     from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
         DependencyAttemptExecutionBoundary,
     )
+    from intergrax.runtime.external_operations.admission.execution_gate import (
+        ExternalOperationExecutionGate,
+    )
+    from intergrax.contracts.external_operations.attempt import ExternalOperationAttempt
 
 T = TypeVar("T")
 
@@ -101,6 +105,22 @@ class LLMAdapter(ABC):
         self._external_operation_capabilities: ExternalOperationCapabilities | None = (
             None
         )
+        self._external_operation_execution_gate: ExternalOperationExecutionGate | None = (
+            None
+        )
+
+    def bind_external_operation_admission_gate(
+        self,
+        gate: ExternalOperationExecutionGate | None,
+    ) -> None:
+        """Inject R1 admission gate — when set, provider calls require ALLOW."""
+        from intergrax.runtime.external_operations.admission.execution_gate import (
+            ExternalOperationExecutionGate as _Gate,
+        )
+
+        if gate is not None and not isinstance(gate, _Gate):
+            raise TypeError("gate must be ExternalOperationExecutionGate or None")
+        self._external_operation_execution_gate = gate
 
     def bind_external_operation_ports(
         self,
@@ -185,12 +205,50 @@ class LLMAdapter(ABC):
             tenant_id=get_llm_tenant_id(),
         )
 
+    def _admit_llm_provider_intent(self, *, call_scope: str) -> ExternalOperationAttempt | None:
+        gate = self._external_operation_execution_gate
+        if gate is None:
+            return None
+        from datetime import datetime, timezone
+
+        from intergrax.contracts.execution_identity import mint_task_id
+        from intergrax.contracts.external_operations.admission import (
+            ExternalOperationAdmissionContext,
+        )
+        from intergrax.contracts.external_operations.intent import (
+            ExternalOperationIntent,
+            ExternalOperationType,
+            mint_external_operation_intent_id,
+        )
+        from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
+
+        tenant = (get_llm_tenant_id() or "").strip() or "tenant_platform"
+        intent = ExternalOperationIntent(
+            intent_id=mint_external_operation_intent_id(),
+            tenant_id=tenant,
+            task_id=mint_task_id(),
+            operation_type=ExternalOperationType.LLM_PROVIDER_CALL,
+            target_resource=f"{self._provider_slug()}:{self.model}:{call_scope}",
+            requested_by="llm_adapter",
+            justification="llm provider inference call",
+            created_at=datetime.now(timezone.utc),
+        )
+        return gate.admit_intent(
+            intent,
+            context=ExternalOperationAdmissionContext(
+                tenant_id=tenant,
+                provider_id=self._provider_slug(),
+            ),
+            provider_id=self._provider_slug(),
+        )
+
     def _run_physical_provider_attempt(self, fn: Callable[[], T]) -> T:
         from intergrax.runtime.external_operations.llm_external_operation_attempt import (
             LlmExternalOperationAttempt,
             llm_external_operation_identity,
         )
 
+        admission_attempt = self._admit_llm_provider_intent(call_scope="sync")
         ext_op = LlmExternalOperationAttempt(
             store=self._external_operation_store,
             owner=self._external_operation_owner,
@@ -207,6 +265,7 @@ class LLMAdapter(ABC):
             status_port=self._external_operation_status_port,
             termination_port=self._external_operation_termination_port,
             capabilities=self._external_operation_capabilities,
+            admission_attempt=admission_attempt,
         )
         ext_op.before_physical_call()
         boundary = self._provider_dependency_boundary
@@ -265,6 +324,7 @@ class LLMAdapter(ABC):
         check_llm_tenant_quota(get_llm_tenant_id())
 
         def physical_attempt() -> Iterable[T]:
+            admission_attempt = self._admit_llm_provider_intent(call_scope="stream")
             ext_op = LlmExternalOperationAttempt(
                 store=self._external_operation_store,
                 owner=self._external_operation_owner,
@@ -281,6 +341,7 @@ class LLMAdapter(ABC):
                 status_port=self._external_operation_status_port,
                 termination_port=self._external_operation_termination_port,
                 capabilities=self._external_operation_capabilities,
+                admission_attempt=admission_attempt,
             )
             ext_op.before_physical_call()
             boundary = self._provider_dependency_boundary
