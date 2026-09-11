@@ -68,11 +68,14 @@ class PolicyEnforcer:
             try:
                 return await asyncio.wait_for(fn(), timeout=timeout)
 
-            except asyncio.TimeoutError as exc:
-                err = TransientOperationError("Operation timed out")
+            except asyncio.CancelledError:
+                raise
 
-            except TransientOperationError as exc:
-                err = exc
+            except asyncio.TimeoutError:
+                pass
+
+            except TransientOperationError:
+                pass
 
             except NonRetryableOperationError:
                 raise

@@ -9,7 +9,8 @@ import threading
 import time
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Callable, DefaultDict, Optional, TypeVar
+from collections.abc import Callable
+from typing import DefaultDict, Optional, TypeVar
 
 from intergrax.contracts.provider_rate_limit import (
     ProviderRateLimitExceededError,
@@ -39,6 +40,10 @@ from intergrax.llm_adapters._shared.provider_retry_budget import (
 from intergrax.llm_adapters._shared.retry import (
     compute_provider_retry_delay,
     is_retriable_provider_error,
+)
+from intergrax.runtime.cancellation.coordinator import (
+    CooperativeCancellationAbort,
+    cooperative_delay_seconds,
 )
 
 T = TypeVar("T")
@@ -236,6 +241,7 @@ def execute_with_resilience(
     config: LLMCallConfig,
     retry_fn: Callable[[Callable[[], T]], T],
     tenant_id: Optional[str] = None,
+    should_abort: Callable[[], bool] | None = None,
 ) -> T:
     """Retry loop with per-attempt budget, rate limit, and circuit breaker."""
     del retry_fn
@@ -261,6 +267,8 @@ def execute_with_resilience(
                 raise
             _record_success(provider)
             return result
+        except CooperativeCancellationAbort:
+            raise
         except BaseException as exc:
             last_exc = exc
             if not is_retriable_provider_error(exc, config):
@@ -272,6 +280,6 @@ def execute_with_resilience(
             )
             attempt_index += 1
             if delay > 0:
-                time.sleep(delay)
+                cooperative_delay_seconds(delay, should_abort=should_abort)
         finally:
             budget.complete_physical_attempt()

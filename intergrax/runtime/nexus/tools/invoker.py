@@ -60,6 +60,11 @@ from intergrax.contracts.dependency_concurrency_admission import (
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
     DependencyAttemptExecutionBoundary,
 )
+from intergrax.runtime.cancellation.coordinator import (
+    CancellationCoordinator,
+    CooperativeCancellationAbort,
+    cooperative_delay_seconds,
+)
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.contracts import SideEffectRetrySafety, ToolContract
 from intergrax.tools.execution_models import (
@@ -617,8 +622,28 @@ class RuntimeToolInvoker:
 
         for attempt in range(1, attempts + 1):
             if attempt > 1:
+                if self._cooperative_cancellation_requested(state):
+                    return self._tool_result_task_cancelled(
+                        state=state,
+                        contract=contract,
+                        request=request,
+                        agent_id=agent_id,
+                    )
                 if policy.backoff_ms > 0:
-                    time.sleep(policy.backoff_ms / 1000.0)
+                    try:
+                        cooperative_delay_seconds(
+                            policy.backoff_ms / 1000.0,
+                            should_abort=lambda: self._cooperative_cancellation_requested(
+                                state
+                            ),
+                        )
+                    except CooperativeCancellationAbort:
+                        return self._tool_result_task_cancelled(
+                            state=state,
+                            contract=contract,
+                            request=request,
+                            agent_id=agent_id,
+                        )
                 self._require_current_attempt_authorization(
                     state=state,
                     agent_id=agent_id,
@@ -780,6 +805,44 @@ class RuntimeToolInvoker:
             )
             return result
         result = ToolExecutionResult.fail(RuntimeErrorCode.TOOL_ERROR, "Tool execution failed.")
+        self._emit_boundary_event(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+            result=result,
+        )
+        return result
+
+    @staticmethod
+    def _cooperative_cancellation_requested(state: "RuntimeState") -> bool:
+        return CancellationCoordinator.is_requested(state.request.metadata)
+
+    def _tool_result_task_cancelled(
+        self,
+        *,
+        state: "RuntimeState",
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+        agent_id: str,
+    ) -> ToolExecutionResult[BaseModel]:
+        state.trace_event(
+            component=TraceComponent.TOOLS,
+            step="tool_invocation_cancelled",
+            message="Tool invocation aborted after cooperative cancellation.",
+            level=TraceLevel.INFO,
+            payload=ToolInvocationErrorDiagV1(
+                tool_id=contract.tool_id,
+                step_id=str(request.step_id),
+                error_code=RuntimeErrorCode.RUNTIME_ERROR,
+                error_message="task_cancelled",
+            ),
+        )
+        result = ToolExecutionResult.fail(
+            RuntimeErrorCode.RUNTIME_ERROR,
+            "task_cancelled",
+            effect_certainty=ToolEffectCertainty.NOT_STARTED,
+        )
         self._emit_boundary_event(
             state=state,
             agent_id=agent_id,

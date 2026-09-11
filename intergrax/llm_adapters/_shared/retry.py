@@ -3,9 +3,8 @@
 
 from __future__ import annotations
 
-import time
-from collections.abc import Mapping
-from typing import Callable, TypeVar
+from collections.abc import Callable, Mapping
+from typing import TypeVar
 
 from intergrax.contracts.provider_rate_limit import (
     ProviderRateLimitExceededError,
@@ -15,6 +14,10 @@ from intergrax.contracts.retry_budget import RetryBudgetExhaustedError
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig
 from intergrax.llm_adapters._shared.dependency_admission import (
     is_non_retriable_dependency_admission_failure,
+)
+from intergrax.runtime.cancellation.coordinator import (
+    CooperativeCancellationAbort,
+    cooperative_delay_seconds,
 )
 from intergrax.utils import attribute_access
 
@@ -96,23 +99,31 @@ def _is_retryable(exc: BaseException, config: LLMCallConfig) -> bool:
     return any(token in name for token in ("timeout", "connection", "rate", "overloaded"))
 
 
-def call_with_retry(fn: Callable[[], T], *, config: LLMCallConfig) -> T:
+def call_with_retry(
+    fn: Callable[[], T],
+    *,
+    config: LLMCallConfig,
+    should_abort: Callable[[], bool] | None = None,
+) -> T:
     """Invoke ``fn`` with bounded retries for transient provider errors."""
     attempts = max(1, int(config.max_retries) + 1)
     last_exc: BaseException | None = None
     for attempt in range(attempts):
         try:
             return fn()
+        except CooperativeCancellationAbort:
+            raise
         except BaseException as exc:
             last_exc = exc
             if attempt >= attempts - 1 or not _is_retryable(exc, config):
                 raise
-            time.sleep(
+            cooperative_delay_seconds(
                 compute_provider_retry_delay(
                     attempt_index=attempt,
                     config=config,
                     exc=exc,
-                )
+                ),
+                should_abort=should_abort,
             )
     assert last_exc is not None
     raise last_exc

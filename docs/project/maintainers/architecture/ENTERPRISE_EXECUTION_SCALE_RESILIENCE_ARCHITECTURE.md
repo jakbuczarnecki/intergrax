@@ -88,6 +88,20 @@ Retry storm risk: many failures with aligned backoff and **no per-provider retry
 
 Cooperative: `CancellationCoordinator` metadata flag; graph marks pending nodes skipped. Propagation depends on call sites checking metadata between batches/nodes. Thread-pool tool work and in-flight provider HTTP may continue until completion unless the delegate respects cancellation (orphan-work risk under cancel).
 
+### Cancellation ownership model (W4-A)
+
+| Resource | Owner | Cleanup |
+|----------|-------|---------|
+| Execution permit | `ExecutionRuntime` | `finally` → `capacity_permit.release()` |
+| Dependency permit | `DependencyAttemptExecutionBoundary` | Worker terminal (detached or attached) → async release |
+| Recovery permit | Recovery caller (`resume_decision_from_durable_state_with_recovery_admission`, partial recovery) | `finally` → `recovery_permit.release()` |
+| Stream resource | LLM adapter / HTTP delegate | Generator close / adapter `finally` |
+| Retry sleep (sync) | Retry loop (`cooperative_delay_seconds`) | `should_abort` / task metadata |
+| Retry sleep (async) | `PolicyEnforcer`, admission wait | `asyncio` cancellation + shielded permit release |
+| Fan-out worker tasks | `concurrent_execution_work` | Parent cancel → cancel workers + `gather` |
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_A_CANCELLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_A_CANCELLATION_INVENTORY.md).
+
 ## Partial recovery (R3)
 
 Same-slot recovery is idempotent via checkpoint revision and slot disposition contracts. Different slots may recover in parallel subject to the same orchestration concurrency rules as initial fan-out. Recovery storm: many tenants resuming after outage can stress checkpoint store and Nexus concurrently — bounded by scheduler claim `limit`, not by global execution throttle.
