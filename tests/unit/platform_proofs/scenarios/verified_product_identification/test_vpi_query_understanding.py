@@ -63,8 +63,10 @@ from platform_proofs.scenarios.verified_product_identification.application.query
     ExtractionCertainty,
     ExtractedConstraintRecord,
     ExtractedIdentifierRecord,
+    ProductIdentificationQueryUnderstandingResult,
     QueryInterpretationCandidate,
     QueryUnderstandingIssueCode,
+    QueryUnderstandingStatus,
     RawProductIdentificationRequest,
 )
 from platform_proofs.scenarios.verified_product_identification.application.query_understanding.extractors import (
@@ -140,6 +142,24 @@ def test_sku_labeled_extraction() -> None:
     result = _service().understand(RawProductIdentificationRequest(raw_text="SKU: X771"))
     assert result.query is not None
     assert result.query.verification_context.requested_identifiers[0].identifier_type is ProductIdentifierType.SKU
+
+
+def test_product_id_labeled_extraction() -> None:
+    result = _service().understand(RawProductIdentificationRequest(raw_text="Product ID: 12345"))
+    assert result.query is not None
+    assert (
+        result.query.verification_context.requested_identifiers[0].identifier_type
+        is ProductIdentifierType.PRODUCT_ID
+    )
+    assert result.query.verification_context.requested_identifiers[0].value == "12345"
+
+
+def test_invalid_gtin_typed_issue_not_accepted_as_identifier() -> None:
+    result = _service().understand(RawProductIdentificationRequest(raw_text="GTIN 123"))
+    assert result.status is QueryUnderstandingStatus.SUCCESS
+    assert result.query is not None
+    assert result.query.verification_context.requested_identifiers == ()
+    assert any(i.code is QueryUnderstandingIssueCode.INVALID_IDENTIFIER for i in result.issues)
 
 
 def test_unlabeled_ambiguous_code_not_guessed() -> None:
@@ -231,8 +251,22 @@ def test_conflicting_hard_constraint_issue() -> None:
 
 def test_no_actionable_semantics() -> None:
     result = _service().understand(RawProductIdentificationRequest(raw_text="???"))
+    assert result.status is QueryUnderstandingStatus.REJECTED
     assert result.query is None
     assert any(i.code is QueryUnderstandingIssueCode.NO_ACTIONABLE_SEMANTICS for i in result.issues)
+
+
+def test_typo_preserved_in_search_text() -> None:
+    raw = "Samung 990 Pro 2TB"
+    result = _service().understand(RawProductIdentificationRequest(raw_text=raw))
+    assert result.query is not None
+    assert result.query.search_text == raw
+
+
+def test_qu_does_not_return_verification_outcome_type() -> None:
+    result = _service().understand(RawProductIdentificationRequest(raw_text="GTIN 4006381333931"))
+    assert isinstance(result, ProductIdentificationQueryUnderstandingResult)
+    assert type(result).__name__ != "ProductIdentificationOutcome"
 
 
 def test_same_input_deterministic() -> None:
@@ -382,15 +416,20 @@ def test_query_understanding_architecture_gates() -> None:
         ".dataset.",
         "data_pack",
         "storage_bootstrap",
+        "postgresql",
+        "qdrant",
+        "pgvector",
         ".proof.",
         "evaluator",
         "benchmark",
         "application.agent",
+        "cluster_id",
         "openai",
         "anthropic",
         "google.generativeai",
         "gemini",
         "huggingface",
+        "ollama",
     )
     violations: list[str] = []
     for path in root.rglob("*.py"):
@@ -408,6 +447,21 @@ def test_query_understanding_architecture_gates() -> None:
                         if fragment in name:
                             violations.append(f"{path.name}:{alias.name}")
     assert violations == []
+    sources = "".join(path.read_text(encoding="utf-8") for path in root.rglob("*.py"))
+    assert "cluster_id" not in sources
+
+
+def test_qu_does_not_import_verification_module() -> None:
+    repo = Path(__file__).resolve().parents[5]
+    root = repo / "platform_proofs/scenarios/verified_product_identification/application/query_understanding"
+    for path in root.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                assert "verification" not in node.module
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    assert "verification" not in alias.name
 
 
 def test_pipeline_input_origin_raw_query() -> None:

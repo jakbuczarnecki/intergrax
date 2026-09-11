@@ -8,6 +8,7 @@ from platform_proofs.scenarios.verified_product_identification.application.query
     ProductIdentificationQueryUnderstandingResult,
     QueryUnderstandingIssue,
     QueryUnderstandingIssueCode,
+    QueryUnderstandingStatus,
     RawProductIdentificationRequest,
 )
 from platform_proofs.scenarios.verified_product_identification.application.query_understanding.service import (
@@ -20,6 +21,7 @@ __all__ = [
     "ProductIdentificationQueryUnderstandingService",
     "QueryUnderstandingIssue",
     "QueryUnderstandingIssueCode",
+    "QueryUnderstandingStatus",
     "RawProductIdentificationRequest",
     "build_product_identification_query_understanding_service",
 ]

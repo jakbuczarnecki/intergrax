@@ -72,6 +72,11 @@ class ExtractionCertainty(StrEnum):
     UNCERTAIN = "uncertain"
 
 
+class QueryUnderstandingStatus(StrEnum):
+    SUCCESS = "success"
+    REJECTED = "rejected"
+
+
 class QueryUnderstandingIssueCode(StrEnum):
     CONFLICTING_USER_CONSTRAINT = "conflicting_user_constraint"
     UNSUPPORTED_ATTRIBUTE_EXPRESSION = "unsupported_attribute_expression"
@@ -183,12 +188,25 @@ class ProductIdentificationQueryUnderstandingResult:
         ProductIdentificationInputOrigin.RAW_QUERY
     )
 
+    @property
+    def status(self) -> QueryUnderstandingStatus:
+        if self.query is not None:
+            return QueryUnderstandingStatus.SUCCESS
+        return QueryUnderstandingStatus.REJECTED
+
     def __post_init__(self) -> None:
         if self.query is None and not self.issues:
             raise ValueError("failed understanding requires at least one issue")
         if self.query is not None:
             if type(self.query.verification_context) is not ProductIdentificationQueryContext:
                 raise TypeError("query.verification_context must be ProductIdentificationQueryContext")
+            blocking = (
+                QueryUnderstandingIssueCode.CONFLICTING_USER_CONSTRAINT,
+                QueryUnderstandingIssueCode.AMBIGUOUS_IDENTIFIER_TYPE,
+                QueryUnderstandingIssueCode.NO_ACTIONABLE_SEMANTICS,
+            )
+            if any(issue.code in blocking for issue in self.issues):
+                raise ValueError("SUCCESS result cannot carry blocking issues")
 
 
 class ProductIdentificationQueryInterpreter(Protocol):
