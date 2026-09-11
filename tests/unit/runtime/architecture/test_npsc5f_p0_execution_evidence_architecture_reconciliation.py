@@ -9,8 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from testing_support.npsc5f_r1_protected_drift import collect_r1_protected_production_drift
-from testing_support.npsc5f_r2_protected_drift import R2_IMPLEMENTATION_SHA
+from testing_support.npsc5f_r1_protected_drift import (
+    R1_POST_R2_QUALIFIED_BASELINE_SHA,
+    collect_r1_protected_production_drift,
+)
 
 from intergrax.contracts.execution_identity import RunId, mint_event_id, mint_run_id, mint_task_id
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -413,12 +415,12 @@ def test_npsc5f_p0_unified_journal_exposes_explicit_completeness_contract() -> N
 
 @pytest.mark.gate
 def test_npsc5f_p0_r1_protected_evidence_surfaces_have_no_unqualified_post_r1_drift() -> None:
-    # R2 journal read contracts qualified at R2_IMPLEMENTATION_SHA; sentinel guards post-R2 only.
+    # Post-R2 sentinel: R2 journal at 63250742; qualified ``runtime_event`` enum at DIAG R2 40cc8c11e.
     drift = collect_r1_protected_production_drift(
         _REPO_ROOT,
-        from_sha=R2_IMPLEMENTATION_SHA,
+        from_sha=R1_POST_R2_QUALIFIED_BASELINE_SHA,
     )
-    assert drift == [], f"unexpected R1 protected production drift since R2 freeze: {drift}"
+    assert drift == [], f"unexpected R1 protected production drift since qualified post-R2 baseline: {drift}"
 
 
 # P0 qualification flags (inventory — gaps do not fail P0)

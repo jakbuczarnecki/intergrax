@@ -1,8 +1,9 @@
 # NPSC-5F — Execution Evidence, Replay & Observability Architecture
 
-> **Status:** NPSC-5F **ACTIVE** — P0 reconciled; **NPSC-5F/R1** **FROZEN / PASS** at `455d3b216f0ad56ea9cdf9db6e0f760b50063a81`; **NPSC-5F/R2** **FROZEN / PASS** at `632507420f0ab8360aede43a2740e8fccc44efb4` (journal completeness & ordering Final)  
+> **Status:** NPSC-5F **ACTIVE** — P0 reconciled; **NPSC-5F/R1** **FROZEN / PASS** at `455d3b216f0ad56ea9cdf9db6e0f760b50063a81`; **NPSC-5F/R2** **FROZEN / PASS** at `632507420f0ab8360aede43a2740e8fccc44efb4` (journal completeness & ordering Final); **NPSC-5F/R3** **FROZEN / PASS** at `0346face3ef68d8f21504822a26f8f45f2384cf9` (governed evidence export Final)  
 > **Frozen execution baseline:** NPSC-5E Final `fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7` (behavioral regression via NPSC-5E Final gate, not broad post-5E path immutability)  
 > **R1 qualification:** [`NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md)  
+> **R3 qualification:** [`NPSC_5F_R3_FINAL_GOVERNED_EVIDENCE_EXPORT_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R3_FINAL_GOVERNED_EVIDENCE_EXPORT_QUALIFICATION_AND_FREEZE.md)  
 > **Canonical domain doc:** [`docs/project/architecture/OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)  
 > **P0 qualification:** [`NPSC_5F_P0_EXECUTION_EVIDENCE_ARCHITECTURE_RECONCILIATION.md`](../qualification/NPSC_5F_P0_EXECUTION_EVIDENCE_ARCHITECTURE_RECONCILIATION.md)
 
@@ -47,7 +48,7 @@ Reconcile the existing Harness Observability Spine (HOS), `RuntimeEvent` persist
 | `RunExecutionAsOfProjection` | `intergrax/runtime/events/asof_projection.py` | Historical view at **E** | No | N/A | Run | Yes | DIAG, audit |
 | `ObservabilityExportEnvelope` | `intergrax/runtime/observability/export_boundary.py` | Redacted export contract | Export view | N/A | N/A | Yes | Integrations |
 | `export_bridge` / `export_routing` | `intergrax/runtime/observability/` | Safe export path | No | N/A | N/A | Yes | Vendor backends |
-| `journal_export` | `intergrax/runtime/observability/journal_export.py` | Journal OTLP/log snapshot | **Bypass risk** | N/A | Uses journal limit | Yes | Default runtime plugin |
+| `journal_export` | `intergrax/runtime/observability/journal_export.py` | Bounded safe journal OTLP/log snapshot (`journal_export.v2`) | No | N/A | Uses `read_run_journal_page` limit | Yes | Default runtime plugin |
 | `PlatformCausalEvidence` | `intergrax/runtime/observability/causal_evidence.py` | Cross-boundary causal facts | Separate plane | Via `CausalEvidencePersistence` | Causal query order | Yes | DIAG |
 | `CausalEvidencePersistence` | `intergrax/runtime/observability/causal_evidence_persistence.py` | Causal durable store | Causal only | Yes | Typed query key | Yes | Reconstruction |
 | `RunTraceWriter` / Plane B | `intergrax/runtime/nexus/tracing/` | Diagnostic trace detail | No | Optional | Trace seq | Yes | Operator detail |
@@ -129,8 +130,7 @@ Metrics, in-memory bus history, optional trace rows, exporter delivery, default 
 
 ## Redaction / export
 
-- Canonical path: `ObservabilityExportEnvelope`, `runtime_event_export_source_from_event`, forbidden field sets in `export_boundary.py`.
-- **Gap:** `journal_export.serialize_runtime_event` uses full `model_dump` — bypasses redaction boundary (audit finding 03).
+- Canonical path: `ObservabilityExportEnvelope`, `runtime_event_export_source_from_event`, forbidden field sets in `export_boundary.py`; journal export projects via `serialize_runtime_event` (R3).
 
 ## Reconstruction & replay
 
@@ -168,7 +168,7 @@ See qualification doc for severity. Summary:
 | -- | ----- | ----- |
 | OBS-01 | Bus fail-open on persist error | **FIXED by R1** (mandatory tier fail-closed) |
 | OBS-02 | EventId content conflict | **FIXED** (reconcile + tests) |
-| OBS-03 | Journal export raw `model_dump` | **FIXED by R3** (`ObservabilityExportEnvelope` via `export_boundary`) |
+| OBS-03 | Journal export raw `model_dump` | **FIXED / FROZEN R3** (`ObservabilityExportEnvelope` via `export_boundary`, `journal_export.v2`) |
 | OBS-04 | `build_unified_run_journal` silent truncation | **FIXED / FROZEN R2** (`RunJournalReadPage`, `load_complete_run_journal`) |
 | OBS-05 | Route vs event tenant mismatch | **FIXED by R1** (equality enforced, zero write) |
 | OBS-06 | Task ordering via run-local position | **FIXED / FROZEN R2** (grouped task API + `(run_id, position)` ordering) |
@@ -177,7 +177,7 @@ See qualification doc for severity. Summary:
 
 1. **5F/R1** — **FROZEN / PASS** at `455d3b216f0ad56ea9cdf9db6e0f760b50063a81` (durable evidence contract hardening + R1 Final qualification; P0 drift sentinel scoped to R1 protected surfaces).
 2. **5F/R2** — **FROZEN / PASS** at `632507420f0ab8360aede43a2740e8fccc44efb4` — `read_run_journal_page` / `RunJournalReadPage` (`is_complete`, `next_cursor`), `load_complete_run_journal`, snapshot-bounded pagination, `list_positioned_for_task_grouped_by_run` (R2 Final qualification).
-3. **5F/R3** — **PASS / IMPLEMENTATION COMPLETE** — governed export: `journal_export.v2` typed snapshots; safe projection only.
+3. **5F/R3** — **FROZEN / PASS** at `0346face3ef68d8f21504822a26f8f45f2384cf9` — governed export: `journal_export.v2` typed snapshots; safe projection only (R3 Final qualification).
 4. **5F/R4** — Reconstruction quality model, as-of/bitemporal public query alignment (build on TRACE slices).
 5. **5F Final** — Platform evidence plane qualification & freeze.
 

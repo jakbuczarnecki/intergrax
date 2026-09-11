@@ -10,6 +10,9 @@ from pathlib import Path
 
 R1_IMPLEMENTATION_SHA = "455d3b216f0ad56ea9cdf9db6e0f760b50063a81"
 
+# Qualified post-R2 R1 surface change: ``RuntimeEventType.EXECUTION_FAILED`` (DIAG execution failure evidence R2).
+R1_POST_R2_QUALIFIED_BASELINE_SHA = "40cc8c11e0b57ed4cf0d99ed1b9b297820c6eaa8"
+
 _R1_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {
         "intergrax/runtime/events/evidence_durability.py",
