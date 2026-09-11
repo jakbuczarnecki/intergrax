@@ -58,6 +58,50 @@ _PRODUCTION_APP_ROOTS = (
 )
 
 
+def _annotation_name(node: ast.expr) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    if isinstance(node, ast.Subscript):
+        return _annotation_name(node.value)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+        left = _annotation_name(node.left)
+        right = _annotation_name(node.right)
+        if left and right:
+            return f"{left}|{right}"
+    return None
+
+
+def _catalog_declarative_tool_invoker_contract(tree: ast.Module) -> tuple[str | None, bool]:
+    """Return (tool_invoker annotation name, has_runtime_tool_invoker_isinstance_dispatch)."""
+    annotation: str | None = None
+    isinstance_dispatch = False
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != "CatalogDeclarativeToolInvoker":
+            continue
+        for stmt in node.body:
+            if (
+                isinstance(stmt, ast.AnnAssign)
+                and isinstance(stmt.target, ast.Name)
+                and stmt.target.id == "tool_invoker"
+                and stmt.annotation is not None
+            ):
+                annotation = _annotation_name(stmt.annotation)
+        for child in ast.walk(node):
+            if not isinstance(child, ast.Call):
+                continue
+            func = child.func
+            if not isinstance(func, ast.Name) or func.id != "isinstance":
+                continue
+            if len(child.args) < 2:
+                continue
+            type_arg = child.args[1]
+            if _annotation_name(type_arg) == "RuntimeToolInvoker":
+                isinstance_dispatch = True
+    return annotation, isinstance_dispatch
+
+
 def test_u5_qualification_artifact_present() -> None:
     assert _U5_QUALIFICATION.is_file()
 
@@ -129,7 +173,13 @@ def test_u5_ep14_declarative_wiring_forwards_governance_and_production_mode() ->
     catalog_source = _CATALOG_INVOKER.read_text(encoding="utf-8")
     assert "production_mode: bool = False" in catalog_source
     assert "production_mode=self.production_mode" in catalog_source
-    assert "tool_invoker: RuntimeToolInvoker | ToolInvokerProtocol" in catalog_source
+
+    catalog_tree = ast.parse(catalog_source, filename=str(_CATALOG_INVOKER))
+    tool_invoker_annotation, has_concrete_dispatch = _catalog_declarative_tool_invoker_contract(
+        catalog_tree,
+    )
+    assert tool_invoker_annotation == "RuntimeToolInvoker"
+    assert not has_concrete_dispatch
 
 
 def test_u5_ep17_no_production_wiring_for_work_stage_capability_loop() -> None:

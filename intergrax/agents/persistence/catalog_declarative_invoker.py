@@ -25,7 +25,6 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tools.catalog_dispatch import invoke_catalog_tool_request
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 
 
 class _CatalogDispatchLLMStub(LLMAdapter):
@@ -65,7 +64,7 @@ class CatalogDeclarativeRunBinding:
 class CatalogDeclarativeToolInvoker:
     """Invoke declarative actions through the Tier-1 catalog tool gateway."""
 
-    tool_invoker: RuntimeToolInvoker | ToolInvokerProtocol
+    tool_invoker: RuntimeToolInvoker
     binding: CatalogDeclarativeRunBinding = field(default_factory=CatalogDeclarativeRunBinding)
     production_mode: bool = False
 
@@ -104,10 +103,6 @@ class CatalogDeclarativeToolInvoker:
 
         agent_id = _require_bound_identity_field(self.binding.agent_id, "agent_id")
         tenant_id = _require_bound_identity_field(self.binding.tenant_id, "tenant_id")
-        if not isinstance(self.tool_invoker, RuntimeToolInvoker):
-            raise TypeError(
-                "catalog declarative execution requires a RuntimeToolInvoker host binding",
-            )
         host_tool_invoker = self.tool_invoker
         from intergrax.prompts.registry.prompt_registry_resolver import (
             resolve_yaml_prompt_registry,
