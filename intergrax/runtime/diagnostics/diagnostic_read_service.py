@@ -61,6 +61,12 @@ from intergrax.runtime.diagnostics.diagnostic_operator_investigation_projection 
 from intergrax.runtime.diagnostics.diagnostic_operator_investigation_read_models import (
     DiagnosticInvestigationResult,
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from intergrax.runtime.prediction.predictive_investigation_service import (
+        PredictiveInvestigationService,
+    )
 
 DEFAULT_PROBLEM_LIST_LIMIT = 100
 MAX_PROBLEM_LIST_LIMIT = 1000
@@ -86,6 +92,7 @@ class DiagnosticReadService:
         assessment_builder: DiagnosticAssessmentBuilder | None = None,
         decision_context_provider: DecisionContextProvider | None = None,
         extension_service: DiagnosticExtensionService | None = None,
+        predictive_investigation_service: PredictiveInvestigationService | None = None,
     ) -> None:
         self._persistence = problem_persistence
         self._occurrence_persistence = occurrence_persistence
@@ -94,6 +101,7 @@ class DiagnosticReadService:
         self._assessment_builder = assessment_builder or DiagnosticAssessmentBuilder()
         self._decision_context_provider = decision_context_provider
         self._extension_service = extension_service
+        self._predictive_investigation_service = predictive_investigation_service
 
     def list_problems(
         self,
@@ -283,10 +291,18 @@ class DiagnosticReadService:
             except ExecutionReconstructionIntegrityError as exc:
                 raise DiagnosticReadIntegrityError(str(exc)) from exc
 
+        related_risk_signals = ()
+        if self._predictive_investigation_service is not None:
+            related_risk_signals = self._predictive_investigation_service.related_risk_signals(
+                problem_detail=detail,
+                occurrence=occurrence_view,
+            )
+
         investigation = project_investigation_view(
             problem_detail=detail,
             occurrence=occurrence_view,
             reconstruction=reconstruction,
+            related_risk_signals=related_risk_signals,
         )
         return DiagnosticInvestigationResult(investigation=investigation)
 

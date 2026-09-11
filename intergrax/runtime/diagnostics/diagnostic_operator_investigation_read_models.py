@@ -30,6 +30,7 @@ from intergrax.runtime.diagnostics.diagnostic_extension_read_models import (
     DiagnosticExtensionOccurrenceEnrichment,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemId
+from intergrax.contracts.predictive_investigation_read import RelatedPredictiveRiskSignalView
 
 
 class DiagnosticTimelineEntryKind(StrEnum):
@@ -171,6 +172,7 @@ class DiagnosticInvestigationView:
     recommendations: tuple[DiagnosticRecommendation, ...]
     assistant_payload: DiagnosticStructuredInvestigationPayload
     investigation_limitations: tuple[str, ...]
+    related_risk_signals: tuple[RelatedPredictiveRiskSignalView, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
