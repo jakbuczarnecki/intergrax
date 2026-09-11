@@ -1,0 +1,15 @@
+---
+description: Limit concurrent uv/pytest processes to avoid OS memory exhaustion on operator machines
+alwaysApply: true
+---
+
+# Intergrax — test process budget
+
+When running tests or proofs locally or in agent sessions:
+
+- Prefer **one** `uv run pytest …` (or one `uv run ruff …`) per verification step.
+- Do **not** launch dozens of parallel `uv run`, `python -m pytest`, or background pytest workers unless CI explicitly requires it and the operator approved resource use.
+- Do **not** open many simultaneous shell sessions each running `uv` — reuse one terminal / one process.
+- For multi-file checks, pass multiple paths to a **single** pytest command instead of N separate invocations.
+
+Rationale: mass parallel `uv`/`python` on Windows dev machines causes memory leaks, swap thrashing, and full OS freezes.

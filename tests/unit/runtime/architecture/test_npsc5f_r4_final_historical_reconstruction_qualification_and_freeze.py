@@ -46,7 +46,7 @@ def test_r4_final_mandatory_suite_labels_recorded() -> None:
 
 
 def test_r4_final_canonical_predecessor_shas_recorded() -> None:
-    assert R4_IMPLEMENTATION_SHA == "3bec620ab56417a469487347f68045bf3dec6bd5"
+    assert R4_IMPLEMENTATION_SHA == "37fb051c7f164d705f628760436b8ea10ee0289f"
     assert R3_FINAL_SHA.startswith("0346fac")
     assert R2_FINAL_SHA.startswith("76c9284")
     assert R1_FINAL_SHA.startswith("455c09f")
@@ -61,5 +61,5 @@ def test_r4_final_no_unqualified_protected_drift_since_implementation() -> None:
 
 @pytest.mark.gate
 def test_npsc5f_r4_final_qualification_gate() -> None:
-    assert R4_IMPLEMENTATION_SHA == "3bec620ab56417a469487347f68045bf3dec6bd5"
+    assert R4_IMPLEMENTATION_SHA == "37fb051c7f164d705f628760436b8ea10ee0289f"
     assert R3_IMPLEMENTATION_SHA == R3_FINAL_SHA

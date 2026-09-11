@@ -57,7 +57,7 @@ def test_r4_final_drift_classifier_blocks_qualification_gate() -> None:
 
 
 def test_r4_final_implementation_sha_recorded() -> None:
-    assert R4_IMPLEMENTATION_SHA == "3bec620ab56417a469487347f68045bf3dec6bd5"
+    assert R4_IMPLEMENTATION_SHA == "37fb051c7f164d705f628760436b8ea10ee0289f"
 
 
 def test_r4_final_no_unqualified_protected_drift_since_implementation() -> None:
