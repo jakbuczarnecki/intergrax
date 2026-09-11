@@ -10,6 +10,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, NewType, Protocol, runtime_checkable
 
 from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
+from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
 from intergrax.contracts.execution_identity import ExecutionId, RunId, TaskId
 from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticAssessment,
@@ -201,6 +202,7 @@ class ProblemGroupingSubjectFindingSource(StrEnum):
 
     LIFECYCLE = "lifecycle"
     EXECUTION_FAILURE = "execution_failure"
+    EXTERNAL_OPERATION_FAILURE = "external_operation_failure"
     PLATFORM_SIGNAL = "platform_signal"
 
 
@@ -222,6 +224,9 @@ class ProblemGroupingSubjectFinding:
     exception_type: str | None = None
     execution_id: ExecutionId | None = None
     execution_failure_kind: ExecutionFailureKind | None = None
+    external_operation_failure_kind: ExternalOperationFailureKind | None = None
+    operation_attempt_id: str | None = None
+    provider_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -602,6 +607,23 @@ def _normalize_finding(finding: DiagnosticFinding) -> ProblemGroupingSubjectFind
             kind=finding.kind,
             execution_id=finding.execution_id,
             execution_failure_kind=finding.execution_failure_kind,
+        )
+    if finding.kind is DiagnosticFindingKind.EXTERNAL_OPERATION_FAILED:
+        if (
+            finding.execution_id is None
+            or finding.external_operation_failure_kind is None
+            or finding.operation_attempt_id is None
+        ):
+            raise ValueError(
+                "external operation failure finding missing execution identity",
+            )
+        return ProblemGroupingSubjectFinding(
+            source=ProblemGroupingSubjectFindingSource.EXTERNAL_OPERATION_FAILURE,
+            kind=finding.kind,
+            execution_id=finding.execution_id,
+            external_operation_failure_kind=finding.external_operation_failure_kind,
+            operation_attempt_id=finding.operation_attempt_id,
+            provider_id=finding.provider_id,
         )
     if finding.source_anomaly_kind is None:
         raise ValueError("lifecycle diagnostic finding missing source_anomaly_kind")

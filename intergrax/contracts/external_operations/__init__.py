@@ -15,6 +15,10 @@ from intergrax.contracts.external_operations.attempt import (
     ExternalOperationAttemptTransitionError,
 )
 from intergrax.contracts.external_operations.audit import ExternalOperationAuditRecord
+from intergrax.contracts.external_operations.execution_context import (
+    ExternalOperationExecutionContext,
+)
+from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
 from intergrax.contracts.external_operations.evidence import (
     ExecutionFailureEvidence,
     ExternalOperationEvidence,
@@ -55,7 +59,9 @@ __all__ = [
     "ExternalOperationAuditRecord",
     "ExternalOperationEvidence",
     "ExternalOperationEvidenceKind",
+    "ExternalOperationExecutionContext",
     "ExternalOperationExecutionForbiddenError",
+    "ExternalOperationFailureKind",
     "ExternalOperationFailed",
     "ExternalOperationGovernanceContext",
     "ExternalOperationGovernanceDecision",

@@ -42,9 +42,10 @@ class InMemoryExternalOperationAuditChain:
         evidence_refs: tuple[str, ...] = (),
     ) -> ExternalOperationAuditRecord:
         record = ExternalOperationAuditRecord(
-            attempt_id=attempt.attempt_id,
+            attempt_id=attempt.operation_attempt_id,
             intent_id=attempt.intent.intent_id,
-            tenant_id=attempt.intent.tenant_id,
+            tenant_id=attempt.tenant_id or attempt.intent.tenant_id,
+            execution_id=attempt.execution_id,
             provider_id=attempt.provider_id,
             admission_decision=admission,
             execution_status=attempt.lifecycle,

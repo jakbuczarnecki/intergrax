@@ -7,9 +7,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
+from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
+from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 
 
@@ -188,3 +190,20 @@ class ExecutionFailurePayloadV1(RuntimeEventPayload):
     failure_kind: ExecutionFailureKind
     safe_summary: str = Field(max_length=256)
     failure_code: str | None = Field(default=None, max_length=128)
+
+
+class ExternalOperationFailurePayloadV1(RuntimeEventPayload):
+    schema_id = "external_operation_failure.v1"
+
+    execution_id: ExecutionId
+    operation_attempt_id: str = Field(min_length=1, max_length=128)
+    provider_id: str = Field(min_length=1, max_length=128)
+    operation_type: str = Field(min_length=1, max_length=128)
+    failure_kind: ExternalOperationFailureKind
+    retryable: bool = False
+    evidence_refs: tuple[str, ...] = ()
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)

@@ -36,6 +36,24 @@ from intergrax.contracts.predictive_investigation_read import (
     RelatedPredictionOutcomeHistoryView,
 )
 from intergrax.contracts.preventive_investigation_read import RelatedPreventiveRecommendationView
+from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticExternalOperationContextView:
+    execution_id: ExecutionId
+    operation_attempt_id: str
+    provider_id: str
+    operation_type: str
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticExternalOperationFailureView:
+    execution_id: ExecutionId
+    operation_attempt_id: str
+    provider_id: str
+    failure_kind: ExternalOperationFailureKind
+    evidence_refs: tuple[EventId, ...]
 
 
 class DiagnosticTimelineEntryKind(StrEnum):
@@ -182,6 +200,8 @@ class DiagnosticInvestigationView:
     prediction_history: tuple[RelatedPredictiveHistoryEntryView, ...] = ()
     prediction_outcome_history: tuple[RelatedPredictionOutcomeHistoryView, ...] = ()
     preventive_recommendations: tuple[RelatedPreventiveRecommendationView, ...] = ()
+    external_operation_context: tuple[DiagnosticExternalOperationContextView, ...] = ()
+    external_operation_failures: tuple[DiagnosticExternalOperationFailureView, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

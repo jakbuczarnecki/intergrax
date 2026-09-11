@@ -198,7 +198,7 @@ def test_operation_attempt_is_reconstructable() -> None:
     )
     executing = gate.begin_execution(admitted.bind_provider("crm"))
     gate.complete_success(executing)
-    chain = audit.reconstruct(admitted.attempt_id)
+    chain = audit.reconstruct(admitted.operation_attempt_id)
     assert len(chain) >= 2
     assert chain[0].admission_decision.verdict is OperationAdmissionVerdict.ALLOW
     assert chain[-1].execution_status is ExternalOperationAttemptLifecycle.SUCCEEDED

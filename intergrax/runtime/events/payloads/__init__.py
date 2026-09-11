@@ -18,6 +18,7 @@ from intergrax.runtime.events.payloads.canonical import (
     LlmCallPayloadV1,
     SkillResolvedPayloadV1,
     ExecutionFailurePayloadV1,
+    ExternalOperationFailurePayloadV1,
     TaskLifecyclePayloadV1,
     ToolPayloadV1,
     TraceBridgePayloadV1,
@@ -41,6 +42,7 @@ CANONICAL_PAYLOAD_TYPES: tuple[type[RuntimeEventPayload], ...] = (
     ContextAssemblyPayloadV2,
     ContextCandidatePayloadV1,
     ExecutionFailurePayloadV1,
+    ExternalOperationFailurePayloadV1,
     TaskLifecyclePayloadV1,
 )
 
@@ -60,6 +62,7 @@ __all__ = [
     "RuntimeEventPayload",
     "SkillResolvedPayloadV1",
     "ExecutionFailurePayloadV1",
+    "ExternalOperationFailurePayloadV1",
     "TaskLifecyclePayloadV1",
     "ToolPayloadV1",
     "TraceBridgePayloadV1",

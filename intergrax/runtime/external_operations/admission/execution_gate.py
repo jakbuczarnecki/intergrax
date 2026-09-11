@@ -55,8 +55,10 @@ class ExternalOperationExecutionGate:
     ) -> ExternalOperationAttempt:
         decision = self.admission.evaluate(intent, context)
         attempt = ExternalOperationAttempt(
-            attempt_id=mint_external_operation_attempt_id(),
+            operation_attempt_id=mint_external_operation_attempt_id(),
             intent=intent,
+            tenant_id=intent.tenant_id,
+            task_id=intent.task_id,
         )
         if decision.verdict is OperationAdmissionVerdict.DENY:
             if self.audit_chain is not None:
@@ -80,7 +82,7 @@ class ExternalOperationExecutionGate:
         admitted = attempt.transition(ExternalOperationAttemptLifecycle.ADMITTED)
         if provider_id is not None:
             admitted = admitted.bind_provider(provider_id)
-        self._decisions_by_attempt[admitted.attempt_id] = decision
+        self._decisions_by_attempt[admitted.operation_attempt_id] = decision
         self._append_audit(admitted, decision)
         return admitted
 
@@ -108,7 +110,7 @@ class ExternalOperationExecutionGate:
                 "execution requires ADMITTED lifecycle"
             )
         executing = attempt.transition(ExternalOperationAttemptLifecycle.EXECUTING)
-        decision = admission or self._decisions_by_attempt.get(attempt.attempt_id)
+        decision = admission or self._decisions_by_attempt.get(attempt.operation_attempt_id)
         self._append_audit(executing, decision)
         return executing
 
@@ -123,7 +125,7 @@ class ExternalOperationExecutionGate:
                 "terminal success requires EXECUTING lifecycle"
             )
         terminal = attempt.transition(ExternalOperationAttemptLifecycle.SUCCEEDED)
-        decision = admission or self._decisions_by_attempt.get(attempt.attempt_id)
+        decision = admission or self._decisions_by_attempt.get(attempt.operation_attempt_id)
         self._append_audit(terminal, decision)
         return terminal
 
@@ -138,7 +140,7 @@ class ExternalOperationExecutionGate:
                 "terminal failure requires EXECUTING lifecycle"
             )
         terminal = attempt.transition(ExternalOperationAttemptLifecycle.FAILED)
-        decision = admission or self._decisions_by_attempt.get(attempt.attempt_id)
+        decision = admission or self._decisions_by_attempt.get(attempt.operation_attempt_id)
         self._append_audit(terminal, decision)
         return terminal
 
@@ -150,7 +152,7 @@ class ExternalOperationExecutionGate:
     ) -> ExternalOperationEvidence:
         return ExternalOperationEvidence(
             evidence_id=f"ext_op_ev_{uuid4().hex}",
-            attempt_id=attempt.attempt_id,
+            attempt_id=attempt.operation_attempt_id,
             intent_id=attempt.intent.intent_id,
             tenant_id=attempt.intent.tenant_id,
             kind=ExternalOperationEvidenceKind.ADMISSION_DENIAL,

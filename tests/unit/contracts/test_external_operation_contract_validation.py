@@ -46,8 +46,10 @@ def test_external_operation_contract_validation() -> None:
 
 def test_operation_requires_admission_before_execution() -> None:
     attempt = ExternalOperationAttempt(
-        attempt_id="ext_op_attempt_" + "a" * 32,
+        operation_attempt_id="ext_op_attempt_" + "a" * 32,
         intent=_intent(),
+        tenant_id="tenant_a",
+        task_id=_intent().task_id,
     )
     assert attempt.lifecycle is ExternalOperationAttemptLifecycle.CREATED
     with pytest.raises(ExternalOperationAttemptTransitionError):
@@ -61,8 +63,10 @@ def test_operation_requires_admission_before_execution() -> None:
 def test_created_to_succeeded_forbidden_at_model_level() -> None:
     with pytest.raises(ValidationError):
         ExternalOperationAttempt(
-            attempt_id="ext_op_attempt_" + "b" * 32,
+            operation_attempt_id="ext_op_attempt_" + "b" * 32,
             intent=_intent(),
+            tenant_id="tenant_a",
+            task_id=_intent().task_id,
             lifecycle=ExternalOperationAttemptLifecycle.SUCCEEDED,
             terminal_at=datetime.now(timezone.utc),
         )

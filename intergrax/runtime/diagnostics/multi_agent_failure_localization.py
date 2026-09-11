@@ -22,6 +22,8 @@ from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
 )
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstruction
 
+from intergrax.runtime.diagnostics.diagnostic_precision import DiagnosticPrecision
+
 if TYPE_CHECKING:
     from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticFinding
 
@@ -78,7 +80,10 @@ def _boundary_from_finding(finding: DiagnosticFinding) -> DiagnosticFailureBound
         raise ValueError("EXECUTION_FAILED finding missing execution_id")
     precision = FailureBoundaryPrecision.EXECUTION_LEVEL
     if finding.precision is not None:
-        precision = FailureBoundaryPrecision(finding.precision.value)
+        if finding.precision is DiagnosticPrecision.EXTERNAL_BOUNDARY:
+            precision = FailureBoundaryPrecision.EXTERNAL_BOUNDARY
+        else:
+            precision = FailureBoundaryPrecision(finding.precision.value)
     return DiagnosticFailureBoundary(
         execution_id=execution_id,
         precision=precision,
@@ -106,7 +111,11 @@ class ExecutionFailureTopologyAnalyzer:
         failure_findings = tuple(
             finding
             for finding in findings
-            if finding.kind is DiagnosticFindingKind.EXECUTION_FAILED
+            if finding.kind
+            in {
+                DiagnosticFindingKind.EXECUTION_FAILED,
+                DiagnosticFindingKind.EXTERNAL_OPERATION_FAILED,
+            }
         )
         if not failure_findings:
             return FailureBoundaryAnalysis.unavailable()
