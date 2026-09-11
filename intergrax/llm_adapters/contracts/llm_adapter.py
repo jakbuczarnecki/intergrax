@@ -7,17 +7,7 @@ from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from collections.abc import Iterable, Iterator, Mapping, Sequence
-from typing import TYPE_CHECKING, Callable, Optional, Any, Dict, Union, List, TypeVar, Generic
-
-if TYPE_CHECKING:
-    from intergrax.contracts.dependency_concurrency_admission import (
-        DependencyConcurrencyAdmissionRequest,
-    )
-    from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
-        DependencyAttemptExecutionBoundary,
-    )
-
-T = TypeVar("T")
+from typing import TYPE_CHECKING, Callable, Optional, Any, Dict, Union, List, TypeVar
 import json
 import re
 import uuid
@@ -33,6 +23,25 @@ from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 
+if TYPE_CHECKING:
+    from intergrax.contracts.dependency_concurrency_admission import (
+        DependencyConcurrencyAdmissionRequest,
+    )
+    from intergrax.contracts.external_operation_cancellation import (
+        ExternalOperationCancellationPort,
+        ExternalOperationStatusPort,
+    )
+    from intergrax.runtime.external_operations.external_operation_state_store import (
+        ExternalOperationStateStore,
+    )
+    from intergrax.runtime.external_operations.external_operation_ownership import (
+        ProcessLocalExternalOperationOwner,
+    )
+    from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
+        DependencyAttemptExecutionBoundary,
+    )
+
+T = TypeVar("T")
 
 
 # ============================================================
@@ -70,6 +79,32 @@ class LLMAdapter(ABC):
         self._provider_dependency_boundary: DependencyAttemptExecutionBoundary | None = (
             None
         )
+        self._external_operation_store: ExternalOperationStateStore | None = None
+        self._external_operation_owner: ProcessLocalExternalOperationOwner | None = None
+        self._external_operation_cancellation_port: (
+            ExternalOperationCancellationPort | None
+        ) = None
+        self._external_operation_status_port: ExternalOperationStatusPort | None = None
+
+    def bind_external_operation_ports(
+        self,
+        *,
+        store: ExternalOperationStateStore | None,
+        owner: ProcessLocalExternalOperationOwner | None = None,
+        cancellation_port: ExternalOperationCancellationPort | None = None,
+        status_port: ExternalOperationStatusPort | None = None,
+    ) -> None:
+        """Inject W4-C durable external operation tracking for provider calls."""
+        from intergrax.runtime.external_operations.external_operation_ownership import (
+            ProcessLocalExternalOperationOwner,
+        )
+
+        self._external_operation_store = store
+        if store is not None and owner is None:
+            owner = ProcessLocalExternalOperationOwner.mint()
+        self._external_operation_owner = owner
+        self._external_operation_cancellation_port = cancellation_port
+        self._external_operation_status_port = status_port
 
     def bind_provider_dependency_boundary(
         self,
@@ -120,15 +155,46 @@ class LLMAdapter(ABC):
         )
 
     def _run_physical_provider_attempt(self, fn: Callable[[], T]) -> T:
+        from intergrax.runtime.external_operations.llm_external_operation_attempt import (
+            LlmExternalOperationAttempt,
+            llm_external_operation_identity,
+        )
+
+        ext_op = LlmExternalOperationAttempt(
+            store=self._external_operation_store,
+            owner=self._external_operation_owner,
+            identity=(
+                llm_external_operation_identity(
+                    provider_slug=self._provider_slug(),
+                    model=str(self.model or ""),
+                    call_scope="sync",
+                )
+                if self._external_operation_store is not None
+                else None
+            ),
+            cancellation_port=self._external_operation_cancellation_port,
+            status_port=self._external_operation_status_port,
+        )
+        ext_op.before_physical_call()
         boundary = self._provider_dependency_boundary
         if boundary is None:
-            return fn()
+            ext_op.mark_running()
+            try:
+                return fn()
+            except BaseException:
+                ext_op.mark_failed()
+                raise
+            else:
+                ext_op.mark_succeeded()
         handle = boundary.acquire(self._provider_dependency_admission_request())
         try:
+            ext_op.mark_running()
             result = fn()
         except BaseException:
+            ext_op.mark_failed()
             boundary.complete_direct(handle)
             raise
+        ext_op.mark_succeeded()
         boundary.complete_direct(handle)
         return result
 

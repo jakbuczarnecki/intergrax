@@ -30,6 +30,15 @@ from intergrax.runtime.execution.decision_finalization_persistence import (
 from intergrax.runtime.execution.decision_recovery import (
     _resume_decision_from_durable_state_impl,
 )
+from intergrax.runtime.external_operations.external_operation_state_store import (
+    ExternalOperationStateStore,
+)
+from intergrax.runtime.external_operations.external_operation_ownership import (
+    ProcessLocalExternalOperationOwner,
+)
+from intergrax.runtime.external_operations.recovery_external_operation_gate import (
+    prepare_external_operations_for_recovery,
+)
 
 T = TypeVar("T")
 
@@ -61,8 +70,18 @@ async def resume_decision_from_durable_state_with_recovery_admission(
     execution_lineage: DecisionExecutionLineage,
     recovery_admission: RecoveryAdmissionPort | None = None,
     runtime_revision_policy: DecisionRevisionPolicy | None = None,
+    external_operation_store: ExternalOperationStateStore | None = None,
+    external_operation_owner: ProcessLocalExternalOperationOwner | None = None,
+    external_operation_ids: tuple[str, ...] = (),
 ) -> DecisionCheckpointState[T] | None:
     """Materialize decision durable state under optional recovery start admission."""
+    if external_operation_store is not None:
+        owner = external_operation_owner or ProcessLocalExternalOperationOwner.mint()
+        prepare_external_operations_for_recovery(
+            external_operation_store,
+            active_owner=owner,
+            operation_ids=external_operation_ids,
+        )
     recovery_permit = None
     if recovery_admission is not None:
         recovery_permit = await recovery_admission.acquire(

@@ -1,6 +1,7 @@
 # Enterprise Execution Scale & Resilience — Architecture (P0 baseline)
 
 **Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1 FINAL (qualified)** — process-local root admission (W1-A), explicit concurrent work policy (W1-B), absolute global deadline into R1 retry (W1-C). Qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md). **W2 FINAL (qualified, process-local)** — dependency admission bulkheads (B1–B3) + retry budget / provider rate limit / LLM circuit composition (C); final matrix: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_FINAL_QUALIFICATION.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_FINAL_QUALIFICATION.md). **W2-A** inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md); **W2-ADR (Accepted)** — [`ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md`](ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md); **W2-B1** `LocalDependencyConcurrencyAdmission`; **W2-B2** `DependencyAttemptExecutionBoundary` on `RuntimeToolInvoker`; **W2-B3** provider boundary on `LLMAdapter` seams; **W2-C** `execute_with_resilience` order: tenant quota (adapter) → retry budget → rate limit → circuit breaker → physical attempt (admission inside `_run_physical_provider_attempt`).
+**W4-C FINAL (qualified):** distributed external operation cancellation — stable identity, intent vs physical planes, durable CAS, permit-after-terminal, recovery gate (`prepare_external_operations_for_recovery`). Qualification: `tests/unit/runtime/architecture/test_enterprise_scale_resilience_w4_c_distributed_cancellation_qualification.py`.
 **Baseline:** `origin/development` at audit start.  
 **Scope:** Execution plane capacity, concurrency ownership, failure domains, process-local vs distributed semantics.
 
@@ -101,6 +102,85 @@ Cooperative: `CancellationCoordinator` metadata flag; graph marks pending nodes 
 | Fan-out worker tasks | `concurrent_execution_work` | Parent cancel → cancel workers + `gather` |
 
 Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_A_CANCELLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_A_CANCELLATION_INVENTORY.md).
+
+### Distributed external operation lifecycle (W4-C FINAL)
+
+**Status:** contract frozen — ports + durable CAS + qualification matrix; no central lifecycle controller or cancellation manager.
+
+**Cancellation ≠ termination.** Two planes:
+
+| Plane | States | Meaning |
+|-------|--------|---------|
+| Intent | `ACTIVE` → `CANCELLATION_REQUESTED` → `TERMINATING` → `TERMINATED` | System wants the logical operation to end |
+| Physical | `NOT_STARTED` (created) → `RUNNING` → `SUCCEEDED` / `FAILED` / `CANCELLED` / `UNKNOWN` | Observed external dependency behavior |
+
+#### External operation lifecycle (physical + cancel path)
+
+```text
+NOT_STARTED (CREATED)
+        |
+        v
+     RUNNING
+        |
+   +----+----+
+   |         |
+   v         v
+SUCCEEDED   FAILED
+
+RUNNING
+   |
+   v
+CANCELLATION_REQUESTED (intent; physical may still be RUNNING)
+   |
+   v
+CANCELLED (physical terminal)
+
+RUNNING
+   |
+   v
+UNKNOWN (legal terminal — worker loss / provider opaque)
+```
+
+**Invariants:** `UNKNOWN` is a legal physical terminal; a record must not remain `RUNNING` indefinitely without an active owner (orphan reconcile → `UNKNOWN`). Durable transitions use `revision` CAS — concurrent terminal writers: one winner, others `StaleExternalOperationStateError`.
+
+#### Cancellation ownership model
+
+| Topic | Rule |
+|-------|------|
+| **Logical cancellation** | Durable intent CAS (`CANCELLATION_REQUESTED`); optional `ExternalOperationCancellationPort.request_cancel` (best-effort signal only). |
+| **Physical termination** | Provider-observed terminal state on `ExternalOperationStateStore`; separate from intent. |
+| **External operation identity** | `mint_stable_operation_id` — same `operation_id` across physical retries; new `attempt_id` / `physical_attempt_sequence` per try (no per-attempt `uuid4` for operation_id). |
+| **Durable state** | `ExternalOperationState` + `ExternalOperationStateStore.compare_and_set`. |
+| **CAS ownership** | `expected_revision` on every transition; stale write → `StaleExternalOperationStateError`. |
+| **Recovery reconciliation** | Checkpoint restore path → `prepare_external_operations_for_recovery` (orphan reconcile, then fail-closed on scoped `UNKNOWN` / `RUNNING`) → resume decision. |
+| **Permit lifecycle** | acquire dependency permit → physical execution → **terminal durable record** → release permit. **Never** release permit on cancel request alone. |
+
+#### Retry interaction (frozen)
+
+| Physical / intent | Retry physical attempt |
+|-------------------|------------------------|
+| `FAILED` (intent `ACTIVE`) | Allowed |
+| `CANCELLATION_REQUESTED` / `CANCELLED` | Forbidden (`ExternalOperationStartSuppressedError`) |
+| `UNKNOWN` | Reconcile first; then policy-driven |
+| Provider / transport error (failed attempt, intent active) | Allowed (same stable `operation_id`) |
+
+#### Provider cancellation boundary (extension only)
+
+| Capability | Behavior |
+|------------|----------|
+| Provider supports cancel | Inject `ExternalOperationCancellationPort` → `request_cancel()` |
+| No cancel API | `NoOpExternalOperationCancellationPort` (intent-only) |
+| No status API | `UnknownOnInquiryExternalOperationStatusPort` → `UNKNOWN` |
+
+No provider-specific branching in W4-C core — adapters bind ports at the seam.
+
+#### Ports (scope freeze)
+
+- `ExternalOperationCancellationPort` — request cancellation + optional provider signal only.
+- `ExternalOperationStatusPort` — query observed physical state only.
+- **Out of scope:** retry scheduling, recovery admission, ownership arbitration, admission permits.
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_C_DISTRIBUTED_CANCELLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_C_DISTRIBUTED_CANCELLATION_INVENTORY.md).
 
 ## Partial recovery (R3)
 
