@@ -67,3 +67,5 @@ No R3 causal root-cause graph; duplicate `EXECUTION_FAILED` may appear when both
 ## Final verdict
 
 PASS pending full CI matrix in operator environment.
+
+**Implementation commit:** `40cc8c11e` (update after merge if rebased).
