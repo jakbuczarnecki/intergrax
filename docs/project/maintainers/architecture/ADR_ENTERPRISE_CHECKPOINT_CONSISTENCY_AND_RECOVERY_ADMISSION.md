@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **Accepted** (architecture + contract design; implementation deferred to W3-C) |
+| **Status** | **Accepted** — Option C event append + snapshot CAS frozen (§2.1–§2.2); recovery **start** admission implemented for `TASK_RESUME`, `PARTIAL_TOPOLOGY`, and `DECISION_DURABLE` (§3). Post-start execution-width gap for `DECISION_DURABLE` remains documented (§3.4); start-only admission is wired at `decision_durable_recovery_handoff`. |
 | **Date** | 2026-09-11 |
 | **Baseline** | W3-A inventory on `development`; task checkpoint CAS frozen in NPSC-5E R2-H2 |
 | **Related** | [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W3_A_CHECKPOINT_RECOVERY_SCALING_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W3_A_CHECKPOINT_RECOVERY_SCALING_INVENTORY.md) · [`NPSC_5E_RECOVERY_CHECKPOINT_RETRY_ARCHITECTURE.md`](NPSC_5E_RECOVERY_CHECKPOINT_RETRY_ARCHITECTURE.md) · W1-A `ExecutionCapacityAdmissionPort` · W2 `DependencyConcurrencyAdmissionPort` |
@@ -80,11 +80,63 @@ DecisionCreated → DecisionApproved → DecisionRejected → DecisionFinalized 
 
 Model:
 
-1. **Append-only** `DecisionEvent` (immutable, monotonic `event_sequence` per finalization key).
-2. **Materialized** `DecisionCheckpointState` ze **`snapshot_revision`** (lub `last_applied_sequence`) — zapis tylko przez `save(..., expected_revision=)` / equivalent.
-3. Konflikt na snapshot → odrzucenie; writer **replay** eventów od ostatniego znanego sequence i ponawia materializację.
+1. **Append-only** `DecisionEvent` (immutable, monotonic `event_sequence` per finalization key) — **authoritative audit trail**; append semantics frozen in §2.1.
+2. **Materialized** `DecisionCheckpointState` ze **`snapshot_revision`** (lub `last_applied_sequence`) — zapis tylko przez `save(..., expected_revision=)` / equivalent — **osobny konflikt** od event append (§2.2).
+3. Po udanym event append: materializacja / replay → snapshot save; konflikt snapshot **nie** usuwa już utrwalonego eventu (§2.2).
 
 Task checkpoint **nie** scala się z decision stream (dual plane unchanged).
+
+### 2.1 Authoritative `DecisionEvent` append (W3-C contract)
+
+Event stream jest **authoritative** — dwa równoległe writery **nie mogą** skutecznie appendować dwóch różnych eventów jako tego samego następnego `event_sequence`.
+
+**Compare-and-append** (nazwy ilustracyjne do W3-C; semantyka obowiązkowa):
+
+```text
+append(
+    event,
+    expected_last_sequence=N,
+)
+
+atomic condition (storage-enforced, not app-only):
+    current_last_sequence == N
+
+success:
+    event.event_sequence = N + 1
+    persist event (immutable)
+
+conflict:
+    StaleDecisionEventAppendError   # typed; authoritative history conflict
+```
+
+| Invariant | Wymaganie |
+|-----------|-----------|
+| `expected_last_sequence` | **Tak** — każdy append musi deklarować oczekiwany ostatni sequence na `DecisionFinalizationKey` |
+| Atomowość | Warunek `current_last_sequence == N` i insert następnego eventu **jedna operacja atomowa** (transaction + constraint lub store-native CAS) |
+| Multi-writer safety | **Zabronione:** `SELECT MAX(event_sequence)` → `next = max + 1` → `INSERT` **bez** atomowej ochrony — to race multi-writer |
+| Storage | Co najmniej **`UNIQUE (finalization_key, event_sequence)`** (lub semantycznie równoważny constraint); nie polegać wyłącznie na application-side check |
+| Idempotencja | Każdy event ma stabilny **`event_id`** (lub istniejący immutable identifier w payload). Retry tego samego logical append: **`same event_id` → idempotent replay OR deterministic duplicate rejection** — bez globalnego idempotency managera |
+| vs snapshot CAS | **Event append conflict** = konflikt authoritative history (`StaleDecisionEventAppendError`). **Snapshot CAS conflict** = konflikt materialized projection (`StaleDecisionCheckpointWriteError` / equivalent). Snapshot CAS **nie zastępuje** event append CAS |
+
+**Po poprawnym append (sequence N+1):**
+
+```text
+append event @ N+1
+    → materialize / replay events through N+1
+    → snapshot save(expected_revision=R)
+
+snapshot CAS loses:
+    reload newer snapshot
+    → replay authoritative events from stream
+    → retry materialization
+    (do not delete or roll back appended event because projection CAS lost)
+```
+
+W3-C: osobny port / persistence dla decision events (małe kontrakty, DI — **nie** `CheckpointManager`).
+
+### 2.2 Snapshot materialization (unchanged intent, frozen separation)
+
+Semantyka revision CAS na snapshot (Opcja A) pozostaje na **projekcji** only. Writers konkurujący o materializację tej samej projekcji: reload + replay z authoritative stream po `StaleDecisionCheckpointWriteError`.
 
 ### Rekomendacja (decision checkpoint)
 
@@ -94,14 +146,14 @@ Uzasadnienie:
 
 | Kryterium | Ocena |
 |-----------|--------|
-| Skalowanie / multi-worker | Append serializuje writes na kluczu; snapshot CAS wykrywa równoległą materializację |
+| Skalowanie / multi-worker | Compare-and-append serializuje authoritative sequence; snapshot CAS wykrywa równoległą materializację |
 | Audyt | Event stream jest authoritative audit trail |
 | AI governance | Historia transitions jest wymagana; snapshot alone (A) niewystarczający |
 | Distributed execution | Event log + revision na projekcji mapuje się na przyszły shared store bez centralnego managera |
 
 **Task checkpoint:** bez zmian — revision CAS (R2-H2). **Decision:** nie utrzymywać LWW UPSERT bez revision w produkcji multi-worker.
 
-W3-C scope (design only here): rozszerzyć port persistence o `expected_revision` na snapshot **oraz** osobny port/event store dla decision events (małe kontrakty, DI — **nie** `CheckpointManager`).
+W3-C scope (design only here): rozszerzyć port persistence o `expected_revision` na snapshot **oraz** port compare-and-append dla decision events (§2.1).
 
 ---
 
@@ -126,11 +178,8 @@ Analogia do W1-A / W2:
 ```text
 request = RecoveryAdmissionRequest(...)
 permit = await recovery_admission.acquire(request)
-try:
-    # start recovery only: eligibility already passed; admission = concurrency / storm control
-    await existing_recovery_entrypoint(...)
-finally:
-    await permit.release()
+# ... durable eligibility, claim/lease, execution-width handoff (§3.3) ...
+await permit.release()   # once, after safe handoff — not immediately after acquire
 ```
 
 Propozowane elementy (names illustrative until W3-C):
@@ -139,7 +188,7 @@ Propozowane elementy (names illustrative until W3-C):
 |--------|------|
 | `RecoveryAdmissionPort` | Async pluginable admission |
 | `RecoveryAdmissionRequest` | `tenant_id`, `task_id`, `run_id`, `attempt_id`, **recovery_kind** (enum: `TASK_RESUME`, `PARTIAL_TOPOLOGY`, `DECISION_DURABLE`, …), opcjonalne metadata |
-| `RecoveryAdmissionPolicy` | `max_concurrent_recoveries`, overload mode, optional wait timeout |
+| `RecoveryAdmissionPolicy` | **`max_concurrent_recovery_starts`** (nie `max_concurrent_recoveries` — start-only permit **nie** limituje liczby trwających recovery), overload mode, optional wait timeout |
 | `RecoveryAdmissionPermit` | `release()` exactly once |
 
 **Injection:** composition root; domyślnie `None` = legacy (brak throttlingu), spójnie z W1 optional port.
@@ -158,16 +207,54 @@ Walidacja policy: mirror `ExecutionCapacityPolicy` — timeout wymagany iff `WAI
 
 | Wariant | Opis |
 |---------|------|
-| **A — tylko start recovery** | Permit trzymany od acquire do momentu **zakończenia fazy startowej** (np. po udanym claim resume / po wejściu w guarded recovery body), następnie release |
+| **A — tylko start recovery** | Permit od acquire do **bezpiecznego handoff** post-start execution width (§3.3) — **nie** „acquire → wejście w funkcję → natychmiastowy release” |
 | **B — całe recovery** | Permit przez cały czas trwania resume/graph recovery |
 
-**Rekomendacja: A (start-only permit).**
+**Rekomendacja: A (start-only permit)** — bez zmiany głównej decyzji.
 
-Długotrwałe recovery (graf, partial fan-out) **nie** powinno blokować puli admission godzinami. Storm control dotyczy **wejścia** w recovery, nie całego czasu wykonania.
+Długotrwałe recovery (graf, partial fan-out) **nie** powinno blokować puli **start** admission godzinami. Policy limituje **`max_concurrent_recovery_starts`**, nie równoległe pełne recovery.
 
-Rozważyć w przyszłości **osobny** opcjonalny port dla długich faz (execution-width), ale W3-C implementuje wyłącznie **recovery start admission** — bez `RecoveryExecutionManager`.
+W3-C implementuje wyłącznie **recovery start admission** — bez `RecoveryExecutionManager` / `RecoveryManager`.
+
+**Handoff invariant (obowiązkowy minimum przed `release()`):**
+
+```text
+RecoveryAdmission acquire
+    → durable recovery eligibility confirmed (terminal / lineage / governance gates)
+    → durable claim / lease ownership acquired where applicable
+    → recovered work handed off to canonical post-start execution-capacity owner (§3.3)
+       OR recovery kind reaches another explicitly bounded execution owner
+    → release RecoveryAdmissionPermit
+```
+
+Gdy ścieżka resume po admission wchodzi pod **`ExecutionCapacityAdmissionPort`** (W1): **nigdy** nie zwalniać recovery-start permit **przed** ustaleniem execution-capacity ownership (permit W1 acquired). Unikać luki:
+
+```text
+release recovery permit → brak execution permit → unbounded recovered work starts
+```
 
 **Interakcja z W1:** `ExecutionCapacityAdmissionPort` = root execution slots; `RecoveryAdmissionPort` = recovery **start** slots. Ortogonalne; nie rozszerzać W1 o recovery.
+
+### 3.3 Post-start execution-width handoff (W1 × recovery kinds)
+
+Start-only admission **nie** zastępuje limitu szerokości wykonania po starcie. Dla każdego `recovery_kind` W3-C musi wire’ować release permit zgodnie z tabelą.
+
+| RECOVERY KIND | START ADMISSION OWNER | DURABLE CLAIM OWNER | POST-START EXECUTION CAPACITY OWNER | SAFE HANDOFF POINT (release permit) |
+|---------------|----------------------|---------------------|-------------------------------------|-------------------------------------|
+| **`TASK_RESUME`** | Caller at `LongRunningCoordinator` resume entry (`RecoveryAdmissionPort`) | `LongRunningScheduler` / task store **atomic claim** + ledger (`claim_due`, lease) where applicable | Optional **`ExecutionCapacityAdmissionPort`** on `ExecutionRuntime` when resume re-enters root execute; **`GraphExecutor`** optional caps; platform **fan-out bounds** on resumed orchestration; scheduler **`claim_due` batch limit** (coarse cross-worker) | After eligibility + **durable claim** (if path uses claim); and when W1 wired on resume execute path, **after** `ExecutionCapacityAdmissionPort.acquire` succeeds; else after claim + binding resume plan to governed execution entry (no gap before bounded graph/root path) |
+| **`PARTIAL_TOPOLOGY`** | `FanOutPartialRecoveryService` entry | Task checkpoint stream + **`expected_revision` CAS** on partial recovery save; topology snapshot on checkpoint | Parent **`ActiveGovernedExecutionTask`** context; **`bounded_multi_agent_fanout`** (`MAX_FAN_OUT_CONCURRENCY`, item caps); **`GraphExecutor`** optional caps via orchestration adapter — **not** a second W1 root on typical partial path | After policy evaluation + delegation to **`FanOutCoordinationSlotExecutor` / orchestration submission** within existing governed task and fan-out bounds |
+| **`DECISION_DURABLE`** | `resume_decision_from_durable_state_with_recovery_admission` (`decision_durable_recovery_handoff`) | **Terminal supremacy** + load **`DecisionFinalizationPersistence`** / checkpoint per key (no scheduler claim) | **Brak** dedykowanego process-wide execution-width owner na tej ścieżce dziś — per-key lifecycle host only | After durable materialization (`resume_decision_from_durable_state`) completes — **start-only** permit; see §3.4 for post-start width gap |
+
+### 3.4 `DECISION_DURABLE` — post-start width gap
+
+| Flag | Value |
+|------|--------|
+| **`POST_START_RECOVERY_WIDTH_GAP`** | **Tak** — mass concurrent `DECISION_DURABLE` starts can overload checkpoint/finalization I/O without a real execution-width owner (distinct from W1 root slots) |
+| **Start admission (W3-C3)** | **`RecoveryKind.DECISION_DURABLE`** + `max_concurrent_recovery_starts` via `LocalRecoveryAdmission`; wired at `decision_durable_recovery_handoff` — limits concurrent **starts** only |
+| **Action for post-start width** | **`ARCHITECTURAL DECISION REQUIRED`** for cross-key concurrency / backpressure beyond start admission ( **nie** auto-tworzyć `RecoveryManager`) |
+| **ADR slice status** | Start admission **implemented**; post-start width policy still open |
+
+`TASK_RESUME` / `PARTIAL_TOPOLOGY`: handoff invariants **Accepted** for W3-C wiring subject to optional W1 on resume path (§3.3).
 
 **Tenant_id:** metadata na request (obserwowalność); **nie** partycjonuje slotów w pierwszej implementacji process-local (fairness — out of scope W3-B).
 
@@ -241,7 +328,7 @@ Process-local ContextVar (resume plan, active bindings) **nie** przetrwa crash �
 
 **Dane:** nie tracimy poprawnego stanu — jeden writer wygrywa, drugi musi reload + retry policy (R3 → `PartialRecoveryError` STALE where applicable).
 
-**Decision (dziś):** LWW — **ryzyko cichej utraty**; po W3-C: konflikt na snapshot revision + event ordering.
+**Decision (dziś):** LWW — **ryzyko cichej utraty**; po W3-C: **compare-and-append** on event stream (§2.1) + konflikt snapshot revision (`StaleDecisionCheckpointWriteError`) — **osobne** błędy.
 
 ### Scenario 2 — Database outage
 
@@ -301,8 +388,9 @@ Poza zaakceptowanym designem W3-C:
 1. `intergrax/contracts/recovery_admission.py` — port + policy + errors (mirror W1 shape).
 2. `LocalRecoveryAdmission` (preferred: `intergrax/runtime/resilience/` or `intergrax/runtime/execution/`) — process-local slots.
 3. Wire at resume / partial recovery / decision durable entrypoints — **optional** `None` default.
-4. Decision: event append port + `expected_revision` on snapshot save; deprecate LWW for multi-worker configs.
-5. Qualification tests for admission + stale decision write (no new managers).
+4. Decision: compare-and-append event port (§2.1) + `expected_revision` on snapshot save; `UNIQUE(finalization_key, event_sequence)`; deprecate LWW for multi-worker configs.
+5. Recovery admission: `max_concurrent_recovery_starts`; wire handoff table §3.3; **`DECISION_DURABLE` start admission** at `decision_durable_recovery_handoff` (§3.4 post-start width still open).
+6. Qualification tests for admission + stale decision event append + stale snapshot write (no new managers).
 
 ---
 
@@ -312,7 +400,7 @@ Poza zaakceptowanym designem W3-C:
 |-------|----------|
 | Planes | checkpoint ≠ lineage ≠ evidence ≠ terminal — **no merge** |
 | Task checkpoint consistency | Keep **revision CAS** (R2-H2) |
-| Decision checkpoint consistency | **Event history + CAS snapshot (Option C)** |
-| Recovery admission | **`RecoveryAdmissionPort`**, start-only permit, REJECT / WAIT_WITH_TIMEOUT |
+| Decision checkpoint consistency | **Event history + CAS snapshot (Option C)**; **compare-and-append** + storage unique sequence (§2.1–§2.2) |
+| Recovery admission | **`RecoveryAdmissionPort`**, start-only permit, **`max_concurrent_recovery_starts`**, handoff §3.3; **`DECISION_DURABLE` start admission** owned by `decision_durable_recovery_handoff` (§3.4 post-start width gap remains) |
 | Orphan RUNNING | **Lease expiry + reclaim**; **terminal always wins** |
 | Central managers | **Forbidden** |

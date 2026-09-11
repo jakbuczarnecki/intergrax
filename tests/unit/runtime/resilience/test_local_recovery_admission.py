@@ -177,3 +177,92 @@ async def test_recovery_kind_isolation() -> None:
         await admission.acquire(_request(RecoveryKind.PARTIAL_TOPOLOGY))
     await task_resume.release()
     await partial.release()
+
+
+@pytest.mark.asyncio
+async def test_decision_durable_capacity_isolation_from_task_resume() -> None:
+    task_resume_capacity = 2
+    decision_durable_capacity = 3
+    policies: Mapping[RecoveryKind, RecoveryAdmissionPolicy] = {
+        RecoveryKind.TASK_RESUME: _reject_policy(task_resume_capacity),
+        RecoveryKind.DECISION_DURABLE: _reject_policy(decision_durable_capacity),
+    }
+    admission = LocalRecoveryAdmission(policies)
+    contender_count = 10
+    start_barrier = asyncio.Barrier(contender_count * 2)
+    task_resume_permits: list[RecoveryAdmissionPermit] = []
+    decision_permits: list[RecoveryAdmissionPermit] = []
+    task_resume_errors: list[RecoveryAdmissionExceededError] = []
+    decision_errors: list[RecoveryAdmissionExceededError] = []
+    lock = asyncio.Lock()
+
+    async def task_resume_contender() -> None:
+        await start_barrier.wait()
+        try:
+            permit = await admission.acquire(_request(RecoveryKind.TASK_RESUME))
+        except RecoveryAdmissionExceededError as exc:
+            async with lock:
+                task_resume_errors.append(exc)
+            return
+        async with lock:
+            task_resume_permits.append(permit)
+
+    async def decision_contender() -> None:
+        await start_barrier.wait()
+        try:
+            permit = await admission.acquire(_request(RecoveryKind.DECISION_DURABLE))
+        except RecoveryAdmissionExceededError as exc:
+            async with lock:
+                decision_errors.append(exc)
+            return
+        async with lock:
+            decision_permits.append(permit)
+
+    tasks = [
+        *[asyncio.create_task(task_resume_contender()) for _ in range(contender_count)],
+        *[asyncio.create_task(decision_contender()) for _ in range(contender_count)],
+    ]
+    try:
+        await asyncio.wait_for(asyncio.gather(*tasks), timeout=2.0)
+    finally:
+        for permit in task_resume_permits + decision_permits:
+            await permit.release()
+
+    assert len(task_resume_permits) == task_resume_capacity
+    assert len(task_resume_errors) == contender_count - task_resume_capacity
+    assert len(decision_permits) == decision_durable_capacity
+    assert len(decision_errors) == contender_count - decision_durable_capacity
+
+
+@pytest.mark.asyncio
+async def test_decision_durable_concurrent_recovery_start_cap() -> None:
+    capacity = 3
+    admission = LocalRecoveryAdmission(
+        {RecoveryKind.DECISION_DURABLE: _reject_policy(capacity)},
+    )
+    request_count = 20
+    start_barrier = asyncio.Barrier(request_count)
+    permits: list[RecoveryAdmissionPermit] = []
+    errors: list[RecoveryAdmissionExceededError] = []
+    lock = asyncio.Lock()
+
+    async def contender() -> None:
+        await start_barrier.wait()
+        try:
+            permit = await admission.acquire(_request(RecoveryKind.DECISION_DURABLE))
+        except RecoveryAdmissionExceededError as exc:
+            async with lock:
+                errors.append(exc)
+            return
+        async with lock:
+            permits.append(permit)
+
+    tasks = [asyncio.create_task(contender()) for _ in range(request_count)]
+    try:
+        await asyncio.wait_for(asyncio.gather(*tasks), timeout=2.0)
+    finally:
+        for permit in permits:
+            await permit.release()
+
+    assert len(permits) == capacity
+    assert len(errors) == request_count - capacity

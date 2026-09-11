@@ -3,13 +3,15 @@
 
 """Decision durable recovery helpers hosted by canonical Execution (DS-REC-02/03).
 
-DECISION_DURABLE recovery admission wiring is deferred (W3-C §3.4): no post-start
-execution-width owner exists on this path yet — do not wire RecoveryAdmissionPort here.
+Recovery start admission (W3-C ``DECISION_DURABLE``) is wired via
+``resume_decision_from_durable_state_with_recovery_admission`` in
+``intergrax.runtime.resilience.decision_durable_recovery_handoff`` — not execution
+capacity admission.
 """
 
 from __future__ import annotations
 
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from intergrax.contracts.decision_checkpoint import (
     DecisionCheckpointState,
@@ -28,7 +30,6 @@ from intergrax.contracts.decision_lifecycle import (
     transition_decision_lifecycle,
 )
 from intergrax.contracts.decision_revision import (
-    DecisionRevisionCheckpointState,
     DecisionRevisionPolicy,
     DecisionRevisionState,
     revision_policy_from_checkpoint,
@@ -90,19 +91,35 @@ def _advance_lifecycle_to_terminal(
     if stage is DecisionLifecycleStage.FINALIZATION:
         return transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
     if stage is DecisionLifecycleStage.RESOLUTION:
-        lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.FINALIZATION)
+        lifecycle = transition_decision_lifecycle(
+            lifecycle, DecisionLifecycleStage.FINALIZATION
+        )
         return transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
     if stage is DecisionLifecycleStage.REVISION:
-        lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.RESOLUTION)
-        lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.FINALIZATION)
+        lifecycle = transition_decision_lifecycle(
+            lifecycle, DecisionLifecycleStage.RESOLUTION
+        )
+        lifecycle = transition_decision_lifecycle(
+            lifecycle, DecisionLifecycleStage.FINALIZATION
+        )
         return transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
     if stage is DecisionLifecycleStage.VERIFICATION:
-        lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.RESOLUTION)
-        lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.FINALIZATION)
+        lifecycle = transition_decision_lifecycle(
+            lifecycle, DecisionLifecycleStage.RESOLUTION
+        )
+        lifecycle = transition_decision_lifecycle(
+            lifecycle, DecisionLifecycleStage.FINALIZATION
+        )
         return transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
-    lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.VERIFICATION)
-    lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.RESOLUTION)
-    lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.FINALIZATION)
+    lifecycle = transition_decision_lifecycle(
+        lifecycle, DecisionLifecycleStage.VERIFICATION
+    )
+    lifecycle = transition_decision_lifecycle(
+        lifecycle, DecisionLifecycleStage.RESOLUTION
+    )
+    lifecycle = transition_decision_lifecycle(
+        lifecycle, DecisionLifecycleStage.FINALIZATION
+    )
     return transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
 
 

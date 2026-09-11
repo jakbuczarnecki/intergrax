@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | W3-C2 decision event append + snapshot CAS **implemented** (process-local SQLite) |
+| **Status** | W3-C2 decision event append + snapshot CAS **implemented**; W3-C3 **`DECISION_DURABLE` recovery start admission** wired |
 | **Date** | 2026-09-11 |
 | **Baseline** | `development` |
 
@@ -14,6 +14,7 @@
 | Event idempotency (`event_id`) | `DuplicateDecisionEventError` + idempotent replay |
 | Snapshot revision CAS | `snapshot_revision` on `decision_checkpoints`, `StaleDecisionCheckpointWriteError` |
 | Multi-writer conflict tests | `tests/unit/runtime/execution/test_decision_event_append_and_snapshot_cas.py` (20 writers) |
+| `DECISION_DURABLE` recovery admission | `RecoveryKind.DECISION_DURABLE`, `decision_durable_recovery_handoff`, `test_local_recovery_admission.py`, `test_decision_durable_recovery_admission.py` |
 
 ## Explicit non-goals (unchanged)
 

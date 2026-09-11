@@ -46,6 +46,7 @@ class RecoveryKind(StrEnum):
 
     TASK_RESUME = "TASK_RESUME"
     PARTIAL_TOPOLOGY = "PARTIAL_TOPOLOGY"
+    DECISION_DURABLE = "DECISION_DURABLE"
 
 
 class RecoveryAdmissionOverloadMode(StrEnum):
