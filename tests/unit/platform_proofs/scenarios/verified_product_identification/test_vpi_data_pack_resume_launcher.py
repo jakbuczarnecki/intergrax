@@ -16,6 +16,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.operator.
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume import (
     VpiDataPackResumePreflightError,
+    _read_process_pids,
     assert_cuda_preflight,
     assert_no_active_canonical_writer,
     assert_path_preflight,
@@ -103,12 +104,61 @@ def test_cuda_python_missing_fails(tmp_path: Path) -> None:
         assert_cuda_preflight(missing)
 
 
+_PROCESS_SAMPLE = '{\n  "python_pid": 123,\n  "powershell_pid": 456\n}\n'
+
+
+def test_read_process_pids_utf8_without_bom(tmp_path: Path) -> None:
+    process_json = tmp_path / "process.json"
+    process_json.write_text(_PROCESS_SAMPLE, encoding="utf-8")
+    assert _read_process_pids(process_json) == (123, 456)
+
+
+def test_read_process_pids_utf8_with_bom(tmp_path: Path) -> None:
+    process_json = tmp_path / "process.json"
+    process_json.write_text(_PROCESS_SAMPLE, encoding="utf-8-sig")
+    assert _read_process_pids(process_json) == (123, 456)
+
+
+def test_read_process_pids_invalid_json_raises_preflight(tmp_path: Path) -> None:
+    process_json = tmp_path / "process.json"
+    process_json.write_text("{not json", encoding="utf-8")
+    with pytest.raises(VpiDataPackResumePreflightError, match="invalid process evidence"):
+        _read_process_pids(process_json)
+
+
+def test_read_process_pids_missing_file_returns_none_pair(tmp_path: Path) -> None:
+    assert _read_process_pids(tmp_path / "process.json") == (None, None)
+
+
+def test_read_process_pids_null_or_missing_pids(tmp_path: Path) -> None:
+    process_json = tmp_path / "process.json"
+    process_json.write_text("{}", encoding="utf-8")
+    assert _read_process_pids(process_json) == (None, None)
+    process_json.write_text('{"python_pid": null, "powershell_pid": null}', encoding="utf-8")
+    assert _read_process_pids(process_json) == (None, None)
+    process_json.write_text('{"python_pid": "123"}', encoding="utf-8")
+    assert _read_process_pids(process_json) == (None, None)
+
+
 def test_active_writer_guard_fails_when_pid_alive(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
     process_json = tmp_path / "process.json"
     process_json.write_text('{"python_pid": 99999}', encoding="utf-8")
     monkeypatch.setattr(
         "platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume._windows_pid_alive",
         lambda pid: pid == 99999,
+    )
+    with pytest.raises(VpiDataPackResumePreflightError, match="ALREADY RUNNING"):
+        assert_no_active_canonical_writer(process_json)
+
+
+def test_active_writer_guard_with_bom_process_json(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    process_json = tmp_path / "process.json"
+    process_json.write_text('{"python_pid": 4242}', encoding="utf-8-sig")
+    monkeypatch.setattr(
+        "platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume._windows_pid_alive",
+        lambda pid: pid == 4242,
     )
     with pytest.raises(VpiDataPackResumePreflightError, match="ALREADY RUNNING"):
         assert_no_active_canonical_writer(process_json)

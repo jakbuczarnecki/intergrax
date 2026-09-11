@@ -49,7 +49,16 @@ def _windows_pid_alive(pid: int) -> bool:
 def _read_process_pids(process_json: Path) -> tuple[int | None, int | None]:
     if not process_json.is_file():
         return None, None
-    payload = json.loads(process_json.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(process_json.read_text(encoding="utf-8-sig"))
+    except OSError as exc:
+        raise VpiDataPackResumePreflightError(
+            f"invalid process evidence: {process_json}"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise VpiDataPackResumePreflightError(
+            f"invalid process evidence: {process_json}"
+        ) from exc
     python_pid = payload.get("python_pid")
     powershell_pid = payload.get("powershell_pid")
     py = int(python_pid) if isinstance(python_pid, int) else None
