@@ -28,6 +28,9 @@ _ACP_SESSION_HOST_WIRING = (
 _HARNESS_HOST_RUNTIME = (
     _REPO_ROOT / "intergrax" / "applications" / "_shared" / "harness_host_runtime.py"
 )
+_U5_ACP_TENANT_PROOF = (
+    _REPO_ROOT / "tests" / "unit" / "applications" / "test_acp_session_host_wiring.py"
+)
 _CATALOG_INVOKER = (
     _REPO_ROOT / "intergrax" / "agents" / "persistence" / "catalog_declarative_invoker.py"
 )
@@ -116,3 +119,11 @@ def test_u5_acp_session_host_preserves_harness_tenant_identity() -> None:
     harness_source = _HARNESS_HOST_RUNTIME.read_text(encoding="utf-8")
     assert "tenant_id: str" in harness_source
     assert "tenant_id=resolved_tenant_id" in harness_source
+
+
+def test_u5_acp_tenant_proof_has_no_private_member_access_or_slf001() -> None:
+    source = _U5_ACP_TENANT_PROOF.read_text(encoding="utf-8")
+    assert "SLF001" not in source
+    assert "_agent_runtime_governance" not in source
+    assert "_capability_resolver" not in source
+    assert "test_build_acp_session_host_from_harness_strict_tenant_governance" in source
