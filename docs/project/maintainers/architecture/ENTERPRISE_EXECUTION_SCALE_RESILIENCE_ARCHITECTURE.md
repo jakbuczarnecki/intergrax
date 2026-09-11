@@ -64,8 +64,29 @@ Each child: new `ExecutionId`, ledger grant, boundary invoke. No global counter 
 | Recovery start admission (W3-C) | Optional `RecoveryAdmissionPort` on TASK_RESUME / partial topology / **DECISION_DURABLE** entry; start-only permit; orthogonal to W1 | `recovery_admission.py` + `local_recovery_admission.py` + `decision_durable_recovery_handoff` |
 | Tool invoker | Bounded default workers; implicit pending-work queue (no admission shed); blocking wait on shared pool | `invoker.py` `_execution_pool` |
 | Event bus | `create_task` on publish | `event_bus.py` |
+| Observability event delivery (W5-A/B) | `BoundedEventSink` + priority overflow; bus optional `event_sink` | `event_delivery/` + `event_bus.py` |
 
 Enterprise gap: overload without configured caps tends toward **unbounded task creation** and implicit OS/thread-pool queues rather than reject/shed at execution admission.
+
+## W5-B — Event delivery ownership model
+
+**Frozen pipeline (no central ObservabilityManager):**
+
+```text
+Producer → RuntimeEventBus → EventSinkPort → BoundedEventSink → Consumer
+```
+
+| Problem | Owner |
+|---------|--------|
+| Event creation | Producer |
+| Routing / subscriber dispatch | `RuntimeEventBus` |
+| Buffering / backpressure / drain worker | `BoundedEventSink` (or other `EventSinkPort`) |
+| Durable execution evidence | `RuntimeEventPersistence` + checkpoint/lineage/decision stores (unchanged) |
+| Persistence of exported telemetry | Downstream consumer |
+
+**Backpressure ownership:** producers never block on slow exporters beyond explicit `IMPORTANT` bounded wait inside the sink; `CRITICAL` events fail closed (`CriticalEventDeliveryError`) when the buffer cannot accept them; `BEST_EFFORT` may return `DROPPED`. Delivery counters (`InternalDeliveryMetrics`) are updated in-process and are **not** re-emitted on `RuntimeEventBus` (no metric→sink→metric loop).
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B_EVENT_BUS_INTEGRATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B_EVENT_BUS_INTEGRATION_INVENTORY.md).
 
 ## Failure domains (architectural)
 

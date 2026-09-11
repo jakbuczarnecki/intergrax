@@ -8,12 +8,26 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+import time
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Awaitable, Callable, DefaultDict, List, Optional, Set, Union
 from uuid import uuid4
 
+from intergrax.contracts.event_delivery import (
+    CriticalEventDeliveryError,
+    EventDeliveryDisposition,
+    EventPriority,
+    EventSinkPort,
+)
 from intergrax.runtime.events.event_taxonomy import EventCategory
+from intergrax.runtime.observability.event_delivery.delivery_metrics import (
+    InternalDeliveryMetrics,
+)
+from intergrax.runtime.observability.event_delivery.runtime_event_delivery import (
+    delivery_priority_for_runtime_event,
+    runtime_event_to_deliverable,
+)
 from intergrax.runtime.events.evidence_durability import (
     EvidencePersistenceRequirement,
     evidence_persistence_requirement,
@@ -89,6 +103,7 @@ class RuntimeEventBus:
         *,
         persistence: Optional[RuntimeEventPersistence] = None,
         record_history: bool = True,
+        event_sink: EventSinkPort | None = None,
     ) -> None:
         self._handlers: DefaultDict[RuntimeEventType, List[tuple[str, int, EventHandler]]] = (
             defaultdict(list)
@@ -98,6 +113,10 @@ class RuntimeEventBus:
         self._history: List[RuntimeEvent] = []
         self._record_history: bool = record_history
         self._persistence: Optional[RuntimeEventPersistence] = persistence
+        self._event_sink: EventSinkPort | None = event_sink
+        self._delivery_metrics: InternalDeliveryMetrics | None = (
+            InternalDeliveryMetrics() if event_sink is not None else None
+        )
 
     def attach_persistence(self, persistence: RuntimeEventPersistence) -> None:
         """Wire or replace the persistence adapter after construction."""
@@ -106,6 +125,15 @@ class RuntimeEventBus:
     @property
     def persistence(self) -> Optional[RuntimeEventPersistence]:
         return self._persistence
+
+    @property
+    def delivery_metrics(self) -> InternalDeliveryMetrics | None:
+        return self._delivery_metrics
+
+    def close(self) -> None:
+        """Drain and stop an optional observability ``EventSinkPort`` (W5-B)."""
+        if self._event_sink is not None:
+            self._event_sink.close()
 
     def subscribe(
         self,
@@ -160,6 +188,7 @@ class RuntimeEventBus:
     async def publish(self, event: RuntimeEvent) -> None:
         """Persist then notify subscribers once (async handlers are awaited)."""
         self._commit_durable_evidence(event)
+        self._deliver_through_event_sink(event)
         await self._dispatch_handlers_async(event)
 
     @property
@@ -172,7 +201,30 @@ class RuntimeEventBus:
     def record(self, event: RuntimeEvent, *, tenant_id: Optional[str] = None) -> None:
         """Synchronous append for callers that cannot await (e.g. TaskLifecycle)."""
         self._commit_durable_evidence(event, tenant_id=tenant_id)
+        self._deliver_through_event_sink(event)
         self._dispatch_handlers_sync(event)
+
+    def _deliver_through_event_sink(self, event: RuntimeEvent) -> None:
+        sink = self._event_sink
+        if sink is None:
+            return
+        priority = delivery_priority_for_runtime_event(event)
+        deliverable = runtime_event_to_deliverable(event)
+        started = time.monotonic()
+        result = sink.publish(deliverable, priority=priority)
+        latency = time.monotonic() - started
+        metrics = self._delivery_metrics
+        if metrics is not None:
+            metrics.record(result, latency_seconds=latency)
+        if priority is EventPriority.CRITICAL:
+            if result.disposition is EventDeliveryDisposition.DROPPED:
+                raise CriticalEventDeliveryError(
+                    f"critical runtime event {deliverable.event_id} was dropped at sink",
+                )
+            if result.disposition is EventDeliveryDisposition.REJECTED:
+                raise CriticalEventDeliveryError(
+                    f"critical runtime event {deliverable.event_id} was rejected at sink",
+                )
 
     def _commit_durable_evidence(
         self,
