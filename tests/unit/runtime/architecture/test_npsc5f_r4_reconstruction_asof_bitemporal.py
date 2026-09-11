@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import ast
-import subprocess
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -382,6 +381,28 @@ def test_r4_cross_tenant_scope_blocked() -> None:
         )
 
 
+def test_r4_reconstruct_does_not_mutate_evidence_or_knowledge() -> None:
+    authority = _InMemoryRevisionOrderingAuthority()
+    revisions: dict[KnowledgeRevisionId, _Revision] = {}
+    watermark = _accept_knowledge(authority, 1, revisions=revisions)
+    store = InMemoryRuntimeEventStore()
+    run_id = mint_run_id()
+    _append_events(store, run_id=run_id, count=2)
+    events_before = len(store._accepted_by_event_id)
+    bindings_before = len(authority._bindings)
+    service = _service(store, authority)
+    request = _request(run_id=run_id, position=2, watermark=watermark)
+    service.reconstruct(
+        request,
+        revision_reader=_RevisionReader(revisions),
+        revision_bitemporal_basis=lambda revision: revision.basis,
+        reducer=_reduce_payloads,
+        initial_state=(),
+    )
+    assert len(store._accepted_by_event_id) == events_before
+    assert len(authority._bindings) == bindings_before
+
+
 def test_r4_determinism_and_clock_independence() -> None:
     authority = _InMemoryRevisionOrderingAuthority()
     revisions: dict[KnowledgeRevisionId, _Revision] = {}
@@ -461,60 +482,3 @@ def test_r4_provider_parity_execution_prefix(tmp_path: Path) -> None:
     assert prefixes[0] == prefixes[1] == prefixes[2] == (1, 2)
 
 
-def _run_pytest(targets: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["uv", "run", "pytest", *targets, "-q", "--tb=no"],
-        cwd=_REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-
-_MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
-    (
-        "R4 gate",
-        ["tests/unit/runtime/architecture/test_npsc5f_r4_reconstruction_asof_bitemporal.py"],
-    ),
-    (
-        "R3 Final",
-        ["tests/unit/runtime/architecture/test_npsc5f_r3_final_governed_evidence_export.py"],
-    ),
-    (
-        "R2 Final",
-        ["tests/unit/runtime/architecture/test_npsc5f_r2_final_journal_completeness_ordering.py"],
-    ),
-    (
-        "R1 Final",
-        ["tests/unit/runtime/architecture/test_npsc5f_r1_final_durable_evidence_commit_tenant_integrity.py"],
-    ),
-    (
-        "TRACE-ASOF",
-        [
-            "tests/unit/runtime/events/test_execution_position_asof.py",
-            "tests/unit/runtime/events/test_asof_projection.py",
-        ],
-    ),
-    (
-        "TRACE-BITEMP",
-        [
-            "tests/unit/contracts/test_bitemporal_revision_ordering.py",
-            "tests/unit/contracts/test_bitemporal_knowledge.py",
-            "tests/unit/runtime/observability/test_knowledge_reconstruction.py",
-        ],
-    ),
-    (
-        "Execution reconstruction",
-        ["tests/unit/runtime/diagnostics/test_execution_reconstruction.py"],
-    ),
-)
-
-
-@pytest.mark.gate
-def test_r4_mandatory_regression_matrix() -> None:
-    failures: list[str] = []
-    for label, targets in _MANDATORY_SUITES:
-        completed = _run_pytest(targets)
-        if completed.returncode != 0:
-            failures.append(f"{label}: {completed.stdout}\n{completed.stderr}")
-    assert not failures, "\n".join(failures)

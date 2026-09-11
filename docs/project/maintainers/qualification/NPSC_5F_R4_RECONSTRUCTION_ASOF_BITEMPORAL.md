@@ -1,6 +1,6 @@
 # NPSC-5F/R4 — Reconstruction / As-of / Bitemporal (Implementation)
 
-> **Status:** NPSC-5F/R4 **PASS / IMPLEMENTATION COMPLETE** (not FROZEN until R4 Final)
+> **Status:** NPSC-5F/R4 **FROZEN** — see [`NPSC_5F_R4_FINAL_HISTORICAL_RECONSTRUCTION_ASOF_BITEMPORAL_QUALIFICATION_AND_FREEZE.md`](NPSC_5F_R4_FINAL_HISTORICAL_RECONSTRUCTION_ASOF_BITEMPORAL_QUALIFICATION_AND_FREEZE.md)
 
 ## Purpose
 
@@ -49,7 +49,7 @@ Tenant-scoped `KnowledgeRevisionWatermark` — contiguous finalized prefix only.
 
 ## Regression matrix
 
-R4 gate runs R1/R2/R3 Final, TRACE-ASOF, TRACE-BITEMP, and execution reconstruction suites (see test module `_MANDATORY_SUITES`).
+Full matrix: `test_npsc5f_r4_final_historical_reconstruction_qualification_and_freeze.py` + `testing_support/npsc5f_r4_regression_matrix.py` (single `uv run pytest`).
 
 ## Scale follow-up
 
@@ -57,4 +57,4 @@ Document-backed full-platform scans beyond existing bounded journal APIs → **S
 
 ## Final verdict
 
-Implementation complete pending R4 Final qualification freeze.
+R4 Final qualification freeze — PASS (read-only historical reconstruction certified).
