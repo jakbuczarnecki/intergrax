@@ -5,7 +5,8 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Coroutine
+from collections.abc import Coroutine, Mapping
+from typing import cast
 
 import pytest
 
@@ -420,20 +421,30 @@ async def test_parallel_acquire_different_dependencies_not_globally_serialized()
 
 
 def test_constructor_rejects_non_mapping() -> None:
+    invalid_policies = cast(
+        Mapping[DependencyConcurrencyIdentity, DependencyConcurrencyPolicy],
+        [],
+    )
     with pytest.raises(TypeError, match="Mapping"):
-        LocalDependencyConcurrencyAdmission([])  # type: ignore[arg-type]
+        LocalDependencyConcurrencyAdmission(invalid_policies)
 
 
 def test_constructor_rejects_invalid_key_type() -> None:
+    invalid_policies = cast(
+        Mapping[DependencyConcurrencyIdentity, DependencyConcurrencyPolicy],
+        {"jira": _reject_policy(1)},
+    )
     with pytest.raises(TypeError, match="DependencyConcurrencyIdentity"):
-        LocalDependencyConcurrencyAdmission(
-            {"jira": _reject_policy(1)},  # type: ignore[dict-item]
-        )
+        LocalDependencyConcurrencyAdmission(invalid_policies)
 
 
 def test_constructor_rejects_invalid_policy_type() -> None:
+    invalid_policies = cast(
+        Mapping[DependencyConcurrencyIdentity, DependencyConcurrencyPolicy],
+        {_JIRA: {"max": 1}},
+    )
     with pytest.raises(TypeError, match="DependencyConcurrencyPolicy"):
-        LocalDependencyConcurrencyAdmission({_JIRA: {"max": 1}})  # type: ignore[dict-item]
+        LocalDependencyConcurrencyAdmission(invalid_policies)
 
 
 @pytest.mark.asyncio
@@ -444,8 +455,9 @@ async def test_acquire_rejects_duck_typed_request() -> None:
         dependency = _JIRA
         tenant_id = None
 
+    fake_request = cast(DependencyConcurrencyAdmissionRequest, _FakeRequest())
     with pytest.raises(TypeError, match="DependencyConcurrencyAdmissionRequest"):
-        await admission.acquire(_FakeRequest())  # type: ignore[arg-type]
+        await admission.acquire(fake_request)
 
 
 @pytest.mark.asyncio
