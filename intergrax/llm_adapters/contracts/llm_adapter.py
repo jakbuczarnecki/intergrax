@@ -255,19 +255,52 @@ class LLMAdapter(ABC):
         from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
         from intergrax.llm_adapters._shared.provider_stream_admission import (
             stream_factory_with_admission,
+            stream_with_external_operation_lifecycle,
+        )
+        from intergrax.runtime.external_operations.llm_external_operation_attempt import (
+            LlmExternalOperationAttempt,
+            llm_external_operation_identity,
         )
 
         check_llm_tenant_quota(get_llm_tenant_id())
 
         def physical_attempt() -> Iterable[T]:
+            ext_op = LlmExternalOperationAttempt(
+                store=self._external_operation_store,
+                owner=self._external_operation_owner,
+                identity=(
+                    llm_external_operation_identity(
+                        provider_slug=self._provider_slug(),
+                        model=str(self.model or ""),
+                        call_scope="stream",
+                    )
+                    if self._external_operation_store is not None
+                    else None
+                ),
+                cancellation_port=self._external_operation_cancellation_port,
+                status_port=self._external_operation_status_port,
+                termination_port=self._external_operation_termination_port,
+                capabilities=self._external_operation_capabilities,
+            )
+            ext_op.before_physical_call()
             boundary = self._provider_dependency_boundary
             if boundary is None:
-                return factory()
+                ext_op.mark_running()
+                return stream_with_external_operation_lifecycle(
+                    ext_op=ext_op,
+                    factory=factory,
+                    stream_registry=self._external_operation_stream_registry,
+                )
             handle = boundary.acquire(self._provider_dependency_admission_request())
-            return stream_factory_with_admission(
-                boundary=boundary,
-                handle=handle,
-                factory=factory,
+            ext_op.mark_running()
+            return stream_with_external_operation_lifecycle(
+                ext_op=ext_op,
+                factory=lambda: stream_factory_with_admission(
+                    boundary=boundary,
+                    handle=handle,
+                    factory=factory,
+                ),
+                stream_registry=self._external_operation_stream_registry,
             )
 
         return execute_with_resilience(

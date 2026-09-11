@@ -140,6 +140,9 @@ class RuntimeToolInvoker:
         external_operation_owner: ProcessLocalExternalOperationOwner | None = None,
         external_operation_cancellation_port: ExternalOperationCancellationPort | None = None,
     ) -> None:
+        from intergrax.runtime.nexus.tools.tool_operation_termination import (
+            ToolExecutorTerminationPort,
+        )
         self._registry = registry
         self._executor = executor
         self._scope_policy = scope_policy
@@ -152,6 +155,9 @@ class RuntimeToolInvoker:
             external_operation_owner = ProcessLocalExternalOperationOwner.mint()
         self._external_operation_owner = external_operation_owner
         self._external_operation_cancellation_port = external_operation_cancellation_port
+        self._tool_termination_port = (
+            ToolExecutorTerminationPort() if external_operation_store is not None else None
+        )
         # Shared pool for timeout-isolated tool execution; default worker count
         # preserves concurrent independent invocations (not max_workers=1).
         self._execution_pool = ThreadPoolExecutor()
@@ -939,11 +945,17 @@ class RuntimeToolInvoker:
             step_id=str(request.step_id),
             physical_attempt_sequence=physical_attempt_sequence,
         )
+        from intergrax.runtime.nexus.tools.tool_operation_termination import (
+            TOOL_EXTERNAL_OPERATION_CAPABILITIES,
+        )
+
         return ToolExternalOperationAttempt(
             store=store,
             owner=self._external_operation_owner,
             identity=identity,
             cancellation_port=self._external_operation_cancellation_port,
+            termination_port=self._tool_termination_port,
+            capabilities=TOOL_EXTERNAL_OPERATION_CAPABILITIES,
         )
 
     def _execute_once(
@@ -967,6 +979,8 @@ class RuntimeToolInvoker:
         if dep_boundary is None:
             ext_op.mark_running()
             future = self._execution_pool.submit(self._executor.execute, request)
+            if self._tool_termination_port is not None and ext_op.operation_id is not None:
+                self._tool_termination_port.bind_future(ext_op.operation_id, future)
             if effect_boundary is not None:
                 effect_boundary.may_have_started = True
             try:
@@ -977,12 +991,15 @@ class RuntimeToolInvoker:
             except BaseException:
                 if self._cooperative_cancellation_requested(state):
                     ext_op.request_cancel()
-                    ext_op.mark_cancelled()
+                    ext_op.complete_cancellation_after_termination()
                 else:
                     ext_op.mark_failed()
                 raise
             else:
                 ext_op.mark_succeeded()
+            finally:
+                if self._tool_termination_port is not None and ext_op.operation_id is not None:
+                    self._tool_termination_port.unbind_future(ext_op.operation_id)
 
         admission_request = DependencyConcurrencyAdmissionRequest(
             dependency=DependencyConcurrencyIdentity(
@@ -995,6 +1012,8 @@ class RuntimeToolInvoker:
         try:
             ext_op.mark_running()
             future = self._execution_pool.submit(self._executor.execute, request)
+            if self._tool_termination_port is not None and ext_op.operation_id is not None:
+                self._tool_termination_port.bind_future(ext_op.operation_id, future)
         except BaseException:
             ext_op.mark_failed()
             dep_boundary.release_after_submit_failure(attempt_handle)
@@ -1022,7 +1041,7 @@ class RuntimeToolInvoker:
         except BaseException:
             if self._cooperative_cancellation_requested(state):
                 ext_op.request_cancel()
-                ext_op.mark_cancelled()
+                ext_op.complete_cancellation_after_termination()
             else:
                 ext_op.mark_failed()
             dep_boundary.complete_attached(attempt_handle)
@@ -1031,6 +1050,9 @@ class RuntimeToolInvoker:
             ext_op.mark_succeeded()
             dep_boundary.complete_attached(attempt_handle)
             return result
+        finally:
+            if self._tool_termination_port is not None and ext_op.operation_id is not None:
+                self._tool_termination_port.unbind_future(ext_op.operation_id)
 
     @staticmethod
     def _map_error(contract: ToolContract, exc: Exception) -> RuntimeErrorCode:

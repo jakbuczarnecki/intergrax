@@ -182,6 +182,25 @@ No provider-specific branching in W4-C core — adapters bind ports at the seam.
 
 Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_C_DISTRIBUTED_CANCELLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_C_DISTRIBUTED_CANCELLATION_INVENTORY.md).
 
+### Provider native cancellation model (W4-D)
+
+**Status:** `ExternalOperationTerminationPort` + per-provider seams; W4-C lifecycle frozen.
+
+| Topic | Rule |
+|-------|------|
+| **Capability discovery** | `ExternalOperationCapabilities` via `external_operation_capabilities_for_provider(slug)` — no runtime `if provider == ...` in CAS core. |
+| **Native termination** | `ExternalOperationTerminationPort.terminate(identity)` — transport close / SDK abort only; no retry, permits, or CAS inside adapters. |
+| **External operation lifecycle** | Intent CAS (`CANCELLATION_REQUESTED`) → optional `ExternalOperationCancellationPort` → termination port → **observe** → `mark_observed_cancellation_terminal` CAS. Never set `CANCELLED` directly from `cancel()`. |
+| **Stream termination** | Adapter-instance `ProviderStreamTransportRegistry`; `stream_with_external_operation_lifecycle` registers `close` for `operation_id`, abort on terminate, permit released in admission `finally`. |
+| **Permit ownership** | Unchanged W4-C: release only after physical terminal record — not on cancel request alone. |
+| **Unsupported cancellation** | No native/stream seam → physical `UNKNOWN` after cancel intent (tools: `ToolExecutorTerminationPort`, `supports_native_cancel=False`). |
+| **Recovery interaction** | `UNKNOWN` / `CANCELLED` remain fail-closed for retry via `assert_may_begin_physical_attempt`; reconcile before resume. |
+| **Timeout vs cancellation** | Timeout paths use `FAILED` / `UNKNOWN` (`timeout_physical_state`); never `CANCELLED`. |
+
+Qualification: `tests/unit/runtime/architecture/test_enterprise_scale_resilience_w4_d_provider_cancellation.py`.
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_D_PROVIDER_CANCELLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_D_PROVIDER_CANCELLATION_INVENTORY.md).
+
 ## Partial recovery (R3)
 
 Same-slot recovery is idempotent via checkpoint revision and slot disposition contracts. Different slots may recover in parallel subject to the same orchestration concurrency rules as initial fan-out. Recovery storm: many tenants resuming after outage can stress checkpoint store and Nexus concurrently — bounded by scheduler claim `limit`, not by global execution throttle.

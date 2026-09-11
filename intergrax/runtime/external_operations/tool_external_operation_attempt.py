@@ -103,6 +103,12 @@ class ToolExternalOperationAttempt:
     def enabled(self) -> bool:
         return self._store is not None and self._identity is not None and self._owner is not None
 
+    @property
+    def operation_id(self) -> str | None:
+        if self._identity is None:
+            return None
+        return self._identity.operation_id
+
     def _binding(
         self,
     ) -> tuple[
@@ -165,11 +171,12 @@ class ToolExternalOperationAttempt:
         if binding is None:
             return
         store, identity, _owner = binding
-        request_operation_cancellation(
+        updated = request_operation_cancellation(
             store,
             operation_id=identity.operation_id,
             cancellation_port=self._cancellation_port,
         )
+        self._revision = updated.revision
 
     def complete_cancellation_after_termination(
         self,

@@ -6,7 +6,10 @@
 from __future__ import annotations
 
 from intergrax.contracts.external_operation_identity import ExternalOperationIdentity
-from intergrax.contracts.external_operation_termination import TerminationResult
+from intergrax.contracts.external_operation_termination import (
+    TerminationOutcome,
+    TerminationResult,
+)
 from intergrax.llm_adapters._shared.provider_native_termination import (
     StreamRegistryTerminationPort,
 )
@@ -23,7 +26,7 @@ class OpenAINativeTermination(StreamRegistryTerminationPort):
 
     async def terminate(self, identity: ExternalOperationIdentity) -> TerminationResult:
         result = await StreamRegistryTerminationPort.terminate(self, identity)
-        if result.outcome.value == "transport_closed":
+        if result.outcome is TerminationOutcome.TRANSPORT_CLOSED:
             return TerminationResult.physical_stop_confirmed()
         return result
 

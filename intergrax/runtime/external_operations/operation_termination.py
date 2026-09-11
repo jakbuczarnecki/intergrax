@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationIntentState,
@@ -42,14 +43,16 @@ def cancellation_physical_state_from_termination(
     return ExternalOperationPhysicalState.UNKNOWN
 
 
-def _run_awaitable_sync(awaitable: Awaitable[TerminationResult]) -> TerminationResult:
+def _run_awaitable_sync(
+    coro: Coroutine[Any, Any, TerminationResult],
+) -> TerminationResult:
     try:
         asyncio.get_running_loop()
     except RuntimeError:
-        return asyncio.run(awaitable)
+        return asyncio.run(coro)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        return executor.submit(asyncio.run, awaitable).result()
+        return executor.submit(asyncio.run, coro).result()
 
 
 async def dispatch_provider_termination(
@@ -78,13 +81,12 @@ def dispatch_provider_termination_sync(
     termination_port: ExternalOperationTerminationPort | None,
     capabilities: ExternalOperationCapabilities,
 ) -> TerminationResult:
-    return _run_awaitable_sync(
-        dispatch_provider_termination(
-            identity,
-            termination_port=termination_port,
-            capabilities=capabilities,
-        ),
+    coro = dispatch_provider_termination(
+        identity,
+        termination_port=termination_port,
+        capabilities=capabilities,
     )
+    return _run_awaitable_sync(coro)
 
 
 def mark_observed_cancellation_terminal(
@@ -119,7 +121,6 @@ def request_cancel_dispatch_terminate_and_observe(
     store: ExternalOperationStateStore,
     identity: ExternalOperationIdentity,
     *,
-    expected_revision: int,
     cancellation_port: object | None,
     termination_port: ExternalOperationTerminationPort | None,
     capabilities: ExternalOperationCapabilities,
@@ -141,7 +142,6 @@ def request_cancel_dispatch_terminate_and_observe(
         operation_id=identity.operation_id,
         cancellation_port=port,
     )
-    revision = intent_record.revision if expected_revision < 0 else expected_revision
     termination = dispatch_provider_termination_sync(
         identity,
         termination_port=termination_port,
@@ -150,7 +150,7 @@ def request_cancel_dispatch_terminate_and_observe(
     return mark_observed_cancellation_terminal(
         store,
         operation_id=identity.operation_id,
-        expected_revision=revision,
+        expected_revision=intent_record.revision,
         termination_result=termination,
     )
 

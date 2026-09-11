@@ -107,6 +107,12 @@ class LlmExternalOperationAttempt:
             and self._owner is not None
         )
 
+    @property
+    def operation_id(self) -> str | None:
+        if self._identity is None:
+            return None
+        return self._identity.operation_id
+
     def _binding(
         self,
     ) -> tuple[
@@ -144,11 +150,12 @@ class LlmExternalOperationAttempt:
         if binding is None:
             return
         store, identity, _owner = binding
-        request_operation_cancellation(
+        updated = request_operation_cancellation(
             store,
             operation_id=identity.operation_id,
             cancellation_port=self._cancellation_port,
         )
+        self._revision = updated.revision
 
     def _terminal(
         self,
