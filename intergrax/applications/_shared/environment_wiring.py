@@ -119,6 +119,11 @@ from intergrax.core.plugins.platform_qualification import (
     PlatformPluginPackageQualificationBundle,
 )
 from intergrax.integrations.contracts.base import HealthStatus
+from intergrax.applications._shared.runtime_event_delivery_wiring import (
+    ApplicationRuntimeEventDeliveryWiring,
+    compose_runtime_event_bus,
+    resolve_application_runtime_event_delivery_wiring,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
@@ -142,6 +147,9 @@ class ApplicationEnvironmentWiring:
     prompt_registry: YamlPromptRegistry | None = None
     registry_snapshot: HarnessRegistrySnapshot | None = None
     capability_graph: EnvironmentCapabilityGraphView | None = None
+    event_delivery: ApplicationRuntimeEventDeliveryWiring = (
+        ApplicationRuntimeEventDeliveryWiring.disabled()
+    )
 
 
 def _security_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, ...]:
@@ -434,6 +442,16 @@ def wire_application_environment(
 
     skill_pinning_store = InMemorySkillExecutionPinningStore()
 
+    event_delivery = resolve_application_runtime_event_delivery_wiring(env)
+    if runtime_event_bus is None:
+        if event_delivery.bounded_sink is not None:
+            resolved_runtime_event_bus = compose_runtime_event_bus(event_delivery)
+        else:
+            resolved_runtime_event_bus = RuntimeEventBus()
+    else:
+        resolved_runtime_event_bus = runtime_event_bus
+        event_delivery = ApplicationRuntimeEventDeliveryWiring.disabled()
+
     build_context = ApplicationBuildContext.for_manifest(
         manifest,
         settings=settings,
@@ -445,7 +463,7 @@ def wire_application_environment(
         skill_pinning_store=skill_pinning_store,
         tool_registry=tool_registry,
         policy_bundle=policy_bundle,
-        runtime_event_bus=runtime_event_bus or RuntimeEventBus(),
+        runtime_event_bus=resolved_runtime_event_bus,
         strict_harness=strict_harness,
         trace_db_path=trace_db_path,
         environment=env,
@@ -507,4 +525,5 @@ def wire_application_environment(
         registry_snapshot=registry_snapshot,
         capability_graph=capability_graph,
         platform_plugin_evidence=platform_plugin_evidence,
+        event_delivery=event_delivery,
     )

@@ -255,6 +255,12 @@ class ObservabilityProfile(BaseModel):
     diagnostics_pane_enabled: bool = False
     health_dashboard_enabled: bool = False
     unified_observability_dashboard_enabled: bool = False
+    bounded_event_delivery_enabled: bool = False
+    bounded_event_delivery_max_capacity: int = Field(default=4096, ge=1)
+    bounded_event_delivery_important_wait_timeout_seconds: float = Field(
+        default=0.05,
+        ge=0.0,
+    )
     event_subscriptions: list[EventSubscriptionSpec] = Field(default_factory=list)
 
     @field_validator("event_subscriptions")

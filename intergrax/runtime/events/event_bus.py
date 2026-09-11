@@ -117,6 +117,7 @@ class RuntimeEventBus:
         self._delivery_metrics: InternalDeliveryMetrics | None = (
             InternalDeliveryMetrics() if event_sink is not None else None
         )
+        self._closed = False
 
     def attach_persistence(self, persistence: RuntimeEventPersistence) -> None:
         """Wire or replace the persistence adapter after construction."""
@@ -130,8 +131,19 @@ class RuntimeEventBus:
     def delivery_metrics(self) -> InternalDeliveryMetrics | None:
         return self._delivery_metrics
 
+    @property
+    def event_sink(self) -> EventSinkPort | None:
+        return self._event_sink
+
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
     def close(self) -> None:
         """Drain and stop an optional observability ``EventSinkPort`` (W5-B)."""
+        if self._closed:
+            return
+        self._closed = True
         if self._event_sink is not None:
             self._event_sink.close()
 

@@ -54,6 +54,10 @@ class BoundedEventSink:
     def pending_depth(self) -> int:
         return self._queue.qsize()
 
+    @property
+    def closed(self) -> bool:
+        return self._stop.is_set()
+
     def publish(
         self,
         event: DeliverableEvent,
@@ -123,6 +127,7 @@ class BoundedEventSink:
         self._worker.join(timeout=10.0)
         if self._worker.is_alive():
             raise RuntimeError("bounded event drain worker did not terminate")
+        self._downstream.close()
 
     def _important_timeout(self, deadline: float | None) -> float:
         if deadline is not None:

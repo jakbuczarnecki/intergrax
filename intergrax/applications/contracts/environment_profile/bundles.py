@@ -331,6 +331,7 @@ class GovernanceBundle(BaseModel):
                 diagnostics_pane_enabled=True,
                 health_dashboard_enabled=True,
                 unified_observability_dashboard_enabled=True,
+                bounded_event_delivery_enabled=True,
             ),
             platform=GovernanceProfile(
                 quarterly_strategy_review_enabled=True,

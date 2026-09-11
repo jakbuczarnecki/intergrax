@@ -158,6 +158,7 @@ __all__ = [
     "HarnessHostRuntime",
     "RegistryAssemblyMode",
     "build_harness_host_runtime",
+    "close_harness_host_runtime",
 ]
 
 
@@ -196,6 +197,10 @@ class HarnessHostRuntime:
     effective_profile_pinning_store: EffectiveProfileExecutionPinningStore | None = None
     effective_profile_active_store: ActiveEffectiveProfileRevisionStore | None = None
     skill_pinning_store: SkillExecutionPinningStore | None = None
+
+    def close(self) -> None:
+        """Stop event bus delivery and release bounded sink workers (W5-B2)."""
+        close_harness_host_runtime(self)
 
 
 def build_harness_host_runtime(
@@ -452,7 +457,7 @@ def build_harness_host_runtime(
             scope=revision_scope,
         ),
     )
-    return HarnessHostRuntime(
+    host_runtime = HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=effective_environment,
         tenant_id=resolved_tenant_id,
@@ -479,4 +484,21 @@ def build_harness_host_runtime(
         effective_profile_pinning_store=profile_persistence.pinning_store,
         effective_profile_active_store=profile_persistence.active_store,
         skill_pinning_store=env_wiring.build_context.skill_pinning_store,
+    )
+    return host_runtime
+
+
+def close_harness_host_runtime(runtime: HarnessHostRuntime) -> None:
+    """Bounded shutdown for harness host event delivery (W5-B2)."""
+    from intergrax.applications._shared.harness_host_composition import (
+        resolve_harness_host_event_bus,
+    )
+    from intergrax.applications._shared.runtime_event_delivery_wiring import (
+        close_application_runtime_event_delivery,
+    )
+
+    bus = resolve_harness_host_event_bus(runtime)
+    close_application_runtime_event_delivery(
+        runtime.env_wiring.event_delivery,
+        event_bus=bus,
     )

@@ -3,6 +3,9 @@
 
 """W5-A bounded observability event delivery (transport only)."""
 
+from intergrax.runtime.observability.event_delivery.accepting_event_sink import (
+    AcceptingObservabilityEventSink,
+)
 from intergrax.runtime.observability.event_delivery.bounded_event_sink import (
     BoundedEventSink,
 )
@@ -19,6 +22,7 @@ from intergrax.runtime.observability.event_delivery.runtime_event_delivery impor
 )
 
 __all__ = [
+    "AcceptingObservabilityEventSink",
     "BoundedEventSink",
     "DeliveryMetricsSnapshot",
     "InMemoryEventSink",

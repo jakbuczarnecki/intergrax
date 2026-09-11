@@ -88,6 +88,29 @@ Producer → RuntimeEventBus → EventSinkPort → BoundedEventSink → Consumer
 
 Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B_EVENT_BUS_INTEGRATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B_EVENT_BUS_INTEGRATION_INVENTORY.md).
 
+## Runtime Event Delivery Deployment Model (W5-B2)
+
+**Composition root** owns sink lifecycle alongside the bus (routing stays on `RuntimeEventBus`).
+
+```text
+Composition Root
+      |
+      +-- EventDeliveryPolicy (from ObservabilityProfile)
+      +-- AcceptingObservabilityEventSink (terminal downstream)
+      +-- BoundedEventSink
+      +-- RuntimeEventBus(event_sink=bounded)
+      |
+      v
+Consumers / persistence / export (subscribers + durable evidence — unchanged)
+```
+
+| Mode | `bounded_event_delivery_enabled` | Behavior |
+|------|----------------------------------|----------|
+| Legacy / lab | `false` (default) | `RuntimeEventBus()` without `event_sink` |
+| Production SLO / harness production | `true` | Bounded transport active; `HarnessHostRuntime.close()` drains sink |
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B2_COMPOSITION_WIRING_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B2_COMPOSITION_WIRING_INVENTORY.md).
+
 ## Failure domains (architectural)
 
 | Domain | Isolation | Notes |

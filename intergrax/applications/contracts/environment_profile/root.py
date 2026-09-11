@@ -798,6 +798,7 @@ class ApplicationEnvironmentProfile(BaseModel):
                             otel_enabled=True,
                             metrics_plugins_enabled=True,
                             debug_surface_override=False,
+                            bounded_event_delivery_enabled=True,
                         ),
                     },
                 ),
