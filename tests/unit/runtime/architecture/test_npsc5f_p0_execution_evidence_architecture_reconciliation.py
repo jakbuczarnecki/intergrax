@@ -147,15 +147,33 @@ def test_npsc5f_p0_build_unified_run_journal_silent_truncation_gap(tmp_path: Pat
 
 
 @pytest.mark.gate
-def test_npsc5f_p0_journal_export_uses_raw_model_dump_gap() -> None:
-    event = sample_runtime_event(tenant_id="tenant-export")
-    payload = serialize_runtime_event(event)
-    assert "event_id" in payload
-    assert payload.get("tenant_id") == "tenant-export"
+def test_npsc5f_p0_journal_export_uses_safe_export_envelope() -> None:
+    from intergrax.runtime.observability.export_boundary import (
+        FORBIDDEN_EXPORT_CONTENT_FIELDS,
+        envelope_is_content_safe,
+    )
+
+    event = sample_runtime_event(tenant_id="tenant-export").model_copy(
+        update={
+            "payload": {
+                "tool_id": "demo.tool",
+                "latency_ms": 3,
+                "prompt": "SECRET_PROMPT_123",
+                "token": "SECRET_TOKEN_456",
+            }
+        }
+    )
+    envelope = serialize_runtime_event(event)
+    assert envelope.tenant_id == "tenant-export"
+    assert envelope.event_id == event.event_id
+    assert envelope_is_content_safe(envelope)
+    serialized = envelope.model_dump_json()
+    for key in FORBIDDEN_EXPORT_CONTENT_FIELDS:
+        assert f'"{key}"' not in serialized
     source = (_REPO_ROOT / "intergrax" / "runtime" / "observability" / "journal_export.py").read_text(
         encoding="utf-8",
     )
-    assert "model_dump(mode=\"json\")" in source
+    assert "event.model_dump(mode=\"json\")" not in source
 
 
 @pytest.mark.gate

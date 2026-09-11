@@ -146,7 +146,8 @@ def test_journal_export_snapshot_serializes_unified_journal() -> None:
         runtime_store=store,
     )
     assert snapshot.event_count == 1
-    assert snapshot.events[0]["event_type"] == RuntimeEventType.TASK_COMPLETED.value
+    assert snapshot.events[0].event_type == RuntimeEventType.TASK_COMPLETED.value
+    assert snapshot.schema_version == "journal_export.v2"
     assert snapshot.parser_trace_count == 0
 
 
@@ -271,7 +272,8 @@ def test_journal_export_snapshot_requires_actual_runtime_store() -> None:
     store = _RecordingStore()
     snapshot = build_journal_export_snapshot(_persisted_run(run_id=run_id), runtime_store=store)
     assert snapshot.event_count == 0
-    assert snapshot.events == []
+    assert snapshot.events == ()
+    assert snapshot.is_complete is True
     assert snapshot.parser_trace_count == 0
     assert store.list_positioned_for_run_calls
     assert all(call[0] == run_id and call[1] == _TENANT for call in store.list_positioned_for_run_calls)

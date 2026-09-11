@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Unified run journal export — ref payloads and OTLP-style snapshots (OBS-BUS-6)."""
+"""Bounded safe run-journal export — typed envelopes and OTLP-style snapshots (OBS-BUS-6, R3)."""
 
 from __future__ import annotations
 from intergrax.utils import attribute_access
@@ -9,7 +9,7 @@ from intergrax.utils import attribute_access
 import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence
 
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.w3c_trace_context import (
@@ -19,15 +19,16 @@ from intergrax.runtime.events.w3c_trace_context import (
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.events.unified_run_journal import (
     JOURNAL_SCHEMA_VERSION,
-    build_unified_run_journal,
     read_run_journal_page,
 )
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
+if TYPE_CHECKING:
+    from intergrax.runtime.observability.export_boundary import ObservabilityExportEnvelope
 
-JOURNAL_EXPORT_SCHEMA_VERSION = "journal_export.v1"
+JOURNAL_EXPORT_SCHEMA_VERSION = "journal_export.v2"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class JournalRef:
     """Lightweight pointer attached to ``TASK_COMPLETED`` payloads."""
 
@@ -47,9 +48,9 @@ class JournalRef:
         }
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class JournalExportSnapshot:
-    """Full export snapshot for OTLP dual-write and operator tooling."""
+    """Bounded, content-safe export snapshot for OTLP dual-write and operator tooling."""
 
     schema_version: str
     journal_schema_version: str
@@ -57,7 +58,9 @@ class JournalExportSnapshot:
     tenant_id: str
     event_count: int
     parser_trace_count: int
-    events: List[Dict[str, Any]]
+    events: tuple[ObservabilityExportEnvelope, ...]
+    is_complete: bool
+    has_continuation: bool
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -67,7 +70,9 @@ class JournalExportSnapshot:
             "tenant_id": self.tenant_id,
             "event_count": self.event_count,
             "parser_trace_count": self.parser_trace_count,
-            "events": self.events,
+            "is_complete": self.is_complete,
+            "has_continuation": self.has_continuation,
+            "events": [envelope.model_dump(mode="json") for envelope in self.events],
         }
 
 
@@ -115,7 +120,7 @@ def build_journal_export_snapshot(
     runtime_store: RuntimeEventPersistence,
     limit: int = 2000,
 ) -> JournalExportSnapshot:
-    """Serialize the unified journal for export sinks."""
+    """Serialize one bounded journal page as typed safe export envelopes."""
     page = read_run_journal_page(
         runtime_store,
         tenant_id=persisted.metadata.tenant_id,
@@ -123,6 +128,7 @@ def build_journal_export_snapshot(
         page_size=limit,
     )
     journal = list(page.events)
+    envelopes = tuple(serialize_runtime_event(event) for event in journal)
     return JournalExportSnapshot(
         schema_version=JOURNAL_EXPORT_SCHEMA_VERSION,
         journal_schema_version=JOURNAL_SCHEMA_VERSION,
@@ -130,12 +136,23 @@ def build_journal_export_snapshot(
         tenant_id=persisted.metadata.tenant_id,
         event_count=len(journal),
         parser_trace_count=count_parser_traces_in_trace_events(persisted.events),
-        events=[serialize_runtime_event(event) for event in journal],
+        events=envelopes,
+        is_complete=page.is_complete,
+        has_continuation=page.next_cursor is not None,
     )
 
 
-def serialize_runtime_event(event: RuntimeEvent) -> Dict[str, Any]:
-    return event.model_dump(mode="json")
+def serialize_runtime_event(event: RuntimeEvent) -> ObservabilityExportEnvelope:
+    """Project a runtime event into the canonical observability export envelope."""
+    from intergrax.runtime.observability.export_boundary import (
+        envelope_from_runtime_event,
+        envelope_is_content_safe,
+    )
+
+    envelope = envelope_from_runtime_event(event)
+    if not envelope_is_content_safe(envelope):
+        raise ValueError("runtime event export envelope failed content-safety validation")
+    return envelope
 
 
 def count_parser_traces_in_trace_events(events: Sequence[Any]) -> int:
@@ -149,27 +166,21 @@ def count_parser_traces_in_trace_events(events: Sequence[Any]) -> int:
     return count
 
 
-def render_journal_otlp_json(snapshot: JournalExportSnapshot | Mapping[str, Any]) -> Dict[str, Any]:
+def render_journal_otlp_json(snapshot: JournalExportSnapshot) -> Dict[str, Any]:
     """
     OTLP-inspired JSON trace snapshot for observability backends / debug export.
 
     Not a full OTLP protobuf encoder — stable JSON for log sinks and HTTP routes.
+    Input must be a bounded safe ``JournalExportSnapshot`` (no raw runtime events).
     """
-    if isinstance(snapshot, JournalExportSnapshot):
-        payload = snapshot.to_dict()
-    else:
-        payload = dict(snapshot)
-    run_id = str(payload.get("run_id", ""))
-    tenant_id = str(payload.get("tenant_id", ""))
-    events = payload.get("events") or []
+    run_id = snapshot.run_id
+    tenant_id = snapshot.tenant_id
     spans: List[Dict[str, Any]] = []
-    for row in events:
-        if not isinstance(row, dict):
-            continue
-        event_id = str(row.get("event_id", ""))
-        event_type = str(row.get("event_type", "unknown"))
-        traceparent_raw = row.get("traceparent")
-        if isinstance(traceparent_raw, str) and is_valid_traceparent(traceparent_raw):
+    for envelope in snapshot.events:
+        event_id = envelope.event_id
+        event_type = envelope.event_type or "unknown"
+        traceparent_raw = envelope.w3c_traceparent
+        if traceparent_raw and is_valid_traceparent(traceparent_raw):
             parsed = parse_traceparent(traceparent_raw)
             trace_id = parsed.trace_id
             span_id = parsed.parent_id
@@ -181,11 +192,11 @@ def render_journal_otlp_json(snapshot: JournalExportSnapshot | Mapping[str, Any]
             "spanId": span_id,
             "name": event_type,
             "kind": "SPAN_KIND_INTERNAL",
-            "startTimeUnixNano": _timestamp_to_unix_nano(row.get("timestamp")),
-            "attributes": _span_attributes(row, tenant_id=tenant_id),
+            "startTimeUnixNano": _timestamp_to_unix_nano(envelope.recorded_at),
+            "attributes": _span_attributes_from_envelope(envelope, tenant_id=tenant_id),
         }
-        parent_event_id = row.get("parent_event_id")
-        if isinstance(parent_event_id, str) and parent_event_id.strip():
+        parent_event_id = envelope.parent_event_id
+        if parent_event_id.strip():
             span["parentSpanId"] = _otlp_hex_id(parent_event_id, length=16)
         spans.append(span)
     return {
@@ -209,25 +220,27 @@ def render_journal_otlp_json(snapshot: JournalExportSnapshot | Mapping[str, Any]
     }
 
 
-def _span_attributes(row: Mapping[str, Any], *, tenant_id: str) -> List[Dict[str, Any]]:
+def _span_attributes_from_envelope(
+    envelope: ObservabilityExportEnvelope,  # noqa: F821 — TYPE_CHECKING
+    *,
+    tenant_id: str,
+) -> List[Dict[str, Any]]:
     attrs: List[Dict[str, Any]] = [
-        {"key": "intergrax.event_id", "value": {"stringValue": str(row.get("event_id", ""))}},
+        {"key": "intergrax.event_id", "value": {"stringValue": envelope.event_id}},
         {"key": "intergrax.tenant_id", "value": {"stringValue": tenant_id}},
-        {"key": "intergrax.task_id", "value": {"stringValue": str(row.get("task_id", ""))}},
-        {"key": "intergrax.phase", "value": {"stringValue": str(row.get("phase", ""))}},
+        {"key": "intergrax.task_id", "value": {"stringValue": envelope.task_id}},
+        {"key": "intergrax.phase", "value": {"stringValue": envelope.execution_phase}},
     ]
-    agent_id = row.get("agent_id")
-    if agent_id:
-        attrs.append({"key": "intergrax.agent_id", "value": {"stringValue": str(agent_id)}})
-    parent = row.get("parent_event_id")
-    if parent:
-        attrs.append({"key": "intergrax.parent_event_id", "value": {"stringValue": str(parent)}})
-    traceparent = row.get("traceparent")
-    if traceparent:
-        attrs.append({"key": "w3c.traceparent", "value": {"stringValue": str(traceparent)}})
-    tracestate = row.get("tracestate")
-    if tracestate:
-        attrs.append({"key": "w3c.tracestate", "value": {"stringValue": str(tracestate)}})
+    if envelope.agent_id:
+        attrs.append({"key": "intergrax.agent_id", "value": {"stringValue": envelope.agent_id}})
+    if envelope.parent_event_id:
+        attrs.append(
+            {"key": "intergrax.parent_event_id", "value": {"stringValue": envelope.parent_event_id}}
+        )
+    if envelope.w3c_traceparent:
+        attrs.append({"key": "w3c.traceparent", "value": {"stringValue": envelope.w3c_traceparent}})
+    if envelope.w3c_tracestate:
+        attrs.append({"key": "w3c.tracestate", "value": {"stringValue": envelope.w3c_tracestate}})
     return attrs
 
 

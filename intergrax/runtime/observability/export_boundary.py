@@ -128,6 +128,10 @@ class ObservabilityExportEnvelope(BaseModel):
     source_schema_id: str = ""
     correlation_id: str = ""
     event_id: str = ""
+    parent_event_id: str = ""
+    execution_phase: str = ""
+    w3c_traceparent: str = ""
+    w3c_tracestate: str = ""
 
     problem_kind: str = ""
     problem_severity: str = ""
@@ -153,6 +157,11 @@ class RuntimeEventExportSource(BaseModel):
     agent_id: str = ""
     tenant_id: str = ""
     correlation_id: str = ""
+    occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    execution_phase: str = ""
+    parent_event_id: str = ""
+    w3c_traceparent: str = ""
+    w3c_tracestate: str = ""
     safe_payload: dict[str, str | int] = Field(default_factory=dict)
 
 
@@ -258,11 +267,20 @@ def envelope_from_platform_observability_source(
 
 
 def envelope_is_content_safe(envelope: ObservabilityExportEnvelope) -> bool:
-    """Return False when serialized envelope exposes forbidden raw-content field names."""
-    serialized = envelope.model_dump_json()
-    for key in FORBIDDEN_EXPORT_CONTENT_FIELDS:
-        if f'"{key}"' in serialized:
-            return False
+    """Return False when envelope object keys include forbidden raw-content field names."""
+    return _export_structure_has_no_forbidden_keys(envelope.model_dump(mode="json"))
+
+
+def _export_structure_has_no_forbidden_keys(value: object) -> bool:
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if key in FORBIDDEN_EXPORT_CONTENT_FIELDS:
+                return False
+            if not _export_structure_has_no_forbidden_keys(nested):
+                return False
+        return True
+    if isinstance(value, list):
+        return all(_export_structure_has_no_forbidden_keys(item) for item in value)
     return True
 
 
@@ -320,6 +338,11 @@ def runtime_event_export_source_from_event(event: RuntimeEvent) -> RuntimeEventE
         agent_id=event.agent_id or "",
         tenant_id=event.tenant_id or "",
         correlation_id=event.correlation_id,
+        occurred_at=event.timestamp,
+        execution_phase=event.phase.value,
+        parent_event_id=str(event.parent_event_id or ""),
+        w3c_traceparent=event.traceparent or "",
+        w3c_tracestate=event.tracestate or "",
         safe_payload=safe_payload,
     )
 
@@ -388,7 +411,7 @@ def envelope_from_runtime_event_source(source: RuntimeEventExportSource) -> Obse
 
     return ObservabilityExportEnvelope(
         record_kind=ExportRecordKind.RUNTIME_EVENT,
-        recorded_at=_utc_now(),
+        recorded_at=source.occurred_at,
         run_id=source.run_id,
         task_id=source.task_id,
         attempt_id=source.attempt_id,
@@ -406,6 +429,10 @@ def envelope_from_runtime_event_source(source: RuntimeEventExportSource) -> Obse
         source_schema_id="runtime_event.v2",
         correlation_id=source.correlation_id,
         event_id=source.event_id,
+        parent_event_id=source.parent_event_id,
+        execution_phase=source.execution_phase,
+        w3c_traceparent=source.w3c_traceparent,
+        w3c_tracestate=source.w3c_tracestate,
     )
 
 

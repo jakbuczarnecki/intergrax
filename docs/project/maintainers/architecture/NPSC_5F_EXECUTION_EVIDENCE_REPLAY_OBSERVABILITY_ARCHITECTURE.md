@@ -152,7 +152,7 @@ Reconstructed views must remain read-only — never call execution methods on hy
 ## Security model (P0)
 
 - Fail-closed for **mandatory** execution evidence on the bus (NPSC-5F/R1); best-effort/debug signals remain explicit.
-- No raw secret fields in export allowlists; journal export path is a **P0 blocker** until aligned.
+- No raw secret fields in export allowlists; journal export routes through `ObservabilityExportEnvelope` (R3).
 - Query/export access control: governed at product host layer (not reimplemented in P0).
 
 ## Concurrency / backpressure
@@ -168,7 +168,7 @@ See qualification doc for severity. Summary:
 | -- | ----- | ----- |
 | OBS-01 | Bus fail-open on persist error | **FIXED by R1** (mandatory tier fail-closed) |
 | OBS-02 | EventId content conflict | **FIXED** (reconcile + tests) |
-| OBS-03 | Journal export raw `model_dump` | STILL PRESENT (R3) |
+| OBS-03 | Journal export raw `model_dump` | **FIXED by R3** (`ObservabilityExportEnvelope` via `export_boundary`) |
 | OBS-04 | `build_unified_run_journal` silent truncation | **FIXED / FROZEN R2** (`RunJournalReadPage`, `load_complete_run_journal`) |
 | OBS-05 | Route vs event tenant mismatch | **FIXED by R1** (equality enforced, zero write) |
 | OBS-06 | Task ordering via run-local position | **FIXED / FROZEN R2** (grouped task API + `(run_id, position)` ordering) |
@@ -177,7 +177,7 @@ See qualification doc for severity. Summary:
 
 1. **5F/R1** — **FROZEN / PASS** at `455d3b216f0ad56ea9cdf9db6e0f760b50063a81` (durable evidence contract hardening + R1 Final qualification; P0 drift sentinel scoped to R1 protected surfaces).
 2. **5F/R2** — **FROZEN / PASS** at `632507420f0ab8360aede43a2740e8fccc44efb4` — `read_run_journal_page` / `RunJournalReadPage` (`is_complete`, `next_cursor`), `load_complete_run_journal`, snapshot-bounded pagination, `list_positioned_for_task_grouped_by_run` (R2 Final qualification).
-3. **5F/R3** — Governed export: align `journal_export` with `ObservabilityExportEnvelope`; remove raw payload bypass.
+3. **5F/R3** — **PASS / IMPLEMENTATION COMPLETE** — governed export: `journal_export.v2` typed snapshots; safe projection only.
 4. **5F/R4** — Reconstruction quality model, as-of/bitemporal public query alignment (build on TRACE slices).
 5. **5F Final** — Platform evidence plane qualification & freeze.
 
@@ -191,6 +191,6 @@ ExecutionRuntime / Nexus / delegates
   → RuntimeEventPersistence.append (scoped tenant, run position)
   → list_positioned_for_run / load_positioned_run_journal_through
   → build_unified_run_journal (derived)
-  → ObservabilityExportEnvelope (canonical export) OR journal_export (parallel path — gap)
+  → read_run_journal_page → serialize_runtime_event → ObservabilityExportEnvelope → OTLP / logging / exporters
   → ExecutionReconstructionService / DIAG read APIs
 ```
