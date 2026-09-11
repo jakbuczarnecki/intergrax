@@ -52,6 +52,15 @@ from intergrax.runtime.diagnostics.decision_context_read_models import (
     DecisionContextUnavailableReason,
     DecisionContextView,
 )
+from intergrax.runtime.diagnostics.diagnostic_extension_service import (
+    DiagnosticExtensionService,
+)
+from intergrax.runtime.diagnostics.diagnostic_operator_investigation_projection import (
+    project_investigation_view,
+)
+from intergrax.runtime.diagnostics.diagnostic_operator_investigation_read_models import (
+    DiagnosticInvestigationResult,
+)
 
 DEFAULT_PROBLEM_LIST_LIMIT = 100
 MAX_PROBLEM_LIST_LIMIT = 1000
@@ -76,6 +85,7 @@ class DiagnosticReadService:
         lifecycle_analyzer: LifecycleAnomalyAnalyzer | None = None,
         assessment_builder: DiagnosticAssessmentBuilder | None = None,
         decision_context_provider: DecisionContextProvider | None = None,
+        extension_service: DiagnosticExtensionService | None = None,
     ) -> None:
         self._persistence = problem_persistence
         self._occurrence_persistence = occurrence_persistence
@@ -83,6 +93,7 @@ class DiagnosticReadService:
         self._lifecycle_analyzer = lifecycle_analyzer or LifecycleAnomalyAnalyzer()
         self._assessment_builder = assessment_builder or DiagnosticAssessmentBuilder()
         self._decision_context_provider = decision_context_provider
+        self._extension_service = extension_service
 
     def list_problems(
         self,
@@ -158,6 +169,7 @@ class DiagnosticReadService:
                 lifecycle_analyzer=self._lifecycle_analyzer,
                 assessment_builder=self._assessment_builder,
                 decision_context_provider=self._decision_context_provider,
+                extension_service=self._extension_service,
             )
             for occurrence in occurrence_page.items
         )
@@ -209,6 +221,75 @@ class DiagnosticReadService:
         )
         return page
 
+    def get_investigation(
+        self,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+        occurrence_index: int = 0,
+        occurrence_limit: int = DEFAULT_OCCURRENCE_LIMIT,
+    ) -> DiagnosticInvestigationResult:
+        """
+        Compose a bounded operator investigation read model for one Problem occurrence.
+
+        Does not mutate Problems, infer root cause, or establish timeline causality.
+        """
+        tenant_id = _require_tenant_id(tenant_id)
+        problem_id = validate_problem_id(problem_id)
+        occurrence_limit = _validate_bounded_limit(
+            occurrence_limit,
+            max_limit=MAX_OCCURRENCE_LIMIT,
+        )
+        if type(occurrence_index) is not int or isinstance(occurrence_index, bool):
+            raise TypeError("occurrence_index must be int")
+        if occurrence_index < 0:
+            raise ValueError("occurrence_index must be >= 0")
+
+        detail = self.get_problem(
+            tenant_id=tenant_id,
+            problem_id=problem_id,
+            occurrence_limit=occurrence_limit,
+        )
+        if detail is None:
+            return DiagnosticInvestigationResult(
+                investigation=None,
+                unavailable_reason="problem_not_found",
+            )
+        if not detail.occurrences:
+            return DiagnosticInvestigationResult(
+                investigation=None,
+                unavailable_reason="no_occurrences",
+            )
+
+        ordered = _order_occurrences_newest_first(detail.occurrences)
+        if occurrence_index >= len(ordered):
+            return DiagnosticInvestigationResult(
+                investigation=None,
+                unavailable_reason="occurrence_index_out_of_range",
+            )
+        occurrence_view = ordered[occurrence_index]
+
+        reconstruction = None
+        subject_ref = occurrence_view.subject_ref
+        execution = subject_ref.execution()
+        if execution is not None:
+            try:
+                reconstruction = self._reconstructor.reconstruct_execution(
+                    tenant_id,
+                    execution.task_id,
+                    execution.run_id,
+                )
+                _validate_reconstruction_scope(reconstruction, subject_ref=subject_ref)
+            except ExecutionReconstructionIntegrityError as exc:
+                raise DiagnosticReadIntegrityError(str(exc)) from exc
+
+        investigation = project_investigation_view(
+            problem_detail=detail,
+            occurrence=occurrence_view,
+            reconstruction=reconstruction,
+        )
+        return DiagnosticInvestigationResult(investigation=investigation)
+
 
 def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:
     return DiagnosticProblemSummary(
@@ -248,6 +329,7 @@ def _reconstruct_occurrence_view(
     lifecycle_analyzer: LifecycleAnomalyAnalyzer,
     assessment_builder: DiagnosticAssessmentBuilder,
     decision_context_provider: DecisionContextProvider | None,
+    extension_service: DiagnosticExtensionService | None,
 ) -> DiagnosticProblemOccurrenceView:
     subject_ref = occurrence.subject_ref
     if subject_ref.tenant_id != tenant_id:
@@ -275,6 +357,7 @@ def _reconstruct_occurrence_view(
             assessment=None,
             unavailable_reason=DiagnosticReadUnavailableReason.NON_EXECUTION_SUBJECT,
             decision_context=decision_context,
+            extension_enrichment=None,
         )
 
     try:
@@ -301,6 +384,11 @@ def _reconstruct_occurrence_view(
             unavailable_reason=DiagnosticReadUnavailableReason.EXECUTION_EVIDENCE_UNAVAILABLE,
             execution_lineage=lineage_view,
             decision_context=decision_context,
+            extension_enrichment=_resolve_extension_enrichment(
+                extension_service,
+                subject_ref=subject_ref,
+                reconstruction=reconstruction,
+            ),
         )
 
     try:
@@ -323,6 +411,29 @@ def _reconstruct_occurrence_view(
         unavailable_reason=None,
         execution_lineage=lineage_view,
         decision_context=decision_context,
+        extension_enrichment=_resolve_extension_enrichment(
+            extension_service,
+            subject_ref=subject_ref,
+            reconstruction=reconstruction,
+        ),
+    )
+
+
+def _resolve_extension_enrichment(
+    service: DiagnosticExtensionService | None,
+    *,
+    subject_ref: object,
+    reconstruction: ExecutionReconstruction,
+):
+    if service is None:
+        return None
+    from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
+
+    if type(subject_ref) is not ProblemGroupingSubjectRef:
+        raise TypeError("subject_ref must be ProblemGroupingSubjectRef")
+    return service.enrich_for_occurrence(
+        subject_ref=subject_ref,
+        reconstruction=reconstruction,
     )
 
 

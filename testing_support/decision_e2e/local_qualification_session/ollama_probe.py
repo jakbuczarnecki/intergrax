@@ -23,6 +23,45 @@ class OllamaProbeConfig:
     timeout_sec: float = 5.0
 
 
+def _normalize_model_digest(raw: str | None) -> str | None:
+    if raw is None:
+        return None
+    text = raw.strip()
+    if not text:
+        return None
+    if text.startswith("sha256:"):
+        return text
+    if len(text) >= 64 and all(ch in "0123456789abcdef" for ch in text.lower()):
+        return f"sha256:{text.lower()}"
+    return text
+
+
+def _digest_from_tags_list(
+    base: str,
+    model_name: str,
+    *,
+    timeout_sec: float,
+) -> str | None:
+    tags_payload = _http_json(f"{base}/api/tags", timeout_sec=timeout_sec)
+    if tags_payload is None:
+        return None
+    models = tags_payload.get("models")
+    if not isinstance(models, list):
+        return None
+    for entry in models:
+        if not isinstance(entry, dict):
+            continue
+        name = entry.get("name")
+        if name != model_name and entry.get("model") != model_name:
+            continue
+        digest = entry.get("digest")
+        if isinstance(digest, str):
+            normalized = _normalize_model_digest(digest)
+            if normalized is not None:
+                return normalized
+    return None
+
+
 def _http_json(url: str, *, timeout_sec: float) -> dict[str, object] | None:
     try:
         with urllib.request.urlopen(url, timeout=timeout_sec) as response:
@@ -58,7 +97,7 @@ def probe_ollama_runtime_identity(
         if show_payload is not None:
             digest = show_payload.get("digest")
             if isinstance(digest, str) and digest:
-                model_digest = digest
+                model_digest = _normalize_model_digest(digest)
             details = show_payload.get("details")
             if isinstance(details, dict):
                 quant = details.get("quantization_level")
@@ -67,6 +106,12 @@ def probe_ollama_runtime_identity(
             model_info_name = show_payload.get("model")
             if isinstance(model_info_name, str) and model_info_name:
                 resolved_model = model_info_name
+        if model_digest is None:
+            model_digest = _digest_from_tags_list(
+                base,
+                model_name,
+                timeout_sec=config.timeout_sec,
+            )
 
     return QualificationRuntimeIdentity(
         provider_kind="ollama",

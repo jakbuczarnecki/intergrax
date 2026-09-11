@@ -24,6 +24,9 @@ from testing_support.decision_e2e.local_qualification_session.attempt_evidence i
 from testing_support.decision_e2e.local_qualification_session.classification_adapter import (
     failure_view_from_classification,
 )
+from testing_support.decision_e2e.local_qualification_session.artifact_contract import (
+    DEFAULT_REQUIRED_ARTIFACTS,
+)
 from testing_support.decision_e2e.local_qualification_session.contracts import (
     CANONICAL_MODEL_ATTEMPT_TRACE_SCHEMA,
     COMPLETION_ALIGNMENT_TRACE_SCHEMA,
@@ -329,14 +332,7 @@ def _session(tmp_path: Path) -> LocalQualificationSession:
     spec = QualificationSpec(
         experiment_identity=_identity(),
         run_count=2,
-        required_artifacts=(
-            "runs.json",
-            "summary.json",
-            "report.md",
-            "analysis.json",
-            "artifact-manifest.txt",
-            "final-report.md",
-        ),
+        required_artifacts=DEFAULT_REQUIRED_ARTIFACTS,
         source_blob_paths=(),
         semantic_source_groups={},
         max_evaluator_attempt_index=1,
@@ -371,6 +367,7 @@ def test_finalize_crash_sets_failed_finalization(tmp_path: Path) -> None:
     )
     session.persist_canonical_run(CanonicalRunRecord(0, "run-0", ()))
     session.persist_canonical_run(CanonicalRunRecord(1, "run-1", ()))
+    (tmp_path / "run.log").write_text("run_index=0\nrun_index=1\n", encoding="utf-8")
     integrity = session.integrity_report(
         _observed(),
         config_matches=True,
@@ -381,11 +378,17 @@ def test_finalize_crash_sets_failed_finalization(tmp_path: Path) -> None:
         raise RuntimeError("derived report failed")
 
     outcome = finalize_with_failure_capture(
-        FinalizationContext(session_dir=tmp_path, spec=session._spec, session_id="sess", task_id="task"),
+        FinalizationContext(
+            session_dir=tmp_path,
+            spec=session._spec,
+            session_id="sess",
+            task_id="task",
+            observed=_observed(),
+        ),
         integrity=integrity,
         inject_derived_failure=_boom,
     )
-    assert outcome.state is QualificationSessionState.FAILED_FINALIZATION
+    assert outcome.state is QualificationSessionState.FAILED_ARTIFACT_GENERATION
     assert (tmp_path / "runs.json").is_file()
 
 
@@ -398,12 +401,13 @@ def test_finalize_recovery_without_model_calls(tmp_path: Path) -> None:
     )
     session.persist_canonical_run(CanonicalRunRecord(0, "run-0", ()))
     session.persist_canonical_run(CanonicalRunRecord(1, "run-1", ()))
+    (tmp_path / "run.log").write_text("run_index=0\nrun_index=1\n", encoding="utf-8")
     integrity = session.integrity_report(
         _observed(),
         config_matches=True,
         source_matches=True,
     )
-    finalized = session.finalize(integrity=integrity)
+    finalized = session.finalize(integrity=integrity, observed=_observed())
     assert finalized.finalization_status is QualificationSessionState.FINALIZED
     validate_required_artifacts(tmp_path, session._spec.required_artifacts)
 
@@ -417,13 +421,14 @@ def test_missing_summary_prevents_valid_finalization(tmp_path: Path) -> None:
     )
     session.persist_canonical_run(CanonicalRunRecord(0, "run-0", ()))
     session.persist_canonical_run(CanonicalRunRecord(1, "run-1", ()))
+    (tmp_path / "run.log").write_text("run_index=0\nrun_index=1\n", encoding="utf-8")
     (tmp_path / "summary.json").unlink(missing_ok=True)
     integrity = session.integrity_report(
         _observed(),
         config_matches=True,
         source_matches=True,
     )
-    finalized = session.finalize(integrity=integrity)
+    finalized = session.finalize(integrity=integrity, observed=_observed())
     assert finalized.finalization_status is QualificationSessionState.FINALIZED
     assert (tmp_path / "summary.json").is_file()
 

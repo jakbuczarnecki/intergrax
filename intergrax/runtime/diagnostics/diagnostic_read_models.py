@@ -41,6 +41,9 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemStatus,
 )
 from intergrax.runtime.diagnostics.decision_context_read_models import DecisionContextView
+from intergrax.runtime.diagnostics.diagnostic_extension_read_models import (
+    DiagnosticExtensionOccurrenceEnrichment,
+)
 
 
 class DiagnosticReadIntegrityError(Exception):
@@ -141,6 +144,7 @@ class DiagnosticProblemOccurrenceView:
     unavailable_reason: DiagnosticReadUnavailableReason | None = None
     execution_lineage: DiagnosticExecutionLineageView | None = None
     decision_context: DecisionContextView | None = None
+    extension_enrichment: DiagnosticExtensionOccurrenceEnrichment | None = None
 
 
 @dataclass(frozen=True, slots=True)

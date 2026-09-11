@@ -49,10 +49,15 @@ class QualificationSessionState(StrEnum):
     PRECONDITIONS_PASSED = "preconditions_passed"
     RUNNING = "running"
     PARTIAL = "partial"
+    COLLECTED = "collected"
+    ARTIFACT_BUILDING = "artifact_building"
+    ARTIFACT_VALIDATING = "artifact_validating"
     FINALIZING = "finalizing"
     FINALIZED = "finalized"
     BLOCKED = "blocked"
     INVALID = "invalid"
+    FAILED_ARTIFACT_GENERATION = "failed_artifact_generation"
+    FAILED_ARTIFACT_VALIDATION = "failed_artifact_validation"
     FAILED_FINALIZATION = "failed_finalization"
 
 
@@ -76,6 +81,18 @@ class TraceReadbackStatus(StrEnum):
 class EvidenceCompletenessStatus(StrEnum):
     COMPLETE = "complete"
     INCOMPLETE = "incomplete"
+    NOT_AVAILABLE = "not_available"
+
+
+class AttemptEvidenceStatus(StrEnum):
+    AVAILABLE = "available"
+    NOT_REQUIRED = "not_required"
+    NOT_AVAILABLE = "not_available"
+
+
+class ReconciliationEvidenceStatus(StrEnum):
+    ENTERED = "entered"
+    NOT_ENTERED = "not_entered"
     NOT_AVAILABLE = "not_available"
 
 

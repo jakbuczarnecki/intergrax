@@ -10,6 +10,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from testing_support.decision_e2e.local_qualification_session.attempt_evidence import (
+    assess_session_attempt_evidence,
+)
 from testing_support.decision_e2e.local_qualification_session.atomic_io import atomic_write_json
 from testing_support.decision_e2e.local_qualification_session.checkpoint import (
     IllegalSessionTransitionError,
@@ -20,6 +23,7 @@ from testing_support.decision_e2e.local_qualification_session.checkpoint import 
 )
 from testing_support.decision_e2e.local_qualification_session.contracts import (
     QUALIFICATION_SESSION_SCHEMA_VERSION,
+    AttemptEvidenceStatus,
     CanonicalRunRecord,
     EvidenceCompletenessStatus,
     QualificationIdentityStatus,
@@ -235,12 +239,17 @@ class LocalQualificationSession:
         source_matches: bool,
     ) -> SessionIntegrityReport:
         alignment_statuses: list[TraceReadbackStatus] = []
-        attempt_complete = True
+        trace_runs: list[tuple[dict[str, object], ...]] = []
         for item in self._registry.records():
             readback = read_typed_alignment_events(item.trace_events)
             alignment_statuses.append(readback.status)
-            if not item.trace_events:
-                attempt_complete = False
+            trace_runs.append(item.trace_events)
+        attempt_status = assess_session_attempt_evidence(tuple(trace_runs))
+        attempt_completeness = (
+            EvidenceCompletenessStatus.INCOMPLETE
+            if attempt_status is AttemptEvidenceStatus.NOT_AVAILABLE
+            else EvidenceCompletenessStatus.COMPLETE
+        )
         return SessionIntegrityReport(
             runtime_identity_status=evaluate_runtime_identity_match(
                 self._spec.experiment_identity, observed
@@ -259,35 +268,65 @@ class LocalQualificationSession:
                 else QualificationIdentityStatus.MISMATCH
             ),
             trace_readback_status=aggregate_trace_readback_status(tuple(alignment_statuses)),
-            attempt_evidence_status=(
-                EvidenceCompletenessStatus.COMPLETE
-                if attempt_complete
-                else EvidenceCompletenessStatus.INCOMPLETE
-            ),
+            attempt_evidence_status=attempt_completeness,
             artifact_completeness_status=EvidenceCompletenessStatus.INCOMPLETE,
             finalization_status=self._state,
         )
+
+    def prepare_finalize_only(self) -> None:
+        if self._state is QualificationSessionState.FINALIZED:
+            transition_state(self._state, QualificationSessionState.COLLECTED)
+            self._state = QualificationSessionState.COLLECTED
+            return
+        if self._state in {
+            QualificationSessionState.FAILED_ARTIFACT_GENERATION,
+            QualificationSessionState.FAILED_ARTIFACT_VALIDATION,
+            QualificationSessionState.FAILED_FINALIZATION,
+        }:
+            transition_state(self._state, QualificationSessionState.COLLECTED)
+            self._state = QualificationSessionState.COLLECTED
+            return
+        if self._state in {
+            QualificationSessionState.RUNNING,
+            QualificationSessionState.PARTIAL,
+        }:
+            if self.pending_run_indices():
+                raise IllegalSessionTransitionError("finalize-only requires collected runs")
 
     def finalize(
         self,
         *,
         integrity: SessionIntegrityReport,
         inject_derived_failure: Callable[[], None] | None = None,
+        observed: QualificationRuntimeIdentity | None = None,
+        temperature: float = 0.0,
+        regenerate_derived: bool = True,
     ) -> SessionIntegrityReport:
         if self._state is QualificationSessionState.INVALID:
             raise IllegalSessionTransitionError("invalid session cannot finalize as valid")
-        transition_state(self._state, QualificationSessionState.FINALIZING)
-        self._state = QualificationSessionState.FINALIZING
+        if integrity.attempt_evidence_status is EvidenceCompletenessStatus.INCOMPLETE:
+            raise IllegalSessionTransitionError("attempt evidence incomplete")
+
+        def _on_state(target: QualificationSessionState) -> None:
+            if self._state is target:
+                return
+            transition_state(self._state, target)
+            self._state = target
+
         context = FinalizationContext(
             session_dir=self._session_dir,
             spec=self._spec,
             session_id=self._session_id,
             task_id=self._task_id,
+            observed=observed,
+            temperature=temperature,
+            on_session_state=_on_state,
         )
         outcome = finalize_with_failure_capture(
             context,
             integrity=integrity,
             inject_derived_failure=inject_derived_failure,
+            regenerate_derived=regenerate_derived,
         )
         self._state = outcome.state
         self._persist_checkpoint(finalization_phase=outcome.phase)

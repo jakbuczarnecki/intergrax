@@ -33,6 +33,9 @@ from testing_support.decision_e2e.local_qualification_session.ollama_probe impor
     OllamaProbeConfig,
     probe_ollama_runtime_identity,
 )
+from testing_support.decision_e2e.local_qualification_session.checkpoint import (
+    IllegalSessionTransitionError,
+)
 from testing_support.decision_e2e.local_qualification_session.session import (
     LocalQualificationSession,
 )
@@ -47,7 +50,7 @@ from testing_support.decision_e2e.scenario_qualification import AI_INCIDENT_SCEN
 R4R1_PROFILE_ID = "DS-E2E-15J-L1.R4.R1"
 R4R1_TASK_ID = "DS-E2E-15J-L1.R4.R1"
 R4R1_PROVIDER = "ollama"
-R4R1_RUNTIME_VERSION = ProviderRuntimeVersion(0, 33, 3)
+R4R1_RUNTIME_VERSION = ProviderRuntimeVersion(0, 34, 0)
 R4R1_MODEL_NAME = "qwen2.5:14b"
 R4R1_QUANTIZATION = "Q4_K_M"
 R4R1_TEMPERATURE = 0.0
@@ -332,18 +335,26 @@ async def run_local_ai_incident_qualification(
     invocations: list[int] = []
 
     if finalize_only:
-        if session.state is QualificationSessionState.FINALIZED:
+        try:
+            _prepare_finalize_only_session(session)
+        except IllegalSessionTransitionError:
             return LocalQualificationOrchestrationResult(
-                exit_code=QualificationCliExit.SUCCESS,
+                exit_code=QualificationCliExit.PARTIAL_OR_INVALID_SESSION,
                 session_state=session.state,
                 executor_invocations=(),
             )
+        observed = provider_probe.probe(model_name=spec.experiment_identity.model_name)
         integrity = session.integrity_report(
-            None,
+            observed,
             config_matches=True,
             source_matches=True,
         )
-        finalized = session.finalize(integrity=integrity)
+        finalized = session.finalize(
+            integrity=integrity,
+            observed=observed,
+            temperature=R4R1_TEMPERATURE,
+            regenerate_derived=True,
+        )
         state = finalized.finalization_status
         exit_code = (
             QualificationCliExit.SUCCESS
@@ -415,6 +426,11 @@ async def run_local_ai_incident_qualification(
                 trace_events=trace_events_from_outcome(outcome),
             )
         )
+        _append_qualification_run_log(
+            session_dir,
+            run_index=run_index,
+            run_id=canonical_id,
+        )
 
     if session.pending_run_indices():
         return LocalQualificationOrchestrationResult(
@@ -440,7 +456,11 @@ async def run_local_ai_incident_qualification(
         ),
         source_matches=source_matches,
     )
-    finalized = session.finalize(integrity=integrity)
+    finalized = session.finalize(
+        integrity=integrity,
+        observed=observed_after,
+        temperature=R4R1_TEMPERATURE,
+    )
     state = finalized.finalization_status
     if state is QualificationSessionState.FINALIZED:
         exit_code = QualificationCliExit.SUCCESS
@@ -459,3 +479,13 @@ async def run_local_ai_incident_qualification(
 
 def qualification_observation_id_is_synthetic(run_id: str) -> bool:
     return run_id.startswith(QUALIFICATION_OBSERVATION_ID_PREFIX)
+
+
+def _append_qualification_run_log(session_dir: Path, *, run_index: int, run_id: str) -> None:
+    path = session_dir / "run.log"
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(f"run_index={run_index} run_id={run_id}\n")
+
+
+def _prepare_finalize_only_session(session: LocalQualificationSession) -> None:
+    session.prepare_finalize_only()

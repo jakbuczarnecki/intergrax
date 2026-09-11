@@ -419,6 +419,7 @@ def test_second_execution_assessment_failure_skips_grouping_and_lifecycle() -> N
 
     class _FailingOnSecondAssessment(DiagnosticAssessmentBuilder):
         def __init__(self) -> None:
+            super().__init__()
             self._calls = 0
 
         def assess(self, reconstruction, lifecycle):

@@ -11,6 +11,11 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.diagnostic_extension_evidence import (
+    DiagnosticEvidenceContext,
+    DiagnosticExtensionEvidence,
+)
+
 
 @runtime_checkable
 class DiagnosticEvidenceContributor(Protocol):
@@ -23,6 +28,16 @@ class DiagnosticEvidenceContributor(Protocol):
     @property
     def evidence_namespace(self) -> str:
         """Namespaced evidence family (e.g. decision, integration, application)."""
+
+    @property
+    def priority(self) -> int:
+        """Lower values run earlier; ties broken by namespace then contributor_id."""
+
+    def collect(
+        self,
+        context: DiagnosticEvidenceContext,
+    ) -> tuple[DiagnosticExtensionEvidence, ...]:
+        """Collect typed evidence for one bounded diagnostic execution scope."""
 
 
 @runtime_checkable

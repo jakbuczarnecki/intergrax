@@ -72,7 +72,7 @@ class _FixedProbe:
 
 def _observed(
     *,
-    version: ProviderRuntimeVersion | None = ProviderRuntimeVersion(0, 33, 3),
+    version: ProviderRuntimeVersion | None = ProviderRuntimeVersion(0, 34, 0),
     digest: str = "digest-a",
 ) -> QualificationRuntimeIdentity:
     return QualificationRuntimeIdentity(
@@ -110,7 +110,7 @@ async def test_wrong_ollama_version_blocks_before_run(tmp_path: Path) -> None:
         spec=spec,
         config_fingerprint=config_fp,
         source_fingerprint=source_fp,
-        provider_probe=_FixedProbe(_observed(version=ProviderRuntimeVersion(0, 34, 0))),
+        provider_probe=_FixedProbe(_observed(version=ProviderRuntimeVersion(0, 33, 3))),
         run_executor=executor,
     )
     assert result.exit_code is QualificationCliExit.BLOCKED_PRECONDITION

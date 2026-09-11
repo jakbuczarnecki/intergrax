@@ -128,6 +128,7 @@ def read_service_for_tests(
     occurrence_persistence: ProblemOccurrencePersistence | None = None,
     document_store: ConditionalDocumentStore | None = None,
     decision_context_provider: object | None = None,
+    extension_service: object | None = None,
 ):
     from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
 
@@ -140,6 +141,7 @@ def read_service_for_tests(
         ),
         execution_reconstructor=execution_reconstructor,
         decision_context_provider=decision_context_provider,
+        extension_service=extension_service,
     )
 
 

@@ -33,11 +33,34 @@ _ALLOWED_TRANSITIONS: dict[QualificationSessionState, frozenset[QualificationSes
         {
             QualificationSessionState.PARTIAL,
             QualificationSessionState.INVALID,
+            QualificationSessionState.COLLECTED,
             QualificationSessionState.FINALIZING,
         }
     ),
     QualificationSessionState.PARTIAL: frozenset(
-        {QualificationSessionState.INVALID, QualificationSessionState.FINALIZING}
+        {
+            QualificationSessionState.INVALID,
+            QualificationSessionState.COLLECTED,
+            QualificationSessionState.FINALIZING,
+        }
+    ),
+    QualificationSessionState.COLLECTED: frozenset(
+        {
+            QualificationSessionState.ARTIFACT_BUILDING,
+            QualificationSessionState.FAILED_ARTIFACT_GENERATION,
+        }
+    ),
+    QualificationSessionState.ARTIFACT_BUILDING: frozenset(
+        {
+            QualificationSessionState.ARTIFACT_VALIDATING,
+            QualificationSessionState.FAILED_ARTIFACT_GENERATION,
+        }
+    ),
+    QualificationSessionState.ARTIFACT_VALIDATING: frozenset(
+        {
+            QualificationSessionState.FINALIZING,
+            QualificationSessionState.FAILED_ARTIFACT_VALIDATION,
+        }
     ),
     QualificationSessionState.FINALIZING: frozenset(
         {
@@ -45,12 +68,28 @@ _ALLOWED_TRANSITIONS: dict[QualificationSessionState, frozenset[QualificationSes
             QualificationSessionState.FAILED_FINALIZATION,
         }
     ),
+    QualificationSessionState.FAILED_ARTIFACT_GENERATION: frozenset(
+        {
+            QualificationSessionState.COLLECTED,
+            QualificationSessionState.ARTIFACT_BUILDING,
+        }
+    ),
+    QualificationSessionState.FAILED_ARTIFACT_VALIDATION: frozenset(
+        {
+            QualificationSessionState.COLLECTED,
+            QualificationSessionState.ARTIFACT_BUILDING,
+            QualificationSessionState.ARTIFACT_VALIDATING,
+        }
+    ),
     QualificationSessionState.FAILED_FINALIZATION: frozenset(
-        {QualificationSessionState.FINALIZING}
+        {
+            QualificationSessionState.FINALIZING,
+            QualificationSessionState.COLLECTED,
+        }
     ),
     QualificationSessionState.BLOCKED: frozenset(),
     QualificationSessionState.INVALID: frozenset(),
-    QualificationSessionState.FINALIZED: frozenset(),
+    QualificationSessionState.FINALIZED: frozenset({QualificationSessionState.COLLECTED}),
 }
 
 

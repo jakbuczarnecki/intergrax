@@ -21,7 +21,11 @@ from intergrax.runtime.diagnostics.diagnostic_precision import (
     DiagnosticPrecision,
     FailureBoundary,
 )
+from intergrax.contracts.multi_agent_failure_localization import FailureBoundaryAnalysis
 from intergrax.runtime.diagnostics.execution_failure_analysis import ExecutionFailureAnalyzer
+from intergrax.runtime.diagnostics.multi_agent_failure_localization import (
+    ExecutionFailureTopologyAnalyzer,
+)
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstruction
 from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnalysis,
@@ -167,6 +171,7 @@ class DiagnosticAssessment:
     run_id: RunId
     findings: tuple[DiagnosticFinding, ...]
     limitations: tuple[DiagnosticLimitation, ...]
+    failure_boundary_analysis: FailureBoundaryAnalysis | None = None
 
     @property
     def has_findings(self) -> bool:
@@ -188,9 +193,13 @@ class DiagnosticAssessmentBuilder:
         self,
         *,
         execution_failure_analyzer: ExecutionFailureAnalyzer | None = None,
+        failure_topology_analyzer: ExecutionFailureTopologyAnalyzer | None = None,
     ) -> None:
         self._execution_failure_analyzer = (
             execution_failure_analyzer or ExecutionFailureAnalyzer()
+        )
+        self._failure_topology_analyzer = (
+            failure_topology_analyzer or ExecutionFailureTopologyAnalyzer()
         )
 
     def assess(
@@ -204,6 +213,11 @@ class DiagnosticAssessmentBuilder:
         limitations: list[DiagnosticLimitation] = []
 
         findings.extend(self._execution_failure_analyzer.analyze(reconstruction))
+
+        failure_boundary_analysis = self._failure_topology_analyzer.analyze(
+            reconstruction,
+            tuple(findings),
+        )
 
         for anomaly in lifecycle.anomalies:
             output_kind = _ANOMALY_OUTPUT_KIND[anomaly.kind]
@@ -222,6 +236,7 @@ class DiagnosticAssessmentBuilder:
             run_id=reconstruction.run_id,
             findings=tuple(findings),
             limitations=tuple(limitations),
+            failure_boundary_analysis=failure_boundary_analysis,
         )
 
 
