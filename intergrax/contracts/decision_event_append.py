@@ -11,10 +11,20 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.decision_finalization import DecisionFinalizationKey
+from intergrax.contracts.decision_identity import DecisionId
 
 
 class StaleDecisionEventAppendError(RuntimeError):
     """Authoritative decision event history conflict on compare-and-append."""
+
+
+class DuplicateDecisionEventError(RuntimeError):
+    """Raised when the same ``event_id`` is reused with a different typed payload."""
+
+
+@runtime_checkable
+class DecisionEventPayload(Protocol):
+    """Immutable typed payload or reference carried by one decision event."""
 
 
 @runtime_checkable
@@ -27,8 +37,28 @@ class DecisionEvent(Protocol):
         ...
 
     @property
+    def decision_id(self) -> DecisionId:
+        """Decision identity this event belongs to."""
+        ...
+
+    @property
     def event_sequence(self) -> int:
-        """Monotonic sequence assigned by the store on successful append."""
+        """Monotonic sequence assigned by the store on successful append (0 before persist)."""
+        ...
+
+    @property
+    def event_type(self) -> str:
+        """Stable event kind for audit and replay."""
+        ...
+
+    @property
+    def occurred_at_utc(self) -> str:
+        """ISO-8601 UTC timestamp for audit."""
+        ...
+
+    @property
+    def payload(self) -> DecisionEventPayload:
+        """Typed event body — not a generic mapping."""
         ...
 
 
@@ -47,7 +77,8 @@ class DecisionEventAppendPort(Protocol):
 
         On success the returned event carries ``event_sequence == expected_last_sequence + 1``.
         On conflict raises :class:`StaleDecisionEventAppendError`.
-        Retry with the same ``event_id`` must be idempotent replay or deterministic
-        duplicate rejection — without a global idempotency manager.
+        Retry with the same ``event_id`` and payload must be idempotent replay or raise
+        :class:`DuplicateDecisionEventError` when the payload differs — without a global
+        idempotency manager.
         """
         ...

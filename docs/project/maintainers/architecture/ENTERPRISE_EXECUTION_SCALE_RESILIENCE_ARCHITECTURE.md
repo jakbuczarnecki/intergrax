@@ -122,3 +122,22 @@ Deferred: tenant fairness partitioning, distributed admission, integration slug 
 3. ~~**Provider/tool bulkheads (process-local)**~~ — **W2 Final:** `DependencyConcurrencyAdmissionPort` wired for tools and LLM providers (qualified).
 4. **Distributed rate limiting** — tenant/provider fairness across workers (optional Redis LLM limiter exists; generic platform limiter absent).  
 5. **Checkpoint store scaling** — reduce SQLite hotspot or shard by tenant for write-heavy fleets.
+
+## W3-C — decision plane durability (event append + snapshot CAS)
+
+**Frozen separation (do not merge planes):**
+
+```text
+Decision Event History  ≠  Checkpoint Snapshot  ≠  Execution Recovery
+```
+
+| Mechanism | Plane | Conflict signal | Owner (W3-C2) |
+|-----------|-------|-----------------|----------------|
+| Compare-and-append event stream | Decision | `StaleDecisionEventAppendError` | `SQLiteDecisionEventAppendPersistence` / `DecisionEventAppendPort` |
+| Snapshot revision CAS | Decision | `StaleDecisionCheckpointWriteError` | `SQLiteDecisionCheckpointPersistence.save(..., expected_revision=)` |
+| Task checkpoint revision CAS | Execution | `StaleCheckpointWriteError` | `SQLiteTaskCheckpointStore` (unchanged) |
+| Recovery admission | Execution | `RecoveryAdmissionPort` | `local_recovery_admission` (unchanged) |
+
+Authoritative **decision events** are append-only with `expected_last_sequence` enforced inside one SQLite transaction (`BEGIN IMMEDIATE` + stream head CAS + `UNIQUE` on `(key, event_sequence)`). **Materialized** `DecisionCheckpointState` snapshots use `snapshot_revision` column CAS — a lost snapshot write does **not** roll back an already-appended event (replay from stream remains the recovery path for projection lag).
+
+Implementation reference: [`ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md`](ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md) §2.1–§2.2.
