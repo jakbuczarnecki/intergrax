@@ -244,9 +244,9 @@ Do not infer numeric SLOs from this model without measurement.
 | SQLite checkpoint hotspot | P1 | many concurrent writes | all tenants on DB file | CAS, indexes | single-file SQLite | W3 store sharding |
 | Shared tool thread pool | P1 | slow tool | all agents on host | timeouts | no per-tool bulkhead | W2 tool pools |
 | Cancel orphan work | P1 | cancel during tool/child | wasted spend | cooperative cancel | no hard preemption | W4 cancel propagation audit |
-| Deadline not on Nexus retry request | P1 | long graph retry | parent SLA | R1 contract | graph_runner omits field | W1 deadline wiring |
-| ConcurrentExecutionWork unbounded | P1 | large council tuple | memory/tasks | none | no cap | W1 width limit at port |
-| Process-local semaphore illusion | P1 | multi-worker deploy | N× local slots vs one cap | ops scaling + W0 docs | semantic misunderstanding | W1 distributed admission |
+| Deadline not on Nexus retry request | P1 | long graph retry | parent SLA | R1 contract + W1-C wiring | **closed (W1)** — `peek_active_execution_global_deadline_monotonic` on retry request | W2+ fairness/bulkheads |
+| ConcurrentExecutionWork unbounded | P1 | large council tuple | memory/tasks | required `ConcurrentExecutionWorkPolicy` | **closed (W1)** — explicit per-call cap | W2 provider isolation |
+| Process-local semaphore illusion | P1 | multi-worker deploy | N× local slots vs one cap | ops scaling + W0/W1 docs | semantic misunderstanding (not a code bug) | future distributed admission |
 | Recovery storm post outage | P2 | many resumes due | Nexus + DB | claim limit | no global throttle | W3 scheduler budgets |
 | Event bus task spam | P2 | high emit rate | CPU | none | unbounded create_task | W5 observability shed |
 

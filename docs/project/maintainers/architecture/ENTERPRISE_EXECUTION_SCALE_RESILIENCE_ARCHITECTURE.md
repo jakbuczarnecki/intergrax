@@ -1,6 +1,6 @@
 # Enterprise Execution Scale & Resilience — Architecture (P0 baseline)
 
-**Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1** bounded concurrent work + global deadline propagation + **W1-A** process-local root capacity admission (optional runtime injection).
+**Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1 FINAL (qualified)** — process-local root admission (W1-A), explicit concurrent work policy (W1-B), absolute global deadline into R1 retry (W1-C). Qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md).
 **Baseline:** `origin/development` at audit start.  
 **Scope:** Execution plane capacity, concurrency ownership, failure domains, process-local vs distributed semantics.
 
