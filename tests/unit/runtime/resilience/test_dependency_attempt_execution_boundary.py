@@ -21,6 +21,7 @@ from intergrax.contracts.dependency_concurrency_admission import (
     DependencyConcurrencyPermit,
     DependencyConcurrencyPolicy,
 )
+from intergrax.runtime.resilience import dependency_attempt_execution_boundary as dab_module
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
     DependencyAttemptExecutionBoundary,
     DependencyAttemptExecutionBoundaryClosedError,
@@ -128,6 +129,97 @@ class _FakeAdmissionPort:
                 raise DependencyConcurrencyExceededError("saturated")
             self.active += 1
         return _FakePermit(self)
+
+
+class _GatedRegistryLock:
+    """Wraps boundary registry lock to pause acquire after permit result()."""
+
+    def __init__(self, inner: threading.Lock) -> None:
+        self._inner = inner
+        self._armed = False
+        self._blocked = threading.Event()
+        self._release = threading.Event()
+        self._release.set()
+        self._inner_acquired = False
+
+    def arm(self) -> None:
+        self._armed = True
+        self._release.clear()
+        self._blocked.clear()
+
+    def unblock(self) -> None:
+        self._release.set()
+
+    def acquire(self, blocking: bool = True, timeout: float = -1) -> bool:
+        if self._armed and not self._release.is_set():
+            self._blocked.set()
+            if not self._release.wait(timeout=10):
+                return False
+        if timeout < 0:
+            acquired = self._inner.acquire(blocking)
+        else:
+            acquired = self._inner.acquire(blocking, timeout)
+        if acquired:
+            self._inner_acquired = True
+        return acquired
+
+    def release(self) -> None:
+        if self._inner_acquired:
+            self._inner.release()
+            self._inner_acquired = False
+
+    def __enter__(self) -> _GatedRegistryLock:
+        self.acquire()
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.release()
+
+
+def _begin_shutdown_on_inner_lock(
+    boundary: DependencyAttemptExecutionBoundary,
+    inner_lock: threading.Lock,
+) -> None:
+    with inner_lock:
+        if boundary._lifecycle is not dab_module._BoundaryLifecycle.OPEN:
+            return
+        boundary._lifecycle = dab_module._BoundaryLifecycle.SHUTTING_DOWN
+        pending_acquires = list(boundary._pending_acquire_futures)
+    for pending in pending_acquires:
+        pending.cancel()
+
+
+class _ShutdownAfterSlotAdmission(_FakeAdmissionPort):
+    """Holds permit after slot claim until test releases shutdown_gate."""
+
+    def __init__(self, *, capacity: int = 4) -> None:
+        super().__init__(capacity=capacity)
+        self._continue = asyncio.Event()
+        self._shutdown_gate = asyncio.Event()
+        self.awaiting_start = threading.Event()
+        self.slot_claimed = threading.Event()
+        self.permits_released = 0
+
+    async def acquire(
+        self,
+        request: DependencyConcurrencyAdmissionRequest,
+    ) -> DependencyConcurrencyPermit:
+        self.awaiting_start.set()
+        await self._continue.wait()
+        permit = await super().acquire(request)
+        self.slot_claimed.set()
+        await self._shutdown_gate.wait()
+        return permit
+
+    def unblock_acquire(self, loop: asyncio.AbstractEventLoop) -> None:
+        loop.call_soon_threadsafe(self._continue.set)
+
+    def release_permit(self, loop: asyncio.AbstractEventLoop) -> None:
+        loop.call_soon_threadsafe(self._shutdown_gate.set)
+
+    async def _release_slot(self) -> None:
+        await super()._release_slot()
+        self.permits_released += 1
 
 
 class _FailingReleaseAdmission(_FakeAdmissionPort):
@@ -363,6 +455,95 @@ def test_detached_worker_completion_releases(
     boundary.drain_and_close()
     assert fake_admission.active == 0
     pool.shutdown(wait=True)
+
+
+def test_acquire_success_shutdown_before_registration_releases_permit() -> None:
+    admission = _ShutdownAfterSlotAdmission(capacity=4)
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    loop = boundary._require_loop()
+    gated_lock = _GatedRegistryLock(boundary._registry_lock)
+    boundary._registry_lock = gated_lock
+    acquire_error: list[BaseException] = []
+
+    def _acquire() -> None:
+        try:
+            boundary.acquire(_request("tool-a"))
+        except BaseException as exc:
+            acquire_error.append(exc)
+
+    thread = threading.Thread(target=_acquire)
+    thread.start()
+    assert admission.awaiting_start.wait(timeout=5)
+    gated_lock.arm()
+    admission.unblock_acquire(loop)
+    assert admission.slot_claimed.wait(timeout=5)
+    admission.release_permit(loop)
+    assert gated_lock._blocked.wait(timeout=5)
+    _begin_shutdown_on_inner_lock(boundary, gated_lock._inner)
+    gated_lock.unblock()
+    thread.join(timeout=10)
+    assert len(acquire_error) == 1
+    assert isinstance(acquire_error[0], DependencyAttemptExecutionBoundaryClosedError)
+    assert admission.acquire_calls == 1
+    assert admission.permits_released == 1
+    assert admission.active == 0
+    boundary.drain_and_close()
+
+
+def test_shutdown_cancel_races_acquire_success_no_leak() -> None:
+    admission = _ShutdownAfterSlotAdmission(capacity=4)
+    boundary = DependencyAttemptExecutionBoundary(admission)
+    loop = boundary._require_loop()
+    gated_lock = _GatedRegistryLock(boundary._registry_lock)
+    boundary._registry_lock = gated_lock
+    outcomes: list[str] = []
+
+    def _acquire() -> None:
+        try:
+            boundary.acquire(_request("tool-a"))
+            outcomes.append("ok")
+        except DependencyAttemptExecutionBoundaryClosedError:
+            outcomes.append("closed")
+        except BaseException as exc:
+            outcomes.append(type(exc).__name__)
+
+    thread = threading.Thread(target=_acquire)
+    thread.start()
+    assert admission.awaiting_start.wait(timeout=5)
+    gated_lock.arm()
+    admission.unblock_acquire(loop)
+    assert admission.slot_claimed.wait(timeout=5)
+    admission.release_permit(loop)
+    assert gated_lock._blocked.wait(timeout=5)
+    _begin_shutdown_on_inner_lock(boundary, gated_lock._inner)
+    gated_lock.unblock()
+    thread.join(timeout=10)
+    assert outcomes == ["closed"]
+    assert admission.permits_released == 1
+    assert admission.active == 0
+    boundary.drain_and_close()
+
+    pending_admission = _FakeAdmissionPort(capacity=1, wait_seconds=0.2)
+    cancel_boundary = DependencyAttemptExecutionBoundary(pending_admission)
+    cancel_outcomes: list[str] = []
+
+    def _pending_acquire() -> None:
+        try:
+            cancel_boundary.acquire(_request("tool-a"))
+            cancel_outcomes.append("ok")
+        except DependencyAttemptExecutionBoundaryClosedError:
+            cancel_outcomes.append("closed")
+        except BaseException as exc:
+            cancel_outcomes.append(type(exc).__name__)
+
+    cancel_thread = threading.Thread(target=_pending_acquire)
+    cancel_thread.start()
+    time.sleep(0.02)
+    cancel_boundary.begin_shutdown()
+    cancel_thread.join(timeout=10)
+    assert cancel_outcomes[0] in {"closed", "CancelledError"}
+    assert pending_admission.active == 0
+    cancel_boundary.drain_and_close()
 
 
 def test_shutdown_cancels_pending_wait() -> None:

@@ -123,9 +123,23 @@ class DependencyAttemptExecutionBoundary:
             with self._registry_lock:
                 self._pending_acquire_futures.discard(acquire_future)
 
-        self._require_accepts_attempts()
-        token = self._register_attempt(permit)
-        return DependencyAttemptHandle(_token=token)
+        with self._registry_lock:
+            if self._lifecycle is _BoundaryLifecycle.OPEN:
+                token = self._next_token
+                self._next_token += 1
+                self._attempts[token] = _AttemptRecord(permit)
+                return DependencyAttemptHandle(_token=token)
+
+        release_future = self._schedule_permit_release(permit)
+        try:
+            release_future.result()
+        except BaseException as exc:
+            raise DependencyAttemptReleaseInvariantError(
+                "dependency permit release failed after shutdown race"
+            ) from exc
+        raise DependencyAttemptExecutionBoundaryClosedError(
+            "dependency attempt boundary is not accepting new attempts"
+        )
 
     def release_after_submit_failure(self, handle: DependencyAttemptHandle) -> None:
         """Release permit when pool submit failed after successful acquire."""
