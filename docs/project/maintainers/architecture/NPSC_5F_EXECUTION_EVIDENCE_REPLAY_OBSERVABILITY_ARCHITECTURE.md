@@ -1,6 +1,6 @@
 # NPSC-5F — Execution Evidence, Replay & Observability Architecture
 
-> **Status:** NPSC-5F **ACTIVE** — P0 reconciled; **NPSC-5F/R1** **FROZEN / PASS** at `455d3b216f0ad56ea9cdf9db6e0f760b50063a81`; **NPSC-5F/R2** **FROZEN / PASS** at `632507420f0ab8360aede43a2740e8fccc44efb4` (journal completeness & ordering Final); **NPSC-5F/R3** **FROZEN / PASS** at `0346face3ef68d8f21504822a26f8f45f2384cf9` (governed evidence export Final)  
+> **Status:** NPSC-5F **ACTIVE** — P0 reconciled; **NPSC-5F/R1** **FROZEN / PASS** at `455d3b216f0ad56ea9cdf9db6e0f760b50063a81`; **NPSC-5F/R2** **FROZEN / PASS** at `632507420f0ab8360aede43a2740e8fccc44efb4` (journal completeness & ordering Final); **NPSC-5F/R3** **FROZEN / PASS** at `0346face3ef68d8f21504822a26f8f45f2384cf9` (governed evidence export Final); **NPSC-5F/R4** **PASS / IMPLEMENTATION COMPLETE** (historical reconstruction / as-of / bitemporal — not FROZEN until R4 Final)  
 > **Frozen execution baseline:** NPSC-5E Final `fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7` (behavioral regression via NPSC-5E Final gate, not broad post-5E path immutability)  
 > **R1 qualification:** [`NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md)  
 > **R3 qualification:** [`NPSC_5F_R3_FINAL_GOVERNED_EVIDENCE_EXPORT_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R3_FINAL_GOVERNED_EVIDENCE_EXPORT_QUALIFICATION_AND_FREEZE.md)  
@@ -46,6 +46,7 @@ Reconcile the existing Harness Observability Spine (HOS), `RuntimeEvent` persist
 | `build_unified_run_journal` | `intergrax/runtime/events/unified_run_journal.py` | Derived read model | No (projection) | No | Delegates to store | Yes | Export, inspect |
 | `load_positioned_run_journal_through` | same | Prefix completeness authority | No (read helper) | N/A | Run prefix | Yes | As-of, reconstruction |
 | `RunExecutionAsOfProjection` | `intergrax/runtime/events/asof_projection.py` | Historical view at **E** | No | N/A | Run | Yes | DIAG, audit |
+| `HistoricalReconstructionService` | `intergrax/runtime/observability/historical_reconstruction.py` | E+K+VT read-only composition (R4) | No | N/A | Tenant+run / tenant K | Yes | Audit, DIAG |
 | `ObservabilityExportEnvelope` | `intergrax/runtime/observability/export_boundary.py` | Redacted export contract | Export view | N/A | N/A | Yes | Integrations |
 | `export_bridge` / `export_routing` | `intergrax/runtime/observability/` | Safe export path | No | N/A | N/A | Yes | Vendor backends |
 | `journal_export` | `intergrax/runtime/observability/journal_export.py` | Bounded safe journal OTLP/log snapshot (`journal_export.v2`) | No | N/A | Uses `read_run_journal_page` limit | Yes | Default runtime plugin |

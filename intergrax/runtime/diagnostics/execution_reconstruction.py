@@ -33,8 +33,13 @@ from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
     ReconstructedAttemptLineage,
     reconstruct_attempt_lineage,
 )
-from intergrax.runtime.events.execution_position import PositionedRuntimeEvent
+from intergrax.runtime.events.execution_position import AsOfBoundary, PositionedRuntimeEvent
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.events.unified_run_journal import (
+    PositionedJournalBoundaryNotFoundError,
+    PositionedJournalPrefixTruncatedError,
+    load_positioned_run_journal_through,
+)
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
@@ -202,12 +207,20 @@ class ExecutionReconstructor:
         task_id: TaskId,
         run_id: RunId,
         *,
+        execution_as_of: AsOfBoundary | None = None,
         initial_limit: int = 1000,
         max_limit: int = 1_000_000,
     ) -> ExecutionReconstruction:
         tenant_id = _require_tenant_id(tenant_id)
         task_id = validate_task_id(task_id)
         run_id = validate_run_id(run_id)
+        if execution_as_of is not None:
+            if type(execution_as_of) is not AsOfBoundary:
+                raise TypeError("execution_as_of must be AsOfBoundary or None")
+            if execution_as_of.run_id != run_id:
+                raise ExecutionReconstructionIntegrityError(
+                    "execution_as_of.run_id must match reconstruct_execution run_id"
+                )
         _validate_history_limit(initial_limit)
         _validate_history_limit(max_limit)
         if initial_limit > max_limit:
@@ -226,13 +239,22 @@ class ExecutionReconstructor:
                 run_id=run_id,
             )
 
-        positioned, completeness = _load_positioned_events_for_run(
-            self._runtime_events,
-            tenant_id=tenant_id,
-            run_id=run_id,
-            initial_limit=initial_limit,
-            max_limit=max_limit,
-        )
+        if execution_as_of is None:
+            positioned, completeness = _load_positioned_events_for_run(
+                self._runtime_events,
+                tenant_id=tenant_id,
+                run_id=run_id,
+                initial_limit=initial_limit,
+                max_limit=max_limit,
+            )
+        else:
+            positioned, completeness = _load_positioned_events_through_boundary(
+                self._runtime_events,
+                tenant_id=tenant_id,
+                boundary=execution_as_of,
+                initial_limit=initial_limit,
+                max_limit=max_limit,
+            )
         for row in positioned:
             _validate_runtime_event_scope(
                 row,
@@ -512,6 +534,29 @@ def _load_positioned_events_for_run(
         if limit >= max_limit:
             return batch, RuntimeHistoryCompleteness.TRUNCATED
         limit = min(limit * 2, max_limit)
+
+
+def _load_positioned_events_through_boundary(
+    runtime_store: RuntimeEventPersistence,
+    *,
+    tenant_id: str,
+    boundary: AsOfBoundary,
+    initial_limit: int,
+    max_limit: int,
+) -> tuple[tuple[PositionedRuntimeEvent, ...], RuntimeHistoryCompleteness]:
+    try:
+        positioned = load_positioned_run_journal_through(
+            runtime_store,
+            tenant_id=tenant_id,
+            boundary=boundary,
+            initial_limit=initial_limit,
+            max_limit=max_limit,
+        )
+    except PositionedJournalPrefixTruncatedError as exc:
+        raise ExecutionReconstructionIntegrityError(str(exc)) from exc
+    except PositionedJournalBoundaryNotFoundError as exc:
+        raise ExecutionReconstructionIntegrityError(str(exc)) from exc
+    return positioned, RuntimeHistoryCompleteness.COMPLETE
 
 
 def _build_attempts(
