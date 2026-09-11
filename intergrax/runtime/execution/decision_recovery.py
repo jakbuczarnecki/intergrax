@@ -1,7 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Decision durable recovery helpers hosted by canonical Execution (DS-REC-02/03)."""
+"""Decision durable recovery helpers hosted by canonical Execution (DS-REC-02/03).
+
+DECISION_DURABLE recovery admission wiring is deferred (W3-C §3.4): no post-start
+execution-width owner exists on this path yet — do not wire RecoveryAdmissionPort here.
+"""
 
 from __future__ import annotations
 

@@ -18,7 +18,7 @@ from intergrax.agent_distribution.bounded_multi_agent_fanout import (
     validate_fan_out_request,
 )
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.execution_identity import ExecutionId
+from intergrax.contracts.execution_identity import ExecutionId, validate_task_id
 from intergrax.contracts.execution_retry import ExecutionFailureKind
 from intergrax.contracts.orchestration_topology import (
     OrchestrationSlotFailure,
@@ -27,6 +27,11 @@ from intergrax.contracts.orchestration_topology import (
     OrchestrationSlotRecoveryRequest,
     OrchestrationSlotStatus,
     OrchestrationTopologyExecutionId,
+)
+from intergrax.contracts.recovery_admission import (
+    RecoveryAdmissionPort,
+    RecoveryAdmissionRequest,
+    RecoveryKind,
 )
 from intergrax.contracts.partial_recovery import (
     PartialRecoveryError,
@@ -149,6 +154,7 @@ class FanOutPartialRecoveryService(Generic[RequestT, ResultT]):
         FanOutItemOutcome[ResultT],
     ]
     checkpoint_store: TaskCheckpointPersistence
+    recovery_admission: RecoveryAdmissionPort | None = None
 
     def validate_recovery_request(
         self,
@@ -302,87 +308,107 @@ class FanOutPartialRecoveryService(Generic[RequestT, ResultT]):
                 code=PartialRecoveryErrorCode.SLOT_NOT_RECOVERABLE,
             )
 
-        execution_id = OrchestrationTopologyExecutionId(snapshot.topology_execution_id)
-        self._ensure_execution_record(
-            fan_out_request=fan_out_request,
-            principal=principal,
-            snapshot=snapshot,
-            partial_result=partial_result,
-            execution_id=execution_id,
-        )
-        host_task = _build_fan_out_host_task(fan_out_request, principal)
-        slot_executor = FanOutCoordinationSlotExecutor(
-            coordination=self.adapter.coordination,
-            principal=principal,
-        )
-        governed = ActiveGovernedExecutionTask()
-        token = governed.bind(host_task)
-        try:
-            orchestration_result = await self.submission_port.recover_failed_slot(
-                OrchestrationSlotRecoveryRequest(
-                    execution_id=execution_id,
-                    slot_id=request.slot_id,
-                    correlation_id=correlation_id,
-                    source_checkpoint_revision=request.source_checkpoint_revision,
+        recovery_permit = None
+        if self.recovery_admission is not None:
+            assert checkpoint.runtime is not None
+            recovery_permit = await self.recovery_admission.acquire(
+                RecoveryAdmissionRequest(
+                    tenant_id=tenant_id,
+                    task_id=validate_task_id(checkpoint.task_id),
+                    run_id=checkpoint.runtime.run_id,
+                    attempt_id=request.source_attempt_id,
+                    recovery_kind=RecoveryKind.PARTIAL_TOPOLOGY,
                 ),
-                slot_executor=slot_executor,
+            )
+
+        execution_id = OrchestrationTopologyExecutionId(snapshot.topology_execution_id)
+        try:
+            self._ensure_execution_record(
+                fan_out_request=fan_out_request,
+                principal=principal,
+                snapshot=snapshot,
+                partial_result=partial_result,
+                execution_id=execution_id,
+            )
+            host_task = _build_fan_out_host_task(fan_out_request, principal)
+            slot_executor = FanOutCoordinationSlotExecutor(
+                coordination=self.adapter.coordination,
+                principal=principal,
+            )
+            governed = ActiveGovernedExecutionTask()
+            token = governed.bind(host_task)
+            try:
+                if recovery_permit is not None:
+                    await recovery_permit.release()
+                    recovery_permit = None
+                orchestration_result = await self.submission_port.recover_failed_slot(
+                    OrchestrationSlotRecoveryRequest(
+                        execution_id=execution_id,
+                        slot_id=request.slot_id,
+                        correlation_id=correlation_id,
+                        source_checkpoint_revision=request.source_checkpoint_revision,
+                    ),
+                    slot_executor=slot_executor,
+                )
+            finally:
+                governed.reset(token)
+
+            recovered_outcomes = map_orchestration_result_to_fan_out_outcomes(
+                fan_out_request,
+                orchestration_result,
+            )
+            merged_items = list(partial_result.items)
+            for index, item in enumerate(fan_out_request.items):
+                if to_orchestration_slot_id(item.item_id) == request.slot_id:
+                    merged_items[index] = recovered_outcomes[index]
+            validate_fan_out_request(cast("FanOutRequest[object]", fan_out_request))
+            merged = FanOutResult(
+                fan_out_id=fan_out_request.fan_out_id,
+                items=tuple(merged_items),
+            )
+            updated_snapshot = capture_topology_recovery_snapshot(
+                request=cast("FanOutRequest[object]", fan_out_request),
+                result=merged,
+                topology_execution_id=execution_id,
+            )
+            assert checkpoint.runtime is not None
+            updated_runtime = checkpoint.runtime.model_copy(
+                update={"topology_recovery": updated_snapshot},
+            )
+            updated_checkpoint = checkpoint.model_copy(
+                update={
+                    "checkpoint_id": f"ckpt_{uuid4().hex[:16]}",
+                    "runtime": updated_runtime,
+                    "progress_message": "partial fan-out recovery committed",
+                },
+            )
+            try:
+                saved = self.checkpoint_store.save(
+                    updated_checkpoint,
+                    expected_revision=checkpoint.revision,
+                )
+            except StaleCheckpointWriteError as exc:
+                raise PartialRecoveryError(
+                    str(exc),
+                    code=PartialRecoveryErrorCode.STALE_CHECKPOINT,
+                ) from exc
+
+            preserved = tuple(
+                FanOutItemId(slot_id)
+                for slot_id in snapshot.slot_order
+                if slot_id != str(request.slot_id)
+                and _slot_disposition(snapshot, OrchestrationSlotId(slot_id))
+                is SlotRecoveryDisposition.SUCCEEDED
+            )
+            return PartialRecoveryResult(
+                fan_out_result=merged,
+                recovered_slot_ids=(FanOutItemId(str(request.slot_id)),),
+                preserved_slot_ids=preserved,
+                checkpoint_revision=saved.revision or request.source_checkpoint_revision,
             )
         finally:
-            governed.reset(token)
-
-        recovered_outcomes = map_orchestration_result_to_fan_out_outcomes(
-            fan_out_request,
-            orchestration_result,
-        )
-        merged_items = list(partial_result.items)
-        for index, item in enumerate(fan_out_request.items):
-            if to_orchestration_slot_id(item.item_id) == request.slot_id:
-                merged_items[index] = recovered_outcomes[index]
-        validate_fan_out_request(cast("FanOutRequest[object]", fan_out_request))
-        merged = FanOutResult(
-            fan_out_id=fan_out_request.fan_out_id,
-            items=tuple(merged_items),
-        )
-        updated_snapshot = capture_topology_recovery_snapshot(
-            request=cast("FanOutRequest[object]", fan_out_request),
-            result=merged,
-            topology_execution_id=execution_id,
-        )
-        assert checkpoint.runtime is not None
-        updated_runtime = checkpoint.runtime.model_copy(
-            update={"topology_recovery": updated_snapshot},
-        )
-        updated_checkpoint = checkpoint.model_copy(
-            update={
-                "checkpoint_id": f"ckpt_{uuid4().hex[:16]}",
-                "runtime": updated_runtime,
-                "progress_message": "partial fan-out recovery committed",
-            },
-        )
-        try:
-            saved = self.checkpoint_store.save(
-                updated_checkpoint,
-                expected_revision=checkpoint.revision,
-            )
-        except StaleCheckpointWriteError as exc:
-            raise PartialRecoveryError(
-                str(exc),
-                code=PartialRecoveryErrorCode.STALE_CHECKPOINT,
-            ) from exc
-
-        preserved = tuple(
-            FanOutItemId(slot_id)
-            for slot_id in snapshot.slot_order
-            if slot_id != str(request.slot_id)
-            and _slot_disposition(snapshot, OrchestrationSlotId(slot_id))
-            is SlotRecoveryDisposition.SUCCEEDED
-        )
-        return PartialRecoveryResult(
-            fan_out_result=merged,
-            recovered_slot_ids=(FanOutItemId(str(request.slot_id)),),
-            preserved_slot_ids=preserved,
-            checkpoint_revision=saved.revision or request.source_checkpoint_revision,
-        )
+            if recovery_permit is not None:
+                await recovery_permit.release()
 
 
 __all__ = [

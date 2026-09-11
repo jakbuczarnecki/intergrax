@@ -60,6 +60,7 @@ Each child: new `ExecutionId`, ledger grant, boundary invoke. No global counter 
 | Graph parallel batch | Optional semaphore wait; `GRAPH_BACKPRESSURE` event when inflight semaphore locked | `GraphExecutor._execute_parallel_batch`, `_emit_backpressure` |
 | Fan-out submission | Reject at validation (invalid request) | `validate_fan_out_request` |
 | Root execution admission | Optional typed port on `ExecutionRuntime` (`ExecutionCapacityAdmissionPort`); default `None` preserves legacy callers | `execution_capacity_admission.py` + `local_execution_capacity_admission.py` |
+| Recovery start admission (W3-C) | Optional `RecoveryAdmissionPort` on TASK_RESUME / partial topology entry; start-only permit; orthogonal to W1 | `recovery_admission.py` + `local_recovery_admission.py` |
 | Tool invoker | Bounded default workers; implicit pending-work queue (no admission shed); blocking wait on shared pool | `invoker.py` `_execution_pool` |
 | Event bus | `create_task` on publish | `event_bus.py` |
 

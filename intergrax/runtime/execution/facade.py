@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Generic, TypeVar
 
+from intergrax.contracts.execution_capacity_admission import ExecutionCapacityPermit
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionOptions,
@@ -35,6 +36,11 @@ class Execution(Generic[RequestT, ResultT]):
         request: RequestT,
         *,
         options: RootExecutionOptions,
+        held_root_capacity_permit: ExecutionCapacityPermit | None = None,
     ) -> ResultT:
         root_context = resolve_root_execution_context(options)
-        return await self._runtime.execute(request, root_context)
+        return await self._runtime.execute(
+            request,
+            root_context,
+            held_root_capacity_permit=held_root_capacity_permit,
+        )

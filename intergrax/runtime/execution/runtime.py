@@ -201,9 +201,12 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self,
         request: RequestT,
         root_context: RootExecutionContext,
+        *,
+        held_root_capacity_permit: ExecutionCapacityPermit | None = None,
     ) -> ResultT:
-        capacity_permit: ExecutionCapacityPermit | None = None
-        if self._execution_capacity_admission is not None:
+        capacity_permit: ExecutionCapacityPermit | None = held_root_capacity_permit
+        acquired_capacity = False
+        if capacity_permit is None and self._execution_capacity_admission is not None:
             capacity_permit = await self._execution_capacity_admission.acquire(
                 ExecutionCapacityAdmissionRequest(
                     tenant_id=root_context.tenant_id,
@@ -213,6 +216,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                     execution_id=root_context.execution_id,
                 ),
             )
+            acquired_capacity = True
         execution_id = root_context.execution_id
         try:
             return await self._execute_with_capacity(
@@ -221,7 +225,9 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 execution_id=execution_id,
             )
         finally:
-            if capacity_permit is not None:
+            if capacity_permit is not None and (
+                acquired_capacity or held_root_capacity_permit is not None
+            ):
                 await capacity_permit.release()
 
     async def _execute_with_capacity(

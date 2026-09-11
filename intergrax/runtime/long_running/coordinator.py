@@ -7,6 +7,16 @@ from __future__ import annotations
 
 from typing import Optional
 
+from intergrax.contracts.execution_capacity_admission import (
+    ExecutionCapacityAdmissionPort,
+    ExecutionCapacityPermit,
+)
+from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId, TaskId
+from intergrax.contracts.recovery_admission import (
+    RecoveryAdmissionPort,
+    RecoveryAdmissionRequest,
+    RecoveryKind,
+)
 from intergrax.runtime.human.models import EscalationOutcome
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 from intergrax.contracts.runtime_policy import PolicyDecision
@@ -37,6 +47,9 @@ from intergrax.runtime.notifications.templates.partial_result import (
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.runtime.resilience.task_resume_recovery_handoff import (
+    handoff_task_resume_recovery_start,
+)
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
 
@@ -49,6 +62,45 @@ def _wants_human_resume(task: Task) -> bool:
 
 class LongRunningCoordinator:
     """Persists checkpoints and restores tasks on resume."""
+
+    @staticmethod
+    async def admit_task_resume_recovery_handoff(
+        *,
+        tenant_id: str | None,
+        task_id: TaskId,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        execution_id: ExecutionId,
+        recovery_admission: RecoveryAdmissionPort | None,
+        execution_capacity_admission: ExecutionCapacityAdmissionPort | None,
+    ) -> ExecutionCapacityPermit | None:
+        """W3-C TASK_RESUME start admission handoff before root execution re-entry."""
+        return await handoff_task_resume_recovery_start(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            recovery_admission=recovery_admission,
+            execution_capacity_admission=execution_capacity_admission,
+        )
+
+    @staticmethod
+    def recovery_admission_request_for_checkpoint(
+        *,
+        tenant_id: str | None,
+        task_id: TaskId,
+        run_id: RunId,
+        attempt_id: AttemptId,
+    ) -> RecoveryAdmissionRequest:
+        """Build one TASK_RESUME admission request from durable resume identity."""
+        return RecoveryAdmissionRequest(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            recovery_kind=RecoveryKind.TASK_RESUME,
+        )
 
     @staticmethod
     def is_long_running(task: Task) -> bool:

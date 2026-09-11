@@ -35,6 +35,8 @@ class InMemoryDecisionCheckpointPersistence(Generic[T]):
         self,
         *,
         checkpoint: DecisionCheckpointState[T],
+        expected_revision: int | None = None,
     ) -> None:
         with self._lock:
+            _ = expected_revision
             self._store[checkpoint.finalization.key] = checkpoint

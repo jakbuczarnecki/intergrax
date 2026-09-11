@@ -22,8 +22,10 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
 )
+from intergrax.contracts.execution_capacity_admission import ExecutionCapacityAdmissionPort
 from intergrax.contracts.execution_failure_evidence import ExecutionFailureEvidenceRecorder
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
+from intergrax.contracts.recovery_admission import RecoveryAdmissionPort
 from intergrax.runtime.execution.agentic import AgentEnginePort
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.execution_terminal.persistence import (
@@ -46,6 +48,9 @@ from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionOptions,
     resolve_root_execution_context,
+)
+from intergrax.runtime.resilience.task_resume_recovery_handoff import (
+    handoff_task_resume_recovery_start,
 )
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
@@ -255,10 +260,14 @@ class HostTaskExecution:
     _revision_admission: EffectiveProfileRevisionAdmissionPort | None = None
     _execution_lineage_persistence: ExecutionLineagePersistence | None = None
     _failure_evidence_recorder: ExecutionFailureEvidenceRecorder | None = None
+    _recovery_admission: RecoveryAdmissionPort | None = None
+    _execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None
 
     def _execution_runtime_for_task(
         self,
         task: Task,
+        *,
+        execution_capacity_admission: ExecutionCapacityAdmissionPort | None,
     ) -> ExecutionRuntime[
         ExecutionRequest[TaskExecutionInput, TaskResult],
         TaskResult,
@@ -284,6 +293,7 @@ class HostTaskExecution:
             decision_lifecycle_host=CanonicalDecisionLifecycleHost(),
             execution_lineage_persistence=self._execution_lineage_persistence,
             failure_evidence_recorder=self._failure_evidence_recorder,
+            execution_capacity_admission=execution_capacity_admission,
         )
 
     async def execute(
@@ -369,10 +379,36 @@ class HostTaskExecution:
                 resume_checkpoint=resume_checkpoint,
                 restore_existing_execution=restore_existing_execution,
             )
+        held_root_capacity = None
+        if resume_checkpoint is not None and (
+            self._recovery_admission is not None
+            or self._execution_capacity_admission is not None
+        ):
+            held_root_capacity = await handoff_task_resume_recovery_start(
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+                run_id=identity.run_id,
+                attempt_id=identity.attempt_id,
+                execution_id=identity.execution_id,
+                recovery_admission=self._recovery_admission,
+                execution_capacity_admission=self._execution_capacity_admission,
+            )
+        runtime_capacity = self._execution_capacity_admission
+        if held_root_capacity is not None:
+            runtime_capacity = None
         await ActiveTaskRegistry.register(task, identity.run_id)
         try:
-            execution = Execution(self._execution_runtime_for_task(task))
-            return await execution.execute(request, options=options)
+            execution = Execution(
+                self._execution_runtime_for_task(
+                    task,
+                    execution_capacity_admission=runtime_capacity,
+                ),
+            )
+            return await execution.execute(
+                request,
+                options=options,
+                held_root_capacity_permit=held_root_capacity,
+            )
         finally:
             if resume_plan_token is not None:
                 reset_active_execution_resume_plan(resume_plan_token)

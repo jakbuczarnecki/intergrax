@@ -101,7 +101,9 @@ class SQLiteDecisionCheckpointPersistence:
         self,
         *,
         checkpoint: DecisionCheckpointState[object],
+        expected_revision: int | None = None,
     ) -> None:
+        _ = expected_revision
         validated = restore_decision_checkpoint_state(checkpoint)
         key = validated.finalization.key
         blob = encode_checkpoint_blob(
