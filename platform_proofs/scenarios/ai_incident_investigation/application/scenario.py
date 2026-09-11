@@ -13,11 +13,13 @@ from typing import Any
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioExecutionRequest,
     ScenarioLabAgentRegistration,
+    ScenarioRuntimeExecutionResult,
     build_scenario_lab_agent_registry,
     execute_scenario_task,
 )
 from intergrax.contracts.evidence_claims import EvidenceChallenge, EvidenceClaimSet, ClaimResolution
 from intergrax.contracts.evidence_claims import validate_evidence_claim_id
+from intergrax.contracts.execution_identity import validate_run_id
 from intergrax.runtime.diagnostics.investigation_contracts import (
     IncidentInvestigationInput,
     InvestigationConclusion,
@@ -25,6 +27,12 @@ from intergrax.runtime.diagnostics.investigation_contracts import (
     validate_investigation_conclusion,
 )
 from intergrax.runtime.diagnostics import ProblemId
+from intergrax.runtime.nexus.tracing.execution.reconciliation_phase import (
+    ReconciliationPhaseValue,
+)
+from intergrax.runtime.observability.qualification_runtime_trace import (
+    DeferredPersistedTraceFinalize,
+)
 from intergrax.runtime.migration.legacy_critic_contracts import LegacyCriticVerdict
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.registry import ToolRegistry
@@ -58,6 +66,10 @@ from platform_proofs.scenarios.ai_incident_investigation.application.tools impor
     ScenarioEvidenceStore,
     register_scenario_tools,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_execution_provenance import (
+    ScenarioExecutionProvenance,
+    scenario_execution_provenance,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
     INVESTIGATOR_NODE_ID,
     ScenarioRuntimeComposition,
@@ -67,9 +79,17 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
     trace_reader_from_composition,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
+    CompletionReconciliationError,
     completion_intent_from_completion_mode,
     normalize_evidence_gathering_stop_reason,
     reconcile_investigation_completion,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
+    PreReconciliationValidationError,
+    enforce_pre_reconciliation_validation_clean_transition,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment_telemetry import (
+    emit_completion_alignment_qualification_trace,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_completion_gate import (
     CompletionEligibilityGateConfig,
@@ -226,6 +246,7 @@ class ScenarioExecutionResult:
     investigation_conclusion: InvestigationConclusion | None = None
     investigated_problem_ids: tuple[ProblemId, ...] = ()
     execution_tenant_id: str = STANDALONE_SCENARIO_TENANT_ID
+    execution_provenance: ScenarioExecutionProvenance | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -331,6 +352,22 @@ def _leak_scan_blob(
     return json.dumps({"claim_set": claim_set, "evidence_nodes": evidence_nodes})
 
 
+def _emit_reconciliation_phase_observation(
+    deferred_trace: DeferredPersistedTraceFinalize | None,
+    *,
+    validation_invalid: bool,
+    entered_reconciliation: bool,
+    phase: ReconciliationPhaseValue,
+) -> None:
+    if deferred_trace is None:
+        return
+    deferred_trace.emit_reconciliation_phase_under_identity(
+        validation_invalid=validation_invalid,
+        entered_reconciliation=entered_reconciliation,
+        phase=phase,
+    )
+
+
 def _persisted_trace_events(
     composition: ScenarioRuntimeComposition,
     run_id: str,
@@ -398,8 +435,39 @@ async def execute_resolved_skeleton(
             tenant_id=execution_tenant_id,
             message="Investigate Line 4 target attainment degradation",
             capability=INVESTIGATOR_CAPABILITY,
+            hold_persisted_trace_finalize=True,
         ),
     )
+    deferred_trace = platform_result.deferred_persisted_trace_finalize
+    if not isinstance(deferred_trace, DeferredPersistedTraceFinalize):
+        deferred_trace = None
+    try:
+        return await _complete_resolved_skeleton_after_platform_run(
+            bundle=bundle,
+            composition=composition,
+            platform_result=platform_result,
+            deferred_trace=deferred_trace,
+            validation_engine=validation_engine,
+            execution_tenant_id=execution_tenant_id,
+            investigated_problem_ids=investigated_problem_ids,
+            max_decision_revisions=max_decision_revisions,
+        )
+    finally:
+        if isinstance(deferred_trace, DeferredPersistedTraceFinalize):
+            await platform.nexus_loop.finalize_deferred_persisted_trace(deferred_trace)
+
+
+async def _complete_resolved_skeleton_after_platform_run(
+    *,
+    bundle: ScenarioRuntimeBundle,
+    composition: ScenarioRuntimeComposition,
+    platform_result: ScenarioRuntimeExecutionResult,
+    deferred_trace: DeferredPersistedTraceFinalize | None,
+    validation_engine: IncidentInvestigationValidationEngine,
+    execution_tenant_id: str,
+    investigated_problem_ids: tuple[ProblemId, ...],
+    max_decision_revisions: int,
+) -> ScenarioExecutionResult:
     task_result = platform_result.task_result
     run_id = str(platform_result.run_id)
     final_execution = task_result.execution_result
@@ -408,7 +476,12 @@ async def execute_resolved_skeleton(
             raise RuntimeError(TERMINAL_STATE_NOT_ACCEPTED)
         raise RuntimeError("no agent executions produced")
 
-    trace_events = _persisted_trace_events(composition, run_id, execution_tenant_id)
+    if isinstance(deferred_trace, DeferredPersistedTraceFinalize):
+        trace_events = [
+            event.to_dict() for event in deferred_trace.trace_emitter.events
+        ]
+    else:
+        trace_events = _persisted_trace_events(composition, run_id, execution_tenant_id)
     domain_payload = domain_payload_from_execution(final_execution)
     evaluator_loop_iterations = count_evaluator_loop_iterations_from_persisted_trace(
         trace_events,
@@ -498,15 +571,48 @@ async def execute_resolved_skeleton(
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
     persist_terminal_acceptance_diagnostic(diagnostic)
-    reconciled = reconcile_investigation_completion(
-        model_intent=completion_intent_from_completion_mode(completion_mode),
-        critic_verdict_passed=critic_verdict_passed,
+    emit_completion_alignment_qualification_trace(
+        deferred_trace,
+        run_id=validate_run_id(run_id),
+        completion_mode=completion_mode,
         has_supported_diagnosis=has_supported_diagnosis,
-        validation_errors=tuple(final_validation.errors),
-        evidence_gathering_stop_reason=normalize_evidence_gathering_stop_reason(
-            evidence_gathering_stop_reason
-        ),
     )
+    try:
+        enforce_pre_reconciliation_validation_clean_transition(
+            validation_valid=final_validation.valid,
+            validation_errors=tuple(final_validation.errors),
+            revision_budget_remaining=max_decision_revisions,
+            completion_mode=completion_mode,
+            has_supported_diagnosis=has_supported_diagnosis,
+        )
+    except PreReconciliationValidationError as exc:
+        _emit_reconciliation_phase_observation(
+            deferred_trace,
+            validation_invalid=True,
+            entered_reconciliation=False,
+            phase=ReconciliationPhaseValue.FAILED,
+        )
+        exc.execution_provenance = scenario_execution_provenance(run_id, execution_tenant_id)
+        raise
+    _emit_reconciliation_phase_observation(
+        deferred_trace,
+        validation_invalid=False,
+        entered_reconciliation=True,
+        phase=ReconciliationPhaseValue.ENTERED,
+    )
+    try:
+        reconciled = reconcile_investigation_completion(
+            model_intent=completion_intent_from_completion_mode(completion_mode),
+            critic_verdict_passed=critic_verdict_passed,
+            has_supported_diagnosis=has_supported_diagnosis,
+            validation_errors=tuple(final_validation.errors),
+            evidence_gathering_stop_reason=normalize_evidence_gathering_stop_reason(
+                evidence_gathering_stop_reason
+            ),
+        )
+    except CompletionReconciliationError as exc:
+        exc.execution_provenance = scenario_execution_provenance(run_id, execution_tenant_id)
+        raise
     if reconciled.completion_mode.value == COMPLETION_SUPPORTED_DIAGNOSIS:
         assert_ai_incident_completion_eligible(
             evidence_nodes=evidence_nodes,
@@ -551,6 +657,7 @@ async def execute_resolved_skeleton(
         investigation_conclusion=investigation_conclusion,
         investigated_problem_ids=investigated_problem_ids,
         execution_tenant_id=execution_tenant_id,
+        execution_provenance=scenario_execution_provenance(run_id, execution_tenant_id),
     )
 
 

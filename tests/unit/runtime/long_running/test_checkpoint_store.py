@@ -13,7 +13,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
-from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
 
 
@@ -25,6 +25,7 @@ def test_checkpoint_store_roundtrip(tmp_path):
         tenant_id="t1",
         user_id="u1",
         message="monitor vendors",
+        state=TaskState.WAITING_FOR_HUMAN,
         options=TaskExecutionOptions(
             long_running=TaskLongRunningOptions(enabled=True, notify_channel="log"),
         ),
@@ -60,6 +61,7 @@ def test_restore_if_resuming_merges_snapshot(tmp_path):
         tenant_id="t1",
         user_id="u1",
         message="paused work",
+        state=TaskState.WAITING_FOR_HUMAN,
         options=TaskExecutionOptions(
             long_running=TaskLongRunningOptions(enabled=True),
         ),

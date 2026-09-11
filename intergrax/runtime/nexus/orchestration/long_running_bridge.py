@@ -5,12 +5,10 @@
 
 from __future__ import annotations
 
-from typing import Awaitable, Callable, Optional, Protocol
+from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Protocol
 
-from intergrax.contracts.execution_identity import (
-    peek_active_execution_identity,
-    validate_attempt_id,
-)
+from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.execution_identity import peek_active_execution_identity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
@@ -24,6 +22,9 @@ from intergrax.runtime.long_running.persistence_contract import (
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.task.task import Task
+
+if TYPE_CHECKING:
+    from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 
 
 class RuntimeEventPublisher(Protocol):
@@ -95,6 +96,7 @@ async def maybe_checkpoint_long_running(
     plan: Optional[NexusPlan] = None,
     graph: Optional[object] = None,
     last_execution: Optional[AgentExecutionResult] = None,
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None,
 ) -> None:
     if checkpoint_store is None or not LongRunningCoordinator.should_checkpoint(task):
         return
@@ -109,6 +111,12 @@ async def maybe_checkpoint_long_running(
         graph=graph_obj,
         last_execution=last_execution,
     )
+    if execution_lineage_persistence is not None:
+        from intergrax.runtime.execution.lineage.seal import (
+            close_active_lineage_segment_for_resume,
+        )
+
+        close_active_lineage_segment_for_resume(execution_lineage_persistence)
     from intergrax.runtime.long_running.partial_results import partial_result_from_checkpoint
 
     partial = partial_result_from_checkpoint(checkpoint)

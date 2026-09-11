@@ -6,13 +6,13 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Protocol, runtime_checkable
-
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
-    DocumentQueryCursorCodec,
     DocumentRecord,
     DocumentStore,
+)
+from intergrax.integrations.contracts.document_store_query_cursor_provider import (
+    DocumentStoreQueryCursorProvider,
 )
 from intergrax.integrations.contracts.partition_atomic_document_store import (
     PartitionAtomicBatch,
@@ -57,13 +57,6 @@ _MAX_OCCURRENCE_PAGE_LIMIT = 1000
 _MAX_SORT_MICROS = 10**16
 _UTC_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 _MAX_ATOMIC_BATCH_RETRIES = 256
-
-
-@runtime_checkable
-class DocumentStoreQueryCursorProvider(Protocol):
-    @property
-    def query_cursor_codec(self) -> DocumentQueryCursorCodec:
-        """Authenticated codec for document-store query continuation cursors."""
 
 
 def _occurrence_partition(tenant_id: str, problem_id: ProblemId) -> str:

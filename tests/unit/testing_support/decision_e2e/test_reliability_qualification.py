@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -29,6 +30,7 @@ from testing_support.decision_e2e.failure_observation_adapter import (
 from testing_support.decision_e2e.reliability_qualification import (
     CallableDecisionQualificationRunExecutor,
     DecisionReliabilityQualificationPlan,
+    DecisionReliabilityQualificationResult,
     DecisionReliabilityQualificationRunRecord,
     QualificationSessionIntegrityError,
     execute_reliability_qualification,
@@ -62,6 +64,10 @@ def _signals(**overrides: object) -> AiIncidentQualificationRunSignals:
         "trace_event_count": 3,
         "route": "unavailable",
         "stop_reason": "complete",
+        "reconciliation_error_reason": None,
+        "reconciliation_model_intent": None,
+        "reconciliation_has_supported_diagnosis": None,
+        "reconciliation_validation_errors": (),
     }
     base.update(overrides)
     return AiIncidentQualificationRunSignals(**base)
@@ -78,6 +84,8 @@ def _model_fail_outcome(run_index: int) -> AiIncidentQualificationRunOutcome:
         valid_model_trial=True,
         environment_event=False,
         run_id=run_id,
+        runtime_execution_run_id=str(run_id),
+        qualification_observation_run_id=None,
         signals=_signals(),
         run_result=build_decision_qualification_run_result(
             run_id=run_id,
@@ -85,6 +93,7 @@ def _model_fail_outcome(run_index: int) -> AiIncidentQualificationRunOutcome:
             evaluator_passed=False,
         ),
         block_reason="staffing_attendance_not_gathered",
+        trace_evidence=None,
     )
 
 
@@ -96,6 +105,8 @@ def _provider_fail_outcome(run_index: int) -> AiIncidentQualificationRunOutcome:
         valid_model_trial=True,
         environment_event=False,
         run_id=run_id,
+        runtime_execution_run_id=str(run_id),
+        qualification_observation_run_id=None,
         signals=None,
         run_result=build_decision_qualification_run_result(
             run_id=run_id,
@@ -103,6 +114,7 @@ def _provider_fail_outcome(run_index: int) -> AiIncidentQualificationRunOutcome:
             evaluator_passed=False,
         ),
         block_reason="rate limit",
+        trace_evidence=None,
     )
 
 
@@ -117,6 +129,8 @@ def _env_fail_outcome(run_index: int) -> AiIncidentQualificationRunOutcome:
         valid_model_trial=False,
         environment_event=True,
         run_id=None,
+        runtime_execution_run_id=None,
+        qualification_observation_run_id="qual-obs-test",
         signals=None,
         run_result=build_decision_qualification_run_result(
             run_id=mint_run_id(),
@@ -124,6 +138,7 @@ def _env_fail_outcome(run_index: int) -> AiIncidentQualificationRunOutcome:
             evaluator_passed=False,
         ),
         block_reason="credential unavailable",
+        trace_evidence=None,
     )
 
 
@@ -287,12 +302,15 @@ def test_consistency_rule_rejects_contradiction() -> None:
 
 
 def test_summary_contains_evaluator_fail_count() -> None:
-    outcomes = [_model_fail_outcome(0)]
-    result = qualification_result_to_summary_dict(
-        _result_from_outcomes(outcomes, run_count=1),
+    outcomes = (_model_fail_outcome(0),)
+    summary = cast(
+        dict[str, Any],
+        qualification_result_to_summary_dict(
+            _result_from_outcomes(outcomes, run_count=1),
+        ),
     )
-    assert result["evaluator_fail_count"] == 1
-    assert result["reliability"]["model_evaluable_count"] == 1
+    assert summary["evaluator_fail_count"] == 1
+    assert summary["reliability"]["model_evaluable_count"] == 1
 
 
 async def _async_return(value: AiIncidentQualificationRunOutcome) -> AiIncidentQualificationRunOutcome:
@@ -314,7 +332,7 @@ def _result_from_outcomes(
     outcomes: tuple[AiIncidentQualificationRunOutcome, ...],
     *,
     run_count: int,
-):
+) -> DecisionReliabilityQualificationResult:
     import asyncio
 
     executor = CallableDecisionQualificationRunExecutor(

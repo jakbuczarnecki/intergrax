@@ -146,7 +146,8 @@ def test_journal_export_snapshot_serializes_unified_journal() -> None:
         runtime_store=store,
     )
     assert snapshot.event_count == 1
-    assert snapshot.events[0]["event_type"] == RuntimeEventType.TASK_COMPLETED.value
+    assert snapshot.events[0].event_type == RuntimeEventType.TASK_COMPLETED.value
+    assert snapshot.schema_version == "journal_export.v2"
     assert snapshot.parser_trace_count == 0
 
 
@@ -224,6 +225,7 @@ class _RecordingStore(InMemoryRuntimeEventStore):
         tenant_id: str,
         limit: int = 1000,
         through=None,
+        after=None,
     ):
         self.list_positioned_for_run_calls.append((run_id, tenant_id, limit))
         return super().list_positioned_for_run(
@@ -231,6 +233,7 @@ class _RecordingStore(InMemoryRuntimeEventStore):
             tenant_id=tenant_id,
             limit=limit,
             through=through,
+            after=after,
         )
 
 
@@ -259,7 +262,9 @@ def test_journal_ref_empty_canonical_store_keeps_parser_trace_count() -> None:
     assert ref is not None
     assert ref.event_count == 0
     assert ref.parser_trace_count == 1
-    assert store.list_positioned_for_run_calls == [(run_id, _TENANT, 2000)]
+    assert store.list_positioned_for_run_calls
+    assert all(call[0] == run_id and call[1] == _TENANT for call in store.list_positioned_for_run_calls)
+    assert (run_id, _TENANT, 2001) in store.list_positioned_for_run_calls
 
 
 def test_journal_export_snapshot_requires_actual_runtime_store() -> None:
@@ -267,6 +272,9 @@ def test_journal_export_snapshot_requires_actual_runtime_store() -> None:
     store = _RecordingStore()
     snapshot = build_journal_export_snapshot(_persisted_run(run_id=run_id), runtime_store=store)
     assert snapshot.event_count == 0
-    assert snapshot.events == []
+    assert snapshot.events == ()
+    assert snapshot.is_complete is True
     assert snapshot.parser_trace_count == 0
-    assert store.list_positioned_for_run_calls == [(run_id, _TENANT, 2000)]
+    assert store.list_positioned_for_run_calls
+    assert all(call[0] == run_id and call[1] == _TENANT for call in store.list_positioned_for_run_calls)
+    assert (run_id, _TENANT, 2001) in store.list_positioned_for_run_calls

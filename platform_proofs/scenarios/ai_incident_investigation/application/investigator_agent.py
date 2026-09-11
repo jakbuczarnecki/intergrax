@@ -8,6 +8,7 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.evidence_claims import ClaimResolution
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.diagnostics.investigation_contracts import IncidentInvestigationInput
@@ -21,16 +22,44 @@ from platform_proofs.scenarios.ai_incident_investigation.application.evidence_ga
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_phase_context import (
     derive_evidence_phase_context,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment import (
+    CompletionAlignmentState,
+    CompletionAlignmentStatus,
+    assess_completion_alignment,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment_correction import (
+    correction_decision_for_domain_alignment,
+    primary_alignment_validation_error,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment_telemetry import (
+    emit_completion_alignment_diag_v1,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_revision_context import (
+    CompletionAlignmentRevisionContext,
+    build_completion_alignment_revision_context,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
+    PriorInvestigationState,
     build_investigation_summary,
+    completion_mode_from_intent,
     completion_mode_from_proposal,
     convert_proposal_to_pending_claims,
     extract_prior_investigation_state,
     propose_incident_reasoning,
     emit_reasoning_observability,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.observability import (
+    IncidentCompletionAlignmentDiagV1,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
+    apply_critic_claim_resolutions,
+    authoritative_supported_diagnosis_present,
+)
+from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import IncidentScope
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
+    DEFAULT_EVALUATOR_LOOP_MAX_ITERATIONS,
+    INVESTIGATOR_NODE_ID,
     ScenarioRuntimeComposition,
     build_agent_runtime_context,
 )
@@ -76,6 +105,56 @@ def _is_revision(ctx: RuntimeExecutionContext) -> bool:
         return True
     raw_feedback = ctx.metadata.get("critic_feedback")
     return isinstance(raw_feedback, list) and bool(raw_feedback)
+
+
+def _evaluator_iterations_remaining_after_current_pass(is_revision: bool) -> int:
+    if is_revision:
+        return 0
+    return max(0, DEFAULT_EVALUATOR_LOOP_MAX_ITERATIONS - 1)
+
+
+def _build_alignment_revision_context_from_prior(
+    prior_state: PriorInvestigationState,
+    *,
+    critic_feedback: tuple[str, ...],
+    is_revision: bool,
+) -> CompletionAlignmentRevisionContext | None:
+    if not is_revision:
+        return None
+    if primary_alignment_validation_error(critic_feedback) is None:
+        return None
+    if prior_state.claim_set is None or prior_state.completion_intent is None:
+        return None
+    prior_completion_mode = completion_mode_from_intent(prior_state.completion_intent)
+    domain_payload = {
+        "claim_set": prior_state.claim_set.model_dump(mode="json"),
+        "claim_hypothesis_bindings": [
+            binding.model_dump(mode="json") for binding in prior_state.claim_hypothesis_bindings
+        ],
+        "evidence_nodes": list(prior_state.evidence_nodes),
+        "completion_mode": prior_completion_mode,
+    }
+    resolved_claim_set = apply_critic_claim_resolutions(
+        prior_state.claim_set,
+        domain_payload,
+        bindings=prior_state.claim_hypothesis_bindings,
+    )
+    has_supported_diagnosis = any(
+        claim.resolution is ClaimResolution.SUPPORTED for claim in resolved_claim_set.claims
+    )
+    semantic_decision = correction_decision_for_domain_alignment(
+        completion_mode=prior_completion_mode,
+        has_supported_diagnosis=has_supported_diagnosis,
+        proposal_structurally_valid=True,
+        evaluator_iterations_remaining=1,
+    )
+    if not semantic_decision.alignment_correctable:
+        return None
+    return build_completion_alignment_revision_context(
+        resolved_claim_set=resolved_claim_set,
+        bindings=prior_state.claim_hypothesis_bindings,
+        prior_completion_mode=prior_completion_mode,
+    )
 
 
 def _prior_metadata(ctx: RuntimeExecutionContext) -> dict[str, object]:
@@ -149,6 +228,11 @@ class IncidentInvestigatorAgent(Agent):
             node_id=node_id or None,
         )
         critic_feedback = _extract_critic_feedback(ctx, is_revision)
+        alignment_revision_context = _build_alignment_revision_context_from_prior(
+            prior_state,
+            critic_feedback=tuple(critic_feedback),
+            is_revision=is_revision,
+        )
 
         gathering = gather_incident_evidence(
             runtime_state=runtime_state,
@@ -170,6 +254,7 @@ class IncidentInvestigatorAgent(Agent):
             is_revision=is_revision,
             evidence_phase_context=evidence_phase_context,
             investigation_input=self._investigation_input,
+            alignment_revision_context=alignment_revision_context,
         )
         pending_conversion = convert_proposal_to_pending_claims(
             proposal,
@@ -181,6 +266,109 @@ class IncidentInvestigatorAgent(Agent):
         pending_claim_set = pending_conversion.claim_set
         claim_bindings = pending_conversion.bindings
         completion_mode = completion_mode_from_proposal(proposal)
+        preview_domain_payload = {
+            "claim_set": pending_claim_set.model_dump(mode="json"),
+            "claim_hypothesis_bindings": [
+                binding.model_dump(mode="json") for binding in claim_bindings
+            ],
+            "evidence_nodes": evidence_nodes,
+            "completion_mode": completion_mode,
+        }
+        has_supported_diagnosis = authoritative_supported_diagnosis_present(
+            pending_claim_set,
+            preview_domain_payload,
+            bindings=claim_bindings,
+        )
+        alignment = assess_completion_alignment(
+            CompletionAlignmentState(
+                completion_mode=completion_mode,
+                has_supported_diagnosis=has_supported_diagnosis,
+            )
+        )
+        budget_remaining = _evaluator_iterations_remaining_after_current_pass(is_revision)
+        correction_decision = correction_decision_for_domain_alignment(
+            completion_mode=completion_mode,
+            has_supported_diagnosis=has_supported_diagnosis,
+            proposal_structurally_valid=pending_claim_set is not None,
+            evaluator_iterations_remaining=budget_remaining,
+        )
+        semantic_correction_decision = correction_decision_for_domain_alignment(
+            completion_mode=completion_mode,
+            has_supported_diagnosis=has_supported_diagnosis,
+            proposal_structurally_valid=pending_claim_set is not None,
+            evaluator_iterations_remaining=1,
+        )
+        alignment_correction_succeeded = (
+            is_revision
+            and alignment.status is CompletionAlignmentStatus.ALIGNED
+            and primary_alignment_validation_error(tuple(critic_feedback)) is not None
+        )
+        emit_completion_alignment_diag_v1(
+            runtime_state=runtime_state,
+            node_id=INVESTIGATOR_NODE_ID,
+            completion_mode=completion_mode,
+            supported_state_present=has_supported_diagnosis,
+            assessment=alignment,
+            correctable=semantic_correction_decision.alignment_correctable,
+            supported_hypothesis_id=(
+                alignment_revision_context.supported_hypothesis_id.value
+                if alignment_revision_context is not None
+                and alignment_revision_context.supported_hypothesis_id is not None
+                else None
+            ),
+            supported_resolution=(
+                alignment_revision_context.supported_resolution.value
+                if alignment_revision_context is not None
+                and alignment_revision_context.supported_resolution is not None
+                else None
+            ),
+        )
+        runtime_state.trace_event(
+            component=TraceComponent.PLANNER,
+            step="incident_completion_alignment",
+            message="Incident investigator completion alignment assessment",
+            level=TraceLevel.INFO,
+            payload=IncidentCompletionAlignmentDiagV1(
+                completion_mode=completion_mode,
+                has_supported_diagnosis=has_supported_diagnosis,
+                alignment_status=alignment.status.value,
+                mismatch_reason=(
+                    alignment.mismatch_reason.value
+                    if alignment.mismatch_reason is not None
+                    else None
+                ),
+                revision_pass=is_revision,
+                revision_authoritative_context_present=alignment_revision_context is not None,
+                supported_hypothesis_id=(
+                    alignment_revision_context.supported_hypothesis_id.value
+                    if alignment_revision_context is not None
+                    and alignment_revision_context.supported_hypothesis_id is not None
+                    else None
+                ),
+                supported_resolution=(
+                    alignment_revision_context.supported_resolution.value
+                    if alignment_revision_context is not None
+                    and alignment_revision_context.supported_resolution is not None
+                    else None
+                ),
+                alignment_mismatch_detected=correction_decision.alignment_mismatch_detected,
+                alignment_direction=(
+                    correction_decision.direction.value
+                    if correction_decision.direction is not None
+                    else None
+                ),
+                alignment_correctable=semantic_correction_decision.alignment_correctable,
+                alignment_correction_attempted=is_revision
+                and primary_alignment_validation_error(tuple(critic_feedback)) is not None,
+                alignment_correction_attempt_index=1 if is_revision else None,
+                alignment_correction_succeeded=alignment_correction_succeeded,
+                alignment_correction_exhausted=(
+                    semantic_correction_decision.alignment_mismatch_detected
+                    and semantic_correction_decision.alignment_correctable
+                    and budget_remaining <= 0
+                ),
+            ),
+        )
         emit_reasoning_observability(
             runtime_state=runtime_state,
             proposal=proposal,

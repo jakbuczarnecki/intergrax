@@ -103,6 +103,9 @@ from intergrax.runtime.nexus.execution.evaluator_loop_metadata import (
     evaluator_loop_spec_from_node,
     set_evaluator_loop_iteration,
 )
+from intergrax.runtime.observability.qualification_runtime_trace import (
+    RuntimeDiagnosticTracePort,
+)
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
     ExecutionGraphCycleError,
@@ -263,6 +266,7 @@ class GraphExecutor:
         self._strategy_router = StrategyExecutionRouter(
             agent_executor=AgentExecutor(self._engine),
         )
+        self._runtime_diagnostic_trace_port: RuntimeDiagnosticTracePort | None = None
 
     @property
     def execution_identity(self) -> ActiveExecutionIdentity:
@@ -341,15 +345,21 @@ class GraphExecutor:
         on_retry: Optional[RetryCallback] = None,
         on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
         on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
+        runtime_diagnostic_trace_port: RuntimeDiagnosticTracePort | None = None,
     ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
-        return await self._execute_graph(
-            graph,
-            task,
-            plan_criteria=plan_criteria,
-            on_retry=on_retry,
-            on_node_start=on_node_start,
-            on_node_complete=on_node_complete,
-        )
+        previous_port = self._runtime_diagnostic_trace_port
+        self._runtime_diagnostic_trace_port = runtime_diagnostic_trace_port
+        try:
+            return await self._execute_graph(
+                graph,
+                task,
+                plan_criteria=plan_criteria,
+                on_retry=on_retry,
+                on_node_start=on_node_start,
+                on_node_complete=on_node_complete,
+            )
+        finally:
+            self._runtime_diagnostic_trace_port = previous_port
 
     async def _execute_graph(
         self,
@@ -984,6 +994,15 @@ class GraphExecutor:
                 output_type=AgentExecutionResult,
                 capabilities=frozenset({ExecutionCapability.AGENT}),
             )
+            if loop_spec is not None:
+                trace_port = self._runtime_diagnostic_trace_port
+                if trace_port is not None:
+                    trace_port.emit_evaluator_model_attempt(
+                        run_id=active_run_id,
+                        node_id=node.node_id,
+                        attempt_index=current_evaluator_loop_iteration(node),
+                        max_iterations=loop_spec.max_iterations,
+                    )
             governed_task_binding = ActiveGovernedExecutionTask()
             token = governed_task_binding.bind(task)
             try:
@@ -1359,6 +1378,42 @@ class GraphExecutor:
         return build_orchestration_result(
             topology,
             outcomes_by_slot=outcomes_by_slot,
+        )
+
+    async def continue_orchestration_topology_slot(
+        self,
+        graph: ExecutionGraph,
+        task: Task,
+        *,
+        slot_id: OrchestrationSlotId,
+        topology: OrchestrationTopology[PayloadT],
+        node_execution: OrchestrationNodeExecutionPort[PayloadT, ResultT],
+        scheduling_policy: OrchestrationSchedulingPolicy,
+    ) -> OrchestrationSlotOutcome[ResultT]:
+        """Execute one orchestration slot through canonical child execution scheduling."""
+        validate_orchestration_topology(topology)
+        validate_orchestration_scheduling_policy(scheduling_policy)
+        require_active_execution_identity()
+        require_active_execution_id()
+
+        node = next(
+            (
+                candidate
+                for candidate in graph.nodes
+                if candidate.orchestration_slot_id == slot_id
+            ),
+            None,
+        )
+        if node is None:
+            raise RuntimeError(f"orchestration slot not found in graph: {slot_id!r}")
+
+        work_delegate = _OrchestrationWorkChildDelegate[PayloadT, ResultT]()
+        return await self._execute_orchestration_work_node(
+            graph,
+            task,
+            node,
+            node_execution=node_execution,
+            work_delegate=work_delegate,
         )
 
     async def _execute_orchestration_work_graph(

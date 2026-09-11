@@ -40,12 +40,14 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.pgvector.errors import (
     PgVectorBootstrapConfigurationError,
     PgVectorBootstrapIdentityConflictError,
+    PgVectorBootstrapOperationError,
     PgVectorBootstrapSchemaError,
     PgVectorBootstrapVectorValidationError,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.pgvector.stored_row import (
     normalize_vector_float32,
     record_matches_stored,
+    stored_pgvector_row_from_fetched_row,
     stored_row_from_record,
     stored_row_identity_matches,
     vectors_transport_equal,
@@ -207,6 +209,7 @@ class _FakePgVectorBackend:
     transaction_active: bool = False
     staged_rows: dict[str, dict[str, object]] = field(default_factory=dict)
     query_log: list[str] = field(default_factory=list)
+    config_calls: list[tuple[str, str]] = field(default_factory=list)
 
     def active_rows(self) -> dict[str, dict[str, object]]:
         return self.staged_rows if self.transaction_active else self.rows
@@ -231,7 +234,8 @@ class _FakePgVectorBackend:
         if normalized.startswith("set transaction isolation level"):
             self.begin_transaction()
             return _FakeCursor(query, params, self)
-        if normalized.startswith("set local application_name"):
+        if normalized.startswith("select set_config"):
+            self.config_calls.append((str(params[0]), str(params[1])))
             return _FakeCursor(query, params, self)
         if normalized.startswith("set search_path"):
             return _FakeCursor(query, params, self)
@@ -773,6 +777,76 @@ def test_float32_transport_equality() -> None:
     assert vectors_transport_equal(left, right, tolerance=0.0) is True
 
 
+def test_provider_native_pgvector_vector_conversion() -> None:
+    pytest.importorskip("pgvector")
+    from pgvector import Vector
+
+    record = _vector_record(0)
+    provider_vector = Vector(list(record.dense_embedding))
+    row = {
+        "logical_point_id": record.logical_point_id,
+        "catalog_id": record.source_ref.catalog_id,
+        "offer_id": record.source_ref.offer_id.value,
+        "source_revision_norm": "",
+        "source_revision": None,
+        "semantic_text_hash": record.semantic_text_hash,
+        "embedding_provider": record.embedding_provider,
+        "embedding_model": record.embedding_model,
+        "embedding_revision": record.embedding_revision,
+        "embedding_dimension": record.embedding_dimension,
+        "derivation_version": record.derivation_version,
+        "dense_embedding": provider_vector,
+    }
+    converted = stored_pgvector_row_from_fetched_row(row)
+    assert len(converted.dense_embedding) == CANONICAL_EMBEDDING_DIMENSION
+    assert converted.dense_embedding == normalize_vector_float32(record.dense_embedding)
+
+
+def test_provider_native_pgvector_vector_wrong_type_fails_closed() -> None:
+    record = _vector_record(0)
+    with pytest.raises(PgVectorBootstrapOperationError, match="dense_embedding must be a vector sequence"):
+        stored_pgvector_row_from_fetched_row(
+            {
+                "logical_point_id": record.logical_point_id,
+                "catalog_id": record.source_ref.catalog_id,
+                "offer_id": record.source_ref.offer_id.value,
+                "source_revision_norm": "",
+                "source_revision": None,
+                "semantic_text_hash": record.semantic_text_hash,
+                "embedding_provider": record.embedding_provider,
+                "embedding_model": record.embedding_model,
+                "embedding_revision": record.embedding_revision,
+                "embedding_dimension": record.embedding_dimension,
+                "derivation_version": record.derivation_version,
+                "dense_embedding": "not-a-vector",
+            }
+        )
+
+
+def test_provider_native_pgvector_vector_dimension_mismatch_fails_closed() -> None:
+    pytest.importorskip("pgvector")
+    from pgvector import Vector
+
+    record = _vector_record(0)
+    with pytest.raises(PgVectorBootstrapOperationError, match="dimension mismatch"):
+        stored_pgvector_row_from_fetched_row(
+            {
+                "logical_point_id": record.logical_point_id,
+                "catalog_id": record.source_ref.catalog_id,
+                "offer_id": record.source_ref.offer_id.value,
+                "source_revision_norm": "",
+                "source_revision": None,
+                "semantic_text_hash": record.semantic_text_hash,
+                "embedding_provider": record.embedding_provider,
+                "embedding_model": record.embedding_model,
+                "embedding_revision": record.embedding_revision,
+                "embedding_dimension": record.embedding_dimension,
+                "derivation_version": record.derivation_version,
+                "dense_embedding": Vector([0.0, 1.0]),
+            }
+        )
+
+
 def test_record_matches_stored_helper() -> None:
     record = _vector_record(0)
     stored = stored_row_from_record(record)
@@ -893,3 +967,40 @@ def test_real_pgvector_bounded_qualification() -> None:
             if schema_name != "public":
                 session.execute(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE")
             session.commit()
+
+
+# --- SESSION CONFIG ---
+
+
+def test_pgvector_adapter_source_has_no_set_local_bind_parameters() -> None:
+    adapter_root = (
+        Path(__file__).resolve().parents[5]
+        / "platform_proofs/scenarios/verified_product_identification/storage_bootstrap/adapters/pgvector"
+    )
+    source = (adapter_root / "adapter.py").read_text(encoding="utf-8")
+    assert "SET LOCAL" not in source
+    assert "set_local_config" in source
+
+
+def test_pgvector_apply_session_limits_uses_parameterized_set_config() -> None:
+    backend = _FakePgVectorBackend()
+    config = _configuration()
+    adapter = _adapter_with_fake(backend, configuration=config)
+    with adapter._provider.connection() as session:
+        adapter._apply_session_limits(session)
+    assert ("application_name", config.application_name) in backend.config_calls
+
+
+def test_pgvector_apply_session_limits_skips_empty_application_name() -> None:
+    backend = _FakePgVectorBackend()
+    config = PgVectorBootstrapConfiguration(
+        sql_integration=_configuration().sql_integration,
+        schema_name="vpi_test_schema",
+        table_name="vpi_data_pack_vector_embedding",
+        expected_vector_identity=ExpectedVectorIdentity.canonical_vpi(),
+        application_name="",
+    )
+    adapter = _adapter_with_fake(backend, configuration=config)
+    with adapter._provider.connection() as session:
+        adapter._apply_session_limits(session)
+    assert backend.config_calls == []

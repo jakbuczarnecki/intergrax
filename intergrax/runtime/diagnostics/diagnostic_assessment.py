@@ -8,7 +8,24 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from intergrax.contracts.execution_identity import AttemptId, EventId, RunId, TaskId
+from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    EventId,
+    ExecutionId,
+    RunId,
+    TaskId,
+)
+from intergrax.runtime.diagnostics.diagnostic_precision import (
+    DiagnosticCertainty,
+    DiagnosticPrecision,
+    FailureBoundary,
+)
+from intergrax.contracts.multi_agent_failure_localization import FailureBoundaryAnalysis
+from intergrax.runtime.diagnostics.execution_failure_analysis import ExecutionFailureAnalyzer
+from intergrax.runtime.diagnostics.multi_agent_failure_localization import (
+    ExecutionFailureTopologyAnalyzer,
+)
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstruction
 from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnalysis,
@@ -25,13 +42,6 @@ class DiagnosticAssessmentIntegrityError(Exception):
     """Raised when reconstruction and lifecycle analysis scopes do not match."""
 
 
-class DiagnosticCertainty(StrEnum):
-    """Semantic certainty for operator-facing diagnostic claims."""
-
-    PROVEN = "proven"
-    INSUFFICIENT_EVIDENCE = "insufficient_evidence"
-
-
 class DiagnosticFindingKind(StrEnum):
     """Operator-facing conclusion kinds derived from lifecycle anomalies."""
 
@@ -40,6 +50,7 @@ class DiagnosticFindingKind(StrEnum):
     MULTIPLE_TERMINAL_OUTCOMES = "multiple_terminal_outcomes"
     EVENT_AFTER_TERMINAL = "event_after_terminal"
     DISALLOWED_AFTER_FAILED = "disallowed_after_failed"
+    EXECUTION_FAILED = "execution_failed"
 
 
 class DiagnosticLimitationKind(StrEnum):
@@ -124,11 +135,15 @@ class DiagnosticFinding:
     attempt_id: AttemptId | None
     certainty: DiagnosticCertainty
     claim: str
-    source_anomaly_kind: LifecycleAnomalyKind
+    source_anomaly_kind: LifecycleAnomalyKind | None
     supporting_event_ids: tuple[EventId, ...]
     supporting_evidence_ids: tuple[EventId, ...]
     supporting_positions: tuple[ExecutionEventPosition, ...]
     lifecycle_transition: LifecycleViolationTransition | None = None
+    execution_id: ExecutionId | None = None
+    precision: DiagnosticPrecision | None = None
+    failure_boundary: FailureBoundary | None = None
+    execution_failure_kind: ExecutionFailureKind | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,6 +171,7 @@ class DiagnosticAssessment:
     run_id: RunId
     findings: tuple[DiagnosticFinding, ...]
     limitations: tuple[DiagnosticLimitation, ...]
+    failure_boundary_analysis: FailureBoundaryAnalysis | None = None
 
     @property
     def has_findings(self) -> bool:
@@ -173,6 +189,19 @@ class DiagnosticAssessmentBuilder:
     Does not query persistence, emit events, infer root cause, or use LLM.
     """
 
+    def __init__(
+        self,
+        *,
+        execution_failure_analyzer: ExecutionFailureAnalyzer | None = None,
+        failure_topology_analyzer: ExecutionFailureTopologyAnalyzer | None = None,
+    ) -> None:
+        self._execution_failure_analyzer = (
+            execution_failure_analyzer or ExecutionFailureAnalyzer()
+        )
+        self._failure_topology_analyzer = (
+            failure_topology_analyzer or ExecutionFailureTopologyAnalyzer()
+        )
+
     def assess(
         self,
         reconstruction: ExecutionReconstruction,
@@ -182,6 +211,13 @@ class DiagnosticAssessmentBuilder:
 
         findings: list[DiagnosticFinding] = []
         limitations: list[DiagnosticLimitation] = []
+
+        findings.extend(self._execution_failure_analyzer.analyze(reconstruction))
+
+        failure_boundary_analysis = self._failure_topology_analyzer.analyze(
+            reconstruction,
+            tuple(findings),
+        )
 
         for anomaly in lifecycle.anomalies:
             output_kind = _ANOMALY_OUTPUT_KIND[anomaly.kind]
@@ -200,6 +236,7 @@ class DiagnosticAssessmentBuilder:
             run_id=reconstruction.run_id,
             findings=tuple(findings),
             limitations=tuple(limitations),
+            failure_boundary_analysis=failure_boundary_analysis,
         )
 
 

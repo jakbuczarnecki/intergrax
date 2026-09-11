@@ -99,6 +99,7 @@ class VectorIndexDescription:
     reachable: bool
     point_count: int
     dense_dimension: int | None
+    dense_metric: Metric | None
     present_capabilities: frozenset[VectorSearchCapability]
     dense_channel_name: str | None
     sparse_lexical_channel_name: str | None

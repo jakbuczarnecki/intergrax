@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from typing import Any, Dict, List
 
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNodeStatus
@@ -17,7 +19,39 @@ __all__ = [
     "CANCELLATION_REASON_KEY",
     "CANCELLATION_REQUESTED_KEY",
     "CancellationCoordinator",
+    "CooperativeCancellationAbort",
+    "cooperative_delay_seconds",
 ]
+
+
+class CooperativeCancellationAbort(BaseException):
+    """Blocking retry/backoff aborted after cooperative cancellation was requested."""
+
+
+def cooperative_delay_seconds(
+    delay_seconds: float,
+    *,
+    should_abort: Callable[[], bool] | None = None,
+    poll_interval_seconds: float = 0.05,
+) -> None:
+    """Sleep up to ``delay_seconds``; raise when ``should_abort`` becomes true."""
+    if delay_seconds <= 0:
+        if should_abort is not None and should_abort():
+            raise CooperativeCancellationAbort()
+        return
+    if should_abort is None:
+        time.sleep(delay_seconds)
+        return
+    deadline = time.monotonic() + delay_seconds
+    while time.monotonic() < deadline:
+        if should_abort():
+            raise CooperativeCancellationAbort()
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        time.sleep(min(poll_interval_seconds, remaining))
+    if should_abort is not None and should_abort():
+        raise CooperativeCancellationAbort()
 
 
 class CancellationCoordinator:

@@ -701,13 +701,14 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
-            with self.client.responses.stream(**payload, **self.request_defaults) as stream:
-                for ev in stream:
-                    if ev.type == "response.output_text.delta":
-                        delta = ev.delta
-                        if delta:
-                            buf.append(delta)
-                            yield partial_stream_event(delta_content=delta)
+            with self._provider_dependency_attempt():
+                with self.client.responses.stream(**payload, **self.request_defaults) as stream:
+                    for ev in stream:
+                        if ev.type == "response.output_text.delta":
+                            delta = ev.delta
+                            if delta:
+                                buf.append(delta)
+                                yield partial_stream_event(delta_content=delta)
 
             full_text = "".join(buf)
             out_tok = int(self.estimate_tokens_for_text(full_text))
@@ -802,38 +803,39 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
             if max_tokens is not None:
                 payload["max_output_tokens"] = max_tokens
 
-            with self.client.responses.stream(**payload, **self.request_defaults) as stream:
-                for ev in stream:
-                    if ev.type == "response.output_text.delta":
-                        delta = ev.delta or ""
-                        if delta:
-                            buf.append(delta)
-                            yield partial_stream_event(delta_content=delta)
+            with self._provider_dependency_attempt():
+                with self.client.responses.stream(**payload, **self.request_defaults) as stream:
+                    for ev in stream:
+                        if ev.type == "response.output_text.delta":
+                            delta = ev.delta or ""
+                            if delta:
+                                buf.append(delta)
+                                yield partial_stream_event(delta_content=delta)
 
-                get_final = attribute_access.optional(stream, "get_final_response", None)
-                resp = get_final() if callable(get_final) else None
-                if resp is None:
-                    raise RuntimeError("OpenAI responses stream did not return a final response")
+                    get_final = attribute_access.optional(stream, "get_final_response", None)
+                    resp = get_final() if callable(get_final) else None
+                    if resp is None:
+                        raise RuntimeError("OpenAI responses stream did not return a final response")
 
-                native_tool_calls = self._extract_tool_calls_from_response(
-                    resp,
-                    tool_name_mapping,
-                    tool_definitions=tool_definitions,
-                )
-                final_content = self._collect_output_text(resp) or "".join(buf)
-                final_response = adapter_response_from_openai_responses(
-                    resp,
-                    model=self.model,
-                    provider=self._provider_slug(),
-                    content=final_content,
-                    tool_calls=tool_calls_from_openai_dicts(native_tool_calls),
-                )
-                if resp.usage:
-                    in_tok = int(resp.usage.input_tokens or in_tok)
-                    out_tok = int(resp.usage.output_tokens or 0)
-                success = True
-                yield final_stream_event(response=final_response)
-                return
+                    native_tool_calls = self._extract_tool_calls_from_response(
+                        resp,
+                        tool_name_mapping,
+                        tool_definitions=tool_definitions,
+                    )
+                    final_content = self._collect_output_text(resp) or "".join(buf)
+                    final_response = adapter_response_from_openai_responses(
+                        resp,
+                        model=self.model,
+                        provider=self._provider_slug(),
+                        content=final_content,
+                        tool_calls=tool_calls_from_openai_dicts(native_tool_calls),
+                    )
+                    if resp.usage:
+                        in_tok = int(resp.usage.input_tokens or in_tok)
+                        out_tok = int(resp.usage.output_tokens or 0)
+                    success = True
+                    yield final_stream_event(response=final_response)
+                    return
 
         except Exception as e:
             err_type = type(e).__name__

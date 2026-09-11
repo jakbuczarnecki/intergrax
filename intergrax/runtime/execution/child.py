@@ -11,6 +11,7 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
 )
+from intergrax.contracts.execution_lineage import ExecutionLineageIntegrityError
 from intergrax.runtime.execution.identity_authority import mint_child_execution_id
 from intergrax.runtime.execution.active_execution_budget import (
     ActiveExecutionBudgetState,
@@ -29,6 +30,9 @@ from intergrax.runtime.execution.boundary import (
     ExecutionDelegate,
     ExecutionIdentityBinding,
 )
+from intergrax.runtime.execution.failure_evidence.recording_delegate import (
+    wrap_execution_delegate_for_failure_evidence,
+)
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
 from intergrax.runtime.execution.budget.models import (
     ChildBudgetAllocationContext,
@@ -37,6 +41,12 @@ from intergrax.runtime.execution.budget.models import (
 from intergrax.runtime.execution.budget.policy import (
     DefaultSharedPoolBudgetPolicy,
     ExecutionBudgetAllocationPolicy,
+)
+from intergrax.runtime.execution.lineage.active_lineage import (
+    peek_active_execution_lineage,
+)
+from intergrax.runtime.execution.lineage.admission import (
+    build_child_lineage_admission_hook,
 )
 from intergrax.runtime.governance.active_execution_authority import (
     require_active_execution_authority,
@@ -84,6 +94,14 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
     ) -> ResultT:
         parent_run_id, parent_attempt_id = require_active_execution_identity()
         parent_execution_id = require_active_execution_id()
+        lineage_state = peek_active_execution_lineage()
+        if (
+            lineage_state is not None
+            and parent_execution_id in lineage_state.non_durable_execution_ids
+        ):
+            raise ExecutionLineageIntegrityError(
+                "non-durable lineage parent cannot admit nested child",
+            )
         parent_authority = require_active_execution_authority()
 
         resolution = self._authority_policy.resolve_child_authority(
@@ -103,8 +121,10 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             parent_mode = parent_budget_state.mode
             parent_remaining = None
             if parent_mode is ExecutionBudgetAllocationMode.RESERVED:
-                parent_remaining = parent_budget_state.ledger.snapshot_reservation_remaining(
-                    parent_execution_id,
+                parent_remaining = (
+                    parent_budget_state.ledger.snapshot_reservation_remaining(
+                        parent_execution_id,
+                    )
                 )
 
         budget_decision = self._budget_policy.resolve_child_budget(
@@ -124,11 +144,17 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             parent_execution_id=parent_execution_id,
             decision=budget_decision,
         )
+        inherited_deadline = (
+            parent_budget_state.global_deadline_monotonic
+            if parent_budget_state is not None
+            else None
+        )
         active_budget = ActiveExecutionBudgetState(
             execution_id=child_execution_id,
             mode=grant.mode,
             ledger=ledger,
             reservation_allowance=grant.reservation_allowance,
+            global_deadline_monotonic=inherited_deadline,
         )
 
         identity = ExecutionIdentityBinding(
@@ -137,9 +163,19 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             execution_id=child_execution_id,
             parent_execution_id=parent_execution_id,
         )
+        resolved_hooks = admission_hooks
+        if lineage_state is not None:
+            lineage_hook = build_child_lineage_admission_hook(
+                persistence=lineage_state.persistence,
+                scope=lineage_state.scope,
+                segment_root_execution_id=lineage_state.segment_root_execution_id,
+                execution_id=child_execution_id,
+                parent_execution_id=parent_execution_id,
+            )
+            resolved_hooks = (lineage_hook, *admission_hooks)
         boundary = ExecutionBoundary[RequestT, ResultT](
-            delegate,
-            admission_hooks=admission_hooks,
+            wrap_execution_delegate_for_failure_evidence(delegate),
+            admission_hooks=resolved_hooks,
             identity=identity,
             authority=child_authority,
             effective_delegation=effective,

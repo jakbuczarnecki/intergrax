@@ -11,6 +11,7 @@ Conservative, high-precision baseline — no fuzzy similarity, ML, or LLM.
 from __future__ import annotations
 
 from intergrax.runtime.diagnostics.problem_grouping import (
+    DeterministicExecutionFailureFindingSignature,
     DeterministicFindingSignature,
     DeterministicLimitationSignature,
     DeterministicProblemGroupingBasis,
@@ -31,10 +32,12 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingSubjectRef,
 )
 from intergrax.runtime.diagnostics.diagnostic_subject import DiagnosticSubjectKind
-from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleViolationTransition
+from intergrax.runtime.diagnostics.lifecycle_analysis import (
+    LifecycleViolationTransition,
+)
 
 STRATEGY_ID = ProblemGroupingStrategyId("intergrax.diagnostics.structural.v1")
-STRATEGY_VERSION = ProblemGroupingStrategyVersion("1")
+STRATEGY_VERSION = ProblemGroupingStrategyVersion("2")
 
 _TRANSITION_ABSENT = (0,)
 _TRANSITION_PRESENT_PREFIX = (1,)
@@ -65,11 +68,24 @@ def _finding_sort_key(finding: ProblemGroupingSubjectFinding) -> tuple[object, .
             finding.error_code or "",
             finding.exception_type or "",
         )
+    if finding.source is ProblemGroupingSubjectFindingSource.EXECUTION_FAILURE:
+        return (
+            finding.source.value,
+            finding.kind.value if finding.kind is not None else "",
+            finding.execution_id or "",
+            (
+                finding.execution_failure_kind.value
+                if finding.execution_failure_kind is not None
+                else ""
+            ),
+        )
     return (
         finding.source.value,
         finding.kind.value if finding.kind is not None else "",
         finding.scope.value if finding.scope is not None else "",
-        finding.source_anomaly_kind.value if finding.source_anomaly_kind is not None else "",
+        finding.source_anomaly_kind.value
+        if finding.source_anomaly_kind is not None
+        else "",
         _lifecycle_transition_sort_key(finding.lifecycle_transition),
     )
 
@@ -85,7 +101,11 @@ def _limitation_sort_key(
 
 def _finding_signature(
     finding: ProblemGroupingSubjectFinding,
-) -> DeterministicFindingSignature | DeterministicSignalFindingSignature:
+) -> (
+    DeterministicFindingSignature
+    | DeterministicExecutionFailureFindingSignature
+    | DeterministicSignalFindingSignature
+):
     if finding.source is ProblemGroupingSubjectFindingSource.PLATFORM_SIGNAL:
         return DeterministicSignalFindingSignature(
             problem_kind=finding.problem_kind or "",
@@ -96,7 +116,25 @@ def _finding_signature(
             error_code=finding.error_code,
             exception_type=finding.exception_type,
         )
-    if finding.kind is None or finding.scope is None or finding.source_anomaly_kind is None:
+    if finding.source is ProblemGroupingSubjectFindingSource.EXECUTION_FAILURE:
+        if (
+            finding.kind is None
+            or finding.execution_id is None
+            or finding.execution_failure_kind is None
+        ):
+            raise ValueError(
+                "execution failure grouping finding missing required fields"
+            )
+        return DeterministicExecutionFailureFindingSignature(
+            kind=finding.kind,
+            execution_id=finding.execution_id,
+            execution_failure_kind=finding.execution_failure_kind,
+        )
+    if (
+        finding.kind is None
+        or finding.scope is None
+        or finding.source_anomaly_kind is None
+    ):
         raise ValueError("lifecycle grouping finding missing required fields")
     return DeterministicFindingSignature(
         kind=finding.kind,
@@ -165,7 +203,9 @@ class DeterministicProblemGroupingStrategy:
         self,
         inputs: tuple[ProblemGroupingInput, ...],
     ) -> ProblemGroupingStrategyResult:
-        buckets: dict[DeterministicProblemSignature, list[ProblemGroupingSubjectRef]] = {}
+        buckets: dict[
+            DeterministicProblemSignature, list[ProblemGroupingSubjectRef]
+        ] = {}
         signature_first_seen: list[DeterministicProblemSignature] = []
 
         for input_item in inputs:

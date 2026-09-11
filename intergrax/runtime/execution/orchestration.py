@@ -7,9 +7,12 @@ from __future__ import annotations
 
 from typing import Protocol, TypeVar
 
-from intergrax.contracts.delegation_authority import resolve_root_parent_execution_authority
+from intergrax.contracts.delegation_authority import (
+    resolve_root_parent_execution_authority,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     require_active_execution_id,
     require_active_execution_identity,
@@ -32,17 +35,34 @@ from intergrax.runtime.execution.decision_lifecycle_host import (
     DecisionLifecycleHost,
 )
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
-from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
+from intergrax.runtime.execution.task_adapter import (
+    TaskExecutionInput,
+    execution_request_from_task,
+)
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
     build_task_checkpoint_resume_plan,
     prepare_task_for_checkpoint_resume,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
+from intergrax.runtime.long_running.resume_planner import (
+    execution_identity_from_checkpoint,
+)
+from intergrax.runtime.execution.execution_terminal.persistence import (
+    terminal_outcome_from_task_state,
+)
+from intergrax.runtime.execution.failure_evidence.runtime_event_recorder import (
+    RuntimeEventExecutionFailureEvidenceRecorder,
+)
+from intergrax.runtime.execution.host_task_terminal_publisher import (
+    HostTaskTerminalPublisher,
+)
+from intergrax.runtime.execution.nexus_host_task_terminal import (
+    build_nexus_root_orchestration_terminal_publisher,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.task.task import Task, TaskResult
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 
 _ORCHESTRATION_CAPABILITIES = frozenset({ExecutionCapability.ORCHESTRATION})
 
@@ -61,17 +81,17 @@ class NexusOrchestrationPort(Protocol):
         *,
         run_id: RunId,
         attempt_id: AttemptId | None = None,
-    ) -> TaskResult:
-        ...
+    ) -> TaskResult: ...
 
 
 def resolve_root_task_identity(
     *,
     run_id: RunId | None = None,
     attempt_id: AttemptId | None = None,
+    execution_id: ExecutionId | None = None,
     resume_checkpoint: TaskCheckpoint | None = None,
 ) -> RootTaskIdentity:
-    if resume_checkpoint is not None:
+    if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
         checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
             resume_checkpoint
         )
@@ -88,8 +108,13 @@ def resolve_root_task_identity(
         return mint_root_execution_identity(
             run_id=checkpoint_run_id,
             attempt_id=checkpoint_attempt_id,
+            execution_id=execution_id,
         )
-    return mint_root_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    return mint_root_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
 
 
 class OrchestrationExecutor:
@@ -109,6 +134,52 @@ class OrchestrationExecutor:
             run_id=run_id,
             attempt_id=attempt_id,
         )
+
+
+class _RootTaskTerminalPublishingDelegate:
+    """Publish terminal runtime events (and diagnostics) on success or failure."""
+
+    __slots__ = ("_inner", "_terminal_publisher", "_task")
+
+    def __init__(
+        self,
+        inner: TaskBoundOrchestrationDelegate,
+        *,
+        terminal_publisher: HostTaskTerminalPublisher,
+        task: Task,
+    ) -> None:
+        self._inner = inner
+        self._terminal_publisher = terminal_publisher
+        self._task = task
+
+    async def _publish_terminal(
+        self, state: TaskState, *, agent_id: str | None
+    ) -> None:
+        if terminal_outcome_from_task_state(state) is None:
+            return
+        run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
+        terminal_task = self._task.model_copy(
+            update={"state": state, "agent_id": agent_id or self._task.agent_id},
+        )
+        await self._terminal_publisher.publish_terminal(
+            terminal_task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+        )
+
+    async def execute(
+        self,
+        request: ExecutionRequest[TaskExecutionInput, TaskResult],
+    ) -> TaskResult:
+        try:
+            result = await self._inner.execute(request)
+        except Exception:
+            await self._publish_terminal(TaskState.FAILED, agent_id=self._task.agent_id)
+            raise
+        await self._publish_terminal(result.state, agent_id=result.agent_id)
+        return result
 
 
 class TaskBoundOrchestrationDelegate:
@@ -137,6 +208,7 @@ async def execute_root_task(
     ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     run_budget: RunBudget | None = None,
 ) -> TaskResult:
+    segment_predecessor_root_execution_id = None
     resume_plan_token = None
     if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
         _checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
@@ -153,6 +225,8 @@ async def execute_root_task(
             identity.attempt_id != checkpoint_attempt_id
             or identity.execution_id != checkpoint_root_execution_id
         ):
+            if identity.execution_id != checkpoint_root_execution_id:
+                segment_predecessor_root_execution_id = checkpoint_root_execution_id
             resume_plan = build_task_checkpoint_resume_plan(
                 task,
                 resume_checkpoint,
@@ -177,15 +251,23 @@ async def execute_root_task(
         capabilities=_ORCHESTRATION_CAPABILITIES,
         output_type=TaskResult,
     )
+    terminal_publisher = build_nexus_root_orchestration_terminal_publisher(nexus_loop)
     router = StrategyExecutionRouter[
         TaskExecutionInput,
         TaskResult,
         TaskResult,
     ](
-        orchestration_executor=TaskBoundOrchestrationDelegate(
-            task,
-            OrchestrationExecutor(nexus_loop),
+        orchestration_executor=_RootTaskTerminalPublishingDelegate(
+            TaskBoundOrchestrationDelegate(
+                task,
+                OrchestrationExecutor(nexus_loop),
+            ),
+            terminal_publisher=terminal_publisher,
+            task=task,
         ),
+    )
+    failure_recorder = RuntimeEventExecutionFailureEvidenceRecorder(
+        nexus_loop.event_bus,
     )
     runtime = ExecutionRuntime[
         ExecutionRequest[TaskExecutionInput, TaskResult],
@@ -195,6 +277,8 @@ async def execute_root_task(
         ledger_factory=ledger_factory,
         run_budget=run_budget,
         decision_lifecycle_host=_default_root_decision_lifecycle_host(),
+        execution_lineage_persistence=nexus_loop.execution_lineage_persistence,
+        failure_evidence_recorder=failure_recorder,
     )
     root_context = RootExecutionContext(
         run_id=identity.run_id,
@@ -202,6 +286,8 @@ async def execute_root_task(
         execution_id=identity.execution_id,
         authority=resolve_root_parent_execution_authority(task.execution_authority),
         tenant_id=task.tenant_id,
+        task_id=task.task_id,
+        segment_predecessor_root_execution_id=segment_predecessor_root_execution_id,
     )
     try:
         return await runtime.execute(request, root_context)

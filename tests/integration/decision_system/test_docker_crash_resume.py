@@ -48,10 +48,11 @@ from intergrax.runtime.execution.decision_finalization_conformance import (
     IncidentDecisionPayload,
     conformance_artifact_payload_codec_registry,
 )
-from intergrax.runtime.execution.decision_recovery import (
-    persist_terminal_decision_state,
-    resume_decision_from_durable_state,
+from intergrax.runtime.execution.decision_recovery import persist_terminal_decision_state
+from testing_support.decision_e2e.canonical_decision_durable_resume import (
+    resume_decision_durable_with_canonical_recovery_admission,
 )
+from testing_support.decision_e2e.docker_worker import _execution_lineage_from_sidecar
 from intergrax.runtime.execution.sqlite_decision_checkpoint_persistence import (
     SQLiteDecisionCheckpointPersistence,
 )
@@ -134,6 +135,7 @@ def _subprocess_crash_before_terminal(db_dir: str) -> None:
         ),
         checkpoint=checkpoint,
     )
+    execution = identity.execution
     (db_path / "identity.json").write_text(
         json.dumps(
             {
@@ -141,6 +143,10 @@ def _subprocess_crash_before_terminal(db_dir: str) -> None:
                 "decision_id": str(identity.decision_id),
                 "namespace": identity.scope.namespace,
                 "subject": identity.scope.subject,
+                "task_id": str(execution.task_id),
+                "run_id": str(execution.run_id),
+                "attempt_id": str(execution.attempt_id),
+                "execution_id": str(execution.execution_id),
             },
         ),
         encoding="utf-8",
@@ -159,7 +165,7 @@ def _subprocess_resume(db_dir: str, queue: mp.Queue[tuple[str, int]]) -> None:
         tenant_id=sidecar["tenant_id"],
     )
     codecs = conformance_artifact_payload_codec_registry()
-    loaded = resume_decision_from_durable_state(
+    loaded = resume_decision_durable_with_canonical_recovery_admission(
         checkpoint_persistence=SQLiteDecisionCheckpointPersistence(
             db_path=db_path / "checkpoint.db",
             payload_codecs=codecs,
@@ -169,6 +175,7 @@ def _subprocess_resume(db_dir: str, queue: mp.Queue[tuple[str, int]]) -> None:
             payload_codecs=codecs,
         ),
         key=key,
+        execution_lineage=_execution_lineage_from_sidecar(sidecar),
         runtime_revision_policy=decision_revision_policy(max_revisions=2),
     )
     stage = loaded.lifecycle.stage.value if loaded is not None else "missing"
@@ -211,6 +218,7 @@ def _subprocess_authority_commit(db_dir: str) -> None:
         ),
         checkpoint=checkpoint,
     )
+    execution = identity.execution
     (db_path / "identity.json").write_text(
         json.dumps(
             {
@@ -218,6 +226,10 @@ def _subprocess_authority_commit(db_dir: str) -> None:
                 "decision_id": str(identity.decision_id),
                 "namespace": identity.scope.namespace,
                 "subject": identity.scope.subject,
+                "task_id": str(execution.task_id),
+                "run_id": str(execution.run_id),
+                "attempt_id": str(execution.attempt_id),
+                "execution_id": str(execution.execution_id),
             },
         ),
         encoding="utf-8",
@@ -270,10 +282,11 @@ def test_process_durability_crash_resume_regression(tmp_path: Path) -> None:
         db_path=Path(authority_dir) / "finalization.db",
         payload_codecs=codecs,
     )
-    loaded = resume_decision_from_durable_state(
+    loaded = resume_decision_durable_with_canonical_recovery_admission(
         checkpoint_persistence=checkpoint_store,
         finalization_persistence=finalization_store,
         key=key,
+        execution_lineage=_execution_lineage_from_sidecar(sidecar),
     )
     assert loaded is not None
     assert loaded.finalization.authoritative_outcome is not None

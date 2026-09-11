@@ -235,6 +235,67 @@ class IncidentClaimRevisedDiagV1(DiagnosticPayload):
 
 
 @dataclass(frozen=True, slots=True)
+class IncidentCompletionAlignmentDiagV1(DiagnosticPayload):
+    completion_mode: str
+    has_supported_diagnosis: bool
+    alignment_status: str
+    mismatch_reason: str | None = None
+    revision_pass: bool = False
+    revision_authoritative_context_present: bool = False
+    supported_hypothesis_id: str | None = None
+    supported_resolution: str | None = None
+    alignment_mismatch_detected: bool = False
+    alignment_direction: str | None = None
+    alignment_correctable: bool = False
+    alignment_correction_attempted: bool = False
+    alignment_correction_attempt_index: int | None = None
+    alignment_correction_succeeded: bool = False
+    alignment_correction_exhausted: bool = False
+
+    @classmethod
+    def schema_id(cls) -> str:
+        return "incident.completion_alignment.v1"
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "completion_mode": self.completion_mode,
+            "has_supported_diagnosis": self.has_supported_diagnosis,
+            "alignment_status": self.alignment_status,
+            "mismatch_reason": self.mismatch_reason,
+            "revision_pass": self.revision_pass,
+            "revision_authoritative_context_present": self.revision_authoritative_context_present,
+            "supported_hypothesis_id": self.supported_hypothesis_id,
+            "supported_resolution": self.supported_resolution,
+            "alignment_mismatch_detected": self.alignment_mismatch_detected,
+            "alignment_direction": self.alignment_direction,
+            "alignment_correctable": self.alignment_correctable,
+            "alignment_correction_attempted": self.alignment_correction_attempted,
+            "alignment_correction_attempt_index": self.alignment_correction_attempt_index,
+            "alignment_correction_succeeded": self.alignment_correction_succeeded,
+            "alignment_correction_exhausted": self.alignment_correction_exhausted,
+        }
+
+    def redact(self) -> IncidentCompletionAlignmentDiagV1:
+        return IncidentCompletionAlignmentDiagV1(
+            completion_mode=self.completion_mode,
+            has_supported_diagnosis=self.has_supported_diagnosis,
+            alignment_status=self.alignment_status,
+            mismatch_reason=self.mismatch_reason,
+            revision_pass=self.revision_pass,
+            revision_authoritative_context_present=self.revision_authoritative_context_present,
+            supported_hypothesis_id=self.supported_hypothesis_id,
+            supported_resolution=self.supported_resolution,
+            alignment_mismatch_detected=self.alignment_mismatch_detected,
+            alignment_direction=self.alignment_direction,
+            alignment_correctable=self.alignment_correctable,
+            alignment_correction_attempted=self.alignment_correction_attempted,
+            alignment_correction_attempt_index=self.alignment_correction_attempt_index,
+            alignment_correction_succeeded=self.alignment_correction_succeeded,
+            alignment_correction_exhausted=self.alignment_correction_exhausted,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class IncidentCompletionIntentDiagV1(DiagnosticPayload):
     completion_intent: str
     unresolved_reason: str | None

@@ -355,13 +355,19 @@ async def test_r4_10_pcm_03_regression() -> None:
         InMemoryCompensationQueueStore,
     )
     from intergrax.agents.persistence.compensation_queue_worker import drain_pending_compensation_jobs
+    from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
     from intergrax.contracts.side_effect import CompensationRequest
+    from tests.unit.agents.persistence.compensation_execution_test_support import (
+        RecordingExecutionBoundDeclarativeToolInvoker,
+        build_test_admitted_compensation_side_effect_execution,
+    )
 
     store = InMemoryCompensationQueueStore()
     key = build_compensation_idempotency_key("acp:r4:pcm03")
     store.enqueue(
         CompensationJob(
-            run_id="run-1",
+            run_id=str(mint_run_id()),
+            task_id=str(mint_task_id()),
             tenant_id=TENANT,
             agent_id="agent-a",
             step_index=0,
@@ -398,7 +404,9 @@ async def test_r4_10_pcm_03_regression() -> None:
     await drain_pending_compensation_jobs(
         store,
         tenant_id=TENANT,
-        invoker=CallableDeclarativeToolInvoker(_counting_invoke),
+        side_effect_execution=build_test_admitted_compensation_side_effect_execution(
+            RecordingExecutionBoundDeclarativeToolInvoker(_counting_invoke),
+        ),
         owner_id="worker-2",
         limit=1,
     )

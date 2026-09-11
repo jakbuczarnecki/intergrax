@@ -13,8 +13,9 @@ from intergrax.contracts.execution_identity import EventId, RunId, validate_run_
 @dataclass(frozen=True, slots=True, order=True)
 class ExecutionEventPosition:
     """
-    Authoritative run-scoped acceptance position.
+    Authoritative run-scoped acceptance position (one tenant + run stream).
 
+    Not task-global, tenant-global, or cross-run chronological order.
     Assigned by ``RuntimeEventPersistence.append`` — producers MUST NOT mint this.
     """
 

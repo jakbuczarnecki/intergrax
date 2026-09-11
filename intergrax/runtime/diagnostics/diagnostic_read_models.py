@@ -9,7 +9,20 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
+from intergrax.contracts.execution_identity import AttemptId, ExecutionId
+from intergrax.contracts.execution_lineage import (
+    ExecutionLineageAttemptClosureKind,
+    ExecutionLineageSegmentLifecycle,
+)
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
+from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
+    ExecutionLineageCompleteness,
+    ExecutionLineageReadStatus,
+)
+from intergrax.runtime.diagnostics.execution_reconstruction import (
+    ExecutionAttemptDiscoveryCompleteness,
+    ExecutionAttemptDiscoveryReadStatus,
+)
 from intergrax.runtime.diagnostics.deterministic_problem_reconciliation import (
     DeterministicProblemReconciliationKey,
 )
@@ -26,6 +39,10 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemOccurrenceAggregateHealth,
     ProblemReconciliationKeyKind,
     ProblemStatus,
+)
+from intergrax.runtime.diagnostics.decision_context_read_models import DecisionContextView
+from intergrax.runtime.diagnostics.diagnostic_extension_read_models import (
+    DiagnosticExtensionOccurrenceEnrichment,
 )
 
 
@@ -83,6 +100,39 @@ class DiagnosticProblemListResult:
 
 
 @dataclass(frozen=True, slots=True)
+class DiagnosticExecutionNodeView:
+    execution_id: ExecutionId
+    parent_execution_id: ExecutionId | None
+    admission_position: int
+    graph_node_id: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticExecutionSegmentView:
+    root_execution_id: ExecutionId
+    predecessor_root_execution_id: ExecutionId | None
+    lifecycle: ExecutionLineageSegmentLifecycle
+    executions: tuple[DiagnosticExecutionNodeView, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticAttemptLineageView:
+    attempt_id: AttemptId
+    read_status: ExecutionLineageReadStatus
+    completeness: ExecutionLineageCompleteness | None
+    degraded: bool | None
+    closure_kind: ExecutionLineageAttemptClosureKind | None
+    segments: tuple[DiagnosticExecutionSegmentView, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticExecutionLineageView:
+    attempts: tuple[DiagnosticAttemptLineageView, ...]
+    attempt_discovery_read_status: ExecutionAttemptDiscoveryReadStatus | None = None
+    attempt_discovery_completeness: ExecutionAttemptDiscoveryCompleteness | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class DiagnosticProblemOccurrenceView:
     subject_ref: ProblemGroupingSubjectRef
     observed_at: datetime
@@ -92,6 +142,9 @@ class DiagnosticProblemOccurrenceView:
     read_status: DiagnosticOccurrenceReadStatus
     assessment: DiagnosticAssessment | None
     unavailable_reason: DiagnosticReadUnavailableReason | None = None
+    execution_lineage: DiagnosticExecutionLineageView | None = None
+    decision_context: DecisionContextView | None = None
+    extension_enrichment: DiagnosticExtensionOccurrenceEnrichment | None = None
 
 
 @dataclass(frozen=True, slots=True)

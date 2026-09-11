@@ -160,6 +160,17 @@ class DataPackBuildState:
         ready_count = sum(1 for shard in self.shards if shard.status is DataPackShardStatus.READY)
         if ready_count != self.completed_shards:
             raise ValueError("completed_shards must equal READY shard count")
+        for index, shard in enumerate(self.shards):
+            if index < self.completed_shards:
+                if shard.status is not DataPackShardStatus.READY:
+                    raise ValueError(
+                        f"contiguous READY prefix violated: shard {shard.ordinal} expected READY"
+                    )
+            elif shard.status is DataPackShardStatus.READY:
+                raise ValueError(
+                    f"contiguous READY prefix violated: shard {shard.ordinal} is READY "
+                    f"beyond prefix length {self.completed_shards}"
+                )
         _validate_shard_plan_integrity(
             expected_record_count=self.expected_record_count,
             shards=self.shards,

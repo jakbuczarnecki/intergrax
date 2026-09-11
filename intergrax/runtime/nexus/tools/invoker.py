@@ -5,12 +5,14 @@
 from __future__ import annotations
 
 import time
+from concurrent.futures import Future as ConcurrentFuture
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
-from typing import TYPE_CHECKING, Optional, Protocol, Type, runtime_checkable
+from typing import TYPE_CHECKING, Optional, Protocol, Type, cast, runtime_checkable
 
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
+    from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.sandbox.isolation_gate import SandboxAvailabilityProvider
     from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
@@ -47,6 +49,36 @@ from intergrax.runtime.sandbox.isolation_gate import (
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from intergrax.contracts.idempotency_store import ClaimOutcome
+from intergrax.contracts.dependency_concurrency_admission import (
+    DependencyConcurrencyAdmissionRequest,
+    DependencyConcurrencyAdmissionTimeoutError,
+    DependencyConcurrencyExceededError,
+    DependencyConcurrencyIdentity,
+    DependencyConcurrencyKind,
+    DependencyConcurrencyPolicyMissingError,
+)
+from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
+    DependencyAttemptExecutionBoundary,
+)
+from intergrax.runtime.cancellation.coordinator import (
+    CancellationCoordinator,
+    CooperativeCancellationAbort,
+    cooperative_delay_seconds,
+)
+from intergrax.contracts.external_operation_cancellation import (
+    ExternalOperationCancellationPort,
+)
+from intergrax.runtime.external_operations.external_operation_state_store import (
+    ExternalOperationStateStore,
+)
+from intergrax.runtime.external_operations.external_operation_ownership import (
+    ProcessLocalExternalOperationOwner,
+)
+from intergrax.runtime.external_operations.tool_external_operation_attempt import (
+    ExternalOperationStartSuppressedError,
+    ToolExternalOperationAttempt,
+    tool_external_operation_identity,
+)
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.contracts import SideEffectRetrySafety, ToolContract
 from intergrax.tools.execution_models import (
@@ -102,24 +134,44 @@ class RuntimeToolInvoker:
         scope_policy: Optional[ToolScopePolicy] = None,
         pre_effect_coordinator: Optional[IdempotencyPreEffectCoordinator] = None,
         sandbox_availability: Optional["SandboxAvailabilityProvider"] = None,
-        agent_runtime_governance: Optional[object] = None,
+        agent_runtime_governance: Optional["AgentRuntimeGovernancePort"] = None,
+        dependency_attempt_boundary: DependencyAttemptExecutionBoundary | None = None,
+        external_operation_store: ExternalOperationStateStore | None = None,
+        external_operation_owner: ProcessLocalExternalOperationOwner | None = None,
+        external_operation_cancellation_port: ExternalOperationCancellationPort | None = None,
     ) -> None:
+        from intergrax.runtime.nexus.tools.tool_operation_termination import (
+            ToolExecutorTerminationPort,
+        )
         self._registry = registry
         self._executor = executor
         self._scope_policy = scope_policy
         self._pre_effect_coordinator = pre_effect_coordinator
         self._sandbox_availability = sandbox_availability
         self._agent_runtime_governance = agent_runtime_governance
+        self._dependency_attempt_boundary = dependency_attempt_boundary
+        self._external_operation_store = external_operation_store
+        if external_operation_store is not None and external_operation_owner is None:
+            external_operation_owner = ProcessLocalExternalOperationOwner.mint()
+        self._external_operation_owner = external_operation_owner
+        self._external_operation_cancellation_port = external_operation_cancellation_port
+        self._tool_termination_port = (
+            ToolExecutorTerminationPort() if external_operation_store is not None else None
+        )
         # Shared pool for timeout-isolated tool execution; default worker count
         # preserves concurrent independent invocations (not max_workers=1).
         self._execution_pool = ThreadPoolExecutor()
         self._execution_pool_closed = False
 
     def close(self) -> None:
-        """Shut down the shared execution pool; waits for active tool calls to finish."""
+        """Shut down admission boundary (when configured) and the execution pool."""
         if self._execution_pool_closed:
             return
+        if self._dependency_attempt_boundary is not None:
+            self._dependency_attempt_boundary.begin_shutdown()
         self._execution_pool.shutdown(wait=True)
+        if self._dependency_attempt_boundary is not None:
+            self._dependency_attempt_boundary.drain_and_close()
         self._execution_pool_closed = True
 
     @property
@@ -442,9 +494,21 @@ class RuntimeToolInvoker:
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
     ) -> None:
-        """NPSC-4 governance boundary — evaluated before tool execution when configured."""
+        """NPSC-4 governance boundary — mandatory on production tool execution."""
         governance = self._agent_runtime_governance
         if governance is None:
+            if state.context.config.production_mode:
+                from intergrax.runtime.agent_governance.errors import ToolGovernanceDeniedError
+
+                capability = contract.category.strip() or contract.tool_id
+                raise ToolGovernanceDeniedError(
+                    run_id=state.run_id,
+                    agent_id=agent_id,
+                    tool_id=request.tool_id,
+                    capability=capability,
+                    reason="agent_runtime_governance_not_configured",
+                    policy_results=(),
+                )
             return
 
         from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
@@ -586,8 +650,28 @@ class RuntimeToolInvoker:
 
         for attempt in range(1, attempts + 1):
             if attempt > 1:
+                if self._cooperative_cancellation_requested(state):
+                    return self._tool_result_task_cancelled(
+                        state=state,
+                        contract=contract,
+                        request=request,
+                        agent_id=agent_id,
+                    )
                 if policy.backoff_ms > 0:
-                    time.sleep(policy.backoff_ms / 1000.0)
+                    try:
+                        cooperative_delay_seconds(
+                            policy.backoff_ms / 1000.0,
+                            should_abort=lambda: self._cooperative_cancellation_requested(
+                                state
+                            ),
+                        )
+                    except CooperativeCancellationAbort:
+                        return self._tool_result_task_cancelled(
+                            state=state,
+                            contract=contract,
+                            request=request,
+                            agent_id=agent_id,
+                        )
                 self._require_current_attempt_authorization(
                     state=state,
                     agent_id=agent_id,
@@ -597,7 +681,13 @@ class RuntimeToolInvoker:
 
             start_perf = time.perf_counter()
             try:
-                raw_out = self._execute_once(contract, request, boundary=boundary)
+                raw_out = self._execute_once(
+                    state,
+                    contract,
+                    request,
+                    effect_boundary=boundary,
+                    physical_attempt_sequence=attempt,
+                )
                 out = self._validate_output(contract.output_schema, raw_out)
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
 
@@ -619,6 +709,49 @@ class RuntimeToolInvoker:
                     ),
                 )
                 result = ToolExecutionResult.ok(out)
+                self._emit_boundary_event(
+                    state=state,
+                    agent_id=agent_id,
+                    contract=contract,
+                    request=request,
+                    result=result,
+                )
+                return result
+
+            except ExternalOperationStartSuppressedError:
+                return self._tool_result_task_cancelled(
+                    state=state,
+                    contract=contract,
+                    request=request,
+                    agent_id=agent_id,
+                )
+
+            except DependencyConcurrencyPolicyMissingError:
+                raise
+
+            except (
+                DependencyConcurrencyExceededError,
+                DependencyConcurrencyAdmissionTimeoutError,
+            ) as exc:
+                duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
+                msg = f"{type(exc).__name__}: {exc}"
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="tool_invocation_error",
+                    message="Tool dependency admission rejected.",
+                    level=TraceLevel.ERROR,
+                    payload=ToolInvocationErrorDiagV1(
+                        tool_id=contract.tool_id,
+                        step_id=str(request.step_id),
+                        error_code=RuntimeErrorCode.DEPENDENCY_ERROR,
+                        error_message=msg,
+                    ),
+                )
+                result = ToolExecutionResult.fail(
+                    RuntimeErrorCode.DEPENDENCY_ERROR,
+                    msg,
+                    effect_certainty=ToolEffectCertainty.NOT_STARTED,
+                )
                 self._emit_boundary_event(
                     state=state,
                     agent_id=agent_id,
@@ -719,6 +852,44 @@ class RuntimeToolInvoker:
         return result
 
     @staticmethod
+    def _cooperative_cancellation_requested(state: "RuntimeState") -> bool:
+        return CancellationCoordinator.is_requested(state.request.metadata)
+
+    def _tool_result_task_cancelled(
+        self,
+        *,
+        state: "RuntimeState",
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+        agent_id: str,
+    ) -> ToolExecutionResult[BaseModel]:
+        state.trace_event(
+            component=TraceComponent.TOOLS,
+            step="tool_invocation_cancelled",
+            message="Tool invocation aborted after cooperative cancellation.",
+            level=TraceLevel.INFO,
+            payload=ToolInvocationErrorDiagV1(
+                tool_id=contract.tool_id,
+                step_id=str(request.step_id),
+                error_code=RuntimeErrorCode.RUNTIME_ERROR,
+                error_message="task_cancelled",
+            ),
+        )
+        result = ToolExecutionResult.fail(
+            RuntimeErrorCode.RUNTIME_ERROR,
+            "task_cancelled",
+            effect_certainty=ToolEffectCertainty.NOT_STARTED,
+        )
+        self._emit_boundary_event(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+            result=result,
+        )
+        return result
+
+    @staticmethod
     def _effective_max_attempts(contract: ToolContract) -> int:
         """Side-effect tools require positive retry-safety proof before automatic retry."""
         policy_attempts = contract.retry_policy.max_attempts
@@ -755,25 +926,140 @@ class RuntimeToolInvoker:
                 level=TraceLevel.WARNING,
             )
 
-    def _execute_once(
+    def _build_tool_external_operation_attempt(
         self,
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
         *,
-        boundary: _ExternalEffectBoundary | None = None,
+        physical_attempt_sequence: int,
+    ) -> ToolExternalOperationAttempt:
+        store = self._external_operation_store
+        if store is None:
+            return ToolExternalOperationAttempt(
+                store=None,
+                owner=None,
+                identity=None,
+            )
+        identity = tool_external_operation_identity(
+            tool_id=contract.tool_id,
+            step_id=str(request.step_id),
+            physical_attempt_sequence=physical_attempt_sequence,
+        )
+        from intergrax.runtime.nexus.tools.tool_operation_termination import (
+            TOOL_EXTERNAL_OPERATION_CAPABILITIES,
+        )
+
+        return ToolExternalOperationAttempt(
+            store=store,
+            owner=self._external_operation_owner,
+            identity=identity,
+            cancellation_port=self._external_operation_cancellation_port,
+            termination_port=self._tool_termination_port,
+            capabilities=TOOL_EXTERNAL_OPERATION_CAPABILITIES,
+        )
+
+    def _execute_once(
+        self,
+        state: "RuntimeState",
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+        *,
+        effect_boundary: _ExternalEffectBoundary | None = None,
+        physical_attempt_sequence: int = 1,
     ) -> BaseModel:
         timeout_s = contract.timeout_ms / 1000.0
-        future = self._execution_pool.submit(self._executor.execute, request)
-        if boundary is not None:
-            boundary.may_have_started = True
-        return future.result(timeout=timeout_s)
+        dep_boundary = self._dependency_attempt_boundary
+        ext_op = self._build_tool_external_operation_attempt(
+            contract,
+            request,
+            physical_attempt_sequence=physical_attempt_sequence,
+        )
+        ext_op.before_physical_submit()
+
+        if dep_boundary is None:
+            ext_op.mark_running()
+            future = self._execution_pool.submit(self._executor.execute, request)
+            if self._tool_termination_port is not None and ext_op.operation_id is not None:
+                self._tool_termination_port.bind_future(ext_op.operation_id, future)
+            if effect_boundary is not None:
+                effect_boundary.may_have_started = True
+            try:
+                return future.result(timeout=timeout_s)
+            except FuturesTimeoutError:
+                ext_op.mark_unknown()
+                raise
+            except BaseException:
+                if self._cooperative_cancellation_requested(state):
+                    ext_op.request_cancel()
+                    ext_op.complete_cancellation_after_termination()
+                else:
+                    ext_op.mark_failed()
+                raise
+            else:
+                ext_op.mark_succeeded()
+            finally:
+                if self._tool_termination_port is not None and ext_op.operation_id is not None:
+                    self._tool_termination_port.unbind_future(ext_op.operation_id)
+
+        admission_request = DependencyConcurrencyAdmissionRequest(
+            dependency=DependencyConcurrencyIdentity(
+                kind=DependencyConcurrencyKind.TOOL,
+                value=contract.tool_id,
+            ),
+            tenant_id=state.tenant_id,
+        )
+        attempt_handle = dep_boundary.acquire(admission_request)
+        try:
+            ext_op.mark_running()
+            future = self._execution_pool.submit(self._executor.execute, request)
+            if self._tool_termination_port is not None and ext_op.operation_id is not None:
+                self._tool_termination_port.bind_future(ext_op.operation_id, future)
+        except BaseException:
+            ext_op.mark_failed()
+            dep_boundary.release_after_submit_failure(attempt_handle)
+            raise
+
+        dep_boundary.bind_worker(
+            attempt_handle,
+            cast(ConcurrentFuture[object], future),
+        )
+        if effect_boundary is not None:
+            effect_boundary.may_have_started = True
+
+        try:
+            result = future.result(timeout=timeout_s)
+        except FuturesTimeoutError:
+            if dep_boundary.detach_if_still_running(attempt_handle):
+                ext_op.mark_unknown()
+                raise
+            dep_boundary.complete_attached(attempt_handle)
+            if future.done():
+                ext_op.mark_succeeded()
+                return future.result()
+            ext_op.mark_unknown()
+            raise
+        except BaseException:
+            if self._cooperative_cancellation_requested(state):
+                ext_op.request_cancel()
+                ext_op.complete_cancellation_after_termination()
+            else:
+                ext_op.mark_failed()
+            dep_boundary.complete_attached(attempt_handle)
+            raise
+        else:
+            ext_op.mark_succeeded()
+            dep_boundary.complete_attached(attempt_handle)
+            return result
+        finally:
+            if self._tool_termination_port is not None and ext_op.operation_id is not None:
+                self._tool_termination_port.unbind_future(ext_op.operation_id)
 
     @staticmethod
     def _map_error(contract: ToolContract, exc: Exception) -> RuntimeErrorCode:
         # contract.error_mapping: Mapping[type[Exception], RuntimeErrorCode]
         for exc_type, code in contract.error_mapping.items():
             if isinstance(exc, exc_type):
-                return code
+                return cast(RuntimeErrorCode, code)
         return RuntimeErrorCode.TOOL_ERROR
 
 

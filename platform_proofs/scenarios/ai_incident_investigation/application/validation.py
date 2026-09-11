@@ -36,10 +36,13 @@ from platform_proofs.scenarios.ai_incident_investigation.application.incident_re
     latest_active_claim_for_hypothesis,
     parse_claim_hypothesis_bindings,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment import (
+    UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,
+    completion_alignment_validation_error,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_UNRESOLVED,
     INCIDENT_EVIDENCE_IDS,
-    TELEMETRY_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.tools import (
     TOOL_COMPARISON_READ,
@@ -66,7 +69,6 @@ H3_FORGED_WITHOUT_TELEMETRY_ERROR = "unsupported_inference:h3_supported_without_
 H1_FALLBACK_ERROR = "unsupported_inference:h1_fallback_without_distinguishing_evidence"
 H2_DISPOSITION_ERROR = "unsupported_inference:h2_disposition_incompatible_with_staffing"
 H2_FALLBACK_ERROR = "unsupported_inference:h2_fallback_incompatible_with_staffing"
-UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR = "unsupported_inference:unresolved_with_supported_diagnosis"
 UNRESOLVED_MISSING_TELEMETRY_UNAVAILABLE_ERROR = (
     "unsupported_inference:unresolved_missing_telemetry_unavailability"
 )
@@ -239,6 +241,23 @@ def _classify_diagnosis_claim(
     return _resolve_h1_claim(claim, observations)
 
 
+def authoritative_supported_diagnosis_present(
+    claim_set: EvidenceClaimSet,
+    domain_payload: dict[str, object],
+    *,
+    bindings: tuple[ClaimHypothesisBinding, ...] | None = None,
+) -> bool:
+    """Preview whether critic-resolved claim state includes a supported diagnosis."""
+    resolved_claim_set = apply_critic_claim_resolutions(
+        claim_set,
+        domain_payload,
+        bindings=bindings,
+    )
+    return any(
+        claim.resolution is ClaimResolution.SUPPORTED for claim in resolved_claim_set.claims
+    )
+
+
 def apply_critic_claim_resolutions(
     claim_set: EvidenceClaimSet,
     domain_payload: dict[str, object],
@@ -381,13 +400,15 @@ def validate_claim_set_against_observations(
         return ValidationResult(valid=False, errors=["missing_diagnosis_claim"])
 
     supported = [c for c in diagnosis_claims if c.resolution is ClaimResolution.SUPPORTED]
-    if supported:
-        if str(domain_payload.get("completion_mode", "")) == COMPLETION_UNRESOLVED:
-            return ValidationResult(
-                valid=False,
-                errors=[UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR],
-            )
+    completion_mode = str(domain_payload.get("completion_mode", ""))
+    alignment_error = completion_alignment_validation_error(
+        completion_mode=completion_mode,
+        has_supported_diagnosis=bool(supported),
+    )
+    if alignment_error is not None:
+        return ValidationResult(valid=False, errors=[alignment_error])
 
+    if supported:
         latest = supported[-1]
         observations = _parse_observations(domain_payload)
         h1_claims = _claims_for_hypothesis(claim_set, resolved_bindings, "H1")
@@ -428,7 +449,6 @@ def validate_claim_set_against_observations(
             return ValidationResult(valid=False, errors=[content_error])
         return ValidationResult(valid=True)
 
-    completion_mode = str(domain_payload.get("completion_mode", ""))
     if completion_mode == COMPLETION_UNRESOLVED:
         unresolved_error = _validate_unresolved_completion(
             claim_set,

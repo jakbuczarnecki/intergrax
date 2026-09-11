@@ -253,6 +253,581 @@ def test_production_code_has_no_concrete_hf_embedding_provider_imports() -> None
     assert violations == []
 
 
+def test_retrieval_orchestration_has_no_provider_imports() -> None:
+    retrieval_root = _VPI_ROOT / "application/retrieval"
+    forbidden = frozenset(
+        {
+            "psycopg",
+            "asyncpg",
+            "sqlalchemy",
+            "mysql",
+            "qdrant",
+            "qdrant_client",
+            "pgvector",
+            "torch",
+            "sentence_transformers",
+            "transformers",
+        }
+    )
+    violations: list[str] = []
+    for module_path in sorted(retrieval_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            root = imported.split(".")[0]
+            if root in forbidden:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_retrieval_orchestration_depends_only_on_application_ports() -> None:
+    retrieval_root = _VPI_ROOT / "application/retrieval"
+    violations: list[str] = []
+    for module_path in sorted(retrieval_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if imported.startswith(
+                "platform_proofs.scenarios.verified_product_identification.integrations"
+            ):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_no_reflection_in_retrieval_orchestration_production_code() -> None:
+    retrieval_root = _VPI_ROOT / "application/retrieval"
+    forbidden_names = {"getattr", "setattr", "hasattr", "inspect"}
+    for path in _iter_production_python_files(retrieval_root):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names = {
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
+
+
+def test_no_weak_contracts_in_retrieval_orchestration_production_code() -> None:
+    retrieval_root = _VPI_ROOT / "application/retrieval"
+    forbidden_fragments = (
+        "dict[str, Any]",
+        ": Any",
+        "dict[str, object]",
+        "Mapping[str, object]",
+        ": object",
+        "type: ignore",
+    )
+    for path in _iter_production_python_files(retrieval_root):
+        source = path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {path}"
+
+
+def test_fusion_layer_has_no_dataset_or_infrastructure_imports() -> None:
+    fusion_root = _VPI_ROOT / "application/fusion"
+    forbidden_fragments = (
+        ".dataset.",
+        ".data_pack.",
+        ".storage_bootstrap.",
+        ".integrations.providers.",
+    )
+    violations: list[str] = []
+    for module_path in sorted(fusion_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_fusion_layer_has_no_provider_imports() -> None:
+    fusion_root = _VPI_ROOT / "application/fusion"
+    forbidden = frozenset(
+        {
+            "psycopg",
+            "asyncpg",
+            "sqlalchemy",
+            "mysql",
+            "qdrant",
+            "qdrant_client",
+            "pgvector",
+            "torch",
+            "sentence_transformers",
+            "transformers",
+        }
+    )
+    violations: list[str] = []
+    for module_path in sorted(fusion_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            root = imported.split(".")[0]
+            if root in forbidden:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_fusion_layer_has_no_integrations_imports() -> None:
+    fusion_root = _VPI_ROOT / "application/fusion"
+    violations: list[str] = []
+    for module_path in sorted(fusion_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if imported.startswith(
+                "platform_proofs.scenarios.verified_product_identification.integrations"
+            ):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_fusion_layer_has_no_cluster_id_usage() -> None:
+    fusion_root = _VPI_ROOT / "application/fusion"
+    for path in _iter_production_python_files(fusion_root):
+        source = path.read_text(encoding="utf-8")
+        assert "cluster_id" not in source, f"cluster_id found in {path}"
+
+
+def test_fusion_layer_has_no_reflection() -> None:
+    fusion_root = _VPI_ROOT / "application/fusion"
+    forbidden_names = {"getattr", "setattr", "hasattr", "inspect"}
+    for path in _iter_production_python_files(fusion_root):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names = {
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
+
+
+def test_fusion_layer_has_no_weak_contracts() -> None:
+    fusion_root = _VPI_ROOT / "application/fusion"
+    forbidden_fragments = (
+        "dict[str, Any]",
+        ": Any",
+        "dict[str, object]",
+        "Mapping[str, object]",
+        ": object",
+        "type: ignore",
+    )
+    for path in _iter_production_python_files(fusion_root):
+        source = path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {path}"
+
+
+def test_identity_layer_has_no_dataset_or_infrastructure_imports() -> None:
+    identity_root = _VPI_ROOT / "application/identity"
+    forbidden_fragments = (
+        ".dataset.",
+        ".data_pack.",
+        ".storage_bootstrap.",
+        ".integrations.providers.",
+    )
+    violations: list[str] = []
+    for module_path in sorted(identity_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_identity_layer_has_no_provider_imports() -> None:
+    identity_root = _VPI_ROOT / "application/identity"
+    forbidden = frozenset(
+        {
+            "psycopg",
+            "asyncpg",
+            "sqlalchemy",
+            "mysql",
+            "qdrant",
+            "qdrant_client",
+            "pgvector",
+            "torch",
+            "sentence_transformers",
+            "transformers",
+        }
+    )
+    violations: list[str] = []
+    for module_path in sorted(identity_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            root = imported.split(".")[0]
+            if root in forbidden:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_identity_layer_has_no_integrations_imports() -> None:
+    identity_root = _VPI_ROOT / "application/identity"
+    violations: list[str] = []
+    for module_path in sorted(identity_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if imported.startswith(
+                "platform_proofs.scenarios.verified_product_identification.integrations"
+            ):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_identity_layer_has_no_cluster_id_usage() -> None:
+    identity_root = _VPI_ROOT / "application/identity"
+    for path in _iter_production_python_files(identity_root):
+        source = path.read_text(encoding="utf-8")
+        assert "cluster_id" not in source, f"cluster_id found in {path}"
+
+
+def test_identity_layer_has_no_reflection() -> None:
+    identity_root = _VPI_ROOT / "application/identity"
+    forbidden_names = {"getattr", "setattr", "hasattr", "inspect"}
+    for path in _iter_production_python_files(identity_root):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names = {
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
+
+
+def test_identity_layer_has_no_weak_contracts() -> None:
+    identity_root = _VPI_ROOT / "application/identity"
+    forbidden_fragments = (
+        "dict[str, Any]",
+        ": Any",
+        "dict[str, object]",
+        "Mapping[str, object]",
+        ": object",
+        "type: ignore",
+    )
+    for path in _iter_production_python_files(identity_root):
+        source = path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {path}"
+
+
+def test_identity_evaluation_layer_has_no_dataset_or_infrastructure_imports() -> None:
+    evaluation_root = _VPI_ROOT / "application/identity_evaluation"
+    forbidden_fragments = (
+        ".dataset.",
+        ".data_pack.",
+        ".storage_bootstrap.",
+        ".integrations.providers.",
+    )
+    violations: list[str] = []
+    for module_path in sorted(evaluation_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_identity_evaluation_layer_has_no_provider_imports() -> None:
+    evaluation_root = _VPI_ROOT / "application/identity_evaluation"
+    forbidden = frozenset(
+        {
+            "psycopg",
+            "asyncpg",
+            "sqlalchemy",
+            "mysql",
+            "qdrant",
+            "qdrant_client",
+            "pgvector",
+            "torch",
+            "sentence_transformers",
+            "transformers",
+        }
+    )
+    violations: list[str] = []
+    for module_path in sorted(evaluation_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            root = imported.split(".")[0]
+            if root in forbidden:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_identity_evaluation_layer_has_no_integrations_imports() -> None:
+    evaluation_root = _VPI_ROOT / "application/identity_evaluation"
+    violations: list[str] = []
+    for module_path in sorted(evaluation_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if imported.startswith(
+                "platform_proofs.scenarios.verified_product_identification.integrations"
+            ):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_identity_evaluation_layer_has_no_cluster_id_usage() -> None:
+    evaluation_root = _VPI_ROOT / "application/identity_evaluation"
+    for path in _iter_production_python_files(evaluation_root):
+        source = path.read_text(encoding="utf-8")
+        assert "cluster_id" not in source, f"cluster_id found in {path}"
+
+
+def test_identity_evaluation_layer_has_no_reflection() -> None:
+    evaluation_root = _VPI_ROOT / "application/identity_evaluation"
+    forbidden_names = {"getattr", "setattr", "hasattr", "inspect"}
+    for path in _iter_production_python_files(evaluation_root):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names = {
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
+
+
+def test_identity_evaluation_layer_has_no_weak_contracts() -> None:
+    evaluation_root = _VPI_ROOT / "application/identity_evaluation"
+    forbidden_fragments = (
+        "dict[str, Any]",
+        ": Any",
+        "dict[str, object]",
+        "Mapping[str, object]",
+        ": object",
+        "type: ignore",
+    )
+    for path in _iter_production_python_files(evaluation_root):
+        source = path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {path}"
+
+
+def test_identity_evaluation_layer_has_no_terminal_verdict_strings() -> None:
+    evaluation_root = _VPI_ROOT / "application/identity_evaluation"
+    forbidden = (
+        "VERIFIED",
+        "AMBIGUOUS",
+        "INSUFFICIENT_INFORMATION",
+        "NO_MATCH",
+    )
+    for path in _iter_production_python_files(evaluation_root):
+        source = path.read_text(encoding="utf-8")
+        for token in forbidden:
+            assert token not in source, f"{token} found in {path}"
+
+
+def test_verification_layer_has_no_dataset_or_infrastructure_imports() -> None:
+    verification_root = _VPI_ROOT / "application/verification"
+    forbidden_fragments = (
+        ".dataset.",
+        ".data_pack.",
+        ".storage_bootstrap.",
+        ".integrations.providers.",
+    )
+    violations: list[str] = []
+    for module_path in sorted(verification_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_verification_layer_has_no_provider_imports() -> None:
+    verification_root = _VPI_ROOT / "application/verification"
+    forbidden = frozenset(
+        {
+            "psycopg",
+            "asyncpg",
+            "sqlalchemy",
+            "mysql",
+            "qdrant",
+            "qdrant_client",
+            "pgvector",
+            "torch",
+            "sentence_transformers",
+            "transformers",
+        }
+    )
+    violations: list[str] = []
+    for module_path in sorted(verification_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            root = imported.split(".")[0]
+            if root in forbidden:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_verification_layer_has_no_integrations_imports() -> None:
+    verification_root = _VPI_ROOT / "application/verification"
+    violations: list[str] = []
+    for module_path in sorted(verification_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if imported.startswith(
+                "platform_proofs.scenarios.verified_product_identification.integrations"
+            ):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_verification_layer_has_no_cluster_id_usage() -> None:
+    verification_root = _VPI_ROOT / "application/verification"
+    for path in _iter_production_python_files(verification_root):
+        source = path.read_text(encoding="utf-8")
+        assert "cluster_id" not in source, f"cluster_id found in {path}"
+
+
+def test_verification_layer_has_no_reflection() -> None:
+    verification_root = _VPI_ROOT / "application/verification"
+    forbidden_names = {"getattr", "setattr", "hasattr", "inspect"}
+    for path in _iter_production_python_files(verification_root):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names = {
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
+
+
+def test_clarification_layer_has_no_dataset_or_infrastructure_imports() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    forbidden_fragments = (
+        ".dataset.",
+        ".data_pack.",
+        ".storage_bootstrap.",
+        ".integrations.providers.",
+    )
+    violations: list[str] = []
+    for module_path in sorted(clarification_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_clarification_layer_has_no_provider_imports() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    forbidden = frozenset(
+        {
+            "psycopg",
+            "asyncpg",
+            "sqlalchemy",
+            "mysql",
+            "qdrant",
+            "qdrant_client",
+            "pgvector",
+            "torch",
+            "sentence_transformers",
+            "transformers",
+        }
+    )
+    violations: list[str] = []
+    for module_path in sorted(clarification_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            root = imported.split(".")[0]
+            if root in forbidden:
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_clarification_layer_has_no_cluster_id_usage() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    for path in _iter_production_python_files(clarification_root):
+        source = path.read_text(encoding="utf-8")
+        assert "cluster_id" not in source, f"cluster_id found in {path}"
+
+
+def test_clarification_layer_has_no_reflection() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    forbidden_names = {"getattr", "setattr", "hasattr", "inspect"}
+    for path in _iter_production_python_files(clarification_root):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        names = {
+            node.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        assert forbidden_names.isdisjoint(names), f"forbidden reflection in {path}"
+
+
+def test_clarification_service_does_not_construct_canonical_policies() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    forbidden_fragments = (
+        "DeterministicClarificationAnswerabilityPolicy(",
+        "DeterministicClarificationMaterialityPolicy(",
+    )
+    for relative in ("service.py", "discriminator_discovery.py"):
+        path = clarification_root / relative
+        source = path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {path}"
+
+
+def test_clarification_layer_has_no_weak_contracts() -> None:
+    clarification_root = _VPI_ROOT / "application/clarification"
+    forbidden_fragments = (
+        "dict[str, Any]",
+        ": Any",
+        "dict[str, object]",
+        "Mapping[str, object]",
+        ": object",
+        "type: ignore",
+    )
+    for path in _iter_production_python_files(clarification_root):
+        source = path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {path}"
+
+
+def test_verification_layer_has_no_weak_contracts() -> None:
+    verification_root = _VPI_ROOT / "application/verification"
+    forbidden_fragments = (
+        "dict[str, Any]",
+        ": Any",
+        "dict[str, object]",
+        "Mapping[str, object]",
+        ": object",
+        "type: ignore",
+    )
+    for path in _iter_production_python_files(verification_root):
+        source = path.read_text(encoding="utf-8")
+        for fragment in forbidden_fragments:
+            assert fragment not in source, f"{fragment} found in {path}"
+
+
+def test_fusion_and_identity_layers_have_no_terminal_verdict_strings() -> None:
+    for layer in ("fusion", "identity"):
+        layer_root = _VPI_ROOT / "application" / layer
+        forbidden = (
+            "ProductIdentificationOutcome",
+            "INSUFFICIENT_INFORMATION",
+        )
+        for path in _iter_production_python_files(layer_root):
+            source = path.read_text(encoding="utf-8")
+            for token in forbidden:
+                assert token not in source, f"{token} found in {path}"
+
+
+def test_pipeline_layer_has_no_dataset_or_proof_imports() -> None:
+    pipeline_root = _VPI_ROOT / "application/pipeline"
+    forbidden_fragments = (
+        ".dataset.",
+        ".data_pack.",
+        ".storage_bootstrap.",
+        ".proof.",
+        "evaluator",
+        ".integrations.providers.",
+    )
+    violations: list[str] = []
+    for module_path in sorted(pipeline_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
+def test_pipeline_layer_has_no_cluster_id_usage() -> None:
+    pipeline_root = _VPI_ROOT / "application/pipeline"
+    for path in _iter_production_python_files(pipeline_root):
+        source = path.read_text(encoding="utf-8")
+        assert "cluster_id" not in source, f"cluster_id found in {path}"
+
+
+def test_observability_layer_has_no_proof_imports() -> None:
+    observability_root = _VPI_ROOT / "application/observability"
+    forbidden_fragments = (".proof.", "evaluator", ".dataset.", ".data_pack.")
+    violations: list[str] = []
+    for module_path in sorted(observability_root.rglob("*.py")):
+        for imported in _module_imports(module_path):
+            if any(fragment in imported for fragment in forbidden_fragments):
+                violations.append(f"{module_path.relative_to(_REPO_ROOT)} -> {imported}")
+    assert violations == []
+
+
 def test_no_weak_contracts_in_embedding_materialization_production_code() -> None:
     forbidden_fragments = (
         "dict[str, Any]",

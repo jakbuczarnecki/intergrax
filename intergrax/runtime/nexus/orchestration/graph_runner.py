@@ -5,18 +5,18 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Awaitable, Callable, List, Optional
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
-from intergrax.contracts.attempt_lifecycle import AttemptLifecycleError, AttemptTransitionReason
+from intergrax.contracts.attempt_lifecycle import AttemptLifecycleError
 from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
     DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG,
 )
 from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
-    rebind_active_attempt_for_retry,
     require_active_execution_identity,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -35,6 +35,9 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 )
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.orchestration.graph_trace_callbacks import GraphTraceCallbacks
+from intergrax.runtime.observability.qualification_runtime_trace import (
+    DeferredPersistedTraceFinalize,
+)
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
@@ -48,8 +51,17 @@ from intergrax.runtime.nexus.retry.retry_engine import (
 )
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.decision_flow import DecisionFlowHostAction, DecisionFlowScope
+from intergrax.contracts.execution_retry import (
+    ExecutionFailureKind,
+    ExecutionRetryEligibilityRequest,
+)
 from intergrax.runtime.execution.attempt_lifecycle.service import AttemptLifecycleService
 from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
+from intergrax.runtime.execution.retry.classification import classify_execution_failure
+from intergrax.runtime.execution.retry.service import ExecutionAttemptRetryService
+from intergrax.runtime.execution.active_execution_budget import (
+    peek_active_execution_global_deadline_monotonic,
+)
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -57,6 +69,7 @@ from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter, TaskTr
 from intergrax.utils.time_provider import SystemTimeProvider
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.runtime.decision_flow import DecisionFlowGate
 
 FinishFn = Callable[..., Awaitable[TaskResult]]
@@ -95,6 +108,7 @@ class GraphPhaseOutcome:
     graph: Optional[ExecutionGraph] = None
     plan: Optional[NexusPlan] = None
     final_validation: Optional[ValidationResult] = None
+    deferred_persisted_trace_finalize: Optional["DeferredPersistedTraceFinalize"] = None
 
 
 @dataclass
@@ -110,9 +124,24 @@ class NexusGraphRunner:
     maybe_checkpoint: CheckpointFn
     attempt_lifecycle: AttemptLifecycleService
     execution_terminal: ExecutionTerminalService
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None
     max_run_retries: int = 0
     production_mode: bool = False
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
+
+    def _attempt_retry_service(self) -> ExecutionAttemptRetryService:
+        return ExecutionAttemptRetryService(
+            self.attempt_lifecycle,
+            lineage_persistence=self.execution_lineage_persistence,
+            production_mode=self.production_mode,
+        )
+
+    def _current_attempt_number(self, task: Task, run_id: RunId) -> int:
+        generation = self.attempt_lifecycle.get_current_generation(
+            tenant_id=task.tenant_id,
+            run_id=run_id,
+        )
+        return generation if generation is not None else 1
 
     def _transition_attempt_for_retry(
         self,
@@ -121,25 +150,70 @@ class NexusGraphRunner:
         run_id: RunId,
         expected_attempt_id: AttemptId,
     ) -> AttemptId | None:
-        if self.production_mode:
-            self.attempt_lifecycle.require_durable()
+        attempt_number = self._current_attempt_number(task, run_id)
+        resilience_policy = _resilience_policy_from_task(task)
+        max_attempts = resilience_policy.max_attempts if resilience_policy is not None else 3
+        retry_service = self._attempt_retry_service()
+        backoff = retry_service.compute_backoff(
+            attempt_number=attempt_number,
+            resilience_policy=resilience_policy,
+        )
+        now_monotonic = time.monotonic()
+        request = ExecutionRetryEligibilityRequest(
+            classification=classify_execution_failure(
+                kind=ExecutionFailureKind.RETRYABLE_TRANSIENT,
+                reason="graph_retry",
+            ),
+            attempt_number=attempt_number,
+            max_attempts=max_attempts,
+            cancelled=CancellationCoordinator.is_requested(task.metadata),
+            proposed_backoff_seconds=backoff,
+            now_monotonic=now_monotonic,
+            global_deadline_monotonic=peek_active_execution_global_deadline_monotonic(),
+        )
         try:
-            result = self.attempt_lifecycle.transition_to_next_attempt(
+            transition = retry_service.transition_for_retry(
                 tenant_id=task.tenant_id,
+                task_id=task.task_id,
                 run_id=run_id,
                 expected_attempt_id=expected_attempt_id,
-                reason=AttemptTransitionReason.RETRY,
+                request=request,
             )
         except AttemptLifecycleError as exc:
             if str(exc) == DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG:
                 raise
             return None
-        except Exception:
+        if transition is None:
             return None
-        return rebind_active_attempt_for_retry(
-            run_id=result.run_id,
-            attempt_id=result.active_attempt_id,
-        )
+        return transition.active_attempt_id
+
+    async def _finalize_or_defer_persisted_trace(
+        self,
+        trace_emitter: TaskTraceEmitter,
+        executions: List[AgentExecutionResult],
+        *,
+        task: Task,
+        hold_persisted_trace_finalize: bool,
+    ) -> DeferredPersistedTraceFinalize | None:
+        if not isinstance(trace_emitter, PersistingTaskTraceEmitter):
+            return None
+        if hold_persisted_trace_finalize:
+            from intergrax.contracts.execution_identity import (
+                require_active_execution_id,
+                require_active_execution_identity,
+            )
+
+            active_run_id, active_attempt_id = require_active_execution_identity()
+            return DeferredPersistedTraceFinalize(
+                trace_emitter=trace_emitter,
+                task=task,
+                executions=tuple(executions),
+                run_id=active_run_id,
+                attempt_id=active_attempt_id,
+                execution_id=require_active_execution_id(),
+            )
+        await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
+        return None
 
     async def run(
         self,
@@ -149,8 +223,10 @@ class NexusGraphRunner:
         graph: ExecutionGraph,
         lifecycle: TaskLifecycle,
         trace_emitter: TaskTraceEmitter,
+        hold_persisted_trace_finalize: bool = False,
     ) -> GraphPhaseOutcome:
         callbacks = GraphTraceCallbacks(task=task, trace_emitter=trace_emitter)
+        runtime_diagnostic_port = callbacks.runtime_diagnostic_trace_port()
         retry_codes = (
             frozenset({RuntimeErrorCode.VALIDATION_ERROR})
             if self.max_run_retries > 0
@@ -209,6 +285,7 @@ class NexusGraphRunner:
                 on_retry=on_retry,
                 on_node_start=callbacks.on_node_start,
                 on_node_complete=callbacks.on_node_complete,
+                runtime_diagnostic_trace_port=runtime_diagnostic_port,
             )
             retry_records.extend(attempt_retries)
             failed_nodes = [
@@ -368,8 +445,12 @@ class NexusGraphRunner:
         else:
             lifecycle.transition(task, TaskState.COMPLETED)
 
-        if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-            await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
+        deferred_finalize = await self._finalize_or_defer_persisted_trace(
+            trace_emitter,
+            executions,
+            task=task,
+            hold_persisted_trace_finalize=hold_persisted_trace_finalize,
+        )
 
         return GraphPhaseOutcome(
             executions=executions,
@@ -377,6 +458,7 @@ class NexusGraphRunner:
             graph=graph,
             plan=plan,
             final_validation=final_validation,
+            deferred_persisted_trace_finalize=deferred_finalize,
         )
 
     async def _handle_cancellation(

@@ -9,7 +9,8 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 
-from intergrax.contracts.execution_identity import RunId, TaskId
+from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
+from intergrax.contracts.execution_identity import ExecutionId, RunId, TaskId
 from intergrax.runtime.diagnostics.deterministic_problem_reconciliation import (
     DeterministicProblemReconciliationKey,
     ProblemReconciliationKeyKind,
@@ -29,6 +30,7 @@ from intergrax.runtime.diagnostics.diagnostic_subject import (
     ExecutionDiagnosticSubjectRef,
 )
 from intergrax.runtime.diagnostics.problem_grouping import (
+    DeterministicExecutionFailureFindingSignature,
     DeterministicFindingSignature,
     DeterministicLimitationSignature,
     DeterministicProblemSignature,
@@ -51,7 +53,9 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemOccurrenceAggregateHealth,
 )
-from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistenceIntegrityError
+from intergrax.runtime.diagnostics.problem_persistence import (
+    ProblemPersistenceIntegrityError,
+)
 from intergrax.runtime.events.asof_projection import (
     RunExecutionLifecycleStatus,
     RunLifecycleViolationKind,
@@ -60,13 +64,14 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 
 _PERSISTENCE_SCHEMA_V1 = "intergrax.diagnostic_problem.persistence.v1"
 _PERSISTENCE_SCHEMA_V2 = "intergrax.diagnostic_problem.persistence.v2"
+_PERSISTENCE_SCHEMA_V3 = "intergrax.diagnostic_problem.persistence.v3"
 _PAYLOAD_FIELD = "payload"
 
 
 def encode_problem_record(problem: Problem) -> dict[str, Any]:
     """Serialize a bounded Problem aggregate for document/KV storage."""
     return {
-        "schema_version": _PERSISTENCE_SCHEMA_V2,
+        "schema_version": _PERSISTENCE_SCHEMA_V3,
         _PAYLOAD_FIELD: _encode_problem_payload_v2(problem),
     }
 
@@ -74,7 +79,9 @@ def encode_problem_record(problem: Problem) -> dict[str, Any]:
 def decode_problem_record(data: object) -> Problem:
     """Reconstruct a typed bounded Problem from stored representation."""
     if not isinstance(data, dict):
-        raise ProblemPersistenceIntegrityError("invalid diagnostic problem persistence record")
+        raise ProblemPersistenceIntegrityError(
+            "invalid diagnostic problem persistence record"
+        )
     schema_version = data.get("schema_version")
     payload = data.get(_PAYLOAD_FIELD)
     if not isinstance(payload, dict):
@@ -83,6 +90,8 @@ def decode_problem_record(data: object) -> Problem:
         )
     try:
         if schema_version == _PERSISTENCE_SCHEMA_V2:
+            return _decode_problem_payload_v2(payload)
+        if schema_version == _PERSISTENCE_SCHEMA_V3:
             return _decode_problem_payload_v2(payload)
         if schema_version == _PERSISTENCE_SCHEMA_V1:
             return _decode_problem_payload_v1(payload)
@@ -97,10 +106,14 @@ def decode_problem_record(data: object) -> Problem:
 
 def decode_legacy_problem_record_with_occurrences(
     data: object,
-) -> tuple[Problem, tuple[ProblemOccurrence, ...], tuple[ProblemGroupingSubjectRef, ...]]:
+) -> tuple[
+    Problem, tuple[ProblemOccurrence, ...], tuple[ProblemGroupingSubjectRef, ...]
+]:
     """Decode legacy v1 records retaining inline occurrence history for migration."""
     if not isinstance(data, dict):
-        raise ProblemPersistenceIntegrityError("invalid diagnostic problem persistence record")
+        raise ProblemPersistenceIntegrityError(
+            "invalid diagnostic problem persistence record"
+        )
     schema_version = data.get("schema_version")
     if schema_version != _PERSISTENCE_SCHEMA_V1:
         raise ProblemPersistenceIntegrityError(
@@ -113,7 +126,8 @@ def decode_legacy_problem_record_with_occurrences(
         )
     try:
         inline_occurrences = tuple(
-            _decode_occurrence(item) for item in _require_sequence(payload["occurrences"])
+            _decode_occurrence(item)
+            for item in _require_sequence(payload["occurrences"])
         )
         inline_subject_refs = tuple(
             _decode_subject_ref(item)
@@ -157,7 +171,9 @@ def _decode_problem_payload_v2(payload: Mapping[str, object]) -> Problem:
     )
 
 
-def _decode_occurrence_aggregate_health(value: object) -> ProblemOccurrenceAggregateHealth:
+def _decode_occurrence_aggregate_health(
+    value: object,
+) -> ProblemOccurrenceAggregateHealth:
     if value is None:
         return ProblemOccurrenceAggregateHealth.CONSISTENT
     if not isinstance(value, str):
@@ -274,12 +290,16 @@ def _decode_subject_ref(value: object) -> ProblemGroupingSubjectRef:
     raise ValueError("unsupported diagnostic subject kind")
 
 
-def encode_problem_occurrence_payload(occurrence: ProblemOccurrence) -> dict[str, object]:
+def encode_problem_occurrence_payload(
+    occurrence: ProblemOccurrence,
+) -> dict[str, object]:
     """Public occurrence payload encoder for occurrence persistence."""
     return _encode_occurrence(occurrence)
 
 
-def decode_problem_occurrence_payload(payload: Mapping[str, object]) -> ProblemOccurrence:
+def decode_problem_occurrence_payload(
+    payload: Mapping[str, object],
+) -> ProblemOccurrence:
     """Public occurrence payload decoder for occurrence persistence."""
     return _decode_occurrence(payload)
 
@@ -384,15 +404,18 @@ def _decode_signature(value: object) -> DeterministicProblemSignature:
             _decode_finding(item) for item in _require_sequence(value["findings"])
         ),
         limitations=tuple(
-            _decode_limitation(item)
-            for item in _require_sequence(value["limitations"])
+            _decode_limitation(item) for item in _require_sequence(value["limitations"])
         ),
         subject_domain=subject_domain,
     )
 
 
 def _encode_finding(
-    finding: DeterministicFindingSignature | DeterministicSignalFindingSignature,
+    finding: (
+        DeterministicFindingSignature
+        | DeterministicExecutionFailureFindingSignature
+        | DeterministicSignalFindingSignature
+    ),
 ) -> dict[str, object]:
     if type(finding) is DeterministicSignalFindingSignature:
         encoded: dict[str, object] = {
@@ -408,6 +431,13 @@ def _encode_finding(
         if finding.exception_type is not None:
             encoded["exception_type"] = finding.exception_type
         return encoded
+    if type(finding) is DeterministicExecutionFailureFindingSignature:
+        return {
+            "source": "execution_failure",
+            "kind": finding.kind.value,
+            "execution_id": finding.execution_id,
+            "execution_failure_kind": finding.execution_failure_kind.value,
+        }
     encoded = {
         "source": "lifecycle",
         "kind": finding.kind.value,
@@ -423,7 +453,11 @@ def _encode_finding(
 
 def _decode_finding(
     value: object,
-) -> DeterministicFindingSignature | DeterministicSignalFindingSignature:
+) -> (
+    DeterministicFindingSignature
+    | DeterministicExecutionFailureFindingSignature
+    | DeterministicSignalFindingSignature
+):
     if not isinstance(value, dict):
         raise ValueError("invalid finding signature")
     source = value.get("source")
@@ -441,16 +475,44 @@ def _decode_finding(
                 str(exception_type_raw) if exception_type_raw is not None else None
             ),
         )
+    if source == "execution_failure":
+        return DeterministicExecutionFailureFindingSignature(
+            kind=DiagnosticFindingKind(str(value["kind"])),
+            execution_id=ExecutionId(str(value["execution_id"])),
+            execution_failure_kind=ExecutionFailureKind(
+                str(value["execution_failure_kind"]),
+            ),
+        )
     transition_raw = value.get("lifecycle_transition")
     transition = (
         _decode_lifecycle_transition(transition_raw)
         if transition_raw is not None
         else None
     )
+    source_anomaly_raw = value.get("source_anomaly_kind")
+    kind = DiagnosticFindingKind(str(value["kind"]))
+    if kind is DiagnosticFindingKind.EXECUTION_FAILED:
+        execution_id_raw = value.get("execution_id")
+        execution_failure_kind_raw = value.get("execution_failure_kind")
+        if execution_id_raw is None or execution_failure_kind_raw is None:
+            raise ProblemPersistenceIntegrityError(
+                "legacy execution_failed lifecycle finding missing execution fields",
+            )
+        return DeterministicExecutionFailureFindingSignature(
+            kind=kind,
+            execution_id=ExecutionId(str(execution_id_raw)),
+            execution_failure_kind=ExecutionFailureKind(
+                str(execution_failure_kind_raw)
+            ),
+        )
+    if source_anomaly_raw is None:
+        raise ProblemPersistenceIntegrityError(
+            "lifecycle finding signature missing source_anomaly_kind",
+        )
     return DeterministicFindingSignature(
-        kind=DiagnosticFindingKind(str(value["kind"])),
+        kind=kind,
         scope=LifecycleAnomalyScope(str(value["scope"])),
-        source_anomaly_kind=LifecycleAnomalyKind(str(value["source_anomaly_kind"])),
+        source_anomaly_kind=LifecycleAnomalyKind(str(source_anomaly_raw)),
         lifecycle_transition=transition,
     )
 

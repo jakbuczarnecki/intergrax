@@ -71,11 +71,17 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     shard_descriptor_paths,
     validate_ready_shard_artifacts,
 )
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.checksums import (
+    write_sha256sums,
+)
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.dataset_manifest import (
     load_dataset_identity,
 )
-from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.checksums import (
-    write_sha256sums,
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.resume_policy import (
+    resolve_resume_boundary,
+)
+from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.resume_boundary import (
+    DataPackResumeBoundary,
 )
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.application.compatibility import (
     assert_data_pack_compatible,
@@ -726,6 +732,8 @@ def run_resumable_data_pack_build(
 
     _ensure_build_directories(paths)
 
+    resume_boundary: DataPackResumeBoundary | None = None
+
     if state_exists:
         state = read_build_state_file(paths.build_state_file)
         if state.content_identity != expected_content_identity:
@@ -738,16 +746,34 @@ def run_resumable_data_pack_build(
             raise VpiDataPackResumeError(
                 "build state expected_record_count does not match current configuration"
             )
-        recovered_shards = tuple(
-            recover_non_ready_shard(
-                shard,
-                relational_dir=paths.relational_dir,
-                embeddings_dir=paths.embeddings_dir,
+        if config.resume:
+            resume_boundary = resolve_resume_boundary(state)
+            if resume_boundary.last_ready_ordinal is not None:
+                boundary_shard = state.shards[resume_boundary.last_ready_ordinal - 1]
+                validate_ready_shard_artifacts(
+                    pack_root=paths.root,
+                    shard=boundary_shard,
+                    relational_schema_version=RELATIONAL_SCHEMA_VERSION,
+                    embedding_schema_version=EMBEDDING_SCHEMA_VERSION,
+                    expected_dimension=embedding_configuration.expected_dimension,
+                )
+            if resume_boundary.next_shard_ordinal is not None:
+                next_shard = state.shards[resume_boundary.next_shard_ordinal - 1]
+                recovered_next = recover_non_ready_shard(
+                    next_shard,
+                    relational_dir=paths.relational_dir,
+                    embeddings_dir=paths.embeddings_dir,
+                )
+                if recovered_next is not next_shard:
+                    state = replace_shard(state, recovered_next)
+                    state = _persist_state(paths, state)
+            logger.info(
+                "resume boundary: %s/%s READY validated boundary shard=%s continuing from shard=%s",
+                resume_boundary.completed_shards,
+                state.shard_count,
+                resume_boundary.last_ready_ordinal or 0,
+                resume_boundary.next_shard_ordinal or "complete",
             )
-            for shard in state.shards
-        )
-        state = replace(state, shards=recovered_shards)
-        state = _persist_state(paths, state)
     else:
         state = _new_build_state(
             content_identity=expected_content_identity,
@@ -807,24 +833,24 @@ def run_resumable_data_pack_build(
 
     seams = build_seams or ShardBuildSeams()
 
+    if resume_boundary is not None and resume_boundary.build_complete:
+        iteration_shards: tuple[DataPackShardBuildState, ...] = ()
+    elif resume_boundary is not None and resume_boundary.next_shard_ordinal is not None:
+        start_index = resume_boundary.next_shard_ordinal - 1
+        iteration_shards = state.shards[start_index:]
+    else:
+        iteration_shards = state.shards
+
     try:
         with graceful_build_interruption_scope():
-            for shard in state.shards:
+            for shard in iteration_shards:
                 if shard_limit is not None and shard.ordinal > shard_limit:
                     break
 
                 if shard.status is DataPackShardStatus.READY:
-                    validate_ready_shard_artifacts(
-                        pack_root=paths.root,
-                        shard=shard,
-                        relational_schema_version=RELATIONAL_SCHEMA_VERSION,
-                        embedding_schema_version=EMBEDDING_SCHEMA_VERSION,
-                        expected_dimension=embedding_configuration.expected_dimension,
-                    )
-                    logger.info(
-                        "skip READY shard ordinal=%s records=%s",
+                    logger.warning(
+                        "unexpected READY shard ordinal=%s in build iteration slice",
                         shard.ordinal,
-                        shard.expected_record_count,
                     )
                     continue
 

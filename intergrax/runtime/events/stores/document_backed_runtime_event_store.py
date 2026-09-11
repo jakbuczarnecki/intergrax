@@ -11,6 +11,7 @@ from typing import List
 
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
+    DocumentQueryPageV1,
     DocumentRecord,
 )
 from intergrax.contracts.execution_identity import EventId, validate_event_id
@@ -25,8 +26,11 @@ from intergrax.runtime.events.persistence_contract import (
     RuntimeEventIdentityClaim,
     RuntimeEventPersistence,
     RuntimeEventPersistenceIntegrityError,
+    TaskRuntimeEventRuns,
+    _filter_positioned_run_rows,
+    _group_positioned_task_rows,
     _validate_persistence_tenant_id,
-    _validate_through_limit,
+    _validate_run_list_params,
     build_runtime_event_identity_claim,
     decode_event_identity_claim,
     encode_event_identity_claim,
@@ -67,6 +71,7 @@ def _event_identity_claim_document(
 
 _SEQUENCE_ROW_KEY = "__run_sequence__"
 _MAX_SEQUENCE_CAS_ATTEMPTS = 16
+_PARTITION_QUERY_PAGE_SIZE = 5000
 
 
 class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
@@ -361,12 +366,20 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
         tenant_id: str,
         limit: int = 1000,
         through: ExecutionEventPosition | None = None,
+        after: ExecutionEventPosition | None = None,
     ) -> List[PositionedRuntimeEvent]:
-        limit, through = _validate_through_limit(limit=limit, through=through)
-        events = self._list_partition(_run_partition(tenant_id, run_id), limit=limit)
-        if through is None:
-            return events
-        return [event for event in events if event.position <= through]
+        limit, through, after = _validate_run_list_params(
+            limit=limit,
+            through=through,
+            after=after,
+        )
+        events = self._list_partition(_run_partition(tenant_id, run_id), limit=None)
+        return _filter_positioned_run_rows(
+            events,
+            after=after,
+            through=through,
+            limit=limit,
+        )
 
     def list_for_task(
         self,
@@ -375,15 +388,26 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
         tenant_id: str,
         limit: int = 1000,
     ) -> List[RuntimeEvent]:
-        if type(limit) is not int or isinstance(limit, bool) or limit <= 0:
-            raise ValueError("limit must be > 0")
-        return [
-            positioned.event
-            for positioned in self._list_partition(
-                _task_partition(tenant_id, task_id),
-                limit=limit,
-            )
-        ]
+        grouped = self.list_positioned_for_task_grouped_by_run(
+            task_id,
+            tenant_id=tenant_id,
+            limit=limit,
+        )
+        events: list[RuntimeEvent] = []
+        for _, run_rows in grouped.runs:
+            for positioned in run_rows:
+                events.append(positioned.event)
+        return events
+
+    def list_positioned_for_task_grouped_by_run(
+        self,
+        task_id: str,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+    ) -> TaskRuntimeEventRuns:
+        events = self._list_partition(_task_partition(tenant_id, task_id), limit=None)
+        return _group_positioned_task_rows(events, limit=limit)
 
     def get_by_event_id(
         self,
@@ -542,21 +566,45 @@ class DocumentBackedRuntimeEventStore(RuntimeEventPersistence):
             return None
         return self._positioned_from_record(record)
 
-    def _list_partition(self, partition_key: str, *, limit: int) -> List[PositionedRuntimeEvent]:
-        result = self._store.query(partition_key, limit=limit)
-        documents = attribute_access.optional(result, "documents", ())
-        if not isinstance(documents, Sequence):
-            return []
+    def _list_partition(
+        self,
+        partition_key: str,
+        *,
+        limit: int | None,
+    ) -> List[PositionedRuntimeEvent]:
         events: list[PositionedRuntimeEvent] = []
-        for doc in documents:
-            if not isinstance(doc, DocumentRecord):
-                continue
-            if doc.row_key == _SEQUENCE_ROW_KEY:
-                continue
-            positioned = self._positioned_from_record(doc)
-            if positioned is not None:
-                events.append(positioned)
-        events.sort(key=lambda positioned: positioned.position)
+        cursor: str | None = None
+        while True:
+            page = self._store.query(
+                partition_key,
+                limit=_PARTITION_QUERY_PAGE_SIZE,
+                cursor=cursor,
+            )
+            if isinstance(page, DocumentQueryPageV1):
+                documents = page.documents
+                next_cursor = page.next_cursor
+            else:
+                documents = attribute_access.optional(page, "documents", ())
+                raw_cursor = attribute_access.optional(page, "next_cursor", None)
+                next_cursor = raw_cursor if isinstance(raw_cursor, str) else None
+            if not isinstance(documents, Sequence):
+                break
+            for doc in documents:
+                if not isinstance(doc, DocumentRecord):
+                    continue
+                if doc.row_key == _SEQUENCE_ROW_KEY:
+                    continue
+                positioned = self._positioned_from_record(doc)
+                if positioned is not None:
+                    events.append(positioned)
+            if next_cursor is None:
+                break
+            cursor = next_cursor
+        events.sort(
+            key=lambda positioned: (str(positioned.event.run_id), positioned.position.value),
+        )
+        if limit is None:
+            return events
         return events[:limit]
 
     def _positioned_from_record(self, record: DocumentRecord) -> PositionedRuntimeEvent | None:

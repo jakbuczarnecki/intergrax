@@ -160,6 +160,8 @@ class StorageBootstrapService:
                 failure=None,
             )
 
+        self._bind_vector_index_metadata(manifest=manifest, request=request)
+
         run_identity = build_run_identity(manifest=manifest, request=request)
         checkpoint_state, resume_context = self._prepare_checkpoint(
             request=request,
@@ -511,6 +513,44 @@ class StorageBootstrapService:
                 detail=str(exc),
             )
         return loaded, resume_decision
+
+    def _bind_vector_index_metadata(
+        self,
+        *,
+        manifest: DataPackManifest,
+        request: BootstrapRequest,
+    ) -> None:
+        from platform_proofs.scenarios.verified_product_identification.integrations.search_store.vector_index_metadata import (
+            VectorIndexPersistedMetadata,
+        )
+        from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.adapter import (
+            QdrantVectorStorageAdapter,
+        )
+        from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.configuration import (
+            QdrantBootstrapConfiguration,
+        )
+        from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.target_mapping import (
+            resolve_physical_target,
+        )
+
+        vector = self.dependencies.vector
+        if not isinstance(vector, QdrantVectorStorageAdapter):
+            return
+        configuration = QdrantBootstrapConfiguration.from_env(
+            logical_collection_name=str(request.vector_target),
+        )
+        physical = resolve_physical_target(request.vector_target, configuration)
+        embedding_identity = manifest.embedding_identity
+        vector.bind_index_metadata(
+            VectorIndexPersistedMetadata(
+                target=physical.index_identity,
+                content_identity=manifest.content_identity,
+                provider=embedding_identity.provider,
+                model=embedding_identity.model,
+                revision=embedding_identity.resolved_model_identity(),
+                dimension=embedding_identity.dimension,
+            )
+        )
 
     def _validate_request(self, request: BootstrapRequest) -> None:
         if request.batch_size.value <= 0:

@@ -13,6 +13,11 @@ from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskDelegate,
 )
 from intergrax.runtime.execution.child import ChildExecutionRunner
+from intergrax.runtime.execution.execution_work_port import (
+    DelegatedSpecialistChildWorkEnvelope,
+    DelegatedSubtaskChildExecutionWorkPort,
+)
+from intergrax.runtime.execution.request import ExecutionRequest
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 RequestT = TypeVar("RequestT")
@@ -59,4 +64,46 @@ def as_child_execution_port(
     return ChildExecutionRunnerPort(runner)
 
 
-__all__ = ["ChildExecutionRunnerPort", "as_child_execution_port"]
+class DelegatedSubtaskChildExecutionWorkPortAdapter(Generic[RequestT, ResultT]):
+    """Translate :class:`ChildExecutionPort` invocations to canonical child work port."""
+
+    __slots__ = ("_work_port",)
+
+    def __init__(
+        self,
+        work_port: DelegatedSubtaskChildExecutionWorkPort[RequestT, ResultT],
+    ) -> None:
+        self._work_port = work_port
+
+    async def execute_child(
+        self,
+        *,
+        request: RequestT,
+        delegate: DelegatedSubtaskDelegate[RequestT, ResultT],
+        options: DelegatedChildExecutionOptions | None = None,
+    ) -> ResultT:
+        envelope = DelegatedSpecialistChildWorkEnvelope(
+            domain_request=request,
+            specialist=delegate,
+            options=options,
+        )
+        work_request = ExecutionRequest(
+            input=envelope,
+            output_type=None,
+        )
+        return await self._work_port.execute(work_request)
+
+
+def child_execution_port_from_work_port(
+    work_port: DelegatedSubtaskChildExecutionWorkPort[RequestT, ResultT],
+) -> ChildExecutionPort[RequestT, ResultT]:
+    """Build domain-facing child port over canonical :class:`ExecutionWorkPort` wiring."""
+    return DelegatedSubtaskChildExecutionWorkPortAdapter(work_port)
+
+
+__all__ = [
+    "ChildExecutionRunnerPort",
+    "DelegatedSubtaskChildExecutionWorkPortAdapter",
+    "as_child_execution_port",
+    "child_execution_port_from_work_port",
+]

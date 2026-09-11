@@ -156,6 +156,12 @@ class AttemptLifecycleService:
             return None
         return self._load_state(raw).active_attempt_id
 
+    def get_current_generation(self, *, tenant_id: str, run_id: RunId) -> int | None:
+        raw = self._load_raw_or_raise(tenant_id=tenant_id, run_id=validate_run_id(run_id))
+        if raw is None:
+            return None
+        return self._load_state(raw).generation
+
     def _load_raw_or_raise(self, *, tenant_id: str, run_id: RunId) -> bytes | None:
         try:
             return self._store.load_raw(tenant_id=tenant_id, run_id=run_id)

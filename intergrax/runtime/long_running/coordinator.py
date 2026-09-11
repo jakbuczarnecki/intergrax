@@ -7,8 +7,25 @@ from __future__ import annotations
 
 from typing import Optional
 
+from intergrax.contracts.execution_capacity_admission import (
+    ExecutionCapacityAdmissionPort,
+    ExecutionCapacityPermit,
+)
+from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId, TaskId
+from intergrax.contracts.recovery_admission import (
+    RecoveryAdmissionPort,
+    RecoveryAdmissionRequest,
+    RecoveryKind,
+)
 from intergrax.runtime.human.models import EscalationOutcome
+from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
+from intergrax.contracts.runtime_policy import PolicyDecision
 from intergrax.runtime.cancellation.resume_admission import assert_checkpoint_resumable
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    assert_checkpoint_persistable,
+    assert_checkpoint_resume_eligible,
+    resolve_resume_execution_authority,
+)
 from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.long_running.checkpoint_builder import (
     apply_runtime_checkpoint_to_task,
@@ -30,6 +47,9 @@ from intergrax.runtime.notifications.templates.partial_result import (
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.runtime.resilience.task_resume_recovery_handoff import (
+    handoff_task_resume_recovery_start,
+)
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
 
@@ -42,6 +62,45 @@ def _wants_human_resume(task: Task) -> bool:
 
 class LongRunningCoordinator:
     """Persists checkpoints and restores tasks on resume."""
+
+    @staticmethod
+    async def admit_task_resume_recovery_handoff(
+        *,
+        tenant_id: str | None,
+        task_id: TaskId,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        execution_id: ExecutionId,
+        recovery_admission: RecoveryAdmissionPort | None,
+        execution_capacity_admission: ExecutionCapacityAdmissionPort | None,
+    ) -> ExecutionCapacityPermit | None:
+        """W3-C TASK_RESUME start admission handoff before root execution re-entry."""
+        return await handoff_task_resume_recovery_start(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            recovery_admission=recovery_admission,
+            execution_capacity_admission=execution_capacity_admission,
+        )
+
+    @staticmethod
+    def recovery_admission_request_for_checkpoint(
+        *,
+        tenant_id: str | None,
+        task_id: TaskId,
+        run_id: RunId,
+        attempt_id: AttemptId,
+    ) -> RecoveryAdmissionRequest:
+        """Build one TASK_RESUME admission request from durable resume identity."""
+        return RecoveryAdmissionRequest(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            recovery_kind=RecoveryKind.TASK_RESUME,
+        )
 
     @staticmethod
     def is_long_running(task: Task) -> bool:
@@ -60,6 +119,9 @@ class LongRunningCoordinator:
         store: TaskCheckpointReader,
         *,
         execution_terminal: ExecutionTerminalService | None = None,
+        execution_lineage_persistence: ExecutionLineagePersistence | None = None,
+        require_durable_lineage: bool = False,
+        policy_decision: PolicyDecision | None = None,
     ) -> Optional[TaskCheckpoint]:
         if not LongRunningCoordinator.is_long_running(task):
             if not _wants_human_resume(task):
@@ -82,11 +144,24 @@ class LongRunningCoordinator:
         if checkpoint is None:
             return None
 
+        latest = store.get_latest(task.task_id, task.tenant_id)
+        assert_checkpoint_resume_eligible(
+            checkpoint,
+            target_task_id=task.task_id,
+            target_tenant_id=task.tenant_id,
+            latest_checkpoint=latest,
+            execution_terminal=execution_terminal,
+            execution_lineage_persistence=execution_lineage_persistence,
+            require_durable_lineage=require_durable_lineage,
+            current_task=task,
+            policy_decision=policy_decision,
+        )
         assert_checkpoint_resumable(checkpoint, execution_terminal=execution_terminal)
 
         token = checkpoint.resume_token
 
         incoming_human = task.options.human.model_copy(deep=True)
+        incoming_authority = task.execution_authority
         restored = Task.model_validate(checkpoint.task_snapshot)
         task.state = restored.state
         task.options = restored.options
@@ -98,7 +173,15 @@ class LongRunningCoordinator:
         task.options.long_running.resume_token = token
         if incoming_human.verdict is not None or incoming_human.response_text is not None:
             task.options.human = incoming_human
+        if incoming_authority is not None:
+            task.execution_authority = resolve_resume_execution_authority(
+                checkpoint,
+                task,
+            )
+        else:
+            task.execution_authority = None
         task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
+        task.runtime.orchestration.checkpoint_revision = checkpoint.revision
         task.runtime.orchestration.resume_token = checkpoint.resume_token
         task.runtime.orchestration.progress_message = checkpoint.progress_message
         if checkpoint.runtime is not None:
@@ -126,6 +209,7 @@ class LongRunningCoordinator:
             graph=graph,
             last_execution=last_execution,
         )
+        assert_checkpoint_persistable(task, runtime)
         existing_token = task.runtime.orchestration.resume_token
         checkpoint = build_task_checkpoint(
             task,
@@ -133,13 +217,17 @@ class LongRunningCoordinator:
             resume_token=existing_token,
             runtime=runtime,
         )
-        store.save(checkpoint)
-        task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
-        task.runtime.orchestration.resume_token = checkpoint.resume_token
-        task.runtime.orchestration.progress_message = progress_message or checkpoint.progress_message
+        saved = store.save(
+            checkpoint,
+            expected_revision=task.runtime.orchestration.checkpoint_revision,
+        )
+        task.runtime.orchestration.checkpoint_id = saved.checkpoint_id
+        task.runtime.orchestration.checkpoint_revision = saved.revision
+        task.runtime.orchestration.resume_token = saved.resume_token
+        task.runtime.orchestration.progress_message = progress_message or saved.progress_message
         apply_runtime_checkpoint_to_task(task, runtime)
         task.sync_metadata()
-        return checkpoint
+        return saved
 
     @staticmethod
     async def notify_progress(

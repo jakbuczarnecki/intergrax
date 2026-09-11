@@ -8,7 +8,7 @@ from typing import Any
 
 from intergrax.agents.authoring.acp_session_host import ACPSessionHostContext
 from intergrax.applications._shared.declarative_tool_wiring import (
-    build_declarative_invoker_from_tool_wiring,
+    build_declarative_invoker_for_application_host,
 )
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.harness_host_composition import (
@@ -42,7 +42,14 @@ def build_acp_session_host_from_harness(
     binding: AgentBinding | None = None,
 ) -> ACPSessionHostContext:
     """Attach Decision flow gate and declarative tool invoker from a harness host."""
-    invoker = build_declarative_invoker_from_tool_wiring(runtime.env_wiring.tool_wiring)
+    invoker = build_declarative_invoker_for_application_host(
+        runtime.env_wiring.tool_wiring,
+        runtime.environment,
+        manifest=runtime.manifest,
+        agent_registry=runtime.registry,
+        tenant_id=runtime.tenant_id,
+        idempotency_store=runtime.reliability.idempotency_store,
+    )
     return build_acp_session_host_context(
         app_profile=runtime.environment,
         binding=binding,

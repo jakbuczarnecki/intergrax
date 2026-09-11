@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
 
@@ -62,7 +63,12 @@ async def test_ds_e2e_09_provider_outage_fail_closed(
     decision_e2e_report_collector,
 ) -> None:
     outage_env = _outage_environment(require_decision_e2e_environment)
-    composition = build_qualification_composition(outage_env)
+    composition = build_qualification_composition(
+        outage_env,
+        participant_concurrent_work_policy=ConcurrentExecutionWorkPolicy(
+            max_concurrency=3,
+        ),
+    )
     identity = mint_qualification_identity(subject="provider-outage")
     with pytest.raises(Exception):
         await run_single_model_producer(

@@ -5,6 +5,7 @@
 **Owner:** Intergrax Platform Architecture (semantic coordination)  
 **Audience:** Principal architects, domain owners, implementers, Cursor implementation sessions  
 **Registered in:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md#architecture-artifact-classification-register)  
+**Maintainer navigation hub (Execution Engine area):** [`EXECUTION_ENGINE.md`](../maintainers/architecture/EXECUTION_ENGINE.md) (`MAINTAINER_HUB` — navigation only; this document remains `META_ARCHITECTURE`)  
 **Last updated:** 2026-08-29 - **UE-8P3** pluggable `ExecutionAuthorityPolicy`, **UEA-INV-022** mandatory authority checkpoint
 
 ---

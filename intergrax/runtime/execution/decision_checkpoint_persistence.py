@@ -20,6 +20,10 @@ from intergrax.contracts.decision_finalization import DecisionFinalizationKey
 T = TypeVar("T")
 
 
+class StaleDecisionCheckpointWriteError(RuntimeError):
+    """Materialized decision checkpoint projection conflict on revision CAS."""
+
+
 class DecisionCheckpointPersistence(Protocol[T]):
     """Execution-facing durability port keyed by stable finalization scope."""
 
@@ -34,8 +38,13 @@ class DecisionCheckpointPersistence(Protocol[T]):
         self,
         *,
         checkpoint: DecisionCheckpointState[T],
+        expected_revision: int | None = None,
     ) -> None:
-        """Persist one validated checkpoint snapshot."""
+        """Persist one validated checkpoint snapshot.
+
+        When ``expected_revision`` is set, the store must reject concurrent writers with
+        :class:`StaleDecisionCheckpointWriteError` if the materialized revision changed.
+        """
 
 
 def load_decision_checkpoint(
@@ -54,7 +63,8 @@ def save_decision_checkpoint(
     persistence: DecisionCheckpointPersistence[T],
     *,
     checkpoint: DecisionCheckpointState[T],
+    expected_revision: int | None = None,
 ) -> None:
     """Validate and persist one checkpoint snapshot."""
     validated = restore_decision_checkpoint_state(checkpoint)
-    persistence.save(checkpoint=validated)
+    persistence.save(checkpoint=validated, expected_revision=expected_revision)

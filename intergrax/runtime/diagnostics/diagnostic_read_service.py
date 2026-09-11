@@ -6,12 +6,10 @@
 from __future__ import annotations
 
 from intergrax.runtime.diagnostics.diagnostic_assessment import (
-    DiagnosticAssessment,
     DiagnosticAssessmentBuilder,
     DiagnosticAssessmentIntegrityError,
 )
 from intergrax.runtime.diagnostics.diagnostic_read_models import (
-    DiagnosticGroupingProvenance,
     DiagnosticOccurrenceReadStatus,
     DiagnosticProblemDetail,
     DiagnosticProblemListResult,
@@ -20,6 +18,9 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticReadIntegrityError,
     DiagnosticReadUnavailableReason,
     grouping_provenance_from_problem_provenance,
+)
+from intergrax.runtime.diagnostics.diagnostic_lineage_projection import (
+    project_execution_lineage_view,
 )
 from intergrax.runtime.diagnostics.execution_reconstruction import (
     ExecutionReconstruction,
@@ -42,6 +43,30 @@ from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrencePersistence,
 )
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
+from intergrax.runtime.diagnostics.decision_context_provider import (
+    DecisionContextProvider,
+    DecisionContextProviderUnavailableError,
+)
+from intergrax.runtime.diagnostics.decision_context_read_models import (
+    DecisionContextReadStatus,
+    DecisionContextUnavailableReason,
+    DecisionContextView,
+)
+from intergrax.runtime.diagnostics.diagnostic_extension_service import (
+    DiagnosticExtensionService,
+)
+from intergrax.runtime.diagnostics.diagnostic_operator_investigation_projection import (
+    project_investigation_view,
+)
+from intergrax.runtime.diagnostics.diagnostic_operator_investigation_read_models import (
+    DiagnosticInvestigationResult,
+)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from intergrax.runtime.prediction.predictive_investigation_service import (
+        PredictiveInvestigationService,
+    )
 
 DEFAULT_PROBLEM_LIST_LIMIT = 100
 MAX_PROBLEM_LIST_LIMIT = 1000
@@ -65,12 +90,18 @@ class DiagnosticReadService:
         *,
         lifecycle_analyzer: LifecycleAnomalyAnalyzer | None = None,
         assessment_builder: DiagnosticAssessmentBuilder | None = None,
+        decision_context_provider: DecisionContextProvider | None = None,
+        extension_service: DiagnosticExtensionService | None = None,
+        predictive_investigation_service: PredictiveInvestigationService | None = None,
     ) -> None:
         self._persistence = problem_persistence
         self._occurrence_persistence = occurrence_persistence
         self._reconstructor = execution_reconstructor
         self._lifecycle_analyzer = lifecycle_analyzer or LifecycleAnomalyAnalyzer()
         self._assessment_builder = assessment_builder or DiagnosticAssessmentBuilder()
+        self._decision_context_provider = decision_context_provider
+        self._extension_service = extension_service
+        self._predictive_investigation_service = predictive_investigation_service
 
     def list_problems(
         self,
@@ -129,7 +160,9 @@ class DiagnosticReadService:
                 "persisted Problem tenant_id does not match lookup tenant scope",
             )
 
-        grouping_provenance = grouping_provenance_from_problem_provenance(problem.provenance)
+        grouping_provenance = grouping_provenance_from_problem_provenance(
+            problem.provenance
+        )
         occurrence_page = self._occurrence_persistence.query_occurrences(
             tenant_id=tenant_id,
             problem_id=problem_id,
@@ -143,6 +176,8 @@ class DiagnosticReadService:
                 reconstructor=self._reconstructor,
                 lifecycle_analyzer=self._lifecycle_analyzer,
                 assessment_builder=self._assessment_builder,
+                decision_context_provider=self._decision_context_provider,
+                extension_service=self._extension_service,
             )
             for occurrence in occurrence_page.items
         )
@@ -194,6 +229,89 @@ class DiagnosticReadService:
         )
         return page
 
+    def get_investigation(
+        self,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+        occurrence_index: int = 0,
+        occurrence_limit: int = DEFAULT_OCCURRENCE_LIMIT,
+    ) -> DiagnosticInvestigationResult:
+        """
+        Compose a bounded operator investigation read model for one Problem occurrence.
+
+        Does not mutate Problems, infer root cause, or establish timeline causality.
+        """
+        tenant_id = _require_tenant_id(tenant_id)
+        problem_id = validate_problem_id(problem_id)
+        occurrence_limit = _validate_bounded_limit(
+            occurrence_limit,
+            max_limit=MAX_OCCURRENCE_LIMIT,
+        )
+        if type(occurrence_index) is not int or isinstance(occurrence_index, bool):
+            raise TypeError("occurrence_index must be int")
+        if occurrence_index < 0:
+            raise ValueError("occurrence_index must be >= 0")
+
+        detail = self.get_problem(
+            tenant_id=tenant_id,
+            problem_id=problem_id,
+            occurrence_limit=occurrence_limit,
+        )
+        if detail is None:
+            return DiagnosticInvestigationResult(
+                investigation=None,
+                unavailable_reason="problem_not_found",
+            )
+        if not detail.occurrences:
+            return DiagnosticInvestigationResult(
+                investigation=None,
+                unavailable_reason="no_occurrences",
+            )
+
+        ordered = _order_occurrences_newest_first(detail.occurrences)
+        if occurrence_index >= len(ordered):
+            return DiagnosticInvestigationResult(
+                investigation=None,
+                unavailable_reason="occurrence_index_out_of_range",
+            )
+        occurrence_view = ordered[occurrence_index]
+
+        reconstruction = None
+        subject_ref = occurrence_view.subject_ref
+        execution = subject_ref.execution()
+        if execution is not None:
+            try:
+                reconstruction = self._reconstructor.reconstruct_execution(
+                    tenant_id,
+                    execution.task_id,
+                    execution.run_id,
+                )
+                _validate_reconstruction_scope(reconstruction, subject_ref=subject_ref)
+            except ExecutionReconstructionIntegrityError as exc:
+                raise DiagnosticReadIntegrityError(str(exc)) from exc
+
+        related_risk_signals = ()
+        forecast_risk_signals = ()
+        if self._predictive_investigation_service is not None:
+            related_risk_signals = self._predictive_investigation_service.related_risk_signals(
+                problem_detail=detail,
+                occurrence=occurrence_view,
+            )
+            forecast_risk_signals = self._predictive_investigation_service.forecast_risk_signals(
+                problem_detail=detail,
+                occurrence=occurrence_view,
+            )
+
+        investigation = project_investigation_view(
+            problem_detail=detail,
+            occurrence=occurrence_view,
+            reconstruction=reconstruction,
+            related_risk_signals=related_risk_signals,
+            forecast_risk_signals=forecast_risk_signals,
+        )
+        return DiagnosticInvestigationResult(investigation=investigation)
+
 
 def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:
     return DiagnosticProblemSummary(
@@ -203,7 +321,9 @@ def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:
         first_seen_at=problem.first_seen_at,
         last_seen_at=problem.last_seen_at,
         occurrence_count=problem.occurrence_count,
-        grouping_provenance=grouping_provenance_from_problem_provenance(problem.provenance),
+        grouping_provenance=grouping_provenance_from_problem_provenance(
+            problem.provenance
+        ),
         occurrence_aggregate_health=problem.occurrence_aggregate_health,
     )
 
@@ -230,6 +350,8 @@ def _reconstruct_occurrence_view(
     reconstructor: ExecutionReconstructor,
     lifecycle_analyzer: LifecycleAnomalyAnalyzer,
     assessment_builder: DiagnosticAssessmentBuilder,
+    decision_context_provider: DecisionContextProvider | None,
+    extension_service: DiagnosticExtensionService | None,
 ) -> DiagnosticProblemOccurrenceView:
     subject_ref = occurrence.subject_ref
     if subject_ref.tenant_id != tenant_id:
@@ -241,6 +363,11 @@ def _reconstruct_occurrence_view(
             "occurrence subject_ref tenant_id does not match Problem tenant_id",
         )
 
+    decision_context = _resolve_decision_context(
+        decision_context_provider,
+        subject_ref=subject_ref,
+    )
+
     if subject_ref.application_instance() is not None:
         return DiagnosticProblemOccurrenceView(
             subject_ref=subject_ref,
@@ -251,6 +378,8 @@ def _reconstruct_occurrence_view(
             read_status=DiagnosticOccurrenceReadStatus.UNAVAILABLE,
             assessment=None,
             unavailable_reason=DiagnosticReadUnavailableReason.NON_EXECUTION_SUBJECT,
+            decision_context=decision_context,
+            extension_enrichment=None,
         )
 
     try:
@@ -263,6 +392,8 @@ def _reconstruct_occurrence_view(
     except ExecutionReconstructionIntegrityError as exc:
         raise DiagnosticReadIntegrityError(str(exc)) from exc
 
+    lineage_view = project_execution_lineage_view(reconstruction)
+
     if _is_execution_evidence_unavailable(reconstruction):
         return DiagnosticProblemOccurrenceView(
             subject_ref=subject_ref,
@@ -273,6 +404,13 @@ def _reconstruct_occurrence_view(
             read_status=DiagnosticOccurrenceReadStatus.UNAVAILABLE,
             assessment=None,
             unavailable_reason=DiagnosticReadUnavailableReason.EXECUTION_EVIDENCE_UNAVAILABLE,
+            execution_lineage=lineage_view,
+            decision_context=decision_context,
+            extension_enrichment=_resolve_extension_enrichment(
+                extension_service,
+                subject_ref=subject_ref,
+                reconstruction=reconstruction,
+            ),
         )
 
     try:
@@ -293,7 +431,56 @@ def _reconstruct_occurrence_view(
         read_status=DiagnosticOccurrenceReadStatus.AVAILABLE,
         assessment=assessment,
         unavailable_reason=None,
+        execution_lineage=lineage_view,
+        decision_context=decision_context,
+        extension_enrichment=_resolve_extension_enrichment(
+            extension_service,
+            subject_ref=subject_ref,
+            reconstruction=reconstruction,
+        ),
     )
+
+
+def _resolve_extension_enrichment(
+    service: DiagnosticExtensionService | None,
+    *,
+    subject_ref: object,
+    reconstruction: ExecutionReconstruction,
+):
+    if service is None:
+        return None
+    from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
+
+    if type(subject_ref) is not ProblemGroupingSubjectRef:
+        raise TypeError("subject_ref must be ProblemGroupingSubjectRef")
+    return service.enrich_for_occurrence(
+        subject_ref=subject_ref,
+        reconstruction=reconstruction,
+    )
+
+
+def _resolve_decision_context(
+    provider: DecisionContextProvider | None,
+    *,
+    subject_ref: object,
+) -> DecisionContextView | None:
+    if provider is None:
+        return None
+    from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
+
+    if type(subject_ref) is not ProblemGroupingSubjectRef:
+        raise TypeError("subject_ref must be ProblemGroupingSubjectRef")
+    try:
+        return provider.resolve_for_occurrence(subject_ref=subject_ref)
+    except DecisionContextProviderUnavailableError:
+        return DecisionContextView(
+            read_status=DecisionContextReadStatus.DEGRADED,
+            related_decisions=(),
+            unavailable_reason=DecisionContextUnavailableReason.PROVIDER_UNAVAILABLE,
+            limitations=(
+                "Decision context enrichment is degraded; execution diagnostics remain authoritative.",
+            ),
+        )
 
 
 def _validate_reconstruction_scope(

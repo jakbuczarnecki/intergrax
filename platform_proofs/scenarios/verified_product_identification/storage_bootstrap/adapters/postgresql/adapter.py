@@ -8,8 +8,7 @@ from intergrax.integrations.providers.relational_store.postgresql.session import
     PostgreSQLConnectionProvider,
     PostgreSQLIsolationLevel,
     PostgreSQLSession,
-    import_psycopg,
-    is_postgresql_unique_violation,
+    set_local_config,
 )
 
 from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
@@ -24,14 +23,58 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     PostgreSqlBootstrapOperationError,
     PostgreSqlBootstrapSchemaError,
 )
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.identifier_projection import (
+    ProjectedIdentifierRow,
+    project_identifiers_from_load_record,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.lexical_projection import (
+    project_lexical_from_load_record,
+    project_lexical_postings,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
+    IdentifierTableSpec,
+    LEXICAL_CORPUS_STATS_SINGLETON_KEY,
+    LEXICAL_STATISTICS_VERSION,
+    LexicalCorpusStatsTableSpec,
+    LexicalDocumentTableSpec,
+    LexicalPostingTableSpec,
+    LexicalTermStatsTableSpec,
     RelationalTableSpec,
+    create_identifier_lookup_index_ddl,
+    create_identifier_table_ddl,
+    create_lexical_corpus_stats_table_ddl,
+    create_lexical_document_table_ddl,
+    create_lexical_posting_lookup_index_ddl,
+    create_lexical_posting_table_ddl,
+    create_lexical_term_stats_table_ddl,
+    create_structured_attribute_table_ddl,
+    create_structured_canonical_equals_index_ddl,
+    create_structured_contains_index_ddl,
+    create_structured_source_equals_index_ddl,
     create_table_ddl,
+    identifier_insert_dml,
+    lexical_corpus_stats_increment_dml,
+    lexical_document_insert_dml,
+    lexical_posting_insert_dml,
+    lexical_term_stats_increment_dml,
+    pg_trgm_extension_available,
+    rebuild_lexical_statistics,
+    structured_attribute_insert_dml,
+    StructuredAttributeTableSpec,
+    verify_identifier_table_compatible,
+    verify_lexical_corpus_stats_table_compatible,
+    verify_lexical_document_table_compatible,
+    verify_lexical_posting_table_compatible,
+    verify_lexical_term_stats_table_compatible,
+    verify_structured_attribute_table_compatible,
     verify_table_compatible,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_row import (
     StoredRelationalRow,
     stored_relational_row_from_fetched_row,
+)
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.structured_projection import (
+    project_structured_from_load_record,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.target_mapping import (
     PhysicalRelationalTarget,
@@ -52,6 +95,10 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 
 _InsertSqlParams = tuple[str, str, str, str | None, int, str, str, str, str]
+_IdentifierInsertParams = tuple[str, str, str, str | None, str, str, str, str]
+_StructuredInsertParams = tuple[str, str, str, str | None, str, str | None, str, str, str, str | None, str]
+_LexicalDocumentInsertParams = tuple[str, str, str, str | None, str, str, int, str]
+_LexicalPostingInsertParams = tuple[str, str, str, str, int]
 
 
 def _source_revision_norm(source_revision: str | None) -> str:
@@ -120,6 +167,30 @@ class PostgreSqlRelationalStorageAdapter:
             schema_name=physical.schema_name,
             table_name=physical.table_name,
         )
+        identifier_spec = IdentifierTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.identifier_table_name,
+        )
+        lexical_document_spec = LexicalDocumentTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.lexical_document_table_name,
+        )
+        lexical_posting_spec = LexicalPostingTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.lexical_posting_table_name,
+        )
+        corpus_stats_spec = LexicalCorpusStatsTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.lexical_corpus_stats_table_name,
+        )
+        term_stats_spec = LexicalTermStatsTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.lexical_term_stats_table_name,
+        )
+        structured_spec = StructuredAttributeTableSpec(
+            schema_name=physical.schema_name,
+            table_name=self._configuration.structured_attribute_table_name,
+        )
         try:
             with self._provider.transaction(
                 isolation_level=PostgreSQLIsolationLevel.READ_COMMITTED,
@@ -128,6 +199,44 @@ class PostgreSqlRelationalStorageAdapter:
                 self._provider.ensure_schema_exists(session, physical.schema_name)
                 session.execute_statement(create_table_ddl(spec))
                 verify_table_compatible(session, spec)
+                session.execute_statement(create_identifier_table_ddl(identifier_spec))
+                session.execute_statement(create_identifier_lookup_index_ddl(identifier_spec))
+                verify_identifier_table_compatible(session, identifier_spec)
+                session.execute_statement(create_lexical_document_table_ddl(lexical_document_spec))
+                verify_lexical_document_table_compatible(session, lexical_document_spec)
+                session.execute_statement(create_lexical_posting_table_ddl(lexical_posting_spec))
+                session.execute_statement(
+                    create_lexical_posting_lookup_index_ddl(lexical_posting_spec)
+                )
+                verify_lexical_posting_table_compatible(session, lexical_posting_spec)
+                session.execute_statement(
+                    create_lexical_corpus_stats_table_ddl(corpus_stats_spec)
+                )
+                verify_lexical_corpus_stats_table_compatible(session, corpus_stats_spec)
+                session.execute_statement(
+                    create_lexical_term_stats_table_ddl(term_stats_spec)
+                )
+                verify_lexical_term_stats_table_compatible(session, term_stats_spec)
+                session.execute_statement(create_structured_attribute_table_ddl(structured_spec))
+                session.execute_statement(
+                    create_structured_canonical_equals_index_ddl(structured_spec)
+                )
+                session.execute_statement(create_structured_source_equals_index_ddl(structured_spec))
+                contains_available = pg_trgm_extension_available(session)
+                if contains_available:
+                    session.execute_statement(create_structured_contains_index_ddl(structured_spec))
+                verify_structured_attribute_table_compatible(
+                    session,
+                    structured_spec,
+                    require_contains_index=contains_available,
+                )
+                rebuild_lexical_statistics(
+                    session,
+                    document_spec=lexical_document_spec,
+                    posting_spec=lexical_posting_spec,
+                    corpus_stats_spec=corpus_stats_spec,
+                    term_stats_spec=term_stats_spec,
+                )
         except PostgreSqlBootstrapSchemaError:
             raise
         except PostgreSqlBootstrapConfigurationError:
@@ -230,14 +339,16 @@ class PostgreSqlRelationalStorageAdapter:
 
     def _apply_session_limits(self, session: PostgreSQLSession) -> None:
         if self._configuration.statement_timeout_ms is not None:
-            session.execute(
-                "SET LOCAL statement_timeout = %s",
-                (str(self._configuration.statement_timeout_ms),),
+            set_local_config(
+                session,
+                "statement_timeout",
+                str(self._configuration.statement_timeout_ms),
             )
         if self._configuration.application_name:
-            session.execute(
-                "SET LOCAL application_name = %s",
-                (self._configuration.application_name,),
+            set_local_config(
+                session,
+                "application_name",
+                self._configuration.application_name,
             )
 
     def _write_record(
@@ -253,7 +364,7 @@ class PostgreSqlRelationalStorageAdapter:
             "global_row_index, record_json, semantic_text, semantic_text_hash, "
             "derivation_version"
             ") VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s, %s, %s) "
-            "ON CONFLICT (catalog_id, offer_id, source_revision_norm) DO NOTHING"
+            "ON CONFLICT DO NOTHING"
         )
         params: _InsertSqlParams = (
             catalog_id,
@@ -267,52 +378,23 @@ class PostgreSqlRelationalStorageAdapter:
             record.derivation_version,
         )
         if self._execute_insert(session, insert_sql, params, physical, record) > 0:
+            self._write_identifier_rows(
+                session,
+                physical,
+                project_identifiers_from_load_record(record),
+            )
+            self._write_structured_rows(session, record)
+            self._write_lexical_rows(session, record)
             return "written"
 
         existing = self._fetch_by_source_identity(session, physical, record.source_ref)
-        if existing is None:
-            raise PostgreSqlBootstrapOperationError(
-                "insert conflict without existing row"
-            )
-        if _record_payload_matches(existing, record):
-            return "skipped"
-        raise PostgreSqlBootstrapIdentityConflictError(
-            f"identity {identity_key(record.source_ref)} has incompatible stored content"
-        )
-
-    def _execute_insert(
-        self,
-        session: PostgreSQLSession,
-        insert_sql: str,
-        params: _InsertSqlParams,
-        physical: PhysicalRelationalTarget,
-        record: RelationalLoadRecord,
-    ) -> int:
-        _, pg_errors, _, _ = import_psycopg()
-        try:
-            return session.execute(insert_sql, params).rowcount
-        except pg_errors.Error as exc:
-            if is_postgresql_unique_violation(exc):
-                self._raise_identity_conflict_for_unique_violation(
-                    session,
-                    physical,
-                    record,
-                )
-            raise PostgreSqlBootstrapOperationError(
-                "PostgreSQL insert failed"
-            ) from exc
-
-    def _raise_identity_conflict_for_unique_violation(
-        self,
-        session: PostgreSQLSession,
-        physical: PhysicalRelationalTarget,
-        record: RelationalLoadRecord,
-    ) -> None:
-        by_identity = self._fetch_by_source_identity(session, physical, record.source_ref)
-        if by_identity is not None and not _record_payload_matches(by_identity, record):
+        if existing is not None:
+            if _record_payload_matches(existing, record):
+                return "skipped"
             raise PostgreSqlBootstrapIdentityConflictError(
                 f"identity {identity_key(record.source_ref)} has incompatible stored content"
             )
+
         by_row_index = self._fetch_by_global_row_index(
             session,
             physical,
@@ -334,9 +416,139 @@ class PostgreSqlRelationalStorageAdapter:
                 raise PostgreSqlBootstrapIdentityConflictError(
                     f"global_row_index {record.global_row_index} has incompatible stored content"
                 )
-        raise PostgreSqlBootstrapIdentityConflictError(
-            f"identity {identity_key(record.source_ref)} conflicts with stored row"
+            return "skipped"
+
+        raise PostgreSqlBootstrapOperationError("insert conflict without existing row")
+
+    def _execute_insert(
+        self,
+        session: PostgreSQLSession,
+        insert_sql: str,
+        params: _InsertSqlParams,
+        physical: PhysicalRelationalTarget,
+        record: RelationalLoadRecord,
+    ) -> int:
+        return session.execute(insert_sql, params).rowcount
+
+    def _write_identifier_rows(
+        self,
+        session: PostgreSQLSession,
+        physical: PhysicalRelationalTarget,
+        rows: tuple[ProjectedIdentifierRow, ...],
+    ) -> None:
+        if not rows:
+            return
+        insert_sql = identifier_insert_dml(
+            IdentifierTableSpec(
+                schema_name=self._configuration.schema_name,
+                table_name=self._configuration.identifier_table_name,
+            )
         )
+        for row in rows:
+            params: _IdentifierInsertParams = (
+                row.catalog_id,
+                row.offer_id,
+                row.source_revision_norm,
+                row.source_revision,
+                row.identifier_type.value,
+                row.source_value,
+                row.normalized_value,
+                row.source_field,
+            )
+            session.execute(insert_sql, params)
+
+    def _write_structured_rows(
+        self,
+        session: PostgreSQLSession,
+        record: RelationalLoadRecord,
+    ) -> None:
+        rows = project_structured_from_load_record(record)
+        if not rows:
+            return
+        insert_sql = structured_attribute_insert_dml(
+            StructuredAttributeTableSpec(
+                schema_name=self._configuration.schema_name,
+                table_name=self._configuration.structured_attribute_table_name,
+            )
+        )
+        for row in rows:
+            params: _StructuredInsertParams = (
+                row.catalog_id,
+                row.offer_id,
+                row.source_revision_norm,
+                row.source_revision,
+                row.attr_identity,
+                row.canonical_key,
+                row.source_key,
+                row.source_value,
+                row.normalized_text_value,
+                row.typed_value_text,
+                row.source_field,
+            )
+            session.execute(insert_sql, params)
+
+    def _write_lexical_rows(
+        self,
+        session: PostgreSQLSession,
+        record: RelationalLoadRecord,
+    ) -> None:
+        projection = project_lexical_from_load_record(record)
+        if projection is None:
+            return
+
+        document_spec = LexicalDocumentTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.lexical_document_table_name,
+        )
+        posting_spec = LexicalPostingTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.lexical_posting_table_name,
+        )
+        corpus_stats_spec = LexicalCorpusStatsTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.lexical_corpus_stats_table_name,
+        )
+        term_stats_spec = LexicalTermStatsTableSpec(
+            schema_name=self._configuration.schema_name,
+            table_name=self._configuration.lexical_term_stats_table_name,
+        )
+        revision_norm = _source_revision_norm(record.source_ref.source_revision)
+        document_params: _LexicalDocumentInsertParams = (
+            record.source_ref.catalog_id,
+            record.source_ref.offer_id.value,
+            revision_norm,
+            record.source_ref.source_revision,
+            projection.lexical_document,
+            projection.document_hash,
+            projection.document_length,
+            projection.derivation_version,
+        )
+        document_inserted = (
+            session.execute(lexical_document_insert_dml(document_spec), document_params).rowcount
+            > 0
+        )
+        if document_inserted:
+            session.execute(
+                lexical_corpus_stats_increment_dml(corpus_stats_spec),
+                (
+                    LEXICAL_CORPUS_STATS_SINGLETON_KEY,
+                    LEXICAL_STATISTICS_VERSION,
+                    projection.document_length,
+                    float(projection.document_length),
+                ),
+            )
+        posting_insert_sql = lexical_posting_insert_dml(posting_spec)
+        term_stats_increment_sql = lexical_term_stats_increment_dml(term_stats_spec)
+        for posting in project_lexical_postings(projection):
+            posting_params: _LexicalPostingInsertParams = (
+                posting.term,
+                posting.catalog_id,
+                posting.offer_id,
+                posting.source_revision_norm,
+                posting.term_frequency,
+            )
+            if session.execute(posting_insert_sql, posting_params).rowcount > 0:
+                session.execute(term_stats_increment_sql, (posting.term,))
 
     def _verify_record(
         self,

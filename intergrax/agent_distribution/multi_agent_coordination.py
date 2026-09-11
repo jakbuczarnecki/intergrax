@@ -19,6 +19,8 @@ from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedSubtaskContractError,
     DelegatedSubtaskError,
     DelegatedSubtaskExecutionAndReleaseError,
+    DelegatedSubtaskGovernanceDenied,
+    DelegatedSubtaskGovernanceRequiresHuman,
     DelegatedSubtaskInvocation,
     DelegatedSubtaskInvocationError,
     DelegatedSubtaskNoEligibleAgent,
@@ -41,6 +43,10 @@ from intergrax.agent_distribution.task_scoped_agents import (
     TaskScopeId,
 )
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.physical_delegation_governance import (
+    PhysicalDelegationGovernedContinuation,
+)
+from intergrax.runtime.task.task import Task
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -80,6 +86,8 @@ class CoordinationFailureCode(StrEnum):
     CHILD_EXECUTION_FAILED = "child_execution_failed"
     LEASE_RELEASE_FAILED = "lease_release_failed"
     AUTHORITY_SCOPE_MISMATCH = "authority_scope_mismatch"
+    GOVERNANCE_DENIED = "governance_denied"
+    GOVERNANCE_REQUIRES_HUMAN = "governance_requires_human"
 
 
 class CoordinationError(AgentDistributionError):
@@ -165,6 +173,34 @@ class AuthorityScopeMismatchError(CoordinationError):
             message,
             failure_code=CoordinationFailureCode.AUTHORITY_SCOPE_MISMATCH,
         )
+
+
+class GovernanceDeniedError(CoordinationError):
+    """Physical delegation governance denied before acquisition."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(
+            message,
+            failure_code=CoordinationFailureCode.GOVERNANCE_DENIED,
+        )
+
+
+class GovernanceRequiresHumanError(CoordinationError):
+    """Physical delegation governance requires governed continuation."""
+
+    continuation: PhysicalDelegationGovernedContinuation
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        continuation: PhysicalDelegationGovernedContinuation,
+    ) -> None:
+        super().__init__(
+            message,
+            failure_code=CoordinationFailureCode.GOVERNANCE_REQUIRES_HUMAN,
+        )
+        self.continuation = continuation
 
 
 class CoordinationPolicy(BaseModel):
@@ -295,6 +331,13 @@ def _map_delegated_subtask_error(exc: DelegatedSubtaskError) -> CoordinationErro
         return CapabilityResolutionFailedError(str(exc))
     if isinstance(exc, DelegatedSubtaskNoEligibleAgent):
         return NoEligibleSpecialistError(str(exc))
+    if isinstance(exc, DelegatedSubtaskGovernanceDenied):
+        return GovernanceDeniedError(str(exc))
+    if isinstance(exc, DelegatedSubtaskGovernanceRequiresHuman):
+        return GovernanceRequiresHumanError(
+            str(exc),
+            continuation=exc.continuation,
+        )
     if isinstance(exc, DelegatedSubtaskAcquisitionError):
         return AcquisitionFailedError(str(exc))
     if isinstance(exc, DelegatedSubtaskInvocationError):
@@ -351,6 +394,45 @@ class MultiAgentCoordinationService(Generic[RequestT, ResultT]):
             delegated=delegated_result,
         )
 
+    async def continue_governed_coordination(
+        self,
+        request: CoordinationRequest,
+        *,
+        delegation: CoordinationDelegation[RequestT],
+        continuation: PhysicalDelegationGovernedContinuation,
+        principal: RequestIdentity,
+        task: Task,
+        expected_grant_id: str,
+    ) -> CoordinationResult[ResultT]:
+        delegated_request = build_delegated_subtask_request(request)
+        invocation = DelegatedSubtaskInvocation(
+            payload=delegation.payload,
+            requested_permission_scopes=delegation.requested_permission_scopes,
+            requested_budget=delegation.requested_budget,
+        )
+        try:
+            delegated_result = await self._delegated_subtasks.continue_governed_delegation(
+                delegated_request,
+                invocation=invocation,
+                continuation=continuation,
+                principal=principal,
+                task=task,
+                expected_grant_id=expected_grant_id,
+            )
+        except DelegatedSubtaskCleanupError as exc:
+            raise CoordinationCleanupError(
+                "coordination succeeded but lease release failed",
+                coordination_id=request.coordination_id,
+                result=exc.result,
+                release_cause=exc.release_cause,
+            ) from exc
+        except DelegatedSubtaskError as exc:
+            raise _map_delegated_subtask_error(exc) from exc
+        return CoordinationResult(
+            coordination_id=request.coordination_id,
+            delegated=delegated_result,
+        )
+
 
 __all__ = [
     "AcquisitionFailedError",
@@ -365,6 +447,8 @@ __all__ = [
     "CoordinationPolicy",
     "CoordinationRequest",
     "CoordinationResult",
+    "GovernanceDeniedError",
+    "GovernanceRequiresHumanError",
     "InvalidCoordinationError",
     "LeaseReleaseFailedError",
     "MultiAgentCoordinationService",

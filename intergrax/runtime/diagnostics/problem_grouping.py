@@ -9,7 +9,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING, NewType, Protocol, runtime_checkable
 
-from intergrax.contracts.execution_identity import RunId, TaskId
+from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
+from intergrax.contracts.execution_identity import ExecutionId, RunId, TaskId
 from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticAssessment,
     DiagnosticFinding,
@@ -26,7 +27,11 @@ from intergrax.runtime.diagnostics.diagnostic_subject import (
     validate_application_diagnostic_subject_ref,
     validate_execution_diagnostic_subject_ref,
 )
-from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyKind, LifecycleAnomalyScope, LifecycleViolationTransition
+from intergrax.runtime.diagnostics.lifecycle_analysis import (
+    LifecycleAnomalyKind,
+    LifecycleAnomalyScope,
+    LifecycleViolationTransition,
+)
 from intergrax.runtime.diagnostics.signal_diagnostic_assessment import (
     SignalDiagnosticAssessment,
     SignalDiagnosticFinding,
@@ -195,6 +200,7 @@ class ProblemGroupingSubjectFindingSource(StrEnum):
     """Typed origin for one normalized grouping finding."""
 
     LIFECYCLE = "lifecycle"
+    EXECUTION_FAILURE = "execution_failure"
     PLATFORM_SIGNAL = "platform_signal"
 
 
@@ -214,6 +220,8 @@ class ProblemGroupingSubjectFinding:
     signal_status: str | None = None
     error_code: str | None = None
     exception_type: str | None = None
+    execution_id: ExecutionId | None = None
+    execution_failure_kind: ExecutionFailureKind | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -269,12 +277,21 @@ class DeterministicSignalFindingSignature:
 
 @dataclass(frozen=True, slots=True)
 class DeterministicFindingSignature:
-    """Typed structural descriptor for one normalized grouping finding."""
+    """Typed structural descriptor for one normalized lifecycle grouping finding."""
 
     kind: DiagnosticFindingKind
     scope: LifecycleAnomalyScope
     source_anomaly_kind: LifecycleAnomalyKind
     lifecycle_transition: LifecycleViolationTransition | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DeterministicExecutionFailureFindingSignature:
+    """Typed structural descriptor for one execution-boundary failure grouping finding."""
+
+    kind: DiagnosticFindingKind
+    execution_id: ExecutionId
+    execution_failure_kind: ExecutionFailureKind
 
 
 @dataclass(frozen=True, slots=True)
@@ -294,7 +311,12 @@ class DeterministicProblemSignature:
     ``subject_domain`` is ``None`` for legacy execution signatures.
     """
 
-    findings: tuple[DeterministicFindingSignature | DeterministicSignalFindingSignature, ...]
+    findings: tuple[
+        DeterministicFindingSignature
+        | DeterministicExecutionFailureFindingSignature
+        | DeterministicSignalFindingSignature,
+        ...,
+    ]
     limitations: tuple[DeterministicLimitationSignature, ...]
     subject_domain: DiagnosticSubjectKind | None = None
 
@@ -345,10 +367,10 @@ class ProblemGroupingAssessmentInput:
 @dataclass(frozen=True, slots=True)
 class ProblemGroupingInput:
     """
-    Central strategy invocation input: normalized subject plus optional features.
+      Central strategy invocation input: normalized subject plus optional features.
 
-    The engine constructs inputs; strategies must not rebuild subjects from
-  persistence or duplicate normalization pipelines.
+      The engine constructs inputs; strategies must not rebuild subjects from
+    persistence or duplicate normalization pipelines.
     """
 
     subject: ProblemGroupingSubject
@@ -441,7 +463,9 @@ class ProblemGroupingStrategyRegistry:
             )
         self._strategies[registration.strategy_id] = registration
 
-    def resolve(self, strategy_id: ProblemGroupingStrategyId) -> ProblemGroupingStrategy:
+    def resolve(
+        self, strategy_id: ProblemGroupingStrategyId
+    ) -> ProblemGroupingStrategy:
         return self._resolve_registration(strategy_id).strategy
 
     def _resolve_registration(
@@ -550,7 +574,9 @@ def normalize_assessment(assessment: DiagnosticAssessment) -> ProblemGroupingSub
     )
 
 
-def normalize_signal_assessment(assessment: SignalDiagnosticAssessment) -> ProblemGroupingSubject:
+def normalize_signal_assessment(
+    assessment: SignalDiagnosticAssessment,
+) -> ProblemGroupingSubject:
     """Map one signal DiagnosticAssessment to a grouping subject."""
     return ProblemGroupingSubject(
         subject_ref=problem_grouping_subject_ref_for_application_instance(
@@ -566,6 +592,19 @@ def normalize_signal_assessment(assessment: SignalDiagnosticAssessment) -> Probl
 
 
 def _normalize_finding(finding: DiagnosticFinding) -> ProblemGroupingSubjectFinding:
+    if finding.kind is DiagnosticFindingKind.EXECUTION_FAILED:
+        if finding.execution_id is None or finding.execution_failure_kind is None:
+            raise ValueError(
+                "execution failure diagnostic finding missing execution identity",
+            )
+        return ProblemGroupingSubjectFinding(
+            source=ProblemGroupingSubjectFindingSource.EXECUTION_FAILURE,
+            kind=finding.kind,
+            execution_id=finding.execution_id,
+            execution_failure_kind=finding.execution_failure_kind,
+        )
+    if finding.source_anomaly_kind is None:
+        raise ValueError("lifecycle diagnostic finding missing source_anomaly_kind")
     return ProblemGroupingSubjectFinding(
         source=ProblemGroupingSubjectFindingSource.LIFECYCLE,
         kind=finding.kind,
@@ -575,7 +614,9 @@ def _normalize_finding(finding: DiagnosticFinding) -> ProblemGroupingSubjectFind
     )
 
 
-def _normalize_signal_finding(finding: SignalDiagnosticFinding) -> ProblemGroupingSubjectFinding:
+def _normalize_signal_finding(
+    finding: SignalDiagnosticFinding,
+) -> ProblemGroupingSubjectFinding:
     return ProblemGroupingSubjectFinding(
         source=ProblemGroupingSubjectFindingSource.PLATFORM_SIGNAL,
         problem_kind=finding.problem_kind,
@@ -779,7 +820,9 @@ def _validate_strategy_characteristics(
     value: object,
 ) -> ProblemGroupingStrategyCharacteristics:
     if type(value) is not ProblemGroupingStrategyCharacteristics:
-        raise TypeError("strategy characteristics must be ProblemGroupingStrategyCharacteristics")
+        raise TypeError(
+            "strategy characteristics must be ProblemGroupingStrategyCharacteristics"
+        )
     if not isinstance(value.method, ProblemGroupingMethod):
         raise TypeError("strategy characteristics method must be ProblemGroupingMethod")
     if type(value.deterministic) is not bool:
@@ -802,7 +845,9 @@ def _assert_registration_coherent(
             "registered strategy_version mutated after registration"
         )
     try:
-        live_characteristics = _validate_strategy_characteristics(strategy.characteristics)
+        live_characteristics = _validate_strategy_characteristics(
+            strategy.characteristics
+        )
     except TypeError as exc:
         raise ProblemGroupingIntegrityError(
             "registered strategy characteristics became invalid after registration"

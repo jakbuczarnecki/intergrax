@@ -9,6 +9,7 @@ from typing import Any
 
 from pydantic import Field
 
+from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 
 
@@ -179,3 +180,11 @@ class TaskLifecyclePayloadV1(RuntimeEventPayload):
     message: str = ""
     capability: str = ""
     source: str = "task_lifecycle"
+
+
+class ExecutionFailurePayloadV1(RuntimeEventPayload):
+    schema_id = "execution_failure.v1"
+
+    failure_kind: ExecutionFailureKind
+    safe_summary: str = Field(max_length=256)
+    failure_code: str | None = Field(default=None, max_length=128)

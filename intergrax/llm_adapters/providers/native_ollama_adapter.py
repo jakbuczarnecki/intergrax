@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 import json
-import os
 from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Dict, List, Optional, Protocol, Union, cast
+from typing import Any, Dict, Optional, Protocol, Union, cast
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (
@@ -23,9 +22,17 @@ from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExte
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
+from intergrax.llm_adapters.contracts.strict_tool_arguments import (
+    CanonicalFunctionToolDefinition,
+)
 from intergrax.llm_adapters.contracts.tool_call import (
     LLMToolCall,
     finalize_accepted_tool_call_identities,
+)
+from intergrax.llm_adapters._shared.strict_tool_enforcement import (
+    enforce_strict_tool_call_conformance,
+    resolve_canonical_tool_definitions,
+    wire_schemas_from_definitions,
 )
 from intergrax.llm_adapters.providers._ollama_schema import (
     prepare_ollama_generation_schema,
@@ -421,12 +428,13 @@ class NativeOllamaAdapter(LLMAdapter):
                 max_tokens=max_tokens,
             )
             try:
-                stream = self._chat(
-                    mapped_messages,
-                    stream=True,
-                    options=options,
-                )
-                for chunk in stream:  # type: ignore[union-attr]
+                for chunk in self._execute_streaming(
+                    lambda: self._chat(
+                        mapped_messages,
+                        stream=True,
+                        options=options,
+                    )
+                ):  # type: ignore[union-attr]
                     last_response = chunk
                     text = self._response_content(chunk)
                     if text:
@@ -436,10 +444,12 @@ class NativeOllamaAdapter(LLMAdapter):
             except Exception:
                 if emitted_partial:
                     raise
-                fallback = self._chat(
-                    mapped_messages,
-                    stream=False,
-                    options=options,
+                fallback = self._execute(
+                    lambda: self._chat(
+                        mapped_messages,
+                        stream=False,
+                        options=options,
+                    )
                 )
                 last_response = fallback
                 text = self._response_content(fallback)
@@ -490,6 +500,9 @@ class NativeOllamaAdapter(LLMAdapter):
 
     def supports_tools(self) -> bool:
         return self.model_capabilities.supports_tools
+
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return self.supports_tools()
 
     def supports_structured_output(self) -> bool:
         return True
@@ -542,7 +555,7 @@ class NativeOllamaAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: List[Dict[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
@@ -554,6 +567,8 @@ class NativeOllamaAdapter(LLMAdapter):
                 f"Ollama model does not declare native tool support: {self.model}"
             )
         self._validate_ollama_tool_choice(tool_choice)
+        tool_definitions = resolve_canonical_tool_definitions(tools)
+        provider_tools = wire_schemas_from_definitions(tool_definitions)
 
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
@@ -573,13 +588,15 @@ class NativeOllamaAdapter(LLMAdapter):
                         temperature=temperature,
                         max_tokens=max_tokens,
                     ),
-                    tools=tools_schema,  # type: ignore[arg-type]
+                    tools=provider_tools,
                 )
             )
             invalid_tool_calls = self._field(native_response, "invalid_tool_calls", None)
             if invalid_tool_calls:
                 raise ValueError("Ollama returned invalid native tool calls")
             tool_calls = self._provider_tool_calls(native_response)
+            if tool_calls:
+                enforce_strict_tool_call_conformance(tool_calls, tool_definitions)
             content = self._response_content(native_response)
             output_text = self._estimate_tool_output_text(content, tool_calls)
             usage, usage_source = self._usage_for_response(

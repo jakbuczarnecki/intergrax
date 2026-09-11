@@ -7,7 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.integrations.providers.vector_store.qdrant.opens import _build_qdrant_client
+from intergrax.integrations.providers.vector_store.qdrant.opens import (
+    open_qdrant_control_plane_client,
+)
 from platform_proofs.scenarios.verified_product_identification.qualification.integration.storage_environment import (
     storage_environment_available,
 )
@@ -116,7 +118,7 @@ def test_storage_bootstrap_composition_fresh_and_resume(tmp_path: Path) -> None:
         reader.close()
         vector.close()
         drop_postgresql_schema(relational)
-        client = _build_qdrant_client(qdrant_configuration.integration)
+        client = open_qdrant_control_plane_client(qdrant_configuration.integration)
         try:
             physical_name = physical_collection_name(
                 qdrant_configuration.logical_collection_name,

@@ -94,6 +94,7 @@ def _description(
         reachable=True,
         point_count=point_count,
         dense_dimension=dense_dimension,
+        dense_metric="cosine" if dense_dimension is not None else None,
         present_capabilities=frozenset(capabilities),
         dense_channel_name="dense" if dense_dimension is not None else None,
         sparse_lexical_channel_name="sparse" if sparse_present else None,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import array
+import math
 from dataclasses import dataclass
 
 from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
@@ -107,6 +108,15 @@ def source_ref_from_payload(payload: QdrantVectorPayload) -> SourceRecordRef:
 def normalize_vector_float32(values: tuple[float, ...]) -> tuple[float, ...]:
     packed = array.array("f", values)
     return tuple(packed)
+
+
+def cosine_storage_normalize(values: tuple[float, ...]) -> tuple[float, ...]:
+    """Match Qdrant cosine-index dense storage: vectors are L2-normalized at write."""
+    norm = math.sqrt(sum(value * value for value in values))
+    if norm <= 0.0:
+        raise QdrantBootstrapOperationError("stored vector has zero norm")
+    inv_norm = 1.0 / norm
+    return normalize_vector_float32(tuple(value * inv_norm for value in values))
 
 
 def vectors_transport_equal(

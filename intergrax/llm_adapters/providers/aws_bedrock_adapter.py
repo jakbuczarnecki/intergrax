@@ -596,11 +596,12 @@ class BedrockChatAdapter(LLMAdapter):
                     max_tokens=max_tokens,
                     temperature=temp,
                 )
-                resp = self._execute(
-                    lambda: self.client.converse_stream(modelId=self.config.model_id, **req)
-                )
-                stream = resp.get("stream") if isinstance(resp, dict) else resp
-                for text in iter_converse_stream_text(stream):
+                def _converse_body_stream() -> Iterable[object]:
+                    resp = self.client.converse_stream(modelId=self.config.model_id, **req)
+                    stream = resp.get("stream") if isinstance(resp, dict) else resp
+                    return iter_converse_stream_text(stream)
+
+                for text in self._execute_streaming(_converse_body_stream):
                     buf.append(text)
                     yield partial_stream_event(delta_content=text)
                 out_tok = int(
@@ -632,15 +633,16 @@ class BedrockChatAdapter(LLMAdapter):
                 model_id=self.config.model_id,
             )
 
-            res = self.client.invoke_model_with_response_stream(
-                modelId=self.config.model_id,
-                body=json.dumps(body).encode("utf-8"),
-                accept="application/json",
-                contentType="application/json",
-            )
+            def _invoke_stream_body() -> Iterable[object]:
+                res = self.client.invoke_model_with_response_stream(
+                    modelId=self.config.model_id,
+                    body=json.dumps(body).encode("utf-8"),
+                    accept="application/json",
+                    contentType="application/json",
+                )
+                return res["body"]
 
-            stream = res["body"]
-            for event in stream:
+            for event in self._execute_streaming(_invoke_stream_body):
                 chunk = event.get("chunk")
                 if not isinstance(chunk, dict):
                     continue
@@ -826,12 +828,13 @@ class BedrockChatAdapter(LLMAdapter):
                     temperature=temp,
                     tools=openai_tools_to_bedrock_converse(tools_schema),
                 )
-                resp = self._execute(
-                    lambda: self.client.converse_stream(modelId=self.config.model_id, **req)
-                )
-                stream = resp.get("stream") if isinstance(resp, dict) else resp
+                def _converse_tool_stream() -> Iterable[object]:
+                    resp = self.client.converse_stream(modelId=self.config.model_id, **req)
+                    stream = resp.get("stream") if isinstance(resp, dict) else resp
+                    return stream
+
                 active_tools: Dict[str, Dict[str, Any]] = {}
-                for event in stream:
+                for event in self._execute_streaming(_converse_tool_stream):
                     for text in iter_converse_stream_text([event]):
                         buf.append(text)
                         yield partial_stream_event(delta_content=text)

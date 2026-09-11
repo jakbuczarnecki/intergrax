@@ -7,7 +7,6 @@ from intergrax.agents.persistence.checkpoint_store import (
 )
 from intergrax.agents.persistence.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
-    build_catalog_declarative_invoker_from_registry,
 )
 from intergrax.agents.persistence.checkpoint_wiring import (
     attach_checkpoint_wiring,
@@ -55,7 +54,6 @@ __all__ = [
     "execute_declarative_actions",
     "attach_checkpoint_wiring",
     "attach_declarative_tool_invoker",
-    "build_catalog_declarative_invoker_from_registry",
     "inject_acp_checkpoint_metadata",
     "inject_acp_tool_invoker_metadata",
     "resolve_declarative_tool_invoker_from_metadata",

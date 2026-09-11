@@ -37,3 +37,22 @@ class DefaultStructuredAttributeNormalizationPolicy:
             stripped = raw_value.strip()
             return stripped if stripped else None
         return None
+
+
+_DEFAULT_POLICY = DefaultStructuredAttributeNormalizationPolicy()
+
+
+def normalize_structured_query_attribute_name(attribute_name: str) -> str:
+    """Deterministic query-side attribute key normalization (index/query invariant)."""
+    stripped = attribute_name.strip()
+    if not stripped:
+        raise ValueError("Structured query attribute_name must be non-empty after normalization")
+    return stripped
+
+
+def normalize_structured_query_value(value: str) -> str:
+    """Deterministic query-side value normalization (index/query invariant)."""
+    normalized = _DEFAULT_POLICY.normalized_text_value(source_value=value)
+    if not normalized:
+        raise ValueError("Structured query value must be non-empty after normalization")
+    return normalized

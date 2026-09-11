@@ -10,6 +10,7 @@ from intergrax.integrations.providers.relational_store.postgresql.session import
     PostgreSQLSession,
     import_psycopg,
     is_postgresql_unique_violation,
+    set_local_config,
 )
 
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.pgvector.configuration import (
@@ -269,9 +270,10 @@ class PgVectorStorageAdapter:
 
     def _apply_session_limits(self, session: PostgreSQLSession) -> None:
         if self._configuration.application_name:
-            session.execute(
-                "SET LOCAL application_name = %s",
-                (self._configuration.application_name,),
+            set_local_config(
+                session,
+                "application_name",
+                self._configuration.application_name,
             )
 
     def _verify_records_in_session(

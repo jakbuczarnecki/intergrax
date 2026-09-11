@@ -473,6 +473,7 @@ def build_phase9_harness(
     delegate = specialist_delegate or _EchoOcrDelegate()
     service = delegated_factory.create(
         specialist_invocation=_StaticSpecialistInvocation(delegate=delegate),
+        child_execution=capability_runtime.delegated_subtask_child_execution.port(),
     )
     return Phase9Harness(
         composition=composition,

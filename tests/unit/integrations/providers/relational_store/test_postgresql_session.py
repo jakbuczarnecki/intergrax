@@ -16,6 +16,8 @@ from intergrax.integrations.providers.relational_store.postgresql.config import 
 from intergrax.integrations.providers.relational_store.postgresql.session import (
     PostgreSQLConnectionProvider,
     PostgreSQLIsolationLevel,
+    PostgreSQLSession,
+    set_local_config,
 )
 
 pytestmark = pytest.mark.unit
@@ -195,3 +197,34 @@ def test_ensure_schema_exists_skips_public_schema() -> None:
 
     assert len(conn.executed) == 1
     assert "search_path" in str(conn.executed[0][0])
+
+
+def test_set_local_config_uses_parameterized_set_config() -> None:
+    conn = _FakeConnection()
+    session = PostgreSQLSession(conn)
+    set_local_config(session, "application_name", "vpi-test")
+    assert len(conn.executed) == 1
+    sql, params = conn.executed[0]
+    assert "set_config" in str(sql).lower()
+    assert params == ("application_name", "vpi-test")
+    assert "true" in str(sql).lower()
+
+
+def test_set_local_config_statement_timeout_uses_parameterized_set_config() -> None:
+    conn = _FakeConnection()
+    session = PostgreSQLSession(conn)
+    set_local_config(session, "statement_timeout", "5000")
+    sql, params = conn.executed[0]
+    assert "set_config" in str(sql).lower()
+    assert params == ("statement_timeout", "5000")
+    assert "true" in str(sql).lower()
+
+
+def test_set_local_config_hostile_application_name_is_not_interpolated() -> None:
+    hostile = "'; DROP TABLE users; --"
+    conn = _FakeConnection()
+    session = PostgreSQLSession(conn)
+    set_local_config(session, "application_name", hostile)
+    sql, params = conn.executed[0]
+    assert hostile not in str(sql)
+    assert params == ("application_name", hostile)

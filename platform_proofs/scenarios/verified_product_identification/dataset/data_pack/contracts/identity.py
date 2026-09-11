@@ -7,6 +7,7 @@ from typing import TypeAlias
 
 from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
     SourceRecordRef,
+    source_ref_sort_key,
 )
 
 SEMANTIC_TEXT_HASH_ALGORITHM = "sha256"
@@ -43,11 +44,6 @@ def source_ref_key(source_ref: SourceRecordRef) -> SourceRefKey:
         source_ref.offer_id.value,
         source_ref.source_revision,
     )
-
-
-def source_ref_sort_key(source_ref: SourceRecordRef) -> tuple[str, str, str]:
-    revision = source_ref.source_revision or ""
-    return (source_ref.catalog_id, source_ref.offer_id.value, revision)
 
 
 def _encode_length_prefixed_utf8(value: str) -> bytes:

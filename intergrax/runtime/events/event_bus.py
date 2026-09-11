@@ -14,7 +14,12 @@ from typing import Awaitable, Callable, DefaultDict, List, Optional, Set, Union
 from uuid import uuid4
 
 from intergrax.runtime.events.event_taxonomy import EventCategory
+from intergrax.runtime.events.evidence_durability import (
+    EvidencePersistenceRequirement,
+    evidence_persistence_requirement,
+)
 from intergrax.runtime.events.persistence_contract import (
+    MandatoryEvidencePersistenceError,
     RuntimeEventPersistence,
     resolve_event_tenant_id,
 )
@@ -154,7 +159,7 @@ class RuntimeEventBus:
 
     async def publish(self, event: RuntimeEvent) -> None:
         """Persist then notify subscribers once (async handlers are awaited)."""
-        self._store_event(event)
+        self._commit_durable_evidence(event)
         await self._dispatch_handlers_async(event)
 
     @property
@@ -166,26 +171,34 @@ class RuntimeEventBus:
 
     def record(self, event: RuntimeEvent, *, tenant_id: Optional[str] = None) -> None:
         """Synchronous append for callers that cannot await (e.g. TaskLifecycle)."""
-        self._store_event(event, tenant_id=tenant_id)
+        self._commit_durable_evidence(event, tenant_id=tenant_id)
         self._dispatch_handlers_sync(event)
 
-    def _store_event(self, event: RuntimeEvent, *, tenant_id: Optional[str] = None) -> None:
+    def _commit_durable_evidence(
+        self,
+        event: RuntimeEvent,
+        *,
+        tenant_id: Optional[str] = None,
+    ) -> None:
+        requirement = evidence_persistence_requirement(event)
+        if self._persistence is not None and requirement is not EvidencePersistenceRequirement.NOT_PERSISTED:
+            scoped_tenant = resolve_event_tenant_id(event, tenant_id)
+            try:
+                self._persistence.append(event, tenant_id=scoped_tenant)
+            except MandatoryEvidencePersistenceError:
+                raise
+            except Exception as exc:
+                if requirement is EvidencePersistenceRequirement.MANDATORY:
+                    raise MandatoryEvidencePersistenceError(
+                        "mandatory runtime event evidence persistence failed for "
+                        f"{event.event_type.value}",
+                    ) from exc
+                logger.exception(
+                    "RuntimeEvent persistence failed for %s",
+                    event.event_type.value,
+                )
         if self._record_history:
             self._history.append(event)
-        if self._persistence is not None:
-            from intergrax.runtime.events.event_catalog import should_persist_event
-
-            if should_persist_event(event):
-                try:
-                    self._persistence.append(
-                        event,
-                        tenant_id=resolve_event_tenant_id(event, tenant_id),
-                    )
-                except Exception:
-                    logger.exception(
-                        "RuntimeEvent persistence failed for %s",
-                        event.event_type.value,
-                    )
 
     async def _dispatch_handlers_async(self, event: RuntimeEvent) -> None:
         for sid, _prio, handler in self._collect_handlers(event):

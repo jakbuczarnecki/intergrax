@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Drain pending compensation jobs through a declarative tool invoker."""
+"""Drain pending compensation jobs through canonical execution admission."""
 
 from __future__ import annotations
 
@@ -8,7 +8,12 @@ from uuid import uuid4
 
 from intergrax.agents.persistence.compensation_enqueue import CompensationActionResult
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.agents.persistence.compensation_side_effect_input import (
+    compensation_side_effect_input_from_job,
+)
+from intergrax.contracts.compensation_side_effect_execution import (
+    CompensationSideEffectExecutionPort,
+)
 
 _DEFAULT_LEASE_SECONDS = 300
 
@@ -17,7 +22,7 @@ async def drain_pending_compensation_jobs(
     store: CompensationQueueStore,
     *,
     tenant_id: str,
-    invoker: DeclarativeToolInvoker,
+    side_effect_execution: CompensationSideEffectExecutionPort,
     limit: int = 100,
     owner_id: str | None = None,
     lease_seconds: int = _DEFAULT_LEASE_SECONDS,
@@ -33,11 +38,19 @@ async def drain_pending_compensation_jobs(
     )
     for claim in claims:
         job = claim.job
-        invoke_result = await invoker.invoke(
-            tool_id=job.request.compensation_tool_id,
-            args=job.request.args,
-            idempotency_key=job.request.idempotency_key,
-        )
+        try:
+            work = compensation_side_effect_input_from_job(job)
+        except ValueError as exc:
+            store.fail_claim(claim, str(exc), retryable=False)
+            results.append(
+                CompensationActionResult(
+                    request=job.request,
+                    status="failed",
+                    error=str(exc),
+                ),
+            )
+            continue
+        invoke_result = await side_effect_execution.execute(work)
         if invoke_result.status == "success":
             store.complete_claim(claim)
             results.append(

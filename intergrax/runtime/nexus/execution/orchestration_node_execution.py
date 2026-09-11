@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Generic, Mapping, Protocol, TypeVar
 
 from intergrax.contracts.orchestration_topology import (
+    OrchestrationSlotContinuationExecutor,
     OrchestrationSlotExecutionError,
     OrchestrationSlotExecutor,
     OrchestrationSlotFailure,
@@ -74,4 +75,49 @@ def bind_orchestration_node_execution(
     return BoundOrchestrationNodeExecution(
         payloads=payloads,
         slot_executor=slot_executor,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class BoundOrchestrationSlotContinuationExecution(Generic[PayloadT, ResultT]):
+    """Slot continuation executor bound to an immutable payload map."""
+
+    payloads: Mapping[OrchestrationSlotId, PayloadT]
+    slot_continuation_executor: OrchestrationSlotContinuationExecutor[PayloadT, ResultT]
+
+    async def execute_node(
+        self,
+        *,
+        slot_id: OrchestrationSlotId,
+    ) -> OrchestrationSlotOutcome[ResultT]:
+        bound_payload = self.payloads[slot_id]
+        try:
+            result = await self.slot_continuation_executor.continue_slot(
+                slot_id=slot_id,
+                payload=bound_payload,
+            )
+        except OrchestrationSlotExecutionError as exc:
+            return OrchestrationSlotOutcome(
+                slot_id=slot_id,
+                status=OrchestrationSlotStatus.FAILURE,
+                failure=OrchestrationSlotFailure(
+                    code=exc.code,
+                    message=exc.message,
+                ),
+            )
+        return OrchestrationSlotOutcome(
+            slot_id=slot_id,
+            status=OrchestrationSlotStatus.SUCCESS,
+            result=result,
+        )
+
+
+def bind_orchestration_slot_continuation_execution(
+    *,
+    payloads: Mapping[OrchestrationSlotId, PayloadT],
+    slot_continuation_executor: OrchestrationSlotContinuationExecutor[PayloadT, ResultT],
+) -> BoundOrchestrationSlotContinuationExecution[PayloadT, ResultT]:
+    return BoundOrchestrationSlotContinuationExecution(
+        payloads=payloads,
+        slot_continuation_executor=slot_continuation_executor,
     )

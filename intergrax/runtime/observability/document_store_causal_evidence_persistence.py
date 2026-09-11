@@ -12,9 +12,6 @@ import secrets
 
 from collections.abc import Callable
 
-from typing import Protocol, runtime_checkable
-
-
 from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
@@ -27,9 +24,11 @@ from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentDataSort,
-    DocumentQueryCursorCodec,
     DocumentRecord,
     DocumentStore,
+)
+from intergrax.integrations.contracts.document_store_query_cursor_provider import (
+    DocumentStoreQueryCursorProvider,
 )
 
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
@@ -100,13 +99,6 @@ _RECONCILE_EXEC_PREFIX = "meta:v1_reconcile:exec:"
 _RECONCILE_TRANSPORT_PREFIX = "meta:v1_reconcile:transport:"
 
 _ROW_KEY_SORT_DESC = (DocumentDataSort(path="$row_key", direction="desc"),)
-
-
-@runtime_checkable
-class DocumentStoreQueryCursorProvider(Protocol):
-    @property
-    def query_cursor_codec(self) -> DocumentQueryCursorCodec:
-        """Authenticated codec for document-store query continuation cursors."""
 
 
 def _document_partition(tenant_id: str) -> str:

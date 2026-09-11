@@ -10,6 +10,8 @@
 
 **Observability companion:** execution evidence recording, HOS, and export are documented in [`OBSERVABILITY.md`](OBSERVABILITY.md). Diagnostics **consumes** canonical evidence; observability **records** and **projects** it.
 
+**Frozen single-authority architecture (R1):** [`DIAGNOSTIC_ENGINE_SINGLE_AUTHORITY_ARCHITECTURE_R1.md`](../maintainers/architecture/DIAGNOSTIC_ENGINE_SINGLE_AUTHORITY_ARCHITECTURE_R1.md)
+
 **Primary audience:** Principal / Staff engineers, harness integrators, and operators wiring diagnostic persistence, terminal triggers, or read APIs.
 
 ---
@@ -53,7 +55,7 @@ Central diagnostics answers:
 It is implemented under `intergrax/runtime/diagnostics/` as a **single spine**:
 
 - `ExecutionReconstructor` - factual reconstruction from canonical evidence
-- `LifecycleAnomalyAnalyzer` + `DiagnosticAssessmentBuilder` - deterministic assessment
+- `LifecycleAnomalyAnalyzer` + `DiagnosticAssessmentBuilder` + `ExecutionFailureAnalyzer` - deterministic assessment (lifecycle anomalies plus durable `EXECUTION_FAILED` execution-boundary facts — R2)
 - `ProblemGroupingEngine` - structural grouping hypotheses
 - `ProblemLifecycleEngine` - stable `Problem` identity and lifecycle
 - `DiagnosticOrchestrator` - canonical write/process entry point

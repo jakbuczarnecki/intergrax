@@ -9,10 +9,25 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.contracts.execution_capacity_admission import (
+    ExecutionCapacityAdmissionPort,
+    ExecutionCapacityAdmissionRequest,
+    ExecutionCapacityPermit,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
+    TaskId,
+)
+from intergrax.contracts.execution_failure_evidence import (
+    ExecutionFailureEvidenceRecorder,
+)
+from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
+from intergrax.runtime.execution.failure_evidence.active_context import (
+    ActiveExecutionEvidenceContext,
+    bind_active_execution_evidence_context,
+    reset_active_execution_evidence_context,
 )
 from intergrax.runtime.execution.active_decision_checkpoint_persistence import (
     bind_active_decision_checkpoint_persistence,
@@ -52,6 +67,13 @@ from intergrax.runtime.execution.budget.ledger import (
     RunBudgetExecutionBudgetLedgerFactory,
 )
 from intergrax.runtime.execution.decision_lifecycle_host import DecisionLifecycleHost
+from intergrax.runtime.execution.lineage.root_activation import (
+    activate_root_execution_lineage,
+    build_root_lineage_admission_hook,
+    deactivate_root_execution_lineage,
+    merge_lineage_root_admission_hooks,
+    validate_root_lineage_inputs,
+)
 from intergrax.runtime.execution.identity_authority import (
     BackgroundTransportIdentity,
     RootTaskIdentity,
@@ -79,6 +101,8 @@ class RootExecutionContext:
     execution_id: ExecutionId
     authority: ParentExecutionAuthority
     tenant_id: str | None = None
+    task_id: TaskId | None = None
+    segment_predecessor_root_execution_id: ExecutionId | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,9 +114,13 @@ class RootExecutionOptions:
     attempt_id: AttemptId | None = None
     execution_id: ExecutionId | None = None
     tenant_id: str | None = None
+    task_id: TaskId | None = None
+    segment_predecessor_root_execution_id: ExecutionId | None = None
 
 
-def resolve_root_execution_context(options: RootExecutionOptions) -> RootExecutionContext:
+def resolve_root_execution_context(
+    options: RootExecutionOptions,
+) -> RootExecutionContext:
     """Resolve typed root context; mints RunId and AttemptId when omitted."""
     identity = mint_root_execution_identity(
         run_id=options.run_id,
@@ -105,6 +133,8 @@ def resolve_root_execution_context(options: RootExecutionOptions) -> RootExecuti
         execution_id=identity.execution_id,
         authority=options.authority,
         tenant_id=options.tenant_id,
+        task_id=options.task_id,
+        segment_predecessor_root_execution_id=options.segment_predecessor_root_execution_id,
     )
 
 
@@ -125,6 +155,9 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         "_decision_checkpoint_persistence",
         "_decision_finalization_persistence",
         "_execution_work_port_binding",
+        "_execution_lineage_persistence",
+        "_execution_capacity_admission",
+        "_failure_evidence_recorder",
     )
 
     def __init__(
@@ -134,6 +167,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         ledger_factory: ExecutionBudgetLedgerFactory | None = None,
         run_budget: RunBudget | None = None,
         admission_hooks: tuple[ExecutionAdmissionHook[RequestT], ...] = (),
+        execution_lineage_persistence: ExecutionLineagePersistence | None = None,
         decision_lifecycle_host: DecisionLifecycleHost | None = None,
         decision_checkpoint_persistence: (
             DecisionCheckpointPersistence[CheckpointPayloadT] | None
@@ -144,6 +178,8 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         execution_work_port_binding: (
             ActiveExecutionWorkPortBinding[WorkInputT, WorkOutputT, WorkResultT] | None
         ) = None,
+        execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None,
+        failure_evidence_recorder: ExecutionFailureEvidenceRecorder | None = None,
     ) -> None:
         self._delegate = delegate
         self._ledger_factory = (
@@ -157,13 +193,50 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._decision_checkpoint_persistence = decision_checkpoint_persistence
         self._decision_finalization_persistence = decision_finalization_persistence
         self._execution_work_port_binding = execution_work_port_binding
+        self._execution_lineage_persistence = execution_lineage_persistence
+        self._execution_capacity_admission = execution_capacity_admission
+        self._failure_evidence_recorder = failure_evidence_recorder
 
     async def execute(
         self,
         request: RequestT,
         root_context: RootExecutionContext,
+        *,
+        held_root_capacity_permit: ExecutionCapacityPermit | None = None,
     ) -> ResultT:
+        capacity_permit: ExecutionCapacityPermit | None = held_root_capacity_permit
+        acquired_capacity = False
+        if capacity_permit is None and self._execution_capacity_admission is not None:
+            capacity_permit = await self._execution_capacity_admission.acquire(
+                ExecutionCapacityAdmissionRequest(
+                    tenant_id=root_context.tenant_id,
+                    task_id=root_context.task_id,
+                    run_id=root_context.run_id,
+                    attempt_id=root_context.attempt_id,
+                    execution_id=root_context.execution_id,
+                ),
+            )
+            acquired_capacity = True
         execution_id = root_context.execution_id
+        try:
+            return await self._execute_with_capacity(
+                request,
+                root_context,
+                execution_id=execution_id,
+            )
+        finally:
+            if capacity_permit is not None and (
+                acquired_capacity or held_root_capacity_permit is not None
+            ):
+                await capacity_permit.release()
+
+    async def _execute_with_capacity(
+        self,
+        request: RequestT,
+        root_context: RootExecutionContext,
+        *,
+        execution_id: ExecutionId,
+    ) -> ResultT:
         ledger = self._ledger_factory.create_ledger(
             self._run_budget,
             tenant_id=root_context.tenant_id,
@@ -175,20 +248,64 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             attempt_id=root_context.attempt_id,
             execution_id=execution_id,
         )
+        admission_hooks = self._admission_hooks
+        lineage_token = None
+        degradation_token = None
+        if self._execution_lineage_persistence is not None:
+            lineage_scope = validate_root_lineage_inputs(
+                tenant_id=root_context.tenant_id,
+                task_id=root_context.task_id,
+                run_id=root_context.run_id,
+                attempt_id=root_context.attempt_id,
+                execution_id=execution_id,
+            )
+            _, lineage_token, degradation_token = activate_root_execution_lineage(
+                persistence=self._execution_lineage_persistence,
+                scope=lineage_scope,
+                root_execution_id=execution_id,
+                predecessor_root_execution_id=root_context.segment_predecessor_root_execution_id,
+            )
+            lineage_hook = build_root_lineage_admission_hook(
+                persistence=self._execution_lineage_persistence,
+                scope=lineage_scope,
+                segment_root_execution_id=execution_id,
+                execution_id=execution_id,
+            )
+            admission_hooks = merge_lineage_root_admission_hooks(
+                lineage_hook,
+                self._admission_hooks,
+            )
         boundary = ExecutionBoundary[RequestT, ResultT](
             self._delegate,
-            admission_hooks=self._admission_hooks,
+            admission_hooks=admission_hooks,
             identity=binding,
             authority=root_context.authority,
         )
         budget_token = bind_root_execution_budget(
             execution_id=execution_id,
             ledger=ledger,
+            run_budget=self._run_budget,
         )
         host_token = None
         persistence_token = None
         finalization_token = None
         work_port_token = None
+        evidence_token = None
+        if self._failure_evidence_recorder is not None:
+            if root_context.tenant_id is None or root_context.task_id is None:
+                raise ValueError(
+                    "failure evidence recorder requires tenant_id and task_id "
+                    "on root execution context",
+                )
+            evidence_token = bind_active_execution_evidence_context(
+                ActiveExecutionEvidenceContext(
+                    tenant_id=root_context.tenant_id,
+                    task_id=root_context.task_id,
+                    run_id=root_context.run_id,
+                    attempt_id=root_context.attempt_id,
+                    recorder=self._failure_evidence_recorder,
+                ),
+            )
         try:
             if self._decision_lifecycle_host is not None:
                 host_token = bind_active_decision_lifecycle_host(
@@ -208,6 +325,10 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 )
             return await boundary.execute(request)
         finally:
+            if evidence_token is not None:
+                reset_active_execution_evidence_context(evidence_token)
+            if lineage_token is not None and degradation_token is not None:
+                deactivate_root_execution_lineage(lineage_token, degradation_token)
             if work_port_token is not None:
                 reset_active_execution_work_port(work_port_token)
             if persistence_token is not None:

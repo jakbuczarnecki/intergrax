@@ -15,6 +15,7 @@ PayloadT = TypeVar("PayloadT")
 ResultT = TypeVar("ResultT", covariant=True)
 
 OrchestrationSlotId = NewType("OrchestrationSlotId", str)
+OrchestrationTopologyExecutionId = NewType("OrchestrationTopologyExecutionId", str)
 
 
 class OrchestrationTopologyValidationError(ValueError):
@@ -296,6 +297,81 @@ class OrchestrationSlotExecutor(Protocol[PayloadT, ResultT]):
         ...
 
 
+class OrchestrationSlotContinuationExecutor(Protocol[PayloadT, ResultT]):
+    """Optional capability for exact resumed slot execution after governed pause."""
+
+    async def continue_slot(
+        self,
+        *,
+        slot_id: OrchestrationSlotId,
+        payload: PayloadT,
+    ) -> ResultT:
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class OrchestrationSlotContinuationRequest:
+    """Identity-bound request to continue one previously blocked orchestration slot."""
+
+    execution_id: OrchestrationTopologyExecutionId
+    slot_id: OrchestrationSlotId
+    correlation_id: str
+
+    def __post_init__(self) -> None:
+        if not str(self.execution_id).strip():
+            raise ValueError("execution_id must be non-empty")
+        validate_orchestration_slot_id(self.slot_id)
+        if not self.correlation_id or not self.correlation_id.strip():
+            raise ValueError("correlation_id must be non-empty")
+        if self.correlation_id != self.correlation_id.strip():
+            raise ValueError("correlation_id must not contain leading or trailing whitespace")
+
+
+@dataclass(frozen=True, slots=True)
+class OrchestrationSlotRecoveryRequest:
+    """Identity-bound request to recover one previously failed orchestration slot."""
+
+    execution_id: OrchestrationTopologyExecutionId
+    slot_id: OrchestrationSlotId
+    correlation_id: str
+    source_checkpoint_revision: int
+
+    def __post_init__(self) -> None:
+        if not str(self.execution_id).strip():
+            raise ValueError("execution_id must be non-empty")
+        validate_orchestration_slot_id(self.slot_id)
+        if not self.correlation_id or not self.correlation_id.strip():
+            raise ValueError("correlation_id must be non-empty")
+        if self.correlation_id != self.correlation_id.strip():
+            raise ValueError("correlation_id must not contain leading or trailing whitespace")
+        if self.source_checkpoint_revision < 1:
+            raise ValueError("source_checkpoint_revision must be >= 1")
+
+
+class OrchestrationSlotContinuationError(ValueError):
+    """Fail-closed orchestration slot continuation validation error."""
+
+    __slots__ = ("code",)
+
+    def __init__(self, message: str, *, code: str) -> None:
+        if not code or not code.strip():
+            raise ValueError("OrchestrationSlotContinuationError code must be non-empty")
+        self.code = code.strip()
+        super().__init__(message)
+
+
+class OrchestrationSlotRecoveryError(ValueError):
+    """Fail-closed orchestration slot failure recovery validation error."""
+
+    __slots__ = ("code",)
+
+    def __init__(self, message: str, *, code: str) -> None:
+        if not code or not code.strip():
+            raise ValueError("OrchestrationSlotRecoveryError code must be non-empty")
+        self.code = code.strip()
+        super().__init__(message)
+
+
 class OrchestrationTopologySubmissionPort(Protocol[PayloadT, ResultT]):
     """Canonical dynamic topology submission entry point."""
 
@@ -306,3 +382,48 @@ class OrchestrationTopologySubmissionPort(Protocol[PayloadT, ResultT]):
         slot_executor: OrchestrationSlotExecutor[PayloadT, ResultT],
     ) -> OrchestrationResult[ResultT]:
         ...
+
+
+class OrchestrationTopologyContinuationPort(Protocol[PayloadT, ResultT]):
+    """Canonical exact-slot continuation within a prior topology execution context."""
+
+    def register_governed_continuation_slots(
+        self,
+        execution_id: OrchestrationTopologyExecutionId,
+        slot_ids: tuple[OrchestrationSlotId, ...],
+    ) -> None:
+        ...
+
+    async def continue_slot(
+        self,
+        request: OrchestrationSlotContinuationRequest,
+        *,
+        slot_continuation_executor: OrchestrationSlotContinuationExecutor[PayloadT, ResultT],
+    ) -> OrchestrationResult[ResultT]:
+        ...
+
+    async def recover_failed_slot(
+        self,
+        request: OrchestrationSlotRecoveryRequest,
+        *,
+        slot_executor: OrchestrationSlotExecutor[PayloadT, ResultT],
+    ) -> OrchestrationResult[ResultT]:
+        ...
+
+
+def mint_orchestration_topology_execution_id(
+    *,
+    host_task_id: str,
+    topology: OrchestrationTopology[PayloadT],
+) -> OrchestrationTopologyExecutionId:
+    """Derive stable in-process topology execution identity from active execution facts."""
+    from intergrax.contracts.execution_identity import require_active_execution_identity
+
+    if not host_task_id or not host_task_id.strip():
+        raise ValueError("host_task_id must be non-empty")
+    validate_orchestration_topology(topology)
+    run_id, attempt_id = require_active_execution_identity()
+    slot_fingerprint = "|".join(str(slot.slot_id) for slot in topology.slots)
+    return OrchestrationTopologyExecutionId(
+        f"{run_id}:{attempt_id}:{host_task_id.strip()}:{slot_fingerprint}"
+    )

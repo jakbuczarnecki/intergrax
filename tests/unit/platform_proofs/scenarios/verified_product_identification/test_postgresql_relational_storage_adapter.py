@@ -41,6 +41,9 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     PostgreSqlBootstrapOperationError,
     PostgreSqlBootstrapSchemaError,
 )
+from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema import (
+    IdentifierTableSpec,
+)
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.stored_row import (
     StoredRelationalRow,
     stored_relational_row_from_fetched_row,
@@ -146,6 +149,12 @@ def _configuration(schema_name: str = "vpi_test_schema") -> PostgreSqlBootstrapC
         integration=integration,
         schema_name=schema_name,
         table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_product_identifiers",
+        lexical_document_table_name="vpi_lexical_document",
+        lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
     )
 
 
@@ -167,6 +176,7 @@ class _FakeCursor:
 class _FakeConnection:
     storage: dict[tuple[str, str, str], dict[str, object]] = field(default_factory=dict)
     by_row_index: dict[int, tuple[str, str, str]] = field(default_factory=dict)
+    identifier_rows: list[tuple[Any, ...]] = field(default_factory=list)
     committed: int = 0
     rolled_back: int = 0
     in_transaction: bool = False
@@ -175,14 +185,18 @@ class _FakeConnection:
     schema_constraints: list[Mapping[str, object]] | None = None
     _txn_storage: dict[tuple[str, str, str], dict[str, object]] | None = None
     _txn_by_row_index: dict[int, tuple[str, str, str]] | None = None
+    _txn_identifier_rows: list[tuple[Any, ...]] | None = None
+    executed: list[tuple[Any, tuple[Any, ...]]] = field(default_factory=list)
 
     def _begin_snapshot(self) -> None:
         self.in_transaction = True
         self._txn_storage = dict(self.storage)
         self._txn_by_row_index = dict(self.by_row_index)
+        self._txn_identifier_rows = list(self.identifier_rows)
 
     def execute(self, sql: Any, params: tuple[Any, ...] = ()) -> _FakeCursor:
-        sql_text = str(sql).lower()
+        self.executed.append((sql, params))
+        sql_text = _executed_sql_text(sql).lower()
         if "set transaction isolation level" in sql_text:
             self._begin_snapshot()
             return _FakeCursor()
@@ -212,7 +226,24 @@ class _FakeConnection:
             else:
                 constraints = self.schema_constraints
             return _FakeCursor(_rows=constraints)
-        if "insert into" in sql_text and params:
+        if (
+            "insert into" in sql_text
+            and "normalized_value" in sql_text
+            and len(params) == 8
+        ):
+            self.identifier_rows.append(tuple(params))
+            return _FakeCursor(rowcount=1)
+        if "insert into" in sql_text and "lexical_document" in sql_text and len(params) == 8:
+            return _FakeCursor(rowcount=1)
+        if "insert into" in sql_text and "term_frequency" in sql_text and len(params) == 5:
+            return _FakeCursor(rowcount=1)
+        if (
+            "insert into" in sql_text
+            and "attr_identity" in sql_text
+            and len(params) == 11
+        ):
+            return _FakeCursor(rowcount=1)
+        if "insert into" in sql_text and params and len(params) == 9:
             catalog_id, offer_id, revision_norm = params[0], params[1], params[2]
             if self.fail_insert_on_offer == offer_id:
                 raise _pg_unique_violation()
@@ -221,7 +252,7 @@ class _FakeConnection:
                 return _FakeCursor(rowcount=0)
             row_index = int(params[4])
             if row_index in self.by_row_index and self.by_row_index[row_index] != identity:
-                raise _pg_unique_violation()
+                return _FakeCursor(rowcount=0)
             row = {
                 "catalog_id": catalog_id,
                 "offer_id": offer_id,
@@ -240,6 +271,12 @@ class _FakeConnection:
             identity = (str(params[0]), str(params[1]), str(params[2]))
             row = self.storage.get(identity)
             return _FakeCursor(_rows=[row] if row else [])
+        if "pg_indexes" in sql_text:
+            if params and len(params) >= 3:
+                return _FakeCursor(_rows=[{"indexname": str(params[2])}])
+            return _FakeCursor(_rows=[{"indexname": "vpi_lexical_posting_term_idx"}])
+        if "pg_extension" in sql_text:
+            return _FakeCursor(_rows=[])
         if "where global_row_index = %s" in sql_text and params:
             identity = self.by_row_index.get(int(params[0]))
             row = self.storage.get(identity) if identity else None
@@ -251,18 +288,40 @@ class _FakeConnection:
         self.in_transaction = False
         self._txn_storage = None
         self._txn_by_row_index = None
+        self._txn_identifier_rows = None
 
     def rollback(self) -> None:
         self.rolled_back += 1
         if self._txn_storage is not None:
             self.storage = dict(self._txn_storage)
             self.by_row_index = dict(self._txn_by_row_index or {})
+            self.identifier_rows = list(self._txn_identifier_rows or [])
         self.in_transaction = False
         self._txn_storage = None
         self._txn_by_row_index = None
+        self._txn_identifier_rows = None
 
     def close(self) -> None:
         return None
+
+
+def _executed_sql_text(statement: object) -> str:
+    if isinstance(statement, str):
+        return statement
+    _, _, _, sql_module = import_psycopg()
+    if isinstance(statement, sql_module.Composable):
+        return statement.as_string(None)
+    return str(statement)
+
+
+def _identifier_insert_sql_text(executed: list[tuple[Any, tuple[Any, ...]]]) -> str:
+    for statement, params in executed:
+        if len(params) != 8:
+            continue
+        sql_text = _executed_sql_text(statement).lower()
+        if "insert into" in sql_text and "normalized_value" in sql_text:
+            return _executed_sql_text(statement)
+    raise AssertionError("expected identifier insert SQL execution")
 
 
 def _pg_unique_violation() -> Exception:
@@ -332,9 +391,83 @@ def test_unsafe_logical_target_rejected() -> None:
 def test_prepare_new_schema_table() -> None:
     connection = _FakeConnection()
     adapter = _adapter_with_fake(connection, prepared=False)
-    with patch(
-        "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_table_ddl",
-        return_value="CREATE TABLE IF NOT EXISTS vpi_data_pack_relational_record (id int)",
+    with (
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_data_pack_relational_record (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_identifier_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_product_identifiers (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_identifier_lookup_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_product_identifiers_lookup_idx ON vpi_product_identifiers (identifier_type, normalized_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_document_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_document (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_posting_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_posting (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_posting_lookup_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_lexical_posting_term_idx ON vpi_lexical_posting (term)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_corpus_stats_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_corpus_stats (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_term_stats_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_term_stats (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_attribute_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_structured_attribute (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_canonical_equals_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_structured_canonical_equals_idx ON vpi_structured_attribute (canonical_key, normalized_text_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_source_equals_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_structured_source_equals_idx ON vpi_structured_attribute (source_key, normalized_text_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_structured_attribute_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.pg_trgm_extension_available",
+            return_value=False,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_identifier_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_document_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_posting_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_corpus_stats_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_term_stats_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.rebuild_lexical_statistics",
+            return_value=None,
+        ),
     ):
         adapter.prepare_target(RelationalTargetId("vpi-products"))
     assert connection.committed >= 1
@@ -343,9 +476,83 @@ def test_prepare_new_schema_table() -> None:
 def test_prepare_existing_compatible_table() -> None:
     connection = _FakeConnection()
     adapter = _adapter_with_fake(connection, prepared=False)
-    with patch(
-        "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_table_ddl",
-        return_value="CREATE TABLE IF NOT EXISTS vpi_data_pack_relational_record (id int)",
+    with (
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_data_pack_relational_record (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_identifier_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_product_identifiers (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_identifier_lookup_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_product_identifiers_lookup_idx ON vpi_product_identifiers (identifier_type, normalized_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_document_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_document (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_posting_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_posting (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_posting_lookup_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_lexical_posting_term_idx ON vpi_lexical_posting (term)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_corpus_stats_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_corpus_stats (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_lexical_term_stats_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_lexical_term_stats (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_attribute_table_ddl",
+            return_value="CREATE TABLE IF NOT EXISTS vpi_structured_attribute (id int)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_canonical_equals_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_structured_canonical_equals_idx ON vpi_structured_attribute (canonical_key, normalized_text_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.create_structured_source_equals_index_ddl",
+            return_value="CREATE INDEX IF NOT EXISTS vpi_structured_source_equals_idx ON vpi_structured_attribute (source_key, normalized_text_value)",
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_structured_attribute_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.schema.pg_trgm_extension_available",
+            return_value=False,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_identifier_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_document_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_posting_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_corpus_stats_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.verify_lexical_term_stats_table_compatible",
+            return_value=None,
+        ),
+        patch(
+            "platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.postgresql.adapter.rebuild_lexical_statistics",
+            return_value=None,
+        ),
     ):
         adapter.prepare_target(RelationalTargetId("vpi-products"))
         adapter.prepare_target(RelationalTargetId("vpi-products"))
@@ -587,6 +794,131 @@ def test_unsafe_logical_target_cannot_become_raw_sql_identifier() -> None:
         reject_unsafe_logical_target("vpi_products;drop")
 
 
+def test_identifier_write_sql_uses_composed_qualified_table() -> None:
+    record_json = json.dumps(
+        {
+            "id": "offer-identifiers",
+            "identifiers": [{"/gtin13": "[8806095123456]"}],
+        }
+    )
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    adapter.write_batch(
+        _batch(
+            _record(
+                0,
+                offer_suffix="identifiers",
+                record_json=record_json,
+            )
+        )
+    )
+    insert_sql = _identifier_insert_sql_text(connection.executed)
+    _, _, _, sql_module = import_psycopg()
+    composed_statement = next(
+        statement for statement, params in connection.executed if len(params) == 8
+    )
+    assert isinstance(composed_statement, sql_module.Composable)
+    assert '"vpi_test_schema"."vpi_product_identifiers"' in insert_sql.lower()
+
+
+def test_identifier_write_schema_and_table_explicitly_qualified() -> None:
+    record_json = json.dumps(
+        {
+            "id": "offer-identifiers",
+            "identifiers": [{"/gtin13": "[8806095123456]"}],
+        }
+    )
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_alt_schema",
+        table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_alt_identifiers",
+        lexical_document_table_name="vpi_lexical_document",
+        lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
+    )
+
+    connection = _FakeConnection()
+
+    def _factory() -> _FakeConnection:
+        return connection
+
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=_factory,
+    )
+    provider._apply_search_path_on_connection = lambda _connection: None  # type: ignore[method-assign]
+    provider.ensure_schema_exists = lambda _session, _schema_name=None: None  # type: ignore[method-assign]
+    adapter = PostgreSqlRelationalStorageAdapter(
+        _provider=provider,
+        _configuration=configuration,
+        _prepared_targets={"vpi-products"},
+    )
+    adapter.write_batch(
+        _batch(
+            _record(
+                0,
+                offer_suffix="identifiers",
+                record_json=record_json,
+            )
+        )
+    )
+    insert_sql = _identifier_insert_sql_text(connection.executed)
+    assert '"vpi_alt_schema"."vpi_alt_identifiers"' in insert_sql.lower()
+
+
+def test_identifier_write_values_remain_bind_parameters() -> None:
+    record_json = json.dumps(
+        {
+            "id": "offer-identifiers",
+            "identifiers": [{"/gtin13": "[8806095123456]"}],
+        }
+    )
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    adapter.write_batch(
+        _batch(
+            _record(
+                0,
+                offer_suffix="identifiers",
+                record_json=record_json,
+            )
+        )
+    )
+    insert_sql = _identifier_insert_sql_text(connection.executed)
+    assert insert_sql.count("%s") == 8
+    _, params = next(
+        (statement, params) for statement, params in connection.executed if len(params) == 8
+    )
+    assert len(params) == 8
+
+
+def test_invalid_identifier_table_configuration_still_rejected() -> None:
+    with pytest.raises(ValueError, match="table_name must be a simple SQL identifier"):
+        validate_table_identifier("bad-table")
+
+
+def test_no_f_string_identifier_sql_in_adapter_identifier_write() -> None:
+    module_path = _ADAPTER_ROOT / "adapter.py"
+    tree = ast.parse(module_path.read_text(encoding="utf-8"))
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.JoinedStr):
+            continue
+        for value in node.values:
+            if isinstance(value, ast.FormattedValue):
+                violations.append(ast.get_source_segment(module_path.read_text(encoding="utf-8"), value) or "")
+    identifier_violations = [
+        fragment
+        for fragment in violations
+        if "identifier_table_name" in fragment or "INSERT INTO {" in fragment
+    ]
+    assert identifier_violations == []
+
+
 def test_malicious_source_text_remains_data() -> None:
     connection = _FakeConnection()
     adapter = _adapter_with_fake(connection)
@@ -748,6 +1080,61 @@ def test_insert_sql_uses_placeholders_not_interpolation() -> None:
     source = (_ADAPTER_ROOT / "adapter.py").read_text(encoding="utf-8")
     assert re.search(r"VALUES\s*\(%s", source)
     assert "record_json" in source
+    assert "ON CONFLICT DO NOTHING" in source
+
+
+def test_global_row_conflict_does_not_abort_transaction() -> None:
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    adapter.write_batch(_batch(_record(7, offer_suffix="a")))
+    with pytest.raises(StorageBootstrapWriteError):
+        adapter.write_batch(_batch(_record(7, offer_suffix="b")))
+    assert connection.in_transaction is False
+    assert any(
+        "where global_row_index = %s" in str(sql).lower()
+        for sql, _params in connection.executed
+    )
+
+
+def test_global_row_conflict_classifies_different_identity() -> None:
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    adapter.write_batch(_batch(_record(9, offer_suffix="first")))
+    with pytest.raises(StorageBootstrapWriteError, match="IDENTITY_CONTENT_CONFLICT"):
+        adapter.write_batch(_batch(_record(9, offer_suffix="second")))
+
+
+def test_source_identity_identical_retry_skipped_without_exception() -> None:
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    batch = _batch(_record(2, offer_suffix="retry"))
+    adapter.write_batch(batch)
+    result = adapter.write_batch(batch)
+    assert result.skipped_count == 1
+    assert result.written_count == 0
+    assert not any(
+        "where global_row_index = %s" in str(sql).lower()
+        for sql, _params in connection.executed[-3:]
+        if "insert into" not in str(sql).lower()
+    )
+
+
+def test_insert_conflict_readback_only_after_valid_insert_state() -> None:
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    adapter.write_batch(_batch(_record(11, offer_suffix="row")))
+    connection.executed.clear()
+    adapter.write_batch(_batch(_record(11, offer_suffix="row")))
+    post_insert_sql = [
+        (str(sql).lower(), params)
+        for sql, params in connection.executed
+        if "insert into" not in str(sql).lower()
+        and "set transaction" not in str(sql).lower()
+        and "set_config" not in str(sql).lower()
+    ]
+    assert post_insert_sql
+    for sql, _params in post_insert_sql:
+        assert "where catalog_id = %s" in sql or "where global_row_index = %s" in sql
 
 
 def test_logical_target_maps_to_approved_table() -> None:
@@ -760,6 +1147,225 @@ def test_configuration_table_mismatch_rejected() -> None:
         integration=_configuration().integration,
         schema_name="vpi_test_schema",
         table_name="other_table",
+        identifier_table_name="vpi_product_identifiers",
+        lexical_document_table_name="vpi_lexical_document",
+        lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
     )
     with pytest.raises(PostgreSqlBootstrapConfigurationError):
         resolve_physical_target(RelationalTargetId("vpi-products"), config)
+
+
+# --- SESSION CONFIG ---
+
+
+def test_adapter_source_has_no_set_local_bind_parameters() -> None:
+    source = (_ADAPTER_ROOT / "adapter.py").read_text(encoding="utf-8")
+    assert "SET LOCAL" not in source
+    assert "set_local_config" in source
+
+
+def test_apply_session_limits_uses_parameterized_set_config() -> None:
+    conn = _FakeConnection()
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_test_schema",
+        table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_product_identifiers",
+        lexical_document_table_name="vpi_lexical_document",
+        lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
+        statement_timeout_ms=7500,
+        application_name="vpi-relational-bootstrap",
+    )
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=lambda: conn,
+    )
+    adapter = PostgreSqlRelationalStorageAdapter(
+        _provider=provider,
+        _configuration=configuration,
+        _prepared_targets=set(),
+    )
+    with provider.connection() as session:
+        adapter._apply_session_limits(session)
+    set_config_calls = [
+        (str(params[0]), str(params[1]))
+        for sql, params in conn.executed
+        if "set_config" in str(sql).lower() and params
+    ]
+    assert ("statement_timeout", "7500") in set_config_calls
+    assert ("application_name", "vpi-relational-bootstrap") in set_config_calls
+
+
+def test_apply_session_limits_skips_empty_application_name() -> None:
+    conn = _FakeConnection()
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_test_schema",
+        table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_product_identifiers",
+        lexical_document_table_name="vpi_lexical_document",
+        lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
+        application_name="",
+    )
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=lambda: conn,
+    )
+    adapter = PostgreSqlRelationalStorageAdapter(
+        _provider=provider,
+        _configuration=configuration,
+        _prepared_targets=set(),
+    )
+    with provider.connection() as session:
+        adapter._apply_session_limits(session)
+    assert all(
+        params[0] != "application_name"
+        for sql, params in conn.executed
+        if "set_config" in str(sql).lower() and params
+    )
+
+
+def test_apply_session_limits_skips_none_statement_timeout() -> None:
+    conn = _FakeConnection()
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_test_schema",
+        table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_product_identifiers",
+        lexical_document_table_name="vpi_lexical_document",
+        lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
+        statement_timeout_ms=None,
+    )
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=lambda: conn,
+    )
+    adapter = PostgreSqlRelationalStorageAdapter(
+        _provider=provider,
+        _configuration=configuration,
+        _prepared_targets=set(),
+    )
+    with provider.connection() as session:
+        adapter._apply_session_limits(session)
+    assert all(
+        params[0] != "statement_timeout"
+        for sql, params in conn.executed
+        if "set_config" in str(sql).lower() and params
+    )
+
+
+def test_apply_session_limits_hostile_application_name_is_value_only() -> None:
+    hostile = "'; DROP TABLE users; --"
+    conn = _FakeConnection()
+    configuration = PostgreSqlBootstrapConfiguration(
+        integration=_configuration().integration,
+        schema_name="vpi_test_schema",
+        table_name="vpi_data_pack_relational_record",
+        identifier_table_name="vpi_product_identifiers",
+        lexical_document_table_name="vpi_lexical_document",
+        lexical_posting_table_name="vpi_lexical_posting",
+        lexical_corpus_stats_table_name="vpi_lexical_corpus_stats",
+        lexical_term_stats_table_name="vpi_lexical_term_stats",
+        structured_attribute_table_name="vpi_structured_attribute",
+        application_name=hostile,
+    )
+    provider = PostgreSQLConnectionProvider(
+        configuration.integration,
+        tenant_schema=configuration.schema_name,
+        connection_factory=lambda: conn,
+    )
+    adapter = PostgreSqlRelationalStorageAdapter(
+        _provider=provider,
+        _configuration=configuration,
+        _prepared_targets=set(),
+    )
+    with provider.connection() as session:
+        adapter._apply_session_limits(session)
+    for sql, params in conn.executed:
+        if "set_config" in str(sql).lower() and params and params[0] == "application_name":
+            assert hostile not in str(sql)
+            assert params[1] == hostile
+            return
+    raise AssertionError("expected application_name set_config call")
+
+
+def test_write_batch_persists_identifier_projection_rows() -> None:
+    record_json = json.dumps(
+        {
+            "id": "offer-identifiers",
+            "identifiers": [
+                {"/gtin13": "[8806095123456]"},
+                {"/mpn": "[MZ-V9P2T0BW]"},
+            ],
+        }
+    )
+    connection = _FakeConnection()
+    adapter = _adapter_with_fake(connection)
+    result = adapter.write_batch(
+        _batch(
+            _record(
+                7,
+                offer_suffix="identifiers",
+                record_json=record_json,
+            )
+        )
+    )
+    assert result.written_count == 1
+    assert len(connection.identifier_rows) == 2
+    identifier_types = {row[4] for row in connection.identifier_rows}
+    assert identifier_types == {"gtin", "mpn"}
+
+
+@dataclass
+class _FailSecondIdentifierConnection(_FakeConnection):
+    def execute(self, sql: Any, params: tuple[Any, ...] = ()) -> _FakeCursor:
+        sql_text = _executed_sql_text(sql).lower()
+        if (
+            "insert into" in sql_text
+            and "normalized_value" in sql_text
+            and len(params) == 8
+            and self.identifier_rows
+        ):
+            raise RuntimeError("identifier write failed")
+        return super().execute(sql, params)
+
+
+def test_failed_batch_rolls_back_identifier_projection_rows() -> None:
+    ok_json = json.dumps(
+        {
+            "id": "offer-ok",
+            "identifiers": [{"/gtin13": "[8806095123456]"}],
+        }
+    )
+    fail_json = json.dumps(
+        {
+            "id": "offer-fail",
+            "identifiers": [{"/mpn": "[MZ-V9P2T0BW]"}],
+        }
+    )
+    connection = _FailSecondIdentifierConnection()
+    adapter = _adapter_with_fake(connection)
+    with pytest.raises(RuntimeError, match="identifier write failed"):
+        adapter.write_batch(
+            _batch(
+                _record(10, offer_suffix="ok", record_json=ok_json),
+                _record(11, offer_suffix="fail", record_json=fail_json),
+            )
+        )
+    assert connection.rolled_back >= 1
+    assert connection.identifier_rows == []

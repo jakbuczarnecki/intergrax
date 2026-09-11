@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import time
 from pathlib import Path
 
@@ -47,9 +46,9 @@ from intergrax.runtime.execution.decision_finalization_conformance import (
     IncidentDecisionPayload,
     conformance_artifact_payload_codec_registry,
 )
-from intergrax.runtime.execution.decision_recovery import (
-    persist_terminal_decision_state,
-    resume_decision_from_durable_state,
+from intergrax.runtime.execution.decision_recovery import persist_terminal_decision_state
+from testing_support.decision_e2e.canonical_decision_durable_resume import (
+    resume_decision_durable_with_canonical_recovery_admission,
 )
 from intergrax.runtime.execution.sqlite_decision_checkpoint_persistence import (
     SQLiteDecisionCheckpointPersistence,
@@ -91,6 +90,7 @@ def _lifecycle_at_finalization(identity: DecisionIdentity):
 
 def _write_sidecar(db_path: Path, identity: DecisionIdentity) -> None:
     db_path.mkdir(parents=True, exist_ok=True)
+    execution = identity.execution
     (db_path / "identity.json").write_text(
         json.dumps(
             {
@@ -98,6 +98,10 @@ def _write_sidecar(db_path: Path, identity: DecisionIdentity) -> None:
                 "decision_id": str(identity.decision_id),
                 "namespace": identity.scope.namespace,
                 "subject": identity.scope.subject,
+                "task_id": str(execution.task_id),
+                "run_id": str(execution.run_id),
+                "attempt_id": str(execution.attempt_id),
+                "execution_id": str(execution.execution_id),
             },
         ),
         encoding="utf-8",
@@ -106,6 +110,22 @@ def _write_sidecar(db_path: Path, identity: DecisionIdentity) -> None:
 
 def _load_sidecar(db_path: Path) -> dict[str, str]:
     return json.loads((db_path / "identity.json").read_text(encoding="utf-8"))
+
+
+def _execution_lineage_from_sidecar(sidecar: dict[str, str]) -> DecisionExecutionLineage:
+    from intergrax.contracts.execution_identity import (
+        validate_attempt_id,
+        validate_execution_id,
+        validate_run_id,
+        validate_task_id,
+    )
+
+    return DecisionExecutionLineage(
+        task_id=validate_task_id(sidecar["task_id"]),
+        run_id=validate_run_id(sidecar["run_id"]),
+        attempt_id=validate_attempt_id(sidecar["attempt_id"]),
+        execution_id=validate_execution_id(sidecar["execution_id"]),
+    )
 
 
 def _stores(db_path: Path):
@@ -166,10 +186,11 @@ def checkpoint_resume(db_dir: Path, result_path: Path) -> None:
         tenant_id=sidecar["tenant_id"],
     )
     checkpoint_store, finalization_store, _ = _stores(db_dir)
-    loaded = resume_decision_from_durable_state(
+    loaded = resume_decision_durable_with_canonical_recovery_admission(
         checkpoint_persistence=checkpoint_store,
         finalization_persistence=finalization_store,
         key=key,
+        execution_lineage=_execution_lineage_from_sidecar(sidecar),
         runtime_revision_policy=decision_revision_policy(max_revisions=2),
     )
     stage = loaded.lifecycle.stage.value if loaded is not None else "missing"
@@ -224,10 +245,11 @@ def authority_resume(db_dir: Path, result_path: Path) -> None:
         tenant_id=sidecar["tenant_id"],
     )
     checkpoint_store, finalization_store, _ = _stores(db_dir)
-    loaded = resume_decision_from_durable_state(
+    loaded = resume_decision_durable_with_canonical_recovery_admission(
         checkpoint_persistence=checkpoint_store,
         finalization_persistence=finalization_store,
         key=key,
+        execution_lineage=_execution_lineage_from_sidecar(sidecar),
     )
     if loaded is None:
         raise RuntimeError("resume returned no durable checkpoint")

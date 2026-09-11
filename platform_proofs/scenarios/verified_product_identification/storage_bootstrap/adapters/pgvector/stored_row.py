@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import array
+import math
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+
+from pgvector import Vector as PgVectorProviderVector
 
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.pgvector.configuration import (
     ExpectedVectorIdentity,
@@ -17,7 +20,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
 )
 
 _PgVectorFetchedScalar = str | int | float | None
-_PgVectorFetchedValue = _PgVectorFetchedScalar | Sequence[float]
+_PgVectorFetchedValue = _PgVectorFetchedScalar | Sequence[float] | PgVectorProviderVector
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,19 +179,41 @@ def _optional_str(
     return value
 
 
-def _embedding_values(raw: _PgVectorFetchedValue) -> tuple[float, ...]:
+def _provider_vector_components(raw: PgVectorProviderVector) -> list[float]:
+    return raw.to_list()
+
+
+def _embedding_values(raw: _PgVectorFetchedValue, *, expected_dimension: int) -> tuple[float, ...]:
     if raw is None:
         raise PgVectorBootstrapOperationError("malformed pgvector row: dense_embedding missing")
-    if isinstance(raw, (str, int, float)):
+    if isinstance(raw, PgVectorProviderVector):
+        components = _provider_vector_components(raw)
+    elif isinstance(raw, (str, int, float)):
         raise PgVectorBootstrapOperationError(
             "malformed pgvector row: dense_embedding must be a vector sequence"
         )
-    return normalize_vector_float32(tuple(float(value) for value in raw))
+    else:
+        components = [float(value) for value in raw]
+    if len(components) != expected_dimension:
+        raise PgVectorBootstrapOperationError(
+            "malformed pgvector row: dense_embedding dimension mismatch"
+        )
+    for value in components:
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise PgVectorBootstrapOperationError(
+                "malformed pgvector row: dense_embedding must contain numeric values"
+            )
+        if not math.isfinite(float(value)):
+            raise PgVectorBootstrapOperationError(
+                "malformed pgvector row: dense_embedding must be finite"
+            )
+    return normalize_vector_float32(tuple(float(value) for value in components))
 
 
 def stored_pgvector_row_from_fetched_row(
     row: Mapping[str, _PgVectorFetchedValue],
 ) -> StoredPgVectorRow:
+    embedding_dimension = _require_int(row, "embedding_dimension")
     return StoredPgVectorRow(
         logical_point_id=_require_str(row, "logical_point_id"),
         catalog_id=_require_str(row, "catalog_id"),
@@ -199,7 +224,10 @@ def stored_pgvector_row_from_fetched_row(
         embedding_provider=_require_str(row, "embedding_provider"),
         embedding_model=_require_str(row, "embedding_model"),
         embedding_revision=_optional_str(row, "embedding_revision"),
-        embedding_dimension=_require_int(row, "embedding_dimension"),
+        embedding_dimension=embedding_dimension,
         derivation_version=_require_str(row, "derivation_version"),
-        dense_embedding=_embedding_values(row["dense_embedding"]),
+        dense_embedding=_embedding_values(
+            row["dense_embedding"],
+            expected_dimension=embedding_dimension,
+        ),
     )

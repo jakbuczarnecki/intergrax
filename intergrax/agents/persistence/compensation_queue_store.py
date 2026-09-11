@@ -36,9 +36,10 @@ class CompensationJobStatus(StrEnum):
 class CompensationJob(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    schema_version: Literal["compensation_job.v1"] = "compensation_job.v1"
+    schema_version: Literal["compensation_job.v2"] = "compensation_job.v2"
     job_id: str = Field(default_factory=lambda: f"cjob_{uuid4().hex}")
     run_id: str
+    task_id: str
     tenant_id: str
     agent_id: str
     step_index: int = Field(ge=0)

@@ -201,7 +201,7 @@ class ClaudeChatAdapter(LLMAdapter):
             if out_tokens is None:
                 out_tokens = 1024
 
-            stream = self._execute(
+            for event in self._execute_streaming(
                 lambda: self.client.messages.create(
                     model=self.model,
                     system=system_text or None,
@@ -210,9 +210,7 @@ class ClaudeChatAdapter(LLMAdapter):
                     temperature=float(temp) if temp is not None else None,
                     stream=True,
                 )
-            )
-
-            for event in stream:
+            ):
                 if event.type != "content_block_delta":
                     continue
                 delta = event.delta
@@ -349,8 +347,14 @@ class ClaudeChatAdapter(LLMAdapter):
             if tool_choice is not None:
                 kwargs["tool_choice"] = tool_choice
 
-            stream = self._execute(lambda: self.client.messages.create(**kwargs))
-            for event in stream:
+            provider_stream: list[object] = []
+
+            def _open_stream() -> object:
+                opened = self.client.messages.create(**kwargs)
+                provider_stream.append(opened)
+                return opened
+
+            for event in self._execute_streaming(_open_stream):
                 if event.type == "content_block_delta":
                     delta = event.delta
                     if attribute_access.optional(delta, "type", None) == "text_delta":
@@ -359,6 +363,7 @@ class ClaudeChatAdapter(LLMAdapter):
                             buf.append(txt)
                             yield partial_stream_event(delta_content=txt)
 
+            stream = provider_stream[0] if provider_stream else None
             get_final = attribute_access.optional(stream, "get_final_message", None)
             resp = get_final() if callable(get_final) else None
             if resp is None:

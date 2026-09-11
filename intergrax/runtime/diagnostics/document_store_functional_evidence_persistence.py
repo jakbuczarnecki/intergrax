@@ -5,14 +5,14 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
-
 from intergrax.contracts.execution_identity import AttemptId, RunId, TaskId, validate_run_id, validate_task_id
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
-    DocumentQueryCursorCodec,
     DocumentRecord,
     DocumentStore,
+)
+from intergrax.integrations.contracts.document_store_query_cursor_provider import (
+    DocumentStoreQueryCursorProvider,
 )
 from intergrax.runtime.diagnostics.functional_evidence import (
     PipelineEvidenceKind,
@@ -65,13 +65,6 @@ _DOCUMENT_STORE_PARTITION_PREFIX = "intergrax.functional_evidence.v1"
 _RECORD_ROW_PREFIX = "record:"
 _QUERY_PAGE_LIMIT = 5000
 _QUERY_OVERFETCH_FACTOR = 4
-
-
-@runtime_checkable
-class DocumentStoreQueryCursorProvider(Protocol):
-    @property
-    def query_cursor_codec(self) -> DocumentQueryCursorCodec:
-        """Authenticated codec for document-store query continuation cursors."""
 
 
 def _document_partition(tenant_id: str) -> str:

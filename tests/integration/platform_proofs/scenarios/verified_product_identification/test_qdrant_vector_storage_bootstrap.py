@@ -7,7 +7,9 @@ import os
 
 import pytest
 
-from intergrax.integrations.providers.vector_store.qdrant.opens import _build_qdrant_client
+from intergrax.integrations.providers.vector_store.qdrant.opens import (
+    open_qdrant_control_plane_client,
+)
 from platform_proofs.scenarios.verified_product_identification.qualification.integration.storage_environment import (
     qdrant_environment_available,
 )
@@ -66,7 +68,7 @@ def _cleanup(
     configuration: QdrantBootstrapConfiguration,
     previous_tenant: str | None,
 ) -> None:
-    client = _build_qdrant_client(configuration.integration)
+    client = open_qdrant_control_plane_client(configuration.integration)
     try:
         physical_name = physical_collection_name(
             configuration.logical_collection_name,
@@ -141,7 +143,8 @@ def test_qdrant_vector_conflict_fails_closed_without_overwrite() -> None:
         record = _vector_record(0)
         adapter.write_batch(_batch(record))
         vector = list(record.dense_embedding)
-        vector[0] = 0.5
+        vector[0] = 0.0
+        vector[1] = 1.0
         conflict = VectorLoadRecord(
             logical_point_id=record.logical_point_id,
             source_ref=record.source_ref,

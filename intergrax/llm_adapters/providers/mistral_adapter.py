@@ -198,13 +198,11 @@ class MistralChatAdapter(LLMAdapter):
                 stream=True,
             )
 
-            stream: Iterable[_MistralStreamChunk] = self._execute(
-                lambda: self.client.chat.complete(**payload)
-            )
-
             buf: List[str] = []
 
-            for chunk in stream:
+            for chunk in self._execute_streaming(
+                lambda: self.client.chat.complete(**payload)
+            ):
                 if not chunk.choices:
                     continue
                 delta = chunk.choices[0].delta
@@ -330,10 +328,9 @@ class MistralChatAdapter(LLMAdapter):
                 tools=tools_schema,
                 tool_choice=tool_choice,
             )
-            stream: Iterable[_MistralStreamChunk] = self._execute(
+            for chunk in self._execute_streaming(
                 lambda: self.client.chat.complete(**payload)
-            )
-            for chunk in stream:
+            ):
                 if not chunk.choices:
                     continue
                 delta = chunk.choices[0].delta

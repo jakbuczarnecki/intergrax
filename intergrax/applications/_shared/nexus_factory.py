@@ -21,8 +21,13 @@ from intergrax.applications._shared.security_wiring import (
     apply_application_security_wiring,
     wire_application_security,
 )
-from intergrax.applications._shared.context_wiring import resolve_context_manager_from_environment
+from intergrax.applications._shared.context_wiring import (
+    resolve_context_manager_from_environment,
+)
 from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
+from intergrax.applications._shared.host_execution_capacity_policy import (
+    validate_strict_host_execution_capacity,
+)
 from intergrax.applications._shared.orchestration_wiring import (
     OrchestrationWiringContext,
     orchestration_requires_llm_adapter,
@@ -35,18 +40,24 @@ from intergrax.applications._shared.reasoning_wiring import (
     resolve_planner_model_id,
 )
 from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.long_running.notification import NotificationAdapter
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.attempt_lifecycle import AttemptLifecycleStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.agents.persistence.declarative_tool_executor import (
+    DeclarativeToolInvoker,
+)
 from intergrax.runtime.execution.authority import (
     resolve_execution_authority_policy_from_runtime_config,
 )
@@ -63,6 +74,9 @@ from intergrax.runtime.execution.execution_terminal import ExecutionTerminalServ
 from intergrax.runtime.execution.execution_terminal.wiring import (
     resolve_execution_terminal_store,
 )
+from intergrax.runtime.execution.lineage.wiring import (
+    resolve_execution_lineage_persistence,
+)
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
@@ -74,13 +88,16 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.contracts.execution_terminal import ExecutionTerminalStore
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
         ExecutionBudgetLedger,
         ExecutionBudgetLedgerFactory,
     )
-    from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
+    from intergrax.runtime.execution.budget.policy import (
+        ExecutionBudgetAllocationPolicy,
+    )
 
 
 def build_nexus_loop_from_environment(
@@ -119,8 +136,10 @@ def build_nexus_loop_from_environment(
     document_store: Any | None = None,
     execution_terminal: ExecutionTerminalService | None = None,
     execution_terminal_store: ExecutionTerminalStore | None = None,
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
+    validate_strict_host_execution_capacity(env)
     orch = env.orchestration_profile
     reliability = env.reliability_profile
     retry_policy = RetryPolicy(max_retries=3)
@@ -141,12 +160,16 @@ def build_nexus_loop_from_environment(
         planner_parse_retries=env.reasoning_profile.planner_parse_retries,
     )
     planner = resolve_nexus_task_planner(env, wiring_context=wiring_context)
-    classifier = resolve_nexus_task_classifier(registry, env, wiring_context=wiring_context)
+    classifier = resolve_nexus_task_classifier(
+        registry, env, wiring_context=wiring_context
+    )
     runtime_settings = resolve_orchestration_runtime_settings(env)
     resolved_authority_policy = authority_policy
     if resolved_authority_policy is None and runtime_config is not None:
-        resolved_authority_policy = resolve_execution_authority_policy_from_runtime_config(
-            runtime_config,
+        resolved_authority_policy = (
+            resolve_execution_authority_policy_from_runtime_config(
+                runtime_config,
+            )
         )
     resolved_budget_policy = budget_allocation_policy
     if resolved_budget_policy is None and runtime_config is not None:
@@ -162,11 +185,15 @@ def build_nexus_loop_from_environment(
                 execution_budget_ledger,
             )
         else:
-            resolved_budget_ledger_factory = create_execution_budget_ledger_factory(run_budget)
+            resolved_budget_ledger_factory = create_execution_budget_ledger_factory(
+                run_budget
+            )
     from intergrax.distributed.contracts.kv_store import DistributedKVStore
     from intergrax.integrations.contracts.document_store import DocumentStore
 
-    kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+    kv_store = (
+        key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+    )
     doc_store = document_store if isinstance(document_store, DocumentStore) else None
     durable_checkpoint_store = (
         checkpoint_store
@@ -184,6 +211,11 @@ def build_nexus_loop_from_environment(
         if resolved_attempt_lifecycle_store is not None
         else None
     )
+    resolved_execution_lineage = resolve_execution_lineage_persistence(
+        explicit_persistence=execution_lineage_persistence,
+        document_store=doc_store,
+        provider=reliability.execution_lineage_persistence_provider,
+    )
     resolved_execution_terminal = execution_terminal
     if resolved_execution_terminal is None and (
         execution_terminal_store is not None
@@ -200,11 +232,14 @@ def build_nexus_loop_from_environment(
                 execution_terminal_store=execution_terminal_store,
             ),
         )
-    resolved_context_manager = context_manager or resolve_context_manager_from_environment(
-        env,
-        event_bus=runtime_event_bus,
-        llm_adapter=producer_llm,
-        context_engine=context_engine,  # type: ignore[arg-type]
+    resolved_context_manager = (
+        context_manager
+        or resolve_context_manager_from_environment(
+            env,
+            event_bus=runtime_event_bus,
+            llm_adapter=producer_llm,
+            context_engine=context_engine,  # type: ignore[arg-type]
+        )
     )
 
     loop = NexusLoop(
@@ -247,6 +282,7 @@ def build_nexus_loop_from_environment(
         execution_budget_ledger_factory=resolved_budget_ledger_factory,
         attempt_lifecycle=resolved_attempt_lifecycle,
         execution_terminal=resolved_execution_terminal,
+        execution_lineage_persistence=resolved_execution_lineage,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)

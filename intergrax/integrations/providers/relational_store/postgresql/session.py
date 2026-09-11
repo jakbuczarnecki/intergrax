@@ -78,6 +78,18 @@ class PostgreSQLExecutionResult:
         return self._cursor.rowcount
 
 
+def set_local_config(
+    session: PostgreSQLSession,
+    setting: str,
+    value: str,
+) -> None:
+    """Apply a transaction-local PostgreSQL configuration value via parameterized set_config."""
+    session.execute(
+        "SELECT set_config(%s, %s, true)",
+        (setting, value),
+    )
+
+
 class PostgreSQLSession:
     """Parameterized SQL session over a single PostgreSQL connection."""
 

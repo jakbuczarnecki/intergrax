@@ -29,6 +29,7 @@ def test_partial_result_from_checkpoint_extracts_runtime_fields(tmp_path) -> Non
         tenant_id="t1",
         user_id="u1",
         message="monitor",
+        state=TaskState.WAITING_FOR_HUMAN,
         context=TaskContext(capability="echo.basic"),
         options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
     )

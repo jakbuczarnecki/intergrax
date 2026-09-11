@@ -40,6 +40,13 @@ class SourceRecordRef:
         _require_non_empty_str(self.catalog_id, field_name="SourceRecordRef.catalog_id")
 
 
+def source_ref_sort_key(source_ref: SourceRecordRef) -> tuple[str, str, str]:
+    """Canonical ordering key: catalog_id, offer_id, normalized source_revision."""
+
+    revision = source_ref.source_revision or ""
+    return (source_ref.catalog_id, source_ref.offer_id.value, revision)
+
+
 @dataclass(frozen=True, slots=True)
 class ProductSourceRecord:
     """Immutable source-truth offer record — never a search index projection."""

@@ -11,8 +11,9 @@ Council does not finalize decisions, verify output, or import Nexus/providers.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import TypeVar
 
+from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
 from intergrax.contracts.decision_context_visibility import (
     DeliberationContextId,
     ParticipantContextVisibilityPolicy,
@@ -32,7 +33,6 @@ from intergrax.contracts.decision_record import (
     candidate_decision,
     candidate_decision_ref,
     decision_lineage_ref,
-    decision_proposal_ref,
     decision_version_lineage,
     validate_decision_artifact_kind,
     validate_decision_branch_id,
@@ -43,10 +43,8 @@ from intergrax.contracts.council_strategy import (
     CouncilDeliberationResult,
     CouncilDisagreementAnalyzer,
     CouncilParticipantProposal,
-    CouncilResolutionDisposition,
     CouncilRoundState,
     CouncilStrategy,
-    CouncilSynthesisAttempt,
     CouncilSynthesisDisposition,
     CouncilSynthesizer,
     council_deliberation_result_deadlock,
@@ -250,6 +248,7 @@ async def execute_parallel_participant_proposals(
     strategy: CouncilStrategy,
     deliberation_input: CouncilDeliberationInput[T],
     work_port: ExecutionWorkPort[tuple[ChatMessage, ...], T, T],
+    concurrent_work_policy: ConcurrentExecutionWorkPolicy,
     disagreement: DecisionDisagreementArtifact | None = None,
 ) -> tuple[CouncilParticipantProposal[T], ...]:
     """Produce independent participant proposals concurrently via Execution work."""
@@ -276,6 +275,7 @@ async def execute_parallel_participant_proposals(
     outputs = await execute_concurrent_execution_work(
         work_port,
         tuple(requests),
+        policy=concurrent_work_policy,
     )
     proposals: list[CouncilParticipantProposal[T]] = []
     for binding, payload in zip(bindings, outputs, strict=True):
@@ -295,6 +295,7 @@ async def execute_parallel_participant_proposals_resilient(
     strategy: CouncilStrategy,
     deliberation_input: CouncilDeliberationInput[T],
     work_port: ExecutionWorkPort[tuple[ChatMessage, ...], T, T],
+    concurrent_work_policy: ConcurrentExecutionWorkPolicy,
     disagreement: DecisionDisagreementArtifact | None = None,
 ) -> tuple[CouncilParticipantProposal[T], ...]:
     """Produce proposals concurrently; omit failed participants instead of aborting."""
@@ -321,6 +322,7 @@ async def execute_parallel_participant_proposals_resilient(
     outcomes = await execute_concurrent_execution_work_resilient(
         work_port,
         tuple(requests),
+        policy=concurrent_work_policy,
     )
     proposals: list[CouncilParticipantProposal[T]] = []
     for binding, outcome in zip(bindings, outcomes, strict=True):
@@ -354,6 +356,7 @@ async def execute_council_deliberation(
     strategy: CouncilStrategy,
     deliberation_input: CouncilDeliberationInput[T],
     work_port: ExecutionWorkPort[tuple[ChatMessage, ...], T, T],
+    concurrent_work_policy: ConcurrentExecutionWorkPolicy,
     disagreement_analyzer: CouncilDisagreementAnalyzer[T],
     synthesizer: CouncilSynthesizer[T],
     budget_ledger: ExecutionBudgetLedger | None = None,
@@ -381,6 +384,7 @@ async def execute_council_deliberation(
                 strategy=strategy,
                 deliberation_input=deliberation_input,
                 work_port=work_port,
+                concurrent_work_policy=concurrent_work_policy,
                 disagreement=disagreement if round_number > 1 else None,
             )
         else:
@@ -388,6 +392,7 @@ async def execute_council_deliberation(
                 strategy=strategy,
                 deliberation_input=deliberation_input,
                 work_port=work_port,
+                concurrent_work_policy=concurrent_work_policy,
                 disagreement=disagreement if round_number > 1 else None,
             )
         if len(proposals) < minimum_successful:

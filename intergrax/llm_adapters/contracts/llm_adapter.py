@@ -4,11 +4,10 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from dataclasses import dataclass, field
-from collections.abc import Mapping
-from typing import Callable, Sequence, Iterable, Optional, Any, Dict, Union, List, TypeVar, Generic
-
-T = TypeVar("T")
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Optional, Any, Dict, Union, List, TypeVar
 import json
 import re
 import uuid
@@ -24,6 +23,32 @@ from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 
+if TYPE_CHECKING:
+    from intergrax.contracts.dependency_concurrency_admission import (
+        DependencyConcurrencyAdmissionRequest,
+    )
+    from intergrax.contracts.external_operation_cancellation import (
+        ExternalOperationCancellationPort,
+        ExternalOperationStatusPort,
+    )
+    from intergrax.contracts.external_operation_termination import (
+        ExternalOperationCapabilities,
+        ExternalOperationTerminationPort,
+    )
+    from intergrax.llm_adapters._shared.provider_stream_transport_registry import (
+        ProviderStreamTransportRegistry,
+    )
+    from intergrax.runtime.external_operations.external_operation_state_store import (
+        ExternalOperationStateStore,
+    )
+    from intergrax.runtime.external_operations.external_operation_ownership import (
+        ProcessLocalExternalOperationOwner,
+    )
+    from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
+        DependencyAttemptExecutionBoundary,
+    )
+
+T = TypeVar("T")
 
 
 # ============================================================
@@ -58,6 +83,76 @@ class LLMAdapter(ABC):
         self.id = uuid.uuid4().hex
         self.usage = LLMAdapterUsageLog()
         self.call_config = LLMCallConfig()
+        self._provider_dependency_boundary: DependencyAttemptExecutionBoundary | None = (
+            None
+        )
+        self._external_operation_store: ExternalOperationStateStore | None = None
+        self._external_operation_owner: ProcessLocalExternalOperationOwner | None = None
+        self._external_operation_cancellation_port: (
+            ExternalOperationCancellationPort | None
+        ) = None
+        self._external_operation_status_port: ExternalOperationStatusPort | None = None
+        self._external_operation_termination_port: (
+            ExternalOperationTerminationPort | None
+        ) = None
+        self._external_operation_stream_registry: (
+            ProviderStreamTransportRegistry | None
+        ) = None
+        self._external_operation_capabilities: ExternalOperationCapabilities | None = (
+            None
+        )
+
+    def bind_external_operation_ports(
+        self,
+        *,
+        store: ExternalOperationStateStore | None,
+        owner: ProcessLocalExternalOperationOwner | None = None,
+        cancellation_port: ExternalOperationCancellationPort | None = None,
+        status_port: ExternalOperationStatusPort | None = None,
+        termination_port: ExternalOperationTerminationPort | None = None,
+        stream_registry: ProviderStreamTransportRegistry | None = None,
+        capabilities: ExternalOperationCapabilities | None = None,
+    ) -> None:
+        """Inject W4-C durable external operation tracking for provider calls."""
+        from intergrax.runtime.external_operations.external_operation_ownership import (
+            ProcessLocalExternalOperationOwner,
+        )
+
+        self._external_operation_store = store
+        if store is not None and owner is None:
+            owner = ProcessLocalExternalOperationOwner.mint()
+        self._external_operation_owner = owner
+        self._external_operation_cancellation_port = cancellation_port
+        self._external_operation_status_port = status_port
+        self._external_operation_termination_port = termination_port
+        self._external_operation_stream_registry = stream_registry
+        if capabilities is not None:
+            self._external_operation_capabilities = capabilities
+        elif store is not None:
+            from intergrax.llm_adapters._shared.provider_external_operation_capabilities import (
+                external_operation_capabilities_for_provider,
+            )
+
+            self._external_operation_capabilities = (
+                external_operation_capabilities_for_provider(self._provider_slug())
+            )
+
+    def bind_provider_dependency_boundary(
+        self,
+        boundary: DependencyAttemptExecutionBoundary | None,
+    ) -> None:
+        """Inject shared process-local provider dependency boundary (W2-B3)."""
+        from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
+            DependencyAttemptExecutionBoundary,
+        )
+
+        if boundary is not None and not isinstance(
+            boundary, DependencyAttemptExecutionBoundary
+        ):
+            raise TypeError(
+                "boundary must be DependencyAttemptExecutionBoundary or None"
+            )
+        self._provider_dependency_boundary = boundary
 
     def _apply_defaults_call_config(self, defaults: Dict[str, Any]) -> None:
         """Merge ``LLMCallConfig`` fields from adapter constructor kwargs."""
@@ -72,19 +167,164 @@ class LLMAdapter(ABC):
     def _adapter_identity(self) -> tuple[str, str]:
         return self._provider_slug(), str(self.model or "")
 
+    def _provider_dependency_admission_request(
+        self,
+    ) -> DependencyConcurrencyAdmissionRequest:
+        from intergrax.contracts.dependency_concurrency_admission import (
+            DependencyConcurrencyAdmissionRequest,
+            DependencyConcurrencyIdentity,
+            DependencyConcurrencyKind,
+        )
+        from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
+
+        return DependencyConcurrencyAdmissionRequest(
+            dependency=DependencyConcurrencyIdentity(
+                kind=DependencyConcurrencyKind.LLM_PROVIDER,
+                value=self._provider_slug(),
+            ),
+            tenant_id=get_llm_tenant_id(),
+        )
+
+    def _run_physical_provider_attempt(self, fn: Callable[[], T]) -> T:
+        from intergrax.runtime.external_operations.llm_external_operation_attempt import (
+            LlmExternalOperationAttempt,
+            llm_external_operation_identity,
+        )
+
+        ext_op = LlmExternalOperationAttempt(
+            store=self._external_operation_store,
+            owner=self._external_operation_owner,
+            identity=(
+                llm_external_operation_identity(
+                    provider_slug=self._provider_slug(),
+                    model=str(self.model or ""),
+                    call_scope="sync",
+                )
+                if self._external_operation_store is not None
+                else None
+            ),
+            cancellation_port=self._external_operation_cancellation_port,
+            status_port=self._external_operation_status_port,
+            termination_port=self._external_operation_termination_port,
+            capabilities=self._external_operation_capabilities,
+        )
+        ext_op.before_physical_call()
+        boundary = self._provider_dependency_boundary
+        if boundary is None:
+            ext_op.mark_running()
+            try:
+                return fn()
+            except BaseException:
+                ext_op.mark_failed()
+                raise
+            else:
+                ext_op.mark_succeeded()
+        handle = boundary.acquire(self._provider_dependency_admission_request())
+        try:
+            ext_op.mark_running()
+            result = fn()
+        except BaseException:
+            ext_op.mark_failed()
+            boundary.complete_direct(handle)
+            raise
+        ext_op.mark_succeeded()
+        boundary.complete_direct(handle)
+        return result
+
     def _execute(self, fn: Callable[[], T]) -> T:
         """Run a provider SDK call with rate limit, circuit breaker, and optional retry."""
         from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
         from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
 
         check_llm_tenant_quota(get_llm_tenant_id())
+
+        def physical_attempt() -> T:
+            return self._run_physical_provider_attempt(fn)
+
         return execute_with_resilience(
-            fn,
+            physical_attempt,
             provider=self._provider_slug(),
             config=self.call_config,
             retry_fn=lambda f: call_with_retry(f, config=self.call_config),
             tenant_id=get_llm_tenant_id(),
         )
+
+    def _execute_streaming(self, factory: Callable[[], Iterable[T]]) -> Iterable[T]:
+        """Acquire permit per creation attempt; hold through stream consumption."""
+        from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
+        from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
+        from intergrax.llm_adapters._shared.provider_stream_admission import (
+            stream_factory_with_admission,
+            stream_with_external_operation_lifecycle,
+        )
+        from intergrax.runtime.external_operations.llm_external_operation_attempt import (
+            LlmExternalOperationAttempt,
+            llm_external_operation_identity,
+        )
+
+        check_llm_tenant_quota(get_llm_tenant_id())
+
+        def physical_attempt() -> Iterable[T]:
+            ext_op = LlmExternalOperationAttempt(
+                store=self._external_operation_store,
+                owner=self._external_operation_owner,
+                identity=(
+                    llm_external_operation_identity(
+                        provider_slug=self._provider_slug(),
+                        model=str(self.model or ""),
+                        call_scope="stream",
+                    )
+                    if self._external_operation_store is not None
+                    else None
+                ),
+                cancellation_port=self._external_operation_cancellation_port,
+                status_port=self._external_operation_status_port,
+                termination_port=self._external_operation_termination_port,
+                capabilities=self._external_operation_capabilities,
+            )
+            ext_op.before_physical_call()
+            boundary = self._provider_dependency_boundary
+            if boundary is None:
+                ext_op.mark_running()
+                return stream_with_external_operation_lifecycle(
+                    ext_op=ext_op,
+                    factory=factory,
+                    stream_registry=self._external_operation_stream_registry,
+                )
+            handle = boundary.acquire(self._provider_dependency_admission_request())
+            ext_op.mark_running()
+            return stream_with_external_operation_lifecycle(
+                ext_op=ext_op,
+                factory=lambda: stream_factory_with_admission(
+                    boundary=boundary,
+                    handle=handle,
+                    factory=factory,
+                ),
+                stream_registry=self._external_operation_stream_registry,
+            )
+
+        return execute_with_resilience(
+            physical_attempt,
+            provider=self._provider_slug(),
+            config=self.call_config,
+            retry_fn=lambda f: call_with_retry(f, config=self.call_config),
+            tenant_id=get_llm_tenant_id(),
+        )
+
+    @contextmanager
+    def _provider_dependency_attempt(self) -> Iterator[None]:
+        """Hold one provider permit for a multi-step physical attempt (e.g. context-managed stream)."""
+        boundary = self._provider_dependency_boundary
+        if boundary is None:
+            yield
+            return
+        handle = boundary.acquire(self._provider_dependency_admission_request())
+        try:
+            yield
+        except BaseException:
+            boundary.complete_direct(handle)
+            raise
+        boundary.complete_direct(handle)
     
     
     def validate(self) -> None:

@@ -110,7 +110,13 @@ class DummyState:
         self._context = type(
             "Ctx",
             (),
-            {"config": type("Cfg", (), {"policy_bundle": policy_bundle})()},
+            {
+                "config": type(
+                    "Cfg",
+                    (),
+                    {"policy_bundle": policy_bundle, "production_mode": False},
+                )()
+            },
         )()
 
     @property
@@ -170,10 +176,22 @@ class SubmitBoundaryProbeInvoker(RuntimeToolInvoker):
         super().__init__(*args, **kwargs)
         self.boundary_before_submit: bool | None = None
 
-    def _execute_once(self, contract, request, *, boundary=None):
-        if boundary is not None:
-            self.boundary_before_submit = boundary.may_have_started
-        return super()._execute_once(contract, request, boundary=boundary)
+    def _execute_once(
+        self,
+        state,
+        contract,
+        request,
+        *,
+        effect_boundary=None,
+    ):
+        if effect_boundary is not None:
+            self.boundary_before_submit = effect_boundary.may_have_started
+        return super()._execute_once(
+            state,
+            contract,
+            request,
+            effect_boundary=effect_boundary,
+        )
 
 
 class SlowCountingExecutor:
@@ -433,17 +451,6 @@ def test_side_effect_tool_explicit_retry_safe_retries() -> None:
 
 
 def test_side_effect_timeout_marks_uncertain_and_blocks_replay() -> None:
-    contract = ToolContract(
-        tool_id="slow_tool",
-        name="slow_tool",
-        description="slow",
-        input_schema=ValueInput,
-        output_schema=ValueOutput,
-        error_mapping={},
-        side_effects=True,
-        timeout_ms=50,
-    )
-
     class SlowExecutor:
         def execute(self, request: ToolExecutionRequest[BaseModel]) -> BaseModel:
             time.sleep(0.2)

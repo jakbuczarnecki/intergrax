@@ -1,6 +1,8 @@
-"""Unit tests for PlatformVectorSearchAdapter composition."""
+"""Unit tests for legacy PlatformVectorSearchAdapter wrapper."""
 
 from __future__ import annotations
+
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -29,8 +31,20 @@ from platform_proofs.scenarios.verified_product_identification.integrations.embe
 from platform_proofs.scenarios.verified_product_identification.integrations.search_store.platform_vector_search_adapter import (
     PlatformVectorSearchAdapter,
 )
+from platform_proofs.scenarios.verified_product_identification.integrations.search_store.qdrant_vector_candidate_search_adapter import (
+    QdrantVectorCandidateSearchAdapter,
+)
+from tests.unit.platform_proofs.scenarios.verified_product_identification.test_qdrant_vector_candidate_search import (
+    _compatibility_gate,
+)
 
 pytestmark = pytest.mark.unit
+
+_REPO_ROOT = Path(__file__).resolve().parents[5]
+_LEGACY_ADAPTER_PATH = (
+    _REPO_ROOT
+    / "platform_proofs/scenarios/verified_product_identification/integrations/search_store/platform_vector_search_adapter.py"
+)
 
 
 class _FakeEmbeddingProvider(EmbeddingProvider):
@@ -97,6 +111,9 @@ class _FakeVectorStore:
     def delete(self, ids, *, scope: VectorStoreScope) -> None:
         return None
 
+    def count(self, *, scope: VectorStoreScope) -> int:
+        return 1
+
 
 def _configuration() -> VpiEmbeddingConfiguration:
     return VpiEmbeddingConfiguration(
@@ -111,7 +128,7 @@ def _execution_configuration() -> VpiEmbeddingProviderExecutionConfiguration:
     )
 
 
-def test_platform_vector_search_adapter_embeds_query_then_queries_store() -> None:
+def test_legacy_platform_vector_search_adapter_delegates_to_canonical_adapter() -> None:
     ensure_embedding_provider_integrations_registered()
     provider = _FakeEmbeddingProvider()
     vector_store = _FakeVectorStore()
@@ -120,14 +137,22 @@ def test_platform_vector_search_adapter_embeds_query_then_queries_store() -> Non
         provider=provider,
         execution_configuration=_execution_configuration(),
     )
-    adapter = PlatformVectorSearchAdapter(
-        _vector_store=vector_store,
-        _scope=VectorStoreScope(tenant_id="default"),
-        _embedding=embedding,
-        _catalog_id="wdc-v2-selected",
+    delegate = QdrantVectorCandidateSearchAdapter.from_dependencies(
+        vector_store=vector_store,
+        scope=VectorStoreScope(tenant_id="default"),
+        embedding=embedding,
+        embedding_configuration=_configuration(),
+        catalog_scope_id="wdc-v2-selected",
+        compatibility_gate=_compatibility_gate(),
     )
+    adapter = PlatformVectorSearchAdapter(_delegate=delegate)
     result = adapter.search(VectorSearchQuery(query_text="relay 24V", limit=3))
     assert provider.calls == [["relay 24V"]]
     assert vector_store.last_query_vector is not None
     assert result.candidates[0].offer_id.value == "offer-1"
     assert result.candidates[0].channel_score.cosine_similarity == 0.99
+
+
+def test_legacy_platform_vector_search_adapter_is_marked_reference_only() -> None:
+    source = _LEGACY_ADAPTER_PATH.read_text(encoding="utf-8")
+    assert "LEGACY / REFERENCE ONLY" in source

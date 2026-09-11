@@ -13,6 +13,7 @@ from intergrax.agents.persistence.declarative_tool_executor import (
 )
 from intergrax.agents.persistence.idempotency_keys import build_default_idempotency_key
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
+from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.contracts.side_effect import SideEffectKind, SideEffectStatus
 from intergrax.tools.tool_execution_profile import (
     ToolExecutionProfile,
@@ -122,6 +123,7 @@ async def test_compensation_enqueue_persists_when_queue_configured_without_invok
         step_index=0,
         compensation_queue=queue,
         run_id="run-1",
+        task_id=str(mint_task_id()),
         tenant_id="tenant-a",
         agent_id="agent-a",
     )

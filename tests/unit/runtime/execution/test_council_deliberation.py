@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
 from intergrax.contracts.council_strategy import (
     CouncilDeadlockReasonCode,
     CouncilDeliberationInput,
@@ -107,6 +108,8 @@ from intergrax.runtime.execution.request import ExecutionRequest
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_COUNCIL_TEST_CONCURRENT_WORK_POLICY = ConcurrentExecutionWorkPolicy(max_concurrency=3)
 
 _COUNCIL_DELIBERATION_PATH = (
     Path(__file__).resolve().parents[4]
@@ -322,6 +325,45 @@ class RecordingWorkPort(ExecutionWorkPort[tuple[ChatMessage, ...], CouncilPayloa
         raise ValueError("unknown inference profile in recording work port")
 
 
+class ConcurrencyObservingCouncilWorkPort(
+    ExecutionWorkPort[tuple[ChatMessage, ...], CouncilPayload, CouncilPayload],
+):
+    def __init__(self, *, responses: dict[str, CouncilPayload]) -> None:
+        self._responses = responses
+        self._active = 0
+        self.max_observed = 0
+        self._lock = asyncio.Lock()
+
+    async def execute(
+        self,
+        request: ExecutionRequest[tuple[ChatMessage, ...], CouncilPayload],
+    ) -> CouncilPayload:
+        participant_id = self._infer_participant_id(request)
+        async with self._lock:
+            self._active += 1
+            if self._active > self.max_observed:
+                self.max_observed = self._active
+        try:
+            await asyncio.sleep(0.02)
+            return self._responses[participant_id]
+        finally:
+            async with self._lock:
+                self._active -= 1
+
+    def _infer_participant_id(
+        self,
+        request: ExecutionRequest[tuple[ChatMessage, ...], CouncilPayload],
+    ) -> str:
+        for participant_id, profile in (
+            ("participant-a", "profile-a"),
+            ("participant-b", "profile-b"),
+            ("participant-c", "profile-c"),
+        ):
+            if request.inference_profile_id == profile:
+                return participant_id
+        raise ValueError("unknown inference profile in concurrency observing work port")
+
+
 class BarrierRecordingWorkPort(
     ExecutionWorkPort[tuple[ChatMessage, ...], CouncilPayload, CouncilPayload],
 ):
@@ -487,6 +529,7 @@ async def test_ds_council_01_two_participants_produce_two_proposals() -> None:
         strategy=strategy,
         deliberation_input=deliberation_input,
         work_port=work_port,
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
     )
     assert len(proposals) == 2
     branches = {proposal.proposal_ref.lineage_ref.branch_id for proposal in proposals}
@@ -509,6 +552,7 @@ async def test_ds_council_01_three_participants_produce_three_proposals() -> Non
         strategy=strategy,
         deliberation_input=deliberation_input,
         work_port=work_port,
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
     )
     assert len(proposals) == 3
 
@@ -527,6 +571,7 @@ async def test_ds_council_01_initial_proposals_are_independent() -> None:
         strategy=strategy,
         deliberation_input=deliberation_input,
         work_port=work_port,
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
     )
     a_blob = _message_blob(work_port.captured_messages["participant-a"])
     b_blob = _message_blob(work_port.captured_messages["participant-b"])
@@ -549,6 +594,7 @@ async def test_ds_council_02_disagreement_references_all_proposals() -> None:
         strategy=strategy,
         deliberation_input=deliberation_input,
         work_port=work_port,
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
     )
     disagreement = analyzer.analyze(proposals=proposals)
     assert {ref.lineage_ref.branch_id for ref in disagreement.proposal_refs} == {
@@ -571,6 +617,7 @@ async def test_ds_council_03_synthesis_candidate_has_parent_lineage() -> None:
         strategy=strategy,
         deliberation_input=deliberation_input,
         work_port=work_port,
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
         disagreement_analyzer=StructuredDisagreementAnalyzer(),
         synthesizer=ConfigurableSynthesizer(SynthesizerBehavior()),
     )
@@ -597,6 +644,7 @@ async def test_ds_council_03_candidate_feeds_verification_pipeline() -> None:
         strategy=strategy,
         deliberation_input=deliberation_input,
         work_port=work_port,
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
         disagreement_analyzer=StructuredDisagreementAnalyzer(),
         synthesizer=ConfigurableSynthesizer(SynthesizerBehavior()),
     )
@@ -620,6 +668,7 @@ async def test_ds_council_04_max_rounds_one_exactly_one_synthesis_attempt() -> N
                 "participant-b": CouncilPayload(recommendation="contain"),
             },
         ),
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
         disagreement_analyzer=StructuredDisagreementAnalyzer(),
         synthesizer=synthesizer,
     )
@@ -641,6 +690,7 @@ async def test_ds_council_04_max_rounds_three_never_exceeds_three() -> None:
                 "participant-b": CouncilPayload(recommendation="contain"),
             },
         ),
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
         disagreement_analyzer=StructuredDisagreementAnalyzer(),
         synthesizer=ConfigurableSynthesizer(behavior),
     )
@@ -662,6 +712,7 @@ async def test_ds_council_04_execution_budget_exhaustion_stops_council() -> None
                 "participant-b": CouncilPayload(recommendation="contain"),
             },
         ),
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
         disagreement_analyzer=StructuredDisagreementAnalyzer(),
         synthesizer=ConfigurableSynthesizer(SynthesizerBehavior(unresolved_rounds=1)),
         budget_ledger=ledger,
@@ -682,6 +733,7 @@ async def test_ds_council_05_persistent_disagreement_deadlock() -> None:
                 "participant-b": CouncilPayload(recommendation="contain"),
             },
         ),
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
         disagreement_analyzer=StructuredDisagreementAnalyzer(),
         synthesizer=ConfigurableSynthesizer(SynthesizerBehavior(unresolved_rounds=2)),
     )
@@ -706,6 +758,7 @@ async def test_ds_council_participant_failure_three_configured_two_fail() -> Non
             },
             fail_participants=frozenset({"participant-c"}),
         ),
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
         disagreement_analyzer=StructuredDisagreementAnalyzer(),
         synthesizer=ConfigurableSynthesizer(SynthesizerBehavior()),
         resilient_participant_failures=True,
@@ -727,12 +780,34 @@ async def test_ds_council_participant_failure_two_failures_deadlock() -> None:
             },
             fail_participants=frozenset({"participant-b", "participant-c"}),
         ),
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
         disagreement_analyzer=StructuredDisagreementAnalyzer(),
         synthesizer=ConfigurableSynthesizer(SynthesizerBehavior()),
         resilient_participant_failures=True,
     )
     assert result.disposition == CouncilResolutionDisposition.DEADLOCK
     assert result.deadlock_reason == CouncilDeadlockReasonCode.INSUFFICIENT_PROPOSALS
+
+
+@pytest.mark.asyncio
+async def test_council_parallel_proposals_respect_explicit_concurrent_work_policy() -> None:
+    strategy = _three_participant_strategy()
+    deliberation_input = _deliberation_input()
+    work_port = ConcurrencyObservingCouncilWorkPort(
+        responses={
+            "participant-a": CouncilPayload(recommendation="a"),
+            "participant-b": CouncilPayload(recommendation="b"),
+            "participant-c": CouncilPayload(recommendation="c"),
+        },
+    )
+    policy = ConcurrentExecutionWorkPolicy(max_concurrency=2)
+    await execute_parallel_participant_proposals(
+        strategy=strategy,
+        deliberation_input=deliberation_input,
+        work_port=work_port,
+        concurrent_work_policy=policy,
+    )
+    assert work_port.max_observed <= 2
 
 
 @pytest.mark.asyncio
@@ -755,6 +830,7 @@ async def test_ds_council_resilient_all_participants_start_before_barrier() -> N
             strategy=strategy,
             deliberation_input=deliberation_input,
             work_port=work_port,
+            concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
         ),
     )
     await _wait_until_participants_started(
@@ -787,6 +863,7 @@ async def test_ds_council_resilient_parallel_failure_continues_with_barrier() ->
             strategy=strategy,
             deliberation_input=deliberation_input,
             work_port=work_port,
+            concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
             disagreement_analyzer=StructuredDisagreementAnalyzer(),
             synthesizer=ConfigurableSynthesizer(SynthesizerBehavior()),
             resilient_participant_failures=True,
@@ -832,6 +909,7 @@ async def test_ds_council_resilient_out_of_order_completion_preserves_binding_or
             strategy=strategy,
             deliberation_input=deliberation_input,
             work_port=work_port,
+            concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
         ),
     )
     await _wait_until_participants_started(
@@ -909,6 +987,7 @@ async def test_ds_council_trust_boundary_for_hostile_proposal_content() -> None:
                 "participant-b": CouncilPayload(recommendation="contain"),
             },
         ),
+        concurrent_work_policy=_COUNCIL_TEST_CONCURRENT_WORK_POLICY,
     )
     disagreement = StructuredDisagreementAnalyzer().analyze(proposals=proposals)
     synthesizer.synthesize(

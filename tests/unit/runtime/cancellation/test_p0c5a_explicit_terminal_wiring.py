@@ -78,7 +78,12 @@ class _FakeTerminalCapableCheckpointStore(TaskCheckpointPersistence):
     def list_paused(self) -> list[TaskCheckpoint]:
         return []
 
-    def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
+    def save(
+        self,
+        checkpoint: TaskCheckpoint,
+        *,
+        expected_revision: int | None = None,
+    ) -> TaskCheckpoint:
         return checkpoint
 
     def get_terminal_record(self, *, tenant_id: str, task_id: str) -> ExecutionTerminalRecord | None:
@@ -110,7 +115,12 @@ class _FakeCheckpointStoreWithoutTerminalCapability(TaskCheckpointPersistence):
     def list_paused(self) -> list[TaskCheckpoint]:
         return []
 
-    def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
+    def save(
+        self,
+        checkpoint: TaskCheckpoint,
+        *,
+        expected_revision: int | None = None,
+    ) -> TaskCheckpoint:
         return checkpoint
 
 

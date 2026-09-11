@@ -61,19 +61,19 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     require_active_execution_id,
 )
-from tests.unit.agent_distribution.test_bounded_multi_agent_fanout import (
-    _build_fan_out_service,
-    build_fan_out_harness,
+from testing_support.agent_distribution.delegated_subtask_qualification_harness import (
+    OcrQualificationRequest as OcrRequest,
+    OcrQualificationResult as OcrResult,
+    build_delegated_subtask_qualification_harness as build_delegated_harness,
 )
-from tests.unit.agent_distribution.test_delegated_subtasks import (
-    OcrRequest,
-    OcrResult,
-    _APP,
-    _ENV,
-    build_delegated_harness,
+from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
+    build_bounded_multi_agent_fan_out_qualification_service as _build_fan_out_service,
+    build_fan_out_delegated_subtask_qualification_harness as build_fan_out_harness,
+    build_multi_agent_coordination_qualification_service as _build_coordination_service,
 )
-from tests.unit.agent_distribution.test_multi_agent_coordination import (
-    _build_coordination_service,
+from testing_support.agent_distribution.task_scoped_agent_qualification_harness import (
+    QUALIFICATION_APPLICATION_ID as _APP,
+    QUALIFICATION_ENVIRONMENT_ID as _ENV,
 )
 
 
@@ -103,9 +103,7 @@ def decision_identity(
     version: DecisionVersion | None = None,
 ) -> DecisionIdentity:
     resolved_decision_id = (
-        mint_decision_id()
-        if decision_id is None
-        else validate_decision_id(decision_id)
+        mint_decision_id() if decision_id is None else validate_decision_id(decision_id)
     )
     return DecisionIdentity(
         decision_id=resolved_decision_id,
@@ -121,7 +119,9 @@ def decision_identity(
     )
 
 
-def decision_capability(capability_id: str = "document.ocr") -> DecisionCapabilityRequirement:
+def decision_capability(
+    capability_id: str = "document.ocr",
+) -> DecisionCapabilityRequirement:
     return DecisionCapabilityRequirement(
         capability_id=validate_decision_capability_id(capability_id),
     )

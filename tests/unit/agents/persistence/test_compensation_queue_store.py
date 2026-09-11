@@ -9,6 +9,7 @@ from intergrax.agents.persistence.compensation_queue_store import (
     InMemoryCompensationQueueStore,
     SQLiteCompensationQueueStore,
 )
+from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.contracts.side_effect import CompensationRequest
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
@@ -18,6 +19,7 @@ def _sample_job(*, tenant_id: str = "tenant-a") -> CompensationJob:
     key = build_compensation_idempotency_key("acp:orig")
     return CompensationJob(
         run_id="run-1",
+        task_id=str(mint_task_id()),
         tenant_id=tenant_id,
         agent_id="agent-a",
         step_index=0,

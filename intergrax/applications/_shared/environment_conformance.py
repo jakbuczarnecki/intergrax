@@ -125,9 +125,12 @@ class ProfileInvariantValidator:
         self._fail = fail_on_violation
 
     def validate(self, env: ApplicationEnvironmentProfile) -> list[str]:
+        from intergrax.applications._shared.host_execution_capacity_policy import (
+            strict_host_execution_capacity_violations,
+        )
         from intergrax.integrations.contracts.base import IntegrationCategory
 
-        violations: list[str] = []
+        violations: list[str] = list(strict_host_execution_capacity_violations(env))
         if env.context_profile.enable_rag:
             vector_slug = env.integration_profile.slug_for_category(IntegrationCategory.VECTOR_STORE)
             if not vector_slug:

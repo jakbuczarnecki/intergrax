@@ -104,6 +104,9 @@ class _FaultyRuntimeEventPersistence(RuntimeEventPersistence):
     def list_for_task(self, task_id, *, tenant_id: str, limit: int = 1000):
         raise AssertionError("list_for_task must not be called")
 
+    def list_positioned_for_task_grouped_by_run(self, task_id, *, tenant_id: str, limit: int = 1000):
+        raise AssertionError("list_positioned_for_task_grouped_by_run must not be called")
+
     def list_positioned_for_run(self, run_id, *, tenant_id: str, limit: int = 1000):
         raise AssertionError("list_positioned_for_run must not be called")
 

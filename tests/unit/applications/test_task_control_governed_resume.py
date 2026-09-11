@@ -233,7 +233,12 @@ class _StaleAfterAllowCheckpointStore(TaskCheckpointPersistence):
     def list_paused(self) -> list[TaskCheckpoint]:
         return []
 
-    def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
+    def save(
+        self,
+        checkpoint: TaskCheckpoint,
+        *,
+        expected_revision: int | None = None,
+    ) -> TaskCheckpoint:
         return checkpoint
 
 

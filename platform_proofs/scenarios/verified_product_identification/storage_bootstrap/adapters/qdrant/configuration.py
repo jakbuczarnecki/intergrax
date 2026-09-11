@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from intergrax.integrations.providers.vector_store.qdrant.config import (
     QdrantIntegrationConfig,
 )
+from platform_proofs.scenarios.verified_product_identification.application.config.embedding_configuration import (
+    VpiEmbeddingConfiguration,
+)
 
 CANONICAL_EMBEDDING_PROVIDER = "hf"
 CANONICAL_EMBEDDING_MODEL = "BAAI/bge-m3"
@@ -36,6 +39,24 @@ class ExpectedVectorIdentity:
             revision=CANONICAL_EMBEDDING_REVISION,
             dimension=CANONICAL_EMBEDDING_DIMENSION,
         )
+
+
+def expected_vector_identity_from_embedding_configuration(
+    configuration: VpiEmbeddingConfiguration,
+    *,
+    revision: str,
+) -> ExpectedVectorIdentity:
+    model = configuration.model
+    if model is None:
+        raise ValueError("embedding model is required")
+    if not revision.strip():
+        raise ValueError("revision must be non-empty")
+    return ExpectedVectorIdentity(
+        provider=configuration.provider,
+        model=model,
+        revision=revision.strip(),
+        dimension=configuration.expected_dimension,
+    )
 
 
 @dataclass(frozen=True, slots=True)

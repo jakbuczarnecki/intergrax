@@ -1,11 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Decision durable recovery helpers hosted by canonical Execution (DS-REC-02/03)."""
+"""Decision durable recovery helpers hosted by canonical Execution (DS-REC-02/03).
+
+Recovery start admission (W3-C ``DECISION_DURABLE``) is wired via
+``resume_decision_from_durable_state_with_recovery_admission`` in
+``intergrax.runtime.resilience.decision_durable_recovery_handoff`` — not execution
+capacity admission.
+"""
 
 from __future__ import annotations
 
-from typing import Generic, TypeVar
+from typing import TypeVar
 
 from intergrax.contracts.decision_checkpoint import (
     DecisionCheckpointState,
@@ -24,7 +30,6 @@ from intergrax.contracts.decision_lifecycle import (
     transition_decision_lifecycle,
 )
 from intergrax.contracts.decision_revision import (
-    DecisionRevisionCheckpointState,
     DecisionRevisionPolicy,
     DecisionRevisionState,
     revision_policy_from_checkpoint,
@@ -86,19 +91,35 @@ def _advance_lifecycle_to_terminal(
     if stage is DecisionLifecycleStage.FINALIZATION:
         return transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
     if stage is DecisionLifecycleStage.RESOLUTION:
-        lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.FINALIZATION)
+        lifecycle = transition_decision_lifecycle(
+            lifecycle, DecisionLifecycleStage.FINALIZATION
+        )
         return transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
     if stage is DecisionLifecycleStage.REVISION:
-        lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.RESOLUTION)
-        lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.FINALIZATION)
+        lifecycle = transition_decision_lifecycle(
+            lifecycle, DecisionLifecycleStage.RESOLUTION
+        )
+        lifecycle = transition_decision_lifecycle(
+            lifecycle, DecisionLifecycleStage.FINALIZATION
+        )
         return transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
     if stage is DecisionLifecycleStage.VERIFICATION:
-        lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.RESOLUTION)
-        lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.FINALIZATION)
+        lifecycle = transition_decision_lifecycle(
+            lifecycle, DecisionLifecycleStage.RESOLUTION
+        )
+        lifecycle = transition_decision_lifecycle(
+            lifecycle, DecisionLifecycleStage.FINALIZATION
+        )
         return transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
-    lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.VERIFICATION)
-    lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.RESOLUTION)
-    lifecycle = transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.FINALIZATION)
+    lifecycle = transition_decision_lifecycle(
+        lifecycle, DecisionLifecycleStage.VERIFICATION
+    )
+    lifecycle = transition_decision_lifecycle(
+        lifecycle, DecisionLifecycleStage.RESOLUTION
+    )
+    lifecycle = transition_decision_lifecycle(
+        lifecycle, DecisionLifecycleStage.FINALIZATION
+    )
     return transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
 
 
@@ -146,14 +167,14 @@ def load_resumable_decision_checkpoint(
     )
 
 
-def resume_decision_from_durable_state(
+def _resume_decision_from_durable_state_impl(
     *,
     checkpoint_persistence: DecisionCheckpointPersistence[T],
     finalization_persistence: DecisionFinalizationPersistence[T],
     key: DecisionFinalizationKey,
     runtime_revision_policy: DecisionRevisionPolicy | None = None,
 ) -> DecisionCheckpointState[T] | None:
-    """Resume one decision from durable checkpoint and finalization stores."""
+    """Load and reconcile durable checkpoint + finalization (no recovery admission)."""
     durable_guard = load_decision_finalization_guard_state(
         finalization_persistence,
         key=key,
@@ -183,6 +204,27 @@ def resume_decision_from_durable_state(
             durable_guard=durable_guard,
         )
     return checkpoint
+
+
+def resume_decision_from_durable_state(
+    *,
+    checkpoint_persistence: DecisionCheckpointPersistence[T],
+    finalization_persistence: DecisionFinalizationPersistence[T],
+    key: DecisionFinalizationKey,
+    runtime_revision_policy: DecisionRevisionPolicy | None = None,
+) -> DecisionCheckpointState[T] | None:
+    """Compatibility wrapper — unit tests only.
+
+    Production ``DECISION_DURABLE`` recovery must use
+    ``resume_decision_from_durable_state_with_recovery_admission`` (handoff module)
+    with ``RecoveryAdmissionPort`` wired.
+    """
+    return _resume_decision_from_durable_state_impl(
+        checkpoint_persistence=checkpoint_persistence,
+        finalization_persistence=finalization_persistence,
+        key=key,
+        runtime_revision_policy=runtime_revision_policy,
+    )
 
 
 def persist_terminal_decision_state(

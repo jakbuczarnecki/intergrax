@@ -1,0 +1,256 @@
+# Enterprise Execution Scale & Resilience — Architecture (P0 baseline)
+
+**Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1 FINAL (qualified)** — process-local root admission (W1-A), explicit concurrent work policy (W1-B), absolute global deadline into R1 retry (W1-C). Qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md). **W2 FINAL (qualified, process-local)** — dependency admission bulkheads (B1–B3) + retry budget / provider rate limit / LLM circuit composition (C); final matrix: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_FINAL_QUALIFICATION.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_FINAL_QUALIFICATION.md). **W2-A** inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md); **W2-ADR (Accepted)** — [`ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md`](ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md); **W2-B1** `LocalDependencyConcurrencyAdmission`; **W2-B2** `DependencyAttemptExecutionBoundary` on `RuntimeToolInvoker`; **W2-B3** provider boundary on `LLMAdapter` seams; **W2-C** `execute_with_resilience` order: tenant quota (adapter) → retry budget → rate limit → circuit breaker → physical attempt (admission inside `_run_physical_provider_attempt`).
+**W4-C FINAL (qualified):** distributed external operation cancellation — stable identity, intent vs physical planes, durable CAS, permit-after-terminal, recovery gate (`prepare_external_operations_for_recovery`). Qualification: `tests/unit/runtime/architecture/test_enterprise_scale_resilience_w4_c_distributed_cancellation_qualification.py`.
+**Baseline:** `origin/development` at audit start.  
+**Scope:** Execution plane capacity, concurrency ownership, failure domains, process-local vs distributed semantics.
+
+## Canonical execution topology
+
+| Layer | Owner | Scale note |
+|-------|--------|------------|
+| Root lifecycle | `ExecutionRuntime` (`intergrax/runtime/execution/runtime.py`) | Per-request context binding; optional `ExecutionCapacityAdmissionPort` (W1-A) for bounded process-local root slots |
+| Strategy / graph | `NexusLoop` → `GraphExecutor` | In-process asyncio parallelism; optional caps on executor |
+| Child work | `ChildExecutionRunner` + `ExecutionBoundary` | One child per spawn; budget via shared ledger |
+| Fan-out / fan-in | `bounded_multi_agent_fanout` + `CanonicalFanOutOrchestrationAdapter` | Hard platform bounds on item count and concurrency |
+| Long-running / resume | `LongRunningCoordinator`, `SQLiteTaskCheckpointStore`, `LongRunningScheduler` | Durable store + lease claims; scheduler poll is process-local |
+| Attempt retry (R1) | `ExecutionAttemptRetryService` + policy | Bounded attempts; backoff/jitter in `compute_backoff_delay` |
+| Partial recovery (R3) | `FanOutPartialRecoveryService` | Slot-level; reuses fan-out bounds and Nexus orchestration path |
+
+Nexus remains the canonical topology scheduler. P0 does not propose alternate orchestration layers.
+
+## Concurrency ownership model
+
+### Process-local (default)
+
+Most execution-plane limits are **per host process**:
+
+- `asyncio.Semaphore` for `max_parallel_nodes` / `max_inflight_nodes` on `GraphExecutor` (instance-scoped `_inflight_semaphore`).
+- `ActiveTaskRegistry` (`_LOCK`, in-memory maps) — mid-run cancel lookup; not cross-worker.
+- `IntegrationCircuitBreaker` / registry — in-process state per integration slug.
+- `DeclarativeToolInvoker._execution_pool` — `ThreadPoolExecutor()` with no explicit `max_workers` (stdlib default **bounded** worker concurrency); Integrax does not define a platform-owned capacity/admission contract; overload can accumulate pending work in the executor's internal queue; one **shared** pool per invoker across tool calls (noisy-neighbor risk between tools).
+- `ConcurrentExecutionWork` — execution-owned bounded worker pool via required `ConcurrentExecutionWorkPolicy` (no platform default; independent from fan-out 64; see W1-B qualification).
+
+### Cross-process / durable
+
+- **Scheduler claims:** `SQLiteTaskCheckpointStore.claim_due` / `complete_claim` — lease + fence for scheduled resume (not a global execution semaphore).
+- **Checkpoint revision CAS:** `TaskCheckpointPersistence` logical revision — stale writer protection (R2-H2).
+- **Attempt lifecycle CAS:** `AttemptLifecycleService` + store `compare_and_swap`.
+- **Idempotency ledger claims:** `sqlite_idempotency_store.claim` — per-key lease.
+
+These mechanisms coordinate **durability and resume**, not fair sharing of CPU across tenants.
+
+## Bounded vs unbounded parallelism
+
+### Explicit platform bounds (fan-out)
+
+`MAX_FAN_OUT_ITEMS = 256`, `MAX_FAN_OUT_CONCURRENCY = 64` in `bounded_multi_agent_fanout.py`; enforced by `validate_fan_out_request`.
+
+Orchestration concurrency resolves as `min(platform_limit, submission_limit)` when either is set (`resolve_effective_orchestration_concurrency`). When **both** GraphExecutor caps and policy limits are `None`, parallel batches run **unbounded** within the batch (`asyncio.gather` on full batch).
+
+Host profile contract allows `max_parallel_nodes` / `max_inflight_nodes` up to 256 (`host_profile_slices.py` / environment `OrchestrationProfile`). Application wiring often sets deployment defaults (e.g. product template 8/8, scaling ceiling patcher fallback 8) — **W0:** `ExecutionMode.STRICT` requires both caps explicitly set before Nexus composition (`host_execution_capacity_policy.py`); `None` is not a safe production default.
+
+### Child execution scale
+
+Each child: new `ExecutionId`, ledger grant, boundary invoke. No global counter on child count; practical limits = parent budget, graph depth (`max_delegation_depth` on executor), and host resources. At 1000+ children, memory grows with lineage/checkpoint snapshots and in-flight asyncio tasks if orchestration runs wide batches without caps.
+
+## Backpressure
+
+| Boundary | Behavior | Evidence |
+|----------|----------|----------|
+| Graph parallel batch | Optional semaphore wait; `GRAPH_BACKPRESSURE` event when inflight semaphore locked | `GraphExecutor._execute_parallel_batch`, `_emit_backpressure` |
+| Fan-out submission | Reject at validation (invalid request) | `validate_fan_out_request` |
+| Root execution admission | Optional typed port on `ExecutionRuntime` (`ExecutionCapacityAdmissionPort`); default `None` preserves legacy callers | `execution_capacity_admission.py` + `local_execution_capacity_admission.py` |
+| Recovery start admission (W3-C) | Optional `RecoveryAdmissionPort` on TASK_RESUME / partial topology / **DECISION_DURABLE** entry; start-only permit; orthogonal to W1 | `recovery_admission.py` + `local_recovery_admission.py` + `decision_durable_recovery_handoff` |
+| Tool invoker | Bounded default workers; implicit pending-work queue (no admission shed); blocking wait on shared pool | `invoker.py` `_execution_pool` |
+| Event bus | `create_task` on publish | `event_bus.py` |
+
+Enterprise gap: overload without configured caps tends toward **unbounded task creation** and implicit OS/thread-pool queues rather than reject/shed at execution admission.
+
+## Failure domains (architectural)
+
+| Domain | Isolation | Notes |
+|--------|-----------|-------|
+| Integration provider | Per-slug in-process circuit breaker | Opens after threshold; not coordinated across workers |
+| Tenant | Data partition keys in stores; lineage admission scope | No global per-tenant execution semaphore |
+| Tool | Scope policy on invoker | Shared thread pool across tools |
+| Nexus graph | Per-task graph state | Global inflight cap optional per executor instance |
+| Checkpoint DB | SQLite file lock / connection per operation | Hot tenant/task streams contend on same DB file |
+| Long-running scheduler | Single poll loop per scheduler instance | `claim_due` limit parameter bounds batch claim size |
+
+## Retry vs circuit breaker
+
+- **R1 retry:** exponential/fixed/jittered backoff; `max_attempts`; eligibility includes `global_deadline_monotonic` when populated on `ExecutionRetryEligibilityRequest`.
+- **Circuit breaker:** integration/RAG vector paths; fails fast when open — orthogonal to attempt retry budget.
+
+Retry storm risk: many failures with aligned backoff and **no per-provider retry concurrency cap** can amplify load on a shared provider. Jitter exists in backoff config but default resilience policies may use zero backoff in some Nexus presets (`execution_mode_defaults.py`).
+
+## Cancellation
+
+Cooperative: `CancellationCoordinator` metadata flag; graph marks pending nodes skipped. Propagation depends on call sites checking metadata between batches/nodes. Thread-pool tool work and in-flight provider HTTP may continue until completion unless the delegate respects cancellation (orphan-work risk under cancel).
+
+### Cancellation ownership model (W4-A)
+
+| Resource | Owner | Cleanup |
+|----------|-------|---------|
+| Execution permit | `ExecutionRuntime` | `finally` → `capacity_permit.release()` |
+| Dependency permit | `DependencyAttemptExecutionBoundary` | Worker terminal (detached or attached) → async release |
+| Recovery permit | Recovery caller (`resume_decision_from_durable_state_with_recovery_admission`, partial recovery) | `finally` → `recovery_permit.release()` |
+| Stream resource | LLM adapter / HTTP delegate | Generator close / adapter `finally` |
+| Retry sleep (sync) | Retry loop (`cooperative_delay_seconds`) | `should_abort` / task metadata |
+| Retry sleep (async) | `PolicyEnforcer`, admission wait | `asyncio` cancellation + shielded permit release |
+| Fan-out worker tasks | `concurrent_execution_work` | Parent cancel → cancel workers + `gather` |
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_A_CANCELLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_A_CANCELLATION_INVENTORY.md).
+
+### Distributed external operation lifecycle (W4-C FINAL)
+
+**Status:** contract frozen — ports + durable CAS + qualification matrix; no central lifecycle controller or cancellation manager.
+
+**Cancellation ≠ termination.** Two planes:
+
+| Plane | States | Meaning |
+|-------|--------|---------|
+| Intent | `ACTIVE` → `CANCELLATION_REQUESTED` → `TERMINATING` → `TERMINATED` | System wants the logical operation to end |
+| Physical | `NOT_STARTED` (created) → `RUNNING` → `SUCCEEDED` / `FAILED` / `CANCELLED` / `UNKNOWN` | Observed external dependency behavior |
+
+#### External operation lifecycle (physical + cancel path)
+
+```text
+NOT_STARTED (CREATED)
+        |
+        v
+     RUNNING
+        |
+   +----+----+
+   |         |
+   v         v
+SUCCEEDED   FAILED
+
+RUNNING
+   |
+   v
+CANCELLATION_REQUESTED (intent; physical may still be RUNNING)
+   |
+   v
+CANCELLED (physical terminal)
+
+RUNNING
+   |
+   v
+UNKNOWN (legal terminal — worker loss / provider opaque)
+```
+
+**Invariants:** `UNKNOWN` is a legal physical terminal; a record must not remain `RUNNING` indefinitely without an active owner (orphan reconcile → `UNKNOWN`). Durable transitions use `revision` CAS — concurrent terminal writers: one winner, others `StaleExternalOperationStateError`.
+
+#### Cancellation ownership model
+
+| Topic | Rule |
+|-------|------|
+| **Logical cancellation** | Durable intent CAS (`CANCELLATION_REQUESTED`); optional `ExternalOperationCancellationPort.request_cancel` (best-effort signal only). |
+| **Physical termination** | Provider-observed terminal state on `ExternalOperationStateStore`; separate from intent. |
+| **External operation identity** | `mint_stable_operation_id` — same `operation_id` across physical retries; new `attempt_id` / `physical_attempt_sequence` per try (no per-attempt `uuid4` for operation_id). |
+| **Durable state** | `ExternalOperationState` + `ExternalOperationStateStore.compare_and_set`. |
+| **CAS ownership** | `expected_revision` on every transition; stale write → `StaleExternalOperationStateError`. |
+| **Recovery reconciliation** | Checkpoint restore path → `prepare_external_operations_for_recovery` (orphan reconcile, then fail-closed on scoped `UNKNOWN` / `RUNNING`) → resume decision. |
+| **Permit lifecycle** | acquire dependency permit → physical execution → **terminal durable record** → release permit. **Never** release permit on cancel request alone. |
+
+#### Retry interaction (frozen)
+
+| Physical / intent | Retry physical attempt |
+|-------------------|------------------------|
+| `FAILED` (intent `ACTIVE`) | Allowed |
+| `CANCELLATION_REQUESTED` / `CANCELLED` | Forbidden (`ExternalOperationStartSuppressedError`) |
+| `UNKNOWN` | Reconcile first; then policy-driven |
+| Provider / transport error (failed attempt, intent active) | Allowed (same stable `operation_id`) |
+
+#### Provider cancellation boundary (extension only)
+
+| Capability | Behavior |
+|------------|----------|
+| Provider supports cancel | Inject `ExternalOperationCancellationPort` → `request_cancel()` |
+| No cancel API | `NoOpExternalOperationCancellationPort` (intent-only) |
+| No status API | `UnknownOnInquiryExternalOperationStatusPort` → `UNKNOWN` |
+
+No provider-specific branching in W4-C core — adapters bind ports at the seam.
+
+#### Ports (scope freeze)
+
+- `ExternalOperationCancellationPort` — request cancellation + optional provider signal only.
+- `ExternalOperationStatusPort` — query observed physical state only.
+- **Out of scope:** retry scheduling, recovery admission, ownership arbitration, admission permits.
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_C_DISTRIBUTED_CANCELLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_C_DISTRIBUTED_CANCELLATION_INVENTORY.md).
+
+### Provider native cancellation model (W4-D)
+
+**Status:** `ExternalOperationTerminationPort` + per-provider seams; W4-C lifecycle frozen.
+
+| Topic | Rule |
+|-------|------|
+| **Capability discovery** | `ExternalOperationCapabilities` via `external_operation_capabilities_for_provider(slug)` — no runtime `if provider == ...` in CAS core. |
+| **Native termination** | `ExternalOperationTerminationPort.terminate(identity)` — transport close / SDK abort only; no retry, permits, or CAS inside adapters. |
+| **External operation lifecycle** | Intent CAS (`CANCELLATION_REQUESTED`) → optional `ExternalOperationCancellationPort` → termination port → **observe** → `mark_observed_cancellation_terminal` CAS. Never set `CANCELLED` directly from `cancel()`. |
+| **Stream termination** | Adapter-instance `ProviderStreamTransportRegistry`; `stream_with_external_operation_lifecycle` registers `close` for `operation_id`, abort on terminate, permit released in admission `finally`. |
+| **Permit ownership** | Unchanged W4-C: release only after physical terminal record — not on cancel request alone. |
+| **Unsupported cancellation** | No native/stream seam → physical `UNKNOWN` after cancel intent (tools: `ToolExecutorTerminationPort`, `supports_native_cancel=False`). |
+| **Recovery interaction** | `UNKNOWN` / `CANCELLED` remain fail-closed for retry via `assert_may_begin_physical_attempt`; reconcile before resume. |
+| **Timeout vs cancellation** | Timeout paths use `FAILED` / `UNKNOWN` (`timeout_physical_state`); never `CANCELLED`. |
+
+Qualification: `tests/unit/runtime/architecture/test_enterprise_scale_resilience_w4_d_provider_cancellation.py`.
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_D_PROVIDER_CANCELLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W4_D_PROVIDER_CANCELLATION_INVENTORY.md).
+
+## Partial recovery (R3)
+
+Same-slot recovery is idempotent via checkpoint revision and slot disposition contracts. Different slots may recover in parallel subject to the same orchestration concurrency rules as initial fan-out. Recovery storm: many tenants resuming after outage can stress checkpoint store and Nexus concurrently — bounded by scheduler claim `limit`, not by global execution throttle.
+
+## Process-local assumptions (explicit)
+
+Do not treat `asyncio.Lock` / `Semaphore` on GraphExecutor as protecting resources across Celery workers or K8s pods. Each worker process holds its **own** local caps; multiplying worker count multiplies local capacity unless a future distributed admission wave says otherwise (W0 qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W0_GUARDRAILS.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W0_GUARDRAILS.md)). Scheduler lease claims are the cross-worker primitive for **resume scheduling**, not for limiting simultaneous graph execution.
+
+## W2-A ownership evidence (inventory)
+
+- **Integration circuit breaker:** `IntegrationCircuitBreaker` + slug registry — **owner:** integrations `_shared`; **production wiring:** Tier-3 health/bootstrap (`health_check_all`) and config from `wire_application_reliability`; **not** on Nexus `RuntimeToolInvoker` path. RAG retrieve uses wrapper on real calls.
+- **Tool execution:** `RuntimeToolInvoker` — **owner:** Nexus tools; single shared `ThreadPoolExecutor()` per invoker; timeout + contract-level retry; **no** per-`tool_id` concurrency port.
+- **Provider calls:** `LLMAdapter._execute` → `execute_with_resilience` — **owner:** llm_adapters; per-physical-attempt retry budget + `ProviderRateLimitPort` (process-local default) + optional RPM/CB/retry via `LLMCallConfig`; in-flight concurrency via W2-B3 admission boundary (orthogonal to W2-C throughput/retry caps).
+- **Tenant:** `tenant_id` on runtime request, idempotency, capacity request metadata — **no** per-tenant root slot partitioning (`LocalExecutionCapacityAdmission` ignores tenant).
+- **W2-ADR (Accepted):** `DependencyConcurrencyAdmissionPort` at external boundaries — acquire → one external attempt → release; typed `DependencyConcurrencyIdentity` (`TOOL`, `LLM_PROVIDER`, `INTEGRATION`, `RETRIEVER`); orthogonal to W1 root admission, W1-B concurrent work, circuit breakers, rate limits, retry, tenant fairness. Tool seam: before shared executor enqueue; provider seam: inside physical attempt after W2-C gates. **W2 Final qualified** — see final qualification doc; no new managers/schedulers.
+
+## W2 Final — composition (qualified)
+
+| Layer | LLM provider call | Tool external effect |
+|-------|-------------------|----------------------|
+| Tenant quota | `check_llm_tenant_quota` | N/A (W2 scope) |
+| Retry budget / rate / CB | `execute_with_resilience` | N/A |
+| Concurrency admission | `DependencyAttemptExecutionBoundary` | Same boundary pattern on invoker |
+| Retry policy | `LLMCallConfig` + `retry.py` | `ToolContract.retry_policy` |
+
+Deferred: tenant fairness partitioning, distributed admission, integration slug breakers remain separate from LLM in-process CB.
+
+## Target problems for follow-on waves (not P0)
+
+1. **Execution admission** — W1-A: bounded process-local root slots via injectable port; distributed/global cap deferred.
+2. ~~**Deadline propagation**~~ — **W1:** `global_deadline_monotonic` wired from active execution budget into `GraphRunner` retry eligibility when root wall-time budget is set.  
+3. ~~**Provider/tool bulkheads (process-local)**~~ — **W2 Final:** `DependencyConcurrencyAdmissionPort` wired for tools and LLM providers (qualified).
+4. **Distributed rate limiting** — tenant/provider fairness across workers (optional Redis LLM limiter exists; generic platform limiter absent).  
+5. **Checkpoint store scaling** — reduce SQLite hotspot or shard by tenant for write-heavy fleets.
+
+## W3-C — decision plane durability (event append + snapshot CAS)
+
+**Frozen separation (do not merge planes):**
+
+```text
+Decision Event History  ≠  Checkpoint Snapshot  ≠  Execution Recovery
+```
+
+| Mechanism | Plane | Conflict signal | Owner (W3-C2) |
+|-----------|-------|-----------------|----------------|
+| Compare-and-append event stream | Decision | `StaleDecisionEventAppendError` | `SQLiteDecisionEventAppendPersistence` / `DecisionEventAppendPort` |
+| Snapshot revision CAS | Decision | `StaleDecisionCheckpointWriteError` | `SQLiteDecisionCheckpointPersistence.save(..., expected_revision=)` |
+| Task checkpoint revision CAS | Execution | `StaleCheckpointWriteError` | `SQLiteTaskCheckpointStore` (unchanged) |
+| Recovery admission | Execution / decision durable start | `RecoveryAdmissionPort` | `local_recovery_admission`; **`DECISION_DURABLE`** canonical entry `resume_decision_from_durable_state_with_recovery_admission` (W3-C4 — no production bypass of `resume_decision_from_durable_state`) |
+
+Authoritative **decision events** are append-only with `expected_last_sequence` enforced inside one SQLite transaction (`BEGIN IMMEDIATE` + stream head CAS + `UNIQUE` on `(key, event_sequence)`). **Materialized** `DecisionCheckpointState` snapshots use `snapshot_revision` column CAS — a lost snapshot write does **not** roll back an already-appended event (replay from stream remains the recovery path for projection lag).
+
+Implementation reference: [`ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md`](ADR_ENTERPRISE_CHECKPOINT_CONSISTENCY_AND_RECOVERY_ADMISSION.md) §2.1–§2.2.

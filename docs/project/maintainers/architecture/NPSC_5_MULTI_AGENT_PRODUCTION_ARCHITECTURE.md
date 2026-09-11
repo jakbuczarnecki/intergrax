@@ -4,7 +4,7 @@
 
 **Series owner:** Agent Distribution + frozen Execution Engine
 
-**Current phase:** NPSC-5C — Typed Coordination Intent + Decision Integration (**FROZEN / PASS** · R1–R3 qualified)
+**Current phase:** NPSC-5D — Multi-Agent Governance (**FROZEN / PASS** · R1+R2+R3 unified)
 
 **R1 reconciliation:** [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md)
 
@@ -271,9 +271,9 @@ CoordinationIntentExecutor
 
 ---
 
-## 8.1 NPSC-5D/R1 / R1-H1 — semantic coordination governance admission
+## 8.1 NPSC-5D/R1 — semantic coordination governance admission
 
-**Status:** NPSC-5D/R1 **PASS** · NPSC-5D/R1-H1 **PASS** (not frozen).
+**Status:** NPSC-5D/R1 **FROZEN / PASS** · NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **FROZEN / PASS**
 
 | Component | Package | Responsibility |
 | --------- | ------- | -------------- |
@@ -281,10 +281,12 @@ CoordinationIntentExecutor
 | `MultiAgentCoordinationGovernancePort` | `intergrax/contracts/` | Public evaluator boundary reusing canonical `PolicyDecision` |
 | `MultiAgentCoordinationGovernanceBoundary` | `intergrax/runtime/governance/` | Fail-closed admission over configured evaluator |
 | `build_multi_agent_coordination_governance_request` | `intergrax/agent_distribution/` | Caller adapter from `CoordinationIntent` + binding |
+| `materialize_coordination_intent_binding` | `intergrax/agent_distribution/` | Runtime binding projection from governed host Task |
+| `CollaborativeWorkAuthorityResolverPort` | `intergrax/autonomous_work/execution_authority_admission.py` | Shared consumer seam (AW-3B) — Collaborative Work owns semantics |
 
-**Canonical evaluation location:** `CoordinationIntentExecutor` after semantic intent validation and before `MultiAgentCoordinationService` / `BoundedMultiAgentFanOutService`.
+**Canonical evaluation location:** `CoordinationIntentExecutor` after intent/binding validation and authoritative applicability reconciliation, before `MultiAgentCoordinationService` / `BoundedMultiAgentFanOutService`.
 
-**Governance model (R1):** coordination-level admission only; per-contribution physical authorization deferred to NPSC-5D/R2.
+**Governance model (R1):** coordination-level all-or-nothing admission only; per-contribution physical authorization deferred to NPSC-5D/R2.
 
 **Authority reconciliation (R1-H1):**
 
@@ -296,9 +298,70 @@ Governance consumes authoritative EffectiveAuthorityDecision + coordination poli
 Execution effective authority remains independent and monotonic on the active Execution path
 ```
 
-**Collaborative applicability:** classified on the typed governance request from authoritative binding context (`workspace_id` present → `REQUIRED`; absent → `NOT_APPLICABLE`). No caller-controlled `is_collaborative` boolean.
+**Collaborative applicability (R1-H2):** authoritative source is governed Execution / host Task context — not `CoordinationIntent`, Decision artifact, or caller workspace omission. `workspace_id` present → `REQUIRED`; absent → `NOT_APPLICABLE`; missing/malformed host → fail-closed.
+
+**Qualification:** [`NPSC_5D_R1_FINAL_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_R1_FINAL_QUALIFICATION_AND_FREEZE.md)
 
 **Distinction:** NPSC `CoordinationPolicy` remains Agent Distribution selection semantics — not platform Governance policy.
+
+---
+
+## 8.2 NPSC-5D/R2 — physical delegation governance admission
+
+**Status:** NPSC-5D/R2 **FROZEN / PASS** · NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **FROZEN / PASS**
+
+| Component | Package | Responsibility |
+| --------- | ------- | -------------- |
+| `PhysicalDelegationGovernanceRequest` | `intergrax/contracts/` | Typed post-selection physical delegation facts |
+| `PhysicalDelegationGovernancePort` | `intergrax/contracts/` | Public evaluator boundary reusing canonical `PolicyDecision` |
+| `PhysicalDelegationGovernanceBoundary` | `intergrax/runtime/governance/` | Fail-closed admission over configured evaluator |
+| `build_physical_delegation_governance_request` | `intergrax/agent_distribution/` | Caller adapter from delegated subtask selection facts |
+
+**Canonical evaluation location:** `DelegatedSubtaskService` after `require_selected_identity`, before `build_acquisition_plan` / `TaskScopedAgentService.acquire`.
+
+**Governance model (R2):** per-contribution physical admission for the exact selected specialist identity — no re-selection, no AC-3 trust duplication, no lease/child side effects before ALLOW.
+
+**Evaluation point:** `GovernanceEvaluationPoint.MULTI_AGENT_DELEGATION` (distinct from R1 `MULTI_AGENT_COORDINATION`).
+
+### 8.2.1 NPSC-5D/R2-H1 — governed continuation identity preservation
+
+**Status:** R2-H1 preserves exact post-selection physical delegation identity across Agent Distribution boundaries.
+
+| Artifact | Package | Responsibility |
+| -------- | ------- | -------------- |
+| `PhysicalDelegationGovernedContinuation` | `intergrax/contracts/` | Immutable typed continuation binding `delegation_id`, exact `selected_identity`, `governance_result` / evidence, task scope, application binding |
+
+**Propagation:** `DelegatedSubtaskGovernanceRequiresHuman` → `GovernanceRequiresHumanError.continuation` → `FanOutItemFailure.continuation` when `GOVERNANCE_REQUIRES_HUMAN`. Ordinary failures carry no continuation payload.
+
+**Qualification:** [`NPSC_5D_R2_FINAL_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_R2_FINAL_QUALIFICATION_AND_FREEZE.md)
+
+**R3 delivered:** canonical HITL pause/approval/grant/resume bound to exact `PhysicalDelegationGovernedContinuation` — no re-selection. See §8.2.2.
+
+**Distinction from R1:** R1 `REQUIRE_HUMAN` is semantic coordination admission (`CoordinationGovernanceRequiresHuman`); R2-H1 is exact selected physical delegation (`PhysicalDelegationGovernedContinuation`).
+
+### 8.2.2 NPSC-5D/R3 — canonical HITL governed continuation
+
+**Status:** NPSC-5D/R3 **FROZEN / PASS** · NPSC-5D **FROZEN / PASS**
+
+**Qualification:** [`NPSC_5D_R3_FINAL_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_R3_FINAL_QUALIFICATION_AND_FREEZE.md) · **NPSC-5D Final:** [`NPSC_5D_FINAL_MULTI_AGENT_GOVERNANCE_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_FINAL_MULTI_AGENT_GOVERNANCE_QUALIFICATION_AND_FREEZE.md)
+
+#### 8.2.2.1 NPSC-5D/R3-H1 — truthful resume provenance and Nexus exact slot continuation
+
+**Status:** R3-H1 incorporated into R3 freeze — governed resume without synthetic selection; Nexus-owned exact fan-out slot continuation.
+
+| Artifact | Package | Responsibility |
+| -------- | ------- | -------------- |
+| `DelegatedSelectionProvenanceKind` | `intergrax/agent_distribution/` | Distinguishes real selection (`SELECTED`) from preserved governed resume (`PRESERVED_GOVERNED_CONTINUATION`) |
+| `OrchestrationTopologyContinuationPort` | `intergrax/contracts/` | Canonical exact-slot continuation within a prior topology execution |
+| `OrchestrationSlotContinuationExecutor` | `intergrax/contracts/` | Optional slot executor capability for resumed governed slots |
+| `CanonicalOrchestrationTopologySubmissionPort` | `intergrax/runtime/execution/` | Stores in-process topology execution context; continues one registered slot without whole-topology resubmit |
+| `FanOutCoordinationSlotExecutor.continue_slot` | `intergrax/runtime/execution/` | Projects Nexus slot continuation into `continue_governed_coordination` |
+
+**Provenance rule:** resume does **not** constitute a new selection. `continue_governed_delegation` preserves exact `selected_identity` from `PhysicalDelegationGovernedContinuation` and records `PRESERVED_GOVERNED_CONTINUATION` without fabricating `AgentSelectionDecision`.
+
+**Ownership:** Nexus resumes the exact blocked slot and scheduling context; Agent Distribution resumes physical delegation semantics (`continue_governed_coordination` / `continue_governed_delegation`). Governance/HITL remain canonical pause/grant owners.
+
+**Fan-out:** `GOVERNANCE_REQUIRES_HUMAN` items register continuable slot identities on the topology execution record. Approval resumes **only** that slot — successful siblings are not re-executed; whole fan-out and whole topology resubmit are forbidden on the resume path.
 
 ---
 
@@ -309,7 +372,7 @@ Execution effective authority remains independent and monotonic on the active Ex
 | **NPSC-5A** | Single parent → single bounded specialist delegation contracts |
 | **NPSC-5B** | Bounded fan-out / fan-in (**FROZEN / PASS**) |
 | **NPSC-5C** | Typed coordination intent + Decision integration (**FROZEN / PASS**) |
-| **NPSC-5D** | Multi-agent governance (**ACTIVE** — R1 typed admission seam **PASS**) |
+| **NPSC-5D** | Multi-agent governance (**FROZEN / PASS** — R1+R2+R3 unified governance plane) |
 | **NPSC-5E** | Retry / checkpoint / recovery |
 | **NPSC-5F** | Audit / observability hooks expansion |
 

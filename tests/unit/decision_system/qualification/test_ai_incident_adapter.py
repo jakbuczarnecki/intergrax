@@ -12,7 +12,27 @@ from intergrax.decision_system.qualification.taxonomy import (
     DecisionFailureReason,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
+    CompletionReconciliationDiagnostic,
     CompletionReconciliationError,
+    CompletionReconciliationFailureReason,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
+    PreReconciliationRecoveryStatus,
+    PreReconciliationTransitionDecision,
+    PreReconciliationTransitionOutcome,
+    PreReconciliationValidationError,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
+    COMPLETION_UNRESOLVED,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment import (
+    SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
+    UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
+    CompletionIntent,
 )
 from testing_support.decision_e2e.failure_observation_adapter import (
     AI_INCIDENT_DIAGNOSTIC_TOOL_TRACE_FAILURE_ID,
@@ -91,9 +111,49 @@ def test_adapter_maps_epistemic_failure_id_without_string_classifier() -> None:
     assert not result.is_platform_failure
 
 
+def test_adapter_maps_reverse_alignment_failure_to_epistemic_contradiction() -> None:
+    observation = observation_from_ai_incident_evaluation(
+        failures=(SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR,),
+        evaluator_passed=False,
+    )
+    result = classify_decision_failure(observation)
+    assert result is not None
+    assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
+    assert result.reason is DecisionFailureReason.EPISTEMIC_CONTRADICTION
+
+
+def test_adapter_maps_pre_reconciliation_validation_error_to_model_unsupported_completion() -> None:
+    observation = observation_from_scenario_execution_exception(
+        PreReconciliationValidationError(
+            PreReconciliationTransitionDecision(
+                outcome=PreReconciliationTransitionOutcome.REJECTED,
+                validation_errors=(UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR,),
+                recovery_status=PreReconciliationRecoveryStatus.BUDGET_EXHAUSTED,
+                revision_budget_remaining=0,
+                completion_mode=COMPLETION_UNRESOLVED,
+                has_supported_diagnosis=True,
+                recovery_attempted=False,
+            )
+        )
+    )
+    result = classify_decision_failure(observation)
+    assert result is not None
+    assert result.category is DecisionFailureCategory.MODEL_BEHAVIOR
+    assert result.reason is DecisionFailureReason.UNSUPPORTED_COMPLETION
+
+
 def test_adapter_maps_completion_reconciliation_error_to_model_unsupported_completion() -> None:
     observation = observation_from_scenario_execution_exception(
-        CompletionReconciliationError("validation_errors_present_during_reconciliation")
+        CompletionReconciliationError(
+            CompletionReconciliationFailureReason.VALIDATION_ERRORS_PRESENT,
+            diagnostic=CompletionReconciliationDiagnostic(
+                model_intent=CompletionIntent.SUPPORTED_DIAGNOSIS,
+                critic_verdict_passed=True,
+                has_supported_diagnosis=True,
+                validation_errors=("some_error",),
+                evidence_gathering_stop_reason="planner_final_answer",
+            ),
+        )
     )
     result = classify_decision_failure(observation)
     assert result is not None

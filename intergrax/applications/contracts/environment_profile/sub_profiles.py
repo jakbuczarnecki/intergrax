@@ -19,6 +19,7 @@ from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
+from intergrax.contracts.execution_lineage import ExecutionLineagePersistenceProvider
 from intergrax.contracts.execution_terminal import ExecutionTerminalPersistenceProvider
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
@@ -200,6 +201,7 @@ class ReliabilityProfile(BaseModel):
     recovery_contract: ApplicationRecoveryContract | None = None
     execution_terminal_persistence_provider: ExecutionTerminalPersistenceProvider | None = None
     attempt_lifecycle_persistence_provider: AttemptLifecyclePersistenceProvider | None = None
+    execution_lineage_persistence_provider: ExecutionLineagePersistenceProvider | None = None
 
 
 class EventSubscriptionSpec(BaseModel):

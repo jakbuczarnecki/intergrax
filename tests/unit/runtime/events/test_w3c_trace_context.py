@@ -113,25 +113,35 @@ def test_inject_w3c_trace_on_event_uses_inbound_metadata() -> None:
 
 
 def test_otlp_export_uses_w3c_trace_ids_when_present() -> None:
+    from intergrax.runtime.events.unified_run_journal import JOURNAL_SCHEMA_VERSION
+    from intergrax.runtime.observability.export_boundary import envelope_from_runtime_event
+    from intergrax.runtime.observability.journal_export import (
+        JOURNAL_EXPORT_SCHEMA_VERSION,
+        JournalExportSnapshot,
+    )
+
     trace_id = generate_trace_id()
     span_id = generate_span_id()
     tp = format_traceparent(trace_id=trace_id, parent_id=span_id)
-    otlp = render_journal_otlp_json(
-        {
-            "run_id": "run-1",
-            "tenant_id": "tenant-a",
-            "events": [
-                {
-                    "event_id": "evt-1",
-                    "event_type": "task_created",
-                    "task_id": "task-1",
-                    "phase": "intake",
-                    "timestamp": "2026-06-17T12:00:00+00:00",
-                    "traceparent": tp,
-                }
-            ],
-        }
+    event = RuntimeEvent(
+        event_type=RuntimeEventType.TASK_CREATED,
+        phase=ExecutionPhase.INTAKE,
+        traceparent=tp,
+        **runtime_event_test_identity(run_id=mint_run_id(), task_id=mint_task_id()),
     )
+    envelope = envelope_from_runtime_event(event)
+    snapshot = JournalExportSnapshot(
+        schema_version=JOURNAL_EXPORT_SCHEMA_VERSION,
+        journal_schema_version=JOURNAL_SCHEMA_VERSION,
+        run_id=event.run_id,
+        tenant_id=event.tenant_id or "tenant-a",
+        event_count=1,
+        parser_trace_count=0,
+        events=(envelope,),
+        is_complete=True,
+        has_continuation=False,
+    )
+    otlp = render_journal_otlp_json(snapshot)
     span = otlp["resourceSpans"][0]["scopeSpans"][0]["spans"][0]
     assert span["traceId"] == trace_id
     assert span["spanId"] == span_id

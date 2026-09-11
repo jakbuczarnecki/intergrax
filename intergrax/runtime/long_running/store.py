@@ -16,6 +16,11 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_TASK_CHECKPOINTS_DB,
     ENV_TASK_CHECKPOINTS_DB,
 )
+from intergrax.runtime.long_running.checkpoint_revision import (
+    CheckpointIdConflictError,
+    CheckpointRevisionRequiredError,
+    StaleCheckpointWriteError,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
@@ -103,6 +108,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 conn.execute(
                     "ALTER TABLE task_checkpoints ADD COLUMN runtime_checkpoint_json TEXT",
                 )
+            self._migrate_checkpoint_revisions(conn)
             conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS scheduled_resumes (
@@ -220,15 +226,150 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 return False
         return True
 
-    def save(self, checkpoint: TaskCheckpoint) -> TaskCheckpoint:
-        with self._connection() as conn:
+    @staticmethod
+    def _migrate_checkpoint_revisions(conn: sqlite3.Connection) -> None:
+        checkpoint_columns = {
+            row[1] for row in conn.execute("PRAGMA table_info(task_checkpoints)").fetchall()
+        }
+        if "checkpoint_revision" not in checkpoint_columns:
             conn.execute(
+                "ALTER TABLE task_checkpoints ADD COLUMN checkpoint_revision INTEGER",
+            )
+        unmigrated = conn.execute(
+            "SELECT COUNT(*) FROM task_checkpoints WHERE checkpoint_revision IS NULL",
+        ).fetchone()
+        if unmigrated is not None and int(unmigrated[0]) > 0:
+            streams = conn.execute(
+                """
+                SELECT DISTINCT tenant_id, task_id
+                FROM task_checkpoints
+                WHERE checkpoint_revision IS NULL
+                """,
+            ).fetchall()
+            for stream in streams:
+                rows = conn.execute(
+                    """
+                    SELECT checkpoint_id
+                    FROM task_checkpoints
+                    WHERE tenant_id = ? AND task_id = ? AND checkpoint_revision IS NULL
+                    ORDER BY rowid ASC
+                    """,
+                    (stream["tenant_id"], stream["task_id"]),
+                ).fetchall()
+                for revision, row in enumerate(rows, start=1):
+                    conn.execute(
+                        """
+                        UPDATE task_checkpoints
+                        SET checkpoint_revision = ?
+                        WHERE checkpoint_id = ?
+                        """,
+                        (revision, row["checkpoint_id"]),
+                    )
+        conn.execute(
+            """
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_task_checkpoints_stream_revision
+            ON task_checkpoints (tenant_id, task_id, checkpoint_revision)
+            """,
+        )
+
+    @staticmethod
+    def _checkpoint_write_payload(checkpoint: TaskCheckpoint) -> tuple[object, ...]:
+        runtime_payload = (
+            json.dumps(checkpoint.runtime.model_dump(mode="json"), sort_keys=True)
+            if checkpoint.runtime is not None
+            else None
+        )
+        return (
+            checkpoint.task_id,
+            checkpoint.tenant_id,
+            checkpoint.resume_token,
+            checkpoint.task_state.value,
+            json.dumps(checkpoint.task_snapshot, sort_keys=True),
+            checkpoint.progress_message,
+            checkpoint.notify_channel,
+            checkpoint.created_at_utc,
+            checkpoint.schema_version,
+            runtime_payload,
+        )
+
+    def save(
+        self,
+        checkpoint: TaskCheckpoint,
+        *,
+        expected_revision: int | None = None,
+    ) -> TaskCheckpoint:
+        with self._connection() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            existing = conn.execute(
+                """
+                SELECT rowid, * FROM task_checkpoints
+                WHERE checkpoint_id = ?
+                """,
+                (checkpoint.checkpoint_id,),
+            ).fetchone()
+            if existing is not None:
+                existing_checkpoint = self._row_to_checkpoint(existing)
+                if self._checkpoint_write_payload(existing_checkpoint) != self._checkpoint_write_payload(
+                    checkpoint,
+                ):
+                    conn.rollback()
+                    raise CheckpointIdConflictError(
+                        checkpoint_id=checkpoint.checkpoint_id,
+                        task_id=checkpoint.task_id,
+                        tenant_id=checkpoint.tenant_id,
+                    )
+                conn.commit()
+                return existing_checkpoint
+
+            current_row = conn.execute(
+                """
+                SELECT checkpoint_revision FROM task_checkpoints
+                WHERE tenant_id = ? AND task_id = ?
+                ORDER BY checkpoint_revision DESC
+                LIMIT 1
+                """,
+                (checkpoint.tenant_id, checkpoint.task_id),
+            ).fetchone()
+            current_revision = (
+                int(current_row["checkpoint_revision"])
+                if current_row is not None and current_row["checkpoint_revision"] is not None
+                else None
+            )
+            if current_revision is None:
+                if expected_revision is not None:
+                    conn.rollback()
+                    raise StaleCheckpointWriteError(
+                        task_id=checkpoint.task_id,
+                        tenant_id=checkpoint.tenant_id,
+                        expected_revision=expected_revision,
+                        actual_revision=None,
+                    )
+                next_revision = 1
+            else:
+                if expected_revision is None:
+                    conn.rollback()
+                    raise CheckpointRevisionRequiredError(
+                        task_id=checkpoint.task_id,
+                        tenant_id=checkpoint.tenant_id,
+                        actual_revision=current_revision,
+                    )
+                if expected_revision != current_revision:
+                    conn.rollback()
+                    raise StaleCheckpointWriteError(
+                        task_id=checkpoint.task_id,
+                        tenant_id=checkpoint.tenant_id,
+                        expected_revision=expected_revision,
+                        actual_revision=current_revision,
+                    )
+                next_revision = current_revision + 1
+
+            cursor = conn.execute(
                 """
                 INSERT INTO task_checkpoints (
                     checkpoint_id, task_id, tenant_id, resume_token, task_state,
                     task_snapshot_json, progress_message, notify_channel, created_at_utc,
-                    runtime_checkpoint_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    runtime_checkpoint_json, checkpoint_revision
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     checkpoint.checkpoint_id,
@@ -243,17 +384,25 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                     json.dumps(checkpoint.runtime.model_dump(mode="json"))
                     if checkpoint.runtime is not None
                     else None,
+                    next_revision,
                 ),
             )
-        return checkpoint
+            if cursor.lastrowid is None:
+                conn.rollback()
+                raise RuntimeError("checkpoint save did not yield durable store_sequence")
+            store_sequence = int(cursor.lastrowid)
+            conn.commit()
+        return checkpoint.model_copy(
+            update={"revision": next_revision, "store_sequence": store_sequence},
+        )
 
     def get_latest(self, task_id: str, tenant_id: str) -> Optional[TaskCheckpoint]:
         with self._connection() as conn:
             row = conn.execute(
                 """
-                SELECT * FROM task_checkpoints
+                SELECT rowid, * FROM task_checkpoints
                 WHERE task_id = ? AND tenant_id = ?
-                ORDER BY created_at_utc DESC
+                ORDER BY checkpoint_revision DESC
                 LIMIT 1
                 """,
                 (task_id, tenant_id),
@@ -269,9 +418,9 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         with self._connection() as conn:
             row = conn.execute(
                 """
-                SELECT * FROM task_checkpoints
+                SELECT rowid, * FROM task_checkpoints
                 WHERE task_id = ? AND tenant_id = ? AND resume_token = ?
-                ORDER BY created_at_utc DESC
+                ORDER BY checkpoint_revision DESC
                 LIMIT 1
                 """,
                 (task_id, tenant_id, resume_token),
@@ -282,9 +431,9 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         with self._connection() as conn:
             rows = conn.execute(
                 """
-                SELECT * FROM task_checkpoints
+                SELECT rowid, * FROM task_checkpoints
                 WHERE task_id = ? AND tenant_id = ?
-                ORDER BY created_at_utc ASC
+                ORDER BY checkpoint_revision ASC, rowid ASC
                 """,
                 (task_id, tenant_id),
             ).fetchall()
@@ -294,16 +443,16 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         paused_states = _PAUSED_TASK_STATES
         placeholders = ",".join("?" for _ in paused_states)
         query = f"""
-            SELECT c.* FROM task_checkpoints c
+            SELECT c.rowid, c.* FROM task_checkpoints c
             INNER JOIN (
-                SELECT task_id, tenant_id, MAX(created_at_utc) AS max_created
+                SELECT task_id, tenant_id, MAX(checkpoint_revision) AS max_revision
                 FROM task_checkpoints
                 WHERE task_state IN ({placeholders})
                 GROUP BY task_id, tenant_id
             ) latest
             ON c.task_id = latest.task_id
             AND c.tenant_id = latest.tenant_id
-            AND c.created_at_utc = latest.max_created
+            AND c.checkpoint_revision = latest.max_revision
             WHERE c.task_state IN ({placeholders})
         """
         params = paused_states + paused_states
@@ -657,6 +806,12 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             progress_message=row["progress_message"],
             notify_channel=row["notify_channel"],
             created_at_utc=row["created_at_utc"],
+            revision=(
+                int(row["checkpoint_revision"])
+                if "checkpoint_revision" in row.keys() and row["checkpoint_revision"] is not None
+                else None
+            ),
+            store_sequence=int(row["rowid"]),
             runtime=runtime,
         )
 

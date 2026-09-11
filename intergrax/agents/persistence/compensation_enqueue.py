@@ -11,11 +11,9 @@ from intergrax.agents.persistence.compensation_queue_store import (
     CompensationJob,
     CompensationQueueStore,
 )
-from intergrax.agents.persistence.declarative_tool_executor import (
-    DeclarativeToolInvoker,
-    DeclarativeToolInvokeResult,
-)
+from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
+from intergrax.contracts.execution_identity import validate_task_id
 from intergrax.contracts.side_effect import CompensationRequest, SideEffectRecord
 from intergrax.tools.tool_execution_profile import (
     ToolExecutionProfile,
@@ -74,6 +72,7 @@ def _persist_enqueued_compensation(
     compensation_queue: CompensationQueueStore,
     request: CompensationRequest,
     run_id: str,
+    task_id: str,
     tenant_id: str,
     agent_id: str,
     step_index: int,
@@ -83,6 +82,7 @@ def _persist_enqueued_compensation(
     compensation_queue.enqueue(
         CompensationJob(
             run_id=run_id,
+            task_id=task_id,
             tenant_id=tenant_id,
             agent_id=agent_id,
             step_index=step_index,
@@ -100,6 +100,7 @@ async def enqueue_compensations_for_step_failure(
     action_args: dict[str, dict[str, Any]] | None = None,
     compensation_queue: CompensationQueueStore | None = None,
     run_id: str = "",
+    task_id: str = "",
     tenant_id: str = "default",
     agent_id: str = "",
 ) -> CompensationEnqueueResult:
@@ -164,10 +165,12 @@ async def enqueue_compensations_for_step_failure(
 
         if invoker is None:
             if compensation_queue is not None:
+                resolved_task_id = str(validate_task_id(task_id))
                 _persist_enqueued_compensation(
                     compensation_queue=compensation_queue,
                     request=request,
                     run_id=run_id,
+                    task_id=resolved_task_id,
                     tenant_id=tenant_id,
                     agent_id=agent_id,
                     step_index=step_index,

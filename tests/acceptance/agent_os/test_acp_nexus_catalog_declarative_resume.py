@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.agents.authoring.step_outcome import StepOutcome
-from intergrax.agents.persistence.catalog_declarative_invoker import (
+from testing_support.catalog_declarative_invoker import (
     build_catalog_declarative_invoker_from_registry,
 )
 from intergrax.agents.persistence.checkpoint_store import InMemoryAgentCheckpointStore

@@ -19,8 +19,10 @@ from intergrax.runtime.events.persistence_contract import (
     AcceptedRuntimeEvent,
     RuntimeEventPersistence,
     RuntimeEventPersistenceIntegrityError,
+    TaskRuntimeEventRuns,
+    _group_positioned_task_rows,
     _validate_persistence_tenant_id,
-    _validate_through_limit,
+    _validate_run_list_params,
     reconcile_idempotent_event_acceptance,
     resolve_persistence_scope,
 )
@@ -226,14 +228,22 @@ class SQLiteRuntimeEventStore(RuntimeEventPersistence):
         tenant_id: str,
         limit: int = 1000,
         through: ExecutionEventPosition | None = None,
+        after: ExecutionEventPosition | None = None,
     ) -> List[PositionedRuntimeEvent]:
-        limit, through = _validate_through_limit(limit=limit, through=through)
+        limit, through, after = _validate_run_list_params(
+            limit=limit,
+            through=through,
+            after=after,
+        )
         query = """
             SELECT event_json, execution_position
             FROM runtime_events
             WHERE tenant_id = ? AND run_id = ?
         """
         params: list[object] = [tenant_id, run_id]
+        if after is not None:
+            query += " AND execution_position > ?"
+            params.append(after.value)
         if through is not None:
             query += " AND execution_position <= ?"
             params.append(through.value)
@@ -250,6 +260,24 @@ class SQLiteRuntimeEventStore(RuntimeEventPersistence):
         tenant_id: str,
         limit: int = 1000,
     ) -> List[RuntimeEvent]:
+        grouped = self.list_positioned_for_task_grouped_by_run(
+            task_id,
+            tenant_id=tenant_id,
+            limit=limit,
+        )
+        events: list[RuntimeEvent] = []
+        for _, run_rows in grouped.runs:
+            for positioned in run_rows:
+                events.append(positioned.event)
+        return events
+
+    def list_positioned_for_task_grouped_by_run(
+        self,
+        task_id: str,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+    ) -> TaskRuntimeEventRuns:
         if type(limit) is not int or isinstance(limit, bool) or limit <= 0:
             raise ValueError("limit must be > 0")
         with self._connection() as conn:
@@ -258,12 +286,13 @@ class SQLiteRuntimeEventStore(RuntimeEventPersistence):
                 SELECT event_json, execution_position
                 FROM runtime_events
                 WHERE tenant_id = ? AND task_id = ?
-                ORDER BY execution_position ASC
+                ORDER BY run_id ASC, execution_position ASC
                 LIMIT ?
                 """,
                 (tenant_id, task_id, limit),
             ).fetchall()
-        return [self._load_positioned(row).event for row in rows]
+        positioned = [self._load_positioned(row) for row in rows]
+        return _group_positioned_task_rows(positioned, limit=limit)
 
     def get_by_event_id(
         self,

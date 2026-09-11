@@ -19,7 +19,9 @@ from intergrax.integrations.contracts.vector_index_administration import (
     VectorSearchCapability,
 )
 from intergrax.integrations.providers.vector_store.qdrant.config import QdrantIntegrationConfig
-from intergrax.integrations.providers.vector_store.qdrant.rag_store import _normalize_point_id
+from intergrax.integrations.providers.vector_store.qdrant.point_ids import (
+    normalize_qdrant_logical_point_id,
+)
 from platform_proofs.scenarios.verified_product_identification.application.domain.identifiers import (
     ProductOfferId,
 )
@@ -35,6 +37,7 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     _distance_label,
     _extract_dense_vector,
     _extract_provider_payload,
+    _record_matches_stored,
     _stored_point_from_provider_record,
     _validate_vector_record,
 )
@@ -54,8 +57,10 @@ from platform_proofs.scenarios.verified_product_identification.storage_bootstrap
     QdrantBootstrapVectorValidationError,
 )
 from platform_proofs.scenarios.verified_product_identification.storage_bootstrap.adapters.qdrant.payload import (
+    QdrantStoredPoint,
     QdrantUpsertPoint,
     QdrantVectorPayload,
+    cosine_storage_normalize,
     normalize_vector_float32,
     payload_from_record,
     payload_identity_matches,
@@ -207,6 +212,7 @@ class _FakeIndexAdmin:
             reachable=True,
             point_count=0,
             dense_dimension=CANONICAL_EMBEDDING_DIMENSION,
+            dense_metric="cosine",
             present_capabilities=frozenset({VectorSearchCapability.DENSE}),
             dense_channel_name=None,
             sparse_lexical_channel_name=None,
@@ -431,14 +437,14 @@ def test_zero_vector_rejected() -> None:
 
 def test_deterministic_logical_point_id_mapping() -> None:
     record = _vector_record(0)
-    first = _normalize_point_id(record.logical_point_id)
-    second = _normalize_point_id(record.logical_point_id)
+    first = normalize_qdrant_logical_point_id(record.logical_point_id)
+    second = normalize_qdrant_logical_point_id(record.logical_point_id)
     assert first == second
 
 
 def test_retry_produces_same_point_id() -> None:
     record = _vector_record(0)
-    assert _normalize_point_id(record.logical_point_id) == _normalize_point_id(record.logical_point_id)
+    assert normalize_qdrant_logical_point_id(record.logical_point_id) == normalize_qdrant_logical_point_id(record.logical_point_id)
 
 
 def test_no_random_point_ids_during_write() -> None:
@@ -448,7 +454,7 @@ def test_no_random_point_ids_during_write() -> None:
     adapter.write_batch(_batch(record))
     assert len(client.points) == 1
     point_id = next(iter(client.points))
-    assert point_id == _normalize_point_id(record.logical_point_id)
+    assert point_id == normalize_qdrant_logical_point_id(record.logical_point_id)
 
 
 # --- PAYLOAD ---
@@ -538,7 +544,7 @@ def test_same_point_different_model_identity_fails() -> None:
     adapter = _adapter_with_fake(client, prepared=True)
     record = _vector_record(0)
     adapter.write_batch(_batch(record))
-    point_id = _normalize_point_id(record.logical_point_id)
+    point_id = normalize_qdrant_logical_point_id(record.logical_point_id)
     client.points[point_id].payload["embedding_model"] = "other-model"
     with pytest.raises(StorageBootstrapWriteError, match="VECTOR_CONTENT_CONFLICT"):
         adapter.write_batch(_batch(record))
@@ -556,7 +562,8 @@ def test_same_point_different_vector_fails() -> None:
     record = _vector_record(0)
     adapter.write_batch(_batch(record))
     vector = list(_unit_vector())
-    vector[0] = 0.5
+    vector[0] = 0.0
+    vector[1] = 1.0
     conflict = _vector_record(0, vector=tuple(vector))
     with pytest.raises(StorageBootstrapWriteError):
         adapter.write_batch(_batch(conflict))
@@ -567,10 +574,10 @@ def test_blind_overwrite_impossible() -> None:
     adapter = _adapter_with_fake(client, prepared=True)
     record = _vector_record(0)
     adapter.write_batch(_batch(record))
-    stored_vector = client.points[_normalize_point_id(record.logical_point_id)].vector
+    stored_vector = client.points[normalize_qdrant_logical_point_id(record.logical_point_id)].vector
     with pytest.raises(StorageBootstrapWriteError):
         adapter.write_batch(_batch(_vector_record(0, semantic_hash="other")))
-    assert client.points[_normalize_point_id(record.logical_point_id)].vector == stored_vector
+    assert client.points[normalize_qdrant_logical_point_id(record.logical_point_id)].vector == stored_vector
 
 
 # --- VERIFICATION ---
@@ -597,7 +604,7 @@ def test_verify_payload_mismatch_detected() -> None:
     adapter = _adapter_with_fake(client, prepared=True)
     record = _vector_record(0)
     adapter.write_batch(_batch(record))
-    point_id = _normalize_point_id(record.logical_point_id)
+    point_id = normalize_qdrant_logical_point_id(record.logical_point_id)
     client.points[point_id].payload["semantic_text_hash"] = "mutated"
     verify = adapter.verify_batch(_batch(record))
     assert verify.failed_count == 1
@@ -608,9 +615,10 @@ def test_verify_vector_mismatch_detected() -> None:
     adapter = _adapter_with_fake(client, prepared=True)
     record = _vector_record(0)
     adapter.write_batch(_batch(record))
-    point_id = _normalize_point_id(record.logical_point_id)
+    point_id = normalize_qdrant_logical_point_id(record.logical_point_id)
     vector = list(client.points[point_id].vector)
-    vector[0] = 0.25
+    vector[0] = 0.0
+    vector[1] = 1.0
     client.points[point_id].vector = vector
     verify = adapter.verify_batch(_batch(record))
     assert verify.failed_count == 1
@@ -774,11 +782,45 @@ def test_extract_dense_vector_rejects_invalid_channel_shape() -> None:
         _extract_dense_vector({"other": [1.0, 0.0]}, _named_physical_target())
 
 
+def test_cosine_storage_normalize_matches_qdrant_roundtrip_for_sparse_vectors() -> None:
+    sparse = normalize_vector_float32((0.0, 0.002, 0.0))
+    stored = cosine_storage_normalize(sparse)
+    readback = cosine_storage_normalize((0.0, 1.0, 0.0))
+    assert vectors_transport_equal(stored, readback, tolerance=0.0) is True
+
+
+def test_record_matches_stored_accepts_runtime_composition_vectors() -> None:
+    from tests.integration.platform_proofs.scenarios.verified_product_identification.conftest import (
+        deterministic_dense_embedding,
+    )
+
+    record = _vector_record(3, offer_suffix="3", semantic_hash="hash-runtime")
+    record = VectorLoadRecord(
+        logical_point_id=record.logical_point_id,
+        source_ref=record.source_ref,
+        semantic_text_hash=record.semantic_text_hash,
+        embedding_provider=record.embedding_provider,
+        embedding_model=record.embedding_model,
+        embedding_revision=record.embedding_revision,
+        embedding_dimension=record.embedding_dimension,
+        dense_embedding=deterministic_dense_embedding(3),
+        derivation_version=record.derivation_version,
+    )
+    payload = payload_from_record(record)
+    stored = QdrantStoredPoint(
+        point_id=normalize_qdrant_logical_point_id(record.logical_point_id),
+        logical_point_id=record.logical_point_id,
+        payload=payload,
+        vector=cosine_storage_normalize(record.dense_embedding),
+    )
+    assert _record_matches_stored(record, stored, tolerance=0.0) is True
+
+
 def test_stored_point_from_provider_record_converts_payload_and_vector() -> None:
     record = _vector_record(0)
     payload = payload_from_record(record).to_provider_payload()
     provider_point = _FakeQdrantPoint(
-        id=_normalize_point_id(record.logical_point_id),
+        id=normalize_qdrant_logical_point_id(record.logical_point_id),
         payload=payload,
         vector=list(normalize_vector_float32(record.dense_embedding)),
     )
@@ -824,11 +866,13 @@ def test_real_qdrant_bounded_qualification() -> None:
     if not qdrant_environment_available():
         pytest.skip("Qdrant environment unavailable")
 
-    from intergrax.integrations.providers.vector_store.qdrant.opens import _build_qdrant_client
+    from intergrax.integrations.providers.vector_store.qdrant.opens import (
+        open_qdrant_vector_data_plane_client,
+    )
 
     collection_name = f"vpi_5c5c_adapter_{uuid.uuid4().hex[:8]}"
     config = QdrantBootstrapConfiguration.from_env(logical_collection_name=collection_name)
-    client = _build_qdrant_client(config.integration)
+    client = open_qdrant_vector_data_plane_client(config.integration)
     try:
         adapter = QdrantVectorStorageAdapter.from_env(logical_collection_name=collection_name)
         target = VectorTargetId("vpi-product-embeddings")

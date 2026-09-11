@@ -9,15 +9,8 @@ from pathlib import Path
 
 import pytest
 
-_CURSOR_SECRET_ENV = "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET"
-_CURSOR_SECRET_VALUE = "decision-e2e-diagnostic-problem-list-cursor-secret"
-
-
-@pytest.fixture(autouse=True)
-def _diagnostic_problem_list_cursor_secret(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv(_CURSOR_SECRET_ENV, _CURSOR_SECRET_VALUE)
-
-
+from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
+from scripts.proof.intergrax_proof_environment import bootstrap_process_environment
 from testing_support.decision_e2e.composition import (
     QualificationComposition,
     build_qualification_composition,
@@ -29,10 +22,22 @@ from testing_support.decision_e2e.environment import (
     resolve_qualification_environment,
 )
 from testing_support.decision_e2e.reporting import QualificationReportCollector
-from scripts.proof.intergrax_proof_environment import bootstrap_process_environment
+
+_CURSOR_SECRET_ENV = "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET"
+_CURSOR_SECRET_VALUE = "decision-e2e-diagnostic-problem-list-cursor-secret"
+
+
+@pytest.fixture(autouse=True)
+def _diagnostic_problem_list_cursor_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(_CURSOR_SECRET_ENV, _CURSOR_SECRET_VALUE)
+
 
 _OUTPUT_DIR = Path(".tmp/decision_e2e_qualification")
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+
+_DECISION_E2E_PARTICIPANT_CONCURRENT_WORK_POLICY = ConcurrentExecutionWorkPolicy(
+    max_concurrency=3,
+)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -68,7 +73,10 @@ def require_decision_e2e_environment(decision_e2e_environment):
 def decision_e2e_composition(
     require_decision_e2e_environment,
 ) -> QualificationComposition:
-    return build_qualification_composition(require_decision_e2e_environment)
+    return build_qualification_composition(
+        require_decision_e2e_environment,
+        participant_concurrent_work_policy=_DECISION_E2E_PARTICIPANT_CONCURRENT_WORK_POLICY,
+    )
 
 
 @pytest.fixture
@@ -79,6 +87,7 @@ def decision_e2e_sqlite_composition(
     persistence = build_sqlite_persistence(tmp_path / "durable")
     return build_qualification_composition(
         require_decision_e2e_environment,
+        participant_concurrent_work_policy=_DECISION_E2E_PARTICIPANT_CONCURRENT_WORK_POLICY,
         persistence=persistence,
     )
 

@@ -173,7 +173,7 @@ class CohereNativeChatAdapter(LLMAdapter):
                 kwargs["temperature"] = float(temperature)
             if max_tokens is not None:
                 kwargs["max_tokens"] = int(max_tokens)
-            stream = self._execute(lambda: self.client.chat_stream(**kwargs))
+            stream = self._execute_streaming(lambda: self.client.chat_stream(**kwargs))
             for event in stream:
                 if attribute_access.optional(event, "type", None) == "content-delta":
                     txt = event.delta.message.content.text or ""
@@ -310,7 +310,7 @@ class CohereNativeChatAdapter(LLMAdapter):
             if max_tokens is not None:
                 kwargs["max_tokens"] = int(max_tokens)
 
-            stream = self._execute(lambda: self.client.chat_stream(**kwargs))
+            stream = self._execute_streaming(lambda: self.client.chat_stream(**kwargs))
             for event in stream:
                 if attribute_access.optional(event, "type", None) == "content-delta":
                     txt = event.delta.message.content.text or ""

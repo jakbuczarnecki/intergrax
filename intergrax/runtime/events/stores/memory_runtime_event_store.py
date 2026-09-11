@@ -17,8 +17,11 @@ from intergrax.runtime.events.execution_position import (
 from intergrax.runtime.events.persistence_contract import (
     AcceptedRuntimeEvent,
     RuntimeEventPersistence,
+    TaskRuntimeEventRuns,
+    _filter_positioned_run_rows,
+    _group_positioned_task_rows,
     _validate_persistence_tenant_id,
-    _validate_through_limit,
+    _validate_run_list_params,
     reconcile_idempotent_event_acceptance,
     resolve_persistence_scope,
 )
@@ -85,13 +88,20 @@ class InMemoryRuntimeEventStore(RuntimeEventPersistence):
         tenant_id: str,
         limit: int = 1000,
         through: ExecutionEventPosition | None = None,
+        after: ExecutionEventPosition | None = None,
     ) -> List[PositionedRuntimeEvent]:
-        limit, through = _validate_through_limit(limit=limit, through=through)
+        limit, through, after = _validate_run_list_params(
+            limit=limit,
+            through=through,
+            after=after,
+        )
         rows = self._by_run.get((tenant_id, run_id), [])
-        if through is None:
-            return list(rows[:limit])
-        filtered = [row for row in rows if row.position <= through]
-        return list(filtered[:limit])
+        return _filter_positioned_run_rows(
+            rows,
+            after=after,
+            through=through,
+            limit=limit,
+        )
 
     def list_for_task(
         self,
@@ -100,10 +110,26 @@ class InMemoryRuntimeEventStore(RuntimeEventPersistence):
         tenant_id: str,
         limit: int = 1000,
     ) -> List[RuntimeEvent]:
-        if type(limit) is not int or isinstance(limit, bool) or limit <= 0:
-            raise ValueError("limit must be > 0")
+        grouped = self.list_positioned_for_task_grouped_by_run(
+            task_id,
+            tenant_id=tenant_id,
+            limit=limit,
+        )
+        events: list[RuntimeEvent] = []
+        for _, run_rows in grouped.runs:
+            for positioned in run_rows:
+                events.append(positioned.event)
+        return events
+
+    def list_positioned_for_task_grouped_by_run(
+        self,
+        task_id: str,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+    ) -> TaskRuntimeEventRuns:
         rows = self._by_task.get((tenant_id, task_id), [])
-        return [positioned.event for positioned in rows[:limit]]
+        return _group_positioned_task_rows(rows, limit=limit)
 
     def get_by_event_id(
         self,

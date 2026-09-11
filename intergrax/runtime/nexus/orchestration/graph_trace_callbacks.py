@@ -16,6 +16,9 @@ from intergrax.runtime.nexus.tracing.graph_node_diag import (
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.task.task import Task
+from intergrax.runtime.observability.qualification_runtime_trace import (
+    TaskTraceRuntimeDiagnosticPort,
+)
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
 
 
@@ -25,6 +28,12 @@ class GraphTraceCallbacks:
 
     task: Task
     trace_emitter: TaskTraceEmitter
+
+    def runtime_diagnostic_trace_port(self) -> TaskTraceRuntimeDiagnosticPort:
+        return TaskTraceRuntimeDiagnosticPort(
+            trace_emitter=self.trace_emitter,
+            task=self.task,
+        )
 
     def on_retry(self, record: RetryRecord) -> None:
         self.trace_emitter.emit(
