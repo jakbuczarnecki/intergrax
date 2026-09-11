@@ -8,7 +8,7 @@ from pathlib import Path
 VPI_5C4F_ORIGINAL_BUILD_SOURCE_SHA = "1c8713ff60abdd5c9397182a01fc04d9e986354d"
 
 # Immutable build-source snapshot for fast-resume R1 (updated when snapshot is created).
-VPI_5C4F_RESUME_BUILD_SOURCE_SHA = "PENDING_R1_COMMIT"
+VPI_5C4F_RESUME_BUILD_SOURCE_SHA = "b0103d133528737484750fabd489ffbed964fedf"
 
 VPI_5C4F_ARTIFACT_ROOT = Path(
     r"D:\Projekty\intergrax-runtime-artifacts\vpi\canonical-v1"
