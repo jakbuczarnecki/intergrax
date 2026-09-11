@@ -37,7 +37,7 @@ _FROZEN_CHILD_RUNNER_IMPORTS = frozenset(
         "intergrax/runtime/execution/delegated_subtask_child_port.py",
         "intergrax/runtime/execution/execution_work_port.py",
         "intergrax/runtime/nexus/execution/graph_executor.py",
-        "intergrax/applications/_shared/production_agent_capability_runtime.py",
+        "intergrax/applications/_shared/production_delegated_subtask_child_execution_wiring.py",
     },
 )
 
@@ -159,11 +159,13 @@ def test_p0_frozen_child_execution_runner_import_surface() -> None:
     )
 
 
-def test_p0_documented_direct_child_bypass_still_at_composition_default() -> None:
-    """BY-01 evidence anchor — default factory must remain visible until U4 closes it."""
+def test_p0_by01_factory_no_longer_constructs_child_execution_runner() -> None:
+    """BY-01 closed in U4 — factory must not mint ChildExecutionRunner locally."""
     source = _PRODUCTION_AGENT_CAPABILITY_RUNTIME.read_text(encoding="utf-8")
     assert "DelegatedSubtaskServiceFactory" in source
-    assert "as_child_execution_port(ChildExecutionRunner" in source
+    assert "ChildExecutionRunner" not in source
+    assert "as_child_execution_port" not in source
+    assert "delegated_subtask_child_execution" in source
 
 
 def test_p0_compensation_worker_routes_through_admitted_execution_port() -> None:

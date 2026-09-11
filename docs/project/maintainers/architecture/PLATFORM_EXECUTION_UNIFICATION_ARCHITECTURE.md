@@ -1,8 +1,8 @@
 # Platform Execution Unification — Architecture (P0 baseline)
 
-**Status:** `U2_TOOL_INTEGRATION_SIDE_EFFECT_QUALIFIED` (P0 inventory + U1 entry + U2 compensation / tool side-effect closure)  
+**Status:** `U4_CHILD_EXECUTION_CLOSURE_QUALIFIED` (P0 inventory + U1–U4 closure waves; U5 final qualification pending)  
 **Architectural baseline:** NPSC-5E Final `fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7` (reference only; work proceeds on current `development`)  
-**Evidence companions:** [`../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U2_TOOL_INTEGRATION_SIDE_EFFECT_QUALIFICATION.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U2_TOOL_INTEGRATION_SIDE_EFFECT_QUALIFICATION.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U3_AGENT_PLUGIN_EXECUTION_QUALIFICATION.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U3_AGENT_PLUGIN_EXECUTION_QUALIFICATION.md)
+**Evidence companions:** [`../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U1_APPLICATION_SCENARIO_ENTRY_QUALIFICATION.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U2_TOOL_INTEGRATION_SIDE_EFFECT_QUALIFICATION.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U2_TOOL_INTEGRATION_SIDE_EFFECT_QUALIFICATION.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U3_AGENT_PLUGIN_EXECUTION_QUALIFICATION.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U3_AGENT_PLUGIN_EXECUTION_QUALIFICATION.md) · [`../qualification/PLATFORM_EXECUTION_UNIFICATION_U4_CHILD_EXECUTION_CLOSURE.md`](../qualification/PLATFORM_EXECUTION_UNIFICATION_U4_CHILD_EXECUTION_CLOSURE.md)
 
 ## Purpose
 
@@ -119,6 +119,12 @@ Compensation side-effect admission and worker surface closure:
 
 `tests/unit/runtime/architecture/test_platform_execution_unification_u2_tool_integration_side_effect_closure.py`
 
+## Static gates (U4)
+
+Delegated subtask child execution composition closure (EP-15 / BY-01):
+
+`tests/unit/runtime/architecture/test_platform_execution_unification_u4_child_execution_closure.py`
+
 ## Closure waves (default proposal)
 
 Adjust after inventory review:
@@ -128,7 +134,7 @@ Adjust after inventory review:
 | U1 | Application / scenario entry unification (host task only; no runner bypass) |
 | U2 | Tool / integration side-effect closure (compensation, declarative out-of-band invokers) |
 | U3 | Agent / plugin execution closure |
-| U4 | Nexus / child closure (default `ChildExecutionPort` injection) |
+| U4 | ✅ Nexus / child closure — composition-root `ChildExecutionPort` (EP-15 / BY-01) |
 | U5 | Final zero-bypass qualification |
 
 P0 does **not** implement U1–U5.
