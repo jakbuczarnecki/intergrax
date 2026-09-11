@@ -193,6 +193,13 @@ class NexusGraphRunner:
         trace_emitter: TaskTraceEmitter,
     ) -> GraphPhaseOutcome:
         callbacks = GraphTraceCallbacks(task=task, trace_emitter=trace_emitter)
+        from intergrax.runtime.observability.qualification_runtime_trace import (
+            GRAPH_QUALIFICATION_RUNTIME_TRACE_PORT_KEY,
+        )
+
+        task.metadata[GRAPH_QUALIFICATION_RUNTIME_TRACE_PORT_KEY] = (
+            callbacks.qualification_runtime_trace_port()
+        )
         retry_codes = (
             frozenset({RuntimeErrorCode.VALIDATION_ERROR})
             if self.max_run_retries > 0

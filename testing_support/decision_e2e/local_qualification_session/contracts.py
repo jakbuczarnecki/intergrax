@@ -8,12 +8,19 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Mapping
 
+from intergrax.runtime.nexus.tracing.execution.evaluator_model_attempt import (
+    EvaluatorModelAttemptDiagV1,
+)
+from intergrax.runtime.nexus.tracing.execution.reconciliation_phase import (
+    ReconciliationPhaseDiagV1,
+)
+
 
 QUALIFICATION_SESSION_SCHEMA_VERSION = "qualification_session.v1"
 
 COMPLETION_ALIGNMENT_TRACE_SCHEMA = "incident.completion_alignment.v1"
-CANONICAL_MODEL_ATTEMPT_TRACE_SCHEMA = "intergrax.diag.evaluator_loop.model_attempt.v1"
-RECONCILIATION_PHASE_TRACE_SCHEMA = "intergrax.diag.completion.reconciliation_phase.v1"
+CANONICAL_MODEL_ATTEMPT_TRACE_SCHEMA = EvaluatorModelAttemptDiagV1.schema_id()
+RECONCILIATION_PHASE_TRACE_SCHEMA = ReconciliationPhaseDiagV1.schema_id()
 
 
 class VersionMatchPolicy(StrEnum):

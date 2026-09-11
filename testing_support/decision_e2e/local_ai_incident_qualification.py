@@ -100,6 +100,15 @@ def semantic_source_groups_for_r4r1() -> dict[str, tuple[str, ...]]:
             "platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py",
             "platform_proofs/scenarios/ai_incident_investigation/application/observability.py",
         ),
+        "O1": (
+            "intergrax/runtime/nexus/tracing/execution/evaluator_model_attempt.py",
+            "intergrax/runtime/nexus/tracing/execution/reconciliation_phase.py",
+            "intergrax/runtime/observability/qualification_runtime_trace.py",
+            "intergrax/runtime/nexus/execution/graph_executor.py",
+            "intergrax/runtime/nexus/orchestration/graph_trace_callbacks.py",
+            "intergrax/runtime/nexus/orchestration/graph_runner.py",
+            "platform_proofs/scenarios/ai_incident_investigation/application/scenario.py",
+        ),
     }
 
 

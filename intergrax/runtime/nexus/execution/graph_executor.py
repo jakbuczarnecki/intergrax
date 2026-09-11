@@ -103,6 +103,9 @@ from intergrax.runtime.nexus.execution.evaluator_loop_metadata import (
     evaluator_loop_spec_from_node,
     set_evaluator_loop_iteration,
 )
+from intergrax.runtime.observability.qualification_runtime_trace import (
+    resolve_graph_qualification_runtime_trace_port,
+)
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
     ExecutionGraphCycleError,
@@ -984,6 +987,15 @@ class GraphExecutor:
                 output_type=AgentExecutionResult,
                 capabilities=frozenset({ExecutionCapability.AGENT}),
             )
+            if loop_spec is not None:
+                trace_port = resolve_graph_qualification_runtime_trace_port(task)
+                if trace_port is not None:
+                    trace_port.emit_evaluator_model_attempt(
+                        run_id=active_run_id,
+                        node_id=node.node_id,
+                        attempt_index=current_evaluator_loop_iteration(node),
+                        max_iterations=loop_spec.max_iterations,
+                    )
             governed_task_binding = ActiveGovernedExecutionTask()
             token = governed_task_binding.bind(task)
             try:
