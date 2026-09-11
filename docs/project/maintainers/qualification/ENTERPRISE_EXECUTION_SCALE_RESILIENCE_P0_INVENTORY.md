@@ -240,9 +240,9 @@ Do not infer numeric SLOs from this model without measurement.
 | Risk | Severity | Trigger | Blast radius | Mitigation | Gap | Future wave |
 |------|----------|---------|--------------|------------|-----|-------------|
 | Unbounded graph/orchestration parallelism | P0 | caps unset in non-strict | whole worker | host profile wiring | strict mode fail-closed (W0) | W1 admission |
-| Retry storm on provider outage | P0 | many runs fail together | provider + all tenants | backoff, CB, max_attempts | no jitter on all presets; no retry bulkhead | W2 provider retry budget |
+| Retry storm on provider outage | P0 | many runs fail together | provider + all tenants | backoff, CB, max_attempts | no jitter on all presets; no retry bulkhead | **W2-A qualified** — partial; ADR for dependency concurrency |
 | SQLite checkpoint hotspot | P1 | many concurrent writes | all tenants on DB file | CAS, indexes | single-file SQLite | W3 store sharding |
-| Shared tool thread pool | P1 | slow tool | all agents on host | timeouts | no per-tool bulkhead | W2 tool pools |
+| Shared tool thread pool | P1 | slow tool | all agents on host | timeouts | no per-tool bulkhead | **W2-A qualified** — gap open; see W2 dependency inventory |
 | Cancel orphan work | P1 | cancel during tool/child | wasted spend | cooperative cancel | no hard preemption | W4 cancel propagation audit |
 | Deadline not on Nexus retry request | P1 | long graph retry | parent SLA | R1 contract + W1-C wiring | **closed (W1)** — `peek_active_execution_global_deadline_monotonic` on retry request | W2+ fairness/bulkheads |
 | ConcurrentExecutionWork unbounded | P1 | large council tuple | memory/tasks | required `ConcurrentExecutionWorkPolicy` | **closed (W1)** — explicit per-call cap | W2 provider isolation |
@@ -256,7 +256,7 @@ Do not infer numeric SLOs from this model without measurement.
 |------|--------|
 | **W0** | Mandatory host caps guardrails + process-local semantics (`host_execution_capacity_policy`; strict Nexus composition) |
 | **W1** | Execution admission + deadline propagation on all retry paths |
-| **W2** | Provider/tool bulkheads + distributed rate limits |
+| **W2** | Provider/tool bulkheads + distributed rate limits (**W2-A inventory complete** — [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md`](ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md)) |
 | **W3** | Checkpoint/evidence store scaling + recovery throttles |
 | **W4** | Cancellation hardening (child/tool/provider) |
 | **W5** | Load-aware observability sampling / backpressure on event pipeline |
