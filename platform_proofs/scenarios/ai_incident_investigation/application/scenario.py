@@ -58,6 +58,10 @@ from platform_proofs.scenarios.ai_incident_investigation.application.tools impor
     ScenarioEvidenceStore,
     register_scenario_tools,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_execution_provenance import (
+    ScenarioExecutionProvenance,
+    scenario_execution_provenance,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
     INVESTIGATOR_NODE_ID,
     ScenarioRuntimeComposition,
@@ -231,8 +235,7 @@ class ScenarioExecutionResult:
     investigation_conclusion: InvestigationConclusion | None = None
     investigated_problem_ids: tuple[ProblemId, ...] = ()
     execution_tenant_id: str = STANDALONE_SCENARIO_TENANT_ID
-    platform_run_id: str | None = None
-    persisted_trace_events: tuple[dict[str, Any], ...] = ()
+    execution_provenance: ScenarioExecutionProvenance | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -514,8 +517,7 @@ async def execute_resolved_skeleton(
             has_supported_diagnosis=has_supported_diagnosis,
         )
     except PreReconciliationValidationError as exc:
-        exc.platform_run_id = run_id
-        exc.persisted_trace_events = tuple(trace_events)
+        exc.execution_provenance = scenario_execution_provenance(run_id, execution_tenant_id)
         raise
     try:
         reconciled = reconcile_investigation_completion(
@@ -528,8 +530,7 @@ async def execute_resolved_skeleton(
             ),
         )
     except CompletionReconciliationError as exc:
-        exc.platform_run_id = run_id
-        exc.persisted_trace_events = tuple(trace_events)
+        exc.execution_provenance = scenario_execution_provenance(run_id, execution_tenant_id)
         raise
     if reconciled.completion_mode.value == COMPLETION_SUPPORTED_DIAGNOSIS:
         assert_ai_incident_completion_eligible(
@@ -575,8 +576,7 @@ async def execute_resolved_skeleton(
         investigation_conclusion=investigation_conclusion,
         investigated_problem_ids=investigated_problem_ids,
         execution_tenant_id=execution_tenant_id,
-        platform_run_id=run_id,
-        persisted_trace_events=tuple(trace_events),
+        execution_provenance=scenario_execution_provenance(run_id, execution_tenant_id),
     )
 
 

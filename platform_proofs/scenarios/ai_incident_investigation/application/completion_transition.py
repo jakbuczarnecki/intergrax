@@ -8,6 +8,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import NoReturn
 
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_execution_provenance import (
+    ScenarioExecutionProvenance,
+)
+
 
 class PreReconciliationTransitionOutcome(StrEnum):
     READY_FOR_RECONCILIATION = "ready_for_reconciliation"
@@ -52,8 +56,7 @@ class PreReconciliationValidationDiagnostic:
 class PreReconciliationValidationError(Exception):
     """Raised when final validation is not clean before completion reconciliation."""
 
-    platform_run_id: str | None
-    persisted_trace_events: tuple[dict[str, object], ...]
+    execution_provenance: ScenarioExecutionProvenance | None
 
     def __init__(self, decision: PreReconciliationTransitionDecision) -> None:
         if decision.outcome is not PreReconciliationTransitionOutcome.REJECTED:
@@ -69,8 +72,7 @@ class PreReconciliationValidationError(Exception):
             revision_budget_remaining=decision.revision_budget_remaining,
             recovery_attempted=decision.recovery_attempted,
         )
-        self.platform_run_id = None
-        self.persisted_trace_events = ()
+        self.execution_provenance = None
         super().__init__(_rejection_message(decision))
 
 

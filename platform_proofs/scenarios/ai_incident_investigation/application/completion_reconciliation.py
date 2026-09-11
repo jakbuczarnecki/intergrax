@@ -8,6 +8,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import NoReturn
 
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_execution_provenance import (
+    ScenarioExecutionProvenance,
+)
+
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationStopReason
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     CompletionIntent,
@@ -60,8 +64,7 @@ class CompletionReconciliationDiagnostic:
 class CompletionReconciliationError(Exception):
     """Raised when model completion intent cannot be reconciled with validated state."""
 
-    platform_run_id: str | None
-    persisted_trace_events: tuple[dict[str, object], ...]
+    execution_provenance: ScenarioExecutionProvenance | None
 
     def __init__(
         self,
@@ -73,8 +76,7 @@ class CompletionReconciliationError(Exception):
         self.reason = reason
         self.diagnostic = diagnostic
         self._detail = detail
-        self.platform_run_id = None
-        self.persisted_trace_events = ()
+        self.execution_provenance = None
         super().__init__(self._message())
 
     def _message(self) -> str:

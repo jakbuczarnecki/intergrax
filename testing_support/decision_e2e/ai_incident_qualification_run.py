@@ -31,6 +31,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario im
     ScenarioExecutionResult,
     execute_resolved_skeleton,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.scenario_execution_provenance import (
+    ScenarioExecutionProvenance,
+)
 from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents import ScenarioVariant
 from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import (
     build_fixture_runtime_bundle,
@@ -296,15 +299,31 @@ def _legacy_trace_flags(trace_evidence: AiIncidentQualificationTraceEvidence) ->
 
 def _execution_provenance_from_exception(
     exc: BaseException,
-) -> tuple[str | None, tuple[dict[str, object], ...]]:
+) -> ScenarioExecutionProvenance | None:
     if isinstance(exc, PreReconciliationValidationError | CompletionReconciliationError):
-        platform_run_id = exc.platform_run_id
-        events = exc.persisted_trace_events
-        if isinstance(platform_run_id, str) and platform_run_id:
-            return platform_run_id, events
-        if events:
-            return None, events
-    return None, ()
+        return exc.execution_provenance
+    return None
+
+
+def _runtime_run_id_from_provenance(
+    provenance: ScenarioExecutionProvenance | None,
+) -> str | None:
+    if provenance is None:
+        return None
+    return str(provenance.platform_run_id)
+
+
+def _trace_events_for_provenance(
+    composition: ScenarioRuntimeComposition,
+    provenance: ScenarioExecutionProvenance | None,
+) -> tuple[dict[str, object], ...]:
+    if provenance is None:
+        return ()
+    return _persisted_trace_events(
+        composition,
+        str(provenance.platform_run_id),
+        provenance.execution_tenant_id,
+    )
 
 
 def _outcome_run_ids(
@@ -434,7 +453,9 @@ async def execute_ai_incident_qualification_run(
         evaluation = evaluate_scenario_run(result, fixture_bundle.fixture)
     except PreReconciliationValidationError as exc:
         observation = observation_from_scenario_execution_exception(exc)
-        runtime_id, trace_events = _execution_provenance_from_exception(exc)
+        provenance = _execution_provenance_from_exception(exc)
+        runtime_id = _runtime_run_id_from_provenance(provenance)
+        trace_events = _trace_events_for_provenance(composition, provenance)
         trace_evidence = _trace_evidence_from_events(
             runtime_execution_run_id=runtime_id,
             trace_events=trace_events,
@@ -472,7 +493,9 @@ async def execute_ai_incident_qualification_run(
         )
     except CompletionReconciliationError as exc:
         observation = observation_from_scenario_execution_exception(exc)
-        runtime_id, trace_events = _execution_provenance_from_exception(exc)
+        provenance = _execution_provenance_from_exception(exc)
+        runtime_id = _runtime_run_id_from_provenance(provenance)
+        trace_events = _trace_events_for_provenance(composition, provenance)
         trace_evidence = _trace_evidence_from_events(
             runtime_execution_run_id=runtime_id,
             trace_events=trace_events,
@@ -510,7 +533,9 @@ async def execute_ai_incident_qualification_run(
         )
     except Exception as exc:
         observation = observation_from_scenario_execution_exception(exc)
-        runtime_id, trace_events = _execution_provenance_from_exception(exc)
+        provenance = _execution_provenance_from_exception(exc)
+        runtime_id = _runtime_run_id_from_provenance(provenance)
+        trace_events = _trace_events_for_provenance(composition, provenance)
         trace_evidence = _trace_evidence_from_events(
             runtime_execution_run_id=runtime_id,
             trace_events=trace_events,
@@ -537,21 +562,16 @@ async def execute_ai_incident_qualification_run(
             trace_evidence=trace_evidence,
         )
 
-    runtime_id = result.platform_run_id
-    trace_events = result.persisted_trace_events
-    if runtime_id is None:
+    provenance = result.execution_provenance
+    runtime_id = _runtime_run_id_from_provenance(provenance)
+    if provenance is None:
         trace_evidence = _trace_evidence_from_events(
             runtime_execution_run_id=None,
             trace_events=(),
             trace_available=False,
         )
     else:
-        if not trace_events:
-            trace_events = _persisted_trace_events(
-                composition,
-                runtime_id,
-                result.execution_tenant_id,
-            )
+        trace_events = _trace_events_for_provenance(composition, provenance)
         trace_evidence = _trace_evidence_from_events(
             runtime_execution_run_id=runtime_id,
             trace_events=trace_events,
