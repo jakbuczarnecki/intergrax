@@ -111,6 +111,37 @@ Consumers / persistence / export (subscribers + durable evidence — unchanged)
 
 Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B2_COMPOSITION_WIRING_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B2_COMPOSITION_WIRING_INVENTORY.md).
 
+## Downstream Event Export Model (W5-C)
+
+Pluggable export after bounded backpressure; `RuntimeEventBus` remains transport-agnostic.
+
+```text
+Producer
+   |
+   v
+RuntimeEventBus
+   |
+   v
+BoundedEventSink
+   |
+   v
+EventExportSinkPort
+   |
+   +------------+
+   |            |
+   v            v
+ OTLP       Durable Store
+```
+
+| Concern | Owner |
+|---------|--------|
+| Buffer / backpressure | `BoundedEventSink` |
+| Export transport | `EventExportSinkPort` implementations (`NoopEventExportSink`, `OtlpEventExportSink`, …) |
+| Export failure visibility | `InternalDeliveryMetrics` (diagnostic snapshot only — never re-published on the bus) |
+| Lifecycle | Composition root: drain → `flush` → `close` on export sink before runtime teardown |
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_C_EVENT_EXPORT_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_C_EVENT_EXPORT_INVENTORY.md).
+
 ## Failure domains (architectural)
 
 | Domain | Isolation | Notes |

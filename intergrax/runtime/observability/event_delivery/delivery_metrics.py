@@ -19,6 +19,11 @@ class DeliveryMetricsSnapshot:
     events_deferred: int
     queue_depth: int
     last_processing_latency_seconds: float
+    export_accepted: int
+    export_failed: int
+    export_last_latency_seconds: float
+    export_flush_duration_seconds: float
+    export_queue_depth: int
 
 
 class InternalDeliveryMetrics:
@@ -32,6 +37,11 @@ class InternalDeliveryMetrics:
         self._deferred = 0
         self._queue_depth = 0
         self._last_latency = 0.0
+        self._export_accepted = 0
+        self._export_failed = 0
+        self._export_last_latency = 0.0
+        self._export_flush_duration = 0.0
+        self._export_queue_depth = 0
 
     def record(self, result: EventDeliveryResult, *, latency_seconds: float) -> None:
         with self._lock:
@@ -46,6 +56,35 @@ class InternalDeliveryMetrics:
             self._queue_depth = result.buffered_depth
             self._last_latency = latency_seconds
 
+    def record_export_accepted(
+        self,
+        *,
+        latency_seconds: float,
+        queue_depth: int,
+    ) -> None:
+        with self._lock:
+            self._export_accepted += 1
+            self._export_last_latency = latency_seconds
+            self._export_queue_depth = queue_depth
+
+    def record_export_failed(
+        self,
+        *,
+        latency_seconds: float,
+        queue_depth: int,
+        dropped: bool,
+    ) -> None:
+        with self._lock:
+            self._export_failed += 1
+            self._export_last_latency = latency_seconds
+            self._export_queue_depth = queue_depth
+            if dropped:
+                self._dropped += 1
+
+    def record_export_flush_duration(self, duration_seconds: float) -> None:
+        with self._lock:
+            self._export_flush_duration = duration_seconds
+
     def snapshot(self) -> DeliveryMetricsSnapshot:
         with self._lock:
             return DeliveryMetricsSnapshot(
@@ -55,4 +94,9 @@ class InternalDeliveryMetrics:
                 events_deferred=self._deferred,
                 queue_depth=self._queue_depth,
                 last_processing_latency_seconds=self._last_latency,
+                export_accepted=self._export_accepted,
+                export_failed=self._export_failed,
+                export_last_latency_seconds=self._export_last_latency,
+                export_flush_duration_seconds=self._export_flush_duration,
+                export_queue_depth=self._export_queue_depth,
             )

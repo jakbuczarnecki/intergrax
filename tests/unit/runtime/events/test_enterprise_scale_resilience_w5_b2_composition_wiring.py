@@ -10,16 +10,14 @@ from intergrax.applications._shared.environment_wiring import wire_application_e
 from intergrax.applications._shared.harness_host_runtime import (
     build_harness_host_runtime,
 )
-from intergrax.applications.contracts.environment_profile import (
-    ApplicationEnvironmentProfile,
-    ObservabilityProfile,
-)
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.observability.event_delivery import (
-    AcceptingObservabilityEventSink,
     BoundedEventSink,
+    NoopEventExportSink,
+    RuntimeEventExportSink,
 )
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
@@ -68,14 +66,16 @@ async def test_published_event_reaches_bounded_sink() -> None:
     bus = runtime.env_wiring.build_context.runtime_event_bus
     assert bus is not None
     delivery = runtime.env_wiring.event_delivery
-    downstream = delivery.downstream_sink
-    assert isinstance(downstream, AcceptingObservabilityEventSink)
+    export_sink = delivery.event_export_sink
+    assert isinstance(export_sink, NoopEventExportSink)
+    bridge = delivery.export_bridge
+    assert isinstance(bridge, RuntimeEventExportSink)
     await bus.publish(_terminal_event())
     metrics = bus.delivery_metrics
     assert metrics is not None
     assert metrics.snapshot().events_accepted >= 1
     runtime.close()
-    assert downstream.accepted_count >= 1
+    assert bridge.closed
 
 
 def test_shutdown_ordering_closes_bus_and_sink() -> None:

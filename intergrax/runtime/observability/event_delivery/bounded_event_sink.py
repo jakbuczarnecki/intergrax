@@ -19,12 +19,17 @@ from intergrax.contracts.event_delivery import (
     EventPriority,
     EventSinkPort,
 )
+from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.runtime.observability.event_delivery.runtime_event_export_sink import (
+    RuntimeEventExportSink,
+)
 
 
 @dataclass(frozen=True, slots=True)
 class _QueuedItem:
     priority: EventPriority
     event: DeliverableEvent
+    source_event: RuntimeEvent | None
     enqueued_at: float
 
 
@@ -64,6 +69,7 @@ class BoundedEventSink:
         *,
         priority: EventPriority,
         deadline: float | None = None,
+        source_event: RuntimeEvent | None = None,
     ) -> EventDeliveryResult:
         if self._stop.is_set():
             if priority is EventPriority.CRITICAL:
@@ -74,7 +80,12 @@ class BoundedEventSink:
                 buffered_depth=self.pending_depth,
             )
 
-        item = _QueuedItem(priority=priority, event=event, enqueued_at=time.monotonic())
+        item = _QueuedItem(
+            priority=priority,
+            event=event,
+            source_event=source_event,
+            enqueued_at=time.monotonic(),
+        )
 
         if priority is EventPriority.BEST_EFFORT:
             try:
@@ -143,10 +154,25 @@ class BoundedEventSink:
             try:
                 if item is None:
                     break
-                self._downstream.publish(
-                    item.event,
-                    priority=item.priority,
-                    deadline=None,
-                )
+                downstream = self._downstream
+                if isinstance(downstream, RuntimeEventExportSink):
+                    if item.source_event is not None:
+                        downstream.deliver_bounded(
+                            item.source_event,
+                            item.event,
+                            priority=item.priority,
+                        )
+                    else:
+                        downstream.publish(
+                            item.event,
+                            priority=item.priority,
+                            deadline=None,
+                        )
+                else:
+                    downstream.publish(
+                        item.event,
+                        priority=item.priority,
+                        deadline=None,
+                    )
             finally:
                 self._queue.task_done()

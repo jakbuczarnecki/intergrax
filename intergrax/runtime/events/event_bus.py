@@ -21,6 +21,9 @@ from intergrax.contracts.event_delivery import (
     EventSinkPort,
 )
 from intergrax.runtime.events.event_taxonomy import EventCategory
+from intergrax.runtime.observability.event_delivery.bounded_event_sink import (
+    BoundedEventSink,
+)
 from intergrax.runtime.observability.event_delivery.delivery_metrics import (
     InternalDeliveryMetrics,
 )
@@ -104,6 +107,7 @@ class RuntimeEventBus:
         persistence: Optional[RuntimeEventPersistence] = None,
         record_history: bool = True,
         event_sink: EventSinkPort | None = None,
+        delivery_metrics: InternalDeliveryMetrics | None = None,
     ) -> None:
         self._handlers: DefaultDict[RuntimeEventType, List[tuple[str, int, EventHandler]]] = (
             defaultdict(list)
@@ -115,7 +119,9 @@ class RuntimeEventBus:
         self._persistence: Optional[RuntimeEventPersistence] = persistence
         self._event_sink: EventSinkPort | None = event_sink
         self._delivery_metrics: InternalDeliveryMetrics | None = (
-            InternalDeliveryMetrics() if event_sink is not None else None
+            delivery_metrics
+            if delivery_metrics is not None
+            else (InternalDeliveryMetrics() if event_sink is not None else None)
         )
         self._closed = False
 
@@ -223,7 +229,14 @@ class RuntimeEventBus:
         priority = delivery_priority_for_runtime_event(event)
         deliverable = runtime_event_to_deliverable(event)
         started = time.monotonic()
-        result = sink.publish(deliverable, priority=priority)
+        if isinstance(sink, BoundedEventSink):
+            result = sink.publish(
+                deliverable,
+                priority=priority,
+                source_event=event,
+            )
+        else:
+            result = sink.publish(deliverable, priority=priority)
         latency = time.monotonic() - started
         metrics = self._delivery_metrics
         if metrics is not None:
