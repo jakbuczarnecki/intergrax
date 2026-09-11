@@ -20,7 +20,13 @@ from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
 )
+from intergrax.contracts.execution_failure_evidence import ExecutionFailureEvidenceRecorder
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
+from intergrax.runtime.execution.failure_evidence.active_context import (
+    ActiveExecutionEvidenceContext,
+    bind_active_execution_evidence_context,
+    reset_active_execution_evidence_context,
+)
 from intergrax.runtime.execution.active_decision_checkpoint_persistence import (
     bind_active_decision_checkpoint_persistence,
     reset_active_decision_checkpoint_persistence,
@@ -147,6 +153,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         "_execution_work_port_binding",
         "_execution_lineage_persistence",
         "_execution_capacity_admission",
+        "_failure_evidence_recorder",
     )
 
     def __init__(
@@ -168,6 +175,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             ActiveExecutionWorkPortBinding[WorkInputT, WorkOutputT, WorkResultT] | None
         ) = None,
         execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None,
+        failure_evidence_recorder: ExecutionFailureEvidenceRecorder | None = None,
     ) -> None:
         self._delegate = delegate
         self._ledger_factory = (
@@ -183,6 +191,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._execution_work_port_binding = execution_work_port_binding
         self._execution_lineage_persistence = execution_lineage_persistence
         self._execution_capacity_admission = execution_capacity_admission
+        self._failure_evidence_recorder = failure_evidence_recorder
 
     async def execute(
         self,
@@ -271,6 +280,21 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         persistence_token = None
         finalization_token = None
         work_port_token = None
+        evidence_token = None
+        if (
+            self._failure_evidence_recorder is not None
+            and root_context.tenant_id is not None
+            and root_context.task_id is not None
+        ):
+            evidence_token = bind_active_execution_evidence_context(
+                ActiveExecutionEvidenceContext(
+                    tenant_id=root_context.tenant_id,
+                    task_id=root_context.task_id,
+                    run_id=root_context.run_id,
+                    attempt_id=root_context.attempt_id,
+                    recorder=self._failure_evidence_recorder,
+                ),
+            )
         try:
             if self._decision_lifecycle_host is not None:
                 host_token = bind_active_decision_lifecycle_host(
@@ -290,6 +314,8 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 )
             return await boundary.execute(request)
         finally:
+            if evidence_token is not None:
+                reset_active_execution_evidence_context(evidence_token)
             if lineage_token is not None and degradation_token is not None:
                 deactivate_root_execution_lineage(lineage_token, degradation_token)
             if work_port_token is not None:

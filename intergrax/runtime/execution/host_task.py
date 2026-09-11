@@ -22,12 +22,14 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
 )
+from intergrax.contracts.execution_failure_evidence import ExecutionFailureEvidenceRecorder
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 from intergrax.runtime.execution.agentic import AgentEnginePort
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.execution_terminal.persistence import (
     terminal_outcome_from_task_state,
 )
+from intergrax.runtime.execution.boundary import ExecutionDelegate
 from intergrax.runtime.execution.facade import Execution
 from intergrax.runtime.execution.orchestration import (
     OrchestrationExecutor,
@@ -180,7 +182,7 @@ class _HostTaskTerminalPublishingDelegate:
 
     def __init__(
         self,
-        inner: StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult],
+        inner: ExecutionDelegate[ExecutionRequest[TaskExecutionInput, TaskResult], TaskResult],
         *,
         terminal_publisher: HostTaskTerminalPublisher | None,
         task: Task,
@@ -189,29 +191,39 @@ class _HostTaskTerminalPublishingDelegate:
         self._terminal_publisher = terminal_publisher
         self._task = task
 
+    async def _publish_terminal_for_state(self, state: TaskState, *, agent_id: str | None) -> None:
+        if self._terminal_publisher is None:
+            return
+        if terminal_outcome_from_task_state(state) is None:
+            return
+        run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
+        terminal_task = self._task.model_copy(
+            update={
+                "state": state,
+                "agent_id": agent_id or self._task.agent_id,
+            },
+        )
+        await self._terminal_publisher.publish_terminal(
+            terminal_task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+        )
+
     async def execute(
         self,
         request: ExecutionRequest[TaskExecutionInput, TaskResult],
     ) -> TaskResult:
-        result = await self._inner.execute(request)
-        if (
-            self._terminal_publisher is not None
-            and terminal_outcome_from_task_state(result.state) is not None
-        ):
-            run_id, attempt_id = require_active_execution_identity()
-            execution_id = require_active_execution_id()
-            terminal_task = self._task.model_copy(
-                update={
-                    "state": result.state,
-                    "agent_id": result.agent_id or self._task.agent_id,
-                },
-            )
-            await self._terminal_publisher.publish_terminal(
-                terminal_task,
-                run_id=run_id,
-                attempt_id=attempt_id,
-                execution_id=execution_id,
-            )
+        try:
+            result = await self._inner.execute(request)
+        except Exception:
+            await self._publish_terminal_for_state(TaskState.FAILED, agent_id=self._task.agent_id)
+            raise
+        await self._publish_terminal_for_state(
+            result.state,
+            agent_id=result.agent_id,
+        )
         return result
 
 
@@ -242,6 +254,7 @@ class HostTaskExecution:
     _terminal_publisher: HostTaskTerminalPublisher | None = None
     _revision_admission: EffectiveProfileRevisionAdmissionPort | None = None
     _execution_lineage_persistence: ExecutionLineagePersistence | None = None
+    _failure_evidence_recorder: ExecutionFailureEvidenceRecorder | None = None
 
     def _execution_runtime_for_task(
         self,
@@ -270,6 +283,7 @@ class HostTaskExecution:
             run_budget=self._run_budget,
             decision_lifecycle_host=CanonicalDecisionLifecycleHost(),
             execution_lineage_persistence=self._execution_lineage_persistence,
+            failure_evidence_recorder=self._failure_evidence_recorder,
         )
 
     async def execute(

@@ -664,9 +664,6 @@ async def test_dg001_p3_canonical_real_multi_agent_failure_central_problem_opera
     root_execution_id = root_admissions[0].execution_id
 
     listed = harness.read_service.list_problems(tenant_id=tenant)
-    if listed.total_count == 0:
-        pytest.skip(_DG001_CENTRAL_PROBLEM_BLOCKER)
-
     assert listed.total_count >= 1
     problem_id = listed.problems[0].problem_id
     detail = harness.read_service.get_problem(
@@ -687,10 +684,7 @@ async def test_dg001_p3_canonical_real_multi_agent_failure_central_problem_opera
             and execution_subject.run_id == validated_run_id
         ):
             matched_occurrence = True
-        assert occurrence_view.read_status in {
-            DiagnosticOccurrenceReadStatus.AVAILABLE,
-            DiagnosticOccurrenceReadStatus.PARTIAL,
-        }
+        assert occurrence_view.read_status is DiagnosticOccurrenceReadStatus.AVAILABLE
         lineage_view = occurrence_view.execution_lineage
         assert lineage_view is not None
         assert lineage_view.attempts

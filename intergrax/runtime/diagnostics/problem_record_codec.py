@@ -9,7 +9,8 @@ from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 
-from intergrax.contracts.execution_identity import RunId, TaskId
+from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
+from intergrax.contracts.execution_identity import ExecutionId, RunId, TaskId
 from intergrax.runtime.diagnostics.deterministic_problem_reconciliation import (
     DeterministicProblemReconciliationKey,
     ProblemReconciliationKeyKind,
@@ -408,16 +409,21 @@ def _encode_finding(
         if finding.exception_type is not None:
             encoded["exception_type"] = finding.exception_type
         return encoded
-    encoded = {
+    encoded: dict[str, object] = {
         "source": "lifecycle",
         "kind": finding.kind.value,
         "scope": finding.scope.value,
-        "source_anomaly_kind": finding.source_anomaly_kind.value,
     }
+    if finding.source_anomaly_kind is not None:
+        encoded["source_anomaly_kind"] = finding.source_anomaly_kind.value
     if finding.lifecycle_transition is not None:
         encoded["lifecycle_transition"] = _encode_lifecycle_transition(
             finding.lifecycle_transition,
         )
+    if finding.execution_id is not None:
+        encoded["execution_id"] = finding.execution_id
+    if finding.execution_failure_kind is not None:
+        encoded["execution_failure_kind"] = finding.execution_failure_kind.value
     return encoded
 
 
@@ -447,11 +453,28 @@ def _decode_finding(
         if transition_raw is not None
         else None
     )
+    source_anomaly_raw = value.get("source_anomaly_kind")
+    execution_id_raw = value.get("execution_id")
+    execution_failure_kind_raw = value.get("execution_failure_kind")
     return DeterministicFindingSignature(
         kind=DiagnosticFindingKind(str(value["kind"])),
         scope=LifecycleAnomalyScope(str(value["scope"])),
-        source_anomaly_kind=LifecycleAnomalyKind(str(value["source_anomaly_kind"])),
+        source_anomaly_kind=(
+            LifecycleAnomalyKind(str(source_anomaly_raw))
+            if source_anomaly_raw is not None
+            else None
+        ),
         lifecycle_transition=transition,
+        execution_id=(
+            ExecutionId(str(execution_id_raw))
+            if execution_id_raw is not None
+            else None
+        ),
+        execution_failure_kind=(
+            ExecutionFailureKind(str(execution_failure_kind_raw))
+            if execution_failure_kind_raw is not None
+            else None
+        ),
     )
 
 

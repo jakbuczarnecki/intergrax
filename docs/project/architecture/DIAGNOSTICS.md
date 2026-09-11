@@ -55,7 +55,7 @@ Central diagnostics answers:
 It is implemented under `intergrax/runtime/diagnostics/` as a **single spine**:
 
 - `ExecutionReconstructor` - factual reconstruction from canonical evidence
-- `LifecycleAnomalyAnalyzer` + `DiagnosticAssessmentBuilder` - deterministic assessment
+- `LifecycleAnomalyAnalyzer` + `DiagnosticAssessmentBuilder` + `ExecutionFailureAnalyzer` - deterministic assessment (lifecycle anomalies plus durable `EXECUTION_FAILED` execution-boundary facts — R2)
 - `ProblemGroupingEngine` - structural grouping hypotheses
 - `ProblemLifecycleEngine` - stable `Problem` identity and lifecycle
 - `DiagnosticOrchestrator` - canonical write/process entry point

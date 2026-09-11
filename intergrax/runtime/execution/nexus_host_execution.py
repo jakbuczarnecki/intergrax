@@ -11,6 +11,9 @@ from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId
 from intergrax.runtime.execution.effective_profile_revision_admission import (
     EffectiveProfileRevisionAdmissionPort,
 )
+from intergrax.runtime.execution.failure_evidence.runtime_event_recorder import (
+    RuntimeEventExecutionFailureEvidenceRecorder,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.host_task_terminal_publisher import (
     HostTaskTerminalPublisher,
@@ -70,4 +73,7 @@ def build_host_task_execution(
         _terminal_publisher=build_nexus_host_task_terminal_publisher(nexus_loop),
         _revision_admission=revision_admission,
         _execution_lineage_persistence=nexus_loop.execution_lineage_persistence,
+        _failure_evidence_recorder=RuntimeEventExecutionFailureEvidenceRecorder(
+            nexus_loop.event_bus,
+        ),
     )

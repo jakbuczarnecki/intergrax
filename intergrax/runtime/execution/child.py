@@ -30,6 +30,9 @@ from intergrax.runtime.execution.boundary import (
     ExecutionDelegate,
     ExecutionIdentityBinding,
 )
+from intergrax.runtime.execution.failure_evidence.recording_delegate import (
+    wrap_execution_delegate_for_failure_evidence,
+)
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
 from intergrax.runtime.execution.budget.models import (
     ChildBudgetAllocationContext,
@@ -171,7 +174,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             )
             resolved_hooks = (lineage_hook, *admission_hooks)
         boundary = ExecutionBoundary[RequestT, ResultT](
-            delegate,
+            wrap_execution_delegate_for_failure_evidence(delegate),
             admission_hooks=resolved_hooks,
             identity=identity,
             authority=child_authority,

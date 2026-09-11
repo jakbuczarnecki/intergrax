@@ -48,9 +48,15 @@ from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.resume_planner import (
     execution_identity_from_checkpoint,
 )
+from intergrax.runtime.execution.execution_terminal.persistence import (
+    terminal_outcome_from_task_state,
+)
+from intergrax.runtime.execution.failure_evidence.runtime_event_recorder import (
+    RuntimeEventExecutionFailureEvidenceRecorder,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.task.task import Task, TaskResult
+from intergrax.runtime.task.task import Task, TaskResult, TaskState
 
 _ORCHESTRATION_CAPABILITIES = frozenset({ExecutionCapability.ORCHESTRATION})
 
@@ -122,6 +128,45 @@ class OrchestrationExecutor:
             run_id=run_id,
             attempt_id=attempt_id,
         )
+
+
+class _RootTaskTerminalPublishingDelegate:
+    """Publish terminal runtime events (and diagnostics) on success or failure."""
+
+    __slots__ = ("_inner", "_nexus_loop", "_task")
+
+    def __init__(
+        self,
+        inner: TaskBoundOrchestrationDelegate,
+        *,
+        nexus_loop: NexusLoop,
+        task: Task,
+    ) -> None:
+        self._inner = inner
+        self._nexus_loop = nexus_loop
+        self._task = task
+
+    async def _publish_terminal(self, state: TaskState, *, agent_id: str | None) -> None:
+        if terminal_outcome_from_task_state(state) is None:
+            return
+        terminal_task = self._task.model_copy(
+            update={"state": state, "agent_id": agent_id or self._task.agent_id},
+        )
+        await self._nexus_loop._publish_terminal_runtime_event_with_active_identity(
+            terminal_task,
+        )
+
+    async def execute(
+        self,
+        request: ExecutionRequest[TaskExecutionInput, TaskResult],
+    ) -> TaskResult:
+        try:
+            result = await self._inner.execute(request)
+        except Exception:
+            await self._publish_terminal(TaskState.FAILED, agent_id=self._task.agent_id)
+            raise
+        await self._publish_terminal(result.state, agent_id=result.agent_id)
+        return result
 
 
 class TaskBoundOrchestrationDelegate:
@@ -198,10 +243,17 @@ async def execute_root_task(
         TaskResult,
         TaskResult,
     ](
-        orchestration_executor=TaskBoundOrchestrationDelegate(
-            task,
-            OrchestrationExecutor(nexus_loop),
+        orchestration_executor=_RootTaskTerminalPublishingDelegate(
+            TaskBoundOrchestrationDelegate(
+                task,
+                OrchestrationExecutor(nexus_loop),
+            ),
+            nexus_loop=nexus_loop,
+            task=task,
         ),
+    )
+    failure_recorder = RuntimeEventExecutionFailureEvidenceRecorder(
+        nexus_loop.event_bus,
     )
     runtime = ExecutionRuntime[
         ExecutionRequest[TaskExecutionInput, TaskResult],
@@ -212,6 +264,7 @@ async def execute_root_task(
         run_budget=run_budget,
         decision_lifecycle_host=_default_root_decision_lifecycle_host(),
         execution_lineage_persistence=nexus_loop.execution_lineage_persistence,
+        failure_evidence_recorder=failure_recorder,
     )
     root_context = RootExecutionContext(
         run_id=identity.run_id,

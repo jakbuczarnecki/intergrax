@@ -9,7 +9,8 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import TYPE_CHECKING, NewType, Protocol, runtime_checkable
 
-from intergrax.contracts.execution_identity import RunId, TaskId
+from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
+from intergrax.contracts.execution_identity import ExecutionId, RunId, TaskId
 from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticAssessment,
     DiagnosticFinding,
@@ -214,6 +215,8 @@ class ProblemGroupingSubjectFinding:
     signal_status: str | None = None
     error_code: str | None = None
     exception_type: str | None = None
+    execution_id: ExecutionId | None = None
+    execution_failure_kind: ExecutionFailureKind | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -273,8 +276,10 @@ class DeterministicFindingSignature:
 
     kind: DiagnosticFindingKind
     scope: LifecycleAnomalyScope
-    source_anomaly_kind: LifecycleAnomalyKind
+    source_anomaly_kind: LifecycleAnomalyKind | None
     lifecycle_transition: LifecycleViolationTransition | None = None
+    execution_id: ExecutionId | None = None
+    execution_failure_kind: ExecutionFailureKind | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -572,6 +577,8 @@ def _normalize_finding(finding: DiagnosticFinding) -> ProblemGroupingSubjectFind
         scope=finding.scope,
         source_anomaly_kind=finding.source_anomaly_kind,
         lifecycle_transition=finding.lifecycle_transition,
+        execution_id=finding.execution_id,
+        execution_failure_kind=finding.execution_failure_kind,
     )
 
 

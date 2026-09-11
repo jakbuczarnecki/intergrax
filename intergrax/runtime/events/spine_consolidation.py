@@ -20,7 +20,7 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_taxonomy import EventCategory, RetentionClass
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 
-_PUBLICATION_SPINE_TARGET_MAX = 56
+_PUBLICATION_SPINE_TARGET_MAX = 57
 
 
 @dataclass(frozen=True, slots=True)

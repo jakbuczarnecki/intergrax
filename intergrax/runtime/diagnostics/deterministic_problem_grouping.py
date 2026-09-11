@@ -34,7 +34,7 @@ from intergrax.runtime.diagnostics.diagnostic_subject import DiagnosticSubjectKi
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleViolationTransition
 
 STRATEGY_ID = ProblemGroupingStrategyId("intergrax.diagnostics.structural.v1")
-STRATEGY_VERSION = ProblemGroupingStrategyVersion("1")
+STRATEGY_VERSION = ProblemGroupingStrategyVersion("2")
 
 _TRANSITION_ABSENT = (0,)
 _TRANSITION_PRESENT_PREFIX = (1,)
@@ -71,6 +71,12 @@ def _finding_sort_key(finding: ProblemGroupingSubjectFinding) -> tuple[object, .
         finding.scope.value if finding.scope is not None else "",
         finding.source_anomaly_kind.value if finding.source_anomaly_kind is not None else "",
         _lifecycle_transition_sort_key(finding.lifecycle_transition),
+        finding.execution_id or "",
+        (
+            finding.execution_failure_kind.value
+            if finding.execution_failure_kind is not None
+            else ""
+        ),
     )
 
 
@@ -96,13 +102,20 @@ def _finding_signature(
             error_code=finding.error_code,
             exception_type=finding.exception_type,
         )
-    if finding.kind is None or finding.scope is None or finding.source_anomaly_kind is None:
+    if finding.kind is None or finding.scope is None:
         raise ValueError("lifecycle grouping finding missing required fields")
+    if (
+        finding.kind.value != "execution_failed"
+        and finding.source_anomaly_kind is None
+    ):
+        raise ValueError("lifecycle grouping finding missing source_anomaly_kind")
     return DeterministicFindingSignature(
         kind=finding.kind,
         scope=finding.scope,
         source_anomaly_kind=finding.source_anomaly_kind,
         lifecycle_transition=finding.lifecycle_transition,
+        execution_id=finding.execution_id,
+        execution_failure_kind=finding.execution_failure_kind,
     )
 
 
