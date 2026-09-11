@@ -1,4 +1,4 @@
-"""CLI entrypoint for resumable VPI Data Pack v1 builds."""
+﻿"""CLI entrypoint for resumable VPI Data Pack v1 builds."""
 
 from __future__ import annotations
 
@@ -30,8 +30,8 @@ from platform_proofs.scenarios.verified_product_identification.integrations.embe
     ensure_embedding_provider_integrations_registered,
 )
 
-_SCENARIO_DIR = Path(__file__).resolve().parents[1]
-_REPO_ROOT = _SCENARIO_DIR.parents[2]
+_SCENARIO_DIR = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 def main(argv: list[str] | None = None) -> int:

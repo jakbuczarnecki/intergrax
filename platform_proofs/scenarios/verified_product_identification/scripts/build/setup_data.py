@@ -1,4 +1,4 @@
-"""Install the VPI portable data package."""
+﻿"""Install the VPI portable data package."""
 
 from __future__ import annotations
 
@@ -18,8 +18,8 @@ from platform_proofs.scenarios.verified_product_identification.data_package.inst
     install_vpi_data_package,
 )
 
-_SCENARIO_DIR = Path(__file__).resolve().parent
-_REPO_ROOT = _SCENARIO_DIR.parents[2]
+_SCENARIO_DIR = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[4]
 
 
 def _build_parser() -> argparse.ArgumentParser:

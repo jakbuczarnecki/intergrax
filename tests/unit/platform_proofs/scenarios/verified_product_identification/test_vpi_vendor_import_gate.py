@@ -18,7 +18,7 @@ _PRODUCTION_PATHS = (
     _VPI_ROOT / "integrations",
     _VPI_ROOT / "composition",
     _VPI_ROOT / "ingest",
-    _VPI_ROOT / "bootstrap.py",
+    _VPI_ROOT / "scripts" / "operator" / "bootstrap.py",
 )
 
 _FORBIDDEN_VENDOR_ROOTS = frozenset(

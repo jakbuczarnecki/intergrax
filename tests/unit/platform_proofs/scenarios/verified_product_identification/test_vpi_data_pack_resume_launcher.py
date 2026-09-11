@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_data_pack_resume_config import (
+from platform_proofs.scenarios.verified_product_identification.scripts.operator.vpi_data_pack_resume_config import (
     VPI_DATA_PACK_ARTIFACT_ROOT,
     VPI_DATA_PACK_EXECUTION_PROFILE,
     VPI_DATA_PACK_RESUME_BUILD_SOURCE_SHA,
@@ -14,7 +14,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.operator.
     build_vpi_data_pack_resume_cli_argv,
     resolve_vpi_data_pack_resume_launch_plan,
 )
-from platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume import (
+from platform_proofs.scenarios.verified_product_identification.scripts.operator.run_vpi_data_pack_resume import (
     VpiDataPackResumePreflightError,
     _read_process_pids,
     assert_cuda_preflight,
@@ -26,18 +26,21 @@ from platform_proofs.scenarios.verified_product_identification.dataset.operator.
 pytestmark = pytest.mark.unit
 
 _REPO_ROOT = Path(__file__).resolve().parents[5]
-_BAT_PATH = _REPO_ROOT / "scripts" / "vpi" / "resume_vpi_data_pack.bat"
+_VPI_ROOT = _REPO_ROOT / "platform_proofs" / "scenarios" / "verified_product_identification"
+_BAT_PATH = _VPI_ROOT / "scripts" / "operator" / "resume_vpi_data_pack.bat"
+_COMPAT_BAT_PATH = _REPO_ROOT / "scripts" / "vpi" / "resume_vpi_data_pack.bat"
 _OLD_BAT_PATH = _REPO_ROOT / "scripts" / "vpi" / "resume_vpi_5c4f.bat"
 
 
 def test_canonical_launcher_exists_old_launcher_removed() -> None:
     assert _BAT_PATH.is_file()
+    assert _COMPAT_BAT_PATH.is_file()
     assert not _OLD_BAT_PATH.exists()
 
 
 def test_bat_contract_resume_only_production_parameters() -> None:
     text = _BAT_PATH.read_text(encoding="utf-8")
-    assert "run_vpi_data_pack_resume" in text
+    assert "scripts.operator.run_vpi_data_pack_resume" in text
     assert "5C4F" not in text.upper()
     assert "5c4f" not in text
     assert "--start-fresh" not in text
@@ -62,17 +65,17 @@ def test_path_preflight_missing_build_state(tmp_path: Path, monkeypatch: pytest.
     output_root.mkdir()
     (output_root / "state").mkdir()
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_RESUME_BUILD_SOURCE_SHA",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_RESUME_BUILD_SOURCE_SHA",
         "test-sha",
     )
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_ARTIFACT_ROOT",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_ARTIFACT_ROOT",
         output_root,
     )
     build_source = tmp_path / "build-source" / "test-sha"
     build_source.mkdir(parents=True)
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_BUILD_SOURCE_ROOT",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_BUILD_SOURCE_ROOT",
         tmp_path / "build-source",
     )
     dataset = tmp_path / "dataset.parquet"
@@ -80,17 +83,17 @@ def test_path_preflight_missing_build_state(tmp_path: Path, monkeypatch: pytest.
     dataset.write_bytes(b"x")
     manifest.write_text("{}", encoding="utf-8")
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_DATASET_PATH",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_DATASET_PATH",
         dataset,
     )
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_DATASET_MANIFEST_PATH",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_DATASET_MANIFEST_PATH",
         manifest,
     )
     python_stub = tmp_path / "python.exe"
     python_stub.write_bytes(b"")
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_CUDA_PYTHON",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.vpi_data_pack_resume_config.VPI_DATA_PACK_CUDA_PYTHON",
         python_stub,
     )
     plan = resolve_vpi_data_pack_resume_launch_plan()
@@ -144,7 +147,7 @@ def test_active_writer_guard_fails_when_pid_alive(monkeypatch: pytest.MonkeyPatc
     process_json = tmp_path / "process.json"
     process_json.write_text('{"python_pid": 99999}', encoding="utf-8")
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume._windows_pid_alive",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.run_vpi_data_pack_resume._windows_pid_alive",
         lambda pid: pid == 99999,
     )
     with pytest.raises(VpiDataPackResumePreflightError, match="ALREADY RUNNING"):
@@ -157,7 +160,7 @@ def test_active_writer_guard_with_bom_process_json(
     process_json = tmp_path / "process.json"
     process_json.write_text('{"python_pid": 4242}', encoding="utf-8-sig")
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume._windows_pid_alive",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.run_vpi_data_pack_resume._windows_pid_alive",
         lambda pid: pid == 4242,
     )
     with pytest.raises(VpiDataPackResumePreflightError, match="ALREADY RUNNING"):
@@ -168,23 +171,23 @@ def test_run_resume_dry_run_does_not_start_build(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume.assert_no_active_canonical_writer",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.run_vpi_data_pack_resume.assert_no_active_canonical_writer",
         lambda: None,
     )
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume.assert_cuda_preflight",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.run_vpi_data_pack_resume.assert_cuda_preflight",
         lambda _path: "test-gpu",
     )
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume.assert_path_preflight",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.run_vpi_data_pack_resume.assert_path_preflight",
         lambda _plan: None,
     )
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume._read_build_progress_counts",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.run_vpi_data_pack_resume._read_build_progress_counts",
         lambda _root: (1200, 3771, 1201, 1200),
     )
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume.resolve_vpi_data_pack_resume_launch_plan",
+        "platform_proofs.scenarios.verified_product_identification.scripts.operator.run_vpi_data_pack_resume.resolve_vpi_data_pack_resume_launch_plan",
         resolve_vpi_data_pack_resume_launch_plan,
     )
     exit_code = run_vpi_data_pack_resume(dry_run=True)

@@ -9,7 +9,7 @@ pytest.importorskip("pyarrow")
 
 import pyarrow.parquet as pq
 
-from platform_proofs.scenarios.verified_product_identification.dataset.build_wdc_dataset import (
+from platform_proofs.scenarios.verified_product_identification.scripts.build.build_wdc_dataset import (
     build_dataset,
     parse_json_object,
     record_is_selected,

@@ -189,19 +189,19 @@ def test_candidate_child_validates_same_cuda_requirement(
         )
 
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.run_embedding_arena_candidate.validate_arena_execution_environment",
+        "platform_proofs.scenarios.verified_product_identification.scripts.diagnostics.run_embedding_arena_candidate.validate_arena_execution_environment",
         _record_validate,
     )
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.run_embedding_arena_candidate.execute_candidate_stage_ab",
+        "platform_proofs.scenarios.verified_product_identification.scripts.diagnostics.run_embedding_arena_candidate.execute_candidate_stage_ab",
         lambda **_: (_ for _ in ()).throw(AssertionError("candidate work must not run")),
     )
     monkeypatch.setattr(
-        "platform_proofs.scenarios.verified_product_identification.run_embedding_arena_candidate.load_proof_environment",
+        "platform_proofs.scenarios.verified_product_identification.scripts.diagnostics.run_embedding_arena_candidate.load_proof_environment",
         lambda **_: None,
     )
 
-    from platform_proofs.scenarios.verified_product_identification.run_embedding_arena_candidate import (
+    from platform_proofs.scenarios.verified_product_identification.scripts.diagnostics.run_embedding_arena_candidate import (
         main,
     )
 
