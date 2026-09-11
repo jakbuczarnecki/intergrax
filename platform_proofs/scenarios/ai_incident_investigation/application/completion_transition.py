@@ -52,6 +52,9 @@ class PreReconciliationValidationDiagnostic:
 class PreReconciliationValidationError(Exception):
     """Raised when final validation is not clean before completion reconciliation."""
 
+    platform_run_id: str | None
+    persisted_trace_events: tuple[dict[str, object], ...]
+
     def __init__(self, decision: PreReconciliationTransitionDecision) -> None:
         if decision.outcome is not PreReconciliationTransitionOutcome.REJECTED:
             raise ValueError("PreReconciliationValidationError requires a rejected transition decision")
@@ -66,6 +69,8 @@ class PreReconciliationValidationError(Exception):
             revision_budget_remaining=decision.revision_budget_remaining,
             recovery_attempted=decision.recovery_attempted,
         )
+        self.platform_run_id = None
+        self.persisted_trace_events = ()
         super().__init__(_rejection_message(decision))
 
 

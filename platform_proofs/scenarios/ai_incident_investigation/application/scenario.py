@@ -67,11 +67,13 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
     trace_reader_from_composition,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
+    CompletionReconciliationError,
     completion_intent_from_completion_mode,
     normalize_evidence_gathering_stop_reason,
     reconcile_investigation_completion,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
+    PreReconciliationValidationError,
     enforce_pre_reconciliation_validation_clean_transition,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_completion_gate import (
@@ -229,6 +231,8 @@ class ScenarioExecutionResult:
     investigation_conclusion: InvestigationConclusion | None = None
     investigated_problem_ids: tuple[ProblemId, ...] = ()
     execution_tenant_id: str = STANDALONE_SCENARIO_TENANT_ID
+    platform_run_id: str | None = None
+    persisted_trace_events: tuple[dict[str, Any], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -501,22 +505,32 @@ async def execute_resolved_skeleton(
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
     persist_terminal_acceptance_diagnostic(diagnostic)
-    enforce_pre_reconciliation_validation_clean_transition(
-        validation_valid=final_validation.valid,
-        validation_errors=tuple(final_validation.errors),
-        revision_budget_remaining=max_decision_revisions,
-        completion_mode=completion_mode,
-        has_supported_diagnosis=has_supported_diagnosis,
-    )
-    reconciled = reconcile_investigation_completion(
-        model_intent=completion_intent_from_completion_mode(completion_mode),
-        critic_verdict_passed=critic_verdict_passed,
-        has_supported_diagnosis=has_supported_diagnosis,
-        validation_errors=tuple(final_validation.errors),
-        evidence_gathering_stop_reason=normalize_evidence_gathering_stop_reason(
-            evidence_gathering_stop_reason
-        ),
-    )
+    try:
+        enforce_pre_reconciliation_validation_clean_transition(
+            validation_valid=final_validation.valid,
+            validation_errors=tuple(final_validation.errors),
+            revision_budget_remaining=max_decision_revisions,
+            completion_mode=completion_mode,
+            has_supported_diagnosis=has_supported_diagnosis,
+        )
+    except PreReconciliationValidationError as exc:
+        exc.platform_run_id = run_id
+        exc.persisted_trace_events = tuple(trace_events)
+        raise
+    try:
+        reconciled = reconcile_investigation_completion(
+            model_intent=completion_intent_from_completion_mode(completion_mode),
+            critic_verdict_passed=critic_verdict_passed,
+            has_supported_diagnosis=has_supported_diagnosis,
+            validation_errors=tuple(final_validation.errors),
+            evidence_gathering_stop_reason=normalize_evidence_gathering_stop_reason(
+                evidence_gathering_stop_reason
+            ),
+        )
+    except CompletionReconciliationError as exc:
+        exc.platform_run_id = run_id
+        exc.persisted_trace_events = tuple(trace_events)
+        raise
     if reconciled.completion_mode.value == COMPLETION_SUPPORTED_DIAGNOSIS:
         assert_ai_incident_completion_eligible(
             evidence_nodes=evidence_nodes,
@@ -561,6 +575,8 @@ async def execute_resolved_skeleton(
         investigation_conclusion=investigation_conclusion,
         investigated_problem_ids=investigated_problem_ids,
         execution_tenant_id=execution_tenant_id,
+        platform_run_id=run_id,
+        persisted_trace_events=tuple(trace_events),
     )
 
 

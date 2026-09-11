@@ -7,6 +7,8 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
+from collections.abc import Mapping
+
 from testing_support.decision_e2e.local_qualification_session.contracts import (
     SourceBlobFingerprint,
     SourceDriftReport,
@@ -41,6 +43,31 @@ def capture_source_fingerprint(
                 semantic_group=semantic_group,
             )
         )
+    return SourceFingerprintSnapshot(
+        repository_head_sha=repository_head_sha,
+        blobs=tuple(blobs),
+    )
+
+
+def capture_semantic_source_fingerprint(
+    repo_root: Path,
+    *,
+    semantic_source_groups: Mapping[str, tuple[str, ...]],
+    repository_head_sha: str,
+) -> SourceFingerprintSnapshot:
+    blobs: list[SourceBlobFingerprint] = []
+    for group, paths in semantic_source_groups.items():
+        for relative in paths:
+            absolute = repo_root / relative
+            if not absolute.is_file():
+                raise FileNotFoundError(f"qualification source blob missing: {relative}")
+            blobs.append(
+                SourceBlobFingerprint(
+                    path=relative.replace("\\", "/"),
+                    content_hash=_hash_file(absolute),
+                    semantic_group=group,
+                )
+            )
     return SourceFingerprintSnapshot(
         repository_head_sha=repository_head_sha,
         blobs=tuple(blobs),

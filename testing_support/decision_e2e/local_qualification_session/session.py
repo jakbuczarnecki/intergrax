@@ -86,6 +86,33 @@ class LocalQualificationSession:
         if existing is not None:
             self._hydrate_from_checkpoint(existing)
 
+    @property
+    def state(self) -> QualificationSessionState:
+        return self._state
+
+    @property
+    def spec(self) -> QualificationSpec:
+        return self._spec
+
+    @property
+    def frozen_source(self) -> SourceFingerprintSnapshot:
+        return self._frozen_source
+
+    @property
+    def session_id(self) -> str:
+        return self._session_id
+
+    @property
+    def task_id(self) -> str:
+        return self._task_id
+
+    def completed_run_indices(self) -> tuple[int, ...]:
+        return self._registry.completed_indices()
+
+    def pending_run_indices(self) -> tuple[int, ...]:
+        completed = set(self._registry.completed_indices())
+        return tuple(index for index in range(self._spec.run_count) if index not in completed)
+
     def _hydrate_from_checkpoint(self, checkpoint: SessionCheckpoint) -> None:
         self._state = checkpoint.state
         self._session_id = checkpoint.session_id

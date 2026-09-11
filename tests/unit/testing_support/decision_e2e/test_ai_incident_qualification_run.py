@@ -141,6 +141,8 @@ async def test_reconciliation_failure_serialization_emits_diagnostic_fields(
         valid_model_trial=True,
         environment_event=False,
         run_id=run_id,
+        runtime_execution_run_id=str(run_id),
+        qualification_observation_run_id=None,
         signals=signals,
         run_result=build_decision_qualification_run_result(
             run_id=run_id,
@@ -148,10 +150,12 @@ async def test_reconciliation_failure_serialization_emits_diagnostic_fields(
             evaluator_passed=False,
         ),
         block_reason=str(exc),
+        trace_evidence=None,
     )
-    executor = CallableDecisionQualificationRunExecutor(
-        _callable=lambda run_index: _async_return(outcome),
-    )
+    async def _run_one(_run_index: int) -> AiIncidentQualificationRunOutcome:
+        return outcome
+
+    executor = CallableDecisionQualificationRunExecutor(_callable=_run_one)
     plan = DecisionReliabilityQualificationPlan(
         run_count=1,
         provider_id="openai",

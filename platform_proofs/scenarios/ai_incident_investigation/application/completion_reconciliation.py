@@ -60,6 +60,9 @@ class CompletionReconciliationDiagnostic:
 class CompletionReconciliationError(Exception):
     """Raised when model completion intent cannot be reconciled with validated state."""
 
+    platform_run_id: str | None
+    persisted_trace_events: tuple[dict[str, object], ...]
+
     def __init__(
         self,
         reason: CompletionReconciliationFailureReason,
@@ -70,6 +73,8 @@ class CompletionReconciliationError(Exception):
         self.reason = reason
         self.diagnostic = diagnostic
         self._detail = detail
+        self.platform_run_id = None
+        self.persisted_trace_events = ()
         super().__init__(self._message())
 
     def _message(self) -> str:
