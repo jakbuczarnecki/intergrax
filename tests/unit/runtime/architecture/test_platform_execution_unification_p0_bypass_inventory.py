@@ -37,7 +37,6 @@ _FROZEN_CHILD_RUNNER_IMPORTS = frozenset(
         "intergrax/runtime/execution/delegated_subtask_child_port.py",
         "intergrax/runtime/execution/execution_work_port.py",
         "intergrax/runtime/nexus/execution/graph_executor.py",
-        "intergrax/applications/_shared/production_delegated_subtask_child_execution_wiring.py",
     },
 )
 

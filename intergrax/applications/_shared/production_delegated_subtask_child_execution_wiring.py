@@ -11,8 +11,13 @@ from intergrax.runtime.execution.budget import (
     ExecutionBudgetLedger,
     create_execution_budget_ledger,
 )
-from intergrax.runtime.execution.child import ChildExecutionRunner
-from intergrax.runtime.execution.delegated_subtask_child_port import as_child_execution_port
+from intergrax.runtime.execution.delegated_subtask_child_port import (
+    child_execution_port_from_work_port,
+)
+from intergrax.runtime.execution.execution_work_port import (
+    DelegatedSubtaskChildExecutionWorkPort,
+    delegated_subtask_child_execution_work_port,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
@@ -22,14 +27,14 @@ class ProductionDelegatedSubtaskChildExecutionPort:
     """
     Process-lifetime child execution binding for delegated subtasks.
 
-    Uses the same :class:`ChildExecutionRunner` admission plane as
-    :class:`intergrax.runtime.execution.execution_work_port.ChildExecutionWorkPort`.
+    Owns a canonical :class:`DelegatedSubtaskChildExecutionWorkPort` — not
+    :class:`intergrax.runtime.execution.child.ChildExecutionRunner`.
     """
 
-    _runner: ChildExecutionRunner
+    _work_port: DelegatedSubtaskChildExecutionWorkPort
 
     def port[RequestT, ResultT](self) -> ChildExecutionPort[RequestT, ResultT]:
-        return as_child_execution_port(self._runner)
+        return child_execution_port_from_work_port(self._work_port)
 
 
 def build_production_delegated_subtask_child_execution_port(
@@ -42,7 +47,7 @@ def build_production_delegated_subtask_child_execution_port(
     Build canonical ``ChildExecutionPort`` at the production composition root.
 
     When ``nexus_loop`` is supplied, budget limits align with the active Nexus run budget
-    (same composition seam as ``build_compensation_side_effect_execution``).
+    (budget alignment only — not Nexus child scheduling).
     """
     resolved_budget = run_budget
     if nexus_loop is not None:
@@ -52,8 +57,8 @@ def build_production_delegated_subtask_child_execution_port(
         if ledger is not None
         else create_execution_budget_ledger(resolved_budget)
     )
-    runner = ChildExecutionRunner(ledger=resolved_ledger)
-    return ProductionDelegatedSubtaskChildExecutionPort(_runner=runner)
+    work_port = delegated_subtask_child_execution_work_port(ledger=resolved_ledger)
+    return ProductionDelegatedSubtaskChildExecutionPort(_work_port=work_port)
 
 
 __all__ = [
