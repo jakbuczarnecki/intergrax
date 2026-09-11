@@ -50,6 +50,8 @@ Drift classification `0346face..origin/development` at qualification: Session C 
 
 P0 post-R2 R1 drift sentinel advanced to `40cc8c11e0b57ed4cf0d99ed1b9b297820c6eaa8` (qualified `RuntimeEventType.EXECUTION_FAILED` — DIAG execution failure evidence R2); no other R1-protected paths changed between that baseline and Final sign-off.
 
+**EXECUTION_FAILED compatibility (H1):** EventId semantics, tenant routing, persistence, journal ordering, pagination, export filtering, redaction, and reconstruction compatibility — PASS via `test_npsc5f_r3_final_h1_upstream_runtime_event_drift_reconciliation.py` on integrated HEAD `2965f2fcfed27162f06625c4b8bcd84b18d27704`.
+
 R3 drift sentinel (`testing_support/npsc5f_r3_protected_drift.py`) scopes **exact R3 export surfaces** and does **not** file-freeze all of `runtime/observability/**` (R4 reconstruction may touch adjacent modules).
 
 ---
