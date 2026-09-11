@@ -14,12 +14,12 @@ Qualify integrated post-R3 changes to the runtime event surface (especially `Run
 | R2 Final | `76c92847f67da22d97943b55896a88c814d7e39d` |
 | R3 implementation | `0346face3ef68d8f21504822a26f8f45f2384cf9` |
 | Qualified `EXECUTION_FAILED` enum (DIAG R2) | `40cc8c11e0b57ed4cf0d99ed1b9b297820c6eaa8` |
-| H1 gate completion (`origin/development`) | `5aeaaca4aeb78fd620d5994b7f08f5daa20b7db2` |
-| R3 Final integrated `development` | `2965f2fcfed27162f06625c4b8bcd84b18d27704` |
+| H1 gate completion | `8ddf63f74aeb78fd620d5994b7f08f5daa20b7db` |
+| R3 Final integrated `development` | `8ddf63f74aeb78fd620d5994b7f08f5daa20b7db` |
 
 ## Current integrated HEAD
 
-`2965f2fcfed27162f06625c4b8bcd84b18d27704` (`origin/development` at R3 Final freeze sign-off; no R3-protected export contract drift since `0346face`).
+`8ddf63f74aeb78fd620d5994b7f08f5daa20b7db` (`origin/development` at R3 Final freeze sign-off; no R3-protected export contract drift since `0346face`).
 
 ## Post-R3 remote drift
 
@@ -114,7 +114,7 @@ Failure evidence records canonical `RuntimeEvent` via `runtime_event_recorder.py
 
 ## Baseline reconciliation decision
 
-**BASELINE ADVANCED:** YES — to qualified enum commit `40cc8c11e` (immutable). Integrated HEAD `2965f2fcfed27162f06625c4b8bcd84b18d27704` recorded as H1 qualification pin (R3 Final sign-off on `origin/development`).
+**BASELINE ADVANCED:** YES — to qualified enum commit `40cc8c11e` (immutable). Integrated HEAD `8ddf63f74aeb78fd620d5994b7f08f5daa20b7db` recorded as H1 qualification pin (R3 Final sign-off on `origin/development`).
 
 **Justification:** QUALIFIED COMPATIBLE DRIFT
 

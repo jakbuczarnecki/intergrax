@@ -41,7 +41,12 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
 )
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstruction
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.contracts.predictive_investigation_read import RelatedPredictiveRiskSignalView
+from intergrax.contracts.predictive_investigation_read import (
+    RelatedPredictiveHistoryEntryView,
+    RelatedPredictiveRiskSignalView,
+    RelatedPredictionOutcomeHistoryView,
+)
+from intergrax.contracts.preventive_investigation_read import RelatedPreventiveRecommendationView
 
 
 def project_investigation_view(
@@ -50,6 +55,10 @@ def project_investigation_view(
     occurrence: DiagnosticProblemOccurrenceView,
     reconstruction: ExecutionReconstruction | None,
     related_risk_signals: tuple[RelatedPredictiveRiskSignalView, ...] = (),
+    forecast_risk_signals: tuple[RelatedPredictiveRiskSignalView, ...] = (),
+    prediction_history: tuple[RelatedPredictiveHistoryEntryView, ...] = (),
+    prediction_outcome_history: tuple[RelatedPredictionOutcomeHistoryView, ...] = (),
+    preventive_recommendations: tuple[RelatedPreventiveRecommendationView, ...] = (),
 ) -> DiagnosticInvestigationView:
     summary = DiagnosticProblemSummary(
         problem_id=problem_detail.problem_id,
@@ -110,6 +119,10 @@ def project_investigation_view(
         assistant_payload=assistant_payload,
         investigation_limitations=limitations,
         related_risk_signals=related_risk_signals,
+        forecast_risk_signals=forecast_risk_signals,
+        prediction_history=prediction_history,
+        prediction_outcome_history=prediction_outcome_history,
+        preventive_recommendations=preventive_recommendations,
     )
 
 

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import TypeVar
 
 from intergrax.contracts.predictive_analyzer import PredictiveAnalyzer
+from intergrax.contracts.predictive.plugin_registration import PredictivePluginRegistration
 
 _T = TypeVar("_T")
 
@@ -32,12 +33,21 @@ def _analyzer_sort_key(item: _OrderedAnalyzer) -> tuple[int, str, str]:
 class PredictiveAnalyzerRegistry:
     """Discovery, validation, deterministic ordering, and isolation metadata."""
 
-    def __init__(self, analyzers: tuple[PredictiveAnalyzer, ...] = ()) -> None:
+    def __init__(
+        self,
+        analyzers: tuple[PredictiveAnalyzer, ...] = (),
+        registrations: tuple[PredictivePluginRegistration, ...] = (),
+    ) -> None:
         self._analyzers = _order_analyzers(analyzers)
+        self._registrations = _order_registrations(registrations)
 
     @property
     def analyzers(self) -> tuple[PredictiveAnalyzer, ...]:
         return self._analyzers
+
+    @property
+    def registrations(self) -> tuple[PredictivePluginRegistration, ...]:
+        return self._registrations
 
     @classmethod
     def empty(cls) -> PredictiveAnalyzerRegistry:
@@ -60,6 +70,25 @@ def _order_analyzers(
         label="predictive analyzer",
     )
     return tuple(item.analyzer for item in ordered)
+
+
+def _order_registrations(
+    registrations: tuple[PredictivePluginRegistration, ...],
+) -> tuple[PredictivePluginRegistration, ...]:
+    seen: set[tuple[str, str]] = set()
+    for reg in registrations:
+        key = (reg.namespace, reg.plugin_id)
+        if key in seen:
+            raise PredictiveRegistryConfigurationError(
+                f"duplicate predictive plugin registration: {reg.namespace}/{reg.plugin_id}",
+            )
+        seen.add(key)
+    return tuple(
+        sorted(
+            registrations,
+            key=lambda r: (-r.priority, r.namespace, r.plugin_id),
+        ),
+    )
 
 
 def _dedupe_and_sort(

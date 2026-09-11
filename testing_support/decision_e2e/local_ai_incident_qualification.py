@@ -112,6 +112,16 @@ def semantic_source_groups_for_r4r1() -> dict[str, tuple[str, ...]]:
             "intergrax/runtime/nexus/orchestration/graph_runner.py",
             "platform_proofs/scenarios/ai_incident_investigation/application/scenario.py",
         ),
+        "O2": (
+            "intergrax/runtime/diagnostics/completion_alignment_diag.py",
+            "intergrax/runtime/observability/qualification_runtime_trace.py",
+            "platform_proofs/scenarios/ai_incident_investigation/application/completion_alignment_telemetry.py",
+            "platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py",
+            "platform_proofs/scenarios/ai_incident_investigation/application/scenario.py",
+            "testing_support/decision_e2e/completion_alignment_producer_reachability.py",
+            "testing_support/decision_e2e/local_qualification_session/trace_readback.py",
+            "testing_support/decision_e2e/local_qualification_session/behavioral_coverage_evidence.py",
+        ),
     }
 
 

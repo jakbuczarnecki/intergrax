@@ -38,7 +38,9 @@ def test_predictive_audit_contract() -> None:
     assert result.audit.prediction_id.startswith("prun_")
     assert result.audit.tenant_id == "tenant-demo"
     assert result.audit.input_snapshot_id == "showcase_crm_agent"
-    assert result.audit.generated_at is not None
+    assert result.audit.context_snapshot_id
+    assert result.audit.quality_assessment is not None
+    assert 0.0 <= result.audit.quality_assessment.governed_confidence <= 1.0
 
     for signal in result.signals:
         assert signal.prediction_run_id == result.audit.prediction_id

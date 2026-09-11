@@ -253,7 +253,7 @@ def test_trace_readback_failure_on_malformed_payload() -> None:
         (
             {
                 "payload_schema_id": COMPLETION_ALIGNMENT_TRACE_SCHEMA,
-                "payload": {"alignment_mismatch_detected": "not-bool"},
+                "payload": {"alignment_status": "not-an-enum"},
             },
         )
     )

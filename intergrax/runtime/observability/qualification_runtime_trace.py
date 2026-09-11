@@ -19,6 +19,7 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.nexus.tracing.execution.evaluator_model_attempt import (
     EvaluatorModelAttemptDiagV1,
 )
+from intergrax.runtime.diagnostics.completion_alignment_diag import CompletionAlignmentDiagV1
 from intergrax.runtime.nexus.tracing.execution.reconciliation_phase import (
     ReconciliationPhaseDiagV1,
     ReconciliationPhaseValue,
@@ -32,10 +33,16 @@ from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter, TaskTr
 
 EVALUATOR_MODEL_ATTEMPT_STEP = "evaluator_loop.model_attempt"
 RECONCILIATION_PHASE_STEP = "completion.reconciliation_phase"
+COMPLETION_ALIGNMENT_STEP = "completion.alignment"
 
 O1_SUPPORTED_TRACE_SCHEMA_IDS: tuple[str, ...] = (
     EvaluatorModelAttemptDiagV1.schema_id(),
     ReconciliationPhaseDiagV1.schema_id(),
+)
+
+O2_SUPPORTED_TRACE_SCHEMA_IDS: tuple[str, ...] = (
+    *O1_SUPPORTED_TRACE_SCHEMA_IDS,
+    CompletionAlignmentDiagV1.schema_id(),
 )
 
 
@@ -56,6 +63,12 @@ class RuntimeDiagnosticTracePort(Protocol):
         validation_invalid: bool,
         entered_reconciliation: bool,
         phase: ReconciliationPhaseValue,
+    ) -> None: ...
+
+    def emit_completion_alignment(
+        self,
+        *,
+        payload: CompletionAlignmentDiagV1,
     ) -> None: ...
 
 
@@ -113,6 +126,20 @@ class TaskTraceRuntimeDiagnosticPort:
             payload=payload,
         )
 
+    def emit_completion_alignment(
+        self,
+        *,
+        payload: CompletionAlignmentDiagV1,
+    ) -> None:
+        self.trace_emitter.emit_trace_step(
+            self.task,
+            component=TraceComponent.RUNTIME,
+            step=COMPLETION_ALIGNMENT_STEP,
+            message="completion alignment authoritative assessment",
+            level=TraceLevel.INFO,
+            payload=payload,
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class DeferredPersistedTraceFinalize:
@@ -148,5 +175,24 @@ class DeferredPersistedTraceFinalize:
                 entered_reconciliation=entered_reconciliation,
                 phase=phase,
             )
+        finally:
+            reset_active_execution_identity(token)
+
+    def emit_completion_alignment_under_identity(
+        self,
+        *,
+        payload: CompletionAlignmentDiagV1,
+    ) -> None:
+        port = TaskTraceRuntimeDiagnosticPort(
+            trace_emitter=self.trace_emitter,
+            task=self.task,
+        )
+        token = bind_active_execution_identity(
+            run_id=self.run_id,
+            attempt_id=self.attempt_id,
+            execution_id=self.execution_id,
+        )
+        try:
+            port.emit_completion_alignment(payload=payload)
         finally:
             reset_active_execution_identity(token)

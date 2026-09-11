@@ -81,7 +81,7 @@ def _signal_for_pattern(
         severity = PredictiveRiskSeverity.HIGH
         confidence = min(0.98, confidence + 0.05)
 
-    evidence = tuple(
+    evidence = (
         f"execution_pattern:{pattern.subject_identity}",
         f"latency_samples:{len(latency_points)}",
     )

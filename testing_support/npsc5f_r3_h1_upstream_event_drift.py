@@ -11,7 +11,7 @@ from testing_support.npsc5f_r1_protected_drift import (
 from testing_support.npsc5f_r3_protected_drift import R3_IMPLEMENTATION_SHA
 
 # Integrated ``development`` HEAD qualified by H1 behavioral gates (immutable provenance pin).
-NPSC5F_R3_H1_QUALIFIED_INTEGRATED_SHA = "2965f2fcfed27162f06625c4b8bcd84b18d27704"
+NPSC5F_R3_H1_QUALIFIED_INTEGRATED_SHA = "8ddf63f74aeb78fd620d5994b7f08f5daa20b7db"
 
 # Commit that introduced qualified ``RuntimeEventType.EXECUTION_FAILED`` on the R1-owned enum surface.
 EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA = R1_POST_R2_QUALIFIED_BASELINE_SHA

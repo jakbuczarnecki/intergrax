@@ -19,6 +19,7 @@ from intergrax.applications._shared.scenario_runtime_baseline import (
 )
 from intergrax.contracts.evidence_claims import EvidenceChallenge, EvidenceClaimSet, ClaimResolution
 from intergrax.contracts.evidence_claims import validate_evidence_claim_id
+from intergrax.contracts.execution_identity import validate_run_id
 from intergrax.runtime.diagnostics.investigation_contracts import (
     IncidentInvestigationInput,
     InvestigationConclusion,
@@ -86,6 +87,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
     PreReconciliationValidationError,
     enforce_pre_reconciliation_validation_clean_transition,
+)
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment_telemetry import (
+    emit_completion_alignment_qualification_trace,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_completion_gate import (
     CompletionEligibilityGateConfig,
@@ -567,6 +571,12 @@ async def _complete_resolved_skeleton_after_platform_run(
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
     persist_terminal_acceptance_diagnostic(diagnostic)
+    emit_completion_alignment_qualification_trace(
+        deferred_trace,
+        run_id=validate_run_id(run_id),
+        completion_mode=completion_mode,
+        has_supported_diagnosis=has_supported_diagnosis,
+    )
     try:
         enforce_pre_reconciliation_validation_clean_transition(
             validation_valid=final_validation.valid,

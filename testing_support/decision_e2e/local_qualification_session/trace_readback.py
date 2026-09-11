@@ -4,10 +4,14 @@
 
 from __future__ import annotations
 
+from intergrax.runtime.diagnostics.completion_alignment_diag import (
+    CompletionAlignmentDiagV1,
+    decode_completion_alignment_diag_v1,
+)
+
 from testing_support.decision_e2e.local_qualification_session.contracts import (
     COMPLETION_ALIGNMENT_TRACE_SCHEMA,
     TraceReadbackStatus,
-    TypedAlignmentEvent,
     TypedAlignmentReadback,
 )
 
@@ -26,33 +30,6 @@ def _event_payload(event: dict[str, object]) -> dict[str, object]:
     return {}
 
 
-def _parse_alignment_event(payload: dict[str, object]) -> TypedAlignmentEvent | None:
-    required_bool = (
-        "alignment_mismatch_detected",
-        "alignment_correctable",
-        "alignment_correction_attempted",
-        "alignment_correction_succeeded",
-        "alignment_correction_exhausted",
-        "revision_authoritative_context_present",
-    )
-    for key in required_bool:
-        if key not in payload or not isinstance(payload[key], bool):
-            return None
-    direction = payload.get("alignment_direction")
-    direction_value = direction if isinstance(direction, str) else None
-    return TypedAlignmentEvent(
-        alignment_mismatch_detected=bool(payload["alignment_mismatch_detected"]),
-        alignment_direction=direction_value,
-        alignment_correctable=bool(payload["alignment_correctable"]),
-        alignment_correction_attempted=bool(payload["alignment_correction_attempted"]),
-        alignment_correction_succeeded=bool(payload["alignment_correction_succeeded"]),
-        alignment_correction_exhausted=bool(payload["alignment_correction_exhausted"]),
-        revision_authoritative_context_present=bool(
-            payload["revision_authoritative_context_present"]
-        ),
-    )
-
-
 def read_typed_alignment_events(
     events: tuple[dict[str, object], ...],
     *,
@@ -61,16 +38,16 @@ def read_typed_alignment_events(
     if not trace_available:
         return TypedAlignmentReadback(status=TraceReadbackStatus.NOT_AVAILABLE, events=())
 
-    parsed: list[TypedAlignmentEvent] = []
+    parsed: list[CompletionAlignmentDiagV1] = []
     parse_failures = 0
     for event in events:
         if _event_schema_id(event) != COMPLETION_ALIGNMENT_TRACE_SCHEMA:
             continue
-        alignment = _parse_alignment_event(_event_payload(event))
-        if alignment is None:
+        decoded = decode_completion_alignment_diag_v1(_event_payload(event))
+        if decoded is None:
             parse_failures += 1
             continue
-        parsed.append(alignment)
+        parsed.append(decoded)
 
     if parse_failures > 0:
         return TypedAlignmentReadback(status=TraceReadbackStatus.FAILED, events=())

@@ -15,6 +15,11 @@ from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationIntentState,
     ExternalOperationPhysicalState,
 )
+from intergrax.contracts.external_operation_termination import (
+    ExternalOperationCapabilities,
+    ExternalOperationTerminationPort,
+    TerminationResult,
+)
 from intergrax.contracts.external_operation_identity import (
     ExternalOperationIdentity,
     mint_stable_operation_id,
@@ -30,6 +35,10 @@ from intergrax.runtime.external_operations.external_operation_ownership import (
 )
 from intergrax.runtime.external_operations.external_operation_state_store import (
     ExternalOperationStateStore,
+)
+from intergrax.runtime.external_operations.operation_termination import (
+    dispatch_provider_termination_sync,
+    mark_observed_cancellation_terminal,
 )
 
 
@@ -65,6 +74,8 @@ class ToolExternalOperationAttempt:
         "_owner",
         "_identity",
         "_cancellation_port",
+        "_termination_port",
+        "_capabilities",
         "_revision",
         "_terminal_recorded",
     )
@@ -76,11 +87,15 @@ class ToolExternalOperationAttempt:
         owner: ProcessLocalExternalOperationOwner | None,
         identity: ExternalOperationIdentity | None,
         cancellation_port: ExternalOperationCancellationPort | None = None,
+        termination_port: ExternalOperationTerminationPort | None = None,
+        capabilities: ExternalOperationCapabilities | None = None,
     ) -> None:
         self._store = store
         self._owner = owner
         self._identity = identity
         self._cancellation_port = cancellation_port
+        self._termination_port = termination_port
+        self._capabilities = capabilities
         self._revision: int | None = None
         self._terminal_recorded = False
 
@@ -155,6 +170,36 @@ class ToolExternalOperationAttempt:
             operation_id=identity.operation_id,
             cancellation_port=self._cancellation_port,
         )
+
+    def complete_cancellation_after_termination(
+        self,
+        termination_result: TerminationResult | None = None,
+    ) -> None:
+        binding = self._binding()
+        if binding is None or self._revision is None or self._identity is None:
+            return
+        store, identity, _owner = binding
+        if termination_result is None:
+            caps = self._capabilities
+            if caps is None:
+                caps = ExternalOperationCapabilities(
+                    supports_native_cancel=False,
+                    supports_stream_abort=False,
+                    supports_remote_termination=False,
+                )
+            termination_result = dispatch_provider_termination_sync(
+                identity,
+                termination_port=self._termination_port,
+                capabilities=caps,
+            )
+        record = mark_observed_cancellation_terminal(
+            store,
+            operation_id=identity.operation_id,
+            expected_revision=self._revision,
+            termination_result=termination_result,
+        )
+        self._revision = record.revision
+        self._terminal_recorded = True
 
     def ensure_terminal_recorded(self) -> None:
         binding = self._binding()

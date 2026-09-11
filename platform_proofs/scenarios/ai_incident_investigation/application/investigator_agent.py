@@ -31,6 +31,9 @@ from platform_proofs.scenarios.ai_incident_investigation.application.completion_
     correction_decision_for_domain_alignment,
     primary_alignment_validation_error,
 )
+from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment_telemetry import (
+    emit_completion_alignment_diag_v1,
+)
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_revision_context import (
     CompletionAlignmentRevisionContext,
     build_completion_alignment_revision_context,
@@ -56,6 +59,7 @@ from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLe
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import IncidentScope
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
     DEFAULT_EVALUATOR_LOOP_MAX_ITERATIONS,
+    INVESTIGATOR_NODE_ID,
     ScenarioRuntimeComposition,
     build_agent_runtime_context,
 )
@@ -298,6 +302,26 @@ class IncidentInvestigatorAgent(Agent):
             is_revision
             and alignment.status is CompletionAlignmentStatus.ALIGNED
             and primary_alignment_validation_error(tuple(critic_feedback)) is not None
+        )
+        emit_completion_alignment_diag_v1(
+            runtime_state=runtime_state,
+            node_id=INVESTIGATOR_NODE_ID,
+            completion_mode=completion_mode,
+            supported_state_present=has_supported_diagnosis,
+            assessment=alignment,
+            correctable=semantic_correction_decision.alignment_correctable,
+            supported_hypothesis_id=(
+                alignment_revision_context.supported_hypothesis_id.value
+                if alignment_revision_context is not None
+                and alignment_revision_context.supported_hypothesis_id is not None
+                else None
+            ),
+            supported_resolution=(
+                alignment_revision_context.supported_resolution.value
+                if alignment_revision_context is not None
+                and alignment_revision_context.supported_resolution is not None
+                else None
+            ),
         )
         runtime_state.trace_event(
             component=TraceComponent.PLANNER,

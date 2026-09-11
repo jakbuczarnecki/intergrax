@@ -1,21 +1,25 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Build readonly PredictiveContext from diagnostic read facts (PREDICTIVE R1)."""
+"""Build readonly PredictiveContext from diagnostic read facts (PREDICTIVE R1/R4)."""
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from hashlib import sha256
-from uuid import uuid4
-
-from intergrax.contracts.predictive_context import (
+from intergrax.contracts.predictive import (
     HistoricalProblemRef,
     PredictiveContext,
+    PredictiveContextDiagnostic,
+    PredictiveScope,
 )
 from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticProblemDetail,
     DiagnosticProblemOccurrenceView,
+)
+from intergrax.runtime.prediction.context import (
+    DecisionHistoryProvider,
+    DiagnosticHistoryProvider,
+    PredictiveContextAggregator,
+    PredictiveContextBuilder,
 )
 
 
@@ -28,7 +32,7 @@ def build_predictive_context_for_investigation(
     """Compose a bounded context snapshot — no Problem mutation."""
 
     tenant_id = problem_detail.tenant_id
-    historical = tuple(
+    historical = (
         HistoricalProblemRef(
             problem_id=str(problem_detail.problem_id),
             observed_at=occurrence.observed_at,
@@ -49,27 +53,26 @@ def build_predictive_context_for_investigation(
             for attempt in occurrence.execution_lineage.attempts
         )
 
-    snapshot_seed = (
-        f"{tenant_id}|{problem_detail.problem_id}|{occurrence.observed_at.isoformat()}"
-    )
-    snapshot_id = f"pctx_{sha256(snapshot_seed.encode()).hexdigest()[:24]}"
+    scope = PredictiveScope(tenant_id=tenant_id)
+    diagnostic = PredictiveContextDiagnostic(historical_problems=historical)
+    current_state = (
+        f"problem_status:{problem_detail.status.value}",
+        f"occurrence_read:{occurrence.read_status.value}",
+    ) + extra_state
 
-    return PredictiveContext(
-        tenant_id=tenant_id,
-        current_state=(
-            f"problem_status:{problem_detail.status.value}",
-            f"occurrence_read:{occurrence.read_status.value}",
-        )
-        + extra_state,
-        historical_problems=historical,
-        execution_patterns=(),
-        failure_history=(),
-        performance_history=(),
-        decision_history=decision_history,
-        lineage_patterns=lineage_patterns,
-        input_snapshot_id=snapshot_id or f"pctx_{uuid4().hex}",
-        as_of=datetime.now(tz=UTC),
+    builder = PredictiveContextBuilder(
+        aggregator=PredictiveContextAggregator(
+            providers=(
+                DiagnosticHistoryProvider(
+                    diagnostic=diagnostic,
+                    lineage_patterns=lineage_patterns,
+                    current_state=current_state,
+                ),
+                DecisionHistoryProvider(decision_history=decision_history),
+            ),
+        ),
     )
+    return builder.build(scope)
 
 
 __all__ = ["build_predictive_context_for_investigation"]

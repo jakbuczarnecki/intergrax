@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Mapping
 
+from intergrax.runtime.diagnostics.completion_alignment_diag import CompletionAlignmentDiagV1
 from intergrax.runtime.nexus.tracing.execution.evaluator_model_attempt import (
     EvaluatorModelAttemptDiagV1,
 )
@@ -18,7 +19,7 @@ from intergrax.runtime.nexus.tracing.execution.reconciliation_phase import (
 
 QUALIFICATION_SESSION_SCHEMA_VERSION = "qualification_session.v1"
 
-COMPLETION_ALIGNMENT_TRACE_SCHEMA = "incident.completion_alignment.v1"
+COMPLETION_ALIGNMENT_TRACE_SCHEMA = CompletionAlignmentDiagV1.schema_id()
 CANONICAL_MODEL_ATTEMPT_TRACE_SCHEMA = EvaluatorModelAttemptDiagV1.schema_id()
 RECONCILIATION_PHASE_TRACE_SCHEMA = ReconciliationPhaseDiagV1.schema_id()
 
@@ -193,20 +194,9 @@ class QualificationAttemptObservation:
 
 
 @dataclass(frozen=True, slots=True)
-class TypedAlignmentEvent:
-    alignment_mismatch_detected: bool
-    alignment_direction: str | None
-    alignment_correctable: bool
-    alignment_correction_attempted: bool
-    alignment_correction_succeeded: bool
-    alignment_correction_exhausted: bool
-    revision_authoritative_context_present: bool
-
-
-@dataclass(frozen=True, slots=True)
 class TypedAlignmentReadback:
     status: TraceReadbackStatus
-    events: tuple[TypedAlignmentEvent, ...]
+    events: tuple[CompletionAlignmentDiagV1, ...]
 
 
 @dataclass(frozen=True, slots=True)

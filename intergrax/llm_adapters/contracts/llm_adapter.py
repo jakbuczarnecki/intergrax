@@ -31,6 +31,13 @@ if TYPE_CHECKING:
         ExternalOperationCancellationPort,
         ExternalOperationStatusPort,
     )
+    from intergrax.contracts.external_operation_termination import (
+        ExternalOperationCapabilities,
+        ExternalOperationTerminationPort,
+    )
+    from intergrax.llm_adapters._shared.provider_stream_transport_registry import (
+        ProviderStreamTransportRegistry,
+    )
     from intergrax.runtime.external_operations.external_operation_state_store import (
         ExternalOperationStateStore,
     )
@@ -85,6 +92,15 @@ class LLMAdapter(ABC):
             ExternalOperationCancellationPort | None
         ) = None
         self._external_operation_status_port: ExternalOperationStatusPort | None = None
+        self._external_operation_termination_port: (
+            ExternalOperationTerminationPort | None
+        ) = None
+        self._external_operation_stream_registry: (
+            ProviderStreamTransportRegistry | None
+        ) = None
+        self._external_operation_capabilities: ExternalOperationCapabilities | None = (
+            None
+        )
 
     def bind_external_operation_ports(
         self,
@@ -93,6 +109,9 @@ class LLMAdapter(ABC):
         owner: ProcessLocalExternalOperationOwner | None = None,
         cancellation_port: ExternalOperationCancellationPort | None = None,
         status_port: ExternalOperationStatusPort | None = None,
+        termination_port: ExternalOperationTerminationPort | None = None,
+        stream_registry: ProviderStreamTransportRegistry | None = None,
+        capabilities: ExternalOperationCapabilities | None = None,
     ) -> None:
         """Inject W4-C durable external operation tracking for provider calls."""
         from intergrax.runtime.external_operations.external_operation_ownership import (
@@ -105,6 +124,18 @@ class LLMAdapter(ABC):
         self._external_operation_owner = owner
         self._external_operation_cancellation_port = cancellation_port
         self._external_operation_status_port = status_port
+        self._external_operation_termination_port = termination_port
+        self._external_operation_stream_registry = stream_registry
+        if capabilities is not None:
+            self._external_operation_capabilities = capabilities
+        elif store is not None:
+            from intergrax.llm_adapters._shared.provider_external_operation_capabilities import (
+                external_operation_capabilities_for_provider,
+            )
+
+            self._external_operation_capabilities = (
+                external_operation_capabilities_for_provider(self._provider_slug())
+            )
 
     def bind_provider_dependency_boundary(
         self,
@@ -174,6 +205,8 @@ class LLMAdapter(ABC):
             ),
             cancellation_port=self._external_operation_cancellation_port,
             status_port=self._external_operation_status_port,
+            termination_port=self._external_operation_termination_port,
+            capabilities=self._external_operation_capabilities,
         )
         ext_op.before_physical_call()
         boundary = self._provider_dependency_boundary

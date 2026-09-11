@@ -292,8 +292,13 @@ class DiagnosticReadService:
                 raise DiagnosticReadIntegrityError(str(exc)) from exc
 
         related_risk_signals = ()
+        forecast_risk_signals = ()
         if self._predictive_investigation_service is not None:
             related_risk_signals = self._predictive_investigation_service.related_risk_signals(
+                problem_detail=detail,
+                occurrence=occurrence_view,
+            )
+            forecast_risk_signals = self._predictive_investigation_service.forecast_risk_signals(
                 problem_detail=detail,
                 occurrence=occurrence_view,
             )
@@ -303,6 +308,7 @@ class DiagnosticReadService:
             occurrence=occurrence_view,
             reconstruction=reconstruction,
             related_risk_signals=related_risk_signals,
+            forecast_risk_signals=forecast_risk_signals,
         )
         return DiagnosticInvestigationResult(investigation=investigation)
 
