@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **BLOCKED — ARCHITECTURAL DECISION REQUIRED** |
+| **Status** | **ARCHITECTURAL DECISION RESOLVED BY** [`ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md`](../architecture/ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md) · **IMPLEMENTATION STILL OPEN** |
 | **Date** | 2026-09-11 |
 | **Baseline HEAD** | `6f79f870808d5e44ce1dc9e11775c6e0fec4b80b` (= `origin/development` at qualification start) |
 | **Related** | [`ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md`](../architecture/ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md) · W2-B1 `LocalDependencyConcurrencyAdmission` |
@@ -180,4 +180,9 @@ Second contract or sync methods on local implementation only.
 
 ## NEXT TASK
 
-Architectural decision on Option B (or approved variant): adapter ownership, thread/loop model, Nexus error mapping for admission failures, then re-open W2-B2 implementation + behavioral qualification suite.
+**W2-B2 implementation** — `DependencyAttemptExecutionBoundary` + `RuntimeToolInvoker._execute_once` wiring per [`ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md`](../architecture/ADR_ENTERPRISE_TOOL_DEPENDENCY_ATTEMPT_BOUNDARY.md); then behavioral qualification suite.
+
+## ADR resolution (2026-09-11)
+
+- **Selected:** Option B — `DependencyAttemptExecutionBoundary` (`intergrax/runtime/resilience/`, planned).
+- **W2-B2 architecture:** CLOSED · **implementation:** OPEN.
