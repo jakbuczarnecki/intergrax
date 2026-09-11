@@ -60,7 +60,7 @@ Each child: new `ExecutionId`, ledger grant, boundary invoke. No global counter 
 | Graph parallel batch | Optional semaphore wait; `GRAPH_BACKPRESSURE` event when inflight semaphore locked | `GraphExecutor._execute_parallel_batch`, `_emit_backpressure` |
 | Fan-out submission | Reject at validation (invalid request) | `validate_fan_out_request` |
 | Root execution admission | Optional typed port on `ExecutionRuntime` (`ExecutionCapacityAdmissionPort`); default `None` preserves legacy callers | `execution_capacity_admission.py` + `local_execution_capacity_admission.py` |
-| Recovery start admission (W3-C) | Optional `RecoveryAdmissionPort` on TASK_RESUME / partial topology entry; start-only permit; orthogonal to W1 | `recovery_admission.py` + `local_recovery_admission.py` |
+| Recovery start admission (W3-C) | Optional `RecoveryAdmissionPort` on TASK_RESUME / partial topology / **DECISION_DURABLE** entry; start-only permit; orthogonal to W1 | `recovery_admission.py` + `local_recovery_admission.py` + `decision_durable_recovery_handoff` |
 | Tool invoker | Bounded default workers; implicit pending-work queue (no admission shed); blocking wait on shared pool | `invoker.py` `_execution_pool` |
 | Event bus | `create_task` on publish | `event_bus.py` |
 
@@ -136,7 +136,7 @@ Decision Event History  ≠  Checkpoint Snapshot  ≠  Execution Recovery
 | Compare-and-append event stream | Decision | `StaleDecisionEventAppendError` | `SQLiteDecisionEventAppendPersistence` / `DecisionEventAppendPort` |
 | Snapshot revision CAS | Decision | `StaleDecisionCheckpointWriteError` | `SQLiteDecisionCheckpointPersistence.save(..., expected_revision=)` |
 | Task checkpoint revision CAS | Execution | `StaleCheckpointWriteError` | `SQLiteTaskCheckpointStore` (unchanged) |
-| Recovery admission | Execution | `RecoveryAdmissionPort` | `local_recovery_admission` (unchanged) |
+| Recovery admission | Execution / decision durable start | `RecoveryAdmissionPort` | `local_recovery_admission`; **`DECISION_DURABLE`** canonical entry `resume_decision_from_durable_state_with_recovery_admission` (W3-C4 — no production bypass of `resume_decision_from_durable_state`) |
 
 Authoritative **decision events** are append-only with `expected_last_sequence` enforced inside one SQLite transaction (`BEGIN IMMEDIATE` + stream head CAS + `UNIQUE` on `(key, event_sequence)`). **Materialized** `DecisionCheckpointState` snapshots use `snapshot_revision` column CAS — a lost snapshot write does **not** roll back an already-appended event (replay from stream remains the recovery path for projection lag).
 

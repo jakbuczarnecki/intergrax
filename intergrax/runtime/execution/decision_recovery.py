@@ -167,14 +167,14 @@ def load_resumable_decision_checkpoint(
     )
 
 
-def resume_decision_from_durable_state(
+def _resume_decision_from_durable_state_impl(
     *,
     checkpoint_persistence: DecisionCheckpointPersistence[T],
     finalization_persistence: DecisionFinalizationPersistence[T],
     key: DecisionFinalizationKey,
     runtime_revision_policy: DecisionRevisionPolicy | None = None,
 ) -> DecisionCheckpointState[T] | None:
-    """Resume one decision from durable checkpoint and finalization stores."""
+    """Load and reconcile durable checkpoint + finalization (no recovery admission)."""
     durable_guard = load_decision_finalization_guard_state(
         finalization_persistence,
         key=key,
@@ -204,6 +204,27 @@ def resume_decision_from_durable_state(
             durable_guard=durable_guard,
         )
     return checkpoint
+
+
+def resume_decision_from_durable_state(
+    *,
+    checkpoint_persistence: DecisionCheckpointPersistence[T],
+    finalization_persistence: DecisionFinalizationPersistence[T],
+    key: DecisionFinalizationKey,
+    runtime_revision_policy: DecisionRevisionPolicy | None = None,
+) -> DecisionCheckpointState[T] | None:
+    """Compatibility wrapper — unit tests only.
+
+    Production ``DECISION_DURABLE`` recovery must use
+    ``resume_decision_from_durable_state_with_recovery_admission`` (handoff module)
+    with ``RecoveryAdmissionPort`` wired.
+    """
+    return _resume_decision_from_durable_state_impl(
+        checkpoint_persistence=checkpoint_persistence,
+        finalization_persistence=finalization_persistence,
+        key=key,
+        runtime_revision_policy=runtime_revision_policy,
+    )
 
 
 def persist_terminal_decision_state(

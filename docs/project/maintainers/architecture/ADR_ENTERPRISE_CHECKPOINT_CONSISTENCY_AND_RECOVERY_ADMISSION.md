@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **Accepted** — Option C event append + snapshot CAS frozen (§2.1–§2.2); recovery **start** admission implemented for `TASK_RESUME`, `PARTIAL_TOPOLOGY`, and `DECISION_DURABLE` (§3). Post-start execution-width gap for `DECISION_DURABLE` remains documented (§3.4); start-only admission is wired at `decision_durable_recovery_handoff`. |
+| **Status** | **Accepted** — Option C event append + snapshot CAS frozen (§2.1–§2.2); recovery **start** admission implemented for `TASK_RESUME`, `PARTIAL_TOPOLOGY`, and `DECISION_DURABLE` (§3). **W3-C4:** canonical `DECISION_DURABLE` recovery entry (`resume_decision_from_durable_state_with_recovery_admission`); production bypass of `resume_decision_from_durable_state` forbidden (§3.5). Post-start execution-width gap for `DECISION_DURABLE` remains documented (§3.4). |
 | **Date** | 2026-09-11 |
 | **Baseline** | W3-A inventory on `development`; task checkpoint CAS frozen in NPSC-5E R2-H2 |
 | **Related** | [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W3_A_CHECKPOINT_RECOVERY_SCALING_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W3_A_CHECKPOINT_RECOVERY_SCALING_INVENTORY.md) · [`NPSC_5E_RECOVERY_CHECKPOINT_RETRY_ARCHITECTURE.md`](NPSC_5E_RECOVERY_CHECKPOINT_RETRY_ARCHITECTURE.md) · W1-A `ExecutionCapacityAdmissionPort` · W2 `DependencyConcurrencyAdmissionPort` |
@@ -257,6 +257,38 @@ Start-only admission **nie** zastępuje limitu szerokości wykonania po starcie.
 `TASK_RESUME` / `PARTIAL_TOPOLOGY`: handoff invariants **Accepted** for W3-C wiring subject to optional W1 on resume path (§3.3).
 
 **Tenant_id:** metadata na request (obserwowalność); **nie** partycjonuje slotów w pierwszej implementacji process-local (fairness — out of scope W3-B).
+
+### 3.5 W3-C4 — canonical `DECISION_DURABLE` recovery wiring
+
+**Forbidden bypass:** production code must not call `resume_decision_from_durable_state` (compatibility wrapper for unit tests only). Static gate: `tests/unit/runtime/architecture/test_w3_c4_decision_durable_recovery_canonical_wiring.py`.
+
+**Canonical entrypoint:** `intergrax.runtime.resilience.decision_durable_recovery_handoff.resume_decision_from_durable_state_with_recovery_admission`.
+
+```text
+Decision Durable Recovery Request
+              |
+              v
+resume_decision_from_durable_state_with_recovery_admission  (canonical)
+              |
+              v
+RecoveryAdmissionPort.acquire(DECISION_DURABLE)
+              |
+              v
+_load / reconcile durable checkpoint + finalization (thread offload)
+              |
+              v
+finally: RecoveryAdmissionPermit.release()  (exactly once)
+```
+
+| Element | Owner |
+|---------|--------|
+| Recovery start capacity | `RecoveryAdmissionPort` (`RecoveryKind.DECISION_DURABLE` isolated from `TASK_RESUME` / `PARTIAL_TOPOLOGY`) |
+| Event history | `DecisionEventAppendPort` |
+| Snapshot consistency | Snapshot revision CAS |
+| Recovery materialization | `_resume_decision_from_durable_state_impl` in `decision_recovery` (no admission) |
+| Recovery flow host | `decision_durable_recovery_handoff` |
+
+**No** `ExecutionCapacityAdmissionPort`, GraphExecutor limits, or W1 root capacity on this path.
 
 ---
 

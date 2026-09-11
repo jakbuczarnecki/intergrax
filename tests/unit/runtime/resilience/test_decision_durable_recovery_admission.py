@@ -139,7 +139,7 @@ async def test_exception_during_recovery_releases_permit(
     ) -> None:
         raise RuntimeError("recovery failed")
 
-    monkeypatch.setattr(handoff, "resume_decision_from_durable_state", _boom)
+    monkeypatch.setattr(handoff, "_resume_decision_from_durable_state_impl", _boom)
 
     with pytest.raises(RuntimeError, match="recovery failed"):
         await resume_decision_from_durable_state_with_recovery_admission(

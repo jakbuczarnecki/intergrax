@@ -9,6 +9,7 @@ releases it after load completes (start-only; not execution lifecycle).
 
 from __future__ import annotations
 
+import asyncio
 from typing import TypeVar
 
 from intergrax.contracts.decision_checkpoint import DecisionCheckpointState
@@ -27,7 +28,7 @@ from intergrax.runtime.execution.decision_finalization_persistence import (
     DecisionFinalizationPersistence,
 )
 from intergrax.runtime.execution.decision_recovery import (
-    resume_decision_from_durable_state,
+    _resume_decision_from_durable_state_impl,
 )
 
 T = TypeVar("T")
@@ -71,7 +72,8 @@ async def resume_decision_from_durable_state_with_recovery_admission(
             ),
         )
     try:
-        return resume_decision_from_durable_state(
+        return await asyncio.to_thread(
+            _resume_decision_from_durable_state_impl,
             checkpoint_persistence=checkpoint_persistence,
             finalization_persistence=finalization_persistence,
             key=key,
