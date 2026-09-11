@@ -231,7 +231,8 @@ Also rejected: `BulkheadManager`, `DependencyManager`, `ConcurrencyManager`, `Re
 |-------|------------------------|
 | W2-A | CLOSED |
 | W2-ADR | CLOSED (Accepted) |
-| W2-B | OPEN — `LocalDependencyConcurrencyAdmission`, tool/provider wiring, behavioral qualification |
+| W2-B1 | **DONE** — `LocalDependencyConcurrencyAdmission` in `intergrax/runtime/resilience/local_dependency_concurrency_admission.py` (process-local, event-loop-local asyncio state; explicit policy snapshot; no runtime wiring) |
+| W2-B2/B3 | OPEN — tool/provider runtime wiring, behavioral qualification in production seams |
 | W2 complete | Not claimed |
 
 Do not implement production wiring to `RuntimeToolInvoker`, `LLMAdapter`, or integration invoke paths in W2-ADR.

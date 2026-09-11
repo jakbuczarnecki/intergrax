@@ -124,7 +124,8 @@ def test_tool_and_llm_provider_same_value_differ_by_kind() -> None:
         value="openai",
     )
     assert tool != provider
-    assert hash(tool) != hash(provider)
+    by_kind = {tool: "tool-pool", provider: "provider-pool"}
+    assert len(by_kind) == 2
 
 
 def test_identity_hashable_as_dict_key() -> None:
