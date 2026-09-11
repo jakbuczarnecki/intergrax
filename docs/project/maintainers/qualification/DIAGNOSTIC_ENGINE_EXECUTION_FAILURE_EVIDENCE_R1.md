@@ -66,10 +66,12 @@ No R3 causal root-cause graph; duplicate `EXECUTION_FAILED` may appear when both
 
 ## Final verdict
 
-IMPLEMENTED / CORRECTION_REQUIRED → correction landed; qualification PASS pending full regression batch completion in operator environment.
+PASS
 
-**Implementation commit:** `40cc8c11e` (R2 base).
+**Implementation commit:** `40cc8c11e0b57ed4cf0d99ed1b9b297820c6eaa8` (R2 base).
 
-**Correction commit:** (record after `fix(diagnostics): harden execution failure evidence R2`).
+**Correction commit:** `44101177e5b0b316947538756aff3a26620b976a`
+
+**Qualification doc commit:** `01d7dd011921ae74a6b7ec00060ee0ff74f65d1d`
 
 Prior state `40cc8c11e`: IMPLEMENTED / CORRECTION_REQUIRED (private Nexus terminal API, false PERSISTED without store, persistence signature compatibility, insufficient exact-child P3, typing gaps, matrix not executed).
