@@ -1,4 +1,4 @@
-"""One-click VPI 5C4F resume launcher (preflight + subprocess; no fresh start)."""
+"""One-click VPI Data Pack resume launcher (preflight + subprocess; no fresh start)."""
 
 from __future__ import annotations
 
@@ -13,12 +13,12 @@ from pathlib import Path
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.paths import (
     resolve_data_pack_paths,
 )
-from platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_5c4f_resume_config import (
-    VPI_5C4F_PROCESS_JSON,
-    VPI_5C4F_RESUME_BUILD_SOURCE_SHA,
-    Vpi5C4FResumeLaunchPlan,
-    build_resume_cli_argv,
-    resolve_vpi_5c4f_resume_launch_plan,
+from platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_data_pack_resume_config import (
+    VPI_DATA_PACK_PROCESS_JSON,
+    VPI_DATA_PACK_RESUME_BUILD_SOURCE_SHA,
+    VpiDataPackResumeLaunchPlan,
+    build_vpi_data_pack_resume_cli_argv,
+    resolve_vpi_data_pack_resume_launch_plan,
 )
 
 _STILL_ACTIVE = 259
@@ -26,7 +26,7 @@ _PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
 
 @dataclass(frozen=True, slots=True)
-class Vpi5C4FResumePreflightError(Exception):
+class VpiDataPackResumePreflightError(Exception):
     message: str
 
     def __str__(self) -> str:
@@ -57,21 +57,23 @@ def _read_process_pids(process_json: Path) -> tuple[int | None, int | None]:
     return py, ps
 
 
-def assert_no_active_canonical_writer(process_json: Path = VPI_5C4F_PROCESS_JSON) -> None:
+def assert_no_active_canonical_writer(
+    process_json: Path = VPI_DATA_PACK_PROCESS_JSON,
+) -> None:
     python_pid, powershell_pid = _read_process_pids(process_json)
     for label, pid in (("python", python_pid), ("powershell", powershell_pid)):
         if pid is None:
             continue
         if _windows_pid_alive(pid):
-            raise Vpi5C4FResumePreflightError(
-                "VPI 5C4F IS ALREADY RUNNING\nNO SECOND WRITER STARTED "
+            raise VpiDataPackResumePreflightError(
+                "VPI DATA PACK IS ALREADY RUNNING\nNO SECOND WRITER STARTED "
                 f"({label} pid={pid})"
             )
 
 
 def assert_cuda_preflight(cuda_python: Path) -> str:
     if not cuda_python.is_file():
-        raise Vpi5C4FResumePreflightError(f"CUDA python missing: {cuda_python}")
+        raise VpiDataPackResumePreflightError(f"CUDA python missing: {cuda_python}")
     script = (
         "import torch\n"
         "assert torch.cuda.is_available()\n"
@@ -87,7 +89,7 @@ def assert_cuda_preflight(cuda_python: Path) -> str:
     )
     if completed.returncode != 0:
         stderr = completed.stderr.strip()
-        raise Vpi5C4FResumePreflightError(
+        raise VpiDataPackResumePreflightError(
             f"CUDA preflight failed (exit {completed.returncode}): {stderr}"
         )
     lines = [line for line in completed.stdout.splitlines() if line.strip()]
@@ -95,7 +97,7 @@ def assert_cuda_preflight(cuda_python: Path) -> str:
     return gpu_name
 
 
-def assert_path_preflight(plan: Vpi5C4FResumeLaunchPlan) -> None:
+def assert_path_preflight(plan: VpiDataPackResumeLaunchPlan) -> None:
     missing: list[str] = []
     if not plan.cuda_python.is_file():
         missing.append(str(plan.cuda_python))
@@ -111,18 +113,18 @@ def assert_path_preflight(plan: Vpi5C4FResumeLaunchPlan) -> None:
     if not paths.build_state_file.is_file():
         missing.append(str(paths.build_state_file))
     if missing:
-        raise Vpi5C4FResumePreflightError(
+        raise VpiDataPackResumePreflightError(
             "resume path preflight failed; missing:\n" + "\n".join(missing)
         )
-    if VPI_5C4F_RESUME_BUILD_SOURCE_SHA == "PENDING_R1_COMMIT":
-        raise Vpi5C4FResumePreflightError(
+    if VPI_DATA_PACK_RESUME_BUILD_SOURCE_SHA == "PENDING_R1_COMMIT":
+        raise VpiDataPackResumePreflightError(
             "resume build-source SHA not pinned; create immutable snapshot first"
         )
 
 
 def print_operator_banner(
     *,
-    plan: Vpi5C4FResumeLaunchPlan,
+    plan: VpiDataPackResumeLaunchPlan,
     ready_shards: int,
     total_shards: int,
     resume_shard: int | None,
@@ -132,7 +134,7 @@ def print_operator_banner(
     resume_label = str(resume_shard) if resume_shard is not None else "complete"
     boundary_label = str(boundary_shard) if boundary_shard is not None else "none"
     print("=" * 60)
-    print("VPI 5C4F — RESUME")
+    print("VPI DATA PACK — RESUME")
     print("=" * 60)
     print(f"artifact: {plan.output_root}")
     print(f"ready shards: {ready_shards} / {total_shards}")
@@ -162,17 +164,19 @@ def _read_build_progress_counts(output_root: Path) -> tuple[int, int, int | None
     )
 
 
-def run_vpi_5c4f_resume(*, dry_run: bool = False) -> int:
-    plan = resolve_vpi_5c4f_resume_launch_plan()
+def run_vpi_data_pack_resume(*, dry_run: bool = False) -> int:
+    plan = resolve_vpi_data_pack_resume_launch_plan()
     try:
         assert_no_active_canonical_writer()
         gpu_name = assert_cuda_preflight(plan.cuda_python)
         assert_path_preflight(plan)
-    except Vpi5C4FResumePreflightError as exc:
+    except VpiDataPackResumePreflightError as exc:
         print(str(exc), file=sys.stderr)
         return 1
 
-    ready, total, resume_shard, boundary_shard = _read_build_progress_counts(plan.output_root)
+    ready, total, resume_shard, boundary_shard = _read_build_progress_counts(
+        plan.output_root
+    )
     print_operator_banner(
         plan=plan,
         ready_shards=ready,
@@ -181,7 +185,7 @@ def run_vpi_5c4f_resume(*, dry_run: bool = False) -> int:
         boundary_shard=boundary_shard,
         gpu_name=gpu_name,
     )
-    argv = build_resume_cli_argv(plan)
+    argv = build_vpi_data_pack_resume_cli_argv(plan)
     if dry_run:
         print("dry-run:", " ".join(argv))
         return 0
@@ -196,7 +200,7 @@ def run_vpi_5c4f_resume(*, dry_run: bool = False) -> int:
 def main(argv: list[str] | None = None) -> int:
     args = argv if argv is not None else sys.argv[1:]
     dry_run = "--dry-run" in args
-    return run_vpi_5c4f_resume(dry_run=dry_run)
+    return run_vpi_data_pack_resume(dry_run=dry_run)
 
 
 if __name__ == "__main__":

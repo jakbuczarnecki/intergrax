@@ -26,9 +26,9 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.paths import (
     resolve_data_pack_paths,
 )
-from platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_5c4f_resume_config import (
-    build_resume_cli_argv,
-    resolve_vpi_5c4f_resume_launch_plan,
+from platform_proofs.scenarios.verified_product_identification.dataset.operator.vpi_data_pack_resume_config import (
+    build_vpi_data_pack_resume_cli_argv,
+    resolve_vpi_data_pack_resume_launch_plan,
 )
 from tests.unit.platform_proofs.scenarios.verified_product_identification.vpi_fast_resume_test_support import (
     build_state_with_ready_prefix,
@@ -345,7 +345,9 @@ def test_resume_does_not_clear_existing_build_state(tmp_path: Path, monkeypatch:
         content_identity=content_identity,
     )
     write_build_state_file(paths.build_state_file, state)
-    argv = build_resume_cli_argv(resolve_vpi_5c4f_resume_launch_plan())
+    argv = build_vpi_data_pack_resume_cli_argv(
+        resolve_vpi_data_pack_resume_launch_plan()
+    )
     assert "--resume" in argv
     assert "--start-fresh" not in argv
     assert paths.build_state_file.is_file()

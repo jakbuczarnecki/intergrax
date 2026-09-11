@@ -1,42 +1,42 @@
-"""Frozen production parameters for VPI 5C4F one-click resume (operator contract)."""
+"""Frozen production parameters for VPI Data Pack one-click resume (operator contract)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
 
-VPI_5C4F_ORIGINAL_BUILD_SOURCE_SHA = "1c8713ff60abdd5c9397182a01fc04d9e986354d"
+VPI_DATA_PACK_ORIGINAL_BUILD_SOURCE_SHA = "1c8713ff60abdd5c9397182a01fc04d9e986354d"
 
-# Immutable build-source snapshot for fast-resume R1 (updated when snapshot is created).
-VPI_5C4F_RESUME_BUILD_SOURCE_SHA = "b0103d133528737484750fabd489ffbed964fedf"
+# Immutable build-source snapshot for fast-resume (pinned build entrypoint only).
+VPI_DATA_PACK_RESUME_BUILD_SOURCE_SHA = "b0103d133528737484750fabd489ffbed964fedf"
 
-VPI_5C4F_ARTIFACT_ROOT = Path(
+VPI_DATA_PACK_ARTIFACT_ROOT = Path(
     r"D:\Projekty\intergrax-runtime-artifacts\vpi\canonical-v1"
 )
-VPI_5C4F_CUDA_PYTHON = Path(
+VPI_DATA_PACK_CUDA_PYTHON = Path(
     r"D:\Projekty\intergrax\.tmp\session\vpi-5c4a2\cuda-venv\Scripts\python.exe"
 )
-VPI_5C4F_DATASET_PATH = Path(
+VPI_DATA_PACK_DATASET_PATH = Path(
     r"D:\Projekty\intergrax\platform_proofs\scenarios\verified_product_identification"
     r"\dataset\processed\selected_offers.parquet"
 )
-VPI_5C4F_DATASET_MANIFEST_PATH = Path(
+VPI_DATA_PACK_DATASET_MANIFEST_PATH = Path(
     r"D:\Projekty\intergrax\platform_proofs\scenarios\verified_product_identification"
     r"\dataset\processed\selected_offers_manifest.json"
 )
-VPI_5C4F_SHARD_SIZE = 1000
-VPI_5C4F_EXECUTION_PROFILE = "production-local-gpu"
-VPI_5C4F_OPERATOR_EVIDENCE_DIR = Path(
+VPI_DATA_PACK_SHARD_SIZE = 1000
+VPI_DATA_PACK_EXECUTION_PROFILE = "production-local-gpu"
+VPI_DATA_PACK_OPERATOR_EVIDENCE_DIR = Path(
     r"D:\Projekty\intergrax-runtime-artifacts\vpi\operator-evidence\5c4f"
 )
-VPI_5C4F_PROCESS_JSON = VPI_5C4F_OPERATOR_EVIDENCE_DIR / "process.json"
-VPI_5C4F_BUILD_SOURCE_ROOT = Path(
+VPI_DATA_PACK_PROCESS_JSON = VPI_DATA_PACK_OPERATOR_EVIDENCE_DIR / "process.json"
+VPI_DATA_PACK_BUILD_SOURCE_ROOT = Path(
     r"D:\Projekty\intergrax-runtime-artifacts\vpi\build-source"
 )
 
 
 @dataclass(frozen=True, slots=True)
-class Vpi5C4FResumeLaunchPlan:
+class VpiDataPackResumeLaunchPlan:
     cuda_python: Path
     build_source_root: Path
     dataset_path: Path
@@ -47,21 +47,25 @@ class Vpi5C4FResumeLaunchPlan:
     resume: bool
 
 
-def resolve_vpi_5c4f_resume_launch_plan() -> Vpi5C4FResumeLaunchPlan:
-    build_source = VPI_5C4F_BUILD_SOURCE_ROOT / VPI_5C4F_RESUME_BUILD_SOURCE_SHA
-    return Vpi5C4FResumeLaunchPlan(
-        cuda_python=VPI_5C4F_CUDA_PYTHON,
+def resolve_vpi_data_pack_resume_launch_plan() -> VpiDataPackResumeLaunchPlan:
+    build_source = (
+        VPI_DATA_PACK_BUILD_SOURCE_ROOT / VPI_DATA_PACK_RESUME_BUILD_SOURCE_SHA
+    )
+    return VpiDataPackResumeLaunchPlan(
+        cuda_python=VPI_DATA_PACK_CUDA_PYTHON,
         build_source_root=build_source,
-        dataset_path=VPI_5C4F_DATASET_PATH,
-        dataset_manifest_path=VPI_5C4F_DATASET_MANIFEST_PATH,
-        output_root=VPI_5C4F_ARTIFACT_ROOT,
-        shard_size=VPI_5C4F_SHARD_SIZE,
-        execution_profile=VPI_5C4F_EXECUTION_PROFILE,
+        dataset_path=VPI_DATA_PACK_DATASET_PATH,
+        dataset_manifest_path=VPI_DATA_PACK_DATASET_MANIFEST_PATH,
+        output_root=VPI_DATA_PACK_ARTIFACT_ROOT,
+        shard_size=VPI_DATA_PACK_SHARD_SIZE,
+        execution_profile=VPI_DATA_PACK_EXECUTION_PROFILE,
         resume=True,
     )
 
 
-def build_resume_cli_argv(plan: Vpi5C4FResumeLaunchPlan) -> tuple[str, ...]:
+def build_vpi_data_pack_resume_cli_argv(
+    plan: VpiDataPackResumeLaunchPlan,
+) -> tuple[str, ...]:
     return (
         str(plan.cuda_python),
         "-m",
