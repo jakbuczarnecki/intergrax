@@ -98,15 +98,40 @@ prepare / governance
 → boundary.may_have_started = True (only after successful submit)
 → caller waits future.result(timeout) OR times out
 → worker runs until ToolExecutor.execute returns (independent of caller timeout)
-→ permit release after worker Future reaches terminal state
+→ attached completion: worker terminal → permit.release() on admission loop → release completes → caller receives physical result/exception
+→ detached completion (caller timed out earlier): worker terminal → boundary tracked release → outstanding entry cleared
+```
+
+**Attached success path (frozen):**
+
+```text
+acquire → submit → worker returns success → permit.release() → release completes → return worker result
+```
+
+**Attached exception path (frozen):**
+
+```text
+acquire → submit → worker raises → permit.release() → release completes → propagate/map worker exception
+```
+
+**Not allowed on attached path:**
+
+```text
+worker result → schedule release → return immediately
 ```
 
 **Retry loop** (`_execute_with_policy`):
 
 ```text
-attempt N: acquire → submit → worker completes → release
-backoff: no permit
+attempt N: acquire → submit → worker terminal → permit fully released
+backoff: no permit held
 attempt N+1: acquire → submit → ...
+```
+
+**Forbidden retry ordering:**
+
+```text
+attempt N worker terminal → release still pending → backoff / attempt N+1 acquire
 ```
 
 ---
@@ -237,12 +262,13 @@ Not implemented in this ADR. Intended shape:
   1. block until acquire completes or admission error (cross-thread schedule onto admission loop),
   2. `submit` worker to invoker pool; on submit failure → release permit, `may_have_started = False`,
   3. on successful submit → `may_have_started = True`,
-  4. `future.result(timeout)` for caller; on `FuturesTimeoutError` return timeout to invoker **without** releasing permit,
-  5. on worker `Future` terminal state → schedule tracked `permit.release()` on admission loop.
+  4. `future.result(timeout)` for caller; on `FuturesTimeoutError` while worker not terminal → return timeout to invoker **without** releasing permit and **without** waiting for worker or release (detached lifecycle),
+  5. when `future.result` returns with worker terminal (**attached** path): run tracked `permit.release()` on admission loop and **block until that release operation completes**, then return physical result or propagate/map worker exception,
+  6. when worker becomes terminal after step 4 returned timeout (**detached** path): exactly one boundary-owned tracked `permit.release()`; no caller waiting.
 
-- **Handle** (internal): ties **one acquired permit** to **one worker Future** — not a generic task handle; not exposed as `asyncio.Task`/`Future` to Nexus callers.
+- **Handle** (internal): ties **one acquired permit** to **one worker Future** and owns **one release ownership transition** per physical attempt — not a generic task handle; not exposed as `asyncio.Task`/`Future` to Nexus callers.
 
-`add_done_callback` on the worker `Future` may only enqueue completion to the boundary owner; it must not run asyncio or fire-and-forget release.
+`add_done_callback` on the worker `Future` (if used) must not unconditionally release: it cooperates with the attempt handle so **attached** completion performs release in the sync return path and **detached** completion performs release once via the boundary owner — never two independent release attempts for the same handle.
 
 ---
 
@@ -281,12 +307,54 @@ If `future.result(timeout)` raises `FuturesTimeoutError` while `future.done() is
 
 ## Completion lifecycle
 
-**Canonical physical completion owner:** `DependencyAttemptExecutionBoundary`.
+**Canonical physical completion owner:** `DependencyAttemptExecutionBoundary` (same owner for attached and detached paths).
 
-1. Register worker `Future` with the attempt handle at submit success.
-2. On terminal Future (success, exception, cancelled before run if applicable): boundary schedules `await permit.release()` on admission loop.
-3. Release completion is **awaited internally** during shutdown drain; invariant violations surface as errors (not swallowed).
-4. Internal outstanding-attempt tracking (if used) removes entry after release completes — **bounded** by active attempts (no leak).
+**Core invariant (attached / normal `_execute_once` return):** physical attempt completion exposed to the synchronous caller requires **both** worker `Future` terminal state **and** permit `release` terminal state. The invoker/retry loop must not observe success, mapped tool failure, or propagated exception until release for that attempt has fully completed.
+
+### Attached completion
+
+Caller still blocked on `future.result(timeout)`; worker reaches terminal state before or when result is delivered:
+
+```text
+worker terminal → permit.release() on admission loop → await release completion → return to RuntimeToolInvoker / caller
+```
+
+If `permit.release()` fails on this path: boundary **fail-closed** — surface invariant failure in the current lifecycle (do **not** return worker success while masking release failure; do **not** defer solely to application shutdown).
+
+### Detached post-timeout completion
+
+Caller already returned `TIMEOUT`; worker may still be running:
+
+```text
+worker eventually terminal → boundary performs tracked permit.release() → release completion tracked → outstanding entry removed
+```
+
+Caller does **not** wait for worker or release. Permit remains held from acquire until this detached release completes.
+
+If `permit.release()` fails on this path: failure remains **tracked**, observable by the lifecycle owner, and must surface during `close()` / drain at minimum — not swallowed.
+
+### Two modes, one release owner
+
+| Mode | Caller | Release trigger | Caller waits for release? |
+|------|--------|-----------------|---------------------------|
+| Attached | still at `_execute_once` | sync return path after `future.result` | **Yes** |
+| Detached | left after timeout | boundary when worker Future completes | **No** |
+
+Exactly **one** release ownership transition per attempt handle. Normal attached completion and a worker `Future` done callback must **not** both independently invoke release; the handle (or equivalent terminal-completion object) records whether release was claimed by the attached path or remains for detached cleanup.
+
+Do **not** rely on permit idempotency alone to mask double-release ownership bugs.
+
+### Outstanding tracking
+
+Track only attempts that still require boundary lifecycle ownership (e.g. caller timed out while `future.done() is False`). Remove entry only after **worker terminal + release terminal**. Do not track attempts that already completed attached release.
+
+### Capacity visibility
+
+After a normal (non-timeout) `_execute_once` return, the previous attempt’s capacity slot must already be free. Example: `capacity=1` — attempt A completes and `_execute_once` returns → immediate next `acquire` succeeds without sleep, yield, or retry polling.
+
+### Shutdown drain
+
+Release completion for **detached** or in-flight attempts is **awaited** during shutdown drain (see Shutdown). Attached-path release failures and drain-time failures surface as errors (not swallowed).
 
 ---
 
@@ -361,6 +429,8 @@ Admission failures are **distinct** from tool execution failures — not one ret
 
 Frozen in §Physical attempt lifecycle. Port does not receive attempt numbers or backoff.
 
+Physical retry in `_execute_with_policy` may start attempt N+1 only after attempt N’s permit is **fully released**. Retryable tool errors must not cause immediate re-acquire while attempt N’s release is still pending (avoids false saturation under `capacity=1`).
+
 ---
 
 ## Failure semantics
@@ -429,6 +499,12 @@ Frozen in §Physical attempt lifecycle. Port does not receive attempt numbers or
 | Explicit shutdown | Yes |
 | One permit per physical attempt | Yes |
 | Replay / conflict skip acquire | Yes |
+| Attached return after worker **and** release complete | Yes |
+| Normal return before release complete | **No** |
+| Retry re-acquire before prior release complete | **No** |
+| Exactly-once release ownership per attempt | Yes |
+| Attached release invariant failure surfaced synchronously | Yes |
+| Detached release failure tracked; surfaced on drain/close | Yes |
 
 ---
 
@@ -436,8 +512,11 @@ Frozen in §Physical attempt lifecycle. Port does not receive attempt numbers or
 
 - admission before submit
 - Tool A isolation / shared capacity bound
-- retry reacquires; no permit during backoff
-- caller timeout retains permit; worker completion releases
+- retry reacquires; no permit during backoff; after retryable failure on attempt #1, attempt #1 release fully completes before backoff and attempt #2 `acquire` succeeds (`capacity=1`, no false saturation)
+- `capacity=1`: attempt completes, `_execute_once` returns, immediate next `acquire` succeeds (capacity visible)
+- caller timeout retains permit; worker completion releases (detached)
+- attached completion + release invariant failure → surfaced synchronously to caller (no private-state assertions)
+- detached post-timeout completion + release failure → retained and surfaced by `close()` / drain
 - submit failure releases permit; `may_have_started` false
 - admission rejection never reaches executor
 - policy missing fails closed (propagate)
