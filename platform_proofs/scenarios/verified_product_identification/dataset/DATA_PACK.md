@@ -140,8 +140,12 @@ generated/data_pack/<build>/
 
 - Resume unit = one shard ordinal
 - Non-READY shards are rebuilt from scratch (no record-level resume in v1)
-- READY shards are immutable; validated before skip on resume
-- Corrupt READY shard → fail closed (`CORRUPT_READY_SHARD`), no silent rebuild
+- Each shard is fully validated when it transitions to READY during generation
+- `state/build-state.json` is the durable resume authority (no filesystem shard scan for progress)
+- READY shards must form one contiguous prefix `1..N` where `N == completed_shards`; gaps fail closed
+- **Fast resume** validates only the last READY boundary shard (`N`) plus recovery of the current non-READY shard (`N+1`); historical READY shards `1..N-1` are not re-hashed on every resume
+- Corrupt READY boundary shard → fail closed (`VpiDataPackReadyShardCorruptionError`), no silent rebuild
+- Full historical artifact integrity re-certification is mandatory in **VPI-IMPLEMENTATION-5C4G** before publication/storage load; fast resume alone is not a distribution proof gate
 - Temp shards use `.parquet.tmp`; serialized temp artifacts are read back and validated before atomic rename to final `.parquet`
 - Final filename means validated immutable shard, not artifact awaiting validation
 - Crash between relational/embedding renames leaves shard non-READY; resume removes partial finals/temps and rebuilds
@@ -205,8 +209,10 @@ Partial builds do not emit READY manifest, `shards.json`, or `SHA256SUMS`.
 | State class | Resume behavior |
 |---|---|
 | NON-READY (`PENDING`…`VALIDATING`) | Discard incomplete outputs for the current shard; rebuild from shard start |
-| READY | Validate integrity metadata + on-disk artifacts; skip when valid |
-| Corrupt READY | Fail closed (`VpiDataPackReadyShardCorruptionError`); **no** silent rebuild or repair |
+| READY prefix `1..N-1` | Trusted from prior READY transitions; **not** re-validated on every resume |
+| READY boundary shard `N` | Validate integrity metadata + on-disk artifacts once at resume startup |
+| Corrupt READY boundary | Fail closed (`VpiDataPackReadyShardCorruptionError`); **no** silent rebuild or repair |
+| Full pack historical integrity | **5C4G** full production validation (mandatory before publish/load proof) |
 
 Representative fail-closed conditions:
 
