@@ -22,6 +22,12 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _DECLARATIVE_WIRING = (
     _REPO_ROOT / "intergrax" / "applications" / "_shared" / "declarative_tool_wiring.py"
 )
+_ACP_SESSION_HOST_WIRING = (
+    _REPO_ROOT / "intergrax" / "applications" / "_shared" / "acp_session_host_wiring.py"
+)
+_HARNESS_HOST_RUNTIME = (
+    _REPO_ROOT / "intergrax" / "applications" / "_shared" / "harness_host_runtime.py"
+)
 _CATALOG_INVOKER = (
     _REPO_ROOT / "intergrax" / "agents" / "persistence" / "catalog_declarative_invoker.py"
 )
@@ -100,3 +106,13 @@ def test_u5_ep17_no_production_wiring_for_work_stage_capability_loop() -> None:
                             )
 
     assert _AW_STAGE_LOOP.is_file()
+
+
+def test_u5_acp_session_host_preserves_harness_tenant_identity() -> None:
+    acp_source = _ACP_SESSION_HOST_WIRING.read_text(encoding="utf-8")
+    assert 'tenant_id=""' not in acp_source
+    assert "tenant_id=runtime.tenant_id" in acp_source
+
+    harness_source = _HARNESS_HOST_RUNTIME.read_text(encoding="utf-8")
+    assert "tenant_id: str" in harness_source
+    assert "tenant_id=resolved_tenant_id" in harness_source

@@ -47,7 +47,7 @@ def build_acp_session_host_from_harness(
         runtime.environment,
         manifest=runtime.manifest,
         agent_registry=runtime.registry,
-        tenant_id="",
+        tenant_id=runtime.tenant_id,
         idempotency_store=runtime.reliability.idempotency_store,
     )
     return build_acp_session_host_context(

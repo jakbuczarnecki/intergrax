@@ -172,6 +172,7 @@ class HarnessHostRuntime:
 
     manifest: ApplicationManifest
     environment: ApplicationEnvironmentProfile
+    tenant_id: str
     env_wiring: ApplicationEnvironmentWiring
     registry: AgentRegistryRead
     observability: NexusObservabilityStores
@@ -454,6 +455,7 @@ def build_harness_host_runtime(
     return HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=effective_environment,
+        tenant_id=resolved_tenant_id,
         env_wiring=env_wiring,
         registry=resolved_registry,
         registry_projection_evidence=registry_evidence,

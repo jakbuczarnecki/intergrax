@@ -23,9 +23,15 @@ from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provid
 from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
     IdempotencyPreEffectCoordinator,
 )
+from intergrax.tools.registry import ToolProfile
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
     build_agent_runtime_governance_boundary,
 )
+
+
+def declarative_catalog_tools_enabled(profile: ToolProfile) -> bool:
+    """True when host tool profile enables catalog declarative tools."""
+    return bool(profile.enabled or profile.enabled_bundles)
 
 
 def build_declarative_invoker_from_tool_wiring(
@@ -36,7 +42,7 @@ def build_declarative_invoker_from_tool_wiring(
     production_mode: bool = False,
 ) -> CatalogDeclarativeToolInvoker | None:
     """Materialize catalog invoker when host tool profile enables catalog tools."""
-    if not tool_wiring.profile.enabled and not tool_wiring.profile.enabled_bundles:
+    if not declarative_catalog_tools_enabled(tool_wiring.profile):
         return None
     if production_mode and agent_runtime_governance is None:
         raise AgentRuntimeGovernanceMaterializationError(
@@ -70,6 +76,8 @@ def build_declarative_invoker_for_application_host(
     idempotency_store: IdempotencyStore | None = None,
 ) -> CatalogDeclarativeToolInvoker | None:
     """Compose declarative invoker with strict-mode agent governance (U5 / EP-14)."""
+    if not declarative_catalog_tools_enabled(tool_wiring.profile):
+        return None
     production_mode = environment.execution_mode.value == "strict"
     governance: AgentRuntimeGovernancePort | None = None
     if production_mode:
