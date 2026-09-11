@@ -68,6 +68,7 @@ class CatalogDeclarativeToolInvoker:
 
     tool_invoker: object
     binding: CatalogDeclarativeRunBinding = field(default_factory=CatalogDeclarativeRunBinding)
+    production_mode: bool = False
 
     def bind_run(
         self,
@@ -110,7 +111,7 @@ class CatalogDeclarativeToolInvoker:
 
         config = RuntimeConfig(
             llm_adapter=_CatalogDispatchLLMStub(),
-            production_mode=False,
+            production_mode=self.production_mode,
             enable_rag=False,
             enable_websearch=False,
             tool_invoker=self.tool_invoker,

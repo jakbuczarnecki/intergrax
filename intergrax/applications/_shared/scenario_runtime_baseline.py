@@ -17,7 +17,7 @@ from intergrax.applications._shared.decision_wiring import (
     wire_application_decision,
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
-    build_declarative_invoker_from_tool_wiring,
+    build_declarative_invoker_for_application_host,
 )
 from intergrax.applications._shared.diagnostic_assembly_resolver import (
     DiagnosticAssemblyError,
@@ -367,7 +367,13 @@ def build_scenario_runtime_from_environment(
         spec=decision_spec,
     )
     task_memory = wire_task_memory_from_profile(environment)
-    declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
+    declarative_tool_invoker = build_declarative_invoker_for_application_host(
+        env_wiring.tool_wiring,
+        environment,
+        manifest=resolved_manifest,
+        agent_registry=registry,
+        tenant_id=resolved_tenant_id,
+    )
 
     nexus_loop = build_nexus_loop_from_environment(
         registry,

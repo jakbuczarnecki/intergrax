@@ -43,7 +43,13 @@ def test_build_acp_session_host_from_harness_attaches_decision_gate() -> None:
         runtime_event_persistence=None,
         _orchestration_backend=nexus_loop,
     )
-    runtime.env_wiring.tool_wiring = MagicMock()
+    tool_wiring = MagicMock()
+    tool_wiring.profile.enabled = False
+    tool_wiring.profile.enabled_bundles = []
+    runtime.env_wiring.tool_wiring = tool_wiring
+    runtime.manifest = MagicMock()
+    runtime.registry = MagicMock()
+    runtime.reliability = MagicMock(idempotency_store=None)
 
     host_ctx = build_acp_session_host_from_harness(runtime)
     assert host_ctx.decision_flow_gate is decision_gate

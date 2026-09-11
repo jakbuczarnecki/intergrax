@@ -225,15 +225,10 @@ def test_p0_central_inventory_metrics_and_bypass_consistency() -> None:
         assert proven_id in proven_section
 
     ambiguous_rows = [row for row in rows if row["verdict"] == "AMBIGUOUS"]
-    assert len(ambiguous_rows) == 1
-    assert ambiguous_rows[0]["id"] == "EP-17"
-    ambiguous_section = _section_slice(
-        text,
-        "## Ambiguous execution paths requiring owner decision",
-        until_heading_prefix="## Direct",
+    assert ambiguous_rows == [], (
+        "U5 requires zero ambiguous production execution entrypoints; "
+        f"found {[row['id'] for row in ambiguous_rows]}"
     )
-    assert "EP-17" in ambiguous_section
-    assert "NOT COUNTED AS PROVEN BYPASS" in ambiguous_section
 
     p0_bypasses = sum(1 for row in bypass_rows if row["severity"] == "P0")
     p1_bypasses = sum(1 for row in bypass_rows if row["severity"] == "P1")

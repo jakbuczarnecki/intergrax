@@ -130,7 +130,7 @@ def create_local_workspace_backend_app(
     lkw_document_store = resolve_lkw_runtime_document_store(resolved_settings)
     lkw_managed_workspace_repository = ManagedWorkspaceRepository(lkw_document_store)
     from intergrax.applications._shared.declarative_tool_wiring import (
-        build_declarative_invoker_from_tool_wiring,
+        build_declarative_invoker_for_application_host,
     )
     from intergrax.applications._shared.diagnostic_cursor_secret import resolve_problem_list_cursor_secret
     from intergrax.integrations._shared.conformance import assert_conditional_document_store
@@ -183,8 +183,12 @@ def create_local_workspace_backend_app(
         agent_checkpoint_store=runtime.agent_checkpoint_store,
         compensation_queue_store=runtime.compensation_queue_store,
         idempotency_store=runtime.reliability.idempotency_store,
-        declarative_tool_invoker_factory=lambda: build_declarative_invoker_from_tool_wiring(
+        declarative_tool_invoker_factory=lambda: build_declarative_invoker_for_application_host(
             runtime.env_wiring.tool_wiring,
+            env,
+            manifest=manifest,
+            agent_registry=runtime.registry,
+            tenant_id=resolved_settings.tenant_id,
             idempotency_store=runtime.reliability.idempotency_store,
         ),
     )

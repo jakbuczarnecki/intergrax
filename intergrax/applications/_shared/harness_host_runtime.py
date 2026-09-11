@@ -35,7 +35,7 @@ from intergrax.applications._shared.decision_wiring import (
     wire_application_decision,
 )
 from intergrax.applications._shared.declarative_tool_wiring import (
-    build_declarative_invoker_from_tool_wiring,
+    build_declarative_invoker_for_application_host,
 )
 from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticWiring
 from intergrax.applications._shared.environment_wiring import (
@@ -329,7 +329,15 @@ def build_harness_host_runtime(
         spec=decision_spec,
     )
     task_memory = wire_task_memory_from_profile(effective_environment)
-    declarative_tool_invoker = build_declarative_invoker_from_tool_wiring(env_wiring.tool_wiring)
+    resolved_tenant_id = (tenant_id or "").strip()
+    declarative_tool_invoker = build_declarative_invoker_for_application_host(
+        env_wiring.tool_wiring,
+        effective_environment,
+        manifest=resolved_manifest,
+        agent_registry=resolved_registry,
+        tenant_id=resolved_tenant_id,
+        idempotency_store=reliability_wiring.idempotency_store,
+    )
     resolved_agent_checkpoint_store = resolve_host_agent_checkpoint_store(
         agent_checkpoint_store=agent_checkpoint_store,
         checkpoints_db_path=checkpoints_db_path,
