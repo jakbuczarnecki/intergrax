@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional, Tuple
 
 
@@ -20,7 +20,9 @@ class LLMCallConfig:
     timeout_sec: Optional[float] = None
     max_retries: int = 0
     retry_backoff_sec: float = 0.5
+    max_retry_after_sec: float = 30.0
     retry_on_status: Tuple[int, ...] = (429, 500, 502, 503, 504)
+    rate_limit_wait_timeout_sec: float = 5.0
     calls_per_minute: Optional[int] = None
     circuit_breaker_threshold: int = 0
     circuit_breaker_cooldown_sec: float = 30.0
@@ -35,7 +37,9 @@ def parse_call_config(defaults: dict) -> LLMCallConfig:
         "timeout_sec",
         "max_retries",
         "retry_backoff_sec",
+        "max_retry_after_sec",
         "retry_on_status",
+        "rate_limit_wait_timeout_sec",
         "calls_per_minute",
         "circuit_breaker_threshold",
         "circuit_breaker_cooldown_sec",

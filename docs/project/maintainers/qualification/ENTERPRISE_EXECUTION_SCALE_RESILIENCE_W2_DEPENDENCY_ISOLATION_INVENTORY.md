@@ -180,7 +180,7 @@ Independent layers can multiply (e.g. R1 `max_attempts=5` × tool `max_attempts`
 | Slack backend | integrations | `asyncio.Semaphore(max_in_flight_handlers)` | inbound handlers |
 | Websearch utils | domain-specific | unit tests reference rate limit | not generic platform |
 
-**GENERIC RATE LIMITER: ABSENT** (no shared `RateLimitPort` for arbitrary dependencies).
+**GENERIC RATE LIMITER:** `ProviderRateLimitPort` (W2-C) for LLM provider slug throughput; arbitrary dependency rate ports remain future work.
 
 ## Retry ownership matrix
 
@@ -193,7 +193,7 @@ Independent layers can multiply (e.g. R1 `max_attempts=5` × tool `max_attempts`
 
 **Breaker vs retry order (integration health):** `breaker.call` → resolve factory → health probe; on failure `_record_failure`. No retry inside breaker.
 
-**Breaker vs retry (LLM):** circuit check → rate limit → call (with optional retry wrapper) → success/failure updates circuit.
+**Breaker vs retry (LLM, W2-C):** retry loop → per attempt: budget → rate limit → circuit check → physical call (admission inside adapter) → backoff without permits held.
 
 Open integration slug breaker **does not** block runtime tool calls that use resolved clients obtained outside `health_check_all`.
 

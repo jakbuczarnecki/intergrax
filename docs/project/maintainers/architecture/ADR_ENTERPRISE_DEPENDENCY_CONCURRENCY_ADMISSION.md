@@ -188,7 +188,9 @@ Future W2-B ordering at each seam must follow the existing resilience path for t
 
 ## Rate-limit interaction
 
-Dependency concurrency limits **how many calls are in flight now**. Rate limiting limits **throughput over time** (W2-C / existing LLM RPM). No `calls_per_minute` on `DependencyConcurrencyPolicy`.
+Dependency concurrency limits **how many calls are in flight now**. Rate limiting limits **throughput over time** (W2-C / `ProviderRateLimitPort` + optional distributed LLM limiter). No `calls_per_minute` on `DependencyConcurrencyPolicy`.
+
+**W2-C provider attempt ordering (LLM):** retry loop → per attempt: `RetryBudgetPort` → `ProviderRateLimitPort` → circuit breaker → `DependencyAttemptExecutionBoundary` → SDK. Local rate-limit reject does not increment circuit failure; provider HTTP 429 remains a retriable provider failure. `Retry-After` is capped by `LLMCallConfig.max_retry_after_sec` (no unbounded sleep).
 
 ---
 
