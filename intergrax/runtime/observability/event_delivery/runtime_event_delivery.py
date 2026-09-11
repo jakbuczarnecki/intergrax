@@ -38,6 +38,7 @@ _RUNTIME_EVENT_DELIVERY_PRIORITY: dict[RuntimeEventType, EventPriority] = {
     RuntimeEventType.STEP_COMPLETED: EventPriority.IMPORTANT,
     RuntimeEventType.STEP_FAILED: EventPriority.IMPORTANT,
     RuntimeEventType.EXECUTION_FAILED: EventPriority.CRITICAL,
+    RuntimeEventType.EXTERNAL_OPERATION_FAILED: EventPriority.IMPORTANT,
     RuntimeEventType.TOOL_REQUESTED: EventPriority.IMPORTANT,
     RuntimeEventType.TOOL_COMPLETED: EventPriority.IMPORTANT,
     RuntimeEventType.TOOL_DENIED: EventPriority.IMPORTANT,
