@@ -8,7 +8,6 @@ from __future__ import annotations
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_failure_evidence import (
     ExecutionFailureEvidenceRecordResult,
-    ExecutionFailureEvidenceRecordStatus,
     ExecutionFailureEvidenceRequest,
     validate_execution_failure_evidence_request,
 )
@@ -34,6 +33,8 @@ class RuntimeEventExecutionFailureEvidenceRecorder:
         self,
         request: ExecutionFailureEvidenceRequest,
     ) -> ExecutionFailureEvidenceRecordResult:
+        if self._bus.persistence is None:
+            return ExecutionFailureEvidenceRecordResult.unavailable()
         validated = validate_execution_failure_evidence_request(request)
         payload = ExecutionFailurePayloadV1(
             failure_kind=validated.failure_kind,
@@ -58,14 +59,8 @@ class RuntimeEventExecutionFailureEvidenceRecorder:
         try:
             self._bus.record(event, tenant_id=validated.tenant_id)
         except MandatoryEvidencePersistenceError:
-            return ExecutionFailureEvidenceRecordResult(
-                status=ExecutionFailureEvidenceRecordStatus.UNAVAILABLE,
-                event_id=None,
-            )
-        return ExecutionFailureEvidenceRecordResult(
-            status=ExecutionFailureEvidenceRecordStatus.PERSISTED,
-            event_id=event.event_id,
-        )
+            return ExecutionFailureEvidenceRecordResult.unavailable()
+        return ExecutionFailureEvidenceRecordResult.persisted(event.event_id)
 
 
 __all__ = ["RuntimeEventExecutionFailureEvidenceRecorder"]

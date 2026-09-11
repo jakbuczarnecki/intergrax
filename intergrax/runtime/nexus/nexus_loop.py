@@ -420,6 +420,37 @@ class NexusLoop:
             planner_model_id=planner_model_id,
             execution_identity=self._execution_identity,
         )
+        self._hold_persisted_trace_finalize = False
+        self._pending_deferred_persisted_trace_finalize = None
+
+    def set_hold_persisted_trace_finalize(self, hold: bool) -> None:
+        """When True, graph success defers persisted trace finalize for scenario observability."""
+        self._hold_persisted_trace_finalize = hold
+
+    def take_deferred_persisted_trace_finalize(self):
+        from intergrax.runtime.observability.qualification_runtime_trace import (
+            DeferredPersistedTraceFinalize,
+        )
+
+        pending = self._pending_deferred_persisted_trace_finalize
+        self._pending_deferred_persisted_trace_finalize = None
+        return pending
+
+    async def finalize_deferred_persisted_trace(
+        self,
+        session,
+    ) -> None:
+        from intergrax.runtime.observability.qualification_runtime_trace import (
+            DeferredPersistedTraceFinalize,
+        )
+
+        if not isinstance(session, DeferredPersistedTraceFinalize):
+            raise TypeError("session must be DeferredPersistedTraceFinalize")
+        await self._finalize_persisting_trace(
+            session.trace_emitter,
+            list(session.executions),
+            task_id=session.task.task_id,
+        )
 
     @property
     def registry(self) -> AgentRegistryRead:
@@ -584,7 +615,12 @@ class NexusLoop:
             graph=graph,
             lifecycle=lifecycle,
             trace_emitter=trace_emitter,
+            hold_persisted_trace_finalize=self._hold_persisted_trace_finalize,
         )
+        if phase.deferred_persisted_trace_finalize is not None:
+            self._pending_deferred_persisted_trace_finalize = (
+                phase.deferred_persisted_trace_finalize
+            )
         if phase.early_result is not None:
             return phase.early_result
         assert phase.executions is not None
@@ -897,6 +933,10 @@ class NexusLoop:
 
     async def _publish_terminal_runtime_event(self, task: Task) -> None:
         await self._publish_terminal_runtime_event_with_active_identity(task)
+
+    async def publish_orchestration_root_terminal_runtime(self, task: Task) -> RuntimeEvent:
+        """Publish terminal RuntimeEvent and diagnostics for root orchestration execution."""
+        return await self._publish_terminal_runtime_event_with_active_identity(task)
 
     async def publish_host_task_terminal_runtime(
         self,

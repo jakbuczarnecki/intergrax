@@ -20,7 +20,9 @@ from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
 )
-from intergrax.contracts.execution_failure_evidence import ExecutionFailureEvidenceRecorder
+from intergrax.contracts.execution_failure_evidence import (
+    ExecutionFailureEvidenceRecorder,
+)
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 from intergrax.runtime.execution.failure_evidence.active_context import (
     ActiveExecutionEvidenceContext,
@@ -116,7 +118,9 @@ class RootExecutionOptions:
     segment_predecessor_root_execution_id: ExecutionId | None = None
 
 
-def resolve_root_execution_context(options: RootExecutionOptions) -> RootExecutionContext:
+def resolve_root_execution_context(
+    options: RootExecutionOptions,
+) -> RootExecutionContext:
     """Resolve typed root context; mints RunId and AttemptId when omitted."""
     identity = mint_root_execution_identity(
         run_id=options.run_id,
@@ -281,11 +285,12 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         finalization_token = None
         work_port_token = None
         evidence_token = None
-        if (
-            self._failure_evidence_recorder is not None
-            and root_context.tenant_id is not None
-            and root_context.task_id is not None
-        ):
+        if self._failure_evidence_recorder is not None:
+            if root_context.tenant_id is None or root_context.task_id is None:
+                raise ValueError(
+                    "failure evidence recorder requires tenant_id and task_id "
+                    "on root execution context",
+                )
             evidence_token = bind_active_execution_evidence_context(
                 ActiveExecutionEvidenceContext(
                     tenant_id=root_context.tenant_id,

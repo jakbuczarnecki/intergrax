@@ -8,7 +8,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -51,10 +51,12 @@ class ExecutionFailureEvidenceRequest(BaseModel):
     safe_summary: str = Field(max_length=_MAX_SAFE_SUMMARY_LEN)
     failure_code: str | None = Field(default=None, max_length=_MAX_FAILURE_CODE_LEN)
 
-    def __init__(self, **data: object) -> None:
-        super().__init__(**data)
-        if not self.tenant_id.strip():
+    @field_validator("tenant_id")
+    @classmethod
+    def _tenant_id_non_empty(cls, value: str) -> str:
+        if not value.strip():
             raise ValueError("tenant_id must be non-empty")
+        return value
 
 
 class ExecutionFailureEvidenceRecordResult(BaseModel):
@@ -62,6 +64,34 @@ class ExecutionFailureEvidenceRecordResult(BaseModel):
 
     status: ExecutionFailureEvidenceRecordStatus
     event_id: EventId | None = None
+
+    @model_validator(mode="after")
+    def _status_event_id_invariant(self) -> ExecutionFailureEvidenceRecordResult:
+        if (
+            self.status is ExecutionFailureEvidenceRecordStatus.PERSISTED
+            and self.event_id is None
+        ):
+            raise ValueError("PERSISTED execution failure evidence requires event_id")
+        if (
+            self.status is ExecutionFailureEvidenceRecordStatus.UNAVAILABLE
+            and self.event_id is not None
+        ):
+            raise ValueError("UNAVAILABLE execution failure evidence forbids event_id")
+        return self
+
+    @classmethod
+    def persisted(cls, event_id: EventId) -> ExecutionFailureEvidenceRecordResult:
+        return cls(
+            status=ExecutionFailureEvidenceRecordStatus.PERSISTED,
+            event_id=event_id,
+        )
+
+    @classmethod
+    def unavailable(cls) -> ExecutionFailureEvidenceRecordResult:
+        return cls(
+            status=ExecutionFailureEvidenceRecordStatus.UNAVAILABLE,
+            event_id=None,
+        )
 
 
 class ExecutionFailureEvidenceRecorder(Protocol):

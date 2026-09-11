@@ -600,9 +600,16 @@ async def test_dg001_p3_canonical_real_multi_agent_failure_central_problem_opera
 ):
     """REAL MULTI-AGENT FAILURE → central Problem → operator read (production spine only)."""
 
+    @dataclass
+    class _FailureCapture:
+        execution_id: ExecutionId | None = None
+
+    capture = _FailureCapture()
+
     class _FailingSpecialist:
         async def execute(self, request: OcrRequest) -> OcrResult:
             del request
+            capture.execution_id = require_active_execution_id()
             raise RuntimeError("controlled child failure")
 
     tenant = f"{_TENANT}-canonical-failure-central"
@@ -702,4 +709,70 @@ async def test_dg001_p3_canonical_real_multi_agent_failure_central_problem_opera
 
     assert matched_occurrence, (
         "occurrence must reference the failing task/run scope"
+    )
+
+    assert capture.execution_id is not None
+    failing_specialist_execution_id = capture.execution_id
+    execution_failed_events = [
+        event
+        for event in events
+        if event.event_type is RuntimeEventType.EXECUTION_FAILED
+        and event.execution_id == failing_specialist_execution_id
+    ]
+    assert len(execution_failed_events) == 1
+    failed_event = execution_failed_events[0]
+    assert failed_event.tenant_id == tenant
+    assert failed_event.task_id == task.task_id
+    assert failed_event.run_id == validated_run_id
+    assert failed_event.attempt_id == events[0].attempt_id
+    from intergrax.runtime.events.payload_registry import validate_payload_envelope
+    from intergrax.runtime.events.payloads.canonical import ExecutionFailurePayloadV1
+    from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
+    from intergrax.runtime.diagnostics.diagnostic_assessment import (
+        DiagnosticFindingKind,
+    )
+    from intergrax.runtime.diagnostics.diagnostic_precision import (
+        DiagnosticCertainty,
+        DiagnosticPrecision,
+    )
+
+    payload = validate_payload_envelope(failed_event.payload)
+    assert isinstance(payload, ExecutionFailurePayloadV1)
+    assert payload.failure_kind is ExecutionFailureKind.DELEGATE_EXCEPTION
+    assert "controlled child failure" not in payload.safe_summary
+    assert payload.safe_summary
+
+    proven_execution_finding = False
+    for occurrence_view in detail.occurrences:
+        assessment = occurrence_view.assessment
+        if assessment is None:
+            continue
+        for finding in assessment.findings:
+            if finding.kind is not DiagnosticFindingKind.EXECUTION_FAILED:
+                continue
+            if finding.execution_id != failing_specialist_execution_id:
+                continue
+            assert finding.certainty is DiagnosticCertainty.PROVEN
+            assert finding.precision is DiagnosticPrecision.EXECUTION_LEVEL
+            assert finding.failure_boundary is not None
+            assert (
+                finding.failure_boundary.execution_id
+                == failing_specialist_execution_id
+            )
+            assert finding.supporting_event_ids == (failed_event.event_id,)
+            proven_execution_finding = True
+    assert proven_execution_finding, (
+        "operator assessment must contain PROVEN execution-level failure "
+        "for the exact failing specialist execution"
+    )
+    root_only_findings = [
+        finding
+        for occurrence_view in detail.occurrences
+        if occurrence_view.assessment is not None
+        for finding in occurrence_view.assessment.findings
+        if finding.kind is DiagnosticFindingKind.EXECUTION_FAILED
+        and finding.execution_id == root_execution_id
+    ]
+    assert not root_only_findings, (
+        "root execution_id alone must not satisfy exact-child execution failure proof"
     )

@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from intergrax.runtime.diagnostics.diagnostic_precision import (
     DiagnosticCertainty,
     DiagnosticPrecision,
@@ -25,6 +27,9 @@ from intergrax.runtime.events.payload_registry import (
 )
 from intergrax.runtime.events.payloads.canonical import ExecutionFailurePayloadV1
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+
+if TYPE_CHECKING:
+    from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticFinding
 
 
 class ExecutionFailureAnalysisIntegrityError(Exception):
@@ -67,7 +72,7 @@ class ExecutionFailureAnalyzer:
     def analyze(
         self,
         reconstruction: ExecutionReconstruction,
-    ) -> tuple[object, ...]:
+    ) -> tuple[DiagnosticFinding, ...]:
         from intergrax.runtime.diagnostics.diagnostic_assessment import (
             DiagnosticFinding,
             DiagnosticFindingKind,

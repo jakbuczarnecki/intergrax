@@ -54,6 +54,12 @@ from intergrax.runtime.execution.execution_terminal.persistence import (
 from intergrax.runtime.execution.failure_evidence.runtime_event_recorder import (
     RuntimeEventExecutionFailureEvidenceRecorder,
 )
+from intergrax.runtime.execution.host_task_terminal_publisher import (
+    HostTaskTerminalPublisher,
+)
+from intergrax.runtime.execution.nexus_host_task_terminal import (
+    build_nexus_root_orchestration_terminal_publisher,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
@@ -133,27 +139,34 @@ class OrchestrationExecutor:
 class _RootTaskTerminalPublishingDelegate:
     """Publish terminal runtime events (and diagnostics) on success or failure."""
 
-    __slots__ = ("_inner", "_nexus_loop", "_task")
+    __slots__ = ("_inner", "_terminal_publisher", "_task")
 
     def __init__(
         self,
         inner: TaskBoundOrchestrationDelegate,
         *,
-        nexus_loop: NexusLoop,
+        terminal_publisher: HostTaskTerminalPublisher,
         task: Task,
     ) -> None:
         self._inner = inner
-        self._nexus_loop = nexus_loop
+        self._terminal_publisher = terminal_publisher
         self._task = task
 
-    async def _publish_terminal(self, state: TaskState, *, agent_id: str | None) -> None:
+    async def _publish_terminal(
+        self, state: TaskState, *, agent_id: str | None
+    ) -> None:
         if terminal_outcome_from_task_state(state) is None:
             return
+        run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
         terminal_task = self._task.model_copy(
             update={"state": state, "agent_id": agent_id or self._task.agent_id},
         )
-        await self._nexus_loop._publish_terminal_runtime_event_with_active_identity(
+        await self._terminal_publisher.publish_terminal(
             terminal_task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
         )
 
     async def execute(
@@ -238,6 +251,7 @@ async def execute_root_task(
         capabilities=_ORCHESTRATION_CAPABILITIES,
         output_type=TaskResult,
     )
+    terminal_publisher = build_nexus_root_orchestration_terminal_publisher(nexus_loop)
     router = StrategyExecutionRouter[
         TaskExecutionInput,
         TaskResult,
@@ -248,7 +262,7 @@ async def execute_root_task(
                 task,
                 OrchestrationExecutor(nexus_loop),
             ),
-            nexus_loop=nexus_loop,
+            terminal_publisher=terminal_publisher,
             task=task,
         ),
     )
