@@ -40,6 +40,7 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemReconciliationKeyKind,
     ProblemStatus,
 )
+from intergrax.runtime.diagnostics.decision_context_read_models import DecisionContextView
 
 
 class DiagnosticReadIntegrityError(Exception):
@@ -139,6 +140,7 @@ class DiagnosticProblemOccurrenceView:
     assessment: DiagnosticAssessment | None
     unavailable_reason: DiagnosticReadUnavailableReason | None = None
     execution_lineage: DiagnosticExecutionLineageView | None = None
+    decision_context: DecisionContextView | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -43,6 +43,15 @@ from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrencePersistence,
 )
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
+from intergrax.runtime.diagnostics.decision_context_provider import (
+    DecisionContextProvider,
+    DecisionContextProviderUnavailableError,
+)
+from intergrax.runtime.diagnostics.decision_context_read_models import (
+    DecisionContextReadStatus,
+    DecisionContextUnavailableReason,
+    DecisionContextView,
+)
 
 DEFAULT_PROBLEM_LIST_LIMIT = 100
 MAX_PROBLEM_LIST_LIMIT = 1000
@@ -66,12 +75,14 @@ class DiagnosticReadService:
         *,
         lifecycle_analyzer: LifecycleAnomalyAnalyzer | None = None,
         assessment_builder: DiagnosticAssessmentBuilder | None = None,
+        decision_context_provider: DecisionContextProvider | None = None,
     ) -> None:
         self._persistence = problem_persistence
         self._occurrence_persistence = occurrence_persistence
         self._reconstructor = execution_reconstructor
         self._lifecycle_analyzer = lifecycle_analyzer or LifecycleAnomalyAnalyzer()
         self._assessment_builder = assessment_builder or DiagnosticAssessmentBuilder()
+        self._decision_context_provider = decision_context_provider
 
     def list_problems(
         self,
@@ -146,6 +157,7 @@ class DiagnosticReadService:
                 reconstructor=self._reconstructor,
                 lifecycle_analyzer=self._lifecycle_analyzer,
                 assessment_builder=self._assessment_builder,
+                decision_context_provider=self._decision_context_provider,
             )
             for occurrence in occurrence_page.items
         )
@@ -235,6 +247,7 @@ def _reconstruct_occurrence_view(
     reconstructor: ExecutionReconstructor,
     lifecycle_analyzer: LifecycleAnomalyAnalyzer,
     assessment_builder: DiagnosticAssessmentBuilder,
+    decision_context_provider: DecisionContextProvider | None,
 ) -> DiagnosticProblemOccurrenceView:
     subject_ref = occurrence.subject_ref
     if subject_ref.tenant_id != tenant_id:
@@ -246,6 +259,11 @@ def _reconstruct_occurrence_view(
             "occurrence subject_ref tenant_id does not match Problem tenant_id",
         )
 
+    decision_context = _resolve_decision_context(
+        decision_context_provider,
+        subject_ref=subject_ref,
+    )
+
     if subject_ref.application_instance() is not None:
         return DiagnosticProblemOccurrenceView(
             subject_ref=subject_ref,
@@ -256,6 +274,7 @@ def _reconstruct_occurrence_view(
             read_status=DiagnosticOccurrenceReadStatus.UNAVAILABLE,
             assessment=None,
             unavailable_reason=DiagnosticReadUnavailableReason.NON_EXECUTION_SUBJECT,
+            decision_context=decision_context,
         )
 
     try:
@@ -281,6 +300,7 @@ def _reconstruct_occurrence_view(
             assessment=None,
             unavailable_reason=DiagnosticReadUnavailableReason.EXECUTION_EVIDENCE_UNAVAILABLE,
             execution_lineage=lineage_view,
+            decision_context=decision_context,
         )
 
     try:
@@ -302,7 +322,32 @@ def _reconstruct_occurrence_view(
         assessment=assessment,
         unavailable_reason=None,
         execution_lineage=lineage_view,
+        decision_context=decision_context,
     )
+
+
+def _resolve_decision_context(
+    provider: DecisionContextProvider | None,
+    *,
+    subject_ref: object,
+) -> DecisionContextView | None:
+    if provider is None:
+        return None
+    from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
+
+    if type(subject_ref) is not ProblemGroupingSubjectRef:
+        raise TypeError("subject_ref must be ProblemGroupingSubjectRef")
+    try:
+        return provider.resolve_for_occurrence(subject_ref=subject_ref)
+    except DecisionContextProviderUnavailableError:
+        return DecisionContextView(
+            read_status=DecisionContextReadStatus.DEGRADED,
+            related_decisions=(),
+            unavailable_reason=DecisionContextUnavailableReason.PROVIDER_UNAVAILABLE,
+            limitations=(
+                "Decision context enrichment is degraded; execution diagnostics remain authoritative.",
+            ),
+        )
 
 
 def _validate_reconstruction_scope(
