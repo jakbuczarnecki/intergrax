@@ -10,6 +10,8 @@
 
 **Observability companion:** execution evidence recording, HOS, and export are documented in [`OBSERVABILITY.md`](OBSERVABILITY.md). Diagnostics **consumes** canonical evidence; observability **records** and **projects** it.
 
+**Frozen single-authority architecture (R1):** [`DIAGNOSTIC_ENGINE_SINGLE_AUTHORITY_ARCHITECTURE_R1.md`](../maintainers/architecture/DIAGNOSTIC_ENGINE_SINGLE_AUTHORITY_ARCHITECTURE_R1.md)
+
 **Primary audience:** Principal / Staff engineers, harness integrators, and operators wiring diagnostic persistence, terminal triggers, or read APIs.
 
 ---
