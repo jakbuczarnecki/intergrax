@@ -51,7 +51,7 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
-from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
+from intergrax.tools.core.contracts import ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolProfile
 from intergrax.tools.tool_executor import ToolHandler
@@ -79,11 +79,11 @@ class _ExecutionProbe:
     count: int = 0
 
 
-class _ProbeHandler(ToolHandler[_ProbeInput, _ProbeOutput]):
+class _ProbeHandler(ToolHandler[BaseModel, BaseModel]):
     def __init__(self, probe: _ExecutionProbe) -> None:
         self._probe = probe
 
-    def execute(self, request: ToolExecutionRequest[_ProbeInput]) -> _ProbeOutput:
+    def execute(self, request: ToolExecutionRequest[BaseModel]) -> BaseModel:
         _ = request
         self._probe.count += 1
         return _ProbeOutput()
@@ -108,19 +108,12 @@ def _strict_lab_environment(profile_id: str) -> ApplicationEnvironmentProfile:
 
 def _register_tenant_probe_tool(runtime: HarnessHostRuntime, probe: _ExecutionProbe) -> None:
     registry = runtime.env_wiring.tool_wiring.registry
-    contract = tools_agent_make_contract(_PROBE_TOOL_ID, _ProbeInput, _ProbeOutput)
-    contract = ToolContract(
-        tool_id=contract.tool_id,
-        name=contract.name,
-        description=contract.description,
-        input_schema=contract.input_schema,
-        output_schema=contract.output_schema,
-        error_mapping=contract.error_mapping,
-        side_effects=False,
+    contract = replace(
+        tools_agent_make_contract(_PROBE_TOOL_ID, _ProbeInput, _ProbeOutput),
         category="echo.basic",
         risk_level=ToolRiskLevel.LOW,
     )
-    registry.register(contract, _ProbeHandler(probe))  # pyright: ignore[reportArgumentType]
+    registry.register(contract, _ProbeHandler(probe))
 
 
 def _strict_harness_with_probe(

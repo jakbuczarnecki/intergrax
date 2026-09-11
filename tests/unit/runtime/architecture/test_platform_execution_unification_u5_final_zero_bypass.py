@@ -127,3 +127,22 @@ def test_u5_acp_tenant_proof_has_no_private_member_access_or_slf001() -> None:
     assert "_agent_runtime_governance" not in source
     assert "_capability_resolver" not in source
     assert "test_build_acp_session_host_from_harness_strict_tenant_governance" in source
+
+    lines = source.splitlines()
+    tree = ast.parse(source)
+    scoped_names = {
+        "_ProbeHandler",
+        "_register_tenant_probe_tool",
+        "_strict_harness_with_probe",
+        "test_build_acp_session_host_from_harness_strict_tenant_governance_allows_matching_tenant",
+        "test_build_acp_session_host_from_harness_strict_tenant_governance_denies_wrong_tenant",
+    }
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef | ast.ClassDef):
+            continue
+        if node.name not in scoped_names:
+            continue
+        start = node.lineno - 1
+        end = (node.end_lineno or node.lineno) - 1
+        block = "\n".join(lines[start : end + 1])
+        assert "pyright: ignore" not in block, f"{node.name} must not use pyright suppressions"
