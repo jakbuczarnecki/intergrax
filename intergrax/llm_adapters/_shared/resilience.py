@@ -12,6 +12,9 @@ from dataclasses import dataclass, field
 from typing import Callable, DefaultDict, Dict, Optional, TypeVar
 
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig
+from intergrax.llm_adapters._shared.dependency_admission import (
+    is_non_retriable_dependency_admission_failure,
+)
 
 try:
     from intergrax.distributed.contracts.rate_limiter import DistributedRateLimiter
@@ -154,6 +157,7 @@ def execute_with_resilience(
             result = fn()
         _record_success(provider)
         return result
-    except BaseException:
-        _record_failure(provider, config)
+    except BaseException as exc:
+        if not is_non_retriable_dependency_admission_failure(exc):
+            _record_failure(provider, config)
         raise

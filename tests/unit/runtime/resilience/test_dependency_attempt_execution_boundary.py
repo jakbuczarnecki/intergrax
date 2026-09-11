@@ -653,6 +653,45 @@ def test_shutdown_cancels_pending_wait() -> None:
     assert waiter_error
 
 
+def test_complete_direct_success_releases(
+    fake_admission: _FakeAdmissionPort,
+) -> None:
+    boundary = DependencyAttemptExecutionBoundary(fake_admission)
+    handle = boundary.acquire(_request("tool-a"))
+    boundary.complete_direct(handle)
+    assert fake_admission.active == 0
+    boundary.close()
+
+
+def test_complete_direct_exception_releases(
+    fake_admission: _FakeAdmissionPort,
+) -> None:
+    boundary = DependencyAttemptExecutionBoundary(fake_admission)
+    handle = boundary.acquire(_request("tool-a"))
+    with pytest.raises(RuntimeError):
+        try:
+            raise RuntimeError("physical failure")
+        except RuntimeError:
+            boundary.complete_direct(handle)
+            raise
+    assert fake_admission.active == 0
+    boundary.close()
+
+
+def test_complete_direct_rejects_bound_worker(
+    boundary: DependencyAttemptExecutionBoundary,
+) -> None:
+    handle = boundary.acquire(_request("tool-a"))
+    pool = ThreadPoolExecutor(max_workers=1)
+    future = pool.submit(lambda: None)
+    boundary.bind_worker(handle, future)
+    future.result()
+    with pytest.raises(RuntimeError, match="complete_direct with bound worker"):
+        boundary.complete_direct(handle)
+    boundary.complete_attached(handle)
+    pool.shutdown(wait=True)
+
+
 def test_close_idempotent(boundary: DependencyAttemptExecutionBoundary) -> None:
     boundary.close()
     boundary.close()

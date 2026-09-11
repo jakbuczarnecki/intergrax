@@ -428,12 +428,13 @@ class NativeOllamaAdapter(LLMAdapter):
                 max_tokens=max_tokens,
             )
             try:
-                stream = self._chat(
-                    mapped_messages,
-                    stream=True,
-                    options=options,
-                )
-                for chunk in stream:  # type: ignore[union-attr]
+                for chunk in self._execute_streaming(
+                    lambda: self._chat(
+                        mapped_messages,
+                        stream=True,
+                        options=options,
+                    )
+                ):  # type: ignore[union-attr]
                     last_response = chunk
                     text = self._response_content(chunk)
                     if text:
@@ -443,10 +444,12 @@ class NativeOllamaAdapter(LLMAdapter):
             except Exception:
                 if emitted_partial:
                     raise
-                fallback = self._chat(
-                    mapped_messages,
-                    stream=False,
-                    options=options,
+                fallback = self._execute(
+                    lambda: self._chat(
+                        mapped_messages,
+                        stream=False,
+                        options=options,
+                    )
                 )
                 last_response = fallback
                 text = self._response_content(fallback)

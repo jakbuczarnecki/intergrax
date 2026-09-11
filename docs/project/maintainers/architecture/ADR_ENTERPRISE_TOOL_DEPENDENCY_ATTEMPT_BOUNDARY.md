@@ -451,9 +451,9 @@ Physical retry in `_execute_with_policy` may start attempt N+1 only after attemp
 
 ---
 
-## Future provider compatibility (W2-B3)
+## Provider compatibility (W2-B3, qualified)
 
-`DependencyAttemptExecutionBoundary` is intentionally **not** tool-named: same pattern applies to **sync physical provider attempt + async admission** if the provider seam matches pool/future completion shape. No extra abstraction in W2-B2; reuse the boundary module from provider wiring ADR.
+`DependencyAttemptExecutionBoundary` is intentionally **not** tool-named. W2-B3 adds **`complete_direct(handle)`** for synchronous provider SDK attempts (no worker `Future`). LLM adapters acquire/release per physical attempt via `_execute`, `_execute_streaming`, and `_provider_dependency_attempt` on `LLMAdapter`, with process-local bootstrap `set_llm_provider_dependency_boundary`.
 
 ---
 

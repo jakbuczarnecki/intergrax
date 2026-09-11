@@ -144,6 +144,11 @@ class LLMAdapterRegistry:
         )
 
         adapter.validate()
+        from intergrax.llm_adapters._shared.provider_dependency_boundary import (
+            apply_llm_provider_dependency_boundary,
+        )
+
+        apply_llm_provider_dependency_boundary(adapter)
         return adapter
 
     @classmethod

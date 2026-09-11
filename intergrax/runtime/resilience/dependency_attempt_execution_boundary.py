@@ -183,6 +183,17 @@ class DependencyAttemptExecutionBoundary:
             self._detached_pending_release.add(handle._token)
             return True
 
+    def complete_direct(self, handle: DependencyAttemptHandle) -> None:
+        """Release permit after a direct synchronous physical attempt (no worker future)."""
+        with self._registry_lock:
+            record = self._require_record_locked(handle)
+            if record.worker_future is not None:
+                raise RuntimeError("invariant: complete_direct with bound worker future")
+            if record.release_claimed:
+                return
+            record.release_claimed = True
+        self._release_attached(handle, record)
+
     def complete_attached(self, handle: DependencyAttemptHandle) -> None:
         """Release permit after worker terminal while caller remains attached."""
         with self._registry_lock:

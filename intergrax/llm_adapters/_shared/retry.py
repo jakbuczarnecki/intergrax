@@ -8,6 +8,9 @@ import time
 from typing import Callable, TypeVar
 
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig
+from intergrax.llm_adapters._shared.dependency_admission import (
+    is_non_retriable_dependency_admission_failure,
+)
 
 T = TypeVar("T")
 
@@ -18,6 +21,8 @@ def is_retriable_provider_error(exc: BaseException, config: LLMCallConfig) -> bo
 
 
 def _is_retryable(exc: BaseException, config: LLMCallConfig) -> bool:
+    if is_non_retriable_dependency_admission_failure(exc):
+        return False
     status = attribute_access.optional(exc, "status_code", None)
     if status is None:
         response = attribute_access.optional(exc, "response", None)

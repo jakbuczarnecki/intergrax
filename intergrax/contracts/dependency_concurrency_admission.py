@@ -42,6 +42,11 @@ class DependencyConcurrencyPolicyMissingError(DependencyConcurrencyAdmissionErro
     """Admission is active but no policy is configured for the dependency identity."""
 
 
+def is_dependency_concurrency_admission_error(exc: BaseException) -> bool:
+    """True for W2 dependency admission failures (not provider physical errors)."""
+    return isinstance(exc, DependencyConcurrencyAdmissionError)
+
+
 class DependencyConcurrencyOverloadMode(StrEnum):
     """Overload behavior when dependency concurrency slots are saturated."""
 

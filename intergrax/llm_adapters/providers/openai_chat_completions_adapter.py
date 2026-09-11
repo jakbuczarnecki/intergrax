@@ -147,8 +147,9 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
                 max_tokens=max_tokens,
                 stream=True,
             )
-            stream = self._execute(lambda: self.client.chat.completions.create(**payload))
-            for chunk in stream:
+            for chunk in self._execute_streaming(
+                lambda: self.client.chat.completions.create(**payload)
+            ):
                 c: ChatCompletionChunk = chunk
                 if not c.choices:
                     continue
@@ -277,8 +278,9 @@ class OpenAIChatCompletionsAdapter(LLMAdapter):
                 tools=provider_tools,
                 tool_choice=tool_choice,
             )
-            stream = self._execute(lambda: self.client.chat.completions.create(**payload))
-            for chunk in stream:
+            for chunk in self._execute_streaming(
+                lambda: self.client.chat.completions.create(**payload)
+            ):
                 if not chunk.choices:
                     continue
                 delta = chunk.choices[0].delta

@@ -392,11 +392,12 @@ class LangChainOllamaAdapter(LLMAdapter):
             buf: List[str] = []
 
             try:
-                for chunk in self.chat.stream(lc_msgs, **kwargs):
-                    c = chunk.content
-                    if c:
-                        buf.append(c)
-                        yield partial_stream_event(delta_content=c)
+                with self._provider_dependency_attempt():
+                    for chunk in self.chat.stream(lc_msgs, **kwargs):
+                        c = chunk.content
+                        if c:
+                            buf.append(c)
+                            yield partial_stream_event(delta_content=c)
 
                 out_tok = int(self.estimate_tokens_for_text("".join(buf), model_hint=self.model_name_for_token_estimation))
                 success = True
@@ -412,7 +413,7 @@ class LangChainOllamaAdapter(LLMAdapter):
                 return
 
             except Exception:
-                res = self.chat.invoke(lc_msgs, **kwargs)
+                res = self._execute(lambda: self.chat.invoke(lc_msgs, **kwargs))
                 text = res.content or str(res)
                 if text:
                     yield partial_stream_event(delta_content=text)

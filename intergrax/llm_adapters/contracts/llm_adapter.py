@@ -4,9 +4,18 @@
 
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from dataclasses import dataclass, field
-from collections.abc import Mapping
-from typing import Callable, Sequence, Iterable, Optional, Any, Dict, Union, List, TypeVar, Generic
+from collections.abc import Iterable, Iterator, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Optional, Any, Dict, Union, List, TypeVar, Generic
+
+if TYPE_CHECKING:
+    from intergrax.contracts.dependency_concurrency_admission import (
+        DependencyConcurrencyAdmissionRequest,
+    )
+    from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
+        DependencyAttemptExecutionBoundary,
+    )
 
 T = TypeVar("T")
 import json
@@ -58,6 +67,26 @@ class LLMAdapter(ABC):
         self.id = uuid.uuid4().hex
         self.usage = LLMAdapterUsageLog()
         self.call_config = LLMCallConfig()
+        self._provider_dependency_boundary: DependencyAttemptExecutionBoundary | None = (
+            None
+        )
+
+    def bind_provider_dependency_boundary(
+        self,
+        boundary: DependencyAttemptExecutionBoundary | None,
+    ) -> None:
+        """Inject shared process-local provider dependency boundary (W2-B3)."""
+        from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
+            DependencyAttemptExecutionBoundary,
+        )
+
+        if boundary is not None and not isinstance(
+            boundary, DependencyAttemptExecutionBoundary
+        ):
+            raise TypeError(
+                "boundary must be DependencyAttemptExecutionBoundary or None"
+            )
+        self._provider_dependency_boundary = boundary
 
     def _apply_defaults_call_config(self, defaults: Dict[str, Any]) -> None:
         """Merge ``LLMCallConfig`` fields from adapter constructor kwargs."""
@@ -72,19 +101,98 @@ class LLMAdapter(ABC):
     def _adapter_identity(self) -> tuple[str, str]:
         return self._provider_slug(), str(self.model or "")
 
+    def _provider_dependency_admission_request(
+        self,
+    ) -> DependencyConcurrencyAdmissionRequest:
+        from intergrax.contracts.dependency_concurrency_admission import (
+            DependencyConcurrencyAdmissionRequest,
+            DependencyConcurrencyIdentity,
+            DependencyConcurrencyKind,
+        )
+        from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
+
+        return DependencyConcurrencyAdmissionRequest(
+            dependency=DependencyConcurrencyIdentity(
+                kind=DependencyConcurrencyKind.LLM_PROVIDER,
+                value=self._provider_slug(),
+            ),
+            tenant_id=get_llm_tenant_id(),
+        )
+
+    def _run_physical_provider_attempt(self, fn: Callable[[], T]) -> T:
+        boundary = self._provider_dependency_boundary
+        if boundary is None:
+            return fn()
+        handle = boundary.acquire(self._provider_dependency_admission_request())
+        try:
+            result = fn()
+        except BaseException:
+            boundary.complete_direct(handle)
+            raise
+        boundary.complete_direct(handle)
+        return result
+
     def _execute(self, fn: Callable[[], T]) -> T:
         """Run a provider SDK call with rate limit, circuit breaker, and optional retry."""
         from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
         from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
 
         check_llm_tenant_quota(get_llm_tenant_id())
+
+        def physical_attempt() -> T:
+            return self._run_physical_provider_attempt(fn)
+
         return execute_with_resilience(
-            fn,
+            physical_attempt,
             provider=self._provider_slug(),
             config=self.call_config,
             retry_fn=lambda f: call_with_retry(f, config=self.call_config),
             tenant_id=get_llm_tenant_id(),
         )
+
+    def _execute_streaming(self, factory: Callable[[], Iterable[T]]) -> Iterable[T]:
+        """Acquire permit per creation attempt; hold through stream consumption."""
+        from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
+        from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
+        from intergrax.llm_adapters._shared.provider_stream_admission import (
+            stream_factory_with_admission,
+        )
+
+        check_llm_tenant_quota(get_llm_tenant_id())
+
+        def physical_attempt() -> Iterable[T]:
+            boundary = self._provider_dependency_boundary
+            if boundary is None:
+                return factory()
+            handle = boundary.acquire(self._provider_dependency_admission_request())
+            return stream_factory_with_admission(
+                boundary=boundary,
+                handle=handle,
+                factory=factory,
+            )
+
+        return execute_with_resilience(
+            physical_attempt,
+            provider=self._provider_slug(),
+            config=self.call_config,
+            retry_fn=lambda f: call_with_retry(f, config=self.call_config),
+            tenant_id=get_llm_tenant_id(),
+        )
+
+    @contextmanager
+    def _provider_dependency_attempt(self) -> Iterator[None]:
+        """Hold one provider permit for a multi-step physical attempt (e.g. context-managed stream)."""
+        boundary = self._provider_dependency_boundary
+        if boundary is None:
+            yield
+            return
+        handle = boundary.acquire(self._provider_dependency_admission_request())
+        try:
+            yield
+        except BaseException:
+            boundary.complete_direct(handle)
+            raise
+        boundary.complete_direct(handle)
     
     
     def validate(self) -> None:
