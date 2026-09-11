@@ -428,10 +428,6 @@ class NexusLoop:
         self._hold_persisted_trace_finalize = hold
 
     def take_deferred_persisted_trace_finalize(self):
-        from intergrax.runtime.observability.qualification_runtime_trace import (
-            DeferredPersistedTraceFinalize,
-        )
-
         pending = self._pending_deferred_persisted_trace_finalize
         self._pending_deferred_persisted_trace_finalize = None
         return pending

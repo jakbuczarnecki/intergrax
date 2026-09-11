@@ -16,9 +16,8 @@ from intergrax.runtime.nexus.tracing.graph_node_diag import (
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.task.task import Task
-from intergrax.contracts.execution_identity import RunId
 from intergrax.runtime.observability.qualification_runtime_trace import (
-    TaskTraceQualificationRuntimePort,
+    TaskTraceRuntimeDiagnosticPort,
 )
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
 
@@ -30,25 +29,10 @@ class GraphTraceCallbacks:
     task: Task
     trace_emitter: TaskTraceEmitter
 
-    def qualification_runtime_trace_port(self) -> TaskTraceQualificationRuntimePort:
-        return TaskTraceQualificationRuntimePort(
+    def runtime_diagnostic_trace_port(self) -> TaskTraceRuntimeDiagnosticPort:
+        return TaskTraceRuntimeDiagnosticPort(
             trace_emitter=self.trace_emitter,
             task=self.task,
-        )
-
-    def emit_evaluator_model_attempt(
-        self,
-        *,
-        run_id: RunId,
-        node_id: str,
-        attempt_index: int,
-        max_iterations: int,
-    ) -> None:
-        self.qualification_runtime_trace_port().emit_evaluator_model_attempt(
-            run_id=run_id,
-            node_id=node_id,
-            attempt_index=attempt_index,
-            max_iterations=max_iterations,
         )
 
     def on_retry(self, record: RetryRecord) -> None:

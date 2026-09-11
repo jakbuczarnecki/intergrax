@@ -76,6 +76,9 @@ from intergrax.applications._shared.host_task_execution_wiring import (
     build_environment_host_task_execution,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.observability.qualification_runtime_trace import (
+    DeferredPersistedTraceFinalize,
+)
 from intergrax.runtime.nexus.observability_wiring import (
     NexusObservabilityStores,
     wire_nexus_observability,
@@ -171,6 +174,7 @@ class ScenarioExecutionRequest:
     user_id: str = "scenario-user"
     capability: str | None = None
     task_id: TaskId | None = None
+    hold_persisted_trace_finalize: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,6 +185,7 @@ class ScenarioRuntimeExecutionResult:
     task_id: TaskId
     run_id: RunId
     tenant_id: str
+    deferred_persisted_trace_finalize: DeferredPersistedTraceFinalize | None = None
 
 
 def validate_scenario_tenant_id(tenant_id: str) -> str:
@@ -454,10 +459,18 @@ async def execute_scenario_task(
         composition.nexus_loop,
         composition.environment,
     )
-    task_result = await host_execution.execute(task)
+    composition.nexus_loop.set_hold_persisted_trace_finalize(
+        request.hold_persisted_trace_finalize,
+    )
+    try:
+        task_result = await host_execution.execute(task)
+    finally:
+        composition.nexus_loop.set_hold_persisted_trace_finalize(False)
+    deferred_finalize = composition.nexus_loop.take_deferred_persisted_trace_finalize()
     return ScenarioRuntimeExecutionResult(
         task_result=task_result,
         task_id=task.task_id,
         run_id=task_result.run_id,
         tenant_id=tenant_id,
+        deferred_persisted_trace_finalize=deferred_finalize,
     )

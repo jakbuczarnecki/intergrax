@@ -35,10 +35,9 @@ def extract_reconciliation_phase_observations(
             continue
         payload = _event_payload(event)
         run_id = payload.get("run_id")
-        attempt_index = payload.get("attempt_index")
         validation_invalid = payload.get("validation_invalid")
         entered_reconciliation = payload.get("entered_reconciliation")
-        if not isinstance(run_id, str) or not isinstance(attempt_index, int):
+        if not isinstance(run_id, str):
             continue
         if not isinstance(validation_invalid, bool) or not isinstance(
             entered_reconciliation, bool
@@ -47,7 +46,6 @@ def extract_reconciliation_phase_observations(
         observations.append(
             ReconciliationPhaseObservation(
                 run_id=run_id,
-                attempt_index=attempt_index,
                 validation_invalid=validation_invalid,
                 entered_reconciliation=entered_reconciliation,
             )

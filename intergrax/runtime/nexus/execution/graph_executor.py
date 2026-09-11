@@ -104,7 +104,7 @@ from intergrax.runtime.nexus.execution.evaluator_loop_metadata import (
     set_evaluator_loop_iteration,
 )
 from intergrax.runtime.observability.qualification_runtime_trace import (
-    resolve_graph_qualification_runtime_trace_port,
+    RuntimeDiagnosticTracePort,
 )
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
@@ -266,6 +266,7 @@ class GraphExecutor:
         self._strategy_router = StrategyExecutionRouter(
             agent_executor=AgentExecutor(self._engine),
         )
+        self._runtime_diagnostic_trace_port: RuntimeDiagnosticTracePort | None = None
 
     @property
     def execution_identity(self) -> ActiveExecutionIdentity:
@@ -344,15 +345,21 @@ class GraphExecutor:
         on_retry: Optional[RetryCallback] = None,
         on_node_start: Optional[Callable[[ExecutionNode], None]] = None,
         on_node_complete: Optional[Callable[[ExecutionNode], None]] = None,
+        runtime_diagnostic_trace_port: RuntimeDiagnosticTracePort | None = None,
     ) -> tuple[List[AgentExecutionResult], List[RetryRecord], ExecutionGraph, bool]:
-        return await self._execute_graph(
-            graph,
-            task,
-            plan_criteria=plan_criteria,
-            on_retry=on_retry,
-            on_node_start=on_node_start,
-            on_node_complete=on_node_complete,
-        )
+        previous_port = self._runtime_diagnostic_trace_port
+        self._runtime_diagnostic_trace_port = runtime_diagnostic_trace_port
+        try:
+            return await self._execute_graph(
+                graph,
+                task,
+                plan_criteria=plan_criteria,
+                on_retry=on_retry,
+                on_node_start=on_node_start,
+                on_node_complete=on_node_complete,
+            )
+        finally:
+            self._runtime_diagnostic_trace_port = previous_port
 
     async def _execute_graph(
         self,
@@ -988,7 +995,7 @@ class GraphExecutor:
                 capabilities=frozenset({ExecutionCapability.AGENT}),
             )
             if loop_spec is not None:
-                trace_port = resolve_graph_qualification_runtime_trace_port(task)
+                trace_port = self._runtime_diagnostic_trace_port
                 if trace_port is not None:
                     trace_port.emit_evaluator_model_attempt(
                         run_id=active_run_id,

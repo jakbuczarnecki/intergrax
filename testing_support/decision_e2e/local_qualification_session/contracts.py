@@ -195,7 +195,6 @@ class TypedAlignmentReadback:
 @dataclass(frozen=True, slots=True)
 class ReconciliationPhaseObservation:
     run_id: str
-    attempt_index: int
     validation_invalid: bool
     entered_reconciliation: bool
 

@@ -13,6 +13,7 @@ from typing import Any
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioExecutionRequest,
     ScenarioLabAgentRegistration,
+    ScenarioRuntimeExecutionResult,
     build_scenario_lab_agent_registry,
     execute_scenario_task,
 )
@@ -25,13 +26,11 @@ from intergrax.runtime.diagnostics.investigation_contracts import (
     validate_investigation_conclusion,
 )
 from intergrax.runtime.diagnostics import ProblemId
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceStore
 from intergrax.runtime.nexus.tracing.execution.reconciliation_phase import (
     ReconciliationPhaseValue,
 )
 from intergrax.runtime.observability.qualification_runtime_trace import (
-    append_reconciliation_phase_to_trace_store,
-    next_trace_seq_for_run,
+    DeferredPersistedTraceFinalize,
 )
 from intergrax.runtime.migration.legacy_critic_contracts import LegacyCriticVerdict
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -349,35 +348,19 @@ def _leak_scan_blob(
     return json.dumps({"claim_set": claim_set, "evidence_nodes": evidence_nodes})
 
 
-def _reconciliation_attempt_index(evaluator_loop_iterations: int) -> int:
-    if evaluator_loop_iterations <= 0:
-        return 0
-    return evaluator_loop_iterations - 1
-
-
-def _persist_reconciliation_phase_observation(
-    composition: ScenarioRuntimeComposition,
+def _emit_reconciliation_phase_observation(
+    deferred_trace: DeferredPersistedTraceFinalize | None,
     *,
-    run_id: str,
-    tenant_id: str,
-    attempt_index: int,
     validation_invalid: bool,
     entered_reconciliation: bool,
     phase: ReconciliationPhaseValue,
 ) -> None:
-    store = composition.platform.observability.trace_store
-    if not isinstance(store, RunTraceStore):
+    if deferred_trace is None:
         return
-    seq = next_trace_seq_for_run(store, run_id, tenant_id)
-    append_reconciliation_phase_to_trace_store(
-        store,
-        run_id=run_id,
-        tenant_id=tenant_id,
-        attempt_index=attempt_index,
+    deferred_trace.emit_reconciliation_phase_under_identity(
         validation_invalid=validation_invalid,
         entered_reconciliation=entered_reconciliation,
         phase=phase,
-        seq=seq,
     )
 
 
@@ -448,8 +431,39 @@ async def execute_resolved_skeleton(
             tenant_id=execution_tenant_id,
             message="Investigate Line 4 target attainment degradation",
             capability=INVESTIGATOR_CAPABILITY,
+            hold_persisted_trace_finalize=True,
         ),
     )
+    deferred_trace = platform_result.deferred_persisted_trace_finalize
+    if not isinstance(deferred_trace, DeferredPersistedTraceFinalize):
+        deferred_trace = None
+    try:
+        return await _complete_resolved_skeleton_after_platform_run(
+            bundle=bundle,
+            composition=composition,
+            platform_result=platform_result,
+            deferred_trace=deferred_trace,
+            validation_engine=validation_engine,
+            execution_tenant_id=execution_tenant_id,
+            investigated_problem_ids=investigated_problem_ids,
+            max_decision_revisions=max_decision_revisions,
+        )
+    finally:
+        if isinstance(deferred_trace, DeferredPersistedTraceFinalize):
+            await platform.nexus_loop.finalize_deferred_persisted_trace(deferred_trace)
+
+
+async def _complete_resolved_skeleton_after_platform_run(
+    *,
+    bundle: ScenarioRuntimeBundle,
+    composition: ScenarioRuntimeComposition,
+    platform_result: ScenarioRuntimeExecutionResult,
+    deferred_trace: DeferredPersistedTraceFinalize | None,
+    validation_engine: IncidentInvestigationValidationEngine,
+    execution_tenant_id: str,
+    investigated_problem_ids: tuple[ProblemId, ...],
+    max_decision_revisions: int,
+) -> ScenarioExecutionResult:
     task_result = platform_result.task_result
     run_id = str(platform_result.run_id)
     final_execution = task_result.execution_result
@@ -458,7 +472,12 @@ async def execute_resolved_skeleton(
             raise RuntimeError(TERMINAL_STATE_NOT_ACCEPTED)
         raise RuntimeError("no agent executions produced")
 
-    trace_events = _persisted_trace_events(composition, run_id, execution_tenant_id)
+    if isinstance(deferred_trace, DeferredPersistedTraceFinalize):
+        trace_events = [
+            event.to_dict() for event in deferred_trace.trace_emitter.events
+        ]
+    else:
+        trace_events = _persisted_trace_events(composition, run_id, execution_tenant_id)
     domain_payload = domain_payload_from_execution(final_execution)
     evaluator_loop_iterations = count_evaluator_loop_iterations_from_persisted_trace(
         trace_events,
@@ -548,7 +567,6 @@ async def execute_resolved_skeleton(
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
     persist_terminal_acceptance_diagnostic(diagnostic)
-    reconciliation_attempt_index = _reconciliation_attempt_index(evaluator_loop_iterations)
     try:
         enforce_pre_reconciliation_validation_clean_transition(
             validation_valid=final_validation.valid,
@@ -558,22 +576,16 @@ async def execute_resolved_skeleton(
             has_supported_diagnosis=has_supported_diagnosis,
         )
     except PreReconciliationValidationError as exc:
-        _persist_reconciliation_phase_observation(
-            composition,
-            run_id=run_id,
-            tenant_id=execution_tenant_id,
-            attempt_index=reconciliation_attempt_index,
+        _emit_reconciliation_phase_observation(
+            deferred_trace,
             validation_invalid=True,
             entered_reconciliation=False,
             phase=ReconciliationPhaseValue.FAILED,
         )
         exc.execution_provenance = scenario_execution_provenance(run_id, execution_tenant_id)
         raise
-    _persist_reconciliation_phase_observation(
-        composition,
-        run_id=run_id,
-        tenant_id=execution_tenant_id,
-        attempt_index=reconciliation_attempt_index,
+    _emit_reconciliation_phase_observation(
+        deferred_trace,
         validation_invalid=False,
         entered_reconciliation=True,
         phase=ReconciliationPhaseValue.ENTERED,

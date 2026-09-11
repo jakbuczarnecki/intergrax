@@ -29,7 +29,6 @@ class ReconciliationPhaseDiagV1(DiagnosticPayload):
     """
 
     run_id: str
-    attempt_index: int
     validation_invalid: bool
     entered_reconciliation: bool
     phase: ReconciliationPhaseValue
@@ -45,7 +44,6 @@ class ReconciliationPhaseDiagV1(DiagnosticPayload):
     def to_dict(self) -> dict[str, Any]:
         return {
             "run_id": self.run_id,
-            "attempt_index": self.attempt_index,
             "validation_invalid": self.validation_invalid,
             "entered_reconciliation": self.entered_reconciliation,
             "phase": self.phase.value,

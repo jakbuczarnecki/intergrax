@@ -44,11 +44,8 @@ from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTra
 from intergrax.runtime.nexus.tracing.persistence_models import RunMetadata, RunStats
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.observability.qualification_runtime_trace import (
-    GRAPH_QUALIFICATION_RUNTIME_TRACE_PORT_KEY,
     O1_SUPPORTED_TRACE_SCHEMA_IDS,
-    TaskTraceQualificationRuntimePort,
-    append_reconciliation_phase_to_trace_store,
-    next_trace_seq_for_run,
+    TaskTraceRuntimeDiagnosticPort,
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
@@ -122,6 +119,16 @@ def test_evaluator_model_attempt_serialization_is_stable() -> None:
     assert again.to_dict() == event
 
 
+def test_reconciliation_phase_has_no_attempt_index_field() -> None:
+    payload = ReconciliationPhaseDiagV1(
+        run_id="run-a",
+        validation_invalid=False,
+        entered_reconciliation=True,
+        phase=ReconciliationPhaseValue.ENTERED,
+    )
+    assert "attempt_index" not in payload.to_dict()
+
+
 def test_qi1_parses_persisted_model_attempt_shape() -> None:
     observations = extract_attempt_observations(
         (
@@ -149,17 +156,19 @@ def test_pre_reconciliation_rejection_has_no_entered_event() -> None:
             has_supported_diagnosis=False,
         )
     store = InMemoryRunTraceStore()
-    append_reconciliation_phase_to_trace_store(
-        store,
-        run_id="run-1",
-        tenant_id="tenant-1",
-        attempt_index=0,
+    run_id = mint_run_id()
+    trace_emitter = TaskTraceEmitter(run_id=run_id, attempt_id=mint_attempt_id())
+    task = Task(tenant_id="tenant-1", user_id="u1", message="m")
+    port = TaskTraceRuntimeDiagnosticPort(trace_emitter=trace_emitter, task=task)
+    port.emit_reconciliation_phase(
+        run_id=run_id,
         validation_invalid=True,
         entered_reconciliation=False,
         phase=ReconciliationPhaseValue.FAILED,
-        seq=1,
     )
-    events = _event_dicts(store, run_id="run-1", tenant_id="tenant-1")
+    for event in trace_emitter.events:
+        store.append_event(event)
+    events = _event_dicts(store, run_id=str(run_id), tenant_id="tenant-1")
     observations = extract_reconciliation_phase_observations(events)
     assessment = assess_reconciliation_leak(observations)
     assert assessment.outcome.value == "pass"
@@ -168,17 +177,19 @@ def test_pre_reconciliation_rejection_has_no_entered_event() -> None:
 
 def test_reconciliation_entered_before_failure_is_detectable() -> None:
     store = InMemoryRunTraceStore()
-    append_reconciliation_phase_to_trace_store(
-        store,
-        run_id="run-1",
-        tenant_id="tenant-1",
-        attempt_index=0,
+    run_id = mint_run_id()
+    trace_emitter = TaskTraceEmitter(run_id=run_id, attempt_id=mint_attempt_id())
+    task = Task(tenant_id="tenant-1", user_id="u1", message="m")
+    port = TaskTraceRuntimeDiagnosticPort(trace_emitter=trace_emitter, task=task)
+    port.emit_reconciliation_phase(
+        run_id=run_id,
         validation_invalid=False,
         entered_reconciliation=True,
         phase=ReconciliationPhaseValue.ENTERED,
-        seq=1,
     )
-    events = _event_dicts(store, run_id="run-1", tenant_id="tenant-1")
+    for event in trace_emitter.events:
+        store.append_event(event)
+    events = _event_dicts(store, run_id=str(run_id), tenant_id="tenant-1")
     observations = extract_reconciliation_phase_observations(events)
     leaked = extract_reconciliation_phase_observations(
         (
@@ -186,7 +197,6 @@ def test_reconciliation_entered_before_failure_is_detectable() -> None:
                 "payload_schema_id": RECONCILIATION_PHASE_TRACE_SCHEMA,
                 "payload": {
                     "run_id": "run-1",
-                    "attempt_index": 0,
                     "validation_invalid": True,
                     "entered_reconciliation": True,
                 },
@@ -210,12 +220,19 @@ class _AlternatingValidationEngine(NexusValidationEngine):
 
 
 class _GraphOrchestrationDelegate:
-    __slots__ = ("_executor", "_graph", "_task")
+    __slots__ = ("_executor", "_graph", "_port", "_task")
 
-    def __init__(self, executor: GraphExecutor, graph: ExecutionGraph, task: Task) -> None:
+    def __init__(
+        self,
+        executor: GraphExecutor,
+        graph: ExecutionGraph,
+        task: Task,
+        port: TaskTraceRuntimeDiagnosticPort,
+    ) -> None:
         self._executor = executor
         self._graph = graph
         self._task = task
+        self._port = port
 
     async def execute(self, _request: object) -> tuple[object, ...]:
         budget_token = None
@@ -225,7 +242,11 @@ class _GraphOrchestrationDelegate:
                 ledger=create_execution_budget_ledger(None),
             )
         try:
-            return await self._executor.execute(self._graph, self._task)
+            return await self._executor.execute(
+                self._graph,
+                self._task,
+                runtime_diagnostic_trace_port=self._port,
+            )
         finally:
             if budget_token is not None:
                 reset_active_execution_budget(budget_token)
@@ -278,12 +299,9 @@ async def test_graph_executor_emits_attempt_indices_zero_and_one() -> None:
     )
     root = _root_identity()
     trace_emitter = TaskTraceEmitter(run_id=root.run_id, attempt_id=root.attempt_id)
-    task.metadata[GRAPH_QUALIFICATION_RUNTIME_TRACE_PORT_KEY] = TaskTraceQualificationRuntimePort(
-        trace_emitter=trace_emitter,
-        task=task,
-    )
+    port = TaskTraceRuntimeDiagnosticPort(trace_emitter=trace_emitter, task=task)
     boundary = ExecutionBoundary(
-        _GraphOrchestrationDelegate(executor, graph, task),
+        _GraphOrchestrationDelegate(executor, graph, task, port),
         identity=root,
         authority=ParentExecutionAuthority.unknown(),
     )
@@ -299,19 +317,3 @@ async def test_graph_executor_emits_attempt_indices_zero_and_one() -> None:
     )
     assert indices == [0, 1]
     assert peek_active_execution_id() is None
-
-
-def test_next_trace_seq_increments() -> None:
-    store = InMemoryRunTraceStore()
-    append_reconciliation_phase_to_trace_store(
-        store,
-        run_id="run-seq",
-        tenant_id="tenant-1",
-        attempt_index=0,
-        validation_invalid=False,
-        entered_reconciliation=True,
-        phase=ReconciliationPhaseValue.ENTERED,
-        seq=3,
-    )
-    _finalize_trace_run(store, run_id="run-seq", tenant_id="tenant-1")
-    assert next_trace_seq_for_run(store, "run-seq", "tenant-1") == 4

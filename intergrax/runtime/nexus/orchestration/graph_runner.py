@@ -35,6 +35,9 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 )
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.orchestration.graph_trace_callbacks import GraphTraceCallbacks
+from intergrax.runtime.observability.qualification_runtime_trace import (
+    DeferredPersistedTraceFinalize,
+)
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
@@ -105,6 +108,7 @@ class GraphPhaseOutcome:
     graph: Optional[ExecutionGraph] = None
     plan: Optional[NexusPlan] = None
     final_validation: Optional[ValidationResult] = None
+    deferred_persisted_trace_finalize: Optional["DeferredPersistedTraceFinalize"] = None
 
 
 @dataclass
@@ -183,6 +187,34 @@ class NexusGraphRunner:
             return None
         return transition.active_attempt_id
 
+    async def _finalize_or_defer_persisted_trace(
+        self,
+        trace_emitter: TaskTraceEmitter,
+        executions: List[AgentExecutionResult],
+        *,
+        task: Task,
+        hold_persisted_trace_finalize: bool,
+    ) -> DeferredPersistedTraceFinalize | None:
+        if not isinstance(trace_emitter, PersistingTaskTraceEmitter):
+            return None
+        if hold_persisted_trace_finalize:
+            from intergrax.contracts.execution_identity import (
+                require_active_execution_id,
+                require_active_execution_identity,
+            )
+
+            active_run_id, active_attempt_id = require_active_execution_identity()
+            return DeferredPersistedTraceFinalize(
+                trace_emitter=trace_emitter,
+                task=task,
+                executions=tuple(executions),
+                run_id=active_run_id,
+                attempt_id=active_attempt_id,
+                execution_id=require_active_execution_id(),
+            )
+        await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
+        return None
+
     async def run(
         self,
         task: Task,
@@ -191,15 +223,10 @@ class NexusGraphRunner:
         graph: ExecutionGraph,
         lifecycle: TaskLifecycle,
         trace_emitter: TaskTraceEmitter,
+        hold_persisted_trace_finalize: bool = False,
     ) -> GraphPhaseOutcome:
         callbacks = GraphTraceCallbacks(task=task, trace_emitter=trace_emitter)
-        from intergrax.runtime.observability.qualification_runtime_trace import (
-            GRAPH_QUALIFICATION_RUNTIME_TRACE_PORT_KEY,
-        )
-
-        task.metadata[GRAPH_QUALIFICATION_RUNTIME_TRACE_PORT_KEY] = (
-            callbacks.qualification_runtime_trace_port()
-        )
+        runtime_diagnostic_port = callbacks.runtime_diagnostic_trace_port()
         retry_codes = (
             frozenset({RuntimeErrorCode.VALIDATION_ERROR})
             if self.max_run_retries > 0
@@ -258,6 +285,7 @@ class NexusGraphRunner:
                 on_retry=on_retry,
                 on_node_start=callbacks.on_node_start,
                 on_node_complete=callbacks.on_node_complete,
+                runtime_diagnostic_trace_port=runtime_diagnostic_port,
             )
             retry_records.extend(attempt_retries)
             failed_nodes = [
@@ -417,8 +445,12 @@ class NexusGraphRunner:
         else:
             lifecycle.transition(task, TaskState.COMPLETED)
 
-        if isinstance(trace_emitter, PersistingTaskTraceEmitter):
-            await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
+        deferred_finalize = await self._finalize_or_defer_persisted_trace(
+            trace_emitter,
+            executions,
+            task=task,
+            hold_persisted_trace_finalize=hold_persisted_trace_finalize,
+        )
 
         return GraphPhaseOutcome(
             executions=executions,
@@ -426,6 +458,7 @@ class NexusGraphRunner:
             graph=graph,
             plan=plan,
             final_validation=final_validation,
+            deferred_persisted_trace_finalize=deferred_finalize,
         )
 
     async def _handle_cancellation(
