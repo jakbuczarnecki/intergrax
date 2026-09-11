@@ -34,6 +34,15 @@ _U5_ACP_TENANT_PROOF = (
 _CATALOG_INVOKER = (
     _REPO_ROOT / "intergrax" / "agents" / "persistence" / "catalog_declarative_invoker.py"
 )
+_PERSISTENCE_PACKAGE = _REPO_ROOT / "intergrax" / "agents" / "persistence" / "__init__.py"
+_RUNTIME_CONTEXT = (
+    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "engine" / "runtime_context.py"
+)
+_APPROVED_RUNTIME_TOOL_INVOKER_OWNERS = (
+    _DECLARATIVE_WIRING,
+    _RUNTIME_CONTEXT,
+)
+_AGENTS_PRODUCTION_ROOT = _REPO_ROOT / "intergrax" / "agents"
 _AW_STAGE_LOOP = _REPO_ROOT / "intergrax" / "autonomous_work" / "work_stage_capability_loop.py"
 _U5_QUALIFICATION = (
     _REPO_ROOT
@@ -71,6 +80,46 @@ def test_u5_inventory_has_no_production_bypass_ambiguous_or_execution_gaps() -> 
     assert by_id["EP-17"]["verdict"] == "LEGACY BUT NON-PRODUCTION"
 
 
+def test_u5_unmanaged_catalog_builder_not_public_package_surface() -> None:
+    init_source = _PERSISTENCE_PACKAGE.read_text(encoding="utf-8")
+    tree = ast.parse(init_source, filename=str(_PERSISTENCE_PACKAGE))
+    exported: set[str] = set()
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id == "__all__":
+                value = node.value
+                if isinstance(value, (ast.List, ast.Tuple)):
+                    for elt in value.elts:
+                        if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                            exported.add(elt.value)
+    assert "build_catalog_declarative_invoker_from_registry" not in exported
+    assert "build_catalog_declarative_invoker_from_registry" not in init_source
+
+    catalog_source = _CATALOG_INVOKER.read_text(encoding="utf-8")
+    assert "def build_catalog_declarative_invoker_from_registry" not in catalog_source
+    assert "RuntimeToolInvoker(" not in catalog_source
+
+
+def test_u5_runtime_tool_invoker_construction_sites_are_approved_owners() -> None:
+    for path in _APPROVED_RUNTIME_TOOL_INVOKER_OWNERS:
+        assert path.is_file()
+        assert "RuntimeToolInvoker(" in path.read_text(encoding="utf-8-sig")
+
+    agent_violations: list[str] = []
+    for path in _AGENTS_PRODUCTION_ROOT.rglob("*.py"):
+        if "__pycache__" in path.parts:
+            continue
+        source = path.read_text(encoding="utf-8-sig")
+        if "RuntimeToolInvoker(" in source:
+            agent_violations.append(path.relative_to(_REPO_ROOT).as_posix())
+    assert agent_violations == [], (
+        "intergrax/agents must not construct RuntimeToolInvoker locally:\n"
+        + "\n".join(agent_violations)
+    )
+
+
 def test_u5_ep14_declarative_wiring_forwards_governance_and_production_mode() -> None:
     wiring_source = _DECLARATIVE_WIRING.read_text(encoding="utf-8")
     assert "agent_runtime_governance=agent_runtime_governance" in wiring_source
@@ -80,6 +129,7 @@ def test_u5_ep14_declarative_wiring_forwards_governance_and_production_mode() ->
     catalog_source = _CATALOG_INVOKER.read_text(encoding="utf-8")
     assert "production_mode: bool = False" in catalog_source
     assert "production_mode=self.production_mode" in catalog_source
+    assert "tool_invoker: RuntimeToolInvoker | ToolInvokerProtocol" in catalog_source
 
 
 def test_u5_ep17_no_production_wiring_for_work_stage_capability_loop() -> None:

@@ -25,8 +25,7 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tools.catalog_dispatch import invoke_catalog_tool_request
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
-from intergrax.tools.registry import ToolRegistry
+from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 
 
 class _CatalogDispatchLLMStub(LLMAdapter):
@@ -58,7 +57,7 @@ class CatalogDeclarativeRunBinding:
     run_id: str = ""
     task_id: str = ""
     agent_id: str = ""
-    tenant_id: str = "default"
+    tenant_id: str = ""
     user_id: str = ""
 
 
@@ -66,7 +65,7 @@ class CatalogDeclarativeRunBinding:
 class CatalogDeclarativeToolInvoker:
     """Invoke declarative actions through the Tier-1 catalog tool gateway."""
 
-    tool_invoker: object
+    tool_invoker: RuntimeToolInvoker | ToolInvokerProtocol
     binding: CatalogDeclarativeRunBinding = field(default_factory=CatalogDeclarativeRunBinding)
     production_mode: bool = False
 
@@ -76,7 +75,7 @@ class CatalogDeclarativeToolInvoker:
         run_id: str,
         task_id: str,
         agent_id: str,
-        tenant_id: str = "default",
+        tenant_id: str,
         user_id: str = "",
     ) -> None:
         self.binding.run_id = run_id
@@ -102,6 +101,14 @@ class CatalogDeclarativeToolInvoker:
 
     def _runtime_state(self) -> RuntimeState:
         from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
+
+        agent_id = _require_bound_identity_field(self.binding.agent_id, "agent_id")
+        tenant_id = _require_bound_identity_field(self.binding.tenant_id, "tenant_id")
+        if not isinstance(self.tool_invoker, RuntimeToolInvoker):
+            raise TypeError(
+                "catalog declarative execution requires a RuntimeToolInvoker host binding",
+            )
+        host_tool_invoker = self.tool_invoker
         from intergrax.prompts.registry.prompt_registry_resolver import (
             resolve_yaml_prompt_registry,
         )
@@ -114,8 +121,8 @@ class CatalogDeclarativeToolInvoker:
             production_mode=self.production_mode,
             enable_rag=False,
             enable_websearch=False,
-            tool_invoker=self.tool_invoker,
-            tenant_id=self.binding.tenant_id,
+            tool_invoker=host_tool_invoker,
+            tenant_id=tenant_id,
         )
         config.validate()
         ensure_production_run_budget(config)
@@ -133,10 +140,10 @@ class CatalogDeclarativeToolInvoker:
         return RuntimeState(
             context=context,
             request=RuntimeRequest(
-                agent_id=self.binding.agent_id or "agent",
-                user_id=self.binding.user_id or "user",
-                session_id=self.binding.run_id or "session",
-                tenant_id=self.binding.tenant_id,
+                agent_id=agent_id,
+                user_id=self.binding.user_id,
+                session_id=str(resolved_run_id),
+                tenant_id=tenant_id,
                 message="acp.declarative",
                 task_id=resolved_task_id,
                 run_id=resolved_run_id,
@@ -152,9 +159,10 @@ class CatalogDeclarativeToolInvoker:
         args: dict[str, Any],
         idempotency_key: str | None,
     ) -> DeclarativeToolInvokeResult:
+        agent_id = _require_bound_identity_field(self.binding.agent_id, "agent_id")
         request = ToolRequest(
             tool_name=tool_id,
-            agent_id=self.binding.agent_id or "agent",
+            agent_id=agent_id,
             step_id="acp.declarative",
             input=args,
             idempotency_key=idempotency_key,
@@ -191,14 +199,12 @@ class CatalogDeclarativeToolInvoker:
         )
 
 
-def build_catalog_declarative_invoker_from_registry(
-    registry: ToolRegistry,
-) -> CatalogDeclarativeToolInvoker:
-    invoker = RuntimeToolInvoker(
-        registry=registry,
-        executor=RegistryToolExecutor(registry),
-    )
-    return CatalogDeclarativeToolInvoker(tool_invoker=invoker)
+def _require_bound_identity_field(value: str, label: str) -> str:
+    if not value or not value.strip():
+        raise ValueError(
+            f"catalog declarative {label} must be set via bind_run before execution",
+        )
+    return value.strip()
 
 
 def resolve_declarative_tool_invoker(

@@ -311,7 +311,7 @@ def test_runtime_context_closes_owned_tool_invoker() -> None:
 @pytest.mark.unit
 def test_host_managed_tool_invoker_survives_runtime_context_close() -> None:
     from intergrax.agents.authoring.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
-    from intergrax.agents.persistence.catalog_declarative_invoker import (
+    from testing_support.catalog_declarative_invoker import (
         build_catalog_declarative_invoker_from_registry,
     )
     from intergrax.agents.persistence.tool_invoker_wiring import attach_declarative_tool_invoker

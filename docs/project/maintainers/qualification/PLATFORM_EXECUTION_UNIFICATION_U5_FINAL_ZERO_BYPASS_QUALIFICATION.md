@@ -52,6 +52,15 @@ All supported production rows EP-01–EP-16, EP-18–EP-19, EP-22: **CANONICAL**
 - EP-14 production wiring test: `test_declarative_tool_wiring.py`, `test_platform_execution_unification_u5_final_zero_bypass.py`.
 - EP-17 non-production wiring test: `test_platform_execution_unification_u5_final_zero_bypass.py`.
 
+## FINAL public declarative invoker surface closure
+
+| Item | Status |
+| --- | --- |
+| UNMANAGED PUBLIC BUILDER (`build_catalog_declarative_invoker_from_registry`) | **REMOVED** from `intergrax.agents.persistence` |
+| PRODUCTION CALLERS | **0** |
+| TEST USAGE | `testing_support/catalog_declarative_invoker.py` |
+| Canonical host builder | `build_declarative_invoker_for_application_host` |
+
 ## Test evidence
 
 - `tests/unit/runtime/architecture/test_platform_execution_unification_p0_bypass_inventory.py`

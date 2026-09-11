@@ -3,9 +3,24 @@
 import pytest
 from pydantic import BaseModel
 
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.agents.persistence.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
+)
+from testing_support.catalog_declarative_invoker import (
     build_catalog_declarative_invoker_from_registry,
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -34,6 +49,20 @@ class _EchoHandler(ToolHandler[_In, _Out]):
 TOOL_ID = "acp.echo_tool"
 
 
+def _bind_catalog_execution(run_id: str) -> tuple[object, object]:
+    execution_id = mint_execution_id()
+    identity_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+    )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=create_execution_budget_ledger(RunBudget()),
+    )
+    return identity_token, budget_token
+
+
 def _registry_with_tool() -> ToolRegistry:
     registry = ToolRegistry()
     contract = tools_agent_make_contract(TOOL_ID, _In, _Out)
@@ -45,17 +74,23 @@ def _registry_with_tool() -> ToolRegistry:
 async def test_catalog_declarative_invoker_routes_through_catalog() -> None:
     registry = _registry_with_tool()
     invoker = build_catalog_declarative_invoker_from_registry(registry)
-    invoker.bind_run(
-        run_id=mint_run_id(),
-        task_id=mint_task_id(),
-        agent_id="agent-a",
-        tenant_id="tenant-1",
-    )
-    result = await invoker.invoke(
-        tool_id=TOOL_ID,
-        args={"value": 4},
-        idempotency_key="key-1",
-    )
+    run_id = mint_run_id()
+    identity_token, budget_token = _bind_catalog_execution(run_id)
+    try:
+        invoker.bind_run(
+            run_id=run_id,
+            task_id=mint_task_id(),
+            agent_id="agent-a",
+            tenant_id="tenant-1",
+        )
+        result = await invoker.invoke(
+            tool_id=TOOL_ID,
+            args={"value": 4},
+            idempotency_key="key-1",
+        )
+    finally:
+        reset_active_execution_budget(budget_token)
+        reset_active_execution_identity(identity_token)
     assert result.status == "success"
     assert result.output == {"result": 5}
 
