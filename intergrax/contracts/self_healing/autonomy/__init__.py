@@ -65,7 +65,20 @@ from intergrax.contracts.self_healing.autonomy.ids import (
     mint_autonomy_evaluation_id,
     mint_autonomy_execution_audit_record_id,
     mint_autonomy_execution_authorization_id,
+    mint_autonomy_qualification_validation_id,
     mint_autonomy_recommendation_correlation_id,
+)
+from intergrax.contracts.self_healing.autonomy.qualification import (
+    AUTONOMY_QUALIFICATION_CONTRACT_VERSION,
+    AutonomyQualificationAuditInfo,
+    AutonomyQualificationRepository,
+    AutonomyQualificationResult,
+    AutonomyQualificationStatus,
+    AutonomySafetyCheck,
+    AutonomySafetyCheckResult,
+    AutonomySafetyIssue,
+    AutonomySafetyQualificationContext,
+    AutonomySafetyValidator,
 )
 from intergrax.contracts.self_healing.autonomy.policy_evaluation import (
     AutonomyPolicyEvaluationResult,
@@ -94,6 +107,7 @@ from intergrax.contracts.self_healing.autonomy.risk import (
 
 __all__ = [
     "AUTONOMY_EVALUATION_CONTRACT_VERSION",
+    "AUTONOMY_QUALIFICATION_CONTRACT_VERSION",
     "AutonomyAuditBundle",
     "AutonomyConstraintDescriptor",
     "AutonomyControlDecision",
@@ -133,7 +147,16 @@ __all__ = [
     "AutonomyPolicyEvaluationVerdict",
     "AutonomyPolicyEvaluator",
     "AutonomyPolicyOutcome",
+    "AutonomyQualificationAuditInfo",
+    "AutonomyQualificationRepository",
+    "AutonomyQualificationResult",
+    "AutonomyQualificationStatus",
     "AutonomyRepository",
+    "AutonomySafetyCheck",
+    "AutonomySafetyCheckResult",
+    "AutonomySafetyIssue",
+    "AutonomySafetyQualificationContext",
+    "AutonomySafetyValidator",
     "AutonomyRequestedActionKind",
     "AutonomyRiskAssessment",
     "AutonomyRiskBand",
@@ -150,5 +173,6 @@ __all__ = [
     "mint_autonomy_evaluation_id",
     "mint_autonomy_execution_audit_record_id",
     "mint_autonomy_execution_authorization_id",
+    "mint_autonomy_qualification_validation_id",
     "mint_autonomy_recommendation_correlation_id",
 ]

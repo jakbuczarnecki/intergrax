@@ -20,6 +20,10 @@ from intergrax.runtime.self_healing.autonomy.in_memory_repository import InMemor
 from intergrax.runtime.self_healing.autonomy.plugin_control_engine import PluginAutonomyControlEngine
 from intergrax.runtime.self_healing.autonomy.plugin_decision_evaluator import PluginAutonomyDecisionEvaluator
 from intergrax.runtime.self_healing.autonomy.policy_plugin_evaluator import AutonomyPolicyPluginEvaluator
+from intergrax.runtime.self_healing.autonomy.qualification import (
+    AutonomyQualificationService,
+    default_autonomy_safety_checks,
+)
 from intergrax.runtime.self_healing.autonomy.service import AutonomyControlService
 
 __all__ = [
@@ -35,6 +39,8 @@ __all__ = [
     "InMemoryAutonomyDecisionRepository",
     "InMemoryAutonomyExecutionAuditRepository",
     "InMemoryAutonomyRepository",
+    "AutonomyQualificationService",
     "PluginAutonomyControlEngine",
+    "default_autonomy_safety_checks",
     "PluginAutonomyDecisionEvaluator",
 ]

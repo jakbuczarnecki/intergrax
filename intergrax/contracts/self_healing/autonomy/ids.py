@@ -28,10 +28,15 @@ def mint_autonomy_execution_audit_record_id() -> str:
     return f"sh_aut_exec_audit_{secrets.token_hex(8)}"
 
 
+def mint_autonomy_qualification_validation_id() -> str:
+    return f"sh_aut_qual_{secrets.token_hex(8)}"
+
+
 __all__ = [
     "mint_autonomy_control_decision_id",
     "mint_autonomy_evaluation_id",
     "mint_autonomy_execution_audit_record_id",
     "mint_autonomy_execution_authorization_id",
+    "mint_autonomy_qualification_validation_id",
     "mint_autonomy_recommendation_correlation_id",
 ]
