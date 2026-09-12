@@ -8,11 +8,14 @@ from __future__ import annotations
 from typing import Generic, TypeVar
 
 from intergrax.contracts.execution_identity import (
+    ExecutionId,
     require_active_execution_id,
     require_active_execution_identity,
 )
 from intergrax.contracts.execution_lineage import ExecutionLineageIntegrityError
-from intergrax.runtime.execution.identity_authority import mint_child_execution_id
+from intergrax.runtime.execution.identity_authority import (
+    default_execution_identity_authority,
+)
 from intergrax.runtime.execution.active_execution_budget import (
     ActiveExecutionBudgetState,
     bind_active_execution_budget,
@@ -55,6 +58,11 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 RequestT = TypeVar("RequestT")
 ResultT = TypeVar("ResultT")
+
+
+def mint_child_execution_id() -> ExecutionId:
+    """Mint child ExecutionId via canonical authority (test hooks may patch this symbol)."""
+    return default_execution_identity_authority.mint_child_execution_identity()
 
 
 class ChildExecutionRunner(Generic[RequestT, ResultT]):

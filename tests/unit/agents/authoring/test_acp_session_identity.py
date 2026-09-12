@@ -26,6 +26,7 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.contracts.execution_identity_authority import MintedExecutionIdentity
 from intergrax.runtime.execution.identity_authority import RootTaskIdentity
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -35,6 +36,19 @@ from testing_support.builder import FakeLLMAdapter, build_in_memory_session_mana
 from tests.unit.agents.conftest import make_acp_host_context
 
 _CANONICAL_ID = re.compile(r"^(task|run|attempt)_[0-9a-f]{32}$")
+
+_ACP_MINT_PATCH = (
+    "intergrax.agents.authoring.acp_run.default_execution_identity_authority.mint_execution_identity"
+)
+
+
+def _minted_identity(root: RootTaskIdentity) -> MintedExecutionIdentity:
+    return MintedExecutionIdentity(
+        run_id=root.run_id,
+        attempt_id=root.attempt_id,
+        execution_id=root.execution_id,
+    )
+
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -120,8 +134,8 @@ async def test_acp_mints_identity_once_when_absent() -> None:
     agent = _IdentityProbeAgent()
     with (
         patch(
-            "intergrax.agents.authoring.acp_run.mint_root_execution_identity",
-            return_value=minted_root,
+            _ACP_MINT_PATCH,
+            return_value=_minted_identity(minted_root),
         ) as mint_root,
         patch("intergrax.agents.authoring.acp_run.mint_task_id", return_value=minted_task) as mint_task,
         patch("intergrax.agents.authoring.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
@@ -141,11 +155,13 @@ async def test_acp_preserves_supplied_canonical_identity() -> None:
     agent = _IdentityProbeAgent()
     with (
         patch(
-            "intergrax.agents.authoring.acp_run.mint_root_execution_identity",
-            return_value=RootTaskIdentity(
-                run_id=supplied_run,
-                attempt_id=mint_attempt_id(),
-                execution_id=mint_execution_id(),
+            _ACP_MINT_PATCH,
+            return_value=_minted_identity(
+                RootTaskIdentity(
+                    run_id=supplied_run,
+                    attempt_id=mint_attempt_id(),
+                    execution_id=mint_execution_id(),
+                ),
             ),
         ) as mint_root,
         patch("intergrax.agents.authoring.acp_run.mint_task_id") as mint_task,
@@ -167,7 +183,7 @@ async def test_acp_malformed_run_id_fails_without_replacement() -> None:
     malformed_run = "run_not_canonical"
     agent = _IdentityProbeAgent()
     _IdentityProbeAgent.captured_active_identity = None
-    with patch("intergrax.agents.authoring.acp_run.mint_root_execution_identity") as mint_root:
+    with patch(_ACP_MINT_PATCH) as mint_root:
         result = await run_acp_session(agent, _request(run_id=malformed_run))
     mint_root.assert_not_called()
     assert result.status == AgentRunStatus.FAILED
@@ -213,11 +229,13 @@ async def test_configure_run_strict_violation_uses_boundary_identity_without_fal
         },
     )
     with patch(
-        "intergrax.agents.authoring.acp_run.mint_root_execution_identity",
-        return_value=RootTaskIdentity(
-            run_id=supplied_run,
-            attempt_id=mint_attempt_id(),
-            execution_id=mint_execution_id(),
+        _ACP_MINT_PATCH,
+        return_value=_minted_identity(
+            RootTaskIdentity(
+                run_id=supplied_run,
+                attempt_id=mint_attempt_id(),
+                execution_id=mint_execution_id(),
+            ),
         ),
     ) as mint_root:
         result = await run_acp_session(agent, request)
@@ -246,8 +264,8 @@ async def test_configure_run_strict_violation_mints_once_when_identity_absent() 
         execution_id=mint_execution_id(),
     )
     with patch(
-        "intergrax.agents.authoring.acp_run.mint_root_execution_identity",
-        return_value=minted_root,
+        _ACP_MINT_PATCH,
+        return_value=_minted_identity(minted_root),
     ) as mint_root:
         result = await run_acp_session(agent, request)
     assert mint_root.call_count == 1
@@ -267,7 +285,7 @@ async def test_configure_run_strict_violation_does_not_mask_malformed_run_id() -
             ACP_HOST_CONTEXT_KEY: make_acp_host_context(_strict_profile()),
         },
     )
-    with patch("intergrax.agents.authoring.acp_run.mint_root_execution_identity") as mint_root:
+    with patch(_ACP_MINT_PATCH) as mint_root:
         result = await run_acp_session(agent, request)
     mint_root.assert_not_called()
     assert result.status == AgentRunStatus.FAILED
@@ -285,11 +303,13 @@ async def test_acp_binds_and_resets_active_execution_identity() -> None:
     _IdentityProbeAgent.captured_active_identity = None
     with (
         patch(
-            "intergrax.agents.authoring.acp_run.mint_root_execution_identity",
-            return_value=RootTaskIdentity(
-                run_id=supplied_run,
-                attempt_id=attempt_id,
-                execution_id=mint_execution_id(),
+            _ACP_MINT_PATCH,
+            return_value=_minted_identity(
+                RootTaskIdentity(
+                    run_id=supplied_run,
+                    attempt_id=attempt_id,
+                    execution_id=mint_execution_id(),
+                ),
             ),
         ),
         patch("intergrax.agents.authoring.acp_uaep_shim.attach_acp_catalog_exec_ctx"),

@@ -68,7 +68,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.runtime.execution.identity_authority import (
     RootTaskIdentity,
-    mint_root_execution_identity,
+    default_execution_identity_authority,
 )
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 
@@ -82,7 +82,12 @@ def _resolve_acp_session_identity(request: AgentRunRequest) -> tuple[TaskId, Roo
     elif request.correlation_id is not None:
         run_id = validate_run_id(request.correlation_id)
 
-    root = mint_root_execution_identity(run_id=run_id)
+    minted = default_execution_identity_authority.mint_execution_identity(run_id=run_id)
+    root = RootTaskIdentity(
+        run_id=minted.run_id,
+        attempt_id=minted.attempt_id,
+        execution_id=minted.execution_id,
+    )
 
     metadata_task_id = request.metadata.get("task_id")
     if metadata_task_id is not None:
