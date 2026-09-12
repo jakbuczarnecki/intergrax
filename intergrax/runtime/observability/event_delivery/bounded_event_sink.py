@@ -134,11 +134,21 @@ class BoundedEventSink:
         if self._stop.is_set():
             return
         self._stop.set()
-        self._queue.put(None, timeout=max(self._policy.important_wait_timeout_seconds, 0.5))
-        self._worker.join(timeout=10.0)
+        self._enqueue_shutdown_sentinel()
+        self._worker.join()
         if self._worker.is_alive():
             raise RuntimeError("bounded event drain worker did not terminate")
         self._downstream.close()
+
+    def _enqueue_shutdown_sentinel(self) -> None:
+        """Ensure the drainer observes shutdown even when the buffer is saturated."""
+        while self._worker.is_alive():
+            try:
+                self._queue.put_nowait(None)
+                return
+            except queue.Full:
+                time.sleep(0.01)
+        raise RuntimeError("bounded event drain worker died before shutdown")
 
     def _important_timeout(self, deadline: float | None) -> float:
         if deadline is not None:
