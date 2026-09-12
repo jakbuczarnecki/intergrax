@@ -10,6 +10,7 @@ import pytest
 
 from testing_support.npsc5f_r4_protected_drift import (
     R4_IMPLEMENTATION_SHA,
+    R4_POST_QUALIFIED_BASELINE_SHA,
     classify_r4_protected_drift,
     collect_r4_protected_production_drift,
     is_r4_protected_production_path,
@@ -60,11 +61,21 @@ def test_r4_final_implementation_sha_recorded() -> None:
     assert R4_IMPLEMENTATION_SHA == "37fb051c7f164d705f628760436b8ea10ee0289f"
 
 
+def test_r4_final_post_qualified_baseline_sha_recorded() -> None:
+    assert R4_POST_QUALIFIED_BASELINE_SHA == "7a3569c64e892588992635c9cee10c264a9fc200"
+
+
 def test_r4_final_no_unqualified_protected_drift_since_implementation() -> None:
-    drift = collect_r4_protected_production_drift(_REPO_ROOT)
-    assert drift == [], f"R4 protected production drift since implementation: {drift}"
+    drift = collect_r4_protected_production_drift(
+        _REPO_ROOT,
+        from_sha=R4_POST_QUALIFIED_BASELINE_SHA,
+    )
+    assert drift == [], f"R4 protected production drift since qualified baseline: {drift}"
 
 
 def test_npsc5f_r4_final_protected_drift() -> None:
     """R4 Final drift sentinel — unqualified protected production drift must be empty."""
-    assert collect_r4_protected_production_drift(_REPO_ROOT) == []
+    assert collect_r4_protected_production_drift(
+        _REPO_ROOT,
+        from_sha=R4_POST_QUALIFIED_BASELINE_SHA,
+    ) == []

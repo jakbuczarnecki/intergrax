@@ -10,6 +10,10 @@ from pathlib import Path
 
 R4_IMPLEMENTATION_SHA = "37fb051c7f164d705f628760436b8ea10ee0289f"
 
+# Re-advanced after EE-FINAL-02: ``historical_reconstruction`` contract imports ``AsOfBoundary`` from
+# contracts layer only — read-only reconstruction semantics unchanged.
+R4_POST_QUALIFIED_BASELINE_SHA = "7a3569c64e892588992635c9cee10c264a9fc200"
+
 _R4_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {
         "intergrax/contracts/historical_reconstruction.py",

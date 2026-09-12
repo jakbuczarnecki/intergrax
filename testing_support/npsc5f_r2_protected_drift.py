@@ -12,7 +12,9 @@ R2_IMPLEMENTATION_SHA = "632507420f0ab8360aede43a2740e8fccc44efb4"
 
 # Re-advanced after NPSC-5F/R2 Final Freeze re-sign-off (qualified drift: ``MandatoryEvidencePersistenceError``
 # canonicalized to ``intergrax.contracts.execution_evidence.persistence_boundary_errors`` — no journal read change).
-R2_POST_QUALIFIED_BASELINE_SHA = "1f7bb7528e8d9b41a0ee00e4831c0f003042474a"
+# Re-advanced after EE-FINAL-02: ``ExecutionEventPosition`` / ``AsOfBoundary`` lifted to
+# ``intergrax.contracts.execution_event_position`` — journal ordering invariants unchanged.
+R2_POST_QUALIFIED_BASELINE_SHA = "7a3569c64e892588992635c9cee10c264a9fc200"
 
 _R2_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {

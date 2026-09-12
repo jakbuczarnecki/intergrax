@@ -8,6 +8,9 @@ from intergrax.contracts.enterprise_reliability.plugin_spi import (
     EnterpriseReliabilityPluginRegistry,
 )
 
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.adapters.in_memory_payment_recovery_action import (
+    InMemoryPaymentRecoveryActionPort,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.adapters.in_memory_payment_evidence_lookup import (
     InMemoryPaymentReconciliationEvidenceLookup,
 )
@@ -18,6 +21,9 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integ
     PaymentEnterpriseGovernancePolicy,
     PaymentGovernanceBusinessContextLookupPort,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.contracts.payment_recovery_action import (
+    PaymentRecoveryActionPort,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.contracts.payment_reconciliation_evidence import (
     PaymentReconciliationEvidenceLookupPort,
 )
@@ -26,6 +32,9 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integ
 )
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.plugins.payment_governance_policy import (
     PaymentGovernancePolicyPlugin,
+)
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.plugins.payment_recovery_strategy import (
+    PaymentRecoveryStrategyPlugin,
 )
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.plugins.payment_resolution_strategy import (
     PaymentResolutionStrategyPlugin,
@@ -39,6 +48,7 @@ def register_scenario_reconciliation_plugins(
     payment_evidence_lookup: PaymentReconciliationEvidenceLookupPort | None = None,
     payment_governance_lookup: PaymentGovernanceBusinessContextLookupPort | None = None,
     payment_governance_policy: PaymentEnterpriseGovernancePolicy | None = None,
+    payment_recovery_action_port: PaymentRecoveryActionPort | None = None,
 ) -> ScenarioExternalRealityReconciliationPlugin:
     """Install reconciliation probe + payment resolution and optional governance plugins."""
     reconcile = ScenarioExternalRealityReconciliationPlugin(_lookup=lookup)
@@ -46,6 +56,11 @@ def register_scenario_reconciliation_plugins(
     registry.register(
         PaymentResolutionStrategyPlugin(
             _lookup=payment_evidence_lookup or InMemoryPaymentReconciliationEvidenceLookup(),
+        ),
+    )
+    registry.register(
+        PaymentRecoveryStrategyPlugin(
+            _action_port=payment_recovery_action_port or InMemoryPaymentRecoveryActionPort(),
         ),
     )
     if payment_governance_lookup is not None:
