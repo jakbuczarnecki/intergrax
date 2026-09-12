@@ -229,7 +229,7 @@ This document explicitly does **not** define:
 
 Ordered preparation steps for implementers (documentation pointers only):
 
-1. **Docker compose setup** — Implement compose stack per § 7; pin images for reproducibility; separate config from dataset.
+1. **Docker compose setup** — PostgreSQL service foundation implemented under [`infrastructure/`](../infrastructure/README.md) ([PostgreSQL Infrastructure](ERL_QUAL_004_POSTGRESQL_INFRASTRUCTURE.md)); extend compose per § 7 for application, external boundary, and runtime when ready.
 2. **PostgreSQL provisioning adapter** — Implement `ScenarioProvisioningPort` (or successor contract) to seed and tear down variant materialization in PostgreSQL; keep reference in-memory provisioner for fast contract tests.
 3. **Scenario application** — Wire application tools to contract-backed reads/writes against materialized state and external boundary endpoints.
 4. **External boundary** — Deploy replaceable payment/reconciliation simulator service; map variant slices to simulator behavior without altering dataset JSON.

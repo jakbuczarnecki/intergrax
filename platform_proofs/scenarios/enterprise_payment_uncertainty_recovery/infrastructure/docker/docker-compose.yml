@@ -1,0 +1,23 @@
+name: erl-qual-004-postgres
+
+services:
+  postgres:
+    image: postgres:16.6
+    container_name: erl-qual-004-postgres
+    env_file:
+      - ../config/postgres.env
+    ports:
+      - "127.0.0.1:${ERL_QUAL_004_POSTGRES_HOST_PORT}:5432"
+    volumes:
+      - erl_qual_004_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+volumes:
+  erl_qual_004_postgres_data:
+    name: erl_qual_004_postgres_data
