@@ -14,6 +14,44 @@ from intergrax.contracts.self_healing.knowledge_evolution.profile import Strateg
 
 
 @dataclass(frozen=True, slots=True)
+class StrategyKnowledgeUpdated:
+    """
+    Audit and monitoring event after knowledge version change.
+
+    Not wired to workflow execution or lifecycle in R5.6.
+    """
+
+    tenant_id: str
+    strategy_id: str
+    context_fingerprint: str
+    revision_id: str
+    change_id: str
+    previous_knowledge_version: int | None
+    new_knowledge_version: int
+    governance_policy_id: str
+    evolution_mechanism_id: str
+    recorded_at: datetime
+
+    def __post_init__(self) -> None:
+        if not self.tenant_id.strip():
+            raise ValueError("tenant_id required")
+        if not self.strategy_id.strip():
+            raise ValueError("strategy_id required")
+        if not self.context_fingerprint.strip():
+            raise ValueError("context_fingerprint required")
+        if not self.revision_id.startswith("sh_skr_"):
+            raise ValueError("revision_id must be sh_skr_*")
+        if not self.change_id.startswith("sh_skc_"):
+            raise ValueError("change_id must be sh_skc_*")
+        if self.new_knowledge_version < 1:
+            raise ValueError("new_knowledge_version must be >= 1")
+        if not self.governance_policy_id.strip():
+            raise ValueError("governance_policy_id required")
+        if not self.evolution_mechanism_id.strip():
+            raise ValueError("evolution_mechanism_id required")
+
+
+@dataclass(frozen=True, slots=True)
 class SelfHealingWorkflowCompleted:
     """
     Domain event shape for asynchronous knowledge evolution.
@@ -76,4 +114,5 @@ __all__ = [
     "KnowledgeEvolutionContextBuilder",
     "KnowledgeEvolutionProcessor",
     "SelfHealingWorkflowCompleted",
+    "StrategyKnowledgeUpdated",
 ]

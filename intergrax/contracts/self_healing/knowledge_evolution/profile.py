@@ -164,6 +164,8 @@ class StrategyKnowledgeRevision:
     metric_snapshot_refs: tuple[str, ...]
     comparison_policy_id: str | None
     previous_knowledge_version: int | None
+    evolution_mechanism_id: str
+    recorded_at: datetime
 
     def __post_init__(self) -> None:
         if not self.revision_id.startswith("sh_skr_"):
@@ -172,6 +174,13 @@ class StrategyKnowledgeRevision:
             raise ValueError("change_summary required")
         if not self.trigger_refs:
             raise ValueError("trigger_refs must be non-empty")
+        if not self.evolution_mechanism_id.strip():
+            raise ValueError("evolution_mechanism_id required")
+        if self.previous_knowledge_version is not None:
+            if self.previous_knowledge_version >= self.profile.knowledge_version:
+                raise ValueError("previous_knowledge_version must be < profile.knowledge_version when set")
+            if self.profile.supersedes_version != self.previous_knowledge_version:
+                raise ValueError("profile.supersedes_version must match previous_knowledge_version")
 
 
 __all__ = [

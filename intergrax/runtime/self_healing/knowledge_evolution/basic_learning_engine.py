@@ -163,6 +163,8 @@ class BasicStrategyLearningEngine:
             metric_snapshot_refs=metric_refs,
             comparison_policy_id=comparison_policy_id,
             previous_knowledge_version=previous_version,
+            evolution_mechanism_id=self.engine_id,
+            recorded_at=derived_at,
         )
         return StrategyKnowledgeEvolutionResult(
             proposed_profile=profile,

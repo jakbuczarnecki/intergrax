@@ -14,16 +14,27 @@ from intergrax.runtime.self_healing.knowledge_evolution.refs_context_provider im
 from intergrax.runtime.self_healing.knowledge_evolution.time_weighted_freshness import (
     TimeWeightedKnowledgeFreshnessPolicy,
 )
+from intergrax.runtime.self_healing.knowledge_evolution.governance import (
+    BasicStrategyKnowledgeIntegrityValidator,
+    DefaultKnowledgeGovernancePolicy,
+    InMemoryStrategyKnowledgeAuditRepository,
+    StrategyKnowledgeGovernanceService,
+)
+
 from intergrax.runtime.self_healing.knowledge_evolution.workflow_context_builder import (
     WorkflowCompletedKnowledgeEvolutionContextBuilder,
 )
 
 __all__ = [
+    "BasicStrategyKnowledgeIntegrityValidator",
     "BasicStrategyLearningEngine",
+    "DefaultKnowledgeGovernancePolicy",
     "EvolutionRefsContextProvider",
+    "InMemoryStrategyKnowledgeAuditRepository",
     "NoDecayKnowledgeFreshnessPolicy",
     "InMemoryStrategyKnowledgeRepository",
     "StrategyKnowledgeEvolutionService",
+    "StrategyKnowledgeGovernanceService",
     "SuccessOverSpeedComparisonPolicy",
     "SuccessRateMetricProvider",
     "TimeWeightedKnowledgeFreshnessPolicy",

@@ -40,6 +40,7 @@ from intergrax.contracts.self_healing.performance_memory.record import SelfHeali
 from intergrax.contracts.self_healing.performance_memory.repository import StrategyPerformanceMemoryRepository
 from intergrax.contracts.self_healing.quality_evaluation.assessment import StrategyQualityAssessment
 from intergrax.contracts.self_healing.quality_evaluation.criteria import StrategyQualityEvaluationCriteria
+from intergrax.runtime.self_healing.knowledge_evolution.governance.service import StrategyKnowledgeGovernanceService
 from intergrax.runtime.self_healing.quality_evaluation.service import StrategyQualityEvaluationService
 
 
@@ -53,6 +54,7 @@ class StrategyKnowledgeEvolutionService:
     quality_evaluation: StrategyQualityEvaluationService | None = None
     context_providers: tuple[StrategyContextProvider, ...] = field(default_factory=tuple)
     freshness_policy: KnowledgeFreshnessPolicy | None = None
+    knowledge_governance: StrategyKnowledgeGovernanceService | None = None
 
     def evolve(self, context: StrategyKnowledgeEvolutionContext) -> StrategyKnowledgeEvolutionResult:
         context = self._enrich_context(context)
@@ -111,6 +113,11 @@ class StrategyKnowledgeEvolutionService:
         if result.proposed_revision is None:
             raise ValueError("learning engine must supply proposed_revision when knowledge changes")
         self.knowledge_repository.append_revision(result.proposed_revision)
+        if self.knowledge_governance is not None:
+            self.knowledge_governance.record_knowledge_evolution(
+                result.proposed_revision,
+                knowledge_repository=self.knowledge_repository,
+            )
         return result
 
     def _revision_exists_for_trigger(self, context: StrategyKnowledgeEvolutionContext) -> bool:
