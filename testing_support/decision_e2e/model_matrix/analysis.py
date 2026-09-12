@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import csv
-import hashlib
 import io
 import json
 from dataclasses import dataclass
@@ -18,7 +17,13 @@ from intergrax.runtime.diagnostics.completion_alignment_diag import (
     AlignmentStatus,
 )
 
-from testing_support.decision_e2e.local_ai_incident_qualification import resolve_repository_head_sha
+from testing_support.decision_e2e.local_ai_incident_qualification import (
+    resolve_repository_head_sha,
+    semantic_source_groups_for_r4r1,
+)
+from testing_support.decision_e2e.local_qualification_session.source_fingerprint import (
+    capture_semantic_source_fingerprint,
+)
 from testing_support.decision_e2e.local_qualification_session.alignment_revision_evidence import (
     infer_alignment_revision_evidence,
 )
@@ -38,12 +43,16 @@ from testing_support.decision_e2e.local_qualification_session.trace_readback imp
     read_typed_alignment_events,
 )
 from testing_support.decision_e2e.model_matrix.profiles import ModelQualificationProfile
+from testing_support.decision_e2e.model_matrix.availability import ModelAvailability
+from testing_support.decision_e2e.model_matrix.matrix_artifact_contract import (
+    QualificationArtifactProvider,
+)
 from testing_support.decision_e2e.model_matrix.qualification_plan import (
-    ModelAvailability,
     ProfileCohortPlan,
     qualification_artifact_root,
     summary_session_dir,
 )
+from testing_support.decision_e2e.model_matrix.registry import qualification_matrix_version
 from testing_support.decision_e2e.model_matrix.registry import iter_qualification_profiles
 from testing_support.decision_e2e.model_matrix.source_freeze import (
     TASK_ID,
@@ -68,7 +77,7 @@ class FifteenKBEffectR6(StrEnum):
 @dataclass(frozen=True, slots=True)
 class PerModelMetrics:
     profile_key: str
-    model_id: str
+    model_name: str
     provider: str
     availability: ModelAvailability
     total_runs: int
@@ -127,22 +136,6 @@ def _csv_bytes(rows: list[dict[str, str]], fieldnames: tuple[str, ...]) -> str:
     return buffer.getvalue()
 
 
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(65536), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def _write_manifest(output_dir: Path, files: tuple[str, ...]) -> None:
-    lines = [f"{name} sha256:{_sha256_file(output_dir / name)}" for name in sorted(files)]
-    body = "\n".join(lines) + ("\n" if lines else "")
-    self_digest = hashlib.sha256(body.encode("utf-8")).hexdigest()
-    manifest_body = body + f"artifact-manifest.txt sha256:{self_digest}\n"
-    (output_dir / "artifact-manifest.txt").write_text(manifest_body, encoding="utf-8")
-
-
 def classify_fifteen_kb_effect(
     *,
     availability: ModelAvailability,
@@ -183,7 +176,7 @@ def analyze_profile_session(
     if not runs or availability is ModelAvailability.MODEL_UNAVAILABLE:
         return PerModelMetrics(
             profile_key=profile.profile_key,
-            model_id=profile.model_id,
+            model_name=profile.model_name,
             provider=profile.provider,
             availability=availability,
             total_runs=len(runs),
@@ -241,7 +234,7 @@ def analyze_profile_session(
     )
     return PerModelMetrics(
         profile_key=profile.profile_key,
-        model_id=profile.model_id,
+        model_name=profile.model_name,
         provider=profile.provider,
         availability=availability,
         total_runs=total,
@@ -264,7 +257,7 @@ def analyze_profile_session(
 def _metrics_comparison_row(metrics: PerModelMetrics) -> dict[str, str]:
     return {
         "profile_key": metrics.profile_key,
-        "model_id": metrics.model_id,
+        "model_name": metrics.model_name,
         "total_runs": str(metrics.total_runs),
         "evaluable_runs": str(metrics.evaluable_runs),
         "alignment_events": str(metrics.alignment_events),
@@ -404,7 +397,7 @@ def run_multi_model_qualification_analysis(
         "profiles": [
             {
                 "profile_key": plan.profile.profile_key,
-                "model_id": plan.profile.model_id,
+                "model_name": plan.profile.model_name,
                 "session_dir": str(plan.session_dir.relative_to(repo_root)),
                 "run_count": len(_load_runs(plan.session_dir)),
                 "availability": plan.availability.value,
@@ -445,7 +438,7 @@ def run_multi_model_qualification_analysis(
         "per_model": [
             {
                 "profile_key": m.profile_key,
-                "model_id": m.model_id,
+                "model_name": m.model_name,
                 "15K_B_EFFECT": m.fifteen_kb_effect.value,
                 "model_overcommit_count": m.model_overcommit_count,
                 "repair_count": m.repair_count,
@@ -475,7 +468,7 @@ def run_multi_model_qualification_analysis(
             comparison,
             (
                 "profile_key",
-                "model_id",
+                "model_name",
                 "total_runs",
                 "evaluable_runs",
                 "alignment_events",
@@ -529,7 +522,7 @@ def run_multi_model_qualification_analysis(
             {
                 "profile_key": plan.profile.profile_key,
                 "provider": plan.profile.provider,
-                "model": plan.profile.model_id,
+                "model": plan.profile.model_name,
                 "digest": plan.profile.digest or None,
                 "temperature": plan.profile.temperature,
                 "expected_behavior_class": plan.profile.expected_behavior_class,
@@ -550,21 +543,43 @@ def run_multi_model_qualification_analysis(
     )
     (output_dir / "final-report.md").write_text(final_report, encoding="utf-8")
 
-    artifact_names = (
-        "runs.json",
-        "summary.json",
-        "analysis.json",
+    derived_csv = (
         "model_comparison.csv",
         "alignment_distribution.csv",
         "revision_effectiveness.csv",
         "attempt_timeline.csv",
-        "local_model_profile.json",
-        "final-report.md",
     )
-    _write_manifest(
+    contract_files = tuple(
+        name
+        for name in QualificationArtifactProvider.required_artifact_names()
+        if name not in {"checksum.json", "artifact-manifest.txt"}
+        and (output_dir / name).is_file()
+    )
+    manifest_files = contract_files + tuple(
+        name for name in derived_csv if (output_dir / name).is_file()
+    )
+    cohort_source = capture_semantic_source_fingerprint(
+        repo_root,
+        semantic_source_groups=semantic_source_groups_for_r4r1(),
+        repository_head_sha=head_sha,
+    )
+    QualificationArtifactProvider.write_checksum_json(
         output_dir,
-        tuple(name for name in artifact_names if (output_dir / name).is_file()),
+        task_id=TASK_ID,
+        repository_head_sha=head_sha,
+        source_fingerprint=cohort_source.semantic_fingerprint(),
+        matrix_version=qualification_matrix_version(),
     )
+    manifest_with_checksum = manifest_files + ("checksum.json",)
+    QualificationArtifactProvider.write_manifest(output_dir, manifest_with_checksum)
+    validation = QualificationArtifactProvider.validate_session(output_dir)
+    if validation.status.value != "COMPLETE":
+        summary_payload["matrix_status"] = "FAIL"
+        summary_payload["artifact_validation"] = validation.status.value
+        (output_dir / "summary.json").write_text(
+            json.dumps(summary_payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
 
     return MultiModelQualificationResult(
         repo_source_freeze=repo_freeze,
@@ -597,7 +612,7 @@ def _build_final_report(
     ]
     for metrics in per_model:
         lines.append(
-            f"- `{metrics.profile_key}` (`{metrics.model_id}`): "
+            f"- `{metrics.profile_key}` (`{metrics.model_name}`): "
             f"availability=`{metrics.availability.value}`, "
             f"15K_B_EFFECT=`{metrics.fifteen_kb_effect.value}`"
         )

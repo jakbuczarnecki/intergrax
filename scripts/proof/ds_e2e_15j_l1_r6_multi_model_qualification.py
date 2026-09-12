@@ -32,16 +32,16 @@ from testing_support.decision_e2e.local_qualification_session.ollama_probe impor
 from testing_support.decision_e2e.model_matrix.analysis import (
     run_multi_model_qualification_analysis,
 )
+from testing_support.decision_e2e.model_matrix.availability import ModelAvailability
 from testing_support.decision_e2e.model_matrix.qualification_plan import (
     DEFAULT_COHORT_RUN_COUNT,
-    ModelAvailability,
     R6_TASK_ID,
     build_cohort_plans,
     build_qualification_spec_for_profile,
     qualification_artifact_root,
 )
 from testing_support.decision_e2e.model_matrix.registry import (
-    iter_qualification_profiles,
+    QualificationRegistry,
     profile_by_key,
 )
 from testing_support.decision_e2e.model_matrix.source_freeze import (
@@ -70,7 +70,7 @@ async def _run_profile_cohort(
         print(f"BLOCKED: digest missing profile={plan.profile.profile_key}")
         return int(QualificationCliExit.BLOCKED_PRECONDITION)
 
-    _apply_runtime_env(plan.profile.provider, plan.profile.model_id)
+    _apply_runtime_env(plan.profile.provider, plan.profile.model_name)
     bootstrap_qualification_environment(start_path=repo_root)
     head_sha = resolve_repository_head_sha(repo_root)
     spec, config_fp, frozen = build_qualification_spec_for_profile(
@@ -102,19 +102,28 @@ async def _run_profile_cohort(
     return int(result.exit_code)
 
 
+def _resolve_profiles(args: argparse.Namespace) -> tuple | None:
+    if args.profile_key and args.all_models:
+        print("BLOCKED: use either --profile-key or --all-models")
+        return None
+    if args.profile_key:
+        selected = profile_by_key(args.profile_key)
+        if selected is None:
+            print(f"BLOCKED: unknown profile_key={args.profile_key}")
+            return None
+        return (selected,)
+    return QualificationRegistry.profiles()
+
+
 async def _run_all_cohorts(args: argparse.Namespace) -> int:
+    profiles = _resolve_profiles(args)
+    if profiles is None:
+        return int(QualificationCliExit.BLOCKED_PRECONDITION)
     env_digest = (
         os.environ.get("INTERGRAX_QUALIFICATION_MODEL_DIGEST", "") or None
         if args.profile_key
         else None
     )
-    profiles = iter_qualification_profiles()
-    if args.profile_key:
-        selected = profile_by_key(args.profile_key)
-        if selected is None:
-            print(f"BLOCKED: unknown profile_key={args.profile_key}")
-            return int(QualificationCliExit.BLOCKED_PRECONDITION)
-        profiles = (selected,)
 
     plans = build_cohort_plans(
         args.repo_root,
@@ -148,6 +157,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--run-count", type=int, default=DEFAULT_COHORT_RUN_COUNT)
     parser.add_argument("--ollama-url", default="http://127.0.0.1:11434")
     parser.add_argument("--profile-key", default=None, help="Run a single registry profile")
+    parser.add_argument(
+        "--all-models",
+        action="store_true",
+        help="Run all profiles from the qualification registry",
+    )
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--finalize-only", action="store_true")
     parser.add_argument(
@@ -180,13 +194,9 @@ def main(argv: list[str] | None = None) -> int:
         if args.profile_key
         else None
     )
-    profiles = iter_qualification_profiles()
-    if args.profile_key:
-        selected = profile_by_key(args.profile_key)
-        if selected is None:
-            print(f"BLOCKED: unknown profile_key={args.profile_key}")
-            return int(QualificationCliExit.BLOCKED_PRECONDITION)
-        profiles = (selected,)
+    profiles = _resolve_profiles(args)
+    if profiles is None:
+        return int(QualificationCliExit.BLOCKED_PRECONDITION)
     plans = build_cohort_plans(
         args.repo_root,
         profiles,

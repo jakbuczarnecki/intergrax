@@ -5,17 +5,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 from pathlib import Path
 
 from testing_support.decision_e2e.ai_incident_qualification_run import (
     CANONICAL_SCENARIO_INPUT_IDENTITY,
 )
 from testing_support.decision_e2e.local_ai_incident_qualification import (
-    R4R1_EVALUATOR_MAX_ITERATIONS,
-    R4R1_MAX_DECISION_REVISIONS,
     R4R1_QUANTIZATION,
-    R4R1_RUNTIME_VERSION,
     R4R1_SEMANTIC_VERIFICATION,
     build_generation_config_fingerprint,
     build_qualification_config_fingerprint,
@@ -31,12 +27,19 @@ from testing_support.decision_e2e.local_qualification_session.contracts import (
     SourceFingerprintSnapshot,
     VersionMatchPolicy,
 )
-from testing_support.decision_e2e.local_qualification_session.ollama_probe import (
-    OllamaProbeConfig,
-    probe_ollama_runtime_identity,
-)
 from testing_support.decision_e2e.local_qualification_session.source_fingerprint import (
     capture_semantic_source_fingerprint,
+)
+from testing_support.decision_e2e.local_qualification_session.ollama_probe import (
+    OllamaProbeConfig,
+)
+from testing_support.decision_e2e.local_qualification_session.versioning import (
+    parse_provider_runtime_version,
+)
+from testing_support.decision_e2e.model_matrix.availability import ModelAvailability
+from testing_support.decision_e2e.model_matrix.model_execution_provider import (
+    ModelExecutionProvider,
+    OllamaModelExecutionProvider,
 )
 from testing_support.decision_e2e.model_matrix.profiles import ModelQualificationProfile
 from testing_support.decision_e2e.model_matrix.source_freeze import TASK_ID
@@ -44,11 +47,6 @@ from testing_support.decision_e2e.scenario_qualification import AI_INCIDENT_SCEN
 
 DEFAULT_COHORT_RUN_COUNT = 20
 R6_TASK_ID = TASK_ID
-
-
-class ModelAvailability(StrEnum):
-    AVAILABLE = "AVAILABLE"
-    MODEL_UNAVAILABLE = "MODEL_UNAVAILABLE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,18 +77,14 @@ def cohort_checkpoint_indices(run_count: int) -> tuple[int, ...]:
 def probe_profile_digest(
     profile: ModelQualificationProfile,
     *,
-    ollama_base_url: str,
+    execution_provider: ModelExecutionProvider | None = None,
+    ollama_base_url: str = "http://127.0.0.1:11434",
     env_digest: str | None,
 ) -> tuple[str | None, ModelAvailability]:
-    if env_digest:
-        return env_digest, ModelAvailability.AVAILABLE
-    observed = probe_ollama_runtime_identity(
-        OllamaProbeConfig(base_url=ollama_base_url),
-        model_name=profile.model_id,
+    provider = execution_provider or OllamaModelExecutionProvider(
+        OllamaProbeConfig(base_url=ollama_base_url)
     )
-    if observed is None or observed.model_digest is None:
-        return None, ModelAvailability.MODEL_UNAVAILABLE
-    return observed.model_digest, ModelAvailability.AVAILABLE
+    return provider.resolve_profile_digest(profile, env_digest=env_digest)
 
 
 def build_qualification_spec_for_profile(
@@ -112,21 +106,24 @@ def build_qualification_spec_for_profile(
     generation_fp = build_generation_config_fingerprint(
         temperature=profile.temperature,
         semantic_verification=R4R1_SEMANTIC_VERIFICATION,
-        evaluator_max_iterations=R4R1_EVALUATOR_MAX_ITERATIONS,
-        max_decision_revisions=R4R1_MAX_DECISION_REVISIONS,
+        evaluator_max_iterations=profile.evaluator_iterations,
+        max_decision_revisions=profile.revision_budget,
     )
     config_fp = build_qualification_config_fingerprint(
         provider=profile.provider,
-        model=profile.model_id,
+        model=profile.model_name,
         generation_config_fingerprint=generation_fp,
         scenario_id=AI_INCIDENT_SCENARIO_ID,
         input_id=CANONICAL_SCENARIO_INPUT_IDENTITY,
     )
+    runtime_version = parse_provider_runtime_version(profile.runtime_version)
+    if runtime_version is None:
+        raise ValueError(f"invalid profile.runtime_version: {profile.runtime_version}")
     identity = QualificationExperimentIdentity(
         provider_kind=profile.provider,
-        provider_runtime_version=R4R1_RUNTIME_VERSION,
+        provider_runtime_version=runtime_version,
         provider_runtime_version_policy=VersionMatchPolicy.EXACT,
-        model_name=profile.model_id,
+        model_name=profile.model_name,
         model_digest=profile.digest,
         model_digest_policy=VersionMatchPolicy.EXACT,
         quantization=R4R1_QUANTIZATION,
@@ -142,7 +139,7 @@ def build_qualification_spec_for_profile(
         required_artifacts=DEFAULT_REQUIRED_ARTIFACTS,
         source_blob_paths=blob_paths,
         semantic_source_groups=groups,
-        max_evaluator_attempt_index=max(0, R4R1_EVALUATOR_MAX_ITERATIONS - 1),
+        max_evaluator_attempt_index=max(0, profile.evaluator_iterations - 1),
         source_checkpoint_run_indices=cohort_checkpoint_indices(run_count),
     )
     return spec, config_fp, frozen_source
@@ -155,26 +152,24 @@ def build_cohort_plans(
     run_count: int = DEFAULT_COHORT_RUN_COUNT,
     ollama_base_url: str,
     env_digest: str | None,
+    execution_provider: ModelExecutionProvider | None = None,
 ) -> tuple[ProfileCohortPlan, ...]:
-    plans: list[ProfileCohortPlan] = []
-    for profile in profiles:
-        digest, availability = probe_profile_digest(
-            profile,
-            ollama_base_url=ollama_base_url,
-            env_digest=env_digest if env_digest else None,
-        )
-        resolved = profile
-        if digest:
-            resolved = profile.with_digest(digest)
-        plans.append(
-            ProfileCohortPlan(
-                profile=resolved,
-                session_dir=profile_session_dir(repo_root, profile),
-                run_count=run_count,
-                availability=availability,
-            )
-        )
-    return tuple(plans)
+    from testing_support.decision_e2e.model_matrix.qualification_planner import (
+        QualificationPlanner,
+        default_planner,
+    )
+
+    planner = (
+        QualificationPlanner(execution_provider)
+        if execution_provider is not None
+        else default_planner(ollama_base_url)
+    )
+    return planner.plan_cohorts(
+        repo_root,
+        profiles,
+        run_count=run_count,
+        env_digest=env_digest if env_digest else None,
+    )
 
 
 __all__ = [
