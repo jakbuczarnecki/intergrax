@@ -17,3 +17,11 @@ class ExternalRealityRecordMissing(ExternalRealityLookupError):
 
 class ExternalRealityInconsistentState(ExternalRealityLookupError):
     """SoR columns contradict each other — cannot derive a definitive verdict."""
+
+
+class PaymentReconciliationEvidenceLookupError(Exception):
+    """Payment evidence lookup could not complete."""
+
+
+class PaymentReconciliationEvidenceMissing(PaymentReconciliationEvidenceLookupError):
+    """No payment reconciliation bundle for the supplied correlation reference."""
