@@ -1,6 +1,6 @@
 # NPSC-5F/R4 — Reconstruction Quality (Implementation)
 
-> **Status:** **IMPLEMENTATION COMPLETE** — formal R4 Final freeze is a separate qualification step (`NPSC_5F_R4_FINAL_*`).
+> **Status:** **FROZEN / PASS** — see `NPSC_5F_R4_FINAL_RECONSTRUCTION_QUALITY_QUALIFICATION_AND_FREEZE.md`.
 
 ## Purpose
 
@@ -81,6 +81,6 @@ Regression: R1/R2/R3 Final architecture suites (unchanged contracts).
 - R4 as-of / bitemporal implementation: `NPSC_5F_R4_RECONSTRUCTION_ASOF_BITEMPORAL.md`
 - Architecture hub: `NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md`
 
-## Next step
+## Final qualification
 
-**NPSC-5F/R4 Final Qualification** — freeze reconstruction quality + historical composition under protected drift policy.
+`NPSC_5F_R4_FINAL_RECONSTRUCTION_QUALITY_QUALIFICATION_AND_FREEZE.md` — enterprise freeze for execution-level reconstruction quality (as-of / bitemporal composition remains under the separate R4 as-of Final record).

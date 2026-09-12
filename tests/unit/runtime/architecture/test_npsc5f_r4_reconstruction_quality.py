@@ -12,8 +12,16 @@ import pytest
 
 from testing_support.npsc5f_r4_regression_matrix import run_mandatory_regression_matrix
 
-from intergrax.contracts.execution_identity import RunId, TaskId, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    TaskId,
+    mint_attempt_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.runtime.diagnostics.execution_reconstruction import (
+    ExecutionReconstructionIntegrityError,
     ExecutionReconstructor,
     RuntimeHistoryCompleteness,
 )
@@ -66,13 +74,47 @@ def _append_events(
     task_id: TaskId,
     run_id: RunId,
     count: int,
+    attempt_id: AttemptId | None = None,
     timestamps: list[datetime] | None = None,
 ) -> None:
+    resolved_attempt = attempt_id or mint_attempt_id()
     for index in range(count):
-        event = sample_runtime_event(tenant_id=tenant_id, task_id=task_id, run_id=run_id)
+        event = sample_runtime_event(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=resolved_attempt,
+        )
         if timestamps is not None:
             event = event.model_copy(update={"timestamp": timestamps[index]})
         store.append(event, tenant_id=tenant_id)
+
+
+class _CorruptRuntimePersistence(InMemoryRuntimeEventStore):
+    def list_positioned_for_run(
+        self,
+        run_id: str,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+        through=None,
+        after=None,
+    ):
+        rows = super().list_positioned_for_run(
+            run_id,
+            tenant_id=tenant_id,
+            limit=limit,
+            through=through,
+            after=after,
+        )
+        if not rows:
+            return rows
+        first = rows[0]
+        corrupted_event = first.event.model_copy(update={"run_id": mint_run_id()})
+        return [
+            type(first)(event=corrupted_event, position=first.position),
+            *rows[1:],
+        ]
 
 
 def test_npsc5f_r4_quality_static_no_execution_control_surface() -> None:
@@ -150,6 +192,80 @@ def test_npsc5f_r4_quality_read_only_does_not_mutate_persistence() -> None:
     assert len(store._accepted_by_event_id) == before
 
 
+def test_npsc5f_r4_quality_read_only_never_calls_append(monkeypatch: pytest.MonkeyPatch) -> None:
+    store = InMemoryRuntimeEventStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    _append_events(store, tenant_id=_TENANT_A, task_id=task_id, run_id=run_id, count=1)
+
+    def _forbidden_append(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("reconstruction must not append runtime events")
+
+    monkeypatch.setattr(store, "append", _forbidden_append)
+    view = ExecutionReconstructor(store, InMemoryCausalEvidencePersistence()).reconstruct_execution(
+        _TENANT_A,
+        task_id,
+        run_id,
+    )
+    assert view.is_runtime_history_complete
+
+
+def test_npsc5f_r4_quality_determinism_same_evidence_same_view() -> None:
+    store = InMemoryRuntimeEventStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    _append_events(store, tenant_id=_TENANT_A, task_id=task_id, run_id=run_id, count=3)
+    reconstructor = ExecutionReconstructor(store, InMemoryCausalEvidencePersistence())
+    first = reconstructor.reconstruct_execution(_TENANT_A, task_id, run_id)
+    second = reconstructor.reconstruct_execution(_TENANT_A, task_id, run_id)
+    assert first == second
+
+
+def test_npsc5f_r4_quality_corrupted_runtime_evidence_fails_closed() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    store = _CorruptRuntimePersistence()
+    _append_events(store, tenant_id=_TENANT_A, task_id=task_id, run_id=run_id, count=1)
+    with pytest.raises(ExecutionReconstructionIntegrityError, match="run_id"):
+        ExecutionReconstructor(store, InMemoryCausalEvidencePersistence()).reconstruct_execution(
+            _TENANT_A,
+            task_id,
+            run_id,
+        )
+
+
+def test_npsc5f_r4_quality_attempt_ordering_stable_across_attempts() -> None:
+    store = InMemoryRuntimeEventStore()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_a = mint_attempt_id()
+    attempt_b = mint_attempt_id()
+    _append_events(
+        store,
+        tenant_id=_TENANT_A,
+        task_id=task_id,
+        run_id=run_id,
+        count=1,
+        attempt_id=attempt_b,
+    )
+    _append_events(
+        store,
+        tenant_id=_TENANT_A,
+        task_id=task_id,
+        run_id=run_id,
+        count=1,
+        attempt_id=attempt_a,
+    )
+    view = ExecutionReconstructor(store, InMemoryCausalEvidencePersistence()).reconstruct_execution(
+        _TENANT_A,
+        task_id,
+        run_id,
+    )
+    assert view.attempt_count == 2
+    # Attempt projection follows run-local journal order (attempt_b first at position 1).
+    assert [attempt.attempt_id for attempt in view.attempts] == [attempt_b, attempt_a]
+
+
 def test_npsc5f_r4_quality_tenant_isolation() -> None:
     store = InMemoryRuntimeEventStore()
     task_id = mint_task_id()
@@ -176,5 +292,12 @@ def test_npsc5f_r4_quality_qualification_gate() -> None:
     doc = _REPO_ROOT / "docs/project/maintainers/qualification/NPSC_5F_R4_RECONSTRUCTION_QUALITY.md"
     assert doc.is_file()
     text = doc.read_text(encoding="utf-8")
-    assert "IMPLEMENTATION COMPLETE" in text
+    assert "FROZEN / PASS" in text
     assert "RuntimeEventPersistence" in text
+    final_doc = (
+        _REPO_ROOT
+        / "docs/project/maintainers/qualification/NPSC_5F_R4_FINAL_RECONSTRUCTION_QUALITY_QUALIFICATION_AND_FREEZE.md"
+    )
+    assert final_doc.is_file()
+    final_text = final_doc.read_text(encoding="utf-8")
+    assert "FROZEN / PASS" in final_text
