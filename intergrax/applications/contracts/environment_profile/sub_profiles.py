@@ -261,6 +261,7 @@ class ObservabilityProfile(BaseModel):
     otlp_export_endpoint: str = ""
     otlp_export_protocol: OtlpProtocol = OtlpProtocol.HTTP_PROTOBUF
     otlp_export_timeout_seconds: float = Field(default=30.0, gt=0.0)
+    observability_export_service_name: str = ""
     bounded_event_delivery_max_capacity: int = Field(default=4096, ge=1)
     bounded_event_delivery_important_wait_timeout_seconds: float = Field(
         default=0.05,

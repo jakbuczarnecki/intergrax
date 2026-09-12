@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 class ExporterKind(StrEnum):
     NOOP = "noop"
     OTLP = "otlp"
+    DISTRIBUTED_OTLP = "distributed_otlp"
     RECORDING = "recording"
 
 

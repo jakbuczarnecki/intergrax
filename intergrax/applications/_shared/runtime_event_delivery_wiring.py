@@ -17,6 +17,12 @@ from intergrax.contracts.observability_export import (
     OtlpExportConfiguration,
     OtlpTransportPort,
 )
+from intergrax.runtime.observability.exporters.distributed.collector_transport import (
+    CollectorTransport,
+)
+from intergrax.runtime.observability.exporters.distributed.distributed_configuration import (
+    DistributedTransportConfiguration,
+)
 from intergrax.runtime.observability.exporters.otlp.otlp_transport import OtlpTransport
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.observability.event_delivery import (
@@ -57,18 +63,42 @@ def _resolve_otlp_export_configuration(
     )
 
 
-def _create_otlp_transport(
+def _resolve_distributed_transport_configuration(
+    env: ApplicationEnvironmentProfile,
+    *,
+    settings: object | None,
+) -> DistributedTransportConfiguration | None:
+    otlp_config = _resolve_otlp_export_configuration(env, settings=settings)
+    if otlp_config is None:
+        return None
+    service_name = env.observability_profile.observability_export_service_name.strip()
+    if not service_name:
+        return None
+    return DistributedTransportConfiguration(
+        endpoint=otlp_config.endpoint,
+        protocol=otlp_config.protocol,
+        service_name=service_name,
+        timeout_seconds=otlp_config.timeout_seconds,
+    )
+
+
+def _create_export_transport(
     export_profile: ObservabilityExportProfile,
     env: ApplicationEnvironmentProfile,
     *,
     settings: object | None,
 ) -> OtlpTransportPort | None:
-    if export_profile.exporter_kind is not ExporterKind.OTLP:
-        return None
-    config = _resolve_otlp_export_configuration(env, settings=settings)
-    if config is None:
-        return None
-    return OtlpTransport(config)
+    if export_profile.exporter_kind is ExporterKind.OTLP:
+        config = _resolve_otlp_export_configuration(env, settings=settings)
+        if config is None:
+            return None
+        return OtlpTransport(config)
+    if export_profile.exporter_kind is ExporterKind.DISTRIBUTED_OTLP:
+        config = _resolve_distributed_transport_configuration(env, settings=settings)
+        if config is None:
+            return None
+        return CollectorTransport(config)
+    return None
 
 
 def resolve_observability_export_profile(
@@ -129,7 +159,7 @@ def resolve_application_runtime_event_delivery_wiring(
     )
     exporter_kind_label = export_profile.exporter_kind.value
     metrics = InternalDeliveryMetrics(exporter_kind=exporter_kind_label)
-    otlp_transport = _create_otlp_transport(export_profile, env, settings=settings)
+    otlp_transport = _create_export_transport(export_profile, env, settings=settings)
     factory = export_sink_factory or ObservabilityExportSinkFactory(
         otlp_transport=otlp_transport,
     )

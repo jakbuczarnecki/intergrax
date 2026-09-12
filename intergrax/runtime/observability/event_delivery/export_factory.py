@@ -36,6 +36,6 @@ class ObservabilityExportSinkFactory:
             return NoopEventExportSink()
         if profile.exporter_kind is ExporterKind.RECORDING:
             return RecordingEventExportSink()
-        if profile.exporter_kind is ExporterKind.OTLP:
+        if profile.exporter_kind in (ExporterKind.OTLP, ExporterKind.DISTRIBUTED_OTLP):
             return OtlpEventExportSink(transport=self._otlp_transport)
         return NoopEventExportSink()
