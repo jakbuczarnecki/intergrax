@@ -8,8 +8,7 @@
 
 ## Out of scope (later R5 stages)
 
-- Strategy ranking, scoring, or quality models
-- Recommendations or automatic strategy selection
+- Strategy recommendation or automatic selection (see R5.2 quality evaluation for read-only scoring)
 - Machine learning pipelines
 - Changes to execution authority, lifecycle control, or workflow orchestration
 
