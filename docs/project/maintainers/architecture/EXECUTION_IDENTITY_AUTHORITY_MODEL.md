@@ -1,13 +1,26 @@
 # Execution Identity Authority Model (EE-A2)
 
 **Classification:** `MAINTAINER_CERTIFICATION`  
-**Status:** `CERTIFIED` (audit EE-A2 on `development`)  
+**Status:** `CERTIFIED` (audit EE-A2-H2 global freeze on `development`)  
 **Audience:** Maintainers, enterprise qualification, architecture gates  
 
 **Parent:** [`EXECUTION_ENGINE_OWNERSHIP_MODEL.md`](EXECUTION_ENGINE_OWNERSHIP_MODEL.md) (EE-A1)  
 **Semantic types:** [`intergrax/contracts/execution_identity.py`](../../../intergrax/contracts/execution_identity.py)  
 **Authority port:** [`intergrax/contracts/execution_identity_authority.py`](../../../intergrax/contracts/execution_identity_authority.py)  
 **Runtime mint:** [`intergrax/runtime/execution/identity_authority.py`](../../../intergrax/runtime/execution/identity_authority.py)
+
+---
+
+## Global Freeze Statement
+
+ExecutionIdentityAuthority is the only production authority
+allowed to mint execution lifecycle identities.
+
+No runtime component, adapter, provider,
+scheduler or recovery mechanism may create
+RunId, ExecutionId or AttemptId directly.
+
+Re-verify this freeze against the current GitHub `development` branch before downstream certification; repository source is the sole authority of truth.
 
 ---
 
@@ -139,6 +152,7 @@ Agent local retry  -->  mint AttemptId          # blocked (use AttemptLifecycleS
 | `test_npsc4_1_execution_boundary_hardening_gate.py` | Application intake |
 | `test_npsc5e_r1_execution_retry_attempt_semantics.py` | Retry / attempt |
 | `test_ee_a2_identity_authority_certification.py` | EE-A2 enterprise certification |
+| `test_ee_a2_h2_identity_authority_global_freeze.py` | EE-A2-H2 global identity authority freeze |
 
 ---
 
