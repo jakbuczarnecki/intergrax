@@ -27,6 +27,15 @@ from intergrax.runtime.enterprise_reliability.reconciliation_orchestration impor
     ReconciliationOrchestrationError,
     plan_external_effect_reconciliation,
 )
+from intergrax.runtime.enterprise_reliability.resolution_execution import (
+    ExternalEffectResolutionRun,
+    execute_external_effect_resolution,
+)
+from intergrax.runtime.enterprise_reliability.resolution_orchestration import (
+    ExternalEffectResolutionPlanning,
+    ResolutionOrchestrationError,
+    plan_external_effect_resolution,
+)
 from intergrax.runtime.enterprise_reliability.uncertainty_lifecycle import (
     UncertaintyResolutionError,
     admit_external_effect_unknown,
@@ -41,9 +50,14 @@ __all__ = [
     "InMemoryEnterpriseReliabilityPluginRegistry",
     "ExternalEffectReconciliationPlanning",
     "ExternalEffectReconciliationProbeRun",
+    "ExternalEffectResolutionPlanning",
+    "ExternalEffectResolutionRun",
     "ReconciliationOrchestrationError",
+    "ResolutionOrchestrationError",
     "apply_reconciliation_evidence",
     "execute_external_effect_reconciliation_probe",
+    "execute_external_effect_resolution",
+    "plan_external_effect_resolution",
     "materialize_external_effect_evidence_from_probe",
     "plan_external_effect_reconciliation",
     "UncertaintyResolutionError",

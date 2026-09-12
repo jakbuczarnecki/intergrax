@@ -47,6 +47,7 @@ class ExternalEffectReconciliationPlanning(BaseModel):
 
     state: UncertaintyStateRecord
     contract_id: str
+    effect_contract: ExternalEffectContract
     unknown_posture: UnknownUncertaintyPosture
     plan: ReconciliationPlan
 
@@ -108,6 +109,7 @@ def plan_external_effect_reconciliation(
         return ExternalEffectReconciliationPlanning(
             state=admission.state,
             contract_id=contract.contract_id,
+            effect_contract=contract,
             unknown_posture=admission.unknown_posture,
             plan=ReconciliationPlan(
                 disposition=disposition,
@@ -141,6 +143,7 @@ def plan_external_effect_reconciliation(
     return ExternalEffectReconciliationPlanning(
         state=prepared,
         contract_id=contract.contract_id,
+        effect_contract=contract,
         unknown_posture=admission.unknown_posture,
         plan=plan,
     )

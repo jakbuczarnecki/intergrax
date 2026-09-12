@@ -25,10 +25,13 @@ from intergrax.contracts.enterprise_reliability import (
     ReconciliationProbeRequest,
     ReconciliationProbeResult,
     ReconciliationStrategyAdvice,
+    ResolutionPlatformAction,
+    ResolutionStrategyEvaluationRequest,
     UncertaintyLifecyclePhase,
     UncertaintyResolutionKind,
     UnknownUncertaintyPosture,
 )
+from intergrax.contracts.enterprise_reliability.resolution_decision import ResolutionDecision
 from intergrax.runtime.enterprise_reliability import (
     EnterpriseReliabilityPluginGatewayImpl,
     InMemoryEnterpriseReliabilityPluginRegistry,
@@ -93,6 +96,32 @@ class _ReconcilePluginWithProbe:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class _ResolutionPlugin:
+    _descriptor: EnterpriseReliabilityPluginDescriptor
+
+    @property
+    def plugin_id(self) -> str:
+        return self._descriptor.plugin_id
+
+    @property
+    def version(self) -> str:
+        return self._descriptor.version
+
+    @property
+    def descriptor(self) -> EnterpriseReliabilityPluginDescriptor:
+        return self._descriptor
+
+    def evaluate(
+        self,
+        request: ResolutionStrategyEvaluationRequest,
+    ) -> ResolutionDecision | None:
+        return ResolutionDecision(
+            action=ResolutionPlatformAction.CONTINUE,
+            rationale="continue_after_reconcile",
+        )
+
+
 def _plan_and_register(
     *,
     verdict: ExternalEffectEvidenceVerdict = ExternalEffectEvidenceVerdict.DEFINITIVE_SUCCESS,
@@ -115,6 +144,19 @@ def _plan_and_register(
                 priority=0,
             ),
             _verdict=verdict,
+        ),
+    )
+    registry.register(
+        _ResolutionPlugin(
+            EnterpriseReliabilityPluginDescriptor(
+                plugin_id="reconcile-pay",
+                version="1.0.0",
+                owner="payments",
+                capability_kind=EnterpriseReliabilityCapabilityKind.RESOLUTION,
+                capabilities=("resolve",),
+                tenant_scope=None,
+                priority=0,
+            ),
         ),
     )
     gateway = EnterpriseReliabilityPluginGatewayImpl(registry)

@@ -105,6 +105,8 @@ Reconciliation **does not** replace Nexus orchestration topology; it informs **w
 
 UNKNOWN triggers reconciliation; reconciliation **resolves** UNKNOWN to SUCCESS, FAILURE, or an escalated path—[`UNCERTAINTY_MANAGEMENT.md`](UNCERTAINTY_MANAGEMENT.md).
 
+After **`ExternalEffectEvidence`** is recorded, **resolution strategies** (ERL plugin capability `resolution`) evaluate evidence plus execution and effect-contract context and return a domain-neutral **`ResolutionDecision`** (`continue`, `stop`, `escalate`, `compensation_required`, `unknown`). The runtime selects strategies only through **`EnterpriseReliabilityPluginGateway`**; a missing strategy must not imply safe continuation.
+
 ---
 
 ## Further reading

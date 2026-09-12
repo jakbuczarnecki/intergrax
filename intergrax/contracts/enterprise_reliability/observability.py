@@ -11,15 +11,20 @@ from typing import Final
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.enterprise_reliability.gating import DependentExecutionGateAction
-from intergrax.contracts.enterprise_reliability.lifecycle import UncertaintyLifecyclePhase
+from intergrax.contracts.enterprise_reliability.lifecycle import (
+    UncertaintyLifecyclePhase,
+    UncertaintyResolutionKind,
+)
 from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
 from intergrax.contracts.enterprise_reliability.evidence import ExternalEffectEvidenceVerdict
 from intergrax.contracts.enterprise_reliability.reconciliation import ReconciliationDisposition
+from intergrax.contracts.enterprise_reliability.resolution_decision import ResolutionPlatformAction
 
 SCHEMA_UNCERTAINTY_ADMISSION_FACT_V1: Final = "uncertainty_admission_fact.v1"
 SCHEMA_UNCERTAINTY_GATING_FACT_V1: Final = "uncertainty_gating_fact.v1"
 SCHEMA_RECONCILIATION_PLAN_FACT_V1: Final = "reconciliation_plan_fact.v1"
 SCHEMA_RECONCILIATION_ATTEMPT_FACT_V1: Final = "reconciliation_attempt_fact.v1"
+SCHEMA_RESOLUTION_DECISION_FACT_V1: Final = "resolution_decision_fact.v1"
 
 
 class UncertaintyAdmissionFact(BaseModel):
@@ -63,6 +68,21 @@ class ReconciliationAttemptFact(BaseModel):
     recorded_at: datetime
 
 
+class ResolutionDecisionFact(BaseModel):
+    """Record resolution strategy outcome after reconciliation evidence."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    correlation_id: str = Field(min_length=1, max_length=256)
+    contract_id: str = Field(min_length=1, max_length=256)
+    plugin_id: str | None = Field(default=None, max_length=256)
+    evidence_ref: str = Field(min_length=1, max_length=512)
+    platform_action: ResolutionPlatformAction | None = None
+    resolution_kind: UncertaintyResolutionKind
+    lifecycle_phase: UncertaintyLifecyclePhase
+    recorded_at: datetime
+
+
 class UncertaintyGatingFact(BaseModel):
     """Record that dependents were gated while truth was uncertain."""
 
@@ -77,9 +97,11 @@ class UncertaintyGatingFact(BaseModel):
 __all__ = [
     "SCHEMA_RECONCILIATION_ATTEMPT_FACT_V1",
     "SCHEMA_RECONCILIATION_PLAN_FACT_V1",
+    "SCHEMA_RESOLUTION_DECISION_FACT_V1",
     "SCHEMA_UNCERTAINTY_ADMISSION_FACT_V1",
     "SCHEMA_UNCERTAINTY_GATING_FACT_V1",
     "ReconciliationAttemptFact",
+    "ResolutionDecisionFact",
     "ReconciliationPlanFact",
     "UncertaintyAdmissionFact",
     "UncertaintyGatingFact",

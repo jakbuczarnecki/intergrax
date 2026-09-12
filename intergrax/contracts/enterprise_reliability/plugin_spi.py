@@ -9,11 +9,15 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.enterprise_reliability.effect_contract import ExternalEffectContract
+from intergrax.contracts.enterprise_reliability.evidence import ExternalEffectEvidenceVerdict
 from intergrax.contracts.enterprise_reliability.lifecycle import (
     UncertaintyLifecyclePhase,
     UncertaintyResolutionKind,
 )
 from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
+from intergrax.contracts.enterprise_reliability.reconciliation_evidence import ExternalEffectEvidence
+from intergrax.contracts.enterprise_reliability.resolution_decision import ResolutionDecision
 from intergrax.contracts.enterprise_reliability.reconciliation_execution import (
     ReconciliationProbeRequest,
     ReconciliationProbeResult,
@@ -63,6 +67,8 @@ class EnterpriseReliabilityStrategyContext:
     contract_id: str
     effect_outcome: ExternalEffectOutcome
     lifecycle_phase: UncertaintyLifecyclePhase
+    evidence_verdict: ExternalEffectEvidenceVerdict | None = None
+    evidence_ref: str | None = None
 
     def __post_init__(self) -> None:
         if not self.tenant_id.strip():
@@ -86,11 +92,21 @@ class ReconciliationStrategyAdvice:
 
 
 @dataclass(frozen=True, slots=True)
+class ResolutionStrategyEvaluationRequest:
+    """Inputs for resolution strategy evaluation — evidence-bound, contract-scoped."""
+
+    evidence: ExternalEffectEvidence
+    execution_context: EnterpriseReliabilityStrategyContext
+    effect_contract: ExternalEffectContract
+
+
+@dataclass(frozen=True, slots=True)
 class ResolutionStrategyAdvice:
-    """Recommended UNKNOWN closure path before UER / Reliability handoff."""
+    """Lifecycle closure path derived from a platform ``ResolutionDecision``."""
 
     resolution_kind: UncertaintyResolutionKind
     rationale: str = ""
+    platform_action: ResolutionDecision | None = None
 
 
 class EnterpriseReliabilityRiskLevel(StrEnum):
@@ -180,8 +196,8 @@ class ResolutionStrategy(Protocol):
 
     def evaluate(
         self,
-        context: EnterpriseReliabilityStrategyContext,
-    ) -> ResolutionStrategyAdvice | None: ...
+        request: ResolutionStrategyEvaluationRequest,
+    ) -> ResolutionDecision | None: ...
 
 
 @runtime_checkable
@@ -276,11 +292,13 @@ class EnterpriseReliabilityPluginGateway(Protocol):
         request: ReconciliationProbeRequest,
     ) -> ReconciliationProbeResult | None: ...
 
+    def resolution_strategy_registered(self, plugin_id: str) -> bool: ...
+
     def evaluate_resolution(
         self,
         plugin_id: str,
-        context: EnterpriseReliabilityStrategyContext,
-    ) -> ResolutionStrategyAdvice | None: ...
+        request: ResolutionStrategyEvaluationRequest,
+    ) -> ResolutionDecision | None: ...
 
     def evaluate_compensation(
         self,
@@ -308,8 +326,10 @@ __all__ = [
     "ReconciliationProbeExecutor",
     "ReconciliationStrategy",
     "ReconciliationStrategyAdvice",
+    "ResolutionDecision",
     "ResolutionStrategy",
     "ResolutionStrategyAdvice",
+    "ResolutionStrategyEvaluationRequest",
     "RiskEvaluationStrategy",
     "RiskEvaluationStrategyAdvice",
     "assert_plugin_identity_matches_descriptor",

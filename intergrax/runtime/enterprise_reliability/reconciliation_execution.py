@@ -25,8 +25,13 @@ from intergrax.contracts.enterprise_reliability.reconciliation_execution import 
     build_reconciliation_probe_request,
 )
 from intergrax.runtime.enterprise_reliability.reconciliation_evidence import (
-    apply_reconciliation_evidence,
     materialize_external_effect_evidence_from_probe,
+)
+from intergrax.runtime.enterprise_reliability.resolution_execution import (
+    execute_external_effect_resolution,
+)
+from intergrax.runtime.enterprise_reliability.resolution_orchestration import (
+    plan_external_effect_resolution,
 )
 from intergrax.runtime.enterprise_reliability.reconciliation_orchestration import (
     ExternalEffectReconciliationPlanning,
@@ -99,7 +104,21 @@ def execute_external_effect_reconciliation_probe(
         probe_result=probe_result,
         obtained_at=timestamp,
     )
-    state = apply_reconciliation_evidence(planning.state, evidence)
+    resolution_planning = plan_external_effect_resolution(
+        state=planning.state,
+        contract_id=planning.contract_id,
+        effect_contract=planning.effect_contract,
+        unknown_posture=planning.unknown_posture,
+        evidence=evidence,
+        gateway=gateway,
+        plugin_id=plan.plugin_id,
+        tenant_id=tenant_id,
+    )
+    resolution_run = execute_external_effect_resolution(
+        planning=resolution_planning,
+        recorded_at=timestamp,
+    )
+    state = resolution_run.state
     attempt_fact = ReconciliationAttemptFact(
         correlation_id=planning.state.correlation_id,
         contract_id=planning.contract_id,

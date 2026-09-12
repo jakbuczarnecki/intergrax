@@ -10,9 +10,10 @@ from intergrax.contracts.enterprise_reliability.plugin_spi import (
     EnterpriseReliabilityPluginRegistry,
     EnterpriseReliabilityStrategyContext,
     ReconciliationStrategyAdvice,
-    ResolutionStrategyAdvice,
+    ResolutionStrategyEvaluationRequest,
     RiskEvaluationStrategyAdvice,
 )
+from intergrax.contracts.enterprise_reliability.resolution_decision import ResolutionDecision
 from intergrax.contracts.enterprise_reliability.reconciliation_execution import (
     ReconciliationProbeRequest,
     ReconciliationProbeResult,
@@ -45,15 +46,18 @@ class EnterpriseReliabilityPluginGatewayImpl:
             return None
         return executor.execute_probe(request)
 
+    def resolution_strategy_registered(self, plugin_id: str) -> bool:
+        return self._registry.resolve_resolution(plugin_id) is not None
+
     def evaluate_resolution(
         self,
         plugin_id: str,
-        context: EnterpriseReliabilityStrategyContext,
-    ) -> ResolutionStrategyAdvice | None:
+        request: ResolutionStrategyEvaluationRequest,
+    ) -> ResolutionDecision | None:
         strategy = self._registry.resolve_resolution(plugin_id)
         if strategy is None:
             return None
-        return strategy.evaluate(context)
+        return strategy.evaluate(request)
 
     def evaluate_compensation(
         self,

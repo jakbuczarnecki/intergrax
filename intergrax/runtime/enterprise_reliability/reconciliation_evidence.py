@@ -11,10 +11,7 @@ from intergrax.contracts.enterprise_reliability.evidence import (
     ExternalEffectEvidenceVerdict,
     classify_external_effect_outcome,
 )
-from intergrax.contracts.enterprise_reliability.lifecycle import (
-    UncertaintyResolutionKind,
-    UncertaintyStateRecord,
-)
+from intergrax.contracts.enterprise_reliability.lifecycle import UncertaintyStateRecord
 from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
 from intergrax.contracts.enterprise_reliability.reconciliation_evidence import (
     ExternalEffectEvidence,
@@ -30,7 +27,9 @@ from intergrax.contracts.enterprise_reliability.reconciliation_execution import 
     ReconciliationProbeRequest,
     ReconciliationProbeResult,
 )
-from intergrax.runtime.enterprise_reliability.uncertainty_lifecycle import resolve_uncertainty
+from intergrax.runtime.enterprise_reliability.uncertainty_lifecycle import (
+    resolve_uncertainty,
+)
 
 
 def materialize_external_effect_evidence_from_probe(
@@ -61,25 +60,14 @@ def materialize_external_effect_evidence_from_probe(
     )
 
 
-def _resolution_kind_for_evidence(
-    evidence: ExternalEffectEvidence,
-) -> UncertaintyResolutionKind | None:
-    if evidence.verdict is ExternalEffectEvidenceVerdict.DEFINITIVE_SUCCESS:
-        return UncertaintyResolutionKind.CONFIRMED_SUCCESS
-    if evidence.verdict is ExternalEffectEvidenceVerdict.DEFINITIVE_FAILURE:
-        return UncertaintyResolutionKind.CONFIRMED_FAILURE
-    return None
-
-
-def apply_reconciliation_evidence(
+def assert_reconciliation_evidence_applicable(
     state: UncertaintyStateRecord,
     evidence: ExternalEffectEvidence,
-) -> UncertaintyStateRecord:
+) -> None:
     """
-    Advance uncertainty lifecycle using recorded reconciliation evidence.
+    Validate reconciliation evidence against an UNKNOWN episode.
 
-    UNKNOWN may leave the episode only when evidence is definitive, operation-linked,
-    and consistent with the current correlation identity.
+    Does not close uncertainty — resolution strategies apply in a later orchestration step.
     """
     if state.effect_outcome is not ExternalEffectOutcome.UNKNOWN:
         raise ExternalEffectEvidenceError(
@@ -92,24 +80,51 @@ def apply_reconciliation_evidence(
     if evidence.source_kind is not ExternalEffectEvidenceSourceKind.RECONCILIATION_PROBE:
         raise ExternalEffectEvidenceError("unsupported evidence source for reconciliation")
 
-    resolution_kind = _resolution_kind_for_evidence(evidence)
-    if resolution_kind is None:
-        return state
 
+def apply_reconciliation_evidence(
+    state: UncertaintyStateRecord,
+    evidence: ExternalEffectEvidence,
+) -> UncertaintyStateRecord:
+    """
+    Apply platform-default resolution for definitive reconciliation evidence.
+
+    Prefer ``plan_external_effect_resolution`` + ``execute_external_effect_resolution`` for
+    plugin-driven closure; this helper preserves the evidence-only fast path for tests.
+    """
+    assert_reconciliation_evidence_applicable(state, evidence)
+    if evidence.verdict is ExternalEffectEvidenceVerdict.INSUFFICIENT:
+        return state
     if evidence.confidence is not ExternalEffectEvidenceConfidence.DEFINITIVE:
         raise ExternalEffectEvidenceError(
             "definitive outcome change requires definitive evidence confidence",
         )
+    from intergrax.contracts.enterprise_reliability.resolution import (
+        resolution_advice_from_decision,
+    )
+    from intergrax.contracts.enterprise_reliability.resolution_decision import (
+        ResolutionDecision,
+        ResolutionPlatformAction,
+    )
 
+    advice = resolution_advice_from_decision(
+        ResolutionDecision(
+            action=ResolutionPlatformAction.CONTINUE,
+            rationale="evidence_only_fast_path",
+        ),
+        evidence,
+    )
+    if advice is None:
+        return state
     resolved_outcome = classify_external_effect_outcome(evidence.verdict)
     return resolve_uncertainty(
         state,
-        resolution_kind=resolution_kind,
+        resolution_kind=advice.resolution_kind,
         resolved_outcome=resolved_outcome,
     )
 
 
 __all__ = [
     "apply_reconciliation_evidence",
+    "assert_reconciliation_evidence_applicable",
     "materialize_external_effect_evidence_from_probe",
 ]
