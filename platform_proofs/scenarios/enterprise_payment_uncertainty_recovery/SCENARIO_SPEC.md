@@ -1,7 +1,7 @@
 ---
 scenario_slug: enterprise_payment_uncertainty_recovery
-lifecycle: ACCEPTED_FOR_IMPLEMENTATION
-implementation_status: NOT_INITIALIZED
+lifecycle: IMPLEMENTATION_INITIALIZED
+implementation_status: INITIALIZED
 intergrax_fit: COMPLETED
 gap_decision: RESOLVED
 observability_contract: COMPLETED
