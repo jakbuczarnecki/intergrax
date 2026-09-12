@@ -1,0 +1,8 @@
+{
+  "entity_type": "external_effect",
+  "effect_id": "erl-qual-004-eff-capture-0001",
+  "related_order_id": "erl-qual-004-ord-0001",
+  "effect_type": "payment_capture",
+  "business_operation": "capture_funds_for_order",
+  "immediate_integration_outcome": "unknown"
+}

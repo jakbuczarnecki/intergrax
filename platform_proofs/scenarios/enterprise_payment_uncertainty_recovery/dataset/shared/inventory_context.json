@@ -1,0 +1,7 @@
+{
+  "entity_type": "inventory_context",
+  "reservation_id": "erl-qual-004-inv-res-0001",
+  "related_order_id": "erl-qual-004-ord-0001",
+  "reservation_state_at_scenario_entry": "held_pending_payment_truth",
+  "fulfillment_eligibility_note": "Eligibility after resolution is variant-specific; see expected_outcomes in each variant."
+}

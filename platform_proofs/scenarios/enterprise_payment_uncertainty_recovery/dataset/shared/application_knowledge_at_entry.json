@@ -1,0 +1,12 @@
+{
+  "entity_type": "application_knowledge_snapshot",
+  "snapshot_id": "erl-qual-004-app-know-entry-0001",
+  "related_order_id": "erl-qual-004-ord-0001",
+  "related_effect_id": "erl-qual-004-eff-capture-0001",
+  "observed_invoke_envelope": "capture_request_sent",
+  "confirmation_received": false,
+  "terminal_payment_outcome_known_to_application": false,
+  "order_payment_state": "pending_payment_truth",
+  "inventory_reservation_state": "held_pending_payment_truth",
+  "note": "Application knowledge intentionally lags external system-of-record truth until reconciliation or governed escalation."
+}

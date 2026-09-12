@@ -1,0 +1,40 @@
+{
+  "variant_id": "payment_completed_after_unknown",
+  "variant_label": "Variant A",
+  "meaning": "External system completed payment; application did not receive confirmation.",
+  "shared_entity_refs": {
+    "order_id": "erl-qual-004-ord-0001",
+    "effect_id": "erl-qual-004-eff-capture-0001",
+    "communication_event_id": "erl-qual-004-comm-0001",
+    "reservation_id": "erl-qual-004-inv-res-0001"
+  },
+  "external_reality": {
+    "entity_type": "external_reality",
+    "system_of_record_truth": {
+      "payment_capture_outcome": "completed",
+      "funds_captured": true,
+      "final_business_truth": "payment_succeeded"
+    }
+  },
+  "reconciliation": {
+    "availability": "available",
+    "discoverable_outcome": "payment_succeeded",
+    "note": "Reconciliation can establish authoritative paid truth after UNKNOWN admission."
+  },
+  "expected_outcomes": {
+    "terminal_business_result": "RESOLVED",
+    "proof_expectation": "safe_continuation_after_reconciliation",
+    "business_process": "continue_order_and_fulfillment_path_after_governance",
+    "invariants": [
+      "no_duplicate_capture",
+      "no_fulfillment_without_confirmed_capture",
+      "order_and_inventory_align_with_paid_truth"
+    ],
+    "evidence_themes": [
+      "unknown_admitted",
+      "reconciliation_completed",
+      "resolution_to_continue",
+      "single_capture_confirmed"
+    ]
+  }
+}

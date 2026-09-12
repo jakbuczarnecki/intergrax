@@ -1,0 +1,31 @@
+{
+  "schema_version": "erl_qual_004.scenario_dataset/1.0.0",
+  "qualification_id": "ERL-QUAL-004",
+  "scenario_slug": "enterprise_payment_uncertainty_recovery",
+  "package_version": "1.0.0",
+  "description": "Vendor-neutral logical scenario dataset for payment uncertainty recovery qualification.",
+  "shared_entities": {
+    "order": "shared/order.json",
+    "inventory_context": "shared/inventory_context.json",
+    "external_effect": "shared/external_effect.json",
+    "communication_event": "shared/communication_event.json",
+    "application_knowledge_at_entry": "shared/application_knowledge_at_entry.json"
+  },
+  "variants": [
+    {
+      "variant_id": "payment_completed_after_unknown",
+      "label": "Variant A",
+      "path": "variants/payment_completed_after_unknown/scenario_variant.json"
+    },
+    {
+      "variant_id": "payment_failed_after_unknown",
+      "label": "Variant B",
+      "path": "variants/payment_failed_after_unknown/scenario_variant.json"
+    },
+    {
+      "variant_id": "payment_truth_unavailable",
+      "label": "Variant C",
+      "path": "variants/payment_truth_unavailable/scenario_variant.json"
+    }
+  ]
+}
