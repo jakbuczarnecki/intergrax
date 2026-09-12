@@ -39,7 +39,10 @@ from intergrax.contracts.preventive_investigation_read import (
     RelatedPreventiveActionHistoryEntryView,
     RelatedPreventiveRecommendationView,
 )
-from intergrax.contracts.self_healing_investigation_read import RelatedSelfHealingHistoryEntryView
+from intergrax.contracts.self_healing_investigation_read import (
+    RelatedSelfHealingHistoryEntryView,
+    RelatedSelfHealingWorkflowHistoryEntryView,
+)
 from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
 
 
@@ -206,6 +209,7 @@ class DiagnosticInvestigationView:
     preventive_recommendations: tuple[RelatedPreventiveRecommendationView, ...] = ()
     preventive_action_history: tuple[RelatedPreventiveActionHistoryEntryView, ...] = ()
     self_healing_history: tuple[RelatedSelfHealingHistoryEntryView, ...] = ()
+    healing_workflow_history: tuple[RelatedSelfHealingWorkflowHistoryEntryView, ...] = ()
     external_operation_context: tuple[DiagnosticExternalOperationContextView, ...] = ()
     external_operation_failures: tuple[DiagnosticExternalOperationFailureView, ...] = ()
 

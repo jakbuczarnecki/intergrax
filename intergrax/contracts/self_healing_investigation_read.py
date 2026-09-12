@@ -27,4 +27,22 @@ class RelatedSelfHealingHistoryEntryView:
     justification: str = ""
 
 
-__all__ = ["RelatedSelfHealingHistoryEntryView"]
+@dataclass(frozen=True, slots=True)
+class RelatedSelfHealingWorkflowHistoryEntryView:
+    """Workflow lifecycle trail on DiagnosticInvestigationView — read-only."""
+
+    workflow_id: str
+    strategy_id: str
+    plan_id: str
+    tenant_id: str
+    from_state: str
+    to_state: str
+    actor: str
+    reason: str
+    recorded_at: datetime
+
+
+__all__ = [
+    "RelatedSelfHealingHistoryEntryView",
+    "RelatedSelfHealingWorkflowHistoryEntryView",
+]

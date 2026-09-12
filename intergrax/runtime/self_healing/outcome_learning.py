@@ -21,6 +21,10 @@ class InMemorySelfHealingStrategyQualityStore:
     def get(self, *, strategy_id: str, tenant_id: str) -> SelfHealingStrategyQualityProfile | None:
         return self._profiles.get((strategy_id, tenant_id))
 
+    def put(self, profile: SelfHealingStrategyQualityProfile) -> SelfHealingStrategyQualityProfile:
+        self._profiles[(profile.strategy_id, profile.tenant_id)] = profile
+        return profile
+
     def apply_audit_record(self, record: SelfHealingAuditRecord) -> SelfHealingStrategyQualityProfile:
         key = (record.strategy_id, record.tenant_id)
         current = self._profiles.get(

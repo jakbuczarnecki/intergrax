@@ -29,6 +29,7 @@ class PlatformSelfHealingActionProvider:
                 "self_healing.capacity.protection",
                 "self_healing.dependency.isolation",
                 "self_healing.human.escalation",
+                "self_healing.rollback.restore",
             },
         )
 
