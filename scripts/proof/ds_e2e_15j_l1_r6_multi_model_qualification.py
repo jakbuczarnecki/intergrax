@@ -15,29 +15,25 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from testing_support.decision_e2e.env_bootstrap import bootstrap_qualification_environment
 from testing_support.decision_e2e.local_ai_incident_qualification import (
-    AiIncidentSingleRunExecutor,
-    OllamaProviderIdentityProbe,
     QualificationCliExit,
-    resolve_repository_head_sha,
-    run_local_ai_incident_qualification,
 )
 from testing_support.decision_e2e.local_qualification_session.behavioral_qualification_source_freeze import (
     SourceFreezeStatus,
 )
-from testing_support.decision_e2e.local_qualification_session.ollama_probe import (
-    OllamaProbeConfig,
-)
 from testing_support.decision_e2e.model_matrix.analysis import (
     run_multi_model_qualification_analysis,
 )
-from testing_support.decision_e2e.model_matrix.availability import ModelAvailability
+from testing_support.decision_e2e.model_matrix.qualification_cohort_executor import (
+    CohortExecutionStatus,
+)
+from testing_support.decision_e2e.model_matrix.qualification_execution_pipeline import (
+    run_qualification_execution_pipeline,
+)
 from testing_support.decision_e2e.model_matrix.qualification_plan import (
     DEFAULT_COHORT_RUN_COUNT,
     R6_TASK_ID,
     build_cohort_plans,
-    build_qualification_spec_for_profile,
     qualification_artifact_root,
 )
 from testing_support.decision_e2e.model_matrix.registry import (
@@ -47,59 +43,6 @@ from testing_support.decision_e2e.model_matrix.registry import (
 from testing_support.decision_e2e.model_matrix.source_freeze import (
     verify_model_matrix_source_freeze,
 )
-
-
-def _apply_runtime_env(profile_provider: str, profile_model: str) -> None:
-    os.environ["INTERGRAX_LLM_PROVIDER"] = profile_provider
-    os.environ["INTERGRAX_LLM_MODEL"] = profile_model
-    os.environ["INTERGRAX_DECISION_E2E_QUALIFICATION"] = "1"
-
-
-async def _run_profile_cohort(
-    *,
-    repo_root: Path,
-    plan,
-    ollama_url: str,
-    resume: bool,
-    finalize_only: bool,
-) -> int:
-    if plan.availability is ModelAvailability.MODEL_UNAVAILABLE:
-        print(f"MODEL_UNAVAILABLE profile={plan.profile.profile_key}")
-        return 0
-    if not plan.profile.digest:
-        print(f"BLOCKED: digest missing profile={plan.profile.profile_key}")
-        return int(QualificationCliExit.BLOCKED_PRECONDITION)
-
-    _apply_runtime_env(plan.profile.provider, plan.profile.model_name)
-    bootstrap_qualification_environment(start_path=repo_root)
-    head_sha = resolve_repository_head_sha(repo_root)
-    spec, config_fp, frozen = build_qualification_spec_for_profile(
-        repo_root,
-        plan.profile,
-        repository_head_sha=head_sha,
-        run_count=plan.run_count,
-    )
-    session_dir = plan.session_dir
-    session_dir.mkdir(parents=True, exist_ok=True)
-    probe = OllamaProviderIdentityProbe(OllamaProbeConfig(base_url=ollama_url))
-    result = await run_local_ai_incident_qualification(
-        repo_root=repo_root,
-        session_dir=session_dir,
-        spec=spec,
-        config_fingerprint=config_fp,
-        source_fingerprint=frozen.semantic_fingerprint(),
-        provider_probe=probe,
-        run_executor=AiIncidentSingleRunExecutor(),
-        resume=resume,
-        finalize_only=finalize_only,
-        repository_head_sha=head_sha,
-        task_id=R6_TASK_ID,
-        temperature=plan.profile.temperature,
-    )
-    print(
-        f"profile={plan.profile.profile_key} session_state={result.session_state.value}"
-    )
-    return int(result.exit_code)
 
 
 def _resolve_profiles(args: argparse.Namespace) -> tuple | None:
@@ -124,25 +67,27 @@ async def _run_all_cohorts(args: argparse.Namespace) -> int:
         if args.profile_key
         else None
     )
-
-    plans = build_cohort_plans(
+    pipeline = await run_qualification_execution_pipeline(
         args.repo_root,
         profiles,
         run_count=args.run_count,
         ollama_base_url=args.ollama_url,
         env_digest=env_digest,
+        resume=args.resume,
+        finalize_only=args.finalize_only,
     )
-    worst = 0
-    for plan in plans:
-        code = await _run_profile_cohort(
-            repo_root=args.repo_root,
-            plan=plan,
-            ollama_url=args.ollama_url,
-            resume=args.resume,
-            finalize_only=args.finalize_only,
-        )
-        worst = max(worst, code)
-    return worst
+    for result in pipeline.cohort_results:
+        if result.status is CohortExecutionStatus.MODEL_UNAVAILABLE:
+            print(f"MODEL_UNAVAILABLE profile={result.profile_key}")
+            continue
+        if result.status is CohortExecutionStatus.BLOCKED_PRECONDITION:
+            print(f"BLOCKED: digest missing profile={result.profile_key}")
+            continue
+        if result.session_state is not None:
+            print(
+                f"profile={result.profile_key} session_state={result.session_state.value}"
+            )
+    return pipeline.worst_exit_code
 
 
 def main(argv: list[str] | None = None) -> int:

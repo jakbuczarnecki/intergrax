@@ -75,6 +75,9 @@ def semantic_source_groups_for_r6() -> dict[str, tuple[str, ...]]:
             "testing_support/decision_e2e/model_matrix/matrix_artifact_contract.py",
             "testing_support/decision_e2e/model_matrix/model_execution_provider.py",
             "testing_support/decision_e2e/model_matrix/qualification_analysis_strategy.py",
+            "testing_support/decision_e2e/model_matrix/qualification_cohort_executor.py",
+            "testing_support/decision_e2e/model_matrix/qualification_cohort_failure.py",
+            "testing_support/decision_e2e/model_matrix/qualification_execution_pipeline.py",
         ),
     }
 
