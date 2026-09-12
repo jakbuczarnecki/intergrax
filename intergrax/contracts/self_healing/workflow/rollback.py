@@ -51,6 +51,7 @@ class SelfHealingRollbackProvider(Protocol):
         workflow_context: SelfHealingWorkflowContext,
     ) -> SelfHealingRollbackPlan:
         """Return rollback directives — no direct infrastructure restore."""
+        ...
 
 
 __all__ = [

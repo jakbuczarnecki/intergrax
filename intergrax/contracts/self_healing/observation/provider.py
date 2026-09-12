@@ -39,6 +39,7 @@ class SelfHealingObservationProvider(Protocol):
         before_metrics: tuple[tuple[str, str], ...] = (),
     ) -> ObservationResult:
         """Collect evidence-backed metrics after spine execution — no mutations."""
+        ...
 
 
 __all__ = ["ObservationResult", "SelfHealingObservationProvider"]

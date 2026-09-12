@@ -42,6 +42,7 @@ class SelfHealingValidationProvider(Protocol):
 
     def validate(self, workflow_context: SelfHealingWorkflowContext) -> ValidationResult:
         """Evidence-based validation — no subjective success claims."""
+        ...
 
 
 __all__ = [

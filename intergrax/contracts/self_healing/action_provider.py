@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.execution_identity import TaskId
 from intergrax.contracts.external_operations.intent import ExternalOperationIntent
 from intergrax.contracts.external_operations.provider import ProviderPayloadBounds
 from intergrax.contracts.self_healing.decision import SelfHealingDecision, SelfHealingProposedAction
@@ -38,7 +39,7 @@ class SelfHealingActionProvider(Protocol):
         action: SelfHealingProposedAction,
         *,
         tenant_id: str,
-        task_id: str,
+        task_id: TaskId,
         requested_by: str,
     ) -> ExternalOperationIntent:
         """Pure translation — no I/O."""

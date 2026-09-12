@@ -48,6 +48,7 @@ class SelfHealingValidator(Protocol):
         observation: ObservationResult | None = None,
     ) -> ValidatorCheckResult:
         """Evidence-only check — never returns bare validation=true."""
+        ...
 
 
 __all__ = ["SelfHealingValidator", "ValidatorCheckResult", "ValidatorCheckStatus"]

@@ -26,6 +26,7 @@ class SelfHealingStrategySelector(Protocol):
         performance_profiles: tuple[SelfHealingStrategyPerformance, ...] = (),
     ) -> tuple[SelfHealingStrategy, ...]:
         """Return strategies in evaluation order — no execution surface."""
+        ...
 
 
 __all__ = ["SelfHealingStrategySelector"]

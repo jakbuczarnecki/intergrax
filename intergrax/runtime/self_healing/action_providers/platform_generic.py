@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from intergrax.contracts.execution_identity import TaskId
 from intergrax.contracts.external_operations.intent import (
     ExternalOperationIntent,
     ExternalOperationType,
@@ -47,7 +48,7 @@ class PlatformSelfHealingActionProvider:
         action: SelfHealingProposedAction,
         *,
         tenant_id: str,
-        task_id: str,
+        task_id: TaskId,
         requested_by: str,
     ) -> ExternalOperationIntent:
         return ExternalOperationIntent(
