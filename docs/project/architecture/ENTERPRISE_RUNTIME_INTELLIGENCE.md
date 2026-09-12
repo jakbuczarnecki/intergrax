@@ -9,7 +9,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 **Enterprise Runtime Intelligence (ERI)** is the planned platform layer that **explains, correlates, and scores** runtime execution using **canonical facts** already produced by W1–W5 — without becoming a second diagnostic engine, without owning execution truth, and without introducing god components.
 
 > [!NOTE]
-> **W6-A:** Architecture inventory and qualification. **W6-B:** Contract freeze in `intergrax/contracts/runtime_intelligence/` (SPI + immutable envelopes). Runtime engines and context builders follow in W6-C+. See [`ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md`](../maintainers/architecture/ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md), [`ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md`](../maintainers/architecture/ADR/ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md), and [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md).
+> **W6-A:** Architecture inventory and qualification. **W6-B:** Contract freeze in `intergrax/contracts/runtime_intelligence/` (SPI + immutable envelopes). **W6-C:** Context builder + deterministic analyzer in `intergrax/runtime/runtime_intelligence/`. See [`ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md`](../maintainers/architecture/ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md), [`ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md`](../maintainers/architecture/ADR/ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md), [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md), and [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_C_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_C_QUALIFICATION.md).
 
 **Primary audience:** Principal / Staff architects and platform engineers extending execution reliability, observability, and adaptive operations.
 
@@ -111,15 +111,31 @@ intergrax/contracts/runtime_intelligence/
 | `IntelligenceRecommendation` | Recommend-only output — no execution hooks |
 | `RuntimeIntelligenceAnalyzerPort` | Local / ML / external analyzers behind one Protocol |
 
-**Deferred (W6-C+):** `RuntimeIntelligencePort` facade, context builder in `runtime/runtime_intelligence/`, `AdaptivePolicySignalPort`.
+**Deferred (post W6-C):** `RuntimeIntelligencePort` facade, multi-analyzer orchestration engine, `AdaptivePolicySignalPort`.
 
 ---
 
-## Ownership (W6-B)
+## Runtime integration (W6-C)
+
+```text
+intergrax/runtime/runtime_intelligence/
+        │
+        ├── RuntimeIntelligenceFacts (read-only request inputs)
+        ├── RuntimeIntelligenceContextBuilder → RuntimeIntelligenceContext
+        ├── DeterministicRuntimeIntelligenceAnalyzer (reference plugin)
+        └── run_runtime_intelligence_analysis (request lifecycle)
+```
+
+Signal observations from read ports are projected into context as stable fact pointers (`intelligence_signal:{kind}:{intensity}`) so W6-B context shape stays unchanged.
+
+---
+
+## Ownership (W6-B + W6-C)
 
 | Concern | Owner |
 |---------|--------|
-| Context projection | Runtime integration layer (future builder; contracts define shape only) |
+| Fact assembly | Integration caller (`RuntimeIntelligenceFacts` from read ports) |
+| Context projection | `RuntimeIntelligenceContextBuilder` (`runtime/runtime_intelligence/`) |
 | Analysis | `RuntimeIntelligenceAnalyzerPort` implementations |
 | Result envelope | Runtime Intelligence contract plane |
 | Recommendations | Runtime Intelligence contract plane (governance decides action) |
@@ -127,11 +143,15 @@ intergrax/contracts/runtime_intelligence/
 
 ---
 
-## Lifecycle (W6-B)
+## Lifecycle (W6-B + W6-C)
 
-- **Request-scoped** analyze over immutable context — no W6 managers or schedulers.
-- Analyzers are **wired at composition root** (tuple ordering), not discovered via a central registry in contracts.
-- No global mutable intelligence state in the contract package.
+```text
+create request → build context → analyze → return response → release request resources
+```
+
+- **Request-scoped** — no W6 managers, schedulers, or daemons.
+- Analyzers are **injected per request** (composition root / caller), not discovered via a central registry.
+- No global mutable intelligence state in contracts or W6-C modules.
 
 ---
 
@@ -152,7 +172,8 @@ Contracts do **not** branch on analyzer kind; each adapter implements the same P
 ## Failure isolation
 
 ```text
-Analyzer failure / invalid context
+Invalid facts at build → InvalidIntelligenceContextError (caller boundary)
+Analyzer failure / invalid context at analyze
         ↓
 run_runtime_intelligence_analyzer_isolated → PLUGIN_UNAVAILABLE or INVALID_CONTEXT
         ↓
