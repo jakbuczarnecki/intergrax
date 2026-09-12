@@ -48,6 +48,20 @@ class HealingExecutionTimelineView:
 
 
 @dataclass(frozen=True, slots=True)
+class AdaptiveHealingInsightView:
+    """R4 adaptive strategy ranking projection — advisory only, not execution authority."""
+
+    tenant_id: str
+    status: str
+    overall_confidence: float
+    recommended_strategy_order: tuple[str, ...]
+    strategy_ranking_summary: tuple[str, ...]
+    confidence_explanation: str
+    adaptive_insights: tuple[str, ...] = ()
+    evidence_refs: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class RelatedSelfHealingWorkflowHistoryEntryView:
     """Workflow lifecycle trail on DiagnosticInvestigationView — read-only."""
 
@@ -63,6 +77,7 @@ class RelatedSelfHealingWorkflowHistoryEntryView:
 
 
 __all__ = [
+    "AdaptiveHealingInsightView",
     "HealingExecutionTimelineStageView",
     "HealingExecutionTimelineView",
     "RelatedSelfHealingHistoryEntryView",
