@@ -1,6 +1,6 @@
 # Self-Healing Strategy Knowledge Evolution (R5.4)
 
-**Status:** Architecture blueprint only — no runtime implementation.
+**Status:** Architecture blueprint — runtime foundation implemented in R5.4 (see [`SELF_HEALING_STRATEGY_KNOWLEDGE_EVOLUTION_R5.md`](SELF_HEALING_STRATEGY_KNOWLEDGE_EVOLUTION_R5.md)).
 
 **Task:** `SELF_HEALING_R5_4_STRATEGY_KNOWLEDGE_EVOLUTION_ARCHITECTURE_BLUEPRINT`
 
