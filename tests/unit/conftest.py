@@ -26,7 +26,7 @@ CI_SMOKE_FILES: frozenset[str] = frozenset(
         "tests/unit/runtime/nexus/context/test_context_budget.py",
         "tests/unit/runtime/nexus/context/test_context_engine.py",
         "tests/unit/runtime/nexus/test_orchestration_capabilities.py",
-        "tests/unit/runtime/critic/test_critic_contracts.py",
+        "tests/unit/runtime/migration/test_decision_critic_parity.py",
         "tests/unit/prompts/test_prompt_registry_resolver.py",
         "tests/unit/tools/registry/test_wiring.py",
         "tests/unit/llm_adapters/test_adapter_response_contract.py",

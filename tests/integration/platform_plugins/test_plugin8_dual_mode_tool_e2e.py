@@ -46,7 +46,11 @@ from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate, pytest.mark.ci_smoke]
 
@@ -132,18 +136,20 @@ def _invoke_tool(
     input_model: Any,
     message: str,
 ) -> Any:
+    run_id = canonical_run_id_for_tests("plugin8")
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
-    state = build_runtime_state_for_tests(run_id="plugin8")
-    result = invoker.invoke(
-        state=state,
-        agent_id="agent",
-        request=ToolExecutionRequest(
-            run_id="plugin8",
-            step_id="step/1",
-            tool_id=tool_id,
-            input=input_model(message=message),
-        ),
-    )
+    state = build_runtime_state_for_tests(run_id=run_id)
+    with canonical_execution_identity_scope(run_id):
+        result = invoker.invoke(
+            state=state,
+            agent_id="agent",
+            request=ToolExecutionRequest(
+                run_id=run_id,
+                step_id="step/1",
+                tool_id=tool_id,
+                input=input_model(message=message),
+            ),
+        )
     assert result.success is True
     assert result.output is not None
     return result.output
