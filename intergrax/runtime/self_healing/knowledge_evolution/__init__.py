@@ -9,16 +9,24 @@ from intergrax.runtime.self_healing.knowledge_evolution.success_over_speed_polic
     SuccessOverSpeedComparisonPolicy,
 )
 from intergrax.runtime.self_healing.knowledge_evolution.success_rate_metric_provider import SuccessRateMetricProvider
+from intergrax.runtime.self_healing.knowledge_evolution.no_decay_freshness import NoDecayKnowledgeFreshnessPolicy
+from intergrax.runtime.self_healing.knowledge_evolution.refs_context_provider import EvolutionRefsContextProvider
+from intergrax.runtime.self_healing.knowledge_evolution.time_weighted_freshness import (
+    TimeWeightedKnowledgeFreshnessPolicy,
+)
 from intergrax.runtime.self_healing.knowledge_evolution.workflow_context_builder import (
     WorkflowCompletedKnowledgeEvolutionContextBuilder,
 )
 
 __all__ = [
     "BasicStrategyLearningEngine",
+    "EvolutionRefsContextProvider",
+    "NoDecayKnowledgeFreshnessPolicy",
     "InMemoryStrategyKnowledgeRepository",
     "StrategyKnowledgeEvolutionService",
     "SuccessOverSpeedComparisonPolicy",
     "SuccessRateMetricProvider",
+    "TimeWeightedKnowledgeFreshnessPolicy",
     "WorkflowCompletedKnowledgeEvolutionContextBuilder",
     "WorkflowCompletedKnowledgeEvolutionProcessor",
 ]

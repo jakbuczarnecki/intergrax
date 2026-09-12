@@ -9,6 +9,13 @@ from intergrax.contracts.self_healing.knowledge_evolution.comparison import (
     StrategyComparisonSubject,
 )
 from intergrax.contracts.self_healing.knowledge_evolution.confidence import StrategyKnowledgeConfidenceLevel
+from intergrax.contracts.self_healing.knowledge_evolution.contextual import (
+    KnowledgeFreshnessPolicy,
+    StrategyContextProvider,
+    StrategyContextResolutionRequest,
+    StrategyKnowledgeOperatingContext,
+    merge_operating_contexts,
+)
 from intergrax.contracts.self_healing.knowledge_evolution.engine import StrategyLearningEngine
 from intergrax.contracts.self_healing.knowledge_evolution.events import (
     KnowledgeEvolutionContextBuilder,
@@ -45,9 +52,12 @@ from intergrax.contracts.self_healing.knowledge_evolution.query import (
 from intergrax.contracts.self_healing.knowledge_evolution.repository import StrategyKnowledgeRepository
 
 __all__ = [
+    "KnowledgeFreshnessPolicy",
     "KnowledgeEvolutionContextBuilder",
     "KnowledgeEvolutionProcessor",
     "SelfHealingWorkflowCompleted",
+    "StrategyContextProvider",
+    "StrategyContextResolutionRequest",
     "StrategyComparisonPolicy",
     "StrategyComparisonPreference",
     "StrategyComparisonResult",
@@ -55,6 +65,7 @@ __all__ = [
     "StrategyComparisonSubject",
     "StrategyKnowledgeConfidenceLevel",
     "StrategyKnowledgeContext",
+    "StrategyKnowledgeOperatingContext",
     "StrategyKnowledgeEvolutionContext",
     "StrategyKnowledgeEvolutionRevisionMetadata",
     "StrategyKnowledgeEvolutionResult",
@@ -73,6 +84,7 @@ __all__ = [
     "StrategyMetricProvider",
     "StrategyMetricScope",
     "StrategyMetricValue",
+    "merge_operating_contexts",
     "mint_strategy_knowledge_profile_id",
     "mint_strategy_knowledge_revision_id",
 ]

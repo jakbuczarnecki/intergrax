@@ -11,6 +11,9 @@ from enum import StrEnum
 from uuid import uuid4
 
 from intergrax.contracts.self_healing.knowledge_evolution.confidence import StrategyKnowledgeConfidenceLevel
+from intergrax.contracts.self_healing.knowledge_evolution.contextual.operating_context import (
+    StrategyKnowledgeOperatingContext,
+)
 
 
 def mint_strategy_knowledge_profile_id() -> str:
@@ -100,6 +103,7 @@ class StrategyKnowledgeProfile:
     derived_at: datetime
     learning_engine_id: str
     input_experience_fingerprint: str
+    operating_context: StrategyKnowledgeOperatingContext | None = None
 
     def __post_init__(self) -> None:
         if not self.profile_id.startswith("sh_skp_"):

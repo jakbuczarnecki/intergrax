@@ -5,13 +5,24 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
 
 from intergrax.contracts.self_healing.knowledge_evolution.comparison import (
     StrategyComparisonPolicy,
     StrategyComparisonResult,
     StrategyComparisonScope,
     StrategyComparisonSubject,
+)
+from intergrax.contracts.self_healing.knowledge_evolution.contextual.context_provider import (
+    StrategyContextProvider,
+    StrategyContextResolutionRequest,
+)
+from intergrax.contracts.self_healing.knowledge_evolution.contextual.freshness_policy import (
+    KnowledgeFreshnessPolicy,
+)
+from intergrax.contracts.self_healing.knowledge_evolution.contextual.operating_context import (
+    merge_operating_contexts,
 )
 from intergrax.contracts.self_healing.knowledge_evolution.engine import StrategyLearningEngine
 from intergrax.contracts.self_healing.knowledge_evolution.evolution import (
@@ -40,8 +51,11 @@ class StrategyKnowledgeEvolutionService:
     metric_provider: StrategyMetricProvider
     comparison_policy: StrategyComparisonPolicy | None = None
     quality_evaluation: StrategyQualityEvaluationService | None = None
+    context_providers: tuple[StrategyContextProvider, ...] = field(default_factory=tuple)
+    freshness_policy: KnowledgeFreshnessPolicy | None = None
 
     def evolve(self, context: StrategyKnowledgeEvolutionContext) -> StrategyKnowledgeEvolutionResult:
+        context = self._enrich_context(context)
         knowledge_context = context.knowledge_context
         if self._revision_exists_for_trigger(context):
             return StrategyKnowledgeEvolutionResult(
@@ -57,6 +71,9 @@ class StrategyKnowledgeEvolutionService:
         )
         if knowledge_context.time_horizon_experience_limit is not None:
             experiences = experiences[-knowledge_context.time_horizon_experience_limit :]
+        reference_time = datetime.now(tz=timezone.utc)
+        if self.freshness_policy is not None:
+            experiences = self.freshness_policy.order_experiences(experiences, reference_time)
 
         profile_query = StrategyKnowledgeProfileQuery(
             tenant_id=knowledge_context.tenant_id,
@@ -148,23 +165,72 @@ class StrategyKnowledgeEvolutionService:
                     strategy_id=right_id,
                 ),
             )
+        reference_time = datetime.now(tz=timezone.utc)
+        operating_context = context.resolved_operating_context
         return self.comparison_policy.compare(
             StrategyComparisonScope(
                 tenant_id=context.knowledge_context.tenant_id,
                 context_fingerprint=context.knowledge_context.context_fingerprint,
                 dimension_weights_ref=None,
+                operating_context=operating_context,
             ),
             StrategyComparisonSubject(
                 strategy_id=left_id,
                 metric_bundle=left_metrics,
                 quality_assessment=left_assessment if left_id == context.knowledge_context.strategy_id else None,
+                operating_context=operating_context,
+                knowledge_freshness_score=self._aggregate_freshness(left_experiences, reference_time),
             ),
             StrategyComparisonSubject(
                 strategy_id=right_id,
                 metric_bundle=right_metrics,
                 quality_assessment=right_assessment,
+                knowledge_freshness_score=self._aggregate_freshness(right_experiences, reference_time),
             ),
         )
+
+    def _enrich_context(self, context: StrategyKnowledgeEvolutionContext) -> StrategyKnowledgeEvolutionContext:
+        operating_context = context.resolved_operating_context
+        if operating_context is None and self.context_providers:
+            request = StrategyContextResolutionRequest(
+                tenant_id=context.knowledge_context.tenant_id,
+                strategy_id=context.knowledge_context.strategy_id,
+                evolution_scope=context.knowledge_context,
+                trigger_refs=context.trigger_refs,
+            )
+            resolved = tuple(
+                row
+                for provider in self.context_providers
+                for row in (provider.resolve(request),)
+                if row is not None
+            )
+            operating_context = merge_operating_contexts(resolved)
+        freshness_policy_id = context.freshness_policy_id
+        if freshness_policy_id is None and self.freshness_policy is not None:
+            freshness_policy_id = self.freshness_policy.policy_id
+        if operating_context == context.resolved_operating_context and freshness_policy_id == context.freshness_policy_id:
+            return context
+        return StrategyKnowledgeEvolutionContext(
+            knowledge_context=context.knowledge_context,
+            trigger=context.trigger,
+            trigger_refs=context.trigger_refs,
+            optional_quality_assessment=context.optional_quality_assessment,
+            comparison_strategy_ids=context.comparison_strategy_ids,
+            resolved_operating_context=operating_context,
+            freshness_policy_id=freshness_policy_id,
+        )
+
+    def _aggregate_freshness(
+        self,
+        experiences: tuple[SelfHealingStrategyPerformanceExperience, ...],
+        reference_time: datetime,
+    ) -> float | None:
+        if self.freshness_policy is None or not experiences:
+            return None
+        scores = [
+            self.freshness_policy.freshness_score(row.recorded_at, reference_time) for row in experiences
+        ]
+        return sum(scores) / len(scores)
 
 
 __all__ = ["StrategyKnowledgeEvolutionService"]

@@ -7,6 +7,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.contracts.self_healing.knowledge_evolution.contextual.operating_context import (
+    StrategyKnowledgeOperatingContext,
+)
 from intergrax.contracts.self_healing.knowledge_evolution.profile import (
     StrategyKnowledgeContext,
     StrategyKnowledgeEvolutionTrigger,
@@ -23,6 +26,8 @@ class StrategyKnowledgeEvolutionContext:
     trigger_refs: tuple[str, ...]
     optional_quality_assessment: StrategyQualityAssessment | None = None
     comparison_strategy_ids: tuple[str, ...] = ()
+    resolved_operating_context: StrategyKnowledgeOperatingContext | None = None
+    freshness_policy_id: str | None = None
 
     def __post_init__(self) -> None:
         if not self.trigger_refs:

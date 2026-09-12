@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.self_healing.knowledge_evolution.contextual.operating_context import (
+    StrategyKnowledgeOperatingContext,
+)
 from intergrax.contracts.self_healing.knowledge_evolution.metrics import StrategyMetricBundle
 from intergrax.contracts.self_healing.quality_evaluation.assessment import StrategyQualityAssessment
 
@@ -24,6 +27,7 @@ class StrategyComparisonScope:
     tenant_id: str
     context_fingerprint: str
     dimension_weights_ref: str | None
+    operating_context: StrategyKnowledgeOperatingContext | None = None
 
     def __post_init__(self) -> None:
         if not self.tenant_id.strip():
@@ -37,10 +41,16 @@ class StrategyComparisonSubject:
     strategy_id: str
     metric_bundle: StrategyMetricBundle
     quality_assessment: StrategyQualityAssessment | None
+    operating_context: StrategyKnowledgeOperatingContext | None = None
+    knowledge_freshness_score: float | None = None
 
     def __post_init__(self) -> None:
         if not self.strategy_id.strip():
             raise ValueError("strategy_id required")
+        if self.knowledge_freshness_score is not None and not (
+            0.0 <= self.knowledge_freshness_score <= 1.0
+        ):
+            raise ValueError("knowledge_freshness_score must be in [0.0, 1.0] when set")
 
 
 @dataclass(frozen=True, slots=True)

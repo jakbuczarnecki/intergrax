@@ -110,6 +110,7 @@ class BasicStrategyLearningEngine:
             current_profile.profile_id if current_profile is not None else mint_strategy_knowledge_profile_id()
         )
         derived_at = datetime.now(tz=timezone.utc)
+        staleness_policy_id = context.freshness_policy_id
         profile = StrategyKnowledgeProfile(
             profile_id=profile_id,
             tenant_id=knowledge_context.tenant_id,
@@ -121,7 +122,7 @@ class BasicStrategyLearningEngine:
             confidence_label=_confidence_for_count(statistics.execution_count),
             freshness=StrategyKnowledgeFreshness(
                 last_evidence_at=latest,
-                staleness_policy_id=None,
+                staleness_policy_id=staleness_policy_id,
                 ttl_hint_seconds=None,
             ),
             knowledge_version=next_version,
@@ -129,6 +130,7 @@ class BasicStrategyLearningEngine:
             derived_at=derived_at,
             learning_engine_id=self.engine_id,
             input_experience_fingerprint=experience_fingerprint,
+            operating_context=context.resolved_operating_context,
         )
         metric_refs = tuple(
             f"metric://{metrics.provider_id}/{metric.name}" for metric in metrics.metrics
