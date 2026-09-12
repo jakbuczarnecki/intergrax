@@ -109,3 +109,7 @@ Full limitations: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 **[ERL-QUAL-004 Scenario Data Architecture](docs/ERL_QUAL_004_SCENARIO_DATA_ARCHITECTURE.md)** — vendor-neutral business data model, external reality vs application knowledge, variant data slices, and conceptual provisioning (documentation only).
 
 **[ERL-QUAL-004 Data Provisioning Architecture](docs/ERL_QUAL_004_DATA_PROVISIONING_ARCHITECTURE.md)** — provisioning boundary, lifecycle, variant materialization, failure model, and plugin direction from dataset to execution environment (documentation only).
+
+## Data provisioning boundary (foundation)
+
+Scenario-local **contract-first** provisioning lives under `contracts/provisioning/` (`ScenarioProvisioningPort`, typed context/results, lifecycle coordinator). A **replaceable reference** in-memory provisioner under `provisioning/reference/` validates the canonical `dataset/` manifest and variant slices only — not production lab storage, payment providers, or ERL runtime wiring. Proof-runner integration and database-backed adapters are future work.

@@ -31,7 +31,7 @@ dataset/
 | `payment_failed_after_unknown` | Payment failed | Controlled recovery |
 | `payment_truth_unavailable` | Truth not establishable | Governance escalation |
 
-Select a variant via `manifest.json` → `variants[].path`. Provisioning (future) maps these logical entities into lab target sources.
+Select a variant via `manifest.json` → `variants[].path`. Provisioning implementations (see `../contracts/provisioning/` and `../provisioning/reference/`) read this package; they do not alter canonical business truth here.
 
 ## Versioning
 
