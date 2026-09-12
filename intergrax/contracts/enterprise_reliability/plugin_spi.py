@@ -18,6 +18,7 @@ from intergrax.contracts.enterprise_reliability.lifecycle import (
 from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
 from intergrax.contracts.enterprise_reliability.reconciliation_evidence import ExternalEffectEvidence
 from intergrax.contracts.enterprise_reliability.compensation_decision import CompensationDecision
+from intergrax.contracts.enterprise_reliability.governance_decision import GovernanceDecision
 from intergrax.contracts.enterprise_reliability.recovery_decision import RecoveryDecision
 from intergrax.contracts.enterprise_reliability.resolution_decision import ResolutionDecision
 from intergrax.contracts.enterprise_reliability.reconciliation_execution import (
@@ -40,6 +41,7 @@ class EnterpriseReliabilityCapabilityKind(StrEnum):
     RESOLUTION = "resolution"
     COMPENSATION = "compensation"
     RECOVERY = "recovery"
+    GOVERNANCE = "governance"
     RISK_EVALUATION = "risk_evaluation"
 
 
@@ -126,6 +128,19 @@ class RecoveryStrategyEvaluationRequest:
 
     resolution_decision: ResolutionDecision
     compensation_execution: CompensationExecutionResult | None
+    evidence: ExternalEffectEvidence
+    execution_context: EnterpriseReliabilityStrategyContext
+    effect_contract: ExternalEffectContract
+
+
+@dataclass(frozen=True, slots=True)
+class GovernanceStrategyEvaluationRequest:
+    """Inputs for governance strategy evaluation — recovery and compensation scoped."""
+
+    recovery_decision: RecoveryDecision
+    resolution_decision: ResolutionDecision
+    compensation_execution: CompensationExecutionResult | None
+    compensation_decision: CompensationDecision | None
     evidence: ExternalEffectEvidence
     execution_context: EnterpriseReliabilityStrategyContext
     effect_contract: ExternalEffectContract
@@ -270,6 +285,25 @@ class RecoveryStrategy(Protocol):
 
 
 @runtime_checkable
+class GovernanceStrategy(Protocol):
+    """Plugin contract — governance evaluation only; does not authorize execution."""
+
+    @property
+    def plugin_id(self) -> str: ...
+
+    @property
+    def version(self) -> str: ...
+
+    @property
+    def descriptor(self) -> EnterpriseReliabilityPluginDescriptor: ...
+
+    def evaluate(
+        self,
+        request: GovernanceStrategyEvaluationRequest,
+    ) -> GovernanceDecision | None: ...
+
+
+@runtime_checkable
 class CompensationExecutionStrategy(Protocol):
     """Plugin contract — external compensation I/O; returns platform-neutral outcomes."""
 
@@ -307,6 +341,7 @@ EnterpriseReliabilityPlugin = (
     | ResolutionStrategy
     | CompensationStrategy
     | RecoveryStrategy
+    | GovernanceStrategy
     | RiskEvaluationStrategy
 )
 
@@ -335,6 +370,8 @@ class EnterpriseReliabilityPluginRegistry(Protocol):
     ) -> CompensationExecutionStrategy | None: ...
 
     def resolve_recovery(self, plugin_id: str) -> RecoveryStrategy | None: ...
+
+    def resolve_governance(self, plugin_id: str) -> GovernanceStrategy | None: ...
 
     def resolve_risk_evaluation(self, plugin_id: str) -> RiskEvaluationStrategy | None: ...
 
@@ -396,6 +433,14 @@ class EnterpriseReliabilityPluginGateway(Protocol):
         request: RecoveryStrategyEvaluationRequest,
     ) -> RecoveryDecision | None: ...
 
+    def governance_strategy_registered(self, plugin_id: str) -> bool: ...
+
+    def evaluate_governance(
+        self,
+        plugin_id: str,
+        request: GovernanceStrategyEvaluationRequest,
+    ) -> GovernanceDecision | None: ...
+
     def evaluate_risk(
         self,
         plugin_id: str,
@@ -416,6 +461,9 @@ __all__ = [
     "EnterpriseReliabilityPluginRegistry",
     "EnterpriseReliabilityRiskLevel",
     "EnterpriseReliabilityStrategyContext",
+    "GovernanceDecision",
+    "GovernanceStrategy",
+    "GovernanceStrategyEvaluationRequest",
     "ReconciliationProbeExecutor",
     "ReconciliationStrategy",
     "ReconciliationStrategyAdvice",

@@ -10,10 +10,12 @@ from intergrax.contracts.enterprise_reliability.compensation_execution import (
     CompensationExecutionRequest,
     CompensationPluginExecutionResult,
 )
+from intergrax.contracts.enterprise_reliability.governance_decision import GovernanceDecision
 from intergrax.contracts.enterprise_reliability.plugin_spi import (
     CompensationStrategyEvaluationRequest,
     EnterpriseReliabilityPluginRegistry,
     EnterpriseReliabilityStrategyContext,
+    GovernanceStrategyEvaluationRequest,
     ReconciliationStrategyAdvice,
     RecoveryStrategyEvaluationRequest,
     ResolutionStrategyEvaluationRequest,
@@ -101,6 +103,19 @@ class EnterpriseReliabilityPluginGatewayImpl:
         request: RecoveryStrategyEvaluationRequest,
     ) -> RecoveryDecision | None:
         strategy = self._registry.resolve_recovery(plugin_id)
+        if strategy is None:
+            return None
+        return strategy.evaluate(request)
+
+    def governance_strategy_registered(self, plugin_id: str) -> bool:
+        return self._registry.resolve_governance(plugin_id) is not None
+
+    def evaluate_governance(
+        self,
+        plugin_id: str,
+        request: GovernanceStrategyEvaluationRequest,
+    ) -> GovernanceDecision | None:
+        strategy = self._registry.resolve_governance(plugin_id)
         if strategy is None:
             return None
         return strategy.evaluate(request)

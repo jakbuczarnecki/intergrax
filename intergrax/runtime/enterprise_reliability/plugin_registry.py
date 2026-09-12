@@ -11,6 +11,7 @@ from intergrax.contracts.enterprise_reliability.plugin_spi import (
     EnterpriseReliabilityCapabilityKind,
     EnterpriseReliabilityPlugin,
     EnterpriseReliabilityPluginDescriptor,
+    GovernanceStrategy,
     ReconciliationProbeExecutor,
     ReconciliationStrategy,
     RecoveryStrategy,
@@ -46,6 +47,7 @@ class InMemoryEnterpriseReliabilityPluginRegistry:
         self._resolution: dict[str, ResolutionStrategy] = {}
         self._compensation: dict[str, CompensationStrategy] = {}
         self._recovery: dict[str, RecoveryStrategy] = {}
+        self._governance: dict[str, GovernanceStrategy] = {}
         self._risk: dict[str, RiskEvaluationStrategy] = {}
 
     def register(self, plugin: EnterpriseReliabilityPlugin) -> None:
@@ -63,6 +65,9 @@ class InMemoryEnterpriseReliabilityPluginRegistry:
             return
         if kind is EnterpriseReliabilityCapabilityKind.RECOVERY:
             self._recovery[plugin_id] = plugin  # type: ignore[assignment]
+            return
+        if kind is EnterpriseReliabilityCapabilityKind.GOVERNANCE:
+            self._governance[plugin_id] = plugin  # type: ignore[assignment]
             return
         if kind is EnterpriseReliabilityCapabilityKind.RISK_EVALUATION:
             self._risk[plugin_id] = plugin  # type: ignore[assignment]
@@ -105,6 +110,9 @@ class InMemoryEnterpriseReliabilityPluginRegistry:
     def resolve_recovery(self, plugin_id: str) -> RecoveryStrategy | None:
         return self._recovery.get(plugin_id)
 
+    def resolve_governance(self, plugin_id: str) -> GovernanceStrategy | None:
+        return self._governance.get(plugin_id)
+
     def resolve_risk_evaluation(self, plugin_id: str) -> RiskEvaluationStrategy | None:
         return self._risk.get(plugin_id)
 
@@ -122,6 +130,8 @@ class InMemoryEnterpriseReliabilityPluginRegistry:
             plugins = tuple(self._compensation.values())
         elif capability_kind is EnterpriseReliabilityCapabilityKind.RECOVERY:
             plugins = tuple(self._recovery.values())
+        elif capability_kind is EnterpriseReliabilityCapabilityKind.GOVERNANCE:
+            plugins = tuple(self._governance.values())
         elif capability_kind is EnterpriseReliabilityCapabilityKind.RISK_EVALUATION:
             plugins = tuple(self._risk.values())
         else:

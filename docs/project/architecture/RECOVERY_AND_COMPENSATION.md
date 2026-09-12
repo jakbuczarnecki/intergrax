@@ -123,6 +123,23 @@ After resolution and optional compensation execution, ERL recommends **what shou
 
 **Failure model (fail closed):** missing recovery strategy yields `escalate` (never automatic `continue`); strategy abstention yields `wait` (unresolved); no silent success.
 
+### Governance evaluation boundary (ERL foundation)
+
+After recovery recommends lifecycle posture, ERL evaluates **whether execution may proceed automatically** — a control boundary before the execution lifecycle.
+
+| Artifact | Owner | Meaning |
+| -------- | ----- | ------- |
+| `GovernanceDecision` | Governance contract | `allow`, `deny`, or `approval_required` — no domain-specific approval types |
+| `HumanApprovalRequirement` | HITL contract surface | Platform-level signal that human approval is required (refs and correlation — not users or UI) |
+| `GovernanceStrategy` | ERL plugin SPI | Evaluates recovery, resolution, and compensation context; proposes `GovernanceDecision` |
+| `ExternalEffectGovernanceEvaluation` | Governance runtime | Immutable bundle for observability and handoff to execution |
+
+**Lifecycle:** materialize strategy context from uncertainty state and evidence → invoke `GovernanceStrategy` through the ERL plugin gateway → map to `GovernanceDecision`. No hidden transitions.
+
+**Ownership split:** ERL governance **evaluates permission**; **Unified Execution Runtime** owns actual execution after governance and HITL boundaries; ERL must not execute actions, approve itself, or bypass governance.
+
+**Failure model (fail closed):** missing governance strategy yields `approval_required` (never automatic `allow`); strategy abstention or invalid outcome yields `approval_required` or `deny`; no silent allow.
+
 ---
 
 ## Escalate and human decision

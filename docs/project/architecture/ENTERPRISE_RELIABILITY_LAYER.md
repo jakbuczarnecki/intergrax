@@ -130,6 +130,7 @@ Enterprise Reliability Layer
 | **Uncertainty Management** | “We don’t know yet—stop assuming.” | Gates downstream side effects until UNKNOWN is resolved or explicitly accepted risk is governed. |
 | **Reconciliation** | “Ask the system of record.” | Provider-specific verification behind one platform reconciliation pattern. |
 | **Recovery Orchestration** | “Resume safely when truth is known.” | Plugin `RecoveryStrategy` → `RecoveryDecision`; UER applies lifecycle via `ExecutionLifecyclePort` — see [`RECOVERY_AND_COMPENSATION.md`](RECOVERY_AND_COMPENSATION.md#recovery-lifecycle-boundary-erl-foundation). Not a second runtime. |
+| **Governance Evaluation** | “May this run without a human?” | Plugin `GovernanceStrategy` → `GovernanceDecision` (`allow`, `deny`, `approval_required`); HITL owns approval workflows — see [`RECOVERY_AND_COMPENSATION.md`](RECOVERY_AND_COMPENSATION.md#governance-evaluation-boundary-erl-foundation). Does not execute or self-approve. |
 | **Compensation Handling** | “Undo or offset what already happened.” | Planning (`CompensationPlan`) and bounded execution (`CompensationExecutionRequest` → plugin gateway → `CompensationExecutionResult`) — see [`RECOVERY_AND_COMPENSATION.md`](RECOVERY_AND_COMPENSATION.md#compensation-execution-boundary-erl-foundation). |
 | **External Effect Contracts** | “Declare how safe this operation is.” | Integrations/tools declare idempotency and reconciliation hooks—architecture only until implementation. |
 | **Audit Evidence** | “Prove what we knew and when.” | Emitted on the Observability spine; Reliability/ERL own behavior, Observability owns persistence. |
@@ -145,8 +146,8 @@ ERL **extends** existing domains; it does not replace them. Use the linked hubs 
 | [**Unified Execution Runtime**](UNIFIED_EXECUTION_RUNTIME.md) | Pause/resume, Execution identity, lifecycle transitions when UNKNOWN blocks progress. |
 | [**Unified Execution Architecture**](UNIFIED_EXECUTION_ARCHITECTURE.md) | Cross-domain identity and Execution Tree semantics for resolution and fencing. |
 | [**Reliability / HITL**](RELIABILITY_FAILURE_AND_HITL.md) | Failure classification, retry layers (R0–R4), compensation queue, HITL escalation—ERL adds **uncertainty-before-classification** paths; Reliability still owns bounded retry taxonomy. |
-| [**Governed Execution**](GOVERNED_EXECUTION.md) | Policy and authority before consequential continue/compensate; ERL recommends gates, Governance authorizes. |
-| [**HITL**](RELIABILITY_FAILURE_AND_HITL.md#how-recovery-works) | Human decision when reconciliation is inconclusive or risk exceeds autonomy—canonical interrupt path, not a second workflow engine. |
+| [**Governed Execution**](GOVERNED_EXECUTION.md) | Policy and authority before consequential continue/compensate; ERL **governance evaluation** returns allow/deny/approval-required before execution lifecycle proceeds. |
+| [**HITL**](RELIABILITY_FAILURE_AND_HITL.md#how-recovery-works) | Human decision when reconciliation is inconclusive or risk exceeds autonomy—`HumanApprovalRequirement` carries platform-level approval need; HITL owns workflow, not ERL. |
 | [**Observability**](OBSERVABILITY.md) | UNKNOWN entered, reconciliation attempts, resolution outcome on `RuntimeEvent` / journal spine. |
 | [**Integrations**](INTEGRATIONS.md) | Transport and provider adapters; reconciliation reads flow through integration boundaries. |
 | [**Tools**](TOOLS.md) | Tool invocations with external side effects participate in effect contracts. |
