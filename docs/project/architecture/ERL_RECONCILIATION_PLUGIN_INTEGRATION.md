@@ -66,7 +66,9 @@ Variant behavior (A/B/C) is **data-driven** from dataset slices (`external_reali
 
 1. UNKNOWN admission → reconciliation planning (`RECONCILIATION_RUNNING` / pending resolution phases).
 2. Gateway `execute_reconciliation_probe` invokes the registered executor.
-3. Runtime materializes `ExternalEffectEvidence` and hands off to resolution orchestration when verdict is definitive.
+3. Runtime materializes `ExternalEffectEvidence`.
+4. Evidence evaluation (`evaluate_external_effect_evidence`) determines resolution readiness — see [`ERL_EVIDENCE_EVALUATION.md`](ERL_EVIDENCE_EVALUATION.md).
+5. Resolution orchestration runs when evaluation outcome is `READY_FOR_DECISION` (or defers on insufficient evidence).
 
 Failures are explicit in `rationale` (`source_unavailable`, `record_missing`, inconsistent SoR, indeterminate truth)—plugins return `INSUFFICIENT` rather than omitting probe results.
 

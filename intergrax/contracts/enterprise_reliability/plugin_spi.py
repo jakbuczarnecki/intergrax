@@ -14,6 +14,7 @@ from intergrax.contracts.enterprise_reliability.evidence import ExternalEffectEv
 from intergrax.contracts.enterprise_reliability.lifecycle import (
     UncertaintyLifecyclePhase,
     UncertaintyResolutionKind,
+    UncertaintyStateRecord,
 )
 from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
 from intergrax.contracts.enterprise_reliability.reconciliation_evidence import ExternalEffectEvidence
@@ -21,6 +22,11 @@ from intergrax.contracts.enterprise_reliability.compensation_decision import Com
 from intergrax.contracts.enterprise_reliability.governance_decision import GovernanceDecision
 from intergrax.contracts.enterprise_reliability.recovery_decision import RecoveryDecision
 from intergrax.contracts.enterprise_reliability.resolution_decision import ResolutionDecision
+from intergrax.contracts.enterprise_reliability.evidence_evaluation import (
+    EvidenceEvaluationContext,
+    EvidenceEvaluationOutcome,
+    EvidenceEvaluationResult,
+)
 from intergrax.contracts.enterprise_reliability.reconciliation_execution import (
     ReconciliationProbeRequest,
     ReconciliationProbeResult,
@@ -101,6 +107,23 @@ class ReconciliationStrategyAdvice:
     def __post_init__(self) -> None:
         if not self.probe_ref.strip():
             raise ValueError("probe_ref required")
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceEvaluationRequest:
+    """Inputs for optional evidence evaluator strategies — post-reconciliation only."""
+
+    state: UncertaintyStateRecord
+    context: EvidenceEvaluationContext
+    platform_result: EvidenceEvaluationResult
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceEvaluatorAdvice:
+    """Non-binding evidence quality override — orchestration applies platform bounds."""
+
+    outcome: EvidenceEvaluationOutcome
+    rationale: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -225,6 +248,23 @@ class ReconciliationProbeExecutor(Protocol):
         request: ReconciliationProbeRequest,
     ) -> ReconciliationProbeResult:
         """Perform provider read for ``request.probe_ref`` — no mutations."""
+
+
+@runtime_checkable
+class EvidenceEvaluatorStrategy(Protocol):
+    """
+    Plugin contract — optional evidence quality extensions.
+
+    Not registered on ``EnterpriseReliabilityPluginGateway`` yet; callers pass
+    an implementation explicitly when composition requires domain-specific checks
+    that remain outside platform defaults.
+    """
+
+    def evaluate(
+        self,
+        request: EvidenceEvaluationRequest,
+    ) -> EvidenceEvaluatorAdvice | None:
+        """Return advice when this strategy applies; ``None`` when it abstains."""
 
 
 @runtime_checkable
@@ -454,6 +494,9 @@ __all__ = [
     "CompensationStrategy",
     "CompensationStrategyAdvice",
     "CompensationStrategyEvaluationRequest",
+    "EvidenceEvaluationRequest",
+    "EvidenceEvaluatorAdvice",
+    "EvidenceEvaluatorStrategy",
     "EnterpriseReliabilityCapabilityKind",
     "EnterpriseReliabilityPlugin",
     "EnterpriseReliabilityPluginDescriptor",

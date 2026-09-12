@@ -19,6 +19,10 @@ from intergrax.runtime.enterprise_reliability.plugin_registry import (
     EnterpriseReliabilityPluginRegistryConfigurationError,
     InMemoryEnterpriseReliabilityPluginRegistry,
 )
+from intergrax.runtime.enterprise_reliability.evidence_evaluation import (
+    EvidenceEvaluationOrchestrationError,
+    evaluate_external_effect_evidence,
+)
 from intergrax.runtime.enterprise_reliability.reconciliation_evidence import (
     apply_reconciliation_evidence,
     materialize_external_effect_evidence_from_probe,
@@ -97,6 +101,8 @@ __all__ = [
     "ResolutionOrchestrationError",
     "execute_external_effect_compensation",
     "plan_external_effect_compensation",
+    "EvidenceEvaluationOrchestrationError",
+    "evaluate_external_effect_evidence",
     "apply_reconciliation_evidence",
     "execute_external_effect_reconciliation_probe",
     "execute_external_effect_resolution",
