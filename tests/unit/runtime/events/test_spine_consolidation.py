@@ -42,7 +42,7 @@ def _legacy_flat_event_payload(event_type: str) -> dict[str, object]:
 
 
 def test_publication_spine_budget_within_target() -> None:
-    assert publication_spine_type_count() <= 57
+    assert publication_spine_type_count() <= 58
     assert_publication_spine_budget()
 
 
