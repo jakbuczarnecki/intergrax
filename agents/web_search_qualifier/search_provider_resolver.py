@@ -10,13 +10,11 @@ from dataclasses import dataclass
 from intergrax.integrations._shared.p2.factories import create_brave_search_provider
 from intergrax.integrations._shared.p3.factories import (
     create_exa_search_provider,
+    create_google_cse_search_provider,
     create_tavily_search_provider,
 )
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.search_provider import SearchProvider
-from intergrax.integrations.providers.search_provider.google_cse.bundle import (
-    create_google_cse_search_provider,
-)
 from intergrax.websearch.schemas.search_hit import SearchHit
 
 

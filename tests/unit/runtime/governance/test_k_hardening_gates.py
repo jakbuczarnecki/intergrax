@@ -38,7 +38,7 @@ def test_coerce_replay_policy_engine_requires_replay_on_facade():
 @pytest.mark.gate
 def test_production_paths_do_not_import_chat_agent() -> None:
     root = Path(__file__).resolve().parents[4]
-    script = root / "scripts" / "check_production_chat_agent_imports.py"
+    script = root / "scripts" / "maintenance" / "check_production_chat_agent_imports.py"
     proc = subprocess.run(
         [sys.executable, str(script)],
         cwd=root,
@@ -53,7 +53,7 @@ def test_production_paths_do_not_import_chat_agent() -> None:
 @pytest.mark.gate
 def test_agents_vendor_import_audit() -> None:
     root = Path(__file__).resolve().parents[4]
-    script = root / "scripts" / "check_agents_vendor_imports.py"
+    script = root / "scripts" / "maintenance" / "check_agents_vendor_imports.py"
     proc = subprocess.run(
         [sys.executable, str(script)],
         cwd=root,
