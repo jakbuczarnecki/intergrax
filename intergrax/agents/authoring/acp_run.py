@@ -56,31 +56,33 @@ from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.runtime.kernel.session_reliability import AgentSessionReliability
 from intergrax.runtime.kernel.step_kernel import StepKernelContext
 from intergrax.contracts.execution_identity import (
-    AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
     bind_active_execution_identity,
-    mint_attempt_id,
-    mint_run_id,
     mint_task_id,
-    peek_active_execution_id,
     peek_active_parent_execution_id,
     reset_active_execution_identity,
     validate_run_id,
     validate_task_id,
 )
+from intergrax.runtime.execution.identity_authority import (
+    RootTaskIdentity,
+    mint_root_execution_identity,
+)
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 
 
-def _resolve_acp_session_identity(request: AgentRunRequest) -> tuple[TaskId, RunId, AttemptId]:
-    """Canonical ACP session identity boundary — mint once when absent; validate when supplied."""
+def _resolve_acp_session_identity(request: AgentRunRequest) -> tuple[TaskId, RootTaskIdentity]:
+    """ACP ingress validates supplied ids; runtime authority mints missing execution identity."""
+    run_id: RunId | None = None
     metadata_run_id = request.metadata.get("run_id")
     if metadata_run_id is not None:
         run_id = validate_run_id(metadata_run_id)
     elif request.correlation_id is not None:
         run_id = validate_run_id(request.correlation_id)
-    else:
-        run_id = mint_run_id()
+
+    root = mint_root_execution_identity(run_id=run_id)
 
     metadata_task_id = request.metadata.get("task_id")
     if metadata_task_id is not None:
@@ -88,7 +90,7 @@ def _resolve_acp_session_identity(request: AgentRunRequest) -> tuple[TaskId, Run
     else:
         task_id = mint_task_id()
 
-    return task_id, run_id, mint_attempt_id()
+    return task_id, root
 
 
 def _malformed_identity_failure(
@@ -154,7 +156,10 @@ async def run_acp_session(
     """Execute typed agent session loop until terminal outcome."""
     started = time.perf_counter()
     try:
-        task_id, run_id, attempt_id = _resolve_acp_session_identity(request)
+        task_id, root_identity = _resolve_acp_session_identity(request)
+        run_id = root_identity.run_id
+        attempt_id = root_identity.attempt_id
+        execution_id: ExecutionId = root_identity.execution_id
     except (TypeError, ValueError) as exc:
         return _malformed_identity_failure(request, exc, started=started)
 
@@ -218,7 +223,7 @@ async def run_acp_session(
     identity_token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
-        execution_id=peek_active_execution_id(),
+        execution_id=execution_id,
         parent_execution_id=peek_active_parent_execution_id(),
     )
     try:
