@@ -1,83 +1,94 @@
 {
-  "task_id": "DS-E2E-15J-L1.R6",
-  "scenario_id": "ai_incident_investigation",
-  "matrix_version": "r6-v2",
-  "configuration": {
-    "scenario_id": "ai_incident_investigation",
-    "matrix_version": "r6-v2",
-    "runtime_version": "0.34.0",
-    "temperature": 0.0,
-    "evaluator_iterations": 2,
-    "revision_budget": 0,
-    "semantic_verification": false,
-    "analysis_schema_version": "r6-summary-v1"
-  },
-  "semantic_fingerprint": "testing_support/decision_e2e/model_matrix/analysis.py:0f638cdb6e4ff4809f070ca82a5c6b63cb600dc7f2919fa366366ef47de41e8f|testing_support/decision_e2e/model_matrix/matrix_artifact_contract.py:589e89c3eb86d2dc0878bc49e95a1c8fb890161637fd0e773f8bb9ddaffb0e0a|testing_support/decision_e2e/model_matrix/model_execution_provider.py:e62fa6170b97d7c2b40f841b85601637b408dfe283a8aed8ad661dc7df6e2d63|testing_support/decision_e2e/model_matrix/profiles.py:1f8bc8c824218a7a152e08fb2ac08e2fb86243184e376e29c60bc7aff65916fe|testing_support/decision_e2e/model_matrix/qualification_analysis_strategy.py:5f80f60e72142ac1034190f15ba8c371174212df276b43e228b8fcc200ee6863|testing_support/decision_e2e/model_matrix/qualification_cohort_executor.py:172df6a8f1929a523dad4158b97493151e91aa1423b7d206280cd2f7253d95dc|testing_support/decision_e2e/model_matrix/qualification_cohort_failure.py:4678bcd0f9abd8f054a12c3567ebd4899f022eeee8ffe180f21075378009791f|testing_support/decision_e2e/model_matrix/qualification_cohort_resume.py:b6eb4e2abf19effbcb3727e14fe7dea19ffebf84e14cb46d831d2ba3787ff6ea|testing_support/decision_e2e/model_matrix/qualification_execution_pipeline.py:54cc85b9f4e81e826bc93d0ae1d41e50cec34b310f2fe8f38be5d258b479ace6|testing_support/decision_e2e/model_matrix/qualification_plan.py:c20106e698593722dc6eff364aa36daaf6e204631119239333f1f4ef9e1c93dd|testing_support/decision_e2e/model_matrix/qualification_planner.py:86d2d215f95d8e678e77c391aafd221b93076dd1082ff64b9b869728d8e8349d|testing_support/decision_e2e/model_matrix/registry.py:7de8ecc71a3f2ca60d4186d707853f5b9349effd433dcd235a91101580b0cc42|testing_support/decision_e2e/model_matrix/source_freeze.py:d6490ed176a6ecc240460618979dc9924df539c8db99d056f2a5b1bef3e4e2b1",
   "blobs": [
     {
+      "content_hash": "75250f22d7c31589907555ab6f4e081e12924be7a060def76b908ed4b02494ee",
       "path": "testing_support/decision_e2e/model_matrix/registry.py",
-      "content_hash": "7de8ecc71a3f2ca60d4186d707853f5b9349effd433dcd235a91101580b0cc42",
       "semantic_group": "R6 matrix"
     },
     {
-      "path": "testing_support/decision_e2e/model_matrix/profiles.py",
       "content_hash": "1f8bc8c824218a7a152e08fb2ac08e2fb86243184e376e29c60bc7aff65916fe",
+      "path": "testing_support/decision_e2e/model_matrix/profiles.py",
       "semantic_group": "R6 matrix"
     },
     {
-      "path": "testing_support/decision_e2e/model_matrix/qualification_plan.py",
       "content_hash": "c20106e698593722dc6eff364aa36daaf6e204631119239333f1f4ef9e1c93dd",
+      "path": "testing_support/decision_e2e/model_matrix/qualification_plan.py",
       "semantic_group": "R6 matrix"
     },
     {
-      "path": "testing_support/decision_e2e/model_matrix/qualification_planner.py",
       "content_hash": "86d2d215f95d8e678e77c391aafd221b93076dd1082ff64b9b869728d8e8349d",
+      "path": "testing_support/decision_e2e/model_matrix/qualification_planner.py",
       "semantic_group": "R6 matrix"
     },
     {
-      "path": "testing_support/decision_e2e/model_matrix/analysis.py",
       "content_hash": "0f638cdb6e4ff4809f070ca82a5c6b63cb600dc7f2919fa366366ef47de41e8f",
+      "path": "testing_support/decision_e2e/model_matrix/analysis.py",
       "semantic_group": "R6 matrix"
     },
     {
+      "content_hash": "af39f34fa64f3f50aa16f49726bfdbabb5864798c36c6d51aa414806581754a6",
       "path": "testing_support/decision_e2e/model_matrix/source_freeze.py",
-      "content_hash": "d6490ed176a6ecc240460618979dc9924df539c8db99d056f2a5b1bef3e4e2b1",
       "semantic_group": "R6 matrix"
     },
     {
-      "path": "testing_support/decision_e2e/model_matrix/matrix_artifact_contract.py",
       "content_hash": "589e89c3eb86d2dc0878bc49e95a1c8fb890161637fd0e773f8bb9ddaffb0e0a",
+      "path": "testing_support/decision_e2e/model_matrix/matrix_artifact_contract.py",
       "semantic_group": "R6 matrix"
     },
     {
-      "path": "testing_support/decision_e2e/model_matrix/model_execution_provider.py",
       "content_hash": "e62fa6170b97d7c2b40f841b85601637b408dfe283a8aed8ad661dc7df6e2d63",
+      "path": "testing_support/decision_e2e/model_matrix/model_execution_provider.py",
       "semantic_group": "R6 matrix"
     },
     {
-      "path": "testing_support/decision_e2e/model_matrix/qualification_analysis_strategy.py",
+      "content_hash": "8fdedbd218967eeaf29cdfb31f17ce538e8fc91908fcb6a64fdcab98164fd827",
+      "path": "testing_support/decision_e2e/model_matrix/model_qualification_contract.py",
+      "semantic_group": "R6 matrix"
+    },
+    {
+      "content_hash": "3d9bb1dc566737da5f477e4c1621cf34f695092788c56dc73edf645fdf112b9a",
+      "path": "testing_support/decision_e2e/model_matrix/model_qualification_outcome.py",
+      "semantic_group": "R6 matrix"
+    },
+    {
       "content_hash": "5f80f60e72142ac1034190f15ba8c371174212df276b43e228b8fcc200ee6863",
+      "path": "testing_support/decision_e2e/model_matrix/qualification_analysis_strategy.py",
       "semantic_group": "R6 matrix"
     },
     {
-      "path": "testing_support/decision_e2e/model_matrix/qualification_cohort_executor.py",
       "content_hash": "172df6a8f1929a523dad4158b97493151e91aa1423b7d206280cd2f7253d95dc",
+      "path": "testing_support/decision_e2e/model_matrix/qualification_cohort_executor.py",
       "semantic_group": "R6 matrix"
     },
     {
-      "path": "testing_support/decision_e2e/model_matrix/qualification_cohort_failure.py",
       "content_hash": "4678bcd0f9abd8f054a12c3567ebd4899f022eeee8ffe180f21075378009791f",
+      "path": "testing_support/decision_e2e/model_matrix/qualification_cohort_failure.py",
       "semantic_group": "R6 matrix"
     },
     {
-      "path": "testing_support/decision_e2e/model_matrix/qualification_cohort_resume.py",
       "content_hash": "b6eb4e2abf19effbcb3727e14fe7dea19ffebf84e14cb46d831d2ba3787ff6ea",
+      "path": "testing_support/decision_e2e/model_matrix/qualification_cohort_resume.py",
       "semantic_group": "R6 matrix"
     },
     {
+      "content_hash": "cb670d0703d6c9146cca398a964fa7a567f05ac255e550cd7d2aeb80566c2343",
       "path": "testing_support/decision_e2e/model_matrix/qualification_execution_pipeline.py",
-      "content_hash": "54cc85b9f4e81e826bc93d0ae1d41e50cec34b310f2fe8f38be5d258b479ace6",
       "semantic_group": "R6 matrix"
     }
-  ]
+  ],
+  "configuration": {
+    "analysis_schema_version": "r6-summary-v1",
+    "evaluator_iterations": 2,
+    "matrix_version": "r6-v2",
+    "revision_budget": 0,
+    "runtime_version": "0.34.0",
+    "scenario_id": "ai_incident_investigation",
+    "semantic_verification": false,
+    "temperature": 0.0
+  },
+  "matrix_version": "r6-v2",
+  "repository_head_sha": "ce9b60241ca2e563f7351b6e04d9df20c692315e",
+  "scenario_id": "ai_incident_investigation",
+  "semantic_fingerprint": "testing_support/decision_e2e/model_matrix/analysis.py:0f638cdb6e4ff4809f070ca82a5c6b63cb600dc7f2919fa366366ef47de41e8f|testing_support/decision_e2e/model_matrix/matrix_artifact_contract.py:589e89c3eb86d2dc0878bc49e95a1c8fb890161637fd0e773f8bb9ddaffb0e0a|testing_support/decision_e2e/model_matrix/model_execution_provider.py:e62fa6170b97d7c2b40f841b85601637b408dfe283a8aed8ad661dc7df6e2d63|testing_support/decision_e2e/model_matrix/model_qualification_contract.py:8fdedbd218967eeaf29cdfb31f17ce538e8fc91908fcb6a64fdcab98164fd827|testing_support/decision_e2e/model_matrix/model_qualification_outcome.py:3d9bb1dc566737da5f477e4c1621cf34f695092788c56dc73edf645fdf112b9a|testing_support/decision_e2e/model_matrix/profiles.py:1f8bc8c824218a7a152e08fb2ac08e2fb86243184e376e29c60bc7aff65916fe|testing_support/decision_e2e/model_matrix/qualification_analysis_strategy.py:5f80f60e72142ac1034190f15ba8c371174212df276b43e228b8fcc200ee6863|testing_support/decision_e2e/model_matrix/qualification_cohort_executor.py:172df6a8f1929a523dad4158b97493151e91aa1423b7d206280cd2f7253d95dc|testing_support/decision_e2e/model_matrix/qualification_cohort_failure.py:4678bcd0f9abd8f054a12c3567ebd4899f022eeee8ffe180f21075378009791f|testing_support/decision_e2e/model_matrix/qualification_cohort_resume.py:b6eb4e2abf19effbcb3727e14fe7dea19ffebf84e14cb46d831d2ba3787ff6ea|testing_support/decision_e2e/model_matrix/qualification_execution_pipeline.py:cb670d0703d6c9146cca398a964fa7a567f05ac255e550cd7d2aeb80566c2343|testing_support/decision_e2e/model_matrix/qualification_plan.py:c20106e698593722dc6eff364aa36daaf6e204631119239333f1f4ef9e1c93dd|testing_support/decision_e2e/model_matrix/qualification_planner.py:86d2d215f95d8e678e77c391aafd221b93076dd1082ff64b9b869728d8e8349d|testing_support/decision_e2e/model_matrix/registry.py:75250f22d7c31589907555ab6f4e081e12924be7a060def76b908ed4b02494ee|testing_support/decision_e2e/model_matrix/source_freeze.py:af39f34fa64f3f50aa16f49726bfdbabb5864798c36c6d51aa414806581754a6",
+  "task_id": "DS-E2E-15J-L1.R6"
 }

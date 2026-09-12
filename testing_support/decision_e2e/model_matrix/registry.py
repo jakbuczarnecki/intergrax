@@ -10,6 +10,10 @@ from testing_support.decision_e2e.local_ai_incident_qualification import (
     R4R1_RUNTIME_VERSION,
     R4R1_TEMPERATURE,
 )
+from testing_support.decision_e2e.model_matrix.model_qualification_contract import (
+    RegisteredModelQualification,
+    contract_for_profile,
+)
 from testing_support.decision_e2e.model_matrix.profiles import ModelQualificationProfile
 
 _MATRIX_VERSION = "r6-v2"
@@ -38,6 +42,11 @@ def _default_profile(
         revision_budget=R4R1_MAX_DECISION_REVISIONS,
         expected_behavior_class=expected_behavior_class,
     )
+
+
+def iter_qualification_contracts() -> tuple[RegisteredModelQualification, ...]:
+    """Matrix contract entries; extend ``iter_qualification_profiles`` only."""
+    return tuple(contract_for_profile(profile) for profile in iter_qualification_profiles())
 
 
 def iter_qualification_profiles() -> tuple[ModelQualificationProfile, ...]:
@@ -73,6 +82,10 @@ class QualificationRegistry:
         return iter_qualification_profiles()
 
     @staticmethod
+    def contracts() -> tuple[RegisteredModelQualification, ...]:
+        return iter_qualification_contracts()
+
+    @staticmethod
     def resolve(profile_key: str) -> ModelQualificationProfile | None:
         return profile_by_key(profile_key)
 
@@ -86,6 +99,7 @@ def profile_by_key(profile_key: str) -> ModelQualificationProfile | None:
 
 __all__ = [
     "QualificationRegistry",
+    "iter_qualification_contracts",
     "iter_qualification_profiles",
     "profile_by_key",
     "qualification_matrix_version",

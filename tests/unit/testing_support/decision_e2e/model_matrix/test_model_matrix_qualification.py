@@ -48,6 +48,17 @@ from testing_support.decision_e2e.model_matrix.qualification_plan import (
     cohort_checkpoint_indices,
     profile_session_dir,
 )
+from testing_support.decision_e2e.model_matrix.model_qualification_contract import (
+    RegisteredModelQualification,
+    contract_for_profile,
+    contracts_for_profiles,
+)
+from testing_support.decision_e2e.model_matrix.model_qualification_outcome import (
+    ModelQualificationOutcome,
+)
+from testing_support.decision_e2e.model_matrix.qualification_execution_pipeline import (
+    run_qualification_execution_pipeline,
+)
 from testing_support.decision_e2e.model_matrix.registry import (
     QualificationRegistry,
     iter_qualification_profiles,
@@ -356,6 +367,46 @@ def _registry_profiles() -> tuple[ModelQualificationProfile, ...]:
 
 
 @pytest.mark.asyncio
+async def test_execution_pipeline_single_model_regression(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    profile = _sample_profile()
+    models = (contract_for_profile(profile.with_digest("sha256:abc")),)
+
+    async def _runner(*, session_dir: Path, **_kwargs):
+        from testing_support.decision_e2e.local_ai_incident_qualification import (
+            LocalQualificationOrchestrationResult,
+        )
+
+        return LocalQualificationOrchestrationResult(
+            exit_code=QualificationCliExit.SUCCESS,
+            session_state=QualificationSessionState.FINALIZED,
+            executor_invocations=(0,),
+        )
+
+    provider = _StubModelExecutionProvider({"qwen2.5-14b": ModelAvailability.AVAILABLE})
+    executor = QualificationCohortExecutor(
+        repo_root=repo_root,
+        session_runner=_runner,
+    )
+    pipeline = await run_qualification_execution_pipeline(
+        tmp_path,
+        models,
+        execution_provider=provider,
+        executor=executor,
+    )
+    assert len(pipeline.cohort_results) == 1
+    assert pipeline.cohort_results[0].status is CohortExecutionStatus.EXECUTED
+    assert len(pipeline.outcomes) == 1
+    outcome = pipeline.outcomes[0]
+    assert isinstance(outcome, ModelQualificationOutcome)
+    assert outcome.profile_key == "qwen2.5-14b"
+    assert outcome.matrix_version == qualification_matrix_version()
+    assert outcome.qualification_task_id == "DS-E2E-15J-L1.R6"
+
+
+@pytest.mark.asyncio
 async def test_execution_pipeline_three_models_independent_sessions(
     repo_root: Path,
     tmp_path: Path,
@@ -379,24 +430,22 @@ async def test_execution_pipeline_three_models_independent_sessions(
     provider = _StubModelExecutionProvider(
         {profile.profile_key: ModelAvailability.AVAILABLE for profile in profiles}
     )
-    from testing_support.decision_e2e.model_matrix.qualification_plan import (
-        build_cohort_plans,
-    )
-
-    plans = build_cohort_plans(
-        tmp_path,
-        profiles,
-        ollama_base_url="http://127.0.0.1:11434",
-        env_digest=None,
-        execution_provider=provider,
-    )
+    models = contracts_for_profiles(profiles)
     executor = QualificationCohortExecutor(
         repo_root=repo_root,
         session_runner=_runner,
     )
-    results = await executor.execute_plans(plans)
+    pipeline = await run_qualification_execution_pipeline(
+        tmp_path,
+        models,
+        execution_provider=provider,
+        executor=executor,
+    )
+    results = pipeline.cohort_results
+    plans = pipeline.plans
     assert len(results) == 3
     assert all(item.status is CohortExecutionStatus.EXECUTED for item in results)
+    assert len(pipeline.outcomes) == 3
     assert len(session_dirs) == 3
     assert len(set(session_dirs)) == 3
     for plan in plans:
@@ -538,6 +587,55 @@ async def test_cohort_resume_allows_interrupted_session_with_resume(
     assert result.status is CohortExecutionStatus.EXECUTED
     runner.assert_awaited_once()
     assert runner.call_args.kwargs["resume"] is True
+
+
+@pytest.mark.asyncio
+async def test_extra_model_via_contract_without_core_changes(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    import testing_support.decision_e2e.model_matrix.qualification_execution_pipeline as pipeline_mod
+
+    pipeline_source = Path(pipeline_mod.__file__).read_text(encoding="utf-8")
+    assert "qwen2.5-14b" not in pipeline_source
+    assert "llama3.1-8b" not in pipeline_source
+
+    extension = RegisteredModelQualification(
+        profile=ModelQualificationProfile(
+            profile_id="mistral-7b",
+            profile_key="mistral-7b",
+            provider="ollama",
+            model_name="mistral:7b",
+            digest="sha256:extension",
+            runtime_version=_sample_profile().runtime_version,
+            temperature=0.0,
+            evaluator_iterations=2,
+            revision_budget=0,
+        )
+    )
+    models = (extension,)
+    provider = _StubModelExecutionProvider({"mistral-7b": ModelAvailability.AVAILABLE})
+    from testing_support.decision_e2e.local_ai_incident_qualification import (
+        LocalQualificationOrchestrationResult,
+    )
+
+    runner = AsyncMock(
+        return_value=LocalQualificationOrchestrationResult(
+            exit_code=QualificationCliExit.SUCCESS,
+            session_state=QualificationSessionState.FINALIZED,
+            executor_invocations=(0,),
+        )
+    )
+    executor = QualificationCohortExecutor(repo_root=repo_root, session_runner=runner)
+    pipeline = await run_qualification_execution_pipeline(
+        tmp_path,
+        models,
+        execution_provider=provider,
+        executor=executor,
+    )
+    assert len(pipeline.plans) == 1
+    assert pipeline.plans[0].profile.profile_key == "mistral-7b"
+    runner.assert_awaited_once()
 
 
 def test_decide_cohort_resume_contract() -> None:

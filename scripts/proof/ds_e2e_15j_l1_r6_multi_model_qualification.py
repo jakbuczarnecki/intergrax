@@ -36,6 +36,9 @@ from testing_support.decision_e2e.model_matrix.qualification_plan import (
     build_cohort_plans,
     qualification_artifact_root,
 )
+from testing_support.decision_e2e.model_matrix.model_qualification_contract import (
+    contract_for_profile,
+)
 from testing_support.decision_e2e.model_matrix.registry import (
     QualificationRegistry,
     profile_by_key,
@@ -45,7 +48,7 @@ from testing_support.decision_e2e.model_matrix.source_freeze import (
 )
 
 
-def _resolve_profiles(args: argparse.Namespace) -> tuple | None:
+def _resolve_models(args: argparse.Namespace) -> tuple | None:
     if args.profile_key and args.all_models:
         print("BLOCKED: use either --profile-key or --all-models")
         return None
@@ -54,13 +57,13 @@ def _resolve_profiles(args: argparse.Namespace) -> tuple | None:
         if selected is None:
             print(f"BLOCKED: unknown profile_key={args.profile_key}")
             return None
-        return (selected,)
-    return QualificationRegistry.profiles()
+        return (contract_for_profile(selected),)
+    return QualificationRegistry.contracts()
 
 
 async def _run_all_cohorts(args: argparse.Namespace) -> int:
-    profiles = _resolve_profiles(args)
-    if profiles is None:
+    models = _resolve_models(args)
+    if models is None:
         return int(QualificationCliExit.BLOCKED_PRECONDITION)
     env_digest = (
         os.environ.get("INTERGRAX_QUALIFICATION_MODEL_DIGEST", "") or None
@@ -69,7 +72,7 @@ async def _run_all_cohorts(args: argparse.Namespace) -> int:
     )
     pipeline = await run_qualification_execution_pipeline(
         args.repo_root,
-        profiles,
+        models,
         run_count=args.run_count,
         ollama_base_url=args.ollama_url,
         env_digest=env_digest,
@@ -139,12 +142,16 @@ def main(argv: list[str] | None = None) -> int:
         if args.profile_key
         else None
     )
-    profiles = _resolve_profiles(args)
-    if profiles is None:
+    models = _resolve_models(args)
+    if models is None:
         return int(QualificationCliExit.BLOCKED_PRECONDITION)
+    from testing_support.decision_e2e.model_matrix.model_qualification_contract import (
+        profiles_from_contracts,
+    )
+
     plans = build_cohort_plans(
         args.repo_root,
-        profiles,
+        profiles_from_contracts(models),
         run_count=args.run_count,
         ollama_base_url=args.ollama_url,
         env_digest=env_digest,
