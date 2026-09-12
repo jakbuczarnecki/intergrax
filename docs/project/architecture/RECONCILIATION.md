@@ -96,7 +96,7 @@ Reconciliation **does not** replace Nexus orchestration topology; it informs **w
 1. **Use stable correlation keys** — reconciliation must target the same logical operation as the original invoke.
 2. **Prefer read-only probes** — verify before repeating mutations.
 3. **Bound attempts** — inconclusive reconcile escalates; no infinite polling in agents.
-4. **Record evidence** — each attempt links provider payload references to Execution identity.
+4. **Record evidence** — each attempt links provider payload references to Execution identity. Platform contracts materialize probe results as **`ExternalEffectEvidence`** (source, check result, confidence, operation link, `evidence_ref`) before lifecycle may leave UNKNOWN.
 5. **Fail closed on risk** — if shipment or settlement would compound UNKNOWN, remain gated.
 
 ---

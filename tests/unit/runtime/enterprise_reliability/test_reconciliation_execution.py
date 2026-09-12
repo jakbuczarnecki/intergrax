@@ -16,6 +16,7 @@ from intergrax.contracts.enterprise_reliability import (
     ExternalEffectCapabilitySupport,
     ExternalEffectCategory,
     ExternalEffectContract,
+    ExternalEffectEvidenceConfidence,
     ExternalEffectEvidenceVerdict,
     ExternalEffectOutcome,
     ExternalEffectSafetyCapabilities,
@@ -144,6 +145,9 @@ def test_execute_probe_resolves_success_with_evidence_fact() -> None:
     assert run.attempt_fact is not None
     assert run.attempt_fact.evidence_ref == "evidence://pay/corr-pay/1"
     assert run.attempt_fact.recorded_at == _FIXED_TIME
+    assert run.evidence is not None
+    assert run.evidence.operation_link.correlation_id == "corr-pay"
+    assert run.evidence.confidence is ExternalEffectEvidenceConfidence.DEFINITIVE
 
 
 def test_execute_probe_insufficient_keeps_unknown() -> None:

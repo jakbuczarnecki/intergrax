@@ -9,17 +9,11 @@ from datetime import UTC, datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from intergrax.contracts.enterprise_reliability.evidence import (
-    ExternalEffectEvidenceVerdict,
-    classify_external_effect_outcome,
-)
-from intergrax.contracts.enterprise_reliability.lifecycle import (
-    UncertaintyLifecyclePhase,
-    UncertaintyResolutionKind,
-    UncertaintyStateRecord,
+from intergrax.contracts.enterprise_reliability.lifecycle import UncertaintyStateRecord
+from intergrax.contracts.enterprise_reliability.reconciliation_evidence import (
+    ExternalEffectEvidence,
 )
 from intergrax.contracts.enterprise_reliability.observability import ReconciliationAttemptFact
-from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
 from intergrax.contracts.enterprise_reliability.plugin_spi import EnterpriseReliabilityPluginGateway
 from intergrax.contracts.enterprise_reliability.reconciliation import ReconciliationDisposition
 from intergrax.contracts.enterprise_reliability.reconciliation_execution import (
@@ -30,11 +24,14 @@ from intergrax.contracts.enterprise_reliability.reconciliation_execution import 
     ReconciliationProbeResult,
     build_reconciliation_probe_request,
 )
+from intergrax.runtime.enterprise_reliability.reconciliation_evidence import (
+    apply_reconciliation_evidence,
+    materialize_external_effect_evidence_from_probe,
+)
 from intergrax.runtime.enterprise_reliability.reconciliation_orchestration import (
     ExternalEffectReconciliationPlanning,
     ReconciliationOrchestrationError,
 )
-from intergrax.runtime.enterprise_reliability.uncertainty_lifecycle import resolve_uncertainty
 
 
 class ExternalEffectReconciliationProbeRun(BaseModel):
@@ -44,17 +41,8 @@ class ExternalEffectReconciliationProbeRun(BaseModel):
 
     state: UncertaintyStateRecord
     execution: ExternalEffectReconciliationExecution
+    evidence: ExternalEffectEvidence | None = None
     attempt_fact: ReconciliationAttemptFact | None = None
-
-
-def _resolution_kind_for_verdict(
-    verdict: ExternalEffectEvidenceVerdict,
-) -> UncertaintyResolutionKind | None:
-    if verdict is ExternalEffectEvidenceVerdict.DEFINITIVE_SUCCESS:
-        return UncertaintyResolutionKind.CONFIRMED_SUCCESS
-    if verdict is ExternalEffectEvidenceVerdict.DEFINITIVE_FAILURE:
-        return UncertaintyResolutionKind.CONFIRMED_FAILURE
-    return None
 
 
 def execute_external_effect_reconciliation_probe(
@@ -105,8 +93,13 @@ def execute_external_effect_reconciliation_probe(
             ),
         )
 
-    state = _apply_probe_evidence(planning.state, probe_result)
     timestamp = recorded_at or datetime.now(tz=UTC)
+    evidence = materialize_external_effect_evidence_from_probe(
+        probe_request=probe_request,
+        probe_result=probe_result,
+        obtained_at=timestamp,
+    )
+    state = apply_reconciliation_evidence(planning.state, evidence)
     attempt_fact = ReconciliationAttemptFact(
         correlation_id=planning.state.correlation_id,
         contract_id=planning.contract_id,
@@ -127,26 +120,8 @@ def execute_external_effect_reconciliation_probe(
             probe_result=probe_result,
             rationale=probe_result.rationale,
         ),
+        evidence=evidence,
         attempt_fact=attempt_fact,
-    )
-
-
-def _apply_probe_evidence(
-    state: UncertaintyStateRecord,
-    probe_result: ReconciliationProbeResult,
-) -> UncertaintyStateRecord:
-    if state.effect_outcome is not ExternalEffectOutcome.UNKNOWN:
-        raise ReconciliationOrchestrationError(
-            "probe execution requires UNKNOWN effect outcome",
-        )
-    resolution_kind = _resolution_kind_for_verdict(probe_result.verdict)
-    if resolution_kind is None:
-        return state
-    resolved_outcome = classify_external_effect_outcome(probe_result.verdict)
-    return resolve_uncertainty(
-        state,
-        resolution_kind=resolution_kind,
-        resolved_outcome=resolved_outcome,
     )
 
 
