@@ -95,6 +95,7 @@ def test_npsc5f_cert_evidence_persistence_port_contract_is_stable() -> None:
         "def append",
         "def list_positioned_for_run",
         "def list_for_task",
+        "def list_positioned_for_task_grouped_by_run",
         "def get_by_event_id",
         "def list_positioned_through",
     ):
