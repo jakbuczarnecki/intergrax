@@ -81,6 +81,9 @@ class RuntimeEventExportSink:
         self._pending_exports += 1
         depth = self._pending_exports
         started = time.monotonic()
+        metrics = self._delivery_metrics
+        if metrics is not None:
+            metrics.record_export_attempt()
         try:
             self._runner.run(self._export_sink.export(source_event))
             latency = time.monotonic() - started
@@ -122,11 +125,14 @@ class RuntimeEventExportSink:
         if self._closed:
             return
         started = time.monotonic()
+        metrics = self._delivery_metrics
         try:
             self._runner.run(self._export_sink.flush())
+        except Exception:
+            if metrics is not None:
+                metrics.record_export_flush_failed()
         finally:
             elapsed = time.monotonic() - started
-            metrics = self._delivery_metrics
             if metrics is not None:
                 metrics.record_export_flush_duration(elapsed)
 

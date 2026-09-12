@@ -19,6 +19,7 @@ from intergrax.contracts.persistence_topology import (
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.codecraft.profile import CodeCraftProfile
+from intergrax.contracts.observability_export import ExporterKind
 from intergrax.contracts.reasoning_profile import ReasoningProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import LLMProfile
@@ -332,6 +333,7 @@ class GovernanceBundle(BaseModel):
                 health_dashboard_enabled=True,
                 unified_observability_dashboard_enabled=True,
                 bounded_event_delivery_enabled=True,
+                observability_exporter_kind=ExporterKind.OTLP,
             ),
             platform=GovernanceProfile(
                 quarterly_strategy_review_enabled=True,

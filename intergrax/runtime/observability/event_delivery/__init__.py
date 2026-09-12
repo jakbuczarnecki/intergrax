@@ -25,6 +25,9 @@ from intergrax.runtime.observability.event_delivery.delivery_metrics import (
     DeliveryMetricsSnapshot,
     InternalDeliveryMetrics,
 )
+from intergrax.runtime.observability.event_delivery.export_factory import (
+    ObservabilityExportSinkFactory,
+)
 from intergrax.runtime.observability.event_delivery.in_memory_sink import (
     InMemoryEventSink,
 )
@@ -39,6 +42,7 @@ __all__ = [
     "DeliveryMetricsSnapshot",
     "InMemoryEventSink",
     "InternalDeliveryMetrics",
+    "ObservabilityExportSinkFactory",
     "NoopEventExportSink",
     "OtlpEventExportSink",
     "RecordingEventExportSink",

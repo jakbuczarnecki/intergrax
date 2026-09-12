@@ -21,6 +21,7 @@ from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistenceProvider
 from intergrax.contracts.execution_terminal import ExecutionTerminalPersistenceProvider
+from intergrax.contracts.observability_export import ExporterKind
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
 from intergrax.llm_adapters.registry.profile import LLMProfile
@@ -256,6 +257,7 @@ class ObservabilityProfile(BaseModel):
     health_dashboard_enabled: bool = False
     unified_observability_dashboard_enabled: bool = False
     bounded_event_delivery_enabled: bool = False
+    observability_exporter_kind: ExporterKind = ExporterKind.NOOP
     bounded_event_delivery_max_capacity: int = Field(default=4096, ge=1)
     bounded_event_delivery_important_wait_timeout_seconds: float = Field(
         default=0.05,

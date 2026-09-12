@@ -1,35 +1,38 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""OTLP SDK adapter seam (W5-C) — no full OTLP client in this layer."""
+"""OTLP transport adapter seam (W5-D) — no OpenTelemetry SDK in this layer."""
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
-
+from intergrax.contracts.observability_export import OtlpTransportPort
 from intergrax.runtime.events.runtime_event import RuntimeEvent
-
-OtlpExportDelegate = Callable[[RuntimeEvent], Awaitable[None]]
 
 
 class OtlpEventExportSink:
     """
-    ``EventExportSinkPort`` adapter toward an injected OTLP SDK delegate.
+    ``EventExportSinkPort`` adapter toward an injected ``OtlpTransportPort``.
 
-    Composition supplies the delegate when OTLP export is enabled.
+    Composition supplies transport when OTLP export is enabled.
     """
 
-    def __init__(self, *, export_delegate: OtlpExportDelegate | None = None) -> None:
-        self._export_delegate = export_delegate
+    def __init__(self, *, transport: OtlpTransportPort | None = None) -> None:
+        self._transport = transport
         self._closed = False
 
     async def export(self, event: RuntimeEvent) -> None:
-        if self._closed or self._export_delegate is None:
+        if self._closed or self._transport is None:
             return
-        await self._export_delegate(event)
+        self._transport.export(event)
 
     async def flush(self) -> None:
-        return None
+        if self._closed or self._transport is None:
+            return
+        self._transport.flush()
 
     async def close(self) -> None:
+        if self._closed:
+            return
+        if self._transport is not None:
+            self._transport.close()
         self._closed = True
