@@ -5,7 +5,7 @@
 > **Uncertainty is not failure.** Integrax transforms unknown external outcomes into controlled recovery instead of risky guessing or blind retries.
 
 > [!NOTE]
-> **Scenario status:** DESIGN / NOT YET ACCEPTED — awaiting human Scenario Quality Gate; no executable proof, evidence, or report exists yet.
+> **Scenario status:** ACCEPTED FOR IMPLEMENTATION — ERL-QUAL-004 quality gate **READY_FOR_IMPLEMENTATION**; INTERGRAX FIT and GAP DECISION complete in spec; implementation scaffold not initialized; no executable proof, evidence, or report yet.
 
 > **Maintainer qualification ID:** ERL-QUAL-004 — fourth official Enterprise Reliability Layer Platform Proof Scenario (design stage only).
 
@@ -24,7 +24,7 @@ A customer completes a high-value purchase. The order system asks an external pa
 | **Trap** | Retry payment on timeout or assume success without verified external truth |
 | **Decision risk** | Double payment, shipment without capture, or cancellation after successful charge |
 | **Scenario outcome** | RESOLVED or UNRESOLVED |
-| **Status** | DESIGN / NOT YET ACCEPTED |
+| **Status** | ACCEPTED FOR IMPLEMENTATION |
 | **Proof class** | SCENARIO |
 
 ## Visual proof story
