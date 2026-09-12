@@ -10,6 +10,7 @@ import pytest
 
 from testing_support.npsc5f_r4_protected_drift import (
     R4_IMPLEMENTATION_SHA,
+    R4_POST_QUALIFIED_BASELINE_SHA,
     collect_r4_protected_production_drift,
 )
 from testing_support.npsc5f_r4_regression_matrix import (
@@ -55,8 +56,11 @@ def test_r4_final_canonical_predecessor_shas_recorded() -> None:
 
 
 def test_r4_final_no_unqualified_protected_drift_since_implementation() -> None:
-    drift = collect_r4_protected_production_drift(_REPO_ROOT)
-    assert drift == [], f"R4 protected production drift since implementation: {drift}"
+    drift = collect_r4_protected_production_drift(
+        _REPO_ROOT,
+        from_sha=R4_POST_QUALIFIED_BASELINE_SHA,
+    )
+    assert drift == [], f"R4 protected production drift since qualified baseline: {drift}"
 
 
 @pytest.mark.gate

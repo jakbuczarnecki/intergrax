@@ -12,8 +12,8 @@ from pathlib import Path
 
 from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 
-# Evidence Plane freeze baseline: NPSC-5F/R4 implementation sign-off (no production drift since).
-NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "3bec620ab56417a469487347f68045bf3dec6bd5"
+# Evidence Plane freeze baseline: EE-FINAL-02 enterprise re-freeze on integrated ``development``.
+NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "7a3569c64e892588992635c9cee10c264a9fc200"
 
 NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
 NPSC_5F_R1_FINAL_SHA = "455c09f342f995ac0a6fcb03ffef2f4d3e36a447"
@@ -50,6 +50,7 @@ _EXPLICITLY_UNRELATED_PREFIXES: tuple[str, ...] = (
 )
 
 _QUALIFIED_COMPATIBLE_PREFIXES: tuple[str, ...] = (
+    "docs/project/maintainers/qualification/EE_FINAL_02",
     "docs/project/maintainers/qualification/NPSC_5F_FINAL",
     "docs/project/maintainers/qualification/NPSC_5F_R",
     "testing_support/npsc5f_final_",
