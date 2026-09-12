@@ -13,6 +13,10 @@ from intergrax.contracts.runtime_intelligence.analyzer import (
     run_runtime_intelligence_analyzer_isolated,
 )
 from intergrax.contracts.runtime_intelligence.context import RuntimeIntelligenceContext
+from intergrax.runtime.runtime_intelligence.analyzer_orchestrator import (
+    RuntimeIntelligenceAnalyzerOrchestrationResult,
+    RuntimeIntelligenceAnalyzerOrchestrator,
+)
 from intergrax.runtime.runtime_intelligence.context_builder import RuntimeIntelligenceContextBuilder
 from intergrax.runtime.runtime_intelligence.runtime_facts import RuntimeIntelligenceFacts
 
@@ -34,6 +38,42 @@ class RuntimeIntelligenceAnalysisResponse:
     outcome: RuntimeIntelligenceAnalyzerOutcome
 
 
+@dataclass(frozen=True, slots=True)
+class RuntimeIntelligenceOrchestratedAnalysisRequest:
+    """Owns facts + explicit analyzer ordering for one advisory orchestration."""
+
+    facts: RuntimeIntelligenceFacts
+    analyzers: tuple[RuntimeIntelligenceAnalyzerPort, ...]
+    context_builder: RuntimeIntelligenceContextBuilder = field(
+        default_factory=RuntimeIntelligenceContextBuilder
+    )
+    orchestrator: RuntimeIntelligenceAnalyzerOrchestrator = field(
+        default_factory=RuntimeIntelligenceAnalyzerOrchestrator
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeIntelligenceOrchestratedAnalysisResponse:
+    context: RuntimeIntelligenceContext
+    orchestration: RuntimeIntelligenceAnalyzerOrchestrationResult
+
+
+def run_runtime_intelligence_orchestrated_analysis(
+    request: RuntimeIntelligenceOrchestratedAnalysisRequest,
+) -> RuntimeIntelligenceOrchestratedAnalysisResponse:
+    """
+    create request → build context → orchestrate analyzers → aggregate outcomes.
+
+    Does not mutate execution state; caller releases request-scoped resources.
+    """
+    context = request.context_builder.build(request.facts)
+    orchestration = request.orchestrator.orchestrate(context, request.analyzers)
+    return RuntimeIntelligenceOrchestratedAnalysisResponse(
+        context=context,
+        orchestration=orchestration,
+    )
+
+
 def run_runtime_intelligence_analysis(
     request: RuntimeIntelligenceAnalysisRequest,
 ) -> RuntimeIntelligenceAnalysisResponse:
@@ -50,5 +90,8 @@ def run_runtime_intelligence_analysis(
 __all__ = [
     "RuntimeIntelligenceAnalysisRequest",
     "RuntimeIntelligenceAnalysisResponse",
+    "RuntimeIntelligenceOrchestratedAnalysisRequest",
+    "RuntimeIntelligenceOrchestratedAnalysisResponse",
     "run_runtime_intelligence_analysis",
+    "run_runtime_intelligence_orchestrated_analysis",
 ]

@@ -9,7 +9,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 **Enterprise Runtime Intelligence (ERI)** is the planned platform layer that **explains, correlates, and scores** runtime execution using **canonical facts** already produced by W1–W5 — without becoming a second diagnostic engine, without owning execution truth, and without introducing god components.
 
 > [!NOTE]
-> **W6-A:** Architecture inventory and qualification. **W6-B:** Contract freeze in `intergrax/contracts/runtime_intelligence/` (SPI + immutable envelopes). **W6-C:** Context builder + deterministic analyzer in `intergrax/runtime/runtime_intelligence/`. See [`ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md`](../maintainers/architecture/ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md), [`ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md`](../maintainers/architecture/ADR/ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md), [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md), and [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_C_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_C_QUALIFICATION.md).
+> **W6-A:** Architecture inventory and qualification. **W6-B:** Contract freeze in `intergrax/contracts/runtime_intelligence/` (SPI + immutable envelopes). **W6-C:** Context builder + deterministic analyzer in `intergrax/runtime/runtime_intelligence/`. **W6-D:** Multi-analyzer orchestration in `intergrax/runtime/runtime_intelligence/analyzer_orchestrator.py`. See [`ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md`](../maintainers/architecture/ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md), [`ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md`](../maintainers/architecture/ADR/ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md), [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md), [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_C_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_C_QUALIFICATION.md), and [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_D_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_D_QUALIFICATION.md).
 
 **Primary audience:** Principal / Staff architects and platform engineers extending execution reliability, observability, and adaptive operations.
 
@@ -111,11 +111,11 @@ intergrax/contracts/runtime_intelligence/
 | `IntelligenceRecommendation` | Recommend-only output — no execution hooks |
 | `RuntimeIntelligenceAnalyzerPort` | Local / ML / external analyzers behind one Protocol |
 
-**Deferred (post W6-C):** `RuntimeIntelligencePort` facade, multi-analyzer orchestration engine, `AdaptivePolicySignalPort`.
+**Deferred (post W6-D):** `RuntimeIntelligencePort` facade, `AdaptivePolicySignalPort`.
 
 ---
 
-## Runtime integration (W6-C)
+## Runtime integration (W6-C + W6-D)
 
 ```text
 intergrax/runtime/runtime_intelligence/
@@ -123,35 +123,39 @@ intergrax/runtime/runtime_intelligence/
         ├── RuntimeIntelligenceFacts (read-only request inputs)
         ├── RuntimeIntelligenceContextBuilder → RuntimeIntelligenceContext
         ├── DeterministicRuntimeIntelligenceAnalyzer (reference plugin)
-        └── run_runtime_intelligence_analysis (request lifecycle)
+        ├── RuntimeIntelligenceAnalyzerOrchestrator (multi-plugin coordination)
+        ├── run_runtime_intelligence_analysis (single-analyzer lifecycle)
+        └── run_runtime_intelligence_orchestrated_analysis (multi-analyzer lifecycle)
 ```
 
 Signal observations from read ports are projected into context as stable fact pointers (`intelligence_signal:{kind}:{intensity}`) so W6-B context shape stays unchanged.
 
 ---
 
-## Ownership (W6-B + W6-C)
+## Ownership (W6-B + W6-C + W6-D)
 
 | Concern | Owner |
 |---------|--------|
 | Fact assembly | Integration caller (`RuntimeIntelligenceFacts` from read ports) |
 | Context projection | `RuntimeIntelligenceContextBuilder` (`runtime/runtime_intelligence/`) |
 | Analysis | `RuntimeIntelligenceAnalyzerPort` implementations |
+| Orchestration (ordering, isolation, aggregation) | `RuntimeIntelligenceAnalyzerOrchestrator` |
 | Result envelope | Runtime Intelligence contract plane |
 | Recommendations | Runtime Intelligence contract plane (governance decides action) |
 | Execution / retry / cancel / checkpoints | Existing W1–W4 owners — **unchanged** |
 
 ---
 
-## Lifecycle (W6-B + W6-C)
+## Lifecycle (W6-B + W6-C + W6-D)
 
 ```text
-create request → build context → analyze → return response → release request resources
+create request → build context → analyze (single or orchestrated) → return response → release request resources
 ```
 
 - **Request-scoped** — no W6 managers, schedulers, or daemons.
 - Analyzers are **injected per request** (composition root / caller), not discovered via a central registry.
-- No global mutable intelligence state in contracts or W6-C modules.
+- Multi-analyzer paths use an explicit `tuple` order; orchestrator delegates each slot to `run_runtime_intelligence_analyzer_isolated`.
+- No global mutable intelligence state in contracts or W6 runtime modules.
 
 ---
 
@@ -177,7 +181,7 @@ Analyzer failure / invalid context at analyze
         ↓
 run_runtime_intelligence_analyzer_isolated → PLUGIN_UNAVAILABLE or INVALID_CONTEXT
         ↓
-Orchestration records degraded outcome (future engine)
+RuntimeIntelligenceAnalyzerOrchestrator aggregates per-analyzer outcomes (W6-D)
         ↓
 Execution hot path continues unchanged
 ```
