@@ -83,7 +83,11 @@ def test_http_only_factory_does_not_import_fastmcp(monkeypatch: pytest.MonkeyPat
 
     from local_workspace_application.host.factory import create_local_workspace_backend_app
 
-    create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(_http_only_settings(), settings=_http_only_settings())
+    settings = _http_only_settings()
+    create_local_workspace_backend_app(
+        registry_projection=build_lkw_test_registry_projection(settings),
+        settings=settings,
+    )
     blocked = {"fastmcp", "mcp"}
     assert not any(
         module in blocked or module.startswith("fastmcp.") or module.startswith("mcp.")

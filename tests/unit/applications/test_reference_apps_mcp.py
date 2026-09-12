@@ -31,7 +31,7 @@ def test_research_application_exposes_mcp_mount(
     harness_auth_headers: dict[str, str],
 ) -> None:
     from research_application.host.factory import create_research_backend_app
-from research_application.tests.research_ac3_projection import build_research_test_registry_projection
+    from research_application.tests.research_ac3_projection import build_research_test_registry_projection
     from research_application.host.settings import ResearchBackendSettings
 
     monkeypatch.setenv("INTERGRAX_HARNESS_API_KEY", "gate-test-harness-key")
