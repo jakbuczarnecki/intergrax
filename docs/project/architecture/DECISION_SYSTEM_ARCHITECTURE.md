@@ -568,4 +568,95 @@ Follow [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) plugin section and [`PLATFORM_
 
 ---
 
+## 13. Operational enablement (integration boundary)
+
+**Task:** `DS-E2E-15J-DECISION-SYSTEM-OPERATIONAL-ENABLEMENT`. This section describes **existing** production operations for the **Decision System Integration Boundary** — reference L7 artifacts mapped to platform lifecycle contracts. It does **not** add a second runtime, execution lifecycle, or platform-wide observability stack.
+
+### 13.1 Configuration model
+
+```text
+Environment / host wiring (explicit parameters)
+        ↓
+Decision Integration Composition Root
+  intergrax/runtime/decision_integration_composition.py
+        ↓
+DecisionIntegrationCompositionProvider + DecisionIntegrationCompositionSpec
+        ↓
+DecisionSystemIntegrationFactory
+        ↓
+DecisionSystemIntegrationEngine
+```
+
+- **Production defaults:** `production_decision_integration_composition_provider()` and `production_decision_system_integration()` — recording audit, plugin admission, lifecycle adapter plugins injected at the root only.
+- **Environment separation:** hosts pass `audit_sink`, `plugin_admission_provider`, and optional custom `DecisionIntegrationCompositionProvider`; the engine has no environment variables or hidden singletons.
+- **Platform Decision plugins** (strategies, verifiers, artifact kinds) remain composed via `decision_plugin_composition.py`; integration boundary composition is a **separate** explicit root (`compose_decision_system_integration_from_platform()`).
+
+Contract README: `intergrax/contracts/decision/integration/README.md`.
+
+### 13.2 Diagnostics and audit (why this decision?)
+
+Integration answers operational reconstruction at the **mapping** boundary:
+
+| Field | Source |
+| ----- | ------ |
+| Decision id | `ReferenceDecisionLifecycleReference.decision_id` on `DecisionIntegrationResult.source` |
+| Adapter / provider id + version | `DecisionAdapterMetadata` (`adapter_id`, `adapter_version`, `mapping_version`) |
+| Integration outcome | `DecisionIntegrationStatus` + `detail` |
+| Audit stamp | `RecordingDecisionIntegrationAuditProvider` → `DecisionIntegrationAuditEnvelope` (`provider_metadata`, full `DecisionIntegrationAuditRecord`) |
+| Correlation to Execution | Platform lifecycle observability and diagnostics use `DecisionExecutionCorrelation` / `DecisionContextProvider` — **Execution** owns execution telemetry; Decision publishes decision identity and audit evidence only |
+
+No per-module loggers inside integration contracts; audit flows **Contract → `DecisionIntegrationAuditProvider` → `DecisionAuditSink`**.
+
+### 13.3 Observability boundary
+
+- **Decision integration:** append-only audit envelopes (decision reference, adapter metadata, status).
+- **Execution Engine:** runtime metrics, traces, checkpoint telemetry ([`OBSERVABILITY.md`](OBSERVABILITY.md)).
+- **Unified operations:** correlate via shared execution / decision identity fields — do not add a second trace or metrics backend inside `intergrax/contracts/decision/integration/`.
+
+### 13.4 Change management
+
+Reconstructable production state at decision time:
+
+- `DecisionIntegrationCompositionSpec` (active lifecycle source types, audit flag),
+- admitted plugin descriptors (`DecisionIntegrationPluginDescriptor`: `plugin_id`, `version`, `source`, `manifest_id`),
+- audit provider id/version on each envelope,
+- adapter `mapping_version` on each result.
+
+Hosts version and deploy composition providers; there is no separate Decision release manager.
+
+### 13.5 Plugin lifecycle (integration adapters)
+
+```text
+Registered (composition root wires DecisionIntegrationAdapterProvider)
+        ↓
+Validated (DecisionPluginAdmissionProvider.evaluate)
+        ↓
+Composed (DecisionSystemIntegrationFactory.filter_admitted_adapter_providers)
+        ↓
+Executed (DecisionSystemIntegrationEngine.integrate_lifecycle)
+        ↓
+Audited (optional DecisionIntegrationAuditProvider)
+```
+
+Identity: `DecisionIntegrationPluginIdentifiable.integration_plugin_descriptor()` or deterministic fallback in `resolve_integration_plugin_descriptor()`.
+
+### 13.6 Failure handling
+
+| Scenario | Behavior |
+| -------- | -------- |
+| Missing adapter | `DecisionIntegrationStatus.FAILED`, explicit detail — no silent fallback |
+| Plugin admission deny | Adapters filtered out → same FAILED path when none remain |
+| Adapter exception | FAILED + `adapter_execution_error:*` + audit when enabled |
+| Invalid composition wiring | `TypeError` at provider construction (fail at startup / assembly) |
+
+### 13.7 Security and governance operations
+
+Operational tools must not call Execution directly to bypass Decision or governance. Integration boundary performs **lifecycle reference mapping only** — it does not execute Nexus side effects or authorize runtime operations. Admission and platform plugin manifest binding remain fail-closed at their respective composition roots.
+
+### 13.8 Proof tests (operational enablement)
+
+`tests/unit/contracts/decision/test_decision_system_operational_enablement.py` (acceptance bundle) plus existing DS-E2E-15J integration / production hardening tests under `tests/unit/runtime/` and `tests/unit/contracts/decision/`.
+
+---
+
 *© Artur Czarnecki. Architecture reference for Intergrax Decision System L1–L18 (DS-E2E-15J).*

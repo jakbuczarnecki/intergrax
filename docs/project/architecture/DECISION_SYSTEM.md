@@ -748,6 +748,23 @@ When ``require_manifest_capability_binding=True``, absence of positive Platform 
 manifest capability evidence is an admission failure (fail-closed). Plugins without
 verifiable manifest binding are not loaded, instantiated, or registered.
 
+### Integration boundary (operational)
+
+Reference enterprise decision lifecycle records (DS-E2E L7 matrix) map to platform
+``decision_lifecycle`` contracts through the **integration boundary** — intelligence
+and mapping only, **before** authoritative Execution hosting.
+
+| Concern | Location |
+| ------- | -------- |
+| Composition root | `intergrax/runtime/decision_integration_composition.py` |
+| Contracts / engine | `intergrax/contracts/decision/integration/` |
+| Production wiring | `production_decision_system_integration()` |
+| Audit | `DecisionIntegrationAuditProvider` → injected `DecisionAuditSink` |
+| Plugin admission | `DecisionPluginAdmissionProvider` at composition root |
+
+Operational detail: [`DECISION_SYSTEM_ARCHITECTURE.md`](DECISION_SYSTEM_ARCHITECTURE.md) §13.
+Proof: `tests/unit/contracts/decision/test_decision_system_operational_enablement.py`.
+
 ---
 
 ## Cross-scenario validation
