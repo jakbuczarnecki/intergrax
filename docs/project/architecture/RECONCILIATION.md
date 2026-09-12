@@ -107,6 +107,8 @@ UNKNOWN triggers reconciliation; reconciliation **resolves** UNKNOWN to SUCCESS,
 
 After **`ExternalEffectEvidence`** is recorded, **resolution strategies** (ERL plugin capability `resolution`) evaluate evidence plus execution and effect-contract context and return a domain-neutral **`ResolutionDecision`** (`continue`, `stop`, `escalate`, `compensation_required`, `unknown`). The runtime selects strategies only through **`EnterpriseReliabilityPluginGateway`**; a missing strategy must not imply safe continuation.
 
+When resolution mandates **`compensation_required`**, **compensation strategies** (ERL plugin capability `compensation`) evaluate the resolution decision, evidence, execution context, and effect contract and return a domain-neutral **`CompensationDecision`** (`approved`, `compensation_required`, `unavailable`, `deferred`, `escalate`). Planning produces a **`CompensationPlan`** only through the same gateway; a missing compensation strategy must escalate, defer, or mark unavailable — never imply safe continuation.
+
 ---
 
 ## Further reading

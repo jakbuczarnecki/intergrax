@@ -17,6 +17,7 @@ from intergrax.contracts.enterprise_reliability.lifecycle import (
 )
 from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
 from intergrax.contracts.enterprise_reliability.reconciliation_evidence import ExternalEffectEvidence
+from intergrax.contracts.enterprise_reliability.compensation_decision import CompensationDecision
 from intergrax.contracts.enterprise_reliability.resolution_decision import ResolutionDecision
 from intergrax.contracts.enterprise_reliability.reconciliation_execution import (
     ReconciliationProbeRequest,
@@ -95,6 +96,16 @@ class ReconciliationStrategyAdvice:
 class ResolutionStrategyEvaluationRequest:
     """Inputs for resolution strategy evaluation — evidence-bound, contract-scoped."""
 
+    evidence: ExternalEffectEvidence
+    execution_context: EnterpriseReliabilityStrategyContext
+    effect_contract: ExternalEffectContract
+
+
+@dataclass(frozen=True, slots=True)
+class CompensationStrategyEvaluationRequest:
+    """Inputs for compensation strategy evaluation — resolution-bound, evidence-scoped."""
+
+    resolution_decision: ResolutionDecision
     evidence: ExternalEffectEvidence
     execution_context: EnterpriseReliabilityStrategyContext
     effect_contract: ExternalEffectContract
@@ -215,8 +226,8 @@ class CompensationStrategy(Protocol):
 
     def evaluate(
         self,
-        context: EnterpriseReliabilityStrategyContext,
-    ) -> CompensationStrategyAdvice | None: ...
+        request: CompensationStrategyEvaluationRequest,
+    ) -> CompensationDecision | None: ...
 
 
 @runtime_checkable
@@ -300,11 +311,13 @@ class EnterpriseReliabilityPluginGateway(Protocol):
         request: ResolutionStrategyEvaluationRequest,
     ) -> ResolutionDecision | None: ...
 
+    def compensation_strategy_registered(self, plugin_id: str) -> bool: ...
+
     def evaluate_compensation(
         self,
         plugin_id: str,
-        context: EnterpriseReliabilityStrategyContext,
-    ) -> CompensationStrategyAdvice | None: ...
+        request: CompensationStrategyEvaluationRequest,
+    ) -> CompensationDecision | None: ...
 
     def evaluate_risk(
         self,
@@ -314,8 +327,10 @@ class EnterpriseReliabilityPluginGateway(Protocol):
 
 
 __all__ = [
+    "CompensationDecision",
     "CompensationStrategy",
     "CompensationStrategyAdvice",
+    "CompensationStrategyEvaluationRequest",
     "EnterpriseReliabilityCapabilityKind",
     "EnterpriseReliabilityPlugin",
     "EnterpriseReliabilityPluginDescriptor",

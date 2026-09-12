@@ -5,8 +5,9 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.enterprise_reliability.compensation_decision import CompensationDecision
 from intergrax.contracts.enterprise_reliability.plugin_spi import (
-    CompensationStrategyAdvice,
+    CompensationStrategyEvaluationRequest,
     EnterpriseReliabilityPluginRegistry,
     EnterpriseReliabilityStrategyContext,
     ReconciliationStrategyAdvice,
@@ -59,15 +60,18 @@ class EnterpriseReliabilityPluginGatewayImpl:
             return None
         return strategy.evaluate(request)
 
+    def compensation_strategy_registered(self, plugin_id: str) -> bool:
+        return self._registry.resolve_compensation(plugin_id) is not None
+
     def evaluate_compensation(
         self,
         plugin_id: str,
-        context: EnterpriseReliabilityStrategyContext,
-    ) -> CompensationStrategyAdvice | None:
+        request: CompensationStrategyEvaluationRequest,
+    ) -> CompensationDecision | None:
         strategy = self._registry.resolve_compensation(plugin_id)
         if strategy is None:
             return None
-        return strategy.evaluate(context)
+        return strategy.evaluate(request)
 
     def evaluate_risk(
         self,

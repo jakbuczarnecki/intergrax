@@ -21,6 +21,20 @@ from intergrax.contracts.enterprise_reliability.evidence import (
     classify_external_effect_outcome,
     external_effect_outcome_from_physical_state,
 )
+from intergrax.contracts.enterprise_reliability.compensation import (
+    CompensationDisposition,
+    CompensationPlan,
+    CompensationPlanningError,
+    assert_resolution_requires_compensation,
+    build_compensation_plan,
+    compensation_advice_from_decision,
+)
+from intergrax.contracts.enterprise_reliability.compensation_decision import (
+    CompensationDecision,
+    CompensationPlatformIntent,
+    abstained_compensation_strategy_decision,
+    missing_compensation_strategy_decision,
+)
 from intergrax.contracts.enterprise_reliability.gating import (
     DependentExecutionGateAction,
     DependentExecutionGateRequest,
@@ -70,6 +84,7 @@ from intergrax.contracts.enterprise_reliability.outcome import (
 from intergrax.contracts.enterprise_reliability.plugin_spi import (
     CompensationStrategy,
     CompensationStrategyAdvice,
+    CompensationStrategyEvaluationRequest,
     EnterpriseReliabilityCapabilityKind,
     EnterpriseReliabilityPlugin,
     EnterpriseReliabilityPluginDescriptor,
@@ -141,8 +156,19 @@ __all__ = [
     "ExternalEffectEvidenceVerdict",
     "ExternalEffectOutcome",
     "ExternalEffectSafetyCapabilities",
+    "CompensationDecision",
+    "CompensationDisposition",
+    "CompensationPlan",
+    "CompensationPlanningError",
+    "CompensationPlatformIntent",
     "CompensationStrategy",
     "CompensationStrategyAdvice",
+    "CompensationStrategyEvaluationRequest",
+    "abstained_compensation_strategy_decision",
+    "assert_resolution_requires_compensation",
+    "build_compensation_plan",
+    "compensation_advice_from_decision",
+    "missing_compensation_strategy_decision",
     "EnterpriseReliabilityCapabilityKind",
     "EnterpriseReliabilityPlugin",
     "EnterpriseReliabilityPluginDescriptor",
