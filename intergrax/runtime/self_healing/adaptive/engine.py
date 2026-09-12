@@ -13,7 +13,11 @@ from intergrax.contracts.self_healing.adaptive.recommendation import (
     AdaptiveHealingRecommendation,
     AdaptiveRecommendationStatus,
 )
-from intergrax.contracts.self_healing.adaptive.registry import AdaptiveHealingPluginDescriptor
+from intergrax.contracts.self_healing.adaptive.registry import (
+    AdaptiveHealingPluginDescriptor,
+    SelfHealingConfidenceEvaluatorRegistry,
+    SelfHealingStrategyRankingRegistry,
+)
 from intergrax.contracts.self_healing.adaptive.score import AdaptiveStrategyScore
 from intergrax.contracts.self_healing.adaptive.spi import (
     SelfHealingConfidenceEvaluator,
@@ -21,11 +25,6 @@ from intergrax.contracts.self_healing.adaptive.spi import (
 )
 from intergrax.contracts.self_healing.context import SelfHealingContext
 from intergrax.contracts.self_healing.strategy import SelfHealingStrategy
-from intergrax.runtime.self_healing.adaptive.confidence_evaluator import AdaptiveConfidenceEvaluator
-from intergrax.runtime.self_healing.adaptive.registries import (
-    InMemorySelfHealingConfidenceEvaluatorRegistry,
-    InMemorySelfHealingStrategyRankingRegistry,
-)
 
 
 def _merge_scores(
@@ -68,16 +67,16 @@ class AdaptiveSelfHealingEngine:
 
     def __init__(
         self,
-        ranking_registry: InMemorySelfHealingStrategyRankingRegistry,
-        confidence_registry: InMemorySelfHealingConfidenceEvaluatorRegistry | None = None,
+        ranking_registry: SelfHealingStrategyRankingRegistry,
+        confidence_registry: SelfHealingConfidenceEvaluatorRegistry,
         *,
         learning_repository: AdaptiveHealingLearningRepository | None = None,
-        default_confidence_evaluator: AdaptiveConfidenceEvaluator | None = None,
+        fallback_confidence_evaluator: SelfHealingConfidenceEvaluator,
     ) -> None:
         self._ranking_registry = ranking_registry
-        self._confidence_registry = confidence_registry or InMemorySelfHealingConfidenceEvaluatorRegistry()
+        self._confidence_registry = confidence_registry
         self._learning = learning_repository
-        self._default_confidence = default_confidence_evaluator or AdaptiveConfidenceEvaluator()
+        self._fallback_confidence = fallback_confidence_evaluator
 
     def build_context(
         self,
@@ -157,7 +156,7 @@ class AdaptiveSelfHealingEngine:
         confidence = 0.0
         confidence_evidence: tuple[str, ...] = ()
         confidence_explanation = ""
-        evaluator: SelfHealingConfidenceEvaluator = self._default_confidence
+        evaluator: SelfHealingConfidenceEvaluator = self._fallback_confidence
         if confidence_entries:
             evaluator = confidence_entries[0][0]
         try:

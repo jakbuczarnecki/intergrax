@@ -20,6 +20,9 @@ from intergrax.contracts.self_healing.knowledge_evolution.governance.integrity i
     StrategyKnowledgeIntegrityReport,
     StrategyKnowledgeIntegrityValidator,
 )
+from intergrax.contracts.self_healing.knowledge_evolution.governance.recorder import (
+    StrategyKnowledgeEvolutionGovernanceRecorder,
+)
 from intergrax.contracts.self_healing.knowledge_evolution.governance.policy import (
     StrategyKnowledgeGovernanceAssessment,
     StrategyKnowledgeGovernanceControlLevel,
@@ -32,6 +35,7 @@ __all__ = [
     "StrategyKnowledgeChangeRecordQuery",
     "StrategyKnowledgeChangeSource",
     "StrategyKnowledgeChangeType",
+    "StrategyKnowledgeEvolutionGovernanceRecorder",
     "StrategyKnowledgeGovernanceAssessment",
     "StrategyKnowledgeGovernanceControlLevel",
     "StrategyKnowledgeGovernancePolicy",

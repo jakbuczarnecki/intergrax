@@ -35,12 +35,12 @@ from intergrax.contracts.self_healing.workflow.plan import SelfHealingPlan
 from intergrax.contracts.self_healing.workflow.plan_builder import SelfHealingPlanBuilder
 from intergrax.contracts.self_healing.workflow.step import SelfHealingStep
 from intergrax.contracts.self_healing.workflow.validation import ValidationStatus
-from intergrax.runtime.self_healing.orchestrator import GovernedSelfHealingOrchestrator
-from intergrax.runtime.self_healing.workflow.registries import (
-    InMemorySelfHealingPlanBuilderRegistry,
-    InMemorySelfHealingRollbackRegistry,
-    InMemorySelfHealingValidationRegistry,
+from intergrax.contracts.self_healing.workflow.registry import (
+    SelfHealingPlanBuilderRegistry,
+    SelfHealingRollbackRegistry,
+    SelfHealingValidationRegistry,
 )
+from intergrax.runtime.self_healing.orchestrator import GovernedSelfHealingOrchestrator
 
 _WAIT_INTENT = "self_healing.workflow.wait_stabilization"
 _VALIDATE_INTENT = "self_healing.workflow.validate"
@@ -56,9 +56,9 @@ class SelfHealingWorkflowOrchestrator:
     """
 
     healing_orchestrator: GovernedSelfHealingOrchestrator
-    plan_builders: InMemorySelfHealingPlanBuilderRegistry
-    validation_registry: InMemorySelfHealingValidationRegistry
-    rollback_registry: InMemorySelfHealingRollbackRegistry
+    plan_builders: SelfHealingPlanBuilderRegistry
+    validation_registry: SelfHealingValidationRegistry
+    rollback_registry: SelfHealingRollbackRegistry
     audit_trail: list[SelfHealingWorkflowAuditEntry] = field(default_factory=list)
     spine_attempt_ids: list[str] = field(default_factory=list)
     _workflows: dict[str, SelfHealingWorkflowContext] = field(default_factory=dict)

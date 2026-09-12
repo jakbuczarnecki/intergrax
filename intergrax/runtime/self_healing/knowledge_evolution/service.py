@@ -38,10 +38,12 @@ from intergrax.contracts.self_healing.knowledge_evolution.repository import Stra
 from intergrax.contracts.self_healing.performance_memory.query import StrategyPerformanceMemoryQuery
 from intergrax.contracts.self_healing.performance_memory.record import SelfHealingStrategyPerformanceExperience
 from intergrax.contracts.self_healing.performance_memory.repository import StrategyPerformanceMemoryRepository
+from intergrax.contracts.self_healing.knowledge_evolution.governance.recorder import (
+    StrategyKnowledgeEvolutionGovernanceRecorder,
+)
 from intergrax.contracts.self_healing.quality_evaluation.assessment import StrategyQualityAssessment
+from intergrax.contracts.self_healing.quality_evaluation.assessor import StrategyQualityAssessor
 from intergrax.contracts.self_healing.quality_evaluation.criteria import StrategyQualityEvaluationCriteria
-from intergrax.runtime.self_healing.knowledge_evolution.governance.service import StrategyKnowledgeGovernanceService
-from intergrax.runtime.self_healing.quality_evaluation.service import StrategyQualityEvaluationService
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,10 +53,10 @@ class StrategyKnowledgeEvolutionService:
     learning_engine: StrategyLearningEngine
     metric_provider: StrategyMetricProvider
     comparison_policy: StrategyComparisonPolicy | None = None
-    quality_evaluation: StrategyQualityEvaluationService | None = None
+    quality_evaluation: StrategyQualityAssessor | None = None
     context_providers: tuple[StrategyContextProvider, ...] = field(default_factory=tuple)
     freshness_policy: KnowledgeFreshnessPolicy | None = None
-    knowledge_governance: StrategyKnowledgeGovernanceService | None = None
+    knowledge_governance: StrategyKnowledgeEvolutionGovernanceRecorder | None = None
 
     def evolve(self, context: StrategyKnowledgeEvolutionContext) -> StrategyKnowledgeEvolutionResult:
         context = self._enrich_context(context)

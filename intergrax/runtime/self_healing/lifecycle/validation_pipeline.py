@@ -20,12 +20,12 @@ from intergrax.contracts.self_healing.validation.validator import (
 from intergrax.contracts.self_healing.workflow.context import SelfHealingWorkflowContext
 from intergrax.contracts.self_healing.workflow.errors import PLUGIN_FAILED, SelfHealingWorkflowPluginFailedError
 from intergrax.contracts.self_healing.workflow.registry import SelfHealingWorkflowPluginDescriptor
-from intergrax.runtime.self_healing.workflow.registries import InMemorySelfHealingValidationRegistry
+from intergrax.contracts.self_healing.workflow.registry import SelfHealingValidationRegistry
 
 
 @dataclass
 class SelfHealingValidationPipeline:
-    validation_registry: InMemorySelfHealingValidationRegistry
+    validation_registry: SelfHealingValidationRegistry
     validators: tuple[SelfHealingValidator, ...] = ()
     validator_descriptors: dict[str, SelfHealingWorkflowPluginDescriptor] = field(default_factory=dict)
 

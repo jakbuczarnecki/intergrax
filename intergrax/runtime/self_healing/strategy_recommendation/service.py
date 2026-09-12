@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.contracts.self_healing.quality_evaluation.assessor import StrategyQualityAssessor
 from intergrax.contracts.self_healing.quality_evaluation.criteria import StrategyQualityEvaluationCriteria
 from intergrax.contracts.self_healing.strategy_recommendation.context import (
     StrategyRecommendationCandidateQuality,
@@ -15,12 +16,10 @@ from intergrax.contracts.self_healing.strategy_recommendation.context import (
 from intergrax.contracts.self_healing.strategy_recommendation.engine import StrategyRecommendationEngine
 from intergrax.contracts.self_healing.strategy_recommendation.recommendation import StrategyRecommendation
 from intergrax.contracts.self_healing.strategy_recommendation.request import StrategyRecommendationRequest
-from intergrax.runtime.self_healing.quality_evaluation.service import StrategyQualityEvaluationService
-
 
 @dataclass(frozen=True, slots=True)
 class StrategyRecommendationService:
-    quality_evaluation: StrategyQualityEvaluationService
+    quality_evaluation: StrategyQualityAssessor
     engine: StrategyRecommendationEngine
 
     def recommend(self, request: StrategyRecommendationRequest) -> StrategyRecommendation:

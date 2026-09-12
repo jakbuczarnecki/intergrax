@@ -3,6 +3,7 @@
 
 from intergrax.contracts.self_healing.quality_evaluation.assessment import StrategyQualityAssessment
 from intergrax.contracts.self_healing.quality_evaluation.criteria import StrategyQualityEvaluationCriteria
+from intergrax.contracts.self_healing.quality_evaluation.assessor import StrategyQualityAssessor
 from intergrax.contracts.self_healing.quality_evaluation.evaluator import StrategyQualityEvaluator
 from intergrax.contracts.self_healing.quality_evaluation.statistics import (
     StrategyQualityHistoryStatistics,
@@ -11,6 +12,7 @@ from intergrax.contracts.self_healing.quality_evaluation.statistics import (
 )
 
 __all__ = [
+    "StrategyQualityAssessor",
     "StrategyQualityAssessment",
     "StrategyQualityEvaluationCriteria",
     "StrategyQualityEvaluator",

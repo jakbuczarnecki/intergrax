@@ -5,18 +5,18 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.self_healing.adaptive.registry import AdaptiveHealingPluginDescriptor
+from intergrax.contracts.self_healing.adaptive.registry import (
+    AdaptiveHealingPluginDescriptor,
+    SelfHealingConfidenceEvaluatorRegistry,
+    SelfHealingStrategyRankingRegistry,
+)
 from intergrax.runtime.self_healing.adaptive.confidence_evaluator import AdaptiveConfidenceEvaluator
 from intergrax.runtime.self_healing.adaptive.platform_ranking import PlatformHistoricalRankingProvider
-from intergrax.runtime.self_healing.adaptive.registries import (
-    InMemorySelfHealingConfidenceEvaluatorRegistry,
-    InMemorySelfHealingStrategyRankingRegistry,
-)
 
 
 def register_platform_adaptive_plugins(
-    ranking_registry: InMemorySelfHealingStrategyRankingRegistry,
-    confidence_registry: InMemorySelfHealingConfidenceEvaluatorRegistry,
+    ranking_registry: SelfHealingStrategyRankingRegistry,
+    confidence_registry: SelfHealingConfidenceEvaluatorRegistry,
 ) -> None:
     ranking = PlatformHistoricalRankingProvider()
     ranking_registry.register(

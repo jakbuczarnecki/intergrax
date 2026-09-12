@@ -64,14 +64,22 @@ def _adaptive_stack(
     ranking = ranking_registry or InMemorySelfHealingStrategyRankingRegistry()
     confidence = InMemorySelfHealingConfidenceEvaluatorRegistry()
     register_platform_adaptive_plugins(ranking, confidence)
-    engine = AdaptiveSelfHealingEngine(ranking, confidence)
+    engine = AdaptiveSelfHealingEngine(
+        ranking,
+        confidence,
+        fallback_confidence_evaluator=AdaptiveConfidenceEvaluator(),
+    )
     return engine, ranking
 
 
 def test_custom_strategy_ranking_provider() -> None:
     ranking = InMemorySelfHealingStrategyRankingRegistry()
     confidence = InMemorySelfHealingConfidenceEvaluatorRegistry()
-    engine = AdaptiveSelfHealingEngine(ranking, confidence)
+    engine = AdaptiveSelfHealingEngine(
+        ranking,
+        confidence,
+        fallback_confidence_evaluator=AdaptiveConfidenceEvaluator(),
+    )
     custom = _ReverseRankingProvider()
     ranking.register(
         custom,

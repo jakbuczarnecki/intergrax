@@ -5,15 +5,15 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.self_healing.workflow.registry import SelfHealingWorkflowPluginDescriptor
+from intergrax.contracts.self_healing.workflow.registry import (
+    SelfHealingPlanBuilderRegistry,
+    SelfHealingRollbackRegistry,
+    SelfHealingValidationRegistry,
+    SelfHealingWorkflowPluginDescriptor,
+)
 from intergrax.runtime.self_healing.workflow.default_plan_builder import PlatformDefaultSelfHealingPlanBuilder
 from intergrax.runtime.self_healing.workflow.platform_rollback import PlatformDefaultRollbackProvider
 from intergrax.runtime.self_healing.workflow.platform_validation import PlatformEvidenceValidationProvider
-from intergrax.runtime.self_healing.workflow.registries import (
-    InMemorySelfHealingPlanBuilderRegistry,
-    InMemorySelfHealingRollbackRegistry,
-    InMemorySelfHealingValidationRegistry,
-)
 
 
 def _descriptor(plugin_id: str, *, capabilities: tuple[str, ...]) -> SelfHealingWorkflowPluginDescriptor:
@@ -30,9 +30,9 @@ def _descriptor(plugin_id: str, *, capabilities: tuple[str, ...]) -> SelfHealing
 
 def register_platform_workflow_plugins(
     *,
-    plan_builders: InMemorySelfHealingPlanBuilderRegistry,
-    validation_registry: InMemorySelfHealingValidationRegistry,
-    rollback_registry: InMemorySelfHealingRollbackRegistry,
+    plan_builders: SelfHealingPlanBuilderRegistry,
+    validation_registry: SelfHealingValidationRegistry,
+    rollback_registry: SelfHealingRollbackRegistry,
     strategy_ids: tuple[str, ...],
     register_validation: bool = True,
 ) -> None:

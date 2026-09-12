@@ -13,9 +13,9 @@ from intergrax.contracts.self_healing.result import (
 from intergrax.contracts.self_healing.safety import assert_strategy_has_no_execution_surface
 from intergrax.contracts.self_healing.strategy import SelfHealingStrategy
 from intergrax.contracts.self_healing.selection.performance import SelfHealingStrategyPerformance
+from intergrax.contracts.self_healing.registry import SelfHealingStrategyRegistry
 from intergrax.contracts.self_healing.selection.selector import SelfHealingStrategySelector
 from intergrax.runtime.self_healing.resolution import resolve_strategies_for_context
-from intergrax.runtime.self_healing.strategy_registry import InMemorySelfHealingStrategyRegistry
 
 
 class SelfHealingDecisionEngine:
@@ -23,7 +23,7 @@ class SelfHealingDecisionEngine:
 
     def __init__(
         self,
-        registry: InMemorySelfHealingStrategyRegistry,
+        registry: SelfHealingStrategyRegistry,
         strategy_selector: SelfHealingStrategySelector | None = None,
         performance_profiles: tuple[SelfHealingStrategyPerformance, ...] = (),
     ) -> None:

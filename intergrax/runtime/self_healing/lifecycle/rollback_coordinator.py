@@ -17,14 +17,14 @@ from intergrax.contracts.self_healing.workflow.errors import (
     SelfHealingWorkflowValidationError,
 )
 from intergrax.contracts.self_healing.workflow.validation import ValidationResult, ValidationStatus
+from intergrax.contracts.self_healing.workflow.registry import SelfHealingRollbackRegistry
 from intergrax.runtime.self_healing.workflow.orchestrator import SelfHealingWorkflowOrchestrator
-from intergrax.runtime.self_healing.workflow.registries import InMemorySelfHealingRollbackRegistry
 
 
 @dataclass
 class SelfHealingRollbackCoordinator:
     workflow_orchestrator: SelfHealingWorkflowOrchestrator
-    rollback_registry: InMemorySelfHealingRollbackRegistry
+    rollback_registry: SelfHealingRollbackRegistry
 
     def should_rollback(self, decision_status: ValidationDecisionStatus) -> bool:
         return decision_status is ValidationDecisionStatus.FAILED
