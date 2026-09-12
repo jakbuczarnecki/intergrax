@@ -276,6 +276,29 @@ def build_design_scenario_spec(title: str, *, slug: str) -> str:
         "Also audit **TEST-ONLY SUBSTITUTE PRESENT?** in canonical Scenario path — "
         "**YES** is a **BLOCKER**.\n\n"
         "Do not prepopulate participating domain(s) — domains are discovered during capability-fit.\n\n"
+        "## Platform Capability Adoption\n\n"
+        "_Complete during implementation preparation. Reference: "
+        "[Authoring Guide § Scenario platform integration and pluginability governance]"
+        "(../../PLATFORM_PROOF_AUTHORING_GUIDE.md#scenario-platform-integration-and-pluginability-governance)"
+        " and VPI `verified_product_identification`._\n\n"
+        "| Capability | Platform Contract | Scenario Implementation | Plugin Type | Reason |\n"
+        "| --- | --- | --- | --- | --- |\n"
+        "| _e.g. Retrieval_ | _e.g. RetrievalStrategy_ | _TBD_ | _Domain Plugin_ | _Why scenario-owned_ |\n\n"
+        "### Platform pluginability evidence\n\n"
+        "- **Contract mapping:** Platform Contract → Scenario Plugin (_diagram or table_)\n"
+        "- **Dependency injection proof:** `application/runtime_composition.py` "
+        "(`build_scenario_runtime` / platform baseline) — document `inject(platform_service, scenario_plugin)`\n"
+        "- **Replacement proof:** swap one contract implementation without pipeline changes (_test or config cite_)\n"
+        "- **Isolation proof:** plugins use public contracts only; no private platform internals\n\n"
+        "## Platform Pluginability Audit\n\n"
+        "- [ ] Existing platform contracts reused\n"
+        "- [ ] No duplicated platform capability\n"
+        "- [ ] Scenario-specific logic isolated\n"
+        "- [ ] Dependency injection used\n"
+        "- [ ] Plugin replacement possible\n"
+        "- [ ] No vendor/framework leakage\n"
+        "- [ ] No direct dependency on platform internals\n"
+        "- [ ] Contract tests exist\n\n"
         "## D. GAP DECISION\n\n"
         "NOT YET PERFORMED\n\n"
         "## E. PROOF BUILD\n\n"
@@ -340,6 +363,12 @@ DESIGN_STAGE_SPEC_REQUIRED_SECTIONS: tuple[str, ...] = (
     "### Excluded claims",
     "### Limitations",
     "## C. INTERGRAX FIT",
+    "## Platform Capability Adoption",
+    "| Capability | Platform Contract | Scenario Implementation | Plugin Type | Reason |",
+    "### Platform pluginability evidence",
+    "## Platform Pluginability Audit",
+    "Existing platform contracts reused",
+    "Contract tests exist",
     "INTERGRAX FIT is not a single-domain assignment",
     "TEST-ONLY SUBSTITUTE PRESENT?",
     "PROOF DOES NOT OWN",

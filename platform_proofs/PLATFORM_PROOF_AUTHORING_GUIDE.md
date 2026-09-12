@@ -1,6 +1,7 @@
 # Intergrax Proof Library - Authoring Guide
 
 **Status:** Canonical  
+**Document version:** 1.12.0 (2026-09-12)  
 **Audience:** Independent Scenario Proof and Conformance Proof author sessions
 
 This is the **single canonical practical instruction** for independent proof-author sessions. Future sessions receive only:
@@ -685,6 +686,168 @@ Only after scenario quality is accepted:
 4. initialize implementation skeleton (`init_scenario_implementation.py`);
 5. implement the production-capable application component;
 6. package / run / evaluate / report under the canonical Proof Library contract (see § Technical Proof Library lifecycle).
+
+---
+
+## Scenario platform integration and pluginability governance
+
+Every Scenario Proof **MUST** demonstrate that it is a **client and extension of the Intergrax platform** — not a standalone application that happens to live beside `intergrax/`.
+
+### Scenario Platform Integration and Pluginability Requirement (normative)
+
+Design and implementation **MUST** follow this shape:
+
+```text
+Platform Core
+      |
+Platform Contracts
+      |
+Scenario Implementation (domain plugins + composition)
+```
+
+**Forbidden** shape:
+
+```text
+Scenario
+ |
+ +-- local execution engine
+ +-- local observability stack
+ +-- local governance
+ +-- local plugin framework
+```
+
+Normative scenario documentation sections (in every `SCENARIO_SPEC.md`):
+
+- **`## Platform Capability Adoption`** — capability table (see below).
+- **`## Platform Pluginability Audit`** — checklist before enterprise / library acceptance.
+
+Reference implementation: [`scenarios/verified_product_identification/`](scenarios/verified_product_identification/) (Verified Product Identification — VPI).
+
+### Platform Capability Adoption (required per scenario)
+
+Each scenario **MUST** maintain a table mapping platform capabilities to scenario-owned plugins:
+
+```markdown
+## Platform Capability Adoption
+
+| Capability | Platform Contract | Scenario Implementation | Plugin Type | Reason |
+| --- | --- | --- | --- | --- |
+| Retrieval | RetrievalStrategy | ProductRetrievalStrategy | Domain Plugin | Product search semantics |
+| Decision | DecisionPolicy | ProductDecisionPolicy | Domain Plugin | Product identity rules |
+| Evidence | EvidenceCollector | ProductEvidenceCollector | Domain Plugin | Product provenance |
+```
+
+Rules:
+
+- **Capability** — platform-facing concern (retrieval, decision, evidence, reconciliation, governance, etc.).
+- **Platform Contract** — public Intergrax contract / port / policy interface (not a private class).
+- **Scenario Implementation** — scenario-owned type that **implements** the contract.
+- **Plugin Type** — e.g. `Domain Plugin`, `Adaptor`, `Policy`, `Evidence Extension` (must not be “local framework”).
+- **Reason** — why this logic belongs in the scenario (domain-specific) rather than platform core (reusable across scenarios).
+
+Populate during **implementation preparation**; keep current through **Proof Library acceptance**.
+
+### Platform First Principle
+
+Before adding any new scenario component, authors **MUST** answer:
+
+> Does the platform already expose a contract for this problem?
+
+| Answer | Required action |
+| --- | --- |
+| **YES** | Implement the existing contract; supply a plugin / adaptor / policy; **do not** build a parallel mechanism. |
+| **NO** | Classify the gap (see below). |
+
+**A. Platform problem** — other scenarios will likely need the same guarantee → extend platform core with a new **public** contract, then implement scenario plugins against it.
+
+**B. Domain problem** — logic is scenario-specific → implement a **scenario plugin** behind an existing or newly added platform contract; keep core generic.
+
+### Scenario Local Framework Duplication (prohibited)
+
+A scenario **MUST NOT** introduce its own:
+
+- execution engine,
+- observability spine,
+- governance gate stack,
+- memory layer,
+- plugin framework,
+- lifecycle manager,
+
+when Intergrax already provides that mechanism for the canonical scenario path. Local clones fail gate **#9** (generic capabilities from Intergrax) and block enterprise readiness.
+
+### Scenario Plugin Definition
+
+A **scenario plugin**:
+
+1. implements a **public** platform contract;
+2. is **replaceable** by another implementation without changing platform core;
+3. requires **no** core platform edits for substitution;
+4. is wired through **dependency injection** (composition root), not static imports of private internals;
+5. has **contract tests** (scenario-owned) proving behavior against the port, not against private platform modules.
+
+### Minimal pluginability evidence (required before enterprise readiness)
+
+Each scenario package **MUST** document (in `SCENARIO_SPEC.md` and, after init, `docs/PLATFORM_PLUGINABILITY_PROOF.md`):
+
+1. **Contract mapping** — diagram or table: `Platform Contract → Scenario Plugin`.
+2. **Dependency injection proof** — where composition happens:
+   - canonical site: `application/runtime_composition.py` (`build_scenario_runtime` / `build_scenario_lab_runtime` baseline);
+   - document the conceptual pair `build_scenario()` + `inject(platform_service, scenario_plugin)` even when symbols differ.
+3. **Replacement proof** — show swapping one contract implementation for another (e.g. `DefaultRetrievalStrategy` → `ProductCatalogRetrievalStrategy`) **without** pipeline changes; point to tests or proof config.
+4. **Isolation proof** — scenario plugins depend on **contracts only**; no imports of private platform internals (enforced also by `scenario_architecture_conformance` gates).
+
+**Reference (VPI):** retrieval and search adapters, identity resolution plugins, verification policies, evidence/provenance extensions, and pipeline composition — see VPI `application/` ports and contract tests under `tests/unit/platform_proofs/scenarios/verified_product_identification/`.
+
+### Platform Pluginability Audit (required checklist)
+
+Every scenario **MUST** include in `SCENARIO_SPEC.md`:
+
+```markdown
+## Platform Pluginability Audit
+
+- [ ] Existing platform contracts reused
+- [ ] No duplicated platform capability
+- [ ] Scenario-specific logic isolated
+- [ ] Dependency injection used
+- [ ] Plugin replacement possible
+- [ ] No vendor/framework leakage
+- [ ] No direct dependency on platform internals
+- [ ] Contract tests exist
+```
+
+Complete with checked items before **Scenario Architecture Review**.
+
+### Scenario Architecture Review (enterprise readiness)
+
+Before treating a Scenario Proof as **enterprise-ready** for Proof Library acceptance, run **Platform Integration Audit**:
+
+| Question | Must be true |
+| --- | --- |
+| Does the scenario consume platform execution, observability, and governance on the canonical path? | YES |
+| Does domain logic extend the platform through **contracts** (plugins), not forks? | YES |
+| Can implementations be swapped without editing platform core? | YES |
+| Did platform core stay generic (no scenario-specific branches)? | YES |
+| Is `## Platform Pluginability Audit` complete? | YES |
+
+Failure → **NOT enterprise-ready** until remediated (even if a single proof run PASSes).
+
+### PLATFORM PLUGINABILITY REVIEW (author / Cursor session report)
+
+At the end of implementation or governance updates, record:
+
+```markdown
+## PLATFORM PLUGINABILITY REVIEW
+
+Platform contracts reused: PASS/FAIL
+Scenario plugins introduced: LIST
+Core platform modifications: LIST
+Dependency injection: PASS/FAIL
+Replacement capability: PASS/FAIL
+Architecture isolation: PASS/FAIL
+Enterprise readiness: PASS/FAIL
+```
+
+Implementation must be audited against GitHub source code. The audit must verify: architecture compliance, plugin boundaries, contract usage, documentation correctness, enterprise readiness.
 
 ---
 
@@ -1792,6 +1955,9 @@ Canonical deep contract for scenario design and implementation:
 A. SCENARIO
 B. SOLUTION
 C. INTERGRAX FIT
+   → Platform Capability Adoption (table)
+   → Platform pluginability evidence (contract / DI / replacement / isolation)
+   → Platform Pluginability Audit (checklist)
 D. GAP DECISION
 E. PROOF BUILD
 ```
@@ -1935,6 +2101,10 @@ A visitor should understand the problem before learning which Intergrax layers s
 ## Public Library acceptance gate
 
 A Scenario Proof is **not accepted** as a Proof Library entry until **all** general gates **and** the Scenario-specific gates below are true.
+
+### Scenario Architecture Review (before enterprise / library acceptance)
+
+After implementation and before public acceptance, complete § Scenario Architecture Review (Platform Integration Audit). An incomplete **`## Platform Pluginability Audit`** or missing **`## Platform Capability Adoption`** table blocks acceptance regardless of evaluator PASS.
 
 ### General gates
 
@@ -2086,6 +2256,7 @@ Full lifecycle: § Canonical Scenario Lifecycle.
 | 3. Implementation preparation | Verify Intergrax fit; resolve platform gaps; update frontmatter gates | `intergrax_fit: COMPLETED`, `gap_decision: RESOLVED` |
 | 4. Init implementation | `uv run python scripts/proof/init_scenario_implementation.py --slug <slug>` | → `IMPLEMENTATION INITIALIZED` |
 | 5. Build + prove | Implement `application/` + `proof/`; run `run_proof.py` | → executable → evidence → library acceptance |
+| 6. Architecture review | Platform Integration Audit + `PLATFORM PLUGINABILITY REVIEW` | → enterprise-ready for library acceptance |
 
 Do not manually invent scenario directory shapes, skip the quality gate, or run the initializer before acceptance frontmatter is set. Complete explanatory visuals under `assets/` **before** implementation when the scenario is mature enough. Post-run README sections populate only after execution.
 
@@ -2093,11 +2264,20 @@ Do not manually invent scenario directory shapes, skip the quality gate, or run 
 
 ## Current reference proof
 
-No executable Scenario or Conformance platform proof is designated as the canonical reference example yet. The first Scenario Proof (`ai_incident_investigation`) is **ACCEPTED FOR IMPLEMENTATION** - design qualification passed; implementation and executable evidence have not started. Public presentation reference: [`scenarios/ai_incident_investigation/README.md`](scenarios/ai_incident_investigation/README.md). Deep contract: [`scenarios/ai_incident_investigation/SCENARIO_SPEC.md`](scenarios/ai_incident_investigation/SCENARIO_SPEC.md).
+**Reference Scenario — Verified Product Identification (VPI)**  
+Slug: `verified_product_identification`. VPI is the canonical **pluginability and platform-contract** reference for Scenario proofs. It demonstrates:
 
-**Observability contract migration (DOC-PROOF-OBS-1):** the global non-black-box observability standard applies prospectively. Existing in-progress Scenario packages that predate full observability implementation (including `ai_incident_investigation`) are **not** retroactively rejected at design stage, but **MUST** satisfy the new standard before executable acceptance (APP-2A and later). No immediate rewrite of design-stage documentation is required solely because migration is pending; public claims must remain truthful.
+- platform retrieval and search contracts;
+- identity resolution plugins;
+- verification policies;
+- evidence / provenance extensions;
+- pipeline composition via scenario runtime baseline (not a local orchestration engine).
 
-Scenario package source of truth: [`scenarios/ai_incident_investigation/`](scenarios/ai_incident_investigation/).
+Public gateway: [`scenarios/verified_product_identification/README.md`](scenarios/verified_product_identification/README.md). Deep contract: [`scenarios/verified_product_identification/SCENARIO_SPEC.md`](scenarios/verified_product_identification/SCENARIO_SPEC.md).
+
+**Design-stage reference (problem narrative, not pluginability):** [`scenarios/ai_incident_investigation/`](scenarios/ai_incident_investigation/) remains **ACCEPTED FOR IMPLEMENTATION** for public problem framing; authors implementing plugin patterns should follow VPI.
+
+**Observability contract migration (DOC-PROOF-OBS-1):** the global non-black-box observability standard applies prospectively. Existing in-progress Scenario packages that predate full observability implementation are **not** retroactively rejected at design stage, but **MUST** satisfy the new standard before executable acceptance. Pluginability governance (v1.12.0) applies to all new and in-progress scenarios before enterprise / library acceptance.
 
 ---
 
@@ -2130,8 +2310,18 @@ Scenario package source of truth: [`scenarios/ai_incident_investigation/`](scena
 | Material decision without bounded rationale/objective | Fails explainability pillar |
 | Operational failure narrated as epistemic UNRESOLVED | Violates diagnostic terminal semantics |
 | Reimplementing platform components inside proof | Proves clone, not platform |
+| Scenario Local Framework Duplication (local engine / observability / governance / plugin framework) | Violates Platform First Principle; blocks pluginability audit |
 | Proof-local critic / observability / receipt stack | Fragments platform truth |
 | Expected-answer prompt leakage | Invalidates falsification |
+
+---
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 1.12.0 | 2026-09-12 | Scenario platform integration and pluginability governance (Platform First, adoption table, audit checklist, architecture review, VPI reference). |
+| 1.11.x | (prior) | Canonical scenario lifecycle, observability contract, production-capable application rules. |
 
 ---
 
@@ -2140,6 +2330,7 @@ Scenario package source of truth: [`scenarios/ai_incident_investigation/`](scena
 | Document | Role |
 |----------|------|
 | [PLATFORM_PROOF_PROTOCOL.md](PLATFORM_PROOF_PROTOCOL.md) | Governance - classification, falsification, evidence |
+| [scenarios/docs/SCENARIO_STRUCTURE.md](scenarios/docs/SCENARIO_STRUCTURE.md) | Scenario package layout + pluginability doc placement |
 | [README.md](README.md) | Proof Library gateway |
 | [PLATFORM_CONFIGURATION.md](../docs/project/technical/guides/PLATFORM_CONFIGURATION.md) | Canonical env / provider names |
 | [PROOFS.md](../docs/project/proofs/PROOFS.md) | Public proof dashboard |

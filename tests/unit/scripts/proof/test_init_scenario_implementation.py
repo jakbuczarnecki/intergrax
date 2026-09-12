@@ -260,6 +260,9 @@ def test_scenario_scaffold_structure(tmp_path: Path) -> None:
     assert (scripts_root / "migration").is_dir()
     assert (package_root / "tests").is_dir()
     assert (package_root / "docs").is_dir()
+    pluginability_doc = package_root / "docs" / "PLATFORM_PLUGINABILITY_PROOF.md"
+    assert pluginability_doc.is_file()
+    assert "Platform Capability Adoption" in pluginability_doc.read_text(encoding="utf-8")
     assert (package_root / "contracts").is_dir()
     assert (package_root / "dataset").is_dir()
 
