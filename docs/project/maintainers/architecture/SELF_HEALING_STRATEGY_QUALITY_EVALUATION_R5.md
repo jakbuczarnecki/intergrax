@@ -8,7 +8,7 @@
 
 ## Out of scope (later R5 stages)
 
-- Strategy recommendation or automatic selection (R5.3)
+- Strategy recommendation (see R5.3 advisory engine — still no automatic selection)
 - Continuous learning or adaptive optimization (R5.4)
 - Changes to lifecycle, orchestrator, execution engine, or strategy selector
 - Machine-learning scoring pipelines
