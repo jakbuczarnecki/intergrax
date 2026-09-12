@@ -764,6 +764,7 @@ Harness Observability Spine (HOS)
 | Identity | `event_id`, `task_id`, `run_id`, `attempt_id` - all required (**CURRENT**); **TARGET:** + `execution_id` |
 | `AttemptId` semantics | One global try inside a Run; local tool/provider/step retries do **not** mint new `AttemptId` (frozen UEA) |
 | Persisted execution evidence | `RuntimeEventPersistence` is the canonical persisted evidence authority for accepted `RuntimeEvent`s; lifecycle facts originate from execution producers; Unified Run Journal reconstructs from persisted events |
+| Execution evidence persistence boundary | Execution producers (`RuntimeEventBus`) depend on `EvidencePersistencePort` only; `RuntimeEventPersistenceEvidenceAdapter` delegates to existing `RuntimeEventPersistence` backends without a second persistence flow |
 | Forbidden | Optional execution identity; multiplexed identity modes; synthetic `TaskId`/`RunId`/`AttemptId` for non-execution events |
 
 `emit_domain_signal()` and `RuntimeEventType.DOMAIN_SIGNAL` are **execution-attached** in practice: both require `EmitContext` with validated `TaskId`, `RunId`, and `AttemptId`. A domain signal on the bus is a `RuntimeEvent` carrying a namespaced `event_kind` and typed payload **within an active execution correlation** - not a generic non-execution lifecycle channel. Platform lifecycle facts that occur **during** execution (for example `platform.adaptive.*` on `DOMAIN_SIGNAL`) remain execution-scoped because they are correlated to a real attempt.

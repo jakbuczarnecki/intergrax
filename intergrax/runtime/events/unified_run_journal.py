@@ -4,7 +4,7 @@
 """
 Unified run journal — derived execution-position ``RuntimeEvent`` read model (§42.24).
 
-Canonical execution truth is ``RuntimeEventPersistence.list_positioned_for_run``.
+Canonical execution truth is ``EvidencePersistencePort.list_positioned_for_run``.
 This module does not own identity, does not mint identity, and does not
 reconstruct identity from Plane B trace tags, payload, or active ContextVar.
 """
@@ -19,7 +19,7 @@ from intergrax.runtime.events.execution_position import (
     ExecutionEventPosition,
     PositionedRuntimeEvent,
 )
-from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
 
@@ -77,7 +77,7 @@ class RunJournalReadPage:
 
 
 def load_positioned_run_journal_through(
-    runtime_store: RuntimeEventPersistence,
+    runtime_store: EvidencePersistencePort,
     *,
     tenant_id: str,
     boundary: AsOfBoundary,
@@ -137,7 +137,7 @@ def load_positioned_run_journal_through(
 
 
 def read_run_journal_page(
-    runtime_store: RuntimeEventPersistence,
+    runtime_store: EvidencePersistencePort,
     *,
     tenant_id: str,
     run_id: str,
@@ -204,7 +204,7 @@ def read_run_journal_page(
 
 
 def load_complete_run_journal(
-    runtime_store: RuntimeEventPersistence,
+    runtime_store: EvidencePersistencePort,
     *,
     tenant_id: str,
     run_id: str,
@@ -242,7 +242,7 @@ def load_complete_run_journal(
 def build_unified_run_journal(
     persisted: PersistedRun,
     *,
-    runtime_store: RuntimeEventPersistence,
+    runtime_store: EvidencePersistencePort,
     max_events: int = JOURNAL_READ_DEFAULT_MAX_EVENTS,
     page_size: int = JOURNAL_READ_DEFAULT_PAGE_SIZE,
 ) -> list[RuntimeEvent]:
@@ -266,7 +266,7 @@ def build_unified_run_journal(
 
 
 def _resolve_run_journal_snapshot_boundary(
-    runtime_store: RuntimeEventPersistence,
+    runtime_store: EvidencePersistencePort,
     *,
     tenant_id: str,
     run_id: RunId,

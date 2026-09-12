@@ -32,9 +32,10 @@ from intergrax.runtime.events.evidence_durability import (
     EvidencePersistenceRequirement,
     evidence_persistence_requirement,
 )
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
+from intergrax.runtime.events.evidence_persistence_adapter import as_evidence_persistence_port
 from intergrax.runtime.events.persistence_contract import (
     MandatoryEvidencePersistenceError,
-    RuntimeEventPersistence,
     resolve_event_tenant_id,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
@@ -101,7 +102,7 @@ class RuntimeEventBus:
     def __init__(
         self,
         *,
-        persistence: Optional[RuntimeEventPersistence] = None,
+        persistence: Optional[EvidencePersistencePort] = None,
         record_history: bool = True,
         event_sink: EventSinkPort | None = None,
         delivery_metrics: InternalDeliveryMetrics | None = None,
@@ -113,7 +114,9 @@ class RuntimeEventBus:
         self._taxonomy: List[_TaxonomySubscription] = []
         self._history: List[RuntimeEvent] = []
         self._record_history: bool = record_history
-        self._persistence: Optional[RuntimeEventPersistence] = persistence
+        self._persistence: Optional[EvidencePersistencePort] = as_evidence_persistence_port(
+            persistence,
+        )
         self._event_sink: EventSinkPort | None = event_sink
         self._delivery_metrics: InternalDeliveryMetrics | None = (
             delivery_metrics
@@ -122,12 +125,12 @@ class RuntimeEventBus:
         )
         self._closed = False
 
-    def attach_persistence(self, persistence: RuntimeEventPersistence) -> None:
+    def attach_persistence(self, persistence: EvidencePersistencePort) -> None:
         """Wire or replace the persistence adapter after construction."""
-        self._persistence = persistence
+        self._persistence = as_evidence_persistence_port(persistence)
 
     @property
-    def persistence(self) -> Optional[RuntimeEventPersistence]:
+    def persistence(self) -> Optional[EvidencePersistencePort]:
         return self._persistence
 
     @property

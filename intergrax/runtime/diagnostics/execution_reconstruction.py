@@ -34,7 +34,7 @@ from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
     reconstruct_attempt_lineage,
 )
 from intergrax.runtime.events.execution_position import AsOfBoundary, PositionedRuntimeEvent
-from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.unified_run_journal import (
     PositionedJournalBoundaryNotFoundError,
     PositionedJournalPrefixTruncatedError,
@@ -167,14 +167,14 @@ class ExecutionReconstructor:
     """
     Platform-owned deterministic reconstruction from canonical persistence only.
 
-    Depends on ``RuntimeEventPersistence`` (execution truth) and
+    Depends on ``EvidencePersistencePort`` (execution truth) and
     ``CausalEvidencePersistence`` (relation truth). Optional
     ``ExecutionLineageReader`` enriches forensic parent topology.
     """
 
     def __init__(
         self,
-        runtime_events: RuntimeEventPersistence,
+        runtime_events: EvidencePersistencePort,
         causal_evidence: CausalEvidencePersistence,
         execution_lineage: ExecutionLineageReader | None = None,
         *,
@@ -513,7 +513,7 @@ def _validate_full_discovery_snapshot(
 
 
 def _load_positioned_events_for_run(
-    runtime_store: RuntimeEventPersistence,
+    runtime_store: EvidencePersistencePort,
     *,
     tenant_id: str,
     run_id: RunId,
@@ -537,7 +537,7 @@ def _load_positioned_events_for_run(
 
 
 def _load_positioned_events_through_boundary(
-    runtime_store: RuntimeEventPersistence,
+    runtime_store: EvidencePersistencePort,
     *,
     tenant_id: str,
     boundary: AsOfBoundary,
