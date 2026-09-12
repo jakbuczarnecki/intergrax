@@ -347,6 +347,7 @@ class _RecordingDecisionCheckpointPersistence(
         self,
         *,
         checkpoint: DecisionCheckpointState[_SemanticOutcomePayload],
+        expected_revision: int | None = None,
     ) -> None:
         self.save_calls += 1
         self._store[checkpoint.finalization.key] = checkpoint

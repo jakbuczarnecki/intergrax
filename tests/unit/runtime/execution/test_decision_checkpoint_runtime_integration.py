@@ -30,6 +30,7 @@ from intergrax.contracts.decision_identity import (
 from intergrax.contracts.decision_lifecycle import (
     DecisionLifecycleStage,
     DecisionLifecycleState,
+    initial_decision_lifecycle_state,
 )
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
@@ -127,6 +128,7 @@ class RecordingDecisionCheckpointPersistence(
         self,
         *,
         checkpoint: DecisionCheckpointState[ProbeCheckpointPayload],
+        expected_revision: int | None = None,
     ) -> None:
         self.save_calls += 1
         self._store[checkpoint.finalization.key] = checkpoint
@@ -157,6 +159,7 @@ class AlternateRecordingDecisionCheckpointPersistence(
         self,
         *,
         checkpoint: DecisionCheckpointState[AlternateCheckpointPayload],
+        expected_revision: int | None = None,
     ) -> None:
         self.save_calls += 1
         self._store[checkpoint.finalization.key] = checkpoint
@@ -188,6 +191,7 @@ class InvalidReturningDecisionCheckpointPersistence(
         self,
         *,
         checkpoint: DecisionCheckpointState[ProbeCheckpointPayload],
+        expected_revision: int | None = None,
     ) -> None:
         self.save_calls += 1
 
@@ -459,6 +463,7 @@ async def test_load_rejects_invalid_checkpoint_from_storage() -> None:
             self,
             *,
             checkpoint: DecisionCheckpointState[ProbeCheckpointPayload],
+            expected_revision: int | None = None,
         ) -> None:
             return None
 
@@ -815,3 +820,44 @@ async def test_binding_returns_bound_persistence_when_active_matches() -> None:
 
     assert observed_get is store
     assert observed_require is store
+
+
+def test_save_decision_checkpoint_forwards_expected_revision_kwarg() -> None:
+    """Regression: test doubles must accept revision CAS kwargs from save_decision_checkpoint."""
+    forwarded: list[int | None] = []
+
+    class _SpyPersistence(DecisionCheckpointPersistence[ProbeCheckpointPayload]):
+        def load(
+            self,
+            *,
+            key: DecisionFinalizationKey,
+        ) -> DecisionCheckpointState[ProbeCheckpointPayload] | None:
+            return None
+
+        def save(
+            self,
+            *,
+            checkpoint: DecisionCheckpointState[ProbeCheckpointPayload],
+            expected_revision: int | None = None,
+        ) -> None:
+            forwarded.append(expected_revision)
+
+    identity = DecisionIdentity(
+        decision_id=mint_decision_id(),
+        version=initial_decision_version(),
+        scope=DecisionScope(namespace="probe", subject="revision-kwarg"),
+        tenant_id="tenant-probe",
+        execution=DecisionExecutionLineage(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
+        ),
+    )
+    checkpoint = decision_checkpoint_state(
+        lifecycle=initial_decision_lifecycle_state(identity),
+        finalization=initial_decision_finalize_guard(decision_finalization_key(identity)),
+    )
+    spy = _SpyPersistence()
+    save_decision_checkpoint(spy, checkpoint=checkpoint, expected_revision=2)
+    assert forwarded == [2]
