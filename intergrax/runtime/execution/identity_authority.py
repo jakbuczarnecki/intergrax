@@ -51,10 +51,21 @@ class DefaultExecutionIdentityAuthority:
         attempt_id: AttemptId | None = None,
         execution_id: ExecutionId | None = None,
     ) -> MintedExecutionIdentity:
+        if execution_id is None:
+            root = mint_root_execution_identity(
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=None,
+            )
+            return MintedExecutionIdentity(
+                run_id=root.run_id,
+                attempt_id=root.attempt_id,
+                execution_id=root.execution_id,
+            )
         return MintedExecutionIdentity(
             run_id=run_id or mint_run_id(),
             attempt_id=attempt_id or mint_attempt_id(),
-            execution_id=execution_id or mint_execution_id(),
+            execution_id=execution_id,
         )
 
     def mint_attempt_identity(self) -> AttemptId:
@@ -64,7 +75,7 @@ class DefaultExecutionIdentityAuthority:
         return mint_run_id()
 
     def mint_child_execution_identity(self) -> ExecutionId:
-        return mint_execution_id()
+        return mint_child_execution_id()
 
     def close_identity(self) -> None:
         """Identity values are immutable; lifecycle close is owned by ExecutionRuntime."""
@@ -83,15 +94,10 @@ def mint_root_execution_identity(
     execution_id: ExecutionId | None = None,
 ) -> RootTaskIdentity:
     """Mint canonical generic root identity for one root execution invocation."""
-    minted = default_execution_identity_authority.mint_execution_identity(
-        run_id=run_id,
-        attempt_id=attempt_id,
-        execution_id=execution_id,
-    )
     return RootTaskIdentity(
-        run_id=minted.run_id,
-        attempt_id=minted.attempt_id,
-        execution_id=minted.execution_id,
+        run_id=run_id or default_execution_identity_authority.mint_run_identity(),
+        attempt_id=attempt_id or default_execution_identity_authority.mint_attempt_identity(),
+        execution_id=execution_id or mint_execution_id(),
     )
 
 
@@ -106,7 +112,7 @@ def mint_background_transport_identity() -> BackgroundTransportIdentity:
 
 def mint_child_execution_id() -> ExecutionId:
     """Mint a child ExecutionId under the active parent execution tree."""
-    return default_execution_identity_authority.mint_child_execution_identity()
+    return mint_execution_id()
 
 
 def mint_retry_attempt_id() -> AttemptId:
