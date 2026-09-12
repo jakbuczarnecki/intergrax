@@ -153,6 +153,65 @@ def test_adapter_is_evidence_persistence_port() -> None:
     assert isinstance(adapter, EvidencePersistencePort)
 
 
+def test_adapter_append_and_read_parity_with_inner_store() -> None:
+    """Port boundary is delegation-only: append/read effects match ``RuntimeEventPersistence``."""
+    inner_direct = InMemoryRuntimeEventStore()
+    inner_wrapped = InMemoryRuntimeEventStore()
+    adapter = RuntimeEventPersistenceEvidenceAdapter(inner_wrapped)
+    tenant_id = "tenant-parity"
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    event = sample_runtime_event(tenant_id=tenant_id, task_id=task_id, run_id=run_id)
+
+    direct_position = inner_direct.append(event, tenant_id=tenant_id)
+    via_port_position = adapter.append(event, tenant_id=tenant_id)
+
+    assert via_port_position == direct_position
+    assert inner_wrapped.list_positioned_for_run(run_id, tenant_id=tenant_id) == inner_direct.list_positioned_for_run(
+        run_id,
+        tenant_id=tenant_id,
+    )
+    assert adapter.list_for_task(task_id, tenant_id=tenant_id) == inner_direct.list_for_task(
+        task_id,
+        tenant_id=tenant_id,
+    )
+
+
+def test_adapter_preserves_run_local_event_ordering() -> None:
+    inner = InMemoryRuntimeEventStore()
+    adapter = RuntimeEventPersistenceEvidenceAdapter(inner)
+    tenant_id = "tenant-order"
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    ordered_ids: list[EventId] = []
+    for _ in range(3):
+        event = sample_runtime_event(tenant_id=tenant_id, task_id=task_id, run_id=run_id)
+        ordered_ids.append(event.event_id)
+        adapter.append(event, tenant_id=tenant_id)
+
+    positioned = adapter.list_positioned_for_run(run_id, tenant_id=tenant_id)
+    assert [item.event.event_id for item in positioned] == ordered_ids
+    assert [item.event.event_id for item in inner.list_positioned_for_run(run_id, tenant_id=tenant_id)] == ordered_ids
+
+
+def test_adapter_preserves_tenant_isolation_on_reads() -> None:
+    inner = InMemoryRuntimeEventStore()
+    adapter = RuntimeEventPersistenceEvidenceAdapter(inner)
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    event_a = sample_runtime_event(tenant_id="tenant-a", task_id=task_id, run_id=run_id)
+    event_b = sample_runtime_event(tenant_id="tenant-b", task_id=task_id, run_id=run_id)
+    adapter.append(event_a, tenant_id="tenant-a")
+    adapter.append(event_b, tenant_id="tenant-b")
+
+    assert adapter.list_for_task(task_id, tenant_id="tenant-a") == [event_a]
+    assert adapter.list_for_task(task_id, tenant_id="tenant-b") == [event_b]
+    assert adapter.list_for_task(task_id, tenant_id="tenant-a") != adapter.list_for_task(
+        task_id,
+        tenant_id="tenant-b",
+    )
+
+
 def test_adapter_preserves_execution_reconstruction() -> None:
     inner = InMemoryRuntimeEventStore()
     adapter = RuntimeEventPersistenceEvidenceAdapter(inner)

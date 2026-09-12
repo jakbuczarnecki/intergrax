@@ -240,3 +240,9 @@ Do not claim mandatory failure rolls back external side effects — only that ev
 > Canonical mandatory RuntimeEvent evidence is accepted only after provider-neutral RuntimeEventPersistence durably commits it under the exact resolved tenant scope. Persistence failure for mandatory evidence fails closed before bus history and subscriber dispatch. Best-effort evidence retains explicit non-authoritative failure semantics. Explicit routing tenant and RuntimeEvent tenant identity must match exactly when both are present; mismatch performs zero write. RuntimeEventBus remains transport, RuntimeEventPersistence remains durable evidence authority, and evidence durability does not acquire execution, lineage, checkpoint, terminal, governance, authority, retry, recovery, or scheduling ownership.
 
 **Next:** NPSC-5F/R2 — Journal Completeness & Ordering
+
+---
+
+## Persistence boundary re-signoff (NPSC-5F/R1)
+
+After `EvidencePersistencePort` and `RuntimeEventPersistenceEvidenceAdapter`, R1 durable commit, tenant integrity, ordering, and lifecycle ownership were re-qualified without changing store semantics. Canonical qualification: [`NPSC_5F_R1_DURABLE_EVIDENCE_RE_SIGNOFF_PERSISTENCE_BOUNDARY.md`](NPSC_5F_R1_DURABLE_EVIDENCE_RE_SIGNOFF_PERSISTENCE_BOUNDARY.md). Post–re-signoff drift sentinel baseline: `df677b5b37e0dcaa1e280b7a98324ee59ea24878` (`R1_POST_R2_QUALIFIED_BASELINE_SHA`). Producers depend on `EvidencePersistencePort`; `RuntimeEventPersistence` remains store-level durable authority behind the adapter.
