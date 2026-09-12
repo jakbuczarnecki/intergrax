@@ -15,6 +15,8 @@ SCENARIO_RECONCILIATION_PLUGIN_OWNER = "erl-qual-004-scenario"
 
 SCENARIO_PAYMENT_EVIDENCE_EVALUATOR_ID = "erl-qual-004-payment-evidence-evaluator"
 
+SCENARIO_PAYMENT_RESOLUTION_STRATEGY_ID = "erl-qual-004-payment-resolution"
+
 SCENARIO_EVIDENCE_REF_PREFIX = "evidence://erl-qual-004/"
 
 EXTERNAL_EFFECT_SOR_PROBE_REF = "external_effect.system_of_record_read"

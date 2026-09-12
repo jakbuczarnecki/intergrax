@@ -118,6 +118,8 @@ Full limitations: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 
 **[ERL-QUAL-004 Payment Evidence Evaluator Plugin](docs/ERL_QUAL_004_PAYMENT_EVIDENCE_EVALUATOR_PLUGIN.md)** — scenario-owned `EvidenceEvaluatorStrategy` for payment reconciliation quality without platform business logic.
 
+**[ERL-QUAL-004 Payment Resolution Strategy Plugin](docs/ERL_QUAL_004_PAYMENT_RESOLUTION_STRATEGY_PLUGIN.md)** — scenario-owned `ResolutionStrategy` mapping payment truth to generic `ResolutionDecision` actions.
+
 ## Data provisioning boundary (foundation)
 
 Scenario-local **contract-first** provisioning lives under `contracts/provisioning/` (`ScenarioProvisioningPort`, typed context/results, lifecycle coordinator). A **replaceable reference** in-memory provisioner under `provisioning/reference/` validates the canonical `dataset/` manifest and variant slices. The **PostgreSQL lab adapter** under `provisioning/postgresql/` materializes `dataset/` into the scenario database — see [ERL_QUAL_004_POSTGRESQL_PROVISIONING.md](docs/ERL_QUAL_004_POSTGRESQL_PROVISIONING.md). Proof-runner wiring remains future work.

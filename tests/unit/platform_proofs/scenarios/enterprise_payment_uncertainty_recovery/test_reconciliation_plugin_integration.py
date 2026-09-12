@@ -39,6 +39,15 @@ from intergrax.runtime.enterprise_reliability import (
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.adapters.in_memory_external_reality_lookup import (
     InMemoryExternalRealityLookup,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.adapters.in_memory_payment_evidence_lookup import (
+    InMemoryPaymentReconciliationEvidenceLookup,
+)
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.contracts.payment_reconciliation_evidence import (
+    PaymentReconciliationEvidenceLookupPort,
+)
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.mapping.payment_evidence_fields import (
+    resolve_payment_reconciliation_evidence,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.constants import (
     EXTERNAL_EFFECT_SOR_PROBE_REF,
     SCENARIO_RECONCILIATION_PLUGIN_ID,
@@ -81,10 +90,40 @@ def _seed_lookup(variant_id: str, correlation_id: str) -> InMemoryExternalRealit
     return lookup
 
 
+def _seed_payment_lookup(
+    variant_id: str,
+    correlation_id: str,
+) -> InMemoryPaymentReconciliationEvidenceLookup:
+    variant_path = _SCENARIO_ROOT / "dataset/variants" / variant_id / "scenario_variant.json"
+    document = json.loads(variant_path.read_text(encoding="utf-8"))
+    fields = resolve_sor_truth_fields(document)
+    snapshot = ExternalRealitySnapshot(
+        correlation_id=correlation_id,
+        external_effect_reference="EXT-LAB",
+        terminal_outcome=fields.terminal_outcome,
+        funds_captured=fields.funds_captured,
+        truth_availability_state=fields.truth_availability_state,
+        sor_transaction_ref="SOR-LAB",
+    )
+    payment = resolve_payment_reconciliation_evidence(
+        document,
+        correlation_id=correlation_id,
+        external_effect_reference=snapshot.external_effect_reference,
+        sor_transaction_ref=snapshot.sor_transaction_ref,
+        funds_captured=snapshot.funds_captured,
+        truth_availability_state=snapshot.truth_availability_state,
+        observed_at=_FIXED_TIME,
+    )
+    payment_lookup = InMemoryPaymentReconciliationEvidenceLookup()
+    payment_lookup.seed(payment)
+    return payment_lookup
+
+
 def _run_reconciliation(
     lookup: InMemoryExternalRealityLookup,
     *,
     correlation_id: str = "corr-erl",
+    payment_evidence_lookup: PaymentReconciliationEvidenceLookupPort | None = None,
 ) -> tuple:
     contract = scenario_external_effect_contract()
     admission = admit_external_effect_unknown_with_contract(
@@ -92,7 +131,11 @@ def _run_reconciliation(
         contract=contract,
     )
     registry = InMemoryEnterpriseReliabilityPluginRegistry()
-    register_scenario_reconciliation_plugins(registry, lookup)
+    register_scenario_reconciliation_plugins(
+        registry,
+        lookup,
+        payment_evidence_lookup=payment_evidence_lookup,
+    )
     gateway = EnterpriseReliabilityPluginGatewayImpl(registry)
     planning = plan_external_effect_reconciliation(
         admission=admission,
@@ -137,7 +180,12 @@ def test_erl_probe_execution_via_scenario_plugin(
 ) -> None:
     correlation_id = f"corr-{variant_id}"
     lookup = _seed_lookup(variant_id, correlation_id)
-    _planning, run = _run_reconciliation(lookup, correlation_id=correlation_id)
+    payment_lookup = _seed_payment_lookup(variant_id, correlation_id)
+    _planning, run = _run_reconciliation(
+        lookup,
+        correlation_id=correlation_id,
+        payment_evidence_lookup=payment_lookup,
+    )
 
     assert run.execution.disposition is ReconciliationExecutionDisposition.PROBE_EXECUTED
     assert run.execution.probe_result is not None
