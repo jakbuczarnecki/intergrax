@@ -103,3 +103,5 @@ Full limitations: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 ## Go deeper
 
 **[Read the full Scenario Specification](SCENARIO_SPEC.md)** — deep contract for scenario design, solution semantics, Intergrax fit, gap decision, and proof build (A/B/C/D/E).
+
+**[ERL-QUAL-004 Proof Architecture Design](docs/ERL_QUAL_004_PROOF_ARCHITECTURE_DESIGN.md)** — proof architecture: actors, end-to-end flow, variants, components, ownership, contracts, evidence model, and implementation preparation (documentation only).
