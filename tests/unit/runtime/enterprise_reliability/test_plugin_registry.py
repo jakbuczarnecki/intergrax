@@ -5,11 +5,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import cast
 
 import pytest
 
 from intergrax.contracts.enterprise_reliability import (
     EnterpriseReliabilityCapabilityKind,
+    EnterpriseReliabilityPlugin,
     EnterpriseReliabilityPluginDescriptor,
     EnterpriseReliabilityRiskLevel,
     EnterpriseReliabilityStrategyContext,
@@ -34,6 +36,25 @@ def _context() -> EnterpriseReliabilityStrategyContext:
         effect_outcome=ExternalEffectOutcome.UNKNOWN,
         lifecycle_phase=UncertaintyLifecyclePhase.PENDING_RESOLUTION,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class _StubPlugin:
+    """Minimal plugin shell — registry routes by descriptor capability_kind only."""
+
+    _descriptor: EnterpriseReliabilityPluginDescriptor
+
+    @property
+    def plugin_id(self) -> str:
+        return self._descriptor.plugin_id
+
+    @property
+    def version(self) -> str:
+        return self._descriptor.version
+
+    @property
+    def descriptor(self) -> EnterpriseReliabilityPluginDescriptor:
+        return self._descriptor
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,6 +124,16 @@ def _descriptor(
         tenant_scope=tenant_scope,
         priority=priority,
     )
+
+
+def test_every_capability_kind_registers_and_lists() -> None:
+    registry = InMemoryEnterpriseReliabilityPluginRegistry()
+    for kind in EnterpriseReliabilityCapabilityKind:
+        plugin_id = f"stub-{kind.value}"
+        plugin = _StubPlugin(_descriptor(plugin_id=plugin_id, kind=kind))
+        registry.register(cast(EnterpriseReliabilityPlugin, plugin))
+        listed = registry.list_by_capability(kind)
+        assert tuple(item.plugin_id for item in listed) == (plugin_id,)
 
 
 def test_registry_resolves_by_capability_kind() -> None:

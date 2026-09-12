@@ -229,6 +229,23 @@ Details: [`UNCERTAINTY_MANAGEMENT.md`](UNCERTAINTY_MANAGEMENT.md) · [`RECOVERY_
 
 ---
 
+## Plugin capability vocabulary (source of truth)
+
+Replaceable ERL behavior is grouped by **`EnterpriseReliabilityCapabilityKind`** in `intergrax/contracts/enterprise_reliability/plugin_spi.py`. That enum names **plugin families only** (what strategy protocol applies)—not execution decisions, lifecycle state, or business semantics.
+
+| Kind | Strategy protocol (SPI) |
+| ---- | ------------------------ |
+| `reconciliation` | `ReconciliationStrategy` (+ optional `ReconciliationProbeExecutor`) |
+| `resolution` | `ResolutionStrategy` |
+| `compensation` | `CompensationStrategy` (+ optional `CompensationExecutionStrategy`) |
+| `recovery` | `RecoveryStrategy` |
+| `governance` | `GovernanceStrategy` |
+| `risk_evaluation` | `RiskEvaluationStrategy` |
+
+**Registry and gateway:** `EnterpriseReliabilityPluginRegistry` and `EnterpriseReliabilityPluginGateway` expose one resolve/invoke path per kind. Runtime bootstrap (`InMemoryEnterpriseReliabilityPluginRegistry`, `EnterpriseReliabilityPluginGatewayImpl`) must accept every enum member—contract tests guard enum ↔ registry consistency.
+
+---
+
 ## Current maturity
 
 | Axis | Boundary |
