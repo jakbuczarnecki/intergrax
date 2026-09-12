@@ -14,7 +14,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
     DataPackValidationPreconditionError,
     validate_full_data_pack,
 )
-from platform_proofs.scenarios.verified_product_identification.scripts.build.run_data_pack_validation import (
+from platform_proofs.scenarios.verified_product_identification.scripts.dataset.dataset_validation.run_data_pack_validation import (
     main as run_validation_cli,
 )
 from tests.unit.platform_proofs.scenarios.verified_product_identification.vpi_full_validation_test_support import (

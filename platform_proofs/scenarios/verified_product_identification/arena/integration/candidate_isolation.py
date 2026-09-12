@@ -15,7 +15,7 @@ from platform_proofs.scenarios.verified_product_identification.arena.contracts.e
 CandidatePhase = Literal["stage_ab", "stage_c"]
 
 _CANDIDATE_MODULE = (
-    "platform_proofs.scenarios.verified_product_identification.scripts.diagnostics.run_embedding_arena_candidate"
+    "platform_proofs.scenarios.verified_product_identification.scripts.embedding.diagnostics.run_embedding_arena_candidate"
 )
 
 

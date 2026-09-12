@@ -10,7 +10,7 @@ pytest.importorskip("pyarrow")
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from platform_proofs.scenarios.verified_product_identification.scripts.build.profile_selected_dataset import (
+from platform_proofs.scenarios.verified_product_identification.scripts.dataset.diagnostics.profile_selected_dataset import (
     build_profile_document,
     profile_dataset,
     profile_selected_dataset,

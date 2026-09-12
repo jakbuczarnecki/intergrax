@@ -26,7 +26,7 @@ from platform_proofs.scenarios.verified_product_identification.dataset.data_pack
 from platform_proofs.scenarios.verified_product_identification.dataset.data_pack.contracts.paths import (
     resolve_data_pack_paths,
 )
-from platform_proofs.scenarios.verified_product_identification.scripts.operator.vpi_data_pack_resume_config import (
+from platform_proofs.scenarios.verified_product_identification.scripts.dataset.operator_lifecycle.vpi_data_pack_resume_config import (
     build_vpi_data_pack_resume_cli_argv,
     resolve_vpi_data_pack_resume_launch_plan,
 )
