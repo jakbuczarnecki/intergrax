@@ -20,7 +20,7 @@ from intergrax.contracts.semantic_verification import (
     VerifierIndependenceMode,
     validate_verifier_independence_mode_profiles,
 )
-from intergrax.runtime.execution.inference_profile import (
+from intergrax.contracts.inference_profile_id import (
     InferenceProfileId,
     validate_inference_profile_id,
 )

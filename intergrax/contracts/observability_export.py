@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from intergrax.contracts.event_delivery import EventExportSinkPort
-    from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 
 class ExporterKind(StrEnum):
@@ -67,7 +66,7 @@ class OtlpTransportPort(Protocol):
 
     def export(
         self,
-        event: RuntimeEvent,
+        event: object,
     ) -> None: ...
 
     def flush(self) -> None: ...

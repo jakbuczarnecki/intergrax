@@ -12,10 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
-
-if TYPE_CHECKING:
-    from intergrax.runtime.events.runtime_event import RuntimeEvent
+from typing import Protocol, runtime_checkable
 
 
 class EventPriority(StrEnum):
@@ -96,7 +93,7 @@ class EventSinkPort(Protocol):
 class EventExportSinkPort(Protocol):
     """Downstream export transport (W5-C): delivery, flush, shutdown only."""
 
-    async def export(self, event: RuntimeEvent) -> None: ...
+    async def export(self, event: object) -> None: ...
 
     async def flush(self) -> None: ...
 

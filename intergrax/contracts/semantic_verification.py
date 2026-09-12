@@ -10,7 +10,7 @@ from enum import Enum
 from typing import NewType, Protocol, TypeVar, runtime_checkable
 
 from intergrax.contracts.decision_record import CandidateDecision
-from intergrax.runtime.execution.inference_profile import (
+from intergrax.contracts.inference_profile_id import (
     InferenceProfileId,
     validate_inference_profile_id,
 )

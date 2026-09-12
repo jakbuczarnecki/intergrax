@@ -4,16 +4,11 @@
 
 from __future__ import annotations
 
-from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
-class PolicyRuleAction(str, Enum):
-    ALLOW = "allow"
-    DENY = "deny"
-    REQUIRE_HITL = "require_hitl"
+from intergrax.contracts.declarative_policy_rule_action import PolicyRuleAction
 
 
 class DeclarativePolicyRule(BaseModel):

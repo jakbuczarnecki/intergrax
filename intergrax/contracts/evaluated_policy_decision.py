@@ -16,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
-from intergrax.runtime.attestation.canonical_json import stable_payload_hash
+from intergrax.contracts.canonical_payload_hash import stable_payload_hash
 
 SCHEMA_EVALUATED_POLICY_DECISION_V1: Final = "evaluated_policy_decision.v1"
 _NON_EMPTY = Field(min_length=1)

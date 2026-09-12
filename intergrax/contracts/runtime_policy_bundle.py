@@ -15,7 +15,7 @@ from typing import Any, Final, Literal, Mapping, Sequence
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from intergrax.runtime.attestation.canonical_json import stable_payload_hash
+from intergrax.contracts.canonical_payload_hash import stable_payload_hash
 
 SCHEMA_RUNTIME_POLICY_BUNDLE_V1: Final = "runtime_policy_bundle.v1"
 _NON_EMPTY = Field(min_length=1)

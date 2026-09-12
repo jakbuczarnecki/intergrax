@@ -10,11 +10,11 @@ from typing import TYPE_CHECKING, List, Protocol, runtime_checkable
 from intergrax.contracts.execution_identity import EventId
 
 if TYPE_CHECKING:
-    from intergrax.runtime.events.execution_position import (
+    from intergrax.contracts.execution_event_position import (
         AsOfBoundary,
         ExecutionEventPosition,
-        PositionedRuntimeEvent,
     )
+    from intergrax.runtime.events.execution_position import PositionedRuntimeEvent
     from intergrax.runtime.events.persistence_contract import TaskRuntimeEventRuns
     from intergrax.runtime.events.runtime_event import RuntimeEvent
 
