@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Pre-execution autonomy guard contract — not wired to spine in R6.1."""
+"""Pre-execution autonomy guard contract (SELF-HEALING R6.1 / wired via R6.3 boundary)."""
 
 from __future__ import annotations
 

@@ -2,7 +2,12 @@
 # Intergrax framework — proprietary and confidential.
 
 from intergrax.runtime.self_healing.autonomy.approval_plugin_evaluator import HumanApprovalPluginEvaluator
+from intergrax.runtime.self_healing.autonomy.default_execution_boundary import DefaultAutonomyExecutionBoundary
+from intergrax.runtime.self_healing.autonomy.default_execution_guard import DefaultAutonomyExecutionGuard
 from intergrax.runtime.self_healing.autonomy.decision_evaluation_service import AutonomyDecisionEvaluationService
+from intergrax.runtime.self_healing.autonomy.in_memory_execution_audit_repository import (
+    InMemoryAutonomyExecutionAuditRepository,
+)
 from intergrax.runtime.self_healing.autonomy.default_approval_resolver import (
     DefaultHumanApprovalRequirementResolver,
 )
@@ -20,12 +25,15 @@ from intergrax.runtime.self_healing.autonomy.service import AutonomyControlServi
 __all__ = [
     "AutonomyControlService",
     "AutonomyDecisionEvaluationService",
+    "DefaultAutonomyExecutionBoundary",
+    "DefaultAutonomyExecutionGuard",
     "AutonomyPolicyPluginEvaluator",
     "DefaultAutonomyPolicy",
     "DefaultAutonomyRiskEvaluator",
     "DefaultHumanApprovalRequirementResolver",
     "HumanApprovalPluginEvaluator",
     "InMemoryAutonomyDecisionRepository",
+    "InMemoryAutonomyExecutionAuditRepository",
     "InMemoryAutonomyRepository",
     "PluginAutonomyControlEngine",
     "PluginAutonomyDecisionEvaluator",

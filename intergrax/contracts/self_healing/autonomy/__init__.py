@@ -10,11 +10,29 @@ from intergrax.contracts.self_healing.autonomy.audit import AutonomyAuditBundle
 from intergrax.contracts.self_healing.autonomy.context import AutonomyDecisionContext
 from intergrax.contracts.self_healing.autonomy.decision import AutonomyControlDecision
 from intergrax.contracts.self_healing.autonomy.engine import AutonomyControlEngine
+from intergrax.contracts.self_healing.autonomy.authorizing_guard import AutonomyExecutionAuthorizingGuard
+from intergrax.contracts.self_healing.autonomy.execution_audit import (
+    AutonomyExecutionAuditRecord,
+    AutonomyExecutionAuditRepository,
+)
+from intergrax.contracts.self_healing.autonomy.execution_authorization import (
+    AutonomyExecutionAuthorization,
+    AutonomyExecutionAuthorizationStatus,
+)
+from intergrax.contracts.self_healing.autonomy.execution_boundary import (
+    AutonomyAdmissionContextSource,
+    AutonomyExecutionBoundary,
+)
+from intergrax.contracts.self_healing.autonomy.execution_denied import AutonomyExecutionDeniedError
 from intergrax.contracts.self_healing.autonomy.guard import (
     AutonomyExecutionAdmissionContext,
     AutonomyExecutionGuard,
     AutonomyGuardCheckResult,
     AutonomyGuardVerdict,
+)
+from intergrax.contracts.self_healing.autonomy.guard_rule import (
+    AutonomyExecutionGuardRule,
+    AutonomyExecutionGuardRuleVerdict,
 )
 from intergrax.contracts.self_healing.autonomy.approval_evaluation import (
     HumanApprovalEvaluationResult,
@@ -45,6 +63,8 @@ from intergrax.contracts.self_healing.autonomy.explanation import (
 from intergrax.contracts.self_healing.autonomy.ids import (
     mint_autonomy_control_decision_id,
     mint_autonomy_evaluation_id,
+    mint_autonomy_execution_audit_record_id,
+    mint_autonomy_execution_authorization_id,
     mint_autonomy_recommendation_correlation_id,
 )
 from intergrax.contracts.self_healing.autonomy.policy_evaluation import (
@@ -92,8 +112,18 @@ __all__ = [
     "AutonomyEvaluationSourceKind",
     "AutonomyEvaluationSourceRef",
     "AutonomyEvaluationVerdict",
+    "AutonomyAdmissionContextSource",
     "AutonomyExecutionAdmissionContext",
+    "AutonomyExecutionAuditRecord",
+    "AutonomyExecutionAuditRepository",
+    "AutonomyExecutionAuthorization",
+    "AutonomyExecutionAuthorizationStatus",
+    "AutonomyExecutionAuthorizingGuard",
+    "AutonomyExecutionBoundary",
+    "AutonomyExecutionDeniedError",
     "AutonomyExecutionGuard",
+    "AutonomyExecutionGuardRule",
+    "AutonomyExecutionGuardRuleVerdict",
     "AutonomyExplanationBullet",
     "AutonomyGuardCheckResult",
     "AutonomyGuardVerdict",
@@ -118,5 +148,7 @@ __all__ = [
     "autonomy_risk_evaluation_result_from_assessment",
     "mint_autonomy_control_decision_id",
     "mint_autonomy_evaluation_id",
+    "mint_autonomy_execution_audit_record_id",
+    "mint_autonomy_execution_authorization_id",
     "mint_autonomy_recommendation_correlation_id",
 ]
