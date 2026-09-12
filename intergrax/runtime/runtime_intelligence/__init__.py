@@ -14,6 +14,7 @@ from intergrax.runtime.runtime_intelligence.analysis_request import (
 from intergrax.runtime.runtime_intelligence.analyzer_orchestrator import (
     RuntimeIntelligenceAnalyzerOrchestrationResult,
     RuntimeIntelligenceAnalyzerOrchestrator,
+    RuntimeIntelligenceAnalyzerOrchestratorPort,
 )
 from intergrax.runtime.runtime_intelligence.context_builder import (
     RuntimeIntelligenceContextBuilder,
@@ -23,6 +24,7 @@ from intergrax.runtime.runtime_intelligence.deterministic_analyzer import (
     DeterministicRuntimeIntelligenceAnalyzer,
 )
 from intergrax.runtime.runtime_intelligence.facade import RuntimeIntelligenceFacade
+from intergrax.runtime.runtime_intelligence.service import RuntimeIntelligenceService
 from intergrax.runtime.runtime_intelligence.runtime_facts import (
     RuntimeIntelligenceFacts,
     RuntimeIntelligenceObservedSignal,
@@ -35,10 +37,12 @@ __all__ = [
     "RuntimeIntelligenceAnalysisResponse",
     "RuntimeIntelligenceAnalyzerOrchestrationResult",
     "RuntimeIntelligenceAnalyzerOrchestrator",
+    "RuntimeIntelligenceAnalyzerOrchestratorPort",
     "RuntimeIntelligenceOrchestratedAnalysisRequest",
     "RuntimeIntelligenceOrchestratedAnalysisResponse",
     "RuntimeIntelligenceContextBuilder",
     "RuntimeIntelligenceFacade",
+    "RuntimeIntelligenceService",
     "RuntimeIntelligenceFacts",
     "RuntimeIntelligenceObservedSignal",
     "RuntimeIntelligenceSignalKind",

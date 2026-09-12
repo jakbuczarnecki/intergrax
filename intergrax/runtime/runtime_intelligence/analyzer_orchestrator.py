@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from intergrax.contracts.runtime_intelligence.analyzer import (
     RuntimeIntelligenceAnalyzerOutcome,
@@ -13,6 +14,15 @@ from intergrax.contracts.runtime_intelligence.analyzer import (
     run_runtime_intelligence_analyzer_isolated,
 )
 from intergrax.contracts.runtime_intelligence.context import RuntimeIntelligenceContext
+
+
+class RuntimeIntelligenceAnalyzerOrchestratorPort(Protocol):
+    def orchestrate(
+        self,
+        context: RuntimeIntelligenceContext,
+        analyzers: tuple[RuntimeIntelligenceAnalyzerPort, ...],
+    ) -> RuntimeIntelligenceAnalyzerOrchestrationResult:
+        ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,4 +60,5 @@ class RuntimeIntelligenceAnalyzerOrchestrator:
 __all__ = [
     "RuntimeIntelligenceAnalyzerOrchestrationResult",
     "RuntimeIntelligenceAnalyzerOrchestrator",
+    "RuntimeIntelligenceAnalyzerOrchestratorPort",
 ]

@@ -141,7 +141,7 @@ def test_facade_orchestrated_matches_direct_lifecycle() -> None:
 
 def test_facade_orchestrated_uses_injected_orchestrator() -> None:
     orchestrator = _RecordingOrchestrator()
-    facade = RuntimeIntelligenceFacade(orchestrator=orchestrator)  # type: ignore[arg-type]
+    facade = RuntimeIntelligenceFacade(orchestrator=orchestrator)
     facade.analyze_orchestrated(_facts(), (DeterministicRuntimeIntelligenceAnalyzer(),))
     assert orchestrator.invoked is True
 

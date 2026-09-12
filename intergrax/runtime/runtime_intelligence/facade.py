@@ -18,6 +18,7 @@ from intergrax.runtime.runtime_intelligence.analysis_request import (
 )
 from intergrax.runtime.runtime_intelligence.analyzer_orchestrator import (
     RuntimeIntelligenceAnalyzerOrchestrator,
+    RuntimeIntelligenceAnalyzerOrchestratorPort,
 )
 from intergrax.runtime.runtime_intelligence.context_builder import RuntimeIntelligenceContextBuilder
 from intergrax.runtime.runtime_intelligence.runtime_facts import RuntimeIntelligenceFacts
@@ -35,7 +36,7 @@ class RuntimeIntelligenceFacade:
     context_builder: RuntimeIntelligenceContextBuilder = field(
         default_factory=RuntimeIntelligenceContextBuilder
     )
-    orchestrator: RuntimeIntelligenceAnalyzerOrchestrator = field(
+    orchestrator: RuntimeIntelligenceAnalyzerOrchestratorPort = field(
         default_factory=RuntimeIntelligenceAnalyzerOrchestrator
     )
 

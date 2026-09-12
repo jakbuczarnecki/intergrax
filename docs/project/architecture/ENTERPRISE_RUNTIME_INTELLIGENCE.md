@@ -9,7 +9,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 **Enterprise Runtime Intelligence (ERI)** is the planned platform layer that **explains, correlates, and scores** runtime execution using **canonical facts** already produced by W1–W5 — without becoming a second diagnostic engine, without owning execution truth, and without introducing god components.
 
 > [!NOTE]
-> **W6-A:** Architecture inventory and qualification. **W6-B:** Contract freeze in `intergrax/contracts/runtime_intelligence/` (SPI + immutable envelopes). **W6-C:** Context builder + deterministic analyzer in `intergrax/runtime/runtime_intelligence/`. **W6-D:** Multi-analyzer orchestration in `intergrax/runtime/runtime_intelligence/analyzer_orchestrator.py`. **W6-E:** Application facade in `intergrax/runtime/runtime_intelligence/facade.py`. See [`ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md`](../maintainers/architecture/ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md), [`ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md`](../maintainers/architecture/ADR/ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md), [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md), [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_C_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_C_QUALIFICATION.md), and [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_D_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_D_QUALIFICATION.md).
+> **W6-A:** Architecture inventory and qualification. **W6-B:** Contract freeze in `intergrax/contracts/runtime_intelligence/` (SPI + immutable envelopes). **W6-C:** Context builder + deterministic analyzer in `intergrax/runtime/runtime_intelligence/`. **W6-D:** Multi-analyzer orchestration in `intergrax/runtime/runtime_intelligence/analyzer_orchestrator.py`. **W6-E:** Execution integration port + service + optional execution call site. See [`ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md`](../maintainers/architecture/ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md), [`ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md`](../maintainers/architecture/ADR/ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md), [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md), [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_C_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_C_QUALIFICATION.md), [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_D_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_D_QUALIFICATION.md), and [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_E_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_E_QUALIFICATION.md).
 
 **Primary audience:** Principal / Staff architects and platform engineers extending execution reliability, observability, and adaptive operations.
 
@@ -118,18 +118,30 @@ intergrax/contracts/runtime_intelligence/
 ## Runtime integration (W6-C + W6-D + W6-E)
 
 ```text
-Caller
+Execution Runtime (W1 — lifecycle owner)
+        │
+        │  optional, fail-soft
+        ▼
+request_execution_runtime_intelligence_advisory
         │
         ▼
-RuntimeIntelligenceFacade (W6-E — primary application entry)
+invoke_runtime_intelligence_integration_isolated (contracts)
         │
-        ├── RuntimeIntelligenceFacts (read-only request inputs)
+        ▼
+RuntimeIntelligenceRuntimeIntegrationPort
+        │
+        ▼
+RuntimeIntelligenceService
+        │
+        ├── RuntimeIntelligenceFacade (lifecycle coordination)
         ├── RuntimeIntelligenceContextBuilder → RuntimeIntelligenceContext
-        ├── DeterministicRuntimeIntelligenceAnalyzer (reference plugin)
-        ├── RuntimeIntelligenceAnalyzerOrchestrator (multi-plugin coordination)
-        ├── run_runtime_intelligence_analysis (single-analyzer lifecycle)
-        └── run_runtime_intelligence_orchestrated_analysis (multi-analyzer lifecycle)
+        ├── RuntimeIntelligenceAnalyzerOrchestrator (multi-plugin)
+        └── RuntimeIntelligenceAnalyzerPort plugins (SPI)
 ```
+
+**W6-E does not:** drive execution, apply retries, mutate lifecycle, bypass governance, schedule background analysis, or cache global intelligence state.
+
+Application callers may still use `RuntimeIntelligenceFacade` directly when not on the execution hot path.
 
 Signal observations from read ports are projected into context as stable fact pointers (`intelligence_signal:{kind}:{intensity}`) so W6-B context shape stays unchanged.
 
@@ -139,8 +151,11 @@ Signal observations from read ports are projected into context as stable fact po
 
 | Concern | Owner |
 |---------|--------|
-| Application API boundary | `RuntimeIntelligenceFacade` (`runtime/runtime_intelligence/facade.py`) |
-| Fact assembly | Integration caller (`RuntimeIntelligenceFacts` from read ports) |
+| Execution → intelligence boundary | `RuntimeIntelligenceRuntimeIntegrationPort` + `invoke_runtime_intelligence_integration_isolated` (`contracts/runtime_intelligence/integration.py`) |
+| Intelligence service | `RuntimeIntelligenceService` (`runtime/runtime_intelligence/service.py`) |
+| Execution call site (optional) | `request_execution_runtime_intelligence_advisory` (`runtime/execution/runtime_intelligence_advisory.py`) |
+| Application / direct API | `RuntimeIntelligenceFacade` (`runtime/runtime_intelligence/facade.py`) |
+| Fact assembly | Execution or application caller (`RuntimeIntelligenceFacts` / `RuntimeIntelligenceFactsInput` from read ports) |
 | Context projection | `RuntimeIntelligenceContextBuilder` (`runtime/runtime_intelligence/`) |
 | Analysis | `RuntimeIntelligenceAnalyzerPort` implementations |
 | Orchestration (ordering, isolation, aggregation) | `RuntimeIntelligenceAnalyzerOrchestrator` |
@@ -153,12 +168,13 @@ Signal observations from read ports are projected into context as stable fact po
 ## Lifecycle (W6-B + W6-C + W6-D + W6-E)
 
 ```text
-facade.analyze / facade.analyze_orchestrated
-        → build context → analyze (single or orchestrated) → return response → release request resources
+create facts input → analyze_advisory (port) → advisory response → dispose request scope
 ```
 
+Direct facade path: `facade.analyze` / `facade.analyze_orchestrated` → build context → analyze → return response.
+
 - **Request-scoped** — no W6 managers, schedulers, or daemons.
-- Callers should prefer **`RuntimeIntelligenceFacade`** over wiring builder and orchestrator directly.
+- Execution should use the **integration port**; application code may use **`RuntimeIntelligenceFacade`** directly.
 - Analyzers are **injected per request** (composition root / caller), not discovered via a central registry.
 - Multi-analyzer paths use an explicit `tuple` order; orchestrator delegates each slot to `run_runtime_intelligence_analyzer_isolated`.
 - No global mutable intelligence state in contracts or W6 runtime modules.
@@ -182,14 +198,15 @@ Contracts do **not** branch on analyzer kind; each adapter implements the same P
 ## Failure isolation
 
 ```text
-Invalid facts at build → InvalidIntelligenceContextError (caller boundary)
+Invalid facts at build → INTEGRATION_OUTCOME_INVALID_INPUT (execution boundary)
+Service / port RuntimeIntelligenceError → INTEGRATION_OUTCOME_UNAVAILABLE
 Analyzer failure / invalid context at analyze
         ↓
 run_runtime_intelligence_analyzer_isolated → PLUGIN_UNAVAILABLE or INVALID_CONTEXT
         ↓
 RuntimeIntelligenceAnalyzerOrchestrator aggregates per-analyzer outcomes (W6-D)
         ↓
-Execution hot path continues unchanged
+Execution hot path continues unchanged (no exception propagation)
 ```
 
 Typed errors: `RuntimeIntelligenceError`, `AnalyzerExecutionError`, `InvalidIntelligenceContextError` — never generic execution exceptions on the hot path.

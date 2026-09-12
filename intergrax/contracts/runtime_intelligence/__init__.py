@@ -19,6 +19,16 @@ from intergrax.contracts.runtime_intelligence.context import (
     RuntimeIntelligenceFactReference,
     validate_runtime_intelligence_context,
 )
+from intergrax.contracts.runtime_intelligence.integration import (
+    INTEGRATION_OUTCOME_INVALID_INPUT,
+    INTEGRATION_OUTCOME_OK,
+    INTEGRATION_OUTCOME_UNAVAILABLE,
+    RuntimeIntelligenceAdvisoryResponse,
+    RuntimeIntelligenceFactsInput,
+    RuntimeIntelligenceIntegrationOutcome,
+    RuntimeIntelligenceRuntimeIntegrationPort,
+    invoke_runtime_intelligence_integration_isolated,
+)
 from intergrax.contracts.runtime_intelligence.errors import (
     AnalyzerExecutionError,
     InvalidIntelligenceContextError,
@@ -38,6 +48,9 @@ from intergrax.contracts.runtime_intelligence.result import (
 )
 
 __all__ = [
+    "INTEGRATION_OUTCOME_INVALID_INPUT",
+    "INTEGRATION_OUTCOME_OK",
+    "INTEGRATION_OUTCOME_UNAVAILABLE",
     "ANALYZER_OUTCOME_INVALID_CONTEXT",
     "ANALYZER_OUTCOME_OK",
     "ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE",
@@ -47,6 +60,11 @@ __all__ = [
     "IntelligenceRecommendation",
     "IntelligenceRecommendationKind",
     "InvalidIntelligenceContextError",
+    "RuntimeIntelligenceAdvisoryResponse",
+    "RuntimeIntelligenceFactsInput",
+    "RuntimeIntelligenceIntegrationOutcome",
+    "RuntimeIntelligenceRuntimeIntegrationPort",
+    "invoke_runtime_intelligence_integration_isolated",
     "RUNTIME_INTELLIGENCE_CONTEXT_SCHEMA_VERSION",
     "RUNTIME_INTELLIGENCE_RESULT_SCHEMA_VERSION",
     "RuntimeIntelligenceAnalyzerOutcome",
