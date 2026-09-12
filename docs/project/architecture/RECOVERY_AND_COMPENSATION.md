@@ -106,6 +106,23 @@ ERL separates **planning** from **execution**:
 
 **Failure model (fail closed):** invalid or non-`invoke_plugin` plans do not call plugins; missing executor yields `unavailable`; plugin faults surface as `failed` or typed orchestration errors before invoke; no silent retry or swallow.
 
+### Recovery lifecycle boundary (ERL foundation)
+
+After resolution and optional compensation execution, ERL recommends **what should happen to execution lifecycle** — not a second workflow engine.
+
+| Artifact | Owner | Meaning |
+| -------- | ----- | ------- |
+| `RecoveryDecision` | Recovery contract | Domain-neutral lifecycle action (`continue`, `pause`, `escalate`, `terminate`, `wait`) |
+| `RecoveryStrategy` | ERL plugin SPI | Evaluates resolution + compensation outcomes and proposes `RecoveryDecision` |
+| `ExternalEffectRecoveryRecommendation` | Recovery runtime | Immutable bundle for observability and handoff |
+| `RecoveryLifecycleIntent` | Execution lifecycle port | Consumed by UER adapters — ERL does not apply lifecycle mutations |
+
+**Lifecycle:** materialize strategy context from uncertainty state and evidence → invoke `RecoveryStrategy` through the ERL plugin gateway → map to `RecoveryDecision`. No hidden transitions.
+
+**Ownership split:** ERL recovery **recommends**; **Unified Execution Runtime** owns pause, resume, terminate, and HITL routing via `ExecutionLifecyclePort` implementations. Recovery must not bypass governance or HITL.
+
+**Failure model (fail closed):** missing recovery strategy yields `escalate` (never automatic `continue`); strategy abstention yields `wait` (unresolved); no silent success.
+
 ---
 
 ## Escalate and human decision

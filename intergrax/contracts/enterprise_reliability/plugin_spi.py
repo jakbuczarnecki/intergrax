@@ -18,6 +18,7 @@ from intergrax.contracts.enterprise_reliability.lifecycle import (
 from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
 from intergrax.contracts.enterprise_reliability.reconciliation_evidence import ExternalEffectEvidence
 from intergrax.contracts.enterprise_reliability.compensation_decision import CompensationDecision
+from intergrax.contracts.enterprise_reliability.recovery_decision import RecoveryDecision
 from intergrax.contracts.enterprise_reliability.resolution_decision import ResolutionDecision
 from intergrax.contracts.enterprise_reliability.reconciliation_execution import (
     ReconciliationProbeRequest,
@@ -27,6 +28,7 @@ from intergrax.contracts.enterprise_reliability.reconciliation_execution import 
 if TYPE_CHECKING:
     from intergrax.contracts.enterprise_reliability.compensation_execution import (
         CompensationExecutionRequest,
+        CompensationExecutionResult,
         CompensationPluginExecutionResult,
     )
 
@@ -37,6 +39,7 @@ class EnterpriseReliabilityCapabilityKind(StrEnum):
     RECONCILIATION = "reconciliation"
     RESOLUTION = "resolution"
     COMPENSATION = "compensation"
+    RECOVERY = "recovery"
     RISK_EVALUATION = "risk_evaluation"
 
 
@@ -112,6 +115,17 @@ class CompensationStrategyEvaluationRequest:
     """Inputs for compensation strategy evaluation — resolution-bound, evidence-scoped."""
 
     resolution_decision: ResolutionDecision
+    evidence: ExternalEffectEvidence
+    execution_context: EnterpriseReliabilityStrategyContext
+    effect_contract: ExternalEffectContract
+
+
+@dataclass(frozen=True, slots=True)
+class RecoveryStrategyEvaluationRequest:
+    """Inputs for recovery strategy evaluation — resolution and compensation scoped."""
+
+    resolution_decision: ResolutionDecision
+    compensation_execution: CompensationExecutionResult | None
     evidence: ExternalEffectEvidence
     execution_context: EnterpriseReliabilityStrategyContext
     effect_contract: ExternalEffectContract
@@ -237,6 +251,25 @@ class CompensationStrategy(Protocol):
 
 
 @runtime_checkable
+class RecoveryStrategy(Protocol):
+    """Plugin contract — execution lifecycle recommendation only."""
+
+    @property
+    def plugin_id(self) -> str: ...
+
+    @property
+    def version(self) -> str: ...
+
+    @property
+    def descriptor(self) -> EnterpriseReliabilityPluginDescriptor: ...
+
+    def evaluate(
+        self,
+        request: RecoveryStrategyEvaluationRequest,
+    ) -> RecoveryDecision | None: ...
+
+
+@runtime_checkable
 class CompensationExecutionStrategy(Protocol):
     """Plugin contract — external compensation I/O; returns platform-neutral outcomes."""
 
@@ -273,6 +306,7 @@ EnterpriseReliabilityPlugin = (
     ReconciliationStrategy
     | ResolutionStrategy
     | CompensationStrategy
+    | RecoveryStrategy
     | RiskEvaluationStrategy
 )
 
@@ -299,6 +333,8 @@ class EnterpriseReliabilityPluginRegistry(Protocol):
         self,
         plugin_id: str,
     ) -> CompensationExecutionStrategy | None: ...
+
+    def resolve_recovery(self, plugin_id: str) -> RecoveryStrategy | None: ...
 
     def resolve_risk_evaluation(self, plugin_id: str) -> RiskEvaluationStrategy | None: ...
 
@@ -352,6 +388,14 @@ class EnterpriseReliabilityPluginGateway(Protocol):
         request: CompensationExecutionRequest,
     ) -> CompensationPluginExecutionResult | None: ...
 
+    def recovery_strategy_registered(self, plugin_id: str) -> bool: ...
+
+    def evaluate_recovery(
+        self,
+        plugin_id: str,
+        request: RecoveryStrategyEvaluationRequest,
+    ) -> RecoveryDecision | None: ...
+
     def evaluate_risk(
         self,
         plugin_id: str,
@@ -375,6 +419,9 @@ __all__ = [
     "ReconciliationProbeExecutor",
     "ReconciliationStrategy",
     "ReconciliationStrategyAdvice",
+    "RecoveryDecision",
+    "RecoveryStrategy",
+    "RecoveryStrategyEvaluationRequest",
     "ResolutionDecision",
     "ResolutionStrategy",
     "ResolutionStrategyAdvice",

@@ -41,6 +41,11 @@ from intergrax.runtime.enterprise_reliability.compensation_orchestration import 
     ExternalEffectCompensationPlanning,
     plan_external_effect_compensation,
 )
+from intergrax.runtime.enterprise_reliability.recovery_orchestration import (
+    ExternalEffectRecoveryRecommendation,
+    RecoveryOrchestrationError,
+    recommend_external_effect_recovery_lifecycle,
+)
 from intergrax.runtime.enterprise_reliability.resolution_orchestration import (
     ExternalEffectResolutionPlanning,
     ResolutionOrchestrationError,
@@ -64,9 +69,11 @@ __all__ = [
     "CompensationOrchestrationError",
     "ExternalEffectCompensationPlanning",
     "ExternalEffectCompensationRun",
+    "ExternalEffectRecoveryRecommendation",
     "ExternalEffectResolutionPlanning",
     "ExternalEffectResolutionRun",
     "ReconciliationOrchestrationError",
+    "RecoveryOrchestrationError",
     "ResolutionOrchestrationError",
     "execute_external_effect_compensation",
     "plan_external_effect_compensation",
@@ -76,6 +83,7 @@ __all__ = [
     "plan_external_effect_resolution",
     "materialize_external_effect_evidence_from_probe",
     "plan_external_effect_reconciliation",
+    "recommend_external_effect_recovery_lifecycle",
     "UncertaintyResolutionError",
     "admit_external_effect_unknown",
     "admit_external_effect_unknown_with_contract",

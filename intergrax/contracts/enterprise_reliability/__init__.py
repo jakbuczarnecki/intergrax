@@ -89,6 +89,16 @@ from intergrax.contracts.enterprise_reliability.outcome import (
     ExternalEffectOutcome,
     is_terminal_external_effect_outcome,
 )
+from intergrax.contracts.enterprise_reliability.execution_lifecycle_port import (
+    ExecutionLifecyclePort,
+    RecoveryLifecycleIntent,
+)
+from intergrax.contracts.enterprise_reliability.recovery_decision import (
+    RecoveryDecision,
+    RecoveryLifecycleAction,
+    abstained_recovery_strategy_decision,
+    missing_recovery_strategy_decision,
+)
 from intergrax.contracts.enterprise_reliability.plugin_spi import (
     CompensationExecutionStrategy,
     CompensationStrategy,
@@ -104,6 +114,8 @@ from intergrax.contracts.enterprise_reliability.plugin_spi import (
     ReconciliationProbeExecutor,
     ReconciliationStrategy,
     ReconciliationStrategyAdvice,
+    RecoveryStrategy,
+    RecoveryStrategyEvaluationRequest,
     ResolutionStrategy,
     ResolutionStrategyAdvice,
     ResolutionStrategyEvaluationRequest,
@@ -180,11 +192,14 @@ __all__ = [
     "CompensationStrategyAdvice",
     "CompensationStrategyEvaluationRequest",
     "abstained_compensation_strategy_decision",
+    "abstained_recovery_strategy_decision",
     "assert_resolution_requires_compensation",
     "build_compensation_execution_request",
     "build_compensation_plan",
     "compensation_advice_from_decision",
     "missing_compensation_strategy_decision",
+    "missing_recovery_strategy_decision",
+    "ExecutionLifecyclePort",
     "EnterpriseReliabilityCapabilityKind",
     "EnterpriseReliabilityPlugin",
     "EnterpriseReliabilityPluginDescriptor",
@@ -202,6 +217,11 @@ __all__ = [
     "ReconciliationProbeExecutor",
     "ReconciliationProbeRequest",
     "ReconciliationProbeResult",
+    "RecoveryDecision",
+    "RecoveryLifecycleAction",
+    "RecoveryLifecycleIntent",
+    "RecoveryStrategy",
+    "RecoveryStrategyEvaluationRequest",
     "ReconciliationStrategy",
     "ReconciliationBounds",
     "ReconciliationDisposition",

@@ -13,6 +13,7 @@ from intergrax.contracts.enterprise_reliability.plugin_spi import (
     EnterpriseReliabilityPluginDescriptor,
     ReconciliationProbeExecutor,
     ReconciliationStrategy,
+    RecoveryStrategy,
     ResolutionStrategy,
     RiskEvaluationStrategy,
     assert_plugin_identity_matches_descriptor,
@@ -44,6 +45,7 @@ class InMemoryEnterpriseReliabilityPluginRegistry:
         self._reconciliation: dict[str, ReconciliationStrategy] = {}
         self._resolution: dict[str, ResolutionStrategy] = {}
         self._compensation: dict[str, CompensationStrategy] = {}
+        self._recovery: dict[str, RecoveryStrategy] = {}
         self._risk: dict[str, RiskEvaluationStrategy] = {}
 
     def register(self, plugin: EnterpriseReliabilityPlugin) -> None:
@@ -58,6 +60,9 @@ class InMemoryEnterpriseReliabilityPluginRegistry:
             return
         if kind is EnterpriseReliabilityCapabilityKind.COMPENSATION:
             self._compensation[plugin_id] = plugin  # type: ignore[assignment]
+            return
+        if kind is EnterpriseReliabilityCapabilityKind.RECOVERY:
+            self._recovery[plugin_id] = plugin  # type: ignore[assignment]
             return
         if kind is EnterpriseReliabilityCapabilityKind.RISK_EVALUATION:
             self._risk[plugin_id] = plugin  # type: ignore[assignment]
@@ -97,6 +102,9 @@ class InMemoryEnterpriseReliabilityPluginRegistry:
             return plugin
         return None
 
+    def resolve_recovery(self, plugin_id: str) -> RecoveryStrategy | None:
+        return self._recovery.get(plugin_id)
+
     def resolve_risk_evaluation(self, plugin_id: str) -> RiskEvaluationStrategy | None:
         return self._risk.get(plugin_id)
 
@@ -112,6 +120,8 @@ class InMemoryEnterpriseReliabilityPluginRegistry:
             plugins = tuple(self._resolution.values())
         elif capability_kind is EnterpriseReliabilityCapabilityKind.COMPENSATION:
             plugins = tuple(self._compensation.values())
+        elif capability_kind is EnterpriseReliabilityCapabilityKind.RECOVERY:
+            plugins = tuple(self._recovery.values())
         elif capability_kind is EnterpriseReliabilityCapabilityKind.RISK_EVALUATION:
             plugins = tuple(self._risk.values())
         else:
