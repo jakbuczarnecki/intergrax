@@ -12,6 +12,8 @@ from intergrax.contracts.self_healing.result import (
 )
 from intergrax.contracts.self_healing.safety import assert_strategy_has_no_execution_surface
 from intergrax.contracts.self_healing.strategy import SelfHealingStrategy
+from intergrax.contracts.self_healing.selection.performance import SelfHealingStrategyPerformance
+from intergrax.contracts.self_healing.selection.selector import SelfHealingStrategySelector
 from intergrax.runtime.self_healing.resolution import resolve_strategies_for_context
 from intergrax.runtime.self_healing.strategy_registry import InMemorySelfHealingStrategyRegistry
 
@@ -19,8 +21,21 @@ from intergrax.runtime.self_healing.strategy_registry import InMemorySelfHealing
 class SelfHealingDecisionEngine:
     """Central decision layer — evaluates registered strategies with containment."""
 
-    def __init__(self, registry: InMemorySelfHealingStrategyRegistry) -> None:
+    def __init__(
+        self,
+        registry: InMemorySelfHealingStrategyRegistry,
+        strategy_selector: SelfHealingStrategySelector | None = None,
+        performance_profiles: tuple[SelfHealingStrategyPerformance, ...] = (),
+    ) -> None:
         self._registry = registry
+        if strategy_selector is None:
+            from intergrax.runtime.self_healing.lifecycle.selection import (
+                HighestConfidenceStrategySelector,
+            )
+
+            strategy_selector = HighestConfidenceStrategySelector()
+        self._strategy_selector = strategy_selector
+        self._performance_profiles = performance_profiles
 
     def evaluate_contained(
         self,
@@ -58,7 +73,13 @@ class SelfHealingDecisionEngine:
         context: SelfHealingContext,
     ) -> tuple[SelfHealingStrategyEvaluationResult, ...]:
         strategies = self._registry.list_available(tenant_id=context.tenant_id)
-        ordered = resolve_strategies_for_context(strategies, context)
+        ordered = self._strategy_selector.select(
+            strategies,
+            context,
+            performance_profiles=self._performance_profiles,
+        )
+        if not ordered:
+            ordered = resolve_strategies_for_context(strategies, context)
         results: list[SelfHealingStrategyEvaluationResult] = []
         for strategy in ordered:
             result = self.evaluate_contained(strategy, context)

@@ -55,6 +55,7 @@ from intergrax.contracts.preventive_investigation_read import (
     RelatedPreventiveRecommendationView,
 )
 from intergrax.contracts.self_healing_investigation_read import (
+    HealingExecutionTimelineView,
     RelatedSelfHealingHistoryEntryView,
     RelatedSelfHealingWorkflowHistoryEntryView,
 )
@@ -73,6 +74,7 @@ def project_investigation_view(
     preventive_action_history: tuple[RelatedPreventiveActionHistoryEntryView, ...] = (),
     self_healing_history: tuple[RelatedSelfHealingHistoryEntryView, ...] = (),
     healing_workflow_history: tuple[RelatedSelfHealingWorkflowHistoryEntryView, ...] = (),
+    healing_execution_timeline: HealingExecutionTimelineView | None = None,
 ) -> DiagnosticInvestigationView:
     summary = DiagnosticProblemSummary(
         problem_id=problem_detail.problem_id,
@@ -145,6 +147,7 @@ def project_investigation_view(
         preventive_action_history=preventive_action_history,
         self_healing_history=self_healing_history,
         healing_workflow_history=healing_workflow_history,
+        healing_execution_timeline=healing_execution_timeline,
         external_operation_context=external_operation_context,
         external_operation_failures=external_operation_failures,
     )

@@ -60,6 +60,7 @@ class SelfHealingWorkflowOrchestrator:
     validation_registry: InMemorySelfHealingValidationRegistry
     rollback_registry: InMemorySelfHealingRollbackRegistry
     audit_trail: list[SelfHealingWorkflowAuditEntry] = field(default_factory=list)
+    spine_attempt_ids: list[str] = field(default_factory=list)
     _workflows: dict[str, SelfHealingWorkflowContext] = field(default_factory=dict)
 
     def create_from_decision(
@@ -200,7 +201,7 @@ class SelfHealingWorkflowOrchestrator:
             wf.decision,
             proposed_actions=(action,),
         )
-        self.healing_orchestrator.attempt_execution(
+        attempt = self.healing_orchestrator.attempt_execution(
             step_decision,
             tenant_id=wf.tenant_id,
             context=wf.healing_context,
@@ -208,6 +209,7 @@ class SelfHealingWorkflowOrchestrator:
             task_id=task_id,
             production_target=wf.healing_context.constraints.production_target,
         )
+        self.spine_attempt_ids.append(attempt.operation_attempt_id)
 
     def _run_validation(self, wf: SelfHealingWorkflowContext) -> SelfHealingWorkflowContext:
         provider = self.validation_registry.resolve(

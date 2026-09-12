@@ -28,6 +28,26 @@ class RelatedSelfHealingHistoryEntryView:
 
 
 @dataclass(frozen=True, slots=True)
+class HealingExecutionTimelineStageView:
+    """One stage on the operator healing execution timeline — read-only."""
+
+    phase: str
+    label: str
+    recorded_at: datetime | None
+    evidence_refs: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class HealingExecutionTimelineView:
+    """R3 healing execution lifecycle projection — not execution authority."""
+
+    workflow_id: str
+    strategy_id: str
+    plan_id: str
+    stages: tuple[HealingExecutionTimelineStageView, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class RelatedSelfHealingWorkflowHistoryEntryView:
     """Workflow lifecycle trail on DiagnosticInvestigationView — read-only."""
 
@@ -43,6 +63,8 @@ class RelatedSelfHealingWorkflowHistoryEntryView:
 
 
 __all__ = [
+    "HealingExecutionTimelineStageView",
+    "HealingExecutionTimelineView",
     "RelatedSelfHealingHistoryEntryView",
     "RelatedSelfHealingWorkflowHistoryEntryView",
 ]
