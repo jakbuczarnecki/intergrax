@@ -10,6 +10,9 @@ from pathlib import Path
 
 R2_IMPLEMENTATION_SHA = "632507420f0ab8360aede43a2740e8fccc44efb4"
 
+# Re-advanced after Evidence Persistence Boundary (journal read API uses ``EvidencePersistencePort``).
+R2_POST_QUALIFIED_BASELINE_SHA = "39ac19d5ba9be3d7b7498d20539a8b2defed676c"
+
 _R2_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {
         "intergrax/runtime/events/execution_position.py",

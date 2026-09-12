@@ -12,7 +12,8 @@ R1_IMPLEMENTATION_SHA = "455d3b216f0ad56ea9cdf9db6e0f760b50063a81"
 
 # Qualified post-R2 enum extension: ``RuntimeEventType.EXECUTION_FAILED`` (40cc8c11e).
 # Advanced after NPSC-5F/R1 event-spine drift reconciliation on integrated ``development``.
-R1_POST_R2_QUALIFIED_BASELINE_SHA = "ec23b24d4bb398c83ed310c9deee7d462d73a7e0"
+# Re-advanced after Evidence Persistence Boundary (``EvidencePersistencePort`` / event bus DI).
+R1_POST_R2_QUALIFIED_BASELINE_SHA = "39ac19d5ba9be3d7b7498d20539a8b2defed676c"
 
 _R1_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {

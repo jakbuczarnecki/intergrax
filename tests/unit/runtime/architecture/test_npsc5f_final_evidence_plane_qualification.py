@@ -66,7 +66,10 @@ from testing_support.npsc5f_r1_protected_drift import (
     R1_POST_R2_QUALIFIED_BASELINE_SHA,
     collect_r1_protected_production_drift,
 )
-from testing_support.npsc5f_r2_protected_drift import collect_r2_protected_production_drift
+from testing_support.npsc5f_r2_protected_drift import (
+    R2_POST_QUALIFIED_BASELINE_SHA,
+    collect_r2_protected_production_drift,
+)
 from testing_support.npsc5f_r3_protected_drift import collect_r3_protected_production_drift
 from tests.unit.contracts.test_bitemporal_revision_ordering import _InMemoryRevisionOrderingAuthority
 from tests.unit.runtime.architecture.test_npsc5f_r4_reconstruction_asof_bitemporal import (
@@ -113,7 +116,11 @@ def test_npsc5f_final_predecessor_drift_sentinels_empty() -> None:
         from_sha=R1_POST_R2_QUALIFIED_BASELINE_SHA,
         to_ref="origin/development",
     ) == []
-    assert collect_r2_protected_production_drift(_REPO_ROOT, to_ref="origin/development") == []
+    assert collect_r2_protected_production_drift(
+        _REPO_ROOT,
+        from_sha=R2_POST_QUALIFIED_BASELINE_SHA,
+        to_ref="origin/development",
+    ) == []
     assert collect_r3_protected_production_drift(_REPO_ROOT, to_ref="origin/development") == []
     assert collect_breaking_evidence_plane_production_drift(_REPO_ROOT) == []
 

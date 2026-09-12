@@ -40,7 +40,11 @@ from testing_support.npsc5f_r1_protected_drift import (
     collect_r1_protected_production_drift,
     git_changed_paths,
 )
-from testing_support.npsc5f_r2_protected_drift import R2_IMPLEMENTATION_SHA, collect_r2_protected_production_drift
+from testing_support.npsc5f_r2_protected_drift import (
+    R2_IMPLEMENTATION_SHA,
+    R2_POST_QUALIFIED_BASELINE_SHA,
+    collect_r2_protected_production_drift,
+)
 from testing_support.npsc5f_r3_h1_upstream_event_drift import (
     EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA,
     NPSC5F_R3_H1_QUALIFIED_INTEGRATED_SHA,
@@ -190,7 +194,10 @@ def test_npsc5f_r3_h1_sentinel_baselines_after_qualified_drift() -> None:
         from_sha=R1_POST_R2_QUALIFIED_BASELINE_SHA,
     )
     assert r1_drift == []
-    assert collect_r2_protected_production_drift(_REPO_ROOT) == []
+    assert collect_r2_protected_production_drift(
+        _REPO_ROOT,
+        from_sha=R2_POST_QUALIFIED_BASELINE_SHA,
+    ) == []
     assert collect_r3_protected_production_drift(_REPO_ROOT) == []
 
 
