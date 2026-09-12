@@ -70,7 +70,11 @@ _NPSC5F_FINAL_EXTRA_SUITES: tuple[tuple[str, list[str]], ...] = (
     ),
     (
         "Evidence",
-        ["tests/unit/runtime/architecture/test_npsc5f_p0_execution_evidence_architecture_reconciliation.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_p0_execution_evidence_architecture_reconciliation.py",
+            "tests/unit/runtime/architecture/test_npsc5f_enterprise_evidence_certification.py",
+            "tests/unit/runtime/events/test_evidence_persistence_boundary.py",
+        ],
     ),
     (
         "NPSC-5D Final",
