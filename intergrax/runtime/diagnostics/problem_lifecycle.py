@@ -19,9 +19,21 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
-from typing import NewType, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 from uuid import uuid4
 
+from intergrax.contracts.diagnostics.problem_identity import (
+    ProblemId,
+    ProblemOccurrenceAggregateHealth,
+    ProblemStatus,
+)
+from intergrax.contracts.diagnostics.problem_persistence import (
+    ProblemPersistence,
+    ProblemPersistenceConflictError,
+    ProblemPersistenceIntegrityError,
+    ProblemPersistenceIntegrityReason,
+)
+from intergrax.contracts.diagnostics.reconciliation_key import ProblemReconciliationKey
 from intergrax.runtime.diagnostics.deterministic_problem_reconciliation import (
     DeterministicProblemReconciliationKey,
     ProblemReconciliationKeyKind,
@@ -42,14 +54,6 @@ from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrenceAppendResult,
     ProblemOccurrencePersistence,
 )
-from intergrax.runtime.diagnostics.problem_persistence import (
-    ProblemPersistence,
-    ProblemPersistenceConflictError,
-    ProblemPersistenceIntegrityError,
-    ProblemPersistenceIntegrityReason,
-)
-
-ProblemId = NewType("ProblemId", str)
 
 _CANONICAL_SUFFIX = re.compile(r"^[0-9a-f]{32}$")
 _MAX_PERSISTENCE_CONFLICT_RETRIES = 3
@@ -57,28 +61,6 @@ _MAX_PERSISTENCE_CONFLICT_RETRIES = 3
 
 class ProblemLifecycleIntegrityError(Exception):
     """Raised when reconciliation input or attachment rules are violated."""
-
-
-class ProblemStatus(StrEnum):
-    OPEN = "open"
-    RESOLVED = "resolved"
-
-
-class ProblemOccurrenceAggregateHealth(StrEnum):
-    """Operator-readable aggregate projection quality for one Problem."""
-
-    CONSISTENT = "consistent"
-    RECONCILIATION_REQUIRED = "reconciliation_required"
-
-
-@runtime_checkable
-class ProblemReconciliationKey(Protocol):
-    """Strategy-specific recurrence evidence — not opaque Problem identity."""
-
-    @property
-    def kind(self) -> ProblemReconciliationKeyKind: ...
-
-    def index_token(self) -> str: ...
 
 
 @dataclass(frozen=True, slots=True)

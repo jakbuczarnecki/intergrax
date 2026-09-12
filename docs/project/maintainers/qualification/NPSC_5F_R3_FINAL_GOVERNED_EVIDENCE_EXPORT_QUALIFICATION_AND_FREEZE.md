@@ -25,6 +25,7 @@ Invariant:
 | NPSC-5F/R1 Final | `455c09f342f995ac0a6fcb03ffef2f4d3e36a447` |
 | NPSC-5F/P0 | `7811371da1069b661987b050a4c9bf42c02bda69` |
 | NPSC-5E Final | `fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7` |
+| **Qualification tested SHA** | `397031005d1d364d96273a1966e9a9f6afe50755` |
 
 ---
 
@@ -210,7 +211,7 @@ Canaries: `SECRET_PROMPT_123`, `SECRET_TOKEN_456`, `RAW_TOOL_ARGS_789`, `PRIVATE
 
 ## Final verdict
 
-**R3 contract qualification:** PASS on implementation SHA `0346face` with **no unqualified R3-protected drift** since implementation through Final sign-off.
+**R3 contract qualification:** PASS on implementation SHA `0346face` with **no unqualified R3-protected drift** since implementation through Final sign-off. Re-qualified on `development` at `397031005d1d364d96273a1966e9a9f6afe50755` (composed gate: R3/R1/R2 finals inline + implementation gates + `tests/unit/runtime/observability/**` + `tests/unit/runtime/events/**` + predecessor mandatory slices; pyright 0 errors on R3 export modules).
 
 **OBS-03:** FIXED / FROZEN R3.
 

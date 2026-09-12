@@ -35,6 +35,8 @@ Enterprise safety follows from: immutable append-only evidence, fail-closed mand
 
 Static negative proof: `testing_support/npsc5f_final_evidence_plane_ownership.py` — Evidence Plane AST roots must not call `retry`, `resume`, `schedule`, bare `execute()`, `mint_attempt`, `mint_run`, `approve`, `deny`, or `mutate_execution`.
 
+Enterprise certification gates (execution / reconstruction / persistence isolation, single durable append path): `tests/unit/runtime/architecture/test_npsc5f_enterprise_evidence_certification.py`. Architecture freeze narrative: `docs/project/architecture/OBSERVABILITY.md` § Evidence Plane freeze (NPSC-5F enterprise certification).
+
 ---
 
 ## Frozen contracts

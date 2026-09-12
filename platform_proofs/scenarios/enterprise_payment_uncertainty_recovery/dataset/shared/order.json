@@ -1,0 +1,9 @@
+{
+  "entity_type": "order",
+  "order_id": "erl-qual-004-ord-0001",
+  "customer_reference": "cust-enterprise-demo-0001",
+  "amount": "12500.00",
+  "currency": "EUR",
+  "business_importance": "high_value_purchase",
+  "lifecycle_intent": "fulfillment_hold_until_payment_truth_established"
+}

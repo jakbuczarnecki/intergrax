@@ -1,0 +1,41 @@
+{
+  "variant_id": "payment_truth_unavailable",
+  "variant_label": "Variant C",
+  "meaning": "External truth cannot be established within qualification policy bounds.",
+  "shared_entity_refs": {
+    "order_id": "erl-qual-004-ord-0001",
+    "effect_id": "erl-qual-004-eff-capture-0001",
+    "communication_event_id": "erl-qual-004-comm-0001",
+    "reservation_id": "erl-qual-004-inv-res-0001"
+  },
+  "external_reality": {
+    "entity_type": "external_reality",
+    "system_of_record_truth": {
+      "authoritative_truth_establishment": "unavailable_within_policy",
+      "final_business_truth": "not_establishable",
+      "note": "Underlying capture state may exist externally but is not authoritatively discoverable for qualification."
+    }
+  },
+  "reconciliation": {
+    "availability": "unavailable",
+    "unavailability_condition": "communication_interruption_prevents_authoritative_query",
+    "discoverable_outcome": null,
+    "note": "Reconciliation cannot return definitive truth within policy; governance escalation is expected."
+  },
+  "expected_outcomes": {
+    "terminal_business_result": "UNRESOLVED",
+    "proof_expectation": "governance_escalation",
+    "business_process": "contain_risky_automation_and_escalate_to_human_operator",
+    "invariants": [
+      "no_ungoverned_capture_retry",
+      "no_ungoverned_fulfillment",
+      "operator_visible_rationale_for_containment"
+    ],
+    "evidence_themes": [
+      "unknown_admitted",
+      "reconciliation_unavailable_or_exhausted",
+      "governance_escalation",
+      "risky_continuation_contained"
+    ]
+  }
+}

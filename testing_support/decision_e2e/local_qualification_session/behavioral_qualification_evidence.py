@@ -27,6 +27,9 @@ from testing_support.decision_e2e.local_qualification_session.contracts import (
     CANONICAL_MODEL_ATTEMPT_TRACE_SCHEMA,
     RECONCILIATION_PHASE_TRACE_SCHEMA,
 )
+from testing_support.decision_e2e.local_qualification_session.alignment_revision_evidence import (
+    infer_alignment_revision_evidence,
+)
 from testing_support.decision_e2e.local_qualification_session.trace_readback import (
     read_typed_alignment_events,
 )
@@ -188,9 +191,10 @@ def extract_run_evidence(run_item: dict[str, object]) -> QualificationRunEvidenc
         if alignment_event is not None
         else None
     )
-    revision_attempted = False
-    typed_context = False
-    repaired = False
+    revision_flags = infer_alignment_revision_evidence(
+        alignment_readback.events,
+        _parse_attempt_events(events),
+    )
 
     return QualificationRunEvidence(
         run_id=run_id,
@@ -207,9 +211,9 @@ def extract_run_evidence(run_item: dict[str, object]) -> QualificationRunEvidenc
         ),
         alignment_direction=direction,
         mismatch_detected=mismatch,
-        revision_attempted=revision_attempted,
-        typed_context_present=typed_context,
-        revision_repaired=repaired,
+        revision_attempted=revision_flags.revision_attempted,
+        typed_context_present=revision_flags.typed_context_present,
+        revision_repaired=revision_flags.revision_repaired,
         attempt_events=_parse_attempt_events(events),
         reconciliation_events=_parse_reconciliation_events(events),
     )

@@ -210,22 +210,6 @@ def _aggregate_metrics(
             if run.revision_attempted and attempt.attempt_index >= max_iterations:
                 budget_violations += 1
 
-    # Recompute exhausted from typed alignment in runs payload
-    runs = _load_runs(session_dir)
-    for item in runs:
-        from testing_support.decision_e2e.local_qualification_session.trace_readback import (
-            read_typed_alignment_events,
-        )
-
-        trace_events = item.get("trace_events")
-        events: tuple[dict[str, object], ...] = ()
-        if isinstance(trace_events, list):
-            events = tuple(dict(e) for e in trace_events if isinstance(e, dict))
-        readback = read_typed_alignment_events(events)
-        for event in readback.events:
-            if event.alignment_correction_exhausted:
-                exhausted += 1
-
     evaluable = sum(1 for run in evidence if _is_evaluable(run))
     alignment = AlignmentMetrics(
         total_runs=len(evidence),

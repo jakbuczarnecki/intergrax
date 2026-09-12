@@ -10,8 +10,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from testing_support.decision_e2e.local_qualification_session.attempt_evidence import (
-    extract_attempt_observations,
+from testing_support.decision_e2e.local_qualification_session.alignment_revision_evidence import (
+    infer_alignment_revision_evidence,
 )
 from testing_support.decision_e2e.local_qualification_session.atomic_io import (
     atomic_write_json,
@@ -21,6 +21,13 @@ from testing_support.decision_e2e.local_qualification_session.contracts import (
     QualificationExperimentIdentity,
     QualificationRuntimeIdentity,
     QualificationSpec,
+)
+from intergrax.runtime.diagnostics.completion_alignment_diag import (
+    AlignmentDirection,
+    AlignmentStatus,
+)
+from testing_support.decision_e2e.local_qualification_session.behavioral_qualification_evidence import (
+    _parse_attempt_events,
 )
 from testing_support.decision_e2e.local_qualification_session.trace_readback import (
     read_typed_alignment_events,
@@ -95,30 +102,22 @@ def build_revision_effectiveness_rows(
         if isinstance(trace_events, list):
             events = tuple(dict(event) for event in trace_events if isinstance(event, dict))
         readback = read_typed_alignment_events(events)
+        revision_flags = infer_alignment_revision_evidence(
+            readback.events,
+            _parse_attempt_events(events),
+        )
         event = readback.events[-1] if readback.events else None
         rows.append(
             {
                 "run_id": run_id,
-                "alignment_direction": event.alignment_direction or ""
-                if event
-                else "",
-                "revision_attempted": str(event.alignment_correction_attempted)
-                if event
-                else "false",
-                "typed_context_present": str(event.revision_authoritative_context_present)
-                if event
-                else "false",
-                "revision_repaired": str(event.alignment_correction_succeeded)
-                if event
-                else "false",
-                "revision_exhausted": str(event.alignment_correction_exhausted)
-                if event
-                else "false",
-                "success_after_revision": str(
-                    event.alignment_correction_succeeded and not event.alignment_mismatch_detected
-                )
-                if event
-                else "false",
+                "alignment_direction": event.alignment_direction.value if event else "",
+                "revision_attempted": str(revision_flags.revision_attempted).lower(),
+                "typed_context_present": str(revision_flags.typed_context_present).lower(),
+                "revision_repaired": str(revision_flags.revision_repaired).lower(),
+                "revision_exhausted": str(
+                    revision_flags.revision_attempted and not revision_flags.revision_repaired
+                ).lower(),
+                "success_after_revision": str(revision_flags.revision_repaired).lower(),
             }
         )
     return rows
@@ -137,21 +136,20 @@ def build_alignment_direction_rows(
         readback = read_typed_alignment_events(events)
         event = readback.events[-1] if readback.events else None
         direction = event.alignment_direction if event else None
+        mismatch = (
+            event.alignment_status is AlignmentStatus.MISMATCH if event else False
+        )
         rows.append(
             {
                 "run_id": run_id,
                 "forward_mismatch": str(
-                    direction == "forward" and event.alignment_mismatch_detected
-                )
-                if event and direction
-                else "false",
+                    direction is AlignmentDirection.FORWARD and mismatch
+                ).lower(),
                 "reverse_mismatch": str(
-                    direction == "reverse" and event.alignment_mismatch_detected
-                )
-                if event and direction
-                else "false",
-                "correctable": str(event.alignment_correctable) if event else "false",
-                "direction": direction or "",
+                    direction is AlignmentDirection.REVERSE and mismatch
+                ).lower(),
+                "correctable": str(event.correctable if event else False).lower(),
+                "direction": direction.value if direction else "",
                 "final_state": _terminal_outcome(item),
             }
         )

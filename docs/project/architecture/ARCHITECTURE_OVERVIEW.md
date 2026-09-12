@@ -163,6 +163,12 @@ The application defines what the business rule means. Intergrax provides reusabl
 
 Details belong in the owning [Governed Execution architecture](GOVERNED_EXECUTION.md).
 
+## Enterprise Reliability Layer
+
+**Enterprise Reliability Layer** is the platform capability that manages **uncertainty** about external systems—timeouts and ambiguous responses become explicit **UNKNOWN** state, not assumed failure. The layer pauses risky steps, reconciles against systems of record, then continues, compensates, or escalates with audit evidence. It complements [Reliability / HITL](RELIABILITY_FAILURE_AND_HITL.md) (retry and failure recovery) without replacing governed execution or business logic in agents.
+
+Architecture canon (implementation **planned**): [Enterprise Reliability Layer](ENTERPRISE_RELIABILITY_LAYER.md) · [Uncertainty Management](UNCERTAINTY_MANAGEMENT.md) · [Reconciliation](RECONCILIATION.md) · [External Effect Contracts](EXTERNAL_EFFECT_CONTRACTS.md) · [Recovery and Compensation](RECOVERY_AND_COMPENSATION.md).
+
 ## Persistent autonomous work
 
 Intergrax also defines a **target architecture** for durable autonomous responsibility through **Virtual Workers** — distinct from single-run agent execution.

@@ -39,6 +39,12 @@ from intergrax.contracts.decision_verification_stage import (
     VerificationStageRegistry,
     register_verification_stage,
 )
+from intergrax.contracts.decision.integration.composition import (
+    DecisionIntegrationCompositionProvider,
+)
+from intergrax.contracts.decision.integration.engine import (
+    DecisionSystemIntegrationEngine,
+)
 from intergrax.core.plugins.admission import (
     DomainPluginLoadReport,
     PluginAdmissionReasonCode,
@@ -333,7 +339,9 @@ def _decision_plugin_pre_admission_rejections(
         )
         if binding.disposition is ManifestCapabilityBindingDisposition.REJECTED:
             if binding.rejection is None:
-                raise RuntimeError("manifest binding rejection missing structured evidence")
+                raise RuntimeError(
+                    "manifest binding rejection missing structured evidence"
+                )
             skip_names.add(spec.name)
             rejected.append(binding.rejection)
 
@@ -738,3 +746,15 @@ def load_decision_artifact_kind_plugins(
             failed=failed,
         ),
     )
+
+
+def compose_decision_system_integration_from_platform(
+    *,
+    composition: DecisionIntegrationCompositionProvider | None = None,
+) -> DecisionSystemIntegrationEngine:
+    """Official Decision domain platform entry for Integration Boundary composition."""
+    from intergrax.runtime.decision_integration_composition import (
+        compose_decision_system_integration_engine,
+    )
+
+    return compose_decision_system_integration_engine(composition)

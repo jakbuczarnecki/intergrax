@@ -49,6 +49,8 @@ from testing_support.decision_e2e.scenario_qualification import AI_INCIDENT_SCEN
 
 R4R1_PROFILE_ID = "DS-E2E-15J-L1.R4.R1"
 R4R1_TASK_ID = "DS-E2E-15J-L1.R4.R1"
+R4R5_PROFILE_ID = "DS-E2E-15J-L1.R4.R5"
+R4R5_TASK_ID = "DS-E2E-15J-L1.R4.R5"
 R4R1_PROVIDER = "ollama"
 R4R1_RUNTIME_VERSION = ProviderRuntimeVersion(0, 34, 0)
 R4R1_MODEL_NAME = "qwen2.5:14b"
@@ -265,6 +267,19 @@ def build_r4r1_qualification_spec(
     return spec, config_fp, frozen_source
 
 
+def build_r4r5_qualification_spec(
+    repo_root: Path,
+    *,
+    params: R4R1ProfileParams,
+    repository_head_sha: str,
+) -> tuple[QualificationSpec, str, SourceFingerprintSnapshot]:
+    return build_r4r1_qualification_spec(
+        repo_root,
+        params=params,
+        repository_head_sha=repository_head_sha,
+    )
+
+
 class ProviderIdentityProbe(Protocol):
     def probe(self, *, model_name: str) -> QualificationRuntimeIdentity | None:
         """Return observed provider identity or None when unavailable."""
@@ -327,6 +342,8 @@ async def run_local_ai_incident_qualification(
     resume: bool = False,
     finalize_only: bool = False,
     repository_head_sha: str | None = None,
+    task_id: str = R4R1_TASK_ID,
+    temperature: float = R4R1_TEMPERATURE,
 ) -> LocalQualificationOrchestrationResult:
     head_sha = repository_head_sha or resolve_repository_head_sha(repo_root)
     groups = dict(spec.semantic_source_groups)
@@ -340,7 +357,7 @@ async def run_local_ai_incident_qualification(
         session_dir=session_dir,
         spec=spec,
         frozen_source=frozen_source,
-        task_id=R4R1_TASK_ID,
+        task_id=task_id,
     )
     invocations: list[int] = []
 
@@ -362,7 +379,7 @@ async def run_local_ai_incident_qualification(
         finalized = session.finalize(
             integrity=integrity,
             observed=observed,
-            temperature=R4R1_TEMPERATURE,
+            temperature=temperature,
             regenerate_derived=True,
         )
         state = finalized.finalization_status
@@ -469,7 +486,7 @@ async def run_local_ai_incident_qualification(
     finalized = session.finalize(
         integrity=integrity,
         observed=observed_after,
-        temperature=R4R1_TEMPERATURE,
+        temperature=temperature,
     )
     state = finalized.finalization_status
     if state is QualificationSessionState.FINALIZED:

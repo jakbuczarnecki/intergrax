@@ -95,6 +95,17 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 | `PROOF_RECEIPTS` | [`PROOF_RECEIPTS.md`](PROOF_RECEIPTS.md) | [`../maintainers/plans/PROOF_RECEIPTS.md`](../maintainers/plans/PROOF_RECEIPTS.md) |
 | `AUTONOMOUS_WORK` | [`AUTONOMOUS_WORK.md`](AUTONOMOUS_WORK.md) | [`../maintainers/plans/AUTONOMOUS_WORK.md`](../maintainers/plans/AUTONOMOUS_WORK.md) |
 | `CAPABILITY_CATALOG_AND_DISCOVERY` | [`CAPABILITY_CATALOG_AND_DISCOVERY.md`](CAPABILITY_CATALOG_AND_DISCOVERY.md) | [`../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md`](../maintainers/plans/CAPABILITY_CATALOG_AND_DISCOVERY.md) |
+| ENTERPRISE_RELIABILITY_LAYER | [ENTERPRISE_RELIABILITY_LAYER.md](ENTERPRISE_RELIABILITY_LAYER.md) | *Implementation plan — NEXT (roadmap step 5; architecture canon only)* |
+
+**Enterprise Reliability Layer subordinate architecture hubs** (subordinate to [ENTERPRISE_RELIABILITY_LAYER.md](ENTERPRISE_RELIABILITY_LAYER.md)):
+
+| Hub | Role |
+|-----|------|
+| [UNCERTAINTY_MANAGEMENT.md](UNCERTAINTY_MANAGEMENT.md) | UNKNOWN state model, lifecycle, decision rules |
+| [RECONCILIATION.md](RECONCILIATION.md) | Verifying external system-of-record truth |
+| [EXTERNAL_EFFECT_CONTRACTS.md](EXTERNAL_EFFECT_CONTRACTS.md) | Idempotency, reconciliation, compensation declarations (architecture) |
+| [RECOVERY_AND_COMPENSATION.md](RECOVERY_AND_COMPENSATION.md) | Continue, compensate, escalate, HITL after uncertainty |
+
 
 **Decision System subordinate architecture hubs** (not separate DOMAIN pairs - subordinate to [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)):
 
@@ -112,7 +123,7 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 
 ### Unified Execution Architecture (cross-domain meta-architecture)
 
-[UNIFIED_EXECUTION_ARCHITECTURE.md](UNIFIED_EXECUTION_ARCHITECTURE.md) is classified **once** as **META_ARCHITECTURE**. It coordinates platform-wide cross-domain Unified Execution semantics: identity hierarchy (TaskId → RunId → AttemptId → ExecutionId → EventId), Execution Tree, ownership boundaries, and UEA-INV-* invariants. It **does not** create a new platform DOMAIN or 1:1 implementation plan and **does not** compete with domain owners for detailed runtime contracts. DOMAIN architecture/plan pairs remain the owners of detailed contracts and runtime behavior: [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md), [ORCHESTRATION.md](ORCHESTRATION.md), [NEXUS_EXECUTION_FLOW.md](NEXUS_EXECUTION_FLOW.md), [AGENT_CONTRACTS_AND_ASSEMBLY.md](AGENT_CONTRACTS_AND_ASSEMBLY.md), [GOVERNED_EXECUTION.md](GOVERNED_EXECUTION.md), [DECISION_SYSTEM.md](DECISION_SYSTEM.md), [OBSERVABILITY.md](OBSERVABILITY.md), [RELIABILITY_FAILURE_AND_HITL.md](RELIABILITY_FAILURE_AND_HITL.md).
+[UNIFIED_EXECUTION_ARCHITECTURE.md](UNIFIED_EXECUTION_ARCHITECTURE.md) is classified **once** as **META_ARCHITECTURE**. It coordinates platform-wide cross-domain Unified Execution semantics: identity hierarchy (TaskId → RunId → AttemptId → ExecutionId → EventId), Execution Tree, ownership boundaries, and UEA-INV-* invariants. It **does not** create a new platform DOMAIN or 1:1 implementation plan and **does not** compete with domain owners for detailed runtime contracts. DOMAIN architecture/plan pairs remain the owners of detailed contracts and runtime behavior: [UNIFIED_EXECUTION_RUNTIME.md](UNIFIED_EXECUTION_RUNTIME.md), [ORCHESTRATION.md](ORCHESTRATION.md), [NEXUS_EXECUTION_FLOW.md](NEXUS_EXECUTION_FLOW.md), [AGENT_CONTRACTS_AND_ASSEMBLY.md](AGENT_CONTRACTS_AND_ASSEMBLY.md), [GOVERNED_EXECUTION.md](GOVERNED_EXECUTION.md), [DECISION_SYSTEM.md](DECISION_SYSTEM.md), [OBSERVABILITY.md](OBSERVABILITY.md), [RELIABILITY_FAILURE_AND_HITL.md](RELIABILITY_FAILURE_AND_HITL.md), [ENTERPRISE_RELIABILITY_LAYER.md](ENTERPRISE_RELIABILITY_LAYER.md).
 
 **Diagram pack (supporting):** [UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md](UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md) - SUPPORTING_MODEL / SATELLITE specification for the twelve UEA architecture views (asset contract, embedding targets, README promotion candidate). Subordinate to UEA; not a domain pair.
 

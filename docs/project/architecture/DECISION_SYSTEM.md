@@ -14,6 +14,8 @@ The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - c
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.
 
+**Enterprise L1–L18 stack (qualification → evolution, DS-E2E-15J):** [`DECISION_SYSTEM_ARCHITECTURE.md`](DECISION_SYSTEM_ARCHITECTURE.md) — complementary reference; does not replace this lifecycle canon.
+
 ---
 
 ## Why it matters

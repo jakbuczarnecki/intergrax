@@ -19,7 +19,7 @@ from intergrax.contracts.bitemporal_knowledge import (
     ValidTimeBoundKind,
 )
 from intergrax.contracts.execution_identity import RunId, validate_run_id
-from intergrax.runtime.events.execution_position import AsOfBoundary
+from intergrax.contracts.execution_event_position import AsOfBoundary
 
 
 class HistoricalReconstructionError(Exception):

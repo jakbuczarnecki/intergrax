@@ -1,10 +1,8 @@
 @echo off
+REM Deprecated compatibility launcher.
+REM Use scenario-local operator script:
+REM   platform_proofs/scenarios/verified_product_identification/scripts/operator/resume_vpi_data_pack.bat
 setlocal EnableExtensions
 set "SCRIPT_DIR=%~dp0"
-set "REPO_ROOT=%SCRIPT_DIR%..\.."
-for %%I in ("%REPO_ROOT%") do set "REPO_ROOT=%%~fI"
-set "PYTHONPATH=%REPO_ROOT%"
-set "CUDA_PYTHON=%REPO_ROOT%\.tmp\session\vpi-5c4a2\cuda-venv\Scripts\python.exe"
-cd /d "%REPO_ROOT%"
-"%CUDA_PYTHON%" -m platform_proofs.scenarios.verified_product_identification.dataset.operator.run_vpi_data_pack_resume
+call "%SCRIPT_DIR%..\..\platform_proofs\scenarios\verified_product_identification\scripts\operator\resume_vpi_data_pack.bat"
 exit /b %ERRORLEVEL%

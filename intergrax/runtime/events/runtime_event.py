@@ -49,6 +49,7 @@ class RuntimeEventType(str, Enum):
     STEP_COMPLETED = "step_completed"
     STEP_FAILED = "step_failed"
     EXECUTION_FAILED = "execution_failed"
+    EXTERNAL_OPERATION_FAILED = "external_operation_failed"
     TOOL_REQUESTED = "tool_requested"
     TOOL_COMPLETED = "tool_completed"
     TOOL_DENIED = "tool_denied"

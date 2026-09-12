@@ -8,11 +8,11 @@ from typing import Any, Dict, Optional
 from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
-    mint_run_id,
     mint_task_id,
     validate_run_id,
     validate_task_id,
 )
+from intergrax.runtime.execution.identity_authority import default_execution_identity_authority
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -22,8 +22,8 @@ TASK_PAYLOAD_VERSION = 1
 
 
 def new_run_id() -> RunId:
-    """Mint a canonical RunId (harness/eval legacy alias — not for HTTP/MCP intake)."""
-    return mint_run_id()
+    """Harness/eval legacy alias — delegates to canonical authority; not for HTTP/MCP intake."""
+    return default_execution_identity_authority.mint_run_identity()
 
 
 def task_from_runtime_request(

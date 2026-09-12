@@ -19,6 +19,7 @@ from intergrax.contracts.persistence_topology import (
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.codecraft.profile import CodeCraftProfile
+from intergrax.contracts.observability_export import ConfigurationError, ExporterKind
 from intergrax.contracts.reasoning_profile import ReasoningProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import LLMProfile
@@ -331,12 +332,45 @@ class GovernanceBundle(BaseModel):
                 diagnostics_pane_enabled=True,
                 health_dashboard_enabled=True,
                 unified_observability_dashboard_enabled=True,
+                bounded_event_delivery_enabled=True,
+                observability_exporter_kind=ExporterKind.OTLP,
             ),
             platform=GovernanceProfile(
                 quarterly_strategy_review_enabled=True,
                 architecture_health_metrics_enabled=True,
                 governance_dashboard_enabled=True,
             ),
+        )
+
+    @classmethod
+    def enterprise_cluster_observability(
+        cls,
+        *,
+        otlp_export_endpoint: str,
+        observability_export_service_name: str,
+    ) -> ObservabilityProfile:
+        """
+        Explicit cluster deployment intent: bounded delivery + DISTRIBUTED_OTLP.
+
+        Endpoint and service name are required (no production/heuristic coupling).
+        """
+        endpoint = otlp_export_endpoint.strip()
+        service_name = observability_export_service_name.strip()
+        if not endpoint:
+            raise ConfigurationError(
+                "enterprise cluster observability requires otlp_export_endpoint",
+            )
+        if not service_name:
+            raise ConfigurationError(
+                "enterprise cluster observability requires observability_export_service_name",
+            )
+        slo = cls.production_slo().observability
+        return slo.model_copy(
+            update={
+                "observability_exporter_kind": ExporterKind.DISTRIBUTED_OTLP,
+                "otlp_export_endpoint": endpoint,
+                "observability_export_service_name": service_name,
+            },
         )
 
 

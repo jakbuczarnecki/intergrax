@@ -15,6 +15,8 @@ Failure, timeout, invalid output, and policy blocks are **normal execution state
 
 **Primary audience:** Principal / Staff engineers, harness integrators, operators tuning recovery posture, and architects evaluating failure boundaries.
 
+**Related capability:** External effect **uncertainty** (UNKNOWN, reconciliation, effect contracts) — [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md). Reliability owns failure classification and bounded retry; ERL owns truth-seeking before consequential continue.
+
 ---
 
 ## Why it matters

@@ -22,6 +22,8 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
 from intergrax.runtime.diagnostics.diagnostic_operator_investigation_read_models import (
     DiagnosticEvidenceExplanation,
     DiagnosticExecutionContextSummary,
+    DiagnosticExternalOperationContextView,
+    DiagnosticExternalOperationFailureView,
     DiagnosticImpactGraph,
     DiagnosticImpactGraphNode,
     DiagnosticInvestigationView,
@@ -32,6 +34,8 @@ from intergrax.runtime.diagnostics.diagnostic_operator_investigation_read_models
     DiagnosticTimelineEntryKind,
     FailureInvestigationSummary,
 )
+from intergrax.runtime.events.payload_registry import validate_payload_envelope
+from intergrax.runtime.events.payloads.canonical import ExternalOperationFailurePayloadV1
 from intergrax.runtime.diagnostics.diagnostic_precision import FailureBoundary
 from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticOccurrenceReadStatus,
@@ -46,7 +50,16 @@ from intergrax.contracts.predictive_investigation_read import (
     RelatedPredictiveRiskSignalView,
     RelatedPredictionOutcomeHistoryView,
 )
-from intergrax.contracts.preventive_investigation_read import RelatedPreventiveRecommendationView
+from intergrax.contracts.preventive_investigation_read import (
+    RelatedPreventiveActionHistoryEntryView,
+    RelatedPreventiveRecommendationView,
+)
+from intergrax.contracts.self_healing_investigation_read import (
+    AdaptiveHealingInsightView,
+    HealingExecutionTimelineView,
+    RelatedSelfHealingHistoryEntryView,
+    RelatedSelfHealingWorkflowHistoryEntryView,
+)
 
 
 def project_investigation_view(
@@ -59,6 +72,11 @@ def project_investigation_view(
     prediction_history: tuple[RelatedPredictiveHistoryEntryView, ...] = (),
     prediction_outcome_history: tuple[RelatedPredictionOutcomeHistoryView, ...] = (),
     preventive_recommendations: tuple[RelatedPreventiveRecommendationView, ...] = (),
+    preventive_action_history: tuple[RelatedPreventiveActionHistoryEntryView, ...] = (),
+    self_healing_history: tuple[RelatedSelfHealingHistoryEntryView, ...] = (),
+    healing_workflow_history: tuple[RelatedSelfHealingWorkflowHistoryEntryView, ...] = (),
+    healing_execution_timeline: HealingExecutionTimelineView | None = None,
+    adaptive_healing_insights: tuple[AdaptiveHealingInsightView, ...] = (),
 ) -> DiagnosticInvestigationView:
     summary = DiagnosticProblemSummary(
         problem_id=problem_detail.problem_id,
@@ -99,6 +117,11 @@ def project_investigation_view(
         limitations=limitations,
     )
     affected = _affected_execution_ids(assessment)
+    external_operation_context = _project_external_operation_context(assessment)
+    external_operation_failures = _project_external_operation_failures(
+        assessment,
+        reconstruction,
+    )
 
     return DiagnosticInvestigationView(
         problem=summary,
@@ -123,6 +146,13 @@ def project_investigation_view(
         prediction_history=prediction_history,
         prediction_outcome_history=prediction_outcome_history,
         preventive_recommendations=preventive_recommendations,
+        preventive_action_history=preventive_action_history,
+        self_healing_history=self_healing_history,
+        healing_workflow_history=healing_workflow_history,
+        healing_execution_timeline=healing_execution_timeline,
+        adaptive_healing_insights=adaptive_healing_insights,
+        external_operation_context=external_operation_context,
+        external_operation_failures=external_operation_failures,
     )
 
 
@@ -143,7 +173,10 @@ def _project_severity(
 ) -> DiagnosticInvestigationSeverity:
     if assessment is not None:
         for finding in assessment.findings:
-            if finding.kind is DiagnosticFindingKind.EXECUTION_FAILED:
+            if finding.kind in {
+                DiagnosticFindingKind.EXECUTION_FAILED,
+                DiagnosticFindingKind.EXTERNAL_OPERATION_FAILED,
+            }:
                 return DiagnosticInvestigationSeverity.HIGH
     from intergrax.runtime.diagnostics.problem_lifecycle import ProblemStatus
 
@@ -578,6 +611,78 @@ def _project_assistant_payload(
         recommendations=tuple(r.recommendation for r in recommendations),
         timeline_labels=tuple(entry.label for entry in timeline.entries),
     )
+
+
+def _project_external_operation_context(
+    assessment: DiagnosticAssessment | None,
+) -> tuple[DiagnosticExternalOperationContextView, ...]:
+    if assessment is None:
+        return ()
+    views: list[DiagnosticExternalOperationContextView] = []
+    for finding in assessment.findings:
+        if finding.kind is not DiagnosticFindingKind.EXTERNAL_OPERATION_FAILED:
+            continue
+        if (
+            finding.execution_id is None
+            or finding.operation_attempt_id is None
+            or finding.provider_id is None
+        ):
+            continue
+        views.append(
+            DiagnosticExternalOperationContextView(
+                execution_id=finding.execution_id,
+                operation_attempt_id=finding.operation_attempt_id,
+                provider_id=finding.provider_id,
+                operation_type="external_operation",
+            ),
+        )
+    return tuple(views)
+
+
+def _project_external_operation_failures(
+    assessment: DiagnosticAssessment | None,
+    reconstruction: ExecutionReconstruction | None,
+) -> tuple[DiagnosticExternalOperationFailureView, ...]:
+    if assessment is None:
+        return ()
+    by_event: dict[str, DiagnosticExternalOperationFailureView] = {}
+    for finding in assessment.findings:
+        if finding.kind is not DiagnosticFindingKind.EXTERNAL_OPERATION_FAILED:
+            continue
+        if (
+            finding.execution_id is None
+            or finding.operation_attempt_id is None
+            or finding.external_operation_failure_kind is None
+        ):
+            continue
+        event_id = finding.supporting_event_ids[0] if finding.supporting_event_ids else None
+        by_event[str(event_id or finding.operation_attempt_id)] = (
+            DiagnosticExternalOperationFailureView(
+                execution_id=finding.execution_id,
+                operation_attempt_id=finding.operation_attempt_id,
+                provider_id=finding.provider_id or "unknown",
+                failure_kind=finding.external_operation_failure_kind,
+                evidence_refs=finding.supporting_event_ids,
+            )
+        )
+    if reconstruction is not None:
+        from intergrax.runtime.events.runtime_event import RuntimeEventType
+
+        for positioned in reconstruction.positioned_events:
+            event = positioned.event
+            if event.event_type is not RuntimeEventType.EXTERNAL_OPERATION_FAILED:
+                continue
+            parsed = validate_payload_envelope(event.payload)
+            if not isinstance(parsed, ExternalOperationFailurePayloadV1):
+                continue
+            by_event[str(event.event_id)] = DiagnosticExternalOperationFailureView(
+                execution_id=event.execution_id,
+                operation_attempt_id=parsed.operation_attempt_id,
+                provider_id=parsed.provider_id,
+                failure_kind=parsed.failure_kind,
+                evidence_refs=(event.event_id,),
+            )
+    return tuple(by_event.values())
 
 
 __all__ = ["project_investigation_view"]

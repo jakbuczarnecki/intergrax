@@ -2,6 +2,7 @@
 
 **Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1 FINAL (qualified)** — process-local root admission (W1-A), explicit concurrent work policy (W1-B), absolute global deadline into R1 retry (W1-C). Qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md). **W2 FINAL (qualified, process-local)** — dependency admission bulkheads (B1–B3) + retry budget / provider rate limit / LLM circuit composition (C); final matrix: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_FINAL_QUALIFICATION.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_FINAL_QUALIFICATION.md). **W2-A** inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md); **W2-ADR (Accepted)** — [`ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md`](ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md); **W2-B1** `LocalDependencyConcurrencyAdmission`; **W2-B2** `DependencyAttemptExecutionBoundary` on `RuntimeToolInvoker`; **W2-B3** provider boundary on `LLMAdapter` seams; **W2-C** `execute_with_resilience` order: tenant quota (adapter) → retry budget → rate limit → circuit breaker → physical attempt (admission inside `_run_physical_provider_attempt`).
 **W4-C FINAL (qualified):** distributed external operation cancellation — stable identity, intent vs physical planes, durable CAS, permit-after-terminal, recovery gate (`prepare_external_operations_for_recovery`). Qualification: `tests/unit/runtime/architecture/test_enterprise_scale_resilience_w4_c_distributed_cancellation_qualification.py`.
+**W5-G FINAL (qualified):** enterprise cluster observability profile activates `DISTRIBUTED_OTLP` via explicit `GovernanceBundle.enterprise_cluster_observability` — qualification: `tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_g_profile_activation.py`.
 **Baseline:** `origin/development` at audit start.  
 **Scope:** Execution plane capacity, concurrency ownership, failure domains, process-local vs distributed semantics.
 
@@ -64,8 +65,119 @@ Each child: new `ExecutionId`, ledger grant, boundary invoke. No global counter 
 | Recovery start admission (W3-C) | Optional `RecoveryAdmissionPort` on TASK_RESUME / partial topology / **DECISION_DURABLE** entry; start-only permit; orthogonal to W1 | `recovery_admission.py` + `local_recovery_admission.py` + `decision_durable_recovery_handoff` |
 | Tool invoker | Bounded default workers; implicit pending-work queue (no admission shed); blocking wait on shared pool | `invoker.py` `_execution_pool` |
 | Event bus | `create_task` on publish | `event_bus.py` |
+| Observability event delivery (W5-A/B) | `BoundedEventSink` + priority overflow; bus optional `event_sink` | `event_delivery/` + `event_bus.py` |
 
 Enterprise gap: overload without configured caps tends toward **unbounded task creation** and implicit OS/thread-pool queues rather than reject/shed at execution admission.
+
+## W5-B — Event delivery ownership model
+
+**Frozen pipeline (no central ObservabilityManager):**
+
+```text
+Producer → RuntimeEventBus → EventSinkPort → BoundedEventSink → Consumer
+```
+
+| Problem | Owner |
+|---------|--------|
+| Event creation | Producer |
+| Routing / subscriber dispatch | `RuntimeEventBus` |
+| Buffering / backpressure / drain worker | `BoundedEventSink` (or other `EventSinkPort`) |
+| Durable execution evidence | `RuntimeEventPersistence` + checkpoint/lineage/decision stores (unchanged) |
+| Persistence of exported telemetry | Downstream consumer |
+
+**Backpressure ownership:** producers never block on slow exporters beyond explicit `IMPORTANT` bounded wait inside the sink; `CRITICAL` events fail closed (`CriticalEventDeliveryError`) when the buffer cannot accept them; `BEST_EFFORT` may return `DROPPED`. Delivery counters (`InternalDeliveryMetrics`) are updated in-process and are **not** re-emitted on `RuntimeEventBus` (no metric→sink→metric loop).
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B_EVENT_BUS_INTEGRATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B_EVENT_BUS_INTEGRATION_INVENTORY.md).
+
+## Runtime Event Delivery Deployment Model (W5-B2)
+
+**Composition root** owns sink lifecycle alongside the bus (routing stays on `RuntimeEventBus`).
+
+```text
+Composition Root
+      |
+      +-- EventDeliveryPolicy (from ObservabilityProfile)
+      +-- AcceptingObservabilityEventSink (terminal downstream)
+      +-- BoundedEventSink
+      +-- RuntimeEventBus(event_sink=bounded)
+      |
+      v
+Consumers / persistence / export (subscribers + durable evidence — unchanged)
+```
+
+| Mode | `bounded_event_delivery_enabled` | Behavior |
+|------|----------------------------------|----------|
+| Legacy / lab | `false` (default) | `RuntimeEventBus()` without `event_sink` |
+| Production SLO / harness production | `true` | Bounded transport active; `HarnessHostRuntime.close()` drains sink |
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B2_COMPOSITION_WIRING_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_B2_COMPOSITION_WIRING_INVENTORY.md).
+
+## Downstream Event Export Model (W5-C)
+
+Pluggable export after bounded backpressure; `RuntimeEventBus` remains transport-agnostic.
+
+```text
+Producer
+   |
+   v
+RuntimeEventBus
+   |
+   v
+BoundedEventSink
+   |
+   v
+EventExportSinkPort
+   |
+   +------------+
+   |            |
+   v            v
+ OTLP       Durable Store
+```
+
+| Concern | Owner |
+|---------|--------|
+| Buffer / backpressure | `BoundedEventSink` |
+| Export transport | `EventExportSinkPort` implementations (`NoopEventExportSink`, `OtlpEventExportSink`, …) |
+| Export failure visibility | `InternalDeliveryMetrics` (diagnostic snapshot only — never re-published on the bus) |
+| Lifecycle | Composition root: drain → `flush` → `close` on export sink before runtime teardown |
+
+Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_C_EVENT_EXPORT_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_C_EVENT_EXPORT_INVENTORY.md).
+
+## W5-G — Enterprise observability profile activation
+
+**Status:** qualified — explicit deployment intent only (no production/heuristic transport selection).
+
+| Profile | `bounded_event_delivery_enabled` | `observability_exporter_kind` | Transport |
+|---------|----------------------------------|--------------------------------|-----------|
+| Lab / local defaults | `false` | `NOOP` (default) | None — legacy bus |
+| Test / recording harness | varies | `RECORDING` where configured | In-memory recording sink |
+| `GovernanceBundle.production_slo()` | `true` | `OTLP` | `OtlpTransport` (single-node endpoint) |
+| `GovernanceBundle.enterprise_cluster_observability(...)` | `true` | `DISTRIBUTED_OTLP` | `CollectorTransport` per environment |
+
+Composition: `wire_application_environment` → `resolve_application_runtime_event_delivery_wiring` → `ObservabilityExportSinkFactory` → per-instance `CollectorTransport`. Missing endpoint or service name for `DISTRIBUTED_OTLP` raises `ConfigurationError` at wiring time.
+
+Qualification: `tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_g_profile_activation.py`.
+
+### Deployment topology (observability export)
+
+**Single process (production SLO / local OTLP):**
+
+```text
+Runtime
+   |
+   v
+OTLP endpoint (process-local or sidecar)
+```
+
+**Cluster (enterprise profile):**
+
+```text
+Runtime A ----\
+Runtime B -----+--> OTLP Collector --> Observability backend
+Runtime C ----/
+```
+
+Each runtime holds its own bounded sink, export sink, and transport — no shared module-level transport singleton.
 
 ## Failure domains (architectural)
 

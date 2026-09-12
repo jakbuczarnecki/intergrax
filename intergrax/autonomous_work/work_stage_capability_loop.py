@@ -35,11 +35,10 @@ from intergrax.contracts.capability_catalog.kind import CapabilityKind
 from intergrax.contracts.capability_catalog.work_stage import WorkStageCapabilityNeed
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
-    mint_attempt_id,
-    mint_execution_id,
     reset_active_execution_identity,
     validate_run_id,
 )
+from intergrax.runtime.execution.identity_authority import default_execution_identity_authority
 from intergrax.contracts.capability_catalog.work_stage_loop import (
     WorkStageCapabilityExecutionCorrelation,
     WorkStageCapabilityLoopDisposition,
@@ -181,10 +180,13 @@ class WorkStageCapabilityDiscoveryLoopCoordinator:
 
     def run(self, initial_need: WorkStageCapabilityNeed) -> WorkStageCapabilityLoopRunOutcome:
         canonical_run_id = validate_run_id(self._run_id)
-        identity_token = bind_active_execution_identity(
+        minted = default_execution_identity_authority.mint_execution_identity(
             run_id=canonical_run_id,
-            attempt_id=mint_attempt_id(),
-            execution_id=mint_execution_id(),
+        )
+        identity_token = bind_active_execution_identity(
+            run_id=minted.run_id,
+            attempt_id=minted.attempt_id,
+            execution_id=minted.execution_id,
         )
         try:
             return self._run_bounded(initial_need)

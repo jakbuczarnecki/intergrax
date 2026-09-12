@@ -1,0 +1,74 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Observability export composition contracts (W5-D)."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import Enum, StrEnum
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from intergrax.contracts.event_delivery import EventExportSinkPort
+
+
+class ExporterKind(StrEnum):
+    NOOP = "noop"
+    OTLP = "otlp"
+    DISTRIBUTED_OTLP = "distributed_otlp"
+    RECORDING = "recording"
+
+
+@dataclass(frozen=True, slots=True)
+class ObservabilityExportProfile:
+    enabled: bool
+    exporter_kind: ExporterKind
+
+
+class ExportError(Exception):
+    """Export transport failure — must not propagate to execution plane."""
+
+
+class ConfigurationError(ValueError):
+    """Invalid observability export configuration at composition boundary."""
+
+
+class OtlpTransportError(ExportError):
+    """OTLP transport export failure — isolated from execution plane."""
+
+
+class OtlpProtocol(Enum):
+    HTTP_PROTOBUF = "http/protobuf"
+    GRPC = "grpc"
+
+
+@dataclass(frozen=True, slots=True)
+class OtlpExportConfiguration:
+    endpoint: str
+    protocol: OtlpProtocol
+    timeout_seconds: float
+
+
+@runtime_checkable
+class EventExportSinkFactoryPort(Protocol):
+    """Profile → export sink only (no registry, no global lifecycle)."""
+
+    def create(
+        self,
+        profile: ObservabilityExportProfile,
+    ) -> EventExportSinkPort: ...
+
+
+@runtime_checkable
+class OtlpTransportPort(Protocol):
+    """Pluggable OTLP (or vendor) transport — sync seam for adapter injection."""
+
+    def export(
+        self,
+        event: object,
+    ) -> None: ...
+
+    def flush(self) -> None: ...
+
+    def close(self) -> None: ...

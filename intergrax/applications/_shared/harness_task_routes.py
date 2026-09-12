@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -44,7 +44,7 @@ from intergrax.runtime.interactions.task_executor import TaskExecutor
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
+from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
@@ -143,9 +143,8 @@ def mount_harness_task_routes(
 
     @router.post("/run-async")
     async def run_async_route(body: HarnessAsyncRunRequest) -> dict[str, Any]:
-        run_id = new_run_id()
         task = Task(
-            task_id=run_id,
+            task_id=mint_task_id(),
             tenant_id=body.tenant_id,
             user_id=body.user_id,
             message=body.message,
@@ -407,9 +406,8 @@ def mount_canonical_harness_task_routes(
 
     @router.post("/run-async")
     async def run_async_route(body: HarnessAsyncRunRequest) -> dict[str, Any]:
-        run_id = new_run_id()
         task = Task(
-            task_id=run_id,
+            task_id=mint_task_id(),
             tenant_id=body.tenant_id,
             user_id=body.user_id,
             message=body.message,

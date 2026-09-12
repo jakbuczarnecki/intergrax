@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
+from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
 from intergrax.contracts.execution_identity import (
     AttemptId,
     EventId,
@@ -23,6 +24,9 @@ from intergrax.runtime.diagnostics.diagnostic_precision import (
 )
 from intergrax.contracts.multi_agent_failure_localization import FailureBoundaryAnalysis
 from intergrax.runtime.diagnostics.execution_failure_analysis import ExecutionFailureAnalyzer
+from intergrax.runtime.diagnostics.external_operation_failure_analysis import (
+    ExternalOperationFailureAnalyzer,
+)
 from intergrax.runtime.diagnostics.multi_agent_failure_localization import (
     ExecutionFailureTopologyAnalyzer,
 )
@@ -51,6 +55,7 @@ class DiagnosticFindingKind(StrEnum):
     EVENT_AFTER_TERMINAL = "event_after_terminal"
     DISALLOWED_AFTER_FAILED = "disallowed_after_failed"
     EXECUTION_FAILED = "execution_failed"
+    EXTERNAL_OPERATION_FAILED = "external_operation_failed"
 
 
 class DiagnosticLimitationKind(StrEnum):
@@ -144,6 +149,9 @@ class DiagnosticFinding:
     precision: DiagnosticPrecision | None = None
     failure_boundary: FailureBoundary | None = None
     execution_failure_kind: ExecutionFailureKind | None = None
+    external_operation_failure_kind: ExternalOperationFailureKind | None = None
+    operation_attempt_id: str | None = None
+    provider_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -193,10 +201,14 @@ class DiagnosticAssessmentBuilder:
         self,
         *,
         execution_failure_analyzer: ExecutionFailureAnalyzer | None = None,
+        external_operation_failure_analyzer: ExternalOperationFailureAnalyzer | None = None,
         failure_topology_analyzer: ExecutionFailureTopologyAnalyzer | None = None,
     ) -> None:
         self._execution_failure_analyzer = (
             execution_failure_analyzer or ExecutionFailureAnalyzer()
+        )
+        self._external_operation_failure_analyzer = (
+            external_operation_failure_analyzer or ExternalOperationFailureAnalyzer()
         )
         self._failure_topology_analyzer = (
             failure_topology_analyzer or ExecutionFailureTopologyAnalyzer()
@@ -213,6 +225,7 @@ class DiagnosticAssessmentBuilder:
         limitations: list[DiagnosticLimitation] = []
 
         findings.extend(self._execution_failure_analyzer.analyze(reconstruction))
+        findings.extend(self._external_operation_failure_analyzer.analyze(reconstruction))
 
         failure_boundary_analysis = self._failure_topology_analyzer.analyze(
             reconstruction,

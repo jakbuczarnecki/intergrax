@@ -1,7 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Integrax framework – proprietary and confidential.
 
-"""Hold provider dependency permits through iterable stream consumption (W2-B3)."""
+"""Hold provider dependency permits through iterable stream consumption (W2-B3).
+
+R1: ``stream_with_external_operation_lifecycle`` assumes ``ext_op`` already passed
+admission governance when ``admission_attempt`` is bound on ``LlmExternalOperationAttempt``.
+"""
 
 from __future__ import annotations
 

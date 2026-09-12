@@ -209,6 +209,17 @@ Document-backed massive-run scan optimization — **Session C** (correctness onl
 
 **OBS-04 / OBS-06:** FIXED / FROZEN R2.
 
+### Re-sign-off (Journal Completeness Final Freeze)
+
+| Item | Detail |
+| ---- | ------ |
+| Pre-freeze HEAD | `1f7bb7528e8d9b41a0ee00e4831c0f003042474a` |
+| Qualified drift `39ac19d5..HEAD` | `persistence_contract.py` only — `MandatoryEvidencePersistenceError` moved to `intergrax.contracts.execution_evidence.persistence_boundary_errors` (commit `3d298f651`); journal read/query semantics unchanged |
+| Drift sentinel baseline | Advanced to pre-freeze HEAD; post-freeze unqualified R2 drift must stay empty |
+| Certification extensions | Enterprise evidence cert + R2 Final gate: single journal, no store leakage, no recovery ownership on `unified_run_journal` |
+
+Audits 1–5 (completeness, ordering, append integrity via bus→port, tenant/run isolation, reconstruction read-only) — **PASS** on existing R2 implementation + regression matrix; no production journal changes in this freeze task.
+
 ---
 
 ## Freeze statement

@@ -27,6 +27,9 @@ from intergrax.runtime.events.execution_position import (
     PositionedRuntimeEvent,
     validate_execution_event_position,
 )
+from intergrax.contracts.execution_evidence.persistence_boundary_errors import (
+    MandatoryEvidencePersistenceError,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 
@@ -36,10 +39,6 @@ class RuntimeEventPersistenceIntegrityError(Exception):
 
 class EvidenceTenantRoutingMismatchError(RuntimeEventPersistenceIntegrityError):
     """Raised when explicit persistence routing tenant disagrees with ``event.tenant_id``."""
-
-
-class MandatoryEvidencePersistenceError(RuntimeEventPersistenceIntegrityError):
-    """Raised when mandatory execution evidence could not be durably committed."""
 
 
 @dataclass(frozen=True, slots=True)

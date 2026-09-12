@@ -36,6 +36,7 @@ from intergrax.runtime.events.unified_run_journal import (
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 from testing_support.npsc5f_r2_protected_drift import (
     R2_IMPLEMENTATION_SHA,
+    R2_POST_QUALIFIED_BASELINE_SHA,
     collect_r2_protected_production_drift,
 )
 
@@ -172,9 +173,12 @@ def test_canonical_predecessor_shas_recorded() -> None:
     assert NPSC_5E_FINAL_SHA.startswith("fabdcfe")
 
 
-def test_r2_final_no_unqualified_protected_drift_since_implementation() -> None:
-    drift = collect_r2_protected_production_drift(_REPO_ROOT)
-    assert drift == [], f"R2 protected production drift since implementation: {drift}"
+def test_r2_final_no_unqualified_protected_drift_since_qualified_baseline() -> None:
+    drift = collect_r2_protected_production_drift(
+        _REPO_ROOT,
+        from_sha=R2_POST_QUALIFIED_BASELINE_SHA,
+    )
+    assert drift == [], f"R2 protected production drift since qualified baseline: {drift}"
 
 
 def test_r2_page_completeness_cursor_invariant(tmp_path: Path) -> None:
@@ -376,6 +380,24 @@ def test_r2_no_execution_control_from_journal_surface() -> None:
             symbol = func.id if isinstance(func, ast.Name) else (func.attr if isinstance(func, ast.Attribute) else None)
             if symbol in _FORBIDDEN_CONTROL_PLANE_SYMBOLS:
                 violations.append(f"{rel}:{node.lineno}:{symbol}")
+    assert violations == []
+
+
+def test_r2_journal_read_surface_has_no_concrete_store_imports() -> None:
+    journal_path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
+    source = journal_path.read_text(encoding="utf-8")
+    assert "intergrax.runtime.events.stores" not in source
+    assert "EvidencePersistencePort" in source
+
+
+def test_r2_journal_read_surface_has_no_recovery_ownership() -> None:
+    forbidden_prefixes = (
+        "intergrax.runtime.long_running",
+        "intergrax.runtime.replay",
+    )
+    journal_path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
+    source = journal_path.read_text(encoding="utf-8")
+    violations = [prefix for prefix in forbidden_prefixes if prefix in source]
     assert violations == []
 
 

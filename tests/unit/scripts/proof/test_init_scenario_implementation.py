@@ -243,6 +243,27 @@ def test_init_happy_path_generates_skeleton_and_updates_lifecycle(tmp_path: Path
     _assert_application_architecture_gate(package_root, repo_root=tmp_path)
 
 
+def test_scenario_scaffold_structure(tmp_path: Path) -> None:
+    slug = "scaffold_scripts_layout"
+    package_root = _write_accepted_design_package(tmp_path, slug=slug)
+    init_scenario_implementation(
+        ScenarioImplementationRequest(
+            slug=validate_scenario_slug(slug),
+            repo_root=tmp_path,
+        ),
+    )
+    scripts_root = package_root / "scripts"
+    assert scripts_root.is_dir()
+    assert (scripts_root / "build").is_dir()
+    assert (scripts_root / "operator").is_dir()
+    assert (scripts_root / "diagnostics").is_dir()
+    assert (scripts_root / "migration").is_dir()
+    assert (package_root / "tests").is_dir()
+    assert (package_root / "docs").is_dir()
+    assert (package_root / "contracts").is_dir()
+    assert (package_root / "dataset").is_dir()
+
+
 def test_second_run_fails_without_overwrite(tmp_path: Path) -> None:
     slug = "second_run"
     _write_accepted_design_package(tmp_path, slug=slug)

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
-from intergrax.runtime.policy.rules.schema import PolicyRuleAction
+from intergrax.contracts.declarative_policy_rule_action import PolicyRuleAction
 
 TOOL_INVOCATION_CONTROL_CONFIGURATION_CONTRACT_ID = "tool_invocation_control.v1"
 

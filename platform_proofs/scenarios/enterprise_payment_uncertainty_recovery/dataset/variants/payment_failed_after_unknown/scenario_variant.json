@@ -1,0 +1,40 @@
+{
+  "variant_id": "payment_failed_after_unknown",
+  "variant_label": "Variant B",
+  "meaning": "External system rejected payment; application did not receive confirmation.",
+  "shared_entity_refs": {
+    "order_id": "erl-qual-004-ord-0001",
+    "effect_id": "erl-qual-004-eff-capture-0001",
+    "communication_event_id": "erl-qual-004-comm-0001",
+    "reservation_id": "erl-qual-004-inv-res-0001"
+  },
+  "external_reality": {
+    "entity_type": "external_reality",
+    "system_of_record_truth": {
+      "payment_capture_outcome": "failed",
+      "funds_captured": false,
+      "final_business_truth": "payment_failed"
+    }
+  },
+  "reconciliation": {
+    "availability": "available",
+    "discoverable_outcome": "payment_failed",
+    "note": "Reconciliation can establish authoritative failure after UNKNOWN admission."
+  },
+  "expected_outcomes": {
+    "terminal_business_result": "RESOLVED",
+    "proof_expectation": "controlled_recovery",
+    "business_process": "compensation_or_equivalent_recovery_without_paid_shipment_drift",
+    "invariants": [
+      "no_duplicate_capture",
+      "no_fulfillment_without_capture",
+      "reservation_released_or_realigned_per_policy"
+    ],
+    "evidence_themes": [
+      "unknown_admitted",
+      "reconciliation_completed",
+      "resolution_to_compensate_or_recover",
+      "failed_payment_terminal_state"
+    ]
+  }
+}

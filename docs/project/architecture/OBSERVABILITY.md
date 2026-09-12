@@ -42,6 +42,40 @@ DIAG interprets that evidence
 
 **Frozen principle:** Observability records execution truth; it does not invent execution truth.
 
+### Evidence Plane freeze (NPSC-5F enterprise certification)
+
+**Evidence Plane responsibility:** the layer that **records and reconstructs execution facts** — durable `RuntimeEvent` evidence, chronological journal projection, governed export, and read-only historical reconstruction. It does **not** own execution lifecycle, agent decisions, replay, or storage vendor semantics.
+
+```text
+Evidence Producer (execution path)
+        ↓
+EvidencePersistencePort
+        ↓
+RuntimeEventPersistence adapter / backend
+        ↓
+Evidence storage
+        ↓
+Journal · Export · Reconstruction (read-only views)
+```
+
+| Sub-plane | Owns | Must not |
+| --------- | ---- | -------- |
+| **Durable evidence** | What actually happened during execution (accepted `RuntimeEvent`s) | Schedule, retry, resume, or mutate lifecycle |
+| **Journal** | Chronological history projection from persisted evidence | Execute actions; mint run/attempt authority |
+| **Reconstruction** | Deterministic views at explicit coordinates (`AsOfBoundary`, knowledge watermark) | Re-execute workflows; emit new canonical events |
+| **Persistence boundary** | Tenant-scoped read/write of evidence via `EvidencePersistencePort` | Business interpretation; orchestration |
+
+**Evidence Plane ≠ Execution Control Plane:** persisted history informs operators and diagnostics; it **never** drives execution control.
+
+**Forbidden behaviors (frozen):**
+
+- **No replay** of execution from evidence stores as a substitute for live runtime control.
+- **No mutation of canonical history** (append-only evidence; idempotent `event_id` acceptance only).
+- **No direct storage coupling** on execution producers — `RuntimeEventBus` depends on `EvidencePersistencePort`, not concrete stores.
+- **No execution side effects** from evidence roots (`intergrax/runtime/events`, `intergrax/runtime/observability`, historical reconstruction contracts) — static gates in `testing_support/npsc5f_final_evidence_plane_ownership.py` and `tests/unit/runtime/architecture/test_npsc5f_enterprise_evidence_certification.py`.
+
+Qualification record: [`docs/project/maintainers/qualification/NPSC_5F_FINAL_EVIDENCE_PLANE_QUALIFICATION_AND_FREEZE.md`](../maintainers/qualification/NPSC_5F_FINAL_EVIDENCE_PLANE_QUALIFICATION_AND_FREEZE.md).
+
 **Local identities are not canonical runtime IDs:** `node_id`, `agent_id`, `step_id`, `tool_call_id`, `correlation_id`, `message_id`, broker transport task id, worker id, and provider request id are topology/transport/component identities. They **must not** substitute `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, or `EventId`. `NodeId` ≠ `ExecutionId`. Transport task id ≠ `TaskId` merely because strings match. Forbidden competing run identities: `NodeRunId`, `AgentRunId`, `StepRunId`, `OrchestrationRunId`, `WorkerRunId`.
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and extension authors wiring observability profiles, export policies, or domain signals - after the platform overview in the root README.
@@ -764,6 +798,8 @@ Harness Observability Spine (HOS)
 | Identity | `event_id`, `task_id`, `run_id`, `attempt_id` - all required (**CURRENT**); **TARGET:** + `execution_id` |
 | `AttemptId` semantics | One global try inside a Run; local tool/provider/step retries do **not** mint new `AttemptId` (frozen UEA) |
 | Persisted execution evidence | `RuntimeEventPersistence` is the canonical persisted evidence authority for accepted `RuntimeEvent`s; lifecycle facts originate from execution producers; Unified Run Journal reconstructs from persisted events |
+| Execution evidence persistence boundary | Execution producers (`RuntimeEventBus`) depend on `EvidencePersistencePort` only; `RuntimeEventPersistenceEvidenceAdapter` delegates to existing `RuntimeEventPersistence` backends without a second persistence flow; storage/provider failures are translated to `EvidencePersistenceBoundaryError` at the adapter and do not propagate as store-specific exceptions |
+| Provider readiness (port stability) | `EvidencePersistencePort` is the frozen interchange contract; new storage backends implement the port (or ship an adapter) without Execution Engine or reconstruction consumer changes |
 | Forbidden | Optional execution identity; multiplexed identity modes; synthetic `TaskId`/`RunId`/`AttemptId` for non-execution events |
 
 `emit_domain_signal()` and `RuntimeEventType.DOMAIN_SIGNAL` are **execution-attached** in practice: both require `EmitContext` with validated `TaskId`, `RunId`, and `AttemptId`. A domain signal on the bus is a `RuntimeEvent` carrying a namespaced `event_kind` and typed payload **within an active execution correlation** - not a generic non-execution lifecycle channel. Platform lifecycle facts that occur **during** execution (for example `platform.adaptive.*` on `DOMAIN_SIGNAL`) remain execution-scoped because they are correlated to a real attempt.

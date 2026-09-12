@@ -230,6 +230,7 @@ class _FakeDecisionCheckpointPersistence(
         self,
         *,
         checkpoint: DecisionCheckpointState[IncidentDecisionPayload],
+        expected_revision: int | None = None,
     ) -> None:
         self._store[checkpoint.finalization.key] = checkpoint
 

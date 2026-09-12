@@ -338,6 +338,21 @@ Do not delete or rename historical artifacts as part of hub maintenance.
 
 ---
 
+## Execution Engine Cross-Plane Certification (EEC-1)
+
+**Scope:** static certification gates confirming plane boundaries without changing runtime semantics.
+
+| Plane | Owner (canonical) | EEC-1 boundary confirmed |
+| --- | --- | --- |
+| Execution Runtime | `intergrax/runtime/execution` (UER) | Single identity contract (`Task`→`Run`→`Attempt`→`Execution`→`Event`); core runtime does not import event store implementations |
+| Evidence | `intergrax/runtime/events`, observability, `contracts/execution_evidence` | One journal / reconstruction read model; no recovery control imports; no lineage mutation from evidence roots |
+| Recovery (NPSC-5E) | `execution/retry`, `attempt_lifecycle`, partial recovery contracts | Retry / checkpoint / resume only; no parallel event journal ownership |
+| Scale & resilience | `contracts/*_admission`, `execution/local_execution_capacity_admission`, `runtime/resilience` handoffs | Admission before uncontrolled work; contracts do not import execution lifecycle; resilience handoff does not mint lifecycle |
+
+**Evidence:** `tests/unit/runtime/architecture/test_eec1_execution_engine_cross_plane_certification.py` (`pytest.mark.gate`).
+
+---
+
 ## 16. Current status (consolidated)
 
 | Topic | Label |

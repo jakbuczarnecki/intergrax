@@ -18,7 +18,7 @@ from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.task_run_bridge import new_run_id
+from intergrax.contracts.execution_identity import mint_task_id
 
 
 class HarnessRunRequestV1(BaseModel):
@@ -52,9 +52,8 @@ def mount_harness_routes(
 
     @router.post("/run", response_model=HarnessRunResponseV1)
     async def run_agent(body: HarnessRunRequestV1) -> HarnessRunResponseV1:
-        run_id = new_run_id()
         task = Task(
-            task_id=run_id,
+            task_id=mint_task_id(),
             tenant_id=body.tenant_id,
             user_id=body.user_id,
             session_id=body.session_id,

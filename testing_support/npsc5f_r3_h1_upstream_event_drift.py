@@ -4,17 +4,14 @@
 
 from __future__ import annotations
 
-from testing_support.npsc5f_r1_protected_drift import (
-    R1_POST_R2_QUALIFIED_BASELINE_SHA,
-    git_changed_paths,
-)
+from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 from testing_support.npsc5f_r3_protected_drift import R3_IMPLEMENTATION_SHA
 
 # Integrated ``development`` HEAD qualified by H1 behavioral gates (immutable provenance pin).
 NPSC5F_R3_H1_QUALIFIED_INTEGRATED_SHA = "8ddf63f74aeb78fd620d5994b7f08f5daa20b7db"
 
 # Commit that introduced qualified ``RuntimeEventType.EXECUTION_FAILED`` on the R1-owned enum surface.
-EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA = R1_POST_R2_QUALIFIED_BASELINE_SHA
+EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA = "40cc8c11e0b57ed4cf0d99ed1b9b297820c6eaa8"
 
 _POST_R3_EVENT_SURFACE_PREFIX = "intergrax/runtime/events/"
 

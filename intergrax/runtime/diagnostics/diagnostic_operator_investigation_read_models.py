@@ -35,7 +35,34 @@ from intergrax.contracts.predictive_investigation_read import (
     RelatedPredictiveRiskSignalView,
     RelatedPredictionOutcomeHistoryView,
 )
-from intergrax.contracts.preventive_investigation_read import RelatedPreventiveRecommendationView
+from intergrax.contracts.preventive_investigation_read import (
+    RelatedPreventiveActionHistoryEntryView,
+    RelatedPreventiveRecommendationView,
+)
+from intergrax.contracts.self_healing_investigation_read import (
+    AdaptiveHealingInsightView,
+    HealingExecutionTimelineView,
+    RelatedSelfHealingHistoryEntryView,
+    RelatedSelfHealingWorkflowHistoryEntryView,
+)
+from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticExternalOperationContextView:
+    execution_id: ExecutionId
+    operation_attempt_id: str
+    provider_id: str
+    operation_type: str
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticExternalOperationFailureView:
+    execution_id: ExecutionId
+    operation_attempt_id: str
+    provider_id: str
+    failure_kind: ExternalOperationFailureKind
+    evidence_refs: tuple[EventId, ...]
 
 
 class DiagnosticTimelineEntryKind(StrEnum):
@@ -182,6 +209,13 @@ class DiagnosticInvestigationView:
     prediction_history: tuple[RelatedPredictiveHistoryEntryView, ...] = ()
     prediction_outcome_history: tuple[RelatedPredictionOutcomeHistoryView, ...] = ()
     preventive_recommendations: tuple[RelatedPreventiveRecommendationView, ...] = ()
+    preventive_action_history: tuple[RelatedPreventiveActionHistoryEntryView, ...] = ()
+    self_healing_history: tuple[RelatedSelfHealingHistoryEntryView, ...] = ()
+    healing_workflow_history: tuple[RelatedSelfHealingWorkflowHistoryEntryView, ...] = ()
+    healing_execution_timeline: HealingExecutionTimelineView | None = None
+    adaptive_healing_insights: tuple[AdaptiveHealingInsightView, ...] = ()
+    external_operation_context: tuple[DiagnosticExternalOperationContextView, ...] = ()
+    external_operation_failures: tuple[DiagnosticExternalOperationFailureView, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)

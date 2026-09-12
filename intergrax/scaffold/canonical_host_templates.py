@@ -38,7 +38,7 @@ def render_canonical_lab_serving_router_py(names: ScaffoldApplicationNames) -> s
         from intergrax.runtime.execution.host_task import HostTaskExecutionPort
         from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
         from intergrax.runtime.task.task import Task, TaskContext
-        from intergrax.runtime.task.task_run_bridge import new_run_id
+        from intergrax.contracts.execution_identity import mint_task_id
 
 
         class {pascal}RunRequestV1(BaseModel):
@@ -71,9 +71,8 @@ def render_canonical_lab_serving_router_py(names: ScaffoldApplicationNames) -> s
                 return cls(host_execution=host_execution)
 
             async def run_task(self, body: {pascal}RunRequestV1) -> {pascal}RunResponseV1:
-                run_id = new_run_id()
                 task = Task(
-                    task_id=run_id,
+                    task_id=mint_task_id(),
                     tenant_id=body.tenant_id,
                     user_id=body.user_id,
                     session_id=body.session_id,
@@ -146,7 +145,7 @@ def render_canonical_product_serving_router_py(
         from intergrax.runtime.execution.host_task import HostTaskExecutionPort
         from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
         from intergrax.runtime.task.task import Task, TaskContext
-        from intergrax.runtime.task.task_run_bridge import new_run_id
+        from intergrax.contracts.execution_identity import mint_task_id
         from {pkg}.serving.schemas import {pascal}RunRequestV1, {pascal}RunResponseV1
 
 
@@ -168,9 +167,8 @@ def render_canonical_product_serving_router_py(
                 )
 
             async def run_task(self, body: {pascal}RunRequestV1) -> {pascal}RunResponseV1:
-                run_id = new_run_id()
                 task = Task(
-                    task_id=run_id,
+                    task_id=mint_task_id(),
                     tenant_id=body.tenant_id,
                     user_id=body.user_id,
                     session_id=body.session_id,

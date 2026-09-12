@@ -1,0 +1,10 @@
+{
+  "entity_type": "communication_event",
+  "communication_event_id": "erl-qual-004-comm-0001",
+  "related_effect_id": "erl-qual-004-eff-capture-0001",
+  "uncertainty_condition": "definitive_confirmation_not_delivered_to_application",
+  "uncertainty_cause": "response_lost_after_request_accepted",
+  "lost_response": true,
+  "delayed_confirmation": true,
+  "narrative": "Capture request was accepted externally; confirmation never reached the commerce integration boundary."
+}

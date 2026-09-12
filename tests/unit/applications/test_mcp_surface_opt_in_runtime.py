@@ -28,7 +28,11 @@ def _http_only_settings(**overrides: object) -> LocalWorkspaceBackendSettings:
 def test_mcp_enabled_factory_mounts_mcp_route_when_available() -> None:
     from local_workspace_application.host.factory import create_local_workspace_backend_app
 
-    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(_http_only_settings(include_mcp=True), settings=_http_only_settings(include_mcp=True))
+    settings = _http_only_settings(include_mcp=True)
+    app = create_local_workspace_backend_app(
+        registry_projection=build_lkw_test_registry_projection(settings),
+        settings=settings,
+    )
     client = TestClient(app)
     assert client.get("/health").status_code == 200
     assert any(
