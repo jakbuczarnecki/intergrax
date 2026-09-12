@@ -46,6 +46,9 @@ from intergrax.runtime.enterprise_reliability.governance_orchestration import (
     GovernanceOrchestrationError,
     evaluate_external_effect_governance,
 )
+from intergrax.runtime.enterprise_reliability.lifecycle_handoff_orchestration import (
+    handoff_recovery_lifecycle_to_execution,
+)
 from intergrax.runtime.enterprise_reliability.recovery_orchestration import (
     ExternalEffectRecoveryRecommendation,
     RecoveryOrchestrationError,
@@ -90,6 +93,7 @@ __all__ = [
     "plan_external_effect_resolution",
     "materialize_external_effect_evidence_from_probe",
     "evaluate_external_effect_governance",
+    "handoff_recovery_lifecycle_to_execution",
     "plan_external_effect_reconciliation",
     "recommend_external_effect_recovery_lifecycle",
     "UncertaintyResolutionError",

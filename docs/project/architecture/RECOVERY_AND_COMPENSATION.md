@@ -140,6 +140,23 @@ After recovery recommends lifecycle posture, ERL evaluates **whether execution m
 
 **Failure model (fail closed):** missing governance strategy yields `approval_required` (never automatic `allow`); strategy abstention or invalid outcome yields `approval_required` or `deny`; no silent allow.
 
+### Lifecycle execution handoff boundary (ERL foundation)
+
+After governance approves (or blocks) lifecycle posture, ERL may emit a **handoff intent** for the execution subsystem — still without mutating execution state.
+
+| Artifact | Owner | Meaning |
+| -------- | ----- | ------- |
+| `RecoveryLifecycleHandoffRequest` | ERL handoff contract | Lifecycle action, correlation identity, `execution_ref`, decision context refs, optional governance result ref — not a duplicate of `RecoveryDecision` / `GovernanceDecision` |
+| `RecoveryLifecycleHandoffResult` | Handoff runtime | `handed_off`, `blocked`, `approval_required`, `escalated`, or `port_unavailable` — typed outcome before/at port invoke |
+| `RecoveryLifecycleIntent` | Execution lifecycle port | Consumed by UER adapters when handoff is allowed and port is wired |
+| `ExecutionLifecyclePort` | Unified Execution Runtime | Sole authority to apply pause, resume, terminate, and related lifecycle mutations |
+
+**Lifecycle:** validate `GovernanceDecision` is `allow` → materialize `RecoveryLifecycleHandoffRequest` → invoke `ExecutionLifecyclePort.apply_recovery_lifecycle_intent` with `RecoveryLifecycleIntent`. No direct execution mutation in ERL runtime.
+
+**Governance requirement:** `deny`, `approval_required`, or recovery `escalate` without allow **must not** invoke the port; outcomes remain typed (`blocked`, `approval_required`, `escalated`).
+
+**Failure model (fail closed):** missing or unwired port yields `port_unavailable`; no silent continue.
+
 ---
 
 ## Escalate and human decision

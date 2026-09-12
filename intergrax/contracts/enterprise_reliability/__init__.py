@@ -101,6 +101,14 @@ from intergrax.contracts.enterprise_reliability.execution_lifecycle_port import 
     ExecutionLifecyclePort,
     RecoveryLifecycleIntent,
 )
+from intergrax.contracts.enterprise_reliability.recovery_lifecycle_handoff import (
+    LifecycleHandoffDisposition,
+    RecoveryLifecycleDecisionContextRefs,
+    RecoveryLifecycleHandoffRequest,
+    RecoveryLifecycleHandoffResult,
+    governance_result_ref,
+    recovery_lifecycle_decision_context_refs,
+)
 from intergrax.contracts.enterprise_reliability.recovery_decision import (
     RecoveryDecision,
     RecoveryLifecycleAction,
@@ -238,6 +246,12 @@ __all__ = [
     "RecoveryDecision",
     "RecoveryLifecycleAction",
     "RecoveryLifecycleIntent",
+    "LifecycleHandoffDisposition",
+    "RecoveryLifecycleDecisionContextRefs",
+    "RecoveryLifecycleHandoffRequest",
+    "RecoveryLifecycleHandoffResult",
+    "governance_result_ref",
+    "recovery_lifecycle_decision_context_refs",
     "RecoveryStrategy",
     "RecoveryStrategyEvaluationRequest",
     "ReconciliationStrategy",
