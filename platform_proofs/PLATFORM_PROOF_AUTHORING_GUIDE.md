@@ -1,7 +1,7 @@
 # Intergrax Proof Library - Authoring Guide
 
 **Status:** Canonical  
-**Document version:** 1.12.0 (2026-09-12)  
+**Document version:** 1.13.0 (2026-09-12)  
 **Audience:** Independent Scenario Proof and Conformance Proof author sessions
 
 This is the **single canonical practical instruction** for independent proof-author sessions. Future sessions receive only:
@@ -693,6 +693,102 @@ Only after scenario quality is accepted:
 
 Every Scenario Proof **MUST** demonstrate that it is a **client and extension of the Intergrax platform** — not a standalone application that happens to live beside `intergrax/`.
 
+Scenarios are not only consumers of the platform; they are also a **controlled mechanism for platform evolution**. A scenario solves a real problem; a missing platform capability is an opportunity for **controlled extension**, not a reason to bypass architecture.
+
+### Scenario-Driven Platform Evolution Principle
+
+#### Core Principle
+
+Every scenario **MUST** start from the problem — not from “how do I use an existing platform feature?”
+
+```text
+Business / Technical Problem
+          |
+          v
+Required Capability
+          |
+          v
+Platform Evaluation
+          |
+          v
+Extension Decision
+```
+
+Ask:
+
+> How do we solve the problem in a way that respects platform architecture?
+
+—not:
+
+> How do I use an existing platform function?
+
+#### Decision Framework
+
+**Step 1 — Identify Scenario Need**
+
+The scenario defines:
+
+- business problem,
+- technical requirements,
+- constraints,
+- required outcome.
+
+**Step 2 — Evaluate Existing Platform Capability**
+
+Check whether the platform already exposes a mechanism for the need.
+
+| Result | Required action |
+| --- | --- |
+| **YES** | Use the existing contract; implement a plugin when specialization is needed; **do not** duplicate the capability. |
+| **NO** | **Do not** automatically build a local workaround. Classify the gap (capability classification) and choose an extension path. |
+
+#### Capability Classification
+
+| Problem type | Decision |
+| --- | --- |
+| General mechanism needed by many scenarios | Extend **platform core** (new public contract + generic implementation where appropriate) |
+| Mechanism extendable through a contract | New **platform contract** + scenario **plugin** |
+| Domain-specific logic | **Scenario plugin** behind an existing or new contract |
+| One-off scenario configuration | **Scenario implementation** only (no new platform surface) |
+
+#### Platform Evolution Rule — Missing Platform Capability
+
+A missing platform mechanism is **not** grounds for:
+
+- bypassing the platform,
+- creating a private framework,
+- direct access to platform internals,
+- a local alternate implementation of a platform concern.
+
+A missing mechanism is a signal:
+
+> **Potential Platform Evolution Opportunity**
+
+#### Example — wrong vs correct
+
+**Wrong approach**
+
+- Problem: “VPI needs product verification.”
+- Implementation: VPI owns a private verifier, lifecycle, and logging stack.
+- Effect: isolated system, no reuse, platform does not evolve.
+
+**Correct approach**
+
+- Analysis: verification is a **platform capability** (reusable across scenarios).
+- Design: platform contract `IdentityVerificationPolicy` → scenario plugin `ProductIdentityVerificationPolicy`.
+- Effect: platform extended, VPI solved, future scenarios reuse the capability.
+
+#### Scenario as Platform Stress Test
+
+Reference scenarios have an additional role:
+
+- surface platform gaps,
+- stress-test abstractions,
+- force better contracts,
+- demonstrate real platform usage.
+
+A good scenario does not only **use** the platform — it helps **evolve** it.
+
 ### Scenario Platform Integration and Pluginability Requirement (normative)
 
 Design and implementation **MUST** follow this shape:
@@ -702,8 +798,12 @@ Platform Core
       |
 Platform Contracts
       |
-Scenario Implementation (domain plugins + composition)
+Plugins
+      |
+Scenario Logic
 ```
+
+**Pluginability does not mean** “everything must be a plugin.” **Pluginability means** every variable concern is placed in the **correct layer** (core → contracts → plugins → scenario logic).
 
 **Forbidden** shape:
 
@@ -718,10 +818,44 @@ Scenario
 
 Normative scenario documentation sections (in every `SCENARIO_SPEC.md`):
 
+- **`## Platform Evolution Assessment`** — problem-first gap analysis and extension decision (see below).
 - **`## Platform Capability Adoption`** — capability table (see below).
-- **`## Platform Pluginability Audit`** — checklist before enterprise / library acceptance.
+- **`## Platform Evolution Review`** — evolution governance checklist before enterprise / library acceptance.
+- **`## Platform Pluginability Audit`** — plugin boundary checklist before enterprise / library acceptance.
 
 Reference implementation: [`scenarios/verified_product_identification/`](scenarios/verified_product_identification/) (Verified Product Identification — VPI).
+
+### Platform Evolution Assessment (required per scenario)
+
+Every scenario **MUST** include in `SCENARIO_SPEC.md`:
+
+```markdown
+## Platform Evolution Assessment
+
+### Business / Technical Need
+
+_Describe the problem._
+
+### Existing Platform Capability
+
+_Does a platform mechanism already exist? Which contract?_
+
+### Capability Gap
+
+_What is missing?_
+
+### Decision
+
+- [ ] Existing capability reused
+- [ ] New platform capability introduced
+- [ ] Scenario plugin introduced
+
+### Rationale
+
+_Why this option respects platform architecture and reuse._
+```
+
+Complete during **implementation preparation**; update when platform contracts or plugins change.
 
 ### Platform Capability Adoption (required per scenario)
 
@@ -817,6 +951,25 @@ Every scenario **MUST** include in `SCENARIO_SPEC.md`:
 
 Complete with checked items before **Scenario Architecture Review**.
 
+### Platform Evolution Review (required checklist)
+
+Every scenario **MUST** include in `SCENARIO_SPEC.md`:
+
+```markdown
+## Platform Evolution Review
+
+- [ ] Scenario solves a real business/technical problem
+- [ ] Existing platform capabilities were evaluated
+- [ ] Missing capabilities were classified
+- [ ] Platform extension opportunity was considered
+- [ ] No local workaround replaced missing platform capability
+- [ ] New platform contracts are generic and reusable
+- [ ] Scenario-specific logic remains isolated
+- [ ] Plugin boundary is documented
+```
+
+Complete with checked items before **Scenario Architecture Review**.
+
 ### Scenario Architecture Review (enterprise readiness)
 
 Before treating a Scenario Proof as **enterprise-ready** for Proof Library acceptance, run **Platform Integration Audit**:
@@ -827,9 +980,37 @@ Before treating a Scenario Proof as **enterprise-ready** for Proof Library accep
 | Does domain logic extend the platform through **contracts** (plugins), not forks? | YES |
 | Can implementations be swapped without editing platform core? | YES |
 | Did platform core stay generic (no scenario-specific branches)? | YES |
+| Is `## Platform Evolution Assessment` complete and consistent with adoption table? | YES |
+| Is `## Platform Evolution Review` complete? | YES |
 | Is `## Platform Pluginability Audit` complete? | YES |
 
 Failure → **NOT enterprise-ready** until remediated (even if a single proof run PASSes).
+
+### PLATFORM EVOLUTION REVIEW (author / Cursor session report)
+
+At the end of design, implementation preparation, or governance updates, record:
+
+```markdown
+## PLATFORM EVOLUTION REVIEW
+
+Scenario problem:
+...
+
+Existing platform capabilities reused:
+...
+
+New platform capabilities introduced:
+...
+
+Scenario plugins introduced:
+...
+
+Why changes belong in platform/plugin layer:
+...
+
+Enterprise architecture assessment:
+PASS / FAIL
+```
 
 ### PLATFORM PLUGINABILITY REVIEW (author / Cursor session report)
 
@@ -1955,8 +2136,10 @@ Canonical deep contract for scenario design and implementation:
 A. SCENARIO
 B. SOLUTION
 C. INTERGRAX FIT
+   → Platform Evolution Assessment (problem → capability → decision)
    → Platform Capability Adoption (table)
    → Platform pluginability evidence (contract / DI / replacement / isolation)
+   → Platform Evolution Review (checklist)
    → Platform Pluginability Audit (checklist)
 D. GAP DECISION
 E. PROOF BUILD
@@ -2104,7 +2287,7 @@ A Scenario Proof is **not accepted** as a Proof Library entry until **all** gene
 
 ### Scenario Architecture Review (before enterprise / library acceptance)
 
-After implementation and before public acceptance, complete § Scenario Architecture Review (Platform Integration Audit). An incomplete **`## Platform Pluginability Audit`** or missing **`## Platform Capability Adoption`** table blocks acceptance regardless of evaluator PASS.
+After implementation and before public acceptance, complete § Scenario Architecture Review (Platform Integration Audit). An incomplete **`## Platform Evolution Assessment`**, **`## Platform Evolution Review`**, **`## Platform Pluginability Audit`**, or missing **`## Platform Capability Adoption`** table blocks acceptance regardless of evaluator PASS.
 
 ### General gates
 
@@ -2256,7 +2439,7 @@ Full lifecycle: § Canonical Scenario Lifecycle.
 | 3. Implementation preparation | Verify Intergrax fit; resolve platform gaps; update frontmatter gates | `intergrax_fit: COMPLETED`, `gap_decision: RESOLVED` |
 | 4. Init implementation | `uv run python scripts/proof/init_scenario_implementation.py --slug <slug>` | → `IMPLEMENTATION INITIALIZED` |
 | 5. Build + prove | Implement `application/` + `proof/`; run `run_proof.py` | → executable → evidence → library acceptance |
-| 6. Architecture review | Platform Integration Audit + `PLATFORM PLUGINABILITY REVIEW` | → enterprise-ready for library acceptance |
+| 6. Architecture review | Platform Integration Audit + `PLATFORM EVOLUTION REVIEW` + `PLATFORM PLUGINABILITY REVIEW` | → enterprise-ready for library acceptance |
 
 Do not manually invent scenario directory shapes, skip the quality gate, or run the initializer before acceptance frontmatter is set. Complete explanatory visuals under `assets/` **before** implementation when the scenario is mature enough. Post-run README sections populate only after execution.
 
@@ -2311,6 +2494,7 @@ Public gateway: [`scenarios/verified_product_identification/README.md`](scenario
 | Operational failure narrated as epistemic UNRESOLVED | Violates diagnostic terminal semantics |
 | Reimplementing platform components inside proof | Proves clone, not platform |
 | Scenario Local Framework Duplication (local engine / observability / governance / plugin framework) | Violates Platform First Principle; blocks pluginability audit |
+| Local workaround for missing platform capability | Violates Scenario-Driven Platform Evolution Principle; blocks Platform Evolution Review |
 | Proof-local critic / observability / receipt stack | Fragments platform truth |
 | Expected-answer prompt leakage | Invalidates falsification |
 
@@ -2320,6 +2504,7 @@ Public gateway: [`scenarios/verified_product_identification/README.md`](scenario
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 1.13.0 | 2026-09-12 | Scenario-Driven Platform Evolution Principle (assessment, classification, evolution review, PLATFORM EVOLUTION REVIEW report, stress-test role). |
 | 1.12.0 | 2026-09-12 | Scenario platform integration and pluginability governance (Platform First, adoption table, audit checklist, architecture review, VPI reference). |
 | 1.11.x | (prior) | Canonical scenario lifecycle, observability contract, production-capable application rules. |
 
