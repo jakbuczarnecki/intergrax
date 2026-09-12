@@ -9,7 +9,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 **Enterprise Runtime Intelligence (ERI)** is the planned platform layer that **explains, correlates, and scores** runtime execution using **canonical facts** already produced by W1–W5 — without becoming a second diagnostic engine, without owning execution truth, and without introducing god components.
 
 > [!NOTE]
-> **W6-A status:** Architecture inventory and qualification only. See [`ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md`](../maintainers/architecture/ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md) and [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md). **Not** a claim of production implementation.
+> **W6-A:** Architecture inventory and qualification. **W6-B:** Contract freeze in `intergrax/contracts/runtime_intelligence/` (SPI + immutable envelopes). Runtime engines and context builders follow in W6-C+. See [`ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md`](../maintainers/architecture/ADR_ENTERPRISE_RUNTIME_INTELLIGENCE_ARCHITECTURE.md), [`ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md`](../maintainers/architecture/ADR/ADR-RUNTIME-INTELLIGENCE-CONTRACTS-W6-B.md), and [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md`](../maintainers/qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md).
 
 **Primary audience:** Principal / Staff architects and platform engineers extending execution reliability, observability, and adaptive operations.
 
@@ -91,12 +91,84 @@ Intergrax Platform
 
 ---
 
-## Planned contracts (W6-B — not implemented in W6-A)
+## Contract model (W6-B)
 
-- `RuntimeIntelligencePort` — analyze request → versioned envelope
-- `RuntimeIntelligenceAnalyzerPort` — plugin SPI
-- `RuntimeIntelligenceContext` — immutable fact snapshot
-- `RuntimeIntelligenceEvidenceRef` — stable pointers into canonical stores
-- Optional: `AdaptivePolicySignalPort` — recommend-only signals
+```text
+intergrax/contracts/runtime_intelligence/
+        │
+        ├── RuntimeIntelligenceContext (+ fact refs, metadata)
+        ├── RuntimeIntelligenceResult (+ confidence, evidence, recommendations)
+        ├── IntelligenceEvidence / IntelligenceRecommendation
+        ├── RuntimeIntelligenceAnalyzerPort (plugin SPI)
+        └── run_runtime_intelligence_analyzer_isolated (per-analyzer fail-soft)
+```
 
-See ADR for lifecycle, failure model, and versioning strategy.
+| Artifact | Role |
+|----------|------|
+| `RuntimeIntelligenceContext` | Immutable snapshot of runtime IDs + observed fact pointers |
+| `RuntimeIntelligenceResult` | Versioned analysis envelope (advisory) |
+| `IntelligenceEvidence` | Traceable refs into canonical stores (not a second authority) |
+| `IntelligenceRecommendation` | Recommend-only output — no execution hooks |
+| `RuntimeIntelligenceAnalyzerPort` | Local / ML / external analyzers behind one Protocol |
+
+**Deferred (W6-C+):** `RuntimeIntelligencePort` facade, context builder in `runtime/runtime_intelligence/`, `AdaptivePolicySignalPort`.
+
+---
+
+## Ownership (W6-B)
+
+| Concern | Owner |
+|---------|--------|
+| Context projection | Runtime integration layer (future builder; contracts define shape only) |
+| Analysis | `RuntimeIntelligenceAnalyzerPort` implementations |
+| Result envelope | Runtime Intelligence contract plane |
+| Recommendations | Runtime Intelligence contract plane (governance decides action) |
+| Execution / retry / cancel / checkpoints | Existing W1–W4 owners — **unchanged** |
+
+---
+
+## Lifecycle (W6-B)
+
+- **Request-scoped** analyze over immutable context — no W6 managers or schedulers.
+- Analyzers are **wired at composition root** (tuple ordering), not discovered via a central registry in contracts.
+- No global mutable intelligence state in the contract package.
+
+---
+
+## Plugin model
+
+```text
+RuntimeIntelligenceAnalyzerPort
+        │
+        ├── Local deterministic adapter (W6-C)
+        ├── ML model adapter
+        └── External HTTP/service adapter
+```
+
+Contracts do **not** branch on analyzer kind; each adapter implements the same Protocol.
+
+---
+
+## Failure isolation
+
+```text
+Analyzer failure / invalid context
+        ↓
+run_runtime_intelligence_analyzer_isolated → PLUGIN_UNAVAILABLE or INVALID_CONTEXT
+        ↓
+Orchestration records degraded outcome (future engine)
+        ↓
+Execution hot path continues unchanged
+```
+
+Typed errors: `RuntimeIntelligenceError`, `AnalyzerExecutionError`, `InvalidIntelligenceContextError` — never generic execution exceptions on the hot path.
+
+---
+
+## Versioning
+
+- Context: `RUNTIME_INTELLIGENCE_CONTEXT_SCHEMA_VERSION`
+- Result: `RUNTIME_INTELLIGENCE_RESULT_SCHEMA_VERSION`
+- Per plugin: `analyzer_id` + `analyzer_version` on every `RuntimeIntelligenceResult`
+
+Optional future port: `AdaptivePolicySignalPort` (recommend-only signals).
