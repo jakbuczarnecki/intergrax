@@ -11,6 +11,7 @@ from typing import Protocol, runtime_checkable
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.event_delivery import EventDeliveryPolicy, EventExportSinkPort, EventSinkPort
 from intergrax.contracts.observability_export import (
+    ConfigurationError,
     EventExportSinkFactoryPort,
     ExporterKind,
     ObservabilityExportProfile,
@@ -96,7 +97,10 @@ def _create_export_transport(
     if export_profile.exporter_kind is ExporterKind.DISTRIBUTED_OTLP:
         config = _resolve_distributed_transport_configuration(env, settings=settings)
         if config is None:
-            return None
+            raise ConfigurationError(
+                "DISTRIBUTED_OTLP requires non-empty otlp_export_endpoint and "
+                "observability_export_service_name",
+            )
         return CollectorTransport(config)
     return None
 

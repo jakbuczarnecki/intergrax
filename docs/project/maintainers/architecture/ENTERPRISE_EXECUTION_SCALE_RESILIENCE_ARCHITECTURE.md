@@ -2,6 +2,7 @@
 
 **Status:** P0 inventory baseline; **W0** strict host capacity guardrails; **W1 FINAL (qualified)** — process-local root admission (W1-A), explicit concurrent work policy (W1-B), absolute global deadline into R1 retry (W1-C). Qualification: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W1_ADMISSION_DEADLINE.md). **W2 FINAL (qualified, process-local)** — dependency admission bulkheads (B1–B3) + retry budget / provider rate limit / LLM circuit composition (C); final matrix: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_FINAL_QUALIFICATION.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_FINAL_QUALIFICATION.md). **W2-A** inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_DEPENDENCY_ISOLATION_INVENTORY.md); **W2-ADR (Accepted)** — [`ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md`](ADR_ENTERPRISE_DEPENDENCY_CONCURRENCY_ADMISSION.md); **W2-B1** `LocalDependencyConcurrencyAdmission`; **W2-B2** `DependencyAttemptExecutionBoundary` on `RuntimeToolInvoker`; **W2-B3** provider boundary on `LLMAdapter` seams; **W2-C** `execute_with_resilience` order: tenant quota (adapter) → retry budget → rate limit → circuit breaker → physical attempt (admission inside `_run_physical_provider_attempt`).
 **W4-C FINAL (qualified):** distributed external operation cancellation — stable identity, intent vs physical planes, durable CAS, permit-after-terminal, recovery gate (`prepare_external_operations_for_recovery`). Qualification: `tests/unit/runtime/architecture/test_enterprise_scale_resilience_w4_c_distributed_cancellation_qualification.py`.
+**W5-G FINAL (qualified):** enterprise cluster observability profile activates `DISTRIBUTED_OTLP` via explicit `GovernanceBundle.enterprise_cluster_observability` — qualification: `tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_g_profile_activation.py`.
 **Baseline:** `origin/development` at audit start.  
 **Scope:** Execution plane capacity, concurrency ownership, failure domains, process-local vs distributed semantics.
 
@@ -141,6 +142,42 @@ EventExportSinkPort
 | Lifecycle | Composition root: drain → `flush` → `close` on export sink before runtime teardown |
 
 Inventory: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_C_EVENT_EXPORT_INVENTORY.md`](../qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_C_EVENT_EXPORT_INVENTORY.md).
+
+## W5-G — Enterprise observability profile activation
+
+**Status:** qualified — explicit deployment intent only (no production/heuristic transport selection).
+
+| Profile | `bounded_event_delivery_enabled` | `observability_exporter_kind` | Transport |
+|---------|----------------------------------|--------------------------------|-----------|
+| Lab / local defaults | `false` | `NOOP` (default) | None — legacy bus |
+| Test / recording harness | varies | `RECORDING` where configured | In-memory recording sink |
+| `GovernanceBundle.production_slo()` | `true` | `OTLP` | `OtlpTransport` (single-node endpoint) |
+| `GovernanceBundle.enterprise_cluster_observability(...)` | `true` | `DISTRIBUTED_OTLP` | `CollectorTransport` per environment |
+
+Composition: `wire_application_environment` → `resolve_application_runtime_event_delivery_wiring` → `ObservabilityExportSinkFactory` → per-instance `CollectorTransport`. Missing endpoint or service name for `DISTRIBUTED_OTLP` raises `ConfigurationError` at wiring time.
+
+Qualification: `tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_g_profile_activation.py`.
+
+### Deployment topology (observability export)
+
+**Single process (production SLO / local OTLP):**
+
+```text
+Runtime
+   |
+   v
+OTLP endpoint (process-local or sidecar)
+```
+
+**Cluster (enterprise profile):**
+
+```text
+Runtime A ----\
+Runtime B -----+--> OTLP Collector --> Observability backend
+Runtime C ----/
+```
+
+Each runtime holds its own bounded sink, export sink, and transport — no shared module-level transport singleton.
 
 ## Failure domains (architectural)
 

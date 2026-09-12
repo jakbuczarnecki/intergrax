@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from intergrax.contracts.observability_export import (
     ConfigurationError,
@@ -21,6 +22,12 @@ class DistributedTransportConfiguration:
     timeout_seconds: float
 
 
+def _validate_distributed_endpoint_url(endpoint: str) -> None:
+    parsed = urlparse(endpoint)
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        raise ConfigurationError("distributed transport endpoint must be a valid http(s) URL")
+
+
 def validate_distributed_transport_configuration(
     config: DistributedTransportConfiguration,
 ) -> DistributedTransportConfiguration:
@@ -28,6 +35,7 @@ def validate_distributed_transport_configuration(
     service_name = config.service_name.strip()
     if not endpoint:
         raise ConfigurationError("distributed transport endpoint must be non-empty")
+    _validate_distributed_endpoint_url(endpoint)
     if not service_name:
         raise ConfigurationError("distributed transport service_name is required")
     if config.timeout_seconds <= 0:
