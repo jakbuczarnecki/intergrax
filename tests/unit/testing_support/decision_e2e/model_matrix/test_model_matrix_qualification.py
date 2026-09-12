@@ -15,6 +15,9 @@ from testing_support.decision_e2e.local_qualification_session.contracts import (
     QualificationSessionState,
     SafetyGateOutcome,
 )
+from testing_support.decision_e2e.local_qualification_session.checkpoint import (
+    SessionCheckpoint,
+)
 from testing_support.decision_e2e.model_matrix.analysis import (
     FifteenKBEffectR6,
     classify_fifteen_kb_effect,
@@ -35,6 +38,10 @@ from testing_support.decision_e2e.model_matrix.qualification_cohort_failure impo
 )
 from testing_support.decision_e2e.model_matrix.qualification_planner import (
     QualificationPlanner,
+)
+from testing_support.decision_e2e.model_matrix.qualification_cohort_resume import (
+    CohortResumeAction,
+    decide_cohort_resume,
 )
 from testing_support.decision_e2e.model_matrix.qualification_plan import (
     ProfileCohortPlan,
@@ -317,6 +324,227 @@ def test_cohort_executor_boundary_excludes_matrix_analysis() -> None:
     source = Path(mod.__file__).read_text(encoding="utf-8")
     assert "run_multi_model_qualification_analysis" not in source
     assert "analysis.json" not in source
+
+
+class _StubModelExecutionProvider:
+    def __init__(
+        self,
+        availability_by_key: dict[str, ModelAvailability],
+        *,
+        digest: str = "sha256:stub",
+    ) -> None:
+        self._availability_by_key = availability_by_key
+        self._digest = digest
+
+    def resolve_profile_digest(
+        self,
+        profile: ModelQualificationProfile,
+        *,
+        env_digest: str | None,
+    ) -> tuple[str | None, ModelAvailability]:
+        availability = self._availability_by_key.get(
+            profile.profile_key,
+            ModelAvailability.AVAILABLE,
+        )
+        if availability is ModelAvailability.MODEL_UNAVAILABLE:
+            return None, availability
+        return env_digest or self._digest, availability
+
+
+def _registry_profiles() -> tuple[ModelQualificationProfile, ...]:
+    return QualificationRegistry.profiles()
+
+
+@pytest.mark.asyncio
+async def test_execution_pipeline_three_models_independent_sessions(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    profiles = _registry_profiles()
+    assert len(profiles) == 3
+    session_dirs: list[Path] = []
+
+    async def _runner(*, session_dir: Path, **_kwargs):
+        session_dirs.append(session_dir)
+        from testing_support.decision_e2e.local_ai_incident_qualification import (
+            LocalQualificationOrchestrationResult,
+        )
+
+        return LocalQualificationOrchestrationResult(
+            exit_code=QualificationCliExit.SUCCESS,
+            session_state=QualificationSessionState.FINALIZED,
+            executor_invocations=(0,),
+        )
+
+    provider = _StubModelExecutionProvider(
+        {profile.profile_key: ModelAvailability.AVAILABLE for profile in profiles}
+    )
+    from testing_support.decision_e2e.model_matrix.qualification_plan import (
+        build_cohort_plans,
+    )
+
+    plans = build_cohort_plans(
+        tmp_path,
+        profiles,
+        ollama_base_url="http://127.0.0.1:11434",
+        env_digest=None,
+        execution_provider=provider,
+    )
+    executor = QualificationCohortExecutor(
+        repo_root=repo_root,
+        session_runner=_runner,
+    )
+    results = await executor.execute_plans(plans)
+    assert len(results) == 3
+    assert all(item.status is CohortExecutionStatus.EXECUTED for item in results)
+    assert len(session_dirs) == 3
+    assert len(set(session_dirs)) == 3
+    for plan in plans:
+        assert plan.session_dir in session_dirs
+
+
+@pytest.mark.asyncio
+async def test_execution_pipeline_one_unavailable_other_models_complete(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    from testing_support.decision_e2e.local_ai_incident_qualification import (
+        LocalQualificationOrchestrationResult,
+    )
+
+    profiles = _registry_profiles()
+    availability = {
+        "qwen2.5-14b": ModelAvailability.AVAILABLE,
+        "qwen2.5-32b": ModelAvailability.MODEL_UNAVAILABLE,
+        "llama3.1-8b": ModelAvailability.AVAILABLE,
+    }
+    provider = _StubModelExecutionProvider(availability)
+    runner = AsyncMock(
+        return_value=LocalQualificationOrchestrationResult(
+            exit_code=QualificationCliExit.SUCCESS,
+            session_state=QualificationSessionState.FINALIZED,
+            executor_invocations=(0,),
+        )
+    )
+    planner = QualificationPlanner(provider)
+    plans = planner.plan_cohorts(tmp_path, profiles)
+    executor = QualificationCohortExecutor(repo_root=repo_root, session_runner=runner)
+    results = await executor.execute_plans(plans)
+    by_key = {item.profile_key: item for item in results}
+    assert by_key["qwen2.5-32b"].status is CohortExecutionStatus.MODEL_UNAVAILABLE
+    assert by_key["qwen2.5-14b"].status is CohortExecutionStatus.EXECUTED
+    assert by_key["llama3.1-8b"].status is CohortExecutionStatus.EXECUTED
+    assert runner.await_count == 2
+
+
+def test_three_model_artifact_dirs_are_isolated(repo_root: Path) -> None:
+    profiles = _registry_profiles()
+    provider = MagicMock()
+    provider.resolve_profile_digest.return_value = (
+        "sha256:abc",
+        ModelAvailability.AVAILABLE,
+    )
+    planner = QualificationPlanner(provider)
+    plans = planner.plan_cohorts(repo_root, profiles, env_digest="sha256:abc")
+    dirs = [plan.session_dir for plan in plans]
+    assert len(dirs) == len(set(dirs))
+    for plan in plans:
+        assert plan.profile.profile_key in str(plan.session_dir)
+
+
+@pytest.mark.asyncio
+async def test_cohort_resume_skips_duplicate_finalized_cohort(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    plan = ProfileCohortPlan(
+        profile=_sample_profile(),
+        session_dir=tmp_path / "qwen2.5-14b",
+        run_count=20,
+        availability=ModelAvailability.AVAILABLE,
+    )
+    runner = AsyncMock()
+    executor = QualificationCohortExecutor(repo_root=repo_root, session_runner=runner)
+    checkpoint = MagicMock(spec=SessionCheckpoint)
+    checkpoint.state = QualificationSessionState.FINALIZED
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            "testing_support.decision_e2e.model_matrix.qualification_cohort_resume.load_checkpoint",
+            lambda _path: checkpoint,
+        )
+        result = await executor.execute_plan(plan, resume=False)
+    assert result.status is CohortExecutionStatus.EXECUTED
+    assert result.session_state is QualificationSessionState.FINALIZED
+    runner.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_cohort_resume_blocks_partial_without_resume_flag(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    plan = ProfileCohortPlan(
+        profile=_sample_profile(),
+        session_dir=tmp_path / "qwen2.5-14b",
+        run_count=20,
+        availability=ModelAvailability.AVAILABLE,
+    )
+    runner = AsyncMock()
+    executor = QualificationCohortExecutor(repo_root=repo_root, session_runner=runner)
+    checkpoint = MagicMock(spec=SessionCheckpoint)
+    checkpoint.state = QualificationSessionState.PARTIAL
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            "testing_support.decision_e2e.model_matrix.qualification_cohort_resume.load_checkpoint",
+            lambda _path: checkpoint,
+        )
+        result = await executor.execute_plan(plan, resume=False)
+    assert result.status is CohortExecutionStatus.BLOCKED_PRECONDITION
+    assert result.exit_code is QualificationCliExit.PARTIAL_OR_INVALID_SESSION
+    runner.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_cohort_resume_allows_interrupted_session_with_resume(
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    plan = ProfileCohortPlan(
+        profile=_sample_profile(),
+        session_dir=tmp_path / "qwen2.5-14b",
+        run_count=20,
+        availability=ModelAvailability.AVAILABLE,
+    )
+    from testing_support.decision_e2e.local_ai_incident_qualification import (
+        LocalQualificationOrchestrationResult,
+    )
+
+    runner = AsyncMock(
+        return_value=LocalQualificationOrchestrationResult(
+            exit_code=QualificationCliExit.SUCCESS,
+            session_state=QualificationSessionState.FINALIZED,
+            executor_invocations=(0, 1),
+        )
+    )
+    executor = QualificationCohortExecutor(repo_root=repo_root, session_runner=runner)
+    checkpoint = MagicMock(spec=SessionCheckpoint)
+    checkpoint.state = QualificationSessionState.RUNNING
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(
+            "testing_support.decision_e2e.model_matrix.qualification_cohort_resume.load_checkpoint",
+            lambda _path: checkpoint,
+        )
+        result = await executor.execute_plan(plan, resume=True)
+    assert result.status is CohortExecutionStatus.EXECUTED
+    runner.assert_awaited_once()
+    assert runner.call_args.kwargs["resume"] is True
+
+
+def test_decide_cohort_resume_contract() -> None:
+    assert (
+        decide_cohort_resume(Path("/missing"), resume=False, finalize_only=False).action
+        is CohortResumeAction.PROCEED
+    )
 
 
 @pytest.fixture

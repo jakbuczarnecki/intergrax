@@ -32,6 +32,10 @@ from testing_support.decision_e2e.model_matrix.qualification_cohort_failure impo
     attribution_for_exception,
     resolve_cohort_failure,
 )
+from testing_support.decision_e2e.model_matrix.qualification_cohort_resume import (
+    CohortResumeAction,
+    decide_cohort_resume,
+)
 from testing_support.decision_e2e.model_matrix.qualification_plan import (
     ProfileCohortPlan,
     R6_TASK_ID,
@@ -143,6 +147,40 @@ class QualificationCohortExecutor:
                 ),
             )
 
+        session_dir = plan.session_dir
+        session_dir.mkdir(parents=True, exist_ok=True)
+        resume_decision = decide_cohort_resume(
+            session_dir,
+            resume=resume,
+            finalize_only=finalize_only,
+        )
+        if resume_decision.action is CohortResumeAction.SKIP_DUPLICATE_FINALIZED:
+            status = CohortExecutionStatus.EXECUTED
+            return CohortExecutionResult(
+                profile_key=profile_key,
+                availability=plan.availability,
+                status=status,
+                exit_code=QualificationCliExit.SUCCESS,
+                session_state=resume_decision.session_state,
+                failure=resolve_cohort_failure(
+                    status=status.value,
+                    exit_code=QualificationCliExit.SUCCESS,
+                ),
+            )
+        if resume_decision.action is CohortResumeAction.BLOCK_RESUME_REQUIRED:
+            status = CohortExecutionStatus.BLOCKED_PRECONDITION
+            return CohortExecutionResult(
+                profile_key=profile_key,
+                availability=plan.availability,
+                status=status,
+                exit_code=QualificationCliExit.PARTIAL_OR_INVALID_SESSION,
+                session_state=resume_decision.session_state,
+                failure=resolve_cohort_failure(
+                    status=status.value,
+                    exit_code=QualificationCliExit.PARTIAL_OR_INVALID_SESSION,
+                ),
+            )
+
         _apply_profile_runtime_env(plan.profile.provider, plan.profile.model_name)
         bootstrap_qualification_environment(start_path=self._repo_root)
         head_sha = repository_head_sha or resolve_repository_head_sha(self._repo_root)
@@ -152,8 +190,6 @@ class QualificationCohortExecutor:
             repository_head_sha=head_sha,
             run_count=plan.run_count,
         )
-        session_dir = plan.session_dir
-        session_dir.mkdir(parents=True, exist_ok=True)
         probe = OllamaProviderIdentityProbe(
             OllamaProbeConfig(base_url=self._ollama_base_url)
         )
