@@ -25,3 +25,11 @@ class PaymentReconciliationEvidenceLookupError(Exception):
 
 class PaymentReconciliationEvidenceMissing(PaymentReconciliationEvidenceLookupError):
     """No payment reconciliation bundle for the supplied correlation reference."""
+
+
+class PaymentGovernanceContextLookupError(Exception):
+    """Payment governance business context lookup could not complete."""
+
+
+class PaymentGovernanceContextMissing(PaymentGovernanceContextLookupError):
+    """No governance business context for the supplied correlation reference."""
