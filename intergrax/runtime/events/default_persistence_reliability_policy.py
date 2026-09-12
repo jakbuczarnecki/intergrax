@@ -14,13 +14,20 @@ from intergrax.contracts.execution_evidence.persistence_reliability_policy_contr
 )
 
 __all__ = [
+    "DEFAULT_PERSISTENCE_RELIABILITY_POLICY_ID",
     "DefaultPersistenceReliabilityPolicy",
     "default_persistence_reliability_policy",
 ]
 
+DEFAULT_PERSISTENCE_RELIABILITY_POLICY_ID = "default_persistence_reliability"
+
 
 class DefaultPersistenceReliabilityPolicy:
     """Durability-based fail-closed vs best-effort continue (legacy runtime behavior)."""
+
+    @property
+    def policy_id(self) -> str:
+        return DEFAULT_PERSISTENCE_RELIABILITY_POLICY_ID
 
     def decide(
         self,

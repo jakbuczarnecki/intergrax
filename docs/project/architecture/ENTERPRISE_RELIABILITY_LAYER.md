@@ -158,6 +158,8 @@ ERL **extends** existing domains; it does not replace them. Use the linked hubs 
 
 **Execution Runtime ↔ evidence persistence:** Runtime producers (`RuntimeEventBus`) know only `EvidencePersistencePort`, controlled failure types (`ControlledEvidencePersistenceFailure`), and the `PersistenceReliabilityPolicy` contract; storage adapters isolate provider exceptions. Execution Runtime reports normalized persistence problems and applies policy decisions—it does not embed swappable resilience strategies. Default policy preserves current fail-closed vs best-effort semantics without changing evidence semantics, journal rules, or reconstruction—see [`OBSERVABILITY.md`](OBSERVABILITY.md) persistence boundary.
 
+**Runtime reliability diagnostics:** Persistence reliability decisions expose a separate diagnostic boundary (`PersistenceReliabilityDiagnostic` + pluggable `PersistenceReliabilityDecisionObserver`). Diagnostics describe problem category, policy identity, and disposition for operators and future adapters; they are not execution evidence, do not alter lifecycle, and the observer is a swappable component with a no-op default.
+
 ---
 
 ## Enterprise example: online laptop purchase
