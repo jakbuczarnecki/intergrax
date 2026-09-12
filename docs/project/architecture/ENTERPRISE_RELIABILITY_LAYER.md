@@ -156,7 +156,7 @@ ERL **extends** existing domains; it does not replace them. Use the linked hubs 
 | [**Tools**](TOOLS.md) | Tool invocations with external side effects participate in effect contracts. |
 | [**Decision System**](DECISION_SYSTEM.md) | Semantic decisions remain separate from **external effect truth**; ERL resolves operational uncertainty, not decision correctness. |
 
-**Execution Runtime ↔ evidence persistence:** Runtime producers (`RuntimeEventBus`) know only `EvidencePersistencePort` and controlled failure types (`ControlledEvidencePersistenceFailure`); storage adapters isolate provider exceptions. Runtime resilience controls apply durability policy without changing evidence semantics, journal rules, or reconstruction—see [`OBSERVABILITY.md`](OBSERVABILITY.md) persistence boundary.
+**Execution Runtime ↔ evidence persistence:** Runtime producers (`RuntimeEventBus`) know only `EvidencePersistencePort`, controlled failure types (`ControlledEvidencePersistenceFailure`), and the `PersistenceReliabilityPolicy` contract; storage adapters isolate provider exceptions. Execution Runtime reports normalized persistence problems and applies policy decisions—it does not embed swappable resilience strategies. Default policy preserves current fail-closed vs best-effort semantics without changing evidence semantics, journal rules, or reconstruction—see [`OBSERVABILITY.md`](OBSERVABILITY.md) persistence boundary.
 
 ---
 
