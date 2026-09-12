@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from intergrax.contracts.predictive_risk import PredictiveRiskSeverity
 from intergrax.contracts.preventive.evidence import RecommendationEvidenceReference
@@ -35,4 +36,21 @@ class RelatedPreventiveRecommendationView:
     evidence_quality: str = ""
 
 
-__all__ = ["RelatedPreventiveRecommendationView"]
+@dataclass(frozen=True, slots=True)
+class RelatedPreventiveActionHistoryEntryView:
+    """Readonly preventive action trail on DiagnosticInvestigationView."""
+
+    proposal_id: str
+    tenant_id: str
+    action_type: str
+    risk_signal_refs: tuple[str, ...]
+    recommendation_refs: tuple[str, ...]
+    approval_refs: tuple[str, ...]
+    external_operation_id: str | None
+    execution_id: str | None
+    outcome: str
+    recorded_at: datetime
+    admission_reason: str = ""
+
+
+__all__ = ["RelatedPreventiveActionHistoryEntryView", "RelatedPreventiveRecommendationView"]

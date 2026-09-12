@@ -50,7 +50,10 @@ from intergrax.contracts.predictive_investigation_read import (
     RelatedPredictiveRiskSignalView,
     RelatedPredictionOutcomeHistoryView,
 )
-from intergrax.contracts.preventive_investigation_read import RelatedPreventiveRecommendationView
+from intergrax.contracts.preventive_investigation_read import (
+    RelatedPreventiveActionHistoryEntryView,
+    RelatedPreventiveRecommendationView,
+)
 
 
 def project_investigation_view(
@@ -63,6 +66,7 @@ def project_investigation_view(
     prediction_history: tuple[RelatedPredictiveHistoryEntryView, ...] = (),
     prediction_outcome_history: tuple[RelatedPredictionOutcomeHistoryView, ...] = (),
     preventive_recommendations: tuple[RelatedPreventiveRecommendationView, ...] = (),
+    preventive_action_history: tuple[RelatedPreventiveActionHistoryEntryView, ...] = (),
 ) -> DiagnosticInvestigationView:
     summary = DiagnosticProblemSummary(
         problem_id=problem_detail.problem_id,
@@ -132,6 +136,7 @@ def project_investigation_view(
         prediction_history=prediction_history,
         prediction_outcome_history=prediction_outcome_history,
         preventive_recommendations=preventive_recommendations,
+        preventive_action_history=preventive_action_history,
         external_operation_context=external_operation_context,
         external_operation_failures=external_operation_failures,
     )
