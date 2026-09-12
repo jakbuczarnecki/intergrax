@@ -19,6 +19,8 @@ SCENARIO_PAYMENT_RESOLUTION_STRATEGY_ID = "erl-qual-004-payment-resolution"
 
 SCENARIO_PAYMENT_GOVERNANCE_STRATEGY_ID = "erl-qual-004-payment-governance"
 
+SCENARIO_PAYMENT_RECOVERY_STRATEGY_ID = "erl-qual-004-payment-recovery"
+
 SCENARIO_EVIDENCE_REF_PREFIX = "evidence://erl-qual-004/"
 
 EXTERNAL_EFFECT_SOR_PROBE_REF = "external_effect.system_of_record_read"

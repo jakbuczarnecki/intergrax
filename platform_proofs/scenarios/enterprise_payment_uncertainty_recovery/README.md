@@ -124,6 +124,8 @@ Full limitations: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 
 **[ERL-QUAL-004 Payment Governance Policy Plugin](docs/ERL_QUAL_004_PAYMENT_GOVERNANCE_PLUGIN.md)** — scenario-owned `GovernanceStrategy` for enterprise payment thresholds before risky continuation.
 
+**[ERL-QUAL-004 Payment Recovery Strategy Plugin](docs/ERL_QUAL_004_PAYMENT_RECOVERY_PLUGIN.md)** — scenario-owned `RecoveryStrategy` mapping resolution to fulfillment, reservation release, and operational follow-up.
+
 ## Data provisioning boundary (foundation)
 
 Scenario-local **contract-first** provisioning lives under `contracts/provisioning/` (`ScenarioProvisioningPort`, typed context/results, lifecycle coordinator). A **replaceable reference** in-memory provisioner under `provisioning/reference/` validates the canonical `dataset/` manifest and variant slices. The **PostgreSQL lab adapter** under `provisioning/postgresql/` materializes `dataset/` into the scenario database — see [ERL_QUAL_004_POSTGRESQL_PROVISIONING.md](docs/ERL_QUAL_004_POSTGRESQL_PROVISIONING.md). Proof-runner wiring remains future work.
