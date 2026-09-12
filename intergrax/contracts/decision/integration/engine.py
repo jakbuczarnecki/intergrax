@@ -85,7 +85,26 @@ class DecisionSystemIntegrationEngine:
             self._maybe_audit(result)
             return result
 
-        result = adapter.integrate_lifecycle(source)
+        try:
+            result = adapter.integrate_lifecycle(source)
+        except Exception as exc:
+            metadata = DecisionAdapterMetadata(
+                source_type=source.source_type,
+                adapter_id=adapter.adapter_id,
+                adapter_version=adapter.adapter_version,
+                mapping_version=adapter.mapping_version,
+                integrated_at=integrated_at,
+            )
+            result = DecisionIntegrationResult(
+                status=DecisionIntegrationStatus.FAILED,
+                source=source,
+                target=None,
+                adapter_metadata=metadata,
+                detail=f"adapter_execution_error:{type(exc).__name__}",
+            )
+            self._maybe_audit(result)
+            return result
+
         if type(result) is not DecisionIntegrationResult:
             raise TypeError(
                 "adapter.integrate_lifecycle must return DecisionIntegrationResult"

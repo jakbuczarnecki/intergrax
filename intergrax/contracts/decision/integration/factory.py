@@ -7,6 +7,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.contracts.decision.integration.admission import (
+    filter_admitted_adapter_providers,
+)
 from intergrax.contracts.decision.integration.composition import (
     DecisionIntegrationCompositionProvider,
 )
@@ -27,8 +30,12 @@ class DecisionSystemIntegrationFactory:
             raise TypeError(
                 "composition must implement DecisionIntegrationCompositionProvider",
             )
+        admitted = filter_admitted_adapter_providers(
+            composition.adapter_providers,
+            composition.plugin_admission_provider,
+        )
         return DecisionSystemIntegrationEngine(
-            adapter_providers=composition.adapter_providers,
+            adapter_providers=admitted,
             audit_provider=composition.audit_provider,
         )
 
