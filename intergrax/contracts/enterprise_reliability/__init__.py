@@ -3,6 +3,18 @@
 
 """Enterprise Reliability Layer contracts (ERL — UNKNOWN, effect contracts, reconciliation, plugin SPI)."""
 
+from intergrax.contracts.enterprise_reliability.admission_boundary import (
+    ExternalEffectAdmissionCaseError,
+    ExternalEffectAdmissionContextError,
+    ExternalEffectAdmissionPhase,
+    ExternalEffectAdmissionRequest,
+    ExternalEffectAdmissionResult,
+    ExternalEffectAdmissionSourceContext,
+    SCHEMA_EXTERNAL_EFFECT_ADMISSION_BOUNDARY_V1,
+    assert_external_effect_admission_request,
+    reliability_case_id_for_admission,
+    uncertainty_state_ref_for_correlation,
+)
 from intergrax.contracts.enterprise_reliability.effect_contract import (
     ExternalEffectCapabilitySupport,
     ExternalEffectCategory,
@@ -194,6 +206,13 @@ __all__ = [
     "DependentExecutionGateAction",
     "DependentExecutionGateRequest",
     "DependentExecutionGateResult",
+    "ExternalEffectAdmissionCaseError",
+    "ExternalEffectAdmissionContextError",
+    "ExternalEffectAdmissionPhase",
+    "ExternalEffectAdmissionRequest",
+    "ExternalEffectAdmissionResult",
+    "ExternalEffectAdmissionSourceContext",
+    "SCHEMA_EXTERNAL_EFFECT_ADMISSION_BOUNDARY_V1",
     "ExternalEffectCapabilitySupport",
     "ExternalEffectCategory",
     "ExternalEffectContract",
@@ -299,12 +318,15 @@ __all__ = [
     "UncertaintyResolutionKind",
     "UncertaintyStateRecord",
     "UnknownUncertaintyPosture",
+    "assert_external_effect_admission_request",
     "assert_plugin_identity_matches_descriptor",
     "assert_reconciliation_probe_ref",
     "assert_reliability_case_lifecycle_refs_for_state",
     "assert_reliability_case_lifecycle_transition",
     "assert_uncertainty_lifecycle_transition",
     "initial_reliability_case_lifecycle",
+    "reliability_case_id_for_admission",
+    "uncertainty_state_ref_for_correlation",
     "classify_external_effect_outcome",
     "contract_declares_compensation",
     "contract_declares_idempotency",

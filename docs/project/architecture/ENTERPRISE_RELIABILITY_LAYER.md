@@ -19,6 +19,7 @@ ERL does **not** execute business logic. It **protects execution correctness** w
 
 | Hub | Role |
 |-----|------|
+| [`ERL_ADMISSION_BOUNDARY.md`](ERL_ADMISSION_BOUNDARY.md) | External effect entry, case initialization, correlation |
 | [`UNCERTAINTY_MANAGEMENT.md`](UNCERTAINTY_MANAGEMENT.md) | UNKNOWN state model, lifecycle, decision rules |
 | [`RECONCILIATION.md`](RECONCILIATION.md) | Verifying external truth before the next step |
 | [`EXTERNAL_EFFECT_CONTRACTS.md`](EXTERNAL_EFFECT_CONTRACTS.md) | Declared safety properties for external operations |

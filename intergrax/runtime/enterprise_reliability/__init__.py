@@ -3,6 +3,11 @@
 
 """Enterprise Reliability Layer runtime (ERL)."""
 
+from intergrax.runtime.enterprise_reliability.admission_boundary import (
+    ExternalEffectAdmissionCaseError,
+    ExternalEffectAdmissionContextError,
+    admit_external_effect_into_enterprise_reliability,
+)
 from intergrax.runtime.enterprise_reliability.contract_admission import (
     ExternalEffectUnknownAdmission,
     admit_external_effect_unknown_with_contract,
@@ -72,6 +77,8 @@ from intergrax.runtime.enterprise_reliability.uncertainty_lifecycle import (
 __all__ = [
     "EnterpriseReliabilityPluginGatewayImpl",
     "EnterpriseReliabilityPluginRegistryConfigurationError",
+    "ExternalEffectAdmissionCaseError",
+    "ExternalEffectAdmissionContextError",
     "ExternalEffectUnknownAdmission",
     "InMemoryEnterpriseReliabilityPluginRegistry",
     "ExternalEffectReconciliationPlanning",
@@ -100,6 +107,7 @@ __all__ = [
     "plan_external_effect_reconciliation",
     "recommend_external_effect_recovery_lifecycle",
     "UncertaintyResolutionError",
+    "admit_external_effect_into_enterprise_reliability",
     "admit_external_effect_unknown",
     "admit_external_effect_unknown_with_contract",
     "advance_uncertainty_lifecycle",
