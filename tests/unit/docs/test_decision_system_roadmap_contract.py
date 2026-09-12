@@ -141,7 +141,8 @@ def test_decision_architecture_declares_decision_system_current_authority() -> N
     arch = _read(_ARCH_SYSTEM)
     assert "CURRENT decision authority = Decision System" in arch
     assert "Critic runtime retired" in arch
-    assert "Production qualification of full Decision System still pending DS-E2E" in arch
+    assert "Production qualification (DS-E2E-15J):" in arch
+    assert "QUALIFIED WITH OBSERVATIONS" in arch
 
 
 def test_decision_verification_architecture_declares_migrated_pipeline() -> None:

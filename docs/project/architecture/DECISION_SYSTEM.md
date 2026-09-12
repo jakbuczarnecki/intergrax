@@ -10,7 +10,7 @@ The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - c
 > - **Architecture:** **TARGET CANON - FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
 > - **Implementation:** Canonical Decision System runtime **implemented and active**.
 > - **CURRENT decision authority = Decision System.** Critic runtime **retired**.
-> - **Production qualification of full Decision System still pending DS-E2E** — no whole-system production-qualified claim.
+> - **Production qualification (DS-E2E-15J):** **QUALIFIED WITH OBSERVATIONS** — in-repo Decision → Governance → Execution qualification bundle passes; distributed **Docker E2E** phase remains a separate gate (see [Production qualification](#production-qualification-boundary)).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.
 
@@ -842,8 +842,8 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | ---- | ----- | --------- |
 | **Architecture (A)** | **A4** | Frozen target canon established; boundaries to Execution, Policy, HITL, Diagnostics explicit |
 | **Implementation (I)** | **I3** | Core lifecycle · revision · verification · governance · execution integration implemented |
-| **Production (P)** | **P1** | Decision System is production decision authority; whole-system qualification pending DS-E2E |
-| **Evidence (E)** | **E0** | No Decision System Docker E2E qualification completed |
+| **Production (P)** | **P2** | DS-E2E-15J integrated flow qualified in-repo; Docker distributed E2E not claimed |
+| **Evidence (E)** | **E1** | DS-E2E-15J production qualification bundle + architecture closure evidence |
 
 ---
 
@@ -853,19 +853,30 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | ----- | --------- |
 | **Architecture** | This hub · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) · [`DECISION_SYSTEM_ARCHITECTURE.md`](DECISION_SYSTEM_ARCHITECTURE.md) |
 | **Architecture closure (DS-E2E-15J)** | [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md) |
+| **Production qualification (DS-E2E-15J)** | [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md) |
 | **Implementation plan** | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
 | **Historical Critic snapshot** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 | **Public proof** | Not claimed - pending DS-E2E Docker qualification phase |
 
 ### Production qualification boundary
 
-The Decision System is **not** production-qualified after:
+**DS-E2E-15J (in-repo):** Task `DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION` certifies the integrated flow below using the production composition root and the L6 reference orchestration chain (governance gate → execution provider abstraction). Proof: `tests/unit/contracts/decision/test_decision_system_production_qualification.py` plus existing DS-E2E-15J boundary, hardening, NPSC-5C decision→execution, and diagnostic lineage gates.
 
-- unit tests,
-- integration tests,
-- mocked E2E.
+```text
+                    Decision System
+                           ↓
+                 Governance Authorization
+                           ↓
+                    Execution Engine
+                           ↓
+                       Runtime
+                           ↓
+                     Audit Evidence
+```
 
-**Production qualification** requires completion of the real **Docker E2E qualification phase** ([`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) - Phase DS-E2E).
+**Observation:** L6 default `RecordingExecutionProvider` records an auditable execution reference for qualification; hosts bind a real Execution Engine provider at the composition root without changing orchestration contracts.
+
+**Still not claimed without Docker E2E:** distributed deployment qualification ([`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) — Phase DS-E2E Docker). Unit, integration, and mocked paths alone do not satisfy that gate.
 
 ---
 

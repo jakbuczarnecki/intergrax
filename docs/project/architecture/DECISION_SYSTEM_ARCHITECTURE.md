@@ -566,6 +566,7 @@ Follow [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) plugin section and [`PLATFORM_
 | [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) | Plugin discovery and admission |
 | [`E2E_SCENARIO_FRAMEWORK_AUDIT.md`](E2E_SCENARIO_FRAMEWORK_AUDIT.md) | Relationship of `decision_e2e` to platform proofs |
 | [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md) | Final architecture closure certification (DS-E2E-15J) |
+| [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md) | Production qualification (Decision → Execution integrated flow) |
 
 ---
 
@@ -657,6 +658,36 @@ Operational tools must not call Execution directly to bypass Decision or governa
 ### 13.8 Proof tests (operational enablement)
 
 `tests/unit/contracts/decision/test_decision_system_operational_enablement.py` (acceptance bundle) plus existing DS-E2E-15J integration / production hardening tests under `tests/unit/runtime/` and `tests/unit/contracts/decision/`.
+
+---
+
+## 14. Production qualification (DS-E2E-15J integrated flow)
+
+**Task:** `DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION`  
+**Status:** **QUALIFIED WITH OBSERVATIONS** (in-repo bundle; Docker distributed E2E not claimed).
+
+```text
+                    Decision System
+                           ↓
+                 Governance Authorization
+                           ↓
+                    Execution Engine
+                           ↓
+                       Runtime
+                           ↓
+                     Audit Evidence
+```
+
+| Layer | Qualification evidence |
+| ----- | ---------------------- |
+| Decision → contract mapping | `test_decision_system_production_qualification.py` · integration boundary tests |
+| Governance gate | L6 `DecisionOrchestrator` — ALLOW / BLOCK / REQUIRE_APPROVAL |
+| Execution boundary | Integration composition root excludes `intergrax.runtime.execution`; NPSC-5C/R3 decision→execution E2E gate |
+| Lifecycle correlation | L6 `DecisionOrchestrationLifecycleMetadata`; platform `DecisionExecutionCorrelation` (DIAG R4) |
+| Evidence chain | Integration audit envelopes + execution result references |
+| Composition root | `production_decision_integration_composition_provider()` |
+
+Full report: [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md).
 
 ---
 
