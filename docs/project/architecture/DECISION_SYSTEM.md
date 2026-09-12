@@ -748,6 +748,23 @@ When ``require_manifest_capability_binding=True``, absence of positive Platform 
 manifest capability evidence is an admission failure (fail-closed). Plugins without
 verifiable manifest binding are not loaded, instantiated, or registered.
 
+### Integration boundary (operational)
+
+Reference enterprise decision lifecycle records (DS-E2E L7 matrix) map to platform
+``decision_lifecycle`` contracts through the **integration boundary** — intelligence
+and mapping only, **before** authoritative Execution hosting.
+
+| Concern | Location |
+| ------- | -------- |
+| Composition root | `intergrax/runtime/decision_integration_composition.py` |
+| Contracts / engine | `intergrax/contracts/decision/integration/` |
+| Production wiring | `production_decision_system_integration()` |
+| Audit | `DecisionIntegrationAuditProvider` → injected `DecisionAuditSink` |
+| Plugin admission | `DecisionPluginAdmissionProvider` at composition root |
+
+Operational detail: [`DECISION_SYSTEM_ARCHITECTURE.md`](DECISION_SYSTEM_ARCHITECTURE.md) §13.
+Proof: `tests/unit/contracts/decision/test_decision_system_operational_enablement.py`.
+
 ---
 
 ## Cross-scenario validation
@@ -834,7 +851,8 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 
 | Class | Artifacts |
 | ----- | --------- |
-| **Architecture** | This hub · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
+| **Architecture** | This hub · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) · [`DECISION_SYSTEM_ARCHITECTURE.md`](DECISION_SYSTEM_ARCHITECTURE.md) |
+| **Architecture closure (DS-E2E-15J)** | [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md) |
 | **Implementation plan** | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
 | **Historical Critic snapshot** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 | **Public proof** | Not claimed - pending DS-E2E Docker qualification phase |

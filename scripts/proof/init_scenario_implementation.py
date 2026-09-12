@@ -281,6 +281,29 @@ def _build_proof_json(slug: str, title: str) -> str:
     return json.dumps(payload, indent=2) + "\n"
 
 
+def _build_platform_pluginability_proof_md(slug: str) -> str:
+    return (
+        "# Platform pluginability proof (scenario-owned)\n\n"
+        f"Scenario: `{slug}`\n\n"
+        "Normative checklist and capability table live in [`SCENARIO_SPEC.md`](../SCENARIO_SPEC.md) "
+        "(§ Platform Capability Adoption, Platform Pluginability Audit).\n\n"
+        "## Dependency injection proof\n\n"
+        "Document the composition root in [`application/runtime_composition.py`]"
+        "(../application/runtime_composition.py):\n\n"
+        "- `build_scenario_runtime()` — scenario `build_scenario()` equivalent\n"
+        "- register scenario plugins against **platform contracts** (not private internals)\n\n"
+        "## Replacement proof\n\n"
+        "Link to tests or configuration showing a contract implementation swap without "
+        "changing the execution pipeline.\n\n"
+        "## Isolation proof\n\n"
+        "Confirm scenario plugins import only public contracts/ports; "
+        "`scenario_architecture_conformance` gates apply on CI.\n\n"
+        "Reference: [PLATFORM_PROOF_AUTHORING_GUIDE.md § Scenario platform integration "
+        "and pluginability governance](../../PLATFORM_PROOF_AUTHORING_GUIDE.md"
+        "#scenario-platform-integration-and-pluginability-governance).\n"
+    )
+
+
 def _build_env_example() -> str:
     return (
         "# Scenario proof configuration — provider-neutral placeholders.\n"
@@ -329,7 +352,9 @@ def _planned_files(
             '"""Scenario-local operational scripts (build, operator, diagnostics, migration)."""\n'
         ),
         package_root / "tests" / ".gitkeep": "",
-        package_root / "docs" / ".gitkeep": "",
+        package_root / "docs" / "PLATFORM_PLUGINABILITY_PROOF.md": (
+            _build_platform_pluginability_proof_md(slug)
+        ),
         **{
             package_root / subdir / ".gitkeep": ""
             for subdir in SCENARIO_SCRIPTS_SUBDIRS

@@ -64,12 +64,15 @@ def test_reconciliation_advice_requires_probe_ref() -> None:
         ReconciliationStrategyAdvice(probe_ref=" ")
 
 
-def test_capability_kind_covers_future_strategy_families() -> None:
+def test_capability_kind_covers_registered_plugin_families() -> None:
+    """``EnterpriseReliabilityCapabilityKind`` is the single plugin-family vocabulary."""
     kinds = {item.value for item in EnterpriseReliabilityCapabilityKind}
     assert kinds == {
         "reconciliation",
         "resolution",
         "compensation",
+        "recovery",
+        "governance",
         "risk_evaluation",
     }
 

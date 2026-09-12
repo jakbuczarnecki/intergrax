@@ -187,6 +187,7 @@ After implementation, Scenario packages add `proof.json`, `run_proof.py`, and ot
 - Scenario implementation artifacts **MUST NOT** be initialized before lifecycle acceptance (`ACCEPTED FOR IMPLEMENTATION` in `SCENARIO_SPEC.md` frontmatter).
 - The canonical implementation skeleton **MUST** be created through `scripts/proof/init_scenario_implementation.py` - not by manual directory layout.
 - `scripts/proof/create_scenario_proof.py` creates the design package only (`README.md` + `SCENARIO_SPEC.md`); it does **not** authorize implementation or generate runtime artifacts.
+- Every scenario **MUST** satisfy **Scenario Platform Integration and Pluginability** and the **Scenario-Driven Platform Evolution Principle** (`## Platform Evolution Assessment`, `## Platform Capability Adoption`, `## Platform Evolution Review`, `## Platform Pluginability Audit`, Scenario Architecture Review before enterprise / library acceptance). Normative detail: [PLATFORM_PROOF_AUTHORING_GUIDE.md § Scenario platform integration and pluginability governance](PLATFORM_PROOF_AUTHORING_GUIDE.md#scenario-platform-integration-and-pluginability-governance). Reference scenario: `scenarios/verified_product_identification/`.
 
 Operational procedure: [PLATFORM_PROOF_AUTHORING_GUIDE.md § Canonical Scenario Lifecycle](PLATFORM_PROOF_AUTHORING_GUIDE.md#canonical-scenario-lifecycle).
 

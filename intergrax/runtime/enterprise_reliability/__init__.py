@@ -3,6 +3,11 @@
 
 """Enterprise Reliability Layer runtime (ERL)."""
 
+from intergrax.runtime.enterprise_reliability.admission_boundary import (
+    ExternalEffectAdmissionCaseError,
+    ExternalEffectAdmissionContextError,
+    admit_external_effect_into_enterprise_reliability,
+)
 from intergrax.runtime.enterprise_reliability.contract_admission import (
     ExternalEffectUnknownAdmission,
     admit_external_effect_unknown_with_contract,
@@ -13,6 +18,10 @@ from intergrax.runtime.enterprise_reliability.plugin_gateway import (
 from intergrax.runtime.enterprise_reliability.plugin_registry import (
     EnterpriseReliabilityPluginRegistryConfigurationError,
     InMemoryEnterpriseReliabilityPluginRegistry,
+)
+from intergrax.runtime.enterprise_reliability.evidence_evaluation import (
+    EvidenceEvaluationOrchestrationError,
+    evaluate_external_effect_evidence,
 )
 from intergrax.runtime.enterprise_reliability.reconciliation_evidence import (
     apply_reconciliation_evidence,
@@ -72,6 +81,8 @@ from intergrax.runtime.enterprise_reliability.uncertainty_lifecycle import (
 __all__ = [
     "EnterpriseReliabilityPluginGatewayImpl",
     "EnterpriseReliabilityPluginRegistryConfigurationError",
+    "ExternalEffectAdmissionCaseError",
+    "ExternalEffectAdmissionContextError",
     "ExternalEffectUnknownAdmission",
     "InMemoryEnterpriseReliabilityPluginRegistry",
     "ExternalEffectReconciliationPlanning",
@@ -90,6 +101,8 @@ __all__ = [
     "ResolutionOrchestrationError",
     "execute_external_effect_compensation",
     "plan_external_effect_compensation",
+    "EvidenceEvaluationOrchestrationError",
+    "evaluate_external_effect_evidence",
     "apply_reconciliation_evidence",
     "execute_external_effect_reconciliation_probe",
     "execute_external_effect_resolution",
@@ -100,6 +113,7 @@ __all__ = [
     "plan_external_effect_reconciliation",
     "recommend_external_effect_recovery_lifecycle",
     "UncertaintyResolutionError",
+    "admit_external_effect_into_enterprise_reliability",
     "admit_external_effect_unknown",
     "admit_external_effect_unknown_with_contract",
     "advance_uncertainty_lifecycle",

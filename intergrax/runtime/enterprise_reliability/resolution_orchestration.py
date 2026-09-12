@@ -35,6 +35,13 @@ from intergrax.contracts.enterprise_reliability.resolution_decision import (
     abstained_resolution_decision,
     missing_resolution_strategy_decision,
 )
+from intergrax.contracts.enterprise_reliability.evidence_evaluation import (
+    EvidenceEvaluationOutcome,
+    EvidenceEvaluationResult,
+)
+from intergrax.runtime.enterprise_reliability.evidence_evaluation import (
+    evaluate_external_effect_evidence,
+)
 from intergrax.runtime.enterprise_reliability.reconciliation_evidence import (
     assert_reconciliation_evidence_applicable,
 )
@@ -53,6 +60,7 @@ class ExternalEffectResolutionPlanning(BaseModel):
     contract_id: str
     unknown_posture: UnknownUncertaintyPosture
     evidence: ExternalEffectEvidence
+    evidence_evaluation: EvidenceEvaluationResult
     plan: ResolutionPlan
 
 
@@ -103,6 +111,40 @@ def plan_external_effect_resolution(
     if effect_contract.contract_id != contract_id:
         raise ResolutionOrchestrationError("effect_contract contract_id mismatch")
 
+    evidence_evaluation = evaluate_external_effect_evidence(
+        state=state,
+        evidence=evidence,
+        tenant_id=tenant_id,
+        contract_id=contract_id,
+    )
+    if evidence_evaluation.outcome is EvidenceEvaluationOutcome.CONFLICTING_EVIDENCE:
+        raise ResolutionOrchestrationError(
+            evidence_evaluation.rationale or "conflicting_evidence",
+        )
+    if evidence_evaluation.outcome is EvidenceEvaluationOutcome.EVALUATION_FAILED:
+        raise ResolutionOrchestrationError(
+            evidence_evaluation.rationale or "evaluation_failed",
+        )
+    if evidence_evaluation.outcome is EvidenceEvaluationOutcome.INSUFFICIENT_EVIDENCE:
+        try:
+            plan = build_resolution_plan(
+                unknown_posture=unknown_posture,
+                evidence=evidence,
+                plugin_id=plugin_id,
+                decision=abstained_resolution_decision(),
+                strategy_registered=gateway.resolution_strategy_registered(plugin_id),
+            )
+        except ResolutionPlanningError as exc:
+            raise ResolutionOrchestrationError(str(exc)) from exc
+        return ExternalEffectResolutionPlanning(
+            state=state,
+            contract_id=contract_id,
+            unknown_posture=unknown_posture,
+            evidence=evidence,
+            evidence_evaluation=evidence_evaluation,
+            plan=plan,
+        )
+
     posture_disposition = evaluate_resolution_disposition(
         unknown_posture=unknown_posture,
         evidence=evidence,
@@ -123,6 +165,7 @@ def plan_external_effect_resolution(
             contract_id=contract_id,
             unknown_posture=unknown_posture,
             evidence=evidence,
+            evidence_evaluation=evidence_evaluation,
             plan=plan,
         )
 
@@ -165,6 +208,7 @@ def plan_external_effect_resolution(
         contract_id=contract_id,
         unknown_posture=unknown_posture,
         evidence=evidence,
+        evidence_evaluation=evidence_evaluation,
         plan=plan,
     )
 

@@ -1,0 +1,1 @@
+"""External payment domain model."""

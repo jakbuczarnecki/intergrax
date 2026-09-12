@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock
-
 import pytest
 
 from intergrax.agents.agent_contract import Agent
@@ -15,6 +13,7 @@ from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
@@ -254,7 +253,11 @@ async def test_nexus_finish_task_post_run_uses_active_run_id_not_task_id() -> No
         message="done",
     )
     trace_emitter = TaskTraceEmitter(run_id=run_id, attempt_id=attempt_id)
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
     try:
         await loop._finish_task(  # noqa: SLF001
             task,
@@ -297,7 +300,11 @@ async def test_uaep_agent_decision_deny_blocks_subsequent_protected_step() -> No
         task_id=task_id,
         run_id=run_id,
     )
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=mint_execution_id(),
+    )
     try:
         _answer, _validation, governance = await executor.execute(agent, request)
     finally:

@@ -52,6 +52,7 @@ from intergrax.contracts.collaborative_work import (
 from intergrax.contracts.execution_identity import (
     mint_task_id,
     validate_attempt_id,
+    validate_execution_id,
     validate_run_id,
 )
 from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
@@ -77,6 +78,7 @@ _WORKSPACE = "workspace-a"
 _TASK_ID = mint_task_id()
 _RUN_ID = validate_run_id("run_" + ("ab" * 16))
 _ATTEMPT_ID = validate_attempt_id("attempt_" + ("cd" * 16))
+_EXECUTION_ID = validate_execution_id("exec_" + ("ef" * 16))
 _PRINCIPAL = "principal-pg-c-r1"
 _DIGEST = "sha256:" + ("cd" * 32)
 _IDEM = "idem-pg-fix-c-r1"
@@ -231,6 +233,7 @@ def _step_ctx(
         task_id=task.task_id,
         run_id=_RUN_ID,
         attempt_id=_ATTEMPT_ID,
+        execution_id=_EXECUTION_ID,
         agent_id="external_contractor_adapter",
         request=request,
     )

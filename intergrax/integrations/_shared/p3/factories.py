@@ -92,6 +92,15 @@ def create_tavily_search_provider(
     )
 
 
+def create_google_cse_search_provider(**config_overrides: object) -> SearchProvider:
+    """Harness factory — delegates to catalog provider (agents must not import providers/)."""
+    from intergrax.integrations.providers.search_provider.google_cse.bundle import (
+        create_google_cse_search_provider as _catalog_create_google_cse_search_provider,
+    )
+
+    return _catalog_create_google_cse_search_provider(**config_overrides)
+
+
 def create_exa_search_provider(
     *,
     search_provider: Optional[SearchProvider] = None,

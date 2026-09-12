@@ -19,6 +19,7 @@ ERL does **not** execute business logic. It **protects execution correctness** w
 
 | Hub | Role |
 |-----|------|
+| [`ERL_ADMISSION_BOUNDARY.md`](ERL_ADMISSION_BOUNDARY.md) | External effect entry, case initialization, correlation |
 | [`UNCERTAINTY_MANAGEMENT.md`](UNCERTAINTY_MANAGEMENT.md) | UNKNOWN state model, lifecycle, decision rules |
 | [`RECONCILIATION.md`](RECONCILIATION.md) | Verifying external truth before the next step |
 | [`EXTERNAL_EFFECT_CONTRACTS.md`](EXTERNAL_EFFECT_CONTRACTS.md) | Declared safety properties for external operations |
@@ -225,6 +226,23 @@ stateDiagram-v2
 ```
 
 Details: [`UNCERTAINTY_MANAGEMENT.md`](UNCERTAINTY_MANAGEMENT.md) · [`RECOVERY_AND_COMPENSATION.md`](RECOVERY_AND_COMPENSATION.md).
+
+---
+
+## Plugin capability vocabulary (source of truth)
+
+Replaceable ERL behavior is grouped by **`EnterpriseReliabilityCapabilityKind`** in `intergrax/contracts/enterprise_reliability/plugin_spi.py`. That enum names **plugin families only** (what strategy protocol applies)—not execution decisions, lifecycle state, or business semantics.
+
+| Kind | Strategy protocol (SPI) |
+| ---- | ------------------------ |
+| `reconciliation` | `ReconciliationStrategy` (+ optional `ReconciliationProbeExecutor`) |
+| `resolution` | `ResolutionStrategy` |
+| `compensation` | `CompensationStrategy` (+ optional `CompensationExecutionStrategy`) |
+| `recovery` | `RecoveryStrategy` |
+| `governance` | `GovernanceStrategy` |
+| `risk_evaluation` | `RiskEvaluationStrategy` |
+
+**Registry and gateway:** `EnterpriseReliabilityPluginRegistry` and `EnterpriseReliabilityPluginGateway` expose one resolve/invoke path per kind. Runtime bootstrap (`InMemoryEnterpriseReliabilityPluginRegistry`, `EnterpriseReliabilityPluginGatewayImpl`) must accept every enum member—contract tests guard enum ↔ registry consistency.
 
 ---
 

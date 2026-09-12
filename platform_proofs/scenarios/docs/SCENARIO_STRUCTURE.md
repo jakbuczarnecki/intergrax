@@ -1,6 +1,20 @@
 # Scenario package structure standard
 
+**Document version:** 1.2.0 (2026-09-12)
+
 Platform Proof scenarios under `platform_proofs/scenarios/<slug>/` use a consistent layout so operators, builders, and maintainers can find entry points without hunting loose files at the package root.
+
+**Governance:** platform integration, pluginability, and **scenario-driven platform evolution** are normative in [PLATFORM_PROOF_AUTHORING_GUIDE.md § Scenario platform integration and pluginability governance](../../PLATFORM_PROOF_AUTHORING_GUIDE.md#scenario-platform-integration-and-pluginability-governance). Every scenario is a platform client **and** extension — not a sidecar application with local frameworks. Missing capabilities are evolution opportunities, not excuses for architectural bypass.
+
+## Pluginability and platform evolution documentation (required)
+
+| Location | Content |
+| --- | --- |
+| `SCENARIO_SPEC.md` | `## Platform Evolution Assessment`, `## Platform Capability Adoption` (table), pluginability evidence, `## Platform Evolution Review`, `## Platform Pluginability Audit` |
+| `docs/PLATFORM_PLUGINABILITY_PROOF.md` | Created by `init_scenario_implementation.py` — DI / replacement / isolation proof pointers |
+| `application/runtime_composition.py` | Composition root (`build_scenario_runtime`); document plugin injection here |
+
+Reference scenario: `verified_product_identification/` (VPI).
 
 ## Top-level layout
 
