@@ -47,7 +47,17 @@ class DecisionIntegrationAuditProvider(Protocol):
     def record_integration(self, record: DecisionIntegrationAuditRecord) -> None: ...
 
 
+@dataclass(frozen=True, slots=True)
+class DefaultDecisionIntegrationAuditProvider:
+    """Default audit plugin — no sink until platform composes a recording provider."""
+
+    def record_integration(self, record: DecisionIntegrationAuditRecord) -> None:
+        if type(record) is not DecisionIntegrationAuditRecord:
+            raise TypeError("record must be DecisionIntegrationAuditRecord")
+
+
 __all__ = [
     "DecisionIntegrationAuditProvider",
     "DecisionIntegrationAuditRecord",
+    "DefaultDecisionIntegrationAuditProvider",
 ]

@@ -7,6 +7,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.contracts.decision.integration.lifecycle.default_adapter import (
+    DefaultDecisionLifecycleIntegrationAdapter,
+)
 from intergrax.contracts.decision.integration.protocol import (
     DecisionLifecycleIntegrationAdapter,
 )
@@ -33,4 +36,23 @@ class SingleLifecycleAdapterProvider:
         return None
 
 
-__all__ = ["SingleLifecycleAdapterProvider"]
+@dataclass(frozen=True, slots=True)
+class DefaultLifecycleAdapterProvider:
+    """Default lifecycle adapter plugin — swappable at composition root."""
+
+    _inner: SingleLifecycleAdapterProvider
+
+    def __init__(self) -> None:
+        inner = SingleLifecycleAdapterProvider(
+            lifecycle_adapter=DefaultDecisionLifecycleIntegrationAdapter(),
+        )
+        object.__setattr__(self, "_inner", inner)
+
+    def provide_lifecycle_adapter(
+        self,
+        source_type: str,
+    ) -> DecisionLifecycleIntegrationAdapter | None:
+        return self._inner.provide_lifecycle_adapter(source_type)
+
+
+__all__ = ["DefaultLifecycleAdapterProvider", "SingleLifecycleAdapterProvider"]

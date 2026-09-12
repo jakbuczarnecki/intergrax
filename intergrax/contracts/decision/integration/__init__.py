@@ -6,12 +6,22 @@
 from intergrax.contracts.decision.integration.audit import (
     DecisionIntegrationAuditProvider,
     DecisionIntegrationAuditRecord,
+    DefaultDecisionIntegrationAuditProvider,
+)
+from intergrax.contracts.decision.integration.composition import (
+    ConfiguredDecisionIntegrationCompositionProvider,
+    DecisionIntegrationCompositionProvider,
+    DecisionIntegrationCompositionSpec,
 )
 from intergrax.contracts.decision.integration.engine import (
     DecisionSystemIntegrationEngine,
 )
+from intergrax.contracts.decision.integration.factory import (
+    DecisionSystemIntegrationFactory,
+)
 from intergrax.contracts.decision.integration.lifecycle import (
     DefaultDecisionLifecycleIntegrationAdapter,
+    DefaultLifecycleAdapterProvider,
     SingleLifecycleAdapterProvider,
 )
 from intergrax.contracts.decision.integration.protocol import (
@@ -32,16 +42,22 @@ from intergrax.contracts.decision.integration.result import (
 )
 
 __all__ = [
+    "ConfiguredDecisionIntegrationCompositionProvider",
     "DecisionAdapterMetadata",
     "DecisionIntegrationAdapterProvider",
     "DecisionIntegrationAuditProvider",
     "DecisionIntegrationAuditRecord",
+    "DecisionIntegrationCompositionProvider",
+    "DecisionIntegrationCompositionSpec",
     "DecisionIntegrationResult",
     "DecisionIntegrationStatus",
     "DecisionLifecycleIntegrationAdapter",
     "DecisionSystemIntegrationAdapter",
     "DecisionSystemIntegrationEngine",
+    "DecisionSystemIntegrationFactory",
+    "DefaultDecisionIntegrationAuditProvider",
     "DefaultDecisionLifecycleIntegrationAdapter",
+    "DefaultLifecycleAdapterProvider",
     "PlatformDecisionLifecycleReference",
     "REFERENCE_DECISION_LIFECYCLE_SOURCE_TYPE",
     "ReferenceDecisionLifecycleReference",
