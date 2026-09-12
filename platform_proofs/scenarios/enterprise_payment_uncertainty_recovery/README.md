@@ -114,6 +114,8 @@ Full limitations: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 
 **[ERL-QUAL-004 PostgreSQL Infrastructure](docs/ERL_QUAL_004_POSTGRESQL_INFRASTRUCTURE.md)** — reproducible scenario-local PostgreSQL Docker foundation (`infrastructure/`), configuration boundary, and health verification (lab only).
 
+**[ERL-QUAL-004 PostgreSQL Data Model Architecture](docs/ERL_QUAL_004_POSTGRESQL_DATA_MODEL_ARCHITECTURE.md)** — future lab relational model: commerce orders and payment intents, external SoR reality vs application knowledge (including UNKNOWN), reconciliation artifacts, variant mapping (documentation only).
+
 ## Data provisioning boundary (foundation)
 
 Scenario-local **contract-first** provisioning lives under `contracts/provisioning/` (`ScenarioProvisioningPort`, typed context/results, lifecycle coordinator). A **replaceable reference** in-memory provisioner under `provisioning/reference/` validates the canonical `dataset/` manifest and variant slices only — not production lab storage, payment providers, or ERL runtime wiring. Proof-runner integration and database-backed adapters are future work.

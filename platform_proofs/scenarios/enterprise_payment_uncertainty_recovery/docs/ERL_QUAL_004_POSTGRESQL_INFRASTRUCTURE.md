@@ -127,6 +127,7 @@ Failure output uses an actionable `BLOCKED_ENVIRONMENT` message suitable for fut
 | --- | --- |
 | [ERL_QUAL_004_VENDOR_INFRASTRUCTURE_ARCHITECTURE.md](ERL_QUAL_004_VENDOR_INFRASTRUCTURE_ARCHITECTURE.md) | Architecture decisions and future compose stack |
 | [ERL_QUAL_004_DATA_PROVISIONING_ARCHITECTURE.md](ERL_QUAL_004_DATA_PROVISIONING_ARCHITECTURE.md) | Provisioning boundary (future PostgreSQL adapter) |
+| [ERL_QUAL_004_POSTGRESQL_DATA_MODEL_ARCHITECTURE.md](ERL_QUAL_004_POSTGRESQL_DATA_MODEL_ARCHITECTURE.md) | Conceptual lab relational entities (no DDL) |
 | [infrastructure/README.md](../infrastructure/README.md) | Operator quick start |
 
 ---
