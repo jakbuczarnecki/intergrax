@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Enterprise Runtime Intelligence integration layer (W6-C)."""
+"""Enterprise Runtime Intelligence integration layer (W6-C + W6-E facade)."""
 
 from intergrax.runtime.runtime_intelligence.analysis_request import (
     RuntimeIntelligenceAnalysisRequest,
@@ -22,6 +22,7 @@ from intergrax.runtime.runtime_intelligence.context_builder import (
 from intergrax.runtime.runtime_intelligence.deterministic_analyzer import (
     DeterministicRuntimeIntelligenceAnalyzer,
 )
+from intergrax.runtime.runtime_intelligence.facade import RuntimeIntelligenceFacade
 from intergrax.runtime.runtime_intelligence.runtime_facts import (
     RuntimeIntelligenceFacts,
     RuntimeIntelligenceObservedSignal,
@@ -37,6 +38,7 @@ __all__ = [
     "RuntimeIntelligenceOrchestratedAnalysisRequest",
     "RuntimeIntelligenceOrchestratedAnalysisResponse",
     "RuntimeIntelligenceContextBuilder",
+    "RuntimeIntelligenceFacade",
     "RuntimeIntelligenceFacts",
     "RuntimeIntelligenceObservedSignal",
     "RuntimeIntelligenceSignalKind",
