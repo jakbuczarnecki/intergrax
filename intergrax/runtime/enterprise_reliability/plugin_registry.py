@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from intergrax.contracts.enterprise_reliability.plugin_spi import (
+    CompensationExecutionStrategy,
     CompensationStrategy,
     EnterpriseReliabilityCapabilityKind,
     EnterpriseReliabilityPlugin,
@@ -84,6 +85,17 @@ class InMemoryEnterpriseReliabilityPluginRegistry:
 
     def resolve_compensation(self, plugin_id: str) -> CompensationStrategy | None:
         return self._compensation.get(plugin_id)
+
+    def resolve_compensation_executor(
+        self,
+        plugin_id: str,
+    ) -> CompensationExecutionStrategy | None:
+        plugin = self._compensation.get(plugin_id)
+        if plugin is None:
+            return None
+        if isinstance(plugin, CompensationExecutionStrategy):
+            return plugin
+        return None
 
     def resolve_risk_evaluation(self, plugin_id: str) -> RiskEvaluationStrategy | None:
         return self._risk.get(plugin_id)

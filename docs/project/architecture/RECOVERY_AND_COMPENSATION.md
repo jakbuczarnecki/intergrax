@@ -90,6 +90,22 @@ flowchart TB
 
 Compensation operations have their own **external effect contracts**—[`EXTERNAL_EFFECT_CONTRACTS.md`](EXTERNAL_EFFECT_CONTRACTS.md). Reliability’s compensation queue remains the execution-oriented owner for enqueue and evidence—[`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md).
 
+### Compensation execution boundary (ERL foundation)
+
+ERL separates **planning** from **execution**:
+
+| Artifact | Owner | Meaning |
+| -------- | ----- | ------- |
+| `CompensationPlan` | Compensation planning | Non-executing intent — plugin selection and strategy advice snapshot |
+| `CompensationExecutionRequest` | Compensation runtime | Approved intent plus contract-scoped context for one bounded invoke |
+| `CompensationExecutionResult` | Compensation runtime | Immutable platform outcome (`completed`, `failed`, `escalated`, `unavailable`) |
+
+**Lifecycle:** validate plan is executable and governance preconditions hold → materialize execution request → invoke `CompensationExecutionStrategy` through the ERL plugin gateway → map plugin-neutral result to platform outcome. No hidden transitions.
+
+**Ownership:** runtime coordinates; **plugins** own external mutations and provider logic. Core must not embed SAP, payment, or API-specific rollback.
+
+**Failure model (fail closed):** invalid or non-`invoke_plugin` plans do not call plugins; missing executor yields `unavailable`; plugin faults surface as `failed` or typed orchestration errors before invoke; no silent retry or swallow.
+
 ---
 
 ## Escalate and human decision

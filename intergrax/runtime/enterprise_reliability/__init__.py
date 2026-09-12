@@ -31,6 +31,11 @@ from intergrax.runtime.enterprise_reliability.resolution_execution import (
     ExternalEffectResolutionRun,
     execute_external_effect_resolution,
 )
+from intergrax.runtime.enterprise_reliability.compensation_execution import (
+    CompensationExecutionFailure,
+    ExternalEffectCompensationRun,
+    execute_external_effect_compensation,
+)
 from intergrax.runtime.enterprise_reliability.compensation_orchestration import (
     CompensationOrchestrationError,
     ExternalEffectCompensationPlanning,
@@ -55,12 +60,15 @@ __all__ = [
     "InMemoryEnterpriseReliabilityPluginRegistry",
     "ExternalEffectReconciliationPlanning",
     "ExternalEffectReconciliationProbeRun",
+    "CompensationExecutionFailure",
     "CompensationOrchestrationError",
     "ExternalEffectCompensationPlanning",
+    "ExternalEffectCompensationRun",
     "ExternalEffectResolutionPlanning",
     "ExternalEffectResolutionRun",
     "ReconciliationOrchestrationError",
     "ResolutionOrchestrationError",
+    "execute_external_effect_compensation",
     "plan_external_effect_compensation",
     "apply_reconciliation_evidence",
     "execute_external_effect_reconciliation_probe",

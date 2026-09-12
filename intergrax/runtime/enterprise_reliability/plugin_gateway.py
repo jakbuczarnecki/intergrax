@@ -6,6 +6,10 @@
 from __future__ import annotations
 
 from intergrax.contracts.enterprise_reliability.compensation_decision import CompensationDecision
+from intergrax.contracts.enterprise_reliability.compensation_execution import (
+    CompensationExecutionRequest,
+    CompensationPluginExecutionResult,
+)
 from intergrax.contracts.enterprise_reliability.plugin_spi import (
     CompensationStrategyEvaluationRequest,
     EnterpriseReliabilityPluginRegistry,
@@ -72,6 +76,19 @@ class EnterpriseReliabilityPluginGatewayImpl:
         if strategy is None:
             return None
         return strategy.evaluate(request)
+
+    def compensation_executor_registered(self, plugin_id: str) -> bool:
+        return self._registry.resolve_compensation_executor(plugin_id) is not None
+
+    def execute_compensation(
+        self,
+        plugin_id: str,
+        request: CompensationExecutionRequest,
+    ) -> CompensationPluginExecutionResult | None:
+        executor = self._registry.resolve_compensation_executor(plugin_id)
+        if executor is None:
+            return None
+        return executor.execute_compensation(request)
 
     def evaluate_risk(
         self,

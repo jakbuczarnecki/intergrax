@@ -130,7 +130,7 @@ Enterprise Reliability Layer
 | **Uncertainty Management** | “We don’t know yet—stop assuming.” | Gates downstream side effects until UNKNOWN is resolved or explicitly accepted risk is governed. |
 | **Reconciliation** | “Ask the system of record.” | Provider-specific verification behind one platform reconciliation pattern. |
 | **Recovery Orchestration** | “Resume safely when truth is known.” | Works **with** UER pause/resume and Reliability policies—not a second runtime. |
-| **Compensation Handling** | “Undo or offset what already happened.” | Business-neutralizing actions when SUCCESS was assumed locally but external truth differs. |
+| **Compensation Handling** | “Undo or offset what already happened.” | Planning (`CompensationPlan`) and bounded execution (`CompensationExecutionRequest` → plugin gateway → `CompensationExecutionResult`) — see [`RECOVERY_AND_COMPENSATION.md`](RECOVERY_AND_COMPENSATION.md#compensation-execution-boundary-erl-foundation). |
 | **External Effect Contracts** | “Declare how safe this operation is.” | Integrations/tools declare idempotency and reconciliation hooks—architecture only until implementation. |
 | **Audit Evidence** | “Prove what we knew and when.” | Emitted on the Observability spine; Reliability/ERL own behavior, Observability owns persistence. |
 

@@ -29,6 +29,14 @@ from intergrax.contracts.enterprise_reliability.compensation import (
     build_compensation_plan,
     compensation_advice_from_decision,
 )
+from intergrax.contracts.enterprise_reliability.compensation_execution import (
+    CompensationExecutionError,
+    CompensationExecutionOutcome,
+    CompensationExecutionRequest,
+    CompensationExecutionResult,
+    CompensationPluginExecutionResult,
+    build_compensation_execution_request,
+)
 from intergrax.contracts.enterprise_reliability.compensation_decision import (
     CompensationDecision,
     CompensationPlatformIntent,
@@ -82,6 +90,7 @@ from intergrax.contracts.enterprise_reliability.outcome import (
     is_terminal_external_effect_outcome,
 )
 from intergrax.contracts.enterprise_reliability.plugin_spi import (
+    CompensationExecutionStrategy,
     CompensationStrategy,
     CompensationStrategyAdvice,
     CompensationStrategyEvaluationRequest,
@@ -158,14 +167,21 @@ __all__ = [
     "ExternalEffectSafetyCapabilities",
     "CompensationDecision",
     "CompensationDisposition",
+    "CompensationExecutionError",
+    "CompensationExecutionOutcome",
+    "CompensationExecutionRequest",
+    "CompensationExecutionResult",
+    "CompensationExecutionStrategy",
     "CompensationPlan",
     "CompensationPlanningError",
     "CompensationPlatformIntent",
+    "CompensationPluginExecutionResult",
     "CompensationStrategy",
     "CompensationStrategyAdvice",
     "CompensationStrategyEvaluationRequest",
     "abstained_compensation_strategy_decision",
     "assert_resolution_requires_compensation",
+    "build_compensation_execution_request",
     "build_compensation_plan",
     "compensation_advice_from_decision",
     "missing_compensation_strategy_decision",

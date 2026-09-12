@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from intergrax.contracts.enterprise_reliability.effect_contract import ExternalEffectContract
 from intergrax.contracts.enterprise_reliability.evidence import ExternalEffectEvidenceVerdict
@@ -23,6 +23,12 @@ from intergrax.contracts.enterprise_reliability.reconciliation_execution import 
     ReconciliationProbeRequest,
     ReconciliationProbeResult,
 )
+
+if TYPE_CHECKING:
+    from intergrax.contracts.enterprise_reliability.compensation_execution import (
+        CompensationExecutionRequest,
+        CompensationPluginExecutionResult,
+    )
 
 
 class EnterpriseReliabilityCapabilityKind(StrEnum):
@@ -231,6 +237,20 @@ class CompensationStrategy(Protocol):
 
 
 @runtime_checkable
+class CompensationExecutionStrategy(Protocol):
+    """Plugin contract — external compensation I/O; returns platform-neutral outcomes."""
+
+    @property
+    def plugin_id(self) -> str: ...
+
+    def execute_compensation(
+        self,
+        request: CompensationExecutionRequest,
+    ) -> CompensationPluginExecutionResult:
+        """Perform provider compensation for ``request.compensation_operation_ref``."""
+
+
+@runtime_checkable
 class RiskEvaluationStrategy(Protocol):
     """Plugin contract — risk evaluation only."""
 
@@ -274,6 +294,11 @@ class EnterpriseReliabilityPluginRegistry(Protocol):
     def resolve_resolution(self, plugin_id: str) -> ResolutionStrategy | None: ...
 
     def resolve_compensation(self, plugin_id: str) -> CompensationStrategy | None: ...
+
+    def resolve_compensation_executor(
+        self,
+        plugin_id: str,
+    ) -> CompensationExecutionStrategy | None: ...
 
     def resolve_risk_evaluation(self, plugin_id: str) -> RiskEvaluationStrategy | None: ...
 
@@ -319,6 +344,14 @@ class EnterpriseReliabilityPluginGateway(Protocol):
         request: CompensationStrategyEvaluationRequest,
     ) -> CompensationDecision | None: ...
 
+    def compensation_executor_registered(self, plugin_id: str) -> bool: ...
+
+    def execute_compensation(
+        self,
+        plugin_id: str,
+        request: CompensationExecutionRequest,
+    ) -> CompensationPluginExecutionResult | None: ...
+
     def evaluate_risk(
         self,
         plugin_id: str,
@@ -328,6 +361,7 @@ class EnterpriseReliabilityPluginGateway(Protocol):
 
 __all__ = [
     "CompensationDecision",
+    "CompensationExecutionStrategy",
     "CompensationStrategy",
     "CompensationStrategyAdvice",
     "CompensationStrategyEvaluationRequest",
