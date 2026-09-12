@@ -110,6 +110,8 @@ Full limitations: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 
 **[ERL-QUAL-004 Data Provisioning Architecture](docs/ERL_QUAL_004_DATA_PROVISIONING_ARCHITECTURE.md)** — provisioning boundary, lifecycle, variant materialization, failure model, and plugin direction from dataset to execution environment (documentation only).
 
+**[ERL-QUAL-004 Vendor Infrastructure Architecture](docs/ERL_QUAL_004_VENDOR_INFRASTRUCTURE_ARCHITECTURE.md)** — lab infrastructure decisions for standalone E2E proof: PostgreSQL, deferred vector/streaming, Docker runtime model, external boundary, and vendor-neutrality preservation (documentation only).
+
 ## Data provisioning boundary (foundation)
 
 Scenario-local **contract-first** provisioning lives under `contracts/provisioning/` (`ScenarioProvisioningPort`, typed context/results, lifecycle coordinator). A **replaceable reference** in-memory provisioner under `provisioning/reference/` validates the canonical `dataset/` manifest and variant slices only — not production lab storage, payment providers, or ERL runtime wiring. Proof-runner integration and database-backed adapters are future work.
