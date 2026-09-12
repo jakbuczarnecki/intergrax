@@ -26,6 +26,16 @@ _EVENTS_TOP_LEVEL = _REPO_ROOT / "intergrax" / "runtime" / "events"
 _PERSISTENCE_PORT_PATH = (
     _REPO_ROOT / "intergrax" / "contracts" / "execution_evidence" / "persistence_port.py"
 )
+_UNIFIED_RUN_JOURNAL_PATH = _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
+
+_FORBIDDEN_JOURNAL_STORE_IMPORT_PREFIX = "intergrax.runtime.events.stores"
+_FORBIDDEN_JOURNAL_RECOVERY_IMPORT_PREFIXES = frozenset(
+    {
+        "intergrax.runtime.long_running",
+        "intergrax.runtime.replay",
+        "intergrax.runtime.execution",
+    },
+)
 
 _FORBIDDEN_EXECUTION_ENGINE_STORE_MODULES = frozenset(
     {
@@ -145,3 +155,33 @@ def test_npsc5f_cert_single_durable_runtime_event_append_entry_in_events_layer()
                 continue
             producers.append(path.name)
     assert producers == ["event_bus.py"]
+
+
+def test_npsc5f_cert_unified_run_journal_has_no_concrete_store_imports() -> None:
+    """Journal read model must depend on ``EvidencePersistencePort``, not concrete storage."""
+    tree = ast.parse(
+        _UNIFIED_RUN_JOURNAL_PATH.read_text(encoding="utf-8"),
+        filename=str(_UNIFIED_RUN_JOURNAL_PATH),
+    )
+    store_imports = [
+        module
+        for module in _imported_modules(tree)
+        if module == _FORBIDDEN_JOURNAL_STORE_IMPORT_PREFIX
+        or module.startswith(f"{_FORBIDDEN_JOURNAL_STORE_IMPORT_PREFIX}.")
+    ]
+    assert store_imports == []
+    source = _UNIFIED_RUN_JOURNAL_PATH.read_text(encoding="utf-8")
+    assert "EvidencePersistencePort" in source
+
+
+def test_npsc5f_cert_unified_run_journal_has_no_recovery_ownership() -> None:
+    """Unified run journal must not import recovery, replay, or execution control surfaces."""
+    tree = ast.parse(
+        _UNIFIED_RUN_JOURNAL_PATH.read_text(encoding="utf-8"),
+        filename=str(_UNIFIED_RUN_JOURNAL_PATH),
+    )
+    violations = _module_prefix_violations(
+        _imported_modules(tree),
+        _FORBIDDEN_JOURNAL_RECOVERY_IMPORT_PREFIXES,
+    )
+    assert violations == []

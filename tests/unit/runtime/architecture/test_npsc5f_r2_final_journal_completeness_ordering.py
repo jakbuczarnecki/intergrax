@@ -383,6 +383,24 @@ def test_r2_no_execution_control_from_journal_surface() -> None:
     assert violations == []
 
 
+def test_r2_journal_read_surface_has_no_concrete_store_imports() -> None:
+    journal_path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
+    source = journal_path.read_text(encoding="utf-8")
+    assert "intergrax.runtime.events.stores" not in source
+    assert "EvidencePersistencePort" in source
+
+
+def test_r2_journal_read_surface_has_no_recovery_ownership() -> None:
+    forbidden_prefixes = (
+        "intergrax.runtime.long_running",
+        "intergrax.runtime.replay",
+    )
+    journal_path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
+    source = journal_path.read_text(encoding="utf-8")
+    violations = [prefix for prefix in forbidden_prefixes if prefix in source]
+    assert violations == []
+
+
 def test_r2_no_second_journal_framework() -> None:
     events_root = _REPO_ROOT / "intergrax" / "runtime" / "events"
     defs = [
