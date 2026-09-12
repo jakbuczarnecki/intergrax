@@ -157,6 +157,21 @@ After governance approves (or blocks) lifecycle posture, ERL may emit a **handof
 
 **Failure model (fail closed):** missing or unwired port yields `port_unavailable`; no silent continue.
 
+### Reliability case lifecycle coordination (ERL foundation)
+
+Capabilities (reconciliation, evidence, resolution, compensation, recovery, governance, handoff) answer **how** each step is performed. **Case lifecycle coordination** answers **where** the reliability case is in the platform journey.
+
+| Artifact | Owner | Meaning |
+| -------- | ----- | ------- |
+| `ReliabilityCaseLifecycleState` | Lifecycle contract | Platform-neutral phases (`UNKNOWN_DETECTED` … `HANDOFF_READY` → `CLOSED`) — not domain states such as payment or order outcomes |
+| `ReliabilityCaseLifecycleRefs` | Lifecycle contract | Correlation-scoped references to upstream artifacts; no duplicated decision or evidence payloads |
+| `ReliabilityCaseLifecycleRecord` | Lifecycle contract | Case identity, correlation identity, current state, refs |
+| `transition_reliability_case_lifecycle` | Lifecycle runtime | Validates explicit transitions and required refs; returns updated record only |
+
+**Boundary:** the coordinator does **not** schedule work, call plugins, execute external effects, or mutate Unified Execution Runtime lifecycle. Existing orchestrators remain authoritative; the coordinator records progression when callers report capability outcomes.
+
+**Failure model (fail closed):** illegal transitions raise `ReliabilityCaseLifecycleTransitionError`; missing refs for the target state raise `ReliabilityCaseLifecycleContextError`; no silent skip (for example `UNKNOWN_DETECTED` → `CLOSED` without the governed path).
+
 ---
 
 ## Escalate and human decision

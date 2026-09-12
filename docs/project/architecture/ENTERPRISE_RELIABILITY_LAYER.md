@@ -118,6 +118,7 @@ Applications should not each implement bespoke idempotency stores, payment-statu
 Enterprise Reliability Layer
 │
 ├── Uncertainty Management      — UNKNOWN admission, lifecycle, gating risky steps
+├── Case lifecycle coordination — single ownership of reliability case journey (state only)
 ├── Reconciliation              — read authoritative external state before deciding
 ├── Recovery Orchestration      — coordinate pause, resume, and resolution with UER
 ├── Compensation Handling       — neutralize prior effects when reality demands rollback
@@ -128,6 +129,7 @@ Enterprise Reliability Layer
 | Capability | Simple explanation | Architectural meaning |
 | ---------- | ------------------ | --------------------- |
 | **Uncertainty Management** | “We don’t know yet—stop assuming.” | Gates downstream side effects until UNKNOWN is resolved or explicitly accepted risk is governed. |
+| **Case lifecycle coordination** | “Where is this reliability case in its journey?” | `ReliabilityCaseLifecycleRecord` + explicit transitions (`UNKNOWN_DETECTED` → … → `CLOSED`); refs only — not evidence/resolution/compensation payloads. Coordinator validates moves; it is **not** a workflow engine and does not invoke capabilities or execution ports. |
 | **Reconciliation** | “Ask the system of record.” | Provider-specific verification behind one platform reconciliation pattern. |
 | **Recovery Orchestration** | “Resume safely when truth is known.” | Plugin `RecoveryStrategy` → `RecoveryDecision`; UER applies lifecycle via `ExecutionLifecyclePort` — see [`RECOVERY_AND_COMPENSATION.md`](RECOVERY_AND_COMPENSATION.md#recovery-lifecycle-boundary-erl-foundation). Not a second runtime. |
 | **Governance Evaluation** | “May this run without a human?” | Plugin `GovernanceStrategy` → `GovernanceDecision` (`allow`, `deny`, `approval_required`); HITL owns approval workflows — see [`RECOVERY_AND_COMPENSATION.md`](RECOVERY_AND_COMPENSATION.md#governance-evaluation-boundary-erl-foundation). Does not execute or self-approve. |

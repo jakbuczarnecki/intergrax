@@ -59,6 +59,9 @@ from intergrax.runtime.enterprise_reliability.resolution_orchestration import (
     ResolutionOrchestrationError,
     plan_external_effect_resolution,
 )
+from intergrax.runtime.enterprise_reliability.case_lifecycle_coordination import (
+    transition_reliability_case_lifecycle,
+)
 from intergrax.runtime.enterprise_reliability.uncertainty_lifecycle import (
     UncertaintyResolutionError,
     admit_external_effect_unknown,
@@ -101,4 +104,5 @@ __all__ = [
     "admit_external_effect_unknown_with_contract",
     "advance_uncertainty_lifecycle",
     "resolve_uncertainty",
+    "transition_reliability_case_lifecycle",
 ]
