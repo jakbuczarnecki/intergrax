@@ -107,3 +107,5 @@ Full limitations: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 **[ERL-QUAL-004 Proof Architecture Design](docs/ERL_QUAL_004_PROOF_ARCHITECTURE_DESIGN.md)** — proof architecture: actors, end-to-end flow, variants, components, ownership, contracts, evidence model, and implementation preparation (documentation only).
 
 **[ERL-QUAL-004 Scenario Data Architecture](docs/ERL_QUAL_004_SCENARIO_DATA_ARCHITECTURE.md)** — vendor-neutral business data model, external reality vs application knowledge, variant data slices, and conceptual provisioning (documentation only).
+
+**[ERL-QUAL-004 Data Provisioning Architecture](docs/ERL_QUAL_004_DATA_PROVISIONING_ARCHITECTURE.md)** — provisioning boundary, lifecycle, variant materialization, failure model, and plugin direction from dataset to execution environment (documentation only).

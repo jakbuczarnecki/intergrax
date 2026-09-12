@@ -238,7 +238,7 @@ Variant outcome summary (aligned with [Scenario Specification § B](SCENARIO_SPE
 
 ## 7. Data Provisioning Architecture
 
-Provisioning is the **future** bridge from the logical Scenario Dataset to lab **Target Data Sources**. This section is conceptual only—**no loaders or implementations** in this task.
+Provisioning is the **future** bridge from the logical Scenario Dataset to lab **Target Data Sources**. This section is conceptual only—**no loaders or implementations** in this task. Expanded lifecycle, boundary capabilities, failure model, and adapter direction: **[ERL_QUAL_004_DATA_PROVISIONING_ARCHITECTURE.md](ERL_QUAL_004_DATA_PROVISIONING_ARCHITECTURE.md)**.
 
 ```text
 ┌─────────────────────┐
