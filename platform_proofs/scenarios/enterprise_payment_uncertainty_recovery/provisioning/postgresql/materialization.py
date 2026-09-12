@@ -12,6 +12,10 @@ from uuid import UUID
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.provisioning.postgresql.dataset_loader import (
     LoadedScenarioPackage,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.external_payment.domain.sor_truth import (
+    SorTruthFields,
+    resolve_sor_truth_fields,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.provisioning.reference.dataset_manifest import (
     InvalidDatasetError,
 )
@@ -22,27 +26,6 @@ _INTEGRATION_OUTCOME_MAP: dict[str, str] = {
 
 _ORDER_LIFECYCLE_STATUS_MAP: dict[str, str] = {
     "fulfillment_hold_until_payment_truth_established": "AWAITING_PAYMENT_CONFIRMATION",
-}
-
-_SOR_TRUTH_BY_CAPTURE_OUTCOME: dict[str, dict[str, Any]] = {
-    "completed": {
-        "terminal_outcome": "PAYMENT_COMPLETED",
-        "funds_captured": True,
-        "truth_availability_state": "AVAILABLE",
-    },
-    "failed": {
-        "terminal_outcome": "PAYMENT_FAILED",
-        "funds_captured": False,
-        "truth_availability_state": "AVAILABLE",
-    },
-}
-
-_SOR_TRUTH_BY_ESTABLISHMENT: dict[str, dict[str, Any]] = {
-    "unavailable_within_policy": {
-        "terminal_outcome": "TRUTH_INDETERMINATE",
-        "funds_captured": False,
-        "truth_availability_state": "UNAVAILABLE",
-    },
 }
 
 _RECONCILIATION_AVAILABILITY_TO_CASE: dict[str, str] = {
@@ -68,35 +51,12 @@ def _slug_reference(logical_id: str, prefix: str) -> str:
 
 
 def resolve_external_reality_fields(variant_document: dict[str, Any]) -> dict[str, Any]:
-    external_reality = variant_document.get("external_reality")
-    if not isinstance(external_reality, dict):
-        raise InvalidDatasetError("external_reality must be an object")
-    sor_truth = external_reality.get("system_of_record_truth")
-    if not isinstance(sor_truth, dict):
-        raise InvalidDatasetError("external_reality.system_of_record_truth must be an object")
-
-    capture_outcome = sor_truth.get("payment_capture_outcome")
-    if isinstance(capture_outcome, str):
-        mapped = _SOR_TRUTH_BY_CAPTURE_OUTCOME.get(capture_outcome)
-        if mapped is None:
-            raise InvalidDatasetError(
-                f"unsupported payment_capture_outcome: {capture_outcome!r}"
-            )
-        return dict(mapped)
-
-    establishment = sor_truth.get("authoritative_truth_establishment")
-    if isinstance(establishment, str):
-        mapped = _SOR_TRUTH_BY_ESTABLISHMENT.get(establishment)
-        if mapped is None:
-            raise InvalidDatasetError(
-                f"unsupported authoritative_truth_establishment: {establishment!r}"
-            )
-        return dict(mapped)
-
-    raise InvalidDatasetError(
-        "system_of_record_truth must declare payment_capture_outcome "
-        "or authoritative_truth_establishment"
-    )
+    fields: SorTruthFields = resolve_sor_truth_fields(variant_document)
+    return {
+        "terminal_outcome": fields.terminal_outcome,
+        "funds_captured": fields.funds_captured,
+        "truth_availability_state": fields.truth_availability_state,
+    }
 
 
 @dataclass(frozen=True, slots=True)
