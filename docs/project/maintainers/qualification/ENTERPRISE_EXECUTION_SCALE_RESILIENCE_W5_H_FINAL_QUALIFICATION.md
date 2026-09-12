@@ -118,6 +118,7 @@ No new manager/coordinator/registry abstractions in W5-H.
 | Ruff | `uv run ruff check` (changed paths) |
 | Pyright | project check on runtime + tests |
 | W5-A…H pytest | enterprise scale resilience + OTLP/distributed exporter tests |
+| W5-H import boundary | `tests/unit/runtime/events/test_event_bus_import_boundary.py` — `BoundedEventSink` import deferred inside `RuntimeEventBus._deliver_through_event_sink` (no module-level events→delivery concrete coupling) |
 
 ## Cursor implementation audit (post W5-H)
 

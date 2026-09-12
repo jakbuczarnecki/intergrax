@@ -21,9 +21,6 @@ from intergrax.contracts.event_delivery import (
     EventSinkPort,
 )
 from intergrax.runtime.events.event_taxonomy import EventCategory
-from intergrax.runtime.observability.event_delivery.bounded_event_sink import (
-    BoundedEventSink,
-)
 from intergrax.runtime.observability.event_delivery.delivery_metrics import (
     InternalDeliveryMetrics,
 )
@@ -226,6 +223,10 @@ class RuntimeEventBus:
         sink = self._event_sink
         if sink is None:
             return
+        from intergrax.runtime.observability.event_delivery.bounded_event_sink import (
+            BoundedEventSink,
+        )
+
         priority = delivery_priority_for_runtime_event(event)
         deliverable = runtime_event_to_deliverable(event)
         started = time.monotonic()
