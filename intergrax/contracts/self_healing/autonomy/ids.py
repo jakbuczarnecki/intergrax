@@ -16,7 +16,12 @@ def mint_autonomy_control_decision_id() -> str:
     return f"sh_aut_dec_{secrets.token_hex(8)}"
 
 
+def mint_autonomy_evaluation_id() -> str:
+    return f"sh_aut_eval_{secrets.token_hex(8)}"
+
+
 __all__ = [
     "mint_autonomy_control_decision_id",
+    "mint_autonomy_evaluation_id",
     "mint_autonomy_recommendation_correlation_id",
 ]
