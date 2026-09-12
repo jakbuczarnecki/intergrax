@@ -565,6 +565,7 @@ Follow [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) plugin section and [`PLATFORM_
 | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) | Deliberation / council strategies |
 | [`PLATFORM_PLUGINS.md`](PLATFORM_PLUGINS.md) | Plugin discovery and admission |
 | [`E2E_SCENARIO_FRAMEWORK_AUDIT.md`](E2E_SCENARIO_FRAMEWORK_AUDIT.md) | Relationship of `decision_e2e` to platform proofs |
+| [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md) | Final architecture closure certification (DS-E2E-15J) |
 
 ---
 

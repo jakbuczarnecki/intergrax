@@ -851,7 +851,8 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 
 | Class | Artifacts |
 | ----- | --------- |
-| **Architecture** | This hub · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) |
+| **Architecture** | This hub · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) · [`DECISION_SYSTEM_ARCHITECTURE.md`](DECISION_SYSTEM_ARCHITECTURE.md) |
+| **Architecture closure (DS-E2E-15J)** | [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md) |
 | **Implementation plan** | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
 | **Historical Critic snapshot** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 | **Public proof** | Not claimed - pending DS-E2E Docker qualification phase |
