@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.observability_export import OtlpTransportPort
+from intergrax.contracts.observability_export import OtlpTransportError, OtlpTransportPort
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 
@@ -23,7 +23,12 @@ class OtlpEventExportSink:
     async def export(self, event: RuntimeEvent) -> None:
         if self._closed or self._transport is None:
             return
-        self._transport.export(event)
+        try:
+            self._transport.export(event)
+        except OtlpTransportError:
+            raise
+        except Exception as exc:
+            raise OtlpTransportError(str(exc)) from exc
 
     async def flush(self) -> None:
         if self._closed or self._transport is None:

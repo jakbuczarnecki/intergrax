@@ -442,7 +442,10 @@ def wire_application_environment(
 
     skill_pinning_store = InMemorySkillExecutionPinningStore()
 
-    event_delivery = resolve_application_runtime_event_delivery_wiring(env)
+    event_delivery = resolve_application_runtime_event_delivery_wiring(
+        env,
+        settings=settings,
+    )
     if runtime_event_bus is None:
         if event_delivery.bounded_sink is not None:
             resolved_runtime_event_bus = compose_runtime_event_bus(event_delivery)

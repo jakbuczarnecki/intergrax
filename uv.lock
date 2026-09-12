@@ -1717,6 +1717,8 @@ dev-ci = [
 dev-ci-rag = [
     { name = "langchain-core", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-api", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "qdrant-client", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1961,6 +1963,8 @@ requires-dist = [
     { name = "opencv-python-headless", marker = "extra == 'media-video'", specifier = "==4.9.0.80" },
     { name = "openpyxl", marker = "extra == 'parsing-office'", specifier = ">=3.1,<4" },
     { name = "opentelemetry-api", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
     { name = "opentelemetry-sdk", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
     { name = "pandas", marker = "extra == 'parsing-office'", specifier = ">=2.1.4,<3" },
     { name = "pgvector", marker = "extra == 'integrations-pgvector'", specifier = ">=0.3" },

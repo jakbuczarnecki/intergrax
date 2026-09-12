@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
+from enum import Enum, StrEnum
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
@@ -28,6 +28,26 @@ class ObservabilityExportProfile:
 
 class ExportError(Exception):
     """Export transport failure — must not propagate to execution plane."""
+
+
+class ConfigurationError(ValueError):
+    """Invalid observability export configuration at composition boundary."""
+
+
+class OtlpTransportError(ExportError):
+    """OTLP transport export failure — isolated from execution plane."""
+
+
+class OtlpProtocol(Enum):
+    HTTP_PROTOBUF = "http/protobuf"
+    GRPC = "grpc"
+
+
+@dataclass(frozen=True, slots=True)
+class OtlpExportConfiguration:
+    endpoint: str
+    protocol: OtlpProtocol
+    timeout_seconds: float
 
 
 @runtime_checkable

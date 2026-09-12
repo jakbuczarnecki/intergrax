@@ -15,6 +15,7 @@ _DIRECT_OTEL_ALLOWED_FILES = frozenset(
     {
         "intergrax/rag/tracking/rag_spans.py",
         "intergrax/context/tracking/context_spans.py",
+        "intergrax/runtime/observability/exporters/otlp/otlp_transport.py",
     }
 )
 
