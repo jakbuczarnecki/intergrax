@@ -118,4 +118,4 @@ Full limitations: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 
 ## Data provisioning boundary (foundation)
 
-Scenario-local **contract-first** provisioning lives under `contracts/provisioning/` (`ScenarioProvisioningPort`, typed context/results, lifecycle coordinator). A **replaceable reference** in-memory provisioner under `provisioning/reference/` validates the canonical `dataset/` manifest and variant slices only — not production lab storage, payment providers, or ERL runtime wiring. Proof-runner integration and database-backed adapters are future work.
+Scenario-local **contract-first** provisioning lives under `contracts/provisioning/` (`ScenarioProvisioningPort`, typed context/results, lifecycle coordinator). A **replaceable reference** in-memory provisioner under `provisioning/reference/` validates the canonical `dataset/` manifest and variant slices. The **PostgreSQL lab adapter** under `provisioning/postgresql/` materializes `dataset/` into the scenario database — see [ERL_QUAL_004_POSTGRESQL_PROVISIONING.md](docs/ERL_QUAL_004_POSTGRESQL_PROVISIONING.md). Proof-runner wiring remains future work.
