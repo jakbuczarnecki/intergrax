@@ -9,6 +9,11 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.contracts.execution_evidence.persistence_boundary_errors import (
+    EvidencePersistenceBoundaryError,
+    EvidencePersistenceIntegrityError,
+    MandatoryEvidencePersistenceError,
+)
 from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.contracts.execution_identity import EventId, mint_run_id, mint_task_id
 from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
@@ -22,7 +27,10 @@ from intergrax.runtime.events.execution_position import (
     ExecutionEventPosition,
     PositionedRuntimeEvent,
 )
-from intergrax.runtime.events.persistence_contract import TaskRuntimeEventRuns
+from intergrax.runtime.events.persistence_contract import (
+    RuntimeEventPersistenceIntegrityError,
+    TaskRuntimeEventRuns,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
@@ -237,3 +245,64 @@ def test_reconstruction_consumers_use_evidence_persistence_port_only() -> None:
         source = path.read_text(encoding="utf-8")
         assert "RuntimeEventPersistence" not in source
         assert "EvidencePersistencePort" in source
+
+
+class _ProviderSpecificStorageError(OSError):
+    """Simulated vendor/storage failure outside Intergrax contracts."""
+
+
+def test_adapter_translates_storage_integrity_to_port_boundary() -> None:
+    inner = InMemoryRuntimeEventStore()
+    adapter = RuntimeEventPersistenceEvidenceAdapter(inner)
+    tenant_id = "tenant-failure-boundary"
+    first = sample_runtime_event(tenant_id=tenant_id)
+    inner.append(first, tenant_id=tenant_id)
+    conflicting = first.model_copy(update={"payload": {"mutated": True}})
+    with pytest.raises(EvidencePersistenceIntegrityError) as exc_info:
+        adapter.append(conflicting, tenant_id=tenant_id)
+    assert not isinstance(exc_info.value, RuntimeEventPersistenceIntegrityError)
+    assert isinstance(exc_info.value.__cause__, RuntimeEventPersistenceIntegrityError)
+
+
+def test_adapter_translates_provider_exceptions_to_port_boundary() -> None:
+    class _BrokenStore(InMemoryRuntimeEventStore):
+        def append(self, event, *, tenant_id: str):
+            raise _ProviderSpecificStorageError("disk unavailable")
+
+    adapter = RuntimeEventPersistenceEvidenceAdapter(_BrokenStore())
+    event = sample_runtime_event(tenant_id="tenant-provider")
+    with pytest.raises(EvidencePersistenceBoundaryError) as exc_info:
+        adapter.append(event, tenant_id="tenant-provider")
+    assert not isinstance(exc_info.value, _ProviderSpecificStorageError)
+    assert isinstance(exc_info.value.__cause__, _ProviderSpecificStorageError)
+
+
+def test_event_bus_mandatory_failure_exposes_only_port_boundary_errors() -> None:
+    class _BrokenStore(InMemoryRuntimeEventStore):
+        def append(self, event, *, tenant_id: str):
+            raise _ProviderSpecificStorageError("backend timeout")
+
+    bus = RuntimeEventBus(persistence=_BrokenStore(), record_history=True)
+    event = sample_runtime_event(tenant_id="tenant-bus-boundary")
+    with pytest.raises(MandatoryEvidencePersistenceError) as exc_info:
+        bus.record(event, tenant_id="tenant-bus-boundary")
+    assert not isinstance(exc_info.value.__cause__, _ProviderSpecificStorageError)
+    assert isinstance(exc_info.value.__cause__, EvidencePersistenceBoundaryError)
+
+
+def test_execution_engine_does_not_reference_storage_persistence_errors() -> None:
+    violations: list[str] = []
+    for path in _EXECUTION_ROOT.rglob("*.py"):
+        if "__pycache__" in path.parts:
+            continue
+        rel = path.relative_to(_REPO_ROOT).as_posix()
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom):
+                continue
+            if node.module != "intergrax.runtime.events.persistence_contract":
+                continue
+            for alias in node.names:
+                if alias.name == "RuntimeEventPersistenceIntegrityError":
+                    violations.append(f"{rel}:{node.lineno}")
+    assert violations == []

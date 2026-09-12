@@ -27,11 +27,15 @@ class EvidencePersistencePort(Protocol):
     Stable persistence contract for canonical execution evidence (``RuntimeEvent``).
 
     Execution producers and the event bus depend on this port, not on a concrete
-    storage backend. Adapters delegate to ``RuntimeEventPersistence`` implementations.
+    storage backend. Adapters delegate to ``RuntimeEventPersistence`` implementations
+    and translate storage failures to ``EvidencePersistenceBoundaryError`` subclasses.
     """
 
     def append(self, event: RuntimeEvent, *, tenant_id: str) -> PositionedRuntimeEvent:
-        """Persist one runtime event; idempotent on ``event_id``."""
+        """Persist one runtime event; idempotent on ``event_id``.
+
+        Raises ``EvidencePersistenceBoundaryError`` subclasses on persistence failure.
+        """
 
     def list_positioned_for_run(
         self,

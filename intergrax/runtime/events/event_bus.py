@@ -32,12 +32,13 @@ from intergrax.runtime.events.evidence_durability import (
     EvidencePersistenceRequirement,
     evidence_persistence_requirement,
 )
+from intergrax.contracts.execution_evidence.persistence_boundary_errors import (
+    EvidencePersistenceBoundaryError,
+    MandatoryEvidencePersistenceError,
+)
 from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.evidence_persistence_adapter import as_evidence_persistence_port
-from intergrax.runtime.events.persistence_contract import (
-    MandatoryEvidencePersistenceError,
-    resolve_event_tenant_id,
-)
+from intergrax.runtime.events.persistence_contract import resolve_event_tenant_id
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 
 logger = logging.getLogger(__name__)
@@ -268,7 +269,7 @@ class RuntimeEventBus:
                 self._persistence.append(event, tenant_id=scoped_tenant)
             except MandatoryEvidencePersistenceError:
                 raise
-            except Exception as exc:
+            except EvidencePersistenceBoundaryError as exc:
                 if requirement is EvidencePersistenceRequirement.MANDATORY:
                     raise MandatoryEvidencePersistenceError(
                         "mandatory runtime event evidence persistence failed for "

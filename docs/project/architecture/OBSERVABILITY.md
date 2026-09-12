@@ -798,7 +798,7 @@ Harness Observability Spine (HOS)
 | Identity | `event_id`, `task_id`, `run_id`, `attempt_id` - all required (**CURRENT**); **TARGET:** + `execution_id` |
 | `AttemptId` semantics | One global try inside a Run; local tool/provider/step retries do **not** mint new `AttemptId` (frozen UEA) |
 | Persisted execution evidence | `RuntimeEventPersistence` is the canonical persisted evidence authority for accepted `RuntimeEvent`s; lifecycle facts originate from execution producers; Unified Run Journal reconstructs from persisted events |
-| Execution evidence persistence boundary | Execution producers (`RuntimeEventBus`) depend on `EvidencePersistencePort` only; `RuntimeEventPersistenceEvidenceAdapter` delegates to existing `RuntimeEventPersistence` backends without a second persistence flow |
+| Execution evidence persistence boundary | Execution producers (`RuntimeEventBus`) depend on `EvidencePersistencePort` only; `RuntimeEventPersistenceEvidenceAdapter` delegates to existing `RuntimeEventPersistence` backends without a second persistence flow; storage/provider failures are translated to `EvidencePersistenceBoundaryError` at the adapter and do not propagate as store-specific exceptions |
 | Provider readiness (port stability) | `EvidencePersistencePort` is the frozen interchange contract; new storage backends implement the port (or ship an adapter) without Execution Engine or reconstruction consumer changes |
 | Forbidden | Optional execution identity; multiplexed identity modes; synthetic `TaskId`/`RunId`/`AttemptId` for non-execution events |
 
