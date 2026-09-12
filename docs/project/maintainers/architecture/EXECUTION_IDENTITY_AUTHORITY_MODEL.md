@@ -1,7 +1,7 @@
 # Execution Identity Authority Model (EE-A2)
 
 **Classification:** `MAINTAINER_CERTIFICATION`  
-**Status:** `CERTIFIED` (audit EE-A2-H2 global freeze on `development`)  
+**Status:** `CERTIFIED` (audit EE-A2-H3 frozen plane integration on `development`)  
 **Audience:** Maintainers, enterprise qualification, architecture gates  
 
 **Parent:** [`EXECUTION_ENGINE_OWNERSHIP_MODEL.md`](EXECUTION_ENGINE_OWNERSHIP_MODEL.md) (EE-A1)  
@@ -21,6 +21,35 @@ scheduler or recovery mechanism may create
 RunId, ExecutionId or AttemptId directly.
 
 Re-verify this freeze against the current GitHub `development` branch before downstream certification; repository source is the sole authority of truth.
+
+---
+
+## Frozen Plane Integration Contract
+
+Frozen execution planes (Evidence, Recovery, Checkpoint, Lineage, Governance) **consume** execution identity as immutable lifecycle facts.
+
+They may **validate**, **persist**, and **reference** identity, but they **cannot create, mutate, or replace** execution identity.
+
+| Plane | Canonical modules | Allowed | Forbidden |
+| --- | --- | --- | --- |
+| **Evidence** | `intergrax/runtime/events/**` | Record/filter/reconstruct `RuntimeEvent` with caller-supplied Run/Attempt/Execution | Mint or normalize execution identity |
+| **Recovery** | `long_running/**`, retry/attempt lifecycle, partial fan-out recovery | Re-enter with existing identity; retry via `AttemptLifecycleService` → authority | Primitive `mint_*` or bypass lifecycle |
+| **Checkpoint** | `RuntimeCheckpoint`, durable task checkpoint | Historical state + continuation metadata | Regenerate Run/Attempt/Execution on resume |
+| **Lineage** | `execution/lineage/**`, `ExecutionLineagePersistence` | Store, correlate, audit lineage records | Replacement lifecycle IDs |
+| **Governance** | `runtime/governance/**` | Policy/trust/authority evaluation against bound identity | Mint Run/Attempt/Execution |
+
+```text
+Execution Identity
+        |
+        v
+Identity Authority (sole producer)
+        |
+        v
+Evidence · Recovery · Checkpoint · Lineage · Governance
+        |
+        v
+consume identity (NEVER create identity)
+```
 
 ---
 
@@ -153,6 +182,7 @@ Agent local retry  -->  mint AttemptId          # blocked (use AttemptLifecycleS
 | `test_npsc5e_r1_execution_retry_attempt_semantics.py` | Retry / attempt |
 | `test_ee_a2_identity_authority_certification.py` | EE-A2 enterprise certification |
 | `test_ee_a2_h2_identity_authority_global_freeze.py` | EE-A2-H2 global identity authority freeze |
+| `test_ee_a2_h3_identity_authority_frozen_plane_integration.py` | EE-A2-H3 frozen plane consumer integration |
 
 ---
 
