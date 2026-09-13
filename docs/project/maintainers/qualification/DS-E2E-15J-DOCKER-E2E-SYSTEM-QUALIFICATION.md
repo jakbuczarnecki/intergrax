@@ -10,9 +10,9 @@
 
 ## Docker E2E Qualification Summary
 
-**Status:** **QUALIFIED WITH OBSERVATIONS**
+**Status:** **QUALIFIED**
 
-Scenario logic passes in-repo (`tests/unit/testing_support/decision_e2e/test_docker_system_scenarios.py`). In-container proof uses the same `ghcr.io/astral-sh/uv:python3.12-bookworm-slim` image pattern as DS-E2E-06 (`testing_support/decision_e2e/docker_system_qualification.py`). Operators must run integration tests on a host with Docker daemon available to close the container gate.
+All nine in-container scenarios pass via `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (25 tests including parametrized gates; Docker daemon required). Local parity: `tests/unit/testing_support/decision_e2e/test_docker_system_scenarios.py`. Image: `ghcr.io/astral-sh/uv:python3.12-bookworm-slim` (same pattern as DS-E2E-06). Harness uses an isolated in-container `UV_PROJECT_ENVIRONMENT` so bind-mounted Windows workspace `.venv` is never mutated; result paths use POSIX `/durable/...` strings (not host `Path`).
 
 ---
 
@@ -20,7 +20,7 @@ Scenario logic passes in-repo (`tests/unit/testing_support/decision_e2e/test_doc
 
 | Obszar | Status | Uwagi |
 | ------ | ------ | ----- |
-| Container startup | PASS (logic) / OBSERVATION (daemon) | `startup-health` via `docker_system_worker` |
+| Container startup | PASS | `startup-health` via `docker_system_worker` |
 | Configuration | PASS | Single composition root; no docker-only business branch |
 | Decision flow | PASS | L6 orchestration in container |
 | Governance | PASS | ALLOW / BLOCK / REQUIRE_APPROVAL |
@@ -47,6 +47,7 @@ Harness: `testing_support/decision_e2e/docker_system_scenarios.py`, `docker_syst
 
 - Requires Docker CLI + running daemon for integration markers (`pytest.mark.docker`, `no_ci`).
 - Mounts repository at `/workspace` and durable artifacts under `.tmp/decision_e2e_qualification/`.
+- In-container `uv sync` targets `/opt/intergrax-decision-e2e-system-qual-venv` (`UV_LINK_MODE=copy`); do not rely on mutating the host `.venv` through the bind mount (especially on Windows).
 - Does **not** add containers, services, or alternate execution paths beyond the existing DS-E2E worker image pattern.
 
 ---

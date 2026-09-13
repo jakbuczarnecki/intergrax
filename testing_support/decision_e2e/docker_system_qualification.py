@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import json
+import shlex
 import subprocess
 import uuid
 from dataclasses import dataclass
@@ -39,8 +40,16 @@ def _qualification_image() -> str:
     return "ghcr.io/astral-sh/uv:python3.12-bookworm-slim"
 
 
-def _worker_command(scenario: str, result_path: Path) -> list[str]:
-    return [
+_CONTAINER_PROJECT_ENV = "/opt/intergrax-decision-e2e-system-qual-venv"
+
+
+def _container_result_path(scenario_id: str) -> str:
+    """POSIX path for in-container writes (never use host Path for /durable)."""
+    return f"/durable/{scenario_id}/result.json"
+
+
+def _worker_command(scenario: str, result_path: str) -> list[str]:
+    worker = [
         "uv",
         "run",
         "python",
@@ -48,8 +57,17 @@ def _worker_command(scenario: str, result_path: Path) -> list[str]:
         "testing_support.decision_e2e.docker_system_worker",
         scenario,
         "--result",
-        str(result_path),
+        result_path,
     ]
+    env = _CONTAINER_PROJECT_ENV
+    run_line = " ".join(shlex.quote(part) for part in worker)
+    script = (
+        f"uv venv --clear {shlex.quote(env)} && "
+        f"UV_PROJECT_ENVIRONMENT={shlex.quote(env)} UV_LINK_MODE=copy "
+        f"uv sync --frozen --no-dev && "
+        f"UV_PROJECT_ENVIRONMENT={shlex.quote(env)} UV_LINK_MODE=copy {run_line}"
+    )
+    return ["bash", "-lc", script]
 
 
 def _cleanup_container(name: str) -> None:
@@ -85,7 +103,7 @@ def run_docker_system_scenario(
     scenario_dir = durable_root / scenario_id
     scenario_dir.mkdir(parents=True, exist_ok=True)
     host_result = scenario_dir / "result.json"
-    container_result = Path(f"/durable/{scenario_id}/result.json")
+    container_result = _container_result_path(scenario_id)
     container_name = f"decision-e2e-sys-{run_id}-{scenario_id}"
 
     try:
