@@ -456,7 +456,7 @@ Remediation: **CLA-CONTROL-PLANE-GOVERNANCE-INTEGRITY** in [`plan/GOVERNED_EXECU
 
 | Capability | Relationship |
 | ---------- | ------------- |
-| **Decision System** *(TARGET)* | Decides **what the system concluded** (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) - **separate from** execution authorization; see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · **CURRENT:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
+| **Decision System** | Decides **what the system concluded** (`ACCEPTED` / `REJECTED` / `UNRESOLVED`) — **canonical decision authority**; **separate from** execution authorization; see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · historical Critic snapshot: [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
 | **Governed Execution** | Controls **what execution may proceed** under configured policy |
 | **Observability & Auditability** | Records and reconstructs **what happened** - complementary, not interchangeable |
 | **Token Optimization** | Optimizes selected context / prompt paths **under policy** |

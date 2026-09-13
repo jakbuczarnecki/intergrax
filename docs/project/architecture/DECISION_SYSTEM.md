@@ -10,7 +10,7 @@ The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - c
 > - **Architecture:** **TARGET CANON - FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
 > - **Implementation:** Canonical Decision System runtime **implemented and active**.
 > - **CURRENT decision authority = Decision System.** Critic runtime **retired**.
-> - **Production qualification (DS-E2E-15J):** **QUALIFIED** — architecture **closed**; in-repo Decision → Governance → Execution bundle plus **Docker E2E system qualification** (L6 matrix + canonical Execution Docker proofs; closure `DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION-CLOSURE`; integration proof requires Docker daemon on the qualification host; see [Production qualification](#production-qualification-boundary)).
+> - **Production qualification (DS-E2E-15J):** **QUALIFIED WITH OBSERVATIONS** — architecture **closed**; in-repo Decision → Governance → Execution bundle plus **Docker E2E system qualification** (L6 matrix + canonical Execution Docker proofs; closure `DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION-CLOSURE`; integration proof requires Docker daemon on the qualification host; see [Production qualification](#production-qualification-boundary)).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.
 

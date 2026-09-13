@@ -76,7 +76,7 @@ with Try LKW as the repository’s primary product action.
 | Audit evidence and public claims | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
 | Explore Governed Execution | [Governed Execution](../architecture/GOVERNED_EXECUTION.md) |
-| Explore Decision System | [Decision System](../architecture/DECISION_SYSTEM.md) - candidate proposals, verification, deliberation, authoritative outcomes separate from authorization (**target canon**; **CURRENT:** [Critic Verification](../architecture/CRITIC_VERIFICATION.md)) |
+| Explore Decision System | [Decision System](../architecture/DECISION_SYSTEM.md) - canonical decision authority: candidate proposals, verification, deliberation, authoritative outcomes separate from authorization; [Critic Verification](../architecture/CRITIC_VERIFICATION.md) is a **historical** implementation snapshot only |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore Virtual Workforce / Virtual Workers | [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work](../architecture/AUTONOMOUS_WORK.md) |
 | Explore dynamic capability discovery, Agent/Skill/Tool ecosystem, or future marketplace architecture | [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) — frozen architecture for governed federated Agent/Skill/Tool discovery; implementation planned |
