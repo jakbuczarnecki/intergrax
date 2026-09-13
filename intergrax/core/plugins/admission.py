@@ -20,6 +20,7 @@ class PluginAdmissionReasonCode(StrEnum):
     ALREADY_REGISTERED = "already_registered"
     PLUGIN_ID_SKIPPED = "plugin_id_skipped"
     NOT_IN_ALLOWLIST = "not_in_allowlist"
+    PLUGIN_NOT_SELECTED = "plugin_not_selected"
     PRODUCTION_ADMISSION_DENIED = "production_admission_denied"
     INVALID_POLICY_CONTRIBUTION_SOURCE = "invalid_policy_contribution_source"
     POLICY_HANDLER_BINDING_MISSING = "policy_handler_binding_missing"

@@ -106,7 +106,9 @@ Ordered sequencing labels (existing **DS-\*** IDs remain authoritative):
 Platform Plugin System owns discovery, admission, and load isolation. Decision domain
 composition adapter (`intergrax/runtime/decision_plugin_composition.py`) validates
 semantics and composes immutable registries. Explicit ``discover_entry_points=True``
-is required for activation. When ``require_manifest_capability_binding=True``, missing
+is required for activation. Selected external plugins require manifest capability proof;
+STRICT hosts always enforce binding. Installed-but-not-selected plugins are skipped
+without fail-closed rejection. When ``require_manifest_capability_binding=True`` in LAB, missing
 positive manifest capability proof is a structured admission rejection (fail-closed).
 
 | ID | Priority | Item | Status |

@@ -376,7 +376,10 @@ class DecisionPluginProfile(BaseModel):
     )
     @classmethod
     def _normalize_kind_ids(cls, value: list[str]) -> list[str]:
-        return [item.strip() for item in value if item.strip()]
+        normalized = [item.strip() for item in value if item.strip()]
+        if len(normalized) != len(set(normalized)):
+            raise ValueError("duplicate plugin kind ids are not allowed")
+        return normalized
 
 
 class DecisionFlowProfile(BaseModel):

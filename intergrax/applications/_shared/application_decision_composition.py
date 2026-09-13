@@ -127,10 +127,11 @@ class ApplicationDecisionComposition:
 @dataclass(frozen=True, slots=True)
 class _AgentExecutionSummarySemanticExtractor:
     def extract(self, candidate: CandidateDecision[AgentExecutionResult]) -> str:
-        summary = candidate.artifact.summary.strip()
+        content = candidate.artifact.content
+        summary = content.summary.strip()
         if summary:
             return summary
-        structured = candidate.artifact.structured_data.get("text")
+        structured = content.structured_data.get("text")
         if isinstance(structured, str) and structured.strip():
             return structured.strip()
         return ""
@@ -139,7 +140,7 @@ class _AgentExecutionSummarySemanticExtractor:
 @dataclass(frozen=True, slots=True)
 class _AgentExecutionTrajectoryAgentIdProvider:
     def resolve(self, candidate: CandidateDecision[AgentExecutionResult]) -> str:
-        agent_id = candidate.artifact.agent_id.strip()
+        agent_id = candidate.artifact.content.agent_id.strip()
         if not agent_id:
             raise ValueError("agent execution artifact missing agent_id for trajectory verification")
         return agent_id
@@ -184,9 +185,14 @@ def _resolve_discover_entry_points(profile: DecisionPluginProfile) -> bool:
 
 def _decision_plugin_load_policy(
     profile: DecisionPluginProfile,
+    *,
+    execution_mode: ExecutionMode,
 ) -> DecisionPluginLoadPolicy:
+    require_manifest_binding = profile.require_manifest_capability_binding
+    if execution_mode is ExecutionMode.STRICT:
+        require_manifest_binding = True
     return DecisionPluginLoadPolicy(
-        require_manifest_capability_binding=profile.require_manifest_capability_binding,
+        require_manifest_capability_binding=require_manifest_binding,
         allowed_strategy_kinds=(
             frozenset(profile.strategy_kinds) if profile.strategy_kinds else None
         ),
@@ -233,6 +239,32 @@ def assert_strict_decision_plugin_composition_acceptable(
     raise ApplicationDecisionCompositionError("; ".join(errors))
 
 
+def _validate_requested_plugin_kinds_activated(
+    profile: DecisionPluginProfile,
+    composition: ApplicationDecisionComposition,
+) -> None:
+    """Fail closed when profile selects plugin kinds that did not activate."""
+    activated_verification = set(composition.activated_verification_stage_kinds)
+    activated_strategies = set(composition.activated_strategy_kinds)
+    activated_artifacts = set(composition.activated_artifact_kinds)
+
+    missing: list[str] = []
+    for kind in profile.verification_stage_kinds:
+        if kind not in activated_verification:
+            missing.append(f"verification stage {kind!r}")
+    for kind in profile.strategy_kinds:
+        if kind not in activated_strategies:
+            missing.append(f"decision strategy {kind!r}")
+    for kind in profile.artifact_kinds:
+        if kind not in activated_artifacts:
+            missing.append(f"artifact kind {kind!r}")
+    if not missing:
+        return
+    raise ApplicationDecisionCompositionError(
+        "selected Decision plugin kinds were not activated: " + ", ".join(missing),
+    )
+
+
 def _resolve_semantic_rubric_ref(
     env: ApplicationEnvironmentProfile,
 ) -> SemanticRubricRef:
@@ -272,7 +304,10 @@ def _merge_plugin_verification_registry(
     plugin_profile = env.decision_profile.plugins
     if not discover or not plugin_profile.verification_stage_kinds:
         return base, DomainPluginLoadReport.empty(EP_DECISION_VERIFICATION_STAGES)
-    policy = _decision_plugin_load_policy(plugin_profile)
+    policy = _decision_plugin_load_policy(
+        plugin_profile,
+        execution_mode=env.execution_mode,
+    )
     outcome = load_verification_stage_plugins(
         base,
         policy=policy,
@@ -290,7 +325,10 @@ def _compose_strategy_registry(
     plugin_profile = env.decision_profile.plugins
     if not discover or not plugin_profile.strategy_kinds:
         return base, DomainPluginLoadReport.empty(EP_DECISION_STRATEGIES)
-    policy = _decision_plugin_load_policy(plugin_profile)
+    policy = _decision_plugin_load_policy(
+        plugin_profile,
+        execution_mode=env.execution_mode,
+    )
     outcome = load_decision_strategy_plugins(
         base,
         policy=policy,
@@ -310,7 +348,10 @@ def _compose_artifact_kind_registry(
     plugin_profile = env.decision_profile.plugins
     if not discover or not plugin_profile.artifact_kinds:
         return base, DomainPluginLoadReport.empty(EP_DECISION_ARTIFACT_KINDS)
-    policy = _decision_plugin_load_policy(plugin_profile)
+    policy = _decision_plugin_load_policy(
+        plugin_profile,
+        execution_mode=env.execution_mode,
+    )
     outcome = load_decision_artifact_kind_plugins(
         base,
         policy=policy,
@@ -464,6 +505,10 @@ def compose_application_decision(
         activated_verification_stage_kinds=_activated_kind_names(pipeline.registry),
         activated_strategy_kinds=_activated_strategy_names(strategy_registry),
         activated_artifact_kinds=_activated_artifact_names(artifact_registry),
+    )
+    _validate_requested_plugin_kinds_activated(
+        environment.decision_profile.plugins,
+        composition,
     )
     assert_strict_decision_plugin_composition_acceptable(environment, composition)
     return composition

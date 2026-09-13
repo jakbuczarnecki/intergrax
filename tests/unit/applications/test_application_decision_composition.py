@@ -104,6 +104,7 @@ def test_installed_but_not_selected_keeps_plugin_stages_inactive() -> None:
         discover_entry_points=True,
         verification_stage_kinds=[],
     )
+    env.execution_mode = ExecutionMode.STRICT
     registry = _registry()
     contract = registry.get_contract("echo")
     composition = compose_application_decision(
@@ -253,6 +254,233 @@ def test_strict_mode_fail_closed_on_plugin_rejection() -> None:
                 contract=contract,
                 spec=application_decision_wiring_spec(),
             )
+
+
+def test_no_applications_decision_wiring_compat_shim() -> None:
+    from pathlib import Path
+
+    shim = Path(__file__).resolve().parents[3] / "applications/_shared/decision_wiring.py"
+    assert not shim.exists()
+
+
+def test_selected_but_missing_plugin_fails_closed() -> None:
+    env = _env_with_plugins(
+        discover_entry_points=True,
+        verification_stage_kinds=["plugin.missing_stage"],
+    )
+    registry = _registry()
+    contract = registry.get_contract("echo")
+    with pytest.raises(ApplicationDecisionCompositionError, match="not activated"):
+        compose_application_decision(
+            environment=env,
+            contract=contract,
+            spec=application_decision_wiring_spec(),
+        )
+
+
+@pytest.mark.asyncio
+async def test_semantic_stage_reads_artifact_content() -> None:
+    from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+    from intergrax.contracts.decision_identity import (
+        DecisionExecutionLineage,
+        DecisionIdentity,
+        DecisionScope,
+        initial_decision_version,
+        mint_decision_id,
+    )
+    from intergrax.contracts.execution_identity import (
+        mint_attempt_id,
+        mint_execution_id,
+        mint_run_id,
+        mint_task_id,
+    )
+    from intergrax.contracts.decision_record import (
+        candidate_decision,
+        validate_decision_artifact_kind,
+    )
+    from intergrax.contracts.decision_verification import VerificationStageOutcome
+    from intergrax.tools.providers.eval.contracts import EvalJudgeInput, EvalJudgeOutput
+
+    @dataclass(frozen=True, slots=True)
+    class _Judge:
+        seen_text: list[str]
+
+        def is_available(self) -> bool:
+            return True
+
+        def judge(self, params: EvalJudgeInput) -> EvalJudgeOutput:
+            self.seen_text.append(params.output_text)
+            return EvalJudgeOutput(rubric_id=params.rubric_id, score=1.0, passed=True)
+
+    judge = _Judge(seen_text=[])
+    bridge = type("_Bridge", (), {"semantic_judge": judge, "trajectory_evaluator": None})()
+
+    env = _env_with_plugins()
+    env.decision_profile.verification.semantic_enabled = True
+    registry = _registry()
+    contract = registry.get_contract("echo")
+    composition = compose_application_decision(
+        environment=env,
+        contract=contract,
+        spec=application_decision_wiring_spec(),
+        eval_bridge=bridge,
+    )
+    identity = DecisionIdentity(
+        decision_id=mint_decision_id(),
+        version=initial_decision_version(),
+        scope=DecisionScope(namespace="test", subject="subject"),
+        tenant_id="tenant-a",
+        execution=DecisionExecutionLineage(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
+        ),
+    )
+    candidate = candidate_decision(
+        identity=identity,
+        artifact_kind=validate_decision_artifact_kind("agent.execution.result"),
+        payload=AgentExecutionResult(
+            agent_id="echo",
+            run_id="run-1",
+            status=AgentExecutionStatus.COMPLETED,
+            summary="typed summary content",
+        ),
+    )
+    result = await composition.verification_pipeline.verify(candidate)
+    semantic_records = [
+        record
+        for record in result.stage_records
+        if str(record.stage) == "semantic"
+    ]
+    assert semantic_records
+    assert semantic_records[0].outcome is VerificationStageOutcome.PASSED
+    assert judge.seen_text == ["typed summary content"]
+
+
+@pytest.mark.asyncio
+async def test_trajectory_stage_reads_artifact_content_agent_id() -> None:
+    from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+    from intergrax.contracts.decision_identity import (
+        DecisionExecutionLineage,
+        DecisionIdentity,
+        DecisionScope,
+        initial_decision_version,
+        mint_decision_id,
+    )
+    from intergrax.contracts.execution_identity import (
+        mint_attempt_id,
+        mint_execution_id,
+        mint_run_id,
+        mint_task_id,
+    )
+    from intergrax.contracts.decision_record import (
+        candidate_decision,
+        validate_decision_artifact_kind,
+    )
+    from intergrax.contracts.decision_verification import VerificationStageOutcome
+    from intergrax.tools.providers.eval.contracts import EvalTrajectoryInput, EvalTrajectoryOutput
+
+    @dataclass(frozen=True, slots=True)
+    class _Evaluator:
+        seen_agent_ids: list[str]
+
+        def is_available(self) -> bool:
+            return True
+
+        def evaluate(self, params: EvalTrajectoryInput) -> EvalTrajectoryOutput:
+            self.seen_agent_ids.append(params.agent_id)
+            return EvalTrajectoryOutput(
+                run_id=params.run_id,
+                score=1.0,
+                passed=True,
+            )
+
+    evaluator = _Evaluator(seen_agent_ids=[])
+    bridge = type("_Bridge", (), {"semantic_judge": None, "trajectory_evaluator": evaluator})()
+
+    env = _env_with_plugins()
+    env.decision_profile.verification.trajectory_enabled = True
+    registry = _registry()
+    contract = registry.get_contract("echo")
+    composition = compose_application_decision(
+        environment=env,
+        contract=contract,
+        spec=application_decision_wiring_spec(),
+        eval_bridge=bridge,
+    )
+    identity = DecisionIdentity(
+        decision_id=mint_decision_id(),
+        version=initial_decision_version(),
+        scope=DecisionScope(namespace="test", subject="subject"),
+        tenant_id="tenant-a",
+        execution=DecisionExecutionLineage(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
+        ),
+    )
+    candidate = candidate_decision(
+        identity=identity,
+        artifact_kind=validate_decision_artifact_kind("agent.execution.result"),
+        payload=AgentExecutionResult(
+            agent_id="trajectory-agent",
+            run_id="run-2",
+            status=AgentExecutionStatus.COMPLETED,
+            summary="trajectory bounded output",
+        ),
+    )
+    result = await composition.verification_pipeline.verify(candidate)
+    trajectory_records = [
+        record
+        for record in result.stage_records
+        if str(record.stage) == "trajectory"
+    ]
+    assert trajectory_records
+    assert trajectory_records[0].outcome is VerificationStageOutcome.PASSED
+    assert evaluator.seen_agent_ids == ["trajectory-agent"]
+
+
+def test_strict_mode_requires_manifest_binding_without_profile_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.core.plugins.admission import DomainPluginLoadReport, PluginAdmissionRejection
+    from intergrax.core.plugins.discovery import EntryPointSpec
+    from intergrax.runtime.decision_plugin_composition import DecisionStrategyPluginLoadOutcome
+
+    env = ApplicationEnvironmentProfile.strict_multi_agent_defaults()
+    env.execution_mode = ExecutionMode.STRICT
+    env.decision_profile = DecisionProfile(
+        plugins=DecisionPluginProfile(
+            discover_entry_points=True,
+            strategy_kinds=["plugin.external_strategy"],
+            require_manifest_capability_binding=False,
+        ),
+    )
+    registry = _registry()
+    contract = registry.get_contract("echo")
+    captured_policy: list[object] = []
+
+    def _fake_strategy_load(registry_in, *, policy=None, discover_entry_points=False):
+        captured_policy.append(policy)
+        return DecisionStrategyPluginLoadOutcome(
+            registry=registry_in,
+            report=DomainPluginLoadReport.empty(EP_DECISION_STRATEGIES),
+        )
+
+    with patch(
+        "intergrax.applications._shared.application_decision_composition.load_decision_strategy_plugins",
+        side_effect=_fake_strategy_load,
+    ):
+        with pytest.raises(ApplicationDecisionCompositionError, match="not activated"):
+            compose_application_decision(
+                environment=env,
+                contract=contract,
+                spec=application_decision_wiring_spec(),
+            )
+    assert captured_policy
+    assert captured_policy[0].require_manifest_capability_binding is True
 
 
 def test_max_revision_profile_reaches_gate() -> None:

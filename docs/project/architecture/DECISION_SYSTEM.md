@@ -744,9 +744,13 @@ Decision domain composition (`intergrax/runtime/decision_plugin_composition.py`)
 targets and composes immutable registries. Installation alone does not activate plugins —
 explicit ``discover_entry_points=True`` composition is required.
 
-When ``require_manifest_capability_binding=True``, absence of positive Platform Plugin
-manifest capability evidence is an admission failure (fail-closed). Plugins without
-verifiable manifest binding are not loaded, instantiated, or registered.
+When a plugin is **selected** by application profile (kind allowlist), absence of
+positive Platform Plugin manifest capability evidence is an admission failure
+(fail-closed). Installed but **not selected** plugins are skipped with
+``plugin_not_selected`` observability and do not fail the host. In **STRICT**
+execution mode, manifest capability binding is mandatory for every selected
+external plugin even when ``require_manifest_capability_binding`` is false on the
+profile (LAB may keep binding profile-controlled).
 
 ### Tier-3 application composition (P0-A)
 
@@ -766,9 +770,10 @@ CanonicalDecisionFlowGate (wire_application_decision)
 Execution / Nexus host
 ```
 
-- **Activation:** ``DecisionProfile.plugins`` selects strategy kinds, verification stage kinds,
-  and artifact kinds; ``discover_entry_points`` (or ``INTERGRAX_DISCOVER_PLUGINS``) enables
-  discovery only — empty allowlists keep plugins inactive.
+- **Activation:** ``installed ≠ selected ≠ admitted ≠ active``. ``DecisionProfile.plugins``
+  selects strategy kinds, verification stage kinds, and artifact kinds; ``discover_entry_points``
+  (or ``INTERGRAX_DISCOVER_PLUGINS``) enables discovery — empty allowlists keep external plugins
+  inactive. Requested kinds that never activate fail composition closed.
 - **Built-in verification:** structural stage is always composed for agent-execution wiring;
   ``DecisionVerificationProfile.semantic_enabled`` / ``trajectory_enabled`` add platform stages
   to the same pipeline (optional until eval bridge is present at wiring time).

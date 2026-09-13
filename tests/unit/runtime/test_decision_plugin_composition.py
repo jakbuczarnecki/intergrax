@@ -513,6 +513,32 @@ def test_verification_wrong_target_rejected(monkeypatch: pytest.MonkeyPatch) -> 
     assert outcome.report.rejected[0].reason_code is PluginAdmissionReasonCode.INVALID_TARGET_TYPE
 
 
+def test_verification_allowlist_not_selected_is_non_fatal(monkeypatch: pytest.MonkeyPatch) -> None:
+    _install_eps(
+        monkeypatch,
+        [
+            _verification_ep("aaa", "_AaaVerificationStage"),
+            _verification_ep("zzz", "_ZzzVerificationStage"),
+        ],
+    )
+    outcome = load_verification_stage_plugins(
+        verification_stage_registry(),
+        policy=DecisionPluginLoadPolicy(
+            allowed_verification_stage_kinds=frozenset({"aaa_plugin_stage"}),
+        ),
+        discover_entry_points=True,
+    )
+    assert outcome.report.registered_count == 1
+    assert outcome.report.critical_bootstrap_acceptable
+    not_selected = [
+        item
+        for item in outcome.report.rejected
+        if item.reason_code is PluginAdmissionReasonCode.PLUGIN_NOT_SELECTED
+    ]
+    assert len(not_selected) == 1
+    assert not_selected[0].fail_closed is False
+
+
 @pytest.mark.asyncio
 async def test_verification_pipeline_order_independent_of_entry_point_scan(
     monkeypatch: pytest.MonkeyPatch,
