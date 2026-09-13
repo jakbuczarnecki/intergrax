@@ -85,6 +85,7 @@ def build_multi_agent_failure_localization_scenario(
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
     lineage = InMemoryExecutionLineagePersistence() if with_lineage else None
     runtime_store = InMemoryRuntimeEventStore()
     causal_store = InMemoryCausalEvidencePersistence()
@@ -97,6 +98,7 @@ def build_multi_agent_failure_localization_scenario(
                 task_id=task_id,
                 run_id=run_id,
                 attempt_id=attempt_id,
+                execution_id=execution_id,
                 tenant_id=_TENANT,
             ),
             recorded_at=datetime(2026, 9, 11, 12, 0, tzinfo=UTC),

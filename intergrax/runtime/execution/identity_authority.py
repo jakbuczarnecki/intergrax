@@ -34,11 +34,12 @@ class RootTaskIdentity:
 
 @dataclass(frozen=True, slots=True)
 class BackgroundTransportIdentity:
-    """Canonical TaskId/RunId/AttemptId minted for one background transport execution."""
+    """Canonical TaskId/RunId/AttemptId/ExecutionId minted for one transport execution."""
 
     task_id: TaskId
     run_id: RunId
     attempt_id: AttemptId
+    execution_id: ExecutionId
 
 
 class DefaultExecutionIdentityAuthority:
@@ -103,10 +104,12 @@ def mint_root_execution_identity(
 
 def mint_background_transport_identity() -> BackgroundTransportIdentity:
     """Mint canonical background transport identity before durable persistence."""
+    root = mint_root_execution_identity()
     return BackgroundTransportIdentity(
         task_id=mint_task_id(),
-        run_id=default_execution_identity_authority.mint_run_identity(),
-        attempt_id=default_execution_identity_authority.mint_attempt_identity(),
+        run_id=root.run_id,
+        attempt_id=root.attempt_id,
+        execution_id=root.execution_id,
     )
 
 

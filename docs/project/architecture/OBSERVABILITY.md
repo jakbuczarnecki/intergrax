@@ -209,7 +209,7 @@ Reference: VPI `platform_proofs/scenarios/verified_product_identification/applic
 
 | ID | Severity | Owner | Reason | Next task |
 | -- | -------- | ----- | ------ | --------- |
-| Causal `RuntimeExecutionRef` stops at `AttemptId` | P1 | Evidence Plane | Cannot pin transport→**specific** `ExecutionId` | **OBS-CAUSAL-2** |
+| Causal `RuntimeExecutionRef` without `ExecutionId` | — | — | **Closed (OBS-CAUSAL-2)** — `platform_causal_evidence.v2` | — |
 | Functional evidence contracts live under `runtime.diagnostics` while OBS records | P1 | Evidence Plane | Ownership inversion vs “OBS records, DIAG interprets” | **OBS-FUNCTIONAL-CONTRACTS-1** |
 | `ExecutionReconstructor` package placement under `diagnostics` | P1 | Evidence + DIAG | Shared factual layer semantically OBS; single implementation today | **OBS-RECONSTRUCTION-1** |
 | Emit-path `ExecutionId` coverage not fully certified on all paths | P1 | Execution + OBS | Contract requires `ExecutionId`; writers vary by path | **OBS-COVERAGE-1** |
@@ -1198,7 +1198,9 @@ Diagnostic projections (`ExecutionReconstruction`, `LifecycleAnalysis`, `Diagnos
 
 ### Causal evidence plane (DIAG-1)
 
-`PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains - for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId`; **TARGET:** + `ExecutionId`). It does **not** extend `RuntimeEvent`, mint synthetic execution identity, redefine `ExecutionId`, duplicate the Execution Tree, or replace `RuntimeEvent` history.
+`PlatformCausalEvidence` records an immutable, tenant-scoped causal fact between existing identity domains - for example a provider-neutral async transport task (`MessageBusTaskRef`) that **triggered** canonical runtime execution (`RuntimeExecutionRef` with `TaskId` / `RunId` / `AttemptId` / **`ExecutionId`**). Schema **`platform_causal_evidence.v2`** requires execution-scoped targets to pin an exact `ExecutionId` (no metadata fallback, no Observability minting). It does **not** extend `RuntimeEvent`, mint synthetic execution identity, redefine `ExecutionId`, duplicate the Execution Tree, or replace `RuntimeEvent` history.
+
+**Invariants (OBS-CAUSAL-2):** Execution topology (`ExecutionLineage`) ≠ causal relation (`PlatformCausalEvidence`). Causal relation ≠ diagnostic root-cause interpretation. Missing `ExecutionId` on execution-scoped causal targets fails closed. Diagnostics may read `target.execution_id` but must not invent causal facts.
 
 `MessageBusTaskRef.task_id` is opaque transport identity (`str`); `RuntimeExecutionRef.task_id` is canonical `TaskId`. Identical text may appear on both sides without collapsing domains - isolation is enforced by typed contracts, not lexical format rules.
 

@@ -73,6 +73,7 @@ def build_transport_triggered_execution_evidence(
             task_id=execution_identity.task_id,
             run_id=execution_identity.run_id,
             attempt_id=execution_identity.attempt_id,
+            execution_id=execution_identity.execution_id,
             tenant_id=execution_identity.tenant_id,
         ),
     )

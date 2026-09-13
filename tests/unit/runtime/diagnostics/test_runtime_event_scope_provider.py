@@ -12,6 +12,7 @@ from intergrax.contracts.execution_identity import (
     EventId,
     mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -364,6 +365,7 @@ def test_three_provider_pluginability_through_unchanged_service() -> None:
                 task_id=task_id,
                 run_id=run_id,
                 attempt_id=mint_attempt_id(),
+                execution_id=mint_execution_id(),
                 tenant_id=_TENANT,
             ),
             recorded_at=sample_runtime_event().timestamp,

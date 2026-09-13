@@ -8,10 +8,12 @@ import pytest
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
     mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -68,11 +70,13 @@ def _execution_ref(
     task_id: TaskId,
     run_id: RunId,
     attempt_id: AttemptId,
+    execution_id: ExecutionId | None = None,
 ) -> RuntimeExecutionRef:
     return RuntimeExecutionRef(
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id or mint_execution_id(),
         tenant_id=tenant_id,
     )
 

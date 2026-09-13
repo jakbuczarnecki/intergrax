@@ -30,6 +30,7 @@ def causal_evidence_export_source_from_evidence(
         target_task_id=evidence.target.task_id,
         target_run_id=evidence.target.run_id,
         target_attempt_id=evidence.target.attempt_id,
+        target_execution_id=evidence.target.execution_id,
         recorded_at=evidence.recorded_at,
     )
 

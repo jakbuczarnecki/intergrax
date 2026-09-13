@@ -22,6 +22,13 @@ from intergrax.runtime.observability.causal_evidence import (
     PlatformCausalEvidence,
     RuntimeExecutionRef,
 )
+from intergrax.runtime.observability.causal_evidence_record_codec import (
+    decode_causal_evidence_record,
+    encode_causal_evidence_record,
+)
+from intergrax.runtime.observability.memory_causal_evidence_persistence import (
+    InMemoryCausalEvidencePersistence,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -36,6 +43,7 @@ def _runtime_execution_ref(*, tenant_id: str = _TENANT_A) -> RuntimeExecutionRef
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         tenant_id=tenant_id,
     )
 
@@ -76,6 +84,7 @@ def test_transport_task_id_may_match_runtime_task_id_text_without_domain_collaps
         task_id=runtime_task_id,
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         tenant_id=_TENANT_A,
     )
 
@@ -103,6 +112,7 @@ def test_causal_evidence_points_to_canonical_execution_identity() -> None:
     assert evidence.target.task_id == target.task_id
     assert evidence.target.run_id == target.run_id
     assert evidence.target.attempt_id == target.attempt_id
+    assert evidence.target.execution_id == target.execution_id
     assert evidence.source.provider == _PROVIDER
     assert evidence.source.task_id == _TRANSPORT_TASK_ID
 
@@ -113,6 +123,7 @@ def test_causal_evidence_points_to_canonical_execution_identity() -> None:
         ("task_id", "not-a-task-id"),
         ("run_id", "not-a-run-id"),
         ("attempt_id", "not-an-attempt-id"),
+        ("execution_id", "not-an-execution-id"),
     ],
 )
 def test_invalid_canonical_execution_ids_fail_closed(
@@ -123,6 +134,24 @@ def test_invalid_canonical_execution_ids_fail_closed(
     payload[field_name] = invalid_value
     with pytest.raises(ValidationError):
         RuntimeExecutionRef.model_validate(payload)
+
+
+def test_missing_execution_id_fails_closed_without_heuristic_fill() -> None:
+    payload = _runtime_execution_ref().model_dump()
+    del payload["execution_id"]
+    with pytest.raises(ValidationError):
+        RuntimeExecutionRef.model_validate(payload)
+
+
+def test_whitespace_tenant_on_execution_ref_rejected() -> None:
+    with pytest.raises(ValidationError):
+        RuntimeExecutionRef(
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
+            tenant_id="  tenant-a  ",
+        )
 
 
 def test_missing_relation_side_fails_closed() -> None:
@@ -176,6 +205,25 @@ def test_serialization_round_trip_preserves_semantic_fact() -> None:
     assert restored.recorded_at == original.recorded_at
 
 
+def test_persistence_codec_round_trip_preserves_execution_id() -> None:
+    original = _causal_evidence()
+    restored = decode_causal_evidence_record(encode_causal_evidence_record(original))
+    assert restored.target.execution_id == original.target.execution_id
+
+
+def test_persistence_store_round_trip_preserves_execution_id() -> None:
+    store = InMemoryCausalEvidencePersistence()
+    original = _causal_evidence()
+    store.append(original)
+    listed = store.list_for_execution(
+        tenant_id=original.tenant_id,
+        task_id=original.target.task_id,
+        run_id=original.target.run_id,
+    )
+    assert len(listed) == 1
+    assert listed[0].target.execution_id == original.target.execution_id
+
+
 def test_runtime_event_still_requires_canonical_execution_identity() -> None:
     with pytest.raises(ValidationError):
         RuntimeEvent(
@@ -202,3 +250,27 @@ def test_causal_evidence_forbids_extra_fields() -> None:
     payload["correlation_id"] = "must-not-appear"
     with pytest.raises(ValidationError):
         PlatformCausalEvidence.model_validate(payload)
+
+
+def test_same_attempt_sibling_executions_remain_distinct_in_evidence() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_e1 = mint_execution_id()
+    execution_e2 = mint_execution_id()
+    assert execution_e1 != execution_e2
+
+    evidence_e2 = PlatformCausalEvidence(
+        relation_kind=CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION,
+        tenant_id=_TENANT_A,
+        source=_message_bus_task_ref(),
+        target=RuntimeExecutionRef(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_e2,
+            tenant_id=_TENANT_A,
+        ),
+    )
+    assert evidence_e2.target.execution_id == execution_e2
+    assert evidence_e2.target.execution_id != execution_e1

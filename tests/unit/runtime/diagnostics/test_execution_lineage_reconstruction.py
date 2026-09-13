@@ -83,6 +83,7 @@ def _build_reconstructor(
                 task_id=task_id,
                 run_id=run_id,
                 attempt_id=attempt_id,
+                execution_id=mint_execution_id(),
                 tenant_id=_TENANT,
             ),
             recorded_at=datetime(2026, 6, 8, 12, 0, tzinfo=UTC),

@@ -181,6 +181,7 @@ def sample_causal_evidence(
     task_id: TaskId | None = None,
     run_id: RunId | None = None,
     attempt_id: AttemptId | None = None,
+    execution_id: ExecutionId | None = None,
 ) -> PlatformCausalEvidence:
     resolved_task_id = task_id or mint_task_id()
     resolved_run_id = run_id or mint_run_id()
@@ -197,6 +198,7 @@ def sample_causal_evidence(
             task_id=resolved_task_id,
             run_id=resolved_run_id,
             attempt_id=attempt_id or mint_attempt_id(),
+            execution_id=execution_id or mint_execution_id(),
             tenant_id=tenant_id,
         ),
     )

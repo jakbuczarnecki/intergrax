@@ -12,6 +12,7 @@ from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -183,6 +184,7 @@ def _causal_evidence(
             task_id=task_id,
             run_id=run_id,
             attempt_id=attempt_id,
+            execution_id=mint_execution_id(),
             tenant_id=tenant_id,
         ),
         recorded_at=datetime(2026, 6, 8, 12, 0, 0, tzinfo=timezone.utc),

@@ -82,6 +82,7 @@ def _reconcile_active_attempt(
         task_id=bootstrap.task_id,
         run_id=bootstrap.run_id,
         attempt_id=active,
+        execution_id=bootstrap.execution_id,
     )
 
 

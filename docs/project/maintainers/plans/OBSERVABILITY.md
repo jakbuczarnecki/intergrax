@@ -18,7 +18,7 @@
 - Unified Run Journal and as-of/bitemporal views are **derived** - not lifecycle authority
 - Embedded DIAG subsystem (DIAG-1..5C-A) preserved under ownership framing; model/grouping output is hypothesis not canonical truth
 
-**CURRENT implementation (descriptive, OBS-REBASE-1 + OBS-BOUNDARY-1 2026-09-13):** TRACE-1A–1C **Done / Closed**. `RuntimeEvent` contract requires **five-ID** spine including `ExecutionId` (`intergrax/runtime/events/runtime_event.py`). Platform-wide **writer/emit-path coverage** is tracked separately (**OBS-COVERAGE-1**), not as “partial contract.” **OBS-BOUNDARY-1** closed: one authority per layer; factual vs diagnostic split frozen in architecture hubs. Factual reconstruction: `ExecutionReconstructor` + `HistoricalReconstructionService`; semantic owner Evidence Plane — package placement migration **OBS-RECONSTRUCTION-1**. Functional evidence recording wired from OBS but contracts still under `runtime.diagnostics` — **OBS-FUNCTIONAL-CONTRACTS-1**. Causal `RuntimeExecutionRef` is attempt-scoped (no `ExecutionId`) — **OBS-CAUSAL-2**.
+**CURRENT implementation (descriptive, OBS-REBASE-1 + OBS-BOUNDARY-1 + OBS-CAUSAL-2 2026-09-13):** TRACE-1A–1C **Done / Closed**. `RuntimeEvent` contract requires **five-ID** spine including `ExecutionId` (`intergrax/runtime/events/runtime_event.py`). Platform-wide **writer/emit-path coverage** is tracked separately (**OBS-COVERAGE-1**), not as “partial contract.” **OBS-BOUNDARY-1** closed: one authority per layer; factual vs diagnostic split frozen in architecture hubs. **OBS-CAUSAL-2** closed: `RuntimeExecutionRef` + `platform_causal_evidence.v2` require `ExecutionId` on execution-scoped causal targets; background transport identity mints root `ExecutionId` at bootstrap (Execution authority, not Observability). Factual reconstruction: `ExecutionReconstructor` + `HistoricalReconstructionService`; semantic owner Evidence Plane — package placement migration **OBS-RECONSTRUCTION-1**. Functional evidence recording wired from OBS but contracts still under `runtime.diagnostics` — **OBS-FUNCTIONAL-CONTRACTS-1**.
 
 **Architecture clarification:** Historical TRACE-1A/B/C Done rows describe the **then-current** four-ID milestone; they are historical evidence rows, not the live contract.
 
@@ -60,7 +60,7 @@
 | -: | -- | -------- | ------ | ---- |
 | 1 | **OBS-REBASE-1** | P0 | **Done / Closed** (this slice) | Synchronize Observability SSOT with Execution, Decision, DIAG, Reliability, scenario projection |
 | 2 | **OBS-BOUNDARY-1** | P0 | **Done / Closed** (2026-09-13) | Freeze Evidence / shared factual reconstruction / Diagnostics semantic and dependency boundaries (import debt → OBS-FUNCTIONAL-CONTRACTS-1, OBS-RECONSTRUCTION-1) |
-| 3 | **OBS-CAUSAL-2** | P1 | Planned | `RuntimeExecutionRef` + causal facts pin specific `ExecutionId` (transport/op/decision/external effect) |
+| 3 | **OBS-CAUSAL-2** | P1 | **Done / Closed** (2026-09-13) | `RuntimeExecutionRef` + `platform_causal_evidence.v2` pin specific `ExecutionId`; no heuristics |
 | 4 | **OBS-FUNCTIONAL-CONTRACTS-1** | P1 | Planned | Neutral `intergrax.contracts.functional_evidence` (or equivalent); OBS records without DIAG contract ownership |
 | 5 | **OBS-COVERAGE-1** | P1 | Planned | Platform-wide evidence coverage matrix — all critical paths emit qualified five-ID evidence |
 | 6 | **OBS-TRACE-1** | P2 | Planned (conditional) | Public trace correlation hardening if consumers require beyond `run_id` |

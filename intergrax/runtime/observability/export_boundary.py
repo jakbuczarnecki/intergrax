@@ -179,6 +179,7 @@ class CausalEvidenceExportSource(BaseModel):
     target_task_id: str
     target_run_id: str
     target_attempt_id: str
+    target_execution_id: str
     recorded_at: datetime
 
 

@@ -8,12 +8,14 @@ import pytest
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
     mint_attempt_id,
     mint_event_id,
     mint_run_id,
     mint_task_id,
+    mint_execution_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.diagnostics.execution_reconstruction import (
@@ -69,11 +71,13 @@ def _execution_ref(
     task_id: TaskId,
     run_id: RunId,
     attempt_id: AttemptId,
+    execution_id: ExecutionId | None = None,
 ) -> RuntimeExecutionRef:
     return RuntimeExecutionRef(
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=execution_id or mint_execution_id(),
         tenant_id=tenant_id,
     )
 
@@ -84,6 +88,7 @@ def _causal_evidence(
     task_id: TaskId,
     run_id: RunId,
     attempt_id: AttemptId,
+    execution_id: ExecutionId | None = None,
     transport_task_id: str = "celery-task-1",
     recorded_at: datetime | None = None,
 ) -> PlatformCausalEvidence:
@@ -96,6 +101,7 @@ def _causal_evidence(
             task_id=task_id,
             run_id=run_id,
             attempt_id=attempt_id,
+            execution_id=execution_id,
         ),
         recorded_at=recorded_at or datetime(2026, 6, 8, 12, 0, 0, tzinfo=timezone.utc),
     )
@@ -438,3 +444,30 @@ def test_runtime_history_complete_when_within_limits() -> None:
 
     assert reconstruction.runtime_history_completeness is RuntimeHistoryCompleteness.COMPLETE
     assert len(reconstruction.positioned_events) == 3
+
+
+def test_reconstruction_preserves_distinct_execution_ids_under_same_attempt() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_e1 = mint_execution_id()
+    execution_e2 = mint_execution_id()
+    causal_store = InMemoryCausalEvidencePersistence()
+    causal_store.append(
+        _causal_evidence(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_e2,
+            transport_task_id="transport-for-e2",
+        )
+    )
+    reconstruction = _reconstructor(causal_store=causal_store).reconstruct_execution(
+        _TENANT_A,
+        task_id,
+        run_id,
+    )
+    attempt = next(a for a in reconstruction.attempts if a.attempt_id == attempt_id)
+    assert len(attempt.causal_evidence) == 1
+    assert attempt.causal_evidence[0].target.execution_id == execution_e2
+    assert attempt.causal_evidence[0].target.execution_id != execution_e1

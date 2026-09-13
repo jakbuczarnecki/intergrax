@@ -10,9 +10,11 @@ from dataclasses import dataclass
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
     validate_attempt_id,
+    validate_execution_id,
     validate_run_id,
     validate_task_id,
 )
@@ -32,16 +34,17 @@ from intergrax.runtime.execution.identity_authority import (
 
 _IDENTITY_RECORD_SEPARATOR = "\n"
 _KV_KEY_PREFIX = "bg_exec_identity"
-_DOCUMENT_STORE_PARTITION_PREFIX = "intergrax.bg_exec_identity.v1"
+_DOCUMENT_STORE_PARTITION_PREFIX = "intergrax.bg_exec_identity.v2"
 
 
 @dataclass(frozen=True, slots=True)
 class PersistedBackgroundExecutionIdentity:
-    """Durable canonical TaskId/RunId/AttemptId for one transport execution."""
+    """Durable canonical TaskId/RunId/AttemptId/ExecutionId for one transport execution."""
 
     task_id: TaskId
     run_id: RunId
     attempt_id: AttemptId
+    execution_id: ExecutionId
 
 
 def _encode_identity_record(
@@ -49,11 +52,13 @@ def _encode_identity_record(
     task_id: TaskId,
     run_id: RunId,
     attempt_id: AttemptId,
+    execution_id: ExecutionId,
 ) -> bytes:
     return (
         f"{task_id}{_IDENTITY_RECORD_SEPARATOR}"
         f"{run_id}{_IDENTITY_RECORD_SEPARATOR}"
-        f"{attempt_id}"
+        f"{attempt_id}{_IDENTITY_RECORD_SEPARATOR}"
+        f"{execution_id}"
     ).encode("utf-8")
 
 
@@ -62,13 +67,14 @@ def _decode_identity_record(raw: bytes) -> PersistedBackgroundExecutionIdentity:
         parts = raw.decode("utf-8").split(_IDENTITY_RECORD_SEPARATOR)
     except UnicodeDecodeError as exc:
         raise RuntimeError("invalid background execution identity record") from exc
-    if len(parts) != 3:
+    if len(parts) != 4:
         raise RuntimeError("invalid background execution identity record")
-    task_raw, run_raw, attempt_raw = parts
+    task_raw, run_raw, attempt_raw, execution_raw = parts
     return PersistedBackgroundExecutionIdentity(
         task_id=validate_task_id(task_raw),
         run_id=validate_run_id(run_raw),
         attempt_id=validate_attempt_id(attempt_raw),
+        execution_id=validate_execution_id(execution_raw),
     )
 
 
@@ -132,6 +138,7 @@ class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersis
             task_id=identity.task_id,
             run_id=identity.run_id,
             attempt_id=identity.attempt_id,
+            execution_id=identity.execution_id,
         )
         if self._kv_store.compare_and_set(
             tenant_id=transport_ref.tenant_id,
@@ -143,6 +150,7 @@ class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersis
                 task_id=identity.task_id,
                 run_id=identity.run_id,
                 attempt_id=identity.attempt_id,
+                execution_id=identity.execution_id,
             )
 
         raced = self._kv_store.get(tenant_id=transport_ref.tenant_id, key=key)
@@ -188,6 +196,7 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
                 "task_id": str(identity.task_id),
                 "run_id": str(identity.run_id),
                 "attempt_id": str(identity.attempt_id),
+                "execution_id": str(identity.execution_id),
             },
         )
         if self._document_store.put_if_absent(document):
@@ -195,6 +204,7 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
                 task_id=identity.task_id,
                 run_id=identity.run_id,
                 attempt_id=identity.attempt_id,
+                execution_id=identity.execution_id,
             )
 
         raced = self._document_store.get(partition_key, row_key)
@@ -207,16 +217,19 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
         task_raw = record.data.get("task_id")
         run_raw = record.data.get("run_id")
         attempt_raw = record.data.get("attempt_id")
+        execution_raw = record.data.get("execution_id")
         if (
             not isinstance(task_raw, str)
             or not isinstance(run_raw, str)
             or not isinstance(attempt_raw, str)
+            or not isinstance(execution_raw, str)
         ):
             raise RuntimeError("invalid background execution identity record")
         return PersistedBackgroundExecutionIdentity(
             task_id=validate_task_id(task_raw),
             run_id=validate_run_id(run_raw),
             attempt_id=validate_attempt_id(attempt_raw),
+            execution_id=validate_execution_id(execution_raw),
         )
 
 
