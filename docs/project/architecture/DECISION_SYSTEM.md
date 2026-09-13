@@ -10,7 +10,7 @@ The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - c
 > - **Architecture:** **TARGET CANON - FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
 > - **Implementation:** Canonical Decision System runtime **implemented and active**.
 > - **CURRENT decision authority = Decision System.** Critic runtime **retired**.
-> - **Production qualification (DS-E2E-15J):** **QUALIFIED** — in-repo Decision → Governance → Execution bundle plus **Docker E2E system qualification** (`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION`; integration proof requires Docker daemon on the qualification host; see [Production qualification](#production-qualification-boundary)).
+> - **Production qualification (DS-E2E-15J):** **QUALIFIED** — architecture **closed**; in-repo Decision → Governance → Execution bundle plus **Docker E2E system qualification** (L6 matrix + canonical Execution Docker proofs; closure `DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION-CLOSURE`; integration proof requires Docker daemon on the qualification host; see [Production qualification](#production-qualification-boundary)).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.
 
@@ -874,7 +874,7 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | ---- | ----- | --------- |
 | **Architecture (A)** | **A4** | Frozen target canon established; boundaries to Execution, Policy, HITL, Diagnostics explicit |
 | **Implementation (I)** | **I3** | Core lifecycle · revision · verification · governance · execution integration implemented |
-| **Production (P)** | **P2** | DS-E2E-15J integrated flow qualified in-repo; Docker distributed E2E not claimed |
+| **Production (P)** | **P2** | DS-E2E-15J integrated flow + Docker E2E system qualification (L6 + canonical Execution) qualified in-repo; multi-host / external SaaS not claimed |
 | **Evidence (E)** | **E1** | DS-E2E-15J production qualification bundle + architecture closure evidence |
 
 ---
@@ -912,6 +912,8 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 **Docker E2E (DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION):** L6 matrix scenarios in-container; proof `tests/unit/testing_support/decision_e2e/test_docker_system_scenarios.py`.
 
 **Canonical Execution Docker E2E (DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION):** `CanonicalDecisionFlowGate` → authorization → `ExecutionRuntime` in-container; proof `tests/unit/testing_support/decision_e2e/test_canonical_docker_execution.py` and `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (`-k canonical`). Report: `docs/project/maintainers/qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`.
+
+**Combined system (closure):** Decision System + Canonical Execution Engine — **Docker E2E System Qualification = QUALIFIED** when both Docker proof planes pass on the qualification host. Final closure record: [`maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) (Final closure section).
 
 **Not claimed:** multi-host production topology, external SaaS vendors, or hosts without a successful Docker integration run.
 

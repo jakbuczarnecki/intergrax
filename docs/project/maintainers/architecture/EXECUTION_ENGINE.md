@@ -8,6 +8,8 @@
 
 A documentation consolidation commit **does not reopen** frozen production semantics. Any change that contradicts frozen architecture or freeze records requires a separate architecture decision.
 
+**Maintainer status (DS-E2E-15J closure):** Execution Engine architecture remains **frozen** for enterprise semantics; **canonical runtime** and **Decision System integration** are **Docker E2E qualified** via [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) and combined system closure in [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md).
+
 ---
 
 ## 1. Purpose
@@ -261,6 +263,13 @@ Architecture supporting the runner (not a domain semantics owner): [`EXECUTION_Q
 | Decision | Production-qualified default **remained 2** |
 
 Do not treat historical wall times as machine-independent SLAs.
+
+### Decision System integration (Docker E2E)
+
+| Record | Scope | Status |
+| --- | --- | --- |
+| [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) | L6 matrix hosting + combined system closure | **QUALIFIED** |
+| [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) | Decision → `DecisionExecutionAuthorization` → `ExecutionRuntime` | **QUALIFIED** |
 
 ---
 

@@ -70,3 +70,5 @@ Worker scenarios: `canonical-execution-success`, `canonical-governance-deny`, `c
 - **Command:** `uv run pytest tests/integration/decision_system/test_docker_e2e_system_qualification.py -k canonical`
 - **Image:** `ghcr.io/astral-sh/uv:python3.12-bookworm-slim`
 - **Requirement:** Docker CLI + running daemon (`pytest.fail` when blocked for canonical gate tests)
+
+**System closure:** Combined Decision System + Canonical Execution Engine Docker E2E status is recorded in [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) (Final closure section; task `DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION-CLOSURE`).
