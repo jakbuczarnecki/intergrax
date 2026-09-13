@@ -36,6 +36,8 @@ Full natural-language query understanding is **not** implemented in 5C12-R1.
 ## Application vs proof
 
 - Application emits immutable `ProductIdentificationObservation` events on the **same** execution path as the business result.
+- **Platform projection (P1B):** optional `PlatformProjectingProductIdentificationObservationSink` projects redaction-safe stage facts to the canonical `RuntimeEvent` spine via `ApplicationExecutionStageSignal` (scenario-owned schema unchanged; additive adapter).
+- **Maturity:** scenario observation schema — **OWNERSHIP APPROVED**; platform contract — **PLATFORM CONTRACT IMPLEMENTED**; VPI adapter — **VPI ADAPTER IMPLEMENTED**; default pipeline composition — **VPI RUNTIME ADOPTED: PENDING** (requires `ApplicationExecutionCorrelation` + scenario runtime event bus).
 - Proof/evaluator code consumes `ProductIdentificationPipelineResult` plus sink snapshots externally — no gold labels, expected outcomes, or benchmark truth in application contracts.
 
 ## Observability

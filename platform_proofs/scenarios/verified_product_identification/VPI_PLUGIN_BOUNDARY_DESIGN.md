@@ -68,7 +68,7 @@ Keep in **Category C** when logic is **pure product-identification semantics** w
 | **verification/** | Evidence-backed terminal decision | Policies, source facts | `ProductIdentificationVerificationPort`, `IdentityVerificationPolicy`, `ProductIdentificationDecisionPolicy` | B → map to platform decision/evidence contracts when integrated |
 | **clarification/** | Discriminator selection when insufficient | Verification outcomes | `ClarificationRequirementSelectionPort`, selection/materiality policies | B → clarification policy plugin |
 | **pipeline/** | Stage order, observation recording, config | All stage ports | `build_product_identification_pipeline(...)` DI | C (orchestrator) — not a plugin |
-| **observability/** | Stage-ordered `ProductIdentificationObservation` | Sink, clock ports | `ProductIdentificationObservationSink` | B extension → platform diagnostic projection (A/B) |
+| **observability/** | Stage-ordered `ProductIdentificationObservation` | Sink, clock ports | `ProductIdentificationObservationSink` | **PLATFORM CONTRACT IMPLEMENTED** (`ApplicationExecutionStageSignal`); **VPI ADAPTER IMPLEMENTED**; runtime bind **PENDING** |
 | **application/contracts/** | Shared immutable DTOs | None (pure types) | Dataclasses | C |
 | **application/ports/catalog_search.py** | Provider-neutral catalog ABI | Domain query/result types | Four search ports + `SourceRecordFetchPort` | B adapters; ports stay scenario until catalog ABI promotes |
 | **integrations/** | Qdrant, PostgreSQL, embedding bootstrap | Platform `VectorStore`, `EmbeddingProvider`, registry | Adapter classes | A reuse + scenario adapters (not domain plugins) |
@@ -100,7 +100,7 @@ Taxonomy for this document: **A** Platform core · **B** Platform contract + sce
 | Pipeline orchestration | `application/pipeline/service.py` | C | `ProductIdentificationPipelineService` | Application spine — not replaceable plugin |
 | Domain models & source facts | `application/domain/`, `application/contracts/source_identity_fact.py` | C | Immutable scenario types | Product identity semantics |
 | Catalog normalization | `application/catalog/` | C | Normalization helpers | WDC/catalog-specific |
-| Stage observations schema | `application/observability/` | B → platform hook | `ProductIdentificationObservation*` → diagnostic contributor | Reusable trace projection gap |
+| Stage observations schema | `application/observability/` | B → platform hook | `PlatformProjectingProductIdentificationObservationSink` → `ApplicationExecutionStageSignal` → `RuntimeEvent` | **PLATFORM CONTRACT IMPLEMENTED** (P1B) |
 | Pipeline / fusion / retrieval config | `application/pipeline/contracts.py` (configuration dataclass), env loaders | D | Configuration only | Not plugins |
 | Agent adapter skeleton | `application/agent.py` | C | Thin delegate to pipeline | Composition wiring only |
 | Bootstrap orchestrator | `storage_bootstrap/`, `composition/bootstrap_runtime.py` | C (tooling) | Operator path | Not hot-path plugin |
@@ -213,7 +213,7 @@ VPI Application
 | --- | --- | --- |
 | Generic multi-channel retrieval coordinator (peer channels + failure semantics) | Platform extension | EPUR/VPI-style scenarios; avoid N copies of orchestration |
 | Shared RRF / rank-fusion math | Platform extension (utility) | VPI duplicates `reciprocal_rank_contribution` vs RAG hybrid helper |
-| Product-stage observability vs `RetrievalTrace` / diagnostic spine | Platform extension | Project `ProductIdentificationObservation` without duplicate fields |
+| Product-stage observability vs central diagnostic spine | Platform extension | **IMPLEMENTED:** neutral `ApplicationExecutionStageSignal` + VPI projection adapter; **PENDING:** scenario runtime bus binding |
 | Generic evidence graph for material identity checks | Platform extension (optional) | Reuse `evidence_verification` patterns; keep product rules in plugins |
 | GTIN/MPN/hypothesis materiality rules | Scenario plugin | Domain-specific |
 | `ProductIdentificationDecision` terminal enum | Scenario domain (+ optional Decision System mapping) | Outcome vocabulary is product-identification specific |

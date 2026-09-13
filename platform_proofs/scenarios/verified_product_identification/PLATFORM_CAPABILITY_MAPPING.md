@@ -58,7 +58,7 @@ Mandatory summary table (expanded detail in §3–§6).
 | **Identity** | `intergrax.contracts.capability_catalog.identity` (generic capability identity keys—not product SKU semantics); no platform product-identity SPI | `ProductIdentityHypothesisPort`, `ProductIdentityHypothesisService`, `ProductIdentityHypothesisRequest` (`application/identity/`); evidence via `SourceRecordFetchPort` + `SourceIdentityFact` | **Scenario internal** (Category D); optional future **Scenario plugin** | **PASS** |
 | **Verification** | `intergrax.contracts.evidence_verification` + Decision System lifecycle (`intergrax.contracts.decision.integration.*`) — **generic**, not wired to VPI outcomes | `ProductIdentificationVerificationPort`, `ProductIdentificationVerificationService`, `ProductIdentificationDecision` (`application/verification/`); policies in `decision_policy.py`, `direct_source_evidence.py` | **Scenario internal** (Category D); optional **Reuse** of decision envelope later | **PASS** (by design); Decision System **not integrated** |
 | **Evidence** | `KnowledgeDocument` (`intergrax.knowledge.contracts.document`); `ExternalEffectEvidence` / execution evidence (`intergrax.contracts.execution_evidence.*`, `intergrax.contracts.external_operations.evidence`) — different domain | `SourceIdentityFact`, `HypothesisRejectionEvidence`, `VerifiedRequirementEvidence`, `ContradictedRequirementEvidence` (`application/contracts/`, `application/verification/`); bootstrap writes via `KnowledgeDocument` in `integrations/search_store/platform_bootstrap_adapter.py` | **Reuse** at index bootstrap only; **Scenario internal** for identity evidence graph | **PASS** |
-| **Observability** | `RetrievalTrace` (RAG); application wiring via `wire_application_observability`, `wire_terminal_execution_diagnostics` (`intergrax.applications._shared.*`); `TraceEvent` / diagnostic assembly on scenario runtime | `ProductIdentificationObservationSink`, `ProductIdentificationObservation`, `ProductIdentificationObservationRecorder` (`application/observability/`); pipeline mapping `application/pipeline/observation_mapping.py` | **Scenario extension** (Category B trace schema); platform spine **available** via `build_scenario_lab_runtime` but **not** bound to pipeline sink today | **PASS** (scenario contract complete); **GAP** bridge to platform diagnostic spine |
+| **Observability** | `ApplicationExecutionStageSignal` + `emit_application_execution_stage_signal` / `RuntimeEventApplicationExecutionStageSignalEmitter` (`intergrax.contracts.application_execution_stage_signal`, `intergrax.runtime.observability.application_execution_stage_signal`); `wire_application_observability`, `wire_terminal_execution_diagnostics`, `RuntimeEvent` / `DOMAIN_SIGNAL` spine | `ProductIdentificationObservation*` (scenario-owned); `project_product_identification_observation`, `PlatformProjectingProductIdentificationObservationSink` (VPI adapter — **IMPLEMENTED**, opt-in at composition) | **Platform contract IMPLEMENTED** (P1B); **VPI adapter IMPLEMENTED**; **VPI runtime adoption PENDING** (pipeline default sink unchanged until composition binds scenario runtime bus + correlation) | **PASS** |
 
 ### Additional platform surfaces actively reused (supporting)
 
@@ -95,7 +95,8 @@ Capability is cross-scenario; VPI defines a **scenario trace or port** that coul
 ```text
 ProductIdentificationObservation*  (scenario)
         |
-        +--> future: projection into RetrievalTrace / diagnostic spine
+        +--> ApplicationExecutionStageSignal  (platform-neutral)
+        +--> RuntimeEvent DOMAIN_SIGNAL  (central spine)  [P1B adapter IMPLEMENTED; runtime bind PENDING]
 ```
 
 **Decision:** **platform extension** (document only—no core change in this audit).
@@ -166,7 +167,7 @@ Recommendations only—**no implementation** in this audit.
 | Generic **multi-channel retrieval coordinator** (peer channel envelopes) | Platform extension (**IMPLEMENTED** P1A / ADR-RAG-001) | VPI delegates orchestration to `intergrax.rag.retrieval.multichannel` while keeping catalog ports and fusion policy in scenario (**adoption pending**) |
 | **MetadataFilter** equality-only / no range queries | Platform extension | Extend `MetadataFilter` + provider SQL for numeric ranges if structured retrieval moves into vector ABI |
 | **PgVector** dense-only / ANN index gaps | Platform adapter | Extend provider schema (HNSW/IVFFlat) per SCENARIO_SPEC gap table; VPI reference path uses Qdrant today |
-| **Product-stage observability** vs `RetrievalTrace` | Platform extension | Define diagnostic contributor or trace projection hook so `ProductIdentificationObservation` can map to platform diagnostic spine without duplicating fields |
+| **Product-stage observability** vs central spine | Platform extension (**PLATFORM CONTRACT IMPLEMENTED** P1B) | VPI maps observations via `PlatformProjectingProductIdentificationObservationSink`; Execution Engine correlation binding **PENDING** |
 | **Terminal authority** for identification outcomes | Scenario plugin + optional reuse | Keep `ProductIdentificationDecision` in scenario; optionally map terminal envelope to Decision System lifecycle for enterprise audit parity (EPUR pattern) |
 | **RRF helper duplication** | Platform adapter (utility) | VPI fusion should call `reciprocal_rank_fusion` or shared math helper to avoid drift |
 | **Agent adapter** | Scenario internal | Thin `ReflexAgent` delegating to `ProductIdentificationPipelineService.run` — composition only |

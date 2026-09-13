@@ -41,7 +41,7 @@ Depend on `MultiChannelRetrievalCoordinator[TResult]` and inject an implementati
 | VPI adoption (`MultiChannelRetrievalService` → coordinator) | **PENDING** |
 | Execution Engine wiring | **PENDING** |
 | Governance integration | **PENDING** (evaluate at E2E boundary) |
-| Diagnostic projection | **PENDING** (P1B) |
+| Diagnostic projection | **PLATFORM CONTRACT IMPLEMENTED** (P1B); VPI adapter implemented; runtime bind pending |
 
 VPI remains the **driver** of this platform evolution; the business requirement is unchanged.
 

@@ -23,7 +23,7 @@ End-to-end VPI production pipeline capabilities: multi-channel catalog retrieval
 | **Rank fusion** | **Promote (utility + optional strategy port):** RRF math and generic N-list fusion primitive → platform (`intergrax.rag`); **offer-grain fusion strategy** (`OfferCandidateFusionStrategy`) remains scenario plugin. |
 | **Identity resolution** | **Split:** platform may later host hypothesis/evidence **mechanisms**; **GTIN/MPN/variant semantics** stay VPI domain + plugins. |
 | **Verification** | **Split:** platform **decision/evidence lifecycle** (`evidence_verification`, Decision System integration) for audit spine; **material identity rules** (`IdentityVerificationPolicy`) stay VPI plugin. |
-| **Observability** | **Promote (projection hook):** platform diagnostic spine receives scenario stage traces; **VPI observation schema** stays scenario-owned until projection contract exists. |
+| **Observability** | **PLATFORM CONTRACT IMPLEMENTED (P1B):** `ApplicationExecutionStageSignal` on `RuntimeEvent` spine; **VPI ADAPTER IMPLEMENTED**; **VPI RUNTIME ADOPTED: PENDING**; VPI observation schema remains scenario-owned. |
 
 ### What was not changed
 
@@ -129,7 +129,7 @@ VPI: MultiChannelRetrievalPolicy / plugin
 
 **As-built:** `ProductIdentificationObservationSink` records stage-ordered observations on the production path. Platform provides `wire_application_observability`, `RetrievalTrace`, scenario lab runtime — **not** bound to VPI sink today.
 
-**Decision:** Introduce (document-only) **platform diagnostic projection contributor** so VPI (and Execution, Agents, Decision, Proof) emit into one spine without duplicating fields. VPI retains schema ownership until projection contract is defined.
+**Decision (updated P1B):** Platform **`ApplicationExecutionStageSignal`** + `emit_application_execution_stage_signal` projects redaction-safe stage facts to the canonical `RuntimeEvent` / `DOMAIN_SIGNAL` spine. VPI adapter **`PlatformProjectingProductIdentificationObservationSink`** is implemented; default pipeline composition remains unchanged until scenario runtime supplies `ApplicationExecutionCorrelation` and event bus. VPI retains full schema ownership.
 
 ---
 
