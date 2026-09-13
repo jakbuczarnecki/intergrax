@@ -11,7 +11,7 @@ Payment uncertainty cases must be reconstructible end-to-end: checkout intent, e
 
 | Layer | Owns |
 | --- | --- |
-| **Platform** | `TraceEvent`, `DiagnosticPayload`, execution identity (`execution_id`, `run_id`), W3C `trace_id` |
+| **Platform** | `TraceEvent`, `DiagnosticPayload` (`intergrax.contracts.tracing`), execution identity (`execution_id`, `run_id`), W3C `trace_id` |
 | **Scenario** | Business step semantics (`ScenarioExecutionTraceStepId`), `ErlQual004LifecycleStepDiagV1` payload fields |
 | **Proof** | Projects `ScenarioExecutionProofResult.execution_trace_events` into evidence; does not emit parallel trace models |
 
@@ -61,6 +61,18 @@ Proof packaging should reference the same `correlation_id` and `evidence_ref` va
 - Recorder: `application/tracing/recorder.py` (`RecordingScenarioExecutionTrace` for lab runs)
 - Wiring: `application/execution/runner.py`, `application/execution/composition.py`
 - Tests: `tests/unit/platform_proofs/scenarios/enterprise_payment_uncertainty_recovery/test_erl_qual_004_execution_tracing.py`
+
+## Public contract boundary
+
+Applications, scenarios, and proof results import Plane B trace types from **`intergrax.contracts.tracing`** only. Runtime Nexus (`intergrax.runtime.nexus.tracing.trace_models`) re-exports the same types for legacy runtime call sites; it is not an application-facing boundary.
+
+Dependency direction:
+
+```text
+scenario / application / proof
+  → intergrax.contracts.tracing
+  → runtime implementations (emitters, stores, bridges)
+```
 
 ## Abstraction and adapter boundary
 

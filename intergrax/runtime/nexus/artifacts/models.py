@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from intergrax.contracts.tracing import TraceArtifactRef as ArtifactRef
+
 
 @dataclass(frozen=True)
 class Artifact:
@@ -32,14 +34,4 @@ class Artifact:
     size_bytes: int
 
 
-@dataclass(frozen=True)
-class ArtifactRef:
-    """
-    Lightweight reference that can be embedded in trace events.
-
-    Trace MUST remain small; artifacts are retrieved via ArtifactStore.
-    """
-
-    artifact_id: str
-    kind: str
-    size_bytes: int
+__all__ = ["Artifact", "ArtifactRef"]

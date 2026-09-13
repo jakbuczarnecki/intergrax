@@ -13,7 +13,7 @@ from intergrax.contracts.enterprise_reliability.recovery_decision import (
     RecoveryLifecycleAction,
 )
 from intergrax.contracts.enterprise_reliability.resolution_decision import ResolutionDecision
-from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
+from intergrax.contracts.tracing import TraceEvent
 
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.domain.workflow import (
     BusinessWorkflowPhase,

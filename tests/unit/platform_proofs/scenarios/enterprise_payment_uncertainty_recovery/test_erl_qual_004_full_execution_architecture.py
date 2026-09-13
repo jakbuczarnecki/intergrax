@@ -24,9 +24,10 @@ _FORBIDDEN_ENGINE_NAMES = frozenset(
     }
 )
 
-_ALLOWED_ERL_IMPORT_PREFIXES = (
+_ALLOWED_PLATFORM_IMPORT_PREFIXES = (
     "intergrax.runtime.enterprise_reliability",
     "intergrax.contracts.enterprise_reliability",
+    "intergrax.contracts.tracing",
 )
 
 
@@ -62,7 +63,7 @@ def test_execution_composition_imports_only_platform_erl_boundaries() -> None:
             if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith(
                 "intergrax.",
             ):
-                if not node.module.startswith(_ALLOWED_ERL_IMPORT_PREFIXES):
+                if not node.module.startswith(_ALLOWED_PLATFORM_IMPORT_PREFIXES):
                     violations.append(f"{path.name}: {node.module}")
     assert not violations, violations
 

@@ -5,12 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from intergrax.contracts.execution_identity import ExecutionId, RunId, mint_execution_id, mint_run_id
 from intergrax.runtime.events.w3c_trace_context import generate_trace_id
-from intergrax.runtime.nexus.tracing.trace_models import (
-    TraceComponent,
-    TraceEvent,
-    TraceLevel,
-    utc_now_iso,
-)
+from intergrax.contracts.tracing import TraceComponent, TraceEvent, TraceLevel
+from intergrax.runtime.nexus.tracing.trace_models import utc_now_iso
 
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.diagnostics import (
     ErlQual004LifecycleStepDiagV1,

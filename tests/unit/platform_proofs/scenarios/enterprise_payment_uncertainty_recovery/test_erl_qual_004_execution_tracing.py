@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
+from intergrax.contracts.tracing import TraceEvent
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.execution import (
     EnterprisePaymentScenarioExecutionRequest,
     ScenarioLifecycleOutcome,

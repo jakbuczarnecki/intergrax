@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from enum import StrEnum
 from typing import Protocol
 
-from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
+from intergrax.contracts.tracing import TraceEvent
 
 TraceAttributeValue = str | int | float | bool | None
 TraceBusinessDetail = Mapping[str, TraceAttributeValue]
