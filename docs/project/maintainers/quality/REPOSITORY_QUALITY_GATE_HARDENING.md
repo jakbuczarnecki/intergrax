@@ -16,10 +16,19 @@ Added architecture gate `tests/unit/runtime/architecture/test_repository_quality
 
 ## Current gate
 
+Sync the canonical unit certification profile first (see
+[UNIT_TEST_CERTIFICATION_ENVIRONMENT.md](./UNIT_TEST_CERTIFICATION_ENVIRONMENT.md)):
+
 ```bash
+uv sync --extra dev --extra dev-unit-cert
 uv run pytest tests/unit --collect-only -q
 # Expect: 0 collection errors
 
-uv run pytest tests/unit
-# Enterprise unit suite (full run; duration depends on environment)
+uv run pytest tests/unit -m "gate and not no_ci" -q --tb=line
+# Deterministic quality gate subset
 ```
+
+Architecture guards:
+
+- `tests/unit/runtime/architecture/test_repository_quality_gate.py`
+- `tests/unit/runtime/architecture/test_unit_certification_environment_contract.py`

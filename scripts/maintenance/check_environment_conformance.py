@@ -56,6 +56,19 @@ _PROFILES = {
             ("FASTAPI", "fastapi", "fastapi", False),
         ),
     ),
+    "unit-cert": EnvironmentProfile(
+        name="unit-cert",
+        requires_managed_python=False,
+        dependencies=(
+            ("PYTEST", "pytest", "pytest", True),
+            ("FASTMCP", "fastmcp", "fastmcp", False),
+            ("LANGCHAIN_CORE", "langchain-core", "langchain_core", False),
+            ("QDRANT_CLIENT", "qdrant-client", "qdrant_client", False),
+            ("ANTHROPIC", "anthropic", "anthropic", False),
+            ("PGVECTOR", "pgvector", "pgvector", False),
+            ("SENTENCE_TRANSFORMERS", "sentence-transformers", "sentence_transformers", False),
+        ),
+    ),
 }
 
 
