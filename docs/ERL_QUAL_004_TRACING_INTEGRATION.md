@@ -66,6 +66,10 @@ Proof packaging should reference the same `correlation_id` and `evidence_ref` va
 
 Applications, scenarios, and proof results import Plane B trace types from **`intergrax.contracts.tracing`** only. Runtime Nexus (`intergrax.runtime.nexus.tracing.trace_models`) re-exports the same types for legacy runtime call sites; it is not an application-facing boundary.
 
+### Trace value typing
+
+Public trace fields (`TraceEvent.tags`, `DiagnosticPayload.to_dict()`, `ToolCallTrace.arguments`, `ToolCallTrace.raw_trace`) use **`TraceValue` / `TraceObject`** from the same package — deterministic JSON-safe data validated at contract boundaries (`intergrax.contracts.structured_json_value`). Arbitrary Python objects, bytes, datetimes, and non-finite floats are rejected explicitly. `ToolCallTrace` remains public as the API-facing tool-call artifact (RuntimeAnswer); it is not a scenario-local DTO.
+
 Dependency direction:
 
 ```text

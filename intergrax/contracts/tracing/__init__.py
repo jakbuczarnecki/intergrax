@@ -13,6 +13,13 @@ from intergrax.contracts.tracing.events import (
     TraceEvent,
     TraceLevel,
 )
+from intergrax.contracts.tracing.values import (
+    TraceObject,
+    TraceScalar,
+    TraceValue,
+    normalize_trace_tags,
+    validate_trace_value,
+)
 
 __all__ = [
     "DEFAULT_REDACTED_TEXT",
@@ -22,4 +29,9 @@ __all__ = [
     "TraceComponent",
     "TraceEvent",
     "TraceLevel",
+    "TraceObject",
+    "TraceScalar",
+    "TraceValue",
+    "normalize_trace_tags",
+    "validate_trace_value",
 ]

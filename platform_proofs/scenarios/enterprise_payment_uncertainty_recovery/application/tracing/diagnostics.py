@@ -3,9 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
-
-from intergrax.contracts.tracing import DiagnosticPayload
+from intergrax.contracts.tracing import DiagnosticPayload, TraceObject
 
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
     TraceBusinessDetail,
@@ -30,7 +28,7 @@ class ErlQual004LifecycleStepDiagV1(DiagnosticPayload):
     def schema_id(cls) -> str:
         return "platform_proofs.erl_qual_004.lifecycle_step.v1"
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> TraceObject:
         return {
             "trace_id": self.trace_id,
             "correlation_id": self.correlation_id,
