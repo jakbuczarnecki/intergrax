@@ -7,16 +7,18 @@
 | **Task** | `INTEGRAx-CORE-PLATFORM-FREEZE` |
 | **Date** | 2026-09-13 |
 | **Branch** | `development` |
-| **Frozen baseline SHA** | `009ad0c62ba6afbd07a7e4f2dbe8b4bbbab1d2c6` |
+| **Frozen baseline SHA (formal freeze not executed)** | `009ad0c62ba6afbd07a7e4f2dbe8b4bbbab1d2c6` (configuration-contract anchor; superseded for **code** by post-baseline audit below until formal freeze) |
+| **Certified code baseline candidate (post-baseline reconciliation)** | `118798759e8a198b9a1d21ecd93293fe601fd7d9` — see [`INTEGRAX_POST_BASELINE_COMMITS_RECONCILIATION.md`](INTEGRAX_POST_BASELINE_COMMITS_RECONCILIATION.md) |
+| **Certification / evidence HEAD** | `18bded87b0fc311ee9d9b76f9223383e0ec6b2c1` |
 | **Parent certification closure SHA** | `ca9af5d9dd594e6cff9e6a16dcdbe2004545fa8e` (`INTEGRAx-POST-CERTIFICATION-DOCUMENTATION-CONSISTENCY-CLOSURE`) |
 | **Final platform certification record** | [`INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md`](INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md) (anchor commit `572b49374532fb54edf25c30380cd954707e4351`) |
 | **Freeze record commit** | See git log for commit with message `INTEGRAx-CORE-PLATFORM-FREEZE` (documentation only; does not alter frozen code baseline above) |
 
-**Status:** **FREEZE PREPARED — PENDING BASELINE RECONCILIATION**
+**Status:** **FREEZE PREPARED — PENDING CLEAN WORKING TREE**
 
 This record is the **single** maintainer anchor for core-platform freeze boundaries. It does not freeze the whole Integrax product roadmap—only the **certified enterprise core** (Decision + governed authorization + canonical Execution + cross-platform integration boundaries evidenced in final certification).
 
-**Operator reconciliation note:** The last operator-named acceptance SHA before post-certification work was `ca9af5d9…`. Commits `de575ed90b47deb9ee05a908ae41cf5b8c47d3dd` and `009ad0c62ba6afbd07a7e4f2dbe8b4bbbab1d2c6` landed on `development` after that closure. An earlier freeze attempt recorded `009ad0c62…` as baseline but was **not effective** (dirty working tree; post-certification commits not yet independently reconciled). **`INTEGRAx-PRE-FREEZE-BASELINE-RECONCILIATION`** audits those commits and recommends `009ad0c62ba6afbd07a7e4f2dbe8b4bbbab1d2c6` as the eligible freeze baseline pending clean-tree formal freeze (excludes uncommitted working-tree changes).
+**Operator reconciliation note:** Post-`009ad0c62…` commits through `18bded87b…` were audited in **`INTEGRAx-POST-BASELINE-COMMITS-RECONCILIATION`** (record linked above). **Certified code baseline candidate:** `118798759…` (tracing contract hardening). **Evidence HEAD:** `18bded87b…`. Formal freeze remains blocked until working tree is clean; uncommitted WIP is not part of any baseline SHA.
 
 ---
 
@@ -215,6 +217,8 @@ Full or partial re-certification is mandatory when any of the following change i
 | Canonical execution Docker E2E | [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) |
 | Execution Engine freeze | [`NPSC_3C_EXECUTION_ENGINE_FREEZE_CERTIFICATION.md`](NPSC_3C_EXECUTION_ENGINE_FREEZE_CERTIFICATION.md) |
 | Post-cert documentation closure | Commit `ca9af5d9dd594e6cff9e6a16dcdbe2004545fa8e` |
+| Post-baseline commits reconciliation | [`INTEGRAX_POST_BASELINE_COMMITS_RECONCILIATION.md`](INTEGRAX_POST_BASELINE_COMMITS_RECONCILIATION.md) |
+| Plugin configuration scoped re-certification | [`INTEGRAX_PLUGIN_CONFIGURATION_CONTRACT_SCOPED_RECERTIFICATION.md`](INTEGRAX_PLUGIN_CONFIGURATION_CONTRACT_SCOPED_RECERTIFICATION.md) |
 
 ---
 
@@ -249,7 +253,7 @@ Execution Engine
 = FROZEN
 
 Certified Core Platform
-= FREEZE PREPARED — PENDING BASELINE RECONCILIATION
+= FREEZE PREPARED — PENDING CLEAN WORKING TREE
 
 Future capabilities
 = EVOLUTION OUTSIDE FROZEN CORE
