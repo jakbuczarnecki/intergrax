@@ -10,9 +10,8 @@ from pathlib import Path
 
 R4_IMPLEMENTATION_SHA = "37fb051c7f164d705f628760436b8ea10ee0289f"
 
-# Re-advanced after EE-FINAL-02: ``historical_reconstruction`` contract imports ``AsOfBoundary`` from
-# contracts layer only — read-only reconstruction semantics unchanged.
-R4_POST_QUALIFIED_BASELINE_SHA = "8879dc8aa6b5be809b3081b61cd5d12b24b6183f"
+# Post-qualified baseline: W5-H1 on GitHub — remote-reachable replacement for orphan ``8879dc8``.
+R4_POST_QUALIFIED_BASELINE_SHA = "b0a465fc0b8e9f1c9b9e2879f94510fc88b77516"
 
 _R4_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {
@@ -20,8 +19,6 @@ _R4_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
         "intergrax/runtime/observability/historical_reconstruction.py",
         "tests/unit/runtime/architecture/test_npsc5f_r4_reconstruction_asof_bitemporal.py",
         "tests/unit/runtime/architecture/test_npsc5f_r4_final_historical_reconstruction_qualification_and_freeze.py",
-        "tests/unit/testing_support/test_npsc5f_r4_final_protected_drift.py",
-        "testing_support/npsc5f_r4_protected_drift.py",
         "testing_support/npsc5f_r4_regression_matrix.py",
     },
 )

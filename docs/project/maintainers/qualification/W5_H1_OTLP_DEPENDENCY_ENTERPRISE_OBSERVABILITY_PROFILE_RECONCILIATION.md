@@ -56,7 +56,7 @@ Install for default local gates: `uv sync` (includes `test` group per `[tool.uv]
 
 ## Evidence plane drift (NPSC-5F Final)
 
-Pre-W5-H1 integrated `development` drift is absorbed by advancing evidence-plane sentinels to `origin/development` at `3de9870a7f6e35ebacd37569ef5737b7a1f7e999` (fetch at W5-H1 reconciliation). W5-H1 production edits are classified `QUALIFIED_COMPATIBLE` via `W5_H1_OTLP` qualification paths in `testing_support/npsc5f_final_evidence_plane_drift.py`.
+Evidence-plane freeze baseline remains EE-FINAL-02 re-freeze `7a3569c64e892588992635c9cee10c264a9fc200`. W5-H1 and post-freeze observability integration drifts are tri-classified `QUALIFIED_COMPATIBLE` via qualification path prefixes in `testing_support/npsc5f_final_evidence_plane_drift.py` (see `W5_H1_FIX1_NPSC5F_FREEZE_BASELINE_PROVENANCE_REPAIR.md` for orphan SHA repair).
 
 ## Final verdict
 
