@@ -28,6 +28,9 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.applicati
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.observability import (
     RecordingScenarioApplicationObservability,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
+    ScenarioExecutionTracePort,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.recorder import (
     RecordingScenarioExecutionTrace,
     ScenarioExecutionTraceScope,
@@ -78,19 +81,21 @@ def build_lab_execution_composition(
     *,
     references: LabBusinessReferences | None = None,
     dataset_package_root: Path | None = None,
+    execution_trace: ScenarioExecutionTracePort | None = None,
 ) -> EnterprisePaymentScenarioExecutor:
     """Construct a replaceable in-memory enterprise execution stack for proof runs."""
     refs = references or LabBusinessReferences()
     dataset_root = dataset_package_root or _DATASET_ROOT
     store = InMemoryExternalRealityStore()
     capture = ExternalPaymentCaptureService(store)
-    execution_trace = RecordingScenarioExecutionTrace(
-        scope=ScenarioExecutionTraceScope.mint(
-            correlation_id=refs.payment_intent_reference,
-            scenario_id="ERL-QUAL-004",
-            variant_id="payment_completed_after_unknown",
-        ),
-    )
+    if execution_trace is None:
+        execution_trace = RecordingScenarioExecutionTrace(
+            scope=ScenarioExecutionTraceScope.mint(
+                correlation_id=refs.payment_intent_reference,
+                scenario_id="ERL-QUAL-004",
+                variant_id="payment_completed_after_unknown",
+            ),
+        )
     payment_workflow = ScenarioExternalPaymentWorkflow(
         capture,
         execution_trace=execution_trace,

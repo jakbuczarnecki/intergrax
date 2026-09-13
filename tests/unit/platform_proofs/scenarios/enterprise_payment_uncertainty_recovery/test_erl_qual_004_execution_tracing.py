@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
@@ -13,7 +13,6 @@ import pytest
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.execution import (
     EnterprisePaymentScenarioExecutionRequest,
-    EnterprisePaymentScenarioExecutor,
     ScenarioLifecycleOutcome,
     build_lab_execution_composition,
 )
@@ -234,20 +233,9 @@ class _SubstituteScenarioExecutionTrace:
         return ()
 
 
-def _executor_with_trace_port(trace: _SubstituteScenarioExecutionTrace) -> EnterprisePaymentScenarioExecutor:
-    lab = build_lab_execution_composition()
-    application = replace(lab._deps.application, execution_trace=trace)
-    deps = replace(lab._deps, application=application, execution_trace=trace)
-    return EnterprisePaymentScenarioExecutor(
-        application_root=lab._application_root,
-        dependencies=deps,
-        business_references=lab._references,
-    )
-
-
 def test_executor_operates_with_substitute_trace_port_not_recording() -> None:
     substitute = _SubstituteScenarioExecutionTrace()
-    executor = _executor_with_trace_port(substitute)
+    executor = build_lab_execution_composition(execution_trace=substitute)
     result = executor.execute(
         EnterprisePaymentScenarioExecutionRequest(
             variant_id="payment_completed_after_unknown",
