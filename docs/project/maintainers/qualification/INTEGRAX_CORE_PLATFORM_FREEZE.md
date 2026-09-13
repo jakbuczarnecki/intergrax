@@ -12,11 +12,11 @@
 | **Final platform certification record** | [`INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md`](INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md) (anchor commit `572b49374532fb54edf25c30380cd954707e4351`) |
 | **Freeze record commit** | See git log for commit with message `INTEGRAx-CORE-PLATFORM-FREEZE` (documentation only; does not alter frozen code baseline above) |
 
-**Status:** **Certified Core Platform = FROZEN**
+**Status:** **FREEZE PREPARED — PENDING BASELINE RECONCILIATION**
 
 This record is the **single** maintainer anchor for core-platform freeze boundaries. It does not freeze the whole Integrax product roadmap—only the **certified enterprise core** (Decision + governed authorization + canonical Execution + cross-platform integration boundaries evidenced in final certification).
 
-**Operator reconciliation note:** The last operator-named acceptance SHA before this task was `ca9af5d9…`. Commits `de575ed90b47deb9ee05a908ae41cf5b8c47d3dd` and `009ad0c62ba6afbd07a7e4f2dbe8b4bbbab1d2c6` landed on `development` after that closure. The frozen baseline SHA above is the **committed** `development` HEAD at freeze execution (excludes any uncommitted working-tree changes).
+**Operator reconciliation note:** The last operator-named acceptance SHA before post-certification work was `ca9af5d9…`. Commits `de575ed90b47deb9ee05a908ae41cf5b8c47d3dd` and `009ad0c62ba6afbd07a7e4f2dbe8b4bbbab1d2c6` landed on `development` after that closure. An earlier freeze attempt recorded `009ad0c62…` as baseline but was **not effective** (dirty working tree; post-certification commits not yet independently reconciled). **`INTEGRAx-PRE-FREEZE-BASELINE-RECONCILIATION`** audits those commits and recommends `009ad0c62ba6afbd07a7e4f2dbe8b4bbbab1d2c6` as the eligible freeze baseline pending clean-tree formal freeze (excludes uncommitted working-tree changes).
 
 ---
 
@@ -249,7 +249,7 @@ Execution Engine
 = FROZEN
 
 Certified Core Platform
-= FROZEN
+= FREEZE PREPARED — PENDING BASELINE RECONCILIATION
 
 Future capabilities
 = EVOLUTION OUTSIDE FROZEN CORE
