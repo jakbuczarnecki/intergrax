@@ -1709,6 +1709,10 @@ dev = [
 ]
 dev-ci = [
     { name = "celery", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-api", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pytest", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pytest-asyncio", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pytest-xdist", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1844,6 +1848,12 @@ media-whisper = [
 media-youtube = [
     { name = "yt-dlp", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+observability-otlp = [
+    { name = "opentelemetry-api", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 parsing-ocr = [
     { name = "pillow", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pytesseract", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1901,6 +1911,10 @@ quality = [
     { name = "ruff", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 test = [
+    { name = "opentelemetry-api", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pytest", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pytest-asyncio", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
@@ -1962,10 +1976,18 @@ requires-dist = [
     { name = "openai-whisper", marker = "extra == 'media-whisper'", specifier = ">=20240930,<20250626" },
     { name = "opencv-python-headless", marker = "extra == 'media-video'", specifier = "==4.9.0.80" },
     { name = "openpyxl", marker = "extra == 'parsing-office'", specifier = ">=3.1,<4" },
+    { name = "opentelemetry-api", marker = "extra == 'dev-ci'", specifier = ">=1.27,<2" },
     { name = "opentelemetry-api", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-api", marker = "extra == 'observability-otlp'", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "extra == 'dev-ci'", specifier = ">=1.27,<2" },
     { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", marker = "extra == 'observability-otlp'", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'dev-ci'", specifier = ">=1.27,<2" },
     { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "extra == 'observability-otlp'", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-sdk", marker = "extra == 'dev-ci'", specifier = ">=1.27,<2" },
     { name = "opentelemetry-sdk", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-sdk", marker = "extra == 'observability-otlp'", specifier = ">=1.27,<2" },
     { name = "pandas", marker = "extra == 'parsing-office'", specifier = ">=2.1.4,<3" },
     { name = "pgvector", marker = "extra == 'integrations-pgvector'", specifier = ">=0.3" },
     { name = "pika", marker = "extra == 'dev'", specifier = ">=1.3.2" },
@@ -2034,7 +2056,7 @@ requires-dist = [
     { name = "xlrd", marker = "extra == 'parsing-office'", specifier = ">=2.0,<3" },
     { name = "yt-dlp", marker = "extra == 'media-youtube'", specifier = ">=2024.0,<2027" },
 ]
-provides-extras = ["integrations-neo4j", "integrations-e2b", "vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "dev-ci-rag", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-postgresql", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
+provides-extras = ["integrations-neo4j", "integrations-e2b", "vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "observability-otlp", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "dev-ci-rag", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-postgresql", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
 
 [package.metadata.requires-dev]
 platform-proofs-vpi-dataset = [{ name = "pyarrow", specifier = ">=18,<22" }]
@@ -2043,6 +2065,10 @@ quality = [
     { name = "ruff" },
 ]
 test = [
+    { name = "opentelemetry-api", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.27,<2" },
+    { name = "opentelemetry-sdk", specifier = ">=1.27,<2" },
     { name = "pytest", specifier = ">=8.4,<9" },
     { name = "pytest-asyncio", specifier = ">=0.23,<0.24" },
 ]

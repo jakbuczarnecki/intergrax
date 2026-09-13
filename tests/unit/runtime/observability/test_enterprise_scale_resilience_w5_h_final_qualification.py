@@ -9,8 +9,6 @@ import time
 
 import pytest
 
-pytest.importorskip("opentelemetry.exporter.otlp.proto.http._log_exporter")
-
 from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,
 )

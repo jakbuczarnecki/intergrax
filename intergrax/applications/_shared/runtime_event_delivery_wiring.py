@@ -30,6 +30,9 @@ from intergrax.runtime.observability.event_delivery import (
 from intergrax.runtime.observability.event_delivery.export_factory import (
     ObservabilityExportSinkFactory,
 )
+from intergrax.runtime.observability.exporters.otlp.otlp_dependency import (
+    require_otlp_observability_dependency_profile,
+)
 
 
 @runtime_checkable
@@ -91,12 +94,18 @@ def _create_export_transport(
         config = _resolve_otlp_export_configuration(env, settings=settings)
         if config is None:
             return None
+        require_otlp_observability_dependency_profile(
+            exporter_kind=ExporterKind.OTLP,
+        )
         return OtlpTransport(config)
     if export_profile.exporter_kind is ExporterKind.DISTRIBUTED_OTLP:
         from intergrax.runtime.observability.exporters.distributed.collector_transport import (
             CollectorTransport,
         )
 
+        require_otlp_observability_dependency_profile(
+            exporter_kind=ExporterKind.DISTRIBUTED_OTLP,
+        )
         config = _resolve_distributed_transport_configuration(env, settings=settings)
         if config is None:
             raise ConfigurationError(

@@ -9,8 +9,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-pytest.importorskip("opentelemetry.exporter.otlp.proto.http._log_exporter")
-
 from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,
 )
@@ -82,6 +80,23 @@ def test_runtime_event_maps_to_otlp_log_record() -> None:
     attrs = record.attributes or {}
     assert attrs.get("intergrax.event_type") == event.event_type.value
     assert attrs.get("intergrax.run_id") == event.run_id
+
+
+def test_otlp_close_is_idempotent() -> None:
+    config = OtlpExportConfiguration(
+        endpoint="http://127.0.0.1:4318/v1/logs",
+        protocol=OtlpProtocol.HTTP_PROTOBUF,
+        timeout_seconds=1.0,
+    )
+    transport = OtlpTransport(config)
+    force_flush = MagicMock()
+    shutdown = MagicMock()
+    transport._provider.force_flush = force_flush
+    transport._provider.shutdown = shutdown
+    transport.close()
+    transport.close()
+    force_flush.assert_called_once()
+    shutdown.assert_called_once()
 
 
 def test_flush_before_close_on_transport() -> None:

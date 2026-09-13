@@ -158,6 +158,22 @@ Composition: `wire_application_environment` → `resolve_application_runtime_eve
 
 Qualification: `tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_g_profile_activation.py`.
 
+## W5-H1 — OTLP dependency contract
+
+**Status:** qualified — OTLP is an **optional observability capability**, not a core runtime dependency.
+
+| Layer | OTLP SDK |
+|-------|----------|
+| `intergrax/runtime/execution`, `events`, `recovery`, `agents/` | **No** `opentelemetry.*` imports |
+| `OtlpTransportPort` contract | Provider-neutral protocol |
+| `OtlpTransport` / `CollectorTransport` adapters | Lazy SDK load; missing install → `ConfigurationError` with profile hint (no `ModuleNotFoundError`, no silent NOOP) |
+| Composition root | `require_otlp_observability_dependency_profile()` before `OTLP` / `DISTRIBUTED_OTLP` transport construction |
+| Packaging | `[project.optional-dependencies] observability-otlp`; same packages in `dependency-groups.test` and `dev-ci` for deterministic gate qualification |
+
+Shutdown on adapters remains: `close()` → `flush()` → `provider.force_flush()` → `provider.shutdown()` (idempotent second `close()`).
+
+Qualification: `tests/unit/runtime/observability/test_w5_h1_otlp_dependency_contract.py`; narrative: [`W5_H1_OTLP_DEPENDENCY_ENTERPRISE_OBSERVABILITY_PROFILE_RECONCILIATION.md`](../qualification/W5_H1_OTLP_DEPENDENCY_ENTERPRISE_OBSERVABILITY_PROFILE_RECONCILIATION.md).
+
 ### Deployment topology (observability export)
 
 **Single process (production SLO / local OTLP):**

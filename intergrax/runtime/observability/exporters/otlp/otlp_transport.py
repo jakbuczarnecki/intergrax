@@ -5,17 +5,7 @@
 
 from __future__ import annotations
 
-from opentelemetry._logs import SeverityNumber
-from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
-    OTLPLogExporter as GrpcOTLPLogExporter,
-)
-from opentelemetry.exporter.otlp.proto.http._log_exporter import (
-    OTLPLogExporter as HttpOTLPLogExporter,
-)
-from opentelemetry.sdk._logs import LogData, LogRecord, LoggerProvider
-from opentelemetry.sdk._logs.export import LogExportResult, SimpleLogRecordProcessor
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.util.instrumentation import InstrumentationScope
+from typing import TYPE_CHECKING
 
 from intergrax.contracts.observability_export import (
     OtlpExportConfiguration,
@@ -31,6 +21,12 @@ from intergrax.runtime.observability.export_boundary import (
 from intergrax.runtime.observability.exporters.otlp.otlp_configuration import (
     validate_otlp_export_configuration,
 )
+from intergrax.runtime.observability.exporters.otlp.otlp_dependency import (
+    require_otlp_observability_dependency_profile,
+)
+
+if TYPE_CHECKING:
+    from opentelemetry.sdk._logs import LogRecord
 
 _EXPORT_SCOPE_NAME = "intergrax.runtime.event_delivery"
 _DEFAULT_SERVICE_NAME = "intergrax"
@@ -73,6 +69,10 @@ def runtime_event_to_otlp_log_record(event: RuntimeEvent) -> LogRecord:
 
 
 def _log_record_from_envelope(envelope: ObservabilityExportEnvelope) -> LogRecord:
+    require_otlp_observability_dependency_profile()
+    from opentelemetry._logs import SeverityNumber
+    from opentelemetry.sdk._logs import LogRecord
+
     body = envelope.event_type or envelope.record_kind.value
     return LogRecord(
         timestamp=int(envelope.recorded_at.timestamp() * 1_000_000_000),
@@ -99,6 +99,18 @@ class OtlpTransport(OtlpTransportPort):
         *,
         service_name: str = _DEFAULT_SERVICE_NAME,
     ) -> None:
+        require_otlp_observability_dependency_profile()
+        from opentelemetry.exporter.otlp.proto.grpc._log_exporter import (
+            OTLPLogExporter as GrpcOTLPLogExporter,
+        )
+        from opentelemetry.exporter.otlp.proto.http._log_exporter import (
+            OTLPLogExporter as HttpOTLPLogExporter,
+        )
+        from opentelemetry.sdk._logs import LoggerProvider
+        from opentelemetry.sdk._logs.export import SimpleLogRecordProcessor
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.sdk.util.instrumentation import InstrumentationScope
+
         validated = validate_otlp_export_configuration(config)
         self._config = validated
         self._closed = False
@@ -125,6 +137,9 @@ class OtlpTransport(OtlpTransportPort):
     def export(self, event: RuntimeEvent) -> None:
         if self._closed:
             return
+        from opentelemetry.sdk._logs import LogData
+        from opentelemetry.sdk._logs.export import LogExportResult
+
         envelope = envelope_from_runtime_event(event)
         record = _log_record_from_envelope(envelope)
         try:
