@@ -6,9 +6,11 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from intergrax.core.plugins.selection_ref import PlatformPluginSelectionRef
 
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
 from intergrax.applications.contracts.application_recovery_contract import ApplicationRecoveryContract
@@ -364,22 +366,33 @@ class DecisionPluginProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     discover_entry_points: bool = False
-    verification_stage_kinds: list[str] = Field(default_factory=list)
-    strategy_kinds: list[str] = Field(default_factory=list)
-    artifact_kinds: list[str] = Field(default_factory=list)
+    verification_stage_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
+    strategy_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
+    artifact_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
     require_manifest_capability_binding: bool = False
 
-    @field_validator(
-        "verification_stage_kinds",
-        "strategy_kinds",
-        "artifact_kinds",
-    )
-    @classmethod
-    def _normalize_kind_ids(cls, value: list[str]) -> list[str]:
-        normalized = [item.strip() for item in value if item.strip()]
-        if len(normalized) != len(set(normalized)):
-            raise ValueError("duplicate plugin kind ids are not allowed")
-        return normalized
+    @model_validator(mode="after")
+    def _reject_duplicate_selection(self) -> Self:
+        for field_name, plugins in (
+            ("verification_stage_plugins", self.verification_stage_plugins),
+            ("strategy_plugins", self.strategy_plugins),
+            ("artifact_plugins", self.artifact_plugins),
+        ):
+            plugin_ids: set[str] = set()
+            location_keys: set[tuple[str, str, str]] = set()
+            for ref in plugins:
+                if ref.plugin_id in plugin_ids:
+                    raise ValueError(
+                        f"duplicate plugin_id in {field_name}: {ref.plugin_id!r}",
+                    )
+                plugin_ids.add(ref.plugin_id)
+                key = ref.location_key
+                if key in location_keys:
+                    raise ValueError(
+                        f"duplicate plugin locator in {field_name}: {key!r}",
+                    )
+                location_keys.add(key)
+        return self
 
 
 class DecisionFlowProfile(BaseModel):

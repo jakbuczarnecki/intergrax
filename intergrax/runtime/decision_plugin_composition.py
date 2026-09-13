@@ -189,7 +189,7 @@ def load_decision_strategy_plugins(
         domain=DECISION_PLUGIN_DOMAIN,
         required_capability_id=DECISION_STRATEGY_CAPABILITY_ID,
         policy=chosen,
-        kind_allowlist=chosen.allowed_strategy_kinds,
+        requested_plugins=chosen.requested_strategy_plugins,
     )
     accepted: list[EntryPointSpec] = []
     rejected: list[PluginAdmissionRejection] = list(plan.rejected)
@@ -291,7 +291,7 @@ def load_verification_stage_plugins(
         domain=DECISION_PLUGIN_DOMAIN,
         required_capability_id=DECISION_VERIFICATION_STAGE_CAPABILITY_ID,
         policy=chosen,
-        kind_allowlist=chosen.allowed_verification_stage_kinds,
+        requested_plugins=chosen.requested_verification_stage_plugins,
     )
     accepted: list[EntryPointSpec] = []
     rejected: list[PluginAdmissionRejection] = list(plan.rejected)
@@ -414,7 +414,7 @@ def load_decision_artifact_kind_plugins(
         domain=DECISION_PLUGIN_DOMAIN,
         required_capability_id=DECISION_ARTIFACT_KIND_CAPABILITY_ID,
         policy=chosen,
-        kind_allowlist=chosen.allowed_artifact_kinds,
+        requested_plugins=chosen.requested_artifact_plugins,
     )
     accepted: list[EntryPointSpec] = []
     rejected: list[PluginAdmissionRejection] = list(plan.rejected)

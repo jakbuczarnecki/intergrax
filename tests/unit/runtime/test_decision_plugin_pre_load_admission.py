@@ -16,6 +16,7 @@ from intergrax.core.plugins.discovery import (
     reset_entry_point_spec_cache_for_tests,
 )
 from intergrax.core.plugins.package_contract import CapabilityDescriptor
+from intergrax.core.plugins.selection_ref import PlatformPluginSelectionRef
 from intergrax.runtime.decision_plugin_composition import (
     DECISION_PLUGIN_DOMAIN,
     DECISION_VERIFICATION_STAGE_CAPABILITY_ID,
@@ -67,6 +68,15 @@ def _install_eps(monkeypatch: pytest.MonkeyPatch, entries: list[_EntryPoint]) ->
 
 def _verification_ep(name: str, value: str) -> _EntryPoint:
     return _EntryPoint(name, value, EP_DECISION_VERIFICATION_STAGES, distribution=_PACKAGE_NAME)
+
+
+def _requested_ref(plugin_id: str, entry_point_name: str) -> PlatformPluginSelectionRef:
+    return PlatformPluginSelectionRef(
+        plugin_id=plugin_id,
+        entry_point_group=EP_DECISION_VERIFICATION_STAGES,
+        entry_point_name=entry_point_name,
+        distribution=_PACKAGE_NAME,
+    )
 
 
 def _dual_capability_manifest(
@@ -145,19 +155,16 @@ def test_unselected_plugin_never_imported(monkeypatch: pytest.MonkeyPatch) -> No
     outcome = load_verification_stage_plugins(
         verification_stage_registry(),
         policy=DecisionPluginLoadPolicy(
-            allowed_verification_stage_kinds=frozenset({"preload.trust.counter"}),
+            requested_verification_stage_plugins=(
+                _requested_ref("preload.trust.counter", "stage_b"),
+            ),
             require_manifest_capability_binding=True,
         ),
         discover_entry_points=True,
     )
     assert outcome.report.registered_count == 1
     assert len(loads) == 1
-    not_selected = [
-        item
-        for item in outcome.report.rejected
-        if item.reason_code is PluginAdmissionReasonCode.PLUGIN_NOT_SELECTED
-    ]
-    assert len(not_selected) == 1
+    assert not outcome.report.rejected
 
 
 def test_malicious_unselected_plugin_does_not_import(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -178,13 +185,43 @@ def test_malicious_unselected_plugin_does_not_import(monkeypatch: pytest.MonkeyP
     outcome = load_verification_stage_plugins(
         verification_stage_registry(),
         policy=DecisionPluginLoadPolicy(
-            allowed_verification_stage_kinds=frozenset({"preload.trust.counter"}),
+            requested_verification_stage_plugins=(
+                _requested_ref("preload.trust.counter", "safe"),
+            ),
             require_manifest_capability_binding=True,
         ),
         discover_entry_points=True,
     )
     assert outcome.report.critical_bootstrap_acceptable
     assert outcome.report.registered_count == 1
+
+
+def test_unrelated_invalid_manifest_does_not_block_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    loads = _track_entry_point_loads(monkeypatch)
+    _install_eps(
+        monkeypatch,
+        [
+            _verification_ep("good", f"{_COUNTER_MODULE}:PreloadTrustCounterStage"),
+            _verification_ep("bad", f"{_REJECT_MODULE}:PreloadTrustCounterStage"),
+        ],
+    )
+    manifest = _dual_capability_manifest(
+        entries=(("good", "preload.trust.counter"),),
+    )
+    _mock_distribution(monkeypatch, manifest)
+    outcome = load_verification_stage_plugins(
+        verification_stage_registry(),
+        policy=DecisionPluginLoadPolicy(
+            requested_verification_stage_plugins=(
+                _requested_ref("preload.trust.counter", "good"),
+            ),
+            require_manifest_capability_binding=True,
+        ),
+        discover_entry_points=True,
+    )
+    assert outcome.report.critical_bootstrap_acceptable
+    assert outcome.report.registered_count == 1
+    assert len(loads) == 1
 
 
 def test_selected_invalid_manifest_never_imports(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -201,7 +238,9 @@ def test_selected_invalid_manifest_never_imports(monkeypatch: pytest.MonkeyPatch
     outcome = load_verification_stage_plugins(
         verification_stage_registry(),
         policy=DecisionPluginLoadPolicy(
-            allowed_verification_stage_kinds=frozenset({"preload.trust.counter"}),
+            requested_verification_stage_plugins=(
+                _requested_ref("preload.trust.counter", "bad"),
+            ),
             require_manifest_capability_binding=True,
         ),
         discover_entry_points=True,
@@ -231,14 +270,16 @@ def test_three_plugins_select_middle_only(monkeypatch: pytest.MonkeyPatch) -> No
     outcome = load_verification_stage_plugins(
         verification_stage_registry(),
         policy=DecisionPluginLoadPolicy(
-            allowed_verification_stage_kinds=frozenset({"preload.trust.counter"}),
+            requested_verification_stage_plugins=(
+                _requested_ref("preload.trust.counter", "ep_b"),
+            ),
             require_manifest_capability_binding=True,
         ),
         discover_entry_points=True,
     )
     assert outcome.report.registered_count == 1
     assert len(loads) == 1
-    assert len([r for r in outcome.report.rejected if not r.fail_closed]) == 2
+    assert not outcome.report.rejected
 
 
 def test_runtime_kind_manifest_plugin_id_mismatch_fails_closed(
@@ -255,7 +296,9 @@ def test_runtime_kind_manifest_plugin_id_mismatch_fails_closed(
     outcome = load_verification_stage_plugins(
         verification_stage_registry(),
         policy=DecisionPluginLoadPolicy(
-            allowed_verification_stage_kinds=frozenset({"preload.trust.wrong_id"}),
+            requested_verification_stage_plugins=(
+                _requested_ref("preload.trust.wrong_id", "stage"),
+            ),
             require_manifest_capability_binding=True,
         ),
         discover_entry_points=True,
@@ -285,7 +328,10 @@ def test_duplicate_manifest_plugin_id_rejected_before_load(
     outcome = load_verification_stage_plugins(
         verification_stage_registry(),
         policy=DecisionPluginLoadPolicy(
-            allowed_verification_stage_kinds=frozenset({"preload.trust.duplicate"}),
+            requested_verification_stage_plugins=(
+                _requested_ref("preload.trust.duplicate", "ep_one"),
+                _requested_ref("preload.trust.duplicate", "ep_two"),
+            ),
             require_manifest_capability_binding=True,
         ),
         discover_entry_points=True,

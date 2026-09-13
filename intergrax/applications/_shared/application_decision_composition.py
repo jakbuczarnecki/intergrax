@@ -193,16 +193,16 @@ def _decision_plugin_load_policy(
         require_manifest_binding = True
     return DecisionPluginLoadPolicy(
         require_manifest_capability_binding=require_manifest_binding,
-        allowed_strategy_kinds=(
-            frozenset(profile.strategy_kinds) if profile.strategy_kinds else None
+        requested_strategy_plugins=(
+            tuple(profile.strategy_plugins) if profile.strategy_plugins else None
         ),
-        allowed_verification_stage_kinds=(
-            frozenset(profile.verification_stage_kinds)
-            if profile.verification_stage_kinds
+        requested_verification_stage_plugins=(
+            tuple(profile.verification_stage_plugins)
+            if profile.verification_stage_plugins
             else None
         ),
-        allowed_artifact_kinds=(
-            frozenset(profile.artifact_kinds) if profile.artifact_kinds else None
+        requested_artifact_plugins=(
+            tuple(profile.artifact_plugins) if profile.artifact_plugins else None
         ),
     )
 
@@ -249,15 +249,15 @@ def _validate_requested_plugin_kinds_activated(
     activated_artifacts = set(composition.activated_artifact_kinds)
 
     missing: list[str] = []
-    for kind in profile.verification_stage_kinds:
-        if kind not in activated_verification:
-            missing.append(f"verification stage {kind!r}")
-    for kind in profile.strategy_kinds:
-        if kind not in activated_strategies:
-            missing.append(f"decision strategy {kind!r}")
-    for kind in profile.artifact_kinds:
-        if kind not in activated_artifacts:
-            missing.append(f"artifact kind {kind!r}")
+    for ref in profile.verification_stage_plugins:
+        if ref.plugin_id not in activated_verification:
+            missing.append(f"verification stage {ref.plugin_id!r}")
+    for ref in profile.strategy_plugins:
+        if ref.plugin_id not in activated_strategies:
+            missing.append(f"decision strategy {ref.plugin_id!r}")
+    for ref in profile.artifact_plugins:
+        if ref.plugin_id not in activated_artifacts:
+            missing.append(f"artifact kind {ref.plugin_id!r}")
     if not missing:
         return
     raise ApplicationDecisionCompositionError(
@@ -302,7 +302,7 @@ def _merge_plugin_verification_registry(
     discover: bool,
 ) -> tuple[VerificationStageRegistry[AgentExecutionResult], DomainPluginLoadReport]:
     plugin_profile = env.decision_profile.plugins
-    if not discover or not plugin_profile.verification_stage_kinds:
+    if not discover or not plugin_profile.verification_stage_plugins:
         return base, DomainPluginLoadReport.empty(EP_DECISION_VERIFICATION_STAGES)
     policy = _decision_plugin_load_policy(
         plugin_profile,
@@ -323,7 +323,7 @@ def _compose_strategy_registry(
 ) -> tuple[DecisionStrategyRegistry, DomainPluginLoadReport]:
     base = decision_strategy_registry()
     plugin_profile = env.decision_profile.plugins
-    if not discover or not plugin_profile.strategy_kinds:
+    if not discover or not plugin_profile.strategy_plugins:
         return base, DomainPluginLoadReport.empty(EP_DECISION_STRATEGIES)
     policy = _decision_plugin_load_policy(
         plugin_profile,
@@ -346,7 +346,7 @@ def _compose_artifact_kind_registry(
         (validate_decision_artifact_kind("agent.execution.result"),),
     )
     plugin_profile = env.decision_profile.plugins
-    if not discover or not plugin_profile.artifact_kinds:
+    if not discover or not plugin_profile.artifact_plugins:
         return base, DomainPluginLoadReport.empty(EP_DECISION_ARTIFACT_KINDS)
     policy = _decision_plugin_load_policy(
         plugin_profile,

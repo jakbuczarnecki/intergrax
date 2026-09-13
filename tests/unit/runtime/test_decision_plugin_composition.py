@@ -72,6 +72,7 @@ from intergrax.core.plugins.discovery import (
     reset_entry_point_spec_cache_for_tests,
 )
 from intergrax.core.plugins.package_contract import CapabilityDescriptor
+from intergrax.core.plugins.selection_ref import PlatformPluginSelectionRef
 from intergrax.core.plugins.platform_qualification import (
     PluginQualificationEvidenceKind,
     PluginQualificationLevel,
@@ -552,20 +553,21 @@ plugin_id = "zzz_plugin_stage"
     outcome = load_verification_stage_plugins(
         verification_stage_registry(),
         policy=DecisionPluginLoadPolicy(
-            allowed_verification_stage_kinds=frozenset({"aaa_plugin_stage"}),
+            requested_verification_stage_plugins=(
+                PlatformPluginSelectionRef(
+                    plugin_id="aaa_plugin_stage",
+                    entry_point_group=EP_DECISION_VERIFICATION_STAGES,
+                    entry_point_name="aaa",
+                    distribution=_PACKAGE_NAME,
+                ),
+            ),
             require_manifest_capability_binding=True,
         ),
         discover_entry_points=True,
     )
     assert outcome.report.registered_count == 1
     assert outcome.report.critical_bootstrap_acceptable
-    not_selected = [
-        item
-        for item in outcome.report.rejected
-        if item.reason_code is PluginAdmissionReasonCode.PLUGIN_NOT_SELECTED
-    ]
-    assert len(not_selected) == 1
-    assert not_selected[0].fail_closed is False
+    assert not outcome.report.rejected
 
 
 @pytest.mark.asyncio

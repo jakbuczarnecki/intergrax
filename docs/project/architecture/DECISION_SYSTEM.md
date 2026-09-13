@@ -744,13 +744,15 @@ Decision domain composition (`intergrax/runtime/decision_plugin_composition.py`)
 targets and composes immutable registries. Installation alone does not activate plugins —
 explicit ``discover_entry_points=True`` composition is required.
 
-When a plugin is **selected** by application profile (kind allowlist), absence of
-positive Platform Plugin manifest capability evidence is an admission failure
-(fail-closed). Installed but **not selected** plugins are skipped with
-``plugin_not_selected`` observability and do not fail the host. In **STRICT**
-execution mode, manifest capability binding is mandatory for every selected
-external plugin even when ``require_manifest_capability_binding`` is false on the
-profile (LAB may keep binding profile-controlled).
+Application profiles declare **requested** external Decision plugins using typed
+``PlatformPluginSelectionRef`` locators (distribution + entry-point group +
+entry-point name + canonical ``plugin_id``). Only requested locators undergo
+manifest validation and fail-closed admission. Installed but **not requested**
+plugins are ignored for the current application composition and cannot block host
+startup, even when their manifests are invalid. In **STRICT** execution mode,
+manifest capability binding is mandatory for every requested external plugin
+even when ``require_manifest_capability_binding`` is false on the profile (LAB may
+keep binding profile-controlled).
 
 ### Tier-3 application composition (P0-A)
 
@@ -761,7 +763,7 @@ ApplicationManifest / ApplicationEnvironmentProfile
         ↓
 compose_application_decision()  — intergrax/applications/_shared/application_decision_composition.py
         ↓
-decision_plugin_composition (explicit discover + allowlists)
+decision_plugin_composition (explicit discover + selection refs)
         ↓
 VerificationPipeline + DecisionStrategyRegistry + DecisionArtifactKindRegistry
         ↓

@@ -43,6 +43,7 @@ from intergrax.core.plugins.discovery import (
     EP_DECISION_VERIFICATION_STAGES,
     reset_entry_point_spec_cache_for_tests,
 )
+from intergrax.core.plugins.selection_ref import PlatformPluginSelectionRef
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 pytestmark = pytest.mark.unit
@@ -102,7 +103,7 @@ def _env_with_plugins(**plugin_kwargs: object) -> ApplicationEnvironmentProfile:
 def test_installed_but_not_selected_keeps_plugin_stages_inactive() -> None:
     env = _env_with_plugins(
         discover_entry_points=True,
-        verification_stage_kinds=[],
+        verification_stage_plugins=[],
     )
     env.execution_mode = ExecutionMode.STRICT
     registry = _registry()
@@ -120,7 +121,14 @@ def test_selected_plugin_stage_merges_into_pipeline(monkeypatch: pytest.MonkeyPa
     reset_entry_point_spec_cache_for_tests()
     env = _env_with_plugins(
         discover_entry_points=True,
-        verification_stage_kinds=["plugin.stage_alpha"],
+        verification_stage_plugins=[
+            PlatformPluginSelectionRef(
+                plugin_id="plugin.stage_alpha",
+                entry_point_group=EP_DECISION_VERIFICATION_STAGES,
+                entry_point_name="stage_alpha",
+                distribution="decision-composition-test-pkg",
+            ),
+        ],
     )
     registry = _registry()
     contract = registry.get_contract("echo")
@@ -163,7 +171,20 @@ def test_deterministic_ordering_independent_of_discovery_order(
     reset_entry_point_spec_cache_for_tests()
     env = _env_with_plugins(
         discover_entry_points=True,
-        verification_stage_kinds=["plugin.stage_alpha", "plugin.stage_beta"],
+        verification_stage_plugins=[
+            PlatformPluginSelectionRef(
+                plugin_id="plugin.stage_alpha",
+                entry_point_group=EP_DECISION_VERIFICATION_STAGES,
+                entry_point_name="stage_alpha",
+                distribution="decision-composition-test-pkg",
+            ),
+            PlatformPluginSelectionRef(
+                plugin_id="plugin.stage_beta",
+                entry_point_group=EP_DECISION_VERIFICATION_STAGES,
+                entry_point_name="stage_beta",
+                distribution="decision-composition-test-pkg",
+            ),
+        ],
     )
     registry = _registry()
     contract = registry.get_contract("echo")
@@ -217,7 +238,14 @@ def test_strict_mode_fail_closed_on_plugin_rejection() -> None:
     env.decision_profile = DecisionProfile(
         plugins=DecisionPluginProfile(
             discover_entry_points=True,
-            strategy_kinds=["plugin.external_strategy"],
+            strategy_plugins=[
+                PlatformPluginSelectionRef(
+                    plugin_id="plugin.external_strategy",
+                    entry_point_group=EP_DECISION_STRATEGIES,
+                    entry_point_name="external_strategy",
+                    distribution="decision-composition-test-pkg",
+                ),
+            ],
         ),
     )
     registry = _registry()
@@ -266,7 +294,14 @@ def test_no_applications_decision_wiring_compat_shim() -> None:
 def test_selected_but_missing_plugin_fails_closed() -> None:
     env = _env_with_plugins(
         discover_entry_points=True,
-        verification_stage_kinds=["plugin.missing_stage"],
+        verification_stage_plugins=[
+            PlatformPluginSelectionRef(
+                plugin_id="plugin.missing_stage",
+                entry_point_group=EP_DECISION_VERIFICATION_STAGES,
+                entry_point_name="missing_stage",
+                distribution="decision-composition-test-pkg",
+            ),
+        ],
     )
     registry = _registry()
     contract = registry.get_contract("echo")
@@ -454,7 +489,14 @@ def test_strict_mode_requires_manifest_binding_without_profile_flag(
     env.decision_profile = DecisionProfile(
         plugins=DecisionPluginProfile(
             discover_entry_points=True,
-            strategy_kinds=["plugin.external_strategy"],
+            strategy_plugins=[
+                PlatformPluginSelectionRef(
+                    plugin_id="plugin.external_strategy",
+                    entry_point_group=EP_DECISION_STRATEGIES,
+                    entry_point_name="external_strategy",
+                    distribution="decision-composition-test-pkg",
+                ),
+            ],
             require_manifest_capability_binding=False,
         ),
     )

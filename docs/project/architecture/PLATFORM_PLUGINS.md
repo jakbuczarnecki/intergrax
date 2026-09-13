@@ -88,16 +88,16 @@ operator evidence
 
 **Lifecycle states (not every surface has every stage):** `installed` ≠ `discovered` ≠ `admitted` ≠ `selected` ≠ `production-qualified` ≠ `active`.
 
-**Pre-load admission (Decision plugins and shared loader primitives):** entry-point **metadata** is scanned first; the host selects plugins from manifest-declared `plugin_id` (domain kind) before `EntryPoint.load()` runs. Unauthorized or unselected plugin targets are never imported.
+**Pre-load admission (Decision plugins and shared loader primitives):** entry-point **metadata** is scanned first. The application profile declares **requested** plugins via ``PlatformPluginSelectionRef`` (distribution + entry-point locator + ``plugin_id``). Only requested locators are manifest-validated and admitted; unrelated installed packages are ignored and never imported.
 
 ```text
-Application profile
+Application profile (PlatformPluginSelectionRef)
         ↓
 Metadata discovery (entry points only)
         ↓
-Selection (profile kind ↔ manifest plugin_id)
+Resolve requested locators (ignore unrelated entry points)
         ↓
-Manifest / capability binding
+Manifest / capability binding (requested only)
         ↓
 Production admission (when policy requires)
         ↓
@@ -109,6 +109,10 @@ Registry
         ↓
 Runtime
 ```
+
+**Isolation guarantee:** a broken external plugin that the application did not declare as a dependency cannot block that application's startup or execute code.
+
+**Requested dependency guarantee:** a declared external plugin is a hard dependency — missing locator, invalid manifest, capability mismatch, or admission denial fails closed for that application.
 
 Implementation: `intergrax/runtime/decision_plugin_pre_load.py`, `intergrax/core/plugins/discovery.py::load_entry_point_targets_for_specs`.
 

@@ -13,6 +13,7 @@ from intergrax.core.plugins.admission import (
     PluginAdmissionRejection,
 )
 from intergrax.core.plugins.discovery import ConflictPolicy, EntryPointSpec, LoadIsolation
+from intergrax.core.plugins.selection_ref import PlatformPluginSelectionRef
 from intergrax.core.plugins.platform_qualification import (
     PluginQualificationResult,
     evaluate_external_package_entry_point_production_admission,
@@ -32,9 +33,9 @@ class DecisionPluginLoadPolicy:
         Callable[[EntryPointSpec], PluginQualificationResult | None] | None
     ) = None
     platform_version: str | None = None
-    allowed_strategy_kinds: frozenset[str] | None = None
-    allowed_verification_stage_kinds: frozenset[str] | None = None
-    allowed_artifact_kinds: frozenset[str] | None = None
+    requested_strategy_plugins: tuple[PlatformPluginSelectionRef, ...] | None = None
+    requested_verification_stage_plugins: tuple[PlatformPluginSelectionRef, ...] | None = None
+    requested_artifact_plugins: tuple[PlatformPluginSelectionRef, ...] | None = None
 
 
 def production_admission_rejection_for_spec(

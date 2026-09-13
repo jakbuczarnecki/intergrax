@@ -39,6 +39,9 @@ class PluginAdmissionReasonCode(StrEnum):
     CAPABILITY_ID_MISMATCH = "capability_id_mismatch"
     PLUGIN_IDENTITY_MISMATCH = "plugin_identity_mismatch"
     METADATA_PLUGIN_ID_COLLISION = "metadata_plugin_id_collision"
+    REQUESTED_PLUGIN_LOCATOR_NOT_FOUND = "requested_plugin_locator_not_found"
+    REQUESTED_PLUGIN_LOCATOR_AMBIGUOUS = "requested_plugin_locator_ambiguous"
+    MANIFEST_PLUGIN_ID_MISMATCH = "manifest_plugin_id_mismatch"
 
 
 @dataclass(frozen=True, slots=True)
