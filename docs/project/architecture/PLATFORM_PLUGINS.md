@@ -88,6 +88,30 @@ operator evidence
 
 **Lifecycle states (not every surface has every stage):** `installed` ≠ `discovered` ≠ `admitted` ≠ `selected` ≠ `production-qualified` ≠ `active`.
 
+**Pre-load admission (Decision plugins and shared loader primitives):** entry-point **metadata** is scanned first; the host selects plugins from manifest-declared `plugin_id` (domain kind) before `EntryPoint.load()` runs. Unauthorized or unselected plugin targets are never imported.
+
+```text
+Application profile
+        ↓
+Metadata discovery (entry points only)
+        ↓
+Selection (profile kind ↔ manifest plugin_id)
+        ↓
+Manifest / capability binding
+        ↓
+Production admission (when policy requires)
+        ↓
+Plugin target load (import)
+        ↓
+Domain contract validation
+        ↓
+Registry
+        ↓
+Runtime
+```
+
+Implementation: `intergrax/runtime/decision_plugin_pre_load.py`, `intergrax/core/plugins/discovery.py::load_entry_point_targets_for_specs`.
+
 The diagram below is the 20-second overview (D1).
 
 ```mermaid

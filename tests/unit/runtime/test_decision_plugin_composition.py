@@ -352,6 +352,9 @@ def _manifest_toml(
     *,
     capability: CapabilityDescriptor,
 ) -> str:
+    plugin_id_line = ""
+    if capability.plugin_id is not None:
+        plugin_id_line = f'plugin_id = "{capability.plugin_id}"\n'
     return f"""
 [project]
 name = "{_PACKAGE_NAME}"
@@ -367,7 +370,7 @@ domain = "{capability.domain}"
 entry_point_group = "{capability.entry_point_group}"
 entry_point_name = "{capability.entry_point_name}"
 capability_ids = {list(capability.capability_ids)}
-"""
+{plugin_id_line}"""
 
 
 # --- DS-PLUGIN-01 strategy matrix ---
@@ -517,14 +520,40 @@ def test_verification_allowlist_not_selected_is_non_fatal(monkeypatch: pytest.Mo
     _install_eps(
         monkeypatch,
         [
-            _verification_ep("aaa", "_AaaVerificationStage"),
-            _verification_ep("zzz", "_ZzzVerificationStage"),
+            _verification_ep("aaa", "_AaaVerificationStage", distribution=_PACKAGE_NAME),
+            _verification_ep("zzz", "_ZzzVerificationStage", distribution=_PACKAGE_NAME),
         ],
     )
+    manifest = f"""
+[project]
+name = "{_PACKAGE_NAME}"
+version = "{_PACKAGE_VERSION}"
+
+[tool.intergrax.plugin]
+name = "{_PACKAGE_NAME}"
+version = "{_PACKAGE_VERSION}"
+intergrax_version = ">=0.1,<2"
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "{DECISION_PLUGIN_DOMAIN}"
+entry_point_group = "{EP_DECISION_VERIFICATION_STAGES}"
+entry_point_name = "aaa"
+capability_ids = ["{DECISION_VERIFICATION_STAGE_CAPABILITY_ID}"]
+plugin_id = "aaa_plugin_stage"
+
+[[tool.intergrax.plugin.capabilities]]
+domain = "{DECISION_PLUGIN_DOMAIN}"
+entry_point_group = "{EP_DECISION_VERIFICATION_STAGES}"
+entry_point_name = "zzz"
+capability_ids = ["{DECISION_VERIFICATION_STAGE_CAPABILITY_ID}"]
+plugin_id = "zzz_plugin_stage"
+"""
+    _mock_installed_distribution(monkeypatch, manifest_toml=manifest)
     outcome = load_verification_stage_plugins(
         verification_stage_registry(),
         policy=DecisionPluginLoadPolicy(
             allowed_verification_stage_kinds=frozenset({"aaa_plugin_stage"}),
+            require_manifest_capability_binding=True,
         ),
         discover_entry_points=True,
     )

@@ -37,6 +37,8 @@ class PluginAdmissionReasonCode(StrEnum):
     MANIFEST_INVALID = "manifest_invalid"
     MANIFEST_CAPABILITY_BINDING_MISSING = "manifest_capability_binding_missing"
     CAPABILITY_ID_MISMATCH = "capability_id_mismatch"
+    PLUGIN_IDENTITY_MISMATCH = "plugin_identity_mismatch"
+    METADATA_PLUGIN_ID_COLLISION = "metadata_plugin_id_collision"
 
 
 @dataclass(frozen=True, slots=True)

@@ -10,9 +10,7 @@ with ``discover_entry_points=True`` is required.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
-from enum import StrEnum
 from typing import Generic
 
 from intergrax.contracts.decision_artifact_registry import (
@@ -51,55 +49,24 @@ from intergrax.core.plugins.admission import (
     PluginAdmissionRejection,
 )
 from intergrax.core.plugins.discovery import (
-    ConflictPolicy,
     EP_DECISION_ARTIFACT_KINDS,
     EP_DECISION_STRATEGIES,
     EP_DECISION_VERIFICATION_STAGES,
     EntryPointLoadResult,
     EntryPointSpec,
-    LoadIsolation,
     instantiate_entry_point_target,
-    iter_entry_point_specs,
-    load_entry_point_targets,
+    load_entry_point_targets_for_specs,
 )
-from intergrax.core.plugins.platform_qualification import (
-    PluginQualificationResult,
-    evaluate_external_package_entry_point_production_admission,
-    resolve_host_platform_version,
+from intergrax.runtime.decision_plugin_policy import DecisionPluginLoadPolicy
+from intergrax.runtime.decision_plugin_pre_load import (
+    DecisionPluginAdmissionPlan,
+    plan_decision_plugin_admission,
 )
 
 DECISION_PLUGIN_DOMAIN = "decision"
 DECISION_STRATEGY_CAPABILITY_ID = "decision.strategy"
 DECISION_VERIFICATION_STAGE_CAPABILITY_ID = "decision.verification_stage"
 DECISION_ARTIFACT_KIND_CAPABILITY_ID = "decision.artifact_kind"
-
-
-class ManifestCapabilityBindingDisposition(StrEnum):
-    VALID = "valid"
-    REJECTED = "rejected"
-
-
-@dataclass(frozen=True, slots=True)
-class ManifestCapabilityBindingResult:
-    disposition: ManifestCapabilityBindingDisposition
-    rejection: PluginAdmissionRejection | None
-
-
-@dataclass(frozen=True, slots=True)
-class DecisionPluginLoadPolicy:
-    """Shared Decision plugin load governance for all capability groups."""
-
-    ep_name_conflict: ConflictPolicy = "error"
-    on_load_failure: LoadIsolation = "isolate"
-    require_production_admission: bool = False
-    require_manifest_capability_binding: bool = False
-    package_qualification_lookup: (
-        Callable[[EntryPointSpec], PluginQualificationResult | None] | None
-    ) = None
-    platform_version: str | None = None
-    allowed_strategy_kinds: frozenset[str] | None = None
-    allowed_verification_stage_kinds: frozenset[str] | None = None
-    allowed_artifact_kinds: frozenset[str] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,265 +94,28 @@ class DecisionArtifactKindPluginLoadOutcome:
     report: DomainPluginLoadReport
 
 
-def _production_admission_rejections(
-    group: str,
-    policy: DecisionPluginLoadPolicy,
-) -> tuple[frozenset[str], list[PluginAdmissionRejection]]:
-    if not policy.require_production_admission:
-        return frozenset(), []
-
-    rejected_names: set[str] = set()
-    rejected: list[PluginAdmissionRejection] = []
-
-    for spec in iter_entry_point_specs(group):
-        admission_rejection = _production_admission_rejection_for_spec(spec, policy)
-        if admission_rejection is None:
-            continue
-        rejected_names.add(spec.name)
-        rejected.append(admission_rejection)
-
-    return frozenset(rejected_names), rejected
-
-
-def _production_admission_rejection_for_spec(
+def _runtime_identity_mismatch_rejection(
     spec: EntryPointSpec,
-    policy: DecisionPluginLoadPolicy,
-) -> PluginAdmissionRejection | None:
-    if not policy.require_production_admission:
-        return None
-
-    platform_version = policy.platform_version or resolve_host_platform_version()
-    lookup = policy.package_qualification_lookup
-    qualification = lookup(spec) if lookup is not None else None
-    admission = evaluate_external_package_entry_point_production_admission(
-        spec,
-        qualification,
-        platform_version=platform_version,
-    )
-    if admission.admitted:
-        return None
+    *,
+    expected_plugin_id: str,
+    runtime_kind: str,
+) -> PluginAdmissionRejection:
     return PluginAdmissionRejection(
         spec=spec,
-        reason_code=PluginAdmissionReasonCode.PRODUCTION_ADMISSION_DENIED,
-        reason=admission.reason,
+        reason_code=PluginAdmissionReasonCode.PLUGIN_IDENTITY_MISMATCH,
+        reason=(
+            f"Admitted plugin_id {expected_plugin_id!r} does not match runtime kind "
+            f"{runtime_kind!r} for entry point {spec.name!r} in group {spec.group!r}."
+        ),
+        plugin_id=expected_plugin_id,
         fail_closed=True,
     )
 
 
-def _plugin_kind_selected(
-    kind_value: str,
-    allowed_kinds: frozenset[str] | None,
-) -> bool:
-    if allowed_kinds is None:
-        return True
-    return kind_value in allowed_kinds
-
-
-def _not_selected_rejection(
-    spec: EntryPointSpec,
-    *,
-    kind_value: str,
-    label: str,
-) -> PluginAdmissionRejection:
-    return PluginAdmissionRejection(
-        spec=spec,
-        reason_code=PluginAdmissionReasonCode.PLUGIN_NOT_SELECTED,
-        reason=(
-            f"{label} {kind_value!r} is installed but not selected by application profile."
-        ),
-        plugin_id=kind_value,
-        fail_closed=False,
-    )
-
-
-def _manifest_binding_rejected(
-    spec: EntryPointSpec,
-    *,
-    reason_code: PluginAdmissionReasonCode,
-    reason: str,
-) -> ManifestCapabilityBindingResult:
-    return ManifestCapabilityBindingResult(
-        disposition=ManifestCapabilityBindingDisposition.REJECTED,
-        rejection=PluginAdmissionRejection(
-            spec=spec,
-            reason_code=reason_code,
-            reason=reason,
-            fail_closed=True,
-        ),
-    )
-
-
-def _manifest_binding_valid() -> ManifestCapabilityBindingResult:
-    return ManifestCapabilityBindingResult(
-        disposition=ManifestCapabilityBindingDisposition.VALID,
-        rejection=None,
-    )
-
-
-def _validate_manifest_capability_binding(
-    spec: EntryPointSpec,
-    *,
-    domain: str,
-    capability_id: str,
-) -> ManifestCapabilityBindingResult:
-    if spec.distribution is None:
-        return _manifest_binding_rejected(
-            spec,
-            reason_code=PluginAdmissionReasonCode.UNRESOLVED_PACKAGE_IDENTITY,
-            reason=(
-                f"Manifest capability binding for entry point {spec.name!r} in group "
-                f"{spec.group!r} cannot be proven: entry-point distribution identity "
-                "is missing."
-            ),
-        )
-
-    from importlib.metadata import PackageNotFoundError, distribution
-
-    from intergrax.core.plugins.errors import PlatformPluginManifestValidationError
-    from intergrax.core.plugins.manifest_io import parse_platform_plugin_pyproject_toml
-
-    try:
-        installed = distribution(spec.distribution)
-    except PackageNotFoundError:
-        return _manifest_binding_rejected(
-            spec,
-            reason_code=PluginAdmissionReasonCode.MANIFEST_BINDING_UNAVAILABLE,
-            reason=(
-                f"Manifest capability binding for entry point {spec.name!r} in group "
-                f"{spec.group!r} cannot be proven: distribution "
-                f"{spec.distribution!r} is not installed or resolvable."
-            ),
-        )
-
-    if installed.files is None:
-        return _manifest_binding_rejected(
-            spec,
-            reason_code=PluginAdmissionReasonCode.MANIFEST_BINDING_UNAVAILABLE,
-            reason=(
-                f"Manifest capability binding for entry point {spec.name!r} in group "
-                f"{spec.group!r} cannot be proven: distribution "
-                f"{spec.distribution!r} has no inspectable file metadata."
-            ),
-        )
-
-    manifest = None
-    try:
-        source = installed.read_text("pyproject.toml")
-    except (FileNotFoundError, OSError, TypeError) as exc:
-        return _manifest_binding_rejected(
-            spec,
-            reason_code=PluginAdmissionReasonCode.MANIFEST_BINDING_UNAVAILABLE,
-            reason=(
-                f"Manifest capability binding for entry point {spec.name!r} in group "
-                f"{spec.group!r} cannot be proven: Platform Plugin manifest for "
-                f"distribution {spec.distribution!r} is unavailable ({type(exc).__name__})."
-            ),
-        )
-
-    if source is None:
-        return _manifest_binding_rejected(
-            spec,
-            reason_code=PluginAdmissionReasonCode.MANIFEST_BINDING_UNAVAILABLE,
-            reason=(
-                f"Manifest capability binding for entry point {spec.name!r} in group "
-                f"{spec.group!r} cannot be proven: Platform Plugin manifest for "
-                f"distribution {spec.distribution!r} is unavailable."
-            ),
-        )
-
-    try:
-        manifest = parse_platform_plugin_pyproject_toml(source)
-    except PlatformPluginManifestValidationError:
-        return _manifest_binding_rejected(
-            spec,
-            reason_code=PluginAdmissionReasonCode.MANIFEST_INVALID,
-            reason=(
-                f"Platform plugin manifest for distribution {spec.distribution!r} "
-                f"is invalid or incomplete for entry point {spec.name!r} in group "
-                f"{spec.group!r}."
-            ),
-        )
-
-    if not manifest.capabilities:
-        return _manifest_binding_rejected(
-            spec,
-            reason_code=PluginAdmissionReasonCode.MANIFEST_CAPABILITY_BINDING_MISSING,
-            reason=(
-                f"Platform plugin manifest for distribution {spec.distribution!r} "
-                f"declares no capabilities for required binding "
-                f"{capability_id!r} on entry point {spec.name!r} in group "
-                f"{spec.group!r}."
-            ),
-        )
-
-    for descriptor in manifest.capabilities:
-        if (
-            descriptor.domain == domain
-            and descriptor.entry_point_group == spec.group
-            and descriptor.entry_point_name == spec.name
-        ):
-            if capability_id not in descriptor.capability_ids:
-                return _manifest_binding_rejected(
-                    spec,
-                    reason_code=PluginAdmissionReasonCode.CAPABILITY_ID_MISMATCH,
-                    reason=(
-                        f"Manifest capability_ids for entry point {spec.name!r} in group "
-                        f"{spec.group!r} do not declare required capability "
-                        f"{capability_id!r}."
-                    ),
-                )
-            return _manifest_binding_valid()
-
-    return _manifest_binding_rejected(
-        spec,
-        reason_code=PluginAdmissionReasonCode.MANIFEST_CAPABILITY_BINDING_MISSING,
-        reason=(
-            f"Entry point {spec.name!r} in group {spec.group!r} is not declared "
-            f"in the installed package Platform Plugin manifest capabilities for "
-            f"required capability {capability_id!r}."
-        ),
-    )
-
-
-def _decision_plugin_pre_admission_rejections(
-    group: str,
-    *,
-    required_capability_id: str,
-    policy: DecisionPluginLoadPolicy,
-    kind_allowlist: frozenset[str] | None,
-) -> tuple[frozenset[str], list[PluginAdmissionRejection]]:
-    """Manifest binding before load when every discovered plugin may activate."""
-    skip_names: set[str] = set()
-    rejected: list[PluginAdmissionRejection] = []
-
-    if kind_allowlist is None:
-        production_skip, production_rejected = _production_admission_rejections(
-            group,
-            policy,
-        )
-        skip_names.update(production_skip)
-        rejected.extend(production_rejected)
-
-    if kind_allowlist is not None or not policy.require_manifest_capability_binding:
-        return frozenset(skip_names), rejected
-
-    for spec in iter_entry_point_specs(group):
-        if spec.name in skip_names:
-            continue
-        binding = _validate_manifest_capability_binding(
-            spec,
-            domain=DECISION_PLUGIN_DOMAIN,
-            capability_id=required_capability_id,
-        )
-        if binding.disposition is ManifestCapabilityBindingDisposition.REJECTED:
-            if binding.rejection is None:
-                raise RuntimeError(
-                    "manifest binding rejection missing structured evidence",
-                )
-            skip_names.add(spec.name)
-            rejected.append(binding.rejection)
-
-    return frozenset(skip_names), rejected
+def _admitted_entry_point_specs(
+    plan: DecisionPluginAdmissionPlan,
+) -> tuple[EntryPointSpec, ...]:
+    return tuple(item.spec for item in plan.admitted)
 
 
 def _build_report(
@@ -454,22 +184,21 @@ def load_decision_strategy_plugins(
             report=DomainPluginLoadReport.empty(EP_DECISION_STRATEGIES),
         )
 
-    skip_names, pre_rejected = _decision_plugin_pre_admission_rejections(
+    plan = plan_decision_plugin_admission(
         EP_DECISION_STRATEGIES,
+        domain=DECISION_PLUGIN_DOMAIN,
         required_capability_id=DECISION_STRATEGY_CAPABILITY_ID,
         policy=chosen,
         kind_allowlist=chosen.allowed_strategy_kinds,
     )
     accepted: list[EntryPointSpec] = []
-    rejected: list[PluginAdmissionRejection] = list(pre_rejected)
+    rejected: list[PluginAdmissionRejection] = list(plan.rejected)
     failed: list[EntryPointLoadResult] = []
     current = registry
 
-    for result in load_entry_point_targets(
-        EP_DECISION_STRATEGIES,
-        on_conflict=chosen.ep_name_conflict,
+    for result in load_entry_point_targets_for_specs(
+        _admitted_entry_point_specs(plan),
         on_load_failure=chosen.on_load_failure,
-        skip_names=skip_names,
     ):
         if result.error is not None:
             failed.append(result)
@@ -494,34 +223,16 @@ def load_decision_strategy_plugins(
             continue
 
         kind_value = str(registration.kind)
-        if not _plugin_kind_selected(kind_value, chosen.allowed_strategy_kinds):
+        expected_plugin_id = plan.expected_plugin_id_for(result.spec)
+        if expected_plugin_id is not None and kind_value != expected_plugin_id:
             rejected.append(
-                _not_selected_rejection(
+                _runtime_identity_mismatch_rejection(
                     result.spec,
-                    kind_value=kind_value,
-                    label="DecisionStrategyKind",
+                    expected_plugin_id=expected_plugin_id,
+                    runtime_kind=kind_value,
                 ),
             )
             continue
-
-        if chosen.allowed_strategy_kinds is not None:
-            production = _production_admission_rejection_for_spec(result.spec, chosen)
-            if production is not None:
-                rejected.append(production)
-                continue
-            if chosen.require_manifest_capability_binding:
-                binding = _validate_manifest_capability_binding(
-                    result.spec,
-                    domain=DECISION_PLUGIN_DOMAIN,
-                    capability_id=DECISION_STRATEGY_CAPABILITY_ID,
-                )
-                if binding.disposition is ManifestCapabilityBindingDisposition.REJECTED:
-                    if binding.rejection is None:
-                        raise RuntimeError(
-                            "manifest binding rejection missing structured evidence",
-                        )
-                    rejected.append(binding.rejection)
-                    continue
 
         try:
             current = register_decision_strategy(current, registration)
@@ -575,14 +286,15 @@ def load_verification_stage_plugins(
             report=DomainPluginLoadReport.empty(EP_DECISION_VERIFICATION_STAGES),
         )
 
-    skip_names, pre_rejected = _decision_plugin_pre_admission_rejections(
+    plan = plan_decision_plugin_admission(
         EP_DECISION_VERIFICATION_STAGES,
+        domain=DECISION_PLUGIN_DOMAIN,
         required_capability_id=DECISION_VERIFICATION_STAGE_CAPABILITY_ID,
         policy=chosen,
         kind_allowlist=chosen.allowed_verification_stage_kinds,
     )
     accepted: list[EntryPointSpec] = []
-    rejected: list[PluginAdmissionRejection] = list(pre_rejected)
+    rejected: list[PluginAdmissionRejection] = list(plan.rejected)
     failed: list[EntryPointLoadResult] = []
     current: VerificationStageRegistry[T] = registry
 
@@ -607,11 +319,9 @@ def load_verification_stage_plugins(
             "VerificationStageRegistration",
         )
 
-    for result in load_entry_point_targets(
-        EP_DECISION_VERIFICATION_STAGES,
-        on_conflict=chosen.ep_name_conflict,
+    for result in load_entry_point_targets_for_specs(
+        _admitted_entry_point_specs(plan),
         on_load_failure=chosen.on_load_failure,
-        skip_names=skip_names,
     ):
         if result.error is not None:
             failed.append(result)
@@ -636,37 +346,16 @@ def load_verification_stage_plugins(
             continue
 
         kind_value = str(registration.kind)
-        if not _plugin_kind_selected(
-            kind_value,
-            chosen.allowed_verification_stage_kinds,
-        ):
+        expected_plugin_id = plan.expected_plugin_id_for(result.spec)
+        if expected_plugin_id is not None and kind_value != expected_plugin_id:
             rejected.append(
-                _not_selected_rejection(
+                _runtime_identity_mismatch_rejection(
                     result.spec,
-                    kind_value=kind_value,
-                    label="VerificationStageKind",
+                    expected_plugin_id=expected_plugin_id,
+                    runtime_kind=kind_value,
                 ),
             )
             continue
-
-        if chosen.allowed_verification_stage_kinds is not None:
-            production = _production_admission_rejection_for_spec(result.spec, chosen)
-            if production is not None:
-                rejected.append(production)
-                continue
-            if chosen.require_manifest_capability_binding:
-                binding = _validate_manifest_capability_binding(
-                    result.spec,
-                    domain=DECISION_PLUGIN_DOMAIN,
-                    capability_id=DECISION_VERIFICATION_STAGE_CAPABILITY_ID,
-                )
-                if binding.disposition is ManifestCapabilityBindingDisposition.REJECTED:
-                    if binding.rejection is None:
-                        raise RuntimeError(
-                            "manifest binding rejection missing structured evidence",
-                        )
-                    rejected.append(binding.rejection)
-                    continue
 
         try:
             current = register_verification_stage(current, registration)
@@ -720,22 +409,21 @@ def load_decision_artifact_kind_plugins(
             report=DomainPluginLoadReport.empty(EP_DECISION_ARTIFACT_KINDS),
         )
 
-    skip_names, pre_rejected = _decision_plugin_pre_admission_rejections(
+    plan = plan_decision_plugin_admission(
         EP_DECISION_ARTIFACT_KINDS,
+        domain=DECISION_PLUGIN_DOMAIN,
         required_capability_id=DECISION_ARTIFACT_KIND_CAPABILITY_ID,
         policy=chosen,
         kind_allowlist=chosen.allowed_artifact_kinds,
     )
     accepted: list[EntryPointSpec] = []
-    rejected: list[PluginAdmissionRejection] = list(pre_rejected)
+    rejected: list[PluginAdmissionRejection] = list(plan.rejected)
     failed: list[EntryPointLoadResult] = []
     current = registry
 
-    for result in load_entry_point_targets(
-        EP_DECISION_ARTIFACT_KINDS,
-        on_conflict=chosen.ep_name_conflict,
+    for result in load_entry_point_targets_for_specs(
+        _admitted_entry_point_specs(plan),
         on_load_failure=chosen.on_load_failure,
-        skip_names=skip_names,
     ):
         if result.error is not None:
             failed.append(result)
@@ -760,34 +448,16 @@ def load_decision_artifact_kind_plugins(
             continue
 
         kind_value = str(kind)
-        if not _plugin_kind_selected(kind_value, chosen.allowed_artifact_kinds):
+        expected_plugin_id = plan.expected_plugin_id_for(result.spec)
+        if expected_plugin_id is not None and kind_value != expected_plugin_id:
             rejected.append(
-                _not_selected_rejection(
+                _runtime_identity_mismatch_rejection(
                     result.spec,
-                    kind_value=kind_value,
-                    label="DecisionArtifactKind",
+                    expected_plugin_id=expected_plugin_id,
+                    runtime_kind=kind_value,
                 ),
             )
             continue
-
-        if chosen.allowed_artifact_kinds is not None:
-            production = _production_admission_rejection_for_spec(result.spec, chosen)
-            if production is not None:
-                rejected.append(production)
-                continue
-            if chosen.require_manifest_capability_binding:
-                binding = _validate_manifest_capability_binding(
-                    result.spec,
-                    domain=DECISION_PLUGIN_DOMAIN,
-                    capability_id=DECISION_ARTIFACT_KIND_CAPABILITY_ID,
-                )
-                if binding.disposition is ManifestCapabilityBindingDisposition.REJECTED:
-                    if binding.rejection is None:
-                        raise RuntimeError(
-                            "manifest binding rejection missing structured evidence",
-                        )
-                    rejected.append(binding.rejection)
-                    continue
 
         try:
             current = register_decision_artifact_kind(current, kind)
