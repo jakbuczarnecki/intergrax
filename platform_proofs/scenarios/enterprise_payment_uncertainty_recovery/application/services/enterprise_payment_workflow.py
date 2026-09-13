@@ -19,6 +19,10 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.applicati
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.ports.payment_workflow import (
     PaymentWorkflowPort,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
+    ScenarioExecutionTracePort,
+    ScenarioExecutionTraceStepId,
+)
 
 
 class EnterprisePaymentWorkflowService:
@@ -30,12 +34,20 @@ class EnterprisePaymentWorkflowService:
         order_access: OrderAccessPort,
         payment_workflow: PaymentWorkflowPort,
         observability: ScenarioApplicationObservability,
+        execution_trace: ScenarioExecutionTracePort,
     ) -> None:
         self._order_access = order_access
         self._payment_workflow = payment_workflow
         self._observability = observability
+        self._execution_trace = execution_trace
 
     def execute(self, context: ScenarioExecutionContext) -> PaymentWorkflowOutcome:
+        self._execution_trace.emit_lifecycle_step(
+            ScenarioExecutionTraceStepId.PAYMENT_WORKFLOW_STARTED,
+            outcome="started",
+            component_identity="application.enterprise_payment_workflow",
+            business_detail={"variant_id": context.variant_id},
+        )
         order = self._order_access.load_order_for_execution(context)
         self._observability.business_action_executed(
             context,

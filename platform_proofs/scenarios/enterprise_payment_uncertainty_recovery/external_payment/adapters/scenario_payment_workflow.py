@@ -19,6 +19,13 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.external_
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.external_payment.contracts.capture import (
     PaymentCaptureCommand,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
+    ScenarioExecutionTracePort,
+    ScenarioExecutionTraceStepId,
+)
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.external_payment.domain.lifecycle import (
+    ExternalPaymentLifecycleState,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.external_payment.services.capture_service import (
     ExternalPaymentCaptureService,
 )
@@ -27,8 +34,14 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.external_
 class ScenarioExternalPaymentWorkflow:
     """Routes application capture requests through the external acquirer simulator."""
 
-    def __init__(self, capture_service: ExternalPaymentCaptureService) -> None:
+    def __init__(
+        self,
+        capture_service: ExternalPaymentCaptureService,
+        *,
+        execution_trace: ScenarioExecutionTracePort,
+    ) -> None:
         self._capture_service = capture_service
+        self._execution_trace = execution_trace
 
     def request_capture(
         self,
@@ -51,11 +64,33 @@ class ScenarioExternalPaymentWorkflow:
             request_timestamp=datetime.now(tz=UTC),
         )
         payment_intent_id = self._payment_intent_uuid(profile.effect_logical_id)
-        self._capture_service.process_capture(
+        processing = self._capture_service.process_capture(
             command,
             profile,
             payment_intent_id=payment_intent_id,
         )
+        self._execution_trace.emit_lifecycle_step(
+            ScenarioExecutionTraceStepId.EXTERNAL_PAYMENT_EFFECT_CREATED,
+            outcome=processing.external_lifecycle_state.value,
+            component_identity="external_payment.capture_service",
+            business_detail={
+                "external_reference": processing.external_reference,
+                "integration_status": processing.integration_status.value,
+            },
+        )
+        if processing.external_lifecycle_state is ExternalPaymentLifecycleState.UNKNOWN:
+            self._execution_trace.emit_lifecycle_step(
+                ScenarioExecutionTraceStepId.UNKNOWN_DETECTED,
+                outcome="unknown",
+                component_identity="external_payment.integration_channel",
+                business_detail={
+                    "communication_failure_kind": (
+                        processing.communication_failure_kind.value
+                        if processing.communication_failure_kind is not None
+                        else None
+                    ),
+                },
+            )
         return PaymentCaptureRequest(
             intent_reference=intent_reference,
             idempotency_key=command.idempotency_key,

@@ -28,6 +28,10 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.applicati
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.observability import (
     RecordingScenarioApplicationObservability,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.recorder import (
+    RecordingScenarioExecutionTrace,
+    ScenarioExecutionTraceScope,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.contracts.application.references import (
     LabBusinessReferences,
 )
@@ -80,12 +84,23 @@ def build_lab_execution_composition(
     dataset_root = dataset_package_root or _DATASET_ROOT
     store = InMemoryExternalRealityStore()
     capture = ExternalPaymentCaptureService(store)
-    payment_workflow = ScenarioExternalPaymentWorkflow(capture)
+    execution_trace = RecordingScenarioExecutionTrace(
+        scope=ScenarioExecutionTraceScope.mint(
+            correlation_id=refs.payment_intent_reference,
+            scenario_id="ERL-QUAL-004",
+            variant_id="payment_completed_after_unknown",
+        ),
+    )
+    payment_workflow = ScenarioExternalPaymentWorkflow(
+        capture,
+        execution_trace=execution_trace,
+    )
     observability = RecordingScenarioApplicationObservability()
     application_deps = ApplicationDependencies(
         order_access=LabReferenceOrderAccess(refs),
         payment_workflow=payment_workflow,
         observability=observability,
+        execution_trace=execution_trace,
     )
     application_root = ScenarioApplicationCompositionRoot(application_deps)
 
@@ -115,6 +130,7 @@ def build_lab_execution_composition(
         payment_governance_lookup=governance_lookup,
         payment_recovery_action_port=recovery_action_port,
         erl_gateway=gateway,
+        execution_trace=execution_trace,
     )
     return EnterprisePaymentScenarioExecutor(
         application_root=application_root,

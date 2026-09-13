@@ -10,6 +10,9 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.applicati
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.observability import (
     RecordingScenarioApplicationObservability,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.recorder import (
+    NullScenarioExecutionTrace,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.services.enterprise_payment_workflow import (
     EnterprisePaymentWorkflowService,
 )
@@ -26,6 +29,7 @@ def test_workflow_loads_order_and_requests_payment(valid_execution_context, lab_
         order_access=LabReferenceOrderAccess(lab_references),
         payment_workflow=LabReferencePaymentWorkflow(lab_references),
         observability=RecordingScenarioApplicationObservability(),
+        execution_trace=NullScenarioExecutionTrace(),
     )
     outcome = service.execute(valid_execution_context)
 
@@ -52,6 +56,7 @@ def test_workflow_surfaces_missing_order(valid_execution_context, lab_references
         order_access=LabReferenceOrderAccess(lab_references),
         payment_workflow=LabReferencePaymentWorkflow(lab_references),
         observability=RecordingScenarioApplicationObservability(),
+        execution_trace=NullScenarioExecutionTrace(),
     )
     with pytest.raises(MissingBusinessEntityError):
         service.execute(missing_context)
