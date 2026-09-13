@@ -73,12 +73,20 @@ No new fan-out limiter; NPSC-5B bounds unchanged. Regression via `test_npsc5e_r3
 
 ## Regression matrix
 
-See § Test execution evidence (filled at certification run).
+| Slice | Result |
+|-------|--------|
+| EE-B1.2 + W1-A capacity | **41 passed** |
+| EE-A1, EE-A2 (H1–H3), NPSC-4.2, NPSC-5E/5F Final, W5-H, EE-B1.1 | **129 passed** |
+| EE-A1 + NPSC-5E R3 fan-out | **25 passed** |
 
 ## Static quality
 
-Scope: `intergrax/contracts/execution_capacity`, `intergrax/runtime/execution/capacity`, EE-B1.2 tests.
+| Gate | Result |
+|------|--------|
+| `ruff check` (changed scope) | **PASS** |
+| `ruff format --check` (changed scope) | **PASS** |
+| `pyright` `intergrax/contracts/execution_capacity`, `intergrax/runtime/execution/capacity` | **0 errors** |
 
 ## Final verdict
 
-**PENDING RUN** — updated after pytest + ruff + pyright.
+**PASS** — single root capacity owner reused; EE-B1.2 gates green; frozen matrix green; no new static errors in changed scope.
