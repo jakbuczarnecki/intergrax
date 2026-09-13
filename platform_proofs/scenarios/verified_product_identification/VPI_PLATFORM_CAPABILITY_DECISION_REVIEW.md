@@ -37,7 +37,7 @@ No plugin extraction, no module moves, no platform core patches, no execution en
 | --- | --- | --- | --- | --- |
 | Vector store / embedding execution | Platform (`VectorStore`, `EmbeddingProvider`) | Platform | **Keep (Reuse)** | Portable ABI; VPI adapters in `integrations/` |
 | Single-path RAG retrieval (`RetrievalService`) | Platform | Platform | **Keep** | Document/knowledge RAG; not catalog 4-channel model |
-| Multi-channel retrieval orchestrator | VPI (`MultiChannelRetrievalService`) | Platform coordinator + VPI policy/plugin | **Promote (phased)** | EPUR/VPI pattern; reuse across scenarios |
+| Multi-channel retrieval orchestrator | VPI (`MultiChannelRetrievalService`) | Platform coordinator + VPI policy/plugin | **PLATFORM CONTRACT IMPLEMENTED — VPI ADOPTION PENDING** (`intergrax.rag.retrieval.multichannel`, ADR-RAG-001) | EPUR/VPI pattern; reuse across scenarios |
 | Catalog search channel ports (exact/lexical/structured/vector) | VPI (`application/ports/catalog_search.py`) | VPI (scenario ABI) → optional promote if 2+ scenarios share | **Keep (scenario)** | Catalog-specific DTOs; swappable adapters |
 | Channel adapter implementations (PostgreSQL, Qdrant) | VPI (`storage_bootstrap/`, `integrations/`) | VPI integration | **Keep** | Reference stack; not platform domain |
 | RRF mathematical primitive | Platform (`reciprocal_rank_fusion`) + duplicate in VPI | Platform only | **Promote (dedupe)** | Anti-pattern: per-scenario RRF copies |
@@ -80,7 +80,7 @@ Every row above was evaluated against:
 **Decision:** **Model A (target)** — not full replacement of VPI service by `RetrievalService`.
 
 ```text
-Platform: MultiChannelRetrievalCoordinator (proposed)
+Platform: MultiChannelRetrievalCoordinator (`intergrax.rag.retrieval.multichannel` — implemented; VPI adoption pending)
     ├── channel execution envelope (status, timing hooks, optional RetrievalTrace bridge)
     └── accepts abstract channel invocations (scenario-supplied callables or port registry)
 
@@ -169,7 +169,7 @@ VPI: MultiChannelRetrievalPolicy / plugin
 
 | Candidate | Priority | Why |
 | --- | --- | --- |
-| `MultiChannelRetrievalCoordinator` | **High** | Cross-scenario orchestration + channel failure semantics |
+| `MultiChannelRetrievalCoordinator` | **High** | Cross-scenario orchestration + channel failure semantics · **Status:** PLATFORM CONTRACT IMPLEMENTED — VPI ADOPTION PENDING |
 | Diagnostic spine / stage trace projection | **High** | Enterprise observability + Application Observability Test |
 | RRF / rank-fusion utility consolidation | **Medium** | Remove VPI duplicate; prevent N-scenario drift |
 | `MetadataFilter` / structured SQL parity | **Medium** | Structured catalog channel at scale |
