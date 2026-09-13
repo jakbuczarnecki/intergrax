@@ -54,7 +54,9 @@ class ExecutionFailureDecision(BaseModel):
 class ExecutionFailureClassifier(Protocol):
     """Pluggable, testable failure classifier (provider-neutral)."""
 
-    def classify(self, failure_context: ExecutionFailureContext) -> ExecutionFailureDecision:
+    def classify(
+        self, failure_context: ExecutionFailureContext
+    ) -> ExecutionFailureDecision:
         """Map a normalized failure context to a semantic category and retry projection."""
         ...
 

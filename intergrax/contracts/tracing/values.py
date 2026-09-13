@@ -37,6 +37,8 @@ def normalize_trace_tags(value: Mapping[str, object]) -> TraceObject:
     return normalize_structured_json_object(value, field_name="tags")
 
 
-def normalize_trace_object(value: Mapping[str, object], *, field_name: str) -> TraceObject:
+def normalize_trace_object(
+    value: Mapping[str, object], *, field_name: str
+) -> TraceObject:
     """Validate a JSON object used in tool-call trace fields."""
     return normalize_structured_json_object(value, field_name=field_name)

@@ -14,11 +14,11 @@
 | **Final platform certification record** | [`INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md`](INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md) (anchor commit `572b49374532fb54edf25c30380cd954707e4351`) |
 | **Freeze record commit** | See git log for commit with message `INTEGRAx-CORE-PLATFORM-FREEZE` (documentation only; does not alter frozen code baseline above) |
 
-**Status:** **FREEZE PREPARED — PENDING CLEAN WORKING TREE**
+**Status:** **FREEZE PREPARED — CLEAN TREE VERIFIED**
 
 This record is the **single** maintainer anchor for core-platform freeze boundaries. It does not freeze the whole Integrax product roadmap—only the **certified enterprise core** (Decision + governed authorization + canonical Execution + cross-platform integration boundaries evidenced in final certification).
 
-**Operator reconciliation note:** Post-`009ad0c62…` commits through `18bded87b…` were audited in **`INTEGRAx-POST-BASELINE-COMMITS-RECONCILIATION`** (record linked above). **Certified code baseline candidate:** `118798759…` (tracing contract hardening). **Evidence HEAD:** `18bded87b…`. Formal freeze remains blocked until working tree is clean; uncommitted WIP is not part of any baseline SHA.
+**Operator reconciliation note:** Post-`009ad0c62…` commits through `18bded87b…` were audited in **`INTEGRAx-POST-BASELINE-COMMITS-RECONCILIATION`** (record linked above). **Certified code baseline candidate:** `118798759…` (tracing contract hardening). **Evidence HEAD:** `18bded87b…`. Clean working tree verified in **`INTEGRAx-CLEAN-BASELINE-FREEZE-READINESS`**; formal freeze remains blocked until post-reconciliation production commits (`fef16c3b9…`, `a185403d0…`) are audited and freeze SHA is explicitly chosen.
 
 ---
 

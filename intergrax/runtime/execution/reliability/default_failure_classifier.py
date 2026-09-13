@@ -17,7 +17,9 @@ from intergrax.runtime.execution.retry.classification import classify_execution_
 __all__ = ["DefaultExecutionFailureClassifier", "default_execution_failure_classifier"]
 
 
-def _semantic_category(context: ExecutionFailureContext) -> ExecutionFailureSemanticCategory:
+def _semantic_category(
+    context: ExecutionFailureContext,
+) -> ExecutionFailureSemanticCategory:
     if context.policy_blocked:
         return ExecutionFailureSemanticCategory.POLICY_BLOCKED
     if context.resource_exhausted:
@@ -63,7 +65,9 @@ def _retry_kind_for_category(
 class DefaultExecutionFailureClassifier:
     """Maps normalized failure context to semantic category + retry projection."""
 
-    def classify(self, failure_context: ExecutionFailureContext) -> ExecutionFailureDecision:
+    def classify(
+        self, failure_context: ExecutionFailureContext
+    ) -> ExecutionFailureDecision:
         category = _semantic_category(failure_context)
         kind = _retry_kind_for_category(category, context=failure_context)
         projection = classify_execution_failure(
