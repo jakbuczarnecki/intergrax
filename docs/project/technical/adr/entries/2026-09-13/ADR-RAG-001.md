@@ -4,58 +4,122 @@
 |-------|-------|
 | **Status** | Accepted |
 | **Date** | 2026-09-13 |
-| **Deciders** | Platform / VPI architecture review |
-| **Related** | VPI `VPI_PLATFORM_CAPABILITY_DECISION_REVIEW.md` · `intergrax.rag.retrieval.multichannel` |
+| **Deciders** | Platform / RAG architecture |
+| **Related** | [`multichannel_retrieval_coordination.md`](../../platform/multichannel_retrieval_coordination.md) · VPI `PLATFORM_CAPABILITY_MAPPING.md` · P1A `dc9ed5cc8558f08cb3db331fac23418d74563063` · P1A-R1 `08bb4c6edc7a547aaff1cb7758269b9d6bf1edf9` |
 
 ## Context
 
-Verified Product Identification (VPI) coordinates several independent catalog retrieval channels (exact identifier, lexical, structured, vector) per identification request. The **orchestration envelope** (ordered execution, per-channel status, typed failure, aggregation) is reusable outside product identification. Catalog query shapes, channel policy, and candidate fusion remain scenario concerns.
+The **Verified Product Identification (VPI)** enterprise scenario must identify the exact product among near matches, incomplete or conflicting input, and abstain when evidence is insufficient. That requires **independent retrieval channels**—exact identifier lookup, lexical search, structured catalog search, and vector similarity—as **peer inputs** with per-channel success, skip, and controlled failure semantics. A single unified retrieval path cannot express this model.
 
-Existing platform pieces serve different roles:
+Platform `RetrievalService` and `RetrieverRegistry` (`intergrax.rag.retrieval`) model **document-oriented RAG retrieval** (registry of retrievers, unified trace). They do **not** model ordered execution of scenario-defined peer catalog channels with scenario-owned `TResult` and fusion policy downstream.
 
-- `RetrievalService` + `RetrieverRegistry` — single-path document RAG retrieval
-- `hybrid_retrieval_orchestrator` / `execute_hybrid_retrieval` — fixed vector/keyword/graph fusion for memory-depth RAG
-
-None provide generic N-channel execution with scenario-supplied operations and domain-neutral outcomes.
+Implementing another VPI-local orchestration framework would duplicate a **reusable platform gap**: generic **ordered N-channel coordination** with typed envelopes and deterministic semantics. Platform-first architecture requires the Harness to own that coordination contract; scenarios own catalog semantics, channel policy, and fusion.
 
 ## Decision
 
-Introduce `intergrax.rag.retrieval.multichannel` with:
+### Platform owns
 
-- Immutable contracts: `RetrievalChannelKey`, `RetrievalChannelStatus`, `RetrievalChannelFailure`, `RetrievalChannelOutcome[T]`, `MultiChannelRetrievalResult[T]`
-- `RetrievalChannelOperation[T]` and `MultiChannelRetrievalCoordinator[T]` protocols
-- `SequentialMultiChannelRetrievalCoordinator` as the default deterministic implementation
+- Channel execution envelope (`RetrievalChannelOperation` protocol)
+- Typed channel identity (`RetrievalChannelKey` value object—not a platform enum of channel kinds)
+- Typed status (`RetrievalChannelStatus`)
+- Typed controlled failure (`RetrievalChannelFailure` with canonical `failure_code`)
+- Outcome envelope (`RetrievalChannelOutcome[TResult]`) and aggregate (`MultiChannelRetrievalResult[TResult]`)
+- Deterministic orchestration (default: `SequentialMultiChannelRetrievalCoordinator`)
+- Execution plan validation (duplicate declared channel keys rejected before execution)
+- Public coordinator contract (`MultiChannelRetrievalCoordinator[TResult]` protocol)
 
-**Scenario owns:** channel semantics, policy, query DTOs, business result types, provider adapters, fusion.
+Module: `intergrax.rag.retrieval.multichannel`.
 
-**Platform owns:** generic orchestration only.
+### Scenario owns
 
-## Non-goals
+- Product / catalog semantics and channel-selection policy
+- Query and result DTOs (`TResult` and request shapes)
+- GTIN, MPN, product meaning, offer grain
+- Provider-neutral catalog port adapters
+- Fusion policy (e.g. RRF at offer level)
+- Fatal-vs-tolerant business policy after aggregation
 
-- Replacing or changing `RetrievalService` behavior
-- Product/catalog semantics in platform code
-- Rank fusion inside the coordinator
-- Retries, concurrency, or provider execution in the coordinator
-- Decision System or diagnostic projection (follow-up tasks)
+### Pluginability
+
+Scenarios depend on `MultiChannelRetrievalCoordinator[TResult]` (protocol) and inject an implementation (default sequential coordinator). Scenario behavior remains pluggable via operation implementations and policy. **No VPI-specific types** appear in platform contracts.
+
+### Invariants
+
+1. Duplicate declared channel keys in the execution plan fail **before** any channel runs.
+2. `operation.channel_key` is **authoritative** for plan identity.
+3. `outcome.channel_key` **must equal** `operation.channel_key`.
+4. Identity mismatch is a **contract violation** (`MultiChannelRetrievalContractError`), **not** a controlled channel `FAILED` outcome.
+5. A controlled `FAILED` channel outcome does **not** automatically abort later channels.
+6. An **empty** execution plan (`operations=()`) is valid and yields an empty aggregate result.
+7. `failure_code` is the canonical machine-readable identity: non-empty and already trimmed.
+8. `message` remains human-readable diagnostic text (separate from `failure_code`).
+
+### Non-goals (this ADR / P1A scope)
+
+- Rank fusion (RRF) or consolidation of fusion math
+- Retries, concurrency, or timeout policy inside the coordinator
+- Product or catalog DTOs in platform contracts
+- Provider SDK execution inside the coordinator
+- Diagnostic spine / `RetrievalTrace` projection (**planned P1B**)
+- Decision System mapping for retrieval outcomes
+- VPI runtime migration to the platform coordinator (**adoption pending**)
+- Physical plugin registry registration unless independently justified
+
+### Platform evolution consequence
+
+This capability exists because a **real enterprise scenario** exposed a **reusable platform gap**. That is intentional Harness evolution: scenario requirements drive platform design, not the reverse.
+
+### Integration positioning (truthful as of P1A-R1)
+
+```text
+Execution Engine / runtime composition  (future wiring)
+              |
+              v
+     scenario execution (e.g. VPI pipeline)
+              |
+              v
+platform retrieval capability
+  MultiChannelRetrievalCoordinator + envelopes
+              |
+              v
+scenario retrieval policy / plugins / MultiChannelRetrievalPort
+              |
+              v
+provider-neutral catalog adapters
+```
+
+| Concern | State |
+| --- | --- |
+| Platform capability (contract + default coordinator) | **IMPLEMENTED** |
+| VPI adoption (delegate scenario orchestrator) | **PENDING** |
+| Execution Engine integration | **PENDING** (later scenario integration) |
+| Diagnostic projection | **PENDING** (P1B) |
+| Governance integration | Evaluate when VPI E2E execution boundary is wired |
+| Plugin system | Logical contract/DI now; physical plugin registration only where justified |
+
+P1A does **not** claim completed Execution Engine wiring, governance hooks, or observability projection.
 
 ## Consequences
 
 ### Positive
 
-- Scenarios plug channel operations through public protocols without altering platform core orchestration
-- VPI can adopt the coordinator in a later migration while keeping catalog ports and DTOs
+- One auditable platform contract for multi-channel retrieval orchestration reusable beyond VPI.
+- Clear scenario/platform ownership; no shadow coordinator in scenario core.
+- Deterministic, testable semantics without domain leakage.
 
 ### Negative
 
-- Additional API surface to maintain alongside existing RAG retrieval paths until scenarios migrate
+- VPI still uses scenario-local `MultiChannelRetrievalService` until migration (adoption task).
+- Follow-up ADR/work (P1B diagnostics, P1C RRF consolidation) remains on the roadmap.
 
 ## Compliance
 
-- Tier boundaries preserved (no `platform_proofs` imports in platform module)
-- VPI runtime unchanged in P1A; adoption pending
+- Tier boundaries preserved: `intergrax.rag.retrieval.multichannel` has no imports from `platform_proofs` or applications.
+- Platform contracts use frozen dataclasses, protocols, and explicit errors—no untyped dict envelopes.
+- Companion doc: [`multichannel_retrieval_coordination.md`](../../platform/multichannel_retrieval_coordination.md).
 
 ## Implementation notes
 
-- Code: `intergrax/rag/retrieval/multichannel/`
-- Tests: `tests/unit/rag/retrieval/test_multichannel_retrieval_coordinator.py`
-- Doc: `docs/project/technical/platform/multichannel_retrieval_coordination.md`
+- Code: `intergrax/rag/retrieval/multichannel/contracts.py`, `coordinator.py`, `errors.py`.
+- Tests: `tests/unit/rag/retrieval/test_multichannel_retrieval_coordinator.py`, `test_multichannel_retrieval_architecture_gate.py`.
+- Verification: `python scripts/maintenance/check_harness_adr.py`; `uv run pytest tests/unit/rag/retrieval/test_multichannel_retrieval_coordinator.py`.

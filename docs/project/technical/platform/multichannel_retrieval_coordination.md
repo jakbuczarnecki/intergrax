@@ -2,6 +2,8 @@
 
 Platform capability: `intergrax.rag.retrieval.multichannel`.
 
+**Canonical decision:** [ADR-RAG-001](../adr/entries/2026-09-13/ADR-RAG-001.md) (Accepted).
+
 ## Purpose
 
 Coordinate independent retrieval **channel operations** in a deterministic order. Each channel returns a typed `RetrievalChannelOutcome` (succeeded, skipped, or failed). The coordinator aggregates outcomes without interpreting domain results.
@@ -25,10 +27,31 @@ Depend on `MultiChannelRetrievalCoordinator[TResult]` and inject an implementati
 
 ## Non-goals (v1)
 
-- Rank fusion (RRF) — separate capability
+- Rank fusion (RRF) — separate capability (P1C consolidation)
 - Retries, concurrency, or provider execution inside the coordinator
 - Product/catalog DTOs or VPI channel enums
-- Diagnostic spine integration (planned follow-up)
+- Diagnostic spine integration (**P1B**, not part of P1A)
+
+## Integration status
+
+| Item | State |
+| --- | --- |
+| P1A platform contract + sequential coordinator | **IMPLEMENTED** |
+| P1A-R1 identity / `failure_code` hardening | **IMPLEMENTED** |
+| VPI adoption (`MultiChannelRetrievalService` → coordinator) | **PENDING** |
+| Execution Engine wiring | **PENDING** |
+| Governance integration | **PENDING** (evaluate at E2E boundary) |
+| Diagnostic projection | **PENDING** (P1B) |
+
+VPI remains the **driver** of this platform evolution; the business requirement is unchanged.
+
+## Architecture placement
+
+```text
+Execution Engine / runtime composition  →  scenario execution  →  platform multichannel coordinator  →  scenario policy/plugins  →  provider adapters
+```
+
+P1A delivers the coordinator layer only; upstream/downstream wiring is not complete.
 
 ## Empty execution plan
 

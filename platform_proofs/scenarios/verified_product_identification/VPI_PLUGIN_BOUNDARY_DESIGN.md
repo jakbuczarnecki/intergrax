@@ -61,7 +61,7 @@ Keep in **Category C** when logic is **pure product-identification semantics** w
 | Area | Responsibility | Key dependencies | Current contract | Target |
 | --- | --- | --- | --- | --- |
 | **query_understanding/** | Normalize typed / future NL input → `ProductIdentificationQuery` | Domain identifiers, extractors | `ProductIdentificationQueryInterpreter`, extractors (Protocol) | C until NL port promoted; optional B for `QueryInterpretationStrategy` |
-| **retrieval/** | Four-channel orchestration, per-channel failure semantics | Catalog search ports | `MultiChannelRetrievalPort`, channel DTOs | B → `MultiChannelRetrievalCoordinator` (platform) + VPI orchestrator plugin |
+| **retrieval/** | Four-channel orchestration, per-channel failure semantics | Catalog search ports | `MultiChannelRetrievalPort`, channel DTOs | B → `MultiChannelRetrievalCoordinator` (**platform contract implemented**, ADR-RAG-001) + VPI orchestrator plugin; **adoption pending** |
 | **fusion/** | Offer-level RRF fusion | Channel batches | `OfferCandidateFusionPort` / `OfferCandidateFusionStrategy` | B → fusion strategy plugin; platform RRF utility (A) |
 | **identity/** | Fused offers → hypotheses + source facts | `SourceRecordFetchPort`, strategy | `ProductIdentityHypothesisPort` / `ProductIdentityHypothesisStrategy` | B → product identity hypothesis plugin |
 | **identity_evaluation/** | Rerank, surface contradictions pre-verify | Identity DTOs | `IdentityHypothesisEvaluationPort` / `IdentityHypothesisRankingStrategy` | B → ranking plugin |
@@ -89,7 +89,7 @@ Taxonomy for this document: **A** Platform core · **B** Platform contract + sce
 | Vector search data plane | `integrations/search_store/*`, Qdrant adapter | A + adapter | `VectorStore`, `VectorIndexIdentity` | Platform integration contract |
 | Embedding execution | `integrations/embedding/*` | A + adapter | `EmbeddingProvider`, `bind_embedding_provider` | Platform RAG contract |
 | PostgreSQL catalog sessions | `storage_bootstrap/adapters/postgresql/*` | A + adapter | Relational session / scenario ports | Infrastructure + port implementation |
-| Multi-channel retrieval orchestrator | `application/retrieval/` | B (pending platform contract) | `MultiChannelRetrievalCoordinator` (proposed) ← `VpiMultiChannelRetrievalPlugin` | Cross-scenario pattern; today scenario `MultiChannelRetrievalPort` |
+| Multi-channel retrieval orchestrator | `application/retrieval/` | B (platform contract **implemented**; VPI adoption **pending**) | `MultiChannelRetrievalCoordinator` (ADR-RAG-001) ← `VpiMultiChannelRetrievalPlugin` | Cross-scenario pattern; today scenario `MultiChannelRetrievalPort` |
 | Catalog channel adapters | `storage_bootstrap/adapters/*`, Qdrant vector adapter | B (adapter) | Scenario ports (`ExactIdentifierLookupPort`, …) | Swappable reference stack |
 | Retrieval fusion (RRF) | `application/fusion/` | B | `RankFusionStrategy` (scenario port today) ← `OfferLevelRrfFusionPlugin`; reuse platform RRF math | Domain weights at offer grain; dedupe platform helper |
 | Product identity hypothesis former | `application/identity/` | B | `ProductIdentityHypothesisPort` ← `ProductIdentityHypothesisPlugin` | Core VPI domain specialization |

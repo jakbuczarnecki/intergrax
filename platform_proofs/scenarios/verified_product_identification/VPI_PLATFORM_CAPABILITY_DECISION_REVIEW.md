@@ -212,7 +212,7 @@ VPI: MultiChannelRetrievalPolicy / plugin
 
 ### Phase 1 — Platform contracts (design → ADR → minimal API)
 
-- ADR for `MultiChannelRetrievalCoordinator` shape (channel status, timing, optional trace).
+- **Done:** ADR-RAG-001 + `MultiChannelRetrievalCoordinator` (`intergrax.rag.retrieval.multichannel`, P1A / P1A-R1). VPI adoption still **pending**.
 - ADR for diagnostic projection contributor (VPI observations → platform spine).
 - Consolidate RRF: VPI calls platform helper; no new fusion framework.
 - Document Decision System mapping for `ProductIdentificationDecision` (optional).
@@ -248,7 +248,7 @@ VPI: MultiChannelRetrievalPolicy / plugin
 Verify against repository `development` (or release branch):
 
 - [ ] VPI `application/pipeline` still has no vendor imports and no forbidden platform internals.
-- [ ] `MultiChannelRetrievalService` remains scenario-owned until coordinator contract lands.
+- [ ] `MultiChannelRetrievalService` remains scenario-owned until VPI **adopts** platform `MultiChannelRetrievalCoordinator` (contract landed; migration pending).
 - [ ] `intergrax.rag.vectorstore.hybrid.reciprocal_rank_fusion` exists and is the canonical RRF primitive.
 - [ ] `PLATFORM_CAPABILITY_MAPPING.md` and this document agree on classification A/B/C/D.
 - [ ] Composition roots: `application/pipeline/composition.py`, `retrieval/composition.py`, `composition/bootstrap_runtime.py`.
