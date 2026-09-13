@@ -8,8 +8,9 @@
 | **Date** | 2026-09-13 |
 | **Branch** | `development` |
 | **Frozen code baseline SHA** | `a185403d0c7524c29bea2fe09212f9508e6bccd8` (`feat(execution): EE-B1.1 reliability contracts and failure semantics`) |
-| **Freeze evidence HEAD (repository tip immediately before this record commit)** | `8a05bb8fb87bd03894f0ae08b79a0dbdd8e6bccd8` (`certification(observability): finalize W5-H1 enterprise qualification` — qualification/docs only) |
-| **Freeze record commit SHA** | Git commit on `development` with message **`INTEGRAx-CORE-PLATFORM-FREEZE`** dated 2026-09-13 that updates this file to **FROZEN** status (not the earlier prep-only record `2eb7cb463…`); use `git log -1 --grep=INTEGRAx-CORE-PLATFORM-FREEZE` — **distinct from frozen code baseline SHA** |
+| **Freeze evidence HEAD (repository tip immediately before freeze record commit)** | `8a05bb8fb87bd03894f0ae08b79a0dbdd8e6d4a4` (`certification(observability): finalize W5-H1 enterprise qualification` — qualification/docs only) |
+| **Freeze record commit SHA** | `59fbf6f305b70d2b74adac7cd61dd21d352dba78` (`INTEGRAx-CORE-PLATFORM-FREEZE`, 2026-09-13) — **distinct from frozen code baseline SHA**; not the earlier prep-only record `2eb7cb463…` |
+| **Freeze provenance correction** | [`INTEGRAX_CORE_PLATFORM_FREEZE_PROVENANCE_CORRECTION.md`](INTEGRAX_CORE_PLATFORM_FREEZE_PROVENANCE_CORRECTION.md) — corrected erroneous freeze evidence HEAD typo (`…e6bccd8` → `…e6d4a4`); baseline and freeze status unchanged |
 | **Prior configuration-contract anchor (superseded for code baseline)** | `009ad0c62ba6afbd07a7e4f2dbe8b4bbbab1d2c6` |
 | **Certified production chain** | `118798759e8a198b9a1d21ecd93293fe601fd7d9` → `fef16c3b951401e2222bc81769442f7150cad9fc` → `a185403d0c7524c29bea2fe09212f9508e6bccd8` |
 | **Baseline selection** | [`INTEGRAX_FINAL_BASELINE_SELECTION.md`](INTEGRAX_FINAL_BASELINE_SELECTION.md) — **ACCEPTED** |
@@ -52,7 +53,7 @@ Commits after [`INTEGRAX_FINAL_BASELINE_SELECTION.md`](INTEGRAX_FINAL_BASELINE_S
 
 | SHA | Type | Production semantics? | Audited? | Freeze impact |
 | --- | ---- | --------------------: | -------: | ------------- |
-| `8a05bb8fb87bd03894f0ae08b79a0dbdd8e6bccd8` | Qualification / evidence (W5-H1 observability) | **No** | N/A (docs-only) | Does **not** move frozen code baseline; eligible pre-freeze evidence |
+| `8a05bb8fb87bd03894f0ae08b79a0dbdd8e6d4a4` | Qualification / evidence (W5-H1 observability) | **No** | N/A (docs-only) | Does **not** move frozen code baseline; eligible pre-freeze evidence |
 
 **New unaudited production commit after selection:** **NONE** — formal freeze **not blocked**.
 
@@ -355,7 +356,7 @@ Permitted when invariants hold and regression gates pass:
 
 ## Freeze execution evidence (2026-09-13)
 
-**Repository state at freeze:** branch `development`; working tree **clean**; HEAD before record commit `8a05bb8fb…`.
+**Repository state at freeze:** branch `development`; working tree **clean**; freeze evidence HEAD (parent of freeze record commit) `8a05bb8fb87bd03894f0ae08b79a0dbdd8e6d4a4`.
 
 **Production code changes in this task:** **NONE**
 
@@ -456,7 +457,7 @@ CORE PLATFORM FROZEN
 
 | Severity | Finding |
 | -------- | ------- |
-| **Observation** | Post-selection commit `8a05bb8fb…` is qualification-only; frozen **code** baseline unchanged. |
+| **Observation** | Post-selection commit `8a05bb8fb87bd03894f0ae08b79a0dbdd8e6d4a4` is qualification-only; frozen **code** baseline unchanged. |
 | **Observation** | Repository `HEAD` after freeze record commit advances evidence tip only. |
 | **Minor** | Earlier doc-only `INTEGRAx-CORE-PLATFORM-FREEZE` commit (`2eb7cb463…`) used pre-selection baseline narrative; superseded by this record. |
 
