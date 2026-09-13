@@ -74,13 +74,14 @@ def test_decision_registries_remain_in_contracts() -> None:
 
 
 def test_required_manifest_binding_missing_distribution_is_fail_closed() -> None:
-    from intergrax.core.plugins.discovery import EntryPointSpec
+    from intergrax.core.plugins.discovery import EP_DECISION_STRATEGIES, EntryPointSpec
     from intergrax.runtime.decision_plugin_composition import (
         DECISION_PLUGIN_DOMAIN,
         DECISION_STRATEGY_CAPABILITY_ID,
-        EP_DECISION_STRATEGIES,
+    )
+    from intergrax.runtime.decision_plugin_manifest_binding import (
         ManifestCapabilityBindingDisposition,
-        _validate_manifest_capability_binding,
+        validate_manifest_capability_binding,
     )
 
     spec = EntryPointSpec(
@@ -89,7 +90,7 @@ def test_required_manifest_binding_missing_distribution_is_fail_closed() -> None
         value="tests.unit.runtime.test_decision_plugin_composition:_ExternalCouncilStrategy",
         distribution=None,
     )
-    result = _validate_manifest_capability_binding(
+    result = validate_manifest_capability_binding(
         spec,
         domain=DECISION_PLUGIN_DOMAIN,
         capability_id=DECISION_STRATEGY_CAPABILITY_ID,
