@@ -10,7 +10,7 @@ The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - c
 > - **Architecture:** **TARGET CANON - FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
 > - **Implementation:** Canonical Decision System runtime **implemented and active**.
 > - **CURRENT decision authority = Decision System.** Critic runtime **retired**.
-> - **Production qualification (DS-E2E-15J):** **QUALIFIED WITH OBSERVATIONS** — in-repo Decision → Governance → Execution qualification bundle passes; distributed **Docker E2E** phase remains a separate gate (see [Production qualification](#production-qualification-boundary)).
+> - **Production qualification (DS-E2E-15J):** **QUALIFIED WITH OBSERVATIONS** — in-repo Decision → Governance → Execution bundle plus **Docker E2E system harness** (`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION`); container proof requires Docker daemon on the qualification host (see [Production qualification](#production-qualification-boundary)).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.
 
@@ -856,7 +856,8 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | **Production qualification (DS-E2E-15J)** | [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md) |
 | **Implementation plan** | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
 | **Historical Critic snapshot** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
-| **Public proof** | Not claimed - pending DS-E2E Docker qualification phase |
+| **Docker E2E system qualification (DS-E2E-15J)** | [`maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) |
+| **Public proof** | Bounded to in-repo + Docker harness; external SaaS not claimed |
 
 ### Production qualification boundary
 
@@ -876,7 +877,27 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 
 **Observation:** L6 default `RecordingExecutionProvider` records an auditable execution reference for qualification; hosts bind a real Execution Engine provider at the composition root without changing orchestration contracts.
 
-**Still not claimed without Docker E2E:** distributed deployment qualification ([`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) — Phase DS-E2E Docker). Unit, integration, and mocked paths alone do not satisfy that gate.
+**Docker E2E (DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION):** Qualification scenarios run inside the standard `uv` slim container against the mounted workspace. Proof: `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (Docker daemon required). Scenario parity without Docker: `tests/unit/testing_support/decision_e2e/test_docker_system_scenarios.py`.
+
+**Not claimed:** multi-host production topology, external SaaS vendors, or hosts without a successful Docker integration run.
+
+---
+
+### Docker E2E system diagram
+
+```text
+                    Decision System
+                           ↓
+                 Governance Authorization
+                           ↓
+                    Execution Engine
+                           ↓
+                       Runtime
+                           ↓
+                  Evidence / Audit Layer
+```
+
+**Environmental limits:** single-container qualification worker; no additional microservices; business logic is not forked for Docker.
 
 ---
 

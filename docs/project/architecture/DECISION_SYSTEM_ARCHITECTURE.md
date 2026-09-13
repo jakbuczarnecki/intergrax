@@ -664,7 +664,7 @@ Operational tools must not call Execution directly to bypass Decision or governa
 ## 14. Production qualification (DS-E2E-15J integrated flow)
 
 **Task:** `DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION`  
-**Status:** **QUALIFIED WITH OBSERVATIONS** (in-repo bundle; Docker distributed E2E not claimed).
+**Status:** **QUALIFIED WITH OBSERVATIONS** (in-repo bundle + Docker system harness; in-container proof requires Docker daemon).
 
 ```text
                     Decision System
@@ -688,6 +688,16 @@ Operational tools must not call Execution directly to bypass Decision or governa
 | Composition root | `production_decision_integration_composition_provider()` |
 
 Full report: [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md).
+
+### 14.1 Docker E2E system qualification
+
+**Task:** `DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION`  
+**Harness:** `testing_support/decision_e2e/docker_system_*`  
+**Integration proof:** `tests/integration/decision_system/test_docker_e2e_system_qualification.py`
+
+Same stack diagram as §14; scenarios validate governance safety, evidence correlation, controlled failures, and plugin swap **inside** the DS-E2E container worker without `if docker:` provider branches.
+
+Report: [`maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md).
 
 ---
 
