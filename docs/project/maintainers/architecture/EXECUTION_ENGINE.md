@@ -299,7 +299,8 @@ Implementation: `testing_support/execution_qualification/configuration.py` (`res
 | Diagnostic lineage (DG-001 R1) | [`DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_READ_INTEGRATION_R1.md`](../qualification/DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_READ_INTEGRATION_R1.md) | **CANONICAL** qual record |
 | Qualification runner | P0 + R1 + R2 + R3 acceleration records | **QUALIFIED** chain |
 | Scale / resilience | W0 / W1 qualification docs | **QUALIFIED** tranches (see scale architecture) |
-| Decision System Docker E2E (hosting boundary) | [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) · `tests/integration/decision_system/test_docker_e2e_system_qualification.py` | **QUALIFIED** (Docker daemon required on qualification host) |
+| Decision System Docker E2E (L6 matrix / hosting boundary) | [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) · `tests/integration/decision_system/test_docker_e2e_system_qualification.py` | **QUALIFIED** (Docker daemon required on qualification host) |
+| Decision → canonical `ExecutionRuntime` Docker E2E | [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) · `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (`-k canonical`) | **QUALIFIED** (no `RecordingExecutionProvider` on success path) |
 
 ---
 

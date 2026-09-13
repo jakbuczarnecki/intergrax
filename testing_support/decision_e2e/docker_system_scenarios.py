@@ -564,6 +564,12 @@ _SCENARIO_RUNNERS = {
 
 
 def run_docker_system_scenario(scenario_id: str) -> DockerSystemScenarioResult:
+    if scenario_id.startswith("canonical-"):
+        from testing_support.decision_e2e.canonical_docker_execution import (
+            run_canonical_docker_scenario,
+        )
+
+        return run_canonical_docker_scenario(scenario_id)
     runner = _SCENARIO_RUNNERS.get(scenario_id)
     if runner is None:
         return _fail(scenario_id, f"unknown scenario: {scenario_id}")

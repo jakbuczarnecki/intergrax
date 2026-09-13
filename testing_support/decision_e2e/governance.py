@@ -7,8 +7,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from intergrax.contracts.decision_authorization import (
+    DecisionExecutionAction,
     DecisionGovernanceDecision,
     DecisionGovernanceDisposition,
+    DecisionGovernancePolicyContext,
     authoritative_decision_ref,
 )
 from intergrax.contracts.decision_record import AuthoritativeAcceptedDecision
@@ -73,6 +75,24 @@ class PolicyGovernanceEvaluator:
         )
         return DecisionGovernanceDecision(
             disposition=disposition,
+            decision_ref=authoritative_decision_ref(evaluation_input.decision),
+            action=self.action,
+            policy_context=self.policy_context,
+            tenant_id=evaluation_input.decision.identity.tenant_id,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class DispositionGovernanceEvaluator:
+    """Governance evaluator with an explicit canonical disposition."""
+
+    action: DecisionExecutionAction
+    policy_context: DecisionGovernancePolicyContext
+    disposition: DecisionGovernanceDisposition
+
+    def evaluate(self, *, evaluation_input):
+        return DecisionGovernanceDecision(
+            disposition=self.disposition,
             decision_ref=authoritative_decision_ref(evaluation_input.decision),
             action=self.action,
             policy_context=self.policy_context,

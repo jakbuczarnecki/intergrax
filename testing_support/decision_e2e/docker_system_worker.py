@@ -30,6 +30,11 @@ def main(argv: list[str] | None = None) -> int:
             "missing-governance",
             "invalid-config-startup",
             "plugin-compatibility",
+            "canonical-execution-success",
+            "canonical-governance-deny",
+            "canonical-governance-approval",
+            "canonical-evidence-chain",
+            "canonical-execution-failure",
         ),
     )
     parser.add_argument("--result", required=True)

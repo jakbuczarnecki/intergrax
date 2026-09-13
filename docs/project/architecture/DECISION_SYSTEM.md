@@ -907,9 +907,11 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
                      Audit Evidence
 ```
 
-**Observation:** L6 default `RecordingExecutionProvider` records an auditable execution reference for qualification; hosts bind a real Execution Engine provider at the composition root without changing orchestration contracts.
+**Observation:** L6 default `RecordingExecutionProvider` records an auditable execution reference for matrix orchestration proofs only; it is **not** the canonical Execution Engine path. Production and canonical qualification bind `ExecutionRuntime` at the composition root (`build_qualification_composition` / host wiring) and mint `DecisionExecutionAuthorization` via `CanonicalDecisionFlowGate` before `ExecutionRequest` work runs.
 
-**Docker E2E (DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION):** Qualification scenarios run inside the standard `uv` slim container against the mounted workspace. Proof: `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (Docker daemon required). Scenario parity without Docker: `tests/unit/testing_support/decision_e2e/test_docker_system_scenarios.py`.
+**Docker E2E (DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION):** L6 matrix scenarios in-container; proof `tests/unit/testing_support/decision_e2e/test_docker_system_scenarios.py`.
+
+**Canonical Execution Docker E2E (DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION):** `CanonicalDecisionFlowGate` → authorization → `ExecutionRuntime` in-container; proof `tests/unit/testing_support/decision_e2e/test_canonical_docker_execution.py` and `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (`-k canonical`). Report: `docs/project/maintainers/qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`.
 
 **Not claimed:** multi-host production topology, external SaaS vendors, or hosts without a successful Docker integration run.
 

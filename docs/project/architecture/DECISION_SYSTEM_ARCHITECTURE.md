@@ -220,10 +220,10 @@ Convention for each layer: **package** = primary module path; **task id** = stab
 **Wejścia:** `DecisionOrchestrationRequest`.  
 **Wyjścia:** `DecisionOrchestrationResult`, lifecycle metadata stages.  
 **Punkty rozszerzeń:** `production_decision_orchestration/protocol.py`; domyślne mostki: `EngineBackedSelectionProvider`, `EngineBackedGovernanceProvider`, `RecordingExecutionProvider` (`default_providers.py`).  
-**Granice:** Domyślny execution provider **rejestruje referencję** — pełne Execution wymaga własnego `ExecutionProvider`.  
+**Granice:** Domyślny execution provider **rejestruje referencję** — pełne Execution wymaga własnego `ExecutionProvider` lub platformowego `ExecutionRuntime` (nie `RecordingExecutionProvider` na ścieżce sukcesu canonical).  
 **Task id:** `DS-E2E-15J-L6` (`ORCHESTRATION_TASK_ID`).
 
-**Platform parallel:** `intergrax/runtime/decision_flow.py` — pełny gate lifecycle platformy.
+**Platform parallel:** `intergrax/runtime/decision_flow.py` — pełny gate lifecycle platformy. **Canonical Docker proof:** `testing_support/decision_e2e/canonical_docker_execution.py` (`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION`).
 
 ---
 

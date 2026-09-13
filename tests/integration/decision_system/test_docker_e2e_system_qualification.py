@@ -94,6 +94,41 @@ def test_docker_failure_scenario() -> None:
     assert result.get("failure_class") == "RuntimeError"
 
 
+_CANONICAL_TASK = "DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION"
+
+
+def _assert_docker_canonical_pass(scenario_id: str) -> dict:
+    run = run_docker_system_scenario(scenario_id)
+    if run.block_reason:
+        pytest.fail(f"Docker required for canonical gate: {run.block_reason}")
+    assert run.result is not None, f"missing result for {scenario_id}"
+    assert run.result.get("passed") is True, run.result
+    assert run.result.get("qualification_task_id") == _CANONICAL_TASK
+    return run.result
+
+
+def test_docker_canonical_execution_success_gate() -> None:
+    result = _assert_docker_canonical_pass("canonical-execution-success")
+    assert result.get("governance_disposition") == "allow"
+    assert result.get("recording_execution_provider_used") is False
+    assert result.get("execution_path") == "canonical-execution-runtime"
+    assert int(result.get("execution_engine_invocations", 0)) >= 1
+
+
+@pytest.mark.parametrize(
+    "scenario_id",
+    (
+        "canonical-execution-success",
+        "canonical-governance-deny",
+        "canonical-governance-approval",
+        "canonical-evidence-chain",
+        "canonical-execution-failure",
+    ),
+)
+def test_docker_canonical_scenarios_in_container(scenario_id: str) -> None:
+    _assert_docker_canonical_pass(scenario_id)
+
+
 def test_local_scenario_parity_before_docker() -> None:
     """Fast parity check (no Docker) for qualification logic."""
     for scenario_id in (
