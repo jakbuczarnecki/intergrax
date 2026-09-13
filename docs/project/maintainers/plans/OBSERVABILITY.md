@@ -18,7 +18,7 @@
 - Unified Run Journal and as-of/bitemporal views are **derived** - not lifecycle authority
 - Embedded DIAG subsystem (DIAG-1..5C-A) preserved under ownership framing; model/grouping output is hypothesis not canonical truth
 
-**CURRENT implementation (descriptive, OBS-REBASE-1 2026-09-13):** TRACE-1A–1C **Done / Closed**. `RuntimeEvent` contract requires **five-ID** spine including `ExecutionId` (`intergrax/runtime/events/runtime_event.py`). Platform-wide **writer/emit-path coverage** is tracked separately (**OBS-COVERAGE-1**), not as “partial contract.” Factual reconstruction: `ExecutionReconstructor` + `HistoricalReconstructionService`; semantic owner Evidence Plane — package placement migration **OBS-RECONSTRUCTION-1**. Functional evidence recording wired from OBS but contracts still under `runtime.diagnostics` — **OBS-FUNCTIONAL-CONTRACTS-1**. Causal `RuntimeExecutionRef` is attempt-scoped (no `ExecutionId`) — **OBS-CAUSAL-2**.
+**CURRENT implementation (descriptive, OBS-REBASE-1 + OBS-BOUNDARY-1 2026-09-13):** TRACE-1A–1C **Done / Closed**. `RuntimeEvent` contract requires **five-ID** spine including `ExecutionId` (`intergrax/runtime/events/runtime_event.py`). Platform-wide **writer/emit-path coverage** is tracked separately (**OBS-COVERAGE-1**), not as “partial contract.” **OBS-BOUNDARY-1** closed: one authority per layer; factual vs diagnostic split frozen in architecture hubs. Factual reconstruction: `ExecutionReconstructor` + `HistoricalReconstructionService`; semantic owner Evidence Plane — package placement migration **OBS-RECONSTRUCTION-1**. Functional evidence recording wired from OBS but contracts still under `runtime.diagnostics` — **OBS-FUNCTIONAL-CONTRACTS-1**. Causal `RuntimeExecutionRef` is attempt-scoped (no `ExecutionId`) — **OBS-CAUSAL-2**.
 
 **Architecture clarification:** Historical TRACE-1A/B/C Done rows describe the **then-current** four-ID milestone; they are historical evidence rows, not the live contract.
 
@@ -59,14 +59,14 @@
 | # | ID | Priority | Status | Goal |
 | -: | -- | -------- | ------ | ---- |
 | 1 | **OBS-REBASE-1** | P0 | **Done / Closed** (this slice) | Synchronize Observability SSOT with Execution, Decision, DIAG, Reliability, scenario projection |
-| 2 | **OBS-BOUNDARY-1** | P0 | Planned | Freeze Evidence / shared factual reconstruction / Diagnostics package and import boundaries |
+| 2 | **OBS-BOUNDARY-1** | P0 | **Done / Closed** (2026-09-13) | Freeze Evidence / shared factual reconstruction / Diagnostics semantic and dependency boundaries (import debt → OBS-FUNCTIONAL-CONTRACTS-1, OBS-RECONSTRUCTION-1) |
 | 3 | **OBS-CAUSAL-2** | P1 | Planned | `RuntimeExecutionRef` + causal facts pin specific `ExecutionId` (transport/op/decision/external effect) |
 | 4 | **OBS-FUNCTIONAL-CONTRACTS-1** | P1 | Planned | Neutral `intergrax.contracts.functional_evidence` (or equivalent); OBS records without DIAG contract ownership |
 | 5 | **OBS-COVERAGE-1** | P1 | Planned | Platform-wide evidence coverage matrix — all critical paths emit qualified five-ID evidence |
 | 6 | **OBS-TRACE-1** | P2 | Planned (conditional) | Public trace correlation hardening if consumers require beyond `run_id` |
 | 7 | **OBS-RECONSTRUCTION-1** | P1 | Planned | Single shared factual reconstruction module owned by Evidence Plane; DIAG consumes only |
 | 8 | **OBS-ASOF-REBASE** | P1/P2 | Planned | Historical execution query on Execution Tree + shared reconstruction |
-| 9 | **TRACE-ASOF-3** | Conditional | **Blocked** — defer | Materialization only when measurably required; blocked on OBS-BOUNDARY-1 / OBS-RECONSTRUCTION-1 |
+| 9 | **TRACE-ASOF-3** | Conditional | **Blocked** — defer | Materialization only when measurably required; blocked on OBS-RECONSTRUCTION-1 / OBS-ASOF-REBASE |
 | 10 | **OBS-BITEMP-REBASE** | P2 | Planned | E/K/V/S composition without axis mixing |
 | 11 | **OBS-DIAG-CONFORMANCE** | P1 | Planned | E2E proof Producer → Evidence → Reconstruction → DIAG |
 | 12 | **OBS-FINAL-CERTIFICATION** | P1 | Planned | Enterprise Observability closure |
@@ -117,7 +117,7 @@ Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observabi
 |----|----------|--------|------|------------|----------------------|
 | **TRACE-ASOF-1** | P1 | Done / Closed (`02462d96897daa4ea19d96dce776768a03cbbf53`) | Resolve deterministic historical boundary: run-scoped `ExecutionEventPosition` at persistence acceptance; `PositionedRuntimeEvent` wrapper; typed inclusive `AsOfBoundary`; positioned read prefix; no timestamp-only ambiguity | TRACE-1C | `append` returns canonical position; idempotent `EventId` reuse; journal/list order follows execution position |
 | **TRACE-ASOF-2** | P1 | Done / Closed (`d0cfad1eeecbf3167e3955b93d4a2ef82de09b4f`) | First canonical logical execution projection: `RunExecutionAsOfProjection` from positioned `RuntimeEvent` prefix via pure reducer `project_run_execution_as_of`; read orchestration `reconstruct_run_execution_as_of` + `load_positioned_run_journal_through`; `RunExecutionLifecycleStatus` from `RuntimeEventType` only (no payload parsing); attempt-aware; `HistoricalEventReference` provenance; logical-only (no materialization); exact `AsOfBoundary` existence required | TRACE-ASOF-1; TRACE-BITEMP-1 | Logical projection rebuildable from journal; no new source of truth; exact boundary event must exist (`RunExecutionBoundaryNotFoundError`); prefix completeness verified (limit pagination fail-closed); unknown history fails explicitly; stable historical coordinate after later appends |
-| **TRACE-ASOF-3** | P2 | **Blocked / conditional** (OBS-REBASE-1) | Only if projections are materialized: immutable projection revisions; explicit `revision_id`; explicit `supersedes`; rebuildability | TRACE-ASOF-2; **OBS-BOUNDARY-1** / **OBS-RECONSTRUCTION-1** | Skippable if materialization not needed; defer until shared reconstruction ownership frozen |
+| **TRACE-ASOF-3** | P2 | **Blocked / conditional** (OBS-REBASE-1) | Only if projections are materialized: immutable projection revisions; explicit `revision_id`; explicit `supersedes`; rebuildability | TRACE-ASOF-2; **OBS-RECONSTRUCTION-1** | Skippable if materialization not needed; defer until shared reconstruction package placement |
 | **TRACE-ASOF-4** | P1 | **Blocked** (OBS-REBASE-1) | Typed public/internal **execution-as-of** query at **E** | TRACE-ASOF-2; **OBS-ASOF-REBASE** / **OBS-RECONSTRUCTION-1** | Unblock after shared factual reconstruction; not bitemporal knowledge semantics |
 
 **TRACE-ASOF-1 evidence chain** (independently audited; final acceptance `02462d96897daa4ea19d96dce776768a03cbbf53`): `ae618fc81817497dbbcf018d92c95856f2d44115` → `d88253dbcfaa470597f93d91eec6a80a30e77007` → `98a2d186d9b512048c01024b67f1e707d72240ee` → `a7a931c6a5c4356e9bd49d7d9f8b5787e9a826b6` → `02462d96897daa4ea19d96dce776768a03cbbf53`.

@@ -147,7 +147,34 @@ Shared factual reconstruction (deterministic, completeness-explicit)
 
 **Verdict (OBS-REBASE-1):** Factual reconstruction is **not** DIAG-only semantically. **Do not** add a second reconstructor. **OBS-RECONSTRUCTION-1** will relocate/neutralize the shared factual core while DIAG keeps interpretation-only consumers.
 
-**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** **BLOCKED BY** shared reconstruction ownership freeze (**OBS-BOUNDARY-1** / **OBS-RECONSTRUCTION-1**). **TRACE-ASOF-3** remains **conditional / defer** (materialization only when measurably required).
+## OBS-BOUNDARY-1 — Evidence / reconstruction / diagnostics ownership freeze (closed 2026-09-13)
+
+Code audit (bounded read scope) confirms one semantic authority per concern. This slice **freezes** boundaries; it does **not** relocate packages or neutralize contracts.
+
+```text
+FACT PRODUCER (Execution · scenarios · applications)
+        ↓
+EVIDENCE (Observability / Evidence Plane — record · persist · order · correlate)
+        ↓
+FACTUAL RECONSTRUCTION (shared deterministic rebuild — today `ExecutionReconstructor` + `HistoricalReconstructionService`)
+        ↓
+DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · operator views)
+```
+
+| Layer | Semantic owner | Physical package today (transitional) |
+| ----- | ---------------- | ------------------------------------- |
+| Execution truth | Execution Runtime | `intergrax.runtime` execution path |
+| Evidence facts | Observability / Evidence Plane | `intergrax.runtime.observability` + `EvidencePersistencePort` |
+| Factual reconstruction | **Evidence Plane (semantic)** | `intergrax.runtime.diagnostics.execution_reconstruction` (**OBS-RECONSTRUCTION-1**) |
+| Diagnostic interpretation | Central Diagnostics | `intergrax.runtime.diagnostics` (orchestrator, Problem lifecycle, analyzers) |
+
+**Frozen:** Observability records facts; it does not decide operational meaning. Diagnostics interprets facts; it does not mint execution identity, own evidence persistence, or maintain a competing Execution Tree.
+
+**Documented import debt (unchanged in this task):** `runtime.observability` imports `runtime.diagnostics` for functional evidence contracts and shared factual reconstruction wiring. Target dependency direction is frozen above; **OBS-FUNCTIONAL-CONTRACTS-1** and **OBS-RECONSTRUCTION-1** perform the moves. No compatibility shims; no second reconstructor in Observability.
+
+**Future architecture gate (after debt migration):** `runtime.observability` MUST NOT import `runtime.diagnostics.*` except explicit temporary allowlist — to be enforced in **OBS-RECONSTRUCTION-1** / **OBS-FUNCTIONAL-CONTRACTS-1**, not before.
+
+**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** **BLOCKED BY** shared reconstruction **package** placement (**OBS-RECONSTRUCTION-1**, **OBS-ASOF-REBASE**). **TRACE-ASOF-3** remains **conditional / defer** (materialization only when measurably required).
 
 ### Signal families (no universal payload bag)
 
@@ -187,7 +214,7 @@ Reference: VPI `platform_proofs/scenarios/verified_product_identification/applic
 | `ExecutionReconstructor` package placement under `diagnostics` | P1 | Evidence + DIAG | Shared factual layer semantically OBS; single implementation today | **OBS-RECONSTRUCTION-1** |
 | Emit-path `ExecutionId` coverage not fully certified on all paths | P1 | Execution + OBS | Contract requires `ExecutionId`; writers vary by path | **OBS-COVERAGE-1** |
 | `TraceEvent` correlates primarily via `run_id` | P2 | Contracts / Plane B | May need stronger canonical correlation for some consumers | **OBS-TRACE-1** (conditional) |
-| OBS → DIAG imports for functional evidence + reconstruction | P1 | Architecture | Dependency direction smell | **OBS-BOUNDARY-1** + contract moves above |
+| OBS → DIAG imports for functional evidence + reconstruction | P1 | Architecture | Dependency direction vs frozen flow (boundary decided in OBS-BOUNDARY-1) | **OBS-FUNCTIONAL-CONTRACTS-1**, **OBS-RECONSTRUCTION-1** |
 
 ### Evidence Plane freeze (NPSC-5F enterprise certification)
 

@@ -112,6 +112,24 @@ AI investigation output = non-canonical interpretation
 
 They share infrastructure (HOS, `RuntimeEvent` persistence) but are **not** one system. Observability outage may cause **missing telemetry** but **cannot** alter platform truth or a correct business result. See [`OBSERVABILITY.md`](OBSERVABILITY.md) for export boundary, exporter health, and vendor neutrality.
 
+### OBS-BOUNDARY-1 — Single diagnostic authority vs shared factual reconstruction (frozen 2026-09-13)
+
+Central Diagnostics remains the **only** owner of diagnostic interpretation: anomaly analysis toward failure boundaries, `DiagnosticAssessment`, `Problem` grouping and lifecycle, operator diagnostic read models.
+
+`ExecutionReconstructor` and `ExecutionReconstruction` are **shared factual reconstruction** (journal prefix, causal evidence, optional lineage, completeness, tenant/run scope validation). They **do not** classify root cause, mint Problems, or emit diagnostic certainty. DIAG **consumes** reconstruction; it does **not** own evidence recording or Execution Tree authority.
+
+**Package placement:** implementation lives under `intergrax.runtime.diagnostics` today for historical wiring only. **Semantic owner:** Evidence Plane / shared factual reconstruction — relocation tracked as **OBS-RECONSTRUCTION-1** (no duplicate engine in Observability).
+
+| Component | Owner (semantic) | DIAG? |
+| --------- | ---------------- | ----- |
+| `LifecycleAnomalyAnalyzer`, `ExecutionFailureAnalyzer`, `DiagnosticAssessmentBuilder` | Central Diagnostics | Yes |
+| `ProblemGroupingEngine`, `ProblemLifecycleEngine`, `DiagnosticOrchestrator` | Central Diagnostics | Yes |
+| `ExecutionReconstructor` → `ExecutionReconstruction` | Shared factual reconstruction (Evidence Plane) | **No** — consumer input only |
+| `FunctionalDiagnosticAnalyzer` | Central Diagnostics | Yes |
+| `PlatformFunctionalEvidence` recording | Observability (facts); contracts → **OBS-FUNCTIONAL-CONTRACTS-1** | No |
+
+Hub: [`OBSERVABILITY.md`](OBSERVABILITY.md#obs-boundary-1--evidence--reconstruction--diagnostics-ownership-freeze-closed-2026-09-13).
+
 ---
 
 ## Business result vs diagnostic state
