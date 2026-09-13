@@ -358,6 +358,27 @@ class DecisionVerificationProfile(BaseModel):
     semantic_rubric_ref: str | None = None
 
 
+class DecisionPluginProfile(BaseModel):
+    """Explicit Decision platform plugin activation for Tier-3 composition (P0-A)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    discover_entry_points: bool = False
+    verification_stage_kinds: list[str] = Field(default_factory=list)
+    strategy_kinds: list[str] = Field(default_factory=list)
+    artifact_kinds: list[str] = Field(default_factory=list)
+    require_manifest_capability_binding: bool = False
+
+    @field_validator(
+        "verification_stage_kinds",
+        "strategy_kinds",
+        "artifact_kinds",
+    )
+    @classmethod
+    def _normalize_kind_ids(cls, value: list[str]) -> list[str]:
+        return [item.strip() for item in value if item.strip()]
+
+
 class DecisionFlowProfile(BaseModel):
     """Host-level Decision flow scopes and revision budget."""
 
@@ -377,6 +398,7 @@ class DecisionProfile(BaseModel):
         default_factory=DecisionVerificationProfile,
     )
     flow: DecisionFlowProfile = Field(default_factory=DecisionFlowProfile)
+    plugins: DecisionPluginProfile = Field(default_factory=DecisionPluginProfile)
 
 
 AdaptiveMode = Literal["observe", "recommend", "shadow", "canary", "apply"]

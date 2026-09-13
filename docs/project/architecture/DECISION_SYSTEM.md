@@ -748,6 +748,33 @@ When ``require_manifest_capability_binding=True``, absence of positive Platform 
 manifest capability evidence is an admission failure (fail-closed). Plugins without
 verifiable manifest binding are not loaded, instantiated, or registered.
 
+### Tier-3 application composition (P0-A)
+
+Applications do **not** assemble a private Decision runtime. The canonical path is:
+
+```text
+ApplicationManifest / ApplicationEnvironmentProfile
+        ↓
+compose_application_decision()  — intergrax/applications/_shared/application_decision_composition.py
+        ↓
+decision_plugin_composition (explicit discover + allowlists)
+        ↓
+VerificationPipeline + DecisionStrategyRegistry + DecisionArtifactKindRegistry
+        ↓
+CanonicalDecisionFlowGate (wire_application_decision)
+        ↓
+Execution / Nexus host
+```
+
+- **Activation:** ``DecisionProfile.plugins`` selects strategy kinds, verification stage kinds,
+  and artifact kinds; ``discover_entry_points`` (or ``INTERGRAX_DISCOVER_PLUGINS``) enables
+  discovery only — empty allowlists keep plugins inactive.
+- **Built-in verification:** structural stage is always composed for agent-execution wiring;
+  ``DecisionVerificationProfile.semantic_enabled`` / ``trajectory_enabled`` add platform stages
+  to the same pipeline (optional until eval bridge is present at wiring time).
+- **Observability:** ``ApplicationDecisionComposition`` exposes activated kinds and per-domain
+  ``DomainPluginLoadReport`` snapshots.
+
 ### Integration boundary (operational)
 
 Reference enterprise decision lifecycle records (DS-E2E L7 matrix) map to platform

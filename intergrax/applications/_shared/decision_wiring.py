@@ -1,33 +1,23 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 Decision flow wiring (DS-MIG-01 / DS-MIG-02)."""
+"""Tier-3 Decision flow wiring (DS-MIG-01 / DS-MIG-02 / P0-A)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.applications._shared.application_decision_composition import (
+    ApplicationDecisionComposition,
+    ApplicationDecisionWiringSpec,
+    compose_application_decision,
+)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.environment_profile.sub_profiles import DecisionProfile
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
-from intergrax.contracts.decision_revision import decision_revision_policy
-from intergrax.runtime.decision_flow import (
-    CanonicalDecisionFlowGate,
-    DecisionFlowGate,
-    DecisionFlowGateCapabilities,
-    DecisionFlowScope,
-)
-from intergrax.runtime.decision_flow_host import build_agent_execution_verification_pipeline
+from intergrax.runtime.decision_flow import DecisionFlowGate
+from intergrax.runtime.decision_verification_composition import ToolWiringEvalVerificationBridge
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
-
-
-@dataclass(frozen=True, slots=True)
-class ApplicationDecisionWiringSpec:
-    """Explicit application-composition contract for canonical Decision wiring."""
-
-    verify_graph_final: bool = True
-    verify_uaep_step: bool = False
-    max_revisions: int = 0
 
 
 def application_decision_wiring_spec(
@@ -78,6 +68,7 @@ class ApplicationDecisionWiring:
     gate: DecisionFlowGate[AgentExecutionResult]
     verify_graph_final: bool
     verify_uaep_step: bool
+    composition: ApplicationDecisionComposition | None = None
 
 
 def resolve_application_decision_agent_id(
@@ -99,30 +90,24 @@ def wire_application_decision(
     registry: AgentRegistryRead,
     agent_id: str,
     spec: ApplicationDecisionWiringSpec,
+    environment: ApplicationEnvironmentProfile,
     capability: str | None = None,
+    eval_bridge: ToolWiringEvalVerificationBridge | None = None,
 ) -> ApplicationDecisionWiring:
     """Materialize one reusable Decision flow gate from explicit composition spec."""
     contract = registry.get_contract(agent_id)
-    scopes: set[DecisionFlowScope] = set()
-    if spec.verify_graph_final:
-        scopes.add(DecisionFlowScope.GRAPH_FINAL)
-    if spec.verify_uaep_step:
-        scopes.add(DecisionFlowScope.UAEP_STEP)
-    pipeline = build_agent_execution_verification_pipeline(
+    composed = compose_application_decision(
+        environment=environment,
         contract=contract,
+        spec=spec,
         capability=capability,
-    )
-    gate = CanonicalDecisionFlowGate(
-        capabilities=DecisionFlowGateCapabilities(
-            verification_pipeline=pipeline,
-            revision_policy=decision_revision_policy(max_revisions=spec.max_revisions),
-            scopes=frozenset(scopes),
-        ),
+        eval_bridge=eval_bridge,
     )
     return ApplicationDecisionWiring(
-        gate=gate,
-        verify_graph_final=spec.verify_graph_final,
-        verify_uaep_step=spec.verify_uaep_step,
+        gate=composed.gate,
+        verify_graph_final=composed.verify_graph_final,
+        verify_uaep_step=composed.verify_uaep_step,
+        composition=composed,
     )
 
 
@@ -130,10 +115,12 @@ def wire_application_decision_flow(
     *,
     registry: AgentRegistryRead,
     agent_id: str,
+    environment: ApplicationEnvironmentProfile,
     capability: str | None = None,
     verify_graph_final: bool = True,
     verify_uaep_step: bool = False,
     max_revisions: int = 0,
+    eval_bridge: ToolWiringEvalVerificationBridge | None = None,
 ) -> ApplicationDecisionWiring:
     """Materialize Decision flow wiring from explicit scope and revision flags."""
     spec = application_decision_wiring_spec(
@@ -145,7 +132,9 @@ def wire_application_decision_flow(
         registry=registry,
         agent_id=agent_id,
         spec=spec,
+        environment=environment,
         capability=capability,
+        eval_bridge=eval_bridge,
     )
 
 

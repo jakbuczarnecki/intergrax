@@ -132,9 +132,11 @@ def test_independent_verifier_llm_resolves_separate_adapter() -> None:
 def test_wire_application_decision_flow_uses_profile_revision_budget() -> None:
     registry = AgentRegistry()
     registry.register(EchoAgent())
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="decision.revision.budget")
     wiring = wire_application_decision_flow(
         registry=registry,
         agent_id="echo",
+        environment=env,
         max_revisions=2,
     )
     gate = wiring.gate
