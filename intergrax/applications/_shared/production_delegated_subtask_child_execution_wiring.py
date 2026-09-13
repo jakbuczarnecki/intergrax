@@ -19,7 +19,6 @@ from intergrax.runtime.execution.execution_work_port import (
     delegated_subtask_child_execution_work_port,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,23 +38,19 @@ class ProductionDelegatedSubtaskChildExecutionPort:
 
 def build_production_delegated_subtask_child_execution_port(
     *,
-    nexus_loop: NexusLoop | None = None,
     run_budget: RunBudget | None = None,
     ledger: ExecutionBudgetLedger | None = None,
 ) -> ProductionDelegatedSubtaskChildExecutionPort:
     """
     Build canonical ``ChildExecutionPort`` at the production composition root.
 
-    When ``nexus_loop`` is supplied, budget limits align with the active Nexus run budget
-    (budget alignment only — not Nexus child scheduling).
+    ``run_budget`` aligns ledger limits with the active Nexus run budget when supplied
+    by the composition owner (budget alignment only — not Nexus child scheduling).
     """
-    resolved_budget = run_budget
-    if nexus_loop is not None:
-        resolved_budget = nexus_loop.run_budget
     resolved_ledger = (
         ledger
         if ledger is not None
-        else create_execution_budget_ledger(resolved_budget)
+        else create_execution_budget_ledger(run_budget)
     )
     work_port = delegated_subtask_child_execution_work_port(ledger=resolved_ledger)
     return ProductionDelegatedSubtaskChildExecutionPort(_work_port=work_port)
