@@ -18,6 +18,8 @@
 
 **Status:** **Certified Core Platform = FROZEN**
 
+Post-freeze evolution governed by: [`INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md`](INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md)
+
 **Semantic distinction:**
 
 | Term | Meaning |
