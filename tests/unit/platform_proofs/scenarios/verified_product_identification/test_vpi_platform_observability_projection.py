@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pytest
 
 from intergrax.contracts.application_execution_stage_signal import (
+    ApplicationExecutionCorrelation,
     ApplicationExecutionStageSignal,
+    ApplicationExecutionStageSignalEmissionError,
 )
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -33,6 +37,13 @@ from platform_proofs.scenarios.verified_product_identification.application.obser
 )
 from platform_proofs.scenarios.verified_product_identification.application.observability.projection_sink import (
     PlatformProjectingProductIdentificationObservationSink,
+)
+from platform_proofs.scenarios.verified_product_identification.application.observability.ports import (
+    ObservationSinkError,
+    ProductIdentificationObservationSinkMode,
+)
+from platform_proofs.scenarios.verified_product_identification.application.observability.recorder import (
+    ProductIdentificationObservationRecorder,
 )
 from platform_proofs.scenarios.verified_product_identification.application.observability.sinks import (
     InMemoryProductIdentificationObservationSink,
@@ -122,3 +133,104 @@ def test_platform_projecting_sink_preserves_inner_observations_and_emits_runtime
     assert data["outcome_status"] == ProductIdentificationOutcome.VERIFIED.value
     assert data["diagnostic_code"] == ProductIdentificationDecisionReasonCode.UNIQUE_IDENTITY_SUPPORTED.value
     assert data["severity"] == EventSeverity.INFO.value
+
+
+@dataclass(frozen=True, slots=True)
+class _EmissionFailingStageSignalEmitter:
+    def emit(
+        self,
+        signal: ApplicationExecutionStageSignal,
+        *,
+        correlation: ApplicationExecutionCorrelation,
+    ) -> None:
+        raise ApplicationExecutionStageSignalEmissionError("injected emission failure")
+
+
+def test_correlation_mismatch_raises_observation_sink_error_without_runtime_event() -> None:
+    bus = RuntimeEventBus(record_history=True)
+    inner = InMemoryProductIdentificationObservationSink()
+    configured_run = ProductIdentificationRunId(value="run-a")
+    mismatched_run = ProductIdentificationRunId(value="run-b")
+    correlation = mint_lab_vpi_application_execution_correlation(
+        tenant_id="tenant-vpi-lab",
+        scenario_run_id=configured_run,
+    )
+    sink = PlatformProjectingProductIdentificationObservationSink(
+        inner=inner,
+        emitter=RuntimeEventApplicationExecutionStageSignalEmitter(bus=bus, production_mode=True),
+        execution_correlation=correlation,
+    )
+    observation = ProductIdentificationObservation(
+        run_id=mismatched_run,
+        sequence=0,
+        stage=ProductIdentificationStage.TERMINAL,
+        kind=ProductIdentificationEventKind.TERMINAL,
+        payload=TerminalObservedPayload(
+            outcome=ProductIdentificationOutcome.VERIFIED,
+            reason_code=ProductIdentificationDecisionReasonCode.UNIQUE_IDENTITY_SUPPORTED,
+            verified_hypothesis_id="hyp-1",
+            clarification_required=False,
+        ),
+    )
+    with pytest.raises(ObservationSinkError, match="does not match execution correlation"):
+        sink.record(observation)
+    assert inner.snapshot() == (observation,)
+    assert not bus.history
+
+
+def test_recorder_best_effort_continues_after_projection_emission_failure() -> None:
+    inner = InMemoryProductIdentificationObservationSink()
+    run_id = ProductIdentificationRunId(value="880e8400-e29b-41d4-a716-446655440003")
+    correlation = mint_lab_vpi_application_execution_correlation(
+        tenant_id="tenant-vpi-lab",
+        scenario_run_id=run_id,
+    )
+    projecting_sink = PlatformProjectingProductIdentificationObservationSink(
+        inner=inner,
+        emitter=_EmissionFailingStageSignalEmitter(),
+        execution_correlation=correlation,
+    )
+    recorder = ProductIdentificationObservationRecorder(
+        run_id=run_id,
+        sink=projecting_sink,
+        sink_mode=ProductIdentificationObservationSinkMode.BEST_EFFORT,
+    )
+    recorder.record_payload(
+        stage=ProductIdentificationStage.TERMINAL,
+        payload=TerminalObservedPayload(
+            outcome=ProductIdentificationOutcome.VERIFIED,
+            reason_code=ProductIdentificationDecisionReasonCode.UNIQUE_IDENTITY_SUPPORTED,
+            verified_hypothesis_id="hyp-1",
+            clarification_required=False,
+        ),
+    )
+    assert len(inner.snapshot()) == 1
+
+
+def test_recorder_required_propagates_projection_emission_failure() -> None:
+    inner = InMemoryProductIdentificationObservationSink()
+    run_id = ProductIdentificationRunId(value="990e8400-e29b-41d4-a716-446655440004")
+    correlation = mint_lab_vpi_application_execution_correlation(
+        tenant_id="tenant-vpi-lab",
+        scenario_run_id=run_id,
+    )
+    projecting_sink = PlatformProjectingProductIdentificationObservationSink(
+        inner=inner,
+        emitter=_EmissionFailingStageSignalEmitter(),
+        execution_correlation=correlation,
+    )
+    recorder = ProductIdentificationObservationRecorder(
+        run_id=run_id,
+        sink=projecting_sink,
+        sink_mode=ProductIdentificationObservationSinkMode.REQUIRED,
+    )
+    with pytest.raises(ObservationSinkError, match="platform application execution stage signal"):
+        recorder.record_payload(
+            stage=ProductIdentificationStage.TERMINAL,
+            payload=TerminalObservedPayload(
+                outcome=ProductIdentificationOutcome.VERIFIED,
+                reason_code=ProductIdentificationDecisionReasonCode.UNIQUE_IDENTITY_SUPPORTED,
+                verified_hypothesis_id="hyp-1",
+                clarification_required=False,
+            ),
+        )

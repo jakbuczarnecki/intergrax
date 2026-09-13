@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from intergrax.contracts.application_execution_stage_signal import (
     ApplicationExecutionCorrelation,
     ApplicationExecutionStageSignalEmitter,
+    ApplicationExecutionStageSignalEmissionError,
     ApplicationExecutionStageSignalError,
 )
 
@@ -27,8 +28,9 @@ class PlatformProjectingProductIdentificationObservationSink:
     """
     Decorator sink: preserve scenario-owned recording, then project to platform spine.
 
-    ``execution_correlation`` must be fixed for the pipeline run; when the run id on
-    an observation disagrees, projection is skipped for that record only.
+    ``execution_correlation`` must be fixed for the pipeline run. Scenario observations are
+    recorded on ``inner`` first; correlation is validated before platform projection so
+    central-spine events never attach to the wrong execution identity.
     """
 
     inner: ProductIdentificationObservationSink
@@ -38,10 +40,17 @@ class PlatformProjectingProductIdentificationObservationSink:
     def record(self, observation: ProductIdentificationObservation) -> None:
         self.inner.record(observation)
         if observation.run_id.value != self.execution_correlation.scenario_execution_correlation_id:
-            return
+            raise ObservationSinkError(
+                "observation run_id does not match execution correlation "
+                "scenario_execution_correlation_id",
+            )
         signal = project_product_identification_observation(observation)
         try:
             self.emitter.emit(signal, correlation=self.execution_correlation)
+        except ApplicationExecutionStageSignalEmissionError as exc:
+            raise ObservationSinkError(
+                "platform application execution stage signal emission failed",
+            ) from exc
         except ApplicationExecutionStageSignalError as exc:
             raise ObservationSinkError(str(exc)) from exc
 

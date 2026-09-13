@@ -27,6 +27,15 @@ class ApplicationExecutionStageSignalError(ValueError):
     """Raised when a stage signal or correlation bundle is invalid."""
 
 
+class ApplicationExecutionStageSignalEmissionError(RuntimeError):
+    """
+    Raised when a valid stage signal could not be emitted on the canonical RuntimeEvent spine.
+
+    Represents observability projection / DOMAIN_SIGNAL emission failure — not invalid signal
+    input, VPI business outcome, or diagnostics Problem semantics.
+    """
+
+
 def _bounded_opaque(value: str, *, label: str) -> str:
     if type(value) is not str:
         raise ApplicationExecutionStageSignalError(f"{label} must be str")
@@ -70,8 +79,11 @@ class ApplicationExecutionCorrelation:
     scenario_execution_correlation_id: str
 
     def __post_init__(self) -> None:
-        if not self.tenant_id.strip():
-            raise ApplicationExecutionStageSignalError("tenant_id must be non-empty")
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _bounded_opaque(self.tenant_id, label="tenant_id"),
+        )
         object.__setattr__(self, "task_id", validate_task_id(self.task_id))
         object.__setattr__(self, "run_id", validate_run_id(self.run_id))
         object.__setattr__(self, "attempt_id", validate_attempt_id(self.attempt_id))
@@ -154,12 +166,19 @@ class ApplicationExecutionStageSignalEmitter(Protocol):
         *,
         correlation: ApplicationExecutionCorrelation,
     ) -> None:
-        """Project one stage signal; raises ``ApplicationExecutionStageSignalError`` on reject."""
+        """
+        Project one stage signal.
+
+        Raises ``ApplicationExecutionStageSignalError`` when signal or correlation input is
+        invalid. Raises ``ApplicationExecutionStageSignalEmissionError`` when emission on the
+        RuntimeEvent spine is rejected.
+        """
 
 
 __all__ = [
     "ApplicationExecutionCorrelation",
     "ApplicationExecutionStageSignal",
     "ApplicationExecutionStageSignalEmitter",
+    "ApplicationExecutionStageSignalEmissionError",
     "ApplicationExecutionStageSignalError",
 ]

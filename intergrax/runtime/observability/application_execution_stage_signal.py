@@ -11,8 +11,11 @@ from pydantic import model_validator
 from intergrax.contracts.application_execution_stage_signal import (
     ApplicationExecutionCorrelation,
     ApplicationExecutionStageSignal,
+    ApplicationExecutionStageSignalEmissionError,
     ApplicationExecutionStageSignalError,
 )
+from intergrax.runtime.events.event_kind import DomainSignalError
+from intergrax.runtime.events.payload_registry import RuntimeEventPayloadError
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -93,27 +96,36 @@ def emit_application_execution_stage_signal(
     production_mode: bool = False,
 ) -> RuntimeEvent:
     """Project one neutral stage signal onto the canonical runtime event bus."""
-    register_application_execution_stage_domain_signals()
     if signal.scenario_execution_correlation_id != correlation.scenario_execution_correlation_id:
         raise ApplicationExecutionStageSignalError(
             "signal scenario_execution_correlation_id must match correlation bundle",
         )
-    ctx = EmitContext(
-        task_id=correlation.task_id,
-        run_id=correlation.run_id,
-        attempt_id=correlation.attempt_id,
-        execution_id=correlation.execution_id,
-        tenant_id=correlation.tenant_id,
-        correlation_id=correlation.scenario_execution_correlation_id,
-        bus=bus,
-        production_mode=production_mode,
-    )
-    return emit_domain_signal(
-        ctx,
-        kind=APPLICATION_EXECUTION_STAGE_OBSERVED_EVENT_KIND,
-        payload=_payload_from_signal(signal),
-        severity=signal.severity,
-    )
+    try:
+        register_application_execution_stage_domain_signals()
+        ctx = EmitContext(
+            task_id=correlation.task_id,
+            run_id=correlation.run_id,
+            attempt_id=correlation.attempt_id,
+            execution_id=correlation.execution_id,
+            tenant_id=correlation.tenant_id,
+            correlation_id=correlation.scenario_execution_correlation_id,
+            bus=bus,
+            production_mode=production_mode,
+        )
+        return emit_domain_signal(
+            ctx,
+            kind=APPLICATION_EXECUTION_STAGE_OBSERVED_EVENT_KIND,
+            payload=_payload_from_signal(signal),
+            severity=signal.severity,
+        )
+    except DomainSignalError as exc:
+        raise ApplicationExecutionStageSignalEmissionError(
+            "application execution stage signal could not be emitted",
+        ) from exc
+    except RuntimeEventPayloadError as exc:
+        raise ApplicationExecutionStageSignalEmissionError(
+            "application execution stage signal could not be emitted",
+        ) from exc
 
 
 @dataclass(frozen=True, slots=True)
