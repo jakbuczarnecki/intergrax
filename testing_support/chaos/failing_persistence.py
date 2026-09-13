@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.execution_identity import EventId
 from intergrax.runtime.events.persistence_contract import (
+    PositionedRuntimeEvent,
     RuntimeEventPersistence,
     TaskRuntimeEventRuns,
 )
@@ -62,5 +64,10 @@ class FailOnAppendPersistence(RuntimeEventPersistence):
             limit=limit,
         )
 
-    def get_by_event_id(self, *, tenant_id: str, event_id):
+    def get_by_event_id(
+        self,
+        *,
+        tenant_id: str,
+        event_id: EventId,
+    ) -> PositionedRuntimeEvent | None:
         return self._inner.get_by_event_id(tenant_id=tenant_id, event_id=event_id)
