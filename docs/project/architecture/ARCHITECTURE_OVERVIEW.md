@@ -206,7 +206,7 @@ The **Decision System** is the platform capability that leads a decision from ca
 | Execution authorization | Governed Execution / Policy |
 | Side effects | Nexus |
 
-**Canonical path:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) — hosted inside canonical Execution; governance mints `DecisionExecutionAuthorization` before `ExecutionRequest` work. Enterprise qualification: [`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md).
+**Canonical path:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) — hosted inside canonical Execution; governance mints `DecisionExecutionAuthorization` before `ExecutionRequest` work. Enterprise qualification: [`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md). **Certified core freeze (maintainers):** Decision System **CLOSED**, Execution Engine **FROZEN**, Certified Core Platform **FROZEN** — [`INTEGRAX_CORE_PLATFORM_FREEZE.md`](../maintainers/qualification/INTEGRAX_CORE_PLATFORM_FREEZE.md); future roadmap capabilities evolve outside that frozen core.
 
 ## LKW as the active reference product
 

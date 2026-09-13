@@ -11,9 +11,10 @@
 | **Baseline SHA (pre-certification commit)** | `3de9870a7f6e35ebacd37569ef5737b7a1f7e999` |
 | **Certification anchor commit** | `572b49374532fb54edf25c30380cd954707e4351` |
 | **Documentation consistency closure** | Record updated on branch `development` (see git log after closure commit) |
+| **Core platform freeze** | [`INTEGRAX_CORE_PLATFORM_FREEZE.md`](INTEGRAX_CORE_PLATFORM_FREEZE.md) — frozen baseline SHA `009ad0c62ba6afbd07a7e4f2dbe8b4bbbab1d2c6` |
 | **Certification date** | 2026-09-13 |
 
-**Frozen baseline (operator input):** Decision System CLOSED / qualified; Execution Engine FROZEN / qualified; combined Decision → Governance → Authorization → Execution Docker E2E qualified.
+**Frozen baseline (operator input):** Decision System CLOSED / qualified; Execution Engine FROZEN / qualified; combined Decision → Governance → Authorization → Execution Docker E2E qualified. **Certified Core Platform** formal freeze boundaries: [`INTEGRAX_CORE_PLATFORM_FREEZE.md`](INTEGRAX_CORE_PLATFORM_FREEZE.md).
 
 This file is the **self-contained** maintainer qualification anchor linked from [`DOCUMENTATION_MAP.md`](../../technical/DOCUMENTATION_MAP.md). It does not depend on Cursor session reports for findings, limitations, or evidence.
 
