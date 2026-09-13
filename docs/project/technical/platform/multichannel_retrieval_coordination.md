@@ -10,12 +10,14 @@ Coordinate independent retrieval **channel operations** in a deterministic order
 
 | Layer | Owns |
 | --- | --- |
-| **Platform** | Channel key value object, status enum, failure DTO, outcome invariants, execution plan validation (duplicate keys), coordinator protocol, default sequential implementation |
+| **Platform** | Channel key value object, status enum, failure DTO (`failure_code` canonical trimmed identity; `message` human-readable), outcome invariants, execution plan validation (duplicate keys), coordinator protocol, default sequential implementation |
 | **Scenario** | Channel semantics, enable/skip policy, query construction, domain `TResult`, provider adapters, fusion, fatal-vs-tolerant failure policy |
 
 ## Failure semantics
 
 A channel `FAILED` outcome does **not** stop later channels. The scenario decides whether any failure is terminal.
+
+Each operation's declared `channel_key` is authoritative for the plan. `execute()` must return an outcome whose `channel_key` matches; mismatch raises `MultiChannelRetrievalContractError` (contract violation, not a channel `FAILED` outcome).
 
 ## Extension
 

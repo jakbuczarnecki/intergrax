@@ -46,9 +46,15 @@ class RetrievalChannelFailure:
     retryable: bool
 
     def __post_init__(self) -> None:
-        if not isinstance(self.failure_code, str) or not self.failure_code.strip():
+        if not isinstance(self.failure_code, str):
+            raise TypeError("RetrievalChannelFailure.failure_code must be str")
+        if not self.failure_code.strip():
             raise MultiChannelRetrievalContractError(
-                "RetrievalChannelFailure.failure_code must be a non-empty string"
+                "RetrievalChannelFailure.failure_code must be non-empty"
+            )
+        if self.failure_code != self.failure_code.strip():
+            raise MultiChannelRetrievalContractError(
+                "RetrievalChannelFailure.failure_code must be trimmed"
             )
         if not isinstance(self.message, str) or not self.message.strip():
             raise MultiChannelRetrievalContractError(

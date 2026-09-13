@@ -222,3 +222,119 @@ def test_genericity_no_vpi_payload() -> None:
         )
     )
     assert all(isinstance(o.result, SampleDocumentHit) for o in result.successful)
+
+
+def test_outcome_channel_key_mismatch_raises_contract_error() -> None:
+    coordinator = SequentialMultiChannelRetrievalCoordinator[SampleDocumentHit]()
+    key_a = _key("a")
+    key_b = _key("b")
+    op = _RecordingOperation(
+        channel_key=key_a,
+        outcome=RetrievalChannelOutcome.succeeded(
+            channel_key=key_b,
+            result=SampleDocumentHit(document_id="wrong-key"),
+        ),
+    )
+    with pytest.raises(
+        MultiChannelRetrievalContractError,
+        match=r"identity mismatch.*operation='a'.*outcome='b'",
+    ):
+        coordinator.execute((op,))
+
+
+def test_outcome_key_mismatch_stops_following_channel_execution() -> None:
+    coordinator = SequentialMultiChannelRetrievalCoordinator[SampleDocumentHit]()
+    key_b = _key("b")
+    key_c = _key("c")
+    op_a = _success_op("a", "1")
+    op_b = _RecordingOperation(
+        channel_key=key_b,
+        outcome=RetrievalChannelOutcome.succeeded(
+            channel_key=key_c,
+            result=SampleDocumentHit(document_id="mislabeled"),
+        ),
+    )
+    op_c = _success_op("c", "3")
+    with pytest.raises(MultiChannelRetrievalContractError, match="identity mismatch"):
+        coordinator.execute((op_a, op_b, op_c))
+    assert op_a.calls == 1
+    assert op_b.calls == 1
+    assert op_c.calls == 0
+
+
+def test_matching_declared_and_outcome_channel_key_succeeds() -> None:
+    coordinator = SequentialMultiChannelRetrievalCoordinator[SampleDocumentHit]()
+    key = _key("lexical")
+    op = _RecordingOperation(
+        channel_key=key,
+        outcome=RetrievalChannelOutcome.succeeded(
+            channel_key=key,
+            result=SampleDocumentHit(document_id="ok"),
+        ),
+    )
+    result = coordinator.execute((op,))
+    assert result.outcomes[0].channel_key == key
+    assert op.calls == 1
+
+
+def test_failure_code_canonical_accepted() -> None:
+    failure = RetrievalChannelFailure(
+        failure_code="lookup_error",
+        message="channel failed",
+        retryable=False,
+    )
+    assert failure.failure_code == "lookup_error"
+
+
+def test_failure_code_leading_whitespace_rejected() -> None:
+    with pytest.raises(
+        MultiChannelRetrievalContractError,
+        match="failure_code must be trimmed",
+    ):
+        RetrievalChannelFailure(
+            failure_code=" lookup_error",
+            message="x",
+            retryable=False,
+        )
+
+
+def test_failure_code_trailing_whitespace_rejected() -> None:
+    with pytest.raises(
+        MultiChannelRetrievalContractError,
+        match="failure_code must be trimmed",
+    ):
+        RetrievalChannelFailure(
+            failure_code="lookup_error ",
+            message="x",
+            retryable=False,
+        )
+
+
+def test_failure_code_empty_or_whitespace_only_rejected() -> None:
+    with pytest.raises(
+        MultiChannelRetrievalContractError,
+        match="failure_code must be non-empty",
+    ):
+        RetrievalChannelFailure(
+            failure_code="",
+            message="x",
+            retryable=False,
+        )
+    with pytest.raises(
+        MultiChannelRetrievalContractError,
+        match="failure_code must be non-empty",
+    ):
+        RetrievalChannelFailure(
+            failure_code="   ",
+            message="x",
+            retryable=False,
+        )
+
+
+def test_failure_message_may_include_surrounding_whitespace() -> None:
+    failure = RetrievalChannelFailure(
+        failure_code="lookup_error",
+        message="  human readable detail  ",
+        retryable=True,
+    )
+    assert failure.message == "  human readable detail  "

@@ -31,7 +31,18 @@ class SequentialMultiChannelRetrievalCoordinator(Generic[TResult]):
 
         collected: list[RetrievalChannelOutcome[TResult]] = []
         for operation in operations:
+            declared_key = operation.channel_key
             outcome = operation.execute()
+            if not isinstance(outcome, RetrievalChannelOutcome):
+                raise TypeError(
+                    "operation.execute() must return RetrievalChannelOutcome"
+                )
+            if outcome.channel_key != declared_key:
+                raise MultiChannelRetrievalContractError(
+                    "retrieval channel outcome identity mismatch: "
+                    f"operation={declared_key.value!r}, "
+                    f"outcome={outcome.channel_key.value!r}"
+                )
             collected.append(outcome)
 
         return MultiChannelRetrievalResult(outcomes=tuple(collected))
