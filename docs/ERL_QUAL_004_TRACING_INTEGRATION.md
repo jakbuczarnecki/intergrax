@@ -61,3 +61,9 @@ Proof packaging should reference the same `correlation_id` and `evidence_ref` va
 - Recorder: `application/tracing/recorder.py` (`RecordingScenarioExecutionTrace` for lab runs)
 - Wiring: `application/execution/runner.py`, `application/execution/composition.py`
 - Tests: `tests/unit/platform_proofs/scenarios/enterprise_payment_uncertainty_recovery/test_erl_qual_004_execution_tracing.py`
+
+## Abstraction and adapter boundary
+
+`EnterprisePaymentScenarioExecutor` and the payment / ERL orchestration layers depend only on `ScenarioExecutionTracePort` (`begin_execution`, `emit_lifecycle_step`, `snapshot`). They must not reference `RecordingScenarioExecutionTrace` or other concrete adapters.
+
+The lab composition root (`application/execution/composition.py`) selects `RecordingScenarioExecutionTrace` and injects it as the port. That recorder is replaceable: another adapter (including a no-op or test double) can satisfy the same contract without changing execution logic. The in-memory lab recorder is not part of the application contract exposed to business orchestration.

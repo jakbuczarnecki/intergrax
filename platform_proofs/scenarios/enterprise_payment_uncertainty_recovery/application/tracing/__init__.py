@@ -6,6 +6,8 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.applicati
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
     ScenarioExecutionTracePort,
     ScenarioExecutionTraceStepId,
+    TraceAttributeValue,
+    TraceBusinessDetail,
 )
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.recorder import (
     NullScenarioExecutionTrace,
@@ -20,4 +22,6 @@ __all__ = [
     "ScenarioExecutionTracePort",
     "ScenarioExecutionTraceScope",
     "ScenarioExecutionTraceStepId",
+    "TraceAttributeValue",
+    "TraceBusinessDetail",
 ]

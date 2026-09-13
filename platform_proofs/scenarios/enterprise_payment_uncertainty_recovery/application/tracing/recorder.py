@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
-
 from intergrax.contracts.execution_identity import ExecutionId, RunId, mint_execution_id, mint_run_id
 from intergrax.runtime.events.w3c_trace_context import generate_trace_id
 from intergrax.runtime.nexus.tracing.trace_models import (
@@ -19,6 +17,7 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.applicati
 )
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
     ScenarioExecutionTraceStepId,
+    TraceBusinessDetail,
 )
 
 _COMPONENT = TraceComponent.RUNTIME
@@ -79,10 +78,10 @@ class RecordingScenarioExecutionTrace:
         *,
         outcome: str,
         component_identity: str,
-        business_detail: dict[str, Any] | None = None,
+        business_detail: TraceBusinessDetail | None = None,
     ) -> None:
         self._seq += 1
-        detail = business_detail or {}
+        detail: dict[str, str | int | float | bool | None] = dict(business_detail or {})
         payload = ErlQual004LifecycleStepDiagV1(
             trace_id=self.scope.trace_id,
             correlation_id=self.scope.correlation_id,
@@ -123,13 +122,22 @@ class RecordingScenarioExecutionTrace:
 class NullScenarioExecutionTrace:
     """No-op trace port when observability is not required."""
 
+    def begin_execution(
+        self,
+        *,
+        correlation_id: str,
+        scenario_id: str,
+        variant_id: str,
+    ) -> None:
+        return None
+
     def emit_lifecycle_step(
         self,
         step_id: ScenarioExecutionTraceStepId,
         *,
         outcome: str,
         component_identity: str,
-        business_detail: dict[str, Any] | None = None,
+        business_detail: TraceBusinessDetail | None = None,
     ) -> None:
         return None
 

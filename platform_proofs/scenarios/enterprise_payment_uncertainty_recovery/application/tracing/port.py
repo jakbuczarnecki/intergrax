@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from enum import StrEnum
-from typing import Any, Protocol
+from typing import Protocol
 
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
+
+TraceAttributeValue = str | int | float | bool | None
+TraceBusinessDetail = Mapping[str, TraceAttributeValue]
 
 
 class ScenarioExecutionTraceStepId(StrEnum):
@@ -23,13 +27,22 @@ class ScenarioExecutionTraceStepId(StrEnum):
 
 
 class ScenarioExecutionTracePort(Protocol):
+    def begin_execution(
+        self,
+        *,
+        correlation_id: str,
+        scenario_id: str,
+        variant_id: str,
+    ) -> None:
+        ...
+
     def emit_lifecycle_step(
         self,
         step_id: ScenarioExecutionTraceStepId,
         *,
         outcome: str,
         component_identity: str,
-        business_detail: dict[str, Any] | None = None,
+        business_detail: TraceBusinessDetail | None = None,
     ) -> None:
         ...
 

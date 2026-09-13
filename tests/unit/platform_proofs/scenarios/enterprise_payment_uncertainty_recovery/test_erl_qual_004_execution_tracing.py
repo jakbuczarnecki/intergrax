@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import ast
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,7 @@ import pytest
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.execution import (
     EnterprisePaymentScenarioExecutionRequest,
+    EnterprisePaymentScenarioExecutor,
     ScenarioLifecycleOutcome,
     build_lab_execution_composition,
 )
@@ -20,6 +22,12 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.applicati
 )
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
     ScenarioExecutionTraceStepId,
+    TraceBusinessDetail,
+)
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.recorder import (
+    NullScenarioExecutionTrace,
+    RecordingScenarioExecutionTrace,
+    ScenarioExecutionTraceScope,
 )
 
 pytestmark = pytest.mark.unit
@@ -154,3 +162,145 @@ def test_tracing_architecture_no_duplicate_framework() -> None:
         if needle in text:
             intergrax_hits.append(str(path.relative_to(_REPO_ROOT)))
     assert not intergrax_hits
+
+
+_RECORDER_ADAPTER_SYMBOL = "RecordingScenarioExecutionTrace"
+_ALLOWED_CONCRETE_RECORDER_IMPORTS = frozenset(
+    {
+        "application/execution/composition.py",
+        "application/tracing/__init__.py",
+        "application/tracing/recorder.py",
+    }
+)
+_ORCHESTRATION_SCAN_ROOTS = (
+    _SCENARIO_ROOT / "application" / "execution",
+    _SCENARIO_ROOT / "application" / "services",
+    _SCENARIO_ROOT / "external_payment" / "adapters",
+)
+
+
+def _imports_recording_trace_adapter(module_path: Path) -> bool:
+    tree = ast.parse(module_path.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module is not None:
+            if not node.module.endswith(".tracing.recorder"):
+                continue
+            for alias in node.names:
+                if alias.name == _RECORDER_ADAPTER_SYMBOL:
+                    return True
+    return False
+
+
+def test_execution_orchestration_does_not_import_concrete_trace_recorder() -> None:
+    violations: list[str] = []
+    for root in _ORCHESTRATION_SCAN_ROOTS:
+        for path in root.rglob("*.py"):
+            rel = path.relative_to(_SCENARIO_ROOT).as_posix()
+            if rel in _ALLOWED_CONCRETE_RECORDER_IMPORTS:
+                continue
+            if _imports_recording_trace_adapter(path):
+                violations.append(rel)
+    assert not violations, violations
+
+
+@dataclass
+class _SubstituteScenarioExecutionTrace:
+    """Test double — not derived from RecordingScenarioExecutionTrace."""
+
+    begin_calls: list[tuple[str, str, str]] = field(default_factory=list)
+    emitted_steps: list[ScenarioExecutionTraceStepId] = field(default_factory=list)
+
+    def begin_execution(
+        self,
+        *,
+        correlation_id: str,
+        scenario_id: str,
+        variant_id: str,
+    ) -> None:
+        self.begin_calls.append((correlation_id, scenario_id, variant_id))
+
+    def emit_lifecycle_step(
+        self,
+        step_id: ScenarioExecutionTraceStepId,
+        *,
+        outcome: str,
+        component_identity: str,
+        business_detail: TraceBusinessDetail | None = None,
+    ) -> None:
+        _ = (outcome, component_identity, business_detail)
+        self.emitted_steps.append(step_id)
+
+    def snapshot(self) -> tuple[TraceEvent, ...]:
+        return ()
+
+
+def _executor_with_trace_port(trace: _SubstituteScenarioExecutionTrace) -> EnterprisePaymentScenarioExecutor:
+    lab = build_lab_execution_composition()
+    application = replace(lab._deps.application, execution_trace=trace)
+    deps = replace(lab._deps, application=application, execution_trace=trace)
+    return EnterprisePaymentScenarioExecutor(
+        application_root=lab._application_root,
+        dependencies=deps,
+        business_references=lab._references,
+    )
+
+
+def test_executor_operates_with_substitute_trace_port_not_recording() -> None:
+    substitute = _SubstituteScenarioExecutionTrace()
+    executor = _executor_with_trace_port(substitute)
+    result = executor.execute(
+        EnterprisePaymentScenarioExecutionRequest(
+            variant_id="payment_completed_after_unknown",
+            run_id="substitute-trace-port",
+        ),
+    )
+    assert result.lifecycle_outcome is ScenarioLifecycleOutcome.RECOVERY_CONTINUATION
+    assert len(substitute.begin_calls) == 1
+    assert substitute.begin_calls[0][1] == "ERL-QUAL-004"
+    assert ScenarioExecutionTraceStepId.SCENARIO_EXECUTION_STARTED in substitute.emitted_steps
+    assert ScenarioExecutionTraceStepId.SCENARIO_COMPLETED in substitute.emitted_steps
+    assert result.execution_trace_events == ()
+
+
+def test_null_trace_adapter_satisfies_full_port_lifecycle() -> None:
+    trace = NullScenarioExecutionTrace()
+    trace.begin_execution(
+        correlation_id="corr-null",
+        scenario_id="ERL-QUAL-004",
+        variant_id="payment_completed_after_unknown",
+    )
+    for step_id in ScenarioExecutionTraceStepId:
+        trace.emit_lifecycle_step(
+            step_id,
+            outcome="noop",
+            component_identity="test.null_trace",
+        )
+    assert trace.snapshot() == ()
+
+
+def test_recording_trace_adapter_satisfies_full_port_lifecycle() -> None:
+    trace = RecordingScenarioExecutionTrace(
+        scope=ScenarioExecutionTraceScope.mint(
+            correlation_id="corr-rec",
+            scenario_id="ERL-QUAL-004",
+            variant_id="payment_completed_after_unknown",
+        ),
+    )
+    trace.begin_execution(
+        correlation_id="corr-rec-run",
+        scenario_id="ERL-QUAL-004",
+        variant_id="payment_failed_after_unknown",
+    )
+    trace.emit_lifecycle_step(
+        ScenarioExecutionTraceStepId.SCENARIO_EXECUTION_STARTED,
+        outcome="started",
+        component_identity="test.recording_trace",
+        business_detail={"run_id": "r1"},
+    )
+    events = trace.snapshot()
+    assert len(events) == 1
+    payload = events[0].payload
+    assert isinstance(payload, ErlQual004LifecycleStepDiagV1)
+    assert payload.correlation_id == "corr-rec-run"
+    assert payload.trace_id
+    assert payload.execution_id

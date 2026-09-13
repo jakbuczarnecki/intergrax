@@ -7,6 +7,10 @@ from typing import Any
 
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
 
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
+    TraceBusinessDetail,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class ErlQual004LifecycleStepDiagV1(DiagnosticPayload):
@@ -20,7 +24,7 @@ class ErlQual004LifecycleStepDiagV1(DiagnosticPayload):
     outcome: str
     variant_id: str
     component_identity: str
-    business_detail: dict[str, Any]
+    business_detail: TraceBusinessDetail
 
     @classmethod
     def schema_id(cls) -> str:
@@ -36,7 +40,7 @@ class ErlQual004LifecycleStepDiagV1(DiagnosticPayload):
             "outcome": self.outcome,
             "variant_id": self.variant_id,
             "component_identity": self.component_identity,
-            "business_detail": self.business_detail,
+            "business_detail": dict(self.business_detail),
         }
 
     def redact(self) -> ErlQual004LifecycleStepDiagV1:

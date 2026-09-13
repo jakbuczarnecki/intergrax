@@ -60,9 +60,6 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integ
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
     ScenarioExecutionTraceStepId,
 )
-from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.recorder import (
-    RecordingScenarioExecutionTrace,
-)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.external_payment.domain.lifecycle import (
     ExternalPaymentLifecycleState,
 )
@@ -82,19 +79,13 @@ class EnterprisePaymentScenarioExecutor:
         self._deps = dependencies
         self._references = business_references
 
-    def _trace(self) -> RecordingScenarioExecutionTrace:
-        trace = self._deps.execution_trace
-        if not isinstance(trace, RecordingScenarioExecutionTrace):
-            raise TypeError("execution stack requires RecordingScenarioExecutionTrace")
-        return trace
-
     def _finalize_result(
         self,
         result: ScenarioExecutionProofResult,
         *,
         terminal_outcome: str,
     ) -> ScenarioExecutionProofResult:
-        trace = self._trace()
+        trace = self._deps.execution_trace
         trace.emit_lifecycle_step(
             ScenarioExecutionTraceStepId.SCENARIO_COMPLETED,
             outcome=terminal_outcome,
@@ -123,7 +114,7 @@ class EnterprisePaymentScenarioExecutor:
     ) -> ScenarioExecutionProofResult:
         scenario_id = "ERL-QUAL-004"
         correlation_id = self._references.payment_intent_reference
-        trace = self._trace()
+        trace = self._deps.execution_trace
         trace.begin_execution(
             correlation_id=correlation_id,
             scenario_id=scenario_id,
