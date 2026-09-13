@@ -48,9 +48,7 @@ def build_production_delegated_subtask_child_execution_port(
     by the composition owner (budget alignment only — not Nexus child scheduling).
     """
     resolved_ledger = (
-        ledger
-        if ledger is not None
-        else create_execution_budget_ledger(run_budget)
+        ledger if ledger is not None else create_execution_budget_ledger(run_budget)
     )
     work_port = delegated_subtask_child_execution_work_port(ledger=resolved_ledger)
     return ProductionDelegatedSubtaskChildExecutionPort(_work_port=work_port)
