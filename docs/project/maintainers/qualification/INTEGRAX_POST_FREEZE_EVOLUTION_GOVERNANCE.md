@@ -379,6 +379,8 @@ Point to **families**—do not treat “new tests pass” as sufficient alone.
 
 Full freeze-era index: [`INTEGRAX_CORE_PLATFORM_FREEZE.md`](INTEGRAX_CORE_PLATFORM_FREEZE.md) § Freeze enforcement gates.
 
+**Architecture Guard Matrix SSOT (guard families, severity, archetypes, gate dependencies — does not alter classification semantics):** [`INTEGRAX_POST_FREEZE_ARCHITECTURE_GUARD_MATRIX.md`](INTEGRAX_POST_FREEZE_ARCHITECTURE_GUARD_MATRIX.md)
+
 ---
 
 ## Regression policy
