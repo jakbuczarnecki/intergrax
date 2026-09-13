@@ -220,10 +220,10 @@ Convention for each layer: **package** = primary module path; **task id** = stab
 **Wejścia:** `DecisionOrchestrationRequest`.  
 **Wyjścia:** `DecisionOrchestrationResult`, lifecycle metadata stages.  
 **Punkty rozszerzeń:** `production_decision_orchestration/protocol.py`; domyślne mostki: `EngineBackedSelectionProvider`, `EngineBackedGovernanceProvider`, `RecordingExecutionProvider` (`default_providers.py`).  
-**Granice:** Domyślny execution provider **rejestruje referencję** — pełne Execution wymaga własnego `ExecutionProvider`.  
+**Granice:** Domyślny execution provider **rejestruje referencję** — pełne Execution wymaga własnego `ExecutionProvider` lub platformowego `ExecutionRuntime` (nie `RecordingExecutionProvider` na ścieżce sukcesu canonical).  
 **Task id:** `DS-E2E-15J-L6` (`ORCHESTRATION_TASK_ID`).
 
-**Platform parallel:** `intergrax/runtime/decision_flow.py` — pełny gate lifecycle platformy.
+**Platform parallel:** `intergrax/runtime/decision_flow.py` — pełny gate lifecycle platformy. **Canonical Docker proof:** `testing_support/decision_e2e/canonical_docker_execution.py` (`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION`).
 
 ---
 
@@ -664,7 +664,7 @@ Operational tools must not call Execution directly to bypass Decision or governa
 ## 14. Production qualification (DS-E2E-15J integrated flow)
 
 **Task:** `DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION`  
-**Status:** **QUALIFIED WITH OBSERVATIONS** (in-repo bundle; Docker distributed E2E not claimed).
+**Status:** **QUALIFIED** (in-repo bundle + Docker E2E system qualification closure; L6 matrix + canonical Execution proofs; in-container integration requires Docker daemon on qualification host).
 
 ```text
                     Decision System
@@ -688,6 +688,28 @@ Operational tools must not call Execution directly to bypass Decision or governa
 | Composition root | `production_decision_integration_composition_provider()` |
 
 Full report: [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md).
+
+### 14.1 Docker E2E system qualification
+
+**Task:** `DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION`  
+**Status:** **QUALIFIED** (in-container scenarios; Docker daemon required on host)  
+**Harness:** `testing_support/decision_e2e/docker_system_*`  
+**Integration proof:** `tests/integration/decision_system/test_docker_e2e_system_qualification.py`
+
+Same stack diagram as §14; scenarios validate governance safety, evidence correlation, controlled failures, and plugin swap **inside** the DS-E2E container worker without `if docker:` provider branches.
+
+Report: [`maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md).
+
+### 14.2 Canonical Execution Docker E2E
+
+**Task:** `DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION`  
+**Status:** **QUALIFIED** (canonical `ExecutionRuntime` path; no `RecordingExecutionProvider` on success)  
+**Report:** [`maintainers/qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md)
+
+### 14.3 Docker E2E system qualification closure
+
+**Task:** `DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION-CLOSURE`  
+**Combined status:** Decision System + Canonical Execution Engine — **Docker E2E System Qualification = QUALIFIED** (both proof planes; see Final closure section in the system qualification report).
 
 ---
 

@@ -49,6 +49,7 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
     CostProfile,
     DecisionProfile,
     DecisionFlowProfile,
+    DecisionPluginProfile,
     DecisionVerificationProfile,
     DiagnosticProfile,
     EvaluationProfile,

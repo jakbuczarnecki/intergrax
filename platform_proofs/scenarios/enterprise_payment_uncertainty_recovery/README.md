@@ -128,6 +128,8 @@ Full limitations: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 
 **[ERL-QUAL-004 Full Execution Integration](docs/ERL_QUAL_004_FULL_EXECUTION_INTEGRATION.md)** — lab end-to-end composition (`application/execution/`), variant A/B/C proof runs, and architecture boundaries.
 
+**[ERL-QUAL-004 Tracing Integration](../../../../docs/ERL_QUAL_004_TRACING_INTEGRATION.md)** — platform `TraceEvent` spine, lifecycle steps, correlation, and proof consumption boundaries.
+
 ## Data provisioning boundary (foundation)
 
 Scenario-local **contract-first** provisioning lives under `contracts/provisioning/` (`ScenarioProvisioningPort`, typed context/results, lifecycle coordinator). A **replaceable reference** in-memory provisioner under `provisioning/reference/` validates the canonical `dataset/` manifest and variant slices. The **PostgreSQL lab adapter** under `provisioning/postgresql/` materializes `dataset/` into the scenario database — see [ERL_QUAL_004_POSTGRESQL_PROVISIONING.md](docs/ERL_QUAL_004_POSTGRESQL_PROVISIONING.md). In-memory full execution wiring: `application/execution/` (see [ERL_QUAL_004_FULL_EXECUTION_INTEGRATION.md](docs/ERL_QUAL_004_FULL_EXECUTION_INTEGRATION.md)).

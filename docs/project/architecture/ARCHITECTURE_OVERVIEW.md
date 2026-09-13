@@ -40,7 +40,7 @@ For the category problem, strategic fit, and alternatives, see [Why Intergrax](.
 The current architecture can support - and provides foundations for - product classes such as:
 
 - governed knowledge applications;
-- evidence-backed decision support ([`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) - target canon; **CURRENT:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md));
+- evidence-backed decision support ([`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) — canonical Decision System; legacy Critic path retired per DS-MIG-04);
 - controlled agent workflows with approvals;
 - applications that call external tools and systems under configured authority; and
 - reviewable, auditable AI-assisted workflows.
@@ -206,7 +206,7 @@ The **Decision System** is the platform capability that leads a decision from ca
 | Execution authorization | Governed Execution / Policy |
 | Side effects | Nexus |
 
-**Target canon:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md). **CURRENT production path:** [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) until clean-cut migration. **Not production-qualified** (E0).
+**Canonical path:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) — hosted inside canonical Execution; governance mints `DecisionExecutionAuthorization` before `ExecutionRequest` work. Enterprise qualification: [`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md). **Certified core freeze (maintainers):** Decision System **CLOSED**, Execution Engine **FROZEN**, Certified Core Platform **FROZEN** — [`INTEGRAX_CORE_PLATFORM_FREEZE.md`](../maintainers/qualification/INTEGRAX_CORE_PLATFORM_FREEZE.md); future roadmap capabilities evolve outside that frozen core.
 
 ## LKW as the active reference product
 

@@ -20,6 +20,7 @@ class PluginAdmissionReasonCode(StrEnum):
     ALREADY_REGISTERED = "already_registered"
     PLUGIN_ID_SKIPPED = "plugin_id_skipped"
     NOT_IN_ALLOWLIST = "not_in_allowlist"
+    PLUGIN_NOT_SELECTED = "plugin_not_selected"
     PRODUCTION_ADMISSION_DENIED = "production_admission_denied"
     INVALID_POLICY_CONTRIBUTION_SOURCE = "invalid_policy_contribution_source"
     POLICY_HANDLER_BINDING_MISSING = "policy_handler_binding_missing"
@@ -36,6 +37,11 @@ class PluginAdmissionReasonCode(StrEnum):
     MANIFEST_INVALID = "manifest_invalid"
     MANIFEST_CAPABILITY_BINDING_MISSING = "manifest_capability_binding_missing"
     CAPABILITY_ID_MISMATCH = "capability_id_mismatch"
+    PLUGIN_IDENTITY_MISMATCH = "plugin_identity_mismatch"
+    METADATA_PLUGIN_ID_COLLISION = "metadata_plugin_id_collision"
+    REQUESTED_PLUGIN_LOCATOR_NOT_FOUND = "requested_plugin_locator_not_found"
+    REQUESTED_PLUGIN_LOCATOR_AMBIGUOUS = "requested_plugin_locator_ambiguous"
+    MANIFEST_PLUGIN_ID_MISMATCH = "manifest_plugin_id_mismatch"
 
 
 @dataclass(frozen=True, slots=True)

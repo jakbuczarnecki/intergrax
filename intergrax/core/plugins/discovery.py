@@ -171,6 +171,27 @@ def instantiate_entry_point_target(target: object) -> object:
     return target
 
 
+def load_entry_point_targets_for_specs(
+    specs: Sequence[EntryPointSpec],
+    *,
+    on_load_failure: LoadIsolation = "fail_fast",
+) -> list[EntryPointLoadResult]:
+    """Load only the given entry-point specs (post-admission)."""
+    loaded: list[EntryPointLoadResult] = []
+    for spec in specs:
+        try:
+            target = load_entry_point_value(spec.value)
+        except PluginLoadError as exc:
+            if on_load_failure == "isolate":
+                loaded.append(EntryPointLoadResult(spec=spec, error=exc))
+                continue
+            raise PluginLoadError(
+                f"Failed to load {spec.group}:{spec.name} ({spec.value}): {exc}"
+            ) from exc
+        loaded.append(EntryPointLoadResult(spec=spec, target=target))
+    return loaded
+
+
 def load_entry_point_targets(
     group: str,
     *,

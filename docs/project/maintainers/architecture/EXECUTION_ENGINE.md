@@ -8,6 +8,8 @@
 
 A documentation consolidation commit **does not reopen** frozen production semantics. Any change that contradicts frozen architecture or freeze records requires a separate architecture decision.
 
+**Maintainer status (DS-E2E-15J closure):** Execution Engine architecture remains **frozen** for enterprise semantics; **canonical runtime** and **Decision System integration** are **Docker E2E qualified** via [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) and combined system closure in [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md).
+
 ---
 
 ## 1. Purpose
@@ -262,6 +264,13 @@ Architecture supporting the runner (not a domain semantics owner): [`EXECUTION_Q
 
 Do not treat historical wall times as machine-independent SLAs.
 
+### Decision System integration (Docker E2E)
+
+| Record | Scope | Status |
+| --- | --- | --- |
+| [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) | L6 matrix hosting + combined system closure | **QUALIFIED** |
+| [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) | Decision → `DecisionExecutionAuthorization` → `ExecutionRuntime` | **QUALIFIED** |
+
 ---
 
 ## 12. Operator configuration
@@ -299,6 +308,8 @@ Implementation: `testing_support/execution_qualification/configuration.py` (`res
 | Diagnostic lineage (DG-001 R1) | [`DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_READ_INTEGRATION_R1.md`](../qualification/DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_READ_INTEGRATION_R1.md) | **CANONICAL** qual record |
 | Qualification runner | P0 + R1 + R2 + R3 acceleration records | **QUALIFIED** chain |
 | Scale / resilience | W0 / W1 qualification docs | **QUALIFIED** tranches (see scale architecture) |
+| Decision System Docker E2E (L6 matrix / hosting boundary) | [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) · `tests/integration/decision_system/test_docker_e2e_system_qualification.py` | **QUALIFIED** (Docker daemon required on qualification host) |
+| Decision → canonical `ExecutionRuntime` Docker E2E | [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) · `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (`-k canonical`) | **QUALIFIED** (no `RecordingExecutionProvider` on success path) |
 
 ---
 

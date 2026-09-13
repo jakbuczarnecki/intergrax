@@ -38,6 +38,10 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integ
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.plugins.payment_evidence_evaluator import (
     PaymentEvidenceEvaluatorPlugin,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
+    ScenarioExecutionTracePort,
+    ScenarioExecutionTraceStepId,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.contracts.payment_reconciliation_evidence import (
     PaymentReconciliationEvidenceLookupPort,
 )
@@ -58,6 +62,7 @@ def run_enterprise_reliability_phase(
     tenant_id: str,
     gateway: EnterpriseReliabilityPluginGateway,
     payment_evidence_lookup: PaymentReconciliationEvidenceLookupPort,
+    execution_trace: ScenarioExecutionTracePort,
     recorded_at: datetime | None = None,
 ) -> EnterpriseReliabilityPhaseResult:
     """Admission → reconciliation → evidence → resolution → governance → recovery."""
@@ -65,6 +70,12 @@ def run_enterprise_reliability_phase(
     admission = admit_external_effect_unknown_with_contract(
         correlation_id=correlation_id,
         contract=contract,
+    )
+    execution_trace.emit_lifecycle_step(
+        ScenarioExecutionTraceStepId.RELIABILITY_CASE_CREATED,
+        outcome=admission.state.effect_outcome.value,
+        component_identity="intergrax.runtime.enterprise_reliability.admission",
+        business_detail={"contract_id": admission.contract_id},
     )
     timestamp = recorded_at or datetime.now(tz=UTC)
 
@@ -81,6 +92,18 @@ def run_enterprise_reliability_phase(
         tenant_id=tenant_id,
         recorded_at=timestamp,
     )
+    probe_verdict = None
+    if reconciliation_run.execution.probe_result is not None:
+        probe_verdict = reconciliation_run.execution.probe_result.verdict.value
+    execution_trace.emit_lifecycle_step(
+        ScenarioExecutionTraceStepId.RECONCILIATION_EXECUTED,
+        outcome=reconciliation_run.execution.disposition.value,
+        component_identity="intergrax.runtime.enterprise_reliability.reconciliation",
+        business_detail={
+            "probe_verdict": probe_verdict,
+            "plugin_id": SCENARIO_RECONCILIATION_PLUGIN_ID,
+        },
+    )
     evidence = reconciliation_run.evidence
     if evidence is None:
         raise ValueError("reconciliation_probe_missing_evidence")
@@ -93,6 +116,12 @@ def run_enterprise_reliability_phase(
         tenant_id=tenant_id,
         contract_id=SCENARIO_EXTERNAL_EFFECT_CONTRACT_ID,
         evaluator_strategy=evaluator,
+    )
+    execution_trace.emit_lifecycle_step(
+        ScenarioExecutionTraceStepId.EVIDENCE_EVALUATED,
+        outcome=evidence_evaluation.outcome.value,
+        component_identity="erl_integration.plugins.payment_evidence_evaluator",
+        business_detail={"evidence_ref": evidence.evidence_ref},
     )
 
     strategy_context = EnterpriseReliabilityStrategyContext(
@@ -113,6 +142,12 @@ def run_enterprise_reliability_phase(
         ),
     )
     resolution_result = resolution_plugin or missing_resolution_strategy_decision()
+    execution_trace.emit_lifecycle_step(
+        ScenarioExecutionTraceStepId.RESOLUTION_DECIDED,
+        outcome=resolution_result.action.value,
+        component_identity="erl_integration.plugins.payment_resolution_strategy",
+        business_detail={"evidence_ref": evidence.evidence_ref},
+    )
 
     recovery_bundle = recommend_external_effect_recovery_lifecycle(
         state=unknown_episode_state,
@@ -135,6 +170,18 @@ def run_enterprise_reliability_phase(
         gateway=gateway,
         plugin_id=SCENARIO_RECONCILIATION_PLUGIN_ID,
         tenant_id=tenant_id,
+    )
+    execution_trace.emit_lifecycle_step(
+        ScenarioExecutionTraceStepId.GOVERNANCE_EVALUATED,
+        outcome=governance_evaluation.governance_decision.disposition.value,
+        component_identity="erl_integration.plugins.payment_governance_policy",
+        business_detail={},
+    )
+    execution_trace.emit_lifecycle_step(
+        ScenarioExecutionTraceStepId.RECOVERY_EXECUTED,
+        outcome=recovery_bundle.recovery_decision.action.value,
+        component_identity="erl_integration.plugins.payment_recovery_strategy",
+        business_detail={},
     )
 
     return EnterpriseReliabilityPhaseResult(

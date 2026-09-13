@@ -36,6 +36,7 @@ class ScenarioApplicationCompositionRoot:
             order_access=dependencies.order_access,
             payment_workflow=dependencies.payment_workflow,
             observability=dependencies.observability,
+            execution_trace=dependencies.execution_trace,
         )
 
     def run(self, context: ScenarioExecutionContext) -> ScenarioApplicationRunResult:

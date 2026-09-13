@@ -6,9 +6,11 @@ from __future__ import annotations
 
 from enum import Enum
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from intergrax.core.plugins.selection_ref import PlatformPluginSelectionRef
 
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
 from intergrax.applications.contracts.application_recovery_contract import ApplicationRecoveryContract
@@ -358,6 +360,41 @@ class DecisionVerificationProfile(BaseModel):
     semantic_rubric_ref: str | None = None
 
 
+class DecisionPluginProfile(BaseModel):
+    """Explicit Decision platform plugin activation for Tier-3 composition (P0-A)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    discover_entry_points: bool = False
+    verification_stage_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
+    strategy_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
+    artifact_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
+    require_manifest_capability_binding: bool = False
+
+    @model_validator(mode="after")
+    def _reject_duplicate_selection(self) -> Self:
+        for field_name, plugins in (
+            ("verification_stage_plugins", self.verification_stage_plugins),
+            ("strategy_plugins", self.strategy_plugins),
+            ("artifact_plugins", self.artifact_plugins),
+        ):
+            plugin_ids: set[str] = set()
+            location_keys: set[tuple[str, str, str]] = set()
+            for ref in plugins:
+                if ref.plugin_id in plugin_ids:
+                    raise ValueError(
+                        f"duplicate plugin_id in {field_name}: {ref.plugin_id!r}",
+                    )
+                plugin_ids.add(ref.plugin_id)
+                key = ref.location_key
+                if key in location_keys:
+                    raise ValueError(
+                        f"duplicate plugin locator in {field_name}: {key!r}",
+                    )
+                location_keys.add(key)
+        return self
+
+
 class DecisionFlowProfile(BaseModel):
     """Host-level Decision flow scopes and revision budget."""
 
@@ -377,6 +414,7 @@ class DecisionProfile(BaseModel):
         default_factory=DecisionVerificationProfile,
     )
     flow: DecisionFlowProfile = Field(default_factory=DecisionFlowProfile)
+    plugins: DecisionPluginProfile = Field(default_factory=DecisionPluginProfile)
 
 
 AdaptiveMode = Literal["observe", "recommend", "shadow", "canary", "apply"]

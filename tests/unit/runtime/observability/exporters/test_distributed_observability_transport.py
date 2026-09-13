@@ -10,8 +10,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-pytest.importorskip("opentelemetry.exporter.otlp.proto.http._log_exporter")
-
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,

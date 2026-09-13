@@ -25,6 +25,9 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integ
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.contracts.payment_recovery_action import (
     PaymentRecoveryActionPort,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
+    ScenarioExecutionTracePort,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.external_payment.adapters.in_memory_persistence import (
     InMemoryExternalRealityStore,
 )
@@ -41,3 +44,4 @@ class EnterprisePaymentExecutionDependencies:
     payment_governance_lookup: PaymentGovernanceBusinessContextLookupPort | None
     payment_recovery_action_port: PaymentRecoveryActionPort
     erl_gateway: EnterpriseReliabilityPluginGateway
+    execution_trace: ScenarioExecutionTracePort

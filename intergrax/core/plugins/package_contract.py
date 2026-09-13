@@ -102,6 +102,7 @@ class CapabilityDescriptor(BaseModel):
     entry_point_group: str
     entry_point_name: str
     capability_ids: tuple[str, ...] = ()
+    plugin_id: str | None = None
 
     @field_validator("domain")
     @classmethod
@@ -117,6 +118,13 @@ class CapabilityDescriptor(BaseModel):
     @classmethod
     def _validate_entry_point_name(cls, value: str) -> str:
         return _require_non_empty_text(value, field_name="entry_point_name")
+
+    @field_validator("plugin_id")
+    @classmethod
+    def _validate_plugin_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return _require_non_empty_text(value, field_name="plugin_id")
 
     @field_validator("capability_ids", mode="before")
     @classmethod

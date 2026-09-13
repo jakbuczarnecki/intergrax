@@ -18,7 +18,6 @@ from intergrax.runtime.observability.exporters.distributed.distributed_configura
 from intergrax.runtime.observability.exporters.distributed.errors import (
     DistributedTransportError,
 )
-from intergrax.runtime.observability.exporters.otlp.otlp_transport import OtlpTransport
 
 
 class CollectorTransport(OtlpTransportPort):
@@ -29,6 +28,8 @@ class CollectorTransport(OtlpTransportPort):
     """
 
     def __init__(self, config: DistributedTransportConfiguration) -> None:
+        from intergrax.runtime.observability.exporters.otlp.otlp_transport import OtlpTransport
+
         validated = validate_distributed_transport_configuration(config)
         self._config = validated
         self._inner = OtlpTransport(

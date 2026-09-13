@@ -276,6 +276,7 @@ def rewire_scenario_decision_wiring(
         registry=composition.registry,
         agent_id=resolve_application_decision_agent_id(composition.registry, environment),
         spec=decision_spec,
+        environment=environment,
     )
     if validation_engine is not None:
         composition.nexus_loop.apply_validation_engine(validation_engine)
@@ -370,6 +371,7 @@ def build_scenario_runtime_from_environment(
         registry=registry,
         agent_id=resolve_application_decision_agent_id(registry, environment),
         spec=decision_spec,
+        environment=environment,
     )
     task_memory = wire_task_memory_from_profile(environment)
     declarative_tool_invoker = build_declarative_invoker_for_application_host(

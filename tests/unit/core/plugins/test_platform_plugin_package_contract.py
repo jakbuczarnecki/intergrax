@@ -60,6 +60,17 @@ def test_capability_descriptor_valid() -> None:
     assert descriptor.capability_ids == ("acme_foo",)
 
 
+def test_capability_descriptor_optional_plugin_id() -> None:
+    descriptor = CapabilityDescriptor(
+        domain="decision",
+        entry_point_group="intergrax.decision_verification_stages",
+        entry_point_name="incident_check",
+        capability_ids=["decision.verification_stage"],
+        plugin_id="incident.domain_check",
+    )
+    assert descriptor.plugin_id == "incident.domain_check"
+
+
 @pytest.mark.parametrize(
     ("field_name", "value"),
     [

@@ -10,7 +10,7 @@ The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - c
 > - **Architecture:** **TARGET CANON - FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
 > - **Implementation:** Canonical Decision System runtime **implemented and active**.
 > - **CURRENT decision authority = Decision System.** Critic runtime **retired**.
-> - **Production qualification (DS-E2E-15J):** **QUALIFIED WITH OBSERVATIONS** — in-repo Decision → Governance → Execution qualification bundle passes; distributed **Docker E2E** phase remains a separate gate (see [Production qualification](#production-qualification-boundary)).
+> - **Production qualification (DS-E2E-15J):** **QUALIFIED WITH OBSERVATIONS** — architecture **closed**; in-repo Decision → Governance → Execution bundle plus **Docker E2E system qualification** (L6 matrix + canonical Execution Docker proofs; closure `DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION-CLOSURE`; integration proof requires Docker daemon on the qualification host; see [Production qualification](#production-qualification-boundary)).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.
 
@@ -744,9 +744,43 @@ Decision domain composition (`intergrax/runtime/decision_plugin_composition.py`)
 targets and composes immutable registries. Installation alone does not activate plugins —
 explicit ``discover_entry_points=True`` composition is required.
 
-When ``require_manifest_capability_binding=True``, absence of positive Platform Plugin
-manifest capability evidence is an admission failure (fail-closed). Plugins without
-verifiable manifest binding are not loaded, instantiated, or registered.
+Application profiles declare **requested** external Decision plugins using typed
+``PlatformPluginSelectionRef`` locators (distribution + entry-point group +
+entry-point name + canonical ``plugin_id``). Only requested locators undergo
+manifest validation and fail-closed admission. Installed but **not requested**
+plugins are ignored for the current application composition and cannot block host
+startup, even when their manifests are invalid. In **STRICT** execution mode,
+manifest capability binding is mandatory for every requested external plugin
+even when ``require_manifest_capability_binding`` is false on the profile (LAB may
+keep binding profile-controlled).
+
+### Tier-3 application composition (P0-A)
+
+Applications do **not** assemble a private Decision runtime. The canonical path is:
+
+```text
+ApplicationManifest / ApplicationEnvironmentProfile
+        ↓
+compose_application_decision()  — intergrax/applications/_shared/application_decision_composition.py
+        ↓
+decision_plugin_composition (explicit discover + selection refs)
+        ↓
+VerificationPipeline + DecisionStrategyRegistry + DecisionArtifactKindRegistry
+        ↓
+CanonicalDecisionFlowGate (wire_application_decision)
+        ↓
+Execution / Nexus host
+```
+
+- **Activation:** ``installed ≠ selected ≠ admitted ≠ active``. ``DecisionProfile.plugins``
+  selects strategy kinds, verification stage kinds, and artifact kinds; ``discover_entry_points``
+  (or ``INTERGRAX_DISCOVER_PLUGINS``) enables discovery — empty allowlists keep external plugins
+  inactive. Requested kinds that never activate fail composition closed.
+- **Built-in verification:** structural stage is always composed for agent-execution wiring;
+  ``DecisionVerificationProfile.semantic_enabled`` / ``trajectory_enabled`` add platform stages
+  to the same pipeline (optional until eval bridge is present at wiring time).
+- **Observability:** ``ApplicationDecisionComposition`` exposes activated kinds and per-domain
+  ``DomainPluginLoadReport`` snapshots.
 
 ### Integration boundary (operational)
 
@@ -842,7 +876,7 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | ---- | ----- | --------- |
 | **Architecture (A)** | **A4** | Frozen target canon established; boundaries to Execution, Policy, HITL, Diagnostics explicit |
 | **Implementation (I)** | **I3** | Core lifecycle · revision · verification · governance · execution integration implemented |
-| **Production (P)** | **P2** | DS-E2E-15J integrated flow qualified in-repo; Docker distributed E2E not claimed |
+| **Production (P)** | **P2** | DS-E2E-15J integrated flow + Docker E2E system qualification (L6 + canonical Execution) qualified in-repo; multi-host / external SaaS not claimed |
 | **Evidence (E)** | **E1** | DS-E2E-15J production qualification bundle + architecture closure evidence |
 
 ---
@@ -856,7 +890,8 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
 | **Production qualification (DS-E2E-15J)** | [`maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md) |
 | **Implementation plan** | [`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) |
 | **Historical Critic snapshot** | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) |
-| **Public proof** | Not claimed - pending DS-E2E Docker qualification phase |
+| **Docker E2E system qualification (DS-E2E-15J)** | [`maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) |
+| **Public proof** | Bounded to in-repo + Docker harness; external SaaS not claimed |
 
 ### Production qualification boundary
 
@@ -874,9 +909,33 @@ Aligned with [`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_TAXONOMY.md):
                      Audit Evidence
 ```
 
-**Observation:** L6 default `RecordingExecutionProvider` records an auditable execution reference for qualification; hosts bind a real Execution Engine provider at the composition root without changing orchestration contracts.
+**Observation:** L6 default `RecordingExecutionProvider` records an auditable execution reference for matrix orchestration proofs only; it is **not** the canonical Execution Engine path. Production and canonical qualification bind `ExecutionRuntime` at the composition root (`build_qualification_composition` / host wiring) and mint `DecisionExecutionAuthorization` via `CanonicalDecisionFlowGate` before `ExecutionRequest` work runs.
 
-**Still not claimed without Docker E2E:** distributed deployment qualification ([`maintainers/plans/DECISION_SYSTEM.md`](../maintainers/plans/DECISION_SYSTEM.md) — Phase DS-E2E Docker). Unit, integration, and mocked paths alone do not satisfy that gate.
+**Docker E2E (DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION):** L6 matrix scenarios in-container; proof `tests/unit/testing_support/decision_e2e/test_docker_system_scenarios.py`.
+
+**Canonical Execution Docker E2E (DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION):** `CanonicalDecisionFlowGate` → authorization → `ExecutionRuntime` in-container; proof `tests/unit/testing_support/decision_e2e/test_canonical_docker_execution.py` and `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (`-k canonical`). Report: `docs/project/maintainers/qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`.
+
+**Combined system (closure):** Decision System + Canonical Execution Engine — **Docker E2E System Qualification = QUALIFIED** when both Docker proof planes pass on the qualification host. Final closure record: [`maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../maintainers/qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) (Final closure section).
+
+**Not claimed:** multi-host production topology, external SaaS vendors, or hosts without a successful Docker integration run.
+
+---
+
+### Docker E2E system diagram
+
+```text
+                    Decision System
+                           ↓
+                 Governance Authorization
+                           ↓
+                    Execution Engine
+                           ↓
+                       Runtime
+                           ↓
+                  Evidence / Audit Layer
+```
+
+**Environmental limits:** single-container qualification worker; no additional microservices; business logic is not forked for Docker.
 
 ---
 

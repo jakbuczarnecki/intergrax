@@ -17,6 +17,9 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.applicati
     BusinessActionKind,
     RecordingScenarioApplicationObservability,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.recorder import (
+    NullScenarioExecutionTrace,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.tests.support.lab_ports import (
     LabReferenceOrderAccess,
     LabReferencePaymentWorkflow,
@@ -35,6 +38,7 @@ def test_composition_root_runs_workflow_and_records_observability(
             order_access=LabReferenceOrderAccess(lab_references),
             payment_workflow=LabReferencePaymentWorkflow(lab_references),
             observability=observability,
+            execution_trace=NullScenarioExecutionTrace(),
         )
     )
     result = root.run(valid_execution_context)

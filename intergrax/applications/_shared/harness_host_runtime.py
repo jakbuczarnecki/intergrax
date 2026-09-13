@@ -333,6 +333,7 @@ def build_harness_host_runtime(
         registry=resolved_registry,
         agent_id=resolve_application_decision_agent_id(resolved_registry, effective_environment),
         spec=decision_spec,
+        environment=effective_environment,
     )
     task_memory = wire_task_memory_from_profile(effective_environment)
     resolved_tenant_id = (tenant_id or "").strip()

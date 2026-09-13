@@ -81,6 +81,11 @@ dependencies = [
 test = [
   "pytest>=8.4,<9",
   "pytest-asyncio>=0.23,<0.24",
+  # W5-H1 — canonical ``uv run pytest`` must satisfy enterprise OTLP gate tests.
+  "opentelemetry-api>=1.27,<2",
+  "opentelemetry-sdk>=1.27,<2",
+  "opentelemetry-exporter-otlp-proto-http>=1.27,<2",
+  "opentelemetry-exporter-otlp-proto-grpc>=1.27,<2",
 ]
 quality = [
   "ruff",
@@ -237,6 +242,13 @@ harness-author = [
   "python-dotenv>=1.0,<2",
   "PyYAML>=6.0,<7",
 ]
+# Optional OpenTelemetry SDK for runtime event OTLP export (W5-E / W5-F / W5-G).
+observability-otlp = [
+  "opentelemetry-api>=1.27,<2",
+  "opentelemetry-sdk>=1.27,<2",
+  "opentelemetry-exporter-otlp-proto-http>=1.27,<2",
+  "opentelemetry-exporter-otlp-proto-grpc>=1.27,<2",
+]
 # Optional legacy adapters only — not required for Nexus / Harness runtime.
 langgraph-legacy = ["langgraph>=0.0.40,<2"]
 # Explicit native LLM provider ownership boundaries.
@@ -291,6 +303,10 @@ dev-ci = [
   "pytest-xdist>=3.6,<4",
   "redis>=5.0",
   "celery>=5.3",
+  "opentelemetry-api>=1.27,<2",
+  "opentelemetry-sdk>=1.27,<2",
+  "opentelemetry-exporter-otlp-proto-http>=1.27,<2",
+  "opentelemetry-exporter-otlp-proto-grpc>=1.27,<2",
 ]
 # Optional deps required by the RAG guard CI profile (LangChain-free core + gate extras).
 dev-ci-rag = [

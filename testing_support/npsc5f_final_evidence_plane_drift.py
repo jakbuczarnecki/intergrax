@@ -13,6 +13,7 @@ from pathlib import Path
 from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 
 # Evidence Plane freeze baseline: EE-FINAL-02 enterprise re-freeze on integrated ``development``.
+# W5-H1-FIX1: restored from orphan ``8879dc8`` (local-only duplicate of ``b0a465fc0``).
 NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "7a3569c64e892588992635c9cee10c264a9fc200"
 
 NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
@@ -53,9 +54,20 @@ _QUALIFIED_COMPATIBLE_PREFIXES: tuple[str, ...] = (
     "docs/project/maintainers/qualification/EE_FINAL_02",
     "docs/project/maintainers/qualification/NPSC_5F_FINAL",
     "docs/project/maintainers/qualification/NPSC_5F_R",
+    "docs/project/maintainers/qualification/W5_H1_OTLP_DEPENDENCY",
+    "docs/project/maintainers/qualification/W5_H1_FIX1_NPSC5F_FREEZE_BASELINE_PROVENANCE_REPAIR",
+    "docs/project/maintainers/architecture/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md",
+    "intergrax/applications/_shared/runtime_event_delivery_wiring.py",
+    "intergrax/runtime/observability/exporters/",
+    "intergrax/runtime/observability/application_execution_stage_signal",
+    "testing_support/npsc5f_final_evidence_plane_drift.py",
     "testing_support/npsc5f_final_",
     "testing_support/npsc5f_r",
     "tests/unit/runtime/architecture/test_npsc5f_final_",
+    "tests/unit/runtime/observability/test_w5_h1_otlp_dependency_contract.py",
+    "tests/unit/runtime/observability/test_enterprise_scale_resilience_w5_g_profile_activation.py",
+    "tests/unit/runtime/observability/exporters/test_otlp_transport_adapter.py",
+    "tests/unit/runtime/observability/exporters/test_distributed_observability_transport.py",
     "tests/unit/testing_support/test_npsc5f_final_",
 )
 

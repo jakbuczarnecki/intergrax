@@ -57,6 +57,9 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integ
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.erl_integration.contracts.payment_governance_context import (
     PaymentGovernanceBusinessContext,
 )
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.port import (
+    ScenarioExecutionTraceStepId,
+)
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.external_payment.domain.lifecycle import (
     ExternalPaymentLifecycleState,
 )
@@ -76,12 +79,53 @@ class EnterprisePaymentScenarioExecutor:
         self._deps = dependencies
         self._references = business_references
 
+    def _finalize_result(
+        self,
+        result: ScenarioExecutionProofResult,
+        *,
+        terminal_outcome: str,
+    ) -> ScenarioExecutionProofResult:
+        trace = self._deps.execution_trace
+        trace.emit_lifecycle_step(
+            ScenarioExecutionTraceStepId.SCENARIO_COMPLETED,
+            outcome=terminal_outcome,
+            component_identity="application.execution.runner",
+            business_detail={"lifecycle_outcome": result.lifecycle_outcome.value},
+        )
+        return ScenarioExecutionProofResult(
+            scenario_id=result.scenario_id,
+            variant_id=result.variant_id,
+            correlation_id=result.correlation_id,
+            lifecycle_outcome=result.lifecycle_outcome,
+            provisioning_status=result.provisioning_status,
+            application_phase=result.application_phase,
+            evidence_ref=result.evidence_ref,
+            evidence_evaluation_outcome=result.evidence_evaluation_outcome,
+            reconciliation_probe_verdict=result.reconciliation_probe_verdict,
+            resolution_result=result.resolution_result,
+            governance_result=result.governance_result,
+            recovery_result=result.recovery_result,
+            execution_trace_events=trace.snapshot(),
+        )
+
     def execute(
         self,
         request: EnterprisePaymentScenarioExecutionRequest,
     ) -> ScenarioExecutionProofResult:
         scenario_id = "ERL-QUAL-004"
         correlation_id = self._references.payment_intent_reference
+        trace = self._deps.execution_trace
+        trace.begin_execution(
+            correlation_id=correlation_id,
+            scenario_id=scenario_id,
+            variant_id=request.variant_id,
+        )
+        trace.emit_lifecycle_step(
+            ScenarioExecutionTraceStepId.SCENARIO_EXECUTION_STARTED,
+            outcome="started",
+            component_identity="application.execution.runner",
+            business_detail={"run_id": request.run_id, "variant_id": request.variant_id},
+        )
         provisioning_context = ProvisioningContext(
             identity=ScenarioIdentity(
                 qualification_id=scenario_id,
@@ -100,23 +144,26 @@ class EnterprisePaymentScenarioExecutor:
             invoke_cleanup=False,
         )
         if provisioning_run.status is not ProvisioningOutcomeStatus.SUCCEEDED:
-            return ScenarioExecutionProofResult(
-                scenario_id=scenario_id,
-                variant_id=request.variant_id,
-                correlation_id=correlation_id,
-                lifecycle_outcome=derive_lifecycle_outcome(
+            return self._finalize_result(
+                ScenarioExecutionProofResult(
+                    scenario_id=scenario_id,
+                    variant_id=request.variant_id,
+                    correlation_id=correlation_id,
+                    lifecycle_outcome=derive_lifecycle_outcome(
+                        provisioning_status=provisioning_run.status,
+                        application_phase=None,
+                        recovery=None,
+                    ),
                     provisioning_status=provisioning_run.status,
                     application_phase=None,
-                    recovery=None,
+                    evidence_ref=None,
+                    evidence_evaluation_outcome=None,
+                    reconciliation_probe_verdict=None,
+                    resolution_result=None,
+                    governance_result=None,
+                    recovery_result=None,
                 ),
-                provisioning_status=provisioning_run.status,
-                application_phase=None,
-                evidence_ref=None,
-                evidence_evaluation_outcome=None,
-                reconciliation_probe_verdict=None,
-                resolution_result=None,
-                governance_result=None,
-                recovery_result=None,
+                terminal_outcome="provisioning_failed",
             )
 
         execution_context = ScenarioExecutionContext(
@@ -134,23 +181,26 @@ class EnterprisePaymentScenarioExecutor:
 
         latest = self._deps.external_reality_store.latest()
         if latest is None or latest.bundle.lifecycle_state is not ExternalPaymentLifecycleState.UNKNOWN:
-            return ScenarioExecutionProofResult(
-                scenario_id=scenario_id,
-                variant_id=request.variant_id,
-                correlation_id=correlation_id,
-                lifecycle_outcome=derive_lifecycle_outcome(
+            return self._finalize_result(
+                ScenarioExecutionProofResult(
+                    scenario_id=scenario_id,
+                    variant_id=request.variant_id,
+                    correlation_id=correlation_id,
+                    lifecycle_outcome=derive_lifecycle_outcome(
+                        provisioning_status=provisioning_run.status,
+                        application_phase=application_phase,
+                        recovery=None,
+                    ),
                     provisioning_status=provisioning_run.status,
                     application_phase=application_phase,
-                    recovery=None,
+                    evidence_ref=None,
+                    evidence_evaluation_outcome=None,
+                    reconciliation_probe_verdict=None,
+                    resolution_result=None,
+                    governance_result=None,
+                    recovery_result=None,
                 ),
-                provisioning_status=provisioning_run.status,
-                application_phase=application_phase,
-                evidence_ref=None,
-                evidence_evaluation_outcome=None,
-                reconciliation_probe_verdict=None,
-                resolution_result=None,
-                governance_result=None,
-                recovery_result=None,
+                terminal_outcome="application_incomplete",
             )
 
         reality_lookup = self._deps.reality_lookup
@@ -184,6 +234,7 @@ class EnterprisePaymentScenarioExecutor:
             tenant_id=request.tenant_id,
             gateway=self._deps.erl_gateway,
             payment_evidence_lookup=payment_lookup,
+            execution_trace=self._deps.execution_trace,
         )
         reconciliation_run = erl_result.reconciliation_run
         probe_verdict = None
@@ -196,21 +247,24 @@ class EnterprisePaymentScenarioExecutor:
 
         evidence_ref = reconciliation_run.evidence.evidence_ref if reconciliation_run.evidence else None
 
-        return ScenarioExecutionProofResult(
-            scenario_id=scenario_id,
-            variant_id=request.variant_id,
-            correlation_id=correlation_id,
-            lifecycle_outcome=derive_lifecycle_outcome(
+        return self._finalize_result(
+            ScenarioExecutionProofResult(
+                scenario_id=scenario_id,
+                variant_id=request.variant_id,
+                correlation_id=correlation_id,
+                lifecycle_outcome=derive_lifecycle_outcome(
+                    provisioning_status=provisioning_run.status,
+                    application_phase=BusinessWorkflowPhase.PAYMENT_REQUESTED,
+                    recovery=erl_result.recovery_result,
+                ),
                 provisioning_status=provisioning_run.status,
-                application_phase=BusinessWorkflowPhase.PAYMENT_REQUESTED,
-                recovery=erl_result.recovery_result,
+                application_phase=application_phase,
+                evidence_ref=evidence_ref,
+                evidence_evaluation_outcome=erl_result.evidence_evaluation_outcome,
+                reconciliation_probe_verdict=probe_verdict,
+                resolution_result=erl_result.resolution_result,
+                governance_result=erl_result.governance_result,
+                recovery_result=erl_result.recovery_result,
             ),
-            provisioning_status=provisioning_run.status,
-            application_phase=application_phase,
-            evidence_ref=evidence_ref,
-            evidence_evaluation_outcome=erl_result.evidence_evaluation_outcome,
-            reconciliation_probe_verdict=probe_verdict,
-            resolution_result=erl_result.resolution_result,
-            governance_result=erl_result.governance_result,
-            recovery_result=erl_result.recovery_result,
+            terminal_outcome=erl_result.recovery_result.action.value,
         )
