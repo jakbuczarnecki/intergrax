@@ -14,7 +14,13 @@ from intergrax.contracts.event_delivery import (
     EventDeliveryResult,
     EventPriority,
     EventSinkPort,
+    effective_event_delivery_obligation,
 )
+from intergrax.runtime.observability.event_delivery.enterprise_default_event_delivery_obligation_policy import (
+    EnterpriseDefaultEventDeliveryObligationPolicy,
+)
+
+_DEFAULT_OBLIGATION_POLICY = EnterpriseDefaultEventDeliveryObligationPolicy()
 
 
 class InMemoryEventSink:
@@ -38,11 +44,13 @@ class InMemoryEventSink:
         priority: EventPriority,
         deadline: float | None = None,
     ) -> EventDeliveryResult:
+        obligation = effective_event_delivery_obligation(priority, _DEFAULT_OBLIGATION_POLICY)
         if self._closed:
             return EventDeliveryResult(
                 disposition=EventDeliveryDisposition.REJECTED,
                 priority=priority,
                 buffered_depth=0,
+                obligation=obligation,
             )
         if self._consume_delay_seconds > 0:
             time.sleep(self._consume_delay_seconds)
@@ -53,6 +61,7 @@ class InMemoryEventSink:
             disposition=EventDeliveryDisposition.ACCEPTED,
             priority=priority,
             buffered_depth=depth,
+            obligation=obligation,
         )
 
     def close(self) -> None:

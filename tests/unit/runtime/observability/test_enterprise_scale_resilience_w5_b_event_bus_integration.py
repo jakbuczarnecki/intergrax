@@ -11,7 +11,11 @@ import pytest
 
 from intergrax.contracts.event_delivery import (
     CriticalEventDeliveryError,
+    EventDeliveryDisposition,
+    EventDeliveryObligation,
     EventDeliveryPolicy,
+    EventDeliveryResult,
+    EventPriority,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -53,16 +57,51 @@ async def test_runtime_event_bus_uses_sink() -> None:
 
 
 def test_critical_event_cannot_disappear_when_buffer_full() -> None:
-    downstream = InMemoryEventSink(consume_delay_seconds=1.0)
+    gate = threading.Event()
+
+    class _GatedDownstream:
+        def publish(self, event, *, priority, deadline=None) -> EventDeliveryResult:
+            gate.wait(timeout=10.0)
+            return EventDeliveryResult(
+                disposition=EventDeliveryDisposition.ACCEPTED,
+                priority=priority,
+                buffered_depth=0,
+                obligation=EventDeliveryObligation.COMPLETION,
+            )
+
+        def close(self) -> None:
+            gate.set()
+
     bounded = BoundedEventSink(
-        downstream,
+        _GatedDownstream(),
         EventDeliveryPolicy(max_capacity=4),
     )
     bus = RuntimeEventBus(record_history=False, event_sink=bounded)
-    for _ in range(4):
-        bus.record(_terminal_event())
-    with pytest.raises(CriticalEventDeliveryError):
-        bus.record(_terminal_event())
+    errors: list[CriticalEventDeliveryError] = []
+    lock = threading.Lock()
+    start_barrier = threading.Barrier(7)
+
+    def _record_critical() -> None:
+        start_barrier.wait(timeout=5.0)
+        try:
+            bus.record(_terminal_event())
+        except CriticalEventDeliveryError as exc:
+            with lock:
+                errors.append(exc)
+
+    threads = [threading.Thread(target=_record_critical) for _ in range(6)]
+
+    def _release_when_ready() -> None:
+        start_barrier.wait(timeout=5.0)
+        time.sleep(0.3)
+        gate.set()
+
+    threads.append(threading.Thread(target=_release_when_ready))
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=15.0)
+    assert errors
     bus.close()
 
 

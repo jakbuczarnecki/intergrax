@@ -32,10 +32,6 @@ from intergrax.runtime.events.event_taxonomy import EventCategory
 from intergrax.runtime.observability.event_delivery.delivery_metrics import (
     InternalDeliveryMetrics,
 )
-from intergrax.runtime.observability.event_delivery.runtime_event_delivery import (
-    delivery_priority_for_runtime_event,
-    runtime_event_to_deliverable,
-)
 from intergrax.runtime.events.evidence_durability import (
     EvidencePersistenceRequirement,
     evidence_persistence_requirement,
@@ -119,6 +115,7 @@ class RuntimeEventBus:
         event_sink: EventSinkPort | None = None,
         delivery_metrics: InternalDeliveryMetrics | None = None,
         delivery_reaction: EventSinkDeliveryReactionPort | None = None,
+        critical_completion_timeout_seconds: float = 5.0,
     ) -> None:
         self._handlers: DefaultDict[RuntimeEventType, List[tuple[str, int, EventHandler]]] = (
             defaultdict(list)
@@ -141,6 +138,9 @@ class RuntimeEventBus:
             if delivery_metrics is not None
             else (InternalDeliveryMetrics() if event_sink is not None else None)
         )
+        if critical_completion_timeout_seconds <= 0:
+            raise ValueError("critical_completion_timeout_seconds must be > 0")
+        self._critical_completion_timeout_seconds = critical_completion_timeout_seconds
         self._closed = False
 
     def attach_persistence(self, persistence: EvidencePersistencePort) -> None:
@@ -241,6 +241,11 @@ class RuntimeEventBus:
         self._dispatch_handlers_sync(event)
 
     def _deliver_through_event_sink(self, event: RuntimeEvent) -> None:
+        from intergrax.runtime.observability.event_delivery.runtime_event_delivery import (
+            delivery_priority_for_runtime_event,
+            runtime_event_to_deliverable,
+        )
+
         sink = self._event_sink
         if sink is None:
             return
@@ -249,9 +254,18 @@ class RuntimeEventBus:
         started = time.monotonic()
         reaction: EventDeliveryReaction
         record_result: EventDeliveryResult | None = None
+        boundary_error: EventDeliveryBoundaryError | None = None
+        deadline: float | None = None
+        if priority is EventPriority.CRITICAL:
+            deadline = time.monotonic() + self._critical_completion_timeout_seconds
         try:
-            record_result = sink.publish(deliverable, priority=priority)
-        except EventDeliveryBoundaryError as boundary_error:
+            record_result = sink.publish(
+                deliverable,
+                priority=priority,
+                deadline=deadline,
+            )
+        except EventDeliveryBoundaryError as caught:
+            boundary_error = caught
             reaction = self._resolve_delivery_reaction(
                 priority=priority,
                 deliverable=deliverable,
@@ -270,9 +284,10 @@ class RuntimeEventBus:
         if metrics is not None and record_result is not None:
             metrics.record(record_result, latency_seconds=latency)
         if reaction is EventDeliveryReaction.FAIL_EXECUTION:
-            raise CriticalEventDeliveryError(
-                f"critical runtime event {deliverable.event_id} delivery failed at sink",
-            )
+            message = f"critical runtime event {deliverable.event_id} delivery failed at sink"
+            if boundary_error is not None:
+                raise CriticalEventDeliveryError(message) from boundary_error
+            raise CriticalEventDeliveryError(message)
 
     def _resolve_delivery_reaction(
         self,

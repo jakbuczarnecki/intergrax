@@ -44,12 +44,30 @@ class EventDeliveryDisposition(StrEnum):
     DEFERRED = "DEFERRED"
 
 
+class EventDeliveryObligation(StrEnum):
+    """What ``ACCEPTED`` must mean for a given ``publish()`` call."""
+
+    ADMISSION = "ADMISSION"
+    COMPLETION = "COMPLETION"
+
+
+class EventSinkHealthState(StrEnum):
+    HEALTHY = "HEALTHY"
+    UNHEALTHY = "UNHEALTHY"
+
+
+class EventDeliveryLateFailureStage(StrEnum):
+    DOWNSTREAM_PUBLISH = "DOWNSTREAM_PUBLISH"
+
+
 class EventDeliveryBoundaryFailureKind(StrEnum):
     """Normalized delivery-boundary failure (not persistence or OTLP vendor errors)."""
 
     SINK_CLOSED = "SINK_CLOSED"
+    SINK_UNAVAILABLE = "SINK_UNAVAILABLE"
     TRANSPORT_FAILURE = "TRANSPORT_FAILURE"
     INTERNAL_ERROR = "INTERNAL_ERROR"
+    COMPLETION_TIMEOUT = "COMPLETION_TIMEOUT"
 
 
 class EventDeliveryReaction(StrEnum):
@@ -159,6 +177,7 @@ class EventDeliveryResult:
     disposition: EventDeliveryDisposition
     priority: EventPriority
     buffered_depth: int
+    obligation: EventDeliveryObligation
 
 
 @dataclass(frozen=True, slots=True)
@@ -167,12 +186,27 @@ class EventDeliveryPolicy:
 
     max_capacity: int
     important_wait_timeout_seconds: float = 0.05
+    critical_completion_timeout_seconds: float = 5.0
+    drain_shutdown_timeout_seconds: float = 30.0
 
     def __post_init__(self) -> None:
         if self.max_capacity < 1:
             raise ValueError("max_capacity must be >= 1")
         if self.important_wait_timeout_seconds < 0:
             raise ValueError("important_wait_timeout_seconds must be >= 0")
+        if self.critical_completion_timeout_seconds <= 0:
+            raise ValueError("critical_completion_timeout_seconds must be > 0")
+        if self.drain_shutdown_timeout_seconds <= 0:
+            raise ValueError("drain_shutdown_timeout_seconds must be > 0")
+
+
+@dataclass(frozen=True, slots=True)
+class EventDeliveryLateFailure:
+    deliverable: DeliverableEvent
+    priority: EventPriority
+    disposition: EventDeliveryDisposition
+    stage: EventDeliveryLateFailureStage
+    boundary_kind: EventDeliveryBoundaryFailureKind | None = None
 
 
 class CriticalEventDeliveryError(RuntimeError):
@@ -226,6 +260,21 @@ class EventExportSinkPort(Protocol):
 
 
 @runtime_checkable
+class EventDeliveryObligationPolicyPort(Protocol):
+    def obligation_for(self, priority: EventPriority) -> EventDeliveryObligation: ...
+
+
+@runtime_checkable
+class EventDeliveryPostAdmissionFailureObserverPort(Protocol):
+    def on_late_failure(self, failure: EventDeliveryLateFailure) -> None: ...
+
+
+@runtime_checkable
+class EventSinkHealthPort(Protocol):
+    def health_state(self) -> EventSinkHealthState: ...
+
+
+@runtime_checkable
 class EventSinkDeliveryReactionPort(Protocol):
     """Extension point: interpret sink results without raising ``CriticalEventDeliveryError``."""
 
@@ -244,6 +293,17 @@ class EventSinkDeliveryReactionPort(Protocol):
         error: EventDeliveryBoundaryError,
         deliverable: DeliverableEvent,
     ) -> EventDeliveryReaction: ...
+
+
+def effective_event_delivery_obligation(
+    priority: EventPriority,
+    policy: EventDeliveryObligationPolicyPort,
+) -> EventDeliveryObligation:
+    """Platform floor: ``CRITICAL`` always requires ``COMPLETION``."""
+    obligation = policy.obligation_for(priority)
+    if priority is EventPriority.CRITICAL:
+        return EventDeliveryObligation.COMPLETION
+    return obligation
 
 
 def priority_for_critical_kind(kind: CriticalEventKind) -> EventPriority:

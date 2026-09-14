@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import time
 
 from intergrax.contracts.event_delivery import (
@@ -15,6 +16,10 @@ from intergrax.contracts.event_delivery import (
     EventDeliveryResult,
     EventExportSinkPort,
     EventPriority,
+    effective_event_delivery_obligation,
+)
+from intergrax.runtime.observability.event_delivery.enterprise_default_event_delivery_obligation_policy import (
+    EnterpriseDefaultEventDeliveryObligationPolicy,
 )
 from intergrax.runtime.observability.event_delivery.async_export_runner import (
     AsyncExportRunner,
@@ -22,6 +27,9 @@ from intergrax.runtime.observability.event_delivery.async_export_runner import (
 from intergrax.runtime.observability.event_delivery.delivery_metrics import (
     InternalDeliveryMetrics,
 )
+
+
+_DEFAULT_OBLIGATION_POLICY = EnterpriseDefaultEventDeliveryObligationPolicy()
 
 
 class RuntimeEventExportSink:
@@ -59,12 +67,13 @@ class RuntimeEventExportSink:
         priority: EventPriority,
         deadline: float | None = None,
     ) -> EventDeliveryResult:
-        _ = deadline
+        obligation = effective_event_delivery_obligation(priority, _DEFAULT_OBLIGATION_POLICY)
         if self._closed:
             return EventDeliveryResult(
                 disposition=EventDeliveryDisposition.REJECTED,
                 priority=priority,
                 buffered_depth=0,
+                obligation=obligation,
             )
         self._pending_exports += 1
         depth = self._pending_exports
@@ -72,8 +81,14 @@ class RuntimeEventExportSink:
         metrics = self._delivery_metrics
         if metrics is not None:
             metrics.record_export_attempt()
+        export_timeout = 30.0
+        if deadline is not None:
+            export_timeout = max(0.001, deadline - time.monotonic())
         try:
-            self._runner.run(self._export_sink.export(event.export_payload))
+            self._runner.run(
+                self._export_sink.export(event.export_payload),
+                timeout_seconds=export_timeout,
+            )
             latency = time.monotonic() - started
             metrics = self._delivery_metrics
             if metrics is not None:
@@ -85,9 +100,16 @@ class RuntimeEventExportSink:
                 disposition=EventDeliveryDisposition.ACCEPTED,
                 priority=priority,
                 buffered_depth=depth,
+                obligation=obligation,
             )
         except EventDeliveryBoundaryError:
             raise
+        except concurrent.futures.TimeoutError as exc:
+            raise EventDeliveryBoundaryError(
+                kind=EventDeliveryBoundaryFailureKind.COMPLETION_TIMEOUT,
+                message="export timed out",
+                deliverable_event_id=event.event_id,
+            ) from exc
         except Exception as exc:
             latency = time.monotonic() - started
             metrics = self._delivery_metrics
@@ -98,17 +120,11 @@ class RuntimeEventExportSink:
                     queue_depth=depth,
                     dropped=dropped,
                 )
-            disposition = (
-                EventDeliveryDisposition.DROPPED
-                if priority is EventPriority.BEST_EFFORT
-                else EventDeliveryDisposition.REJECTED
-            )
-            _ = exc
-            return EventDeliveryResult(
-                disposition=disposition,
-                priority=priority,
-                buffered_depth=depth,
-            )
+            raise EventDeliveryBoundaryError(
+                kind=EventDeliveryBoundaryFailureKind.INTERNAL_ERROR,
+                message="unexpected export sink defect",
+                deliverable_event_id=event.event_id,
+            ) from exc
         finally:
             self._pending_exports = max(0, self._pending_exports - 1)
 

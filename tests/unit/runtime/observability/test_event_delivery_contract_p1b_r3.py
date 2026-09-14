@@ -16,6 +16,7 @@ from intergrax.contracts.event_delivery import (
     EventDeliveryBoundaryError,
     EventDeliveryBoundaryFailureKind,
     EventDeliveryDisposition,
+    EventDeliveryObligation,
     EventDeliveryPolicy,
     EventDeliveryReaction,
     EventDeliveryResult,
@@ -103,6 +104,7 @@ class _RejectingSink:
             disposition=EventDeliveryDisposition.REJECTED,
             priority=priority,
             buffered_depth=0,
+            obligation=EventDeliveryObligation.ADMISSION,
         )
 
     def close(self) -> None:
@@ -175,6 +177,7 @@ def test_enterprise_default_reaction_matches_critical_reject() -> None:
         disposition=EventDeliveryDisposition.REJECTED,
         priority=EventPriority.CRITICAL,
         buffered_depth=0,
+        obligation=EventDeliveryObligation.COMPLETION,
     )
     assert (
         reaction.react_to_result(
@@ -197,6 +200,7 @@ def test_plugin_custom_event_sink_port_without_core_changes() -> None:
                 disposition=EventDeliveryDisposition.ACCEPTED,
                 priority=EventPriority.BEST_EFFORT,
                 buffered_depth=1,
+                obligation=EventDeliveryObligation.ADMISSION,
             )
 
         def close(self) -> None:

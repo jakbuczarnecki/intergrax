@@ -13,7 +13,9 @@ from intergrax.contracts.event_delivery import (
     CriticalEventKind,
     DeliverableEvent,
     EventDeliveryDisposition,
+    EventDeliveryObligation,
     EventDeliveryPolicy,
+    EventDeliveryResult,
     EventPriority,
     make_deliverable_event,
     make_observability_export_payload,
@@ -54,19 +56,46 @@ def test_best_effort_overflow_allows_drop_execution_continues() -> None:
 
 
 def test_critical_overflow_fail_closed_no_silent_loss() -> None:
-    downstream = InMemoryEventSink(consume_delay_seconds=1.0)
+    gate = threading.Event()
+
+    class _GatedDownstream:
+        def publish(self, event, *, priority, deadline=None) -> EventDeliveryResult:
+            gate.wait(timeout=10.0)
+            return EventDeliveryResult(
+                disposition=EventDeliveryDisposition.ACCEPTED,
+                priority=priority,
+                buffered_depth=0,
+                obligation=EventDeliveryObligation.COMPLETION,
+            )
+
+        def close(self) -> None:
+            gate.set()
+
     policy = EventDeliveryPolicy(max_capacity=10)
-    sink = BoundedEventSink(downstream, policy)
-    for i in range(10):
-        sink.publish(
-            _event(f"c-{i}", seq=i),
-            priority=EventPriority.CRITICAL,
-        )
-    overflow = sink.publish(
-        _event("c-overflow"),
-        priority=EventPriority.CRITICAL,
-    )
-    assert overflow.disposition is EventDeliveryDisposition.REJECTED
+    sink = BoundedEventSink(_GatedDownstream(), policy)
+    results: list[EventDeliveryResult] = []
+    lock = threading.Lock()
+    start_barrier = threading.Barrier(12)
+
+    def _publish_one(label: str) -> None:
+        start_barrier.wait(timeout=5.0)
+        result = sink.publish(_event(label), priority=EventPriority.CRITICAL)
+        with lock:
+            results.append(result)
+
+    threads = [threading.Thread(target=_publish_one, args=(f"c-{i}",)) for i in range(11)]
+
+    def _release_when_ready() -> None:
+        start_barrier.wait(timeout=5.0)
+        time.sleep(0.3)
+        gate.set()
+
+    threads.append(threading.Thread(target=_release_when_ready))
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=15.0)
+    assert any(r.disposition is EventDeliveryDisposition.REJECTED for r in results)
     sink.close()
 
 
