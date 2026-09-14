@@ -10,9 +10,15 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 if TYPE_CHECKING:
     from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    validate_attempt_id,
+    validate_execution_id,
+)
 from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.contracts.autonomy_level import AutonomyLevel
@@ -115,8 +121,24 @@ class HumanApprovalResolution(BaseModel):
     approver: HumanApproverEvidence
     resolved_at: str
     run_id: Optional[str] = None
+    attempt_id: Optional[AttemptId] = None
+    execution_id: Optional[ExecutionId] = None
     response_text: Optional[str] = None
     schema_version: str = "human_approval_resolution.v2"
+
+    @field_validator("attempt_id", mode="before")
+    @classmethod
+    def _validate_attempt_id(cls, value: object | None) -> AttemptId | None:
+        if value is None:
+            return None
+        return validate_attempt_id(value)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id(cls, value: object | None) -> ExecutionId | None:
+        if value is None:
+            return None
+        return validate_execution_id(value)
 
 
 class TaskGovernanceState(BaseModel):

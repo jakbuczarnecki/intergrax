@@ -13,6 +13,7 @@ from intergrax.contracts.control_plane_mutation import (
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
+    resolve_meaningful_side_effect_execution_identity,
 )
 from intergrax.contracts.runtime_policy import PolicyDecision
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
@@ -28,18 +29,22 @@ def control_plane_mutation_to_meaningful_side_effect_request(
     principal_id = principal.user_id or principal.auth_subject
     if not principal_id:
         raise ValueError("control_plane_mutation_requires_principal_identity")
-    execution_task_id = (
-        str(request.task_id) if request.task_id is not None else request.mutation_id
-    )
-    execution_run_id = (
-        str(request.run_id) if request.run_id is not None else request.mutation_id
+    if request.task_id is None or request.run_id is None:
+        raise ValueError("control_plane_mutation_requires_task_and_run_identity")
+    task_id, run_id, attempt_id, execution_id = (
+        resolve_meaningful_side_effect_execution_identity(
+            task_id=request.task_id,
+            run_id=request.run_id,
+        )
     )
     return MeaningfulSideEffectRequest(
         action=request.mutation_type,
         kinds=(MeaningfulSideEffectKind.MUTATION,),
         side_effect_scope_id=request.resource_scope,
-        task_id=execution_task_id,
-        run_id=execution_run_id,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
         principal_id=principal_id,
         tenant_id=principal.tenant_id,
         resource=f"{request.resource_type}:{request.resource_id}",

@@ -184,6 +184,8 @@ class HumanPauseCoordinator:
         pause_id: str | None = None,
         human_request_id: str | None = None,
         run_id: str | None = None,
+        attempt_id: str | None = None,
+        execution_id: str | None = None,
         response_text: str | None = None,
     ) -> HumanApprovalResolution:
         gov = task.runtime.governance
@@ -222,6 +224,25 @@ class HumanPauseCoordinator:
             if gov.human_request.request_id != active_request_id:
                 raise HumanApprovalResolutionError("human_request identity mismatch")
 
+        governed = (
+            gov.human_request.governed_continuation
+            if gov.human_request is not None
+            else None
+        )
+        if governed is not None:
+            if attempt_id is None:
+                raise HumanApprovalResolutionError("attempt_id required for governed continuation")
+            if execution_id is None:
+                raise HumanApprovalResolutionError(
+                    "execution_id required for governed continuation",
+                )
+            if str(governed.attempt_id) != attempt_id:
+                raise HumanApprovalResolutionError("governed continuation attempt_id mismatch")
+            if str(governed.execution_id) != execution_id:
+                raise HumanApprovalResolutionError(
+                    "governed continuation execution_id mismatch",
+                )
+
         resolution = HumanApprovalResolution(
             task_id=task.task_id,
             pause_id=active_pause_id,
@@ -230,6 +251,8 @@ class HumanPauseCoordinator:
             approver=approver,
             resolved_at=datetime.now(timezone.utc).isoformat(),
             run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
             response_text=response_text or task.options.human.response_text,
         )
         gov.hitl_resolution = resolution

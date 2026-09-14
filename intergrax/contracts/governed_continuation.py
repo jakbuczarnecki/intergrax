@@ -23,6 +23,16 @@ from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    validate_attempt_id,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
 from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.governed_continuation_correlation import (
@@ -84,8 +94,10 @@ class GovernedContinuationRequest(BaseModel):
         SCHEMA_GOVERNED_CONTINUATION_REQUEST_V1
     )
     reason: ContinuationReason
-    task_id: str = _NON_EMPTY
-    run_id: str = _NON_EMPTY
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
     source_agent_id: str = _NON_EMPTY
     source_step_id: str | None = None
     prompt: str = Field(min_length=1)
@@ -153,13 +165,33 @@ class GovernedContinuationRequest(BaseModel):
             self.policy_bundle_digest,
         )
 
-    @field_validator("task_id", "run_id", "source_agent_id", "prompt")
+    @field_validator("source_agent_id", "prompt")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()
         if not normalized:
             raise ValueError("field must be non-empty")
         return normalized
+
+    @field_validator("task_id", mode="before")
+    @classmethod
+    def _validate_task_id(cls, value: object) -> TaskId:
+        return validate_task_id(value)
+
+    @field_validator("run_id", mode="before")
+    @classmethod
+    def _validate_run_id(cls, value: object) -> RunId:
+        return validate_run_id(value)
+
+    @field_validator("attempt_id", mode="before")
+    @classmethod
+    def _validate_attempt_id(cls, value: object) -> AttemptId:
+        return validate_attempt_id(value)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
 
     @field_validator("source_step_id")
     @classmethod
@@ -177,6 +209,8 @@ class GovernedContinuationRequest(BaseModel):
             reason=self.reason,
             task_id=self.task_id,
             run_id=self.run_id,
+            attempt_id=self.attempt_id,
+            execution_id=self.execution_id,
             side_effect_scope_id=self.side_effect_scope_id,
             side_effect_scope_digest=self.side_effect_scope_digest,
             operation_id=self.operation_id,

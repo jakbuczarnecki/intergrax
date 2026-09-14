@@ -36,7 +36,14 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
 from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
@@ -62,8 +69,10 @@ _RESOURCE = "document-123"
 _RESOURCE_OTHER = "document-456"
 _NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
 _TASK_ID = mint_task_id()
-_RUN_ID = "run-g5c2b2b-1"
-_RUN_OTHER = "run-g5c2b2b-2"
+_RUN_ID = mint_run_id()
+_RUN_OTHER = mint_run_id()
+_ATTEMPT_ID = mint_attempt_id()
+_EXECUTION_ID = mint_execution_id()
 _POLICY_RULE = "runtime.hitl"
 _BUNDLE_ID = "bundle-g5c2b2b"
 _BUNDLE_V1 = "1.0.0"
@@ -130,6 +139,8 @@ def _grant(
         side_effect_scope_digest=side_effect_scope_digest,
         task_id=task_id,
         run_id=run_id,
+        attempt_id=_ATTEMPT_ID,
+        execution_id=_EXECUTION_ID,
         operation_id=operation_id,
         resource_scope=resource_scope,
         policy_rule_id=_POLICY_RULE,
@@ -260,6 +271,8 @@ def _enforcement_request(
             side_effect_scope_digest=side_effect_scope_digest,
             task_id=task_id,
             run_id=run_id,
+            attempt_id=_ATTEMPT_ID,
+            execution_id=_EXECUTION_ID,
             principal_id=_ACTING,
             tenant_id=_TENANT,
             resource=resource_scope,

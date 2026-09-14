@@ -81,6 +81,7 @@ class NexusIntakeRunner:
                 raise RuntimeError("approver evidence required for human approval resolution")
         hitl_run_id: str | None = None
         hitl_attempt_id: str | None = None
+        hitl_execution_id: str | None = None
         if verdict in {
             HumanResponseVerdict.REJECT,
             HumanResponseVerdict.ESCALATE,
@@ -89,6 +90,7 @@ class NexusIntakeRunner:
             if self.execution_identity is None:
                 raise RuntimeError("active execution identity required for intake emission")
             hitl_run_id, hitl_attempt_id = self.execution_identity.require()
+            hitl_execution_id = str(self.execution_identity.require_execution_id())
         if verdict == HumanResponseVerdict.REJECT:
             HumanPauseCoordinator.resolve_human_response(
                 task,
@@ -97,6 +99,8 @@ class NexusIntakeRunner:
                 pause_id=response_pause_id,
                 human_request_id=response_request_id,
                 run_id=hitl_run_id,
+                attempt_id=hitl_attempt_id,
+                execution_id=hitl_execution_id,
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
@@ -114,6 +118,8 @@ class NexusIntakeRunner:
                 pause_id=response_pause_id,
                 human_request_id=response_request_id,
                 run_id=hitl_run_id,
+                attempt_id=hitl_attempt_id,
+                execution_id=hitl_execution_id,
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
@@ -136,6 +142,8 @@ class NexusIntakeRunner:
                 pause_id=response_pause_id,
                 human_request_id=response_request_id,
                 run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=hitl_execution_id,
                 response_text=task.options.human.response_text,
             )
             resolution = task.runtime.governance.hitl_resolution

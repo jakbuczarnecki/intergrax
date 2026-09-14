@@ -62,6 +62,10 @@ def matches_current_requirement(
         return False
     if grant.run_id != current_side_effect.run_id:
         return False
+    if grant.attempt_id != current_side_effect.attempt_id:
+        return False
+    if grant.execution_id != current_side_effect.execution_id:
+        return False
 
     operation_id = current_operation_id.strip()
     if not operation_id or grant.operation_id != operation_id:
@@ -96,6 +100,10 @@ def grant_belongs_to_same_proposal_scope(
     if grant.task_id != side_effect.task_id:
         return False
     if grant.run_id != side_effect.run_id:
+        return False
+    if grant.attempt_id != side_effect.attempt_id:
+        return False
+    if grant.execution_id != side_effect.execution_id:
         return False
 
     normalized_operation = operation_id.strip()
@@ -215,6 +223,15 @@ class GovernedContinuationGrantCoordinator:
         if resolution.run_id != continuation.run_id:
             raise GovernedContinuationGrantError("continuation run_id mismatch")
 
+        if resolution.attempt_id is None:
+            raise GovernedContinuationGrantError("resolution attempt_id required")
+        if resolution.execution_id is None:
+            raise GovernedContinuationGrantError("resolution execution_id required")
+        if resolution.attempt_id != continuation.attempt_id:
+            raise GovernedContinuationGrantError("continuation attempt_id mismatch")
+        if resolution.execution_id != continuation.execution_id:
+            raise GovernedContinuationGrantError("continuation execution_id mismatch")
+
     @staticmethod
     def create_grant_from_approval(task: Task) -> GovernedContinuationApprovalGrant | None:
         gov = task.runtime.governance
@@ -241,6 +258,8 @@ class GovernedContinuationGrantCoordinator:
             side_effect_scope_digest=continuation.side_effect_scope_digest,
             task_id=continuation.task_id,
             run_id=continuation.run_id,
+            attempt_id=continuation.attempt_id,
+            execution_id=continuation.execution_id,
             operation_id=continuation.operation_id,
             resource_scope=continuation.resource_scope,
             policy_rule_id=continuation.policy_rule_id,

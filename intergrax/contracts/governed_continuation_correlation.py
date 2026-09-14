@@ -10,6 +10,16 @@ from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    validate_attempt_id,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.policy_action import PolicyAction
 from intergrax.contracts.policy_bundle_provenance import (
     has_attested_policy_bundle_provenance,
@@ -39,8 +49,10 @@ class GovernedContinuationCorrelation(BaseModel):
 
     continuation_request_id: str = _NON_EMPTY
     reason: ContinuationReason
-    task_id: str = _NON_EMPTY
-    run_id: str = _NON_EMPTY
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
     side_effect_scope_id: str | None = None
     side_effect_scope_digest: str | None = None
     operation_id: str = _NON_EMPTY
@@ -52,13 +64,33 @@ class GovernedContinuationCorrelation(BaseModel):
     policy_action: PolicyAction | None = None
     source_step_id: str | None = None
 
-    @field_validator("continuation_request_id", "operation_id", "task_id", "run_id")
+    @field_validator("continuation_request_id", "operation_id")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()
         if not normalized:
             raise ValueError("field must be non-empty")
         return normalized
+
+    @field_validator("task_id", mode="before")
+    @classmethod
+    def _validate_task_id(cls, value: object) -> TaskId:
+        return validate_task_id(value)
+
+    @field_validator("run_id", mode="before")
+    @classmethod
+    def _validate_run_id(cls, value: object) -> RunId:
+        return validate_run_id(value)
+
+    @field_validator("attempt_id", mode="before")
+    @classmethod
+    def _validate_attempt_id(cls, value: object) -> AttemptId:
+        return validate_attempt_id(value)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
 
     @field_validator("side_effect_scope_id")
     @classmethod

@@ -98,6 +98,8 @@ def _continuation_request(
     resource_scope: str = RESOURCE,
     task_id: str = TASK_ID,
     run_id: str = RUN_ID,
+    attempt_id: str = ATTEMPT_ID,
+    execution_id: str = EXECUTION_ID,
     side_effect_scope_digest: str | None = None,
     policy_bundle_id: str = BUNDLE_ID,
     policy_bundle_version: str = BUNDLE_VERSION,
@@ -107,6 +109,8 @@ def _continuation_request(
         reason=ContinuationReason.COMPLIANCE,
         task_id=task_id,
         run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
         source_agent_id="agent-test",
         prompt="continuation required",
         continuation_request_id=continuation_request_id,
@@ -154,6 +158,8 @@ def _approve_resolution(
     pause_id: str,
     human_request_id: str,
     run_id: str = RUN_ID,
+    attempt_id: str = ATTEMPT_ID,
+    execution_id: str = EXECUTION_ID,
 ) -> HumanApprovalResolution:
     return HumanPauseCoordinator.resolve_human_response(
         task,
@@ -162,6 +168,8 @@ def _approve_resolution(
         pause_id=pause_id,
         human_request_id=human_request_id,
         run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
     )
 
 
@@ -303,6 +311,8 @@ def test_stale_pause_cannot_create_grant() -> None:
             pause_id=PAUSE_B,
             human_request_id=pause.human_request_id,
             run_id=RUN_ID,
+            attempt_id=ATTEMPT_ID,
+            execution_id=EXECUTION_ID,
         )
 
     assert task.runtime.governance.governed_continuation_grant is None
@@ -316,6 +326,8 @@ def test_stale_pause_cannot_create_grant() -> None:
             pause_id=pause.pause_id,
             human_request_id=HR_B,
             run_id=RUN_ID,
+            attempt_id=ATTEMPT_ID,
+            execution_id=EXECUTION_ID,
         )
 
     assert task.runtime.governance.governed_continuation_grant is None
@@ -335,6 +347,8 @@ def test_reject_does_not_create_grant() -> None:
         approver=APPROVER,
         pause_id=pause.pause_id,
         human_request_id=pause.human_request_id,
+        attempt_id=ATTEMPT_ID,
+        execution_id=EXECUTION_ID,
     )
     with pytest.raises(GovernedContinuationGrantError, match="verdict is not approve"):
         GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
@@ -354,10 +368,33 @@ def test_escalate_does_not_create_grant() -> None:
         approver=APPROVER,
         pause_id=pause.pause_id,
         human_request_id=pause.human_request_id,
+        attempt_id=ATTEMPT_ID,
+        execution_id=EXECUTION_ID,
     )
     with pytest.raises(GovernedContinuationGrantError, match="verdict is not approve"):
         GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
     assert task.runtime.governance.governed_continuation_grant is None
+
+
+def test_forged_execution_identity_fails_closed() -> None:
+    continuation = _continuation_request(
+        continuation_request_id=CONTINUATION_1,
+        side_effect_scope_id=SCOPE_1,
+    )
+    task = _task()
+    pause = _apply_governed_pause(task, continuation)
+    with pytest.raises(
+        HumanApprovalResolutionError,
+        match="governed continuation execution_id mismatch",
+    ):
+        _approve_resolution(
+            task,
+            pause_id=pause.pause_id,
+            human_request_id=pause.human_request_id,
+            execution_id=mint_execution_id(),
+        )
+    with pytest.raises(GovernedContinuationGrantError):
+        GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
 
 
 def test_generic_hitl_approve_does_not_create_grant() -> None:
@@ -424,6 +461,8 @@ def test_quote_acceptance_require_human_grant_preserves_canonical_digest() -> No
         reason=ContinuationReason.QUOTE,
         task_id=TASK_ID,
         run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=EXECUTION_ID,
         source_agent_id="external_contractor_adapter",
         prompt="quote acceptance requires governed continuation",
         continuation_request_id=CONTINUATION_1,
@@ -535,6 +574,8 @@ async def test_intake_runner_reject_clears_grant(
         side_effect_scope_digest=None,
         task_id=TASK_ID,
         run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=EXECUTION_ID,
         operation_id=OPERATION,
         resource_scope=RESOURCE,
         policy_rule_id=POLICY_RULE,
