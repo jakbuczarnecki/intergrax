@@ -20,6 +20,10 @@ from intergrax.contracts.runtime_execution_policy_admission import (
     WORKER_ROOT_EXECUTION_OPERATION,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.governance.execution_admission_composition import (
+    build_fail_closed_runtime_execution_policy_admission,
+    build_root_execution_authority_admission,
+)
 from intergrax.runtime.governance.root_execution_authority_admission import (
     DenyingRootExecutionAuthorityAdmission,
     RootExecutionAuthorityAdmissionService,
@@ -49,7 +53,9 @@ def _request(*, action: PolicyAction) -> RootExecutionAuthorityAdmissionRequest:
 
 
 def test_default_service_fails_closed_on_collaborative_allow() -> None:
-    service = RootExecutionAuthorityAdmissionService()
+    service = build_root_execution_authority_admission(
+        runtime_policy_admission=build_fail_closed_runtime_execution_policy_admission(),
+    )
     result = service.authorize(_request(action=PolicyAction.ALLOW))
     assert result.disposition in {
         RootExecutionAuthorityAdmissionDisposition.UNAVAILABLE,
@@ -60,7 +66,7 @@ def test_default_service_fails_closed_on_collaborative_allow() -> None:
 
 
 def test_explicit_allow_policy_mints_trusted_authority() -> None:
-    service = RootExecutionAuthorityAdmissionService(
+    service = build_root_execution_authority_admission(
         runtime_policy_admission=RuntimeExecutionPolicyAdmissionEvaluator(
             policy_engine=RuntimePolicyEngine(
                 root_execution_admission_rules=(
@@ -80,7 +86,7 @@ def test_explicit_allow_policy_mints_trusted_authority() -> None:
 
 
 def test_explicit_deny_policy_does_not_mint_authority() -> None:
-    service = RootExecutionAuthorityAdmissionService(
+    service = build_root_execution_authority_admission(
         runtime_policy_admission=RuntimeExecutionPolicyAdmissionEvaluator(
             policy_engine=RuntimePolicyEngine(
                 root_execution_admission_rules=(
@@ -100,7 +106,7 @@ def test_explicit_deny_policy_does_not_mint_authority() -> None:
 
 
 def test_no_matching_rule_fails_closed() -> None:
-    service = RootExecutionAuthorityAdmissionService(
+    service = build_root_execution_authority_admission(
         runtime_policy_admission=RuntimeExecutionPolicyAdmissionEvaluator(
             policy_engine=RuntimePolicyEngine(
                 root_execution_admission_rules=(
@@ -120,7 +126,7 @@ def test_no_matching_rule_fails_closed() -> None:
 
 
 def test_empty_rule_set_fails_closed() -> None:
-    service = RootExecutionAuthorityAdmissionService(
+    service = build_root_execution_authority_admission(
         runtime_policy_admission=RuntimeExecutionPolicyAdmissionEvaluator(
             policy_engine=RuntimePolicyEngine(),
         ),
@@ -135,7 +141,7 @@ def test_empty_rule_set_fails_closed() -> None:
 
 
 def test_allow_mints_scoped_trusted_authority() -> None:
-    service = RootExecutionAuthorityAdmissionService(
+    service = build_root_execution_authority_admission(
         runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
     )
     result = service.authorize(_request(action=PolicyAction.ALLOW))
@@ -159,7 +165,7 @@ def test_non_allow_fail_closed(
     action: PolicyAction,
     expected: RootExecutionAuthorityAdmissionDisposition,
 ) -> None:
-    service = RootExecutionAuthorityAdmissionService(
+    service = build_root_execution_authority_admission(
         runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
     )
     result = service.authorize(_request(action=action))
@@ -168,7 +174,7 @@ def test_non_allow_fail_closed(
 
 
 def test_collaborative_allow_runtime_deny_does_not_mint_authority() -> None:
-    service = RootExecutionAuthorityAdmissionService(
+    service = build_root_execution_authority_admission(
         runtime_policy_admission=DenyingRuntimeExecutionPolicyAdmission(),
     )
     result = service.authorize(_request(action=PolicyAction.ALLOW))
@@ -177,7 +183,7 @@ def test_collaborative_allow_runtime_deny_does_not_mint_authority() -> None:
 
 
 def test_collaborative_allow_runtime_require_human_does_not_mint_authority() -> None:
-    service = RootExecutionAuthorityAdmissionService(
+    service = build_root_execution_authority_admission(
         runtime_policy_admission=RequireHumanRuntimeExecutionPolicyAdmission(),
     )
     result = service.authorize(_request(action=PolicyAction.ALLOW))
@@ -186,7 +192,7 @@ def test_collaborative_allow_runtime_require_human_does_not_mint_authority() -> 
 
 
 def test_collaborative_allow_runtime_allow_mints_authority() -> None:
-    service = RootExecutionAuthorityAdmissionService(
+    service = build_root_execution_authority_admission(
         runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
     )
     result = service.authorize(_request(action=PolicyAction.ALLOW))

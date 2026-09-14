@@ -80,6 +80,9 @@ from intergrax.contracts.runtime_execution_policy_admission import (
 from intergrax.runtime.execution.canonical_intake_adapter import CanonicalExecutionRuntimeAdapter
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.runtime import ExecutionRuntime
+from intergrax.runtime.governance.execution_admission_composition import (
+    build_root_execution_authority_admission,
+)
 from intergrax.runtime.governance.root_execution_authority_admission import (
     DenyingRootExecutionAuthorityAdmission,
     RootExecutionAuthorityAdmissionService,
@@ -195,16 +198,16 @@ def _seed_binding_and_authority(
 
 
 def _explicit_allow_root_admission() -> RootExecutionAuthorityAdmissionService:
-    return RootExecutionAuthorityAdmissionService(
-        runtime_policy_admission=RuntimeExecutionPolicyAdmissionEvaluator(
-            policy_engine=RuntimePolicyEngine(
-                root_execution_admission_rules=(
-                    RootExecutionAdmissionPolicyRule(
-                        rule_id="test.worker.root_execution.allow",
-                        decision=PolicyAction.ALLOW,
-                        execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
-                    ),
-                ),
+    from intergrax.runtime.governance.execution_admission_composition import (
+        build_root_execution_authority_admission_from_rules,
+    )
+
+    return build_root_execution_authority_admission_from_rules(
+        root_execution_admission_rules=(
+            RootExecutionAdmissionPolicyRule(
+                rule_id="test.worker.root_execution.allow",
+                decision=PolicyAction.ALLOW,
+                execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
             ),
         ),
     )
@@ -700,7 +703,14 @@ def test_root_admission_requires_explicit_runtime_policy_allow() -> None:
         RootExecutionAuthorityAdmissionRequest,
     )
 
-    service = RootExecutionAuthorityAdmissionService()
+    from intergrax.runtime.governance.execution_admission_composition import (
+        build_fail_closed_runtime_execution_policy_admission,
+        build_root_execution_authority_admission,
+    )
+
+    service = build_root_execution_authority_admission(
+        runtime_policy_admission=build_fail_closed_runtime_execution_policy_admission(),
+    )
     result = service.authorize(
         RootExecutionAuthorityAdmissionRequest(
             tenant_id=_TENANT,
@@ -757,7 +767,7 @@ async def test_collaborative_allow_runtime_deny_skips_execution() -> None:
         membership_repo=membership_repo,
         authority_repo=authority_repo,
         delegation_repo=delegation_repo,
-        root_admission=RootExecutionAuthorityAdmissionService(
+        root_admission=build_root_execution_authority_admission(
             runtime_policy_admission=DenyingRuntimeExecutionPolicyAdmission(),
         ),
     )
@@ -781,7 +791,7 @@ async def test_collaborative_allow_runtime_require_human_skips_execution() -> No
         membership_repo=membership_repo,
         authority_repo=authority_repo,
         delegation_repo=delegation_repo,
-        root_admission=RootExecutionAuthorityAdmissionService(
+        root_admission=build_root_execution_authority_admission(
             runtime_policy_admission=RequireHumanRuntimeExecutionPolicyAdmission(),
         ),
     )
@@ -885,7 +895,7 @@ async def test_same_run_id_retry_is_not_idempotent() -> None:
                 clock=lambda: _UTC,
             ),
         ),
-        root_authority_admission=RootExecutionAuthorityAdmissionService(
+        root_authority_admission=build_root_execution_authority_admission(
             runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
         ),
         execution_intake=adapter,

@@ -47,7 +47,7 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 | GOV-GAP-009 | P1 | Control plane | CONTROL_PLANE_MUTATION GAP | Shared authority context per domain executor | No unified taxonomy enforcement | Unsafe platform mutations | Per-domain adoption of shared boundary; no god executor | Domain plans | GR-12 | plan CLA block; ECP tests partial | OPEN |
 | GOV-GAP-010 | P2 | Maintainer truth | Stale PG-FIX / Protocol v2.2 status in docs | IMPLEMENTED / VERIFIED / CLOSED distinguished | Operators mis-plan | False closure claims | Reconcile plan + arch pointers (GR-0) | GR-0 | GR-0 | `plans/GOVERNED_EXECUTION.md` | IN_PROGRESS |
 | GOV-GAP-011 | P2 | Policy plugins | Catalog + handler slices; Nexus types in `policy_bundle.py` | Vendor-neutral core; platform plugin admission | Residual Nexus coupling in policy assembly | Tier violation / test burden | Gradual decouple bundle assembly from Nexus models | Platform plugins | GR-4, GR-11 | `policy_bundle.py`, `tool_policy_resolution.py` | OPEN |
-| GOV-GAP-012 | P2 | Admission vs inner | `evaluate_root_execution_admission` + inner meaningful-side-effect | Admission = may start Execution; inner = may proceed | Potential semantic overlap if misused | Admission replaces policy | Keep `ExecutionAuthorityPolicy` as child narrowing only; document ports | GR-2 | GR-2, GR-3 | `execution/authority/policy.py`, `runtime_execution_policy_admission.py` | OPEN |
+| GOV-GAP-012 | P2 | Admission vs inner | `evaluate_root_execution_admission` + inner meaningful-side-effect | Admission = may start Execution; inner = may proceed | Potential semantic overlap if misused | Admission replaces policy | Keep `ExecutionAuthorityPolicy` as child narrowing only; document ports | GR-2 | GR-3 | `execution/authority/policy.py`, `runtime_execution_policy_admission.py`, `execution_admission_composition.py` | OPEN |
 
 ---
 
@@ -189,8 +189,8 @@ Historical AUDIT-5 findings remain valid context; closure requires identity rebi
 | GR-1 | Execution Identity Rebinding | **CLOSED** | Bind grants, side effects, HITL resolution to Attempt+Execution (GR-1-R1 atomic correction) | GR-0 | G5C identity follow-on | Yes | Contract + matcher + GR-1-R1 security tests |
 | GR-1-R1 | Frozen boundary + atomic identity | **DONE** | Fail-closed partial identity; Governance consumes frozen active context | GR-1 | Audit defect A/B | Yes | `test_meaningful_side_effect_execution_identity_resolution.py` |
 | GR-1-R2 | Frozen Nexus baseline restoration | **DONE** | Remove Governance-specific Attempt/Execution forwarding from Nexus; identity via active context | GR-1-R1 | GR-1 Nexus coupling | Yes | `test_gr1_execution_identity_rebinding.py` (Nexus path) |
-| GR-2 | Execution Admission Governance | **NEXT** | Single admission story at Execution start | GR-1-R2 | G3 admission rows | Yes | Admission integration tests |
-| GR-3 | Inner Evaluation Spine | PLANNED | One inner enforcement path; safe `authorize_and_execute` | GR-1, GR-2 | PG-FIX-A completion | Yes | Bypass gate tests |
+| GR-2 | Execution Admission Governance | **CLOSED** | Single admission story at Execution start | GR-1-R2 | G3 admission rows | Yes | `test_gr2_execution_admission_governance.py`, root/worker admission tests |
+| GR-3 | Inner Evaluation Spine | **NEXT** | One inner enforcement path; safe `authorize_and_execute` | GR-1, GR-2 | PG-FIX-A completion | Yes | Bypass gate tests |
 | GR-4 | Policy Resolution & Catalog Requalification | PLANNED | Close PG-FIX-B/D qualification gaps | GR-3 | G2C, PG-FIX-B/D | Yes | Precedence + catalog tests |
 | GR-5 | HITL / Governed Continuation Rebase | PLANNED | UER pause/resume; scoped approval preserved | GR-1 | G5*, PG-FIX-C | Yes | HITL E2E per strategy |
 | GR-6 | Decision → Governance Integration | PLANNED | Decision provenance where material | GR-1 | — | Yes | Decision-version binding tests |
