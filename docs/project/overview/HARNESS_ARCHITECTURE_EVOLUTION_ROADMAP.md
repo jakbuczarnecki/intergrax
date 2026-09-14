@@ -989,17 +989,19 @@ Capability descriptors should include:
 
 **Status:** **CLOSED** (2026-09-14) — **Y1–Y5 documentation synchronization complete.** **Y1:** frozen Execution CURRENT sync (UEA, UER, `NEXUS_EXECUTION_FLOW.md`, hub registry). **Y2:** Observability + Diagnostics primary hubs. **Y3:** Background Tasks + UER extended satellite + maintainer adoption split. **Y4:** public/community + technical maps, `ARCHITECTURE_OVERVIEW.md`, README execution/decision wording. **Y5:** deep Decision System / Verification / Deliberation maturity + Nexus cross-refs, maintainer verification qualification row, flagship companion alt text, Nexus→Decision neighbor row, P0A Y5 addendum.
 
+**Closed semantics:** **Y1–Y5** reconciled the active authoritative documentation surfaces covered by Initiative Y. **Remaining active authoritative documentation drift (Initiative Y scope):** **NONE**. **Remaining legacy/historical text** in audit addenda, ADR/index phrases, SVG subcaptions, and pre-closeout P0A inventories is **non-authoritative** and does not represent CURRENT platform architecture (new drift after Y closeout is out of Initiative Y scope).
+
 **Historical-only drift (non-blocking):** legacy ADR/index phrases, SVG diagram subcaptions (e.g. deliberation budget line), `PLATFORM_FOUNDATION.md` agent-in-Nexus composition shorthand — not used as CURRENT decision authority.
 
-## Priority (post EE1)
+## Historical P0A re-baseline context (pre-Y1 — audit inventory)
 
-**URGENT (remaining):** satellites and non-primary domains (UER satellites, Background Tasks, Tools, Skills, public docs, etc.) may still drift from frozen Execution reality. **OBSERVABILITY.md** and **DIAGNOSTICS.md** primary hubs were re-baselined in **Y2**; other pairs remain on the P0A list below.
+**Historical (EE1 / pre-Y1):** the P0A pair list below scoped **Y1–Y5** work. It is **not** an open backlog after closeout. **OBSERVABILITY.md** and **DIAGNOSTICS.md** primary hubs were re-baselined in **Y2**; UER satellites, Background Tasks, Tools, Skills, public maps, Decision deep docs, and maintainer rows were addressed in **Y3–Y5** per P0A addenda.
 
-## P0A documentation re-baseline
+## P0A documentation re-baseline (historical inventory — superseded by Y1–Y5)
 
-The repository contains multiple cases where older CURRENT documentation lags behind shipped runtime code and enterprise qualification.
+Historical P0A recorded cases where older CURRENT documentation lagged behind shipped runtime code and enterprise qualification. Initiative Y executed the synchronization process below.
 
-Before code implementation begins:
+Historical process (pre-closeout):
 
 1. Re-audit current code at HEAD.
 2. Update stale CURRENT sections in canonical architecture documents.
@@ -1007,7 +1009,7 @@ Before code implementation begins:
 4. Mark implemented milestones as CURRENT/DONE rather than asking future sessions to reimplement them.
 5. Ensure cross-references do not contradict code reality.
 
-Priority documents include:
+Historical priority document inventory (Y1–Y5 scope — **reconciled**):
 
 - UEA/UER,
 - UER satellites,
@@ -1023,9 +1025,11 @@ Priority documents include:
 - Platform Plugins,
 - Governance/HITL.
 
-Gate:
+Historical gate (P0A / pre-Y closeout):
 
 > No implementation session may rely on a canonical CURRENT statement known to conflict with current code.
+
+Initiative Y closeout affirms authoritative surfaces in this inventory were synchronized at Y1–Y5 HEAD evidence; the gate remains a **standing platform rule** for **future** doc/code drift, not unfinished Y work.
 
 ---
 
