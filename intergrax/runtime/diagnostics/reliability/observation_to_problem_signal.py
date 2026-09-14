@@ -21,9 +21,6 @@ from intergrax.runtime.diagnostics.reliability.reliability_observability_attribu
 from intergrax.runtime.observability.export_attributes import ObservabilityArtifactReference
 from intergrax.runtime.observability.problem_signal import (
     PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY,
-    PROBLEM_SEVERITY_ERROR,
-    PROBLEM_SEVERITY_INFO,
-    PROBLEM_SEVERITY_WARNING,
     PROBLEM_SOURCE_LAYER_RUNTIME,
     PROBLEM_STATUS_DETECTED,
     PlatformProblemSignal,
@@ -31,24 +28,16 @@ from intergrax.runtime.observability.problem_signal import (
 
 ERL_RELIABILITY_SIGNAL_SOURCE_COMPONENT = "external_effect_reliability"
 ERL_RELIABILITY_DIAGNOSTIC_SUBJECT_APPLICATION_ID = "erl"
+ERL_RELIABILITY_FACT_ERROR_CODE_PREFIX = "external_effect_reliability"
+
 
 def _neutral_safe_message(signal_kind: ExternalEffectReliabilitySignalKind) -> str:
     return f"External effect reliability signal: {signal_kind.value}"
 
 
-def _conservative_severity(signal_kind: ExternalEffectReliabilitySignalKind) -> str:
-    if signal_kind in (
-        ExternalEffectReliabilitySignalKind.TRUTH_UNAVAILABLE,
-        ExternalEffectReliabilitySignalKind.EVIDENCE_INSUFFICIENT,
-        ExternalEffectReliabilitySignalKind.AUTOMATION_SAFETY_LIMIT,
-    ):
-        return PROBLEM_SEVERITY_ERROR
-    if signal_kind in (
-        ExternalEffectReliabilitySignalKind.UNCERTAINTY_ADMITTED,
-        ExternalEffectReliabilitySignalKind.RECONCILIATION_ATTEMPTED,
-    ):
-        return PROBLEM_SEVERITY_WARNING
-    return PROBLEM_SEVERITY_INFO
+def _fact_type_error_code(signal_kind: ExternalEffectReliabilitySignalKind) -> str:
+    """Stable classifier from fact type only — not occurrence identity."""
+    return f"{ERL_RELIABILITY_FACT_ERROR_CODE_PREFIX}.{signal_kind.value}"
 
 
 def _artifact_refs_to_observability(
@@ -138,12 +127,11 @@ def map_handoff_to_platform_problem_signal(
 
     return PlatformProblemSignal(
         problem_kind=PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY,
-        severity=_conservative_severity(handoff.signal_kind),
         source_layer=PROBLEM_SOURCE_LAYER_RUNTIME,
         source_component=ERL_RELIABILITY_SIGNAL_SOURCE_COMPONENT,
         status=PROBLEM_STATUS_DETECTED,
         safe_message=_neutral_safe_message(handoff.signal_kind),
-        error_code=handoff.observation_id,
+        error_code=_fact_type_error_code(handoff.signal_kind),
         exception_type=None,
         run_id=run_id,
         task_id=task_id,
@@ -157,6 +145,7 @@ def map_handoff_to_platform_problem_signal(
 
 __all__ = [
     "ERL_RELIABILITY_DIAGNOSTIC_SUBJECT_APPLICATION_ID",
+    "ERL_RELIABILITY_FACT_ERROR_CODE_PREFIX",
     "ERL_RELIABILITY_SIGNAL_SOURCE_COMPONENT",
     "map_handoff_to_platform_problem_signal",
 ]

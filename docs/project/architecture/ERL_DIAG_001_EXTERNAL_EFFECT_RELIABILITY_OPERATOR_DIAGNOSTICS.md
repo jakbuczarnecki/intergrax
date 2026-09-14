@@ -404,7 +404,8 @@ DiagnosticOrchestrator / ProblemLifecycleEngine
 ```
 
 **Phase B (ERL-DIAG-001B) ownership:** `intergrax/runtime/diagnostics/reliability/` — `ReliabilityDiagnosticHandoff` → `PlatformProblemSignal` (`platform.external_effect_reliability`) + `DiagnosticSignalSubjectScope` (`application_id=erl`, `instance_id=reliability_case_id`); orchestration via injected `ReliabilityDiagnosticOrchestrationPort` only (no direct persistence).
-```
+
+**Phase B semantic transport (001B-H):** `error_code` = stable fact-type classifier (`external_effect_reliability.<signal_kind>`); `event_id` = `observation_id` (source occurrence identity); `application_attributes.observation_id` mirrors the same id. Bridge does **not** map business severity from `signal_kind` — it leaves `PlatformProblemSignal.severity` at the platform model default until Phase classify plugins (001D).
 
 **REJECTED:** Observer-only on trace tail without lifecycle commit (race + incomplete facts).
 

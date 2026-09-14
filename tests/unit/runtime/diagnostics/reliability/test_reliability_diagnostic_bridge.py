@@ -42,6 +42,7 @@ from intergrax.runtime.diagnostics.reliability.reliability_observability_attribu
 )
 from intergrax.runtime.observability.problem_signal import (
     PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY,
+    PROBLEM_SEVERITY_ERROR,
 )
 from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
     build_diagnostic_orchestrator_stack_for_tests,
@@ -127,8 +128,10 @@ def test_valid_observation_maps_and_preserves_identity_fields() -> None:
     signal = map_handoff_to_platform_problem_signal(handoff)
 
     assert signal.problem_kind == PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY
-    assert signal.error_code == observation.observation_id
+    assert signal.error_code == "external_effect_reliability.TRUTH_UNAVAILABLE"
+    assert signal.error_code != observation.observation_id
     assert signal.event_id == observation.observation_id
+    assert signal.severity == PROBLEM_SEVERITY_ERROR
     assert signal.correlation_id == observation.correlation.correlation_id
     assert signal.exception_type is None
     assert signal.application_attributes is not None
@@ -140,6 +143,33 @@ def test_valid_observation_maps_and_preserves_identity_fields() -> None:
     assert attrs.trace_refs == observation.trace_refs
     assert len(signal.artifact_refs) == 1
     assert signal.artifact_refs[0].artifact_ref == "evidence-1"
+
+
+def test_same_fact_type_yields_stable_error_code_and_distinct_event_ids() -> None:
+    kind = ExternalEffectReliabilitySignalKind.TRUTH_UNAVAILABLE
+    obs_a = _observation(observation_id="obs-1", signal_kind=kind)
+    obs_b = _observation(observation_id="obs-2", signal_kind=kind)
+    signal_a = map_handoff_to_platform_problem_signal(map_observation_to_handoff(obs_a))
+    signal_b = map_handoff_to_platform_problem_signal(map_observation_to_handoff(obs_b))
+
+    assert signal_a.error_code == signal_b.error_code == "external_effect_reliability.TRUTH_UNAVAILABLE"
+    assert signal_a.event_id == "obs-1"
+    assert signal_b.event_id == "obs-2"
+    assert signal_a.error_code != signal_a.event_id
+
+
+def test_bridge_does_not_derive_severity_from_signal_kind() -> None:
+    severe = map_handoff_to_platform_problem_signal(
+        map_observation_to_handoff(
+            _observation(signal_kind=ExternalEffectReliabilitySignalKind.TRUTH_UNAVAILABLE),
+        ),
+    )
+    mild = map_handoff_to_platform_problem_signal(
+        map_observation_to_handoff(
+            _observation(signal_kind=ExternalEffectReliabilitySignalKind.UNCERTAINTY_ADMITTED),
+        ),
+    )
+    assert severe.severity == mild.severity == PROBLEM_SEVERITY_ERROR
 
 
 def test_bridge_invokes_orchestration_exactly_once() -> None:
