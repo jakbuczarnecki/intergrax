@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import os
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Mapping, Optional, Sequence
 
 import urllib.request
 import urllib.error
@@ -42,6 +42,7 @@ from intergrax.runtime.replay.metrics import ExecutionMetrics
 from intergrax.runtime.replay.policy import PolicyDecision, PolicyDecisionType
 from intergrax.runtime.replay.regression import RegressionSignals
 from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext, ToolGateway
 from intergrax.tools.core.contracts import ToolContract
 
 
@@ -495,25 +496,32 @@ def build_runtime_request_for_tests(
     user_id: str = "test-user",
     session_id: str = "test-session",
     message: str = "test",
-    metadata: dict[str, Any] | None = None,
-    **overrides: str,
+    task_id: str | None = None,
+    run_id: str | None = None,
+    metadata: Mapping[str, object] | None = None,
 ) -> RuntimeRequest:
     """Build a contract-valid ``RuntimeRequest`` for unit tests."""
-    fields: dict[str, str] = {
-        "tenant_id": tenant_id,
-        "agent_id": agent_id,
-        "user_id": user_id,
-        "session_id": session_id,
-        "message": message,
-        "task_id": canonical_task_id_for_tests(seed),
-        "run_id": canonical_run_id_for_tests(seed),
-    }
-    fields.update(overrides)
-    request = RuntimeRequest(**fields)
+    from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
+
+    resolved_task_id = (
+        validate_task_id(task_id) if task_id is not None else canonical_task_id_for_tests(seed)
+    )
+    resolved_run_id = (
+        validate_run_id(run_id) if run_id is not None else canonical_run_id_for_tests(seed)
+    )
+    request = RuntimeRequest(
+        tenant_id=tenant_id,
+        agent_id=agent_id,
+        user_id=user_id,
+        session_id=session_id,
+        message=message,
+        task_id=resolved_task_id,
+        run_id=resolved_run_id,
+    )
     if metadata is not None:
         from dataclasses import replace
 
-        request = replace(request, metadata=metadata)
+        request = replace(request, metadata=dict(metadata))
     return request
 
 
@@ -521,21 +529,46 @@ def build_runtime_execution_context_for_tests(
     *,
     seed: str = "unit-test",
     agent_id: str = "agent_test",
-    **overrides: object,
+    task_id: str | None = None,
+    run_id: str | None = None,
+    attempt_id: str | None = None,
+    execution_id: str | None = None,
+    metadata: Mapping[str, object] | None = None,
+    request: RuntimeRequest | None = None,
+    tool_gateway: ToolGateway | None = None,
 ) -> RuntimeExecutionContext:
     """Build a contract-valid ``RuntimeExecutionContext`` for unit tests."""
-    from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
-    from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+    from intergrax.contracts.execution_identity import (
+        mint_attempt_id,
+        mint_execution_id,
+        validate_attempt_id,
+        validate_execution_id,
+        validate_run_id,
+        validate_task_id,
+    )
 
-    fields: dict[str, object] = {
-        "task_id": canonical_task_id_for_tests(seed),
-        "run_id": canonical_run_id_for_tests(seed),
-        "attempt_id": mint_attempt_id(),
-        "execution_id": mint_execution_id(),
-        "agent_id": agent_id,
-    }
-    fields.update(overrides)
-    return RuntimeExecutionContext(**fields)
+    resolved_task_id = (
+        validate_task_id(task_id) if task_id is not None else canonical_task_id_for_tests(seed)
+    )
+    resolved_run_id = (
+        validate_run_id(run_id) if run_id is not None else canonical_run_id_for_tests(seed)
+    )
+    resolved_attempt_id = (
+        validate_attempt_id(attempt_id) if attempt_id is not None else mint_attempt_id()
+    )
+    resolved_execution_id = (
+        validate_execution_id(execution_id) if execution_id is not None else mint_execution_id()
+    )
+    return RuntimeExecutionContext(
+        task_id=resolved_task_id,
+        run_id=resolved_run_id,
+        attempt_id=resolved_attempt_id,
+        execution_id=resolved_execution_id,
+        agent_id=agent_id,
+        metadata=dict(metadata) if metadata is not None else {},
+        request=request,
+        tool_gateway=tool_gateway,
+    )
 
 
 @contextmanager

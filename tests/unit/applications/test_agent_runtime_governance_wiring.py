@@ -39,16 +39,17 @@ _CAP = "factory-only.run"
 
 
 def _runtime_request(**overrides: str) -> RuntimeRequest:
-    fields: dict[str, str] = {
-        "seed": "gov-mat",
-        "tenant_id": "tenant-a",
-        "agent_id": "echo",
-        "user_id": "user",
-        "session_id": "session",
-        "message": "probe",
-    }
-    fields.update(overrides)
-    return build_runtime_request_for_tests(**fields)
+    return build_runtime_request_for_tests(
+        seed=overrides.pop("seed", "gov-mat"),
+        tenant_id=overrides.pop("tenant_id", "tenant-a"),
+        agent_id=overrides.pop("agent_id", "echo"),
+        user_id=overrides.pop("user_id", "user"),
+        session_id=overrides.pop("session_id", "session"),
+        message=overrides.pop("message", "probe"),
+        task_id=overrides.pop("task_id", None),
+        run_id=overrides.pop("run_id", None),
+        metadata=overrides.pop("metadata", None),
+    )
 
 
 def _echo_manifest(*agents: AgentBinding) -> ApplicationManifest:

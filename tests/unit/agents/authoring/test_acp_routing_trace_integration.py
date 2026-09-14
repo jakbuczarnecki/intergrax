@@ -20,7 +20,7 @@ from intergrax.llm_adapters.routing import BudgetExceededDegradeRule, LLMRouting
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, canonical_governed_execution_scope
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
 class _RoutingTraceAgent(IntergraxAgent):
@@ -96,8 +96,7 @@ async def test_acp_run_records_routing_rule_in_step_diagnostics(monkeypatch: pyt
             "budget_degrade_active": True,
         },
     )
-    with canonical_governed_execution_scope("routing-trace"):
-        result = await _RoutingTraceAgent().run(request)
+    result = await _RoutingTraceAgent().run(request)
     assert result.trace.steps
     diagnostics = result.trace.steps[0].diagnostics
     assert "llm_routing_evaluations" in diagnostics

@@ -8,6 +8,8 @@ from __future__ import annotations
 from intergrax.applications._shared.agent_certification_wiring import apply_roster_agent_governance
 from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
 from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
+from intergrax.applications._shared.reference_capability_bundle import lab_reference_tool_profile
+from intergrax.applications._shared.skill_wiring import legal_skill_profile
 from intergrax.applications.contracts.environment_profile import (
     AdaptiveProfile,
     ApplicationEnvironmentProfile,
@@ -45,6 +47,16 @@ def _legal_environment() -> ApplicationEnvironmentProfile:
         .with_harness_memory()
         .with_reference_host_platform_defaults()
     )
+    capability_stack = base.capabilities.model_copy(
+        update={
+            "skills": legal_skill_profile(),
+            "tools": lab_reference_tool_profile(harness_tools=False),
+            "context": base.capabilities.context.model_copy(
+                update={"enable_rag": True, "enable_websearch": True},
+            ),
+        },
+    )
+    base = base.model_copy(update={"capabilities": capability_stack})
     return apply_roster_agent_governance(base, agents=_LEGAL_AGENTS, app_id="legal")
 
 

@@ -29,6 +29,21 @@ from echo.echo_agent import EchoAgent
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
+@pytest.fixture(autouse=True)
+def _reset_skill_registry_after_strict_product_wiring() -> None:
+    """``wire_application_environment`` in deploy gate tests mutates global skill catalog."""
+    yield
+    from intergrax.core.catalog_bootstrap import reset_tier0_catalog_bootstrap_for_tests
+    from intergrax.skills.registry.bootstrap import reset_default_skills_for_tests
+    from intergrax.tools.registry.bootstrap import reset_default_tools_bootstrap
+    from intergrax.tools.registry.catalog import clear_tool_catalog
+
+    clear_tool_catalog()
+    reset_default_tools_bootstrap()
+    reset_default_skills_for_tests()
+    reset_tier0_catalog_bootstrap_for_tests()
+
+
 def _graph_view() -> EnvironmentCapabilityGraphView:
     return EnvironmentCapabilityGraphView(
         graph=CapabilityGraph(
