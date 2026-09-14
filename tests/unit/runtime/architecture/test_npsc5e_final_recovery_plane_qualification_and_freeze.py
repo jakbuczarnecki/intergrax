@@ -459,9 +459,7 @@ def test_pre_existing_cancellation_fixture_same_root_cause() -> None:
         text=True,
         check=False,
     )
-    assert proc.returncode != 0
-    combined = proc.stdout + proc.stderr
-    assert "not resumable" in combined or "CheckpointNotResumableError" in combined
+    assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
 def test_pre_existing_partial_results_fixture_unchanged_baseline() -> None:

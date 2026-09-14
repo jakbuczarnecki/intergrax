@@ -96,6 +96,7 @@ def test_terminal_cancellation_survives_process_restart(tmp_path) -> None:
         tenant_id=_TENANT,
         user_id="user",
         message="paused",
+        state=TaskState.WAITING_FOR_HUMAN,
         options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
     )
     run_id = mint_run_id()

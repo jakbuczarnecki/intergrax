@@ -22,8 +22,7 @@ _PYTEST_MATRIX_KEXPR = (
     "not test_pre_existing_cancellation_fixture_same_root_cause and "
     "not test_pre_existing_partial_results_fixture_unchanged_baseline and "
     "not test_ruff_recovery_surfaces_and_final_test and "
-    "not test_pyright_recovery_surfaces_and_final_test and "
-    "not test_terminal_cancellation_survives_process_restart"
+    "not test_pyright_recovery_surfaces_and_final_test"
 )
 
 MANDATORY_REGRESSION_SUITES: tuple[tuple[str, list[str]], ...] = (

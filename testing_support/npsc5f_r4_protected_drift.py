@@ -11,7 +11,8 @@ from pathlib import Path
 R4_IMPLEMENTATION_SHA = "37fb051c7f164d705f628760436b8ea10ee0289f"
 
 # Post-qualified baseline: W5-H1 on GitHub — remote-reachable replacement for orphan ``8879dc8``.
-R4_POST_QUALIFIED_BASELINE_SHA = "b0a465fc0b8e9f1c9b9e2879f94510fc88b77516"
+# Re-baselined @ INTEGRAx-QUALIFICATION-CANONICAL-FAIL-DIAGNOSTICS (SSOT regression matrix, commit 1dc93afab).
+R4_POST_QUALIFIED_BASELINE_SHA = "dffe2ae52a6938e0620ae4a3cc5e4be760e7f2f7"
 
 _R4_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {
