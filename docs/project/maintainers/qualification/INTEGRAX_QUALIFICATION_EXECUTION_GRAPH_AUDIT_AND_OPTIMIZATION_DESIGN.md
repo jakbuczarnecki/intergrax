@@ -441,7 +441,7 @@ Future tests (design):
 
 | Phase | Responsibility |
 | ----- | -------------- |
-| **P1** | Canonical `suite_id` registry + gate/suite contracts + graph compiler (typed, cycle/missing/duplicate definition checks) |
+| **P1** | Canonical `suite_id` registry + gate/suite contracts + graph compiler (typed, cycle/missing/duplicate definition checks) — implementation: [`INTEGRAX_CANONICAL_QUALIFICATION_DAG_CONTRACTS_AND_GRAPH_COMPILER.md`](INTEGRAX_CANONICAL_QUALIFICATION_DAG_CONTRACTS_AND_GRAPH_COMPILER.md) |
 | **P2** | Replace nested `_run_pytest` / matrix orchestrators with `requires` declarations; profiles (`CURRENT_HEAD_REVALIDATION`, `FULL_PLATFORM_CERTIFICATION`) |
 | **P3** | Central DAG execution via extended `QualificationCoordinator` + in-run dedup |
 | **P4** | Parity certification (target set equality + PASS/FAIL injection) |
