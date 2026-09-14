@@ -361,6 +361,20 @@ def _encode_reconciliation_key(
             "strategy_version": str(reconciliation_key.strategy_version),
             "signature": _encode_signature(reconciliation_key.signature),
         }
+    if reconciliation_key.kind is ProblemReconciliationKeyKind.RELIABILITY_CASE:
+        from intergrax.runtime.diagnostics.reliability.reliability_case_grouping_reconciliation import (
+            ReliabilityCaseProblemReconciliationKey,
+        )
+
+        if not isinstance(reconciliation_key, ReliabilityCaseProblemReconciliationKey):
+            raise TypeError("reliability case reconciliation key type mismatch")
+        return {
+            "kind": reconciliation_key.kind.value,
+            "tenant_id": reconciliation_key.tenant_id,
+            "strategy_id": str(reconciliation_key.strategy_id),
+            "strategy_version": str(reconciliation_key.strategy_version),
+            "reliability_case_id": reconciliation_key.reliability_case_id,
+        }
     raise TypeError(f"unsupported reconciliation key kind: {reconciliation_key.kind}")
 
 
@@ -376,6 +390,19 @@ def _decode_reconciliation_key(value: object) -> ProblemReconciliationKey:
                 str(value["strategy_version"]),
             ),
             signature=_decode_signature(value["signature"]),
+        )
+    if kind == ProblemReconciliationKeyKind.RELIABILITY_CASE.value:
+        from intergrax.runtime.diagnostics.reliability.reliability_case_grouping_reconciliation import (
+            ReliabilityCaseProblemReconciliationKey,
+        )
+
+        return ReliabilityCaseProblemReconciliationKey(
+            tenant_id=str(value["tenant_id"]),
+            strategy_id=ProblemGroupingStrategyId(str(value["strategy_id"])),
+            strategy_version=ProblemGroupingStrategyVersion(
+                str(value["strategy_version"]),
+            ),
+            reliability_case_id=str(value["reliability_case_id"]),
         )
     raise ValueError("unsupported reconciliation key kind")
 

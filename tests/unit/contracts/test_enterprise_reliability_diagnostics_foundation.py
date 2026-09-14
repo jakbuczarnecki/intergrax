@@ -207,14 +207,23 @@ def test_public_exports_intentional() -> None:
         "ExternalEffectReliabilityDiagnosticEmitter",
         "ExternalEffectReliabilityObservation",
         "ExternalEffectReliabilityObservationValidationError",
+        "ExternalEffectReliabilityProblemGroupingStrategy",
         "ExternalEffectReliabilitySignalKind",
         "MAX_RELIABILITY_DIAGNOSTIC_TRACE_REFS",
         "NullExternalEffectReliabilityDiagnosticEmitter",
+        "RELIABILITY_CASE_DEFAULT_GROUPING_STRATEGY_ID",
+        "RELIABILITY_CASE_DEFAULT_GROUPING_STRATEGY_VERSION",
+        "ReliabilityCaseSubjectRef",
         "ReliabilityDiagnosticArtifactRefs",
         "ReliabilityDiagnosticCorrelation",
+        "ReliabilityProblemGroupingStrategyId",
+        "ReliabilityProblemGroupingStrategyVersion",
         "SCHEMA_AUTOMATION_SAFETY_HINT_V1",
         "SCHEMA_EXTERNAL_EFFECT_RELIABILITY_OBSERVATION_V1",
         "SCHEMA_EXTERNAL_EFFECT_RELIABILITY_SIGNAL_KIND_V1",
+        "parse_reliability_diagnostic_occurrence_instance_id",
+        "reliability_case_subject_index_token",
+        "reliability_diagnostic_occurrence_instance_id",
     }
     assert set(diagnostics_public_exports) == expected
 

@@ -20,7 +20,12 @@ from intergrax.contracts.enterprise_reliability.diagnostics import (
     ReliabilityDiagnosticArtifactRefs,
     ReliabilityDiagnosticCorrelation,
 )
-from intergrax.runtime.diagnostics.deterministic_problem_grouping import STRATEGY_ID
+from intergrax.runtime.diagnostics.reliability.reliability_case_default_grouping_strategy import (
+    STRATEGY_ID as ERL_RELIABILITY_GROUPING_STRATEGY_ID,
+)
+from intergrax.contracts.enterprise_reliability.diagnostics.grouping import (
+    reliability_diagnostic_occurrence_instance_id,
+)
 from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticOrchestrationRequest,
     DiagnosticOrchestrationResult,
@@ -174,7 +179,7 @@ def test_bridge_does_not_derive_severity_from_signal_kind() -> None:
 
 def test_bridge_invokes_orchestration_exactly_once() -> None:
     recording = _RecordingOrchestration()
-    bridge = ReliabilityDiagnosticBridge(recording, grouping_strategy_id=STRATEGY_ID)
+    bridge = ReliabilityDiagnosticBridge(recording, grouping_strategy_id=ERL_RELIABILITY_GROUPING_STRATEGY_ID)
     bridge.on_observation(_observation())
 
     assert len(recording.calls) == 1
@@ -183,7 +188,10 @@ def test_bridge_invokes_orchestration_exactly_once() -> None:
     assert len(request.signal_subjects) == 1
     scope = request.signal_subjects[0]
     assert scope.application_id == ERL_RELIABILITY_DIAGNOSTIC_SUBJECT_APPLICATION_ID
-    assert scope.instance_id == "case-bridge-1"
+    assert scope.instance_id == reliability_diagnostic_occurrence_instance_id(
+        reliability_case_id="case-bridge-1",
+        observation_id="obs-bridge-1",
+    )
     assert len(scope.problem_signals) == 1
 
 
@@ -192,7 +200,7 @@ def test_bridge_failure_does_not_escape() -> None:
         def run(self, request: DiagnosticOrchestrationRequest) -> DiagnosticOrchestrationResult:
             raise RuntimeError("orchestrator down")
 
-    bridge = ReliabilityDiagnosticBridge(_FailingOrchestration(), grouping_strategy_id=STRATEGY_ID)
+    bridge = ReliabilityDiagnosticBridge(_FailingOrchestration(), grouping_strategy_id=ERL_RELIABILITY_GROUPING_STRATEGY_ID)
     bridge.on_observation(_observation())
 
 
@@ -200,7 +208,7 @@ def test_emitter_substitution_and_null_emitter() -> None:
     recording = _RecordingOrchestration()
     emitter = build_reliability_diagnostic_emitter(
         recording,
-        grouping_strategy_id=STRATEGY_ID,
+        grouping_strategy_id=ERL_RELIABILITY_GROUPING_STRATEGY_ID,
     )
     emitter.emit(_observation())
     assert len(recording.calls) == 1
@@ -212,7 +220,7 @@ def test_emitter_substitution_and_null_emitter() -> None:
 
 def test_runtime_emitter_wraps_bridge() -> None:
     recording = _RecordingOrchestration()
-    bridge = ReliabilityDiagnosticBridge(recording, grouping_strategy_id=STRATEGY_ID)
+    bridge = ReliabilityDiagnosticBridge(recording, grouping_strategy_id=ERL_RELIABILITY_GROUPING_STRATEGY_ID)
     RuntimeExternalEffectReliabilityDiagnosticEmitter(bridge).emit(_observation())
     assert len(recording.calls) == 1
 
@@ -221,7 +229,7 @@ def test_integration_orchestrator_creates_problem_without_persistence_bypass() -
     orchestrator, persistence, _, _ = build_diagnostic_orchestrator_stack_for_tests()
     emitter = build_reliability_diagnostic_emitter(
         orchestrator,
-        grouping_strategy_id=STRATEGY_ID,
+        grouping_strategy_id=ERL_RELIABILITY_GROUPING_STRATEGY_ID,
     )
     emitter.emit(_observation())
 
@@ -234,7 +242,7 @@ def test_duplicate_observation_id_does_not_duplicate_occurrence() -> None:
     orchestrator, persistence, _, _ = build_diagnostic_orchestrator_stack_for_tests()
     emitter = build_reliability_diagnostic_emitter(
         orchestrator,
-        grouping_strategy_id=STRATEGY_ID,
+        grouping_strategy_id=ERL_RELIABILITY_GROUPING_STRATEGY_ID,
     )
     observation = _observation()
     emitter.emit(observation)

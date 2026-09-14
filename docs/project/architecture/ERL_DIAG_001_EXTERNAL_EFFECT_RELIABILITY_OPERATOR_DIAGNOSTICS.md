@@ -403,9 +403,11 @@ ReliabilityDiagnosticBridge (runtime internal)
 DiagnosticOrchestrator / ProblemLifecycleEngine
 ```
 
-**Phase B (ERL-DIAG-001B) ownership:** `intergrax/runtime/diagnostics/reliability/` — `ReliabilityDiagnosticHandoff` → `PlatformProblemSignal` (`platform.external_effect_reliability`) + `DiagnosticSignalSubjectScope` (`application_id=erl`, `instance_id=reliability_case_id`); orchestration via injected `ReliabilityDiagnosticOrchestrationPort` only (no direct persistence).
+**Phase C (ERL-DIAG-001C) grouping + occurrence identity:** Public SPI `ExternalEffectReliabilityProblemGroupingStrategy` (`intergrax/contracts/enterprise_reliability/diagnostics/grouping.py`); default batch strategy `ReliabilityCaseDefaultGroupingStrategy` (`strategy_id=intergrax.diagnostics.external_effect_reliability.case.v1`) groups by `tenant_id` + `reliability_case_id` with grouping index token `erl:case:{reliability_case_id}`. Orchestration scope `instance_id` encodes `reliability_diagnostic_occurrence_instance_id(case, observation_id)` so occurrence durable identity remains distinct per `observation_id` while Problem reconciliation uses the case basis. Replay of the same `observation_id` is idempotent via existing `ProblemOccurrencePersistence.append_if_absent`. Composition: `register_reliability_case_default_grouping_strategy` + `default_reliability_diagnostic_reconciliation_policies()` — no new global registry.
 
-**Phase B semantic transport (001B-H):** `error_code` = stable fact-type classifier (`external_effect_reliability.<signal_kind>`); `event_id` = `observation_id` (source occurrence identity); `application_attributes.observation_id` mirrors the same id. Bridge does **not** map business severity from `signal_kind` — it leaves `PlatformProblemSignal.severity` at the platform model default until Phase classify plugins (001D).
+**Phase B bridge scope (updated in 001C):** `DiagnosticSignalSubjectScope.instance_id` uses occurrence encoding above (not bare `reliability_case_id`). Default emitter wiring uses ERL case grouping `strategy_id` when not overridden.
+
+**Phase B semantic transport (001B-H):** `error_code` = stable fact-type classifier (`external_effect_reliability.<signal_kind>`); `event_id` = `observation_id` (source observation identity on the signal transport); `application_attributes.observation_id` mirrors the same id. Occurrence deduplication uses encoded scope subject index tokens, not `error_code`. Bridge does **not** map business severity from `signal_kind` — it leaves `PlatformProblemSignal.severity` at the platform model default until Phase classify plugins (001D).
 
 **REJECTED:** Observer-only on trace tail without lifecycle commit (race + incomplete facts).
 
@@ -773,7 +775,7 @@ flowchart TB
 | --- | --- | --- |
 | OQ-1 | Package name: `enterprise_reliability.diagnostics` vs `diagnostics.reliability` | **DECIDED** — `intergrax.contracts.enterprise_reliability.diagnostics` |
 | OQ-2 | Sync vs async bridge default for orchestrator handoff | **DECIDED FOR MVP** — synchronous `ReliabilityDiagnosticBridge.on_observation` → `DiagnosticOrchestrator.run` (bounded, failure-contained) |
-| OQ-3 | Exact `PersistedProblem` / occurrence extension schema | **OPEN** (implementation) |
+| OQ-3 | Exact `PersistedProblem` / occurrence extension schema | **PARTIALLY OPEN** — occurrence identity for ERL uses existing subject index + scope encoding (001C); optional versioned occurrence extension fields remain open |
 | OQ-4 | Read model authz integration for evidence ref resolution | **OPEN** |
 | OQ-5 | Whether ERL case transition journal persistence is required before replay-from-store | **OPEN** (emit-at-commit sufficient for MVP) |
 | OQ-6 | Additive `DiagnosticRecommendationKind` values — single PR vs alias mapping | **OPEN** |

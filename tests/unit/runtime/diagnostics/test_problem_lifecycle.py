@@ -323,7 +323,7 @@ def test_different_strategy_version_does_not_match_old_problem() -> None:
         members=candidate.members,
         provenance=ProblemGroupingProvenance(
             strategy_id=candidate.provenance.strategy_id,
-            strategy_version=ProblemGroupingStrategyVersion("2"),
+            strategy_version=ProblemGroupingStrategyVersion("3"),
             method=ProblemGroupingMethod.DETERMINISTIC,
             supporting_subject_refs=candidate.provenance.supporting_subject_refs,
             basis=candidate.provenance.basis,
@@ -332,7 +332,7 @@ def test_different_strategy_version_does_not_match_old_problem() -> None:
     bumped_result = grouping_result.__class__(
         tenant_id=grouping_result.tenant_id,
         strategy_id=grouping_result.strategy_id,
-        strategy_version=ProblemGroupingStrategyVersion("2"),
+        strategy_version=ProblemGroupingStrategyVersion("3"),
         method=grouping_result.method,
         candidates=(bumped,),
         ungrouped_subjects=grouping_result.ungrouped_subjects,

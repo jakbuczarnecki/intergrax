@@ -63,18 +63,24 @@ class ProblemGroupingBasisKind(StrEnum):
     """Typed discriminator for strategy-specific grouping evidence."""
 
     DETERMINISTIC = "deterministic"
+    RELIABILITY_CASE = "reliability_case"
     SEMANTIC = "semantic"
     ML = "ml"
     LLM = "llm"
     HYBRID = "hybrid"
 
 
-_METHOD_TO_BASIS_KIND: dict[ProblemGroupingMethod, ProblemGroupingBasisKind] = {
-    ProblemGroupingMethod.DETERMINISTIC: ProblemGroupingBasisKind.DETERMINISTIC,
-    ProblemGroupingMethod.SEMANTIC: ProblemGroupingBasisKind.SEMANTIC,
-    ProblemGroupingMethod.ML: ProblemGroupingBasisKind.ML,
-    ProblemGroupingMethod.LLM: ProblemGroupingBasisKind.LLM,
-    ProblemGroupingMethod.HYBRID: ProblemGroupingBasisKind.HYBRID,
+_ALLOWED_BASIS_KINDS_BY_METHOD: dict[ProblemGroupingMethod, frozenset[ProblemGroupingBasisKind]] = {
+    ProblemGroupingMethod.DETERMINISTIC: frozenset(
+        {
+            ProblemGroupingBasisKind.DETERMINISTIC,
+            ProblemGroupingBasisKind.RELIABILITY_CASE,
+        },
+    ),
+    ProblemGroupingMethod.SEMANTIC: frozenset({ProblemGroupingBasisKind.SEMANTIC}),
+    ProblemGroupingMethod.ML: frozenset({ProblemGroupingBasisKind.ML}),
+    ProblemGroupingMethod.LLM: frozenset({ProblemGroupingBasisKind.LLM}),
+    ProblemGroupingMethod.HYBRID: frozenset({ProblemGroupingBasisKind.HYBRID}),
 }
 
 
@@ -1054,8 +1060,8 @@ def _validate_basis_coherence(
         raise ProblemGroupingIntegrityError(
             "candidate provenance basis must implement ProblemGroupingBasis"
         )
-    expected_kind = _METHOD_TO_BASIS_KIND[method]
-    if basis.kind != expected_kind:
+    expected_kinds = _ALLOWED_BASIS_KINDS_BY_METHOD[method]
+    if basis.kind not in expected_kinds:
         raise ProblemGroupingIntegrityError(
             "candidate provenance basis kind does not match strategy method"
         )

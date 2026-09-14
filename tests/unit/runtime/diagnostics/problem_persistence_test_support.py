@@ -15,7 +15,12 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import (
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )
-from intergrax.runtime.diagnostics.problem_lifecycle import Problem, ProblemLifecycleEngine, ProblemId
+from intergrax.runtime.diagnostics.problem_lifecycle import (
+    Problem,
+    ProblemLifecycleEngine,
+    ProblemId,
+    ProblemReconciliationPolicy,
+)
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrencePersistence,
 )
@@ -109,15 +114,19 @@ def lifecycle_engine_for_tests(
     occurrence_persistence: ProblemOccurrencePersistence | None = None,
     *,
     document_store: ConditionalDocumentStore | None = None,
+    reconciliation_policies: tuple[ProblemReconciliationPolicy, ...] | None = None,
 ) -> ProblemLifecycleEngine:
     store = document_store or in_memory_document_store_for_problem_tests()
     resolved_occurrence = (
         occurrence_persistence
         or document_store_occurrence_persistence_for_tests(store)
     )
+    if reconciliation_policies is None:
+        return ProblemLifecycleEngine(problem_persistence, resolved_occurrence)
     return ProblemLifecycleEngine(
         problem_persistence,
         resolved_occurrence,
+        reconciliation_policies=reconciliation_policies,
     )
 
 
@@ -155,6 +164,10 @@ def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
     from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
         DeterministicProblemGroupingStrategy,
     )
+    from intergrax.runtime.diagnostics.reliability.reliability_diagnostic_strategy_composition import (
+        default_reliability_diagnostic_reconciliation_policies,
+        register_reliability_case_default_grouping_strategy,
+    )
     from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
     from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
     from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
@@ -179,6 +192,7 @@ def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
     )
     registry = ProblemGroupingStrategyRegistry()
     registry.register(DeterministicProblemGroupingStrategy())
+    register_reliability_case_default_grouping_strategy(registry)
     orchestrator = DiagnosticOrchestrator(
         execution_reconstructor=reconstructor,
         lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
@@ -188,6 +202,7 @@ def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
             persistence,
             occurrence_persistence,
             document_store=occurrence_store,
+            reconciliation_policies=default_reliability_diagnostic_reconciliation_policies(),
         ),
     )
     read_service = read_service_for_tests(
