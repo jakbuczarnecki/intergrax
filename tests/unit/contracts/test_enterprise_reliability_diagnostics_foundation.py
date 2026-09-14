@@ -223,6 +223,7 @@ def test_public_exports_intentional() -> None:
         "SCHEMA_EXTERNAL_EFFECT_RELIABILITY_SIGNAL_KIND_V1",
         "parse_reliability_diagnostic_occurrence_instance_id",
         "reliability_case_subject_index_token",
+        "reliability_correlation_subject_index_token",
         "reliability_diagnostic_occurrence_instance_id",
     }
     assert set(diagnostics_public_exports) == expected

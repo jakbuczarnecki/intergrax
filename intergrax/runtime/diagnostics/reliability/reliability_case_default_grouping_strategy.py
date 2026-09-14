@@ -14,7 +14,6 @@ from intergrax.contracts.enterprise_reliability.diagnostics.grouping import (
     ReliabilityCaseSubjectRef,
     ReliabilityProblemGroupingStrategyId,
     ReliabilityProblemGroupingStrategyVersion,
-    parse_reliability_diagnostic_occurrence_instance_id,
     reliability_case_subject_index_token,
 )
 from intergrax.contracts.enterprise_reliability.diagnostics.observation import (
@@ -38,6 +37,10 @@ from intergrax.runtime.diagnostics.reliability.observation_to_problem_signal imp
 )
 from intergrax.runtime.diagnostics.reliability.reliability_case_grouping_reconciliation import (
     ReliabilityCaseProblemGroupingBasis,
+)
+from intergrax.runtime.diagnostics.reliability.reliability_observation_grouping_adapter import (
+    ReliabilityObservationGroupingAdapterError,
+    grouping_subject_index_token_for_erl_signal_scope,
 )
 from intergrax.runtime.observability.problem_signal import (
     PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY,
@@ -86,8 +89,8 @@ class ReliabilityCaseDefaultGroupingStrategy:
     """
     Batch grouping over normalized ERL signal assessments.
 
-    Groups by ``reliability_case_id`` while preserving per-observation subject refs
-    for occurrence identity (encoded in orchestration ``instance_id``).
+    Buckets by the public observation grouping SPI ``index_token`` (when provided
+    upstream) while preserving per-observation subject refs for occurrence identity.
     """
 
     def __init__(
@@ -120,23 +123,23 @@ class ReliabilityCaseDefaultGroupingStrategy:
         inputs: tuple[ProblemGroupingInput, ...],
     ) -> ProblemGroupingStrategyResult:
         buckets: dict[str, list[ProblemGroupingSubjectRef]] = {}
-        case_order: list[str] = []
+        bucket_order: list[str] = []
 
         for input_item in inputs:
-            parsed = _parse_erl_reliability_grouping_subject(input_item.subject)
-            if parsed is None:
+            resolved = _resolve_erl_grouping_bucket(input_item, self._observation_grouping)
+            if resolved is None:
                 continue
-            case_id, subject_ref = parsed
-            members = buckets.get(case_id)
+            bucket_key, subject_ref = resolved
+            members = buckets.get(bucket_key)
             if members is None:
                 members = []
-                buckets[case_id] = members
-                case_order.append(case_id)
+                buckets[bucket_key] = members
+                bucket_order.append(bucket_key)
             members.append(subject_ref)
 
         candidates: list[ProblemGroupingCandidate] = []
-        for case_id in case_order:
-            members = tuple(buckets[case_id])
+        for bucket_key in bucket_order:
+            members = tuple(buckets[bucket_key])
             candidates.append(
                 ProblemGroupingCandidate(
                     members=members,
@@ -146,7 +149,7 @@ class ReliabilityCaseDefaultGroupingStrategy:
                         method=ProblemGroupingMethod.DETERMINISTIC,
                         supporting_subject_refs=members,
                         basis=ReliabilityCaseProblemGroupingBasis(
-                            reliability_case_id=case_id,
+                            grouping_subject_index_token=bucket_key,
                         ),
                     ),
                 ),
@@ -159,9 +162,56 @@ class ReliabilityCaseDefaultGroupingStrategy:
         )
 
 
-def _parse_erl_reliability_grouping_subject(
-    subject: ProblemGroupingSubject,
+def _resolve_erl_grouping_bucket(
+    input_item: ProblemGroupingInput,
+    observation_grouping: ExternalEffectReliabilityProblemGroupingStrategy,
 ) -> tuple[str, ProblemGroupingSubjectRef] | None:
+    subject = input_item.subject
+    subject_ref = _parse_erl_reliability_subject_ref(subject)
+    if subject_ref is None:
+        return None
+
+    token = subject.grouping_subject_index_token
+    if token is None:
+        token = _resolve_grouping_token_from_signals(input_item, observation_grouping)
+    if token is None:
+        return None
+
+    application = subject.ref.application_instance()
+    if application is None:
+        return None
+    if application.tenant_id != subject.tenant_id:
+        raise ValueError("ERL grouping subject tenant mismatch")
+
+    return token, subject_ref
+
+
+def _resolve_grouping_token_from_signals(
+    input_item: ProblemGroupingInput,
+    observation_grouping: ExternalEffectReliabilityProblemGroupingStrategy,
+) -> str | None:
+    signals = input_item.signal_source_signals
+    if not signals:
+        return None
+    subject = input_item.subject
+    application = subject.ref.application_instance()
+    if application is None:
+        return None
+    try:
+        return grouping_subject_index_token_for_erl_signal_scope(
+            tenant_id=application.tenant_id,
+            application_id=application.application_id,
+            instance_id=application.instance_id,
+            problem_signals=signals,
+            strategy=observation_grouping,
+        )
+    except ReliabilityObservationGroupingAdapterError:
+        return None
+
+
+def _parse_erl_reliability_subject_ref(
+    subject: ProblemGroupingSubject,
+) -> ProblemGroupingSubjectRef | None:
     application = subject.ref.application_instance()
     if application is None:
         return None
@@ -174,13 +224,7 @@ def _parse_erl_reliability_grouping_subject(
             return None
         if finding.problem_kind != PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY:
             return None
-    try:
-        case_id, _observation_id = parse_reliability_diagnostic_occurrence_instance_id(
-            application.instance_id,
-        )
-    except ValueError:
-        return None
-    return case_id, subject.ref
+    return subject.ref
 
 
 __all__ = [

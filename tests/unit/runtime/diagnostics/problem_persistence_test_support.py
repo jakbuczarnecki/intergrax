@@ -154,7 +154,10 @@ def read_service_for_tests(
     )
 
 
-def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
+def build_diagnostic_orchestrator_stack_for_tests(
+    *,
+    observation_grouping: object | None = None,
+) -> tuple[
     "DiagnosticOrchestrator",
     InMemoryProblemPersistence,
     "DiagnosticReadService",
@@ -163,6 +166,9 @@ def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
     """Canonical in-memory diagnostic orchestrator stack for hosted/scenario architecture gates."""
     from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
         DeterministicProblemGroupingStrategy,
+    )
+    from intergrax.contracts.enterprise_reliability.diagnostics.grouping import (
+        ExternalEffectReliabilityProblemGroupingStrategy,
     )
     from intergrax.runtime.diagnostics.reliability.reliability_diagnostic_strategy_composition import (
         default_reliability_diagnostic_reconciliation_policies,
@@ -192,7 +198,15 @@ def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
     )
     registry = ProblemGroupingStrategyRegistry()
     registry.register(DeterministicProblemGroupingStrategy())
-    register_reliability_case_default_grouping_strategy(registry)
+    plugin_grouping: ExternalEffectReliabilityProblemGroupingStrategy | None = None
+    if observation_grouping is not None:
+        if not isinstance(observation_grouping, ExternalEffectReliabilityProblemGroupingStrategy):
+            raise TypeError("observation_grouping must implement grouping SPI")
+        plugin_grouping = observation_grouping
+    register_reliability_case_default_grouping_strategy(
+        registry,
+        observation_grouping=plugin_grouping,
+    )
     orchestrator = DiagnosticOrchestrator(
         execution_reconstructor=reconstructor,
         lifecycle_analyzer=LifecycleAnomalyAnalyzer(),

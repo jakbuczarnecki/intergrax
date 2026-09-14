@@ -20,9 +20,9 @@ from intergrax.runtime.diagnostics.problem_grouping import (
 
 @dataclass(frozen=True, slots=True)
 class ReliabilityCaseProblemGroupingBasis:
-    """Grouping evidence: one operator Problem aggregate per tenant + reliability case."""
+    """Grouping evidence: one operator Problem per tenant + plugin grouping subject token."""
 
-    reliability_case_id: str
+    grouping_subject_index_token: str
 
     @property
     def kind(self) -> ProblemGroupingBasisKind:
@@ -36,7 +36,7 @@ class ReliabilityCaseProblemReconciliationKey:
     tenant_id: str
     strategy_id: ProblemGroupingStrategyId
     strategy_version: ProblemGroupingStrategyVersion
-    reliability_case_id: str
+    grouping_subject_index_token: str
 
     @property
     def kind(self) -> ProblemReconciliationKeyKind:
@@ -49,7 +49,7 @@ class ReliabilityCaseProblemReconciliationKey:
                 self.tenant_id,
                 str(self.strategy_id),
                 str(self.strategy_version),
-                self.reliability_case_id,
+                self.grouping_subject_index_token,
             ),
         )
 
@@ -71,7 +71,7 @@ def extract_reliability_case_reconciliation_key(
         tenant_id=tenant_id,
         strategy_id=candidate.provenance.strategy_id,
         strategy_version=candidate.provenance.strategy_version,
-        reliability_case_id=basis.reliability_case_id,
+        grouping_subject_index_token=basis.grouping_subject_index_token,
     )
 
 

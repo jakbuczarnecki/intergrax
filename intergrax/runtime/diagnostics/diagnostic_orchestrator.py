@@ -150,6 +150,8 @@ class DiagnosticOrchestrator:
         return _ScopedSignalSubjectAnalysis(
             assessment_input=ProblemGroupingAssessmentInput(
                 signal_assessment=assessment,
+                grouping_subject_index_token=scope.grouping_subject_index_token,
+                signal_source_signals=scope.problem_signals,
             ),
             signal_subject_analysis=DiagnosticSignalSubjectAnalysis(
                 tenant_id=tenant_id,

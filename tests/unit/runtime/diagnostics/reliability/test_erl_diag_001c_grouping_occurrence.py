@@ -26,14 +26,7 @@ from intergrax.contracts.enterprise_reliability.diagnostics import (
 )
 from intergrax.runtime.diagnostics.diagnostic_subject import ApplicationDiagnosticSubjectRef
 from intergrax.runtime.diagnostics.problem_grouping import (
-    ProblemGroupingCandidate,
     ProblemGroupingInput,
-    ProblemGroupingMethod,
-    ProblemGroupingProvenance,
-    ProblemGroupingStrategyCharacteristics,
-    ProblemGroupingStrategyRegistry,
-    ProblemGroupingStrategyResult,
-    ProblemGroupingStrategyVersion,
     normalize_signal_assessment,
 )
 from intergrax.runtime.diagnostics.reliability.observation_to_problem_signal import (
@@ -41,9 +34,12 @@ from intergrax.runtime.diagnostics.reliability.observation_to_problem_signal imp
     map_handoff_to_platform_problem_signal,
 )
 from intergrax.runtime.diagnostics.reliability.reliability_case_default_grouping_strategy import (
+    ReliabilityCaseDefaultGroupingStrategy,
     ReliabilityCaseDefaultObservationGroupingStrategy,
     STRATEGY_ID,
-    _parse_erl_reliability_grouping_subject,
+)
+from intergrax.runtime.diagnostics.reliability.reliability_observation_grouping_adapter import (
+    grouping_subject_index_token_for_observation,
 )
 from intergrax.runtime.diagnostics.reliability.reliability_case_grouping_reconciliation import (
     ReliabilityCaseProblemGroupingBasis,
@@ -113,7 +109,11 @@ def _observation(
     )
 
 
-def _grouping_input_for(observation: ExternalEffectReliabilityObservation) -> ProblemGroupingInput:
+def _grouping_input_for(
+    observation: ExternalEffectReliabilityObservation,
+    *,
+    observation_grouping: ExternalEffectReliabilityProblemGroupingStrategy | None = None,
+) -> ProblemGroupingInput:
     handoff = map_observation_to_handoff(observation)
     signal = map_handoff_to_platform_problem_signal(handoff)
     subject_ref = ApplicationDiagnosticSubjectRef(
@@ -125,7 +125,15 @@ def _grouping_input_for(observation: ExternalEffectReliabilityObservation) -> Pr
         ),
     )
     assessment = SignalDiagnosticAssessmentBuilder().assess(subject_ref, (signal,))
-    return ProblemGroupingInput(subject=normalize_signal_assessment(assessment))
+    spi = observation_grouping or ReliabilityCaseDefaultObservationGroupingStrategy()
+    token = grouping_subject_index_token_for_observation(observation, spi)
+    return ProblemGroupingInput(
+        subject=normalize_signal_assessment(
+            assessment,
+            grouping_subject_index_token=token,
+        ),
+        signal_source_signals=(signal,),
+    )
 
 
 def test_default_strategy_subject_token_is_deterministic() -> None:
@@ -222,59 +230,13 @@ def test_case5_multi_tenant_isolation() -> None:
     assert len(query_all_problems_for_tenant(persistence, _TENANT_B)) == 1
 
 
-class _CompositeCorrelationBatchGroupingStrategy:
-    """Test-only plugin: one Problem per correlation_id across distinct case ids."""
+def test_case4_observation_spi_groups_two_cases_by_shared_token() -> None:
+    from tests.unit.erl_diagnostics_plugins.correlation_grouping_strategy import (
+        CorrelationGroupingStrategy,
+    )
 
-    @property
-    def strategy_id(self):
-        return STRATEGY_ID
-
-    @property
-    def strategy_version(self) -> ProblemGroupingStrategyVersion:
-        return ProblemGroupingStrategyVersion("test-composite-1")
-
-    @property
-    def characteristics(self) -> ProblemGroupingStrategyCharacteristics:
-        return ProblemGroupingStrategyCharacteristics(
-            method=ProblemGroupingMethod.DETERMINISTIC,
-            deterministic=True,
-        )
-
-    def group(
-        self,
-        inputs: tuple[ProblemGroupingInput, ...],
-    ) -> ProblemGroupingStrategyResult:
-        all_members: list = []
-        for input_item in inputs:
-            parsed = _parse_erl_reliability_grouping_subject(input_item.subject)
-            if parsed is None:
-                continue
-            all_members.append(parsed[1])
-
-        members = tuple(all_members)
-        candidate = ProblemGroupingCandidate(
-            members=members,
-            provenance=ProblemGroupingProvenance(
-                strategy_id=self.strategy_id,
-                strategy_version=self.strategy_version,
-                method=ProblemGroupingMethod.DETERMINISTIC,
-                supporting_subject_refs=members,
-                basis=ReliabilityCaseProblemGroupingBasis(
-                    reliability_case_id="composite:shared-corr",
-                ),
-            ),
-        )
-        return ProblemGroupingStrategyResult(
-            strategy_id=self.strategy_id,
-            strategy_version=self.strategy_version,
-            candidates=(candidate,),
-        )
-
-
-def test_case4_custom_batch_strategy_plugin_groups_two_cases() -> None:
-    registry = ProblemGroupingStrategyRegistry()
-    registry.register(_CompositeCorrelationBatchGroupingStrategy())
-    strategy = registry.resolve(STRATEGY_ID)
+    plugin = CorrelationGroupingStrategy()
+    strategy = ReliabilityCaseDefaultGroupingStrategy(observation_grouping=plugin)
     obs_case_1 = _observation(
         reliability_case_id="case-one",
         correlation_id="shared-corr",
@@ -286,7 +248,10 @@ def test_case4_custom_batch_strategy_plugin_groups_two_cases() -> None:
         observation_id="obs-2",
     )
     result = strategy.group(
-        (_grouping_input_for(obs_case_1), _grouping_input_for(obs_case_2)),
+        (
+            _grouping_input_for(obs_case_1, observation_grouping=plugin),
+            _grouping_input_for(obs_case_2, observation_grouping=plugin),
+        ),
     )
     assert len(result.candidates) == 1
     assert len(result.candidates[0].members) == 2

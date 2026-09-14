@@ -33,6 +33,19 @@ def test_grouping_contracts_have_no_payment_terms() -> None:
     assert "payment" not in source
 
 
+def test_runtime_adapter_imports_public_grouping_contract() -> None:
+    adapter = (
+        _REPO_ROOT
+        / "intergrax"
+        / "runtime"
+        / "diagnostics"
+        / "reliability"
+        / "reliability_observation_grouping_adapter.py"
+    )
+    imports = _collect_imports(adapter)
+    assert "intergrax.contracts.enterprise_reliability.diagnostics.grouping" in imports
+
+
 def _collect_imports(path: Path) -> list[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
     imports: list[str] = []

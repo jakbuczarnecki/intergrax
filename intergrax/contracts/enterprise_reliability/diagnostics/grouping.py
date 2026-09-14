@@ -29,6 +29,7 @@ RELIABILITY_CASE_DEFAULT_GROUPING_STRATEGY_VERSION = ReliabilityProblemGroupingS
 )
 
 _RELIABILITY_CASE_INDEX_PREFIX = "erl:case:"
+_RELIABILITY_CORRELATION_INDEX_PREFIX = "erl:correlation:"
 _OCCURRENCE_SEGMENT = ":obs:"
 
 
@@ -67,6 +68,15 @@ def reliability_case_subject_index_token(reliability_case_id: str) -> str:
         field_name="reliability_case_id",
     )
     return f"{_RELIABILITY_CASE_INDEX_PREFIX}{normalized}"
+
+
+def reliability_correlation_subject_index_token(correlation_id: str) -> str:
+    """Deterministic grouping index token for correlation-scoped plugin strategies."""
+    normalized = _require_semantic_identifier(
+        correlation_id,
+        field_name="correlation_id",
+    )
+    return f"{_RELIABILITY_CORRELATION_INDEX_PREFIX}{normalized}"
 
 
 def reliability_diagnostic_occurrence_instance_id(
@@ -127,5 +137,6 @@ __all__ = [
     "ReliabilityProblemGroupingStrategyVersion",
     "parse_reliability_diagnostic_occurrence_instance_id",
     "reliability_case_subject_index_token",
+    "reliability_correlation_subject_index_token",
     "reliability_diagnostic_occurrence_instance_id",
 ]

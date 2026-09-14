@@ -373,7 +373,7 @@ def _encode_reconciliation_key(
             "tenant_id": reconciliation_key.tenant_id,
             "strategy_id": str(reconciliation_key.strategy_id),
             "strategy_version": str(reconciliation_key.strategy_version),
-            "reliability_case_id": reconciliation_key.reliability_case_id,
+            "grouping_subject_index_token": reconciliation_key.grouping_subject_index_token,
         }
     raise TypeError(f"unsupported reconciliation key kind: {reconciliation_key.kind}")
 
@@ -402,9 +402,23 @@ def _decode_reconciliation_key(value: object) -> ProblemReconciliationKey:
             strategy_version=ProblemGroupingStrategyVersion(
                 str(value["strategy_version"]),
             ),
-            reliability_case_id=str(value["reliability_case_id"]),
+            grouping_subject_index_token=_decode_grouping_subject_index_token(value),
         )
     raise ValueError("unsupported reconciliation key kind")
+
+
+def _decode_grouping_subject_index_token(value: dict[str, object]) -> str:
+    token = value.get("grouping_subject_index_token")
+    if token is not None:
+        return str(token)
+    legacy_case_id = value.get("reliability_case_id")
+    if legacy_case_id is not None:
+        from intergrax.contracts.enterprise_reliability.diagnostics.grouping import (
+            reliability_case_subject_index_token,
+        )
+
+        return reliability_case_subject_index_token(str(legacy_case_id))
+    raise ValueError("reconciliation key missing grouping_subject_index_token")
 
 
 def _encode_signature(signature: DeterministicProblemSignature) -> dict[str, object]:
