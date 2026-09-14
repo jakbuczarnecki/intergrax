@@ -992,4 +992,12 @@ Unrelated dirty worktree (unit test files under `tests/unit/…`, `testing_suppo
 
 **Stale claims removed:** `ExecutionId` “not yet canonical”; UER “implementation PARTIAL” without frozen-core vs consumer-adoption split; Critic as CURRENT decision authority in hub registry.
 
-**Remaining doc drift (Initiative Y, post-Y1):** UER satellites, `DECISION_SYSTEM.md` cross-refs, Observability/DIAG/Background Tasks CURRENT tables, maintainer plan CURRENT rows, public/community maps.
+**Remaining doc drift (Initiative Y, post-Y2):** UER satellites, `DECISION_SYSTEM.md` cross-refs, Background Tasks CURRENT tables, maintainer plan CURRENT rows, public/community maps.
+
+## HARNESS-Y2 addendum (2026-09-14)
+
+**Audited / synchronized:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md), [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) — frozen five-ID `RuntimeEvent` as **CURRENT** contract; emit-path **OBS-COVERAGE-1**; **ADOPTION / PROJECTION GAP** for journal/export/DIAG surfaces; `ObservabilityExporter` / `RuntimeEventPersistence` contract-first; Diagnostics ≠ Runtime Invariant Service; `ProblemId` ≠ `ExecutionId`; `ProblemGroupingStrategyRegistry` documented as proven strategy seam.
+
+**Stale claims removed:** `ExecutionId` as TARGET-only on `RuntimeEvent`; “migrated paths / PARTIAL contract” wording conflating projection lag with core identity; DIAG implying `ExecutionId` not yet on canonical events.
+
+**Extensibility gaps (report only):** Runtime Invariant Service (Initiative N); full OBS-COVERAGE-1 writer certification; journal Execution Tree projection adoption.

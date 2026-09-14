@@ -987,11 +987,11 @@ Capability descriptors should include:
 
 # 29. Initiative Y — Documentation architecture synchronization
 
-**Status:** **PARTIAL** — **Y1 DONE** (2026-09-14): frozen Execution **CURRENT** sync in UEA, UER, `NEXUS_EXECUTION_FLOW.md`, and `intergrax_runtime_architecture.md` hub registry (Critic legacy labeling, contract-first Nexus positioning). Remaining domain/public doc drift tracked under Initiative Y P0A list below.
+**Status:** **PARTIAL** — **Y1 + Y2 DONE** (2026-09-14): frozen Execution **CURRENT** sync in UEA, UER, `NEXUS_EXECUTION_FLOW.md`, and hub registry (**Y1**); Observability + Diagnostics primary architecture CURRENT sync — five-ID frozen contract vs adoption gaps, contract-first export/persistence, Diagnostics authority boundaries (**Y2**). Remaining Initiative Y drift: UER satellites, Background Tasks, maintainer plan CURRENT rows, public/community maps.
 
 ## Priority (post EE1)
 
-**URGENT (remaining):** satellites and non-primary domains (Observability, DIAG, Background Tasks, Tools, Skills, etc.) may still drift from frozen Execution reality. This roadmap re-baseline does not replace per-document CURRENT sync outside Y1 scope.
+**URGENT (remaining):** satellites and non-primary domains (UER satellites, Background Tasks, Tools, Skills, public docs, etc.) may still drift from frozen Execution reality. **OBSERVABILITY.md** and **DIAGNOSTICS.md** primary hubs were re-baselined in **Y2**; other pairs remain on the P0A list below.
 
 ## P0A documentation re-baseline
 

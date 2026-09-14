@@ -56,12 +56,16 @@ It is implemented under `intergrax/runtime/diagnostics/` as a **single spine**:
 
 - `ExecutionReconstructor` - factual reconstruction from canonical evidence
 - `LifecycleAnomalyAnalyzer` + `DiagnosticAssessmentBuilder` + `ExecutionFailureAnalyzer` - deterministic assessment (lifecycle anomalies plus durable `EXECUTION_FAILED` execution-boundary facts — R2)
-- `ProblemGroupingEngine` - structural grouping hypotheses
+- `ProblemGroupingEngine` + `ProblemGroupingStrategyRegistry` - structural grouping hypotheses (strategy id → registered `ProblemGroupingStrategy`; **proven pluggable seam** — strategies propose; engine validates; `ProblemId` lifecycle remains in `ProblemLifecycleEngine`)
 - `ProblemLifecycleEngine` - stable `Problem` identity and lifecycle
 - `DiagnosticOrchestrator` - canonical write/process entry point
 - `DiagnosticReadService` - canonical read/reconstruction entry point
 
 There is **no** scenario-local, proof-local, or AI-incident-specific canonical diagnostic authority.
+
+**Diagnostics ≠ Runtime Invariant Service:** Central Diagnostics **interprets** persisted evidence into `Problem` / assessment state. Runtime invariant evaluation (registered invariant rules → deterministic outcome) is a **separate concern** — **GAP** (Initiative N). Diagnostics does **not** own invariant catalogs, does **not** substitute for Execution Engine lifecycle authority, and does **not** use AI as authority.
+
+**Diagnostics ≠ Decision System:** Diagnostics may observe decision failures and supply investigation inputs; it does **not** own Decision Resolution, Revision, or verification rubrics. **Decision System** is the authoritative decision capability; **Critic** is legacy/historical — see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md).
 
 ---
 
@@ -203,7 +207,7 @@ flowchart TB
 | ------- | -------- |
 | **Deterministic signature** | `DeterministicProblemSignature` + strategy id/version |
 | **Reconciliation key** | `tenant_id` + strategy metadata + signature - finds same logical Problem |
-| **Stable `problem_id`** | Opaque minted id - same Problem across occurrences |
+| **Stable `problem_id`** | Opaque minted id - same Problem across occurrences (**diagnostic identity** — not a substitute for `ExecutionId`) |
 | **Occurrences** | Distinct accepted execution (or signal) attachments |
 | **`first_seen_at` / `last_seen_at`** | Min/max of accepted occurrence `observed_at` |
 | **Tenant scope** | Problem identity is **tenant-scoped** - same logical issue in tenant A and B are separate Problems |
@@ -408,9 +412,10 @@ Problem Store failure **cannot** change execution truth.
 | `task_id` (`TaskId`) | Work intent - authoritative from Execution Runtime |
 | `run_id` (`RunId`) | One governed lifecycle - authoritative from Execution Runtime |
 | `attempt_id` (`AttemptId`) | Global try of the run - on `RuntimeEvent`; do not conflate with `RunId` |
-| `execution_id` (`ExecutionId`) | **TARGET** schedulable unit - not yet on all `RuntimeEvent` paths |
+| `execution_id` (`ExecutionId`) | Schedulable unit — **required** on canonical `RuntimeEvent` (**CURRENT** frozen contract); Diagnostics **consumes**, never mints |
+| `problem_id` (`ProblemId`) | Diagnostic-domain identity for reconciled `Problem` state — **not** interchangeable with `ExecutionId` |
 
-Do not mix `RunId`, `ExecutionId`, or `AttemptId` in diagnostic contracts.
+Do not mix `RunId`, `ExecutionId`, `AttemptId`, or `ProblemId` in diagnostic contracts. End-to-end operator correlation on every read model is **not** claimed where legacy producers or projections still omit fields — see **ADOPTION / PROJECTION GAP** in [`OBSERVABILITY.md`](OBSERVABILITY.md).
 
 ---
 
