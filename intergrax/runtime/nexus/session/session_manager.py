@@ -64,6 +64,7 @@ class SessionManager:
         include_cross_session_episodic: bool = False,
         user_turns_consolidation_interval: Optional[int] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
         consolidation_cooldown_seconds: Optional[int] = GLOBAL_SETTINGS.default_consolidation_cooldown_seconds,
+        memory_consolidation_mode: str = "manual",
     ) -> None:
         """
         Initialize a new SessionManager instance.
@@ -140,6 +141,7 @@ class SessionManager:
             service=session_memory_consolidation_service,
             user_turns_interval=effective_interval,
             cooldown_seconds=effective_cooldown,
+            consolidation_mode=memory_consolidation_mode,
         )
         self._lifecycle = SessionLifecycleCoordinator(storage)
         self._profile_instructions = SessionProfileInstructionResolver(
@@ -223,8 +225,9 @@ class SessionManager:
 
     async def close_session(
         self,
-        session_id: str,
         *,
+        tenant_id: str,
+        session_id: str,
         reason: Optional[SessionCloseReason] = None,
         run_id: Optional[str] = None,
         trace_state: Optional[RuntimeState] = None,
@@ -249,7 +252,10 @@ class SessionManager:
                 Optional domain-level reason. If None, a default
                 SessionCloseReason.EXPLICIT is used.
         """
-        session = await self._storage.get_session(session_id)
+        session = await self._lifecycle.get_session(
+            tenant_id=tenant_id,
+            session_id=session_id,
+        )
         if session is None:
             return
 
@@ -268,7 +274,10 @@ class SessionManager:
         #      - the service is configured, and
         #      - the session is associated with a user_id.
         if self._consolidation.should_consolidate_on_close(session):
-            messages = await self.get_history_for_session(session_id)
+            messages = await self.get_history_for_session(
+                tenant_id=tenant_id,
+                session_id=session_id,
+            )
             if messages:
                 diag = await self._consolidation.consolidate(
                     user_id=session.user_id,
@@ -346,7 +355,10 @@ class SessionManager:
                 session,
                 user_turns=user_turns,
             ):
-                messages = await self.get_history_for_session(session_id)
+                messages = await self.get_history_for_session(
+                    tenant_id=tenant_id,
+                    session_id=session_id,
+                )
                 if messages:
                     consolidation_diag = await self._consolidation.consolidate(
                         user_id=session.user_id,

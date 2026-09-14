@@ -17,6 +17,7 @@ from intergrax.memory.memory_vector_namespace import (
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.memory.memory_vector_errors import MemoryTenantScopeViolationError
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
     VectorStoreRecord,
@@ -135,6 +136,15 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
             scope=scope,
         )
 
+    def _resolve_bound_tenant(self, tenant_id: str | None) -> str:
+        requested = tenant_id if tenant_id is not None else self._tenant_id
+        if requested != self._tenant_id:
+            raise MemoryTenantScopeViolationError(
+                expected_tenant_id=self._tenant_id,
+                requested_tenant_id=requested,
+            )
+        return self._tenant_id
+
     def _scope(
         self,
         *,
@@ -142,8 +152,9 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         namespace: str | None = None,
         workspace_id: str | None = None,
     ) -> VectorStoreScope:
+        bound_tenant = self._resolve_bound_tenant(tenant_id)
         return VectorStoreScope(
-            tenant_id=tenant_id or self._tenant_id,
+            tenant_id=bound_tenant,
             namespace=namespace if namespace is not None else self._vector_index_namespace,
             workspace_id=workspace_id if workspace_id is not None else self._workspace_id,
         )

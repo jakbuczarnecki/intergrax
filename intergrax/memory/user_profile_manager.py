@@ -11,6 +11,7 @@ from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.memory.user_profile_memory import (
     UserProfile,
     UserProfileMemoryEntry,
+    UserProfileMemoryEntryNotFoundError,
 )
 from intergrax.memory.memory_temporal import filter_active_memory_entries, is_memory_entry_active
 from intergrax.memory.memory_vector_namespace import resolve_memory_index_collection
@@ -119,6 +120,7 @@ class UserProfileManager:
             query=query,
             final_top_k=top_k,
             score_threshold=score_threshold,
+            scope=self._vector_scope(),
             metadata_filter=MetadataFilter(
                 conditions={
                     "user_id": user_id,
@@ -537,23 +539,26 @@ class UserProfileManager:
         """
         profile = await self._get_store_profile(user_id)
 
+        matched: UserProfileMemoryEntry | None = None
         for entry in profile.memory_entries:
             if entry.entry_id == entry_id:
                 if content is not None:
                     entry.content = content
                 if metadata is not None:
                     entry.metadata = metadata
-                entry.modified=True                
+                entry.modified = True
+                matched = entry
                 break
+
+        if matched is None:
+            raise UserProfileMemoryEntryNotFoundError(entry_id)
 
         await self._save_store_profile(profile)
 
-        # If content changed, refresh vector index
         if content is not None:
-            await self._index_upsert_entry(user_id=user_id, entry=entry)
+            await self._index_upsert_entry(user_id=user_id, entry=matched)
 
-        if entry:
-            entry.modified=False
+        matched.modified = False
 
         return profile
 

@@ -63,6 +63,7 @@ class PolicyScopedMemoryView:
 
     async def read(self, namespace: str, key: str) -> Optional[Dict[str, Any]]:
         self._guard_namespace(namespace, write=False)
+        self._guard_scope_boundary()
         record = TaskMemoryCoordinator.read(
             self._store,
             tenant_id=self._tenant_id,
@@ -70,11 +71,7 @@ class PolicyScopedMemoryView:
             namespace=namespace,
             key=key,
         )
-        if record is not None and should_forget_stm_record(
-            updated_at_utc=record.updated_at_utc,
-            retention_days=self._retention_days,
-            namespace=namespace,
-        ):
+        if record is not None and not self._is_record_visible(record, namespace):
             memory_platform_metrics().record_retention_violation()
             record = None
         memory_platform_metrics().record_read()
@@ -157,6 +154,7 @@ class PolicyScopedMemoryView:
 
     async def list(self, namespace: str, prefix: str = "") -> List[TaskMemoryRecord]:
         self._guard_namespace(namespace, write=False)
+        self._guard_scope_boundary()
         records = TaskMemoryCoordinator.list_namespace(
             self._store,
             tenant_id=self._tenant_id,
@@ -165,6 +163,13 @@ class PolicyScopedMemoryView:
             prefix=prefix,
             limit=self._access_policy.list_limit,
         )
+        visible: List[TaskMemoryRecord] = []
+        for record in records:
+            if self._is_record_visible(record, namespace):
+                visible.append(record)
+            else:
+                memory_platform_metrics().record_retention_violation()
+        records = visible
         await self._emit(
             RuntimeEventType.MEMORY_READ,
             namespace=namespace,
@@ -176,6 +181,7 @@ class PolicyScopedMemoryView:
 
     async def delete(self, namespace: str, key: str) -> bool:
         self._guard_namespace(namespace, write=True)
+        self._guard_scope_boundary()
         deleted = self._store.delete(
             tenant_id=self._tenant_id,
             task_id=self._task_id,
@@ -191,6 +197,13 @@ class PolicyScopedMemoryView:
             extra={"operation": "delete", "deleted": deleted},
         )
         return deleted
+
+    def _is_record_visible(self, record: TaskMemoryRecord, namespace: str) -> bool:
+        return not should_forget_stm_record(
+            updated_at_utc=record.updated_at_utc,
+            retention_days=self._retention_days,
+            namespace=namespace,
+        )
 
     def _guard_namespace(self, namespace: str, *, write: bool) -> None:
         ns = (namespace or "").strip()
