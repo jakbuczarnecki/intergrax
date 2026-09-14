@@ -48,7 +48,7 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 | GOV-GAP-010 | P2 | Maintainer truth | Stale PG-FIX / Protocol v2.2 status in docs | IMPLEMENTED / VERIFIED / CLOSED distinguished | Operators mis-plan | False closure claims | Reconcile plan + arch pointers (GR-0) | GR-0 | GR-0 | `plans/GOVERNED_EXECUTION.md` | IN_PROGRESS |
 | GOV-GAP-011 | P2 | Policy plugins | Catalog + handler slices; Nexus types in `policy_bundle.py` | Vendor-neutral core; platform plugin admission | Residual Nexus coupling in policy assembly | Tier violation / test burden | Gradual decouple bundle assembly from Nexus models | Platform plugins | GR-4, GR-11 | `policy_bundle.py`, `tool_policy_resolution.py` | OPEN |
 | GOV-GAP-012 | P2 | Admission vs inner | `evaluate_root_execution_admission` + inner meaningful-side-effect | Admission = may start Execution; inner = may proceed | Potential semantic overlap if misused | Admission replaces policy | Keep `ExecutionAuthorityPolicy` as child narrowing only; document ports | GR-2 | GR-3 | `execution/authority/policy.py`, `runtime_execution_policy_admission.py`, `execution_admission_composition.py` | OPEN |
-| GOV-GAP-013 | P0 | Root admission coverage | `RootExecutionAuthorityAdmissionPort` + `CanonicalExecutionIntakePort` wired only in `WorkerExecutionDispatchService` (tests + AW seam); canonical host path `HostTaskExecution` → `Execution` → `ExecutionRuntime.execute` mints `ParentExecutionAuthority` from `task.execution_authority` with no Governance admission | One platform-wide Governance gate before every root Execution (INFERENCE / AGENTIC / ORCHESTRATION) | Frozen runtime has intake adapter but does not require trusted authority from Governance; host path bypasses intake | Root Execution starts without `RuntimeExecutionPolicyAdmissionPort` on primary production host | Mandatory composition at canonical host boundary **or** new frozen contract hook (operator decision); map worker admission to strategy-neutral `execution_operation` | GR-2-R1 | GR-2, GR-10 | `host_task.py`, `worker_execution_dispatch.py`, `canonical_intake_adapter.py`, `runtime_execution_admission.py` | **OPEN** |
+| GOV-GAP-013 | P0 | Root admission coverage | `RootExecutionAuthorityAdmissionPort` + `CanonicalExecutionIntakePort` wired only in `WorkerExecutionDispatchService` (tests + AW seam); canonical host path `HostTaskExecution` → `Execution` → `ExecutionRuntime.execute` mints `ParentExecutionAuthority` from `task.execution_authority` with no Governance admission | One platform-wide Governance gate before every root Execution (INFERENCE / AGENTIC / ORCHESTRATION) | Frozen runtime has intake adapter but does not require trusted authority from Governance; host path bypasses intake | Root Execution starts without `RuntimeExecutionPolicyAdmissionPort` on primary production host | **GR-2-R2:** mandatory `RootExecutionLaunchPort` → admission → intake; demote direct `Execution`/`ExecutionRuntime` root APIs; strategy-neutral `execution_operation` | GR-2-R2 | GR-2, GR-10 | `host_task.py`, `worker_execution_dispatch.py`, `canonical_intake_adapter.py`, `runtime_execution_admission.py` | **OPEN** (design **DONE** — GR-2-R3) |
 
 ---
 
@@ -71,6 +71,20 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 **WORKER_ROOT_EXECUTION_OPERATION (§12):** **A** — `RuntimeExecutionPolicyAdmissionRequest.execution_operation` is generic; `RootExecutionAuthorityAdmissionService` hardcodes `WORKER_ROOT_EXECUTION_OPERATION` when calling policy (worker-named default, not worker-only port type).
 
 **Admission contract roles:** `RuntimeExecutionPolicyAdmissionPort` / `RootExecutionAuthorityAdmissionPort` = GOVERNANCE AUTHORIZATION; `ExecutionAdmissionHook` = EXECUTION VALIDATION; `ExecutionCapacityAdmissionPort` = CAPACITY; `ExecutionAuthorityPolicy` = CHILD AUTHORITY; `CanonicalExecutionIntakePort` = INTAKE (trusted authority → runtime).
+
+---
+
+## GR-2-R2 — canonical root admission trust boundary (architecture)
+
+**Design HEAD:** `e7d08f846c9a4a3b3f63439f6fad7cb0e1e79a7a` on `development`.
+
+**Verdict:** `ARCHITECTURE_APPROVAL_RECOMMENDED` — **Option C** (mandatory external intake + unified `RootExecutionLaunchPort`).
+
+**Legal root entry (target):** `RootExecutionLaunchPort` → `RootExecutionAuthorityAdmissionPort` → `CanonicalExecutionIntakePort` → `ExecutionRuntime`.
+
+**Artifact:** [`docs/project/maintainers/architecture/GR_2_R2_CANONICAL_ROOT_ADMISSION_TRUST_BOUNDARY.md`](../architecture/GR_2_R2_CANONICAL_ROOT_ADMISSION_TRUST_BOUNDARY.md)
+
+**Status:** GR-2-R2 **DONE** (design only). GR-2 **OPEN**. GR-2-R3 **NEXT** after operator approval. GR-3 **BLOCKED** until GR-2 root bypass closed.
 
 ---
 
@@ -213,7 +227,9 @@ Historical AUDIT-5 findings remain valid context; closure requires identity rebi
 | GR-1-R1 | Frozen boundary + atomic identity | **DONE** | Fail-closed partial identity; Governance consumes frozen active context | GR-1 | Audit defect A/B | Yes | `test_meaningful_side_effect_execution_identity_resolution.py` |
 | GR-1-R2 | Frozen Nexus baseline restoration | **DONE** | Remove Governance-specific Attempt/Execution forwarding from Nexus; identity via active context | GR-1-R1 | GR-1 Nexus coupling | Yes | `test_gr1_execution_identity_rebinding.py` (Nexus path) |
 | GR-2-R1 | Platform-wide root admission & frozen seam decision | **DONE** (`ARCHITECTURAL_DECISION_REQUIRED`) | Prove one Governance admission for INFERENCE/AGENTIC/ORCHESTRATION without layer violations | GR-1-R2 | — | No (audit) | This ledger § GR-2-R1; GOV-GAP-013 |
-| GR-2 | Execution Admission Governance | **OPEN** (worker/AW slice only) | Single admission story at **every** root Execution start | GR-2-R1 | G3 admission rows | Blocked until host seam decided | `test_gr2_execution_admission_governance.py` (policy port); host bypass remains |
+| GR-2-R2 | Canonical root admission trust boundary architecture | **DONE** (`ARCHITECTURE_APPROVAL_RECOMMENDED`) | One mandatory contract-first root trust boundary (design) | GR-2-R1 | — | No (docs) | `GR_2_R2_CANONICAL_ROOT_ADMISSION_TRUST_BOUNDARY.md` |
+| GR-2-R3 | Root admission implementation | **BLOCKED** (next after operator approval) | Implement approved launcher + close host bypass | GR-2-R2 | — | Yes | Qualification matrix § GR-2-R2 doc |
+| GR-2 | Execution Admission Governance | **OPEN** | Single admission at **every** root Execution start | GR-2-R3 | G3 admission rows | Yes (after R3) | Host + strategy proofs |
 | GR-3 | Inner Evaluation Spine | **BLOCKED** | One inner enforcement path; safe `authorize_and_execute` | GR-1, GR-2 | PG-FIX-A completion | Yes | Bypass gate tests |
 | GR-4 | Policy Resolution & Catalog Requalification | PLANNED | Close PG-FIX-B/D qualification gaps | GR-3 | G2C, PG-FIX-B/D | Yes | Precedence + catalog tests |
 | GR-5 | HITL / Governed Continuation Rebase | PLANNED | UER pause/resume; scoped approval preserved | GR-1 | G5*, PG-FIX-C | Yes | HITL E2E per strategy |
