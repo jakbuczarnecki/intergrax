@@ -50,11 +50,12 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_co
     WORKLOAD_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
-    EVALUATOR_LOOP_MAX_ITERATIONS,
     OUTCOME_RESOLVED,
     OUTCOME_UNRESOLVED,
     ScenarioExecutionResult,
 )
+
+_LEGACY_EVALUATOR_LOOP_MAX_ITERATIONS = 0
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     claim_id_for_hypothesis,
     latest_active_claim_for_hypothesis,
@@ -212,12 +213,8 @@ def evaluate_resolved_scenario_run(
         elif TELEMETRY_EVIDENCE_ID in challenge.evidence_ids:
             failures.append("open_challenge_must_not_include_resolving_evidence")
 
-    if result.evaluator_loop_iterations < 1:
-        failures.append("bounded_recovery_missing")
-    elif result.evaluator_loop_iterations > EVALUATOR_LOOP_MAX_ITERATIONS:
+    if result.evaluator_loop_iterations > _LEGACY_EVALUATOR_LOOP_MAX_ITERATIONS:
         failures.append("evaluator_loop_budget_exceeded")
-    else:
-        checks.append("bounded_recovery_within_platform")
 
     if not result.revision_used_tools:
         failures.append("follow_up_not_via_tools")
@@ -422,12 +419,8 @@ def evaluate_unresolved_scenario_run(
     else:
         checks.append("challenge_remains_open_without_resolving_evidence")
 
-    if result.evaluator_loop_iterations < 1:
-        failures.append("bounded_recovery_missing")
-    elif result.evaluator_loop_iterations > EVALUATOR_LOOP_MAX_ITERATIONS:
+    if result.evaluator_loop_iterations > _LEGACY_EVALUATOR_LOOP_MAX_ITERATIONS:
         failures.append("evaluator_loop_budget_exceeded")
-    else:
-        checks.append("bounded_recovery_within_platform")
 
     if not result.revision_used_tools:
         failures.append("follow_up_not_via_tools")

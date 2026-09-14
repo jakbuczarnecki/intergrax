@@ -18,7 +18,6 @@ from intergrax.applications._shared.scenario_runtime_baseline import (
     execute_scenario_task,
 )
 from intergrax.contracts.evidence_claims import EvidenceChallenge, EvidenceClaimSet, ClaimResolution
-from intergrax.contracts.evidence_claims import validate_evidence_claim_id
 from intergrax.contracts.execution_identity import validate_run_id
 from intergrax.runtime.diagnostics.investigation_contracts import (
     IncidentInvestigationInput,
@@ -36,12 +35,6 @@ from intergrax.runtime.observability.qualification_runtime_trace import (
 from intergrax.runtime.migration.legacy_critic_contracts import LegacyCriticVerdict
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.registry import ToolRegistry
-from platform_proofs.scenarios.ai_incident_investigation.application.critic_adapter import (
-    apply_challenge_lifecycle,
-    count_evaluator_loop_iterations_from_persisted_trace,
-    first_failed_node_partial_verdict_from_persisted_trace,
-    legacy_verdict_from_validation_errors,
-)
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_data_contracts import (
     IncidentOperationalData,
 )
@@ -50,13 +43,10 @@ from platform_proofs.scenarios.ai_incident_investigation.application.investigato
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.investigator_agent import (
     COMPARISON_EVIDENCE_ID,
-    INITIAL_CLAIM_ID,
     IncidentInvestigatorAgent,
     INVESTIGATOR_CAPABILITY,
     STAFFING_ATTENDANCE_EVIDENCE_ID,
     TELEMETRY_EVIDENCE_ID,
-    WORKLOAD_EVIDENCE_ID,
-    THROUGHPUT_EVIDENCE_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_reasoning import (
     claim_id_for_hypothesis,
@@ -71,29 +61,13 @@ from platform_proofs.scenarios.ai_incident_investigation.application.scenario_ex
     scenario_execution_provenance,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
-    INVESTIGATOR_NODE_ID,
     ScenarioRuntimeComposition,
     build_scenario_environment_profile,
     build_scenario_runtime_composition,
     prepare_incident_execution_runtime,
-    trace_reader_from_composition,
-)
-from platform_proofs.scenarios.ai_incident_investigation.application.completion_reconciliation import (
-    CompletionReconciliationError,
-    completion_intent_from_completion_mode,
-    normalize_evidence_gathering_stop_reason,
-    reconcile_investigation_completion,
-)
-from platform_proofs.scenarios.ai_incident_investigation.application.completion_transition import (
-    PreReconciliationValidationError,
-    enforce_pre_reconciliation_validation_clean_transition,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.completion_alignment_telemetry import (
     emit_completion_alignment_qualification_trace,
-)
-from platform_proofs.scenarios.ai_incident_investigation.application.evidence_completion_gate import (
-    CompletionEligibilityGateConfig,
-    assert_ai_incident_completion_eligible,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (
     COMPLETION_SUPPORTED_DIAGNOSIS,
@@ -104,8 +78,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.execution_p
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import IncidentScope
 from platform_proofs.scenarios.ai_incident_investigation.application.validation import (
-    IncidentInvestigationValidationEngine,
-    UNSUPPORTED_INFERENCE_ERROR,
     apply_critic_claim_resolutions,
 )
 
@@ -114,17 +86,17 @@ OUTCOME_UNRESOLVED = "UNRESOLVED"
 STANDALONE_SCENARIO_TENANT_ID = "scenario-tenant"
 SYNTHETIC_SCENARIO_TENANT_ID = STANDALONE_SCENARIO_TENANT_ID
 TERMINAL_STATE_NOT_ACCEPTED = "incident_terminal_state_not_accepted"
-EVALUATOR_LOOP_MAX_ITERATIONS = 2
+EVALUATOR_LOOP_MAX_ITERATIONS = 0
 
 
 def is_resolved_completion(
     *,
-    critic_verdict_passed: bool,
+    decision_accepted: bool,
     has_supported_diagnosis: bool,
     completion_mode: str,
 ) -> bool:
     return (
-        critic_verdict_passed
+        decision_accepted
         and has_supported_diagnosis
         and completion_mode == COMPLETION_SUPPORTED_DIAGNOSIS
     )
@@ -132,12 +104,12 @@ def is_resolved_completion(
 
 def is_epistemic_unresolved_completion(
     *,
-    critic_verdict_passed: bool,
+    decision_accepted: bool,
     has_supported_diagnosis: bool,
     completion_mode: str,
 ) -> bool:
     return (
-        critic_verdict_passed
+        decision_accepted
         and not has_supported_diagnosis
         and completion_mode == COMPLETION_UNRESOLVED
     )
@@ -145,18 +117,21 @@ def is_epistemic_unresolved_completion(
 
 def derive_terminal_outcome(
     *,
-    critic_verdict_passed: bool,
+    decision_accepted: bool,
     has_supported_diagnosis: bool,
     completion_mode: str,
 ) -> str:
+    """Project business RESOLVED/UNRESOLVED after platform Decision System acceptance."""
+    if not decision_accepted:
+        raise RuntimeError(TERMINAL_STATE_NOT_ACCEPTED)
     if is_resolved_completion(
-        critic_verdict_passed=critic_verdict_passed,
+        decision_accepted=decision_accepted,
         has_supported_diagnosis=has_supported_diagnosis,
         completion_mode=completion_mode,
     ):
         return OUTCOME_RESOLVED
     if is_epistemic_unresolved_completion(
-        critic_verdict_passed=critic_verdict_passed,
+        decision_accepted=decision_accepted,
         has_supported_diagnosis=has_supported_diagnosis,
         completion_mode=completion_mode,
     ):
@@ -164,24 +139,27 @@ def derive_terminal_outcome(
     raise RuntimeError(TERMINAL_STATE_NOT_ACCEPTED)
 
 
+def platform_decision_accepted(task_state_value: str) -> bool:
+    """True when canonical execution + Decision flow completed without terminal block."""
+    return task_state_value == "completed"
+
+
 TERMINAL_ACCEPTANCE_DIAGNOSTIC_PATH_ENV = "INTERGRAX_TERMINAL_ACCEPTANCE_DIAGNOSTIC_PATH"
 
 
 @dataclass(frozen=True, slots=True)
 class TerminalAcceptanceDiagnostic:
-    critic_verdict_passed: bool
+    platform_decision_accepted: bool
     has_supported_diagnosis: bool
     completion_mode: str
-    validation_errors: tuple[str, ...]
     revision_pass: bool
     evidence_gathering_stop_reason: str
 
     def to_json_dict(self) -> dict[str, object]:
         return {
-            "critic_verdict_passed": self.critic_verdict_passed,
+            "platform_decision_accepted": self.platform_decision_accepted,
             "has_supported_diagnosis": self.has_supported_diagnosis,
             "completion_mode": self.completion_mode,
-            "validation_errors": list(self.validation_errors),
             "revision_pass": self.revision_pass,
             "evidence_gathering_stop_reason": self.evidence_gathering_stop_reason,
         }
@@ -189,18 +167,16 @@ class TerminalAcceptanceDiagnostic:
 
 def build_terminal_acceptance_diagnostic(
     *,
-    critic_verdict_passed: bool,
+    platform_decision_accepted: bool,
     has_supported_diagnosis: bool,
     completion_mode: str,
-    validation_errors: tuple[str, ...],
     revision_pass: bool,
     evidence_gathering_stop_reason: str,
 ) -> TerminalAcceptanceDiagnostic:
     return TerminalAcceptanceDiagnostic(
-        critic_verdict_passed=critic_verdict_passed,
+        platform_decision_accepted=platform_decision_accepted,
         has_supported_diagnosis=has_supported_diagnosis,
         completion_mode=completion_mode,
-        validation_errors=validation_errors,
         revision_pass=revision_pass,
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
@@ -368,18 +344,6 @@ def _emit_reconciliation_phase_observation(
     )
 
 
-def _persisted_trace_events(
-    composition: ScenarioRuntimeComposition,
-    run_id: str,
-    tenant_id: str,
-) -> list[dict[str, object]]:
-    reader = trace_reader_from_composition(composition)
-    if reader is None:
-        return []
-    persisted = reader.read_run(run_id, tenant_id)
-    return [dict(item) for item in persisted.events if isinstance(item, dict)]
-
-
 def _revision_gathered_follow_up_evidence(domain_payload: dict[str, Any]) -> bool:
     if not domain_payload.get("revision_pass"):
         return False
@@ -403,16 +367,12 @@ async def execute_resolved_skeleton(
     bundle: ScenarioRuntimeBundle,
     *,
     semantic_verification_enabled: bool = False,
-    validation_engine: IncidentInvestigationValidationEngine | None = None,
-    evaluator_loop_max_iterations: int = EVALUATOR_LOOP_MAX_ITERATIONS,
     max_decision_revisions: int = 0,
 ) -> ScenarioExecutionResult:
     composition = bundle.runtime_composition
-    validation_engine = prepare_incident_execution_runtime(
+    prepare_incident_execution_runtime(
         composition,
-        validation_engine=validation_engine,
         semantic_verification_enabled=semantic_verification_enabled,
-        evaluator_loop_max_iterations=evaluator_loop_max_iterations,
         max_decision_revisions=max_decision_revisions,
     )
     platform = composition.platform
@@ -447,10 +407,8 @@ async def execute_resolved_skeleton(
             composition=composition,
             platform_result=platform_result,
             deferred_trace=deferred_trace,
-            validation_engine=validation_engine,
             execution_tenant_id=execution_tenant_id,
             investigated_problem_ids=investigated_problem_ids,
-            max_decision_revisions=max_decision_revisions,
         )
     finally:
         if isinstance(deferred_trace, DeferredPersistedTraceFinalize):
@@ -463,10 +421,8 @@ async def _complete_resolved_skeleton_after_platform_run(
     composition: ScenarioRuntimeComposition,
     platform_result: ScenarioRuntimeExecutionResult,
     deferred_trace: DeferredPersistedTraceFinalize | None,
-    validation_engine: IncidentInvestigationValidationEngine,
     execution_tenant_id: str,
     investigated_problem_ids: tuple[ProblemId, ...],
-    max_decision_revisions: int,
 ) -> ScenarioExecutionResult:
     task_result = platform_result.task_result
     run_id = str(platform_result.run_id)
@@ -476,29 +432,8 @@ async def _complete_resolved_skeleton_after_platform_run(
             raise RuntimeError(TERMINAL_STATE_NOT_ACCEPTED)
         raise RuntimeError("no agent executions produced")
 
-    if isinstance(deferred_trace, DeferredPersistedTraceFinalize):
-        trace_events = [
-            event.to_dict() for event in deferred_trace.trace_emitter.events
-        ]
-    else:
-        trace_events = _persisted_trace_events(composition, run_id, execution_tenant_id)
     domain_payload = domain_payload_from_execution(final_execution)
-    evaluator_loop_iterations = count_evaluator_loop_iterations_from_persisted_trace(
-        trace_events,
-        node_id=INVESTIGATOR_NODE_ID,
-    )
-    failed_critic_verdict = first_failed_node_partial_verdict_from_persisted_trace(
-        trace_events,
-        node_id=INVESTIGATOR_NODE_ID,
-    )
     revision_pass = bool(domain_payload.get("revision_pass", False))
-    if evaluator_loop_iterations < 1 and revision_pass:
-        evaluator_loop_iterations = 1
-    if failed_critic_verdict is None and revision_pass:
-        failed_critic_verdict = legacy_verdict_from_validation_errors(
-            [UNSUPPORTED_INFERENCE_ERROR],
-            node_id=INVESTIGATOR_NODE_ID,
-        )
     bindings = parse_claim_hypothesis_bindings(domain_payload.get("claim_hypothesis_bindings"))
     resolved_claim_set = apply_critic_claim_resolutions(
         EvidenceClaimSet.model_validate(dict(domain_payload.get("claim_set", {}))),
@@ -524,49 +459,20 @@ async def _complete_resolved_skeleton_after_platform_run(
     tool_execution_order = tuple(str(item) for item in tool_order_raw if item)
     evidence_gathering_stop_reason = str(domain_payload.get("evidence_gathering_stop_reason", ""))
 
-    critic_challenged = failed_critic_verdict is not None and not failed_critic_verdict.passed
-
-    final_validation = validation_engine.validate(
-        final_execution,
-        contract=bundle.investigator.get_contract(),
-        capability=INVESTIGATOR_CAPABILITY,
-    )
-    critic_verdict_passed = final_validation.valid
-
-    evidence_challenge: EvidenceChallenge | None = None
     claim_set_model = resolved_claim_set
     has_supported_diagnosis = any(
         claim.resolution is ClaimResolution.SUPPORTED for claim in claim_set_model.claims
     )
     completion_mode = str(domain_payload.get("completion_mode", COMPLETION_SUPPORTED_DIAGNOSIS))
 
-    first_bindings = bindings
-    if critic_challenged and failed_critic_verdict is not None:
-        challenged_claim_id = claim_id_for_hypothesis(first_bindings, "H1")
-        claim_set, evidence_challenge = apply_challenge_lifecycle(
-            claim_set,
-            failed_critic_verdict,
-            claim_id=validate_evidence_claim_id(challenged_claim_id or str(INITIAL_CLAIM_ID)),
-            initial_evidence_ids=(WORKLOAD_EVIDENCE_ID, THROUGHPUT_EVIDENCE_ID),
-            resolving_evidence_ids=(
-                TELEMETRY_EVIDENCE_ID,
-                COMPARISON_EVIDENCE_ID,
-                STAFFING_ATTENDANCE_EVIDENCE_ID,
-            ),
-            resolved=critic_verdict_passed and has_supported_diagnosis,
-            satisfied_description=(
-                "Follow-up comparison, attendance, and telemetry gathered via platform tools"
-            ),
-        )
-
-    if task_result.state.value != "completed" and critic_verdict_passed:
-        raise RuntimeError(f"investigator task not completed: {task_result.state}")
+    decision_accepted = platform_decision_accepted(task_result.state.value)
+    if not decision_accepted:
+        raise RuntimeError(TERMINAL_STATE_NOT_ACCEPTED)
 
     diagnostic = build_terminal_acceptance_diagnostic(
-        critic_verdict_passed=critic_verdict_passed,
+        platform_decision_accepted=decision_accepted,
         has_supported_diagnosis=has_supported_diagnosis,
         completion_mode=completion_mode,
-        validation_errors=tuple(final_validation.errors),
         revision_pass=revision_pass,
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
     )
@@ -577,51 +483,16 @@ async def _complete_resolved_skeleton_after_platform_run(
         completion_mode=completion_mode,
         has_supported_diagnosis=has_supported_diagnosis,
     )
-    try:
-        enforce_pre_reconciliation_validation_clean_transition(
-            validation_valid=final_validation.valid,
-            validation_errors=tuple(final_validation.errors),
-            revision_budget_remaining=max_decision_revisions,
-            completion_mode=completion_mode,
-            has_supported_diagnosis=has_supported_diagnosis,
-        )
-    except PreReconciliationValidationError as exc:
-        _emit_reconciliation_phase_observation(
-            deferred_trace,
-            validation_invalid=True,
-            entered_reconciliation=False,
-            phase=ReconciliationPhaseValue.FAILED,
-        )
-        exc.execution_provenance = scenario_execution_provenance(run_id, execution_tenant_id)
-        raise
     _emit_reconciliation_phase_observation(
         deferred_trace,
         validation_invalid=False,
         entered_reconciliation=True,
         phase=ReconciliationPhaseValue.ENTERED,
     )
-    try:
-        reconciled = reconcile_investigation_completion(
-            model_intent=completion_intent_from_completion_mode(completion_mode),
-            critic_verdict_passed=critic_verdict_passed,
-            has_supported_diagnosis=has_supported_diagnosis,
-            validation_errors=tuple(final_validation.errors),
-            evidence_gathering_stop_reason=normalize_evidence_gathering_stop_reason(
-                evidence_gathering_stop_reason
-            ),
-        )
-    except CompletionReconciliationError as exc:
-        exc.execution_provenance = scenario_execution_provenance(run_id, execution_tenant_id)
-        raise
-    if reconciled.completion_mode.value == COMPLETION_SUPPORTED_DIAGNOSIS:
-        assert_ai_incident_completion_eligible(
-            evidence_nodes=evidence_nodes,
-            gate=CompletionEligibilityGateConfig(),
-        )
     outcome = derive_terminal_outcome(
-        critic_verdict_passed=critic_verdict_passed,
+        decision_accepted=decision_accepted,
         has_supported_diagnosis=has_supported_diagnosis,
-        completion_mode=reconciled.completion_mode.value,
+        completion_mode=completion_mode,
     )
     leak_blob = _leak_scan_blob(claim_set, evidence_nodes)
     investigation_conclusion = build_investigation_conclusion(
@@ -639,18 +510,18 @@ async def _complete_resolved_skeleton_after_platform_run(
         initial_evidence_nodes=initial_evidence_nodes,
         tool_trace_count=tool_invocations,
         tool_invocations=tool_invocations,
-        evaluator_loop_iterations=evaluator_loop_iterations,
-        critic_challenged=critic_challenged,
+        evaluator_loop_iterations=0,
+        critic_challenged=False,
         revision_used_tools=_revision_gathered_follow_up_evidence(domain_payload),
         revision_pass=revision_pass,
-        critic_verdict_passed=critic_verdict_passed,
+        critic_verdict_passed=decision_accepted,
         leak_scan_blob=leak_blob,
-        failed_critic_verdict=failed_critic_verdict,
-        evidence_challenge=evidence_challenge,
+        failed_critic_verdict=None,
+        evidence_challenge=None,
         claim_hypothesis_bindings=tuple(
             binding.model_dump(mode="json") for binding in bindings
         ),
-        challenged_claim_id=claim_id_for_hypothesis(first_bindings, "H1"),
+        challenged_claim_id=claim_id_for_hypothesis(bindings, "H1"),
         planner_decisions=planner_decisions,
         tool_execution_order=tool_execution_order,
         evidence_gathering_stop_reason=evidence_gathering_stop_reason,
@@ -662,10 +533,9 @@ async def _complete_resolved_skeleton_after_platform_run(
 
 
 async def execute_with_completion_gate_blocked(bundle: ScenarioRuntimeBundle) -> ScenarioExecutionResult:
-    """Real Nexus path where Decision revision budget is exhausted within platform loop."""
+    """Execution path where Decision System revision budget is zero (platform-owned lifecycle)."""
     return await execute_resolved_skeleton(
         bundle,
         semantic_verification_enabled=True,
-        evaluator_loop_max_iterations=1,
         max_decision_revisions=0,
     )

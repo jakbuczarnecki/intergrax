@@ -1,12 +1,18 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Canonical evaluator-loop revision proof for completion alignment (DS-E2E-15F.1)."""
+"""Completion alignment integration (evaluator-loop revision proofs retired at P0-B)."""
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 import pytest
+
+pytestmark = pytest.mark.unit
+
+_P0B_EVALUATOR_AUTHORITY_RETIRED = pytest.mark.skip(
+    reason="P0-B: evaluator loop is not Scenario decision authority; revision proofs move to Decision System",
+)
+
+from collections.abc import Sequence
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
@@ -164,6 +170,7 @@ class _AlignmentRevisionLLM(FixtureDrivenIncidentInvestigationLLM):
         )
 
 
+@_P0B_EVALUATOR_AUTHORITY_RETIRED
 @pytest.mark.asyncio
 async def test_alignment_misalignment_routes_through_evaluator_loop_to_revision() -> None:
     llm = _AlignmentRevisionLLM()
@@ -206,6 +213,7 @@ async def test_alignment_misalignment_routes_through_evaluator_loop_to_revision(
     assert COMPLETION_SUPPORTED_DIAGNOSIS not in COMPLETION_ALIGNMENT_REVISION_GUIDANCE
 
 
+@_P0B_EVALUATOR_AUTHORITY_RETIRED
 @pytest.mark.asyncio
 async def test_alignment_revision_failure_exhausts_evaluator_budget() -> None:
     fixture_bundle = build_fixture_runtime_bundle(
@@ -219,6 +227,7 @@ async def test_alignment_revision_failure_exhausts_evaluator_budget() -> None:
     assert UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS_ERROR in exc_info.value.diagnostic.validation_errors
 
 
+@_P0B_EVALUATOR_AUTHORITY_RETIRED
 @pytest.mark.asyncio
 async def test_alignment_zero_evaluator_budget_fails_closed() -> None:
     fixture_bundle = build_fixture_runtime_bundle(
@@ -251,6 +260,7 @@ def test_alignment_guidance_signal_is_non_prescriptive() -> None:
     assert COMPLETION_SUPPORTED_DIAGNOSIS not in COMPLETION_ALIGNMENT_REVISION_GUIDANCE
 
 
+@_P0B_EVALUATOR_AUTHORITY_RETIRED
 @pytest.mark.asyncio
 async def test_reverse_alignment_misalignment_routes_through_evaluator_loop_to_revision() -> None:
     llm = _ReverseAlignmentRevisionLLM()
@@ -275,6 +285,7 @@ async def test_reverse_alignment_misalignment_routes_through_evaluator_loop_to_r
     assert "alignment mismatch: supported diagnosis completion intent lacks" in system_content
 
 
+@_P0B_EVALUATOR_AUTHORITY_RETIRED
 @pytest.mark.asyncio
 async def test_reverse_alignment_revision_failure_exhausts_evaluator_budget() -> None:
     fixture_bundle = build_fixture_runtime_bundle(
@@ -288,6 +299,7 @@ async def test_reverse_alignment_revision_failure_exhausts_evaluator_budget() ->
     assert SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE_ERROR in exc_info.value.diagnostic.validation_errors
 
 
+@_P0B_EVALUATOR_AUTHORITY_RETIRED
 @pytest.mark.asyncio
 async def test_reverse_alignment_zero_evaluator_budget_fails_closed() -> None:
     fixture_bundle = build_fixture_runtime_bundle(

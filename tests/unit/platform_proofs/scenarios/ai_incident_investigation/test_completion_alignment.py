@@ -147,7 +147,7 @@ def test_target_15e_residual_is_misaligned() -> None:
 def test_misaligned_terminal_candidate_not_accepted() -> None:
     with pytest.raises(RuntimeError, match=TERMINAL_STATE_NOT_ACCEPTED):
         derive_terminal_outcome(
-            critic_verdict_passed=True,
+            decision_accepted=True,
             has_supported_diagnosis=True,
             completion_mode=COMPLETION_UNRESOLVED,
         )
@@ -155,7 +155,7 @@ def test_misaligned_terminal_candidate_not_accepted() -> None:
 
 def test_aligned_supported_terminal_candidate_accepted() -> None:
     outcome = derive_terminal_outcome(
-        critic_verdict_passed=True,
+        decision_accepted=True,
         has_supported_diagnosis=True,
         completion_mode=COMPLETION_SUPPORTED_DIAGNOSIS,
     )
@@ -293,7 +293,7 @@ def test_pre_terminal_alignment_consistent_with_reconciliation_overlap() -> None
     )
     reconciled = reconcile_investigation_completion(
         model_intent=CompletionIntent.UNRESOLVED,
-        critic_verdict_passed=True,
+        decision_accepted=True,
         has_supported_diagnosis=False,
         validation_errors=(),
         evidence_gathering_stop_reason="planner_final_answer",
@@ -311,7 +311,7 @@ def test_pre_terminal_alignment_consistent_with_reconciliation_overlap() -> None
     with pytest.raises(Exception, match="unresolved_intent_with_supported_state"):
         reconcile_investigation_completion(
             model_intent=CompletionIntent.UNRESOLVED,
-            critic_verdict_passed=True,
+            decision_accepted=True,
             has_supported_diagnosis=True,
             validation_errors=(),
             evidence_gathering_stop_reason="planner_final_answer",
@@ -345,7 +345,7 @@ def test_need_more_evidence_with_supported_state_stays_aligned_pre_terminal() ->
     assert assessment.status is CompletionAlignmentStatus.ALIGNED
     reconciled = reconcile_investigation_completion(
         model_intent=CompletionIntent.NEED_MORE_EVIDENCE,
-        critic_verdict_passed=True,
+        decision_accepted=True,
         has_supported_diagnosis=True,
         validation_errors=(),
         evidence_gathering_stop_reason="planner_final_answer",

@@ -45,7 +45,7 @@ async def test_critic_failure_does_not_return_unresolved() -> None:
 def test_wrong_completion_mode_not_unresolved() -> None:
     with pytest.raises(RuntimeError, match=TERMINAL_STATE_NOT_ACCEPTED):
         derive_terminal_outcome(
-            critic_verdict_passed=True,
+            decision_accepted=True,
             has_supported_diagnosis=False,
             completion_mode=COMPLETION_SUPPORTED_DIAGNOSIS,
         )
@@ -53,13 +53,13 @@ def test_wrong_completion_mode_not_unresolved() -> None:
 
 def test_supported_diagnosis_with_unresolved_completion_mode_not_unresolved() -> None:
     assert not is_epistemic_unresolved_completion(
-        critic_verdict_passed=True,
+        decision_accepted=True,
         has_supported_diagnosis=True,
         completion_mode=COMPLETION_UNRESOLVED,
     )
     with pytest.raises(RuntimeError, match=TERMINAL_STATE_NOT_ACCEPTED):
         derive_terminal_outcome(
-            critic_verdict_passed=True,
+            decision_accepted=True,
             has_supported_diagnosis=True,
             completion_mode=COMPLETION_UNRESOLVED,
         )
@@ -67,12 +67,12 @@ def test_supported_diagnosis_with_unresolved_completion_mode_not_unresolved() ->
 
 def test_critic_fail_predicate_neither_resolved_nor_unresolved() -> None:
     assert not is_resolved_completion(
-        critic_verdict_passed=False,
+        decision_accepted=False,
         has_supported_diagnosis=False,
         completion_mode=COMPLETION_UNRESOLVED,
     )
     assert not is_epistemic_unresolved_completion(
-        critic_verdict_passed=False,
+        decision_accepted=False,
         has_supported_diagnosis=False,
         completion_mode=COMPLETION_UNRESOLVED,
     )
@@ -84,7 +84,7 @@ async def test_valid_resolved_terminal_outcome() -> None:
     result = await execute_resolved_skeleton(bundle)
     assert result.outcome == OUTCOME_RESOLVED
     assert is_resolved_completion(
-        critic_verdict_passed=result.critic_verdict_passed,
+        decision_accepted=result.critic_verdict_passed,
         has_supported_diagnosis=True,
         completion_mode=COMPLETION_SUPPORTED_DIAGNOSIS,
     )

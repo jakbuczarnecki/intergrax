@@ -32,6 +32,10 @@ At a fictional industrial manufacturing plant, production target attainment on a
 - **Reference Production V1 lifecycle validation:** PASS
 - **Evidence:** `tests/integration/platform_proofs/test_ai_incident_investigation_agent_platform_e2e.py`
 
+### Decision authority (P0-B)
+
+The platform **Decision System** is the sole authority for material diagnosis acceptance and revision lifecycle (`AuthoritativeAcceptedDecision` / `AuthoritativeResolutionRecord`). The scenario graph does not configure `EvaluatorLoopGraphBinding` for decision control. Business **RESOLVED** / **UNRESOLVED** values are application projections after platform acceptance, not a second decision engine. The generic evaluator loop remains available elsewhere on the platform for non–Scenario-1 use cases.
+
 ## Visual proof story
 
 <a href="assets/proof-story-light.svg">
