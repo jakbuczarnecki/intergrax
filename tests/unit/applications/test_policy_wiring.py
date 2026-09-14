@@ -850,11 +850,9 @@ def _wire_environment_state() -> None:
 
 @pytest.fixture
 def _stub_environment_llm_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        environment_wiring_module,
-        "resolve_environment_llm_adapter",
-        lambda _env: FakeLLMAdapter(),
-    )
+    from testing_support.application_environment_test_support import stub_environment_llm_adapter
+
+    stub_environment_llm_adapter(monkeypatch)
 
 
 def test_strict_wire_application_environment_allows_valid_policy_plugin(

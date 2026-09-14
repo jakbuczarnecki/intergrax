@@ -16,7 +16,8 @@ from intergrax.applications._shared.cost_runtime_bridge import (
     resolve_cost_wiring_options,
 )
 from intergrax.applications._shared.cost_wiring import wire_application_cost
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
+from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
 from intergrax.applications._shared.runtime_config_bridge import materialize_runtime_config
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import (
@@ -107,16 +108,17 @@ def test_validate_cost_wiring_rejects_budget_policy_when_disabled() -> None:
 
 def test_materialize_runtime_config_applies_cost_profile() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="cost.runtime")
-    request = RuntimeRequest(
-        message="hello",
+    request = build_runtime_request_for_tests(
+        seed="cost-runtime",
         tenant_id="t1",
         agent_id="echo",
         user_id="user-1",
         session_id="session-1",
+        message="hello",
     )
     manifest = build_lab_manifest(LabApplicationSettings.from_env())
     build_ctx = ApplicationBuildContext.for_manifest(manifest, environment=env)
-    config = materialize_runtime_config(request, build_ctx, env)
+    config = materialize_runtime_config(request, build_ctx, env, llm_adapter=FakeLLMAdapter())
     assert config.budget_policy is not None
     assert config.run_budget is not None
     assert config.run_budget.max_llm_calls == 64
@@ -127,7 +129,7 @@ def test_build_harness_host_runtime_wires_cost_policy_bundle() -> None:
     manifest = build_lab_manifest(settings)
     env = manifest.environment
     assert env is not None
-    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     assert runtime.cost.budget_policy is not None
     assert runtime.env_wiring.policy_bundle.budget == runtime.cost.budget_policy
     assert "cost_governance" in runtime.env_wiring.policy_bundle.domain_fragments

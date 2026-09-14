@@ -10,10 +10,15 @@ from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_run_enums import AgentRunStatus, PrincipalType, TerminalReason
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_execution_context_for_tests,
+    canonical_governed_execution_scope,
+)
+from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
-from intergrax.runtime.nexus.config import RuntimeConfig
 
 
 def _stub_build_context(_agent: IntergraxAgent, _request: RuntimeRequest) -> RuntimeContext:
@@ -99,13 +104,13 @@ async def test_default_on_next_step_drives_authored_steps_with_exec_ctx() -> Non
         input="go",
         identity=RequestIdentity(tenant_id="t", user_id="u"),
         metadata={
-            "uaep_exec_ctx": RuntimeExecutionContext(
-                run_id="run-1",
-                task_id="task-1",
+            "uaep_exec_ctx": build_runtime_execution_context_for_tests(
+                seed="step-bridge",
                 agent_id="bridge",
             ),
         },
     )
-    result = await agent.run(request)
+    with canonical_governed_execution_scope("step-bridge"):
+        result = await agent.run(request)
     assert result.status == AgentRunStatus.SUCCEEDED
     assert "summary" in str(result.output)

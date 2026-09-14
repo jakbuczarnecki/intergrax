@@ -19,17 +19,18 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
 from intergrax.runtime.wiring.harness_governance import LabAllowGovernanceService
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def _request() -> RuntimeRequest:
-    return RuntimeRequest(
+    return build_runtime_request_for_tests(
+        seed="strict-probe",
         tenant_id="tenant-strict",
+        agent_id="echo",
         user_id="user-strict",
         session_id="session-strict",
-        agent_id="echo",
         message="strict probe",
     )
 

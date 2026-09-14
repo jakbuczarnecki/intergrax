@@ -12,6 +12,7 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import build_runtime_request_for_tests
 from typing import Optional, Sequence
 
 
@@ -46,7 +47,8 @@ def test_build_runtime_config_from_merged_uses_profile_flags() -> None:
         enable_websearch=False,
     )
     config = build_lab_agent_runtime_config_from_merged(
-        request=RuntimeRequest(
+        request=build_runtime_request_for_tests(
+            seed="merged-config",
             agent_id="echo",
             user_id="user-1",
             session_id="sess-1",

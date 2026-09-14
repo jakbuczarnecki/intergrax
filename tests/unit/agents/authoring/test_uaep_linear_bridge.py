@@ -14,7 +14,12 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_execution_context_for_tests,
+    build_runtime_request_for_tests,
+)
 
 
 class _LinearAgent(IntergraxAgent):
@@ -47,30 +52,22 @@ class _LinearAgent(IntergraxAgent):
 @pytest.mark.unit
 def test_linear_bridge_get_steps_and_decide() -> None:
     agent = _LinearAgent()
-    ctx = agent.build_context(
-        RuntimeRequest(
-            tenant_id="t",
-            user_id="u",
-            session_id="s",
-            agent_id="linear-test",
-            message="hi",
-        )
+    request = build_runtime_request_for_tests(
+        seed="linear-bridge",
+        tenant_id="t",
+        user_id="u",
+        session_id="s",
+        agent_id="linear-test",
+        message="hi",
     )
+    ctx = agent.build_context(request)
     steps = linear_agent_get_steps(agent, ctx)
     assert [step.step_id for step in steps] == ["s1", "s2"]
 
-    exec_ctx = RuntimeExecutionContext(
-        run_id="r1",
-        task_id="task-1",
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed="linear-bridge",
         agent_id="linear-test",
-        step_index=0,
-        request=RuntimeRequest(
-            tenant_id="t",
-            user_id="u",
-            session_id="s",
-            agent_id="linear-test",
-            message="hi",
-        ),
+        request=request,
         domain_context=ctx,
     )
     decision = linear_agent_decide_after_step(

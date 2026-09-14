@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.agents.authoring.acp_routing_trace_bridge import record_acp_routing_rule_evaluation
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.llm_adapters.routing import (
@@ -13,16 +14,9 @@ from intergrax.llm_adapters.routing import (
     LLMRoutingProfile,
     RoutingContext,
 )
-from intergrax.contracts.execution_identity import (
-    bind_active_execution_identity,
-    mint_attempt_id,
-    mint_run_id,
-    mint_task_id,
-    reset_active_execution_identity,
-)
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.kernel.step_kernel import StepKernelContext
+from testing_support.builder import canonical_governed_execution_scope
 
 
 @pytest.mark.unit
@@ -30,9 +24,7 @@ from intergrax.runtime.kernel.step_kernel import StepKernelContext
 def test_record_acp_routing_rule_evaluation_emits_plane_a_event() -> None:
     run_id = mint_run_id()
     task_id = mint_task_id()
-    attempt_id = mint_attempt_id()
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
-    try:
+    with canonical_governed_execution_scope(run_id):
         kernel_ctx = StepKernelContext(
             agent_id="agent-1",
             run_id=run_id,
@@ -46,9 +38,12 @@ def test_record_acp_routing_rule_evaluation_emits_plane_a_event() -> None:
                     LLMProfile(provider=LLMProvider.OPENAI, model="gpt-4o-mini"),
                     LLMProfile(provider=LLMProvider.VLLM, model="meta-llama/Llama-3.1-8B"),
                 ),
-                rules=(BudgetBelowRule(threshold=0.2, profile=LLMProfile(
-                    provider=LLMProvider.VLLM, model="meta-llama/Llama-3.1-8B"
-                )),),
+                rules=(
+                    BudgetBelowRule(
+                        threshold=0.2,
+                        profile=LLMProfile(provider=LLMProvider.VLLM, model="meta-llama/Llama-3.1-8B"),
+                    ),
+                ),
             ),
             RoutingContext(budget_remaining_ratio=0.1),
         )
@@ -64,7 +59,4 @@ def test_record_acp_routing_rule_evaluation_emits_plane_a_event() -> None:
         assert event.payload.get("trace_step") == "llm_routing_rule"
         assert event.task_id == task_id
         assert event.run_id == run_id
-        assert event.attempt_id == attempt_id
         assert kernel_ctx.routing_rule_evaluations[0]["matched_rule_id"] == "builtin.budget_below"
-    finally:
-        reset_active_execution_identity(token)

@@ -25,13 +25,14 @@ from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def _request() -> RuntimeRequest:
-    return RuntimeRequest(
+    return build_runtime_request_for_tests(
+        seed="session-pe-wire",
         tenant_id="tenant-pe-wire",
         agent_id="echo",
         user_id="user-pe-wire",

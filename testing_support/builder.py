@@ -427,27 +427,8 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
     Minimal RuntimeState builder for unit tests that only need tracing.
     No engine, no pipeline, no planner — just state + trace_event support.
     """
-    from hashlib import sha256
-
-    from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
-
-    if run_id.startswith("run_") and len(run_id) == 36:
-        canonical_run_id = validate_run_id(run_id)
-        canonical_task_id = validate_task_id(f"task_{run_id[4:]}")
-    else:
-        digest = sha256(run_id.encode()).hexdigest()[:32]
-        canonical_run_id = validate_run_id(f"run_{digest}")
-        canonical_task_id = validate_task_id(f"task_{digest}")
-
-    request = RuntimeRequest(
-        tenant_id="test-tenant",
-        agent_id="agent_test",
-        user_id="test-user",
-        session_id="test-session",
-        message="test",
-        task_id=canonical_task_id,
-        run_id=canonical_run_id,
-    )
+    canonical_run_id = canonical_run_id_for_tests(run_id)
+    request = build_runtime_request_for_tests(seed=run_id)
 
     cfg = RuntimeConfig(
         llm_adapter=None,
@@ -492,6 +473,71 @@ def canonical_run_id_for_tests(run_id: str) -> str:
     return validate_run_id(f"run_{digest}")
 
 
+def canonical_task_id_for_tests(seed: str) -> str:
+    """Canonical TaskId correlated with :func:`canonical_run_id_for_tests` for the same seed."""
+    from hashlib import sha256
+
+    from intergrax.contracts.execution_identity import validate_task_id
+
+    if seed.startswith("run_") and len(seed) == 36:
+        return validate_task_id(f"task_{seed[4:]}")
+    if seed.startswith("task_") and len(seed) == 36:
+        return validate_task_id(seed)
+    digest = sha256(seed.encode()).hexdigest()[:32]
+    return validate_task_id(f"task_{digest}")
+
+
+def build_runtime_request_for_tests(
+    *,
+    seed: str = "unit-test",
+    tenant_id: str = "test-tenant",
+    agent_id: str = "agent_test",
+    user_id: str = "test-user",
+    session_id: str = "test-session",
+    message: str = "test",
+    metadata: dict[str, Any] | None = None,
+    **overrides: str,
+) -> RuntimeRequest:
+    """Build a contract-valid ``RuntimeRequest`` for unit tests."""
+    fields: dict[str, str] = {
+        "tenant_id": tenant_id,
+        "agent_id": agent_id,
+        "user_id": user_id,
+        "session_id": session_id,
+        "message": message,
+        "task_id": canonical_task_id_for_tests(seed),
+        "run_id": canonical_run_id_for_tests(seed),
+    }
+    fields.update(overrides)
+    request = RuntimeRequest(**fields)
+    if metadata is not None:
+        from dataclasses import replace
+
+        request = replace(request, metadata=metadata)
+    return request
+
+
+def build_runtime_execution_context_for_tests(
+    *,
+    seed: str = "unit-test",
+    agent_id: str = "agent_test",
+    **overrides: object,
+) -> RuntimeExecutionContext:
+    """Build a contract-valid ``RuntimeExecutionContext`` for unit tests."""
+    from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
+    from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+
+    fields: dict[str, object] = {
+        "task_id": canonical_task_id_for_tests(seed),
+        "run_id": canonical_run_id_for_tests(seed),
+        "attempt_id": mint_attempt_id(),
+        "execution_id": mint_execution_id(),
+        "agent_id": agent_id,
+    }
+    fields.update(overrides)
+    return RuntimeExecutionContext(**fields)
+
+
 @contextmanager
 def canonical_execution_identity_scope(run_id: str):
     """
@@ -517,6 +563,47 @@ def canonical_execution_identity_scope(run_id: str):
         yield canonical_run_id
     finally:
         reset_active_execution_identity(token)
+
+
+@contextmanager
+def canonical_governed_execution_scope(run_id: str, *, bind_budget: bool = True):
+    """
+    Bind canonical execution identity and optional root budget for unit tests.
+
+    Use when code under test calls ``require_active_execution_identity`` or
+    ``require_active_execution_budget`` without going through the full host spine.
+    """
+    from intergrax.contracts.execution_identity import (
+        bind_active_execution_identity,
+        mint_attempt_id,
+        mint_execution_id,
+        reset_active_execution_identity,
+    )
+    from intergrax.runtime.execution.active_execution_budget import (
+        bind_root_execution_budget,
+        reset_active_execution_budget,
+    )
+    from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+
+    canonical_run_id = canonical_run_id_for_tests(run_id)
+    execution_id = mint_execution_id()
+    identity_token = bind_active_execution_identity(
+        run_id=canonical_run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+    )
+    budget_token = None
+    if bind_budget:
+        budget_token = bind_root_execution_budget(
+            execution_id=execution_id,
+            ledger=create_execution_budget_ledger(None),
+        )
+    try:
+        yield canonical_run_id
+    finally:
+        if budget_token is not None:
+            reset_active_execution_budget(budget_token)
+        reset_active_execution_identity(identity_token)
 
 
 class DummyRunStore(RunStore):

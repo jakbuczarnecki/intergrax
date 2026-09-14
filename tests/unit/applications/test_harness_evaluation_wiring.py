@@ -16,7 +16,8 @@ from intergrax.applications._shared.evaluation_runtime_bridge import (
     resolve_evaluation_wiring_options,
 )
 from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from testing_support.builder import build_runtime_request_for_tests, FakeLLMAdapter
+from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
 from intergrax.applications._shared.runtime_config_bridge import materialize_runtime_config
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import (
@@ -108,16 +109,17 @@ def test_validate_evaluation_wiring_rejects_baseline_without_trend() -> None:
 
 def test_materialize_runtime_config_applies_evaluation_profile() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="eval.runtime")
-    request = RuntimeRequest(
-        message="hello",
+    request = build_runtime_request_for_tests(
+        seed="eval-runtime",
         tenant_id="t1",
         agent_id="echo",
         user_id="user-1",
         session_id="session-1",
+        message="hello",
     )
     manifest = build_lab_manifest(LabApplicationSettings.from_env())
     build_ctx = ApplicationBuildContext.for_manifest(manifest, environment=env)
-    config = materialize_runtime_config(request, build_ctx, env)
+    config = materialize_runtime_config(request, build_ctx, env, llm_adapter=FakeLLMAdapter())
     assert config.evaluation_profile is not None
     assert config.evaluation_profile.shadow_eval_enabled is True
     assert config.evaluation_registry is not None
@@ -128,7 +130,7 @@ def test_build_harness_host_runtime_wires_evaluation_policy_bundle() -> None:
     manifest = build_lab_manifest(settings)
     env = manifest.environment
     assert env is not None
-    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     assert runtime.evaluation.registry is not None
     assert runtime.evaluation.governance_bridge is not None
     assert "evaluation_governance" in runtime.env_wiring.policy_bundle.domain_fragments

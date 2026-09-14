@@ -8,7 +8,7 @@ from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, build_runtime_request_for_tests
 
 
 class _LegacyPipelineAgent(Agent):
@@ -37,7 +37,8 @@ class _LegacyPipelineAgent(Agent):
 @pytest.mark.gate
 async def test_agent_engine_rejects_runtime_engine_fallback() -> None:
     agent = _LegacyPipelineAgent()
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="legacy-pipeline",
         tenant_id="t1",
         user_id="u1",
         session_id="s1",

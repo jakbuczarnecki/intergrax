@@ -86,18 +86,9 @@ def _echo_task() -> Task:
 
 @pytest.fixture(autouse=True)
 def _stub_llm(monkeypatch: pytest.MonkeyPatch) -> None:
-    from testing_support.builder import MeteringFakeLLMAdapter
+    from testing_support.application_environment_test_support import stub_environment_llm_adapter
 
-    adapter = MeteringFakeLLMAdapter()
-
-    def _resolve(env: object, agent_override: object | None = None, **_: object) -> object:
-        del env, agent_override
-        return adapter
-
-    monkeypatch.setattr(
-        "intergrax.applications._shared.harness_host_runtime.resolve_environment_llm_adapter",
-        _resolve,
-    )
+    stub_environment_llm_adapter(monkeypatch)
 
 
 def _build_runtime(

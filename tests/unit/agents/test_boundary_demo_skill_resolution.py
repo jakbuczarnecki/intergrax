@@ -13,6 +13,7 @@ from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from testing_support.builder import build_runtime_request_for_tests, canonical_governed_execution_scope
 from intergrax.skills.registry.bootstrap import register_default_skills
 from intergrax.skills.registry.factory import build_registry_from_profile
 from intergrax.skills.registry.profile import SkillProfile
@@ -58,7 +59,8 @@ async def test_boundary_demo_uaep_uses_registry_allowed_tools_without_author_lis
     assert agent.get_contract().allowed_tools == []
 
     engine = AgentEngine(registry)
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="boundary-demo-skill",
         tenant_id="default",
         user_id="regression-user",
         session_id="regression-session",
@@ -73,7 +75,8 @@ async def test_boundary_demo_uaep_uses_registry_allowed_tools_without_author_lis
         },
     )
 
-    result = await engine.run_with_result(request)
+    with canonical_governed_execution_scope("boundary-demo-skill"):
+        result = await engine.run_with_result(request)
 
     assert result.status == AgentExecutionStatus.COMPLETED
     assert "tool_not_allowed" not in result.summary

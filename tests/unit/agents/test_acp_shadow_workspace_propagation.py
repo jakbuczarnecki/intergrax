@@ -33,7 +33,13 @@ from intergrax.runtime.workspace.shadow_workspace import (
     SHADOW_WORKSPACE_ID_KEY,
 )
 from intergrax.tools.providers.workspace.service import WORKSPACE_WRITE_FILE_TOOL_ID
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_execution_context_for_tests,
+    build_runtime_request_for_tests,
+    canonical_governed_execution_scope,
+)
 
 
 def _stub_build_context(_agent: ReflexAgent, _request: RuntimeRequest) -> RuntimeContext:
@@ -81,9 +87,8 @@ class _ShadowWriteReflexAgent(ReflexAgent):
 @pytest.mark.unit
 @pytest.mark.gate
 def test_isolation_structured_data_from_exec_ctx_exports_shadow_workspace_id() -> None:
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-iso",
-        run_id="run-iso",
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed="iso-export",
         agent_id="agent-1",
         metadata={SHADOW_WORKSPACE_ID_KEY: "shadow-ws-test"},
     )
@@ -110,7 +115,8 @@ async def test_acp_run_propagates_shadow_workspace_id(tmp_path) -> None:
         },
     )
 
-    result = await agent.run(request)
+    with canonical_governed_execution_scope("acp-shadow-run"):
+        result = await agent.run(request)
 
     assert result.status == AgentRunStatus.SUCCEEDED
     assert result.structured_data.get(SHADOW_WORKSPACE_ID_KEY)
@@ -125,7 +131,8 @@ async def test_acp_run_propagates_shadow_workspace_id(tmp_path) -> None:
 async def test_agent_engine_merges_acp_shadow_workspace_id_into_execution_result(tmp_path) -> None:
     shadow_manager = ShadowWorkspaceManager(root=tmp_path / "shadow")
     agent = _ShadowWriteReflexAgent()
-    runtime_request = RuntimeRequest(
+    runtime_request = build_runtime_request_for_tests(
+        seed="acp-shadow-merge",
         agent_id=agent.contract_id,
         tenant_id="tenant-a",
         user_id="user-1",
@@ -139,7 +146,8 @@ async def test_agent_engine_merges_acp_shadow_workspace_id_into_execution_result
         },
     )
 
-    execution = await AgentEngine.run_agent_with_result(agent, runtime_request)
+    with canonical_governed_execution_scope("acp-shadow-merge"):
+        execution = await AgentEngine.run_agent_with_result(agent, runtime_request)
 
     assert execution.structured_data.get(SHADOW_WORKSPACE_ID_KEY)
     workspace_id = str(execution.structured_data[SHADOW_WORKSPACE_ID_KEY])

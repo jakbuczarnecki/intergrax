@@ -9,6 +9,7 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskContext
+from testing_support.builder import build_runtime_request_for_tests
 
 
 class _StubAgent:
@@ -36,7 +37,8 @@ def test_agent_engine_rejects_retired_agent_in_production_mode() -> None:
         )
     )
     engine = AgentEngine(registry, production_mode=True)
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="retired-agent",
         agent_id="retired",
         user_id="u1",
         session_id="s1",

@@ -23,6 +23,7 @@ from intergrax.runtime.nexus.orchestration.application_run_summary_builder impor
 )
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_engine import PolicyEngine
+from testing_support.builder import build_runtime_execution_context_for_tests, build_runtime_request_for_tests, canonical_governed_execution_scope
 
 
 @pytest.mark.unit
@@ -97,7 +98,9 @@ async def test_uaep_kernel_bridge_harvests_catalog_tool_calls_for_app_summary() 
                 duration_ms=5,
             )
 
-    request = RuntimeRequest(
+    seed = "uaep-kernel-bridge"
+    request = build_runtime_request_for_tests(
+        seed=seed,
         agent_id="local_indexer",
         tenant_id="t1",
         user_id="u1",
@@ -107,16 +110,15 @@ async def test_uaep_kernel_bridge_harvests_catalog_tool_calls_for_app_summary() 
     )
     kernel_ctx = build_kernel_session(
         agent_id="local_indexer",
-        run_id="run-uaep-bridge",
-        task_id="task-uaep-bridge",
+        run_id=request.run_id,
+        task_id=request.task_id,
         tenant_id="t1",
         max_steps=1,
         policy_engine=PolicyEngine(),
         request=request,
     )
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-uaep-bridge",
-        run_id="run-uaep-bridge",
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed=seed,
         agent_id="local_indexer",
         tool_gateway=_Gateway(),
     )
@@ -126,7 +128,8 @@ async def test_uaep_kernel_bridge_harvests_catalog_tool_calls_for_app_summary() 
         step_index=0,
     )
 
-    await execute_uaep_step_via_kernel(_CatalogToolUAEPAgent(), step, exec_ctx, kernel_ctx)
+    with canonical_governed_execution_scope(seed):
+        await execute_uaep_step_via_kernel(_CatalogToolUAEPAgent(), step, exec_ctx, kernel_ctx)
 
     trace_summary = trace_summary_from_kernel(kernel_ctx)
     assert trace_summary["total_tool_calls"] >= 1
@@ -135,7 +138,7 @@ async def test_uaep_kernel_bridge_harvests_catalog_tool_calls_for_app_summary() 
 
     execution = AgentExecutionResult(
         agent_id="local_indexer",
-        run_id="run-uaep-bridge",
+        run_id=request.run_id,
         status=AgentExecutionStatus.COMPLETED,
         structured_data={AcpStructuredDataKey.TRACE_SUMMARY: trace_summary},
     )
@@ -158,9 +161,8 @@ def test_merge_last_outcome_diagnostics_preserves_typed_payloads() -> None:
         source_count=1,
     )
     last_outcome = StepOutcome.complete({"answer": "ok"}, diagnostic_payloads=[payload])
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-diag",
-        run_id="run-diag",
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed="merge-diagnostics",
         agent_id="local_indexer",
     )
     exec_ctx.metadata[AcpRunContextKey.LAST_OUTCOME] = last_outcome.model_dump(mode="json")
@@ -205,7 +207,9 @@ async def test_uaep_kernel_bridge_propagates_last_outcome_diagnostics() -> None:
                 duration_ms=5,
             )
 
-    request = RuntimeRequest(
+    seed = "uaep-diag-bridge"
+    request = build_runtime_request_for_tests(
+        seed=seed,
         agent_id="local_indexer",
         tenant_id="t1",
         user_id="u1",
@@ -215,16 +219,15 @@ async def test_uaep_kernel_bridge_propagates_last_outcome_diagnostics() -> None:
     )
     kernel_ctx = build_kernel_session(
         agent_id="local_indexer",
-        run_id="run-uaep-diag",
-        task_id="task-uaep-diag",
+        run_id=request.run_id,
+        task_id=request.task_id,
         tenant_id="t1",
         max_steps=1,
         policy_engine=PolicyEngine(),
         request=request,
     )
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-uaep-diag",
-        run_id="run-uaep-diag",
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed=seed,
         agent_id="local_indexer",
         tool_gateway=_Gateway(),
     )
@@ -234,7 +237,8 @@ async def test_uaep_kernel_bridge_propagates_last_outcome_diagnostics() -> None:
         step_index=0,
     )
 
-    await execute_uaep_step_via_kernel(_DiagnosticCatalogToolUAEPAgent(), step, exec_ctx, kernel_ctx)
+    with canonical_governed_execution_scope(seed):
+        await execute_uaep_step_via_kernel(_DiagnosticCatalogToolUAEPAgent(), step, exec_ctx, kernel_ctx)
 
     trace_summary = trace_summary_from_kernel(kernel_ctx)
     step_diagnostics = trace_summary.get("step_diagnostics")

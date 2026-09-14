@@ -16,7 +16,7 @@ from intergrax.applications._shared.acp_checkpoint_host_wiring import (
     resolve_agent_checkpoint_db_path,
     resolve_host_agent_checkpoint_store,
 )
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
 from intergrax.applications._shared.task_control_wiring import build_reliability_task_enricher
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.runtime.task.task import Task
@@ -48,7 +48,7 @@ def test_build_harness_host_runtime_exposes_agent_checkpoint_store() -> None:
     manifest = build_lab_manifest(settings)
     env = manifest.environment
     assert env is not None
-    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     assert runtime.agent_checkpoint_store is not None
 
 
@@ -57,7 +57,7 @@ def test_build_reliability_task_enricher_injects_checkpoint_store() -> None:
     manifest = build_lab_manifest(settings)
     env = manifest.environment
     assert env is not None
-    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     enricher = build_reliability_task_enricher(
         env,
         agent_checkpoint_store=runtime.agent_checkpoint_store,
@@ -80,7 +80,7 @@ def test_build_reliability_task_enricher_injects_idempotency_store() -> None:
     manifest = build_lab_manifest(settings)
     env = manifest.environment
     assert env is not None
-    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     enricher = build_reliability_task_enricher(
         env,
         idempotency_store=runtime.reliability.idempotency_store,

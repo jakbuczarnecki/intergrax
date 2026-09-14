@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
 from intergrax.applications._shared.reliability_assembly_resolver import (
     ReliabilityAssemblyError,
     assert_reliability_assembly_valid,
@@ -143,5 +143,5 @@ def test_build_harness_host_runtime_wires_reliability_artifacts() -> None:
     manifest = build_lab_manifest(settings)
     env = manifest.environment
     assert env is not None
-    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     assert runtime.reliability.idempotency_store is not None

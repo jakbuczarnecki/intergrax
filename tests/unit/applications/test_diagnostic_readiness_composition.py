@@ -14,7 +14,7 @@ from intergrax.applications._shared.diagnostic_assembly_resolver import (
     DiagnosticReadiness,
     resolve_central_diagnostics_required,
 )
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
 from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
 from intergrax.applications._shared.scenario_runtime_baseline import (
     ScenarioRuntimeBuildError,
@@ -287,7 +287,7 @@ def test_lab_host_not_required_without_prerequisites() -> None:
     manifest = build_lab_manifest(settings)
     env = manifest.environment
     assert env is not None
-    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     assert runtime.diagnostic_wiring.required is False
 
 

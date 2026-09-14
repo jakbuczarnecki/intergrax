@@ -12,6 +12,7 @@ from intergrax.contracts.agent_run_enums import AgentRunStatus, CognitivePattern
 from intergrax.contracts.agent_step import AgentStep
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import build_runtime_execution_context_for_tests, build_runtime_request_for_tests
 
 
 @pytest.mark.unit
@@ -47,17 +48,18 @@ async def test_remaining_batch_typed_run(factory, fragment) -> None:
 def test_organization_worker_decide_after_step_requests_hitl() -> None:
     agent = OrganizationWorkerAgent()
     step = AgentStep(step_id="prepare_vendor_report", step_name="prepare_vendor_report", step_index=0)
-    ctx = RuntimeExecutionContext(
-        run_id="run1",
-        task_id="task1",
+    request = build_runtime_request_for_tests(
+        seed="org-worker-hitl",
+        tenant_id="t1",
+        user_id="u1",
+        session_id="s1",
         agent_id="organization_worker",
-        request=RuntimeRequest(
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            agent_id="organization_worker",
-            message="Acme Corp",
-        ),
+        message="Acme Corp",
+    )
+    ctx = build_runtime_execution_context_for_tests(
+        seed="org-worker-hitl",
+        agent_id="organization_worker",
+        request=request,
     )
     from intergrax.contracts.agent_step import StepOutput
 
@@ -75,18 +77,19 @@ def test_organization_worker_decide_after_step_requests_hitl() -> None:
 def test_organization_worker_decide_after_step_completes_when_approved() -> None:
     agent = OrganizationWorkerAgent()
     step = AgentStep(step_id="prepare_vendor_report", step_name="prepare_vendor_report", step_index=0)
-    ctx = RuntimeExecutionContext(
-        run_id="run1",
-        task_id="task1",
+    request = build_runtime_request_for_tests(
+        seed="org-worker-approved",
+        tenant_id="t1",
+        user_id="u1",
+        session_id="s1",
         agent_id="organization_worker",
-        request=RuntimeRequest(
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            agent_id="organization_worker",
-            message="Acme Corp",
-            metadata={"human_approved": True},
-        ),
+        message="Acme Corp",
+        metadata={"human_approved": True},
+    )
+    ctx = build_runtime_execution_context_for_tests(
+        seed="org-worker-approved",
+        agent_id="organization_worker",
+        request=request,
     )
     from intergrax.contracts.agent_step import StepOutput
 

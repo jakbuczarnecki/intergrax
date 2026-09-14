@@ -25,7 +25,7 @@ from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
-from testing_support.builder import FakeLLMAdapter, tools_agent_make_contract
+from testing_support.builder import FakeLLMAdapter, tools_agent_make_contract, build_runtime_request_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -55,7 +55,8 @@ def _wired_registry() -> ToolRegistry:
 
 
 def _request() -> RuntimeRequest:
-    return RuntimeRequest(
+    return build_runtime_request_for_tests(
+        seed="session-parity",
         tenant_id="tenant-parity",
         agent_id="agent-parity",
         user_id="user-parity",
