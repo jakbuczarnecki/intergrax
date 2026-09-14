@@ -20,35 +20,45 @@ from intergrax.contracts.execution_identity import (
 pytestmark = pytest.mark.gate
 
 
-def _valid_correlation_kwargs(*, tenant_id: str = "tenant-vpi") -> dict[str, object]:
-    return {
-        "tenant_id": tenant_id,
-        "task_id": mint_task_id(),
-        "run_id": mint_run_id(),
-        "attempt_id": mint_attempt_id(),
-        "execution_id": mint_execution_id(),
-        "scenario_execution_correlation_id": "550e8400-e29b-41d4-a716-446655440000",
-    }
+def _mint_valid_correlation(*, tenant_id: str = "tenant-vpi") -> ApplicationExecutionCorrelation:
+    return ApplicationExecutionCorrelation(
+        tenant_id=tenant_id,
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+        scenario_execution_correlation_id="550e8400-e29b-41d4-a716-446655440000",
+    )
 
 
 def test_application_execution_correlation_accepts_canonical_tenant_id() -> None:
-    correlation = ApplicationExecutionCorrelation(**_valid_correlation_kwargs(tenant_id="tenant-vpi"))
+    correlation = _mint_valid_correlation(tenant_id="tenant-vpi")
     assert correlation.tenant_id == "tenant-vpi"
 
 
 def test_application_execution_correlation_rejects_non_str_tenant_id() -> None:
+    valid = _mint_valid_correlation()
     with pytest.raises(ApplicationExecutionStageSignalError, match="tenant_id must be str"):
-        ApplicationExecutionCorrelation(**{**_valid_correlation_kwargs(), "tenant_id": 42})
+        ApplicationExecutionCorrelation(
+            **{
+                "tenant_id": 42,
+                "task_id": valid.task_id,
+                "run_id": valid.run_id,
+                "attempt_id": valid.attempt_id,
+                "execution_id": valid.execution_id,
+                "scenario_execution_correlation_id": valid.scenario_execution_correlation_id,
+            },
+        )
 
 
 def test_application_execution_correlation_rejects_empty_tenant_id() -> None:
     with pytest.raises(ApplicationExecutionStageSignalError, match="tenant_id must be non-empty"):
-        ApplicationExecutionCorrelation(**_valid_correlation_kwargs(tenant_id=""))
+        _mint_valid_correlation(tenant_id="")
 
 
 def test_application_execution_correlation_rejects_whitespace_only_tenant_id() -> None:
     with pytest.raises(ApplicationExecutionStageSignalError, match="tenant_id must be non-empty"):
-        ApplicationExecutionCorrelation(**_valid_correlation_kwargs(tenant_id="   "))
+        _mint_valid_correlation(tenant_id="   ")
 
 
 def test_stage_signal_contract_module_has_no_vpi_imports() -> None:

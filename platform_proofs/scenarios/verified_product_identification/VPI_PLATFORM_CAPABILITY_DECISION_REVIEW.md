@@ -23,7 +23,7 @@ End-to-end VPI production pipeline capabilities: multi-channel catalog retrieval
 | **Rank fusion** | **Promote (utility + optional strategy port):** RRF math and generic N-list fusion primitive → platform (`intergrax.rag`); **offer-grain fusion strategy** (`OfferCandidateFusionStrategy`) remains scenario plugin. |
 | **Identity resolution** | **Split:** platform may later host hypothesis/evidence **mechanisms**; **GTIN/MPN/variant semantics** stay VPI domain + plugins. |
 | **Verification** | **Split:** platform **decision/evidence lifecycle** (`evidence_verification`, Decision System integration) for audit spine; **material identity rules** (`IdentityVerificationPolicy`) stay VPI plugin. |
-| **Observability** | **PLATFORM CONTRACT IMPLEMENTED (P1B / P1B-R1):** `ApplicationExecutionStageSignal` on `RuntimeEvent` spine; correlation mismatch → explicit `ObservationSinkError`; emission failure → `ApplicationExecutionStageSignalEmissionError` → `ObservationSinkError` + `BEST_EFFORT`/`REQUIRED`; **VPI ADAPTER IMPLEMENTED**; **VPI RUNTIME ADOPTED: PENDING**; VPI observation schema remains scenario-owned. |
+| **Observability** | **PLATFORM CONTRACT IMPLEMENTED (P1B / P1B-R1 / P1B-R2):** `ApplicationExecutionStageSignal` on `RuntimeEvent` spine; public emission boundary covers domain/payload errors and mandatory evidence persistence failures on the canonical bus path; correlation mismatch → explicit `ObservationSinkError`; emission failure → `ApplicationExecutionStageSignalEmissionError` → `ObservationSinkError` + `BEST_EFFORT`/`REQUIRED`; **VPI ADAPTER IMPLEMENTED**; **VPI RUNTIME ADOPTED: PENDING**; VPI observation schema remains scenario-owned. |
 
 ### What was not changed
 

@@ -14,6 +14,9 @@ from intergrax.contracts.application_execution_stage_signal import (
     ApplicationExecutionStageSignalEmissionError,
     ApplicationExecutionStageSignalError,
 )
+from intergrax.contracts.execution_evidence.persistence_boundary_errors import (
+    MandatoryEvidencePersistenceError,
+)
 from intergrax.runtime.events.event_kind import DomainSignalError
 from intergrax.runtime.events.payload_registry import RuntimeEventPayloadError
 from intergrax.contracts.event_severity import EventSeverity
@@ -123,6 +126,10 @@ def emit_application_execution_stage_signal(
             "application execution stage signal could not be emitted",
         ) from exc
     except RuntimeEventPayloadError as exc:
+        raise ApplicationExecutionStageSignalEmissionError(
+            "application execution stage signal could not be emitted",
+        ) from exc
+    except MandatoryEvidencePersistenceError as exc:
         raise ApplicationExecutionStageSignalEmissionError(
             "application execution stage signal could not be emitted",
         ) from exc
