@@ -20,6 +20,19 @@ from intergrax.runtime.diagnostics.reliability.reliability_case_default_grouping
 from intergrax.runtime.diagnostics.reliability.reliability_case_grouping_reconciliation import (
     ReliabilityCaseProblemReconciliationPolicy,
 )
+from intergrax.contracts.enterprise_reliability.diagnostics.classification import (
+    ExternalEffectReliabilityDiagnosticRecommendationStrategy,
+    ExternalEffectReliabilityDiagnosticSeverityStrategy,
+)
+from intergrax.runtime.diagnostics.reliability.conservative_reliability_recommendation_strategy import (
+    ConservativeReliabilityRecommendationStrategy,
+)
+from intergrax.runtime.diagnostics.reliability.conservative_reliability_severity_strategy import (
+    ConservativeReliabilitySeverityStrategy,
+)
+from intergrax.runtime.diagnostics.reliability.reliability_diagnostic_classification_service import (
+    ReliabilityDiagnosticClassificationService,
+)
 
 
 def default_reliability_diagnostic_reconciliation_policies() -> tuple[
@@ -62,8 +75,24 @@ def register_reliability_case_default_grouping_strategy(
     return strategy
 
 
+def build_reliability_diagnostic_classification_service(
+    *,
+    severity_strategy: ExternalEffectReliabilityDiagnosticSeverityStrategy | None = None,
+    recommendation_strategy: ExternalEffectReliabilityDiagnosticRecommendationStrategy | None = None,
+) -> ReliabilityDiagnosticClassificationService:
+    resolved_severity = severity_strategy or ConservativeReliabilitySeverityStrategy()
+    resolved_recommendation = recommendation_strategy or ConservativeReliabilityRecommendationStrategy()
+    return ReliabilityDiagnosticClassificationService(
+        severity_strategy=resolved_severity,
+        recommendation_strategy=resolved_recommendation,
+        severity_fallback=ConservativeReliabilitySeverityStrategy(),
+        recommendation_fallback=ConservativeReliabilityRecommendationStrategy(),
+    )
+
+
 __all__ = [
     "build_reliability_case_default_grouping_strategy",
+    "build_reliability_diagnostic_classification_service",
     "default_reliability_diagnostic_reconciliation_policies",
     "register_reliability_case_default_grouping_strategy",
 ]
