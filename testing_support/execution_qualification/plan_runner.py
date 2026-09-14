@@ -4,14 +4,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from testing_support.execution_qualification.aggregate import (
     QualificationAggregateEvaluator,
 )
 from testing_support.execution_qualification.contracts import (
     ExecutionQualificationRunResult,
     ExecutionQualificationSuiteResult,
+    QualificationExecutionContext,
     QualificationRunConfig,
     QualificationRunManifest,
     QualificationRunStatus,
@@ -19,6 +18,9 @@ from testing_support.execution_qualification.contracts import (
     QualificationSuiteStatus,
 )
 from testing_support.execution_qualification.coordinator import QualificationCoordinator
+from testing_support.execution_qualification.coordinator_port import (
+    QualificationCoordinatorPort,
+)
 from testing_support.execution_qualification.graph_contracts import (
     QualificationExecutionPlan,
     QualificationGateResult,
@@ -32,25 +34,6 @@ from testing_support.execution_qualification.executor import (
 )
 
 
-@dataclass(frozen=True, slots=True)
-class _CoordinatorRunPort:
-    """Minimal coordinator surface for dependency injection in tests."""
-
-    _run: object
-
-    def run(
-        self,
-        manifest: QualificationRunManifest,
-        config: QualificationRunConfig,
-    ) -> ExecutionQualificationRunResult:
-        result = self._run(manifest, config)  # type: ignore[misc]
-        if not isinstance(result, ExecutionQualificationRunResult):
-            raise QualificationReceiptConflictError(
-                "coordinator must return ExecutionQualificationRunResult"
-            )
-        return result
-
-
 class _InRunLeafDedupExecutor:
     """Fail closed if the same suite_id is physically executed twice in one plan run."""
 
@@ -61,14 +44,14 @@ class _InRunLeafDedupExecutor:
     def execute(
         self,
         suite: QualificationSuite,
-        context: object,
+        context: QualificationExecutionContext,
     ) -> ExecutionQualificationSuiteResult:
         if suite.suite_id in self._executed_suite_ids:
             raise QualificationReceiptConflictError(
                 f"duplicate physical execution of suite {suite.suite_id!r}"
             )
         self._executed_suite_ids.add(suite.suite_id)
-        return self._inner.execute(suite, context)  # type: ignore[arg-type]
+        return self._inner.execute(suite, context)
 
 
 def _leaf_manifest_from_plan(
@@ -134,7 +117,7 @@ def _root_run_status(
 class QualificationPlanRunner:
     def __init__(
         self,
-        coordinator: QualificationCoordinator | _CoordinatorRunPort | None = None,
+        coordinator: QualificationCoordinatorPort | None = None,
         aggregate_evaluator: QualificationAggregateEvaluator | None = None,
     ) -> None:
         self._coordinator = coordinator
@@ -179,7 +162,7 @@ class QualificationPlanRunner:
 
     def _resolve_coordinator(
         self,
-    ) -> QualificationCoordinator | _CoordinatorRunPort:
+    ) -> QualificationCoordinatorPort:
         if self._coordinator is not None:
             return self._coordinator
         inner = PytestSubprocessSuiteExecutor()
@@ -191,6 +174,6 @@ def run_qualification_execution_plan(
     plan: QualificationExecutionPlan,
     config: QualificationRunConfig,
     *,
-    coordinator: QualificationCoordinator | _CoordinatorRunPort | None = None,
+    coordinator: QualificationCoordinatorPort | None = None,
 ) -> QualificationPlanRunResult:
     return QualificationPlanRunner(coordinator=coordinator).run(plan, config)

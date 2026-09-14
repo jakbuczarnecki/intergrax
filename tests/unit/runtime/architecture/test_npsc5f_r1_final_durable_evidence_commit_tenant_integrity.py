@@ -1,6 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""NPSC-5F/R1 Final — durable evidence commit & tenant integrity qualification and freeze."""
+"""NPSC-5F/R1 Final — durable evidence commit & tenant integrity qualification and freeze.
+
+Legacy reference path: ``test_mandatory_frozen_suite_passes`` nested pytest composition
+remains for parity reference. Canonical DAG profile: ``npsc5f-r1-final`` via
+``testing_support.npsc5f_r1_qualification_profile``.
+"""
 
 from __future__ import annotations
 
