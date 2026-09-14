@@ -5,13 +5,14 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.contracts.event_delivery import ObservabilityExportPayload
 
 
 class NoopEventExportSink:
     """Accept, flush, and close without side effects."""
 
-    async def export(self, event: RuntimeEvent) -> None:
+    async def export(self, payload: ObservabilityExportPayload) -> None:
+        _ = payload
         return None
 
     async def flush(self) -> None:

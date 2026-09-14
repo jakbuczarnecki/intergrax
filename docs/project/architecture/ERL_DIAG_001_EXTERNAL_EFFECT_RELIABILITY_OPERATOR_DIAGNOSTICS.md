@@ -337,8 +337,8 @@ Platform **must not** hard-code payment keys in `intergrax/`.
 | # | Mechanism | SPI location | Reuse |
 | --- | --- | --- | --- |
 | 1 | Problem grouping | `ExternalEffectReliabilityProblemGroupingStrategy` | Extends grouping infrastructure |
-| 2 | Severity classification | `ReliabilityDiagnosticSeverityStrategy` | New; inputs observation + optional `SeverityContext` |
-| 3 | Recommendation derivation | `ReliabilityDiagnosticRecommendationStrategy` | New; outputs `DiagnosticRecommendationKind` + optional structured codes |
+| 2 | Severity classification | `ExternalEffectReliabilityDiagnosticSeverityStrategy` | **001D** — `ExternalEffectReliabilityDiagnosticClassificationContext` |
+| 3 | Recommendation derivation | `ExternalEffectReliabilityDiagnosticRecommendationStrategy` | **001D** — `ExternalEffectReliabilityOperatorRecommendationKind` (+ 001E projection to `DiagnosticRecommendationKind`) |
 | 4 | Diagnostic enrichment | `ReliabilityDiagnosticEnrichmentContributor` | May wrap `DiagnosticExtensionEvidence` |
 | 5 | Domain wording | `DiagnosticExtensionEvidenceContributor` | **Existing SPI — sufficient** with schema ids |
 | 6 | Evidence augmentation | `DiagnosticExtensionEvidenceContributor` | **Existing** — add refs, not blobs |
@@ -376,8 +376,9 @@ Domain **wording** ("retry may double-charge") via `DiagnosticExtensionEvidence`
 | Emitter | `NullExternalEffectReliabilityDiagnosticEmitter` | No-op |
 | Bridge | Wired in composition when diagnostics enabled | Forwards to orchestrator |
 | Grouping | `ReliabilityCaseDefaultGroupingStrategy` | case_id + tenant |
-| Severity | `ConservativeReliabilitySeverityStrategy` | signal_kind table |
-| Recommendation | `ConservativeReliabilityRecommendationStrategy` | maps posture → kind |
+| Severity | `ConservativeReliabilitySeverityStrategy` | signal_kind + automation-safety hint (domain-neutral) |
+| Recommendation | `ConservativeReliabilityRecommendationStrategy` | advisory kinds; severity passed explicitly |
+| Classification runtime | `ReliabilityDiagnosticClassificationService` | DI-composed strategies; validation + safe fallback |
 | Enrichment | none | Extension plugins optional |
 
 All defaults: deterministic, conservative, auditable, domain-neutral.
@@ -403,8 +404,11 @@ ReliabilityDiagnosticBridge (runtime internal)
 DiagnosticOrchestrator / ProblemLifecycleEngine
 ```
 
-**Phase B (ERL-DIAG-001B) ownership:** `intergrax/runtime/diagnostics/reliability/` — `ReliabilityDiagnosticHandoff` → `PlatformProblemSignal` (`platform.external_effect_reliability`) + `DiagnosticSignalSubjectScope` (`application_id=erl`, `instance_id=reliability_case_id`); orchestration via injected `ReliabilityDiagnosticOrchestrationPort` only (no direct persistence).
-```
+**Phase C (ERL-DIAG-001C) grouping + occurrence identity:** Public SPI `ExternalEffectReliabilityProblemGroupingStrategy` (`intergrax/contracts/enterprise_reliability/diagnostics/grouping.py`); default batch strategy `ReliabilityCaseDefaultGroupingStrategy` (`strategy_id=intergrax.diagnostics.external_effect_reliability.case.v1`) groups by the SPI-returned `index_token` (default `erl:case:{reliability_case_id}` via `ReliabilityCaseDefaultObservationGroupingStrategy`). **001C-H:** `ReliabilityObservationGroupingAdapter` invokes the public SPI at the bridge; `grouping_subject_index_token` is carried on `DiagnosticSignalSubjectScope` / `ProblemGroupingSubject` so batch grouping does not re-derive policy from `instance_id` parsing. Orchestration `instance_id` still encodes `reliability_diagnostic_occurrence_instance_id(case, observation_id)` for occurrence identity only. Reconciliation uses `ReliabilityCaseProblemReconciliationKey.grouping_subject_index_token` (generic token; custom plugins e.g. `erl:correlation:{id}` without per-plugin codec branches). Replay of the same `observation_id` is idempotent via existing `ProblemOccurrencePersistence.append_if_absent`. Composition: `build_reliability_case_default_grouping_strategy` / `register_reliability_case_default_grouping_strategy` + shared `observation_grouping` injection on bridge emitter — no new global registry.
+
+**Phase B bridge scope (updated in 001C):** `DiagnosticSignalSubjectScope.instance_id` uses occurrence encoding above (not bare `reliability_case_id`). Default emitter wiring uses ERL case grouping `strategy_id` when not overridden.
+
+**Phase B semantic transport (001B-H):** `error_code` = stable fact-type classifier (`external_effect_reliability.<signal_kind>`); `event_id` = `observation_id` (source observation identity on the signal transport); `application_attributes.observation_id` mirrors the same id. Occurrence deduplication uses encoded scope subject index tokens, not `error_code`. Bridge does **not** map business severity from `signal_kind` — it leaves `PlatformProblemSignal.severity` at the platform model default until Phase classify plugins (001D).
 
 **REJECTED:** Observer-only on trace tail without lifecycle commit (race + incomplete facts).
 
@@ -624,8 +628,9 @@ Recovery disposition drives `RECOVERY_POSTURE` signal and recommendation kinds (
 | ERL lifecycle / decision artifacts | ERL contracts | Public | Via ERL plugins | ERL runtime | ERL plugins only | ERL stores refs | Yes (ERL) |
 | `ReliabilityDiagnosticBridge` | Runtime | Internal | No | Yes | No | No | No |
 | `ExternalEffectReliabilityProblemGroupingStrategy` | Contracts + runtime | Public SPI | Yes | Case id default | Yes (register) | No | No |
-| `ReliabilityDiagnosticSeverityStrategy` | Contracts + runtime | Public SPI | Yes | Conservative | Yes | No | No |
-| `ReliabilityDiagnosticRecommendationStrategy` | Contracts + runtime | Public SPI | Yes | Conservative | Yes | No | No |
+| `ExternalEffectReliabilityDiagnosticSeverityStrategy` | Contracts + runtime | Public SPI | Yes | Conservative | Yes | No | No |
+| `ExternalEffectReliabilityDiagnosticRecommendationStrategy` | Contracts + runtime | Public SPI | Yes | Conservative | Yes | No | No |
+| `ReliabilityDiagnosticClassificationService` | Runtime | Internal | No (strategies plugin) | Composed defaults | No | No | No |
 | `DiagnosticExtensionEvidenceContributor` | Contracts | Public SPI | Yes | None | Yes | Extension store | No |
 | `ProblemPersistence` | Contracts | Public | Adapter | SQL/etc. | Adapter only | Yes | No |
 | `ProblemLifecycleEngine` | Runtime | Internal | Policy hooks | Yes | No | Via ports | No |
@@ -660,20 +665,19 @@ class ExternalEffectReliabilityProblemGroupingStrategy(Protocol):
     ) -> ReliabilityCaseSubjectRef: ...
 
 
-class ReliabilityDiagnosticSeverityStrategy(Protocol):
+class ExternalEffectReliabilityDiagnosticSeverityStrategy(Protocol):
     def classify(
         self,
-        observation: ExternalEffectReliabilityObservation,
-        context: SeverityContext | None,
-    ) -> DiagnosticInvestigationSeverity: ...
+        context: ExternalEffectReliabilityDiagnosticClassificationContext,
+    ) -> ExternalEffectReliabilitySeverityDecision: ...
 
 
-class ReliabilityDiagnosticRecommendationStrategy(Protocol):
-    def derive(
+class ExternalEffectReliabilityDiagnosticRecommendationStrategy(Protocol):
+    def recommend(
         self,
-        observation: ExternalEffectReliabilityObservation,
-        severity: DiagnosticInvestigationSeverity,
-    ) -> DiagnosticRecommendationKind: ...
+        context: ExternalEffectReliabilityDiagnosticClassificationContext,
+        severity: ExternalEffectReliabilitySeverityDecision,
+    ) -> ExternalEffectReliabilityRecommendationDecision: ...
 
 
 # Runtime internal (sketch)
@@ -772,10 +776,10 @@ flowchart TB
 | --- | --- | --- |
 | OQ-1 | Package name: `enterprise_reliability.diagnostics` vs `diagnostics.reliability` | **DECIDED** — `intergrax.contracts.enterprise_reliability.diagnostics` |
 | OQ-2 | Sync vs async bridge default for orchestrator handoff | **DECIDED FOR MVP** — synchronous `ReliabilityDiagnosticBridge.on_observation` → `DiagnosticOrchestrator.run` (bounded, failure-contained) |
-| OQ-3 | Exact `PersistedProblem` / occurrence extension schema | **OPEN** (implementation) |
+| OQ-3 | Exact `PersistedProblem` / occurrence extension schema | **PARTIALLY OPEN** — occurrence identity for ERL uses existing subject index + scope encoding (001C); optional versioned occurrence extension fields remain open |
 | OQ-4 | Read model authz integration for evidence ref resolution | **OPEN** |
 | OQ-5 | Whether ERL case transition journal persistence is required before replay-from-store | **OPEN** (emit-at-commit sufficient for MVP) |
-| OQ-6 | Additive `DiagnosticRecommendationKind` values — single PR vs alias mapping | **OPEN** |
+| OQ-6 | Additive `DiagnosticRecommendationKind` values — single PR vs alias mapping | **PARTIALLY DECIDED (001D)** — ERL classification emits `ExternalEffectReliabilityOperatorRecommendationKind`; 001E maps to `DiagnosticRecommendationKind` without execution authority |
 
 All other major decisions in this document are **DECIDED**.
 

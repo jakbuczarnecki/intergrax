@@ -64,6 +64,7 @@ class SessionManager:
         include_cross_session_episodic: bool = False,
         user_turns_consolidation_interval: Optional[int] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
         consolidation_cooldown_seconds: Optional[int] = GLOBAL_SETTINGS.default_consolidation_cooldown_seconds,
+        memory_consolidation_mode: str = "manual",
     ) -> None:
         """
         Initialize a new SessionManager instance.
@@ -140,6 +141,7 @@ class SessionManager:
             service=session_memory_consolidation_service,
             user_turns_interval=effective_interval,
             cooldown_seconds=effective_cooldown,
+            consolidation_mode=memory_consolidation_mode,
         )
         self._lifecycle = SessionLifecycleCoordinator(storage)
         self._profile_instructions = SessionProfileInstructionResolver(
@@ -223,8 +225,9 @@ class SessionManager:
 
     async def close_session(
         self,
-        session_id: str,
         *,
+        tenant_id: str,
+        session_id: str,
         reason: Optional[SessionCloseReason] = None,
         run_id: Optional[str] = None,
         trace_state: Optional[RuntimeState] = None,
@@ -249,7 +252,10 @@ class SessionManager:
                 Optional domain-level reason. If None, a default
                 SessionCloseReason.EXPLICIT is used.
         """
-        session = await self._storage.get_session(session_id)
+        session = await self._lifecycle.get_session(
+            tenant_id=tenant_id,
+            session_id=session_id,
+        )
         if session is None:
             return
 
@@ -268,7 +274,10 @@ class SessionManager:
         #      - the service is configured, and
         #      - the session is associated with a user_id.
         if self._consolidation.should_consolidate_on_close(session):
-            messages = await self.get_history_for_session(session_id)
+            messages = await self.get_history_for_session(
+                tenant_id=tenant_id,
+                session_id=session_id,
+            )
             if messages:
                 diag = await self._consolidation.consolidate(
                     user_id=session.user_id,
@@ -326,19 +335,18 @@ class SessionManager:
 
         consolidation_diag: Optional[SessionConsolidationDiagV1] = None
 
-        # Try to load the session so we can apply domain-level updates
-        # (user_turns counter, timestamps, etc.).
         session = await self._lifecycle.get_session(
             tenant_id=tenant_id,
             session_id=session_id,
         )
 
-        # Increment user_turns only for user messages and only if the
-        # session exists. If the session is missing, we delegate error
-        # handling to the storage.append_message call below.
+        stored_message = await self._storage.append_message(
+            tenant_id=tenant_id,
+            session_id=session_id,
+            message=message,
+        )
+
         if session is not None and message.role == "user":
-            # This updates in-memory state and timestamps; persistence is
-            # delegated to save_session().
             user_turns = session.increment_user_turns()
             await self.save_session(session)
 
@@ -346,7 +354,10 @@ class SessionManager:
                 session,
                 user_turns=user_turns,
             ):
-                messages = await self.get_history_for_session(session_id)
+                messages = await self.get_history_for_session(
+                    tenant_id=tenant_id,
+                    session_id=session_id,
+                )
                 if messages:
                     consolidation_diag = await self._consolidation.consolidate(
                         user_id=session.user_id,
@@ -359,15 +370,6 @@ class SessionManager:
                         turn=user_turns,
                     )
                     await self.save_session(session)
-
-        # Delegate message persistence to the storage backend. The storage
-        # may apply its own retention/trimming logic (FIFO, max_messages, etc.).
-        
-        stored_message = await self._storage.append_message(
-            tenant_id=tenant_id,
-            session_id=session_id,
-            message=message,
-        )
 
         if self._session_turn_index_enabled and self._session_turn_index_store is not None:
             await self._session_turn_index_store.upsert_turn(

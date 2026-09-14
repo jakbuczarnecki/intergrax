@@ -10,8 +10,13 @@ from intergrax.applications._shared.profile_resolution.execution_admission impor
     EffectiveProfileExecutionPinningDependencies,
     build_effective_profile_revision_admission,
 )
+from intergrax.applications._shared.harness_root_execution_launch_wiring import (
+    build_harness_root_execution_authority_admission,
+)
+from intergrax.contracts.runtime_execution_admission import RootExecutionAuthorityAdmissionPort
+from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_execution import (
-    build_host_task_execution,
+    build_host_task_execution as _build_nexus_host_task_execution,
     build_nexus_host_task_terminal_publisher,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -22,6 +27,26 @@ __all__ = [
     "build_host_task_execution",
     "build_nexus_host_task_terminal_publisher",
 ]
+
+
+def build_host_task_execution(
+    nexus_loop: NexusLoop,
+    *,
+    orchestration_triggers: frozenset[str],
+    pipeline_capability_suffix: str = ".pipeline",
+    revision_admission: object | None = None,
+    root_authority_admission: RootExecutionAuthorityAdmissionPort | None = None,
+) -> HostTaskExecution:
+    """Composition-root host task execution with mandatory root admission wiring."""
+    return _build_nexus_host_task_execution(
+        nexus_loop,
+        orchestration_triggers=orchestration_triggers,
+        pipeline_capability_suffix=pipeline_capability_suffix,
+        revision_admission=revision_admission,
+        root_authority_admission=(
+            root_authority_admission or build_harness_root_execution_authority_admission()
+        ),
+    )
 
 
 def build_environment_host_task_execution(
@@ -46,4 +71,5 @@ def build_environment_host_task_execution(
             graph_spec.pipeline_capability_suffix if graph_spec is not None else ".pipeline"
         ),
         revision_admission=revision_admission,
+        root_authority_admission=build_harness_root_execution_authority_admission(),
     )

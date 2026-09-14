@@ -15,7 +15,12 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import (
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )
-from intergrax.runtime.diagnostics.problem_lifecycle import Problem, ProblemLifecycleEngine, ProblemId
+from intergrax.runtime.diagnostics.problem_lifecycle import (
+    Problem,
+    ProblemLifecycleEngine,
+    ProblemId,
+    ProblemReconciliationPolicy,
+)
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrencePersistence,
 )
@@ -109,15 +114,19 @@ def lifecycle_engine_for_tests(
     occurrence_persistence: ProblemOccurrencePersistence | None = None,
     *,
     document_store: ConditionalDocumentStore | None = None,
+    reconciliation_policies: tuple[ProblemReconciliationPolicy, ...] | None = None,
 ) -> ProblemLifecycleEngine:
     store = document_store or in_memory_document_store_for_problem_tests()
     resolved_occurrence = (
         occurrence_persistence
         or document_store_occurrence_persistence_for_tests(store)
     )
+    if reconciliation_policies is None:
+        return ProblemLifecycleEngine(problem_persistence, resolved_occurrence)
     return ProblemLifecycleEngine(
         problem_persistence,
         resolved_occurrence,
+        reconciliation_policies=reconciliation_policies,
     )
 
 
@@ -145,7 +154,10 @@ def read_service_for_tests(
     )
 
 
-def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
+def build_diagnostic_orchestrator_stack_for_tests(
+    *,
+    observation_grouping: object | None = None,
+) -> tuple[
     "DiagnosticOrchestrator",
     InMemoryProblemPersistence,
     "DiagnosticReadService",
@@ -154,6 +166,13 @@ def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
     """Canonical in-memory diagnostic orchestrator stack for hosted/scenario architecture gates."""
     from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
         DeterministicProblemGroupingStrategy,
+    )
+    from intergrax.contracts.enterprise_reliability.diagnostics.grouping import (
+        ExternalEffectReliabilityProblemGroupingStrategy,
+    )
+    from intergrax.runtime.diagnostics.reliability.reliability_diagnostic_strategy_composition import (
+        default_reliability_diagnostic_reconciliation_policies,
+        register_reliability_case_default_grouping_strategy,
     )
     from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
     from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
@@ -179,6 +198,15 @@ def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
     )
     registry = ProblemGroupingStrategyRegistry()
     registry.register(DeterministicProblemGroupingStrategy())
+    plugin_grouping: ExternalEffectReliabilityProblemGroupingStrategy | None = None
+    if observation_grouping is not None:
+        if not isinstance(observation_grouping, ExternalEffectReliabilityProblemGroupingStrategy):
+            raise TypeError("observation_grouping must implement grouping SPI")
+        plugin_grouping = observation_grouping
+    register_reliability_case_default_grouping_strategy(
+        registry,
+        observation_grouping=plugin_grouping,
+    )
     orchestrator = DiagnosticOrchestrator(
         execution_reconstructor=reconstructor,
         lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
@@ -188,6 +216,7 @@ def build_diagnostic_orchestrator_stack_for_tests() -> tuple[
             persistence,
             occurrence_persistence,
             document_store=occurrence_store,
+            reconciliation_policies=default_reliability_diagnostic_reconciliation_policies(),
         ),
     )
     read_service = read_service_for_tests(

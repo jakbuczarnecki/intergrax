@@ -46,7 +46,10 @@ class CanonicalExecutionRuntimeAdapter(
             authority=request.trusted_parent_execution_authority,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
+            execution_id=request.execution_id,
             tenant_id=request.tenant_id,
+            task_id=request.task_id,
+            segment_predecessor_root_execution_id=request.segment_predecessor_root_execution_id,
         )
         root_context = resolve_root_execution_context(options)
         try:

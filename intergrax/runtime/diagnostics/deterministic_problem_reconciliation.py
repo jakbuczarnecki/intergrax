@@ -22,6 +22,7 @@ class ProblemReconciliationKeyKind(StrEnum):
     """Typed discriminator for strategy-specific recurrence evidence."""
 
     DETERMINISTIC = "deterministic"
+    RELIABILITY_CASE = "reliability_case"
 
 
 @dataclass(frozen=True, slots=True)

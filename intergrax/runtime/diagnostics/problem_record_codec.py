@@ -361,6 +361,20 @@ def _encode_reconciliation_key(
             "strategy_version": str(reconciliation_key.strategy_version),
             "signature": _encode_signature(reconciliation_key.signature),
         }
+    if reconciliation_key.kind is ProblemReconciliationKeyKind.RELIABILITY_CASE:
+        from intergrax.runtime.diagnostics.reliability.reliability_case_grouping_reconciliation import (
+            ReliabilityCaseProblemReconciliationKey,
+        )
+
+        if not isinstance(reconciliation_key, ReliabilityCaseProblemReconciliationKey):
+            raise TypeError("reliability case reconciliation key type mismatch")
+        return {
+            "kind": reconciliation_key.kind.value,
+            "tenant_id": reconciliation_key.tenant_id,
+            "strategy_id": str(reconciliation_key.strategy_id),
+            "strategy_version": str(reconciliation_key.strategy_version),
+            "grouping_subject_index_token": reconciliation_key.grouping_subject_index_token,
+        }
     raise TypeError(f"unsupported reconciliation key kind: {reconciliation_key.kind}")
 
 
@@ -377,7 +391,34 @@ def _decode_reconciliation_key(value: object) -> ProblemReconciliationKey:
             ),
             signature=_decode_signature(value["signature"]),
         )
+    if kind == ProblemReconciliationKeyKind.RELIABILITY_CASE.value:
+        from intergrax.runtime.diagnostics.reliability.reliability_case_grouping_reconciliation import (
+            ReliabilityCaseProblemReconciliationKey,
+        )
+
+        return ReliabilityCaseProblemReconciliationKey(
+            tenant_id=str(value["tenant_id"]),
+            strategy_id=ProblemGroupingStrategyId(str(value["strategy_id"])),
+            strategy_version=ProblemGroupingStrategyVersion(
+                str(value["strategy_version"]),
+            ),
+            grouping_subject_index_token=_decode_grouping_subject_index_token(value),
+        )
     raise ValueError("unsupported reconciliation key kind")
+
+
+def _decode_grouping_subject_index_token(value: dict[str, object]) -> str:
+    token = value.get("grouping_subject_index_token")
+    if token is not None:
+        return str(token)
+    legacy_case_id = value.get("reliability_case_id")
+    if legacy_case_id is not None:
+        from intergrax.contracts.enterprise_reliability.diagnostics.grouping import (
+            reliability_case_subject_index_token,
+        )
+
+        return reliability_case_subject_index_token(str(legacy_case_id))
+    raise ValueError("reconciliation key missing grouping_subject_index_token")
 
 
 def _encode_signature(signature: DeterministicProblemSignature) -> dict[str, object]:

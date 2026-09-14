@@ -945,7 +945,7 @@ Enterprise qualification and post-freeze audits confirm the **Execution Engine i
 | O | TARGET | **PARTIAL** (topology exec) + **TARGET** (governed proposal path) |
 | N | GAP / PARTIAL | **GAP** (no shared invariant runner) |
 | AF | CURRENT / PARTIAL | **FROZEN / PARTIAL** (plane frozen; consumer gaps remain) |
-| Y | PARTIAL | **URGENT / PARTIAL** |
+| Y | PARTIAL | **URGENT / PARTIAL** *(EE1 snapshot — superseded: **CLOSED** Y1–Y5, 2026-09-14)* |
 | DS (cross-cutting) | (not in matrix) | CURRENT / QUALIFIED — hosted by Execution |
 | DIAG (cross-cutting) | (not in matrix) | CURRENT / ENTERPRISE — not invariant service |
 
@@ -962,7 +962,7 @@ Enterprise qualification and post-freeze audits confirm the **Execution Engine i
 - Governed dynamic topology **proposal** path (Initiative O — distinct from shipped fan-out execution)
 - External/subagent provider **production adoption** (P2.1-S2)
 - Runtime Inspection read-model API (Initiative C)
-- Canonical doc CURRENT drift (Initiative Y — **Y1 closed** 2026-09-14 for UEA/UER/Nexus/hub; satellites and domain pairs remain)
+- *(Removed from active gaps — Initiative Y **CLOSED** Y1–Y5; historical pre-closeout inventory in Y1–Y4 addenda below.)*
 - Residual intake helper debt (`task_run_bridge.mint_intake_execution_identity`) — documented in enterprise verification §10
 
 ## ADOPTION_GAP samples (report only — not fixed in EE1)
@@ -1043,5 +1043,19 @@ Unrelated dirty worktree (unit test files under `tests/unit/…`, `testing_suppo
 **Y closeout matrix (Y5):** Y-CLOSE-1..7 **PASS** after Y5 sync (see Initiative Y section in roadmap).
 
 **Initiative Y final verdict:** **CLOSED** — Y1–Y5 documentation synchronization complete.
+
+**Production code changed:** **NO**
+
+## HARNESS-Y5-C1 addendum (2026-09-14)
+
+**Task:** HARNESS-Y5-C1 — Initiative Y closeout consistency correction (roadmap Priority block vs **CLOSED** status).
+
+**Corrected claims:** Roadmap §29 **Priority (post EE1) / URGENT (remaining)** language relabeled as **historical P0A inventory** superseded by Y1–Y5; **closed semantics** and **remaining active authoritative drift = NONE** stated explicitly. P0A EE1 matrix Y row annotated as EE1 snapshot; Initiative Y removed from **Real remaining gaps** active list.
+
+**Y-C1 closeout matrix:** Y-C1-GATE-1..6 **PASS** (roadmap status row matches §29; no active URGENT-remaining contradiction; P0A latest verdict **CLOSED**; drift classified historical or none; layer boundaries unchanged; production code **NO**).
+
+**Initiative Y status (current):** **CLOSED** — Y1–Y5 reconciled authoritative documentation surfaces; legacy audit-trail wording is non-authoritative.
+
+**Y closeout readiness (current):** **YES** (Initiative Y scope).
 
 **Production code changed:** **NO**

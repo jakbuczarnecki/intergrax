@@ -536,6 +536,7 @@ def build_runtime_execution_context_for_tests(
     metadata: Mapping[str, object] | None = None,
     request: RuntimeRequest | None = None,
     tool_gateway: ToolGateway | None = None,
+    tenant_id: str = "default",
 ) -> RuntimeExecutionContext:
     """Build a contract-valid ``RuntimeExecutionContext`` for unit tests."""
     from intergrax.contracts.execution_identity import (
@@ -559,6 +560,9 @@ def build_runtime_execution_context_for_tests(
     resolved_execution_id = (
         validate_execution_id(execution_id) if execution_id is not None else mint_execution_id()
     )
+    from intergrax.contracts.agent_run import RequestIdentity
+    from intergrax.contracts.agent_run_enums import PrincipalType
+
     return RuntimeExecutionContext(
         task_id=resolved_task_id,
         run_id=resolved_run_id,
@@ -568,6 +572,12 @@ def build_runtime_execution_context_for_tests(
         metadata=dict(metadata) if metadata is not None else {},
         request=request,
         tool_gateway=tool_gateway,
+        canonical_request_identity=RequestIdentity(
+            tenant_id=tenant_id,
+            user_id="test-user",
+            principal_type=PrincipalType.USER,
+            auth_subject="test-user",
+        ),
     )
 
 

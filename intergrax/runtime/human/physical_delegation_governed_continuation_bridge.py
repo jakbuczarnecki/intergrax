@@ -4,6 +4,10 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.execution_identity import (
+    require_active_execution_id,
+    require_active_execution_identity,
+)
 from intergrax.contracts.governed_continuation import (
     ContinuationReason,
     GovernedContinuationRequest,
@@ -32,13 +36,19 @@ def project_physical_delegation_to_governed_continuation_request(
     source_step_id: str | None = None,
 ) -> GovernedContinuationRequest:
     """Project exact physical continuation into generic governed continuation request."""
+    active_run_id, attempt_id = require_active_execution_identity()
+    execution_id = require_active_execution_id()
+    if run_id != active_run_id:
+        raise ValueError("run_id does not match active execution identity")
     evidence = continuation.governance_result.evidence
     decision = continuation.governance_result.decision
     continuation_digest = physical_delegation_governed_continuation_digest(continuation)
     return GovernedContinuationRequest(
         reason=ContinuationReason.COMPLIANCE,
         task_id=continuation.task_scope_id,
-        run_id=run_id,
+        run_id=active_run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
         source_agent_id=source_agent_id,
         source_step_id=source_step_id,
         prompt=(

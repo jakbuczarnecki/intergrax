@@ -127,7 +127,7 @@ class _UpdateShippingAddressHandler(
 def register_scenario_tools(
     registry: ToolRegistry,
     *,
-    provider_client: OrderOperationsPort,
+    order_operations: OrderOperationsPort,
 ) -> None:
     registry.register(
         _order_tool_contract(
@@ -137,7 +137,7 @@ def register_scenario_tools(
             description="Read current order facts including status and shipping address.",
             side_effects=False,
         ),
-        _OrderGetHandler(provider_client),
+        _OrderGetHandler(order_operations),
     )
     registry.register(
         _order_tool_contract(
@@ -147,7 +147,7 @@ def register_scenario_tools(
             description="Read support notes attached to an order.",
             side_effects=False,
         ),
-        _OrderGetNotesHandler(provider_client),
+        _OrderGetNotesHandler(order_operations),
     )
     registry.register(
         _order_tool_contract(
@@ -157,5 +157,5 @@ def register_scenario_tools(
             description="Update the shipping address for an order.",
             side_effects=True,
         ),
-        _UpdateShippingAddressHandler(provider_client),
+        _UpdateShippingAddressHandler(order_operations),
     )

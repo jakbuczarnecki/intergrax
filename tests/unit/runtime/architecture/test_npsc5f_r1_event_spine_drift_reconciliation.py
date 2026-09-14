@@ -83,9 +83,9 @@ def test_npsc5f_r1_event_spine_persist_before_optional_sink_on_record() -> None:
     sink = InMemoryEventSink()
     original_publish = sink.publish
 
-    def _tracking_publish(deliverable, *, priority=EventPriority.BEST_EFFORT, source_event=None):
+    def _tracking_publish(deliverable, *, priority=EventPriority.BEST_EFFORT, deadline=None):
         order.append("sink")
-        return original_publish(deliverable, priority=priority)
+        return original_publish(deliverable, priority=priority, deadline=deadline)
 
     sink.publish = _tracking_publish  # type: ignore[method-assign]
 

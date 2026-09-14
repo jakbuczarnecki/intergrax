@@ -45,8 +45,11 @@ async def test_search_longterm_uses_retrieval_service() -> None:
         trace=RetrievalTrace(),
     )
 
-    mgr = UserProfileManager(store, retrieval_service=service)
+    mgr = UserProfileManager(store, retrieval_service=service, tenant_id="tenant-ltm")
     out = await mgr.search_longterm_memory("u1", "query")
     assert out["used_longterm"] is True
     assert len(out["hits"]) == 1
     service.retrieve.assert_called_once()
+    request = service.retrieve.call_args[0][0]
+    assert request.scope is not None
+    assert request.scope.tenant_id == "tenant-ltm"

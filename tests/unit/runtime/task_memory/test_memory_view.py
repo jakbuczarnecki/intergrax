@@ -2,9 +2,7 @@
 
 import pytest
 
-from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.memory_write_policy import MemoryWritePolicy
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.task_memory import (
@@ -14,6 +12,7 @@ from intergrax.runtime.task_memory import (
     TaskMemoryCoordinator,
 )
 from intergrax.runtime.task_memory.memory_view import MemoryViewAccessDenied
+from testing_support.builder import build_runtime_execution_context_for_tests
 
 
 class _RecordingEmitter:
@@ -30,22 +29,20 @@ def _view(
     emitter=None,
     policy=None,
     tenant_id="t1",
-    task_id="task_1",
+    task_id=None,
 ):
     store = store or InMemoryTaskMemoryStore()
-    exec_ctx = RuntimeExecutionContext(
+    exec_ctx = build_runtime_execution_context_for_tests(
         task_id=task_id,
-        run_id="run_1",
         agent_id="agent_a",
-        phase=ExecutionPhase.STEP_EXECUTION,
-        event_emitter=emitter,
+        tenant_id=tenant_id,
     )
+    exec_ctx.event_emitter = emitter
+    resolved_task_id = exec_ctx.task_id
     return (
         PolicyScopedMemoryView(
             exec_ctx,
             store,
-            tenant_id=tenant_id,
-            task_id=task_id,
             access_policy=policy,
         ),
         store,
@@ -64,7 +61,7 @@ async def test_memory_view_write_read_roundtrip():
     persisted = TaskMemoryCoordinator.read(
         store,
         tenant_id="t1",
-        task_id="task_1",
+        task_id=_ctx.task_id,
         namespace="findings",
         key="vendor.a",
     )

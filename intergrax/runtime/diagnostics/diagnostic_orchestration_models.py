@@ -46,6 +46,7 @@ class DiagnosticSignalSubjectScope:
     application_id: str
     instance_id: str
     problem_signals: tuple[PlatformProblemSignal, ...] = ()
+    grouping_subject_index_token: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

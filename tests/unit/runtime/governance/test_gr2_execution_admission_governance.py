@@ -11,6 +11,7 @@ from intergrax.contracts.runtime_execution_admission import (
     RootExecutionAuthorityAdmissionDisposition,
     RootExecutionAuthorityAdmissionRequest,
 )
+from intergrax.contracts.root_execution_operation import RootExecutionOperation
 from intergrax.contracts.runtime_execution_policy_admission import (
     RootExecutionAdmissionPolicyRule,
     RuntimeExecutionPolicyAdmissionPort,
@@ -67,6 +68,7 @@ def _authorize_with_port(
             effective_authority_decision=EffectiveAuthorityDecision(
                 decision=PolicyDecision(action=PolicyAction.ALLOW, reason="collaborative"),
             ),
+            root_execution_operation=RootExecutionOperation.ROOT_AGENT,
         )
     )
     return result.disposition
@@ -96,6 +98,7 @@ def test_gr2_fail_closed_when_composition_uses_unconfigured_policy_engine() -> N
             effective_authority_decision=EffectiveAuthorityDecision(
                 decision=PolicyDecision(action=PolicyAction.ALLOW, reason="collaborative"),
             ),
+            root_execution_operation=RootExecutionOperation.ROOT_AGENT,
         )
     )
     assert result.disposition in {
@@ -111,7 +114,7 @@ def test_gr2_scope_narrowing_read_write_to_read() -> None:
             RootExecutionAdmissionPolicyRule(
                 rule_id="runtime.read_only",
                 decision=PolicyAction.ALLOW,
-                execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
+                execution_operation=RootExecutionOperation.ROOT_AGENT.policy_operation(),
                 approved_scopes=("workspace.read",),
             ),
         ),
@@ -125,6 +128,7 @@ def test_gr2_scope_narrowing_read_write_to_read() -> None:
             effective_authority_decision=EffectiveAuthorityDecision(
                 decision=PolicyDecision(action=PolicyAction.ALLOW, reason="collaborative"),
             ),
+            root_execution_operation=RootExecutionOperation.ROOT_AGENT,
         )
     )
     assert result.disposition is RootExecutionAuthorityAdmissionDisposition.ALLOWED
@@ -139,7 +143,7 @@ def test_gr2_policy_cannot_widen_authority_with_admin_scope() -> None:
                 RootExecutionAdmissionPolicyRule(
                     rule_id="runtime.admin_escape",
                     decision=PolicyAction.ALLOW,
-                    execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
+                    execution_operation=RootExecutionOperation.ROOT_AGENT.policy_operation(),
                     approved_scopes=("workspace.admin",),
                 ),
             ),
@@ -157,6 +161,7 @@ def test_gr2_policy_cannot_widen_authority_with_admin_scope() -> None:
             effective_authority_decision=EffectiveAuthorityDecision(
                 decision=PolicyDecision(action=PolicyAction.ALLOW, reason="collaborative"),
             ),
+            root_execution_operation=RootExecutionOperation.ROOT_AGENT,
         )
     )
     assert result.disposition is RootExecutionAuthorityAdmissionDisposition.DENIED
@@ -183,6 +188,7 @@ def test_gr2_composition_selects_allowing_vs_denying_adapters() -> None:
         effective_authority_decision=EffectiveAuthorityDecision(
             decision=PolicyDecision(action=PolicyAction.ALLOW, reason="collaborative"),
         ),
+        root_execution_operation=RootExecutionOperation.ROOT_AGENT,
     )
     assert (
         allow_service.authorize(request).disposition

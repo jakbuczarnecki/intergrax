@@ -27,6 +27,9 @@ from intergrax.runtime.observability.event_delivery import (
     InternalDeliveryMetrics,
     RuntimeEventExportSink,
 )
+from intergrax.runtime.observability.event_delivery.logging_post_admission_failure_observer import (
+    LoggingEventDeliveryPostAdmissionFailureObserver,
+)
 from intergrax.runtime.observability.event_delivery.export_factory import (
     ObservabilityExportSinkFactory,
 )
@@ -171,6 +174,8 @@ def resolve_application_runtime_event_delivery_wiring(
     policy = EventDeliveryPolicy(
         max_capacity=profile.bounded_event_delivery_max_capacity,
         important_wait_timeout_seconds=profile.bounded_event_delivery_important_wait_timeout_seconds,
+        critical_completion_timeout_seconds=profile.bounded_event_delivery_critical_completion_timeout_seconds,
+        drain_shutdown_timeout_seconds=profile.bounded_event_delivery_drain_shutdown_timeout_seconds,
     )
     exporter_kind_label = export_profile.exporter_kind.value
     metrics = InternalDeliveryMetrics(exporter_kind=exporter_kind_label)
@@ -180,7 +185,11 @@ def resolve_application_runtime_event_delivery_wiring(
     )
     event_export_sink = factory.create(export_profile)
     export_bridge = RuntimeEventExportSink(event_export_sink, delivery_metrics=metrics)
-    bounded = BoundedEventSink(export_bridge, policy)
+    bounded = BoundedEventSink(
+        export_bridge,
+        policy,
+        late_failure_observer=LoggingEventDeliveryPostAdmissionFailureObserver(),
+    )
     return ApplicationRuntimeEventDeliveryWiring(
         export_profile=export_profile,
         policy=policy,
@@ -199,10 +208,14 @@ def compose_runtime_event_bus(
     record_history: bool = True,
 ) -> RuntimeEventBus:
     event_sink = delivery_wiring.bounded_sink
+    critical_timeout = 5.0
+    if delivery_wiring.policy is not None:
+        critical_timeout = delivery_wiring.policy.critical_completion_timeout_seconds
     return RuntimeEventBus(
         record_history=record_history,
         event_sink=event_sink,
         delivery_metrics=delivery_wiring.delivery_metrics,
+        critical_completion_timeout_seconds=critical_timeout,
     )
 
 

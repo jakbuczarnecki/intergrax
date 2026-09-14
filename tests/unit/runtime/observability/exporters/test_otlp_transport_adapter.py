@@ -118,7 +118,8 @@ def test_flush_before_close_on_transport() -> None:
 @pytest.mark.asyncio
 async def test_transport_failure_isolated_from_runtime_export_bridge() -> None:
     class FailingTransport(OtlpTransportPort):
-        def export(self, event: RuntimeEvent) -> None:
+        def export(self, event: object) -> None:
+            _ = event
             raise OtlpTransportError("simulated otlp outage")
 
         def flush(self) -> None:

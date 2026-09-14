@@ -20,10 +20,10 @@ ResultT = TypeVar("ResultT")
 
 class Execution(Generic[RequestT, ResultT]):
     """
-    Typed developer-facing facade establishing canonical root execution.
+    Internal execution facade — not a legal production root entry (GR-2-R3 MODEL C1).
 
-    Wraps :class:`ExecutionRuntime` supplied at construction. Does not own
-    subsystem semantics, strategy selection, or global runtime state.
+    Production root starts must use :class:`~intergrax.contracts.root_execution_launch.RootExecutionLaunchPort`.
+    Wraps :class:`ExecutionRuntime` for composition/internal bridges only.
     """
 
     __slots__ = ("_runtime",)

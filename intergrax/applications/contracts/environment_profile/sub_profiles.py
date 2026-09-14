@@ -269,6 +269,14 @@ class ObservabilityProfile(BaseModel):
         default=0.05,
         ge=0.0,
     )
+    bounded_event_delivery_critical_completion_timeout_seconds: float = Field(
+        default=5.0,
+        gt=0.0,
+    )
+    bounded_event_delivery_drain_shutdown_timeout_seconds: float = Field(
+        default=30.0,
+        gt=0.0,
+    )
     event_subscriptions: list[EventSubscriptionSpec] = Field(default_factory=list)
 
     @field_validator("event_subscriptions")

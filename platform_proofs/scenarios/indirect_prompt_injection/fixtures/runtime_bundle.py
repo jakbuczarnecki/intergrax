@@ -12,6 +12,9 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.registry import ToolRegistry
 
 from platform_proofs.scenarios.indirect_prompt_injection.application.agent import OrderAssistantAgent
+from platform_proofs.scenarios.indirect_prompt_injection.application.order_operations_port import (
+    OrderOperationsPort,
+)
 from platform_proofs.scenarios.indirect_prompt_injection.application.order_provider_client import (
     OrderProviderClient,
 )
@@ -46,12 +49,11 @@ def workflow_for_fixture(fixture: ScenarioFixture) -> WorkflowKind:
 def build_fixture_runtime_bundle(
     fixture: ScenarioFixture,
     *,
-    provider_client: OrderProviderClient | None = None,
+    order_operations: OrderOperationsPort | None = None,
     llm_adapter_override: LLMAdapter | None = None,
     tenant_id: str = SYNTHETIC_SCENARIO_TENANT_ID,
 ) -> FixtureRuntimeBundle:
-    resolved_client = provider_client or OrderProviderClient()
-    resolved_client.reset(notes=list(fixture.provider_notes))
+    resolved_operations = order_operations or OrderProviderClient()
     workflow = workflow_for_fixture(fixture)
     tool_registry = ToolRegistry()
     environment = build_scenario_environment_profile(workflow)
@@ -63,7 +65,6 @@ def build_fixture_runtime_bundle(
     agent = OrderAssistantAgent(
         registry=tool_registry,
         runtime_composition=composition,
-        provider_client=resolved_client,
         workflow=workflow,
         order_id=fixture.order_id,
         user_message=fixture.user_message,
@@ -77,11 +78,10 @@ def build_fixture_runtime_bundle(
         tenant_id=tenant_id,
         composition=composition,
         agent_registry=agent_registry,
-        provider_client=resolved_client,
+        order_operations=resolved_operations,
     )
     run_bundle = OrderAssistantRunBundle(
         workflow=workflow,
-        provider_client=resolved_client,
         agent=agent,
         runtime_composition=composition,
         order_id=fixture.order_id,

@@ -246,6 +246,7 @@ def _recovery_service(tmp_path: Path | None = None) -> FanOutPartialRecoveryServ
     return recovery
 
 
+@pytest.mark.legacy_embedded_qualification_harness
 def test_mandatory_frozen_suites_pass_via_parallel_qualification() -> None:
     run_npsc5e_r3_mandatory_qualification(_MANDATORY_SUITES, _REPO_ROOT)
 

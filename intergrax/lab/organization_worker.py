@@ -11,6 +11,7 @@ from typing import Callable, Optional
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
+from intergrax.runtime.governance.execution_admission_composition import build_reference_allowing_root_execution_authority_admission
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.debug.store import open_default_task_checkpoint_persistence
@@ -90,6 +91,7 @@ def create_organization_worker_lab_app(
             build_host_task_execution(
                 nexus_loop,
                 orchestration_triggers=frozenset({ORG_WORKER_CAPABILITY}),
+                root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
             )
         ),
         verifier=create_inbound_verifier(),
@@ -99,6 +101,7 @@ def create_organization_worker_lab_app(
         host_execution=build_host_task_execution(
             nexus_loop,
             orchestration_triggers=frozenset({ORG_WORKER_CAPABILITY}),
+            root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
         ),
         checkpoint_store=checkpoint_store,
     )

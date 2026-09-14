@@ -18,6 +18,10 @@ from intergrax.contracts.autonomous_work.execution_authority import (
 )
 from intergrax.contracts.collaborative_work import EffectiveAuthorityDecision
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.contracts.root_execution_operation import (
+    RootExecutionOperation,
+    normalize_root_execution_policy_operation,
+)
 from intergrax.contracts.runtime_policy import PolicyDecision
 
 
@@ -40,6 +44,7 @@ class RootExecutionAuthorityAdmissionRequest:
     principal_id: str
     collaborative_authority_scopes: tuple[str, ...]
     effective_authority_decision: EffectiveAuthorityDecision
+    root_execution_operation: RootExecutionOperation
 
     def __post_init__(self) -> None:
         if not self.tenant_id.strip():
@@ -55,6 +60,9 @@ class RootExecutionAuthorityAdmissionRequest:
         )
         if type(self.effective_authority_decision) is not EffectiveAuthorityDecision:
             raise TypeError("effective_authority_decision must be EffectiveAuthorityDecision")
+        if type(self.root_execution_operation) is not RootExecutionOperation:
+            raise TypeError("root_execution_operation must be RootExecutionOperation")
+        normalize_root_execution_policy_operation(self.root_execution_operation)
 
 
 @dataclass(frozen=True, slots=True)

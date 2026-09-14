@@ -20,6 +20,9 @@ from testing_support.execution_qualification.coordinator import QualificationCoo
 from testing_support.execution_qualification.fake_executor import (
     FakeQualificationSuiteExecutor,
 )
+from testing_support.execution_qualification.final_semantic_pytest import (
+    profile_final_semantic_argument_sets,
+)
 from testing_support.execution_qualification.coordinator_port import (
     QualificationCoordinatorPort,
 )
@@ -121,15 +124,17 @@ class QualificationSemanticParityCertifier:
         canonical_set = canonical_leaf_pytest_argument_set(plan)
         missing = legacy_set - canonical_set
         extra = canonical_set - legacy_set
-        coverage_parity = not missing and not extra
+        allowed_semantic = profile_final_semantic_argument_sets(case.canonical_profile_id)
+        unexpected_extra = extra - allowed_semantic
+        coverage_parity = not missing and not unexpected_extra
         coverage_diag = CoverageParityDiagnostics(
             missing_in_canonical=frozenset(missing),
-            unexpected_in_canonical=frozenset(extra),
+            unexpected_in_canonical=frozenset(unexpected_extra),
         )
         if missing:
             failures.append(f"missing_in_canonical={sorted(missing)!r}")
-        if extra:
-            failures.append(f"unexpected_in_canonical={sorted(extra)!r}")
+        if unexpected_extra:
+            failures.append(f"unexpected_in_canonical={sorted(unexpected_extra)!r}")
 
         reachable = nodes_reachable_from_roots(plan)
         leaf_set = set(plan.leaf_suite_ids)

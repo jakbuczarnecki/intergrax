@@ -39,6 +39,14 @@ class MemoryImportance(Enum):
     CRITICAL = "critical"
 
 
+class UserProfileMemoryEntryNotFoundError(LookupError):
+    """Raised when a memory entry id does not exist on the user profile."""
+
+    def __init__(self, entry_id: str) -> None:
+        super().__init__(f"memory entry not found: {entry_id}")
+        self.entry_id = entry_id
+
+
 @dataclass
 class UserProfileMemoryEntry:
     """

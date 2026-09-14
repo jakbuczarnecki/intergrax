@@ -100,8 +100,19 @@ def _flat_profile(
     root_gate_id: str,
     mandatory: FrozenPytestSuiteSource,
     branch: str,
+    extra_leaves: tuple[CatalogRequiredTarget, ...] = (),
+    leaf_gate_extra_requires: Mapping[str, tuple[str, ...]] | None = None,
 ) -> CompiledCatalogProfile:
     leaves = unique_required_leaf_targets(mandatory)
+    if extra_leaves:
+        seen_args = {entry.pytest_arguments for entry in leaves}
+        merged = list(leaves)
+        for extra in extra_leaves:
+            if extra.pytest_arguments in seen_args:
+                continue
+            merged.append(extra)
+            seen_args.add(extra.pytest_arguments)
+        leaves = tuple(merged)
     suites = _build_suites_from_leaves(leaves)
     manifest = QualificationRunManifest(suites=suites)
     gate_ids: list[str] = []
@@ -113,10 +124,14 @@ def _flat_profile(
         if gate_id in gate_ids:
             continue
         gate_ids.append(gate_id)
+        requires: tuple[str, ...] = (suite_id,)
+        extra = leaf_gate_extra_requires or {}
+        if suite_id in extra:
+            requires = (suite_id, *extra[suite_id])
         gates.append(
             QualificationGateDefinition(
                 gate_id=gate_id,
-                requires=(suite_id,),
+                requires=requires,
                 declaration_index=declaration_index,
             ),
         )
@@ -296,20 +311,53 @@ def build_npsc5f_r1_profile() -> CompiledCatalogProfile:
 
 
 def build_npsc5e_r3_profile() -> CompiledCatalogProfile:
+    from testing_support.execution_qualification.catalog.expansion import (
+        CatalogRequiredTarget,
+    )
+    from testing_support.execution_qualification.final_semantic_pytest import (
+        npsc5e_r3_final_semantic_pytest_arguments,
+    )
+
     return _flat_profile(
         profile_id=NPSC5E_R3_PROFILE_ID,
         root_gate_id="npsc5e-r3.final",
         mandatory=NPSC5E_R3_FINAL_MANDATORY,
         branch="npsc5e-r3",
+        extra_leaves=(
+            CatalogRequiredTarget(
+                display_label="R3 Final semantic/freeze",
+                pytest_arguments=npsc5e_r3_final_semantic_pytest_arguments(),
+            ),
+        ),
     )
 
 
 def build_npsc5e_r2_profile() -> CompiledCatalogProfile:
+    from testing_support.execution_qualification.catalog.expansion import (
+        CatalogRequiredTarget,
+    )
+    from testing_support.execution_qualification.final_semantic_pytest import (
+        NPSC5E_R2_H2_Q1_SEMANTIC_SUITE_ID,
+        npsc5e_r2_final_semantic_pytest_arguments,
+        npsc5e_r2_h2_q1_embedded_predecessor_suite_ids,
+    )
+
     return _flat_profile(
         profile_id=NPSC5E_R2_PROFILE_ID,
         root_gate_id="npsc5e-r2.final",
         mandatory=NPSC5E_R2_FINAL_MANDATORY,
         branch="npsc5e-r2",
+        extra_leaves=(
+            CatalogRequiredTarget(
+                display_label="R2 Final semantic/freeze",
+                pytest_arguments=npsc5e_r2_final_semantic_pytest_arguments(),
+            ),
+        ),
+        leaf_gate_extra_requires={
+            NPSC5E_R2_H2_Q1_SEMANTIC_SUITE_ID: (
+                npsc5e_r2_h2_q1_embedded_predecessor_suite_ids()
+            ),
+        },
     )
 
 

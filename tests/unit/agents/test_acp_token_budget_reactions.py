@@ -28,6 +28,13 @@ from intergrax.contracts.agent_budget import (
 )
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
 from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
+    canonical_task_id_for_tests,
+)
 from intergrax.contracts.agent_run_enums import AgentRunStatus, TerminalReason
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.runtime.events.runtime_event import RuntimeEventType
@@ -36,7 +43,6 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.notifications.models import NotificationMessage
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
 def _stub_build_context(_agent: IntergraxAgent, _request: RuntimeRequest) -> RuntimeContext:
@@ -218,10 +224,12 @@ async def test_degrade_model_forces_cheapest_allowed_model() -> None:
 @pytest.mark.unit
 @pytest.mark.gate
 async def test_budget_threshold_emits_runtime_event() -> None:
+    run_seed = "run-1"
+    task_seed = "task-1"
     kernel_ctx = StepKernelContext(
         agent_id="demo",
-        run_id="run-1",
-        task_id="task-1",
+        run_id=canonical_run_id_for_tests(run_seed),
+        task_id=canonical_task_id_for_tests(task_seed),
         budget_reaction=BudgetReactionProfile(
             warn_threshold_ratio=0.50,
             on_agent_limit_exceeded=BudgetExceededReaction.DEGRADE_MODEL,
@@ -237,7 +245,8 @@ async def test_budget_threshold_emits_runtime_event() -> None:
             environment=AcpTokenUsage(tokens_total=12, tokens_limit=20),
         ),
     )
-    await maybe_emit_budget_threshold(step_ctx, kernel_ctx)
+    with canonical_execution_identity_scope(run_seed):
+        await maybe_emit_budget_threshold(step_ctx, kernel_ctx)
     assert kernel_ctx.budget_degrade_active is True
     assert any(
         event.event_type == RuntimeEventType.BUDGET_THRESHOLD for event in kernel_ctx.events

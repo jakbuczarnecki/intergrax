@@ -14,9 +14,6 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskContext
 from intergrax.tools.registry import ToolRegistry
 
-from platform_proofs.scenarios.indirect_prompt_injection.application.order_provider_client import (
-    OrderProviderClient,
-)
 from platform_proofs.scenarios.indirect_prompt_injection.application.order_workflow import (
     execute_order_workflow,
     tool_trace_to_dict,
@@ -39,14 +36,12 @@ class OrderAssistantAgent(Agent):
         *,
         registry: ToolRegistry,
         runtime_composition: ScenarioRuntimeComposition,
-        provider_client: OrderProviderClient,
         workflow: WorkflowKind,
         order_id: str = "48291",
         user_message: str = "",
     ) -> None:
         self._registry = registry
         self._runtime_composition = runtime_composition
-        self._provider_client = provider_client
         self._workflow = workflow
         self._order_id = order_id
         self._user_message = user_message
@@ -55,7 +50,6 @@ class OrderAssistantAgent(Agent):
         return OrderAssistantAgent(
             registry=self._registry,
             runtime_composition=self._runtime_composition,
-            provider_client=self._provider_client,
             workflow=self._workflow,
             order_id=order_id,
             user_message=user_message,

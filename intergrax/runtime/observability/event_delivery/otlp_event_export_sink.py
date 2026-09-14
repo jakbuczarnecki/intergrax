@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.event_delivery import ObservabilityExportPayload
 from intergrax.contracts.observability_export import OtlpTransportError, OtlpTransportPort
-from intergrax.runtime.events.runtime_event import RuntimeEvent
-
+from intergrax.runtime.observability.event_delivery.observability_export_payload_mapping import (
+    envelope_from_observability_export_payload,
+)
 
 class OtlpEventExportSink:
     """
@@ -20,11 +22,12 @@ class OtlpEventExportSink:
         self._transport = transport
         self._closed = False
 
-    async def export(self, event: RuntimeEvent) -> None:
+    async def export(self, payload: ObservabilityExportPayload) -> None:
         if self._closed or self._transport is None:
             return
+        envelope = envelope_from_observability_export_payload(payload)
         try:
-            self._transport.export(event)
+            self._transport.export(envelope)
         except OtlpTransportError:
             raise
         except Exception as exc:

@@ -6,29 +6,25 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.task_memory import InMemoryTaskMemoryStore, PolicyScopedMemoryView
 from intergrax.runtime.task_memory.memory_view import MemoryViewAccessDenied
+from testing_support.builder import build_runtime_execution_context_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def _view(*, hook_registry: HookRegistry | None = None) -> PolicyScopedMemoryView:
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task_hook",
-        run_id="run_hook",
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed="hook",
         agent_id="agent_hook",
-        phase=ExecutionPhase.STEP_EXECUTION,
+        tenant_id="tenant-hook",
     )
     return PolicyScopedMemoryView(
         exec_ctx,
         InMemoryTaskMemoryStore(),
-        tenant_id="tenant-hook",
-        task_id="task_hook",
         hook_registry=hook_registry,
     )
 

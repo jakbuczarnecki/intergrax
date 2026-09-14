@@ -10,6 +10,9 @@ from typing import Protocol
 from intergrax.contracts.enterprise_reliability.diagnostics.emitter import (
     ExternalEffectReliabilityDiagnosticEmitter,
 )
+from intergrax.contracts.enterprise_reliability.diagnostics.grouping import (
+    ExternalEffectReliabilityProblemGroupingStrategy,
+)
 from intergrax.contracts.enterprise_reliability.diagnostics.observation import (
     ExternalEffectReliabilityObservation,
 )
@@ -18,6 +21,16 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticOrchestrationRequest,
     DiagnosticOrchestrationResult,
     DiagnosticSignalSubjectScope,
+)
+from intergrax.contracts.enterprise_reliability.diagnostics.grouping import (
+    reliability_diagnostic_occurrence_instance_id,
+)
+from intergrax.runtime.diagnostics.reliability.reliability_case_default_grouping_strategy import (
+    ReliabilityCaseDefaultObservationGroupingStrategy,
+    STRATEGY_ID as ERL_RELIABILITY_DEFAULT_GROUPING_STRATEGY_ID,
+)
+from intergrax.runtime.diagnostics.reliability.reliability_observation_grouping_adapter import (
+    grouping_subject_index_token_for_handoff,
 )
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingStrategyId
 from intergrax.runtime.diagnostics.reliability.observation_to_problem_signal import (
@@ -48,9 +61,11 @@ class ReliabilityDiagnosticBridge:
         orchestration: ReliabilityDiagnosticOrchestrationPort,
         *,
         grouping_strategy_id: ProblemGroupingStrategyId,
+        observation_grouping: ExternalEffectReliabilityProblemGroupingStrategy,
     ) -> None:
         self._orchestration = orchestration
         self._grouping_strategy_id = grouping_strategy_id
+        self._observation_grouping = observation_grouping
         self._logger = IntergraxLogging.get_logger(__name__, component="diagnostics")
 
     def on_observation(self, observation: ExternalEffectReliabilityObservation) -> None:
@@ -62,8 +77,15 @@ class ReliabilityDiagnosticBridge:
             scope = DiagnosticSignalSubjectScope(
                 tenant_id=handoff.tenant_id,
                 application_id=ERL_RELIABILITY_DIAGNOSTIC_SUBJECT_APPLICATION_ID,
-                instance_id=handoff.reliability_case_id,
+                instance_id=reliability_diagnostic_occurrence_instance_id(
+                    reliability_case_id=handoff.reliability_case_id,
+                    observation_id=handoff.observation_id,
+                ),
                 problem_signals=(signal,),
+                grouping_subject_index_token=grouping_subject_index_token_for_handoff(
+                    handoff,
+                    self._observation_grouping,
+                ),
             )
             request = DiagnosticOrchestrationRequest(
                 tenant_id=handoff.tenant_id,
@@ -113,11 +135,19 @@ class RuntimeExternalEffectReliabilityDiagnosticEmitter:
 def build_reliability_diagnostic_emitter(
     orchestration: ReliabilityDiagnosticOrchestrationPort,
     *,
-    grouping_strategy_id: ProblemGroupingStrategyId,
+    grouping_strategy_id: ProblemGroupingStrategyId | None = None,
+    observation_grouping: ExternalEffectReliabilityProblemGroupingStrategy | None = None,
 ) -> ExternalEffectReliabilityDiagnosticEmitter:
+    resolved_strategy_id = (
+        grouping_strategy_id or ERL_RELIABILITY_DEFAULT_GROUPING_STRATEGY_ID
+    )
+    resolved_observation_grouping = (
+        observation_grouping or ReliabilityCaseDefaultObservationGroupingStrategy()
+    )
     bridge = ReliabilityDiagnosticBridge(
         orchestration,
-        grouping_strategy_id=grouping_strategy_id,
+        grouping_strategy_id=resolved_strategy_id,
+        observation_grouping=resolved_observation_grouping,
     )
     return RuntimeExternalEffectReliabilityDiagnosticEmitter(bridge)
 

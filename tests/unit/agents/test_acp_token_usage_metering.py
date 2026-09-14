@@ -23,7 +23,13 @@ from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContex
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
+    canonical_task_id_for_tests,
+)
 
 
 def _stub_build_context(_agent: IntergraxAgent, _request: RuntimeRequest) -> RuntimeContext:
@@ -131,9 +137,11 @@ async def test_kernel_increments_budget_after_llm_drain() -> None:
         metadata={},
         llm_router=router,
     )
+    meter_seed = "run-meter-1"
     kernel_ctx = StepKernelContext(
         agent_id="demo",
-        run_id="run-meter-1",
+        run_id=canonical_run_id_for_tests(meter_seed),
+        task_id=canonical_task_id_for_tests(meter_seed),
         allow_permissive_missing_policy=True,
         state_root={
             ACP_STATE_KEY: {
@@ -154,7 +162,8 @@ async def test_kernel_increments_budget_after_llm_drain() -> None:
         ),
     )
     outcome = StepOutcome.continue_with({"phase": "ok"})
-    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    with canonical_execution_identity_scope(meter_seed):
+        record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
     assert record.outcome_applied is True
     assert record.step_record is not None
     assert record.step_record.llm_calls

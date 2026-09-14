@@ -12,18 +12,12 @@ from testing_support.execution_qualification.catalog.mandatory_sources import (
 )
 from testing_support.npsc5f_r4_regression_matrix import flatten_regression_targets
 
-# Exclude orchestrators and nested ``uv run pytest`` / ruff / pyright fan-out tests.
-_PYTEST_MATRIX_KEXPR = (
-    "not test_mandatory_frozen_suite_passes and "
-    "not test_mandatory_frozen_suites_pass_via_parallel_qualification and "
-    "not test_mandatory_regression_matrix_passes and "
-    "not test_r4_mandatory_regression_matrix and "
-    "not test_npsc5f_final_mandatory_regression_matrix_passes and "
-    "not test_pre_existing_cancellation_fixture_same_root_cause and "
-    "not test_pre_existing_partial_results_fixture_unchanged_baseline and "
-    "not test_ruff_recovery_surfaces_and_final_test and "
-    "not test_pyright_recovery_surfaces_and_final_test"
+from testing_support.execution_qualification.embedded_harness_kexpr import (
+    CANONICAL_FINAL_EMBEDDED_HARNESS_KEXPR,
 )
+
+# Exclude orchestrators and nested ``uv run pytest`` / ruff / pyright fan-out tests.
+_PYTEST_MATRIX_KEXPR = CANONICAL_FINAL_EMBEDDED_HARNESS_KEXPR
 
 MANDATORY_REGRESSION_SUITES: tuple[tuple[str, list[str]], ...] = (
     NPSC5F_FINAL_MANDATORY_REGRESSION_SUITES

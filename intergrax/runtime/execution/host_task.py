@@ -26,6 +26,11 @@ from intergrax.contracts.execution_capacity_admission import ExecutionCapacityAd
 from intergrax.contracts.execution_failure_evidence import ExecutionFailureEvidenceRecorder
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 from intergrax.contracts.recovery_admission import RecoveryAdmissionPort
+from intergrax.contracts.root_execution_launch import (
+    RootExecutionLaunchDisposition,
+    RootExecutionLaunchRequest,
+)
+from intergrax.contracts.runtime_execution_admission import RootExecutionAuthorityAdmissionPort
 from intergrax.runtime.execution.agentic import AgentEnginePort
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.execution_terminal.persistence import (
@@ -44,6 +49,22 @@ from intergrax.runtime.execution.active_execution_resume import (
     reset_active_execution_resume_plan,
 )
 from intergrax.runtime.execution.orchestration import resolve_root_task_identity
+from intergrax.runtime.execution.host_root_execution_intake import (
+    HostFacadeRootExecutionIntake,
+    HostRootExecutionIntakePayload,
+)
+from intergrax.runtime.execution.host_root_launch_evidence import (
+    host_principal_id,
+    host_upstream_collaborative_scopes,
+    host_upstream_effective_authority_decision,
+    host_workspace_id,
+)
+from intergrax.runtime.execution.root_execution_operation_mapping import (
+    root_execution_operation_from_request,
+)
+from intergrax.runtime.governance.default_root_execution_launcher import (
+    DefaultRootExecutionLauncher,
+)
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionOptions,
@@ -256,12 +277,33 @@ class HostTaskExecution:
     _pipeline_capability_suffix: str
     _ledger_factory: ExecutionBudgetLedgerFactory | None
     _run_budget: RunBudget | None
+    _root_authority_admission: RootExecutionAuthorityAdmissionPort
     _terminal_publisher: HostTaskTerminalPublisher | None = None
     _revision_admission: EffectiveProfileRevisionAdmissionPort | None = None
     _execution_lineage_persistence: ExecutionLineagePersistence | None = None
     _failure_evidence_recorder: ExecutionFailureEvidenceRecorder | None = None
     _recovery_admission: RecoveryAdmissionPort | None = None
     _execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None
+
+    def _launcher_for_task(
+        self,
+        task: Task,
+        *,
+        execution_capacity_admission: ExecutionCapacityAdmissionPort | None,
+    ) -> DefaultRootExecutionLauncher[
+        HostRootExecutionIntakePayload[ExecutionRequest[TaskExecutionInput, TaskResult]],
+        TaskResult,
+    ]:
+        intake = HostFacadeRootExecutionIntake(
+            self._execution_runtime_for_task(
+                task,
+                execution_capacity_admission=execution_capacity_admission,
+            ),
+        )
+        return DefaultRootExecutionLauncher(
+            root_authority_admission=self._root_authority_admission,
+            execution_intake=intake,
+        )
 
     def _execution_runtime_for_task(
         self,
@@ -361,17 +403,17 @@ class HostTaskExecution:
                 )
             elif task.runtime.orchestration.runtime_checkpoint is None:
                 apply_runtime_checkpoint_to_task(task, resume_checkpoint.runtime)
-        options = RootExecutionOptions(
-            authority=resolve_root_parent_execution_authority(task.execution_authority),
-            tenant_id=task.tenant_id,
-            run_id=identity.run_id,
-            attempt_id=identity.attempt_id,
-            execution_id=identity.execution_id,
-            task_id=task.task_id,
-            segment_predecessor_root_execution_id=segment_predecessor_root_execution_id,
-        )
         if self._revision_admission is not None:
-            root_context = resolve_root_execution_context(options)
+            preview_options = RootExecutionOptions(
+                authority=resolve_root_parent_execution_authority(task.execution_authority),
+                tenant_id=task.tenant_id,
+                run_id=identity.run_id,
+                attempt_id=identity.attempt_id,
+                execution_id=identity.execution_id,
+                task_id=task.task_id,
+                segment_predecessor_root_execution_id=segment_predecessor_root_execution_id,
+            )
+            root_context = resolve_root_execution_context(preview_options)
             task = self._revision_admission.admit_root_execution(
                 tenant_id=task.tenant_id,
                 execution_id=root_context.execution_id,
@@ -398,17 +440,59 @@ class HostTaskExecution:
             runtime_capacity = None
         await ActiveTaskRegistry.register(task, identity.run_id)
         try:
-            execution = Execution(
-                self._execution_runtime_for_task(
-                    task,
-                    execution_capacity_admission=runtime_capacity,
+            if restore_existing_execution:
+                continuation_options = RootExecutionOptions(
+                    authority=resolve_root_parent_execution_authority(task.execution_authority),
+                    tenant_id=task.tenant_id,
+                    run_id=identity.run_id,
+                    attempt_id=identity.attempt_id,
+                    execution_id=identity.execution_id,
+                    task_id=task.task_id,
+                    segment_predecessor_root_execution_id=segment_predecessor_root_execution_id,
+                )
+                execution = Execution(
+                    self._execution_runtime_for_task(
+                        task,
+                        execution_capacity_admission=runtime_capacity,
+                    ),
+                )
+                return await execution.execute(
+                    request,
+                    options=continuation_options,
+                    held_root_capacity_permit=held_root_capacity,
+                )
+            launcher = self._launcher_for_task(
+                task,
+                execution_capacity_admission=runtime_capacity,
+            )
+            launch_result = await launcher.launch(
+                RootExecutionLaunchRequest(
+                    tenant_id=task.tenant_id,
+                    workspace_id=host_workspace_id(task),
+                    principal_id=host_principal_id(task),
+                    root_execution_operation=root_execution_operation_from_request(request),
+                    collaborative_authority_scopes=host_upstream_collaborative_scopes(task),
+                    effective_authority_decision=host_upstream_effective_authority_decision(),
+                    payload=HostRootExecutionIntakePayload(
+                        execution_request=request,
+                        held_root_capacity_permit=held_root_capacity,
+                    ),
+                    run_id=identity.run_id,
+                    attempt_id=identity.attempt_id,
+                    execution_id=identity.execution_id,
+                    task_id=task.task_id,
+                    segment_predecessor_root_execution_id=segment_predecessor_root_execution_id,
                 ),
             )
-            return await execution.execute(
-                request,
-                options=options,
-                held_root_capacity_permit=held_root_capacity,
-            )
+            if launch_result.disposition is not RootExecutionLaunchDisposition.LAUNCHED:
+                return TaskResult(
+                    task_id=task.task_id,
+                    run_id=identity.run_id,
+                    state=TaskState.FAILED,
+                    answer=f"root execution admission {launch_result.disposition.value}",
+                )
+            assert launch_result.intake_result is not None
+            return launch_result.intake_result.result
         finally:
             if resume_plan_token is not None:
                 reset_active_execution_resume_plan(resume_plan_token)

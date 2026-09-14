@@ -4,14 +4,9 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
-from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from typing import Generic, Protocol, TypeVar
 from uuid import uuid4
-
-from pydantic import BaseModel
 
 from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionCapabilities,
@@ -22,6 +17,7 @@ from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionRequest,
     delegated_failure_outcome,
     delegated_success_outcome,
+    digest_delegated_execution_payload,
     digest_delegated_execution_request,
     mint_delegated_provider_invocation,
     validate_provider_identity,
@@ -99,7 +95,7 @@ class LocalDelegatedExecutionProvider(
         request: DelegatedExecutionRequest[RequestT],
     ) -> DelegatedExecutionOutcome[ResultT]:
         started_at = datetime.now(timezone.utc)
-        payload_digest = _digest_payload(request.payload)
+        payload_digest = digest_delegated_execution_payload(request.payload)
         request_digest = digest_delegated_execution_request(
             context=request.context,
             operation=request.operation,
@@ -168,7 +164,7 @@ class LocalDelegatedExecutionProvider(
             invocation_id=invocation_id,
             status=ProviderInvocationStatus.SUCCEEDED,
             completed_at=completed_at,
-            response_digest=_digest_payload(result),
+            response_digest=digest_delegated_execution_payload(result),
             provider_request_id=invocation.provider_request_id,
             provider_operation_id=invocation.provider_operation_id,
         )
@@ -179,38 +175,10 @@ class LocalDelegatedExecutionProvider(
         )
 
 
-def _digest_payload(payload: object) -> str:
-    coerced = _coerce_payload_value(payload)
-    try:
-        encoded = json.dumps(coerced, sort_keys=True)
-    except (TypeError, ValueError) as exc:
-        raise DelegatedExecutionContractError(
-            "payload is not serializable for delegated execution digest",
-        ) from exc
-    return "sha256:" + hashlib.sha256(encoded.encode("utf-8")).hexdigest()
-
-
-def _coerce_payload_value(value: object) -> object:
-    if value is None or isinstance(value, (bool, int, float, str)):
-        return value
-    if isinstance(value, dict):
-        coerced: dict[str, object] = {}
-        for key, item in value.items():
-            if not isinstance(key, str):
-                raise DelegatedExecutionContractError(
-                    "payload map keys must be strings for delegated execution digest",
-                )
-            coerced[key] = _coerce_payload_value(item)
-        return coerced
-    if isinstance(value, (list, tuple)):
-        return [_coerce_payload_value(item) for item in value]
-    if isinstance(value, BaseModel):
-        return value.model_dump(mode="json")
-    if is_dataclass(value):
-        return _coerce_payload_value(asdict(value))
-    raise DelegatedExecutionContractError(
-        f"payload type {type(value).__name__} is not supported for delegated execution digest",
-    )
+__all__ = [
+    "LocalDelegatedExecutionDelegate",
+    "LocalDelegatedExecutionProvider",
+]
 
 
 def _failed_outcome(

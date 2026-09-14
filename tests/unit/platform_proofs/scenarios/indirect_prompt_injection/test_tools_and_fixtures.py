@@ -33,7 +33,7 @@ def test_tool_contracts_registered_with_expected_side_effects() -> None:
     registry = ToolRegistry()
     client = InProcessOrderProviderClient()
     client.reset(notes=[OrderProviderNote(note_id="n1", content="hello")])
-    register_scenario_tools(registry, provider_client=client)
+    register_scenario_tools(registry, order_operations=client)
 
     get_contract = registry.get(TOOL_ORDER_GET).contract
     notes_contract = registry.get(TOOL_ORDER_GET_NOTES).contract
@@ -72,7 +72,7 @@ def test_read_tools_execute_via_registry_handler() -> None:
     registry = ToolRegistry()
     client = InProcessOrderProviderClient()
     client.reset(notes=[OrderProviderNote(note_id="n1", content="note")])
-    register_scenario_tools(registry, provider_client=client)
+    register_scenario_tools(registry, order_operations=client)
     handler = registry.get(TOOL_ORDER_GET).handler
     result = handler.execute(
         ToolExecutionRequest(

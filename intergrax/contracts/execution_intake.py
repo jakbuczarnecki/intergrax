@@ -13,9 +13,11 @@ from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
+    TaskId,
     validate_attempt_id,
     validate_execution_id,
     validate_run_id,
+    validate_task_id,
 )
 
 PayloadT = TypeVar("PayloadT")
@@ -52,6 +54,9 @@ class CanonicalExecutionIntakeRequest(Generic[PayloadT]):
     tenant_id: str
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
+    execution_id: ExecutionId | None = None
+    task_id: TaskId | None = None
+    segment_predecessor_root_execution_id: ExecutionId | None = None
 
     def __post_init__(self) -> None:
         if type(self.trusted_parent_execution_authority) is not ParentExecutionAuthority:
@@ -64,6 +69,12 @@ class CanonicalExecutionIntakeRequest(Generic[PayloadT]):
             validate_run_id(self.run_id)
         if self.attempt_id is not None:
             validate_attempt_id(self.attempt_id)
+        if self.execution_id is not None:
+            validate_execution_id(self.execution_id)
+        if self.task_id is not None:
+            validate_task_id(self.task_id)
+        if self.segment_predecessor_root_execution_id is not None:
+            validate_execution_id(self.segment_predecessor_root_execution_id)
 
 
 @dataclass(frozen=True, slots=True)

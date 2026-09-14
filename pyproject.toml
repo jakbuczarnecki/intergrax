@@ -393,6 +393,7 @@ markers = [
   "decision_e2e: Decision System Docker/production qualification (DS-E2E); requires INTERGRAX_DECISION_E2E_QUALIFICATION=1.",
   "docker: Tests requiring Docker daemon.",
   "slow: Long-running qualification or soak tests.",
+  "legacy_embedded_qualification_harness: Legacy standalone mandatory matrix re-execution; excluded from canonical catalog leaves.",
   "external_provider: Tests requiring real external model provider credentials.",
   "sandbox_provider: Tests requiring a real hosted sandbox provider substrate (E2B, Modal, Daytona).",
 ]

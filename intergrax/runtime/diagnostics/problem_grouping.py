@@ -37,6 +37,7 @@ from intergrax.runtime.diagnostics.signal_diagnostic_assessment import (
     SignalDiagnosticAssessment,
     SignalDiagnosticFinding,
 )
+from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
 
 if TYPE_CHECKING:
     from intergrax.runtime.diagnostics.problem_grouping_features import (
@@ -63,18 +64,24 @@ class ProblemGroupingBasisKind(StrEnum):
     """Typed discriminator for strategy-specific grouping evidence."""
 
     DETERMINISTIC = "deterministic"
+    RELIABILITY_CASE = "reliability_case"
     SEMANTIC = "semantic"
     ML = "ml"
     LLM = "llm"
     HYBRID = "hybrid"
 
 
-_METHOD_TO_BASIS_KIND: dict[ProblemGroupingMethod, ProblemGroupingBasisKind] = {
-    ProblemGroupingMethod.DETERMINISTIC: ProblemGroupingBasisKind.DETERMINISTIC,
-    ProblemGroupingMethod.SEMANTIC: ProblemGroupingBasisKind.SEMANTIC,
-    ProblemGroupingMethod.ML: ProblemGroupingBasisKind.ML,
-    ProblemGroupingMethod.LLM: ProblemGroupingBasisKind.LLM,
-    ProblemGroupingMethod.HYBRID: ProblemGroupingBasisKind.HYBRID,
+_ALLOWED_BASIS_KINDS_BY_METHOD: dict[ProblemGroupingMethod, frozenset[ProblemGroupingBasisKind]] = {
+    ProblemGroupingMethod.DETERMINISTIC: frozenset(
+        {
+            ProblemGroupingBasisKind.DETERMINISTIC,
+            ProblemGroupingBasisKind.RELIABILITY_CASE,
+        },
+    ),
+    ProblemGroupingMethod.SEMANTIC: frozenset({ProblemGroupingBasisKind.SEMANTIC}),
+    ProblemGroupingMethod.ML: frozenset({ProblemGroupingBasisKind.ML}),
+    ProblemGroupingMethod.LLM: frozenset({ProblemGroupingBasisKind.LLM}),
+    ProblemGroupingMethod.HYBRID: frozenset({ProblemGroupingBasisKind.HYBRID}),
 }
 
 
@@ -249,6 +256,7 @@ class ProblemGroupingSubject:
     subject_ref: ProblemGroupingSubjectRef
     findings: tuple[ProblemGroupingSubjectFinding, ...]
     limitations: tuple[ProblemGroupingSubjectLimitation, ...]
+    grouping_subject_index_token: str | None = None
 
     @property
     def tenant_id(self) -> str:
@@ -367,6 +375,8 @@ class ProblemGroupingAssessmentInput:
     assessment: DiagnosticAssessment | None = None
     signal_assessment: SignalDiagnosticAssessment | None = None
     feature_source_facts: ProblemGroupingFeatureSourceFacts | None = None
+    grouping_subject_index_token: str | None = None
+    signal_source_signals: tuple[PlatformProblemSignal, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -380,6 +390,7 @@ class ProblemGroupingInput:
 
     subject: ProblemGroupingSubject
     features: ProblemGroupingFeatureSet | None = None
+    signal_source_signals: tuple[PlatformProblemSignal, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -581,6 +592,8 @@ def normalize_assessment(assessment: DiagnosticAssessment) -> ProblemGroupingSub
 
 def normalize_signal_assessment(
     assessment: SignalDiagnosticAssessment,
+    *,
+    grouping_subject_index_token: str | None = None,
 ) -> ProblemGroupingSubject:
     """Map one signal DiagnosticAssessment to a grouping subject."""
     return ProblemGroupingSubject(
@@ -593,6 +606,7 @@ def normalize_signal_assessment(
             _normalize_signal_finding(finding) for finding in assessment.findings
         ),
         limitations=(),
+        grouping_subject_index_token=grouping_subject_index_token,
     )
 
 
@@ -736,7 +750,10 @@ def _normalize_and_validate_inputs(
                 raise ProblemGroupingIntegrityError(
                     "grouping input cannot include both assessment and signal_assessment",
                 )
-            subject = normalize_signal_assessment(assessment_input.signal_assessment)
+            subject = normalize_signal_assessment(
+                assessment_input.signal_assessment,
+                grouping_subject_index_token=assessment_input.grouping_subject_index_token,
+            )
             source_facts = None
         elif assessment_input.assessment is not None:
             assessment = assessment_input.assessment
@@ -770,7 +787,13 @@ def _normalize_and_validate_inputs(
                 subject,
                 source_facts=source_facts,
             )
-        inputs.append(ProblemGroupingInput(subject=subject, features=features))
+        inputs.append(
+            ProblemGroupingInput(
+                subject=subject,
+                features=features,
+                signal_source_signals=assessment_input.signal_source_signals,
+            ),
+        )
 
     return tuple(inputs)
 
@@ -1054,8 +1077,8 @@ def _validate_basis_coherence(
         raise ProblemGroupingIntegrityError(
             "candidate provenance basis must implement ProblemGroupingBasis"
         )
-    expected_kind = _METHOD_TO_BASIS_KIND[method]
-    if basis.kind != expected_kind:
+    expected_kinds = _ALLOWED_BASIS_KINDS_BY_METHOD[method]
+    if basis.kind not in expected_kinds:
         raise ProblemGroupingIntegrityError(
             "candidate provenance basis kind does not match strategy method"
         )

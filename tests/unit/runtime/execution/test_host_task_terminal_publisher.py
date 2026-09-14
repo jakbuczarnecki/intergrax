@@ -69,6 +69,7 @@ def _build_host_task_execution(
         _ledger_factory=execution._ledger_factory,
         _run_budget=execution._run_budget,
         _terminal_publisher=terminal_publisher,
+        _root_authority_admission=execution._root_authority_admission,
     )
 
 
@@ -95,6 +96,7 @@ def test_host_task_execution_has_terminal_publisher_field_only() -> None:
     field_names = {field.name for field in fields(HostTaskExecution)}
     assert "_terminal_publisher" in field_names
     assert "_revision_admission" in field_names
+    assert "_root_authority_admission" in field_names
     assert "_nexus_loop" not in field_names
     assert "nexus_loop" not in field_names
 

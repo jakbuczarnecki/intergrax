@@ -274,7 +274,7 @@ These invariants must be reflected in canonical documentation, code, conformance
 | F | Canonical ToolRuntime pipeline | CURRENT / PARTIAL | Tools / ToolRuntime | safety + convergence |
 | G | Runtime credentials and secret references | PARTIAL | security/secrets/integrations | provider seam + late resolution |
 | H | Execution sandbox and isolation | CURRENT / PARTIAL | runtime sandbox + security + execution | convergence |
-| I | Subagent and external-agent providers | PARTIAL | `DelegatedExecutionProvider` + UER | P2.1-S2 adoption (not Nexus public API) |
+| I | Subagent and external-agent providers | PARTIAL | `DelegatedExecutionProvider` + UER | P2.1-S2A/S2B CLOSED; remaining P2.1-S2 adoption slices |
 | J | Background Execution control | CURRENT / PARTIAL | Background Tasks + UER | convergence + DX |
 | K | Verified external event intake | PARTIAL | interactions/integrations + UER | generalization + durability |
 | L | Artifacts, attachments, spill | PARTIAL | artifacts/storage + CE + tools | consolidation |
@@ -556,11 +556,19 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S1 — `DelegatedExecutionProvider` contracts + `LocalDelegatedExecutionProvider` = CLOSED.**
 
-Contract: `intergrax/contracts/delegated_execution_provider.py`  
-Reference provider: `intergrax/runtime/execution/delegated_execution/local_provider.py`  
-Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`
+**P2.1-S2A — production adoption via `DelegatedExecutionService` + child `ExecutionBoundary` dispatch = CLOSED** (CREATE/DELEGATE path only).
 
-## Remaining work (P2.1-S2 — adoption, not new seam)
+**P2.1-S2B — capability-gated provider-native cancel/interrupt control propagation = CLOSED** (control plane only; canonical Execution lifecycle unchanged).
+
+**P2.1-S2B-C2 — authoritative S2A invocation binding issuance = CLOSED** (Execution-owned dispatch enriches outcomes with platform-issued ``DelegatedExecutionInvocationBinding``; no durable registry).
+
+**P2.1-S2B = CLOSED** (S2A adoption + S2B control + C1 correlation + C2 authoritative binding issuance).
+
+**P2.1-S2 = OPEN** (S2C durability / status / continuation next).
+
+Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`
+
+## Remaining work (P2.1-S2 — adoption slices after S2A, not new seam)
 
 Integrate external/subagent providers **through the frozen Execution Engine boundary** (child Execution admission, authority/budget inheritance). Do **not** route public delegation through Nexus APIs or Nexus-specific consumer contracts.
 
@@ -989,17 +997,19 @@ Capability descriptors should include:
 
 **Status:** **CLOSED** (2026-09-14) — **Y1–Y5 documentation synchronization complete.** **Y1:** frozen Execution CURRENT sync (UEA, UER, `NEXUS_EXECUTION_FLOW.md`, hub registry). **Y2:** Observability + Diagnostics primary hubs. **Y3:** Background Tasks + UER extended satellite + maintainer adoption split. **Y4:** public/community + technical maps, `ARCHITECTURE_OVERVIEW.md`, README execution/decision wording. **Y5:** deep Decision System / Verification / Deliberation maturity + Nexus cross-refs, maintainer verification qualification row, flagship companion alt text, Nexus→Decision neighbor row, P0A Y5 addendum.
 
+**Closed semantics:** **Y1–Y5** reconciled the active authoritative documentation surfaces covered by Initiative Y. **Remaining active authoritative documentation drift (Initiative Y scope):** **NONE**. **Remaining legacy/historical text** in audit addenda, ADR/index phrases, SVG subcaptions, and pre-closeout P0A inventories is **non-authoritative** and does not represent CURRENT platform architecture (new drift after Y closeout is out of Initiative Y scope).
+
 **Historical-only drift (non-blocking):** legacy ADR/index phrases, SVG diagram subcaptions (e.g. deliberation budget line), `PLATFORM_FOUNDATION.md` agent-in-Nexus composition shorthand — not used as CURRENT decision authority.
 
-## Priority (post EE1)
+## Historical P0A re-baseline context (pre-Y1 — audit inventory)
 
-**URGENT (remaining):** satellites and non-primary domains (UER satellites, Background Tasks, Tools, Skills, public docs, etc.) may still drift from frozen Execution reality. **OBSERVABILITY.md** and **DIAGNOSTICS.md** primary hubs were re-baselined in **Y2**; other pairs remain on the P0A list below.
+**Historical (EE1 / pre-Y1):** the P0A pair list below scoped **Y1–Y5** work. It is **not** an open backlog after closeout. **OBSERVABILITY.md** and **DIAGNOSTICS.md** primary hubs were re-baselined in **Y2**; UER satellites, Background Tasks, Tools, Skills, public maps, Decision deep docs, and maintainer rows were addressed in **Y3–Y5** per P0A addenda.
 
-## P0A documentation re-baseline
+## P0A documentation re-baseline (historical inventory — superseded by Y1–Y5)
 
-The repository contains multiple cases where older CURRENT documentation lags behind shipped runtime code and enterprise qualification.
+Historical P0A recorded cases where older CURRENT documentation lagged behind shipped runtime code and enterprise qualification. Initiative Y executed the synchronization process below.
 
-Before code implementation begins:
+Historical process (pre-closeout):
 
 1. Re-audit current code at HEAD.
 2. Update stale CURRENT sections in canonical architecture documents.
@@ -1007,7 +1017,7 @@ Before code implementation begins:
 4. Mark implemented milestones as CURRENT/DONE rather than asking future sessions to reimplement them.
 5. Ensure cross-references do not contradict code reality.
 
-Priority documents include:
+Historical priority document inventory (Y1–Y5 scope — **reconciled**):
 
 - UEA/UER,
 - UER satellites,
@@ -1023,9 +1033,11 @@ Priority documents include:
 - Platform Plugins,
 - Governance/HITL.
 
-Gate:
+Historical gate (P0A / pre-Y closeout):
 
 > No implementation session may rely on a canonical CURRENT statement known to conflict with current code.
+
+Initiative Y closeout affirms authoritative surfaces in this inventory were synchronized at Y1–Y5 HEAD evidence; the gate remains a **standing platform rule** for **future** doc/code drift, not unfinished Y work.
 
 ---
 
@@ -1467,7 +1479,7 @@ Profile resolution, revision pinning, capability validation, inspection/health p
 
 # 44. P2 — Delegation, background UX, event intake, artifacts, compaction
 
-1. **P2.1-S2** — External/subagent provider **adoption** through frozen Execution boundary (`DelegatedExecutionProvider` foundation closed in P2.1-S1).
+1. **P2.1-S2** — Remaining external/subagent provider **adoption** slices (follow-up/cancel/remote/ACP); **P2.1-S2A CLOSED** — CREATE/DELEGATE through frozen Execution boundary (`DelegatedExecutionService`).
 2. Background execution UX/control convergence.
 3. Verified external-event intake durability.
 4. Artifact/attachment/spill convergence.

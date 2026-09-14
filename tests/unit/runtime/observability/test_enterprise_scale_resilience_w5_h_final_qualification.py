@@ -14,7 +14,7 @@ from intergrax.applications._shared.runtime_event_delivery_wiring import (
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.environment_profile.bundles import GovernanceBundle
-from intergrax.contracts.event_delivery import EventDeliveryPolicy, EventExportSinkPort
+from intergrax.contracts.event_delivery import EventDeliveryPolicy, EventExportSinkPort, ObservabilityExportPayload
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.observability_export import (
     ExporterKind,
@@ -107,7 +107,8 @@ def test_runtime_instance_isolation_transports_and_sinks() -> None:
 @pytest.mark.asyncio
 async def test_failure_containment_otlp_transport_error() -> None:
     class FailingCollector(OtlpTransportPort):
-        def export(self, event: RuntimeEvent) -> None:
+        def export(self, event: object) -> None:
+            _ = event
             raise OtlpTransportError("collector unavailable")
 
         def flush(self) -> None:
@@ -143,7 +144,8 @@ async def test_backpressure_qualification_slow_exporter() -> None:
         def __init__(self) -> None:
             self._export_calls = 0
 
-        def export(self, event: RuntimeEvent) -> None:
+        def export(self, event: object) -> None:
+            _ = event
             self._export_calls += 1
             if self._export_calls == 1:
                 time.sleep(5.0)
@@ -171,7 +173,8 @@ class _LifecycleProbeExportSink(EventExportSinkPort):
     def __init__(self) -> None:
         self.events: list[str] = []
 
-    async def export(self, event: RuntimeEvent) -> None:
+    async def export(self, payload: ObservabilityExportPayload) -> None:
+        _ = payload
         return
 
     async def flush(self) -> None:

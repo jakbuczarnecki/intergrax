@@ -14,7 +14,7 @@ from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.contracts.event_delivery import EventDeliveryPolicy
+from intergrax.contracts.event_delivery import EventDeliveryPolicy, ObservabilityExportPayload
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.observability_export import (
     ExportError,
@@ -114,7 +114,8 @@ def test_ten_runtime_instances_isolated_exporters() -> None:
 
 
 class _ExportErrorSink:
-    async def export(self, event: RuntimeEvent) -> None:
+    async def export(self, payload: ObservabilityExportPayload) -> None:
+        _ = payload
         raise ExportError("export failed")
 
     async def flush(self) -> None:
@@ -150,7 +151,8 @@ class _OrderTrackingSink:
     def __init__(self) -> None:
         self.steps: list[str] = []
 
-    async def export(self, event: RuntimeEvent) -> None:
+    async def export(self, payload: ObservabilityExportPayload) -> None:
+        _ = payload
         return None
 
     async def flush(self) -> None:
@@ -170,7 +172,8 @@ def test_shutdown_flush_before_exporter_close() -> None:
 
 
 class _SlowExportSink:
-    async def export(self, event: RuntimeEvent) -> None:
+    async def export(self, payload: ObservabilityExportPayload) -> None:
+        _ = payload
         time.sleep(0.05)
 
     async def flush(self) -> None:
