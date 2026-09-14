@@ -116,6 +116,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-GOVERNED-EXECUTION-002](entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) | Policy Catalog Identity, Versioning, and Runtime Ownership (Governed Execution G2A) | Accepted |
 | [ADR-SEC-002](entries/2026-09-07/ADR-SEC-002.md) | Third-Party Isolation and External Execution Boundary (Capability Catalog Stage 12) | Accepted (architecture only) |
 | [ADR-RAG-001](entries/2026-09-13/ADR-RAG-001.md) | Generic multi-channel retrieval coordination | Accepted |
+| [ADR-OBS-005](entries/2026-09-14/ADR-OBS-005.md) | Runtime event delivery failure contract (`EventSinkPort`) — P1B-D1 | Proposed |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0…GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 
