@@ -70,3 +70,17 @@ def test_empty_plugin_id_rejected() -> None:
             entry_point_name="ep",
             distribution="pkg",
         )
+
+
+def test_selection_ref_normalizes_distribution_identity() -> None:
+    base = {
+        "plugin_id": "plugin.example",
+        "entry_point_group": EP_DECISION_STRATEGIES,
+        "entry_point_name": "example",
+    }
+    ref_underscore = PlatformPluginSelectionRef(distribution="My_Plugin", **base)
+    ref_hyphen = PlatformPluginSelectionRef(distribution="my-plugin", **base)
+    ref_dot = PlatformPluginSelectionRef(distribution="my.plugin", **base)
+    assert ref_underscore.distribution == "my-plugin"
+    assert ref_hyphen.distribution == "my-plugin"
+    assert ref_dot.distribution == "my-plugin"
