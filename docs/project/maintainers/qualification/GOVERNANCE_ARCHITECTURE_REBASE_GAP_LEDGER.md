@@ -36,7 +36,7 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 
 | ID | Severity | Area | Current code truth | Target architecture | Mismatch | Risk | Required remediation | Dependencies | Roadmap slice | Evidence paths | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| GOV-GAP-001 | P0 | Identity | GR-1: grant + side-effect + matcher bind full execution identity | Authorization bound to AttemptId + ExecutionId where security-sensitive | — | — | Implemented GR-1 | GR-0 audit | GR-1 | `governed_continuation_grant.py`, `meaningful_side_effect.py` | **CLOSED** |
+| GOV-GAP-001 | P0 | Identity | GR-1-R1: atomic Attempt+Execution resolution; no hybrid caller/active assembly | Authorization bound to AttemptId + ExecutionId where security-sensitive | Pre-R1 partial override could mix caller Attempt with active Execution | Cross-attempt side-effect authorization | GR-1-R1 resolver + pause atomic bind | GR-0 audit | GR-1-R1 | `meaningful_side_effect.py`, `pause.py`, `test_meaningful_side_effect_execution_identity_resolution.py` | **CLOSED** |
 | GOV-GAP-002 | P0 | Identity | GR-1: `HumanApprovalResolution` carries attempt/execution; governed pause validates correlation | Resolution correlated to active Execution | Residual UER pause ownership (GR-5) | HITL replay if resolution forged | GR-1 pause validation + grant derivation | GR-1 | GR-5 | `task_contract.py`, `pause.py` | **VERIFIED** |
 | GOV-GAP-003 | P1 | HITL ownership | TaskLifecycle `WAITING_FOR_HUMAN`; Task governance blob | UER owns PAUSE/WAIT/RESUME same Execution | Doc/code split on pause owner | Nexus-shaped pause on non-orchestration strategies | Rebase pause onto Execution lifecycle; Task bridge only | UER APIs | GR-5 | `meaningful_side_effect_authorization.py`, `governed_continuation_bridge.py` | OPEN |
 | GOV-GAP-004 | P1 | Nexus coupling | Governed continuation docstrings + AgentExecutionResult bridge | HITL without mandatory Nexus | Orchestration-only proof for HITL path | Agentic/inference hosts lack qualified HITL | Strategy-neutral HITL entry; qualify non-Nexus paths | GR-5 | GR-5, GR-10 | `governed_continuation.py` (module doc), `governed_continuation_bridge.py` | OPEN |
@@ -186,8 +186,9 @@ Historical AUDIT-5 findings remain valid context; closure requires identity rebi
 | ID | Task | Status | Simple goal | Depends on | Replaces (old) | Implementation expected? | Proof |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | GR-0 | Architecture Rebase & Gap Ledger | **DONE** | Establish code-truth gaps and roadmap | — | — | No (docs) | This ledger |
-| GR-1 | Execution Identity Rebinding | **DONE** | Bind grants, side effects, HITL resolution to Attempt+Execution | GR-0 | G5C identity follow-on | Yes | Contract + matcher tests |
-| GR-2 | Execution Admission Governance | **NEXT** | Single admission story at Execution start | GR-1 | G3 admission rows | Yes | Admission integration tests |
+| GR-1 | Execution Identity Rebinding | **CLOSED** | Bind grants, side effects, HITL resolution to Attempt+Execution (GR-1-R1 atomic correction) | GR-0 | G5C identity follow-on | Yes | Contract + matcher + GR-1-R1 security tests |
+| GR-1-R1 | Frozen boundary + atomic identity | **DONE** | Fail-closed partial identity; Governance consumes frozen active context | GR-1 | Audit defect A/B | Yes | `test_meaningful_side_effect_execution_identity_resolution.py` |
+| GR-2 | Execution Admission Governance | **NEXT** | Single admission story at Execution start | GR-1-R1 | G3 admission rows | Yes | Admission integration tests |
 | GR-3 | Inner Evaluation Spine | PLANNED | One inner enforcement path; safe `authorize_and_execute` | GR-1, GR-2 | PG-FIX-A completion | Yes | Bypass gate tests |
 | GR-4 | Policy Resolution & Catalog Requalification | PLANNED | Close PG-FIX-B/D qualification gaps | GR-3 | G2C, PG-FIX-B/D | Yes | Precedence + catalog tests |
 | GR-5 | HITL / Governed Continuation Rebase | PLANNED | UER pause/resume; scoped approval preserved | GR-1 | G5*, PG-FIX-C | Yes | HITL E2E per strategy |

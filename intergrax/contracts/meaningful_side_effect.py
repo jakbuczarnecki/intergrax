@@ -21,6 +21,8 @@ from intergrax.contracts.execution_identity import (
     ExecutionId,
     RunId,
     TaskId,
+    peek_active_execution_id,
+    peek_active_execution_identity,
     require_active_execution_id,
     require_active_execution_identity,
     validate_attempt_id,
@@ -123,15 +125,37 @@ def resolve_meaningful_side_effect_execution_identity(
     attempt_id: object | None = None,
     execution_id: object | None = None,
 ) -> tuple[TaskId, RunId, AttemptId, ExecutionId]:
-    """Bind attempt/execution from explicit values or the active Execution Engine context."""
+    """Bind a coherent AttemptId + ExecutionId pair from caller or active execution context."""
     validated_task = validate_task_id(task_id)
     validated_run = validate_run_id(run_id)
-    if attempt_id is not None and execution_id is not None:
+    has_attempt = attempt_id is not None
+    has_execution = execution_id is not None
+    if has_attempt != has_execution:
+        raise ValueError(
+            "meaningful side effect attempt_id and execution_id must be supplied together",
+        )
+    if has_attempt:
+        validated_attempt = validate_attempt_id(attempt_id)
+        validated_execution = validate_execution_id(execution_id)
+        active_identity = peek_active_execution_identity()
+        if active_identity is not None:
+            active_run, active_attempt = active_identity
+            active_execution = peek_active_execution_id()
+            if active_run != validated_run:
+                raise ValueError(
+                    "meaningful side effect run_id does not match active execution",
+                )
+            if active_execution is None:
+                raise RuntimeError("active ExecutionId required")
+            if active_attempt != validated_attempt or active_execution != validated_execution:
+                raise ValueError(
+                    "meaningful side effect execution identity does not match active execution",
+                )
         return (
             validated_task,
             validated_run,
-            validate_attempt_id(attempt_id),
-            validate_execution_id(execution_id),
+            validated_attempt,
+            validated_execution,
         )
     active_run, active_attempt = require_active_execution_identity()
     active_execution = require_active_execution_id()
@@ -140,6 +164,6 @@ def resolve_meaningful_side_effect_execution_identity(
     return (
         validated_task,
         validated_run,
-        validate_attempt_id(attempt_id or active_attempt),
-        validate_execution_id(execution_id or active_execution),
+        active_attempt,
+        active_execution,
     )
