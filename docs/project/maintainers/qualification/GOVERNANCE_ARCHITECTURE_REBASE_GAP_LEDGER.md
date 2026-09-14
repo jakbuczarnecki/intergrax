@@ -188,7 +188,8 @@ Historical AUDIT-5 findings remain valid context; closure requires identity rebi
 | GR-0 | Architecture Rebase & Gap Ledger | **DONE** | Establish code-truth gaps and roadmap | — | — | No (docs) | This ledger |
 | GR-1 | Execution Identity Rebinding | **CLOSED** | Bind grants, side effects, HITL resolution to Attempt+Execution (GR-1-R1 atomic correction) | GR-0 | G5C identity follow-on | Yes | Contract + matcher + GR-1-R1 security tests |
 | GR-1-R1 | Frozen boundary + atomic identity | **DONE** | Fail-closed partial identity; Governance consumes frozen active context | GR-1 | Audit defect A/B | Yes | `test_meaningful_side_effect_execution_identity_resolution.py` |
-| GR-2 | Execution Admission Governance | **NEXT** | Single admission story at Execution start | GR-1-R1 | G3 admission rows | Yes | Admission integration tests |
+| GR-1-R2 | Frozen Nexus baseline restoration | **DONE** | Remove Governance-specific Attempt/Execution forwarding from Nexus; identity via active context | GR-1-R1 | GR-1 Nexus coupling | Yes | `test_gr1_execution_identity_rebinding.py` (Nexus path) |
+| GR-2 | Execution Admission Governance | **NEXT** | Single admission story at Execution start | GR-1-R2 | G3 admission rows | Yes | Admission integration tests |
 | GR-3 | Inner Evaluation Spine | PLANNED | One inner enforcement path; safe `authorize_and_execute` | GR-1, GR-2 | PG-FIX-A completion | Yes | Bypass gate tests |
 | GR-4 | Policy Resolution & Catalog Requalification | PLANNED | Close PG-FIX-B/D qualification gaps | GR-3 | G2C, PG-FIX-B/D | Yes | Precedence + catalog tests |
 | GR-5 | HITL / Governed Continuation Rebase | PLANNED | UER pause/resume; scoped approval preserved | GR-1 | G5*, PG-FIX-C | Yes | HITL E2E per strategy |

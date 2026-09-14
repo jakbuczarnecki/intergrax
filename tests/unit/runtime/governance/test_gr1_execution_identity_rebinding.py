@@ -37,6 +37,14 @@ from intergrax.runtime.human.governed_continuation_bridge import (
 )
 from intergrax.runtime.task.task import Task
 from intergrax.contracts.runtime_policy import PolicyDecision
+from intergrax.runtime.task.task_lifecycle import TaskLifecycle
+from intergrax.runtime.task.task_trace import TaskTraceEmitter
+from tests.unit.runtime.human.test_g5b_hitl_resolution import (
+    _build_intake_runner_with_hitl,
+    _patch_hitl_runtime_events,
+    _set_human_response,
+    bound_hitl_test_execution_identity,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -160,3 +168,61 @@ def test_child_execution_id_does_not_match_parent_grant() -> None:
         )
         is False
     )
+
+
+@pytest.mark.asyncio
+async def test_nexus_intake_governed_approval_without_nexus_ae_forwarding(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """GR-1-R2: Nexus must not forward attempt_id/execution_id; Governance uses active context."""
+    _patch_hitl_runtime_events(monkeypatch)
+    side_effect = _side_effect()
+    enforcement = CollaborativeWorkEnforcementRequest(
+        tenant_id="t1",
+        workspace_id="ws1",
+        operation_id=OPERATION,
+        acting_principal_id="principal-1",
+        resource_scope="doc-1",
+        meaningful_side_effect_request=side_effect,
+    )
+    continuation = compose_governed_continuation_from_enforcement(
+        enforcement,
+        decision=_decision(),
+        enforcement_operation_id=OPERATION,
+        enforcement_authority_scope="doc-1",
+        requires_governed_continuation=True,
+        source_agent_id="agent-gr1",
+    )
+    assert continuation is not None
+    task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
+    HumanPauseCoordinator.apply_pause(
+        task,
+        bridge_governed_continuation_to_execution_result(continuation),
+    )
+    pause = task.runtime.governance.pause_record
+    assert pause is not None
+    _set_human_response(
+        task,
+        response_text="approve",
+        verdict=HumanResponseVerdict.APPROVE,
+        pause_id=pause.pause_id,
+        human_request_id=pause.human_request_id,
+    )
+
+    runner, _published = _build_intake_runner_with_hitl()
+    trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+    with bound_hitl_test_execution_identity(
+        run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=EXECUTION_ID,
+    ):
+        await runner.run(task, lifecycle=TaskLifecycle(), trace_emitter=trace_emitter)
+
+    resolution = task.runtime.governance.hitl_resolution
+    assert resolution is not None
+    assert resolution.attempt_id == ATTEMPT_ID
+    assert resolution.execution_id == EXECUTION_ID
+    grant = GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
+    assert grant is not None
+    assert grant.attempt_id == ATTEMPT_ID
+    assert grant.execution_id == EXECUTION_ID
