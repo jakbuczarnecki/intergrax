@@ -369,18 +369,16 @@ def build_npsc5f_final_profile() -> CompiledCatalogProfile:
 
 QualificationProfileBuilder = Callable[[], CompiledCatalogProfile]
 
-_PROFILE_BUILDER_MAP: dict[str, QualificationProfileBuilder] = {
-    NPSC5F_R1_PROFILE_ID: build_npsc5f_r1_profile,
-    NPSC5E_R3_PROFILE_ID: build_npsc5e_r3_profile,
-    NPSC5E_R2_PROFILE_ID: build_npsc5e_r2_profile,
-    NPSC5E_R1_PROFILE_ID: build_npsc5e_r1_profile,
-    NPSC5E_FINAL_PROFILE_ID: build_npsc5e_final_profile,
-    NPSC5F_R2_PROFILE_ID: build_npsc5f_r2_profile,
-    NPSC5F_R3_PROFILE_ID: build_npsc5f_r3_profile,
-    NPSC5F_R4_PROFILE_ID: build_npsc5f_r4_profile,
-    NPSC5F_FINAL_PROFILE_ID: build_npsc5f_final_profile,
-}
-
 PROFILE_BUILDERS: Mapping[str, QualificationProfileBuilder] = MappingProxyType(
-    _PROFILE_BUILDER_MAP,
+    {
+        NPSC5F_R1_PROFILE_ID: build_npsc5f_r1_profile,
+        NPSC5E_R3_PROFILE_ID: build_npsc5e_r3_profile,
+        NPSC5E_R2_PROFILE_ID: build_npsc5e_r2_profile,
+        NPSC5E_R1_PROFILE_ID: build_npsc5e_r1_profile,
+        NPSC5E_FINAL_PROFILE_ID: build_npsc5e_final_profile,
+        NPSC5F_R2_PROFILE_ID: build_npsc5f_r2_profile,
+        NPSC5F_R3_PROFILE_ID: build_npsc5f_r3_profile,
+        NPSC5F_R4_PROFILE_ID: build_npsc5f_r4_profile,
+        NPSC5F_FINAL_PROFILE_ID: build_npsc5f_final_profile,
+    },
 )

@@ -51,7 +51,12 @@ def expand_mandatory_subprocesses(
     expanded: list[CatalogRequiredTarget] = []
     for display_label, targets in source:
         expanded.extend(
-            _expand_one_mandatory(display_label, targets, expanding=frozenset()),
+            _expand_one_mandatory(
+                display_label,
+                targets,
+                expanding=(),
+                expanding_set=frozenset(),
+            ),
         )
     return tuple(expanded)
 
@@ -60,15 +65,17 @@ def _expand_one_mandatory(
     display_label: str,
     targets: list[str],
     *,
-    expanding: frozenset[str],
+    expanding: tuple[str, ...],
+    expanding_set: frozenset[str],
 ) -> tuple[CatalogRequiredTarget, ...]:
     nested = _orchestrator_expansion(targets)
     if nested is None:
         return (CatalogRequiredTarget.from_targets(display_label, targets),)
     normalized = normalize_pytest_arguments(targets)[0]
-    if normalized in expanding:
+    if normalized in expanding_set:
         raise QualificationDependencyCycleError((*expanding, normalized))
-    next_expanding = expanding | frozenset({normalized})
+    next_stack = (*expanding, normalized)
+    next_set = expanding_set | frozenset({normalized})
     expanded: list[CatalogRequiredTarget] = []
     for child_label, child_targets in nested:
         child_path = f"{display_label}>{child_label}"
@@ -76,7 +83,8 @@ def _expand_one_mandatory(
             _expand_one_mandatory(
                 child_path,
                 child_targets,
-                expanding=next_expanding,
+                expanding=next_stack,
+                expanding_set=next_set,
             ),
         )
     return tuple(expanded)
