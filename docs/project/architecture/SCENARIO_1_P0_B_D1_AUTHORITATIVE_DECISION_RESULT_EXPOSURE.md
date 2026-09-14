@@ -6,7 +6,7 @@ Intergrax is source-available under the Intergrax Evaluation and Collaboration L
 # SCENARIO-1-P0-B-D1 — Authoritative Decision Result Exposure
 
 **Task:** SCENARIO-1-P0-B-D1  
-**Status:** Architecture design (implementation not in scope)  
+**Status:** Architecture design — D1-R1 hardened (implementation not in scope)  
 **Qualification driver:** Scenario #1 — AI incident investigation (`ai_incident_investigation`)  
 **Branch target:** `development`  
 **Blocks:** P0-B-R1 (Authoritative Result Boundary Cleanup)
@@ -264,7 +264,7 @@ DecisionFlowResult[T]
 
 **Single mapping authority:** `decision_flow_result_to_authoritative_exposure` owns translation from flow result to public envelope. Graph runner must not reconstruct acceptance from validation.
 
-**Terminal scope policy (v1):** For task-level public exposure, publish the **effective terminal** decision outcome for **`DecisionEvaluationScope.GRAPH_FINAL`** when evaluated; otherwise the highest configured terminal scope evaluated during the run (precedence: `GRAPH_FINAL` > `UAEP_STEP`). Partial/node scopes (future) do not override final exposure. Multi-scope simultaneous finals are a Decision System invariant violation and must fail mapping.
+**Terminal public outcome (v1, D1-R1):** Per-evaluation mapping still flows through `decision_flow_result_to_authoritative_exposure`. **Which** mapped outcome becomes the single `TaskResult.authoritative_decision_exposure` is **not** an enum precedence hack; it is selected by the **execution host** via a platform `DecisionExposureSelectionStrategy` fed by run-scoped `DecisionExposureCandidate` records (see §D1-R1).
 
 ---
 
@@ -282,6 +282,8 @@ class DecisionEvaluationScope(StrEnum):
 class ExposureUnevaluatedReason(StrEnum):
     NO_DECISION_GATE = "no_decision_gate"
     SCOPE_NOT_EVALUATED = "scope_not_evaluated"
+    EXECUTION_FAILED_BEFORE_DECISION = "execution_failed_before_decision"
+    EXECUTION_CANCELLED_BEFORE_DECISION = "execution_cancelled_before_decision"
 
 @dataclass(frozen=True, slots=True)
 class ExposureAccepted(Generic[T]):
@@ -311,7 +313,7 @@ AuthoritativeDecisionExposure = ExposureAccepted[T] | ExposureResolution | Expos
 | Gate absent / scope skipped | `ExposureUnevaluated` |
 | Both accepted and resolution set | **Mapping error** — refuse; indicates DS bug |
 
-**Factory trust:** Only Decision runtime module may call constructors after gate evaluation; contracts validate invariants in `__post_init__` (mirror `AuthoritativeResolutionRecord` rules).
+**Type validity:** Contracts validate structural invariants in `__post_init__` (mirror `AuthoritativeResolutionRecord` rules). **Authority authenticity** is separate — see §D1-R1 (trust boundary); Python does not prevent manual construction of syntactically valid exposure values.
 
 ---
 
@@ -367,13 +369,15 @@ authoritative_decision_exposure: AuthoritativeDecisionExposure[AgentExecutionRes
 authoritative_decision_exposure: AuthoritativeDecisionExposure[AgentExecutionResult] | None = None
 ```
 
-Semantics:
+Semantics (post-migration invariant — see §D1-R1 terminality matrix):
 
 | Value | Meaning |
 | --- | --- |
-| `None` | Not yet terminal **or** non-decision task path (legacy default during migration) |
-| `ExposureUnevaluated` | Terminal task, decision subsystem not engaged for published scope |
-| `ExposureAccepted` / `ExposureResolution` | Terminal authoritative outcome |
+| `None` | **Non-terminal** task lifecycle (HITL pause, in-flight execution, pending authority) |
+| `ExposureUnevaluated` | **Terminal** task without a publishable Decision authority outcome for the host’s declared public terminal scope |
+| `ExposureAccepted` / `ExposureResolution` | **Terminal** task with selected public authoritative Decision outcome |
+
+**Post-migration:** `terminal TaskResult` + `authoritative_decision_exposure is None` is an **invariant violation** (configuration bug or incomplete host wiring), not a legacy default.
 
 `HostTaskExecution.execute` returns `TaskResult` unchanged — no reinterpretation.
 
@@ -468,7 +472,7 @@ Trace enriches audit; **not** authoritative for application logic.
 
 ## 26. Security / trust
 
-Applications cannot mint `AuthoritativeAcceptedDecision` without going through gate (existing contract constructors + platform-only mapping). Exposure mapping function lives in Tier-1 runtime, invoked only from trusted orchestration paths.
+See **§D1-R1 — Trust model** for the authoritative statement. Summary: **type validity ≠ authority authenticity**; exposure is **trusted runtime-issued** only when produced by the platform execution path and selected for publication by the host. Application-constructed values are not accepted as platform authority **input** to any API.
 
 ---
 
@@ -554,7 +558,7 @@ Decision System unit suites, decision flow host, graph decision integration/pari
 | Risk | Mitigation |
 | --- | --- |
 | `AgentExecutionResult` as `T` at host boundary | P0-C artifact projection + artifact kind registry |
-| Multiple scopes in one task | Precedence policy + single terminal exposure |
+| Multiple scopes in one task | Host `DecisionExposureSelectionStrategy` + fail-closed collision rules (§D1-R1) |
 | Checkpoint serialization size | Exposure is small (refs + artifact) |
 | Consumers confuse validation vs acceptance | Dual channel + docs + tests |
 
@@ -597,9 +601,265 @@ Decision System does not import applications. Execution does not import scenario
 
 ---
 
+## D1-R1 HARDENING — Multi-scope selection, trust, terminality
+
+**Task:** SCENARIO-1-P0-B-D1-R1  
+**Supersedes (partial):** informal `GRAPH_FINAL > UAEP_STEP` precedence in §13; weak trust wording in §26; migration-ambiguous `None` semantics in §18.
+
+### D1-R1.1 Problem statement
+
+A single task/run may evaluate **multiple** `DecisionFlowGate.evaluate` calls at different `DecisionFlowScope` values and different `DecisionScope.subject` values (`DecisionFlowRequest.identity_seed.scope`). Each evaluation yields a correct `DecisionFlowResult[T]` for **that** scope/subject. The platform must still expose **exactly one** public `AuthoritativeDecisionExposure` on terminal `TaskResult` when the host declares a single public terminal authority — without assuming one task equals one decision.
+
+**Decision scope ≠ publication priority.** Enum ordering is not semantics. Required model:
+
+```text
+Decision evaluation (per scope/subject/attempt)
+  + publication eligibility (host terminal scope policy)
+  + terminality (task lifecycle + host finalization)
+  + selection strategy (deterministic, fail-closed)
+→ effective public authoritative_decision_exposure
+```
+
+### D1-R1.2 Preserved D1 architecture (B + C)
+
+Unchanged target shape:
+
+```text
+DecisionFlowResult
+  ├── decision_flow_result_to_validation_result → ValidationResult
+  └── decision_flow_result_to_authoritative_exposure → per-evaluation exposure fragment
+
+Run-scoped candidates → host selection → TaskResult.authoritative_decision_exposure
+```
+
+Single field on `TaskResult` remains **`authoritative_decision_exposure`** (not a collection at the public application boundary). Optional observability may list all evaluated scopes; applications **match** the single selected exposure only (§D1-R1.20).
+
+### D1-R1.3 Ownership: selection policy (S1 / S2 / S3)
+
+| Option | Owner | Verdict |
+| --- | --- | --- |
+| **S1** Decision System picks global publishable terminal | Decision runtime | **Reject** — conflates per-evaluation correctness with host-final semantics |
+| **S2** Execution host declares which scope is terminal for this host run | Execution host (Nexus, UAEP, future workflow) | **Accept (primary)** |
+| **S3** Explicit host configuration object | Host composition | **Accept (configuration surface for S2)** |
+
+**Split of concerns (target):**
+
+- **Decision System:** each `DecisionFlowResult` is authoritative **for its evaluation** (`flow_scope`, `identity_seed.scope`, attempt lineage).
+- **Execution host:** declares **which scope(s) may become the host’s public terminal authority** and runs **selection** over collected candidates.
+
+This matches existing code: `DecisionFlowGateCapabilities.scopes` is composed by the hosting application (`application_decision_composition.py`); `DecisionFlowScope` is a **host invocation scope**, not a global platform ranking.
+
+### D1-R1.4 Multi-scope options (MS-A … MS-D)
+
+| ID | Approach | Summary |
+| --- | --- | --- |
+| **MS-A** | Hardcoded static precedence in mapper | Mapper picks “winner” via fixed enum order |
+| **MS-B** | Execution-host selection contract | Host accumulates candidates; strategy selects one public outcome |
+| **MS-C** | Decision-system publication contract | DS marks “publishable terminal” per evaluation |
+| **MS-D** | Expose collection on `TaskResult` | Application chooses among all outcomes |
+
+#### Comparative matrix
+
+| Kryterium | MS-A | MS-B | MS-C | MS-D |
+| --- | ---: | ---: | ---: | ---: |
+| Layer ownership | Poor (mapper) | **Strong (host)** | Split / muddy | Weak (app) |
+| Pluginability | Poor | **Strong (strategy plugin)** | Medium | N/A |
+| Determinism | Fragile | **Strong (pure strategy)** | Medium | App-dependent |
+| Host neutrality | Poor | **Strong** | Medium | Medium |
+| Application simplicity | Medium | **Strong (single field)** | Strong | Poor |
+| Auditability | Poor | **Strong (selection reason)** | Medium | Medium |
+| Future extensibility | Poor | **Strong** | Medium | Medium |
+
+**Recommendation: MS-B** — execution-host selection contract with pluggable `DecisionExposureSelectionStrategy`, default implementation `HostTerminalDecisionExposureSelector` (name illustrative only; not Scenario-specific).
+
+MS-A rejected: smuggles host semantics into Decision mapper; non-pluginable `if graph elif uaep`.  
+MS-C rejected: Decision System should not own “this host’s final public outcome”.  
+MS-D rejected: violates single public authority invariant for Scenario #1; pushes platform gap to applications.
+
+### D1-R1.5 Selection contract (design-only pseudocode)
+
+**Package (future):** `intergrax/contracts/decision_authoritative_exposure.py` (types) + `intergrax/contracts/decision_exposure_selection.py` (strategy) — or co-located; **no implementation in D1-R1**.
+
+```python
+@dataclass(frozen=True, slots=True)
+class DecisionExposureCandidate(Generic[T]):
+    """Minimal input for selection; not a dump of DecisionFlowResult."""
+
+    evaluation_scope: DecisionEvaluationScope  # maps from DecisionFlowScope
+    decision_scope: DecisionScope  # namespace + subject from identity_seed
+    execution_lineage: DecisionExecutionLineage  # run_id, task_id, attempt_id, …
+    host_publication_class: HostPublicationClass  # see below
+    exposure: AuthoritativeDecisionExposure[T]  # mapped fragment for this evaluation
+    evaluation_ordinal: int  # monotonic per run-scoped collector; stable ordering
+
+
+class HostPublicationClass(StrEnum):
+    INTERMEDIATE = "intermediate"  # e.g. UAEP_STEP on graph host
+    HOST_TERMINAL_CANDIDATE = "host_terminal_candidate"  # eligible if policy says so
+    NON_PUBLISHABLE = "non_publishable"  # PENDING_HUMAN path fragments
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionExposurePublicationPolicy:
+    """Host-declared terminal scope semantics (S3 config for S2)."""
+
+    eligible_terminal_scopes: frozenset[DecisionEvaluationScope]
+    # Graph host default: {GRAPH_FINAL}; UAEP-only: {UAEP_STEP}; no gate: ∅
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionExposureSelectionDecision(Generic[T]):
+    selected: AuthoritativeDecisionExposure[T]
+    reason_code: str  # structured, no CoT; e.g. "host_terminal_scope_graph_final"
+    considered_candidates: int
+
+
+class DecisionExposureSelectionStrategy(Protocol[T]):
+    def select(
+        self,
+        policy: DecisionExposurePublicationPolicy,
+        candidates: Sequence[DecisionExposureCandidate[T]],
+    ) -> DecisionExposureSelectionDecision[T] | DecisionExposureSelectionFailure:
+        ...
+```
+
+**Collision:** two `HOST_TERMINAL_CANDIDATE` exposures with the same effective `(attempt_id, evaluation_scope, decision_scope.subject)` and both terminal-eligible → **`DecisionExposureSelectionFailure` (fail closed)** — not last-write-wins.
+
+**Attempt-aware:** strategy prefers the **effective terminal attempt** (highest `attempt_id` among terminal task outcomes, per existing execution lineage). Rejected outcomes from superseded attempts never override the final attempt’s selected exposure.
+
+**Determinism:** sort key `(attempt_id, evaluation_ordinal, evaluation_scope, decision_scope.namespace, decision_scope.subject)` before tie-break rules; no dict iteration order.
+
+### D1-R1.6 Host semantics
+
+| Host | Possible evaluation scopes | Public terminal selection |
+| --- | --- | --- |
+| **Graph host** (Nexus) | `UAEP_STEP` (intermediate) + `GRAPH_FINAL` (terminal candidate) | Policy `eligible={GRAPH_FINAL}`; intermediate UAEP never overrides finalized `GRAPH_FINAL`; if `GRAPH_FINAL` never evaluated → `ExposureUnevaluated(SCOPE_NOT_EVALUATED)` when gate configured |
+| **UAEP-only host** | `UAEP_STEP` only | Policy `eligible={UAEP_STEP}`; subject = step identity; **last terminal UAEP evaluation is not automatic** — strategy picks among UAEP candidates per policy (e.g. configured final step subject or max ordinal) |
+| **Direct agent / no Decision gate** | none | Terminal task → `ExposureUnevaluated(NO_DECISION_GATE)` |
+| **Future workflow host** | configured | `DecisionExposurePublicationPolicy` + strategy from host composition |
+
+**Scenario #1 rule:** when graph host completes with evaluated `GRAPH_FINAL`, **no** intermediate `UAEP_STEP` outcome may be selected as public terminal — host policy + `HostPublicationClass.INTERMEDIATE`, not global enum rank.
+
+### D1-R1.7 Subject semantics
+
+Two evaluations at `UAEP_STEP` with subjects `planning-step-1` vs `planning-step-2` are **distinct candidates**. Selection uses `(evaluation_scope, decision_scope.namespace, decision_scope.subject, attempt_id)` — not “last UAEP_STEP wins”.
+
+Whether `UAEP_STEP` can ever be task-final public outcome: **yes, only on hosts whose `DecisionExposurePublicationPolicy.eligible_terminal_scopes` includes `UAEP_STEP`** (UAEP-only mode). On graph hosts, UAEP outcomes are **intermediate** for public terminal purposes.
+
+### D1-R1.8 Collector / execution-local state
+
+- **Owner:** execution host runtime (e.g. NexusLoop run context, UAEP host context) — **run/task scoped**, not global singleton or thread-local magic.
+- **Shape:** append-only list of `DecisionExposureCandidate` per effective attempt; reset on new attempt.
+- **Population:** after each `evaluate`, mapper produces exposure fragment; host classifies publication class; append candidate.
+- **Not allowed:** trace as storage; `TaskResult.metadata` dict; hidden module state.
+- **v1 persistence:** in-process only; **resume/HITL after checkpoint** may require reconstructing candidates from decision checkpoint store — **out of scope for I1 v1** unless checkpoint replay already re-executes gates; document as **remaining gap** (§D1-R1.19).
+
+### D1-R1.9 Pluginability / external strategy
+
+- Host composition selects `DecisionExposureSelectionStrategy` (built-in default or **external plugin** implementing the protocol).
+- **Integration point:** same host composition layer that wires `DecisionFlowGate` today (`application_decision_composition` / execution profile) — **reuse platform plugin framework**, no Scenario-specific selector types in platform code.
+- Selector **must not** inspect business payload, hypothesis, diagnosis, or application RESOLVED/UNRESOLVED.
+
+### D1-R1.10 Trust model
+
+**Required statement:**
+
+> `AuthoritativeDecisionExposure` is authoritative **only** as the outcome of a trusted platform execution path. Manual construction of a type-valid instance by application code does **not** confer platform authority.
+
+| # | Question | Answer |
+| --- | --- | --- |
+| 1 | Trusted producer? | Decision runtime path (`evaluate` → mapper) + host selection on trusted execution boundary |
+| 2 | Consumer? | Application / external caller (untrusted for minting) |
+| 3 | Manual construction possible? | **Yes** (Python) |
+| 4 | Why manual ≠ authority? | Authority from **provenance** (lineage inside accepted/resolution records), **trusted path**, not datatype |
+| 5 | Platform API intake of exposure? | **No** — not accepted proof of pre-approved Decision |
+| 6 | Provenance verification? | `DecisionIdentity.execution` (`run_id`, `task_id`, `attempt_id`, `decision_id`, version) embedded in nested records; match to current `TaskResult` execution context |
+| 7 | Cryptography now? | **No** — in-process trusted boundary sufficient for v1 |
+
+**Asymmetry:** public **output** may be `AuthoritativeDecisionExposure`; public **input** must not treat caller-built exposure as authority. Do **not** claim “unforgeable”; use **trusted runtime-issued**.
+
+**Public contract documentation (must appear in ADR + contracts docstring):**
+
+> The type represents a platform-issued authoritative outcome when received from the trusted execution boundary. Construction of an equivalent value by application code does not constitute platform-issued authority.
+
+No fake security (private constructors, magic tokens) as authority mechanism.
+
+### D1-R1.11 Terminality matrix
+
+| Task state | Decision evaluated for host terminal scope? | `authoritative_decision_exposure` |
+| --- | ---: | --- |
+| `COMPLETED` | accepted | `ExposureAccepted` |
+| `COMPLETED` | resolution (no acceptance) | `ExposureResolution` |
+| `COMPLETED` | gate configured, terminal scope not reached/evaluated | `ExposureUnevaluated` (`SCOPE_NOT_EVALUATED`) |
+| `COMPLETED` | no gate | `ExposureUnevaluated` (`NO_DECISION_GATE`) |
+| `FAILED` (before any Decision evaluation on terminal path) | no | `ExposureUnevaluated` (`EXECUTION_FAILED_BEFORE_DECISION`) — **≠** `ExposureResolution` |
+| `CANCELLED` (before Decision evaluation) | no | `ExposureUnevaluated` (`EXECUTION_CANCELLED_BEFORE_DECISION`) |
+| `WAITING_FOR_HUMAN` / `NEEDS_INPUT` | pending | `None` |
+| `PARTIALLY_COMPLETED` | non-terminal for authority | `None` while lifecycle open; if host treats as terminal without Decision → `ExposureUnevaluated` per policy |
+
+### D1-R1.12 Attempt matrix (examples)
+
+| Attempt | Scope | Outcome | Public final? |
+| --- | --- | --- | ---: |
+| 1 | `GRAPH_FINAL` | Resolution | no (superseded) |
+| 2 | `GRAPH_FINAL` | Accepted | **yes** |
+| 1 | `UAEP_STEP` / step-1 | Accepted | no (intermediate on graph host) |
+| 2 | `GRAPH_FINAL` | Accepted | **yes** |
+| 1 | `UAEP_STEP` / step-2 | Accepted | **yes** on UAEP-only host only |
+| — | none | — | `ExposureUnevaluated(NO_DECISION_GATE)` |
+
+### D1-R1.13 Multiple decision identities
+
+`TaskResult` carries **one** public exposure field. Host policy + selection strategy must guarantee **at most one** eligible terminal authority per terminal task. If configuration yields two semantically co-equal terminal candidates **same attempt** → **fail closed** (selection failure → host surfaces task `FAILED` or explicit invariant error at finalize — exact host error mapping is I1 detail).
+
+Two independent final Decision identities on one task without a declared selection rule → **configuration error**, not silent multi-authority.
+
+### D1-R1.14 Observability
+
+Structured events (not embedded in exposure): all evaluated scopes/subjects, candidate count, `DecisionExposureSelectionDecision.reason_code`, selected identity. Trace remains observability-only.
+
+### D1-R1.15 Test strategy additions (future I1)
+
+**Multi-scope:** (A) UAEP + GRAPH_FINAL → GRAPH_FINAL selected; (B) UAEP-only host → configured terminal; (C) duplicate eligible finals same attempt → fail closed; (D) attempt 2 over attempt 1; (E) intermediate never overrides terminal; (F) no gate → Unevaluated.
+
+**Trust:** (A) app-built exposure not accepted as platform input; (B) execution output includes exposure; (C) no pre-approved intake API; (D) lineage preserved.
+
+**Terminality:** matrix rows §D1-R1.11; failure/cancel ≠ resolution; HITL → `None`.
+
+**Negative:** no last-write-wins; no metadata/trace selection; no task-state-as-acceptance; no business-payload selector; no Scenario-specific policy type in platform.
+
+### D1-R1.16 Implementation split (recommendation)
+
+| Task | Scope |
+| --- | --- |
+| **I1-A** | Contracts (`AuthoritativeDecisionExposure`, candidates, policy, strategy protocol), mapper, default selector, run-scoped collector |
+| **I1-B** | Graph phase dual channel + NexusLoop finalize selection + `TaskResult` field |
+| **I1-C** | UAEP host parity (same collector + strategy wiring) |
+
+I1-B may start after I1-A contracts freeze; I1-C can follow B.
+
+### D1-R1.17 Remaining gaps (v1)
+
+- Checkpoint/resume reconstruction of candidate list without re-evaluation.
+- Cross-process / API trust (serialization attestation) — deferred.
+
+### D1-R1.18 Layer boundaries (validation)
+
+```text
+intergrax/contracts  ← exposure + selection protocol
+        ↑
+Decision runtime     ← per-evaluation map only
+        ↑
+Execution host       ← collector + policy + strategy (default | plugin)
+        ↑
+Application          ← consume single exposure; no minting as input
+```
+
+---
+
 ## 36. Design verdict
 
-**PASS — READY FOR IMPLEMENTATION** (pending independent design audit per task §80).
+**PASS — READY FOR IMPLEMENTATION** after **D1-R1** hardening; **blocked** on independent **D1-R1 design audit** before P0-B-D1-I1 (per roadmap §90).
 
 ---
 
@@ -613,9 +873,10 @@ Decision System does not import applications. Execution does not import scenario
 
 ## 38. Updated roadmap snippet
 
-| Etap | Status after D1 |
+| Etap | Status after D1-R1 |
 | --- | --- |
-| P0-B-D1 Design | ✅ Complete (this document) |
-| P0-B-D1 Design Audit | ⏳ Required before I1 |
-| P0-B-D1-I1 Implementation | ⏳ Unblocked after audit |
+| P0-B-D1 Design | ✅ Baseline (e3139f2f…) |
+| P0-B-D1-R1 Hardening | ✅ This §D1-R1 |
+| P0-B-D1-R1 Design Audit | ⏳ Required before I1 |
+| P0-B-D1-I1 Implementation | ⏳ Blocked until R1 audit |
 | P0-B-R1 | ⏳ Blocked until I1 lands |
