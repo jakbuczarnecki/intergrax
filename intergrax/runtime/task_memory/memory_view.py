@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.memory_write_policy import MemoryWritePolicy
+from intergrax.contracts.request_identity_spine import assert_untrusted_metadata_identity_compatible
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
@@ -45,8 +46,6 @@ class PolicyScopedMemoryView:
         exec_ctx: RuntimeExecutionContext,
         store: TaskMemoryPersistence,
         *,
-        tenant_id: str,
-        task_id: str,
         access_policy: Optional[MemoryAccessPolicy] = None,
         limits: Optional[TaskMemoryLimits] = None,
         hook_registry: Optional["HookRegistry"] = None,
@@ -54,12 +53,35 @@ class PolicyScopedMemoryView:
     ) -> None:
         self._exec_ctx = exec_ctx
         self._store = store
-        self._tenant_id = tenant_id
-        self._task_id = task_id
+        self._tenant_id, self._task_id = self._resolve_execution_scope()
         self._access_policy = access_policy or MemoryAccessPolicy()
         self._limits = limits or TaskMemoryLimits()
         self._hook_registry = hook_registry
         self._retention_days = retention_days
+
+    def _resolve_execution_scope(self) -> tuple[str, str]:
+        identity = self._exec_ctx.canonical_request_identity
+        if identity is None:
+            raise MemoryViewAccessDenied(
+                "memory scope requires canonical request identity on execution context"
+            )
+        self._guard_untrusted_identity_overrides(identity)
+        return identity.tenant_id, str(self._exec_ctx.task_id)
+
+    def _guard_untrusted_identity_overrides(self, identity: object) -> None:
+        from intergrax.contracts.agent_run import RequestIdentity
+
+        if not isinstance(identity, RequestIdentity):
+            raise MemoryViewAccessDenied("invalid canonical request identity")
+        metadata = self._exec_ctx.metadata
+        if "memory_scope_tenant_id" in metadata:
+            raise MemoryViewAccessDenied(
+                "metadata memory_scope_tenant_id is not authority for memory tenant scope"
+            )
+        try:
+            assert_untrusted_metadata_identity_compatible(identity, metadata)
+        except ValueError as exc:
+            raise MemoryViewAccessDenied(str(exc)) from exc
 
     async def read(self, namespace: str, key: str) -> Optional[Dict[str, Any]]:
         self._guard_namespace(namespace, write=False)
@@ -222,8 +244,11 @@ class PolicyScopedMemoryView:
         boundary = self._access_policy.scope_boundary.strip().lower()
         if boundary != "tenant":
             return
-        expected = str(self._exec_ctx.metadata.get("memory_scope_tenant_id", self._tenant_id))
-        if expected != self._tenant_id:
+        identity = self._exec_ctx.canonical_request_identity
+        if identity is None:
+            raise MemoryViewAccessDenied("memory scope boundary requires canonical request identity")
+        self._guard_untrusted_identity_overrides(identity)
+        if identity.tenant_id != self._tenant_id:
             raise MemoryViewAccessDenied("memory scope boundary violated for tenant")
 
     async def _run_memory_write_hooks(

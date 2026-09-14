@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Protocol, TYPE_CHECKING, runtime_c
 from pydantic import BaseModel, Field, field_validator
 
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -93,6 +94,7 @@ class RuntimeExecutionContext(BaseModel):
     phase: ExecutionPhase = ExecutionPhase.STEP_EXECUTION
     contract: Optional[AgentContract] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
+    canonical_request_identity: Optional[RequestIdentity] = None
 
     model_config = {"arbitrary_types_allowed": True}
 

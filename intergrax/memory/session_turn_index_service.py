@@ -71,27 +71,17 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         session_id: str,
         user_id: str | None,
         message: ChatMessage,
-        namespace: str | None = None,
-        workspace_id: str | None = None,
     ) -> None:
         if message.deleted:
-            await self.tombstone_turn(
-                message.entry_id,
-                tenant_id=tenant_id,
-                namespace=namespace,
-                workspace_id=workspace_id,
-            )
+            self._resolve_bound_tenant(tenant_id)
+            await self.tombstone_turn(message.entry_id)
             return
         if message.role not in self._index_roles:
             return
         text = (message.content or "").strip()
         if not text:
             return
-        scope = self._scope(
-            tenant_id=tenant_id,
-            namespace=namespace,
-            workspace_id=workspace_id,
-        )
+        scope = self._bound_scope(tenant_id=tenant_id)
         meta = _sanitize_metadata(
             {
                 "session_id": session_id,
@@ -145,37 +135,20 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
             )
         return self._tenant_id
 
-    def _scope(
-        self,
-        *,
-        tenant_id: str | None = None,
-        namespace: str | None = None,
-        workspace_id: str | None = None,
-    ) -> VectorStoreScope:
+    def _bound_scope(self, *, tenant_id: str) -> VectorStoreScope:
         bound_tenant = self._resolve_bound_tenant(tenant_id)
         return VectorStoreScope(
             tenant_id=bound_tenant,
-            namespace=namespace if namespace is not None else self._vector_index_namespace,
-            workspace_id=workspace_id if workspace_id is not None else self._workspace_id,
+            namespace=self._vector_index_namespace,
+            workspace_id=self._workspace_id,
         )
 
-    async def tombstone_turn(
-        self,
-        entry_id: str,
-        *,
-        tenant_id: str | None = None,
-        namespace: str | None = None,
-        workspace_id: str | None = None,
-    ) -> None:
+    async def tombstone_turn(self, entry_id: str) -> None:
         if not entry_id:
             return
         self._vectorstore_manager.delete(
             [entry_id],
-            scope=self._scope(
-                tenant_id=tenant_id,
-                namespace=namespace,
-                workspace_id=workspace_id,
-            ),
+            scope=self._bound_scope(tenant_id=self._tenant_id),
         )
 
     async def search_turns(
@@ -188,17 +161,11 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         top_k: int = 8,
         score_threshold: float | None = None,
         include_cross_session: bool = False,
-        namespace: str | None = None,
-        workspace_id: str | None = None,
     ) -> list[dict[str, Any]]:
         q = (query or "").strip()
         if not q:
             return []
-        scope = self._scope(
-            tenant_id=tenant_id,
-            namespace=namespace,
-            workspace_id=workspace_id,
-        )
+        scope = self._bound_scope(tenant_id=tenant_id)
         where: dict[str, Any] = {
             "deleted": 0,
             "index_domain": EPISODIC_INDEX_DOMAIN,

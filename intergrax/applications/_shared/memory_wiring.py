@@ -301,4 +301,5 @@ def build_session_manager_from_environment(
         session_index_top_k=memory_profile.session_index_top_k,
         session_index_score_threshold=memory_profile.session_index_score_threshold,
         include_cross_session_episodic=memory_profile.include_cross_session_episodic,
+        memory_consolidation_mode=memory_profile.consolidation_mode,
     )

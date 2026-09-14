@@ -17,12 +17,14 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def _view(*, hook_registry: HookRegistry | None = None) -> PolicyScopedMemoryView:
-    exec_ctx = build_runtime_execution_context_for_tests(seed="hook", agent_id="agent_hook")
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed="hook",
+        agent_id="agent_hook",
+        tenant_id="tenant-hook",
+    )
     return PolicyScopedMemoryView(
         exec_ctx,
         InMemoryTaskMemoryStore(),
-        tenant_id="tenant-hook",
-        task_id=exec_ctx.task_id,
         hook_registry=hook_registry,
     )
 

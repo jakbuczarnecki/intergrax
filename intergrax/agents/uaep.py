@@ -29,6 +29,9 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult, Age
 from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
 from intergrax.contracts.execution_identity import require_active_execution_identity, require_active_execution_id
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.request_identity_spine import assert_untrusted_metadata_identity_compatible
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.runtime_policy_context import AgentDecisionPolicyContext
 from intergrax.contracts.validation import ValidationResult
@@ -233,12 +236,13 @@ class UAEPExecutor:
             phase=ExecutionPhase.CONTEXT_BUILDING,
             contract=contract,
             request=request,
+            canonical_request_identity=self._canonical_request_identity_for_execute(request),
             event_emitter=_BusEventEmitter(self._event_bus) if self._event_bus else None,
         )
         self._attach_shadow_workspace(exec_ctx, request, task_id=task_id)
         self._attach_sandbox_session(exec_ctx, request, task_id=task_id)
         self._attach_shared_context(exec_ctx, request)
-        self._attach_memory_view(exec_ctx, request, task_id=task_id)
+        self._attach_memory_view(exec_ctx, request)
 
         kernel_ctx = build_kernel_session(
             agent_id=contract.id,
@@ -973,22 +977,45 @@ class UAEPExecutor:
         if shared is not None:
             exec_ctx.metadata["shared_task_context"] = shared.model_dump(mode="json")
 
+    @staticmethod
+    def _canonical_request_identity_for_execute(request: RuntimeRequest) -> RequestIdentity:
+        if request.canonical_identity is not None:
+            assert_untrusted_metadata_identity_compatible(
+                request.canonical_identity,
+                request.metadata,
+            )
+            identity = request.canonical_identity
+        else:
+            tenant_id = (request.tenant_id or request.metadata.get("tenant_id") or "default")
+            identity = RequestIdentity(
+                tenant_id=str(tenant_id),
+                user_id=request.user_id,
+                principal_type=PrincipalType.USER,
+                auth_subject=request.user_id,
+            )
+        legacy_tenant = request.tenant_id
+        if legacy_tenant is not None and str(legacy_tenant) != identity.tenant_id:
+            raise ValueError(
+                "request tenant_id conflicts with canonical RequestIdentity"
+            )
+        return identity
+
     def _attach_memory_view(
         self,
         exec_ctx: RuntimeExecutionContext,
         request: RuntimeRequest,
-        *,
-        task_id: str,
     ) -> None:
         if self._task_memory_store is None:
             return
-        tenant_id = request.tenant_id or "default"
+        identity = exec_ctx.canonical_request_identity
+        if identity is None:
+            return
+        tenant_id = identity.tenant_id
+        task_id = str(exec_ctx.task_id)
         access_policy = self._memory_access_policy_for_request(request.metadata)
         exec_ctx.memory_view = PolicyScopedMemoryView(
             exec_ctx,
             self._task_memory_store,
-            tenant_id=tenant_id,
-            task_id=task_id,
             access_policy=access_policy,
             limits=self._memory_limits,
             hook_registry=self._middleware.hooks,

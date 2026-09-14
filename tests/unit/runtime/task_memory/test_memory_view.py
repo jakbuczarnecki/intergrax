@@ -35,6 +35,7 @@ def _view(
     exec_ctx = build_runtime_execution_context_for_tests(
         task_id=task_id,
         agent_id="agent_a",
+        tenant_id=tenant_id,
     )
     exec_ctx.event_emitter = emitter
     resolved_task_id = exec_ctx.task_id
@@ -42,8 +43,6 @@ def _view(
         PolicyScopedMemoryView(
             exec_ctx,
             store,
-            tenant_id=tenant_id,
-            task_id=resolved_task_id,
             access_policy=policy,
         ),
         store,

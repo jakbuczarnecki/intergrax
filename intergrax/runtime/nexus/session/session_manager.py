@@ -335,19 +335,18 @@ class SessionManager:
 
         consolidation_diag: Optional[SessionConsolidationDiagV1] = None
 
-        # Try to load the session so we can apply domain-level updates
-        # (user_turns counter, timestamps, etc.).
         session = await self._lifecycle.get_session(
             tenant_id=tenant_id,
             session_id=session_id,
         )
 
-        # Increment user_turns only for user messages and only if the
-        # session exists. If the session is missing, we delegate error
-        # handling to the storage.append_message call below.
+        stored_message = await self._storage.append_message(
+            tenant_id=tenant_id,
+            session_id=session_id,
+            message=message,
+        )
+
         if session is not None and message.role == "user":
-            # This updates in-memory state and timestamps; persistence is
-            # delegated to save_session().
             user_turns = session.increment_user_turns()
             await self.save_session(session)
 
@@ -371,15 +370,6 @@ class SessionManager:
                         turn=user_turns,
                     )
                     await self.save_session(session)
-
-        # Delegate message persistence to the storage backend. The storage
-        # may apply its own retention/trimming logic (FIFO, max_messages, etc.).
-        
-        stored_message = await self._storage.append_message(
-            tenant_id=tenant_id,
-            session_id=session_id,
-            message=message,
-        )
 
         if self._session_turn_index_enabled and self._session_turn_index_store is not None:
             await self._session_turn_index_store.upsert_turn(

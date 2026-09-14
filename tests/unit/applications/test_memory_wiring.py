@@ -134,6 +134,24 @@ def test_build_session_manager_skips_managers_when_memory_flags_disabled(
     assert isinstance(session_manager._storage, SQLiteSessionStorage)
 
 
+def test_build_session_manager_wires_consolidation_mode_from_memory_profile(
+    tmp_path: Path,
+) -> None:
+    create_sqlite_integration(data_dir=tmp_path)
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.session.consolidation")
+    env.memory_profile = MemoryProfile(
+        enable_user_memory=False,
+        enable_org_memory=False,
+        enable_long_term_memory=False,
+        enable_task_memory=False,
+        consolidation_mode="auto",
+    )
+    wiring = resolve_memory_platform_wiring(env)
+    session_manager = build_session_manager_from_environment(env, memory_wiring=wiring)
+
+    assert session_manager._consolidation._consolidation_mode == "auto"
+
+
 def test_build_session_manager_requires_runtime_tenant_for_user_memory() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="host-profile-x")
     env.memory_profile = MemoryProfile(

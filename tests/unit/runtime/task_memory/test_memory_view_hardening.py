@@ -22,13 +22,14 @@ def _view_with_policy(**kwargs):
     retention_days = kwargs.pop("retention_days", None)
     tenant_id = kwargs.pop("tenant_id", _TENANT_ID)
     metadata = kwargs.pop("metadata", None)
-    exec_ctx = build_runtime_execution_context_for_tests(metadata=metadata or {})
+    exec_ctx = build_runtime_execution_context_for_tests(
+        metadata=metadata or {},
+        tenant_id=tenant_id,
+    )
     task_id = exec_ctx.task_id
     view = PolicyScopedMemoryView(
         exec_ctx,
         store,
-        tenant_id=tenant_id,
-        task_id=task_id,
         access_policy=policy or MemoryAccessPolicy(),
         retention_days=retention_days,
     )
@@ -70,12 +71,12 @@ async def test_scope_boundary_applies_to_read_list_delete() -> None:
     policy = MemoryAccessPolicy(scope_boundary="tenant")
     view, _, exec_ctx = _view_with_policy(policy=policy)
     await view.write("ns", "k", {"v": 1})
-    exec_ctx.metadata["memory_scope_tenant_id"] = "other-tenant"
-    with pytest.raises(MemoryViewAccessDenied, match="scope boundary"):
+    exec_ctx.metadata["tenant_id"] = "other-tenant"
+    with pytest.raises(MemoryViewAccessDenied, match="conflicts"):
         await view.read("ns", "k")
-    with pytest.raises(MemoryViewAccessDenied, match="scope boundary"):
+    with pytest.raises(MemoryViewAccessDenied, match="conflicts"):
         await view.list("ns")
-    with pytest.raises(MemoryViewAccessDenied, match="scope boundary"):
+    with pytest.raises(MemoryViewAccessDenied, match="conflicts"):
         await view.delete("ns", "k")
-    with pytest.raises(MemoryViewAccessDenied, match="scope boundary"):
+    with pytest.raises(MemoryViewAccessDenied, match="conflicts"):
         await view.write("ns", "k2", {"v": 2})
