@@ -14,9 +14,12 @@ from enum import StrEnum
 from typing import Final, Protocol, runtime_checkable
 
 from intergrax.contracts.autonomous_work.execution_authority import validate_authority_scopes
+from intergrax.contracts.root_execution_operation import (
+    WORKER_ROOT_EXECUTION_OPERATION,
+    RootExecutionOperation,
+    normalize_root_execution_policy_operation,
+)
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-
-WORKER_ROOT_EXECUTION_OPERATION: Final = "worker.root_execution.dispatch"
 
 
 class RootExecutionAdmissionPolicyRule:
@@ -59,7 +62,7 @@ class RuntimeExecutionPolicyAdmissionRequest:
     workspace_id: str
     principal_id: str
     collaborative_authority_scopes: tuple[str, ...]
-    execution_operation: str = WORKER_ROOT_EXECUTION_OPERATION
+    execution_operation: str = RootExecutionOperation.ROOT_ORCHESTRATION.policy_operation()
     resource_scope: str | None = None
 
     def __post_init__(self) -> None:
@@ -69,8 +72,8 @@ class RuntimeExecutionPolicyAdmissionRequest:
             raise ValueError("workspace_id must be non-empty")
         if not self.principal_id.strip():
             raise ValueError("principal_id must be non-empty")
-        if not self.execution_operation.strip():
-            raise ValueError("execution_operation must be non-empty")
+        normalized_operation = normalize_root_execution_policy_operation(self.execution_operation)
+        object.__setattr__(self, "execution_operation", normalized_operation)
         object.__setattr__(
             self,
             "collaborative_authority_scopes",

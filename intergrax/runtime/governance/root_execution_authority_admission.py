@@ -18,7 +18,6 @@ from intergrax.contracts.runtime_execution_admission import (
 from intergrax.contracts.runtime_execution_policy_admission import (
     RuntimeExecutionPolicyAdmissionPort,
     RuntimeExecutionPolicyAdmissionRequest,
-    WORKER_ROOT_EXECUTION_OPERATION,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 def _map_runtime_policy_action(
@@ -90,7 +89,7 @@ class RootExecutionAuthorityAdmissionService:
                 workspace_id=request.workspace_id,
                 principal_id=request.principal_id,
                 collaborative_authority_scopes=request.collaborative_authority_scopes,
-                execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
+                execution_operation=request.root_execution_operation.policy_operation(),
             )
         )
         if _approved_scopes_exceed_collaborative_authority(

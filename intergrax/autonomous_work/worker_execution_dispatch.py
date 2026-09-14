@@ -51,16 +51,13 @@ from intergrax.contracts.execution_identity import ExecutionId
 from intergrax.contracts.autonomous_work.goal import WorkerGoalStatus
 from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
 from intergrax.contracts.autonomous_work.responsibility import ResponsibilityStatus
-from intergrax.contracts.execution_intake import (
-    CanonicalExecutionIntakePort,
-    CanonicalExecutionIntakeRequest,
-    CanonicalExecutionInvocationFailed,
+from intergrax.contracts.execution_intake import CanonicalExecutionInvocationFailed
+from intergrax.contracts.root_execution_launch import (
+    RootExecutionLaunchDisposition,
+    RootExecutionLaunchPort,
+    RootExecutionLaunchRequest,
 )
-from intergrax.contracts.runtime_execution_admission import (
-    RootExecutionAuthorityAdmissionDisposition,
-    RootExecutionAuthorityAdmissionPort,
-    RootExecutionAuthorityAdmissionRequest,
-)
+from intergrax.contracts.root_execution_operation import RootExecutionOperation
 
 InputT = TypeVar("InputT")
 OutputT = TypeVar("OutputT")
@@ -89,8 +86,7 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
         responsibility_repository: ResponsibilityRepository,
         worker_goal_repository: WorkerGoalRepository,
         admission_service: WorkerExecutionAdmissionService,
-        root_authority_admission: RootExecutionAuthorityAdmissionPort,
-        execution_intake: CanonicalExecutionIntakePort[InputT, OutputT],
+        root_execution_launcher: RootExecutionLaunchPort[InputT, OutputT],
         budget_admission_service: WorkerBudgetAdmissionService | None = None,
         execution_accounting_service: WorkerExecutionAccountingService | None = None,
         clock: Callable[[], datetime] | None = None,
@@ -99,8 +95,7 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
         self._responsibility_repository = responsibility_repository
         self._worker_goal_repository = worker_goal_repository
         self._admission_service = admission_service
-        self._root_authority_admission = root_authority_admission
-        self._execution_intake = execution_intake
+        self._root_execution_launcher = root_execution_launcher
         self._budget_admission_service = budget_admission_service
         self._execution_accounting_service = execution_accounting_service
         self._clock = clock or _utc_now
@@ -197,32 +192,16 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
             )
 
         principal = authority_context.resolved_principal
-        root_admission = self._root_authority_admission.authorize(
-            RootExecutionAuthorityAdmissionRequest(
-                tenant_id=principal.tenant_id,
-                workspace_id=principal.workspace_id,
-                principal_id=principal.principal_id,
-                collaborative_authority_scopes=authority_context.collaborative_authority_scopes,
-                effective_authority_decision=authority_context.effective_authority_decision,
-            )
-        )
-        if root_admission.disposition is not RootExecutionAuthorityAdmissionDisposition.ALLOWED:
-            if budget_reserved:
-                self._release_budget_reservation(request)
-            if root_admission.disposition is RootExecutionAuthorityAdmissionDisposition.UNAVAILABLE:
-                return self._unavailable(correlation=base_correlation)
-            return self._rejected(
-                correlation=base_correlation,
-                reason=WorkerExecutionDispatchRejectionReason.RUNTIME_AUTHORITY_DENIED,
-            )
-        assert root_admission.trusted_parent_execution_authority is not None
-
         try:
-            intake_result = await self._execution_intake.dispatch(
-                CanonicalExecutionIntakeRequest(
-                    payload=request.runtime_request,
-                    trusted_parent_execution_authority=root_admission.trusted_parent_execution_authority,
+            launch_result = await self._root_execution_launcher.launch(
+                RootExecutionLaunchRequest(
                     tenant_id=principal.tenant_id,
+                    workspace_id=principal.workspace_id,
+                    principal_id=principal.principal_id,
+                    root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,
+                    collaborative_authority_scopes=authority_context.collaborative_authority_scopes,
+                    effective_authority_decision=authority_context.effective_authority_decision,
+                    payload=request.runtime_request,
                     run_id=request.run_id,
                     attempt_id=request.attempt_id,
                 )
@@ -248,6 +227,20 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
                 ),
                 failure_reason=str(exc.cause or exc),
             )
+
+        if launch_result.disposition is RootExecutionLaunchDisposition.UNAVAILABLE:
+            if budget_reserved:
+                self._release_budget_reservation(request)
+            return self._unavailable(correlation=base_correlation)
+        if launch_result.disposition is not RootExecutionLaunchDisposition.LAUNCHED:
+            if budget_reserved:
+                self._release_budget_reservation(request)
+            return self._rejected(
+                correlation=base_correlation,
+                reason=WorkerExecutionDispatchRejectionReason.RUNTIME_AUTHORITY_DENIED,
+            )
+        assert launch_result.intake_result is not None
+        intake_result = launch_result.intake_result
 
         self._bind_budget_execution(
             request,

@@ -19,6 +19,7 @@ from intergrax.runtime.background_execution.identity_admission import (
     assert_payload_run_id_consistent,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.governance.execution_admission_composition import build_reference_allowing_root_execution_authority_admission
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
@@ -112,10 +113,15 @@ class NexusWorkerRuntime:
             execution_budget_ledger_factory=resolved_factory,
             execution_terminal=execution_terminal,
         )
+        from intergrax.runtime.governance.execution_admission_composition import (
+            build_reference_allowing_root_execution_authority_admission,
+        )
+
         host_execution = build_host_task_execution(
             loop,
             orchestration_triggers=orchestration_triggers,
             pipeline_capability_suffix=pipeline_capability_suffix,
+            root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
         )
         return cls(
             host_execution,

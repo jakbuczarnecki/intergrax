@@ -15,6 +15,7 @@ from intergrax.contracts.runtime_execution_admission import (
     RootExecutionAuthorityAdmissionDisposition,
     RootExecutionAuthorityAdmissionRequest,
 )
+from intergrax.contracts.root_execution_operation import RootExecutionOperation
 from intergrax.contracts.runtime_execution_policy_admission import (
     RootExecutionAdmissionPolicyRule,
     WORKER_ROOT_EXECUTION_OPERATION,
@@ -49,6 +50,7 @@ def _request(*, action: PolicyAction) -> RootExecutionAuthorityAdmissionRequest:
         effective_authority_decision=EffectiveAuthorityDecision(
             decision=PolicyDecision(action=action, reason="test"),
         ),
+        root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,
     )
 
 

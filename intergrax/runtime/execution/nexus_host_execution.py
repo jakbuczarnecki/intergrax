@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.runtime_execution_admission import RootExecutionAuthorityAdmissionPort
 from intergrax.runtime.execution.effective_profile_revision_admission import (
     EffectiveProfileRevisionAdmissionPort,
 )
@@ -26,6 +27,7 @@ def build_host_task_execution(
     orchestration_triggers: frozenset[str],
     pipeline_capability_suffix: str = ".pipeline",
     revision_admission: EffectiveProfileRevisionAdmissionPort | None = None,
+    root_authority_admission: RootExecutionAuthorityAdmissionPort,
 ) -> HostTaskExecution:
     """Internal composition builder: extract canonical execution dependencies from Nexus."""
     return HostTaskExecution(
@@ -45,6 +47,7 @@ def build_host_task_execution(
         _failure_evidence_recorder=RuntimeEventExecutionFailureEvidenceRecorder(
             nexus_loop.event_bus,
         ),
+        _root_authority_admission=root_authority_admission,
     )
 
 

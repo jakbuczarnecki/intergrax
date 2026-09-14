@@ -73,6 +73,7 @@ from intergrax.contracts.execution_identity import (
     mint_execution_id,
     mint_run_id,
 )
+from intergrax.contracts.root_execution_operation import RootExecutionOperation
 from intergrax.contracts.runtime_execution_policy_admission import (
     RootExecutionAdmissionPolicyRule,
     WORKER_ROOT_EXECUTION_OPERATION,
@@ -80,6 +81,9 @@ from intergrax.contracts.runtime_execution_policy_admission import (
 from intergrax.runtime.execution.canonical_intake_adapter import CanonicalExecutionRuntimeAdapter
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.runtime import ExecutionRuntime
+from intergrax.runtime.governance.default_root_execution_launcher import (
+    DefaultRootExecutionLauncher,
+)
 from intergrax.runtime.governance.execution_admission_composition import (
     build_root_execution_authority_admission,
 )
@@ -239,8 +243,10 @@ def _dispatch_service(
                 clock=lambda: _UTC,
             ),
         ),
-        root_authority_admission=root_admission or _explicit_allow_root_admission(),
-        execution_intake=recording,
+        root_execution_launcher=DefaultRootExecutionLauncher(
+            root_authority_admission=root_admission or _explicit_allow_root_admission(),
+            execution_intake=recording,
+        ),
     )
     return service, recording
 
@@ -601,8 +607,10 @@ async def test_execution_runtime_invoked_exactly_once_per_dispatch() -> None:
                 clock=lambda: _UTC,
             ),
         ),
-        root_authority_admission=_explicit_allow_root_admission(),
-        execution_intake=adapter,
+        root_execution_launcher=DefaultRootExecutionLauncher(
+            root_authority_admission=_explicit_allow_root_admission(),
+            execution_intake=adapter,
+        ),
     )
 
     result = await service.dispatch(_dispatch_request(worker_id=worker_id))
@@ -720,6 +728,7 @@ def test_root_admission_requires_explicit_runtime_policy_allow() -> None:
             effective_authority_decision=EffectiveAuthorityDecision(
                 decision=PolicyDecision(action=PolicyAction.ALLOW, reason="ok"),
             ),
+            root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,
         )
     )
     assert result.disposition in {
@@ -747,6 +756,7 @@ def test_root_admission_mints_trusted_authority_with_explicit_policy() -> None:
             effective_authority_decision=EffectiveAuthorityDecision(
                 decision=PolicyDecision(action=PolicyAction.ALLOW, reason="ok"),
             ),
+            root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,
         )
     )
     assert result.disposition is RootExecutionAuthorityAdmissionDisposition.ALLOWED
@@ -895,10 +905,12 @@ async def test_same_run_id_retry_is_not_idempotent() -> None:
                 clock=lambda: _UTC,
             ),
         ),
-        root_authority_admission=build_root_execution_authority_admission(
-            runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
+        root_execution_launcher=DefaultRootExecutionLauncher(
+            root_authority_admission=build_root_execution_authority_admission(
+                runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
+            ),
+            execution_intake=adapter,
         ),
-        execution_intake=adapter,
     )
     base = _dispatch_request(worker_id=worker_id)
     first_request = WorkerExecutionDispatchRequest(

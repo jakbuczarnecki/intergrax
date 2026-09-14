@@ -83,12 +83,16 @@ def create_debug_app(
                 checkpoint_store=resolved_checkpoint_store,
             )
         elif registry is not None and resolved_loop is not None:
+            from intergrax.runtime.governance.execution_admission_composition import (
+                build_reference_allowing_root_execution_authority_admission,
+            )
             from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 
             resolved_hitl = DebugHitlResumeService(
                 host_execution=build_host_task_execution(
                     resolved_loop,
                     orchestration_triggers=frozenset(),
+                    root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
                 ),
                 checkpoint_store=resolved_checkpoint_store,
             )
@@ -101,6 +105,9 @@ def create_debug_app(
                 verifier=create_inbound_verifier(),
             )
         elif resolved_loop is not None:
+            from intergrax.runtime.governance.execution_admission_composition import (
+                build_reference_allowing_root_execution_authority_admission,
+            )
             from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 
             resolved_interaction = DebugInteractionIntakeService(
@@ -108,6 +115,7 @@ def create_debug_app(
                     build_host_task_execution(
                         resolved_loop,
                         orchestration_triggers=frozenset(),
+                        root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
                     )
                 ),
                 verifier=create_inbound_verifier(),
