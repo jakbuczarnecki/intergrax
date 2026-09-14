@@ -11,7 +11,6 @@ import time
 from dataclasses import dataclass
 
 from intergrax.contracts.event_delivery import (
-    CriticalEventDeliveryError,
     DeliverableEvent,
     EventDeliveryDisposition,
     EventDeliveryPolicy,
@@ -19,17 +18,12 @@ from intergrax.contracts.event_delivery import (
     EventPriority,
     EventSinkPort,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEvent
-from intergrax.runtime.observability.event_delivery.runtime_event_export_sink import (
-    RuntimeEventExportSink,
-)
 
 
 @dataclass(frozen=True, slots=True)
 class _QueuedItem:
     priority: EventPriority
     event: DeliverableEvent
-    source_event: RuntimeEvent | None
     enqueued_at: float
 
 
@@ -69,11 +63,14 @@ class BoundedEventSink:
         *,
         priority: EventPriority,
         deadline: float | None = None,
-        source_event: RuntimeEvent | None = None,
     ) -> EventDeliveryResult:
         if self._stop.is_set():
             if priority is EventPriority.CRITICAL:
-                raise CriticalEventDeliveryError("sink closed with undelivered critical event")
+                return EventDeliveryResult(
+                    disposition=EventDeliveryDisposition.REJECTED,
+                    priority=priority,
+                    buffered_depth=self.pending_depth,
+                )
             return EventDeliveryResult(
                 disposition=EventDeliveryDisposition.REJECTED,
                 priority=priority,
@@ -83,7 +80,6 @@ class BoundedEventSink:
         item = _QueuedItem(
             priority=priority,
             event=event,
-            source_event=source_event,
             enqueued_at=time.monotonic(),
         )
 
@@ -106,8 +102,10 @@ class BoundedEventSink:
             try:
                 self._queue.put_nowait(item)
             except queue.Full:
-                raise CriticalEventDeliveryError(
-                    f"critical event {event.event_id} rejected: buffer full",
+                return EventDeliveryResult(
+                    disposition=EventDeliveryDisposition.REJECTED,
+                    priority=priority,
+                    buffered_depth=self.pending_depth,
                 )
             return EventDeliveryResult(
                 disposition=EventDeliveryDisposition.ACCEPTED,
@@ -164,25 +162,10 @@ class BoundedEventSink:
             try:
                 if item is None:
                     break
-                downstream = self._downstream
-                if isinstance(downstream, RuntimeEventExportSink):
-                    if item.source_event is not None:
-                        downstream.deliver_bounded(
-                            item.source_event,
-                            item.event,
-                            priority=item.priority,
-                        )
-                    else:
-                        downstream.publish(
-                            item.event,
-                            priority=item.priority,
-                            deadline=None,
-                        )
-                else:
-                    downstream.publish(
-                        item.event,
-                        priority=item.priority,
-                        deadline=None,
-                    )
+                self._downstream.publish(
+                    item.event,
+                    priority=item.priority,
+                    deadline=None,
+                )
             finally:
                 self._queue.task_done()

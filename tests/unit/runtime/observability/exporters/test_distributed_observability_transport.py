@@ -115,7 +115,8 @@ def test_ten_wiring_instances_isolated_transports() -> None:
 @pytest.mark.asyncio
 async def test_collector_failure_isolated_from_runtime() -> None:
     class FailingCollector(OtlpTransportPort):
-        def export(self, event: RuntimeEvent) -> None:
+        def export(self, event: object) -> None:
+            _ = event
             raise DistributedTransportError("collector unavailable")
 
         def flush(self) -> None:
@@ -163,7 +164,8 @@ def test_collector_transport_flush_before_close() -> None:
 @pytest.mark.asyncio
 async def test_backpressure_remains_bounded_with_slow_export() -> None:
     class SlowTransport(OtlpTransportPort):
-        def export(self, event: RuntimeEvent) -> None:
+        def export(self, event: object) -> None:
+            _ = event
             time.sleep(0.05)
 
         def flush(self) -> None:

@@ -16,9 +16,17 @@ from uuid import uuid4
 
 from intergrax.contracts.event_delivery import (
     CriticalEventDeliveryError,
+    DeliverableEvent,
+    EventDeliveryBoundaryError,
     EventDeliveryDisposition,
+    EventDeliveryReaction,
+    EventDeliveryResult,
     EventPriority,
+    EventSinkDeliveryReactionPort,
     EventSinkPort,
+)
+from intergrax.runtime.observability.event_delivery.enterprise_default_event_sink_delivery_reaction import (
+    EnterpriseDefaultEventSinkDeliveryReaction,
 )
 from intergrax.runtime.events.event_taxonomy import EventCategory
 from intergrax.runtime.observability.event_delivery.delivery_metrics import (
@@ -110,6 +118,7 @@ class RuntimeEventBus:
         record_history: bool = True,
         event_sink: EventSinkPort | None = None,
         delivery_metrics: InternalDeliveryMetrics | None = None,
+        delivery_reaction: EventSinkDeliveryReactionPort | None = None,
     ) -> None:
         self._handlers: DefaultDict[RuntimeEventType, List[tuple[str, int, EventHandler]]] = (
             defaultdict(list)
@@ -122,6 +131,11 @@ class RuntimeEventBus:
             persistence,
         )
         self._event_sink: EventSinkPort | None = event_sink
+        self._delivery_reaction: EventSinkDeliveryReactionPort = (
+            delivery_reaction
+            if delivery_reaction is not None
+            else EnterpriseDefaultEventSinkDeliveryReaction()
+        )
         self._delivery_metrics: InternalDeliveryMetrics | None = (
             delivery_metrics
             if delivery_metrics is not None
@@ -230,34 +244,68 @@ class RuntimeEventBus:
         sink = self._event_sink
         if sink is None:
             return
-        from intergrax.runtime.observability.event_delivery.bounded_event_sink import (
-            BoundedEventSink,
-        )
-
         priority = delivery_priority_for_runtime_event(event)
         deliverable = runtime_event_to_deliverable(event)
         started = time.monotonic()
-        if isinstance(sink, BoundedEventSink):
-            result = sink.publish(
-                deliverable,
+        reaction: EventDeliveryReaction
+        record_result: EventDeliveryResult | None = None
+        try:
+            record_result = sink.publish(deliverable, priority=priority)
+        except EventDeliveryBoundaryError as boundary_error:
+            reaction = self._resolve_delivery_reaction(
                 priority=priority,
-                source_event=event,
+                deliverable=deliverable,
+                result=None,
+                boundary_error=boundary_error,
             )
         else:
-            result = sink.publish(deliverable, priority=priority)
+            reaction = self._resolve_delivery_reaction(
+                priority=priority,
+                deliverable=deliverable,
+                result=record_result,
+                boundary_error=None,
+            )
         latency = time.monotonic() - started
         metrics = self._delivery_metrics
-        if metrics is not None:
-            metrics.record(result, latency_seconds=latency)
+        if metrics is not None and record_result is not None:
+            metrics.record(record_result, latency_seconds=latency)
+        if reaction is EventDeliveryReaction.FAIL_EXECUTION:
+            raise CriticalEventDeliveryError(
+                f"critical runtime event {deliverable.event_id} delivery failed at sink",
+            )
+
+    def _resolve_delivery_reaction(
+        self,
+        *,
+        priority: EventPriority,
+        deliverable: DeliverableEvent,
+        result: EventDeliveryResult | None,
+        boundary_error: EventDeliveryBoundaryError | None,
+    ) -> EventDeliveryReaction:
+        if boundary_error is not None:
+            strategy = self._delivery_reaction.react_to_boundary_error(
+                priority=priority,
+                error=boundary_error,
+                deliverable=deliverable,
+            )
+        elif result is not None:
+            strategy = self._delivery_reaction.react_to_result(
+                priority=priority,
+                result=result,
+                deliverable=deliverable,
+            )
+        else:
+            strategy = EventDeliveryReaction.CONTINUE
+
         if priority is EventPriority.CRITICAL:
-            if result.disposition is EventDeliveryDisposition.DROPPED:
-                raise CriticalEventDeliveryError(
-                    f"critical runtime event {deliverable.event_id} was dropped at sink",
-                )
-            if result.disposition is EventDeliveryDisposition.REJECTED:
-                raise CriticalEventDeliveryError(
-                    f"critical runtime event {deliverable.event_id} was rejected at sink",
-                )
+            if boundary_error is not None:
+                return EventDeliveryReaction.FAIL_EXECUTION
+            if result is not None and result.disposition in (
+                EventDeliveryDisposition.DROPPED,
+                EventDeliveryDisposition.REJECTED,
+            ):
+                return EventDeliveryReaction.FAIL_EXECUTION
+        return strategy
 
     def _commit_durable_evidence(
         self,

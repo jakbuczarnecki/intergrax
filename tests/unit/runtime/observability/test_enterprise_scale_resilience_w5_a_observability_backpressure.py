@@ -10,12 +10,13 @@ import time
 import pytest
 
 from intergrax.contracts.event_delivery import (
-    CriticalEventDeliveryError,
     CriticalEventKind,
     DeliverableEvent,
     EventDeliveryDisposition,
     EventDeliveryPolicy,
     EventPriority,
+    make_deliverable_event,
+    make_observability_export_payload,
 )
 from intergrax.runtime.observability.event_delivery import BoundedEventSink, InMemoryEventSink
 
@@ -23,7 +24,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def _event(label: str, seq: int = 0) -> DeliverableEvent:
-    return DeliverableEvent(event_id=label, kind=label, sequence=seq)
+    return make_deliverable_event(
+        make_observability_export_payload(event_id=label, kind=label),
+        sequence=seq,
+    )
 
 
 def test_best_effort_overflow_allows_drop_execution_continues() -> None:
@@ -58,11 +62,11 @@ def test_critical_overflow_fail_closed_no_silent_loss() -> None:
             _event(f"c-{i}", seq=i),
             priority=EventPriority.CRITICAL,
         )
-    with pytest.raises(CriticalEventDeliveryError):
-        sink.publish(
-            _event("c-overflow"),
-            priority=EventPriority.CRITICAL,
-        )
+    overflow = sink.publish(
+        _event("c-overflow"),
+        priority=EventPriority.CRITICAL,
+    )
+    assert overflow.disposition is EventDeliveryDisposition.REJECTED
     sink.close()
 
 
@@ -102,9 +106,11 @@ def test_cancellation_during_publish_no_orphan_worker() -> None:
         try:
             for i in range(50):
                 sink.publish(
-                    DeliverableEvent(
-                        event_id=f"pub-{i}",
-                        kind=CriticalEventKind.RECOVERY_STATE_CHANGE.value,
+                    make_deliverable_event(
+                        make_observability_export_payload(
+                            event_id=f"pub-{i}",
+                            kind=CriticalEventKind.RECOVERY_STATE_CHANGE.value,
+                        ),
                         sequence=i,
                     ),
                     priority=EventPriority.CRITICAL,

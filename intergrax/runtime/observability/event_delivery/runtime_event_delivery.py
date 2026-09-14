@@ -9,9 +9,14 @@ from intergrax.contracts.event_delivery import (
     CriticalEventKind,
     DeliverableEvent,
     EventPriority,
+    ObservabilityExportSafeAttribute,
     classify_kind_string,
+    make_deliverable_event,
+    make_observability_export_payload,
+    ObservabilityExportPayload,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.observability.export_boundary import runtime_event_export_source_from_event
 
 
 class UnclassifiedRuntimeEventDeliveryError(ValueError):
@@ -87,12 +92,37 @@ if _missing_types:
     )
 
 
-def runtime_event_to_deliverable(event: RuntimeEvent) -> DeliverableEvent:
+def observability_export_payload_from_runtime_event(
+    event: RuntimeEvent,
+) -> ObservabilityExportPayload:
+    source = runtime_event_export_source_from_event(event)
     kind = event.event_kind or event.event_type.value
-    return DeliverableEvent(
-        event_id=str(event.event_id),
-        kind=kind,
+    safe_attributes = tuple(
+        ObservabilityExportSafeAttribute(key=key, value=value)
+        for key, value in sorted(source.safe_payload.items())
     )
+    return make_observability_export_payload(
+        event_id=str(source.event_id),
+        kind=kind,
+        event_type=source.event_type,
+        run_id=source.run_id,
+        task_id=source.task_id,
+        attempt_id=source.attempt_id,
+        execution_id=source.execution_id,
+        agent_id=source.agent_id,
+        tenant_id=source.tenant_id,
+        correlation_id=source.correlation_id,
+        parent_event_id=source.parent_event_id,
+        execution_phase=source.execution_phase,
+        w3c_traceparent=source.w3c_traceparent,
+        w3c_tracestate=source.w3c_tracestate,
+        safe_attributes=safe_attributes,
+    )
+
+
+def runtime_event_to_deliverable(event: RuntimeEvent) -> DeliverableEvent:
+    payload = observability_export_payload_from_runtime_event(event)
+    return make_deliverable_event(payload)
 
 
 def delivery_priority_for_runtime_event(event: RuntimeEvent) -> EventPriority:

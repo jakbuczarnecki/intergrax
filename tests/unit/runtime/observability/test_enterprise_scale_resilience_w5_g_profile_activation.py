@@ -142,7 +142,8 @@ def test_shutdown_flush_before_transport_close() -> None:
 @pytest.mark.asyncio
 async def test_export_failure_isolated_from_execution_plane() -> None:
     class FailingTransport(OtlpTransportPort):
-        def export(self, event: RuntimeEvent) -> None:
+        def export(self, event: object) -> None:
+            _ = event
             raise OtlpTransportError("collector unavailable")
 
         def flush(self) -> None:

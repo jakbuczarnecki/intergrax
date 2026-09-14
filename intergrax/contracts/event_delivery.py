@@ -12,7 +12,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
+
+OBSERVABILITY_EXPORT_PAYLOAD_SCHEMA: Literal["observability_export_payload.v1"] = (
+    "observability_export_payload.v1"
+)
 
 
 class EventPriority(StrEnum):
@@ -40,13 +44,114 @@ class EventDeliveryDisposition(StrEnum):
     DEFERRED = "DEFERRED"
 
 
+class EventDeliveryBoundaryFailureKind(StrEnum):
+    """Normalized delivery-boundary failure (not persistence or OTLP vendor errors)."""
+
+    SINK_CLOSED = "SINK_CLOSED"
+    TRANSPORT_FAILURE = "TRANSPORT_FAILURE"
+    INTERNAL_ERROR = "INTERNAL_ERROR"
+
+
+class EventDeliveryReaction(StrEnum):
+    CONTINUE = "CONTINUE"
+    FAIL_EXECUTION = "FAIL_EXECUTION"
+
+
+@dataclass(frozen=True, slots=True)
+class ObservabilityExportSafeAttribute:
+    key: str
+    value: str | int
+
+
+@dataclass(frozen=True, slots=True)
+class ObservabilityExportPayload:
+    """Vendor-neutral, redacted observability export payload (contract layer)."""
+
+    event_id: str
+    kind: str
+    schema_version: Literal["observability_export_payload.v1"] = (
+        OBSERVABILITY_EXPORT_PAYLOAD_SCHEMA
+    )
+    event_type: str = ""
+    run_id: str = ""
+    task_id: str = ""
+    attempt_id: str = ""
+    execution_id: str = ""
+    agent_id: str = ""
+    tenant_id: str = ""
+    correlation_id: str = ""
+    parent_event_id: str = ""
+    execution_phase: str = ""
+    w3c_traceparent: str = ""
+    w3c_tracestate: str = ""
+    safe_attributes: tuple[ObservabilityExportSafeAttribute, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.event_id.strip():
+            raise ValueError("event_id must be non-empty")
+        if not self.kind.strip():
+            raise ValueError("kind must be non-empty")
+
+
 @dataclass(frozen=True, slots=True)
 class DeliverableEvent:
     """Opaque envelope for sink transport (distinct from ``RuntimeEvent`` evidence)."""
 
-    event_id: str
-    kind: str
+    export_payload: ObservabilityExportPayload
     sequence: int = 0
+
+    @property
+    def event_id(self) -> str:
+        return self.export_payload.event_id
+
+    @property
+    def kind(self) -> str:
+        return self.export_payload.kind
+
+
+def make_observability_export_payload(
+    *,
+    event_id: str,
+    kind: str,
+    event_type: str = "",
+    run_id: str = "",
+    task_id: str = "",
+    attempt_id: str = "",
+    execution_id: str = "",
+    agent_id: str = "",
+    tenant_id: str = "",
+    correlation_id: str = "",
+    parent_event_id: str = "",
+    execution_phase: str = "",
+    w3c_traceparent: str = "",
+    w3c_tracestate: str = "",
+    safe_attributes: tuple[ObservabilityExportSafeAttribute, ...] = (),
+) -> ObservabilityExportPayload:
+    return ObservabilityExportPayload(
+        event_id=event_id,
+        kind=kind,
+        event_type=event_type,
+        run_id=run_id,
+        task_id=task_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        agent_id=agent_id,
+        tenant_id=tenant_id,
+        correlation_id=correlation_id,
+        parent_event_id=parent_event_id,
+        execution_phase=execution_phase,
+        w3c_traceparent=w3c_traceparent,
+        w3c_tracestate=w3c_tracestate,
+        safe_attributes=safe_attributes,
+    )
+
+
+def make_deliverable_event(
+    export_payload: ObservabilityExportPayload,
+    *,
+    sequence: int = 0,
+) -> DeliverableEvent:
+    return DeliverableEvent(export_payload=export_payload, sequence=sequence)
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +176,27 @@ class EventDeliveryPolicy:
 
 
 class CriticalEventDeliveryError(RuntimeError):
-    """Fail-closed when a critical event cannot be accepted (buffer saturated)."""
+    """Fail-closed when a critical event cannot be accepted (raised only by ``RuntimeEventBus``)."""
+
+
+class EventDeliveryBoundaryError(Exception):
+    """Normalized observability delivery failure at an ``EventSinkPort`` boundary."""
+
+    kind: EventDeliveryBoundaryFailureKind
+    message: str
+    deliverable_event_id: str
+
+    def __init__(
+        self,
+        *,
+        kind: EventDeliveryBoundaryFailureKind,
+        message: str,
+        deliverable_event_id: str = "",
+    ) -> None:
+        super().__init__(message)
+        self.kind = kind
+        self.message = message
+        self.deliverable_event_id = deliverable_event_id
 
 
 @runtime_checkable
@@ -93,11 +218,32 @@ class EventSinkPort(Protocol):
 class EventExportSinkPort(Protocol):
     """Downstream export transport (W5-C): delivery, flush, shutdown only."""
 
-    async def export(self, event: object) -> None: ...
+    async def export(self, payload: ObservabilityExportPayload) -> None: ...
 
     async def flush(self) -> None: ...
 
     async def close(self) -> None: ...
+
+
+@runtime_checkable
+class EventSinkDeliveryReactionPort(Protocol):
+    """Extension point: interpret sink results without raising ``CriticalEventDeliveryError``."""
+
+    def react_to_result(
+        self,
+        *,
+        priority: EventPriority,
+        result: EventDeliveryResult,
+        deliverable: DeliverableEvent,
+    ) -> EventDeliveryReaction: ...
+
+    def react_to_boundary_error(
+        self,
+        *,
+        priority: EventPriority,
+        error: EventDeliveryBoundaryError,
+        deliverable: DeliverableEvent,
+    ) -> EventDeliveryReaction: ...
 
 
 def priority_for_critical_kind(kind: CriticalEventKind) -> EventPriority:

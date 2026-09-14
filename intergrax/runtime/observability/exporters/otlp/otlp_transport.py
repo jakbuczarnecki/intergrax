@@ -134,13 +134,16 @@ class OtlpTransport(OtlpTransportPort):
         self._provider = provider
         self._exporter = exporter
 
-    def export(self, event: RuntimeEvent) -> None:
+    def export(self, event: object) -> None:
         if self._closed:
             return
         from opentelemetry.sdk._logs import LogData
         from opentelemetry.sdk._logs.export import LogExportResult
 
-        envelope = envelope_from_runtime_event(event)
+        if isinstance(event, ObservabilityExportEnvelope):
+            envelope = event
+        else:
+            envelope = envelope_from_runtime_event(event)  # type: ignore[arg-type]
         record = _log_record_from_envelope(envelope)
         try:
             result = self._exporter.export((LogData(record, self._scope),))

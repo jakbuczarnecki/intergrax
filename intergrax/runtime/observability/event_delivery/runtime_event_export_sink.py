@@ -9,12 +9,13 @@ import time
 
 from intergrax.contracts.event_delivery import (
     DeliverableEvent,
+    EventDeliveryBoundaryError,
+    EventDeliveryBoundaryFailureKind,
     EventDeliveryDisposition,
     EventDeliveryResult,
     EventExportSinkPort,
     EventPriority,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.observability.event_delivery.async_export_runner import (
     AsyncExportRunner,
 )
@@ -58,20 +59,7 @@ class RuntimeEventExportSink:
         priority: EventPriority,
         deadline: float | None = None,
     ) -> EventDeliveryResult:
-        """Legacy ``EventSinkPort`` entry — use ``deliver_bounded`` from the drain worker."""
-        return EventDeliveryResult(
-            disposition=EventDeliveryDisposition.REJECTED,
-            priority=priority,
-            buffered_depth=0,
-        )
-
-    def deliver_bounded(
-        self,
-        source_event: RuntimeEvent,
-        deliverable: DeliverableEvent,
-        *,
-        priority: EventPriority,
-    ) -> EventDeliveryResult:
+        _ = deadline
         if self._closed:
             return EventDeliveryResult(
                 disposition=EventDeliveryDisposition.REJECTED,
@@ -85,7 +73,7 @@ class RuntimeEventExportSink:
         if metrics is not None:
             metrics.record_export_attempt()
         try:
-            self._runner.run(self._export_sink.export(source_event))
+            self._runner.run(self._export_sink.export(event.export_payload))
             latency = time.monotonic() - started
             metrics = self._delivery_metrics
             if metrics is not None:
@@ -98,7 +86,9 @@ class RuntimeEventExportSink:
                 priority=priority,
                 buffered_depth=depth,
             )
-        except Exception:
+        except EventDeliveryBoundaryError:
+            raise
+        except Exception as exc:
             latency = time.monotonic() - started
             metrics = self._delivery_metrics
             if metrics is not None:
@@ -113,6 +103,7 @@ class RuntimeEventExportSink:
                 if priority is EventPriority.BEST_EFFORT
                 else EventDeliveryDisposition.REJECTED
             )
+            _ = exc
             return EventDeliveryResult(
                 disposition=disposition,
                 priority=priority,

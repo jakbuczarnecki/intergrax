@@ -65,8 +65,8 @@ async def test_routing_exporter_receives_published_event() -> None:
     await bus.publish(event)
     await asyncio.sleep(0.05)
     bus.close()
-    assert len(recorder.events) == 1
-    assert recorder.events[0].event_kind == event.event_kind
+    assert len(recorder.payloads) == 1
+    assert recorder.payloads[0].kind == event.event_kind
     assert bounded.closed
 
 
@@ -77,15 +77,19 @@ async def test_ordering_preserved_for_100_events() -> None:
         await bus.publish(_event(f".event_{index}"))
     await asyncio.sleep(0.2)
     bus.close()
-    kinds = [e.event_kind for e in recorder.events]
+    kinds = [payload.kind for payload in recorder.payloads]
     assert len(kinds) == 100
     for index in range(1, 101):
         assert kinds[index - 1] == f"qualification.w5c.event_{index}"
     assert bounded.closed
 
 
+from intergrax.contracts.event_delivery import ObservabilityExportPayload
+
+
 class _FailingExportSink:
-    async def export(self, event: RuntimeEvent) -> None:
+    async def export(self, payload: ObservabilityExportPayload) -> None:
+        _ = payload
         raise RuntimeError("export failed")
 
     async def flush(self) -> None:

@@ -41,7 +41,7 @@ class CollectorTransport(OtlpTransportPort):
             service_name=validated.service_name,
         )
 
-    def export(self, event: RuntimeEvent) -> None:
+    def export(self, event: object) -> None:
         try:
             self._inner.export(event)
         except OtlpTransportError as exc:

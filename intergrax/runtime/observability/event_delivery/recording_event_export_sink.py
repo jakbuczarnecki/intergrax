@@ -7,22 +7,22 @@ from __future__ import annotations
 
 import threading
 
-from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.contracts.event_delivery import ObservabilityExportPayload
 
 
 class RecordingEventExportSink:
-    """Captures exported runtime events in enqueue order."""
+    """Captures exported payloads in enqueue order."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
-        self._events: list[RuntimeEvent] = []
+        self._payloads: list[ObservabilityExportPayload] = []
         self._flush_count = 0
         self._closed = False
 
     @property
-    def events(self) -> list[RuntimeEvent]:
+    def payloads(self) -> list[ObservabilityExportPayload]:
         with self._lock:
-            return list(self._events)
+            return list(self._payloads)
 
     @property
     def flush_count(self) -> int:
@@ -34,11 +34,11 @@ class RecordingEventExportSink:
         with self._lock:
             return self._closed
 
-    async def export(self, event: RuntimeEvent) -> None:
+    async def export(self, payload: ObservabilityExportPayload) -> None:
         with self._lock:
             if self._closed:
                 return
-            self._events.append(event)
+            self._payloads.append(payload)
 
     async def flush(self) -> None:
         with self._lock:
