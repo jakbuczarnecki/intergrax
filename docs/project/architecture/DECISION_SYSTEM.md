@@ -65,6 +65,33 @@ The Decision System provides **typed lifecycle semantics, version lineage, compo
 
 ---
 
+## Canonical decision → execution integration
+
+Decision System is a **semantic decision lifecycle hosted by canonical Execution**. It is **not** a second runtime.
+
+```mermaid
+flowchart TD
+  Intent[Intent / application scope]
+  Prop[Proposal]
+  Ver[Verification]
+  Res[Resolution]
+  Gov[Governance / policy]
+  Auth[DecisionExecutionAuthorization]
+  Req[ExecutionRequest]
+  RT[ExecutionRuntime]
+  Intent --> Prop
+  Prop --> Ver
+  Ver --> Res
+  Res --> Gov
+  Gov --> Auth
+  Auth --> Req
+  Req --> RT
+```
+
+Optional deliberation/adjudication stages sit between Proposal and Verification per strategy; flows without semantic decision skip Proposal→Resolution and enter governance/admission directly.
+
+---
+
 ## Flagship architecture visual
 
 <a href="assets/fullsize/decision-system-flagship.md">

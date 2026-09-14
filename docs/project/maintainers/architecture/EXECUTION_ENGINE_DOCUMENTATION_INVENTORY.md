@@ -1,34 +1,40 @@
-# Execution Engine — Documentation Inventory (P0)
+﻿# Execution Engine â€” Documentation Inventory (P0 + post-freeze)
 
-**Status:** `INVENTORY` (classification only — no mass rewrites)
+**Status:** `INVENTORY` (classification + post-freeze reconciliation index)
+**Classification:** `INVENTORY SSOT`
+**Audience:** Maintainers, auditors
+**Canonical parent:** [`EXECUTION_ENGINE.md`](EXECUTION_ENGINE.md)
+**Last architecture reconciliation:** 2026-09-14 (EE-POST-FREEZE-FINAL)
+**Post-freeze audit:** [`../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md) (**PASS**)
+**Documentation reconciliation:** [`../qualification/EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md`](../qualification/EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md)
 
 **Ownership reference (unchanged):**
 
 ```text
-Decision = WHAT · AD = WHO · Governance = WHETHER
-ExecutionRuntime = lifecycle/how · Nexus = HOW/WHEN topology
-HITL = human authority · 5E = recovery · 5F = evidence (owned elsewhere)
+Decision = WHAT Â· AD = WHO Â· Governance = WHETHER
+ExecutionRuntime = lifecycle/how Â· Nexus = HOW/WHEN topology
+HITL = human authority Â· 5E = recovery Â· 5F = evidence (owned elsewhere)
 ```
 
 ---
 
 ## Maintainer entry point (CANONICAL)
 
-Single maintainer hub — navigation and status only (`MAINTAINER_HUB`):
+Single maintainer hub â€” navigation and status only (`MAINTAINER_HUB`):
 
 ```text
 docs/project/maintainers/architecture/EXECUTION_ENGINE.md
-├─ Execution Runtime      → UNIFIED_EXECUTION_RUNTIME.md
-├─ Governance & Authority → GOVERNED_EXECUTION.md + DECISION_APPROVAL_GOVERNANCE.md + NPSC-5D docs
-├─ Nexus                  → NEXUS_EXECUTION_FLOW.md
-├─ Child Execution        → UEA + NPSC-5B maintainers docs
-├─ Multi-Agent            → NPSC_5_MULTI_AGENT_PRODUCTION_ARCHITECTURE.md
-├─ Recovery               → NPSC_5E_RECOVERY_CHECKPOINT_RETRY_ARCHITECTURE.md
-├─ Evidence               → NPSC_5F_* + OBSERVABILITY.md
-└─ Scale / Resilience     → ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md
+â”śâ”€ Execution Runtime      â†’ UNIFIED_EXECUTION_RUNTIME.md
+â”śâ”€ Governance & Authority â†’ GOVERNED_EXECUTION.md + DECISION_APPROVAL_GOVERNANCE.md + NPSC-5D docs
+â”śâ”€ Nexus                  â†’ NEXUS_EXECUTION_FLOW.md
+â”śâ”€ Child Execution        â†’ UEA + NPSC-5B maintainers docs
+â”śâ”€ Multi-Agent            â†’ NPSC_5_MULTI_AGENT_PRODUCTION_ARCHITECTURE.md
+â”śâ”€ Recovery               â†’ NPSC_5E_RECOVERY_CHECKPOINT_RETRY_ARCHITECTURE.md
+â”śâ”€ Evidence               â†’ NPSC_5F_* + OBSERVABILITY.md
+â””â”€ Scale / Resilience     â†’ ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md
 ```
 
-Hub links to canonical owners only; it does not own normative semantics (see hub §Purpose).
+Hub links to canonical owners only; it does not own normative semantics (see hub Â§Purpose).
 
 ---
 
@@ -38,9 +44,9 @@ Hub links to canonical owners only; it does not own normative semantics (see hub
 
 | Document | Classification | Rationale |
 | --- | --- | --- |
-| `docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md` | **CANONICAL** | UEA — conflict winner per enterprise verification |
+| `docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md` | **CANONICAL** | UEA â€” conflict winner per enterprise verification |
 | `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` | **CANONICAL** | UER lifecycle owner narrative |
-| `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` | **CANONICAL** (plan pair) | Maintainer plan ↔ arch pair |
+| `docs/project/maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` | **CANONICAL** (plan pair) | Maintainer plan â†” arch pair |
 | `docs/project/architecture/UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md` | **CANONICAL** (supporting) | Implementation map |
 | `docs/project/architecture/UNIFIED_EXECUTION_IMPLEMENTATION_READINESS.md` | **FUTURE / PLANNED** | Readiness tracking |
 | `docs/project/maintainers/qualification/EXECUTION_ENGINE_ENTERPRISE_VERIFICATION.md` | **CANONICAL** (qualification record) | Post-NPSC-3G certification snapshot |
@@ -122,11 +128,14 @@ Hub links to canonical owners only; it does not own normative semantics (see hub
 | Document | Classification |
 | --- | --- |
 | `docs/project/maintainers/architecture/EXECUTION_ENGINE.md` | **CANONICAL** (`MAINTAINER_HUB`) |
+| `docs/project/maintainers/architecture/EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md` | **CANONICAL** (frozen enterprise map) |
+| `docs/project/maintainers/qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md` | **QUALIFICATION** (post-freeze PASS) |
+| `docs/project/maintainers/qualification/EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md` | **QUALIFICATION** (doc reconciliation PASS) |
 | `EXECUTION_CERTIFICATION_ACCELERATION_P0.md` | **CANONICAL** (P0 inventory) |
-| `EXECUTION_CERTIFICATION_ACCELERATION_R1.md` | **CANONICAL** (qual) — R1 **QUALIFIED** |
-| `EXECUTION_CERTIFICATION_ACCELERATION_R2.md` | **CANONICAL** (qual) — R2 **QUALIFIED** |
-| `EXECUTION_CERTIFICATION_ACCELERATION_R3.md` | **CANONICAL** (qual) — R3 **QUALIFIED** |
-| `EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md` | **CANONICAL** (supporting architecture) — **R3 QUALIFIED**; R3A ENV contract |
+| `EXECUTION_CERTIFICATION_ACCELERATION_R1.md` | **CANONICAL** (qual) â€” R1 **QUALIFIED** |
+| `EXECUTION_CERTIFICATION_ACCELERATION_R2.md` | **CANONICAL** (qual) â€” R2 **QUALIFIED** |
+| `EXECUTION_CERTIFICATION_ACCELERATION_R3.md` | **CANONICAL** (qual) â€” R3 **QUALIFIED** |
+| `EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md` | **CANONICAL** (supporting architecture) â€” **R3 QUALIFIED**; R3A ENV contract |
 
 ---
 
@@ -147,11 +156,11 @@ No **CONTRADICTORY** pair identified among current `docs/project/architecture` c
 | Asset / doc | Topic | Classification |
 | --- | --- | --- |
 | `UNIFIED_EXECUTION_ARCHITECTURE_DIAGRAMS.md` | Execution flow | **CORRECT** (canonical diagram pack) |
-| `EXECUTION_ENGINE_ENTERPRISE_VERIFICATION.md` §2 mermaid | Lifecycle entry | **CORRECT** (matches UEA/UER) |
+| `EXECUTION_ENGINE_ENTERPRISE_VERIFICATION.md` Â§2 mermaid | Lifecycle entry | **CORRECT** (matches UEA/UER) |
 | `docs/project/architecture/assets/fullsize/orchestration-control-plane.md` | Nexus / control | **CORRECT** (supporting) |
 | `docs/project/architecture/assets/fullsize/observability-evidence-spine.md` | Evidence | **CORRECT** |
 | Legacy audit diagram copies | Various | **STALE** |
-| End-to-end **qualification parallelization** diagram | Runner topology | **MISSING** (R1 doc above is text-only — acceptable until R1) |
+| End-to-end **qualification parallelization** diagram | Runner topology | **MISSING** (R1 doc above is text-only â€” acceptable until R1) |
 
 **DIAGRAMS TO REPLACE:** none mandatory in P0; add R1 coordinator diagram when runner lands.
 
