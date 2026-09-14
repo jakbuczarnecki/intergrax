@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""P2.1-S2B — capability-gated delegated provider cancel/interrupt control."""
+"""P2.1-S2B / P2.1-S2B-C1 — delegated provider control correlation hardening."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.contracts.delegated_execution_control import (
     DelegatedExecutionCancelProvider,
@@ -20,8 +21,15 @@ from intergrax.contracts.delegated_execution_control import (
     DelegatedExecutionInterruptProvider,
     delegated_control_outcome,
 )
+from intergrax.contracts.delegated_execution_invocation_binding import (
+    DelegatedExecutionInvocationBinding,
+    mint_delegated_execution_invocation_binding,
+)
 from intergrax.contracts.delegated_execution_provider import (
+    DelegatedExecutionBudgetMode,
+    DelegatedExecutionBudgetProjection,
     DelegatedExecutionCapabilities,
+    DelegatedExecutionContext,
     DelegatedExecutionOperationMetadata,
     DelegatedExecutionOutcome,
     DelegatedExecutionOutcomeCategory,
@@ -29,7 +37,9 @@ from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionRequest,
     DelegatedExecutionTransportError,
     delegated_success_outcome,
+    digest_delegated_execution_request,
 )
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_execution_id,
@@ -58,7 +68,11 @@ _CONTROL_SERVICE_MODULE = (
     / "delegated_execution"
     / "control_service.py"
 )
+_BINDING_MODULE = (
+    _REPO_ROOT / "intergrax" / "contracts" / "delegated_execution_invocation_binding.py"
+)
 _T0 = datetime(2026, 9, 7, 8, 0, 0, tzinfo=timezone.utc)
+_PAYLOAD_DIGEST = "sha256:" + ("ef" * 32)
 
 
 @dataclass(frozen=True)
@@ -71,20 +85,58 @@ class EchoResult:
     value: str
 
 
-def _invocation(
+def _operation() -> DelegatedExecutionOperationMetadata:
+    return DelegatedExecutionOperationMetadata.model_validate(
+        {
+            "operation": "execute_delegate",
+            "task_id": "task-1",
+        }
+    )
+
+
+def _context(
+    *,
+    execution_id: object | None = None,
+    run_id: object | None = None,
+    parent_execution_id: object | None = None,
+) -> DelegatedExecutionContext:
+    parent = parent_execution_id or mint_execution_id()
+    child = execution_id or mint_execution_id()
+    run = run_id or mint_run_id()
+    return DelegatedExecutionContext(
+        execution_id=child,
+        parent_execution_id=parent,
+        run_id=run,
+        attempt_id=mint_attempt_id(),
+        authority=ParentExecutionAuthority.scoped(("tools.read",)),
+        budget=DelegatedExecutionBudgetProjection(
+            allocation_mode=DelegatedExecutionBudgetMode.SHARED,
+        ),
+    )
+
+
+def _invocation_for_context(
     *,
     provider_id: str,
-    run_id: str,
+    context: DelegatedExecutionContext,
+    operation: DelegatedExecutionOperationMetadata | None = None,
     invocation_id: str = "inv-control-1",
+    run_id_override: str | None = None,
 ) -> ProviderInvocation:
+    op = operation or _operation()
+    digest = digest_delegated_execution_request(
+        context=context,
+        operation=op,
+        payload_digest=_PAYLOAD_DIGEST,
+    )
     return ProviderInvocation.model_validate(
         {
             "invocation_id": invocation_id,
             "provider_id": provider_id,
-            "operation": "execute_delegate",
-            "task_id": "task-1",
-            "run_id": run_id,
-            "request_digest": "sha256:" + ("cd" * 32),
+            "operation": op.operation,
+            "task_id": op.task_id,
+            "run_id": run_id_override or str(context.run_id),
+            "request_digest": digest,
             "started_at": _T0.isoformat(),
             "provider_request_id": "preq-control-1",
             "provider_operation_id": "pop-control-1",
@@ -92,24 +144,54 @@ def _invocation(
     )
 
 
+def _binding(
+    *,
+    provider_id: str,
+    context: DelegatedExecutionContext | None = None,
+    operation: DelegatedExecutionOperationMetadata | None = None,
+    invocation: ProviderInvocation | None = None,
+) -> DelegatedExecutionInvocationBinding:
+    ctx = context or _context()
+    op = operation or _operation()
+    inv = invocation or _invocation_for_context(
+        provider_id=provider_id,
+        context=ctx,
+        operation=op,
+    )
+    return mint_delegated_execution_invocation_binding(
+        context=ctx,
+        operation=op,
+        payload_digest=_PAYLOAD_DIGEST,
+        provider_invocation=inv,
+    )
+
+
 def _control_request(
     *,
     provider_id: str,
     operation: DelegatedExecutionControlOperation,
-    execution_id: str | None = None,
-    run_id: str | None = None,
+    execution_id: object | None = None,
+    run_id: object | None = None,
     invocation_id: str = "inv-control-1",
+    binding: DelegatedExecutionInvocationBinding | None = None,
 ) -> DelegatedExecutionControlRequest:
-    run = run_id or str(mint_run_id())
-    child = execution_id or str(mint_execution_id())
-    return DelegatedExecutionControlRequest(
-        execution_id=child,
-        run_id=run,
-        provider_invocation=_invocation(
+    if binding is not None:
+        return DelegatedExecutionControlRequest(
+            invocation_binding=binding,
+            operation=operation,
+        )
+    ctx = _context(execution_id=execution_id, run_id=run_id)
+    resolved_binding = _binding(
+        provider_id=provider_id,
+        context=ctx,
+        invocation=_invocation_for_context(
             provider_id=provider_id,
-            run_id=run,
+            context=ctx,
             invocation_id=invocation_id,
         ),
+    )
+    return DelegatedExecutionControlRequest(
+        invocation_binding=resolved_binding,
         operation=operation,
     )
 
@@ -128,6 +210,7 @@ class FakeControlProvider(
         cancel_behavior: str = "accepted",
         interrupt_behavior: str = "accepted",
         raise_transport_on_cancel: bool = False,
+        cancel_spoof_field: str | None = None,
     ) -> None:
         self._provider_id = provider_id
         self._cancel_calls = cancel_calls if cancel_calls is not None else []
@@ -135,6 +218,7 @@ class FakeControlProvider(
         self._cancel_behavior = cancel_behavior
         self._interrupt_behavior = interrupt_behavior
         self._raise_transport_on_cancel = raise_transport_on_cancel
+        self._cancel_spoof_field = cancel_spoof_field
         self._cancel_count = 0
 
     @property
@@ -157,9 +241,11 @@ class FakeControlProvider(
         self,
         request: DelegatedExecutionRequest[EchoPayload],
     ) -> DelegatedExecutionOutcome[EchoResult]:
-        invocation = _invocation(
+        ctx = request.context
+        invocation = _invocation_for_context(
             provider_id=self._provider_id,
-            run_id=str(request.context.run_id),
+            context=ctx,
+            operation=request.operation,
         )
         outcome = ProviderInvocationOutcome.model_validate(
             {
@@ -204,10 +290,16 @@ class FakeControlProvider(
                 request=request,
                 provider_id=self._provider_id,
             )
-        return delegated_control_outcome(
+        outcome = delegated_control_outcome(
             category=DelegatedExecutionControlOutcomeCategory.ACCEPTED,
             request=request,
             provider_id=self._provider_id,
+        )
+        return _maybe_spoof_control_outcome(
+            outcome,
+            request=request,
+            provider_id=self._provider_id,
+            spoof_field=self._cancel_spoof_field,
         )
 
     async def interrupt_delegated_execution(
@@ -226,6 +318,95 @@ class FakeControlProvider(
             request=request,
             provider_id=self._provider_id,
         )
+
+
+def _maybe_spoof_control_outcome(
+    outcome: DelegatedExecutionControlOutcome,
+    *,
+    request: DelegatedExecutionControlRequest,
+    provider_id: str,
+    spoof_field: str | None,
+) -> DelegatedExecutionControlOutcome:
+    if spoof_field is None:
+        return outcome
+    if spoof_field == "execution_id":
+        return DelegatedExecutionControlOutcome(
+            category=outcome.category,
+            operation=outcome.operation,
+            execution_id=mint_execution_id(),
+            run_id=outcome.run_id,
+            provider_id=outcome.provider_id,
+            invocation_id=outcome.invocation_id,
+            provider_request_id=outcome.provider_request_id,
+            provider_operation_id=outcome.provider_operation_id,
+        )
+    if spoof_field == "run_id":
+        return DelegatedExecutionControlOutcome(
+            category=outcome.category,
+            operation=outcome.operation,
+            execution_id=outcome.execution_id,
+            run_id=mint_run_id(),
+            provider_id=outcome.provider_id,
+            invocation_id=outcome.invocation_id,
+            provider_request_id=outcome.provider_request_id,
+            provider_operation_id=outcome.provider_operation_id,
+        )
+    if spoof_field == "provider_id":
+        return DelegatedExecutionControlOutcome(
+            category=outcome.category,
+            operation=outcome.operation,
+            execution_id=outcome.execution_id,
+            run_id=outcome.run_id,
+            provider_id="spoof-provider",
+            invocation_id=outcome.invocation_id,
+            provider_request_id=outcome.provider_request_id,
+            provider_operation_id=outcome.provider_operation_id,
+        )
+    if spoof_field == "invocation_id":
+        return DelegatedExecutionControlOutcome(
+            category=outcome.category,
+            operation=outcome.operation,
+            execution_id=outcome.execution_id,
+            run_id=outcome.run_id,
+            provider_id=outcome.provider_id,
+            invocation_id="spoof-invocation",
+            provider_request_id=outcome.provider_request_id,
+            provider_operation_id=outcome.provider_operation_id,
+        )
+    if spoof_field == "provider_request_id":
+        return DelegatedExecutionControlOutcome(
+            category=outcome.category,
+            operation=outcome.operation,
+            execution_id=outcome.execution_id,
+            run_id=outcome.run_id,
+            provider_id=outcome.provider_id,
+            invocation_id=outcome.invocation_id,
+            provider_request_id="spoof-preq",
+            provider_operation_id=outcome.provider_operation_id,
+        )
+    if spoof_field == "provider_operation_id":
+        return DelegatedExecutionControlOutcome(
+            category=outcome.category,
+            operation=outcome.operation,
+            execution_id=outcome.execution_id,
+            run_id=outcome.run_id,
+            provider_id=outcome.provider_id,
+            invocation_id=outcome.invocation_id,
+            provider_request_id=outcome.provider_request_id,
+            provider_operation_id="spoof-pop",
+        )
+    if spoof_field == "operation":
+        return DelegatedExecutionControlOutcome(
+            category=outcome.category,
+            operation=DelegatedExecutionControlOperation.INTERRUPT,
+            execution_id=outcome.execution_id,
+            run_id=outcome.run_id,
+            provider_id=outcome.provider_id,
+            invocation_id=outcome.invocation_id,
+            provider_request_id=outcome.provider_request_id,
+            provider_operation_id=outcome.provider_operation_id,
+        )
+    raise AssertionError(f"unknown spoof_field: {spoof_field}")
 
 
 @pytest.mark.asyncio
@@ -488,3 +669,115 @@ async def test_capability_without_contract_fail_closed() -> None:
     )
     assert outcome.category is DelegatedExecutionControlOutcomeCategory.UNSUPPORTED
     assert outcome.failure_code == "CONTROL_CONTRACT_MISSING"
+
+
+@pytest.mark.asyncio
+async def test_c1_t1_cross_child_invocation_rejected_before_provider() -> None:
+    run = mint_run_id()
+    ctx_a = _context(run_id=run)
+    ctx_b = _context(run_id=run)
+    inv_a = _invocation_for_context(provider_id="fake_control", context=ctx_a)
+    cancel_calls: list[DelegatedExecutionControlRequest] = []
+    provider = FakeControlProvider(cancel_calls=cancel_calls)
+    with pytest.raises(ValidationError):
+        mint_delegated_execution_invocation_binding(
+            context=ctx_b,
+            operation=_operation(),
+            payload_digest=_PAYLOAD_DIGEST,
+            provider_invocation=inv_a,
+        )
+    assert len(cancel_calls) == 0
+
+
+@pytest.mark.asyncio
+async def test_c1_t2_wrong_run_rejected_at_binding() -> None:
+    ctx = _context()
+    with pytest.raises(ValidationError):
+        _binding(
+            provider_id="fake_control",
+            context=ctx,
+            invocation=_invocation_for_context(
+                provider_id="fake_control",
+                context=ctx,
+                run_id_override=str(mint_run_id()),
+            ),
+        )
+
+
+@pytest.mark.asyncio
+async def test_c1_t3_wrong_provider_binding_fail_closed() -> None:
+    provider = FakeControlProvider(provider_id="provider-a")
+    service = DelegatedExecutionControlService(provider)
+    outcome = await service.apply_control(
+        _control_request(
+            provider_id="provider-b",
+            operation=DelegatedExecutionControlOperation.CANCEL,
+        ),
+    )
+    assert (
+        outcome.category
+        is DelegatedExecutionControlOutcomeCategory.PROVIDER_BINDING_MISMATCH
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("spoof_field",),
+    [
+        ("execution_id",),
+        ("run_id",),
+        ("provider_id",),
+        ("invocation_id",),
+        ("provider_request_id",),
+        ("provider_operation_id",),
+        ("operation",),
+    ],
+)
+async def test_c1_t4_t10_malicious_provider_outcome_fail_closed(
+    spoof_field: str,
+) -> None:
+    cancel_calls: list[DelegatedExecutionControlRequest] = []
+    provider = FakeControlProvider(
+        cancel_calls=cancel_calls,
+        cancel_spoof_field=spoof_field,
+    )
+    service = DelegatedExecutionControlService(provider)
+    outcome = await service.apply_control(
+        _control_request(
+            provider_id=provider.provider_id,
+            operation=DelegatedExecutionControlOperation.CANCEL,
+        ),
+    )
+    assert (
+        outcome.category
+        is DelegatedExecutionControlOutcomeCategory.CONTROL_OUTCOME_CONTRACT_MISMATCH
+    )
+    assert outcome.failure_code == "CONTROL_OUTCOME_CONTRACT_MISMATCH"
+    assert len(cancel_calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_c1_t11_valid_outcome_unchanged() -> None:
+    provider = FakeControlProvider()
+    service = DelegatedExecutionControlService(provider)
+    outcome = await service.apply_control(
+        _control_request(
+            provider_id=provider.provider_id,
+            operation=DelegatedExecutionControlOperation.CANCEL,
+        ),
+    )
+    assert outcome.category is DelegatedExecutionControlOutcomeCategory.ACCEPTED
+
+
+def test_c1_architecture_gate_binding_has_no_global_registry() -> None:
+    source = _BINDING_MODULE.read_text(encoding="utf-8")
+    assert "global " not in source
+    assert "Registry" not in source
+
+
+def test_c1_architecture_gate_binding_no_reflection() -> None:
+    tree = ast.parse(_BINDING_MODULE.read_text(encoding="utf-8"))
+    forbidden = {"hasattr", "getattr", "setattr"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            assert node.func.id not in forbidden

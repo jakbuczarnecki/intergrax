@@ -560,8 +560,11 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2B — capability-gated provider-native cancel/interrupt control propagation = CLOSED** (control plane only; canonical Execution lifecycle unchanged).
 
+**P2.1-S2B-C1 — delegated control correlation + provider outcome integrity hardening = CLOSED** (`DelegatedExecutionInvocationBinding` + fail-closed outcome correlation validation; no durable invocation registry).
+
 Contract: `intergrax/contracts/delegated_execution_provider.py`  
 Control contract: `intergrax/contracts/delegated_execution_control.py`  
+Invocation binding: `intergrax/contracts/delegated_execution_invocation_binding.py`  
 Reference provider: `intergrax/runtime/execution/delegated_execution/local_provider.py`  
 Adoption service: `intergrax/runtime/execution/delegated_execution/service.py`  
 Control service: `intergrax/runtime/execution/delegated_execution/control_service.py`  

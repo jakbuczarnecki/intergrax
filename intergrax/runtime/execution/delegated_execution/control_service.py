@@ -14,6 +14,7 @@ from intergrax.contracts.delegated_execution_control import (
     DelegatedExecutionControlRequest,
     DelegatedExecutionInterruptProvider,
     delegated_control_outcome,
+    provider_control_outcome_matches_request,
 )
 from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionProvider,
@@ -29,6 +30,7 @@ _CAPABILITY_CONTRACT_MESSAGE = (
     "provider advertises control capability without implementing control contract"
 )
 _TRANSPORT_MESSAGE = "delegated execution control transport failed"
+_OUTCOME_MISMATCH_MESSAGE = "delegated control outcome failed platform correlation checks"
 
 
 class DelegatedExecutionControlService:
@@ -130,7 +132,7 @@ async def _dispatch_cancel(
     provider_id: str,
 ) -> DelegatedExecutionControlOutcome:
     try:
-        return await provider.cancel_delegated_execution(request)
+        provider_outcome = await provider.cancel_delegated_execution(request)
     except DelegatedExecutionTransportError:
         return delegated_control_outcome(
             category=DelegatedExecutionControlOutcomeCategory.TRANSPORT_FAILURE,
@@ -139,6 +141,11 @@ async def _dispatch_cancel(
             failure_code="TRANSPORT_FAILURE",
             failure_message=_TRANSPORT_MESSAGE,
         )
+    return _finalize_provider_control_outcome(
+        provider_outcome,
+        request=request,
+        provider_id=provider_id,
+    )
 
 
 async def _dispatch_interrupt(
@@ -148,7 +155,7 @@ async def _dispatch_interrupt(
     provider_id: str,
 ) -> DelegatedExecutionControlOutcome:
     try:
-        return await provider.interrupt_delegated_execution(request)
+        provider_outcome = await provider.interrupt_delegated_execution(request)
     except DelegatedExecutionTransportError:
         return delegated_control_outcome(
             category=DelegatedExecutionControlOutcomeCategory.TRANSPORT_FAILURE,
@@ -157,6 +164,32 @@ async def _dispatch_interrupt(
             failure_code="TRANSPORT_FAILURE",
             failure_message=_TRANSPORT_MESSAGE,
         )
+    return _finalize_provider_control_outcome(
+        provider_outcome,
+        request=request,
+        provider_id=provider_id,
+    )
+
+
+def _finalize_provider_control_outcome(
+    provider_outcome: DelegatedExecutionControlOutcome,
+    *,
+    request: DelegatedExecutionControlRequest,
+    provider_id: str,
+) -> DelegatedExecutionControlOutcome:
+    if provider_control_outcome_matches_request(
+        outcome=provider_outcome,
+        request=request,
+        bound_provider_id=provider_id,
+    ):
+        return provider_outcome
+    return delegated_control_outcome(
+        category=DelegatedExecutionControlOutcomeCategory.CONTROL_OUTCOME_CONTRACT_MISMATCH,
+        request=request,
+        provider_id=provider_id,
+        failure_code="CONTROL_OUTCOME_CONTRACT_MISMATCH",
+        failure_message=_OUTCOME_MISMATCH_MESSAGE,
+    )
 
 
 __all__ = ["DelegatedExecutionControlService"]

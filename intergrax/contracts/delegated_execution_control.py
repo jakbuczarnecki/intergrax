@@ -13,22 +13,19 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final, Literal, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict
 
 from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionContractError,
-    assert_provider_native_ids_distinct_from_execution,
 )
-from intergrax.contracts.execution_identity import (
-    ExecutionId,
-    RunId,
-    validate_execution_id,
-    validate_run_id,
+from intergrax.contracts.delegated_execution_invocation_binding import (
+    DelegatedExecutionInvocationBinding,
 )
+from intergrax.contracts.execution_identity import ExecutionId, RunId
 from intergrax.contracts.provider_invocation import ProviderInvocation
 
-SCHEMA_DELEGATED_EXECUTION_CONTROL_REQUEST_V1: Final = (
-    "delegated_execution_control_request.v1"
+SCHEMA_DELEGATED_EXECUTION_CONTROL_REQUEST_V2: Final = (
+    "delegated_execution_control_request.v2"
 )
 
 
@@ -48,47 +45,35 @@ class DelegatedExecutionControlOutcomeCategory(StrEnum):
     NOT_FOUND = "not_found"
     ALREADY_TERMINAL = "already_terminal"
     PROVIDER_BINDING_MISMATCH = "provider_binding_mismatch"
+    CONTROL_OUTCOME_CONTRACT_MISMATCH = "control_outcome_contract_mismatch"
     PROVIDER_FAILURE = "provider_failure"
     TRANSPORT_FAILURE = "transport_failure"
 
 
 class DelegatedExecutionControlRequest(BaseModel):
-    """Typed control carrier for an existing provider invocation."""
+    """Typed control carrier correlated via platform invocation binding."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["delegated_execution_control_request.v1"] = (
-        SCHEMA_DELEGATED_EXECUTION_CONTROL_REQUEST_V1
+    schema_version: Literal["delegated_execution_control_request.v2"] = (
+        SCHEMA_DELEGATED_EXECUTION_CONTROL_REQUEST_V2
     )
-    execution_id: ExecutionId
-    run_id: RunId
-    provider_invocation: ProviderInvocation
+    invocation_binding: DelegatedExecutionInvocationBinding
     operation: DelegatedExecutionControlOperation
     reason_code: str | None = None
     reason_message: str | None = None
 
-    @field_validator("execution_id", mode="before")
-    @classmethod
-    def _validate_execution_id(cls, value: object) -> ExecutionId:
-        return validate_execution_id(value)
+    @property
+    def execution_id(self) -> ExecutionId:
+        return self.invocation_binding.execution_id
 
-    @field_validator("run_id", mode="before")
-    @classmethod
-    def _validate_run_id(cls, value: object) -> RunId:
-        return validate_run_id(value)
+    @property
+    def run_id(self) -> RunId:
+        return self.invocation_binding.run_id
 
-    @model_validator(mode="after")
-    def _correlate_invocation(self) -> DelegatedExecutionControlRequest:
-        inv = self.provider_invocation
-        if str(self.run_id) != inv.run_id:
-            raise ValueError("provider_invocation.run_id must match control request run_id")
-        assert_provider_native_ids_distinct_from_execution(
-            execution_id=self.execution_id,
-            provider_request_id=inv.provider_request_id,
-            provider_operation_id=inv.provider_operation_id,
-            invocation_id=inv.invocation_id,
-        )
-        return self
+    @property
+    def provider_invocation(self) -> ProviderInvocation:
+        return self.invocation_binding.provider_invocation
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,6 +97,7 @@ class DelegatedExecutionControlOutcome:
             DelegatedExecutionControlOutcomeCategory.TRANSPORT_FAILURE,
             DelegatedExecutionControlOutcomeCategory.UNSUPPORTED,
             DelegatedExecutionControlOutcomeCategory.PROVIDER_BINDING_MISMATCH,
+            DelegatedExecutionControlOutcomeCategory.CONTROL_OUTCOME_CONTRACT_MISMATCH,
         } and not (self.failure_code and self.failure_code.strip()):
             raise DelegatedExecutionContractError(
                 "control failure categories require failure_code",
@@ -136,19 +122,40 @@ def delegated_control_outcome(
     failure_code: str | None = None,
     failure_message: str | None = None,
 ) -> DelegatedExecutionControlOutcome:
-    """Construct a validated control outcome correlated to the request."""
-    inv = request.provider_invocation
+    """Construct a platform-owned control outcome correlated to the request."""
+    binding = request.invocation_binding
+    inv = binding.provider_invocation
     return DelegatedExecutionControlOutcome(
         category=category,
         operation=request.operation,
-        execution_id=request.execution_id,
-        run_id=request.run_id,
+        execution_id=binding.execution_id,
+        run_id=binding.run_id,
         provider_id=provider_id,
         invocation_id=inv.invocation_id,
         provider_request_id=inv.provider_request_id,
         provider_operation_id=inv.provider_operation_id,
         failure_code=failure_code,
         failure_message=failure_message,
+    )
+
+
+def provider_control_outcome_matches_request(
+    *,
+    outcome: DelegatedExecutionControlOutcome,
+    request: DelegatedExecutionControlRequest,
+    bound_provider_id: str,
+) -> bool:
+    """Reject untrusted plugin outcomes that spoof platform correlation fields."""
+    binding = request.invocation_binding
+    inv = binding.provider_invocation
+    return (
+        outcome.execution_id == binding.execution_id
+        and outcome.run_id == binding.run_id
+        and outcome.provider_id == bound_provider_id
+        and outcome.invocation_id == inv.invocation_id
+        and outcome.provider_request_id == inv.provider_request_id
+        and outcome.provider_operation_id == inv.provider_operation_id
+        and outcome.operation == request.operation
     )
 
 
@@ -184,4 +191,5 @@ __all__ = [
     "DelegatedExecutionControlRequest",
     "DelegatedExecutionInterruptProvider",
     "delegated_control_outcome",
+    "provider_control_outcome_matches_request",
 ]
