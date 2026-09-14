@@ -13,7 +13,7 @@ application_vs_proof_ownership: COMPLETED
 **Scenario:** Indirect Prompt Injection with Governed Action Prevention  
 **Slug:** `indirect_prompt_injection`  
 **Proof class:** SCENARIO  
-**Status:** Architecture aligned with runtime (stage 4). Application and proof are implemented and executable; deterministic qualification and canonical real-model proof are **not** yet independently verified.
+**Status:** Deterministic qualification **DONE** (canonical SoT evaluator + E2E tests). Real-model WOW and independent verification **pending**.
 
 [← Back to public Scenario page](README.md)
 

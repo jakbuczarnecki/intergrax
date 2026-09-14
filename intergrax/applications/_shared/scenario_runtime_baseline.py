@@ -380,6 +380,7 @@ def build_scenario_runtime_from_environment(
         manifest=resolved_manifest,
         agent_registry=registry,
         tenant_id=resolved_tenant_id,
+        idempotency_store=reliability_wiring.idempotency_store,
     )
 
     nexus_loop = build_nexus_loop_from_environment(

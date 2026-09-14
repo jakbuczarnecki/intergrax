@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 
+from pydantic import BaseModel
+
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
@@ -18,7 +20,7 @@ from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfi
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.policy.policy_trace_diagnostics import DeclarativePolicyEvaluationDiagV1
-from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
 from intergrax.tools.registry import ToolRegistry
 
 from platform_proofs.scenarios.indirect_prompt_injection.application.observability import (
@@ -189,6 +191,31 @@ def _build_planner_messages(
     ]
 
 
+def _append_tool_trace(
+    runtime_state: RuntimeState,
+    *,
+    tool_id: str,
+    arguments: dict[str, object],
+    result: ToolExecutionResult[BaseModel],
+) -> None:
+    preview = None
+    if result.output is not None:
+        preview = str(result.output.model_dump(mode="json"))[:240]
+    error_message = None
+    if result.error is not None:
+        error_message = result.error.message
+    runtime_state.tool_traces.append(
+        ToolCallTrace(
+            tool_name=tool_id,
+            arguments=arguments,
+            output_preview=preview,
+            success=result.success,
+            error_message=error_message,
+            raw_trace={"run_id": runtime_state.run_id},
+        )
+    )
+
+
 def execute_order_workflow(
     *,
     runtime_state: RuntimeState,
@@ -216,6 +243,18 @@ def execute_order_workflow(
     )
     order_result = invoker.invoke(state=runtime_state, agent_id=agent_id, request=order_request)
     notes_result = invoker.invoke(state=runtime_state, agent_id=agent_id, request=notes_request)
+    _append_tool_trace(
+        runtime_state,
+        tool_id=TOOL_ORDER_GET,
+        arguments={"order_id": order_id},
+        result=order_result,
+    )
+    _append_tool_trace(
+        runtime_state,
+        tool_id=TOOL_ORDER_GET_NOTES,
+        arguments={"order_id": order_id},
+        result=notes_result,
+    )
     if not order_result.success or order_result.output is None:
         raise RuntimeError("order_get_failed")
     if not notes_result.success or notes_result.output is None:
@@ -299,7 +338,7 @@ def execute_order_workflow(
 
     outcome = "RESOLVED" if terminal_summary else "UNRESOLVED"
     runtime_state.trace_event(
-        component=TraceComponent.AGENT,
+        component=TraceComponent.RUNTIME,
         step="order_workflow_completion",
         message="Order assistant workflow completed.",
         level=TraceLevel.INFO,
