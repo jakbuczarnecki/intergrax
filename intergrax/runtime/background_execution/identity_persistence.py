@@ -22,9 +22,13 @@ from intergrax.runtime.background_execution.identity_dual_read import (
 from intergrax.runtime.background_execution.identity_record_codec import (
     BG_EXEC_IDENTITY_DOCUMENT_PARTITION_V1,
     BG_EXEC_IDENTITY_DOCUMENT_PARTITION_V2,
+    InvalidBackgroundExecutionIdentityV1RecordError,
+    InvalidBackgroundExecutionIdentityV2RecordError,
     decode_background_identity_kv_record,
+    decode_document_identity_v1_record,
+    decode_document_identity_v2_record,
     encode_background_identity_v2_record,
-    persisted_identity_from_document_record_data,
+    same_identity_triplet,
 )
 from intergrax.runtime.background_execution.identity_types import (
     PersistedBackgroundExecutionIdentity,
@@ -183,29 +187,25 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
         v1_candidate = None
         if v2_record is not None:
             try:
-                decoded_v2 = persisted_identity_from_document_record_data(
-                    dict(v2_record.data)
-                )
+                v2_candidate = decode_document_identity_v2_record(dict(v2_record.data))
+            except InvalidBackgroundExecutionIdentityV2RecordError:
+                raise
             except ValueError as exc:
                 raise RuntimeError(
                     "invalid background execution identity record"
                 ) from exc
-            if decoded_v2.kind == "complete_v2":
-                v2_candidate = decoded_v2
-            else:
-                v1_candidate = decoded_v2
         if v1_record is not None:
             try:
-                decoded_v1 = persisted_identity_from_document_record_data(
-                    dict(v1_record.data)
-                )
+                decoded_v1 = decode_document_identity_v1_record(dict(v1_record.data))
+            except InvalidBackgroundExecutionIdentityV1RecordError:
+                raise
             except ValueError as exc:
                 raise RuntimeError(
                     "invalid background execution identity record"
                 ) from exc
             if v1_candidate is None:
                 v1_candidate = decoded_v1
-            elif v1_candidate.task_id != decoded_v1.task_id:
+            elif not same_identity_triplet(v1_candidate, decoded_v1):
                 raise BackgroundExecutionIdentityConflictError(
                     "conflicting v1 background identity records",
                 )

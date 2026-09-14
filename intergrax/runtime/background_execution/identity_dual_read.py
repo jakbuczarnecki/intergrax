@@ -18,6 +18,7 @@ from intergrax.runtime.background_execution.identity_types import (
 )
 from intergrax.runtime.background_execution.identity_record_codec import (
     DecodedBackgroundIdentityRecord,
+    same_identity_triplet,
 )
 from intergrax.runtime.observability.causal_evidence_enrichment import (
     CanonicalExecutionIdLookupPort,
@@ -39,17 +40,6 @@ def _to_persisted(
     )
 
 
-def _same_triplet(
-    left: DecodedBackgroundIdentityRecord,
-    right: DecodedBackgroundIdentityRecord,
-) -> bool:
-    return (
-        left.task_id == right.task_id
-        and left.run_id == right.run_id
-        and left.attempt_id == right.attempt_id
-    )
-
-
 def reconcile_dual_read_records(
     *,
     v2_candidate: DecodedBackgroundIdentityRecord | None,
@@ -61,7 +51,7 @@ def reconcile_dual_read_records(
     if v2_candidate is not None and v2_candidate.kind == "complete_v2":
         complete_v2 = _to_persisted(v2_candidate)
         if v1_candidate is not None and v1_candidate.kind == "legacy_v1":
-            if not _same_triplet(v1_candidate, v2_candidate):
+            if not same_identity_triplet(v1_candidate, v2_candidate):
                 raise BackgroundExecutionIdentityConflictError(
                     "v1 and v2 background identity triplets disagree",
                 )
