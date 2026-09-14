@@ -16,7 +16,7 @@
 | **Prior classification** | [`INTEGRAX_NPSC_5F_PROTECTED_DRIFT_CLASSIFICATION_AND_RESIGNOFF.md`](INTEGRAX_NPSC_5F_PROTECTED_DRIFT_CLASSIFICATION_AND_RESIGNOFF.md) |
 | **Governance SSOT** | [`INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md`](INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md) |
 
-**Status:** Scoped architecture reopen — **approved** (record only; **no** production implementation in this task).
+**Status:** Scoped architecture reopen — **approved**; v1/v2 compatibility implementation — **completed** (see [`INTEGRAX_NPSC_5F_V1_V2_COMPATIBILITY_AND_MIGRATION_IMPLEMENTATION.md`](INTEGRAX_NPSC_5F_V1_V2_COMPATIBILITY_AND_MIGRATION_IMPLEMENTATION.md)).
 
 **Reopen type:**
 

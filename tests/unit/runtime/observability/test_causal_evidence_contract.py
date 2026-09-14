@@ -24,6 +24,7 @@ from intergrax.runtime.observability.causal_evidence import (
 )
 from intergrax.runtime.observability.causal_evidence_record_codec import (
     decode_causal_evidence_record,
+    decode_causal_evidence_record_v2,
     encode_causal_evidence_record,
 )
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
@@ -73,7 +74,9 @@ def test_transport_and_runtime_identity_domains_remain_distinct() -> None:
     assert source.task_id != str(target.task_id)
 
 
-def test_transport_task_id_may_match_runtime_task_id_text_without_domain_collapse() -> None:
+def test_transport_task_id_may_match_runtime_task_id_text_without_domain_collapse() -> (
+    None
+):
     runtime_task_id = mint_task_id()
     source = MessageBusTaskRef(
         provider=_PROVIDER,
@@ -207,7 +210,7 @@ def test_serialization_round_trip_preserves_semantic_fact() -> None:
 
 def test_persistence_codec_round_trip_preserves_execution_id() -> None:
     original = _causal_evidence()
-    restored = decode_causal_evidence_record(encode_causal_evidence_record(original))
+    restored = decode_causal_evidence_record_v2(encode_causal_evidence_record(original))
     assert restored.target.execution_id == original.target.execution_id
 
 
