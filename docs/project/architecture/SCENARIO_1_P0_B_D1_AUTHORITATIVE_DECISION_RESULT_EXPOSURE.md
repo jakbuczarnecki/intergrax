@@ -6,7 +6,7 @@ Intergrax is source-available under the Intergrax Evaluation and Collaboration L
 # SCENARIO-1-P0-B-D1 — Authoritative Decision Result Exposure
 
 **Task:** SCENARIO-1-P0-B-D1  
-**Status:** Architecture design — D1-R1 hardened (implementation not in scope)  
+**Status:** Architecture design — D1-R2 effective-attempt semantics (implementation not in scope)  
 **Qualification driver:** Scenario #1 — AI incident investigation (`ai_incident_investigation`)  
 **Branch target:** `development`  
 **Blocks:** P0-B-R1 (Authoritative Result Boundary Cleanup)
@@ -690,7 +690,7 @@ class DecisionExposureCandidate(Generic[T]):
     execution_lineage: DecisionExecutionLineage  # run_id, task_id, attempt_id, …
     host_publication_class: HostPublicationClass  # see below
     exposure: AuthoritativeDecisionExposure[T]  # mapped fragment for this evaluation
-    evaluation_ordinal: int  # monotonic per run-scoped collector; stable ordering
+    evaluation_ordinal: int  # monotonic per effective attempt (collector partition); stable ordering within attempt
 
 
 class HostPublicationClass(StrEnum):
@@ -723,11 +723,11 @@ class DecisionExposureSelectionStrategy(Protocol[T]):
         ...
 ```
 
-**Collision:** two `HOST_TERMINAL_CANDIDATE` exposures with the same effective `(attempt_id, evaluation_scope, decision_scope.subject)` and both terminal-eligible → **`DecisionExposureSelectionFailure` (fail closed)** — not last-write-wins.
+**Collision:** two `HOST_TERMINAL_CANDIDATE` exposures with the same `(evaluation_scope, decision_scope.subject)` **within the same effective attempt** and both terminal-eligible → **`DecisionExposureSelectionFailure` (fail closed)** — not last-write-wins. (`attempt_id` appears only for identity correlation in lineage, not ordering — see **§D1-R2**.)
 
-**Attempt-aware:** strategy prefers the **effective terminal attempt** (highest `attempt_id` among terminal task outcomes, per existing execution lineage). Rejected outcomes from superseded attempts never override the final attempt’s selected exposure.
+**Attempt-aware (corrected in D1-R2):** the selection strategy **does not** choose execution attempts. **Execution Engine** resolves **`effective_attempt_id`** before selection; superseded attempts’ Decision outcomes are not public terminal candidates.
 
-**Determinism:** sort key `(attempt_id, evaluation_ordinal, evaluation_scope, decision_scope.namespace, decision_scope.subject)` before tie-break rules; no dict iteration order.
+**Determinism (within effective attempt only):** sort key `(evaluation_ordinal, evaluation_scope, decision_scope.namespace, decision_scope.subject)` before tie-break rules; no dict iteration order; **`AttemptId` must not appear in chronological sort keys**.
 
 ### D1-R1.6 Host semantics
 
@@ -749,7 +749,7 @@ Whether `UAEP_STEP` can ever be task-final public outcome: **yes, only on hosts 
 ### D1-R1.8 Collector / execution-local state
 
 - **Owner:** execution host runtime (e.g. NexusLoop run context, UAEP host context) — **run/task scoped**, not global singleton or thread-local magic.
-- **Shape:** append-only list of `DecisionExposureCandidate` per effective attempt; reset on new attempt.
+- **Shape:** run-scoped collector keyed/partitioned by `AttemptId`; append within partition; **finalize reads only the Execution-resolved effective attempt partition** (§D1-R2).
 - **Population:** after each `evaluate`, mapper produces exposure fragment; host classifies publication class; append candidate.
 - **Not allowed:** trace as storage; `TaskResult.metadata` dict; hidden module state.
 - **v1 persistence:** in-process only; **resume/HITL after checkpoint** may require reconstructing candidates from decision checkpoint store — **out of scope for I1 v1** unless checkpoint replay already re-executes gates; document as **remaining gap** (§D1-R1.19).
@@ -799,14 +799,16 @@ No fake security (private constructors, magic tokens) as authority mechanism.
 
 ### D1-R1.12 Attempt matrix (examples)
 
-| Attempt | Scope | Outcome | Public final? |
-| --- | --- | --- | ---: |
-| 1 | `GRAPH_FINAL` | Resolution | no (superseded) |
-| 2 | `GRAPH_FINAL` | Accepted | **yes** |
-| 1 | `UAEP_STEP` / step-1 | Accepted | no (intermediate on graph host) |
-| 2 | `GRAPH_FINAL` | Accepted | **yes** |
-| 1 | `UAEP_STEP` / step-2 | Accepted | **yes** on UAEP-only host only |
-| — | none | — | `ExposureUnevaluated(NO_DECISION_GATE)` |
+Superseded ordering column semantics: use **§D1-R2.23** (execution `generation`, not `AttemptId`).
+
+| Exec. ordering (`generation`) | Attempt ID (identity) | Scope | Outcome | Effective? | Public candidate? |
+| --- | --- | --- | --- | ---: | ---: |
+| 1 | random A | `GRAPH_FINAL` | Resolution | no | no |
+| 2 | random Z | `GRAPH_FINAL` | Accepted | **yes** | **yes** |
+| 1 | random A | `UAEP_STEP` / step-1 | Accepted | no | no (intermediate on graph host) |
+| 2 | random Z | `GRAPH_FINAL` | Accepted | **yes** | **yes** |
+| 1 | random A | `UAEP_STEP` / step-2 | Accepted | no | **yes** on UAEP-only host only when attempt 1 is effective |
+| — | — | none | — | — | `ExposureUnevaluated(NO_DECISION_GATE)` |
 
 ### D1-R1.13 Multiple decision identities
 
@@ -857,9 +859,170 @@ Application          ← consume single exposure; no minting as input
 
 ---
 
+## D1-R2 — Effective Attempt Selection Semantics
+
+**Task:** SCENARIO-1-P0-B-D1-R2  
+**Supersedes (partial):** D1-R1 §D1-R1.5 attempt ordering via `AttemptId`; any “highest attempt_id” or lexicographic attempt sort; implicit selector-owned retry lifecycle.
+
+### D1-R2.1 Hard rule — `AttemptId` identity-only
+
+`AttemptId` values are opaque identities (e.g. `attempt_<uuid>` from `mint_attempt_id()` / `mint_retry_attempt_id()` in `intergrax/contracts/execution_identity.py` and `intergrax/runtime/execution/identity_authority.py`). **Permitted:** equality, lineage correlation, lookup, deduplication. **Forbidden:** `max`/`min`, lexicographic sort, “newer than”, retry ordering, effective-attempt resolution.
+
+### D1-R2.2 Effective attempt — definition
+
+**Effective attempt** (for public Decision exposure at terminal `TaskResult` finalization): the execution attempt the **Execution Engine** treats as authoritative for the terminal task/run outcome after retry supersession, cancellation, and recovery — **not** the lexicographically largest UUID and **not** the last Decision callback arrival order.
+
+### D1-R2.3 Canonical Execution Engine source of truth (HEAD audit)
+
+| Mechanism | Location | Role |
+| --- | --- | --- |
+| **`AttemptLifecycleState`** | `intergrax/contracts/attempt_lifecycle.py` | Durable record: `active_attempt_id`, `previous_attempt_id`, **`generation`** (≥1, monotonic per run retry sequence), `transition_reason` |
+| **`AttemptLifecycleService`** | `intergrax/runtime/execution/attempt_lifecycle/service.py` | **Canonical authority** for attempt transitions: `record_initial_attempt`, `transition_to_next_attempt`, `get_active_attempt_id`, `get_current_generation` |
+| **`ExecutionAttemptRetryService.transition_for_retry`** | `intergrax/runtime/execution/retry/service.py` | Orchestrates policy-eligible retry → lifecycle transition → **`rebind_active_attempt_for_retry`**; seals superseded attempt in lineage (`RETRY_SUPERSEDED`) |
+| **In-process active identity** | `require_active_execution_identity()` in `intergrax/contracts/execution_identity.py` | Current `(run_id, attempt_id)` for executing work; rebinding follows durable transition (`transition_retry` on facade is **explicitly non-authoritative**) |
+
+**Retry ordering signal:** `AttemptLifecycleState.generation` (and transition graph), **not** `AttemptId`.
+
+**Not authoritative for execution-attempt ordering:** Nexus `RetryRecord` / node-level `RetryEngine` (`intergrax/runtime/nexus/retry/`) — agent/step retries, not run-scoped effective attempt.
+
+### D1-R2.4 Target flow (required)
+
+```text
+Execution attempt lifecycle (AttemptLifecycleService + retry orchestration)
+        ↓
+effective_attempt_id resolved (Execution Engine)
+        ↓
+Decision exposure candidates for effective attempt only
+        ↓
+DecisionExposurePublicationPolicy (host)
+        ↓
+DecisionExposureSelectionStrategy (scope/subject/terminal eligibility)
+        ↓
+single authoritative_decision_exposure on TaskResult
+```
+
+### D1-R2.5 Negative flows (forbidden)
+
+```text
+all attempts → sort AttemptId → pick max
+```
+
+```text
+pick attempt whose Decision outcome is Accepted / “better” business result
+```
+
+```text
+DecisionExposureSelectionStrategy chooses which retry won
+```
+
+### D1-R2.6 Effective attempt resolution at finalize (design contract)
+
+At host **`TaskResult` finalization** (I1 detail, design invariant now):
+
+1. Resolve **`effective_attempt_id`** from Execution lifecycle — **prefer durable** `AttemptLifecycleService.get_active_attempt_id(tenant_id, run_id)` when run lifecycle is durable; **in-process** finalize on the same worker must match `require_active_execution_identity()[1]` after canonical retry rebind.
+2. If lifecycle cannot resolve an effective attempt for a terminal task → **fail closed** (`DecisionExposureSelectionFailure` / invariant error); do not pick arbitrary candidates.
+3. **`candidates = collector.for_attempt(effective_attempt_id)`** (run-scoped collector partitioned by `AttemptId`).
+4. **`strategy.select(policy, candidates)`** — inputs **only** effective-attempt candidates.
+
+Application-supplied `effective_attempt_id` is **never** trusted input.
+
+### D1-R2.7 Ownership table (effective attempt)
+
+| Concern | Owner |
+| --- | --- |
+| Attempt identity | Execution Engine |
+| Retry ordering / supersession | Execution Engine (`generation`, lifecycle transitions) |
+| **Effective terminal attempt** | **Execution Engine** |
+| Decision authority within attempt | Decision System |
+| Public scope/subject inside effective attempt | Execution host (`DecisionExposurePublicationPolicy` + `DecisionExposureSelectionStrategy`) |
+| Business outcome | Application |
+
+### D1-R2.8 Supersession semantics
+
+When attempt A fails/eligible-retry → `transition_to_next_attempt` mints attempt B, updates `active_attempt_id`, increments `generation`, records `previous_attempt_id=A`. Attempt A is **superseded** for terminal public authority; its Decision outcomes remain historically correct **for A** but are **not** eligible public terminal candidates after B is effective.
+
+**Effective ≠ Decision success:** if effective attempt 2 yields `ExposureResolution` and superseded attempt 1 had `ExposureAccepted`, public exposure is **Resolution from attempt 2**.
+
+### D1-R2.9 Concurrency and late completion
+
+Overlapping or late-finishing superseded attempts must not override exposure: only **effective attempt** candidates participate at finalize. Arrival order of Decision callbacks or trace events is **not** ordering authority.
+
+| Attempt | Lifecycle position (`generation`) | Completion time | Effective |
+| --- | ---: | ---: | ---: |
+| A | older (1) | later | no |
+| B | newer (2) | earlier | **yes** |
+
+Design test: `attempt_old_id = "attempt_ffff…"`, `attempt_new_id = "attempt_0000…"` — effective is the **newer generation**, not lexicographic ID order.
+
+### D1-R2.10 Recovery / resume
+
+After checkpoint/resume, durable `AttemptLifecycleState` restores `active_attempt_id` and `generation` (qualified in NPSC-5E recovery tests). Effective attempt for exposure finalize must be recovered from **the same lifecycle store**, not recomputed from `AttemptId`. **I1 v1** may still defer **rebuilding** the decision candidate collector from checkpoints without re-evaluation (D1-R1.17 gap remains); lifecycle effective attempt itself is **not** a platform gap at HEAD.
+
+### D1-R2.11 Collector options — EA-A … EA-D
+
+| ID | Model | Verdict |
+| --- | --- | --- |
+| **EA-A** | Selector compares / sorts `AttemptId` | **Reject** — violates identity-only rule and Execution ownership |
+| **EA-B** | Selector receives all attempts + ordinal | **Reject** — selector still owns attempt winner |
+| **EA-C** | Execution resolves effective attempt; selector receives **only** that attempt’s candidates | **Accept (preferred default)** |
+| **EA-D** | Attempt-scoped collector created/handoff per active attempt by Execution host | **Accept** when host lifecycle already isolates per-attempt context |
+
+#### Comparative matrix
+
+| Kryterium | EA-A | EA-B | EA-C | EA-D |
+| --- | ---: | ---: | ---: | ---: |
+| Layer ownership | Poor | Weak | **Strong** | **Strong** |
+| Determinism | Wrong | Medium | **Strong** | **Strong** |
+| Retry correctness | Wrong | Medium | **Strong** | **Strong** |
+| Concurrency safety | Poor | Medium | **Strong** | **Strong** |
+| Simplicity | — | Low | **Strong** | Medium |
+| Reuse of lifecycle | No | Partial | **Strong** | **Strong** |
+| Pluginability (scope selection) | N/A | N/A | **Strong** | **Strong** |
+
+**Recommendation:** **EA-C** with run-scoped partitioned collector (matches D1-R1.8 shape); consider **EA-D** if I1 wiring already binds collectors to attempt-local execution scopes.
+
+Effective attempt resolution is **not** a plugin strategy — it is a **lifecycle invariant** implemented via existing `AttemptLifecycleService` / retry orchestration.
+
+### D1-R2.12 Selector contract (revised)
+
+```python
+# After Execution resolves effective_attempt_id:
+candidates_for_effective = collector.candidates_for_attempt(effective_attempt_id)
+decision = strategy.select(policy, candidates_for_effective)
+```
+
+`DecisionExposureSelectionStrategy` chooses **scope**, **subject**, and **terminal eligibility** among candidates **inside one effective attempt** only.
+
+### D1-R2.13 Observability (selection event)
+
+Include: `effective_attempt_id`, lifecycle resolution method (`durable_active_attempt` / `in_process_identity`), `generation` when available, candidate count, selected `DecisionIdentity`, structured `reason_code`. No chain-of-thought.
+
+### D1-R2.14 Test strategy additions (future I1)
+
+- **ID order independence:** smaller lexicographic UUID wins when `generation` is higher.
+- **Retry supersession:** attempt 1 Resolution, attempt 2 Accepted → public Accepted from attempt 2 (via generation, not ID).
+- **Late old attempt:** attempt 2 terminal before attempt 1 completes → no override.
+- **Same attempt collision:** two eligible finals same effective attempt → fail closed (unchanged).
+- **Multi-scope + retry:** attempt 1 UAEP + GRAPH_FINAL Resolution; attempt 2 UAEP + GRAPH_FINAL Accepted → effective attempt 2, selected GRAPH_FINAL Accepted.
+- **UAEP-only retry:** Execution picks attempt; selector picks terminal UAEP candidate within attempt.
+- **No effective attempt at finalize:** fail closed.
+- **Cancelled / superseded:** cancelled attempt not public accepted authority when not effective terminal.
+
+### D1-R2.15 Platform gap verdict
+
+**No BLOCKED gap** for execution-attempt ordering at HEAD: canonical durable + in-process mechanisms exist. Remaining gaps: candidate collector reconstruction on resume (D1-R1.17), not missing effective-attempt contract.
+
+### D1-R2.16 Acceptance mapping (R2)
+
+| AC | Status |
+| --- | --- |
+| AC-R2-1 … AC-R2-15 | Addressed in this § |
+
+---
+
 ## 36. Design verdict
 
-**PASS — READY FOR IMPLEMENTATION** after **D1-R1** hardening; **blocked** on independent **D1-R1 design audit** before P0-B-D1-I1 (per roadmap §90).
+**PASS — READY FOR FINAL DESIGN AUDIT** after **D1-R2**; **blocked** on independent **D1-R2 design audit** before P0-B-D1-I1 (supersedes D1-R1 audit gate).
 
 ---
 
@@ -873,10 +1036,11 @@ Application          ← consume single exposure; no minting as input
 
 ## 38. Updated roadmap snippet
 
-| Etap | Status after D1-R1 |
+| Etap | Status after D1-R2 |
 | --- | --- |
 | P0-B-D1 Design | ✅ Baseline (e3139f2f…) |
-| P0-B-D1-R1 Hardening | ✅ This §D1-R1 |
-| P0-B-D1-R1 Design Audit | ⏳ Required before I1 |
-| P0-B-D1-I1 Implementation | ⏳ Blocked until R1 audit |
+| P0-B-D1-R1 Hardening | ✅ §D1-R1 (attempt ordering corrected in R2) |
+| P0-B-D1-R2 Effective attempt | ✅ This §D1-R2 |
+| D1 FINAL DESIGN AUDIT | ⏳ Required before I1 |
+| P0-B-D1-I1 Implementation | ⏳ Blocked until D1 final audit |
 | P0-B-R1 | ⏳ Blocked until I1 lands |
