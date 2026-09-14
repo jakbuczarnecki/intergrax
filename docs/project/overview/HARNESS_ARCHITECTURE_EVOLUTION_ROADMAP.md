@@ -274,7 +274,7 @@ These invariants must be reflected in canonical documentation, code, conformance
 | F | Canonical ToolRuntime pipeline | CURRENT / PARTIAL | Tools / ToolRuntime | safety + convergence |
 | G | Runtime credentials and secret references | PARTIAL | security/secrets/integrations | provider seam + late resolution |
 | H | Execution sandbox and isolation | CURRENT / PARTIAL | runtime sandbox + security + execution | convergence |
-| I | Subagent and external-agent providers | PARTIAL | `DelegatedExecutionProvider` + UER | P2.1-S2A CLOSED; remaining P2.1-S2 lifecycle adoption |
+| I | Subagent and external-agent providers | PARTIAL | `DelegatedExecutionProvider` + UER | P2.1-S2A/S2B CLOSED; remaining P2.1-S2 adoption slices |
 | J | Background Execution control | CURRENT / PARTIAL | Background Tasks + UER | convergence + DX |
 | K | Verified external event intake | PARTIAL | interactions/integrations + UER | generalization + durability |
 | L | Artifacts, attachments, spill | PARTIAL | artifacts/storage + CE + tools | consolidation |
@@ -558,10 +558,14 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2A — production adoption via `DelegatedExecutionService` + child `ExecutionBoundary` dispatch = CLOSED** (CREATE/DELEGATE path only).
 
+**P2.1-S2B — capability-gated provider-native cancel/interrupt control propagation = CLOSED** (control plane only; canonical Execution lifecycle unchanged).
+
 Contract: `intergrax/contracts/delegated_execution_provider.py`  
+Control contract: `intergrax/contracts/delegated_execution_control.py`  
 Reference provider: `intergrax/runtime/execution/delegated_execution/local_provider.py`  
 Adoption service: `intergrax/runtime/execution/delegated_execution/service.py`  
-Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`
+Control service: `intergrax/runtime/execution/delegated_execution/control_service.py`  
+Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`
 
 ## Remaining work (P2.1-S2 — adoption slices after S2A, not new seam)
 
