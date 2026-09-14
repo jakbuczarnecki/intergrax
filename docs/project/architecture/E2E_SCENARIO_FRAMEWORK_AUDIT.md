@@ -12,6 +12,8 @@
 - [`platform_proofs/PLATFORM_PROOF_AUTHORING_GUIDE.md`](../../platform_proofs/PLATFORM_PROOF_AUTHORING_GUIDE.md)
 - [`platform_proofs/README.md`](../../platform_proofs/README.md)
 
+**Frozen enterprise scenario portfolio (separate SSOT):** [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](../maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md) — **30** selection-frozen problems (v1). This audit is a **filesystem inventory** and framework analysis; it is not the portfolio authority.
+
 ---
 
 ## 1. Executive Summary
@@ -27,7 +29,7 @@ Execution uses the shared **scenario runtime baseline** (`intergrax.applications
 
 **Related but separate:** `testing_support/decision_e2e/` hosts **behavioral / model-matrix qualification** (e.g. DS-E2E-15J tracks, local AI incident qualification). That layer consumes scenario application code paths but is **not** the authoring scaffold for new Platform Proof scenarios.
 
-**ERL-QUAL-004** (“ERL Payment Uncertainty Recovery Scenario”) does **not** appear in the repository under that identifier. ERL Phase 6 describes a **maintainer qualification showcase** in [`docs/project/maintainers/plans/ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md`](../maintainers/plans/ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md); the closest existing **design-only** payment-adjacent slug is `payment_exception_recovery` (template scaffold, `lifecycle: DESIGN`).
+**ERL-QUAL-004** is implemented as scenario package `enterprise_payment_uncertainty_recovery` (catalog #4 in the frozen portfolio). A separate **design-only** payment-adjacent template, `payment_exception_recovery`, is **not** catalog #4 and is **not** part of frozen portfolio v1—see [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](../maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md). ERL program context: [`ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md`](../maintainers/plans/ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md).
 
 ---
 
