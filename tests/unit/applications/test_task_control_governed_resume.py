@@ -11,7 +11,9 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from intergrax.agent_distribution.control_plane_governance import build_activation_mutation_request
+from intergrax.agent_distribution.control_plane_governance import (
+    build_activation_mutation_request,
+)
 from intergrax.applications._shared.harness_auth import HarnessAuthState
 from intergrax.applications._shared.harness_control_plane_governance_wiring import (
     build_harness_control_plane_governance,
@@ -37,7 +39,9 @@ from intergrax.applications._shared.task_control_governance import (
     task_execution_resource_id,
     task_execution_resource_scope,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
@@ -49,7 +53,11 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
 )
 from intergrax.contracts.human_approver import local_development_approver_evidence
-from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_policy import (
+    EnforcementLevel,
+    PolicyAction,
+    PolicyDecision,
+)
 from intergrax.contracts.runtime_policy_bundle import (
     PolicyBundleRule,
     build_immutable_runtime_policy_bundle,
@@ -62,13 +70,22 @@ from intergrax.runtime.governance.control_plane_mutation_policy import (
     BundleBackedControlPlaneMutationEvaluator,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
-from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
+from intergrax.runtime.long_running.execution_tree_checkpoint import (
+    minimal_runtime_checkpoint,
+)
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
-from intergrax.runtime.policy.runtime_policy_bundle_evaluator import RuntimePolicyBundleEvaluator
+from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
+    RuntimePolicyBundleEvaluator,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from tests.unit.applications.task_control_policy_evaluation_support import (
+    authorize_bundle_backed_control_plane_mutation,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -206,7 +223,9 @@ class _StaticCheckpointStore:
 
 
 class _StaleAfterAllowCheckpointStore(TaskCheckpointPersistence):
-    def __init__(self, checkpoint: TaskCheckpoint, *, stale: TaskCheckpoint | None) -> None:
+    def __init__(
+        self, checkpoint: TaskCheckpoint, *, stale: TaskCheckpoint | None
+    ) -> None:
         self._initial = checkpoint
         self._stale = stale
         self._lookup_count = 0
@@ -266,7 +285,10 @@ async def test_taskcpm_r1_allow_exact_checkpoint_invokes_runner_once() -> None:
         )
     assert outcome.accepted is True
     assert resume_call.await_count == 1
-    assert resume_call.await_args.kwargs["checkpoint"].checkpoint_id == checkpoint.checkpoint_id
+    assert (
+        resume_call.await_args.kwargs["checkpoint"].checkpoint_id
+        == checkpoint.checkpoint_id
+    )
     assert len(evaluator.calls) == 1
 
 
@@ -338,7 +360,9 @@ async def test_taskcpm_r4_task_id_bound_from_route_and_checkpoint() -> None:
         )
     request = evaluator.calls[0]
     assert request.task_id == _TASK_ID
-    assert request.resource_id == task_execution_resource_id(task_id=_TASK_ID, run_id=_RUN_ID)
+    assert request.resource_id == task_execution_resource_id(
+        task_id=_TASK_ID, run_id=_RUN_ID
+    )
 
 
 @pytest.mark.asyncio
@@ -595,7 +619,9 @@ async def test_taskcpm_r13_checkpoint_disappears_after_allow_zero_runner() -> No
 
 
 @pytest.mark.asyncio
-async def test_taskcpm_r14_checkpoint_identity_changes_after_allow_zero_runner() -> None:
+async def test_taskcpm_r14_checkpoint_identity_changes_after_allow_zero_runner() -> (
+    None
+):
     checkpoint = _checkpoint()
     replaced = _checkpoint(checkpoint_id="chk-replaced")
     boundary, _ = _allow_boundary()
@@ -811,18 +837,24 @@ def test_taskcpm_r21_product_host_uses_canonical_bundle_authority() -> None:
         build_harness_control_plane_governance(env),
     )
     assert boundary is not None
-    result = boundary.authorize(
-        build_resume_task_execution_mutation_request(
-            principal=_principal(),
-            tenant_id=_TENANT,
-            task_id=_TASK_ID,
-            run_id=_RUN_ID,
-            mutation_id=_MUTATION_ID,
-            checkpoint=_checkpoint(),
-        )
+    checkpoint = _checkpoint()
+    mutation_request = build_resume_task_execution_mutation_request(
+        principal=_principal(),
+        tenant_id=_TENANT,
+        task_id=_TASK_ID,
+        run_id=_RUN_ID,
+        mutation_id=_MUTATION_ID,
+        checkpoint=checkpoint,
+    )
+    result = authorize_bundle_backed_control_plane_mutation(
+        boundary,
+        mutation_request,
+        checkpoint=checkpoint,
     )
     assert result.permitted is True
-    assert result.decision.policy_rule_id == "harness.task_control.resume_task_execution"
+    assert (
+        result.decision.policy_rule_id == "harness.task_control.resume_task_execution"
+    )
 
 
 def test_taskcpm_r22_lab_without_boundary_remains_fail_closed() -> None:
@@ -872,7 +904,10 @@ def test_taskcpm_r24_supported_route_requires_governance_boundary() -> None:
             headers={"Authorization": "Bearer valid-bearer"},
         )
     assert response.status_code == 403
-    assert response.json()["detail"]["blocker_code"] == "TASK_CONTROL_BLOCKED_BY_MISSING_BOUNDARY"
+    assert (
+        response.json()["detail"]["blocker_code"]
+        == "TASK_CONTROL_BLOCKED_BY_MISSING_BOUNDARY"
+    )
     assert resume_call.await_count == 0
 
 
@@ -887,7 +922,9 @@ async def test_taskcpm_r_revision_binds_checkpoint_identity() -> None:
         mutation_id=_MUTATION_ID,
         checkpoint=checkpoint,
     )
-    assert request.current_revision == task_checkpoint_resume_current_revision(checkpoint)
+    assert request.current_revision == task_checkpoint_resume_current_revision(
+        checkpoint
+    )
     assert request.resource_scope == task_execution_resource_scope(
         tenant_id=_TENANT,
         task_id=_TASK_ID,
