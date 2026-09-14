@@ -2,10 +2,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Proposed — design freeze for P1B-R3 (D1-R1 plugin-boundary correction; GitHub audit required before implementation) |
-| **Date** | 2026-09-14 (revised D1-R1) |
+| **Status** | Proposed — design freeze for P1B-R3 (D1-R2 contract invariants + policy extension; GitHub audit required before implementation) |
+| **Date** | 2026-09-14 (revised D1-R2) |
 | **Deciders** | Platform observability / VPI platform evolution |
-| **Related** | `intergrax/contracts/event_delivery.py` · ADR-OBS-001 · VPI-PLATFORM-EVOLUTION-P1B-D1 · P1B-D1-R1 · P1B-R3 |
+| **Related** | `intergrax/contracts/event_delivery.py` · ADR-OBS-001 · VPI-PLATFORM-EVOLUTION-P1B-D1 · P1B-D1-R1 · P1B-D1-R2 · P1B-R3 · OBS-EXPORT-TRANSPORT-CONTRACT-D1 |
 
 ## Context
 
@@ -21,12 +21,21 @@ P1B wired stage signals through `RuntimeEventBus` → optional `EventSinkPort`. 
 
 VPI / Scenario 3 must use this platform path without bespoke side channels; gaps are fixed here, not in scenario code.
 
+A follow-up **D1-R2** audit closed three remaining ambiguities before P1B-R3:
+
+| ID | Blocker |
+|----|---------|
+| **D** | Duplicate identity/kind on `DeliverableEvent` and embedded `ObservabilityExportPayload` with documentation-only consistency rules. |
+| **E** | Fail-closed vs tolerate reactions are hardcoded in `RuntimeEventBus` with no minimal public strategy extension point. |
+| **F** | `RuntimeEventExportSink.deliver_bounded` described as optional private dead code instead of explicit R3 removal. |
+
+
 ### Target path (contract-pure)
 
 ```text
 RuntimeEvent
   -> RuntimeEventBus (persist Plane A)
-  -> map to DeliverableEvent (+ embedded export payload)   [producer]
+  -> map to DeliverableEvent (export_payload + sequence)   [producer]
   -> EventSinkPort.publish(DeliverableEvent, priority=...)
        -> BoundedEventSink (buffer only; same port contract)
        -> RuntimeEventExportSink (bridge; EventSinkPort)
@@ -47,7 +56,7 @@ flowchart LR
 | Datum | Created by | Consumed by |
 |-------|------------|-------------|
 | `EventPriority` | Platform (`delivery_priority_for_runtime_event` / kind rules) | `RuntimeEventBus`, every `EventSinkPort` |
-| `DeliverableEvent` (transport envelope + embedded `ObservabilityExportPayload`) | Platform mapper at bus edge (`runtime_event_to_deliverable` extended in R3) | `BoundedEventSink`, `RuntimeEventExportSink`, any `EventSinkPort` |
+| `DeliverableEvent` (`export_payload` + `sequence`; identity/kind via payload only) | Platform mapper at bus edge (`runtime_event_to_deliverable` extended in R3) | `BoundedEventSink`, `RuntimeEventExportSink`, any `EventSinkPort` |
 | `EventDeliveryResult` | Every `EventSinkPort` implementation | `RuntimeEventBus` (policy), metrics |
 | `EventDeliveryBoundaryError` | `EventSinkPort` / bridge when mechanism cannot honor the port | `RuntimeEventBus` (policy translation) |
 | `ExportError` family | `EventExportSinkPort` plugins after vendor translation | `RuntimeEventExportSink` (maps to `EventDeliveryResult`, never bus) |
@@ -60,7 +69,7 @@ flowchart LR
 | AcceptingObservabilityEventSink | EventSinkPort | Document unified behavioral contract |
 | InMemoryEventSink | EventSinkPort | Same |
 | BoundedEventSink | EventSinkPort | Remove `RuntimeEventExportSink` isinstance branch; remove `source_event` kwarg; never raise `CriticalEventDeliveryError` |
-| RuntimeEventExportSink | EventSinkPort bridge | Consume `DeliverableEvent.export_payload`; deprecate `deliver_bounded`; narrow exception mapping |
+| RuntimeEventExportSink | EventSinkPort bridge | Consume `DeliverableEvent.export_payload`; **delete** `deliver_bounded` in R3; narrow exception mapping |
 | RuntimeEventBus | orchestrator | Remove `isinstance(..., BoundedEventSink)`; sole owner of `CriticalEventDeliveryError` |
 | *EventExportSinkPort plugins* | EventExportSinkPort | `export(ObservabilityExportPayload)` |
 
@@ -71,6 +80,9 @@ flowchart LR
 3. **A:** Side channel (`source_event`, `deliver_bounded`, isinstance) couples core buffering to one bridge class.
 4. **B:** Split rules for `CriticalEventDeliveryError` across bus and `BoundedEventSink`.
 5. **C:** Export transport accepts `object` — no structure, invariants, or plugin expectations.
+6. **D:** Two stores for `event_id` / `kind` invite illegal or drifted envelopes unless construction is constrained.
+7. **E:** Bus reaction rules are not injectable without editing `RuntimeEventBus`.
+8. **F:** Legacy `deliver_bounded` seam still documented as tolerable dead code.
 
 ## Decision 1 — Plugin boundary (D1-R1): Option C (enriched neutral envelope at producer)
 
@@ -84,10 +96,23 @@ Evaluated:
 
 ### Contract changes (P1B-R3 — design only here)
 
-1. Add **`ObservabilityExportPayload`** to `intergrax/contracts/event_delivery.py` (frozen dataclass): vendor-neutral, redacted-by-default fields required for observability export (identity, kind, correlation ids, safe attribute bag, `schema_version`). **No** `RuntimeEvent` type on the port surface.
-2. Extend **`DeliverableEvent`** with required `export_payload: ObservabilityExportPayload` (transport fields `event_id`, `kind`, `sequence` remain; must stay consistent with payload).
-3. **Producer ownership:** `runtime_event_to_deliverable` (runtime module) is the only place that reads `RuntimeEvent` to build both transport and export payload. `RuntimeEventBus` always calls `sink.publish(deliverable, priority=...)` — **no** `isinstance` on sink implementation, **no** extra keyword arguments.
-4. **Consumer ownership:** `BoundedEventSink` drain loop calls only `downstream.publish(item.event, priority=..., deadline=None)`. `RuntimeEventExportSink` reads `deliverable.export_payload` and passes it to `EventExportSinkPort.export(...)`.
+1. Add **`ObservabilityExportPayload`** to `intergrax/contracts/event_delivery.py` (frozen dataclass): vendor-neutral, redacted-by-default fields required for observability export (**canonical** `event_id`, `kind`, correlation ids, safe attribute bag, `schema_version`). **No** `RuntimeEvent` type on the port surface.
+2. Reshape **`DeliverableEvent`** to **single source of truth** for identity/kind:
+   - **Stored fields:** `export_payload: ObservabilityExportPayload` and `sequence: int` (bounded-buffer ordering only).
+   - **No** independent stored `event_id` / `kind` on the envelope. P1B-R3 may expose `event_id` and `kind` as read-only delegating accessors (`deliverable.event_id` → `deliverable.export_payload.event_id`) for stable call sites — not a second mutable source.
+   - **Illegal inconsistent construction** is prevented by a **single public factory** in contracts, e.g. `make_deliverable_event(export_payload, *, sequence=0) -> DeliverableEvent`. Producers and tests must use this factory (or a runtime helper that delegates to it). Ad-hoc construction that could diverge payload vs envelope is **not** part of the supported public API.
+3. **Producer ownership:** `runtime_event_to_deliverable` (runtime module) is the **only** place that reads `RuntimeEvent`. It builds `ObservabilityExportPayload` first, then `make_deliverable_event(...)`. `RuntimeEventBus` always calls `sink.publish(deliverable, priority=...)` — **no** `isinstance` on sink implementation, **no** extra keyword arguments.
+4. **Consumer ownership:** `BoundedEventSink` drain loop calls only `downstream.publish(item.event, priority=..., deadline=None)`. `RuntimeEventExportSink` reads `deliverable.export_payload` only. Plugins **must not** synchronize duplicate identity fields — there are none to sync.
+
+### Decision 1b — Data ownership (D1-R2)
+
+| Field / concern | Canonical owner | Notes |
+|-----------------|-----------------|-------|
+| `event_id`, `kind`, export correlation | `ObservabilityExportPayload` | Only write path is the runtime mapper → factory |
+| `sequence` | `DeliverableEvent` | Transport ordering for bounded delivery; not a second identity |
+| Envelope accessors `event_id` / `kind` | Delegation to `export_payload` | Ergonomics only; no separate storage |
+
+**Transport duplication:** If a future wire format requires repeating identity outside the payload blob, the **same factory** must populate both from one `ObservabilityExportPayload` instance in one call — consumers still treat payload as canonical; wire duplicates are encoder concerns, not a second platform truth for plugins.
 
 ### Re-use note (no scope creep)
 
@@ -95,7 +120,7 @@ Runtime tier already defines **`ObservabilityExportEnvelope`** (`export_boundary
 
 ### Vendor neutrality
 
-External plugins implement `EventSinkPort` and/or `EventExportSinkPort` using only `intergrax/contracts/*`. They never import `RuntimeEventExportSink`, never receive private `deliver_bounded`, and never depend on buffer internals.
+External plugins implement `EventSinkPort` and/or `EventExportSinkPort` using only `intergrax/contracts/*`. They never import `RuntimeEventExportSink`, never call `deliver_bounded` (removed in R3), and never depend on buffer internals.
 
 ## Decision 2 — Failure taxonomy on `EventSinkPort` (D1, retained)
 
@@ -120,6 +145,47 @@ Including buffer saturation: `BoundedEventSink` returns `REJECTED` for `CRITICAL
 
 `BEST_EFFORT` / `IMPORTANT`: bus tolerates or records per existing disposition rules; boundary errors on `BEST_EFFORT` do not fail the execution plane.
 
+## Decision 3b — Delivery failure reaction policy (D1-R2)
+
+`RuntimeEventBus` remains the **sole** component that may **raise** `CriticalEventDeliveryError`. Reaction rules must not be permanently hardcoded in the bus implementation body; they must be supplied by a **minimal injectable strategy** without `isinstance` on sink classes.
+
+### Re-use first
+
+- **`EventDeliveryPolicy`** (buffer capacity, important wait timeout) — **unchanged**; it is not a failure-reaction policy. Do not overload it.
+- No policy registry, no plugin framework, no governance catalog in P1B-R3.
+
+### New minimal contract (`intergrax/contracts/event_delivery.py`)
+
+| Type | Role |
+|------|------|
+| `EventDeliveryReaction` (`StrEnum`) | `CONTINUE` — execution plane proceeds (metrics/logging as today); `FAIL_EXECUTION` — bus must fail closed |
+| `EventSinkDeliveryReactionPort` (`Protocol`) | `reaction_for_result(priority, result: EventDeliveryResult) -> EventDeliveryReaction`; `reaction_for_boundary_error(priority, error: EventDeliveryBoundaryError) -> EventDeliveryReaction` |
+| `EnterpriseDefaultEventSinkDeliveryReaction` | Frozen default strategy matching current enterprise bus behavior (drop-in when injection omitted) |
+
+**Wiring:** `RuntimeEventBus` constructor accepts optional `delivery_reaction: EventSinkDeliveryReactionPort | None` (default = enterprise implementation). Composition root (`runtime_event_delivery_wiring` or tests) may substitute a custom strategy; **bus applies platform invariants below before acting**.
+
+### Platform invariants (not configurable by strategy)
+
+| ID | Invariant |
+|----|-----------|
+| **PI-1** | Only `RuntimeEventBus` may raise `CriticalEventDeliveryError`. |
+| **PI-2** | Strategies return `EventDeliveryReaction` only; they **never** raise `CriticalEventDeliveryError`. |
+| **PI-3** | For `EventPriority.CRITICAL`, `EventDeliveryResult` disposition `DROPPED` or `REJECTED` → effective reaction is always `FAIL_EXECUTION` (bus enforces floor if strategy returns `CONTINUE`). |
+| **PI-4** | For `EventPriority.CRITICAL`, any `EventDeliveryBoundaryError` from `EventSinkPort.publish` / `close` → effective reaction is always `FAIL_EXECUTION` (bus enforces floor). |
+| **PI-5** | Every `EventSinkPort` implementation (including `BoundedEventSink`, `RuntimeEventExportSink`) — unchanged port behavior from Decision 3. |
+
+### Configurable strategy surface (examples)
+
+| Input | Typical enterprise default | May vary (non-CRITICAL) |
+|-------|---------------------------|-------------------------|
+| `BEST_EFFORT` + `DROPPED` / `REJECTED` | `CONTINUE` | Metrics detail only |
+| `BEST_EFFORT` + `EventDeliveryBoundaryError` | `CONTINUE` | Alternate logging |
+| `IMPORTANT` + `REJECTED` | `CONTINUE` (metrics) | Future stricter product policy via injected strategy |
+| `CRITICAL` + bad disposition or boundary | `FAIL_EXECUTION` | **Not** overridable (PI-3, PI-4) |
+
+Bus mapping: `FAIL_EXECUTION` → raise `CriticalEventDeliveryError` (with `EventDeliveryBoundaryError` chained when applicable); `CONTINUE` → no execution-plane failure.
+
+
 ### Error ownership table
 
 | Situation | Who detects | Public result / error | Who decides execution impact |
@@ -143,7 +209,7 @@ Including buffer saturation: `BoundedEventSink` returns `REJECTED` for `CRITICAL
 
 `EventExportSinkPort` must accept **`ObservabilityExportPayload`** (same type embedded in `DeliverableEvent`). `object`, `dict[str, Any]`, reflection, and `RuntimeEvent` on the port are **forbidden** at end of R3.
 
-`OtlpTransportPort.export(event: object)` remains **separate contract debt** (documented finding below); R3 may narrow the bridge adapter only — not a substitute for fixing `EventExportSinkPort`.
+`OtlpTransportPort.export(event: object)` remains **separate contract debt** — formal design task **OBS-EXPORT-TRANSPORT-CONTRACT-D1** (see below); R3 may narrow the bridge adapter only — not a substitute for fixing `EventExportSinkPort`.
 
 ### Export layer vs delivery boundary
 
@@ -169,7 +235,9 @@ Including buffer saturation: `BoundedEventSink` returns `REJECTED` for `CRITICAL
 | `DeliverableEvent` + `ObservabilityExportPayload` construction | Runtime mapper at bus edge |
 | `EventDeliveryResult` / `EventDeliveryBoundaryError` | Platform contracts; raised only by sinks |
 | `CriticalEventDeliveryError` | **`RuntimeEventBus` only** |
-| Priority & fail-closed policy | `RuntimeEventBus` |
+| Priority assignment | `RuntimeEventBus` / kind rules |
+| Fail-closed reaction (CRITICAL) | `RuntimeEventBus` applies `EventSinkDeliveryReactionPort` under PI-1…PI-4 |
+| `EventSinkDeliveryReactionPort` implementation | Injectable; default `EnterpriseDefaultEventSinkDeliveryReaction` |
 | Vendor translation | Export / sink plugins |
 | Buffering semantics | `BoundedEventSink` (as plain `EventSinkPort`) |
 | Retry | FUTURE — not `EventSinkPort` |
@@ -181,7 +249,8 @@ Including buffer saturation: `BoundedEventSink` returns `REJECTED` for `CRITICAL
 **In scope:**
 
 - Contract types in `event_delivery.py` (`ObservabilityExportPayload`, boundary error types).
-- `DeliverableEvent` shape; mapper; `EventExportSinkPort` signature.
+- `DeliverableEvent` shape (payload + sequence, factory); mapper; `EventExportSinkPort` signature.
+- `EventSinkDeliveryReactionPort` + bus injection; `EnterpriseDefaultEventSinkDeliveryReaction`.
 - Remove isinstance / `source_event` / `deliver_bounded` public seam from delivery path.
 - Unified `CriticalEventDeliveryError` ownership in `event_bus.py`.
 - Tests listed under contract tests.
@@ -191,15 +260,17 @@ Including buffer saturation: `BoundedEventSink` returns `REJECTED` for `CRITICAL
 - Retry framework, plugin registry governance, Kafka, full OTLP stack rewrite.
 - Promoting full `ObservabilityExportEnvelope` Pydantic model to contracts.
 - Scenario 3 business logic; Data Pack; RRF.
-- `OtlpTransportPort.export(object)` — **separate follow-up** (same hygiene rules; optional small adapter typing in R3 only if zero semantic creep).
+- Full OTLP transport typing — **OBS-EXPORT-TRANSPORT-CONTRACT-D1** only (not P1B-R3 scope beyond bridge isolation).
 
-**Legacy removal (R3 implementation, not D1-R1):**
+**Legacy removal (R3 implementation — mandatory, no dead-code retention):**
 
-- `BoundedEventSink.publish(..., source_event=...)` — delete.
-- `RuntimeEventExportSink.deliver_bounded` — delete or make private dead code until removed.
-- `RuntimeEventBus` `isinstance(sink, BoundedEventSink)` — delete.
+- `BoundedEventSink.publish(..., source_event=...)` — **delete**.
+- `RuntimeEventBus` `isinstance(sink, BoundedEventSink)` — **delete**.
+- `RuntimeEventExportSink.deliver_bounded` — **delete** (not private, not deprecated shim).
 
-If a sink has no production consumer after R3, prefer removal over compatibility shims.
+**Production consumer audit (pre-R3):** `deliver_bounded` is referenced only from `BoundedEventSink` drain (`bounded_event_sink.py`) and from `RuntimeEventExportSink` itself. No composition root, application, or agent calls it directly. After R3, drain uses `downstream.publish(deliverable, priority=..., deadline=None)` only — same as every other `EventSinkPort` decorator.
+
+If any additional caller appears during R3 implementation, migrate it to `publish` in the same change set; do not retain `deliver_bounded`.
 
 ## Contract tests (P1B-R3)
 
@@ -239,7 +310,7 @@ Remove new contract fields and bus policy handling; restore prior behavior only 
 
 Tier boundaries preserved (`intergrax/` does not import `applications/` or `agents/`). Persistence ≠ delivery. Scenario-neutral.
 
-## Enterprise design review (D1-R1)
+## Enterprise design review (D1-R1 + D1-R2)
 
 | # | Criterion | Answer |
 |---|-----------|--------|
@@ -254,12 +325,27 @@ Tier boundaries preserved (`intergrax/` does not import `applications/` or `agen
 | 9 | Persistence vs observability delivery separate | YES |
 | 10 | Scenario-neutral | YES |
 | 11 | Scenario 3 uses platform mechanism | YES (no side channel) |
-| 12 | Future strategy without core edit | YES (injection + contracts) |
+| 12 | Future strategy without core edit | YES (`EventSinkDeliveryReactionPort` injection) |
 | 13 | No gratuitous abstraction | YES (one payload type, one port shape) |
 | 14 | Scope limited to audit blockers | YES |
+| 15 | Single source of truth identity/kind | YES (`ObservabilityExportPayload` + factory-only `DeliverableEvent`) |
+| 16 | Delivery failure policy extension | YES (`EventSinkDeliveryReactionPort` + PI-1…PI-4) |
+| 17 | No `deliver_bounded` dead code | YES (explicit R3 deletion) |
+| 18 | OTLP `object` debt owned | YES (OBS-EXPORT-TRANSPORT-CONTRACT-D1) |
 
-**Verdict:** Design PASS for P1B-R3 entry — pending independent GitHub audit of this revision.
 
-## Separate finding (not D1-R1 scope)
+**Verdict:** Design PASS for P1B-R3 entry (D1-R2) — pending independent GitHub audit of this revision.
 
-`OtlpTransportPort.export(event: object)` in `intergrax/contracts/observability_export.py` mirrors the same weakness. Track as **OBS-EXPORT transport contract debt**; do not block P1B-R3 on full OTLP port redesign if `EventExportSinkPort` and bridge are typed.
+## Follow-up design task — OBS-EXPORT-TRANSPORT-CONTRACT-D1
+
+| Field | Value |
+|-------|-------|
+| **Task** | OBS-EXPORT-TRANSPORT-CONTRACT-D1 |
+| **Goal** | Remove the pseudo-contract `OtlpTransportPort.export(event: object)` from the OTLP transport boundary; replace with a typed carrier aligned with the export bridge output (post-`ObservabilityExportPayload` mapping). |
+| **Owner** | Platform observability / contracts (`intergrax/contracts/observability_export.py` + OTLP adapters) |
+| **Blocks** | Marking the **full** observability export path (delivery + OTLP wire) as enterprise-complete |
+| **Does not block** | P1B-R3 implementation when this ADR's isolation holds |
+
+**P1B-R3 isolation (required for unblock):** Typed `EventExportSinkPort.export(ObservabilityExportPayload)` and `RuntimeEventExportSink` must confine `object` to the OTLP adapter seam only — `RuntimeEventBus` and `EventSinkPort` plugins never accept or forward untyped export blobs. Until OBS-EXPORT-TRANSPORT-CONTRACT-D1 closes, documentation and qualification must state: **enterprise-complete delivery boundary** (P1B-R3) ≠ **enterprise-complete OTLP transport contract**.
+
+Related inventory: `docs/project/maintainers/qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_E_OTLP_TRANSPORT_INVENTORY.md`, ADR_ENTERPRISE_OTLP_TRANSPORT_ADAPTER.
