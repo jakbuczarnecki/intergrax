@@ -5,7 +5,7 @@
 | **Status** | Proposed — design freeze for P1B-R3 (D1-R2 contract invariants + policy extension; GitHub audit required before implementation) |
 | **Date** | 2026-09-14 (revised D1-R2) |
 | **Deciders** | Platform observability / VPI platform evolution |
-| **Related** | `intergrax/contracts/event_delivery.py` · ADR-OBS-001 · VPI-PLATFORM-EVOLUTION-P1B-D1 · P1B-D1-R1 · P1B-D1-R2 · P1B-R3 · OBS-EXPORT-TRANSPORT-CONTRACT-D1 |
+| **Related** | `intergrax/contracts/event_delivery.py` · ADR-OBS-001 · VPI-PLATFORM-EVOLUTION-P1B-D1 · P1B-D1-R1 · P1B-D1-R2 · P1B-R3 · **P1B-R3-D1** · OBS-EXPORT-TRANSPORT-CONTRACT-D1 |
 
 ## Context
 
@@ -335,6 +335,300 @@ Tier boundaries preserved (`intergrax/` does not import `applications/` or `agen
 
 
 **Verdict:** Design PASS for P1B-R3 entry (D1-R2) — pending independent GitHub audit of this revision.
+
+---
+
+## Decision 5 — Bounded delivery completion & failure semantics (P1B-R3-D1)
+
+| Field | Value |
+|-------|-------|
+| **Task** | VPI-PLATFORM-EVOLUTION-P1B-R3-D1 |
+| **Status** | Design extension (supersedes ambiguous `ACCEPTED` / CRITICAL wording in Decision 3 for async stacks) |
+| **Blocks** | P1B-R3-R1 implementation correction |
+| **Does not implement** | Runtime changes, Scenario 3 hooks, retry, DLQ |
+
+### D1 context — audit gap (post P1B-R3 @ `29d6dd660cc45d954c9490faef0cb926652bd7a8`)
+
+Production wiring (`runtime_event_delivery_wiring.py`) exposes **`BoundedEventSink`** as the bus-facing `EventSinkPort`. That sink returns `ACCEPTED` when an item is **enqueued**, while `RuntimeEventBus` applies the CRITICAL floor to the **synchronous** `publish()` return only. Downstream export outcomes in `RuntimeEventExportSink` occur later in the drain worker and are **not** visible to the bus. `BoundedEventSink._drain_loop` does not normalize downstream exceptions; an unexpected raise can **terminate the worker** while the bus already observed `ACCEPTED` for CRITICAL events.
+
+This is an architectural contract gap, not a Scenario 3 defect. Fixes belong in platform contracts + sink obligations, not scenario code.
+
+### Target flow (post P1B-R3-R1)
+
+```text
+RuntimeEventBus
+  -> EventSinkPort.publish (obligation-aware; deadline-bounded)
+       -> [optional] BoundedEventSink (buffer + worker; honors obligation policy)
+       -> RuntimeEventExportSink (export bridge; normalizes vendor/export failures)
+       -> EventExportSinkPort (plugin transport)
+  -> EventSinkDeliveryReactionPort + platform invariants (CRITICAL floor)
+  -> [async only] EventDeliveryPostAdmissionFailureObserverPort (ADMISSION-met, later failure)
+  -> [buffering sinks] EventSinkHealthPort (terminal worker / subsystem loss)
+```
+
+```mermaid
+flowchart TB
+  bus[RuntimeEventBus]
+  sink[EventSinkPort stack]
+  oblig[EventDeliveryObligationPolicyPort]
+  obs[PostAdmissionFailureObserverPort]
+  health[EventSinkHealthPort]
+  bus --> sink
+  oblig -.-> sink
+  sink -->|late fail BEST_EFFORT/IMPORTANT| obs
+  sink -->|worker terminal| health
+  health -.->|unhealthy| sink
+```
+
+### Problem A — single meaning of `ACCEPTED`
+
+**Decision:** `EventDeliveryDisposition.ACCEPTED` on `EventSinkPort.publish()` means:
+
+> **The sink has fulfilled the configured delivery obligation for this `priority` on this call** (see `EventDeliveryObligation` below). It does **not** mean “vendor ACK on the wire” unless the configured obligation for that priority is `COMPLETION` and the sink’s completion boundary is defined to include that transport hop.
+
+Every `EventSinkPort` implementation MUST use the same rule: read obligation from injected **`EventDeliveryObligationPolicyPort`** (or equivalent constructor-injected policy). Implementations MUST NOT invent private interpretations (no `isinstance`, no per-class semantics).
+
+### Problem B — admission vs completion (explicit, not hidden)
+
+Two lifecycle stages exist; they MUST NOT be conflated inside buffer implementations.
+
+| Stage | Meaning |
+|-------|---------|
+| **Admission** | Event accepted into the sink’s controlled delivery mechanism (e.g. bounded queue). |
+| **Completion** | Required downstream work for this priority/obligations has finished with a terminal disposition at the sink’s **completion boundary** (for the default stack: export bridge finished `EventExportSinkPort.export` for that payload). |
+
+**Contract shape (P1B-R3-R1 — design only here):**
+
+| Type | Role |
+|------|------|
+| `EventDeliveryObligation` (`StrEnum`) | `ADMISSION` · `COMPLETION` — what `publish()` must achieve before returning `ACCEPTED` |
+| `EventDeliveryObligationPolicyPort` (`Protocol`) | `obligation_for(priority: EventPriority) -> EventDeliveryObligation` |
+| `EnterpriseDefaultEventDeliveryObligationPolicy` | `CRITICAL` → `COMPLETION`; `IMPORTANT` / `BEST_EFFORT` → `ADMISSION` (baseline) |
+| `EventDeliveryResult` (extended) | Adds `obligation: EventDeliveryObligation` — documents which obligation was evaluated to produce this result |
+
+`EventDeliveryResult` remains the **single synchronous return** from `publish()`. For `COMPLETION` obligations, `ACCEPTED`/`REJECTED`/`DROPPED`/`DEFERRED` describe **completion-stage** outcomes. For `ADMISSION` obligations, the same dispositions describe **admission-stage** outcomes; completion may still fail later.
+
+**No second parallel “publish completion” API** unless a future ADR adds one; late completion for `ADMISSION` priorities uses the observer below (minimal Model C).
+
+### Problem C — CRITICAL guarantee (selected model)
+
+#### Model comparison (enterprise)
+
+| Criterion | A — admission only | B — sync completion (all priorities) | C — obligation policy + late-failure observer (selected) |
+|-----------|-------------------|--------------------------------------|----------------------------------------------------------|
+| Execution latency | Excellent | Poor for BEST_EFFORT | CRITICAL bounded wait; others low |
+| Backpressure | Simple | Propagates to producers | CRITICAL wait uses queue + deadline; BE drops |
+| Failure propagation | CRITICAL gap after queue | Strong synchronous | Strong for CRITICAL; explicit async path for BE/IMPORTANT |
+| Pluginability | High | High | High (policy + observer injectable) |
+| Distributed transport | Easy | Hard (long blocking) | COMPLETION bounded; transport stays in export plugin |
+| Shutdown semantics | Weak for pending CRITICAL | Strong | Explicit drain + fail-closed rules |
+| Worker failure | Hidden today | Less likely if sync | Health port + reject subsequent publishes |
+| Observability | Misleading ACCEPTED | Clear | Clear via obligation field + observer |
+| Retries | N/A (future hook at export) | Same | Same |
+| Enterprise reliability | Insufficient for CRITICAL | Strong but costly | Strong where required |
+| Implementation complexity | Low | Medium | Medium (no receipt framework) |
+| Compatibility | Breaks stated CRITICAL floor intent | Matches floor literally | Extends ADR without Scenario hooks |
+| Scenario 3 needs | Fails real export guarantee | Satisfies | Satisfies via platform path |
+| Future vendors | OK | OK | OK |
+
+**Selected model:** **C (minimal)** — priority-conditioned **obligation policy** on the existing `publish()` contract, plus a **post-admission failure observer** for priorities that stop at `ADMISSION`. Not a general receipt/future framework.
+
+**CRITICAL guarantee (one sentence):** For `EventPriority.CRITICAL`, `publish()` MUST NOT return `ACCEPTED` until `EventDeliveryObligation.COMPLETION` is satisfied through the configured sink chain (default production stack: export bridge terminal disposition), subject to the caller `deadline`; admission-only `ACCEPTED` for CRITICAL is **forbidden**.
+
+**Refines Decision 3 / PI-3 / PI-4:** PI-3 and PI-4 apply to the **terminal disposition returned by `publish()` for the configured obligation**. Post-admission failures apply only when obligation was `ADMISSION` (non-CRITICAL default).
+
+### Problem D — failure after admission (`ADMISSION` obligation)
+
+When obligation is `ADMISSION` and `publish()` returned `ACCEPTED`, downstream may still fail in a worker.
+
+| Mechanism | Owner |
+|-----------|--------|
+| `EventDeliveryPostAdmissionFailureObserverPort` | Pluggable; default implementation records metrics + diagnostic state (no execution fail) |
+| Notification payload | Normalized `EventDeliveryLateFailure` (frozen dataclass): `deliverable`, `priority`, `terminal_disposition` or `EventDeliveryBoundaryError` kind, `stage=LATE_COMPLETION` |
+| Execution impact | **None** for BEST_EFFORT / IMPORTANT unless a future governance ADR ties observer to execution (out of scope) |
+
+For `COMPLETION` obligation (CRITICAL), late failure MUST NOT occur after `ACCEPTED`; the worker must surface failure as the synchronous `publish()` result (`REJECTED` / `DROPPED`) or `EventDeliveryBoundaryError` before returning.
+
+### Problem E — worker resilience (`BoundedEventSink`)
+
+| Rule | Design |
+|------|--------|
+| Legal downstream outcomes | `EventDeliveryResult` or `EventDeliveryBoundaryError` from downstream `publish`; no raw vendor exceptions |
+| Exception in drain loop | Catch, normalize to late-failure observer + metrics; **do not** exit loop for per-event failures |
+| Terminal worker failure | Only after unrecoverable subsystem errors (e.g. repeated internal invariant violation); set `EventSinkHealthPort` to `UNHEALTHY` |
+| Subsequent `publish` while unhealthy | `REJECTED` or `EventDeliveryBoundaryError(SINK_UNAVAILABLE)` — never silent `ACCEPTED` |
+| `close()` | See shutdown below; drain thread must not die on single-event export failure |
+
+**Enterprise invariant (new):** **PI-7** — A single event failure MUST NOT silently terminate the delivery worker.
+
+### Problem F — `CriticalEventDeliveryError` causal chain
+
+When the bus raises `CriticalEventDeliveryError` because `EventDeliveryBoundaryError` escaped `publish()`:
+
+- MUST set `raise CriticalEventDeliveryError(...) from boundary_error`.
+- MUST NOT attach raw vendor exceptions; export bridge MUST normalize vendor faults to `EventDeliveryBoundaryError` or `EventDeliveryResult` before the bus boundary.
+
+### Problem G — controlled vs unexpected export failure
+
+`RuntimeEventExportSink` (and export plugins) MUST distinguish:
+
+| Class | Handling |
+|-------|----------|
+| Controlled export failure | Known transport/unavailable/timeout → map to `EventDeliveryResult` (`DROPPED`/`REJECTED`) per priority |
+| Unexpected plugin defect | `except Exception` → **`EventDeliveryBoundaryError(INTERNAL_ERROR)`** with safe message; preserve `__cause__` for logs only (not bus surface) |
+
+Unexpected failures are **not** policy-complete `REJECTED` outcomes.
+
+### Policy vs mechanism
+
+| Layer | Examples |
+|-------|----------|
+| Mechanism | Queue, worker, completion wait, health flag, observer callback |
+| Policy | `EventDeliveryObligationPolicyPort`, `EventSinkDeliveryReactionPort`, `deadline` from bus, profile caps on max wait |
+
+Concrete sinks MUST NOT hardcode CRITICAL blocking; they consult obligation policy.
+
+### Governance (reuse + follow-up)
+
+| Control | Reuse |
+|---------|--------|
+| Buffer capacity / IMPORTANT wait | `EventDeliveryPolicy` + `ApplicationEnvironmentProfile` (existing) |
+| CRITICAL completion max wait | **Follow-up:** profile field `bounded_event_delivery_critical_completion_timeout_seconds` capped by governance (design task **OBS-DELIVERY-GOV-BOUNDS-D1**, not implemented here) |
+| Allowed obligation overrides | Non-CRITICAL only; **PI-8** — `CRITICAL` obligation MUST remain `COMPLETION` (non-overridable) |
+
+### Diagnostics (minimal contract states)
+
+Expose via observer + health + existing `InternalDeliveryMetrics` (no new backend):
+
+`admitted`, `completed`, `rejected`, `dropped`, `deferred`, `late_completion_failed`, `worker_unhealthy`, `completion_timed_out`.
+
+### Shutdown semantics (`close()`)
+
+| Question | Decision |
+|----------|----------|
+| Drain pending? | **Yes** — bounded sink enqueues shutdown sentinel; worker drains until empty or **drain deadline** |
+| Downstream failures during drain | Normalize per Problem G; CRITICAL pending items that fail completion → fail `close()` with `EventDeliveryBoundaryError` or composition-root error type (not `CriticalEventDeliveryError` — bus already finished) |
+| CRITICAL still pending | Must be driven to `COMPLETION` outcome or explicit failure before worker exit |
+| `close()` failure owner | Composition root / lifecycle (`close_application_runtime_event_delivery`); logs + health `UNHEALTHY` |
+| Deadline | `EventDeliveryPolicy` extension or profile: `drain_timeout_seconds` (follow-up field in R1) |
+
+### Deadline / timeout semantics
+
+- `RuntimeEventBus` MUST pass a monotonic `deadline` into `publish()` for CRITICAL (and MAY for IMPORTANT).
+- Sinks MUST NOT block unbounded on COMPLETION waits.
+- On timeout: return `REJECTED` (CRITICAL → bus `FAIL_EXECUTION`) or `EventDeliveryBoundaryError(TRANSPORT_FAILURE)` if mechanism broken.
+
+### Retry
+
+Retry belongs **after** export normalization (export plugin or future reliability layer). Not part of `EventSinkPort.publish()` semantics. P1B-R3-D1 only notes the hook: `EventExportSinkPort` / ERL, not bus.
+
+### Re-use first (D1)
+
+| Candidate | Verdict |
+|-----------|---------|
+| `EventDeliveryPolicy` | Reuse for buffer; extend for drain/critical caps in R1 |
+| `EventSinkDeliveryReactionPort` | Reuse |
+| `InternalDeliveryMetrics` | Reuse for late failures |
+| Evidence `ProofReceipt` / wake-up receipts | **Not** reused — different domain (§21) |
+| New receipt framework | **Rejected** — observer + obligation on `publish()` suffices |
+
+### Required ownership matrix
+
+| Concern | Owner |
+|---------|--------|
+| Admission | Buffering `EventSinkPort` (e.g. `BoundedEventSink`) |
+| Queue / backpressure | `BoundedEventSink` + `EventDeliveryPolicy` |
+| Downstream completion | Terminal sink in chain (`RuntimeEventExportSink` + `EventExportSinkPort`) |
+| Downstream failure (sync / COMPLETION path) | Chain of `EventSinkPort` implementations (normalize to result/boundary) |
+| Downstream failure (post-admission) | `EventDeliveryPostAdmissionFailureObserverPort` |
+| Critical execution decision | `RuntimeEventBus` (PI-3, PI-4, PI-6, PI-8) |
+| Worker health | `EventSinkHealthPort` (buffering sinks) |
+| Retry | FUTURE |
+| Metrics / diagnostics | `InternalDeliveryMetrics` + observer + health |
+| Persistence | Evidence subsystem |
+| Vendor normalization | Export / transport plugins |
+| Governance bounds | Profile + future OBS-DELIVERY-GOV-BOUNDS-D1 |
+
+### Required state transition matrix
+
+Effective outcome = execution plane (`RuntimeEventBus`) after invariants.
+
+| Priority | Admission / obligation | Downstream | Effective outcome |
+|----------|------------------------|------------|-------------------|
+| BEST_EFFORT | `ADMISSION` accepted | success (late) | CONTINUE |
+| BEST_EFFORT | `ADMISSION` accepted | fail (late) | CONTINUE; observer + metrics |
+| IMPORTANT | `ADMISSION` accepted | fail (late) | CONTINUE (default strategy); observer + metrics |
+| CRITICAL | rejected at admission (`REJECTED`/`DROPPED`/full buffer) | n/a | FAIL_EXECUTION |
+| CRITICAL | `COMPLETION` success | success | CONTINUE |
+| CRITICAL | `COMPLETION` | downstream `REJECTED`/`DROPPED` | FAIL_EXECUTION (`publish` returns bad disposition) |
+| CRITICAL | `COMPLETION` | `EventDeliveryBoundaryError` | FAIL_EXECUTION (chained cause) |
+| CRITICAL | `COMPLETION` in flight | worker terminal | `publish` → `UNHEALTHY` / boundary; FAIL_EXECUTION if CRITICAL |
+| CRITICAL | `COMPLETION` | completion timeout | FAIL_EXECUTION (`REJECTED` or boundary) |
+
+### Required contract matrix (after P1B-R3-R1)
+
+| Contract | Responsibility | Pluginable? |
+|----------|----------------|-------------|
+| `EventSinkPort` | Obligation-aware synchronous delivery boundary | YES |
+| `EventDeliveryResult` | Terminal disposition for evaluated obligation + metadata | n/a |
+| `EventDeliveryObligation` / `EventDeliveryObligationPolicyPort` | Maps priority → admission vs completion requirement | YES (CRITICAL fixed by PI-8) |
+| `EventSinkDeliveryReactionPort` | Non-invariant reactions for non-CRITICAL | YES |
+| `EventDeliveryPostAdmissionFailureObserverPort` | Late failure signal for `ADMISSION` obligations | YES |
+| `EventSinkHealthPort` | Subsystem availability after terminal worker failure | YES |
+| `EventExportSinkPort` | Transport export / flush / close | YES |
+| Completion receipt / future API | **Not needed** — obligation on `publish()` + observer |
+
+### Platform invariants (additions)
+
+| ID | Invariant |
+|----|-----------|
+| **PI-6** | `ACCEPTED` means obligation configured for `priority` is satisfied on this `publish()` call. |
+| **PI-7** | Per-event downstream failure MUST NOT silently kill the bounded delivery worker. |
+| **PI-8** | `EventPriority.CRITICAL` obligation MUST be `COMPLETION` (not overridable by plugins). |
+| **PI-9** | Unexpected export/plugin defects MUST surface as `EventDeliveryBoundaryError(INTERNAL_ERROR)`, not as policy `REJECTED`/`DROPPED`. |
+| **PI-10** | `CriticalEventDeliveryError` MUST chain `EventDeliveryBoundaryError` via `__cause__` when applicable. |
+
+### P1B-R3-R1 migration notes (implementation — out of scope for D1)
+
+- Extend contracts (`EventDeliveryObligation*`, observer, health).
+- `BoundedEventSink`: obligation-aware `publish`; resilient drain; health.
+- `RuntimeEventExportSink`: narrow `except Exception` mapping.
+- `RuntimeEventBus`: pass `deadline` for CRITICAL; `raise ... from boundary_error`.
+- Tests: bounded stack CRITICAL cannot `ACCEPTED` before export outcome; worker survives export failure; unhealthy sink rejects.
+
+### Enterprise gates (P1B-R3-D1)
+
+| # | Criterion | Answer |
+|---|-----------|--------|
+| 1 | Single `ACCEPTED` meaning | YES (obligation-based) |
+| 2 | Admission vs completion separated | YES (obligation + observer) |
+| 3 | CRITICAL guarantee explicit | YES (COMPLETION) |
+| 4 | Bounded production stack honors CRITICAL | YES (after R1) |
+| 5 | Post-admission failure not lost | YES (observer) |
+| 6 | Worker exception cannot silently kill delivery | YES (PI-7) |
+| 7 | Worker health explicit | YES (`EventSinkHealthPort`) |
+| 8 | `CriticalEventDeliveryError` ownership | YES (bus only) |
+| 9 | Causal chain | YES (PI-10) |
+| 10 | Unexpected plugin failure normalized | YES (PI-9) |
+| 11 | Pluginability | YES |
+| 12 | Core avoids concrete types | YES |
+| 13 | Scenario 3 neutral | YES |
+| 14 | Persistence separate | YES |
+| 15 | Shutdown explicit | YES |
+| 16 | Deadline explicit | YES |
+| 17 | No gratuitous framework | YES |
+| 18 | Design-only scope | YES |
+
+**Verdict:** Design **PASS** for P1B-R3-D1 — pending independent GitHub audit; unblocks P1B-R3-R1 planning.
+
+### Findings / follow-ups (out of scope)
+
+| ID | Item |
+|----|------|
+| OBS-EXPORT-TRANSPORT-CONTRACT-D1 | OTLP `object` transport (unchanged) |
+| OBS-DELIVERY-GOV-BOUNDS-D1 | Governance caps for critical completion / drain timeouts |
+| ERL | Retry / uncertainty recovery integration with export (separate reliability layer) |
+
 
 ## Follow-up design task — OBS-EXPORT-TRANSPORT-CONTRACT-D1
 
