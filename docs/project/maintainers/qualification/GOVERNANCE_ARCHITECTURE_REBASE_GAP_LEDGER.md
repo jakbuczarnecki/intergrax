@@ -48,6 +48,29 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 | GOV-GAP-010 | P2 | Maintainer truth | Stale PG-FIX / Protocol v2.2 status in docs | IMPLEMENTED / VERIFIED / CLOSED distinguished | Operators mis-plan | False closure claims | Reconcile plan + arch pointers (GR-0) | GR-0 | GR-0 | `plans/GOVERNED_EXECUTION.md` | IN_PROGRESS |
 | GOV-GAP-011 | P2 | Policy plugins | Catalog + handler slices; Nexus types in `policy_bundle.py` | Vendor-neutral core; platform plugin admission | Residual Nexus coupling in policy assembly | Tier violation / test burden | Gradual decouple bundle assembly from Nexus models | Platform plugins | GR-4, GR-11 | `policy_bundle.py`, `tool_policy_resolution.py` | OPEN |
 | GOV-GAP-012 | P2 | Admission vs inner | `evaluate_root_execution_admission` + inner meaningful-side-effect | Admission = may start Execution; inner = may proceed | Potential semantic overlap if misused | Admission replaces policy | Keep `ExecutionAuthorityPolicy` as child narrowing only; document ports | GR-2 | GR-3 | `execution/authority/policy.py`, `runtime_execution_policy_admission.py`, `execution_admission_composition.py` | OPEN |
+| GOV-GAP-013 | P0 | Root admission coverage | `RootExecutionAuthorityAdmissionPort` + `CanonicalExecutionIntakePort` wired only in `WorkerExecutionDispatchService` (tests + AW seam); canonical host path `HostTaskExecution` → `Execution` → `ExecutionRuntime.execute` mints `ParentExecutionAuthority` from `task.execution_authority` with no Governance admission | One platform-wide Governance gate before every root Execution (INFERENCE / AGENTIC / ORCHESTRATION) | Frozen runtime has intake adapter but does not require trusted authority from Governance; host path bypasses intake | Root Execution starts without `RuntimeExecutionPolicyAdmissionPort` on primary production host | Mandatory composition at canonical host boundary **or** new frozen contract hook (operator decision); map worker admission to strategy-neutral `execution_operation` | GR-2-R1 | GR-2, GR-10 | `host_task.py`, `worker_execution_dispatch.py`, `canonical_intake_adapter.py`, `runtime_execution_admission.py` | **OPEN** |
+
+---
+
+## GR-2-R1 — platform-wide root admission audit (code truth)
+
+**Audit HEAD:** `0123a11a6f337e264e503041ba1c84e750b6fe00` on `development` (note: differs from instruction pin `a409cce…` — no reset performed).
+
+**Verdict:** `ARCHITECTURAL_DECISION_REQUIRED` — `FROZEN_EXECUTION_SEAM_INSUFFICIENT` (composition contracts exist; frozen canonical host does not consume them; `ExecutionRuntime` cannot enforce Governance without reopening).
+
+| Root type | Production entry | Governance admission | Canonical intake | ExecutionRuntime | Bypass possible |
+| --- | --- | --- | --- | --- | --- |
+| INFERENCE | `HostTaskExecution.execute` → `build_host_task_strategy_router` → `StrategyExecutionRouter` → `InferenceExecutor` | None on host path | Skipped (`resolve_root_parent_execution_authority(task.execution_authority)`) | `Execution` → `ExecutionRuntime.execute` | **YES** |
+| AGENTIC | Same host path → `AgentExecutor` | None on host path | Skipped | Same | **YES** |
+| ORCHESTRATION | Host path → orchestration delegate; alternate AW `WorkerExecutionDispatchService` → `RootExecutionAuthorityAdmissionPort` → `CanonicalExecutionIntakePort` | AW dispatch only (not used by `HostTaskExecution` / harness / lab) | AW dispatch only | Both reach `ExecutionRuntime` | **YES** (host + direct `Execution`/`ExecutionRuntime` composition) |
+
+**Root execution definition (frozen):** `ExecutionRuntime.execute(request, root_context: RootExecutionContext)` with `resolve_root_execution_context` / `mint_root_execution_identity` (`runtime.py`, `identity_authority.py`); lineage root invariant `execution_id == segment_root_execution_id` and `parent_execution_id is None` (`contracts/execution_lineage.py`).
+
+**§13 seam:** `NO — MISSING_PLATFORM_GENERIC_GOVERNANCE_ADMISSION_CONTRACT` at the mandatory frozen host boundary. Optional AW-5A pair (`RootExecutionAuthorityAdmissionPort` → `CanonicalExecutionIntakePort`) is strategy-neutral but not enforced for `HostTaskExecution`.
+
+**WORKER_ROOT_EXECUTION_OPERATION (§12):** **A** — `RuntimeExecutionPolicyAdmissionRequest.execution_operation` is generic; `RootExecutionAuthorityAdmissionService` hardcodes `WORKER_ROOT_EXECUTION_OPERATION` when calling policy (worker-named default, not worker-only port type).
+
+**Admission contract roles:** `RuntimeExecutionPolicyAdmissionPort` / `RootExecutionAuthorityAdmissionPort` = GOVERNANCE AUTHORIZATION; `ExecutionAdmissionHook` = EXECUTION VALIDATION; `ExecutionCapacityAdmissionPort` = CAPACITY; `ExecutionAuthorityPolicy` = CHILD AUTHORITY; `CanonicalExecutionIntakePort` = INTAKE (trusted authority → runtime).
 
 ---
 
@@ -189,8 +212,9 @@ Historical AUDIT-5 findings remain valid context; closure requires identity rebi
 | GR-1 | Execution Identity Rebinding | **CLOSED** | Bind grants, side effects, HITL resolution to Attempt+Execution (GR-1-R1 atomic correction) | GR-0 | G5C identity follow-on | Yes | Contract + matcher + GR-1-R1 security tests |
 | GR-1-R1 | Frozen boundary + atomic identity | **DONE** | Fail-closed partial identity; Governance consumes frozen active context | GR-1 | Audit defect A/B | Yes | `test_meaningful_side_effect_execution_identity_resolution.py` |
 | GR-1-R2 | Frozen Nexus baseline restoration | **DONE** | Remove Governance-specific Attempt/Execution forwarding from Nexus; identity via active context | GR-1-R1 | GR-1 Nexus coupling | Yes | `test_gr1_execution_identity_rebinding.py` (Nexus path) |
-| GR-2 | Execution Admission Governance | **CLOSED** | Single admission story at Execution start | GR-1-R2 | G3 admission rows | Yes | `test_gr2_execution_admission_governance.py`, root/worker admission tests |
-| GR-3 | Inner Evaluation Spine | **NEXT** | One inner enforcement path; safe `authorize_and_execute` | GR-1, GR-2 | PG-FIX-A completion | Yes | Bypass gate tests |
+| GR-2-R1 | Platform-wide root admission & frozen seam decision | **DONE** (`ARCHITECTURAL_DECISION_REQUIRED`) | Prove one Governance admission for INFERENCE/AGENTIC/ORCHESTRATION without layer violations | GR-1-R2 | — | No (audit) | This ledger § GR-2-R1; GOV-GAP-013 |
+| GR-2 | Execution Admission Governance | **OPEN** (worker/AW slice only) | Single admission story at **every** root Execution start | GR-2-R1 | G3 admission rows | Blocked until host seam decided | `test_gr2_execution_admission_governance.py` (policy port); host bypass remains |
+| GR-3 | Inner Evaluation Spine | **BLOCKED** | One inner enforcement path; safe `authorize_and_execute` | GR-1, GR-2 | PG-FIX-A completion | Yes | Bypass gate tests |
 | GR-4 | Policy Resolution & Catalog Requalification | PLANNED | Close PG-FIX-B/D qualification gaps | GR-3 | G2C, PG-FIX-B/D | Yes | Precedence + catalog tests |
 | GR-5 | HITL / Governed Continuation Rebase | PLANNED | UER pause/resume; scoped approval preserved | GR-1 | G5*, PG-FIX-C | Yes | HITL E2E per strategy |
 | GR-6 | Decision → Governance Integration | PLANNED | Decision provenance where material | GR-1 | — | Yes | Decision-version binding tests |
