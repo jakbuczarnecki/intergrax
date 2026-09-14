@@ -191,9 +191,11 @@ There is **no** public contract or documented bridge that:
 
 ## 9. Public contracts
 
-### 9.1 Package placement (DECIDED)
+### 9.1 Package placement (DECIDED — OQ-1)
 
-New public surface under **`intergrax.contracts.enterprise_reliability.diagnostics`** (or `intergrax.contracts.diagnostics.reliability` if maintainers prefer spine colocation — **OPEN** naming package suffix; behavior is fixed).
+Canonical public surface: **`intergrax.contracts.enterprise_reliability.diagnostics`**.
+
+Rejected alternative: `intergrax.contracts.diagnostics.reliability` — would split ERL-sourced facts from the ERL contract spine and risk coupling central diagnostics persistence into the emission contract graph.
 
 Rationale: emission is ERL-sourced but consumed by central diagnostics; colocating with ERL facts avoids circular imports while keeping diagnostics persistence in `intergrax.contracts.diagnostics`.
 
@@ -765,7 +767,7 @@ flowchart TB
 
 | ID | Question | Status |
 | --- | --- | --- |
-| OQ-1 | Package name: `enterprise_reliability.diagnostics` vs `diagnostics.reliability` | **OPEN** |
+| OQ-1 | Package name: `enterprise_reliability.diagnostics` vs `diagnostics.reliability` | **DECIDED** — `intergrax.contracts.enterprise_reliability.diagnostics` |
 | OQ-2 | Sync vs async bridge default for orchestrator handoff | **OPEN** (recommend sync MVP, async under load) |
 | OQ-3 | Exact `PersistedProblem` / occurrence extension schema | **OPEN** (implementation) |
 | OQ-4 | Read model authz integration for evidence ref resolution | **OPEN** |
