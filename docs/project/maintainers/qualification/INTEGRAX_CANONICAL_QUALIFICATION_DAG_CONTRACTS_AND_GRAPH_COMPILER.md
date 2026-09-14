@@ -138,7 +138,7 @@ uv run pytest tests/unit/testing_support/execution_qualification/ -q
 
 ## Findings
 
-P1 delivers compile-only execution plans; physical dedup and aggregate receipt evaluation remain P2+.
+P1 delivers compile-only execution plans. **P2 implementation:** [`INTEGRAX_QUALIFICATION_IN_RUN_DEDUP_AND_RECEIPT_REUSE.md`](INTEGRAX_QUALIFICATION_IN_RUN_DEDUP_AND_RECEIPT_REUSE.md) (plan runner, receipt reuse, plan hardening).
 
 ## Final Verdict
 

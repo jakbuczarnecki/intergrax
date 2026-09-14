@@ -25,7 +25,9 @@ class FakeExecutorProbe:
     lock: threading.Lock = field(default_factory=threading.Lock)
     overlap_pairs: list[tuple[str, str]] = field(default_factory=list)
     active_suite_ids: set[str] = field(default_factory=set)
-    env_snapshots: list[tuple[str, tuple[tuple[str, str], ...]]] = field(default_factory=list)
+    env_snapshots: list[tuple[str, tuple[tuple[str, str], ...]]] = field(
+        default_factory=list
+    )
 
     def enter(self, suite_id: str) -> None:
         with self.lock:
@@ -45,7 +47,9 @@ class FakeExecutorProbe:
 class FakeQualificationSuiteExecutor:
     def __init__(
         self,
-        behaviors: dict[str, Callable[[QualificationSuite, QualificationExecutionContext], None]],
+        behaviors: dict[
+            str, Callable[[QualificationSuite, QualificationExecutionContext], None]
+        ],
         *,
         probe: FakeExecutorProbe | None = None,
         default_sleep_seconds: float = 0.0,
@@ -54,16 +58,24 @@ class FakeQualificationSuiteExecutor:
         self._probe = probe if probe is not None else FakeExecutorProbe()
         self._default_sleep_seconds = default_sleep_seconds
         self.completion_order: list[str] = []
+        self.invocation_counts: dict[str, int] = {}
+        self._status_overrides: dict[str, QualificationSuiteStatus] = {}
 
     @property
     def probe(self) -> FakeExecutorProbe:
         return self._probe
+
+    def set_suite_status(self, suite_id: str, status: QualificationSuiteStatus) -> None:
+        self._status_overrides[suite_id] = status
 
     def execute(
         self,
         suite: QualificationSuite,
         context: QualificationExecutionContext,
     ) -> ExecutionQualificationSuiteResult:
+        self.invocation_counts[suite.suite_id] = (
+            self.invocation_counts.get(suite.suite_id, 0) + 1
+        )
         self._probe.enter(suite.suite_id)
         started = time.monotonic()
         try:
@@ -81,6 +93,27 @@ class FakeQualificationSuiteExecutor:
         duration = time.monotonic() - started
         context.suite_log_path.parent.mkdir(parents=True, exist_ok=True)
         context.suite_log_path.write_text("", encoding="utf-8")
+        override = self._status_overrides.get(suite.suite_id)
+        if override is QualificationSuiteStatus.FAIL:
+            return ExecutionQualificationSuiteResult(
+                suite_id=suite.suite_id,
+                command=("fake", suite.suite_id),
+                status=QualificationSuiteStatus.FAIL,
+                outcome_kind=QualificationSuiteOutcomeKind.PYTEST_NONZERO_EXIT,
+                exit_code=1,
+                duration_seconds=duration,
+                log_path=context.suite_log_path,
+            )
+        if override is QualificationSuiteStatus.SKIP:
+            return ExecutionQualificationSuiteResult(
+                suite_id=suite.suite_id,
+                command=("fake", suite.suite_id),
+                status=QualificationSuiteStatus.SKIP,
+                outcome_kind=QualificationSuiteOutcomeKind.NOT_STARTED,
+                exit_code=None,
+                duration_seconds=duration,
+                log_path=context.suite_log_path,
+            )
         return ExecutionQualificationSuiteResult(
             suite_id=suite.suite_id,
             command=("fake", suite.suite_id),

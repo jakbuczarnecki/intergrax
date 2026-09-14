@@ -443,7 +443,7 @@ Future tests (design):
 | ----- | -------------- |
 | **P1** | Canonical `suite_id` registry + gate/suite contracts + graph compiler (typed, cycle/missing/duplicate definition checks) — implementation: [`INTEGRAX_CANONICAL_QUALIFICATION_DAG_CONTRACTS_AND_GRAPH_COMPILER.md`](INTEGRAX_CANONICAL_QUALIFICATION_DAG_CONTRACTS_AND_GRAPH_COMPILER.md) |
 | **P2** | Replace nested `_run_pytest` / matrix orchestrators with `requires` declarations; profiles (`CURRENT_HEAD_REVALIDATION`, `FULL_PLATFORM_CERTIFICATION`) |
-| **P3** | Central DAG execution via extended `QualificationCoordinator` + in-run dedup |
+| **P3** | Central DAG execution via extended `QualificationCoordinator` + in-run dedup — **implementation (execution plane, no orchestrator migration):** [`INTEGRAX_QUALIFICATION_IN_RUN_DEDUP_AND_RECEIPT_REUSE.md`](INTEGRAX_QUALIFICATION_IN_RUN_DEDUP_AND_RECEIPT_REUSE.md) |
 | **P4** | Parity certification (target set equality + PASS/FAIL injection) |
 | **P5** | Performance certification (wall time vs baseline; duplicate time avoided) |
 
