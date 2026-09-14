@@ -75,8 +75,10 @@ with Try LKW as the repository’s primary product action.
 | Explore difficult real-world Scenario Proofs | [Proof Library](../proofs/PROOF_LIBRARY.md) |
 | Audit evidence and public claims | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore a partner, integrator or design-partner path | [Partners](PARTNERS.md) |
+| Explore platform execution | [Unified Execution Architecture](../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) · [Unified Execution Runtime](../architecture/UNIFIED_EXECUTION_RUNTIME.md) — **Execution Engine** = sole legal execution authority; Nexus = private orchestration implementation |
 | Explore Governed Execution | [Governed Execution](../architecture/GOVERNED_EXECUTION.md) |
-| Explore Decision System | [Decision System](../architecture/DECISION_SYSTEM.md) - canonical decision authority: candidate proposals, verification, deliberation, authoritative outcomes separate from authorization; [Critic Verification](../architecture/CRITIC_VERIFICATION.md) is a **historical** implementation snapshot only |
+| Explore Diagnostics | [Diagnostics](../architecture/DIAGNOSTICS.md) |
+| Explore Decision System | [Decision System](../architecture/DECISION_SYSTEM.md) — semantic capability **hosted by Execution**: proposals, verification, deliberation, authoritative outcomes separate from authorization; pluggable **Decision Strategies**; [Critic Verification](../architecture/CRITIC_VERIFICATION.md) is **historical** only |
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore Virtual Workforce / Virtual Workers | [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work](../architecture/AUTONOMOUS_WORK.md) |
 | Explore dynamic capability discovery, Agent/Skill/Tool ecosystem, or future marketplace architecture | [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) — frozen architecture for governed federated Agent/Skill/Tool discovery; implementation planned |

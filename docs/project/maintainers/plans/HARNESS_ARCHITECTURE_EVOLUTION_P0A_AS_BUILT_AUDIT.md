@@ -1013,3 +1013,17 @@ Unrelated dirty worktree (unit test files under `tests/unit/…`, `testing_suppo
 **Extensibility gaps (report only):** `TaskRegistry` port ABC; unified worker provider port beyond concrete worker classes.
 
 **Remaining doc drift (Initiative Y, post-Y3):** public/community maps, `DECISION_SYSTEM.md` cross-refs, diagrams and non-primary maintainer CURRENT rows outside Y3 scope.
+
+## HARNESS-Y4 addendum (2026-09-14)
+
+**Audited public docs:** `README.md`, `docs/project/community/PUBLIC_DOCUMENTATION_MAP.md`, `docs/project/technical/DOCUMENTATION_MAP.md`, `docs/project/architecture/ARCHITECTURE_OVERVIEW.md`.
+
+**Corrected claims:** “Decision System inside Nexus execution”; README/platform table presenting **Critic** as **CURRENT** production decision path; technical map Critic **CURRENT** snapshot line; public navigation missing first-contact **Execution** and **Diagnostics** routes; README “Execution migrating” vs frozen Execution Engine authority.
+
+**Remaining active drift (post-Y4):** maintainer-plan CURRENT rows; README diagram alt text / full-size companion pages; deep `DECISION_SYSTEM.md` satellite cross-refs; non-authoritative historical ADR index phrases.
+
+**Historical-only drift preserved:** `CRITIC_VERIFICATION.md` remains linked as **HISTORICAL**; Nexus orchestration internals remain behind technical routes — not public execution API.
+
+**Y closeout readiness:** **NO** — active contradictory CURRENT docs may remain outside Y4 file budget (maintainer rows, assets).
+
+**Production code changed:** **NO**

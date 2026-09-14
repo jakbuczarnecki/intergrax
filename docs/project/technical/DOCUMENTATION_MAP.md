@@ -47,6 +47,17 @@ Public readers looking for product value, proof paths, evaluation, partnership o
 
 Canonical domain pair index: [architecture hub § Domain pair index (primary 24)](../architecture/intergrax_runtime_architecture.md#domain-pair-index-primary-24) plus [additional canonical DOMAIN pairs](../architecture/intergrax_runtime_architecture.md#architecture-artifact-classification-register).
 
+### Execution / Decision / Nexus navigation classes
+
+| Topic | Class | Route |
+|-------|-------|-------|
+| Execution Engine (sole legal execution authority) | **CANONICAL** (frozen core) | [UNIFIED_EXECUTION_ARCHITECTURE.md](../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) · [UNIFIED_EXECUTION_RUNTIME.md](../architecture/UNIFIED_EXECUTION_RUNTIME.md) |
+| Decision System (semantic capability hosted by Execution) | **CANONICAL** | [DECISION_SYSTEM.md](../architecture/DECISION_SYSTEM.md) + verification/deliberation sub-hubs |
+| Nexus orchestration flow | **SUPPORTING** (private implementation; not public execution API) | [NEXUS_EXECUTION_FLOW.md](../architecture/NEXUS_EXECUTION_FLOW.md) · [ORCHESTRATION.md](../architecture/ORCHESTRATION.md) |
+| Critic verification snapshot | **HISTORICAL** | [CRITIC_VERIFICATION.md](../architecture/CRITIC_VERIFICATION.md) |
+| Maintainer qualification / freeze registers | **QUALIFICATION** | [INTEGRAX_CORE_PLATFORM_FREEZE.md](../maintainers/qualification/INTEGRAX_CORE_PLATFORM_FREEZE.md) |
+| Extended engineering depth | **SATELLITE** | `docs/project/architecture/satellites/*` (on demand) |
+
 ### Decision System - progressive technical routing
 
 ```text
@@ -57,7 +68,7 @@ Decision System
 └ implementation plan ............ maintainers/plans/DECISION_*.md
 ```
 
-Critic = **CURRENT implementation snapshot only** - not target canonical domain owner.
+[`CRITIC_VERIFICATION.md`](../architecture/CRITIC_VERIFICATION.md) = **HISTORICAL** migration snapshot only — canonical decision semantics live under **Decision System** (Execution-hosted); not current decision authority.
 
 ---
 
