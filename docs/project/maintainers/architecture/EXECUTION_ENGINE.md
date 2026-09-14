@@ -1,11 +1,11 @@
-﻿# Execution Engine â€” Maintainer Hub
+# Execution Engine — Maintainer Hub
 
 **Classification:** `MAINTAINER_HUB`
-**Status:** Enterprise-certified Â· frozen for current platform stage Â· post-freeze gap audit **PASS** ([`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md))
+**Status:** Enterprise-certified · frozen for current platform stage · post-freeze gap audit **PASS** ([`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md))
 **Audience:** Maintainers, qualification operators, Cursor implementation sessions
-**Canonical parent:** â€” (hub)
-**Related qualification:** [`EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md`](../qualification/EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md) Â· post-freeze reconciliation [`EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md`](../qualification/EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md)
-**Last architecture reconciliation:** 2026-09-14 (EE-POST-FREEZE-FINAL)
+**Canonical parent:** — (hub)
+**Related qualification:** [`EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md`](../qualification/EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md) · post-freeze reconciliation [`EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md`](../qualification/EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md)
+**Last architecture reconciliation:** 2026-09-14 (EE-POST-FREEZE-FINAL-R1)
 
 **This document does not own detailed execution semantics.** Normative cross-domain semantics remain in [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) (`META_ARCHITECTURE`). Domain lifecycle, topology, recovery, evidence, and qualification proofs remain with their listed canonical owners below.
 
@@ -24,8 +24,8 @@ It answers:
 | Question | Where this hub points |
 | --- | --- |
 | Where should I start? | Here, then the owning domain doc |
-| Which document owns which part? | [Ownership map](#4-ownership-map) Â· [Ownership table](#5-canonical-ownership-table) |
-| What is frozen / qualified? | [Qualification and freeze](#10-qualification-and-freeze) Â· [Freeze evidence map](#11-final-freeze--certification-evidence-map) |
+| Which document owns which part? | [Ownership map](#4-ownership-map) · [Ownership table](#5-canonical-ownership-table) |
+| What is frozen / qualified? | [Qualification and freeze](#10-qualification-and-freeze) · [Freeze evidence map](#11-final-freeze--certification-evidence-map) |
 | Where are the proofs? | Qualification records under `docs/project/maintainers/qualification/` |
 | Where do I change configuration? | [Operator configuration](#12-operator-configuration) |
 
@@ -33,12 +33,12 @@ It does **not** replace implementation detail in UER, Nexus, NPSC planes, or qua
 
 ### Start here (recommended reading order)
 
-1. **This hub** â€” [`EXECUTION_ENGINE.md`](EXECUTION_ENGINE.md)
-2. **Frozen enterprise map** â€” [`EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md`](EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md)
-3. **Decision System (semantic layer inside Execution)** â€” [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md)
-4. **Ownership / identity / governance** â€” UEA, UER, [`GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md), ownership model
-5. **Recovery / evidence / observability** â€” NPSC-5E, NPSC-5F, [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)
-6. **Qualification evidence** â€” EE-FINAL + [`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md)
+1. **This hub** — [`EXECUTION_ENGINE.md`](EXECUTION_ENGINE.md)
+2. **Frozen enterprise map** — [`EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md`](EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md)
+3. **Decision System (semantic layer inside Execution)** — [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md)
+4. **Ownership / identity / governance** — UEA, UER, [`GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md), ownership model
+5. **Recovery / evidence / observability** — NPSC-5E, NPSC-5F, [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)
+6. **Qualification evidence** — EE-FINAL + [`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md)
 
 | Audience | Start with |
 | --- | --- |
@@ -59,7 +59,7 @@ It does **not** replace implementation detail in UER, Nexus, NPSC planes, or qua
 
 ---
 
-## 2. What â€śExecution Engineâ€ť means here
+## 2. What “Execution Engine” means here
 
 **Execution Engine** is the **maintainer-facing name** for the coordinated platform area that covers:
 
@@ -71,27 +71,27 @@ It does **not** replace implementation detail in UER, Nexus, NPSC planes, or qua
 - Recovery (NPSC-5E), evidence / replay / observability (NPSC-5F)
 - Tool side effects, scale / resilience mechanisms, and certification infrastructure
 
-No single runtime class â€śisâ€ť the whole Engine; ownership is **partitioned by plane** (see below).
+No single runtime class “is” the whole Engine; ownership is **partitioned by plane** (see below).
 
 ---
 
 ## 3. Canonical mental model
 
-Compact identity hierarchy (normative detail: UEA Â§3):
+Compact identity hierarchy (normative detail: UEA §3):
 
 ```text
 Task
-  â†“
+  ↓
 Run
-  â†“
+  ↓
 Attempt
-  â†“
+  ↓
 Execution
-  â†“
+  ↓
 Event
 ```
 
-**Strategies** (how a root or child Execution is realized â€” do not collapse into â€śNexusâ€ť):
+**Strategies** (how a root or child Execution is realized — do not collapse into “Nexus”):
 
 | Strategy | Role at hub level |
 | --- | --- |
@@ -119,7 +119,7 @@ NPSC-5E           = recovery plane (retry, checkpoint, resume, partial recovery)
 NPSC-5F           = evidence / durable facts, replay taxonomy, observability integration
 ```
 
-Detailed MUST/MUST NOT rules live in domain owners â€” not duplicated here.
+Detailed MUST/MUST NOT rules live in domain owners — not duplicated here.
 
 ### Navigation / mental-model overview (not normative)
 
@@ -127,10 +127,10 @@ The diagram below is a **maintainer navigation aid**. For normative diagrams use
 
 ```mermaid
 flowchart TB
-  T[Task / request] --> RT[Execution Runtime â€” Run + Attempt]
+  T[Task / request] --> RT[Execution Runtime — Run + Attempt]
   RT --> RE[Root Execution]
   RE --> D[Direct / tool / agent strategies]
-  RE --> NX[Nexus â€” orchestration strategy only]
+  RE --> NX[Nexus — orchestration strategy only]
   NX --> CE[Child Executions]
   D --> OUT[Terminal outcome]
   CE --> OUT
@@ -155,14 +155,14 @@ flowchart TB
 | Unified Execution semantics (cross-domain) | [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) | Identity hierarchy, Execution Tree, cross-domain invariants, strategy rules | Run/Attempt API detail, Nexus algorithms, recovery policies |
 | Execution Runtime | [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) | Run / Attempt lifecycle, execution coordination, boundary admission | Orchestration topology, governance policy content, durable recovery store semantics |
 | Nexus | [`NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md) | Orchestration control flow, scheduling child Executions, fan-out/fan-in at topology level | Universal entry for all workloads; Execution identity; governance decisions |
-| Governance / approval | [`GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md) Â· [`DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) | Whether actions may proceed; collaborative decision / approval semantics (domain-specific) | Execution lifecycle state machine; Nexus scheduling |
-| Authority (WHO) | Governed Execution + platform authority contracts (UEA Â§12) | Effective authority envelope, child authority checkpoint | WHAT decision content; Nexus topology |
+| Governance / approval | [`GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md) · [`DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) | Whether actions may proceed; collaborative decision / approval semantics (domain-specific) | Execution lifecycle state machine; Nexus scheduling |
+| Authority (WHO) | Governed Execution + platform authority contracts (UEA §12) | Effective authority envelope, child authority checkpoint | WHAT decision content; Nexus topology |
 | Child Execution | UEA + UER + [`NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md`](NPSC_5B_CROSS_SYSTEM_FANOUT_OWNERSHIP_RECONCILIATION.md) | Child identity, boundary re-entry, fan-out ownership reconciliation | Agent step internals (UAEP) |
-| Multi-agent / fan-out | [`NPSC_5_MULTI_AGENT_PRODUCTION_ARCHITECTURE.md`](NPSC_5_MULTI_AGENT_PRODUCTION_ARCHITECTURE.md) | NPSC-5 production planes (5Aâ€“5D) | Single-agent UAEP step loop |
+| Multi-agent / fan-out | [`NPSC_5_MULTI_AGENT_PRODUCTION_ARCHITECTURE.md`](NPSC_5_MULTI_AGENT_PRODUCTION_ARCHITECTURE.md) | NPSC-5 production planes (5A–5D) | Single-agent UAEP step loop |
 | Lineage / diagnostics | [`DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_ARCHITECTURE_R1.md`](DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_ARCHITECTURE_R1.md) | Diagnostic lineage read model | Recovery mutations; evidence durability |
 | Retry / checkpoint / recovery | [`NPSC_5E_RECOVERY_CHECKPOINT_RETRY_ARCHITECTURE.md`](NPSC_5E_RECOVERY_CHECKPOINT_RETRY_ARCHITECTURE.md) | Retry, checkpoint, resume, partial recovery, terminal convergence | Evidence replay; governance approval |
 | HITL | [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md) | Failure escalation, HITL interaction with reliability | Human decision record (Governance) |
-| Observability / evidence / replay | [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) Â· [`NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md`](NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md) | Runtime events, export, evidence plane direction, replay taxonomy | Whether execution may run; recovery writes |
+| Observability / evidence / replay | [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md`](NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md) | Runtime events, export, evidence plane direction, replay taxonomy | Whether execution may run; recovery writes |
 | Tools / side effects | [`TOOLS.md`](../../architecture/TOOLS.md) | Tool invocation, scopes, side-effect classification | Execution identity |
 | Scale / resilience | [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md`](ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md) | Capacity, concurrency ownership, failure domains, admission (W0/W1) | Redefining Execution identity or governance semantics |
 | Qualification / certification | [`EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md`](EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md) + P0/R1/R2/R3 records | Parallel qualification runner, manifest, performance-qualified defaults | Product runtime semantics |
@@ -173,19 +173,19 @@ flowchart TB
 
 ```text
 request / task
-   â†“
+   ↓
 governed execution entry
-   â†“
+   ↓
 run + attempt
-   â†“
+   ↓
 root execution
-   â†“
+   ↓
 direct | tool | agent | orchestration strategy
-   â†“
+   ↓
 child executions where needed (orchestration / fan-out)
-   â†“
+   ↓
 terminal outcome
-   â†“
+   ↓
 evidence + lineage + checkpoint/recovery where applicable
 ```
 
@@ -204,7 +204,7 @@ Normative flow diagrams: UEA diagram pack and [`NEXUS_EXECUTION_FLOW.md`](../../
 | Nexus | NEXUS_EXECUTION_FLOW | **CANONICAL** |
 | Multi-agent production | NPSC_5_MULTI_AGENT | **CANONICAL**; 5D **FROZEN / PASS** |
 | Recovery | NPSC-5E architecture + Final freeze | **FROZEN / PASS** (recovery plane) |
-| Evidence | NPSC-5F + OBSERVABILITY | **ACTIVE**; 5F/R1 **FROZEN / PASS**; 5F/R2 implemented, not final-frozen |
+| Evidence | NPSC-5F + OBSERVABILITY | **FROZEN / PASS** (R1–R4 Final + Final); R3 + Final **REQUALIFIED / RE-FROZEN** @ `cd0217ef0…` · EE-FINAL-02 reconciliation **PASS** |
 | Scale / resilience | ENTERPRISE_EXECUTION_SCALE_RESILIENCE | **CANONICAL** maintainer architecture; W0/W1 qualification records |
 
 ---
@@ -243,7 +243,7 @@ Hub-level topics:
 | Diagnostics | DG-001 architecture + qualification read integration |
 | Export / signals | OBSERVABILITY export boundary |
 
-**Current qualified implementation note:** NPSC-5F/R1 durable commit and tenant integrity are **FROZEN / PASS**. NPSC-5F/R2 journal completeness/ordering is **implementation complete** â€” await R2 Final qualification/freeze (see [`NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md`](../qualification/NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md)).
+**Current qualified implementation note:** NPSC-5F/R1–R4 and NPSC-5F Final are **FROZEN / PASS** (R1–R4 Final qualification records; [`NPSC_5F_FINAL_EVIDENCE_PLANE_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_FINAL_EVIDENCE_PLANE_QUALIFICATION_AND_FREEZE.md)). Post-freeze evidence-plane drift was **REQUALIFIED / RE-FROZEN** for NPSC-5F R3 + Final @ `cd0217ef0cbf2386f5f6134c30cfb80adf6ecddb` and reconciled under EE-FINAL-02 ([`EE_FINAL_02_NPSC5F_FROZEN_PLANE_DRIFT_RECONCILIATION_AND_ENTERPRISE_RE_FREEZE.md`](../qualification/EE_FINAL_02_NPSC5F_FROZEN_PLANE_DRIFT_RECONCILIATION_AND_ENTERPRISE_RE_FREEZE.md) **PASS**).
 
 Evidence must not decide whether execution may run or mutate recovery authority (NPSC-5F core principle).
 
@@ -253,7 +253,7 @@ Evidence must not decide whether execution may run or mutate recovery authority 
 
 Primary maintainer architecture: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md`](ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md).
 
-**Principle:** Execution Engine **semantics stay stable** regardless of deployment scale. Scale mechanisms (capacity admission, executor caps, fan-out bounds, scheduler leases) coordinate **host and durability behavior** â€” they do not redefine Execution identity, governance outcomes, or NPSC-5E recovery semantics.
+**Principle:** Execution Engine **semantics stay stable** regardless of deployment scale. Scale mechanisms (capacity admission, executor caps, fan-out bounds, scheduler leases) coordinate **host and durability behavior** — they do not redefine Execution identity, governance outcomes, or NPSC-5E recovery semantics.
 
 Supporting qualification evidence: `ENTERPRISE_EXECUTION_SCALE_RESILIENCE_P0_INVENTORY.md`, W0 guardrails, W1 admission/deadline records under `docs/project/maintainers/qualification/`.
 
@@ -269,9 +269,9 @@ Supporting qualification evidence: `ENTERPRISE_EXECUTION_SCALE_RESILIENCE_P0_INV
 | **R1** | Reusable bounded parallel runner (mechanism) | **QUALIFIED** | [`EXECUTION_CERTIFICATION_ACCELERATION_R1.md`](../qualification/EXECUTION_CERTIFICATION_ACCELERATION_R1.md) |
 | **R2** | Final gate integration + parity with frozen orchestration | **QUALIFIED** | [`EXECUTION_CERTIFICATION_ACCELERATION_R2.md`](../qualification/EXECUTION_CERTIFICATION_ACCELERATION_R2.md) |
 | **R3** | Performance qualification; qualified default `max_parallel = 2` | **QUALIFIED** | [`EXECUTION_CERTIFICATION_ACCELERATION_R3.md`](../qualification/EXECUTION_CERTIFICATION_ACCELERATION_R3.md) |
-| **R3A** | ENV-configurable parallelism (operator contract) | **QUALIFIED** (implementation + unit tests) | [`EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md`](EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md) Â· `testing_support/execution_qualification/configuration.py` |
+| **R3A** | ENV-configurable parallelism (operator contract) | **QUALIFIED** (implementation + unit tests) | [`EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md`](EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md) · `testing_support/execution_qualification/configuration.py` |
 
-Architecture supporting the runner (not a domain semantics owner): [`EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md`](EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md) â€” status **R3 QUALIFIED**.
+Architecture supporting the runner (not a domain semantics owner): [`EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md`](EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md) — status **R3 QUALIFIED**.
 
 ### Performance facts (verified; not universal SLA)
 
@@ -279,7 +279,7 @@ Architecture supporting the runner (not a domain semantics owner): [`EXECUTION_Q
 | --- | --- |
 | Qualified default | `max_parallel = 2` |
 | Full R3 matrix at mp=2 | ~**892.31 s** wall on measured candidate run (host/load dependent) |
-| mp=3 candidate | ~**868.02 s** (~**2.7%** reduction) â€” below change threshold |
+| mp=3 candidate | ~**868.02 s** (~**2.7%** reduction) — below change threshold |
 | Decision | Production-qualified default **remained 2** |
 
 Do not treat historical wall times as machine-independent SLAs.
@@ -289,7 +289,7 @@ Do not treat historical wall times as machine-independent SLAs.
 | Record | Scope | Status |
 | --- | --- | --- |
 | [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) | L6 matrix hosting + combined system closure | **QUALIFIED** |
-| [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) | Decision â†’ `DecisionExecutionAuthorization` â†’ `ExecutionRuntime` | **QUALIFIED** |
+| [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) | Decision → `DecisionExecutionAuthorization` → `ExecutionRuntime` | **QUALIFIED** |
 
 ---
 
@@ -305,11 +305,11 @@ explicit max_parallel argument  >  ENV  >  qualified default (2)
 
 | Source | Behavior |
 | --- | --- |
-| Explicit argument | Wins; must be â‰Ą 1 |
-| `INTERGRAX_EXECUTION_QUALIFICATION_MAX_PARALLEL` | Positive integer; empty/invalid â†’ error |
+| Explicit argument | Wins; must be ≥ 1 |
+| `INTERGRAX_EXECUTION_QUALIFICATION_MAX_PARALLEL` | Positive integer; empty/invalid → error |
 | Default | `2` (performance-qualified in R3) |
 
-An operator override does **not** automatically become â€śqualifiedâ€ť for certification claims â€” only documented qualified defaults and recorded qualification runs count.
+An operator override does **not** automatically become “qualified” for certification claims — only documented qualified defaults and recorded qualification runs count.
 
 Implementation: `testing_support/execution_qualification/configuration.py` (`resolve_execution_qualification_max_parallel`).
 
@@ -324,18 +324,22 @@ Implementation: `testing_support/execution_qualification/configuration.py` (`res
 | Multi-agent governance (5D) | [`NPSC_5D_FINAL_MULTI_AGENT_GOVERNANCE_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_FINAL_MULTI_AGENT_GOVERNANCE_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
 | Recovery plane (5E) | [`NPSC_5E_FINAL_RECOVERY_PLANE_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5E_FINAL_RECOVERY_PLANE_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
 | Evidence durability (5F/R1) | [`NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
-| Evidence journal (5F/R2) | [`NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md`](../qualification/NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md) | **ACTIVE** (not FROZEN) |
+| Evidence journal (5F/R2) | [`NPSC_5F_R2_FINAL_JOURNAL_COMPLETENESS_ORDERING_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R2_FINAL_JOURNAL_COMPLETENESS_ORDERING_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
+| Evidence export (5F/R3) | [`NPSC_5F_R3_FINAL_GOVERNED_EVIDENCE_EXPORT_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R3_FINAL_GOVERNED_EVIDENCE_EXPORT_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
+| Evidence reconstruction (5F/R4) | [`NPSC_5F_R4_FINAL_RECONSTRUCTION_QUALITY_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R4_FINAL_RECONSTRUCTION_QUALITY_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
+| Evidence plane Final | [`NPSC_5F_FINAL_EVIDENCE_PLANE_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_FINAL_EVIDENCE_PLANE_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
+| NPSC-5F post-freeze re-freeze | [`EE_FINAL_02_NPSC5F_FROZEN_PLANE_DRIFT_RECONCILIATION_AND_ENTERPRISE_RE_FREEZE.md`](../qualification/EE_FINAL_02_NPSC5F_FROZEN_PLANE_DRIFT_RECONCILIATION_AND_ENTERPRISE_RE_FREEZE.md) | **PASS** (compatible evolution) |
 | Diagnostic lineage (DG-001 R1) | [`DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_READ_INTEGRATION_R1.md`](../qualification/DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_READ_INTEGRATION_R1.md) | **CANONICAL** qual record |
 | Qualification runner | P0 + R1 + R2 + R3 acceleration records | **QUALIFIED** chain |
 | Scale / resilience | W0 / W1 qualification docs | **QUALIFIED** tranches (see scale architecture) |
-| Decision System Docker E2E (L6 matrix / hosting boundary) | [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) Â· `tests/integration/decision_system/test_docker_e2e_system_qualification.py` | **QUALIFIED** (Docker daemon required on qualification host) |
-| Decision â†’ canonical `ExecutionRuntime` Docker E2E | [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) Â· `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (`-k canonical`) | **QUALIFIED** (no `RecordingExecutionProvider` on success path) |
+| Decision System Docker E2E (L6 matrix / hosting boundary) | [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) · `tests/integration/decision_system/test_docker_e2e_system_qualification.py` | **QUALIFIED** (Docker daemon required on qualification host) |
+| Decision → canonical `ExecutionRuntime` Docker E2E | [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) · `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (`-k canonical`) | **QUALIFIED** (no `RecordingExecutionProvider` on success path) |
 
 ---
 
 ## 14. Canonical documentation map
 
-| I need to understandâ€¦ | Read this (PRIMARY) | Notes |
+| I need to understand… | Read this (PRIMARY) | Notes |
 | --- | --- | --- |
 | Execution identities / Execution Tree | [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) | **META_ARCHITECTURE** |
 | Run / Attempt lifecycle | [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) | Plan pair: `maintainers/plans/UNIFIED_EXECUTION_RUNTIME.md` |
@@ -349,7 +353,7 @@ Implementation: `testing_support/execution_qualification/configuration.py` (`res
 | HITL / reliability | [`RELIABILITY_FAILURE_AND_HITL.md`](../../architecture/RELIABILITY_FAILURE_AND_HITL.md) | Plan pair available |
 | Tools | [`TOOLS.md`](../../architecture/TOOLS.md) | Side-effect plane |
 | Scale / resilience | [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md`](ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md) | P0 inventory qual **SUPPORTING** |
-| Qualification runner | [`EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md`](EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md) | **QUALIFICATION EVIDENCE:** P0â€“R3 records |
+| Qualification runner | [`EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md`](EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md) | **QUALIFICATION EVIDENCE:** P0–R3 records |
 | Maintainer doc inventory | [`EXECUTION_ENGINE_DOCUMENTATION_INVENTORY.md`](EXECUTION_ENGINE_DOCUMENTATION_INVENTORY.md) | Classification only |
 | Final enterprise architecture | [`EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md`](EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md) | **CANONICAL** frozen technical map |
 | Decision System | [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) | Semantic lifecycle hosted by Execution |
@@ -362,7 +366,7 @@ Implementation: `testing_support/execution_qualification/configuration.py` (`res
 
 These remain useful as **historical evidence** but do **not** override current canonical architecture:
 
-- `docs/audit_results/**` â€” point-in-time audits and legacy snapshots
+- `docs/audit_results/**` — point-in-time audits and legacy snapshots
 - Legacy qualification records superseded by newer Final freeze documents
 - Duplicate `UNIFIED_EXECUTION_RUNTIME.md` copies under audit legacy trees
 
@@ -378,7 +382,7 @@ Do not delete or rename historical artifacts as part of hub maintenance.
 
 | Plane | Owner (canonical) | EEC-1 boundary confirmed |
 | --- | --- | --- |
-| Execution Runtime | `intergrax/runtime/execution` (UER) | Single identity contract (`Task`â†’`Run`â†’`Attempt`â†’`Execution`â†’`Event`); core runtime does not import event store implementations |
+| Execution Runtime | `intergrax/runtime/execution` (UER) | Single identity contract (`Task`→`Run`→`Attempt`→`Execution`→`Event`); core runtime does not import event store implementations |
 | Evidence | `intergrax/runtime/events`, observability, `contracts/execution_evidence` | One journal / reconstruction read model; no recovery control imports; no lineage mutation from evidence roots |
 | Recovery (NPSC-5E) | `execution/retry`, `attempt_lifecycle`, partial recovery contracts | Retry / checkpoint / resume only; no parallel event journal ownership |
 | Scale & resilience | `contracts/*_admission`, `execution/local_execution_capacity_admission`, `runtime/resilience` handoffs | Admission before uncontrolled work; contracts do not import execution lifecycle; resilience handoff does not mint lifecycle |
@@ -391,16 +395,16 @@ Do not delete or rename historical artifacts as part of hub maintenance.
 
 | Topic | Label |
 | --- | --- |
-| This hub | **MAINTAINER_HUB** â€” navigation only |
+| This hub | **MAINTAINER_HUB** — navigation only |
 | UEA | **CANONICAL** `META_ARCHITECTURE` |
 | UER / Nexus / Tools / Observability domain docs | **CANONICAL** |
 | NPSC-5E recovery plane | **FROZEN / PASS** |
-| NPSC-5F evidence plane | **ACTIVE**; R1 **FROZEN / PASS**; R2 pending final freeze |
+| NPSC-5F evidence plane | **FROZEN / PASS** (R1–R4 Final + Final); **REQUALIFIED / RE-FROZEN** (R3 + Final) · EE-FINAL-02 **PASS** |
 | Qualification acceleration | **R3 QUALIFIED**; R3A ENV contract implemented |
 | Scale / resilience | **CANONICAL** maintainer architecture + W0/W1 quals |
-| EE-FINAL enterprise certification | **CLOSED / FROZEN** â€” [`EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md`](../qualification/EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md) |
-| Post-freeze exhaustive gap audit | **PASS** â€” [`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md) |
-| Execution Engine workstream | **FINAL** â€” build new capabilities on canonical engine only |
+| EE-FINAL enterprise certification | **CLOSED / FROZEN** — [`EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md`](../qualification/EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md) |
+| Post-freeze exhaustive gap audit | **PASS** — [`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md) |
+| Execution Engine workstream | **FINAL** — build new capabilities on canonical engine only |
 
 ---
 
@@ -410,7 +414,7 @@ Before changing Execution Engine code:
 
 1. Start from **this hub** (`EXECUTION_ENGINE.md`).
 2. Identify the **owning domain** from the [ownership table](#5-canonical-ownership-table).
-3. Read that domainâ€™s **canonical architecture** (not audit snapshots).
+3. Read that domain’s **canonical architecture** (not audit snapshots).
 4. Read current **qualification / freeze evidence** for the plane you touch.
 5. Do **not** invent cross-domain ownership or new lifecycle identifiers in code or docs.
 

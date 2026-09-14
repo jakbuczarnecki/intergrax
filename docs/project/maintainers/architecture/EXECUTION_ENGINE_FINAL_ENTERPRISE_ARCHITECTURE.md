@@ -1,4 +1,4 @@
-﻿# Execution Engine â€” Final Enterprise Architecture (EE-FINAL)
+# Execution Engine — Final Enterprise Architecture (EE-FINAL)
 
 **Classification:** `MAINTAINER_CERTIFICATION`
 **Status:** `FROZEN FOR CURRENT PLATFORM STAGE` (EE-FINAL PASS; post-freeze gap audit PASS)
@@ -53,8 +53,8 @@ flowchart TD
 ASCII equivalent:
 
 ```text
-Intent â†’ Decision â†’ Governance â†’ Execution Request â†’ ExecutionRuntime â†’ Boundary â†’ StrategyRouter
-  â†’ Nexus | ChildExecutionRunner | RuntimeToolInvoker
+Intent → Decision → Governance → Execution Request → ExecutionRuntime → Boundary → StrategyRouter
+  → Nexus | ChildExecutionRunner | RuntimeToolInvoker
 ```
 
 ---
@@ -87,13 +87,13 @@ Every meaningful execution carries `TaskId`, `RunId`, `AttemptId`, `ExecutionId`
 
 ## 5. Authority model
 
-Child effective authority **â‰¤** parent. Retry, resume, recovery, and HITL continuation do not expand unrelated authority. `ExecutionBoundary` enforces propagation; security gates (EE-B3) certify adversarial resistance.
+Child effective authority **≤** parent. Retry, resume, recovery, and HITL continuation do not expand unrelated authority. `ExecutionBoundary` enforces propagation; security gates (EE-B3) certify adversarial resistance.
 
 ---
 
 ## 6. Governance model
 
-Outcomes: `ALLOW`, `DENY`, `MODIFY`, `ESCALATE`, `REQUIRE_HUMAN` per decision contract. Policy/governance failure is **fail-closed** â€” it must not yield execution success. No implicit allow on evaluation failure.
+Outcomes: `ALLOW`, `DENY`, `MODIFY`, `ESCALATE`, `REQUIRE_HUMAN` per decision contract. Policy/governance failure is **fail-closed** — it must not yield execution success. No implicit allow on evaluation failure.
 
 ---
 
@@ -105,7 +105,7 @@ Nexus is the **sole** orchestration/scheduling owner for graph/fan-out execution
 
 ## 8. Child execution
 
-Fan-out slots invoke **child execution** through `ChildExecutionRunner` / `ChildExecutionPort` with canonical lineage. No supported parentâ†’specialist direct execution outside this path.
+Fan-out slots invoke **child execution** through `ChildExecutionRunner` / `ChildExecutionPort` with canonical lineage. No supported parent→specialist direct execution outside this path.
 
 ---
 
@@ -144,13 +144,13 @@ Historical reconstruction is **read-only** (NPSC-5F R4). No active replay from e
 
 ## 14. Observability
 
-Facts flow through typed export boundaries to plugins/sinks. OTLP/export outage degrades observability only â€” not canonical execution correctness (EE-B2 F-05).
+Facts flow through typed export boundaries to plugins/sinks. OTLP/export outage degrades observability only — not canonical execution correctness (EE-B2 F-05).
 
 ---
 
 ## 15. Diagnostics
 
-Diagnostics **read, interpret, explain** â€” they do not execute, retry, recover, or mutate governance.
+Diagnostics **read, interpret, explain** — they do not execute, retry, recover, or mutate governance.
 
 ---
 
@@ -162,7 +162,7 @@ EE-B3 threat model + adversarial abuse certification: identity spoofing, cross-t
 
 ## 17. Shutdown
 
-Graceful lifecycle (EE-B4-B): `STOP_ACCEPTING` â†’ `DRAIN` â†’ `FLUSH EVIDENCE` â†’ `PERSIST FINAL STATE` â†’ `TERMINATE`.
+Graceful lifecycle (EE-B4-B): `STOP_ACCEPTING` → `DRAIN` → `FLUSH EVIDENCE` → `PERSIST FINAL STATE` → `TERMINATE`.
 
 ---
 
@@ -194,7 +194,7 @@ Plugin registration does not confer execution authority. Dynamic loading uses ty
 
 ## 21. Persistence abstraction
 
-Execution, recovery, and evidence persist through **contracts â†’ configured providers**. Authoritative execution core has **0** direct vendor store coupling (EE-FINAL-ARCH, EEC-1, NPSC-5F R1).
+Execution, recovery, and evidence persist through **contracts → configured providers**. Authoritative execution core has **0** direct vendor store coupling (EE-FINAL-ARCH, EEC-1, NPSC-5F R1).
 
 ---
 
@@ -214,7 +214,7 @@ Future scale work must **consume** this engine, not fork parallel runtimes.
 ## 23. Control planes (diagram)
 
 ```text
-Identity Â· Authority Â· Governance Â· Capacity Â· Recovery Â· Evidence Â· Observability Â· Diagnostics Â· Security Â· Shutdown Â· Operations
+Identity · Authority · Governance · Capacity · Recovery · Evidence · Observability · Diagnostics · Security · Shutdown · Operations
         surround ExecutionRuntime (single lifecycle owner)
 ```
 
@@ -308,7 +308,7 @@ flowchart TD
   Req --> RT
 ```
 
-**Without Decision Lifecycle:** Intent â†’ governance/admission as required â†’ `ExecutionRequest` â†’ `ExecutionRuntime` (see `test_decision_optionality.py`).
+**Without Decision Lifecycle:** Intent → governance/admission as required → `ExecutionRequest` → `ExecutionRuntime` (see `test_decision_optionality.py`).
 
 ---
 
@@ -475,4 +475,4 @@ flowchart TD
 
 ## Freeze and evolution
 
-Execution Engine architecture is **frozen for the current platform stage** after EE-FINAL PASS. Changes to frozen semantics require: **drift classification â†’ architecture reopen â†’ implementation â†’ requalification â†’ re-freeze**.
+Execution Engine architecture is **frozen for the current platform stage** after EE-FINAL PASS. Changes to frozen semantics require: **drift classification → architecture reopen → implementation → requalification → re-freeze**.

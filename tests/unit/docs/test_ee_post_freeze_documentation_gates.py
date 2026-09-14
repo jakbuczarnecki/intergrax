@@ -10,6 +10,17 @@ from pathlib import Path
 
 import pytest
 
+from tests.unit.docs._ee_canonical_documentation_support import (
+    DECISION_SYSTEM,
+    DECISION_SYSTEM_PLAN,
+    DOCUMENTATION_INVENTORY,
+    FINAL_ENTERPRISE_ARCHITECTURE,
+    MAINTAINER_HUB,
+    NPSC5F_CURRENT_STATUS_MARKERS,
+    find_mojibake_violations,
+    find_stale_current_state_claims,
+    read_doc,
+)
 from tests.unit.runtime.architecture._ee_final_arch_facts import p0_bypass_count
 from tests.unit.runtime.architecture._ee_final_enterprise_facts import (
     FINAL_ARCHITECTURE_DOC,
@@ -37,9 +48,7 @@ INVENTORY_DOC = (
     _REPO
     / "docs/project/maintainers/architecture/EXECUTION_ENGINE_DOCUMENTATION_INVENTORY.md"
 )
-MAINTAINER_HUB = _REPO / "docs/project/maintainers/architecture/EXECUTION_ENGINE.md"
-DECISION_SYSTEM = _REPO / "docs/project/architecture/DECISION_SYSTEM.md"
-DECISION_PLAN = _REPO / "docs/project/maintainers/plans/DECISION_SYSTEM.md"
+DECISION_PLAN = DECISION_SYSTEM_PLAN
 
 _CANONICAL_DOC_LINKS: tuple[tuple[Path, str], ...] = (
     (MAINTAINER_HUB, "EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md"),
@@ -72,8 +81,46 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def test_canonical_execution_decision_docs_have_no_mojibake() -> None:
+    violations = find_mojibake_violations()
+    assert violations == [], "\n".join(violations)
+
+
+def test_execution_engine_hub_has_no_stale_npsc5f_status() -> None:
+    violations = find_stale_current_state_claims()
+    assert violations == [], "\n".join(violations)
+
+
+def test_canonical_docs_current_status_consistent() -> None:
+    hub = read_doc(MAINTAINER_HUB)
+    for marker in NPSC5F_CURRENT_STATUS_MARKERS:
+        assert marker in hub, f"missing NPSC-5F status marker in hub: {marker!r}"
+    assert "EE-FINAL-02" in hub or "EE_FINAL_02" in hub
+    final = read_doc(FINAL_ENTERPRISE_ARCHITECTURE)
+    assert "frozen" in final.lower()
+    decision = read_doc(DECISION_SYSTEM)
+    assert "semantic decision lifecycle hosted by canonical Execution" in decision
+    assert "frozen" in final.lower()
+    decision = read_doc(DECISION_SYSTEM)
+    assert "semantic decision lifecycle hosted by canonical Execution" in decision
+
+
+def test_canonical_execution_decision_docs_have_status_headers() -> None:
+    required = ("**Status:**", "**Classification:**", "**Audience:**")
+    missing: list[str] = []
+    for path in (
+        MAINTAINER_HUB,
+        FINAL_ENTERPRISE_ARCHITECTURE,
+        DOCUMENTATION_INVENTORY,
+    ):
+        text = read_doc(path)
+        for token in required:
+            if token not in text:
+                missing.append(f"{path.name}: missing {token}")
+    assert missing == []
+
+
 def test_ee_post_freeze_gap_audit_document_present_and_pass() -> None:
-    assert POST_FREEZE_GAP_AUDIT.is_file()
     text = _read(POST_FREEZE_GAP_AUDIT)
     assert "FINAL GAP AUDIT VERDICT: PASS" in text
     assert "**PRODUCTION CODE CHANGED** | **NO**" in text

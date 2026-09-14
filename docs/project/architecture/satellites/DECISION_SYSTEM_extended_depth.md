@@ -1,4 +1,4 @@
-﻿# DECISION_SYSTEM - extended architecture
+# DECISION_SYSTEM - extended architecture
 
 **Parent hub:** [`DECISION_SYSTEM.md`](../DECISION_SYSTEM.md)
 

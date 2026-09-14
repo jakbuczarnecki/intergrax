@@ -1,4 +1,4 @@
-﻿# Decision System - Implementation Plan
+# Decision System - Implementation Plan
 
 **Classification:** `IMPLEMENTED` / `HISTORICAL PLAN` (canonical architecture supersedes active planning)
 **Status:** All closed phases implemented; use [`architecture/DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) for current semantics
@@ -8,11 +8,11 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> **DS-ROADMAP-REALITY-SYNC (2026-09-13):** Canonical target architecture **FROZEN** / **CLOSED**. Canonical Decision System runtime is **implemented** and is the **production decision authority**. Legacy Critic production authority has been **fully retired**. **Production qualification = DONE / QUALIFIED** ([`DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md)). **Docker E2E = DONE / QUALIFIED** ([`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) Â· canonical plane [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md)). **Final Decision System audit = DONE** ([`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md)). **Platform certification = ENTERPRISE CERTIFIED WITH OBSERVATIONS** ([`INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md`](../qualification/INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md)).
+> **DS-ROADMAP-REALITY-SYNC (2026-09-13):** Canonical target architecture **FROZEN** / **CLOSED**. Canonical Decision System runtime is **implemented** and is the **production decision authority**. Legacy Critic production authority has been **fully retired**. **Production qualification = DONE / QUALIFIED** ([`DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md)). **Docker E2E = DONE / QUALIFIED** ([`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) · canonical plane [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md)). **Final Decision System audit = DONE** ([`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md)). **Platform certification = ENTERPRISE CERTIFIED WITH OBSERVATIONS** ([`INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md`](../qualification/INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md)).
 
 > When implementing this layer, read **only** the architecture doc and **this plan hub**.
 
-**Last updated:** 2026-09-13 â€” post-certification documentation consistency closure (`INTEGRAx-POST-CERTIFICATION-DOCUMENTATION-CONSISTENCY-CLOSURE`).
+**Last updated:** 2026-09-13 — post-certification documentation consistency closure (`INTEGRAx-POST-CERTIFICATION-DOCUMENTATION-CONSISTENCY-CLOSURE`).
 
 ---
 
@@ -20,12 +20,12 @@
 
 **Do not read this entire file in one session.**
 
-- **Implement / audit default:** architecture frozen banner Â· **Current status** table Â· Critic disposition (historical) Â· DS-E2E qualification record links.
-- **Use** `Read` with offset/limit - open **P0/P1** rows with Status â‰  Done in **one** phase section only.
+- **Implement / audit default:** architecture frozen banner · **Current status** table · Critic disposition (historical) · DS-E2E qualification record links.
+- **Use** `Read` with offset/limit - open **P0/P1** rows with Status   Done in **one** phase section only.
 - **Skip** **Done** / closed unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) read-scope block only.
-- **Paired architecture:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) Â· [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) - one per session max.
-- **CURRENT implementation:** Decision System runtime â€” see [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md).
+- **Paired architecture:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) - one per session max.
+- **CURRENT implementation:** Decision System runtime — see [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md).
 - **Extended depth:** [`architecture/satellites/DECISION_SYSTEM_extended_depth.md`](../../architecture/satellites/DECISION_SYSTEM_extended_depth.md) on demand.
 
 ---
@@ -34,16 +34,16 @@
 
 | Layer | Status |
 | ----- | ------ |
-| **Decision architecture** | **CLOSED** â€” [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) Â· [`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md) |
+| **Decision architecture** | **CLOSED** — [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) · [`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md) |
 | **Core Decision runtime** | **DONE** |
 | **Critic migration** | **COMPLETE** |
-| **Platform plugin integration** | **DONE / QUALIFIED** â€” DS-PLUGIN enterprise closed |
-| **Durable authority/recovery** | **DONE / QUALIFIED** â€” DS-REC enterprise closed; Docker resume proof in DS-E2E-15J |
-| **Lifecycle observability** | **DONE / QUALIFIED** â€” DS-OBS-DIAG enterprise closed |
-| **Production qualification** | **DONE / QUALIFIED** â€” [`DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md) |
-| **Docker E2E** | **DONE / QUALIFIED** â€” [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) |
-| **Final Decision System audit** | **DONE** â€” architecture closure record above |
-| **Platform certification** | **ENTERPRISE CERTIFIED WITH OBSERVATIONS** â€” [`INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md`](../qualification/INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md) |
+| **Platform plugin integration** | **DONE / QUALIFIED** — DS-PLUGIN enterprise closed |
+| **Durable authority/recovery** | **DONE / QUALIFIED** — DS-REC enterprise closed; Docker resume proof in DS-E2E-15J |
+| **Lifecycle observability** | **DONE / QUALIFIED** — DS-OBS-DIAG enterprise closed |
+| **Production qualification** | **DONE / QUALIFIED** — [`DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md) |
+| **Docker E2E** | **DONE / QUALIFIED** — [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) |
+| **Final Decision System audit** | **DONE** — architecture closure record above |
+| **Platform certification** | **ENTERPRISE CERTIFIED WITH OBSERVATIONS** — [`INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md`](../qualification/INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md) |
 
 Future evolution requires an explicit product requirement; do not reopen closed phases without a new qualification task.
 
@@ -65,7 +65,7 @@ Future evolution requires an explicit product requirement; do not reopen closed 
 | **Decision Human Review** | **DONE** |
 | **Execution/Nexus integration** | **DONE** |
 | **Critic migration** | **COMPLETE** |
-| **Council Strategy** | **DONE** â€” DS-COUNCIL enterprise closed |
+| **Council Strategy** | **DONE** — DS-COUNCIL enterprise closed |
 | **Platform plugin integration** | **DONE / QUALIFIED** |
 | **Durable authority/recovery** | **DONE / QUALIFIED** |
 | **Lifecycle observability** | **DONE / QUALIFIED** |
@@ -122,7 +122,7 @@ Ordered sequencing labels (existing **DS-\*** IDs remain authoritative):
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-REV-01 | P0 | Decision revision policy foundation (challenge â†’ bounded authorization â†’ revised candidate minting) | **Done / ENTERPRISE CLOSED** - identity-bound `DecisionRevisionState`, policy provenance in `DecisionRevisionDecision`, custom evaluator semantic outputs validated against canonical policy semantics; `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
+| DS-REV-01 | P0 | Decision revision policy foundation (challenge → bounded authorization → revised candidate minting) | **Done / ENTERPRISE CLOSED** - identity-bound `DecisionRevisionState`, policy provenance in `DecisionRevisionDecision`, custom evaluator semantic outputs validated against canonical policy semantics; `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
 
 ### Plugin architecture (ENTERPRISE CLOSED)
 
@@ -140,11 +140,11 @@ positive manifest capability proof is a structured admission rejection (fail-clo
 | DS-PLUGIN-02 | P1 | Verification stage registration surface via Platform Plugins | **Done / ENTERPRISE CLOSED** |
 | DS-PLUGIN-03 | P2 | Plugin/config integration for Decision Artifact kind registration | **Done / ENTERPRISE CLOSED** |
 
-**Architecture:** Platform Plugin System â†’ discovery/admission/config/trust â†’ Decision domain composition adapter â†’ domain-owned immutable registry. Decision contracts do **not** import discovery (source gate on decision contracts).
+**Architecture:** Platform Plugin System → discovery/admission/config/trust → Decision domain composition adapter → domain-owned immutable registry. Decision contracts do **not** import discovery (source gate on decision contracts).
 
 ---
 
-## Phase DS-INTEGRATION - Execution host Â· orchestration Â· governance Â· observability Â· recovery (DONE / QUALIFIED)
+## Phase DS-INTEGRATION - Execution host · orchestration · governance · observability · recovery (DONE / QUALIFIED)
 
 ### Execution-host integration
 
@@ -162,10 +162,10 @@ Decision System is **optional per flow**. Ordinary Execution work must complete 
 
 ```text
 A. Execution without Decision:
-Application â†’ Execution â†’ normal execution work â†’ completion
+Application → Execution → normal execution work → completion
 
 B. Execution with Decision:
-Application â†’ Execution â†’ Decision Lifecycle â†’ strategy / verification / resolution â†’ continue execution as required
+Application → Execution → Decision Lifecycle → strategy / verification / resolution → continue execution as required
 ```
 
 **Required future proofs:**
@@ -173,7 +173,7 @@ Application â†’ Execution â†’ Decision Lifecycle â†’ strategy / v
 | Proof | Expectation |
 | ----- | ----------- |
 | Decision System disabled / absent | Ordinary Execution still works |
-| Decision System not selected for a flow | No Decision identity Â· no Decision lifecycle Â· no Decision checkpoint Â· no Decision finalization Â· no Decision verification |
+| Decision System not selected for a flow | No Decision identity · no Decision lifecycle · no Decision checkpoint · no Decision finalization · no Decision verification |
 | Decision System selected | Canonical Decision Lifecycle applies |
 
 **Future invariant:** No Decision artifacts or lifecycle state are created for a flow that does not request Decision capability.
@@ -219,22 +219,22 @@ Decision semantic checkpoint and physical orchestration recovery remain independ
 
 Proof gate: `tests/unit/runtime/execution/test_decision_orchestration_recovery.py`.
 
-#### DS-NEXUS-01 - Decision â†’ Execution work seam (DONE)
+#### DS-NEXUS-01 - Decision → Execution work seam (DONE)
 
 Decision-aware code submits canonical `ExecutionRequest` work through an optional execution-scoped `ExecutionWorkPort` hosted by `ExecutionRuntime`. Child work is minted via `ChildExecutionRunner` and routed by the wired `StrategyExecutionRouter` - Decision does **not** import Nexus, construct orchestration backends, or select `ExecutionStrategy`.
 
 ```text
 Decision Strategy (decision-aware delegate)
-      â†“ require_active_execution_work_port()
+      ↓ require_active_execution_work_port()
 ExecutionWorkPort
-      â†“ ChildExecutionRunner (child ExecutionId + parent lineage)
+      ↓ ChildExecutionRunner (child ExecutionId + parent lineage)
 StrategyExecutionRouter
-      â”śâ”€â”€ INFERENCE
-      â”śâ”€â”€ AGENTIC
-      â””â”€â”€ ORCHESTRATION â†’ private Nexus implementation
+      ├── INFERENCE
+      ├── AGENTIC
+      └── ORCHESTRATION → private Nexus implementation
 ```
 
-**Invariants:** no Nexus field on Decision contracts; no global DecisionStrategy â†’ ExecutionStrategy mapping; ordinary flows without work port do not require orchestration backend; missing orchestration backend fails closed via canonical Execution error.
+**Invariants:** no Nexus field on Decision contracts; no global DecisionStrategy → ExecutionStrategy mapping; ordinary flows without work port do not require orchestration backend; missing orchestration backend fails closed via canonical Execution error.
 
 Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
@@ -249,8 +249,8 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-OBS-01 | P1 | Decision lifecycle audit events on observability spine | **DONE / ENTERPRISE CLOSED** - `intergrax.decision.lifecycle.started` Â· `transitioned` Â· `resolved` Â· `finalized` Â· `terminal` via `intergrax/runtime/decision_lifecycle_observability.py` Â· optional `DecisionLifecycleObserver` on `CanonicalDecisionLifecycleHost` Â· proof `tests/unit/runtime/test_decision_lifecycle_observability.py` |
-| DS-OBS-02 | P2 | Diagnostics feed boundaries (no lifecycle ownership) | **DONE / ENTERPRISE CLOSED** - deterministic `DecisionLifecycleDiagnosticSnapshot` projection in `intergrax/runtime/diagnostics/decision_lifecycle_projection.py`; diagnostics consumes RuntimeEvent evidence only; proof `tests/unit/runtime/diagnostics/test_decision_lifecycle_projection.py` Â· architecture gates `tests/unit/runtime/architecture/test_decision_lifecycle_observability_gates.py` |
+| DS-OBS-01 | P1 | Decision lifecycle audit events on observability spine | **DONE / ENTERPRISE CLOSED** - `intergrax.decision.lifecycle.started` · `transitioned` · `resolved` · `finalized` · `terminal` via `intergrax/runtime/decision_lifecycle_observability.py` · optional `DecisionLifecycleObserver` on `CanonicalDecisionLifecycleHost` · proof `tests/unit/runtime/test_decision_lifecycle_observability.py` |
+| DS-OBS-02 | P2 | Diagnostics feed boundaries (no lifecycle ownership) | **DONE / ENTERPRISE CLOSED** - deterministic `DecisionLifecycleDiagnosticSnapshot` projection in `intergrax/runtime/diagnostics/decision_lifecycle_projection.py`; diagnostics consumes RuntimeEvent evidence only; proof `tests/unit/runtime/diagnostics/test_decision_lifecycle_projection.py` · architecture gates `tests/unit/runtime/architecture/test_decision_lifecycle_observability_gates.py` |
 
 ### Persistence / recovery / concurrency
 
@@ -267,7 +267,7 @@ Proof gate: `tests/unit/runtime/execution/test_decision_execution_work.py`.
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
 | DS-SEC-01 | P0 | Execution identity binding on all decision records | **DONE / ENTERPRISE CLOSED** - identity chain through authoritative records; closure evidence in DS-E2E-15J production qualification + architecture closure audit |
-| DS-SEC-02 | P1 | Stale approval protection across revisions | **DONE** - `validate_human_review_decision_for_proposal()` Â· `proposal_refs_match()` Â· `validate_execution_authorization_for_decision()` fail closed on exact-version mismatch; v1 approval cannot authorize v2 |
+| DS-SEC-02 | P1 | Stale approval protection across revisions | **DONE** - `validate_human_review_decision_for_proposal()` · `proposal_refs_match()` · `validate_execution_authorization_for_decision()` fail closed on exact-version mismatch; v1 approval cannot authorize v2 |
 
 ---
 
@@ -286,9 +286,9 @@ Legacy Critic exists only in historical migration evidence / legacy input normal
 
 ---
 
-## Critic â†’ Decision disposition matrix (historical migration reference)
+## Critic → Decision disposition matrix (historical migration reference)
 
-Audited against legacy Critic and [`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md). **Target owner** is post-migration; **Disposition** guided clean-cut slice. **Migration complete** â€” matrix retained for provenance only.
+Audited against legacy Critic and [`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md). **Target owner** is post-migration; **Disposition** guided clean-cut slice. **Migration complete** — matrix retained for provenance only.
 
 | Legacy Critic capability | Target owner | Disposition |
 | ------------------------- | ------------ | ----------- |
@@ -299,14 +299,14 @@ Audited against legacy Critic and [`CRITIC_VERIFICATION.md`](../../architecture/
 | `CriticOrchestrator` | Verification Pipeline + Decision Lifecycle orchestration | **REPLACE** |
 | `CriticAction.REVISE` | Decision Lifecycle revision | **MOVE** |
 | `CriticAction.RETRY` technical semantics | Nexus Reliability | **MOVE** |
-| `CriticAction.ESCALATE_HITL` | Decision Lifecycle â†’ HITL invocation | **MOVE** |
+| `CriticAction.ESCALATE_HITL` | Decision Lifecycle → HITL invocation | **MOVE** |
 | `CriticAction.FAIL` / `CONTINUE` | Decision Lifecycle resolution semantics | **MERGE** |
 | `EvaluatorLoopExecutor` / `EvaluatorLoopSpec` | Decision Lifecycle revision policy | **REPLACE/MOVE** |
 | `evaluator_loop_metadata` | Decision Lifecycle revision state | **MOVE** |
 | `policy_bridge` / `resolve_critic_action` | Policy boundary + Lifecycle routing | **SPLIT/DELETE** |
 | `critic_governance_from_fragment` | Policy profile ingestion only | **SPLIT** |
 | `guardrail_l0` / `merge_guardrail_l0` | Decision Verification - deterministic stage | **MOVE/REUSE** |
-| `CriticGraphHooks` / `critic_wiring` | Nexus graph â†’ Decision Lifecycle hooks | **REPLACE** |
+| `CriticGraphHooks` / `critic_wiring` | Nexus graph → Decision Lifecycle hooks | **REPLACE** |
 | `CriticTraceEmitter` / `CriticVerdictDiagV1` | Observability decision/verification events | **MOVE** |
 | `CriticProfile` / `CriticScope` / `CriticVerdict` contracts | Decision + Verification typed contracts | **REPLACE** |
 | `RubricSpec` | Decision Verification semantic stage | **REUSE** |
@@ -316,7 +316,7 @@ Audited against legacy Critic and [`CRITIC_VERIFICATION.md`](../../architecture/
 | `borderline_l1_score` L2 escalation heuristic | HITL policy trigger via Lifecycle | **MOVE** |
 | `ToolRegistryCriticEvalClient` | Verification stage tool client | **REUSE** |
 
-**CRITIC_VERIFICATION docs:** **HISTORICAL IMPLEMENTATION SNAPSHOT** â€” physical DELETE completed in DS-MIG-04 ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) banner).
+**CRITIC_VERIFICATION docs:** **HISTORICAL IMPLEMENTATION SNAPSHOT** — physical DELETE completed in DS-MIG-04 ([`CRITIC_VERIFICATION.md`](../../architecture/CRITIC_VERIFICATION.md) banner).
 
 ---
 
@@ -326,9 +326,9 @@ Migration-only observational comparison in `intergrax/runtime/migration/decision
 
 | Legacy Critic concept | Target Decision owner | Raw parity expected? | Retirement interpretation |
 | --------------------- | --------------------- | -------------------- | ------------------------- |
-| L0 deterministic | Decision Verification â€” structural stage | Yes (normalized outcome) | Missing Decision capability blocks retirement |
-| L1 semantic | Decision Verification â€” semantic stage | Yes (normalized outcome) | Provider-unavailable classified explicitly |
-| L1 trajectory | Decision Verification â€” trajectory stage | Yes where configured | Architectural layer mapping only |
+| L0 deterministic | Decision Verification — structural stage | Yes (normalized outcome) | Missing Decision capability blocks retirement |
+| L1 semantic | Decision Verification — semantic stage | Yes (normalized outcome) | Provider-unavailable classified explicitly |
+| L1 trajectory | Decision Verification — trajectory stage | Yes where configured | Architectural layer mapping only |
 | L2 human / `ESCALATE_HITL` | Decision HITL outside Verification | No (expected difference) | Does not block retirement alone |
 | `RETRY` | Execution reliability / RetryEngine | No (expected difference) | Does not block retirement |
 | `REVISE` | Decision Revision lifecycle | No when revision policy maps | Does not block retirement alone |
@@ -344,37 +344,37 @@ Re-owned from [`CRITIC_VERIFICATION` plan](CRITIC_VERIFICATION.md) Protocol v2 f
 
 | ID | Owner | Status |
 | -- | ----- | ------ |
-| DS-VER-RUBRIC-PROVENANCE-INTEGRITY | Verification | **DONE** - `SemanticRubricRef` Â· `ResolvedSemanticRubric` Â· `criteria` Â· `min_score` Â· `provenance_ref` Â· resolver exact-ref check Â· fail-closed unresolved rubric (`intergrax/contracts/semantic_verification.py`) |
-| DS-VER-PRODUCER-INDEPENDENCE | Verification Â· Deliberation | **DONE / QUALIFIED** - `SemanticVerificationIndependenceConfig` Â· fail-closed independence gates; Docker E2E evidence **DS-E2E-03** in DS-E2E-15J bundle |
-| DS-VER-ADVERSARIAL-SEMANTIC | Verification | **DONE / ENTERPRISE CLOSED** - `EvalTrustedRubricContext` Â· `EvalUntrustedCandidateContent` Â· `build_eval_judge_messages()` Â· canonical `intergrax.eval.candidate.v1` serialization Â· adversarial unit tests (`tests/unit/tools/providers/eval/test_judge_trust_boundary.py`) |
+| DS-VER-RUBRIC-PROVENANCE-INTEGRITY | Verification | **DONE** - `SemanticRubricRef` · `ResolvedSemanticRubric` · `criteria` · `min_score` · `provenance_ref` · resolver exact-ref check · fail-closed unresolved rubric (`intergrax/contracts/semantic_verification.py`) |
+| DS-VER-PRODUCER-INDEPENDENCE | Verification · Deliberation | **DONE / QUALIFIED** - `SemanticVerificationIndependenceConfig` · fail-closed independence gates; Docker E2E evidence **DS-E2E-03** in DS-E2E-15J bundle |
+| DS-VER-ADVERSARIAL-SEMANTIC | Verification | **DONE / ENTERPRISE CLOSED** - `EvalTrustedRubricContext` · `EvalUntrustedCandidateContent` · `build_eval_judge_messages()` · canonical `intergrax.eval.candidate.v1` serialization · adversarial unit tests (`tests/unit/tools/providers/eval/test_judge_trust_boundary.py`) |
 | DS-DEC-EXECUTION-IDENTITY-BINDING | Decision System | **DONE / ENTERPRISE CLOSED** - identity chain through authoritative records; DS-E2E-15J closure |
-| DS-VER-RESULT-COHERENCE | Verification | **DONE** - `VerificationResult` Â· `_validate_result_coherence()` Â· `VerificationStageRecord` coherence Â· exact `DecisionProposalRef` binding (`intergrax/contracts/decision_verification.py`) |
+| DS-VER-RESULT-COHERENCE | Verification | **DONE** - `VerificationResult` · `_validate_result_coherence()` · `VerificationStageRecord` coherence · exact `DecisionProposalRef` binding (`intergrax/contracts/decision_verification.py`) |
 | DS-DEC-REVISION-LOOP-BOUNDEDNESS | Decision System | **Done** - `intergrax/contracts/decision_revision.py`; `intergrax/runtime/decision_revision.py`; `tests/unit/runtime/test_decision_revision.py` |
 
 ---
 
 ## Phase DS-E2E - Docker production qualification (**DONE / QUALIFIED**)
 
-**Qualification records (SSOT):** [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) Â· [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) Â· [`DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md).
+**Qualification records (SSOT):** [`DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md`](../qualification/DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION.md) · [`DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md`](../qualification/DS-E2E-15J-CANONICAL-EXECUTION-DOCKER-E2E-QUALIFICATION.md) · [`DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md).
 
 Real Docker E2E qualification **completed** for the certified Decision + canonical Execution boundary. Harness **fail-closes** weak proofs (`testing_support/decision_e2e/requirements.py`). Integration gate: `tests/integration/decision_system/test_docker_e2e_system_qualification.py` (15 L6/matrix Docker + 6 canonical Docker scenarios on qualification hosts with Docker).
 
 | ID | Priority | Item | Status |
 |----|----------|------|--------|
-| DS-E2E-01 | P0 | Real single-model Decision System path | **QUALIFIED** â€” DS-E2E-15J Docker + `tests/integration/decision_system/test_real_single_model.py` |
-| DS-E2E-02 | P0 | Real multi-model Council (â‰Ą2 distinct model identities) | **QUALIFIED** â€” fail-closed independence gate; Docker evidence in DS-E2E-15J |
-| DS-E2E-03 | P0 | Real independent semantic verifier (producer model â‰  verifier model) | **QUALIFIED** â€” fail-closed independence gate; Docker evidence in DS-E2E-15J |
-| DS-E2E-04 | P0 | Real HITL pause/resume | **QUALIFIED** â€” DS-E2E-15J + `tests/integration/decision_system/test_hitl_pause_resume.py` |
-| DS-E2E-05 | P0 | Governed real side effect: ALLOW and DENY | **QUALIFIED** â€” DS-E2E-15J canonical governance matrix + `test_governed_side_effect.py` |
-| DS-E2E-06 | P1 | Docker container kill + durable resume (not subprocess-only) | **QUALIFIED** â€” `testing_support/decision_e2e/docker_qualification.py`; subprocess retained as DS-REC regression |
-| DS-E2E-07 | P1 | Concurrent proposal/finalization race test | **QUALIFIED** â€” DS-E2E-15J + `test_concurrent_finalization.py` |
-| DS-E2E-08 | P1 | Real budget exhaustion / bounded stop | **QUALIFIED** â€” DS-E2E-15J + `test_budget_exhaustion.py` |
-| DS-E2E-09 | P1 | Real provider outage / fail-closed behavior | **QUALIFIED** â€” DS-E2E-15J + `test_provider_outage.py` |
-| DS-E2E-10 | P1 | Two-tenant isolation | **QUALIFIED** â€” DS-E2E-15J + `test_tenant_isolation.py` |
-| DS-E2E-11 | P1 | Real observability / OTLP evidence reconstruction | **QUALIFIED** â€” DS-E2E-15J + `test_otlp_reconstruction.py` |
-| DS-E2E-12 | P1 | `ai_incident_investigation` live scenario proof | **QUALIFIED** â€” live scenario execution evidence required by harness; DS-E2E-15J closure |
-| DS-E2E-13 | P1 | Cross-scenario qualification (two live Decision scenarios + AST gate) | **QUALIFIED** â€” AST gate + second scenario proof in DS-E2E-15J bundle |
-| DS-FINAL-AUDIT | P0 | Independent exact-commit architecture/runtime/docs/E2E audit | **DONE** â€” [`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md) |
+| DS-E2E-01 | P0 | Real single-model Decision System path | **QUALIFIED** — DS-E2E-15J Docker + `tests/integration/decision_system/test_real_single_model.py` |
+| DS-E2E-02 | P0 | Real multi-model Council (≥2 distinct model identities) | **QUALIFIED** — fail-closed independence gate; Docker evidence in DS-E2E-15J |
+| DS-E2E-03 | P0 | Real independent semantic verifier (producer model   verifier model) | **QUALIFIED** — fail-closed independence gate; Docker evidence in DS-E2E-15J |
+| DS-E2E-04 | P0 | Real HITL pause/resume | **QUALIFIED** — DS-E2E-15J + `tests/integration/decision_system/test_hitl_pause_resume.py` |
+| DS-E2E-05 | P0 | Governed real side effect: ALLOW and DENY | **QUALIFIED** — DS-E2E-15J canonical governance matrix + `test_governed_side_effect.py` |
+| DS-E2E-06 | P1 | Docker container kill + durable resume (not subprocess-only) | **QUALIFIED** — `testing_support/decision_e2e/docker_qualification.py`; subprocess retained as DS-REC regression |
+| DS-E2E-07 | P1 | Concurrent proposal/finalization race test | **QUALIFIED** — DS-E2E-15J + `test_concurrent_finalization.py` |
+| DS-E2E-08 | P1 | Real budget exhaustion / bounded stop | **QUALIFIED** — DS-E2E-15J + `test_budget_exhaustion.py` |
+| DS-E2E-09 | P1 | Real provider outage / fail-closed behavior | **QUALIFIED** — DS-E2E-15J + `test_provider_outage.py` |
+| DS-E2E-10 | P1 | Two-tenant isolation | **QUALIFIED** — DS-E2E-15J + `test_tenant_isolation.py` |
+| DS-E2E-11 | P1 | Real observability / OTLP evidence reconstruction | **QUALIFIED** — DS-E2E-15J + `test_otlp_reconstruction.py` |
+| DS-E2E-12 | P1 | `ai_incident_investigation` live scenario proof | **QUALIFIED** — live scenario execution evidence required by harness; DS-E2E-15J closure |
+| DS-E2E-13 | P1 | Cross-scenario qualification (two live Decision scenarios + AST gate) | **QUALIFIED** — AST gate + second scenario proof in DS-E2E-15J bundle |
+| DS-FINAL-AUDIT | P0 | Independent exact-commit architecture/runtime/docs/E2E audit | **DONE** — [`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md) |
 
 ---
 
@@ -383,7 +383,7 @@ Real Docker E2E qualification **completed** for the certified Decision + canonic
 **Production qualification** for the certified Decision System scope is **DONE / QUALIFIED**:
 
 1. Runtime migration slices through DS-CORE / DS-MIG **complete** for in-scope capabilities.
-2. **Phase DS-E2E** executed as **real Docker E2E** on qualification hosts â€” see DS-E2E-15J records.
+2. **Phase DS-E2E** executed as **real Docker E2E** on qualification hosts — see DS-E2E-15J records.
 3. **DS-FINAL-AUDIT** **DONE** at pinned commits in qualification records.
 
 Do **not** claim whole-product completeness beyond certified scope in [`INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md`](../qualification/INTEGRAX_FINAL_PLATFORM_CERTIFICATION.md). New capabilities require explicit product requirements and new qualification tasks.
@@ -404,4 +404,4 @@ Do **not** claim whole-product completeness beyond certified scope in [`INTEGRAX
 
 ## Delivery rule
 
-One **DS-\*** ID per PR â†’ update the owning phase row in this hub â†’ documentation gates green â†’ no `shipped` claim until runtime slice lands.
+One **DS-\*** ID per PR → update the owning phase row in this hub → documentation gates green → no `shipped` claim until runtime slice lands.

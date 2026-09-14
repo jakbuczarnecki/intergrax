@@ -1,9 +1,9 @@
-﻿# Execution Engine â€” Post-Freeze Exhaustive Gap Audit (EE-POST-FREEZE-FINAL)
+# Execution Engine — Post-Freeze Exhaustive Gap Audit (EE-POST-FREEZE-FINAL)
 
-**Status:** `PASS` â€” independent post-freeze gap audit
+**Status:** `PASS` — independent post-freeze gap audit
 **Classification:** `QUALIFICATION` (current architecture assurance)
 **Audience:** Maintainers, enterprise auditors
-**Task:** EE-POST-FREEZE-FINAL â€” Phase A
+**Task:** EE-POST-FREEZE-FINAL — Phase A
 **Canonical parent:** [`../architecture/EXECUTION_ENGINE.md`](../architecture/EXECUTION_ENGINE.md)
 **Related qualification:** [`EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md`](EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md)
 
@@ -28,14 +28,14 @@
 
 Independent of EE-FINAL narrative closure:
 
-1. **Entry inventory SSOT** â€” [`PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md`](PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md) (22 entrypoints; supported bypass **0**).
-2. **Static production scans** â€” EE-FINAL-ARCH gate modules (`test_ee_final_arch_*.py`): bypass imports, owner uniqueness, scheduler ownership, tool/side-effect boundary, persistence abstraction, vendor neutrality, composition convergence, pluginability.
-3. **Security re-audit** â€” EE-B3-A/C representative gates (identity, tenant, governance, authority, tool, recovery, HITL abuse paths).
-4. **Operational planes** â€” EE-B4-A/B/C (shutdown, readiness, runbooks without operator bypass).
-5. **Chaos / resilience** â€” EE-B2-FINAL ancestry + fault matrix closure references.
-6. **Decision â†” execution boundary** â€” NPSC-5C projection gate, `test_decision_optionality.py`, Decision roadmap/architecture doc gates.
-7. **Evidence plane** â€” NPSC-5F final qualification sentinel.
-8. **Documentation vs code** â€” post-freeze documentation gates (`test_ee_post_freeze_documentation_gates.py`).
+1. **Entry inventory SSOT** — [`PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md`](PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md) (22 entrypoints; supported bypass **0**).
+2. **Static production scans** — EE-FINAL-ARCH gate modules (`test_ee_final_arch_*.py`): bypass imports, owner uniqueness, scheduler ownership, tool/side-effect boundary, persistence abstraction, vendor neutrality, composition convergence, pluginability.
+3. **Security re-audit** — EE-B3-A/C representative gates (identity, tenant, governance, authority, tool, recovery, HITL abuse paths).
+4. **Operational planes** — EE-B4-A/B/C (shutdown, readiness, runbooks without operator bypass).
+5. **Chaos / resilience** — EE-B2-FINAL ancestry + fault matrix closure references.
+6. **Decision ↔ execution boundary** — NPSC-5C projection gate, `test_decision_optionality.py`, Decision roadmap/architecture doc gates.
+7. **Evidence plane** — NPSC-5F final qualification sentinel.
+8. **Documentation vs code** — post-freeze documentation gates (`test_ee_post_freeze_documentation_gates.py`).
 
 No finding accepted from prior reports without current gate or targeted code-path proof.
 
@@ -84,8 +84,8 @@ No finding accepted from prior reports without current gate or targeted code-pat
 Semantic model confirmed:
 
 ```text
-Decision = WHAT Â· Governance = WHETHER Â· Authority = MAY ACT
-Nexus = HOW/WHEN (orchestration) Â· ExecutionRuntime = PERFORM + lifecycle
+Decision = WHAT · Governance = WHETHER · Authority = MAY ACT
+Nexus = HOW/WHEN (orchestration) · ExecutionRuntime = PERFORM + lifecycle
 ```
 
 ---
@@ -106,7 +106,7 @@ Nexus = HOW/WHEN (orchestration) Â· ExecutionRuntime = PERFORM + lifecycle
 ## Security summary
 
 Representative EE-B3 gates: **PASS**.
-**CRITICAL:** 0 Â· **HIGH:** 0 Â· **MEDIUM:** 0 (none violating frozen enterprise invariant) Â· **LOW:** 0 Â· **OBSERVATION:** documented qualification observations only (DS-E2E-15J), not architecture gaps.
+**CRITICAL:** 0 · **HIGH:** 0 · **MEDIUM:** 0 (none violating frozen enterprise invariant) · **LOW:** 0 · **OBSERVATION:** documented qualification observations only (DS-E2E-15J), not architecture gaps.
 
 ---
 
@@ -114,7 +114,7 @@ Representative EE-B3 gates: **PASS**.
 
 | ID | Severity | Summary | Frozen invariant | Action |
 | --- | --- | --- | --- | --- |
-| â€” | â€” | No supported production gap identified | â€” | â€” |
+| — | — | No supported production gap identified | — | — |
 
 ---
 
@@ -141,13 +141,13 @@ Log: `.tmp/session/ee-post-freeze-final/pytest-arch-gates.log` (local session ar
 ```text
 FINAL GAP AUDIT VERDICT: PASS
 
-CRITICAL = 0 Â· HIGH = 0
-SUPPORTED BYPASS = 0 Â· GOVERNANCE BYPASS = 0 Â· IDENTITY BYPASS = 0
-AUTHORITY BYPASS = 0 Â· SCHEDULER BYPASS = 0 Â· TOOL BYPASS = 0
-RECOVERY BYPASS = 0 Â· PERSISTENCE BYPASS = 0 Â· DIRECT SIDE-EFFECT BYPASS = 0
+CRITICAL = 0 · HIGH = 0
+SUPPORTED BYPASS = 0 · GOVERNANCE BYPASS = 0 · IDENTITY BYPASS = 0
+AUTHORITY BYPASS = 0 · SCHEDULER BYPASS = 0 · TOOL BYPASS = 0
+RECOVERY BYPASS = 0 · PERSISTENCE BYPASS = 0 · DIRECT SIDE-EFFECT BYPASS = 0
 
 EXECUTION ENGINE STATUS: CLOSED
 EXECUTION ENGINE ARCHITECTURE: FROZEN FOR CURRENT PLATFORM STAGE
 ```
 
-**NEXT PLATFORM STEP:** Build new capabilities on canonical Execution Engine; reopen only via drift classification â†’ architecture reopen â†’ requalification.
+**NEXT PLATFORM STEP:** Build new capabilities on canonical Execution Engine; reopen only via drift classification → architecture reopen → requalification.
