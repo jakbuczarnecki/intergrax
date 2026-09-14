@@ -8,7 +8,20 @@ import pytest
 
 from pydantic import BaseModel
 
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    reset_active_execution_identity,
+)
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
+from intergrax.runtime.execution.active_execution_budget import (
+    ActiveExecutionBudgetState,
+    bind_active_execution_budget,
+    reset_active_execution_budget,
+)
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.execution.budget.models import ExecutionBudgetAllocationMode
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -215,14 +228,32 @@ def _state_with_catalog_invoker() -> RuntimeState:
 async def test_tool_gateway_invokes_registered_catalog_tool():
     state = _state_with_catalog_invoker()
     gateway = RuntimeToolGateway.for_state(state, allowed_tools=[GATEWAY_CATALOG_TOOL])
-    response = await gateway.invoke(
-        ToolRequest(
-            tool_name=GATEWAY_CATALOG_TOOL,
-            agent_id="agent-1",
-            step_id="s1",
-            input={"query": "PROJ-1"},
-        )
+    execution_id = mint_execution_id()
+    ledger = create_execution_budget_ledger(None)
+    budget_token = bind_active_execution_budget(
+        ActiveExecutionBudgetState(
+            execution_id=execution_id,
+            mode=ExecutionBudgetAllocationMode.SHARED,
+            ledger=ledger,
+        ),
     )
+    token = bind_active_execution_identity(
+        run_id=_GATEWAY_RUN_ID,
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+    )
+    try:
+        response = await gateway.invoke(
+            ToolRequest(
+                tool_name=GATEWAY_CATALOG_TOOL,
+                agent_id="agent-1",
+                step_id="s1",
+                input={"query": "PROJ-1"},
+            )
+        )
+    finally:
+        reset_active_execution_identity(token)
+        reset_active_execution_budget(budget_token)
 
     assert response.status == ToolResponseStatus.SUCCESS
     assert response.output is not None

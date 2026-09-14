@@ -29,7 +29,7 @@ from platform_proofs.scenarios.verified_product_identification.application.obser
     QueryContextObservedPayload,
     TerminalObservedPayload,
 )
-from platform_proofs.scenarios.verified_product_identification.application.observability.execution_correlation import (
+from platform_proofs.scenarios.verified_product_identification.lab.execution_correlation_lab import (
     mint_lab_vpi_application_execution_correlation,
 )
 from platform_proofs.scenarios.verified_product_identification.application.observability.platform_projection import (

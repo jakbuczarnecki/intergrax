@@ -15,10 +15,13 @@ from typing import Any
 from intergrax.integrations.contracts.key_value_cache import KeyValueCache
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.examples.custom_memory_kv.adapter import InProcessKeyValueCache
+from intergrax.integrations.examples.custom_memory_kv.contract_spec import CONTRACT_SPECS
 from intergrax.integrations.examples.custom_memory_kv.manifest import MANIFEST
 
 
 class CustomMemoryKvPlugin:
+    CONTRACT_SPECS = CONTRACT_SPECS
+
     @classmethod
     def integration_manifest(cls) -> IntegrationManifest:
         return MANIFEST

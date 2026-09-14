@@ -7,6 +7,7 @@ from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
@@ -34,7 +35,12 @@ async def test_three_step_session_loop() -> None:
     run_id = mint_run_id()
     task_id = mint_task_id()
     attempt_id = mint_attempt_id()
-    token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
     try:
         step_ctx = AgentStepContext(
             step_index=0,

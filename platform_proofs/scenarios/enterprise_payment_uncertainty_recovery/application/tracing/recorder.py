@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from intergrax.contracts.execution_identity import ExecutionId, RunId, mint_execution_id, mint_run_id
+from intergrax.contracts.execution_identity import ExecutionId, RunId
 from intergrax.runtime.events.w3c_trace_context import generate_trace_id
 from intergrax.contracts.tracing import TraceComponent, TraceEvent, TraceLevel
 from intergrax.runtime.nexus.tracing.trace_models import utc_now_iso
@@ -29,19 +29,22 @@ class ScenarioExecutionTraceScope:
     run_id: RunId
 
     @staticmethod
-    def mint(
+    def from_fields(
         *,
+        trace_id: str,
         correlation_id: str,
+        execution_id: ExecutionId,
         scenario_id: str,
         variant_id: str,
+        run_id: RunId,
     ) -> ScenarioExecutionTraceScope:
         return ScenarioExecutionTraceScope(
-            trace_id=generate_trace_id(),
+            trace_id=trace_id,
             correlation_id=correlation_id,
-            execution_id=mint_execution_id(),
+            execution_id=execution_id,
             scenario_id=scenario_id,
             variant_id=variant_id,
-            run_id=mint_run_id(),
+            run_id=run_id,
         )
 
 
@@ -60,10 +63,13 @@ class RecordingScenarioExecutionTrace:
         scenario_id: str,
         variant_id: str,
     ) -> None:
-        self.scope = ScenarioExecutionTraceScope.mint(
+        self.scope = ScenarioExecutionTraceScope.from_fields(
+            trace_id=generate_trace_id(),
             correlation_id=correlation_id,
+            execution_id=self.scope.execution_id,
             scenario_id=scenario_id,
             variant_id=variant_id,
+            run_id=self.scope.run_id,
         )
         self._events.clear()
         self._seq = 0

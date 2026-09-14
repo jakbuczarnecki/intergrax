@@ -26,7 +26,9 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.applicati
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.recorder import (
     NullScenarioExecutionTrace,
     RecordingScenarioExecutionTrace,
-    ScenarioExecutionTraceScope,
+)
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.lab.tracing_scope import (
+    mint_lab_scenario_execution_trace_scope,
 )
 
 pytestmark = pytest.mark.unit
@@ -268,7 +270,7 @@ def test_null_trace_adapter_satisfies_full_port_lifecycle() -> None:
 
 def test_recording_trace_adapter_satisfies_full_port_lifecycle() -> None:
     trace = RecordingScenarioExecutionTrace(
-        scope=ScenarioExecutionTraceScope.mint(
+        scope=mint_lab_scenario_execution_trace_scope(
             correlation_id="corr-rec",
             scenario_id="ERL-QUAL-004",
             variant_id="payment_completed_after_unknown",

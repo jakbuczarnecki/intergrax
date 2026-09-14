@@ -328,13 +328,16 @@ async def test_unified_task_runner_mints_attempt_at_run_boundary():
     class _StubLoop:
         execution_budget_ledger_factory = None
         run_budget = None
+        execution_lineage_persistence = None
 
         def __init__(self) -> None:
+            from intergrax.runtime.events.event_bus import RuntimeEventBus
             from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
             from intergrax.runtime.registry.agent_registry import AgentRegistry
 
             registry = AgentRegistry()
             self._graph_executor = GraphExecutor(registry)
+            self.event_bus = RuntimeEventBus()
 
         async def handle_task(
             self,
@@ -352,6 +355,9 @@ async def test_unified_task_runner_mints_attempt_at_run_boundary():
                 run_id=run_id,
                 state=TaskState.COMPLETED,
             )
+
+        async def publish_orchestration_root_terminal_runtime(self, task: Task) -> None:
+            return None
 
     loop = _StubLoop()
     runner = UnifiedTaskRunner(loop)

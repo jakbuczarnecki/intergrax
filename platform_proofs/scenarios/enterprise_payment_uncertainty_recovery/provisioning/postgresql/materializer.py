@@ -15,8 +15,12 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.provision
 
 if TYPE_CHECKING:
     import psycopg
-
-from psycopg import sql
+    from psycopg import sql
+else:
+    try:
+        from psycopg import sql
+    except ModuleNotFoundError:  # optional CI / smoke deps
+        sql = None  # type: ignore[assignment,misc]
 
 _INSERT_ORDER: tuple[str, ...] = (
     "commerce.organizations",
