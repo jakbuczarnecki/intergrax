@@ -20,6 +20,8 @@ from intergrax.contracts.delegated_execution_provider import (
     assert_provider_native_ids_distinct_from_execution,
     delegated_failure_outcome,
     delegated_success_outcome,
+    digest_delegated_execution_payload,
+    digest_delegated_execution_request,
 )
 from intergrax.contracts.delegation_authority import (
     DelegationAuthorityError,
@@ -128,6 +130,12 @@ class _RecordingProvider:
             provider_operation_id="pop-fake-1",
             invocation_id="inv-fake-1",
         )
+        payload_digest = digest_delegated_execution_payload(request.payload)
+        request_digest = digest_delegated_execution_request(
+            context=request.context,
+            operation=request.operation,
+            payload_digest=payload_digest,
+        )
         return delegated_success_outcome(
             result=EchoResult(
                 value=request.payload.value,
@@ -141,7 +149,7 @@ class _RecordingProvider:
                     "operation": request.operation.operation,
                     "task_id": request.operation.task_id,
                     "run_id": str(request.context.run_id),
-                    "request_digest": "sha256:" + ("cd" * 32),
+                    "request_digest": request_digest,
                     "started_at": "2026-09-07T08:00:00+00:00",
                     "provider_request_id": "preq-fake-1",
                     "provider_operation_id": "pop-fake-1",
@@ -468,6 +476,12 @@ async def test_conformance_fake_provider_composition() -> None:
             self,
             request: DelegatedExecutionRequest[EchoPayload],
         ) -> DelegatedExecutionOutcome[EchoResult]:
+            payload_digest = digest_delegated_execution_payload(request.payload)
+            request_digest = digest_delegated_execution_request(
+                context=request.context,
+                operation=request.operation,
+                payload_digest=payload_digest,
+            )
             invocation = ProviderInvocation.model_validate(
                 {
                     "invocation_id": "inv-conformance-1",
@@ -475,7 +489,7 @@ async def test_conformance_fake_provider_composition() -> None:
                     "operation": request.operation.operation,
                     "task_id": request.operation.task_id,
                     "run_id": str(request.context.run_id),
-                    "request_digest": "sha256:" + ("ef" * 32),
+                    "request_digest": request_digest,
                     "started_at": "2026-09-07T08:00:00+00:00",
                     "provider_request_id": "preq-conformance-1",
                     "provider_operation_id": "pop-conformance-1",

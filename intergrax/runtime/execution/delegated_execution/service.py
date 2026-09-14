@@ -7,11 +7,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
+from pydantic import ValidationError
+
+from intergrax.contracts.delegated_execution_invocation_binding import (
+    enrich_delegated_outcome_with_platform_invocation_binding,
+)
 from intergrax.contracts.delegated_execution_provider import (
+    DelegatedExecutionContractError,
     DelegatedExecutionOperationMetadata,
     DelegatedExecutionOutcome,
+    DelegatedExecutionOutcomeCategory,
     DelegatedExecutionProvider,
     DelegatedExecutionRequest,
+    delegated_failure_outcome,
+    digest_delegated_execution_payload,
 )
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
@@ -124,7 +133,25 @@ class _DelegatedProviderDispatchDelegate(
             payload=work.payload,
             operation=work.operation,
         )
-        return await self._provider.execute(provider_request)
+        outcome = await self._provider.execute(provider_request)
+        payload_digest = digest_delegated_execution_payload(work.payload)
+        try:
+            return enrich_delegated_outcome_with_platform_invocation_binding(
+                outcome=outcome,
+                context=context,
+                operation=work.operation,
+                payload_digest=payload_digest,
+            )
+        except (ValidationError, DelegatedExecutionContractError, ValueError):
+            return delegated_failure_outcome(
+                category=DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE,
+                failure_code="OUTCOME_CONTRACT_MISMATCH",
+                failure_message=(
+                    "provider outcome failed platform invocation correlation checks"
+                ),
+                provider_invocation=outcome.provider_invocation,
+                provider_outcome=outcome.provider_outcome,
+            )
 
 
 class DelegatedExecutionService(Generic[RequestT, ResultT]):

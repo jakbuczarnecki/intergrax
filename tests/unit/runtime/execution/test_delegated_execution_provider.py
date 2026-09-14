@@ -28,6 +28,7 @@ from intergrax.contracts.delegated_execution_provider import (
     assert_provider_native_ids_distinct_from_execution,
     delegated_failure_outcome,
     delegated_success_outcome,
+    digest_delegated_execution_payload,
     digest_delegated_execution_request,
     mint_delegated_provider_invocation,
     validate_provider_identity,
@@ -55,7 +56,6 @@ from intergrax.runtime.execution.delegated_execution.context_projection import (
 )
 from intergrax.runtime.execution.delegated_execution.local_provider import (
     LocalDelegatedExecutionProvider,
-    _digest_payload,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
@@ -399,15 +399,15 @@ async def test_transport_io_does_not_leak_raw_message() -> None:
 
 
 def test_pydantic_payload_digest_is_deterministic() -> None:
-    first = _digest_payload(PydanticPayload(value="stable"))
-    second = _digest_payload(PydanticPayload(value="stable"))
+    first = digest_delegated_execution_payload(PydanticPayload(value="stable"))
+    second = digest_delegated_execution_payload(PydanticPayload(value="stable"))
     assert first == second
     assert first.startswith("sha256:")
 
 
 def test_dataclass_payload_digest_is_deterministic() -> None:
-    first = _digest_payload(EchoPayload(value="stable"))
-    second = _digest_payload(EchoPayload(value="stable"))
+    first = digest_delegated_execution_payload(EchoPayload(value="stable"))
+    second = digest_delegated_execution_payload(EchoPayload(value="stable"))
     assert first == second
     assert first.startswith("sha256:")
 

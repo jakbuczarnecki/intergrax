@@ -560,15 +560,13 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2B — capability-gated provider-native cancel/interrupt control propagation = CLOSED** (control plane only; canonical Execution lifecycle unchanged).
 
-**P2.1-S2B-C1 — delegated control correlation + provider outcome integrity hardening = CLOSED** (`DelegatedExecutionInvocationBinding` + fail-closed outcome correlation validation; no durable invocation registry).
+**P2.1-S2B-C2 — authoritative S2A invocation binding issuance = CLOSED** (Execution-owned dispatch enriches outcomes with platform-issued ``DelegatedExecutionInvocationBinding``; no durable registry).
 
-Contract: `intergrax/contracts/delegated_execution_provider.py`  
-Control contract: `intergrax/contracts/delegated_execution_control.py`  
-Invocation binding: `intergrax/contracts/delegated_execution_invocation_binding.py`  
-Reference provider: `intergrax/runtime/execution/delegated_execution/local_provider.py`  
-Adoption service: `intergrax/runtime/execution/delegated_execution/service.py`  
-Control service: `intergrax/runtime/execution/delegated_execution/control_service.py`  
-Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`
+**P2.1-S2B = CLOSED** (S2A adoption + S2B control + C1 correlation + C2 authoritative binding issuance).
+
+**P2.1-S2 = OPEN** (S2C durability / status / continuation next).
+
+Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`
 
 ## Remaining work (P2.1-S2 — adoption slices after S2A, not new seam)
 

@@ -10,7 +10,8 @@ S2A dispatch path), not caller-supplied pairings.
 
 from __future__ import annotations
 
-from typing import Final, Literal
+from dataclasses import replace
+from typing import Final, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -20,6 +21,7 @@ from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionContext,
     DelegatedExecutionContractError,
     DelegatedExecutionOperationMetadata,
+    DelegatedExecutionOutcome,
     assert_provider_native_ids_distinct_from_execution,
     digest_delegated_execution_request,
 )
@@ -33,6 +35,8 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
 )
 from intergrax.contracts.provider_invocation import ProviderInvocation
+
+ResultT = TypeVar("ResultT")
 
 SCHEMA_DELEGATED_EXECUTION_INVOCATION_BINDING_V1: Final = (
     "delegated_execution_invocation_binding.v1"
@@ -150,7 +154,27 @@ def mint_delegated_execution_invocation_binding(
     )
 
 
+def enrich_delegated_outcome_with_platform_invocation_binding(
+    *,
+    outcome: DelegatedExecutionOutcome[ResultT],
+    context: DelegatedExecutionContext,
+    operation: DelegatedExecutionOperationMetadata,
+    payload_digest: str,
+) -> DelegatedExecutionOutcome[ResultT]:
+    """Attach platform-issued binding on the Execution-owned S2A dispatch path."""
+    if outcome.provider_invocation is None:
+        return outcome
+    binding = mint_delegated_execution_invocation_binding(
+        context=context,
+        operation=operation,
+        payload_digest=payload_digest,
+        provider_invocation=outcome.provider_invocation,
+    )
+    return replace(outcome, invocation_binding=binding)
+
+
 __all__ = [
     "DelegatedExecutionInvocationBinding",
+    "enrich_delegated_outcome_with_platform_invocation_binding",
     "mint_delegated_execution_invocation_binding",
 ]
