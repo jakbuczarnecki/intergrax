@@ -110,6 +110,7 @@ from tests.unit.agent_distribution.test_physical_delegation_governance_boundary 
 )
 from tests.unit.runtime.human.test_g5b_hitl_resolution import (
     ATTEMPT_ID,
+    EXECUTION_ID,
     bound_hitl_test_execution_identity,
 )
 
@@ -227,14 +228,17 @@ async def test_projection_preserves_physical_delegation_identity() -> None:
     )
     task_scope = harness.task_scope_authority.task_scope_id
     continuation = await _require_human_continuation(harness, task_scope=task_scope)
-    request = project_physical_delegation_to_governed_continuation_request(
-        continuation,
-        source_agent_id=SOURCE_AGENT,
-        run_id=RUN_ID,
-    )
+    with bound_hitl_test_execution_identity(run_id=RUN_ID):
+        request = project_physical_delegation_to_governed_continuation_request(
+            continuation,
+            source_agent_id=SOURCE_AGENT,
+            run_id=RUN_ID,
+        )
     assert request.reason is ContinuationReason.COMPLIANCE
     assert request.task_id == str(task_scope)
     assert request.run_id == RUN_ID
+    assert request.attempt_id == ATTEMPT_ID
+    assert request.execution_id == EXECUTION_ID
     assert request.source_agent_id == SOURCE_AGENT
     assert continuation.delegation_id in request.operation_id
     assert request.side_effect_scope_id is None
