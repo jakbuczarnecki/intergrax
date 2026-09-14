@@ -290,7 +290,7 @@ These invariants must be reflected in canonical documentation, code, conformance
 | V | Process/filesystem/terminal/code providers | PARTIAL / OPTIONAL | tools/execution providers | provider-first |
 | W | SDK/API/ACP/MCP/host convergence | PARTIAL | host/application boundaries + UER | convergence |
 | X | Generated architecture/capability metadata | PARTIAL | tooling/control plane | automation |
-| Y | Documentation architecture synchronization | **PARTIAL** (Y1–Y4 done) | documentation canon | maintainer CURRENT rows / assets outside Y4 budget |
+| Y | Documentation architecture synchronization | **CLOSED** (Y1–Y5, 2026-09-14) | documentation canon | — |
 | Z | Security/trust/supply-chain hardening | PARTIAL | security/governance/plugins | hardening |
 | AA | Memory and RAG hardening | CURRENT / PARTIAL | Memory + RAG + CE | hardening |
 | AB | AHI expansion | CURRENT / PARTIAL | AHI + Evaluation/HOS | controlled expansion |
@@ -987,7 +987,9 @@ Capability descriptors should include:
 
 # 29. Initiative Y — Documentation architecture synchronization
 
-**Status:** **PARTIAL** — **Y1 + Y2 + Y3 + Y4 DONE** (2026-09-14): frozen Execution **CURRENT** sync in UEA, UER, `NEXUS_EXECUTION_FLOW.md`, and hub registry (**Y1**); Observability + Diagnostics primary architecture CURRENT sync (**Y2**); Background Tasks + UER runtime extended satellite + UER maintainer plan adoption split (**Y3**); public/community + technical navigation maps, `ARCHITECTURE_OVERVIEW.md`, README execution/decision wording, Decision/Critic cross-refs (**Y4**). Remaining Initiative Y drift: non-primary maintainer CURRENT rows, historical ADR/index wording, diagram assets outside Y4 file budget, `DECISION_SYSTEM.md` deep cross-refs not in Y4 scope.
+**Status:** **CLOSED** (2026-09-14) — **Y1–Y5 documentation synchronization complete.** **Y1:** frozen Execution CURRENT sync (UEA, UER, `NEXUS_EXECUTION_FLOW.md`, hub registry). **Y2:** Observability + Diagnostics primary hubs. **Y3:** Background Tasks + UER extended satellite + maintainer adoption split. **Y4:** public/community + technical maps, `ARCHITECTURE_OVERVIEW.md`, README execution/decision wording. **Y5:** deep Decision System / Verification / Deliberation maturity + Nexus cross-refs, maintainer verification qualification row, flagship companion alt text, Nexus→Decision neighbor row, P0A Y5 addendum.
+
+**Historical-only drift (non-blocking):** legacy ADR/index phrases, SVG diagram subcaptions (e.g. deliberation budget line), `PLATFORM_FOUNDATION.md` agent-in-Nexus composition shorthand — not used as CURRENT decision authority.
 
 ## Priority (post EE1)
 

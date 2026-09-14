@@ -5,12 +5,12 @@
 The Decision System answers **„jaki jest autorytatywny wynik decyzji?”** - classification, recommendation, selection, plan, approval, finding, or evidence-backed conclusion. It is **not** an „ulepszony Critic”, **not** Council Runtime, and **not** a parallel execution engine.
 
 > [!IMPORTANT]
-> **Maturity boundary (frozen target vs current production):**
+> **Maturity boundary (multi-axis — do not collapse into one `PARTIAL`):**
 >
-> - **Architecture:** **TARGET CANON - FROZEN** (this document and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
-> - **Implementation:** Canonical Decision System runtime **implemented and active**.
-> - **CURRENT decision authority = Decision System.** Critic runtime **retired**.
-> - **Production qualification (DS-E2E-15J):** **QUALIFIED WITH OBSERVATIONS** — architecture **closed**; in-repo Decision → Governance → Execution bundle plus **Docker E2E system qualification** (L6 matrix + canonical Execution Docker proofs; closure `DS-E2E-15J-DOCKER-E2E-SYSTEM-QUALIFICATION-CLOSURE`; integration proof requires Docker daemon on the qualification host; see [Production qualification](#production-qualification-boundary)).
+> - **Architecture semantics:** **FROZEN / CANONICAL** (this hub and paired [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md)).
+> - **Implementation:** **CURRENT / ACTIVE** — canonical Decision System runtime hosted by Execution; **CURRENT decision authority = Decision System**; Critic runtime **retired** (historical snapshot only in [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md)).
+> - **Qualification:** **QUALIFIED WITH OBSERVATIONS** (DS-E2E-15J) — in-repo Decision → Governance → Execution bundle + Docker E2E system qualification (L6 matrix + canonical Execution Docker proofs; integration proof requires Docker daemon on the qualification host; see [Production qualification](#production-qualification-boundary)).
+> - **Consumer adoption:** **PARTIAL** only where not proven — e.g. universal Tier-3 manifest wiring, external SaaS providers, multi-host topology (not claimed here).
 
 **Primary audience:** Principal / Staff engineers, harness integrators, and Tier-2/3 authors configuring decision strategies, verification posture, and adjudication flows.
 
@@ -61,7 +61,7 @@ The Decision System provides **typed lifecycle semantics, version lineage, compo
 | **Policy** | Cross-cutting authorization - Decision System does not own Runtime Policy Engine |
 | **Diagnostics** | May feed investigation - does not own Decision System |
 | **Observability** | Full decision audit trail - no private chain-of-thought |
-| **Maturity** | **A4 target / I0 / P0 / E0** for Decision System - see [Current maturity](#current-maturity) |
+| **Maturity** | **A4 / I3 / P2 / E1** (taxonomy axes) — see [Current maturity](#current-maturity) |
 
 ---
 
@@ -247,6 +247,8 @@ Council is **only** a Decision Strategy implementation - not a mandatory stage.
 | **ExecutionStrategy** | How is a concrete unit of work executed? | INFERENCE, AGENTIC, ORCHESTRATION |
 
 Council may use ORCHESTRATION but is not synonymous with Nexus as a system. Single Model and Rule-Based may operate without Nexus.
+
+**External / plugin strategy authority:** registered strategies may **propose**, **deliberate**, **score**, and **synthesize** candidates. They **must not** authorize execution, mint `ExecutionId`, bypass Governance, own retry/lifecycle, or introduce a competing runtime.
 
 ### Example - simple decision (no Nexus)
 
@@ -796,7 +798,7 @@ VerificationPipeline + DecisionStrategyRegistry + DecisionArtifactKindRegistry
         ↓
 CanonicalDecisionFlowGate (wire_application_decision)
         ↓
-Execution / Nexus host
+canonical Execution host (Decision lifecycle + strategy routing; ORCHESTRATION may use private Nexus for child work only)
 ```
 
 - **Activation:** ``installed ≠ selected ≠ admitted ≠ active``. ``DecisionProfile.plugins``

@@ -1027,3 +1027,21 @@ Unrelated dirty worktree (unit test files under `tests/unit/…`, `testing_suppo
 **Y closeout readiness:** **NO** — active contradictory CURRENT docs may remain outside Y4 file budget (maintainer rows, assets).
 
 **Production code changed:** **NO**
+
+## HARNESS-Y5 addendum (2026-09-14)
+
+**Audited deep docs:** [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md), [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md), [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) — multi-axis maturity (architecture FROZEN · implementation ACTIVE · qualification DS-E2E-15J · adoption PARTIAL where unproven); external `DecisionStrategy` authority rule; canonical Execution hosting (not Nexus-owned lifecycle).
+
+**Maintainer rows corrected:** [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) plan — production qualification **PLANNED** → **QUALIFIED WITH OBSERVATIONS** (DS-E2E-15J bundle).
+
+**Companion / asset text:** [`assets/fullsize/decision-system-flagship.md`](../../architecture/assets/fullsize/decision-system-flagship.md) alt text — removed Nexus-owned lifecycle claim.
+
+**Nexus cross-ref:** [`NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md) Decision neighbor row aligned with Execution-hosted Decision capability.
+
+**Remaining historical drift (non-authoritative):** `CRITIC_VERIFICATION.md` snapshot; deliberation SVG subcaption “Runs inside Nexus budgets”; maintainer NPSC/Nexus historical fan-out notes; `PLATFORM_FOUNDATION.md` Tier-3 composition shorthand.
+
+**Y closeout matrix (Y5):** Y-CLOSE-1..7 **PASS** after Y5 sync (see Initiative Y section in roadmap).
+
+**Initiative Y final verdict:** **CLOSED** — Y1–Y5 documentation synchronization complete.
+
+**Production code changed:** **NO**

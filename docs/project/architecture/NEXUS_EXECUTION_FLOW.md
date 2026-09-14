@@ -477,7 +477,7 @@ Harness FLOW/ORCH **Done** does **not** mean: Execution-centric target implement
 | [`TOOLS.md`](TOOLS.md) | Third planning plane |
 | [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) | Policy at flow boundaries |
 | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) | Retry ownership, Attempt Ledger, HITL semantics - approval binds exact Decision Version (**TARGET:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)) |
-| [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) | **TARGET:** Nexus hosts Decision Lifecycle; Nexus owns scheduling/checkpoint/retry - Lifecycle owns semantic decision progression |
+| [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) | **CURRENT:** Decision capability **hosted by canonical Execution**; private Nexus participates only when ORCHESTRATION routes child work — Nexus does **not** own Decision lifecycle semantics, persistence, or authority |
 | [`OBSERVABILITY.md`](OBSERVABILITY.md) | Event spine - Nexus emits, Observability persists |
 | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Tier-3 bootstrap wires **CURRENT** `NexusLoop` |
 

@@ -5,12 +5,12 @@
 Deliberation answers **„jakie kandydackie propozycje i niezgodności powstały przed weryfikacją?”** Council is **only** a strategy implementation - **not** the Decision System, **not** a Council Runtime, and **not** mandatory for every decision.
 
 > [!IMPORTANT]
-> **Maturity boundary:**
+> **Maturity boundary (multi-axis):**
 >
-> - **Architecture:** **TARGET CANON - FROZEN**.
-> - **Implementation:** Decision Strategy foundation **implemented** (Single Model · Rule-Based · Hybrid · participant/disagreement contracts · **CouncilStrategy**).
-> - **CouncilStrategy:** **implemented** as canonical `DecisionStrategy` hosted through Execution deliberation (`intergrax/contracts/council_strategy.py`, `intergrax/runtime/execution/council_deliberation.py`). Separate Council Runtime **forbidden**.
-> - **Production:** Single-model / rule-based / hybrid / council contract paths available; real multi-provider Council qualification remains **DS-E2E-02**.
+> - **Architecture semantics:** **FROZEN / CANONICAL**.
+> - **Implementation:** **CURRENT / ACTIVE** — Single Model · Rule-Based · Hybrid · participant/disagreement contracts · **CouncilStrategy** (`intergrax/contracts/council_strategy.py`, `intergrax/runtime/execution/council_deliberation.py`). Separate Council Runtime **forbidden**.
+> - **Qualification:** Strategy contracts ship in DS-E2E-15J scope; **real multi-provider Council** qualification remains **DS-E2E-02** (bounded — not all provider matrices claimed).
+> - **Consumer adoption:** **PARTIAL** for production multi-model Council graphs outside qualification matrix.
 
 **Primary audience:** Principal / Staff engineers designing multi-model deliberation, participant roles, disagreement artifacts, and strategy registration.
 
@@ -357,11 +357,14 @@ No separate Council Runtime.
 
 ## Current maturity
 
-| Axis | Level |
-| ---- | ----- |
-| **Architecture** | **A4** frozen target |
-| **Implementation** | **I1** - Council strategy contracts + Execution deliberation host shipped |
-| **Production** | **P0** for real multi-provider Council - agent/graph paths; **DS-E2E-02** open |
+| Axis | Level | Rationale |
+| ---- | ----- | --------- |
+| **Architecture (A)** | **A4** | Frozen deliberation canon; Council = strategy only |
+| **Implementation (I)** | **I2** | Council + single/rule/hybrid contracts and Execution deliberation host shipped |
+| **Production (P)** | **P1** | In-repo contract paths qualified with Decision bundle; multi-provider Council **DS-E2E-02** still open |
+| **Evidence (E)** | **E1** | DS-E2E-15J + deliberation unit gates; multi-provider matrix not closed |
+
+**Proven pluggable seams (CURRENT):** `DecisionStrategy` registry + `intergrax.decision_strategies` entry-point group (see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md#plugin--extension-posture)).
 
 ---
 

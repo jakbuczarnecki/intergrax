@@ -29,7 +29,7 @@
 | **Target architecture** | **FROZEN** |
 | **Verification Pipeline runtime** | **DONE** |
 | **Verification production composition** | **DONE / ENTERPRISE CLOSED** |
-| **Production qualification** | **PLANNED** - DS-E2E |
+| **Production qualification** | **QUALIFIED WITH OBSERVATIONS** — DS-E2E-15J integrated Decision System bundle ([`DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md`](../qualification/DS-E2E-15J-DECISION-SYSTEM-PRODUCTION-QUALIFICATION.md)); producer-independence external matrix **QUALIFICATION OPEN** (DS-VER-PRODUCER-INDEPENDENCE row below) |
 
 ---
 
