@@ -962,7 +962,7 @@ Enterprise qualification and post-freeze audits confirm the **Execution Engine i
 - Governed dynamic topology **proposal** path (Initiative O — distinct from shipped fan-out execution)
 - External/subagent provider **production adoption** (P2.1-S2)
 - Runtime Inspection read-model API (Initiative C)
-- Canonical doc CURRENT drift (Initiative Y)
+- Canonical doc CURRENT drift (Initiative Y — **Y1 closed** 2026-09-14 for UEA/UER/Nexus/hub; satellites and domain pairs remain)
 - Residual intake helper debt (`task_run_bridge.mint_intake_execution_identity`) — documented in enterprise verification §10
 
 ## ADOPTION_GAP samples (report only — not fixed in EE1)
@@ -985,3 +985,11 @@ Cross-domain imports of Nexus implementation types where Execution-owned ports s
 ## Workspace note (EE1 session)
 
 Unrelated dirty worktree (unit test files under `tests/unit/…`, `testing_support/`) was **not** staged for the EE1 documentation commit. Scope for EE1: documentation-only paths listed in the task.
+
+## HARNESS-Y1 addendum (2026-09-14)
+
+**Audited / synchronized (CURRENT claims):** `UNIFIED_EXECUTION_ARCHITECTURE.md`, `UNIFIED_EXECUTION_RUNTIME.md`, `NEXUS_EXECUTION_FLOW.md`, `intergrax_runtime_architecture.md` (Critic row + Nexus wiring note), roadmap Initiative Y status.
+
+**Stale claims removed:** `ExecutionId` “not yet canonical”; UER “implementation PARTIAL” without frozen-core vs consumer-adoption split; Critic as CURRENT decision authority in hub registry.
+
+**Remaining doc drift (Initiative Y, post-Y1):** UER satellites, `DECISION_SYSTEM.md` cross-refs, Observability/DIAG/Background Tasks CURRENT tables, maintainer plan CURRENT rows, public/community maps.

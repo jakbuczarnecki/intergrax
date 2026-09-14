@@ -1,10 +1,18 @@
 # Nexus Execution Flow
 
-**Intergrax Nexus Execution Flow** is the canonical architecture for the Nexus orchestration control plane: traversal of accepted orchestration topology, dependency readiness, scheduling of child Executions, fan-out/fan-in, delegation/handoff coordination, and orchestration-level failure decisions.
+**Nexus is an internal orchestration implementation** behind Execution-owned contracts. It is **not** a public execution API, public SDK contract, public provider boundary, root execution authority, or peer of the Execution Engine.
+
+**Intergrax Nexus Execution Flow** documents the Nexus orchestration control plane: traversal of accepted orchestration topology, dependency readiness, scheduling of child Executions, fan-out/fan-in, delegation/handoff coordination, and orchestration-level failure decisions.
 
 > **Orchestration defines HOW work is structured. Nexus decides WHAT EXECUTES NEXT. Unified Execution Runtime owns HOW each Execution behaves.**
 
 **Semantic authority:** Subordinate to frozen [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) (UEA). Where Nexus docs and UEA conflict, **UEA wins**.
+
+**Contract-first consumer rule:** External platform consumers **MUST** bind to Execution-owned contracts and the public execution boundary — **not** to `NexusLoop`, `GraphExecutor`, or other Nexus implementation types. Dependency direction:
+
+```text
+External consumer → Execution-owned contract → orchestration strategy (when selected) → private Nexus implementation
+```
 
 Nexus is **not** a second UER, an `AgentEngine` replacement, a tool planner, a context engine, a business agent, or the mandatory entry for every platform workload. It operates when a parent **Execution** uses **orchestration strategy**.
 

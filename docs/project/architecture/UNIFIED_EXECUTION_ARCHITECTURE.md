@@ -6,7 +6,7 @@
 **Audience:** Principal architects, domain owners, implementers, Cursor implementation sessions  
 **Registered in:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md#architecture-artifact-classification-register)  
 **Maintainer navigation hub (Execution Engine area):** [`EXECUTION_ENGINE.md`](../maintainers/architecture/EXECUTION_ENGINE.md) (`MAINTAINER_HUB` — navigation only; this document remains `META_ARCHITECTURE`)  
-**Last updated:** 2026-08-29 - **UE-8P3** pluggable `ExecutionAuthorityPolicy`, **UEA-INV-022** mandatory authority checkpoint
+**Last updated:** 2026-09-14 - **HARNESS-Y1** frozen Execution Engine CURRENT sync; contract-first consumer dependency; Nexus as private orchestration implementation
 
 ---
 
@@ -27,7 +27,11 @@ What MUST / MUST NOT happen at runtime?
 
 **This document coordinates semantics; it does not replace domain owners.** Detailed contracts, APIs, and implementation roadmaps remain in the owning domain architecture/plan pairs listed in [§16 Canonical ownership matrix](#16-canonical-ownership-matrix).
 
-**Normative authority:** Sections marked **TARGET ARCHITECTURE** are frozen. **CURRENT IMPLEMENTATION** and **MIGRATION GAPS** describe the as-built state without elevating it over target semantics.
+**Normative authority:** Sections marked **TARGET ARCHITECTURE** are frozen. **CURRENT IMPLEMENTATION** and **CONSUMER ADOPTION GAPS** describe the as-built state without elevating it over target semantics.
+
+**Execution Engine maturity (enterprise):** The Execution Engine is **FROZEN / ENTERPRISE-QUALIFIED** — sole canonical execution authority. All executable platform work **MUST** enter through an approved Execution Engine boundary. **Consumer adoption** of Execution-owned contracts on every surface may still be **PARTIAL**; that is a separate dimension from frozen core semantics.
+
+**Platform contract dependency (normative):** Platform code **MUST** depend on platform-defined contracts (ports, protocols, stable boundaries). Concrete implementations are selected through composition. Where behavior is replaceable, Strategy / Provider / Adapter implementations **MUST** remain swappable behind typed contracts without extending platform authority (identity minting, governance bypass, parallel lifecycle, and durable-evidence shortcuts remain forbidden). Pluginability operates **under** platform invariants, never instead of them.
 
 ---
 
@@ -111,7 +115,7 @@ Direct execution **MUST NOT** require Nexus merely because execution identity, g
 | **Execution** | A concrete, independently schedulable/governable unit of work inside an Attempt | Unified Execution Runtime / execution lifecycle layer |
 | **Event** | One canonical runtime fact or transition | Observability spine + UER event contract |
 
-**CURRENT IMPLEMENTATION:** Typed `TaskId`, `RunId`, `AttemptId`, and `EventId` exist. **`ExecutionId` is not yet a canonical Python identity** (see [§18 Migration gaps](#18-target-vs-current-implementation-and-migration-gaps)).
+**CURRENT IMPLEMENTATION (frozen core):** Typed `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, and `EventId` exist in platform contracts (`intergrax/contracts/execution_identity.py`). The Execution Engine identity spine **Task → Run → Attempt → Execution → Event** is canonical on approved Execution boundaries; `ExecutionIdentityAuthority` is the single identity authority (not a pluggable override). See [§25 Target vs current](#25-target-vs-current-implementation-and-migration-gaps) for **consumer adoption** gaps only.
 
 <a href="UNIFIED_EXECUTION_RUNTIME.md">
 <picture>
@@ -222,6 +226,15 @@ Execution E1
 ---
 
 ## 7. Nexus
+
+**Canonical positioning:** Nexus is a **private/internal orchestration implementation** behind Execution-owned contracts. Cross-domain consumers **MUST** depend on Execution-owned ports and the public execution boundary — **not** on Nexus-specific types (`NexusLoop`, `GraphExecutor`, etc.) as integration surfaces.
+
+```text
+External consumer
+  → Execution-owned contract / public execution boundary
+  → orchestration strategy (when selected)
+  → private Nexus implementation
+```
 
 **TARGET ARCHITECTURE**
 
@@ -672,11 +685,11 @@ Task → Run → Attempt → Execution Tree → RuntimeEvents
   → derived projections (e.g. Unified Run Journal)
 ```
 
-`RuntimeEvent` will conceptually require `ExecutionId` in the target architecture. `parent_event_id` and `parent_execution_id` are **different** relationships; one cannot always be reconstructed from the other.
+`RuntimeEvent` **requires** `ExecutionId` on the canonical contract. `parent_event_id` and `parent_execution_id` are **different** relationships; one cannot always be reconstructed from the other.
 
 **Owner:** [`OBSERVABILITY.md`](OBSERVABILITY.md).
 
-**CURRENT IMPLEMENTATION / MIGRATION GAP:** `RuntimeEvent` currently lacks `ExecutionId`; identity spine stops at `TaskId`/`RunId`/`AttemptId`/`EventId`.
+**CURRENT IMPLEMENTATION:** Canonical `RuntimeEvent.execution_id` exists on the frozen event contract; Observability records identity minted by Execution. **Consumer adoption:** full five-ID propagation on every evidence carrier and projection surface may remain **PARTIAL** — not a frozen-core regression.
 
 <a href="OBSERVABILITY.md">
 <picture>
@@ -1029,30 +1042,33 @@ Stable IDs for implementation constraints. Map to domain invariants where they e
 
 Sections §3–§21 above.
 
-### CURRENT IMPLEMENTATION (descriptive)
+### FROZEN CORE — CURRENT (enterprise-qualified)
 
 | Area | Current state |
 |------|----------------|
-| Identity spine | `TaskId`, `RunId`, `AttemptId`, `EventId` typed and wired on main harness paths |
-| Active execution identity | `ActiveExecutionIdentity` carries `RunId` + `AttemptId` |
-| Runtime events | `RuntimeEvent` requires Task/Run/Attempt/Event - **no ExecutionId** |
-| DIAG refs | `RuntimeExecutionRef` stops at Task/Run/Attempt |
-| Nexus | `GraphExecutor` agent-centric; direct `AgentEngine` / `AgentExecutionResult` dependency |
-| Agent context | `RuntimeExecutionContext` is agent-specific |
-| Checkpoint | `RuntimeCheckpoint` without canonical Execution Tree |
-| Budget | Run-level budgeting exists; hierarchical execution allowances incomplete |
-| Authority | `ExecutionAuthorityPolicy` + `DefaultStrictAuthorityPolicy`; composition-time resolution (UE-8P2); child admission checkpoint wired; legacy graph/node-centric paths may remain on some surfaces |
+| Execution authority | Execution Engine = **FROZEN / CERTIFIED** sole legal execution authority (see qualification: NPSC-3C, EE cross-session certification) |
+| Identity spine | Typed `TaskId` → `RunId` → `AttemptId` → `ExecutionId` → `EventId`; single identity authority on approved boundaries |
+| Execution boundary | `ExecutionBoundary`, `StrategyExecutionRouter`, child Execution admission, bypass protection on certified paths |
+| Runtime events | Canonical `RuntimeEvent` includes `execution_id` |
+| Execution tree / recovery | `ExecutionTreeSnapshot` and frozen recovery-plane semantics on qualified paths |
+| Nexus role | **Private** orchestration implementation when strategy = orchestration — not a public execution API or peer authority |
+| Decision System | Semantic capability **hosted inside Execution**; Council = `DecisionStrategy` — not a second scheduler |
 
-### MIGRATION GAPS (known)
+Evidence for freeze claims lives in `docs/project/maintainers/qualification/` — not duplicated here.
 
-1. Canonical Python identity lacks `ExecutionId`.
-2. Execution Tree not represented in checkpoint or universal event envelope.
-3. Nexus boundary not yet Execution-first.
-4. Observability and DIAG not yet Execution-aware end-to-end.
-5. Budget reservations not fully hierarchical per Execution tree.
-6. Authority propagation not yet Execution-tree-centric.
+### CONSUMER ADOPTION GAPS (non-core; may be PARTIAL)
 
-Do **not** claim target behavior is already implemented.
+These describe **wiring and surface convergence**, not reopening frozen Execution semantics:
+
+| Area | Adoption gap |
+|------|----------------|
+| Entry routing | Legacy harness paths may still reach orchestration via `UnifiedTaskRunner` → `NexusLoop` before full neutral strategy routing on every product surface |
+| Nexus internals | `GraphExecutor` remains agent-centric in places; target child-Execution admission abstraction is not uniformly expressed in all call sites |
+| Evidence carriers | Full five-ID propagation on every journal/DIAG projection may remain incomplete on some surfaces |
+| Budget / authority | Hierarchical dimensions and monotonic authority on **all** legacy call paths may remain open |
+| Task/result contracts | Agent-centric `Task`/`TaskResult` shapes on some intake surfaces |
+
+Do **not** label the frozen Execution Engine core **PARTIAL** because a consumer still holds legacy coupling. Do **not** claim universal product qualification from harness gates alone.
 
 **Detailed implementation mapping (UE-DOC-0.9):** canonical target→current→gap→transformation map - [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md). Subordinate to this document; not an architecture authority.
 
