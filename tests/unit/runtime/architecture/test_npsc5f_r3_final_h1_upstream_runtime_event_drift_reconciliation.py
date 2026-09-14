@@ -187,7 +187,7 @@ def test_npsc5f_r3_h1_r3_execution_failure_payload_not_export_allowlisted() -> N
 
 
 def test_npsc5f_r3_h1_sentinel_baselines_after_qualified_drift() -> None:
-    assert R3_IMPLEMENTATION_SHA == "0346face3ef68d8f21504822a26f8f45f2384cf9"
+    assert R3_IMPLEMENTATION_SHA == "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
     assert EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA == "40cc8c11e0b57ed4cf0d99ed1b9b297820c6eaa8"
     r1_drift = collect_r1_protected_production_drift(
         _REPO_ROOT,

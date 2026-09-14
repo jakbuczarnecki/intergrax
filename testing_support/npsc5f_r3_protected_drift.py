@@ -8,7 +8,8 @@ import subprocess
 from collections.abc import Iterable
 from pathlib import Path
 
-R3_IMPLEMENTATION_SHA = "0346face3ef68d8f21504822a26f8f45f2384cf9"
+# Re-qualified / re-frozen after Class C v1→v2 (scoped reopen through persistence hardening).
+R3_IMPLEMENTATION_SHA = "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
 
 _R3_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {
@@ -48,7 +49,11 @@ def protected_r3_export_paths() -> frozenset[str]:
 
 
 def classify_r3_protected_drift(changed_paths: Iterable[str]) -> list[str]:
-    drift = {_normalize_repo_path(path) for path in changed_paths if is_r3_protected_production_path(path)}
+    drift = {
+        _normalize_repo_path(path)
+        for path in changed_paths
+        if is_r3_protected_production_path(path)
+    }
     return sorted(drift)
 
 
@@ -69,7 +74,9 @@ def git_changed_paths(
         raise RuntimeError(
             f"git diff failed ({proc.returncode}): {proc.stderr.strip() or proc.stdout.strip()}",
         )
-    return [_normalize_repo_path(line) for line in proc.stdout.splitlines() if line.strip()]
+    return [
+        _normalize_repo_path(line) for line in proc.stdout.splitlines() if line.strip()
+    ]
 
 
 def collect_r3_protected_production_drift(

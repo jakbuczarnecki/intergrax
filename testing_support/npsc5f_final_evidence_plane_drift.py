@@ -12,14 +12,14 @@ from pathlib import Path
 
 from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 
-# Evidence Plane freeze baseline: EE-FINAL-02 enterprise re-freeze on integrated ``development``.
-# W5-H1-FIX1: restored from orphan ``8879dc8`` (local-only duplicate of ``b0a465fc0``).
-NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "7a3569c64e892588992635c9cee10c264a9fc200"
+# Evidence Plane scoped re-freeze: NPSC-5F R3+Final requalification after Class C v1→v2.
+# Prior EE-FINAL-02 baseline: ``7a3569c64e892588992635c9cee10c264a9fc200``.
+NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
 
 NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
 NPSC_5F_R1_FINAL_SHA = "455c09f342f995ac0a6fcb03ffef2f4d3e36a447"
 NPSC_5F_R2_FINAL_SHA = "76c92847f67da22d97943b55896a88c814d7e39d"
-NPSC_5F_R3_FINAL_SHA = "0346face3ef68d8f21504822a26f8f45f2384cf9"
+NPSC_5F_R3_FINAL_SHA = "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
 NPSC_5F_R4_FINAL_SHA = "37fb051c7f164d705f628760436b8ea10ee0289f"
 
 _PROTECTED_PATH_PREFIXES: tuple[str, ...] = (
@@ -54,6 +54,7 @@ _QUALIFIED_COMPATIBLE_PREFIXES: tuple[str, ...] = (
     "docs/project/maintainers/qualification/EE_FINAL_02",
     "docs/project/maintainers/qualification/NPSC_5F_FINAL",
     "docs/project/maintainers/qualification/NPSC_5F_R",
+    "docs/project/maintainers/qualification/INTEGRAX_NPSC_5F_",
     "docs/project/maintainers/qualification/W5_H1_OTLP_DEPENDENCY",
     "docs/project/maintainers/qualification/W5_H1_FIX1_NPSC5F_FREEZE_BASELINE_PROVENANCE_REPAIR",
     "docs/project/maintainers/architecture/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md",
@@ -105,14 +106,18 @@ def is_qualified_compatible_qualification_path(path: str) -> bool:
     normalized = _normalize_repo_path(path)
     if not normalized:
         return False
-    return any(normalized.startswith(prefix) for prefix in _QUALIFIED_COMPATIBLE_PREFIXES)
+    return any(
+        normalized.startswith(prefix) for prefix in _QUALIFIED_COMPATIBLE_PREFIXES
+    )
 
 
 def is_explicitly_unrelated_path(path: str) -> bool:
     normalized = _normalize_repo_path(path)
     if not normalized:
         return True
-    return any(normalized.startswith(prefix) for prefix in _EXPLICITLY_UNRELATED_PREFIXES)
+    return any(
+        normalized.startswith(prefix) for prefix in _EXPLICITLY_UNRELATED_PREFIXES
+    )
 
 
 def classify_evidence_plane_drift_path(path: str) -> EvidencePlaneDriftClass:
@@ -129,10 +134,16 @@ def classify_evidence_plane_drift_path(path: str) -> EvidencePlaneDriftClass:
     return EvidencePlaneDriftClass.BREAKING
 
 
-def classify_evidence_plane_drift(changed_paths: Iterable[str]) -> list[ClassifiedEvidencePlaneDrift]:
-    ordered = sorted({_normalize_repo_path(path) for path in changed_paths if path.strip()})
+def classify_evidence_plane_drift(
+    changed_paths: Iterable[str],
+) -> list[ClassifiedEvidencePlaneDrift]:
+    ordered = sorted(
+        {_normalize_repo_path(path) for path in changed_paths if path.strip()}
+    )
     return [
-        ClassifiedEvidencePlaneDrift(path=path, classification=classify_evidence_plane_drift_path(path))
+        ClassifiedEvidencePlaneDrift(
+            path=path, classification=classify_evidence_plane_drift_path(path)
+        )
         for path in ordered
     ]
 
