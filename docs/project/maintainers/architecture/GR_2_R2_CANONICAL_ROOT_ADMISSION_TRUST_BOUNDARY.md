@@ -1,10 +1,10 @@
 # GR-2-R2 — Canonical Root Admission Trust Boundary Architecture
 
-**Status:** Architecture design (no runtime implementation)  
-**Audit HEAD (design):** `e7d08f846c9a4a3b3f63439f6fad7cb0e1e79a7a` (`development`)  
-**Verdict:** `ARCHITECTURE_APPROVAL_RECOMMENDED`  
+**Status:** GR-2-R2-R1 corrected architecture (no runtime implementation)  
+**Audit HEAD (design):** `722143bc37ff4459e126e9118c2e9596fdbbe9db` (`origin/development` baseline for R1)  
+**Verdict:** `ARCHITECTURE_APPROVAL_RECOMMENDED` (candidate — independent audit required before GR-2-R3)  
 **Supersedes decision gap:** GR-2-R1 `ARCHITECTURAL_DECISION_REQUIRED` / GOV-GAP-013  
-**Implementation:** GR-2-R3 (blocked until operator approves this design)
+**Implementation:** GR-2-R3 (next after independent audit of this document)
 
 ---
 
@@ -115,7 +115,7 @@ Worker (AW)
 | Root execution request (intent, Task, payload) | Application / host adapter |
 | Root Governance decision (ALLOW/DENY/REQUIRE_HUMAN/ESCALATE/UNAVAILABLE) | Governance plane (`RuntimeExecutionPolicyAdmissionPort` + `RootExecutionAuthorityAdmissionPort`) |
 | Policy implementation (enterprise rules) | Composed plugin / `RuntimeExecutionPolicyAdmissionPort` implementation |
-| Trusted root authority (`ParentExecutionAuthority` mint) | **Only** `RootExecutionAuthorityAdmissionService` (Governance runtime), after policy ALLOW |
+| Admission-provenanced root authority (`ParentExecutionAuthority` on legal path) | **Only** via `RootExecutionAuthorityAdmissionService` after policy ALLOW on certified launcher path (value object remains constructible — see §10) |
 | Root admission sequencing (collaborative evidence → policy → mint → intake) | **Composition** (`RootExecutionLaunchPort` — new GR-2-R3 contract) |
 | Execution lifecycle / identity | Execution Engine (`ExecutionRuntime`, identity minting) |
 | Execution identity types | Platform contracts (frozen primitives) |
@@ -141,13 +141,37 @@ All root callers
 
 `ExecutionRuntime` remains Governance-unaware. Bypass closure = **no production-legal API** that accepts caller-supplied root authority without prior admission.
 
-### Option B — Frozen admission hook inside `ExecutionRuntime.execute`
+### Option B — Mandatory neutral root-admission hook inside `ExecutionRuntime.execute`
+
+Conceptual flow:
 
 ```text
-Application → ExecutionRuntime → RootGovernanceAdmissionPort (neutral contract) → execute body
+Application / composition
+    → ExecutionRuntime.execute(...)
+        → mandatory neutral RootGovernanceAdmissionPort (contract)
+        → policy via RuntimeExecutionPolicyAdmissionPort (composed implementation)
+        → ALLOW / block
+        → execution body (identity mint, boundary, strategies)
 ```
 
-**Rejected:** Duplicates intake seam; pushes Governance *invocation* into engine startup (even via neutral port, every caller must still hit runtime — direct runtime remains bypass); conflates with `ExecutionAdmissionHook` (validation) unless new port added — larger frozen surface with weaker “single outer trust boundary” story.
+**Bypass semantics (accurate):** If the hook is **mandatory** and **non-skippable** for every root `execute`, then **direct** `ExecutionRuntime.execute(...)` is **not** an admission bypass — the same code path runs admission before the execution body. Python visibility does not matter; runtime enforcement closes the bypass for any caller that reaches root `execute`.
+
+**No-bypass strength (runtime-enforced):** **HIGH** — comparable to mandatory intake enforcement inside the engine. Disadvantages are **architectural**, not “callers can skip admission by calling runtime directly.”
+
+**Rejected (valid trade-offs only):**
+
+| Reason | Impact |
+| --- | --- |
+| Reopens frozen `ExecutionRuntime.execute` startup semantics | **HIGH** blast radius on Execution Engine |
+| Root admission becomes engine lifecycle concern | Stronger coupling between authorization and execution identity mint |
+| New mandatory neutral contract **inside** frozen engine | Contract + composition changes in `runtime.py` domain |
+| Harder separation from `ExecutionAdmissionHook` | Validation vs Governance policy risk unless ports are strictly distinct |
+| HITL / REQUIRE_HUMAN at root | Admission disposition must align with frozen resume/continuation (GR-5) at engine boundary |
+| Direct internal child/root semantics | Child starts and engine-internal paths must not accidentally re-enter full root policy |
+| Plugin failure domain | Missing/timeout/invalid policy → **ExecutionRuntime root start failure** (startup domain) |
+| Single outer trust boundary story | Weaker than one explicit public launcher + demoted engine API for enterprise auditability |
+
+**Not a valid rejection reason:** “Direct `ExecutionRuntime.execute` remains bypass” — **false** when admission is mandatory inside `execute`.
 
 ### Option C — Sealed root launcher only (refinement of A)
 
@@ -155,23 +179,48 @@ Same as A, but one named contract `RootExecutionLaunchPort` wraps admission + in
 
 **Selected:** **Option C** (Option A + unified launcher contract). **No tie.**
 
+### 6.1 Primary security enforcement model (Option C only)
+
+Option C does **not** rely on Python making `ExecutionRuntime` uncallable. Internal APIs remain **technically callable**; production legality is enforced separately.
+
+**Chosen model: MODEL C1 — STRUCTURAL REPOSITORY ENFORCEMENT (architecture gates)**
+
+```text
+RootExecutionLaunchPort = only PUBLIC LEGAL PRODUCTION root start contract
+
+ExecutionRuntime.execute / Execution facade (root) / direct intake construction =
+INTERNAL CALLABLE APIs (illegal for production root starts outside allowlist)
+
+Mandatory CI architecture gates = security enforcement (not documentation advice)
+```
+
+> **Root admission security is enforced by platform API boundaries plus mandatory static architecture gates.**
+
+A root execution bypass must be **detectable deterministically before merge/deployment**. P0 bypass closure is **MANDATORY**; there is no “optional hardening if tests are insufficient.”
+
+**Not selected for Option C:** MODEL C2 (runtime trust proof / unforgeable admission artifact) — provenance-by-path plus gates is sufficient without new cryptographic proof types; intake already requires launcher-composed trusted authority flow (see §10).
+
+**Trust assumption:** Platform production source in `intergrax/**`, `agents/**`, `applications/**`, `platform_proofs/**` is trusted repository code. Untrusted extensions interact only through admitted plugin contracts (`RuntimeExecutionPolicyAdmissionPort`). Arbitrary malicious Python outside the repository is out of scope unless plugin sandboxing applies.
+
+**If a new production module imports and calls `ExecutionRuntime.execute` for a root start:** the **import/invocation architecture gate fails**, merge is **blocked**, module is **outside the production allowlist** (unless explicitly allowlisted, e.g. engine intake adapter).
+
 ---
 
 ## 7. Comparison matrix
 
-| Criterion | Option A | Option B | Option C |
-| --- | ---: | ---: | ---: |
-| No bypass | High (if public APIs demoted) | Medium (runtime entry still public) | **High** |
-| Frozen engine impact | Low | **High** (runtime.execute) | **Low** |
-| Layering correctness | **Yes** | Risky (engine invokes admission) | **Yes** |
-| Contract-first | **Yes** | Yes | **Yes** |
-| Pluginability | **Yes** | Yes | **Yes** |
-| Runtime coupling | **None** to Governance impl | Neutral port in engine | **None** |
-| Security strength | High | Medium | **High** |
-| Migration complexity | Medium | High | Medium |
-| Testability | High | High | **High** |
-| Backward compatibility risk | Medium (host refactor) | High | Medium |
-| Enterprise suitability | High | Medium | **High** |
+| Criterion | Option B (runtime hook) | Option C (launcher + gates) |
+| --- | ---: | ---: |
+| Runtime-enforced no bypass | **HIGH** (mandatory hook) | N/A (not runtime-enforced for internal APIs) |
+| CI architecture-enforced no bypass | Optional (hook may reduce need) | **MANDATORY** |
+| Frozen engine change | **HIGH** | **LOW** |
+| Governance / runtime coupling | Higher (admission in `execute`) | Lower (admission before intake) |
+| Layering | Valid if **neutral port only** (no Governance impl in engine) | **Clean** (engine unaware of Governance impl) |
+| Pluginability (`RuntimeExecutionPolicyAdmissionPort`) | **High** | **High** |
+| Failure-domain coupling | Higher (engine start fails on policy) | Lower (launcher/admission fails before engine) |
+| Migration complexity | **High** | Medium |
+| Security enforceability | **High** (runtime) | **High** (if gates mandatory) |
+| Enterprise suitability | Medium (engine reopen + audit story) | **High** |
+| Single public legal root API | Weak (runtime remains “the” entry) | **Strong** (`RootExecutionLaunchPort` only) |
 
 ---
 
@@ -215,13 +264,26 @@ ExecutionBoundary → strategies
 | `ExecutionAdmissionHook` | **EXECUTION VALIDATION** (lineage, hooks) — **not** Governance |
 | `ExecutionCapacityAdmissionPort` | **CAPACITY** — orthogonal, may deny after admission |
 
-### 8.3 Why Option C
+### 8.3 Why Option C (after corrected Option B analysis)
 
-- **Bypass:** Single outer port; host path aligned with AW; public self-serve authority injection removed from legal host flow.
-- **Layering:** Governance implements ports; engine consumes trusted authority at intake only; no `ConcreteGovernance` in `ExecutionRuntime`.
+- **Bypass closure:** Option B already achieves **high** runtime no-bypass; Option C achieves **high** enforceability via **mandatory** architecture gates + one **public legal** entry without reopening frozen `ExecutionRuntime.execute`.
+- **Enterprise auditability:** Explicit `RootExecutionLaunchPort` vs demoted internal engine APIs; separation of Governance admission from engine validation hooks.
+- **Layering:** Governance implements ports; engine consumes admission-provenanced authority at intake only; no concrete Governance in `ExecutionRuntime`.
 - **Pluginability:** `RuntimeExecutionPolicyAdmissionPort` remains swap-in; selection at composition/bootstrap (existing plugin infrastructure).
+- **Failure domain:** Policy/plugin failures block at launcher/admission, not inside engine root startup.
 - **Migration:** Reuse `RootExecutionAuthorityAdmissionService` + `CanonicalExecutionRuntimeAdapter`; generalize admission request for non-AW principals; retire parallel “host mints authority” step.
-- **Frozen impact:** Smaller than Option B (no mandatory policy call inside `runtime.py`).
+- **Frozen impact:** **Lower** than Option B (no mandatory neutral admission port inside `runtime.py`).
+
+### 8.4 Default launcher ownership (GR-2-R3)
+
+| Property | Decision |
+| --- | --- |
+| **Contract** | `RootExecutionLaunchPort` in `intergrax/contracts/` |
+| **Default implementation** | `DefaultRootExecutionLauncher` in `intergrax/runtime/governance/` (thin orchestrator — **no** policy engine, retry, HITL runtime, or evidence store) |
+| **Dependencies** | **Only** `RootExecutionAuthorityAdmissionPort` + `CanonicalExecutionIntakePort` (ports, not concrete services) |
+| **Not allowed** | Launcher executing business work; god-object lifecycle ownership |
+
+Application/bootstrap wires port implementations; launcher does not import Nexus or application packages.
 
 ---
 
@@ -239,18 +301,40 @@ ExecutionBoundary → strategies
 
 ---
 
-## 10. Trust artifact model
+## 10. Trust artifact model (anti-forgery)
 
-**`ParentExecutionAuthority` is sufficient for authorization semantics** (scopes, unrestricted flag, child narrowing) **but insufficient alone for anti-forgery** (any caller can construct `ParentExecutionAuthority.scoped(...)` today).
+### 10.1 Value object vs trusted production provenance
 
-**GR-2-R3 anti-forgery (no new primitive identity types):**
+| Concept | Meaning |
+| --- | --- |
+| `ParentExecutionAuthority` | Platform **value object** (scopes, narrowing) — **constructible** in Python today (`ParentExecutionAuthority.scoped(...)`, etc.) |
+| **Trusted production root authority** | Authority whose **provenance** is certified: produced only on the launcher → `RootExecutionAuthorityAdmissionPort` → ALLOW path and passed to intake by the launcher |
 
-1. **Structural:** Production-legal root path is **only** `RootExecutionLaunchPort` → admission mint → `CanonicalExecutionIntakePort`. Applications must not call `Execution.execute` with caller-built `RootExecutionOptions.authority`.
-2. **Minting monopoly:** Only `RootExecutionAuthorityAdmissionService.authorize` may attach `trusted_parent_execution_authority` on `RootExecutionAuthorityAdmissionResult` (already enforced by result invariants).
-3. **Intake coupling:** `CanonicalExecutionIntakeRequest` continues to require `ParentExecutionAuthority`; launcher is the only production composer of intake requests after admission.
-4. **Optional R3 hardening (if architecture tests insufficient):** package-private factory module `intergrax.runtime.governance.trusted_root_authority` exporting mint helper used **only** by admission service — intake accepts authority only when paired with admission result object (`RootExecutionAuthorityAdmissionResult`) in launcher closure (no new lineage/identity artifact).
+Do **not** claim “mint monopoly,” “cryptographically trusted,” or “unforgeable” for the value type alone. Use **admission-provenanced authority** for trust on the legal production path.
 
-**Do not** pluginize `TaskId` / `RunId` / `AttemptId` / `ExecutionId`.
+### 10.2 Trust model: provenance-by-path (selected)
+
+Authority is **trusted for production root start** only when created and forwarded on the certified path:
+
+```text
+RootExecutionLaunchPort
+    → RootExecutionAuthorityAdmissionPort.authorize (ALLOW)
+    → CanonicalExecutionIntakePort.dispatch (launcher-built request)
+```
+
+**Provenance-by-artifact** (separate `RootExecutionAdmissionProof` verified inside runtime) is **not** required for Option C when MODEL C1 gates are **mandatory**.
+
+### 10.3 Anti-forgery rules (MANDATORY for R3)
+
+1. **Legal API:** Production code may start root Execution **only** through `RootExecutionLaunchPort` (not by passing caller-built authority into `Execution` / `ExecutionRuntime` / intake).
+2. **Admission service:** Only `RootExecutionAuthorityAdmissionService` (via port) produces `RootExecutionAuthorityAdmissionResult.trusted_parent_execution_authority` after policy ALLOW — this is the **certified mint on the legal path**, not a claim that the value type is unconstructible elsewhere.
+3. **Intake coupling:** `CanonicalExecutionIntakePort` remains **mandatory internal engine intake** (trusted authority → runtime). Production modules outside the allowlist **must not** build `CanonicalExecutionIntakeRequest` for root starts.
+4. **Authority gate:** Production code outside allowlist **must not** use `resolve_root_parent_execution_authority(task.execution_authority)` (or equivalent) to supply root `ParentExecutionAuthority` for a production root start.
+5. **Architecture gates:** Any forbidden import/construction/invocation is a **deterministic CI failure** (§20).
+
+**Forgery question (target state):** Can production code construct `ParentExecutionAuthority`? **YES** (type is constructible). Can it **legally** start production root Execution with a self-built authority? **NO** — no legal API accepts it; direct internal calls are **gate violations**.
+
+**Do not** pluginize `TaskId` / `RunId` / `AttemptId` / `ExecutionId` (Execution Engine remains identity owner).
 
 ---
 
@@ -307,19 +391,34 @@ ExecutionRuntime (Execution Engine)
 
 ## 14. Public API / legal entry model
 
+### 14.1 Terminology (architecture-defined; not Python visibility)
+
+| Term | Definition |
+| --- | --- |
+| **PUBLIC LEGAL API** | The **only** production-approved contracts for the concern; CI gates enforce who may use them |
+| **INTERNAL CALLABLE API** | Types/methods remain importable/callable in Python but **illegal** for production root starts outside allowlist |
+| **TEST-ONLY API** | Direct engine/facade/intake access allowed under `tests/**`, `testing_support/**`, and explicit gate allowlists |
+| **COMPOSITION-ONLY API** | Wired only at platform bootstrap / certified adapters (intake adapter, launcher default impl, harness allowlists) |
+
+### 14.2 Classifications (post GR-2-R3)
+
+| Surface | Classification |
+| --- | --- |
+| `RootExecutionLaunchPort` | **THE ONLY PUBLIC LEGAL PRODUCTION ROOT START CONTRACT** |
+| `CanonicalExecutionIntakePort` | **Mandatory internal engine intake** (legal only as launcher downstream; not a second public root entry) |
+| `HostTaskExecutionPort` / `HostTaskExecution` | **HOST ADAPTER** — delegates to `RootExecutionLaunchPort`; **must not** independently mint root authority |
+| `WorkerExecutionDispatchService` | AW pre-admission / collaborative evidence → **generic `RootExecutionLaunchPort`**; no parallel canonical root start |
+| `Execution` facade (root start) | **INTERNAL / ENGINE COMPOSITION FACADE** for root starts |
+| `ExecutionRuntime.execute` (root) | **INTERNAL ENGINE API** — root starts only via `CanonicalExecutionRuntimeAdapter` in production allowlist |
+
 **LEGAL ROOT ENTRY (post R3):** `RootExecutionLaunchPort.launch(...)` (exact request type defined in R3-1).
 
-**INTERNAL / composition-only:**
-
-- `Execution.execute` (root) — host and apps migrate off
-- `ExecutionRuntime.execute` — intake adapter + controlled test helpers only
-- `CanonicalExecutionRuntimeAdapter` — wired at composition
-
-**PUBLIC API control (R3):**
+### 14.3 PUBLIC API control (MANDATORY in R3)
 
 - Narrow `intergrax.runtime.execution` package exports; document `__all__`
-- Architecture tests: `applications/` and `agents/` must not import `Execution` or `ExecutionRuntime` for root starts
-- Optional: `import-linter` layer rule — launcher contract lives in `intergrax/contracts/`
+- **Mandatory** architecture gates (§20) on `intergrax/**`, `agents/**`, `applications/**`, `platform_proofs/**`
+- Prefer **AST / import dependency** checks over brittle substring grep where feasible
+- Launcher contract remains in `intergrax/contracts/` (contract-first)
 
 ---
 
@@ -341,7 +440,7 @@ ExecutionRuntime (Execution Engine)
 | `task.execution_authority` | **UNTRUSTED REQUEST INPUT** (evidence of desired scopes; not minted trust) |
 | Collaborative / AW authority decision | **EVIDENCE** |
 | `PolicyDecision` / admission disposition | **EVIDENCE** |
-| `ParentExecutionAuthority` from admission ALLOW | **TRUSTED AUTHORIZATION ARTIFACT** |
+| `ParentExecutionAuthority` from admission ALLOW on launcher path | **ADMISSION-PROVENANCED AUTHORITY** |
 | `RootExecutionOptions` from application | **UNTRUSTED** unless produced inside launcher |
 | Execution request payload | **EXECUTION INPUT** |
 
@@ -375,7 +474,7 @@ ExecutionRuntime (Execution Engine)
 6. Add qualification tests (§20) and architecture gates.
 7. Remove temporary dual-path milestone in same release train (no “no admission → old path” fallback).
 
-**`WORKER_ROOT_EXECUTION_OPERATION` replacement:** Use stable operation IDs derived from **`ExecutionCapability`** / `ExecutionStrategy`, e.g. `root.execution.inference`, `root.execution.agent`, `root.execution.orchestration` (contract constants in `runtime_execution_policy_admission.py` or dedicated `root_execution_operation.py` contract module). Policy rules match on `execution_operation`; AW dispatch passes `root.execution.orchestration` (or agent) from request capabilities — **not** worker-specific string as hardcoded default in admission service.
+**`WORKER_ROOT_EXECUTION_OPERATION` replacement:** Introduce platform-owned **`RootExecutionOperation`** (or equivalent contract enum) for **authorization operation identity** — distinct from `ExecutionCapability` in `execution_request.py`, which describes **semantic work requirements** (agent/tools/orchestration/streaming), not policy operation keys. Stable values e.g. `root.execution.inference`, `root.execution.agent`, `root.execution.orchestration` in `runtime_execution_policy_admission.py` or `root_execution_operation.py`. Policy rules match on `execution_operation`; launcher maps strategy/host context → operation; admission service **must not** hardcode worker-only default.
 
 ---
 
@@ -411,10 +510,56 @@ ExecutionRuntime (Execution Engine)
 | Same-execution resume | No second root admission |
 | New attempt | Fresh admission |
 
-**Architecture tests (proposed):**
+### 20.1 Mandatory architecture gates (GR-2-R3 — security enforcement)
 
-- `applications/` may not reference `ExecutionRuntime.execute` for roots
-- Execution engine modules must not import `intergrax.runtime.governance.*` implementations (except allowed adapter packages per layer rules)
+Gate ownership: **`tests/unit/runtime/architecture/`** (or sibling qualification layer) — platform certification, not runtime.
+
+| Gate type | Enforces |
+| --- | --- |
+| **Import gate** | Who may import `ExecutionRuntime`, root `Execution` facade paths, internal intake types |
+| **Construction gate** | Who may construct `RootExecutionOptions`, `CanonicalExecutionIntakeRequest` for production root |
+| **Authority gate** | Who may call `resolve_root_parent_execution_authority` / attach root `ParentExecutionAuthority` for production start |
+| **Invocation gate** | Who may call `ExecutionRuntime.execute` / facade root `execute` for production root |
+
+**Illustrative test modules (implement in R3):**
+
+- `test_no_production_direct_execution_runtime_root_calls.py`
+- `test_no_production_execution_facade_root_calls.py`
+- `test_only_launcher_builds_root_intake.py`
+- `test_only_admission_service_mints_trusted_root_authority_on_legal_path.py`
+
+### 20.2 Production allowlist (design)
+
+Modules/categories **allowed** to invoke internal root engine APIs or build root intake (non-exhaustive; refine in R3 against repo topology):
+
+| Allowlisted role | Examples (repository paths) |
+| --- | --- |
+| Intake → runtime bridge | `intergrax/runtime/execution/canonical_intake_adapter.py` |
+| Engine internal root wiring | `intergrax/runtime/execution/runtime.py`, `facade.py` (internal composition only) |
+| Certified qualification / architecture tests | `tests/**`, `testing_support/**` (scoped fixtures) |
+| Platform proofs (explicit subpaths only) | `platform_proofs/**` only where scenario manifest declares engine-direct shim (not general feature code) |
+
+**Explicitly forbidden** for production root start via internal APIs:
+
+- `applications/**` (including `_shared` harness after migration — harness must use launcher)
+- `agents/**`
+- General feature / business modules in `intergrax/**` outside engine + launcher + intake adapter
+- Any module constructing root intake or root authority without going through `RootExecutionLaunchPort`
+
+### 20.3 Option C acceptance conditions (all MANDATORY)
+
+1. Only `RootExecutionLaunchPort` is legal public root entry  
+2. Direct runtime/facade root usage classified internal  
+3. CI static architecture gates prohibit forbidden production imports/calls  
+4. Host migrates to launcher  
+5. AW migrates to launcher  
+6. No second authority mint path on legal production flow  
+7. INFERENCE / AGENTIC / ORCHESTRATION share same legal entry  
+8. Policy missing / exception / timeout / invalid output / incompatible version → **fail closed**  
+9. Authority widening impossible (existing admission invariants)  
+10. Architectural gates part of **mandatory** platform qualification (not optional)
+
+**Invariant:** A root execution bypass must be detectable deterministically before merge/deployment.
 
 ---
 
@@ -446,7 +591,7 @@ ExecutionRuntime (Execution Engine)
 | R3-2 | `DefaultRootExecutionLauncher` composition (admission + intake) |
 | R3-3 | `HostTaskExecution` integration + harness wiring |
 | R3-4 | `WorkerExecutionDispatchService` → launcher; remove duplicate semantics |
-| R3-5 | Public API demotion + architecture tests (bypass closure) |
+| R3-5 | Public/internal API enforcement + **mandatory** architecture gates (import/construction/authority/invocation) |
 | R3-6 | Inference qualification scenarios |
 | R3-7 | Agentic qualification scenarios |
 | R3-8 | Orchestration / AW qualification scenarios |
@@ -460,15 +605,18 @@ ExecutionRuntime (Execution Engine)
 
 | Threat | Mitigation |
 | --- | --- |
-| Caller bypasses Governance | Mandatory `RootExecutionLaunchPort`; demote direct facade/runtime |
-| Forged `ParentExecutionAuthority` | Mint monopoly + intake-only root runtime entry |
-| Stale admission across new attempt | Re-admit on new `AttemptId` |
+| Caller bypasses Governance | **MANDATORY** `RootExecutionLaunchPort`; internal facade/runtime; **MANDATORY** CI gates |
+| Forged `ParentExecutionAuthority` | Provenance-by-path; no legal API accepts caller-built root authority; gates block direct intake/runtime |
+| Stale admission across new attempt | Re-admit on new `AttemptId` (§17) |
 | Scope widening | Existing narrowing in admission service |
-| Plugin missing/crash/timeout | FAIL CLOSED → UNAVAILABLE/DENY; adapter timeouts (GR-11) |
-| Malicious plugin | Provenance + deny; no widen |
-| Direct runtime/facade call | Architecture tests + non-export |
-| Strategy-specific bypass | Single launcher; operation from `ExecutionCapability` |
+| Plugin missing / exception / timeout / invalid output / incompatible version | **FAIL CLOSED** → UNAVAILABLE/DENY; adapter timeouts (GR-11) |
+| Malicious plugin | Typed `RuntimeExecutionPolicyAdmissionPort` result only; no raw runtime authority to plugin; provenance + deny |
+| Direct runtime/facade call in production | **Deterministic architecture gate failure**; merge blocked |
+| Strategy-specific bypass | Single launcher; `RootExecutionOperation` per strategy (not parallel entry points) |
 | Resume confused with new root | Lifecycle rules in §17 |
+| Reflection / dynamic calls in repo code | Same static gates on import/call patterns in production trees; malicious arbitrary Python out of scope (§6.1) |
+
+**Plugin threat model:** External policy plugin never receives `ExecutionRuntime` or mint authority; it returns typed policy disposition through `RuntimeExecutionPolicyAdmissionPort` only.
 
 ---
 
@@ -503,7 +651,9 @@ Remains **execution validation** (lineage activation, physical hooks). **Not** r
 
 ## 28. Architectural verdict
 
-**`ARCHITECTURE_APPROVAL_RECOMMENDED`** — pending operator acceptance before GR-2-R3.
+**`ARCHITECTURE_APPROVAL_RECOMMENDED`** — GR-2-R2-R1 corrections applied (Option B bypass accuracy, MODEL C1 enforcement, anti-forgery nomenclature, mandatory gates). **Independent audit required** before GR-2-R3 implementation.
+
+**GR-2-R2-R1 status:** **DONE** (architecture correction only).
 
 ---
 
