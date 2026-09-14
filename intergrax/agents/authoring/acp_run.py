@@ -7,6 +7,9 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from intergrax.agents.authoring.acp_execution_budget_wiring import (
+    resolve_acp_execution_budget_ledger_factory,
+)
 from intergrax.agents.authoring.acp_session_host import (
     ACP_HOST_CONTEXT_KEY,
     ACPSessionHostContext,
@@ -235,11 +238,17 @@ async def run_acp_session(
         bind_root_execution_budget,
         reset_active_execution_budget,
     )
-    from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 
+    budget_ledger_factory = resolve_acp_execution_budget_ledger_factory(host)
+    budget_ledger = budget_ledger_factory.create_ledger(
+        None,
+        tenant_id=merged.tenant_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
     budget_token = bind_root_execution_budget(
         execution_id=execution_id,
-        ledger=create_execution_budget_ledger(None),
+        ledger=budget_ledger,
     )
     try:
         return await _run_acp_session_bound(

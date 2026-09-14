@@ -94,6 +94,11 @@ def resolve_harness_host_decision_flow_gate(
     return _require_internal_composition(runtime).decision_flow_gate
 
 
+def resolve_harness_host_nexus_loop(runtime: HarnessHostRuntime) -> NexusLoop:
+    """Resolve orchestration backend for host-scoped execution composition."""
+    return _require_internal_composition(runtime)._orchestration_backend
+
+
 def resolve_harness_host_middleware_pipeline(runtime: HarnessHostRuntime) -> MiddlewarePipeline:
     """Resolve middleware pipeline for platform assembly verification."""
     return _require_internal_composition(runtime).middleware_pipeline
@@ -159,5 +164,6 @@ __all__ = [
     "resolve_harness_host_execution_terminal",
     "resolve_harness_host_lifecycle_hook_coordinator",
     "resolve_harness_host_middleware_pipeline",
+    "resolve_harness_host_nexus_loop",
     "resolve_harness_host_runtime_event_persistence",
 ]

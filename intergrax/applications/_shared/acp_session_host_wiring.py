@@ -13,7 +13,9 @@ from intergrax.applications._shared.declarative_tool_wiring import (
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_decision_flow_gate,
+    resolve_harness_host_nexus_loop,
 )
+from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.applications._shared.runtime_boundary_adapters import (
     agent_binding_to_run_binding,
@@ -27,12 +29,14 @@ def build_acp_session_host_context(
     binding: AgentBinding | None = None,
     declarative_tool_invoker: Any = None,
     decision_flow_gate: Any = None,
+    execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
 ) -> ACPSessionHostContext:
     return ACPSessionHostContext(
         runtime_profile=application_profile_to_runtime_profile(app_profile),
         binding=agent_binding_to_run_binding(binding),
         declarative_tool_invoker=declarative_tool_invoker,
         decision_flow_gate=decision_flow_gate,
+        execution_budget_ledger_factory=execution_budget_ledger_factory,
     )
 
 
@@ -50,9 +54,11 @@ def build_acp_session_host_from_harness(
         tenant_id=runtime.tenant_id,
         idempotency_store=runtime.reliability.idempotency_store,
     )
+    nexus_loop = resolve_harness_host_nexus_loop(runtime)
     return build_acp_session_host_context(
         app_profile=runtime.environment,
         binding=binding,
         declarative_tool_invoker=invoker,
         decision_flow_gate=resolve_harness_host_decision_flow_gate(runtime),
+        execution_budget_ledger_factory=nexus_loop.execution_budget_ledger_factory,
     )
