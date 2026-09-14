@@ -2,6 +2,22 @@
 
 **Parent hub:** [`UNIFIED_EXECUTION_RUNTIME.md`](../UNIFIED_EXECUTION_RUNTIME.md)
 
+## HARNESS-Y3 canonical sync (2026-09-14)
+
+**Parent relationship:** Extended engineering depth (§42.8+) — subordinate to [UER hub](../UNIFIED_EXECUTION_RUNTIME.md) frozen-core statement.
+
+| Dimension | Status |
+|-----------|--------|
+| **Execution Engine core** | **FROZEN / ENTERPRISE-QUALIFIED** — sole legal execution authority; do not describe core identity, boundary, router, or certified recovery as PARTIAL or future work here |
+| **Consumer / product adoption** | **PARTIAL** where noted in UER hub — background intake, observability projection, legacy routing |
+| **This satellite** | Historical orchestration and Nexus-era flows; Nexus is **one strategy path**, not a mandatory spine for all execution |
+
+**Background execution:** consumers of execution identity and dmit_background_execution_reentry — not parallel runtimes. Canonical ownership: [BACKGROUND_TASKS.md](../BACKGROUND_TASKS.md).
+
+**Rule:** Do not label frozen core PARTIAL because a background consumer or product host lags adoption.
+
+---
+
 ## 42.8 Execution Interrupt Model
 
 **Interrupts** are formal, structured requests to change global execution flow.

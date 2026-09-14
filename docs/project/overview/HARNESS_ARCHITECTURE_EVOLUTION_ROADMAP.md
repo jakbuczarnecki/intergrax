@@ -987,7 +987,7 @@ Capability descriptors should include:
 
 # 29. Initiative Y — Documentation architecture synchronization
 
-**Status:** **PARTIAL** — **Y1 + Y2 DONE** (2026-09-14): frozen Execution **CURRENT** sync in UEA, UER, `NEXUS_EXECUTION_FLOW.md`, and hub registry (**Y1**); Observability + Diagnostics primary architecture CURRENT sync — five-ID frozen contract vs adoption gaps, contract-first export/persistence, Diagnostics authority boundaries (**Y2**). Remaining Initiative Y drift: UER satellites, Background Tasks, maintainer plan CURRENT rows, public/community maps.
+**Status:** **PARTIAL** — **Y1 + Y2 + Y3 DONE** (2026-09-14): frozen Execution **CURRENT** sync in UEA, UER, `NEXUS_EXECUTION_FLOW.md`, and hub registry (**Y1**); Observability + Diagnostics primary architecture CURRENT sync (**Y2**); Background Tasks + UER runtime extended satellite + UER maintainer plan adoption split — background as Execution consumer, ownership matrix, BG-EXEC intake CURRENT vs handler admission adoption gaps (**Y3**). Remaining Initiative Y drift: public/community maps, non-primary maintainer rows, diagrams outside Y3 file budget.
 
 ## Priority (post EE1)
 

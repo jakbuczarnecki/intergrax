@@ -1001,3 +1001,15 @@ Unrelated dirty worktree (unit test files under `tests/unit/…`, `testing_suppo
 **Stale claims removed:** `ExecutionId` as TARGET-only on `RuntimeEvent`; “migrated paths / PARTIAL contract” wording conflating projection lag with core identity; DIAG implying `ExecutionId` not yet on canonical events.
 
 **Extensibility gaps (report only):** Runtime Invariant Service (Initiative N); full OBS-COVERAGE-1 writer certification; journal Execution Tree projection adoption.
+
+## HARNESS-Y3 addendum (2026-09-14)
+
+**Audited / synchronized:** [`BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md), [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](../../architecture/satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md), [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) plan hub §UE-DOC-0.4.
+
+**Corrected claims:** Background Tasks as parallel execution runtime / `WorkerRuntime` as execution authority; stale “mint new `AttemptId` on every worker redelivery” (superseded by persisted transport identity + `admit_background_execution_reentry`); conflating frozen Execution core PARTIAL with consumer adoption.
+
+**Implementation / adoption debt (report only):** universal `execution.execute` admission for all `TaskHandler` paths; formal `TaskRegistry` port; enqueue-side transport envelopes with full runtime identity.
+
+**Extensibility gaps (report only):** `TaskRegistry` port ABC; unified worker provider port beyond concrete worker classes.
+
+**Remaining doc drift (Initiative Y, post-Y3):** public/community maps, `DECISION_SYSTEM.md` cross-refs, diagrams and non-primary maintainer CURRENT rows outside Y3 scope.
