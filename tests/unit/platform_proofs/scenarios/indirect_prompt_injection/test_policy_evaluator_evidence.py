@@ -14,6 +14,9 @@ from platform_proofs.scenarios.indirect_prompt_injection.application.scenario im
 from platform_proofs.scenarios.indirect_prompt_injection.application.tools import (
     TOOL_ORDER_UPDATE_SHIPPING_ADDRESS,
 )
+from platform_proofs.scenarios.indirect_prompt_injection.application.order_workflow import (
+    matched_policy_rule_ids_from_evaluations,
+)
 from platform_proofs.scenarios.indirect_prompt_injection.application.workflows import (
     READ_ONLY_DENY_RULE_ID,
     WorkflowKind,
@@ -42,6 +45,17 @@ from platform_proofs.scenarios.indirect_prompt_injection.proof.evidence_builder 
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_matched_rule_ids_derived_from_platform_policy_evaluations() -> None:
+    evaluations = (
+        {
+            "tool_id": TOOL_ORDER_UPDATE_SHIPPING_ADDRESS,
+            "action": "deny",
+            "matched_rule_ids": [READ_ONLY_DENY_RULE_ID],
+        },
+    )
+    assert matched_policy_rule_ids_from_evaluations(evaluations) == (READ_ONLY_DENY_RULE_ID,)
 
 
 def test_read_only_policy_profile_denies_write_tool() -> None:
@@ -261,5 +275,5 @@ def test_evidence_includes_model_participant() -> None:
     )
     participant_ids = {participant.participant_id for participant in evidence.participants}
     assert "llm_provider" in participant_ids
-    assert "nexus_runtime" in participant_ids
+    assert "intergrax_execution_engine" in participant_ids
     assert "order_service" in participant_ids

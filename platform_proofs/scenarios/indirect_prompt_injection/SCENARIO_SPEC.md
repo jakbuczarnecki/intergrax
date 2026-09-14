@@ -480,7 +480,7 @@ RuntimeToolInvoker
 ↓
 DeclarativePolicyEnforcer - DENY
 ↓
-TRACE - policy evaluation + denial diagnostic
+TRACE - DeclarativePolicyEvaluationDiagV1 (platform policy authority)
 ↓
 ToolExecutor NOT INVOKED - no PATCH / mutation call issued
 ↓

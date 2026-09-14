@@ -364,11 +364,11 @@ def build_platform_proof_evidence(
     )
 
     participant_platform = ParticipantEvidence(
-        participant_id="nexus_runtime",
-        name="Intergrax Nexus Runtime",
+        participant_id="intergrax_execution_engine",
+        name="Intergrax Execution Engine",
         implementation="Intergrax",
         version_or_model="development",
-        role="ToolRuntime and declarative policy enforcement",
+        role="Canonical execution, governed tool invocation, declarative policy enforcement",
         participant_class=ParticipantClass.PLATFORM,
     )
     participant_model = ParticipantEvidence(
