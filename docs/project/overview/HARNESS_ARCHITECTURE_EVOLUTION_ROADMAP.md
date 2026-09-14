@@ -6,12 +6,19 @@ This document is the canonical cross-domain roadmap for the next stage of Interg
 
 It coordinates work across existing semantic domains. It does **not** replace domain architecture documents and it must never become a second semantic authority.
 
-**As-built audit baseline:** `development @ 38e5b54726f7b6e3861c59754b99dad7e52caf6f`, validated on 2026-09-02.
+**As-built audit baseline:** `development @ a189282b35e7a4ac549489f0d06b7acd271e9a5b`, re-baselined on 2026-09-14 (task **HARNESS-REBASE-EE1**).
 
-The roadmap is deliberately based on repository reality, not only architecture intent. Before any implementation session, the relevant CURRENT/PARTIAL/GAP statements must be revalidated against the then-current `development` HEAD.
+**Execution Engine position (evidence-backed):** the canonical Execution Engine is **enterprise-qualified, frozen, and the sole legal platform execution authority**. Harness evolution work must compose through that boundary or close illegal bypass/adoption gaps — not re-converge or reimplement the engine.
+
+The roadmap is deliberately based on repository reality, not only architecture intent. Before any implementation session, the relevant status labels must be revalidated against the then-current `development` HEAD.
+
+**Qualification evidence (Execution freeze, non-exhaustive):** [`NPSC_3C_EXECUTION_ENGINE_FREEZE_CERTIFICATION.md`](../maintainers/qualification/NPSC_3C_EXECUTION_ENGINE_FREEZE_CERTIFICATION.md), [`EXECUTION_ENGINE_ENTERPRISE_VERIFICATION.md`](../maintainers/qualification/EXECUTION_ENGINE_ENTERPRISE_VERIFICATION.md), [`NPSC_4_1_EXECUTION_BOUNDARY_HARDENING_FINAL_CERTIFICATION.md`](../maintainers/qualification/NPSC_4_1_EXECUTION_BOUNDARY_HARDENING_FINAL_CERTIFICATION.md), [`NPSC_5E_FINAL_RECOVERY_PLANE_QUALIFICATION_AND_FREEZE.md`](../maintainers/qualification/NPSC_5E_FINAL_RECOVERY_PLANE_QUALIFICATION_AND_FREEZE.md), [`EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md`](../maintainers/qualification/EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md), [`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../maintainers/qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md).
+
+**P0A / as-built companion:** [`HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT.md`](../maintainers/plans/HARNESS_ARCHITECTURE_EVOLUTION_P0A_AS_BUILT_AUDIT.md) (includes EE1 re-baseline addendum).
 
 Status labels:
 
+- **FROZEN / ENTERPRISE** — frozen contracts, enterprise qualification, and architecture gates; no fundamental reimplementation in harness roadmap work (consumer adoption and conformance only).
 - **CURRENT** — real implementation and/or canonical contract exists and is usable as a foundation.
 - **PARTIAL** — substantial implementation exists, but convergence, migration, hardening, proof, or adoption remains.
 - **GAP** — materially missing from canonical runtime paths.
@@ -72,6 +79,22 @@ Adaptive, Governed Evolution
 
 The goal is not to create a universal god-object. Existing semantic domains remain authoritative and must compose through explicit contracts.
 
+### Frozen Execution invariant (platform)
+
+```text
+All executable platform work MUST enter through an approved Execution Engine boundary.
+```
+
+No Application, API, SDK, MCP/ACP adapter, Agent, Decision System, Scheduler, background worker, delegation mechanism, provider, integration, plugin, diagnostics remediation path, or orchestration subsystem may establish an alternate legal platform execution path.
+
+**Nexus invariant:**
+
+```text
+Nexus = private/internal orchestration implementation inside the Execution Engine strategy layer.
+```
+
+Nexus is not a public execution contract, platform execution authority, public provider integration surface, alternative execution engine, or generic application entry point. Cross-domain consumers must bind to Execution-owned stable ports where they exist.
+
 ---
 
 # 2. Canonical ownership decisions
@@ -95,8 +118,9 @@ An overlay, read model, preset, inspector, or effective view is never an indepen
 
 ## 2.2 Domain ownership remains distributed
 
-- UER owns execution lifecycle, execution identity, admission coordination, strategy routing coordination, and execution-tree runtime semantics.
-- Nexus owns accepted orchestration topology decisions and what executes next.
+- **Execution Engine (UER)** owns execution lifecycle, execution identity, admission coordination, strategy routing, retry/recovery/checkpoint semantics on canonical paths, and execution-tree runtime semantics (**frozen foundation** — see §1).
+- **Nexus** implements private orchestration topology execution **inside** the Execution strategy layer; it does not mint root identity, own public execution contracts, or replace UER admission.
+- **Decision System** owns decision semantics and authoritative decision lifecycle outcomes; it is a semantic capability **hosted by** Execution, not a second runtime. Council is a Decision Strategy, not scheduler/runtime authority.
 - Governance owns policy, authority, approval, and meaningful-side-effect authorization decisions.
 - Budget owns allowance, reservation, consumption, release, and enforcement semantics.
 - Tools own executable tool contracts and ToolRuntime semantics.
@@ -106,7 +130,7 @@ An overlay, read model, preset, inspector, or effective view is never an indepen
 - Memory owns persistent memory semantics.
 - RAG owns governed retrieval semantics.
 - Observability/HOS records canonical platform facts and historical projections.
-- DIAG interprets canonical evidence; it does not create execution truth.
+- **Diagnostics (DIAG)** interprets canonical evidence into `Problem` state; it does not create execution truth or mint execution identity.
 - Checkpoint/recovery owns durable restore state, not identity authority.
 - Platform Plugins own package/control-plane coordination, not Tool/Skill/RAG/Memory runtime semantics.
 - Runtime interaction intake owns inbound interaction normalization; human continuation interaction remains a distinct runtime seam.
@@ -132,6 +156,23 @@ Provider
 ```
 
 Consumers must not depend directly on concrete providers when a provider-neutral contract exists or should exist.
+
+## 2.5 Cross-domain ownership matrix (execution-adjacent)
+
+Planning aid only — domain architecture documents remain authoritative.
+
+| Concern | Owner |
+| --- | --- |
+| execution lifecycle | Execution Engine |
+| execution identity | Execution Engine |
+| strategy routing | Execution Engine |
+| orchestration implementation | private Execution Engine / Nexus |
+| decision semantics | Decision System (hosted by Execution) |
+| authorization | Governance |
+| diagnostic interpretation | Diagnostics |
+| canonical execution evidence | Execution / Observability spine (`RuntimeEvent`, HOS) |
+| runtime invariant evaluation | **GAP** — no shared invariant runner catalog (Initiative N) |
+| provider dispatch (delegation) | `DelegatedExecutionProvider` contract under frozen Execution boundary |
 
 ---
 
@@ -225,7 +266,7 @@ These invariants must be reflected in canonical documentation, code, conformance
 
 | ID | Initiative | As-built status | Canonical owner / existing area | Change type |
 |---|---|---|---|---|
-| A | Unified Execution convergence | **CURRENT / PARTIAL** | UER / UEA | finish convergence + proof |
+| A | Unified Execution convergence | **FROZEN / ENTERPRISE** | UER / UEA | adoption audits + conformance only |
 | B | Profile resolution and effective composition | PARTIAL | Applications / environment profile | consolidation + DX |
 | C | Runtime inspection and explanation | GAP / PARTIAL | read models over canonical facts | new read-model + DX |
 | D | Reconstructable model execution | PARTIAL | CE + HOS + UER evidence | hardening |
@@ -233,13 +274,13 @@ These invariants must be reflected in canonical documentation, code, conformance
 | F | Canonical ToolRuntime pipeline | CURRENT / PARTIAL | Tools / ToolRuntime | safety + convergence |
 | G | Runtime credentials and secret references | PARTIAL | security/secrets/integrations | provider seam + late resolution |
 | H | Execution sandbox and isolation | CURRENT / PARTIAL | runtime sandbox + security + execution | convergence |
-| I | Subagent and external-agent providers | PARTIAL / TARGET | delegation + UER + Nexus | provider seam |
+| I | Subagent and external-agent providers | PARTIAL | `DelegatedExecutionProvider` + UER | P2.1-S2 adoption (not Nexus public API) |
 | J | Background Execution control | CURRENT / PARTIAL | Background Tasks + UER | convergence + DX |
 | K | Verified external event intake | PARTIAL | interactions/integrations + UER | generalization + durability |
 | L | Artifacts, attachments, spill | PARTIAL | artifacts/storage + CE + tools | consolidation |
 | M | Context compaction and retention | PARTIAL / TARGET | CE/UCL/token optimization | hardening |
-| N | Runtime invariant service | GAP / PARTIAL | domain checks + diagnostics | shared runner, domain-owned rules |
-| O | Dynamic orchestration proposals | TARGET | Orchestration/Nexus/Governance | proposal path |
+| N | Runtime invariant service | **GAP** | domain checks + diagnostics | shared runner, domain-owned rules |
+| O | Dynamic orchestration | **PARTIAL** (topology exec) / **TARGET** (governed live reconfig) | Execution strategy / Nexus (private) + Governance | fan-out/fan-in/recovery shipped; proposal/governance path open |
 | P | Capability Skills + Instruction Skills | CURRENT / PARTIAL / GAP | Skills + CE | safety fixes + instructional type |
 | Q | Dynamic/reversible runtime registration | PARTIAL | Platform Plugins + domain registries | scoped runtime lifecycle only |
 | R | Governance UX and permission presets | CURRENT / PARTIAL | Governance/HITL/ToolRuntime/sandbox | DX + hardening |
@@ -249,71 +290,49 @@ These invariants must be reflected in canonical documentation, code, conformance
 | V | Process/filesystem/terminal/code providers | PARTIAL / OPTIONAL | tools/execution providers | provider-first |
 | W | SDK/API/ACP/MCP/host convergence | PARTIAL | host/application boundaries + UER | convergence |
 | X | Generated architecture/capability metadata | PARTIAL | tooling/control plane | automation |
-| Y | Documentation architecture synchronization | PARTIAL | documentation canon | re-baseline + simplification |
+| Y | Documentation architecture synchronization | **URGENT / PARTIAL** | documentation canon | stale UER/Nexus/Critic claims vs frozen EE |
 | Z | Security/trust/supply-chain hardening | PARTIAL | security/governance/plugins | hardening |
 | AA | Memory and RAG hardening | CURRENT / PARTIAL | Memory + RAG + CE | hardening |
 | AB | AHI expansion | CURRENT / PARTIAL | AHI + Evaluation/HOS | controlled expansion |
 | AC | Governed Runtime Evolution | GAP / LATE TARGET | sandbox + UER + Governance + Plugins + AHI | strategic capability |
 | AD | Test and qualification infrastructure | PARTIAL | test-support + qualification + proofs | hardening |
 | AE | Developer/operator experience | PARTIAL | CLI/docs/inspection | DX |
-| AF | Checkpoint, durability, and recovery convergence | **CURRENT / PARTIAL** | long-running runtime + UER + reliability | close remaining durability gaps |
+| AF | Checkpoint, durability, and recovery convergence | **FROZEN / PARTIAL** | NPSC-5E recovery plane + UER | consumer/adoption gaps; plane frozen |
 | AG | Effective capability health/readiness | GAP / PARTIAL | operational projection over domain facts | read-model + lifecycle |
 | AH | Controlled live composition reconfiguration | GAP / TARGET | ProfileResolution + lifecycle + UER | later controlled reconfiguration |
 | AI | Human continuation interaction seam | PARTIAL | Governance/HITL/host interaction | convergence |
+| DS | Decision System (cross-cutting) | **CURRENT / QUALIFIED** | Decision capability hosted by Execution | integration/adoption hardening, not second runtime |
+| DIAG | Central Diagnostics (cross-cutting) | **CURRENT / ENTERPRISE** | `intergrax/runtime/diagnostics` | adoption matrix + bounded read paths; not Runtime Invariant Service |
 
-This matrix is a planning baseline, not a permanent truth. P0A below revalidates it before implementation.
+This matrix is a planning baseline, not a permanent truth. Revalidate against `development` HEAD before implementation.
 
 ---
 
-# 5. Initiative A — Unified Execution Runtime convergence
+# 5. Initiative A — Unified Execution Runtime (frozen foundation)
 
-## Current reality
+## Verdict (HARNESS-REBASE-EE1 @ `a189282b…`)
 
-The repository already contains substantial canonical UER implementation:
+**Status: FROZEN / ENTERPRISE — sole canonical execution authority.**
 
-- canonical `ExecutionId`,
-- root execution identity/context,
-- `ExecutionRuntime`,
-- strategy-neutral `ExecutionBoundary`,
-- active Run/Attempt/Execution binding,
-- `parent_execution_id`,
-- `ChildExecutionRunner`,
-- child authority resolution,
-- child budget allocation/reservation/release,
-- `StrategyExecutionRouter`,
-- inference/agentic/orchestration strategy surfaces,
-- `RuntimeEvent.execution_id`,
-- graph-node work routed through child Executions on canonical paths,
-- Execution-tree checkpoint models.
+Enterprise freeze and post-freeze gap audit confirm: frozen contracts, single identity/lifecycle owner, architecture bypass gates, and qualification closure (NPSC-3C through EE-FINAL; recovery plane NPSC-5E Final). **Do not treat Initiative A as a greenfield convergence or reimplementation program.**
 
-Therefore the task is **not** to invent these concepts again.
+Evidence anchors (code + gates):
 
-## Remaining work
+- identity mint: `intergrax/runtime/execution/identity_authority.py` + `test_execution_identity_single_authority_gate`
+- lifecycle/admission: `ExecutionRuntime`, `ExecutionBoundary`, `HostTaskExecutionPort`
+- strategy routing: `StrategyExecutionRouter` (Nexus only behind orchestration strategy)
+- bypass protection: `test_ee_final_arch_zero_execution_bypass.py`, `test_platform_execution_unification_u5_final_zero_bypass.py`, `EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md` (supported bypass **0** on inventory)
+- retry/recovery/checkpoint: NPSC-5E Final recovery plane freeze
 
-1. Audit every public and internal entry path for canonical UER adoption.
-2. Remove/bound remaining private execution identities or bypasses.
-3. Complete Execution Tree lineage queries and subtree cancellation where incomplete.
-4. Finish cancellation propagation across local, remote, background, model, tool, and delegated work.
-5. Complete pause/resume semantics at all supported Execution boundaries.
-6. Freeze and enforce retry ownership taxonomy:
-   - provider/tool/internal retry,
-   - Execution retry generation,
-   - transport redelivery,
-   - whole-Run retry.
-7. Finish hierarchical budget dimensions, including:
-   - tokens,
-   - money,
-   - tool calls,
-   - child execution count,
-   - concurrency,
-   - wall-clock,
-   - agent-loop/step limits.
-8. Converge Execution Environment semantics without creating a new authority.
-9. Converge neutral Execution Result ABI where legacy agent-centric results leak upward.
-10. Ensure distributed worker/redelivery paths preserve logical runtime identity.
-11. Prove inference, agentic, orchestration, delegated, background, and resumed flows on the same runtime spine.
+Residual **non-foundation** work (other initiatives / adoption tasks):
 
-**Acceptance:** remaining work is convergence and proof, not reimplementation of existing UER foundations.
+1. Consumer adoption audits (hosts, agents, SDK surfaces) — prefer Execution-owned ports over Nexus types.
+2. Conformance re-verification when touching ingress adapters (no production changes to frozen `intergrax/runtime/execution/` without architectural reopening).
+3. Documented residual intake debt (e.g. `task_run_bridge.mint_intake_execution_identity`) — track under adoption/hardening, not “finish UER convergence.”
+4. Execution Environment semantics, neutral Result ABI leaks, and extended budget dimensions — bounded hardening only.
+5. Explicitly reopened architecture work only via qualification-gated reopening — not harness roadmap default.
+
+**Acceptance:** Initiative A is **closed as a foundation**. New execution features compose through the frozen boundary.
 
 ---
 
@@ -533,7 +552,17 @@ Do not rebuild existing sandbox providers solely for parity.
 
 # 13. Initiative I — Subagent and external-agent providers
 
-Create one provider-neutral delegation seam over existing execution/delegation semantics.
+## Current reality
+
+**P2.1-S1 — `DelegatedExecutionProvider` contracts + `LocalDelegatedExecutionProvider` = CLOSED.**
+
+Contract: `intergrax/contracts/delegated_execution_provider.py`  
+Reference provider: `intergrax/runtime/execution/delegated_execution/local_provider.py`  
+Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`
+
+## Remaining work (P2.1-S2 — adoption, not new seam)
+
+Integrate external/subagent providers **through the frozen Execution Engine boundary** (child Execution admission, authority/budget inheritance). Do **not** route public delegation through Nexus APIs or Nexus-specific consumer contracts.
 
 Potential providers:
 
@@ -663,6 +692,8 @@ Compaction never deletes audit/evidence merely to reduce model tokens.
 
 Rules remain domain-owned; execution is shared.
 
+**As-built:** Diagnostics runs deterministic checks over canonical evidence, but there is **no** shared `Runtime Invariant Service` catalog/runner in production (`intergrax/` — **GAP**). Strong Diagnostics maturity does **not** close Initiative N.
+
 Build a central runner/catalog able to execute domain-provided invariant checks in runtime, diagnostics, and CI.
 
 Each invariant has:
@@ -691,9 +722,22 @@ Do not create a central business-policy engine.
 
 ---
 
-# 19. Initiative O — Dynamic orchestration proposals
+# 19. Initiative O — Dynamic orchestration
 
-Flow:
+## Shipped (execution topology — not governed live reconfiguration)
+
+Bounded dynamic topology execution is **implemented and qualified** on canonical paths (separate from Initiative AH live composition reconfiguration):
+
+- canonical topology submission (`orchestration_topology_submission.py`),
+- bounded fan-out / deterministic fan-in (NPSC-5B qualification),
+- child Execution per slot,
+- partial failure preservation and partial recovery (NPSC-5E R3 / recovery plane freeze).
+
+Nexus executes accepted topology **as private orchestration inside Execution strategy routing**; it is not the public integration surface.
+
+## Remaining (governed proposal / mutation path)
+
+Flow still **TARGET** for model/agent-driven **governed** topology change:
 
 ```text
 model/agent proposes topology
@@ -704,13 +748,13 @@ model/agent proposes topology
 → budget checks
 → accept/reject
 → accepted topology
-→ Nexus
+→ Execution strategy → Nexus (private)
 → child Executions via UER
 ```
 
-Proposal identity and accepted topology identity must be distinct.
+Proposal identity and accepted topology identity must be distinct. No model-generated topology executes directly without governance acceptance.
 
-No model-generated topology executes directly.
+Do not equate **dynamic topology execution** with **versioned live architecture reconfiguration** (Initiative AH).
 
 ---
 
@@ -943,9 +987,13 @@ Capability descriptors should include:
 
 # 29. Initiative Y — Documentation architecture synchronization
 
+## Priority (post EE1)
+
+**URGENT:** canonical docs and satellites still drift from frozen Execution reality (examples: `ExecutionId` “future” wording, Nexus as consumer-facing execution surface, obsolete Critic-as-decision-authority, pre-freeze “finish UER convergence” framing). This roadmap re-baseline does not replace per-document CURRENT sync.
+
 ## P0A documentation re-baseline
 
-The repository currently contains at least one important case where older CURRENT documentation lags behind shipped runtime code.
+The repository contains multiple cases where older CURRENT documentation lags behind shipped runtime code and enterprise qualification.
 
 Before code implementation begins:
 
@@ -959,7 +1007,9 @@ Priority documents include:
 
 - UEA/UER,
 - UER satellites,
-- Nexus execution flow,
+- [`DECISION_SYSTEM.md`](../architecture/DECISION_SYSTEM.md),
+- [`DIAGNOSTICS.md`](../architecture/DIAGNOSTICS.md),
+- Nexus **private** orchestration flow (not public execution API),
 - Background Tasks,
 - Observability,
 - Checkpoint/recovery,
@@ -1136,6 +1186,8 @@ DX must consume read models; it must not create parallel runtime logic.
 # 36. Initiative AF — Checkpoint, durability, and recovery convergence
 
 ## Current reality
+
+**NPSC-5E Final — recovery plane (retry R1, checkpoint/resume R2, partial fan-out recovery R3) = FROZEN / PASS.**
 
 Checkpoint/recovery is substantially implemented already:
 
@@ -1363,9 +1415,11 @@ No caller, Skill, child Execution, plugin/runtime extension proposal, or host sh
 
 # 42. P0C — Execution and durability convergence
 
+**Execution Engine foundation:** treated as **FROZEN** after EE1 re-baseline; P0C items below are adoption, durability consumer gaps, and proof — not UER reimplementation.
+
 After P0A/P0B:
 
-1. Finish remaining UER entry-path adoption.
+1. Finish remaining **consumer** entry-path adoption (illegal bypass removal only where gates fail).
 2. Finish Execution Tree queries/cancellation.
 3. Finish pause/resume/cancel across supported providers.
 4. Complete budget dimensions and child accounting.
@@ -1409,7 +1463,7 @@ Profile resolution, revision pinning, capability validation, inspection/health p
 
 # 44. P2 — Delegation, background UX, event intake, artifacts, compaction
 
-1. External/subagent provider seam.
+1. **P2.1-S2** — External/subagent provider **adoption** through frozen Execution boundary (`DelegatedExecutionProvider` foundation closed in P2.1-S1).
 2. Background execution UX/control convergence.
 3. Verified external-event intake durability.
 4. Artifact/attachment/spill convergence.
