@@ -8,6 +8,34 @@ from testing_support.execution_qualification.frozen_pytest_adapter import (
     FrozenPytestSuiteSource,
 )
 
+from testing_support.execution_qualification.embedded_harness_kexpr import (
+    R2_H2_Q1_EMBEDDED_HARNESS_KEXPR,
+)
+
+NPSC5E_R2_H2_Q1_ORCHESTRATOR_PATH = (
+    "tests/unit/runtime/architecture/test_npsc5e_r2_h2_q1_frozen_regression_closure.py"
+)
+
+NPSC5E_R2_H2_Q1_EMBEDDED_PREDECESSOR_LABELS: tuple[str, ...] = (
+    "R1 Final",
+    "R2 Original",
+    "R2-H1",
+    "R2-H2",
+    "P0A",
+    "DG_001 lineage",
+    "NPSC-5D Final",
+    "HITL R3",
+    "NPSC-5A",
+    "NPSC-5B",
+    "NPSC-5C",
+    "Attempt lifecycle",
+    "Child execution",
+    "Terminal",
+    "Cancellation",
+    "Checkpoint store",
+    "Long-running",
+)
+
 NPSC5E_R3_FINAL_MANDATORY: FrozenPytestSuiteSource = (
     (
         "R1 Final",
@@ -136,7 +164,9 @@ NPSC5E_R2_FINAL_MANDATORY: FrozenPytestSuiteSource = (
     (
         "R2-H2-Q1",
         [
-            "tests/unit/runtime/architecture/test_npsc5e_r2_h2_q1_frozen_regression_closure.py"
+            NPSC5E_R2_H2_Q1_ORCHESTRATOR_PATH,
+            "-k",
+            R2_H2_Q1_EMBEDDED_HARNESS_KEXPR,
         ],
     ),
     (
@@ -526,6 +556,7 @@ NPSC5F_R4_MANDATORY_REGRESSION_SUITES: FrozenPytestSuiteSource = (
     ),
 )
 
+
 def _npsc5f_final_recovery_pytest_targets() -> list[str]:
     from testing_support.execution_qualification.final_semantic_pytest import (
         npsc5f_final_recovery_pytest_arguments,
@@ -611,6 +642,8 @@ __all__ = [
     "NPSC5E_FINAL_MANDATORY",
     "NPSC5E_R1_FINAL_MANDATORY",
     "NPSC5E_R2_FINAL_MANDATORY",
+    "NPSC5E_R2_H2_Q1_EMBEDDED_PREDECESSOR_LABELS",
+    "NPSC5E_R2_H2_Q1_ORCHESTRATOR_PATH",
     "NPSC5E_R3_FINAL_MANDATORY",
     "NPSC5F_FINAL_MANDATORY_REGRESSION_SUITES",
     "NPSC5F_R1_FINAL_MANDATORY",

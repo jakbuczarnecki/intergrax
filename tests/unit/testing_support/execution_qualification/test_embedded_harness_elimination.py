@@ -40,6 +40,7 @@ from testing_support.execution_qualification.embedded_harness_kexpr import (
 )
 from testing_support.execution_qualification.final_semantic_pytest import (
     NPSC5E_R2_FINAL_SEMANTIC_SUITE_ID,
+    NPSC5E_R2_H2_Q1_SEMANTIC_SUITE_ID,
     pytest_arguments_exclude_embedded_harness,
 )
 from testing_support.execution_qualification.plan_runner import (
@@ -56,17 +57,29 @@ _R3_FINAL_MODULE = Path(
     "tests/unit/runtime/architecture/"
     "test_npsc5e_r3_final_child_fanout_partial_recovery_qualification.py",
 )
+_R2_H2_Q1_MODULE = Path(
+    "tests/unit/runtime/architecture/test_npsc5e_r2_h2_q1_frozen_regression_closure.py",
+)
 
 
 def test_t1_inventory_embedded_harness_calls(repo_root: Path) -> None:
     r2_entries = inventory_embedded_harness_in_module(repo_root / _R2_FINAL_MODULE)
     r3_entries = inventory_embedded_harness_in_module(repo_root / _R3_FINAL_MODULE)
-    assert any(e.test_function == "test_mandatory_frozen_suite_passes" for e in r2_entries)
     assert any(
-        e.test_function == "test_mandatory_frozen_suites_pass_via_parallel_qualification"
+        e.test_function == "test_mandatory_frozen_suite_passes" for e in r2_entries
+    )
+    assert any(
+        e.test_function
+        == "test_mandatory_frozen_suites_pass_via_parallel_qualification"
         for e in r3_entries
     )
-    assert any(e.pattern == "call:run_npsc5e_r3_mandatory_qualification" for e in r3_entries)
+    assert any(
+        e.pattern == "call:run_npsc5e_r3_mandatory_qualification" for e in r3_entries
+    )
+    q1_entries = inventory_embedded_harness_in_module(repo_root / _R2_H2_Q1_MODULE)
+    assert any(
+        e.test_function == "test_mandatory_frozen_suite_passes" for e in q1_entries
+    )
 
 
 @pytest.mark.parametrize("profile_id", (NPSC5E_R2_PROFILE_ID, NPSC5E_R3_PROFILE_ID))
@@ -81,19 +94,27 @@ def test_t2_t3_canonical_final_profiles_exclude_embedded_harness(
         for arg in suite.pytest_arguments:
             if arg in CANONICAL_ORCHESTRATOR_PATHS:
                 orchestrator_hits.append(suite_id)
-                assert pytest_arguments_exclude_embedded_harness(suite.pytest_arguments), (
-                    suite_id
-                )
+                assert pytest_arguments_exclude_embedded_harness(
+                    suite.pytest_arguments
+                ), suite_id
     assert orchestrator_hits, profile_id
 
 
-def test_canonical_final_profiles_do_not_execute_embedded_qualification_harnesses() -> None:
+def test_canonical_final_profiles_do_not_execute_embedded_qualification_harnesses() -> (
+    None
+):
     catalog = build_default_qualification_catalog()
-    for profile_id in (NPSC5E_R2_PROFILE_ID, NPSC5E_R3_PROFILE_ID, NPSC5F_FINAL_PROFILE_ID):
+    for profile_id in (
+        NPSC5E_R2_PROFILE_ID,
+        NPSC5E_R3_PROFILE_ID,
+        NPSC5F_FINAL_PROFILE_ID,
+    ):
         compiled = catalog.compile_profile(profile_id)
         for suite_id in compiled.plan.leaf_suite_ids:
             suite = compiled.suite_by_id[suite_id]
-            if any(path in suite.pytest_arguments for path in CANONICAL_ORCHESTRATOR_PATHS):
+            if any(
+                path in suite.pytest_arguments for path in CANONICAL_ORCHESTRATOR_PATHS
+            ):
                 assert pytest_arguments_exclude_embedded_harness(suite.pytest_arguments)
 
 
@@ -159,7 +180,9 @@ def test_t6_one_predecessor_skip_final_gate_fail(
     catalog = build_default_qualification_catalog()
     compiled = catalog.compile_profile(NPSC5E_R2_PROFILE_ID)
     fake = FakeQualificationSuiteExecutor({})
-    fake.set_suite_status(NPSC5E_R2_FINAL_SEMANTIC_SUITE_ID, QualificationSuiteStatus.SKIP)
+    fake.set_suite_status(
+        NPSC5E_R2_FINAL_SEMANTIC_SUITE_ID, QualificationSuiteStatus.SKIP
+    )
     config = QualificationRunConfig(
         repo_root=repo_root,
         max_parallel=2,
@@ -255,7 +278,9 @@ def test_t9_no_duplicate_physical_execution(
         assert fake.invocation_counts.get(suite_id, 0) == 1
 
 
-def test_t10_t11_t12_semantic_and_freeze_tests_not_in_harness_exclusion(repo_root: Path) -> None:
+def test_t10_t11_t12_semantic_and_freeze_tests_not_in_harness_exclusion(
+    repo_root: Path,
+) -> None:
     for module in (_R2_FINAL_MODULE, _R3_FINAL_MODULE):
         source = (repo_root / module).read_text(encoding="utf-8")
         tree = ast.parse(source)
@@ -268,6 +293,13 @@ def test_t10_t11_t12_semantic_and_freeze_tests_not_in_harness_exclusion(repo_roo
         semantic = names - harness
         assert "test_canonical_predecessor_shas_recorded" in semantic
         assert semantic, module.as_posix()
+
+
+def test_canonical_r2_h2_q1_leaf_excludes_embedded_harness_in_npsc5f_final() -> None:
+    catalog = build_default_qualification_catalog()
+    compiled = catalog.compile_profile(NPSC5F_FINAL_PROFILE_ID)
+    suite = compiled.suite_by_id[NPSC5E_R2_H2_Q1_SEMANTIC_SUITE_ID]
+    assert pytest_arguments_exclude_embedded_harness(suite.pytest_arguments)
 
 
 def test_t15_recovery_leaf_excludes_embedded_harness() -> None:

@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+R2_H2_Q1_EMBEDDED_HARNESS_KEXPR: str = "not test_mandatory_frozen_suite_passes"
+
 CANONICAL_FINAL_EMBEDDED_HARNESS_KEXPR: str = (
     "not test_mandatory_frozen_suite_passes and "
     "not test_mandatory_frozen_suites_pass_via_parallel_qualification and "

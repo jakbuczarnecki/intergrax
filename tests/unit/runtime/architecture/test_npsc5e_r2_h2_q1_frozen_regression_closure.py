@@ -22,12 +22,19 @@ from intergrax.runtime.execution.attempt_lifecycle import (
     AttemptLifecycleService,
     InMemoryAttemptLifecycleStore,
 )
-from intergrax.runtime.long_running.checkpoint_revision import CheckpointRevisionRequiredError
+from intergrax.runtime.long_running.checkpoint_revision import (
+    CheckpointRevisionRequiredError,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.task.task import Task, TaskState
-from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
+from intergrax.runtime.task.task_contract import (
+    TaskExecutionOptions,
+    TaskLongRunningOptions,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -46,11 +53,36 @@ _FORBIDDEN_FRAMEWORK_NAMES = (
 )
 
 _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
-    ("R1 Final", ["tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py"]),
-    ("R2 Original", ["tests/unit/runtime/architecture/test_npsc5e_r2_checkpoint_durable_resume_hardening.py"]),
-    ("R2-H1", ["tests/unit/runtime/architecture/test_npsc5e_r2_h1_authority_stale_checkpoint_closure.py"]),
-    ("R2-H2", ["tests/unit/runtime/architecture/test_npsc5e_r2_h2_checkpoint_revision_stale_writer_protection.py"]),
-    ("P0A", ["tests/unit/runtime/architecture/test_npsc5e_p0a_execution_lineage_baseline_qualification.py"]),
+    (
+        "R1 Final",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py"
+        ],
+    ),
+    (
+        "R2 Original",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_r2_checkpoint_durable_resume_hardening.py"
+        ],
+    ),
+    (
+        "R2-H1",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_r2_h1_authority_stale_checkpoint_closure.py"
+        ],
+    ),
+    (
+        "R2-H2",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_r2_h2_checkpoint_revision_stale_writer_protection.py"
+        ],
+    ),
+    (
+        "P0A",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_p0a_execution_lineage_baseline_qualification.py"
+        ],
+    ),
     (
         "DG_001 lineage",
         [
@@ -60,15 +92,28 @@ _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
     ),
     (
         "NPSC-5D Final",
-        ["tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py"
+        ],
     ),
-    ("HITL R3", ["tests/unit/runtime/architecture/test_npsc5d_r3_governed_continuation.py"]),
-    ("NPSC-5A", ["tests/unit/runtime/architecture/test_npsc5a_coordination_delegation_e2e.py"]),
+    (
+        "HITL R3",
+        ["tests/unit/runtime/architecture/test_npsc5d_r3_governed_continuation.py"],
+    ),
+    (
+        "NPSC-5A",
+        ["tests/unit/runtime/architecture/test_npsc5a_coordination_delegation_e2e.py"],
+    ),
     (
         "NPSC-5B",
-        ["tests/unit/runtime/architecture/test_npsc5b_final_production_fanout_fanin_qualification.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5b_final_production_fanout_fanin_qualification.py"
+        ],
     ),
-    ("NPSC-5C", ["tests/unit/runtime/architecture/test_npsc5c_decision_execution_e2e.py"]),
+    (
+        "NPSC-5C",
+        ["tests/unit/runtime/architecture/test_npsc5c_decision_execution_e2e.py"],
+    ),
     (
         "Attempt lifecycle",
         [
@@ -84,7 +129,10 @@ _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
             "tests/unit/runtime/execution/authority/test_child_execution_authority_policy.py",
         ],
     ),
-    ("Terminal", ["tests/unit/runtime/execution/test_p0c6_terminal_outcome_convergence.py"]),
+    (
+        "Terminal",
+        ["tests/unit/runtime/execution/test_p0c6_terminal_outcome_convergence.py"],
+    ),
     (
         "Cancellation",
         [
@@ -146,7 +194,12 @@ def _run_pytest(targets: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
-@pytest.mark.parametrize(("label", "targets"), _MANDATORY_SUITES, ids=[label for label, _ in _MANDATORY_SUITES])
+@pytest.mark.legacy_embedded_qualification_harness
+@pytest.mark.parametrize(
+    ("label", "targets"),
+    _MANDATORY_SUITES,
+    ids=[label for label, _ in _MANDATORY_SUITES],
+)
 def test_mandatory_frozen_suite_passes(label: str, targets: list[str]) -> None:
     proc = _run_pytest(targets)
     assert proc.returncode == 0, f"{label} failed:\n{proc.stdout}\n{proc.stderr}"
@@ -163,7 +216,9 @@ def test_persistence_contract_exposes_revision_cas() -> None:
     assert "expected_revision" in signature.parameters
 
 
-def test_empty_stream_none_allowed_existing_stream_requires_revision(tmp_path: Path) -> None:
+def test_empty_stream_none_allowed_existing_stream_requires_revision(
+    tmp_path: Path,
+) -> None:
     store = SQLiteTaskCheckpointStore(db_path=tmp_path / "cas.db")
     first = store.save(_paused_checkpoint())
     with pytest.raises(CheckpointRevisionRequiredError):
