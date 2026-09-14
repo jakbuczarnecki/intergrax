@@ -274,7 +274,7 @@ These invariants must be reflected in canonical documentation, code, conformance
 | F | Canonical ToolRuntime pipeline | CURRENT / PARTIAL | Tools / ToolRuntime | safety + convergence |
 | G | Runtime credentials and secret references | PARTIAL | security/secrets/integrations | provider seam + late resolution |
 | H | Execution sandbox and isolation | CURRENT / PARTIAL | runtime sandbox + security + execution | convergence |
-| I | Subagent and external-agent providers | PARTIAL | `DelegatedExecutionProvider` + UER | P2.1-S2 adoption (not Nexus public API) |
+| I | Subagent and external-agent providers | PARTIAL | `DelegatedExecutionProvider` + UER | P2.1-S2A CLOSED; remaining P2.1-S2 lifecycle adoption |
 | J | Background Execution control | CURRENT / PARTIAL | Background Tasks + UER | convergence + DX |
 | K | Verified external event intake | PARTIAL | interactions/integrations + UER | generalization + durability |
 | L | Artifacts, attachments, spill | PARTIAL | artifacts/storage + CE + tools | consolidation |
@@ -556,11 +556,14 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S1 — `DelegatedExecutionProvider` contracts + `LocalDelegatedExecutionProvider` = CLOSED.**
 
+**P2.1-S2A — production adoption via `DelegatedExecutionService` + child `ExecutionBoundary` dispatch = CLOSED** (CREATE/DELEGATE path only).
+
 Contract: `intergrax/contracts/delegated_execution_provider.py`  
 Reference provider: `intergrax/runtime/execution/delegated_execution/local_provider.py`  
-Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`
+Adoption service: `intergrax/runtime/execution/delegated_execution/service.py`  
+Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`
 
-## Remaining work (P2.1-S2 — adoption, not new seam)
+## Remaining work (P2.1-S2 — adoption slices after S2A, not new seam)
 
 Integrate external/subagent providers **through the frozen Execution Engine boundary** (child Execution admission, authority/budget inheritance). Do **not** route public delegation through Nexus APIs or Nexus-specific consumer contracts.
 
@@ -1471,7 +1474,7 @@ Profile resolution, revision pinning, capability validation, inspection/health p
 
 # 44. P2 — Delegation, background UX, event intake, artifacts, compaction
 
-1. **P2.1-S2** — External/subagent provider **adoption** through frozen Execution boundary (`DelegatedExecutionProvider` foundation closed in P2.1-S1).
+1. **P2.1-S2** — Remaining external/subagent provider **adoption** slices (follow-up/cancel/remote/ACP); **P2.1-S2A CLOSED** — CREATE/DELEGATE through frozen Execution boundary (`DelegatedExecutionService`).
 2. Background execution UX/control convergence.
 3. Verified external-event intake durability.
 4. Artifact/attachment/spill convergence.
