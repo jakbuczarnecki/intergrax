@@ -13,7 +13,7 @@ application_vs_proof_ownership: COMPLETED
 **Scenario:** Indirect Prompt Injection with Governed Action Prevention  
 **Slug:** `indirect_prompt_injection`  
 **Proof class:** SCENARIO  
-**Status:** Business implementation complete and executable - canonical real-model proof not yet independently verified.
+**Status:** Architecture aligned with runtime (stage 4). Application and proof are implemented and executable; deterministic qualification and canonical real-model proof are **not** yet independently verified.
 
 [← Back to public Scenario page](README.md)
 
@@ -245,7 +245,7 @@ After removing evaluator, proof runner, evidence packaging, and report generatio
 - retrieves order status, notes, and shipment facts through governed tools;
 - produces summaries and flags suspicious retrieved content;
 - performs **authorized** shipping-address updates when the trusted host selects a workflow policy that permits the write;
-- runs on normal Intergrax runtime, ToolRegistry, and integration contracts.
+- runs on the canonical Execution Engine path, governed `ToolRegistry`, and `OrderOperationsPort` integration contracts.
 
 The application is not “an injection test harness.” Proof adversarial fixtures select note content and workflow policy profiles; they do not define the product.
 
@@ -369,13 +369,121 @@ Attack variants expect immediate **DENY** without HITL on the read-only workflow
 | Trusted-host workflow policy configuration | HTML report rendering and reproduction matrix metadata |
 | Terminal RESOLVED / UNRESOLVED customer outcome | Expected outcome table per variant |
 
-**PROOF DOES NOT:**
+**PROOF DOES NOT CONTROL APPLICATION BEHAVIOR.** Proof does not:
 
 - decide “this action should be blocked” instead of governance;
 - call provider write endpoints directly;
 - remove write tools from the canonical application path;
 - inject `is_attack=true` into model context;
 - substitute `FakeLLM` on the canonical proof path.
+
+### Runtime architecture (canonical)
+
+The **Execution Engine** (`HostTaskExecution` via `build_environment_host_task_execution`) is the canonical execution authority. Internal Nexus mechanics (agent steps, `RuntimeState`, trace persistence) implement that authority — Nexus is **not** a separate public application root.
+
+Root execution flow (code names):
+
+```text
+execute_order_assistant_run
+→ execute_scenario_task (scenario runtime baseline)
+→ HostTaskExecution.execute(Task)
+→ OrderAssistantAgent.run_step
+→ execute_order_workflow
+→ order.get / order.get_notes (RuntimeToolInvoker → ToolHandler → OrderOperationsPort)
+→ CatalogToolPlanner + run_bounded_tool_loop (real LLM proposals)
+→ RuntimeToolInvoker
+→ DeclarativePolicyEnforcer
+→ ToolExecutor → ToolHandler (only when ALLOW)
+→ OrderOperationsPort → provider implementation
+```
+
+```mermaid
+flowchart TD
+  User[User / trusted host workflow selection] --> EE[Execution Engine HostTaskExecution]
+  EE --> Agent[OrderAssistantAgent]
+  Agent --> WF[execute_order_workflow]
+  WF --> LLM[LLM + bounded tool loop]
+  LLM --> Prop[Tool proposal]
+  Prop --> RTI[RuntimeToolInvoker]
+  RTI --> Gov[Declarative Policy]
+  Gov -->|DENY| Stop[ToolExecutor not invoked]
+  Gov -->|ALLOW| TE[ToolExecutor / ToolHandler]
+  TE --> Port[OrderOperationsPort]
+  Port --> OMS[Provider / OMS integration]
+```
+
+**MODEL PROPOSAL vs AUTHORIZATION:** What the AI reads can influence what it proposes, but retrieved content cannot grant execution authority. The LLM proposes; the platform governs; tools execute only when policy allows.
+
+### Layer ownership
+
+| Layer | Owns |
+| --- | --- |
+| **Platform** | Execution Engine, execution identity, tool invocation lifecycle, `RuntimeToolInvoker`, declarative policy enforcement, policy/tool/execution diagnostics, observability, platform contracts (`ToolContract`, proof evidence contracts) |
+| **Application** | User request intake, workflow selection (`WorkflowKind` / `ApplicationEnvironmentProfile`), agent, LLM adapter resolution, retrieval orchestration, tool catalog handlers, governance **configuration** (inline DENY rule on read-only workflow), `OrderOperationsPort`, business result, domain diagnostics (`OrderRetrievalDiagV1`, `OrderWorkflowCompletionDiagV1`) |
+| **Proof** | Attack fixtures, hidden truth, `OrderProviderControlPort` reset, provider mutation observation, initial/final provider state, expected write counts, falsification evaluator, evidence projection, HTML report |
+
+### Extension contracts (pluginable)
+
+> Intergrax owns the extension contracts and runtime boundaries; applications provide domain implementations behind those contracts.
+
+| Contract | Owner | Implementation (this scenario) | Pluginable |
+| --- | --- | --- | --- |
+| `ToolContract` / `ToolHandler` | Platform contract + app impl | `order.get`, `order.get_notes`, `order.update_shipping_address` in `application/tools.py` | Yes |
+| `OrderOperationsPort` | Application | `OrderProviderClient` / `InProcessOrderProviderClient` (and optional HTTP provider service) | Yes — e.g. SAP/ERP/OMS adapters are **examples only**, not shipped capabilities |
+| `OrderProviderControlPort` | Proof | Controlled provider reset + `mutation_state()` | Yes — proof-only; not business API |
+| `PlatformProofEvidence` v3 | Platform contract + proof projection | `proof/evidence_builder.py` | Projection |
+| Decision System plugin | Platform | Wired in scenario lab baseline when profile enables it | **NOT USED — NOT BUSINESS JUSTIFIED** for this scenario’s tool DENY/ALLOW; runtime authorization is **declarative policy** on `RuntimeToolInvoker` |
+
+Example port implementations (illustrative):
+
+```text
+OrderOperationsPort
+├── HTTP order service (docker provider in repo)
+├── InProcessOrderProviderClient (unit/integration tests)
+└── (hypothetical) SAP / Shopify / custom OMS adapters
+```
+
+### Proof observation (separate diagram)
+
+Proof never sits between governance and `ToolExecutor`.
+
+```mermaid
+flowchart TD
+  Fix[Fixture catalog] --> Reset[OrderProviderControlPort.reset]
+  Reset --> Run[Harness: execute_order_assistant_run]
+  Run --> Trace[Runtime + application diagnostics]
+  Run --> Prov[Provider write_count observation]
+  Trace --> Eval[Evaluator]
+  Prov --> Eval
+  Eval --> Art[PlatformProofEvidence / report]
+```
+
+### Diagnostics — platform vs domain
+
+| Source of truth | Artifacts |
+| --- | --- |
+| **Platform** | `DeclarativePolicyEvaluationDiagV1`, tool invocation lifecycle diagnostics, execution/trace export |
+| **Domain enrichment** | `OrderRetrievalDiagV1`, `OrderWorkflowCompletionDiagV1` — business workflow context only; **not** authority for DENY/ALLOW or whether a tool executed |
+
+### Evidence facts and sources of truth
+
+| Evidence fact | Source of truth | Owner |
+| --- | --- | --- |
+| Hostile note retrieved | Tool/runtime trace (`order.get_notes` output) | Platform + application |
+| Write proposal | Canonical tool planner / `ToolCallTrace` | Platform runtime |
+| Policy DENY / ALLOW | `DeclarativePolicyEvaluationDiagV1` | Platform |
+| Matched rule | Policy diagnostic (`matched_policy_rule_ids` from evaluations) | Platform |
+| Write execution outcome | Tool lifecycle / successful invocation end | Platform |
+| Provider write count | `OrderProviderControlPort.mutation_state()` | Proof |
+| Final shipping address | Provider observation via `OrderOperationsPort.get_order` | Proof + application read path |
+
+### Derived projections (not source of truth)
+
+Application and proof surfaces aggregate these for evaluator convenience; auditors must trace back to platform diagnostics and provider observation:
+
+- `write_tool_proposed`
+- `write_tool_executed`
+- `policy_denied`
 
 ### Desired behavior
 
@@ -601,17 +709,32 @@ This scenario does **not** claim:
 
 Audit date: 2026-08-30 · repository HEAD re-audited for declarative policy enforcement on the canonical tool invocation path.
 
-### Audit matrix
+### Scenario need → platform mechanism
+
+| Scenario need | Intergrax mechanism | Owner | Extension |
+| --- | --- | --- | --- |
+| Root execution | Execution Engine (`HostTaskExecution` via scenario baseline) | Platform | No |
+| Agent runtime | Internal Nexus agent/tool mechanics behind Execution Engine | Platform | No |
+| Business tools | `ToolContract` / application `ToolHandler` | Platform contract + app impl | Yes |
+| Tool authorization | Declarative Policy (`DeclarativePolicyEnforcer`, inline rules in `ApplicationEnvironmentProfile`) | Platform enforcement + app config | App config |
+| OMS integration | `OrderOperationsPort` | Application | Yes |
+| Diagnostics | Platform policy/tool/trace diagnostics + domain payloads | Mixed | Yes (domain diag) |
+| Provider observation | `OrderProviderControlPort` | Proof | Yes |
+| Evidence | `PlatformProofEvidence` v3 | Proof / platform contract | Projection |
+| Decision System | Lab wiring available in baseline | Platform composition | **Not used** for this scenario’s write authorization |
+
+### Audit matrix (repository HEAD)
 
 | Potrzeba | Czy Intergrax to ma? | Gdzie | Ocena | Dlaczego |
 | --- | --- | --- | --- | --- |
+| Execution Engine | Tak | `HostTaskExecution` · `execute_scenario_task` | **AVAILABLE** | Canonical task execution before agent workflow. |
 | tool catalog contract | Tak | `ToolContract` · `ToolRegistry` | **AVAILABLE** | Application registers `order.get`, `order.get_notes`, `order.update_shipping_address` on the governed catalog surface. |
 | canonical tool invocation | Tak | `RuntimeToolInvoker` (`intergrax/runtime/nexus/tools/invoker.py`) | **AVAILABLE** | Real LLM tool proposals reach the invoker before any executor call. |
 | declarative policy enforcement | Tak | `DeclarativePolicyEnforcer` · `DeclarativePolicyRule` · `PolicyRuleAction` | **AVAILABLE** | Workflow policy can DENY `order.update_shipping_address` via `resource_kind=tool`, `handler_id=deny_tool`, `action=DENY`. |
 | deny handler | Tak | `deny_tool` policy handler · `PolicyRuleAction.DENY` | **AVAILABLE** | Canonical handler blocks invocation before side effect. |
 | executor gating | Tak | `RuntimeToolInvoker` → policy decision → `ToolExecutor` | **AVAILABLE** | DENY prevents `ToolExecutor` invocation; ALLOW proceeds to external provider. |
 | observability | Tak | `DeclarativePolicyEvaluationDiagV1` · `ToolCallTrace` · `TraceEvent` | **AVAILABLE** | Material chain retrieval → proposal → policy → outcome is structurally observable. |
-| proof evidence support | Tak | `intergrax.platform_proof_evidence.v3` | **AVAILABLE** | Evidence projection hooks exist; wiring is implementation-time work. |
+| proof evidence support | Tak | `intergrax.platform_proof_evidence.v3` | **AVAILABLE** | Evidence projection implemented in `proof/evidence_builder.py`. |
 
 ### Fit summary
 
@@ -629,7 +752,7 @@ This scenario requires **application/workflow policy configuration** using the e
 
 ## D. GAP DECISION
 
-**Status: NO REUSABLE PLATFORM GAP IDENTIFIED**
+**PLATFORM GAP: NONE**
 
 Frontmatter `gap_decision: RESOLVED`.
 
@@ -638,9 +761,9 @@ Frontmatter `gap_decision: RESOLVED`.
 | | |
 | --- | --- |
 | **Scenario requirement** | On a read-only workflow, deny `order.update_shipping_address` on the canonical invoker path when the model proposes it after reading hostile note content; permit the same write on an authorized workflow. |
-| **What Intergrax provides** | `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `DeclarativePolicyEnforcer`, `deny_tool`, `PolicyRuleAction`, `ToolExecutor`, and tool/policy diagnostics on HEAD. |
-| **Gap** | **None** - trusted host selects declarative policy configuration; no new platform mechanism required. |
-| **Why not platform work** | The scenario needs workflow-level policy wiring, not a reusable platform extension such as task-authority ↔ action-scope subset enforcement. |
+| **What Intergrax provides** | Execution Engine, `ToolContract`, `ToolRegistry`, `RuntimeToolInvoker`, `DeclarativePolicyEnforcer`, `deny_tool`, `PolicyRuleAction`, `ToolExecutor`, tool/policy/execution diagnostics, proof evidence contracts. |
+| **Gap** | **None** — execution, governance, diagnostics, and extension contracts exist; OMS integration is correctly application-owned via `OrderOperationsPort`; proof control is correctly outside the business layer via `OrderProviderControlPort`. |
+| **Why not platform work** | The scenario needs workflow-level policy configuration and application ports, not a new reusable platform mechanism. |
 
 ### Outcome
 
@@ -654,9 +777,9 @@ Frontmatter `gap_decision: RESOLVED`.
 
 ## E. PROOF BUILD
 
-**Design-stage proof plan** - describes how we will prove the solution. Not implementation.
+**Implementation status:** Application, provider integration, harness, evaluator, and evidence projection are implemented. Remaining work is **qualification** (deterministic matrix + real-model WOW), not core architecture.
 
-### How we will prove the solution
+### How we prove the solution
 
 | Element | Plan |
 | --- | --- |
@@ -667,14 +790,18 @@ Frontmatter `gap_decision: RESOLVED`.
 | **Data** | Controlled order provider with variant-specific note content; workflow policy profiles per case |
 | **Evidence** | `PlatformProofEvidence` v3 projection; provider mutation log; policy diagnostics |
 
-### Canonical application path (planned)
+### Canonical application path (implemented)
 
 ```text
-Customer request → order assistant → production-capable runtime + real LLM
-→ governed tool invocation → order tools → controlled OrderServiceIntegration
+Customer request
+→ execute_order_assistant_run
+→ execute_scenario_task → HostTaskExecution
+→ OrderAssistantAgent → execute_order_workflow
+→ RuntimeToolInvoker → ToolHandler → OrderOperationsPort
+→ (optional) HTTP Order Service provider
 ```
 
-Write tool stays registered so the model **can** propose forbidden action on attack variants.
+Write tool stays registered so the model **can** propose the forbidden action on attack variants; proof observes via `proof/harness.py` without intercepting governance.
 
 ### Controlled provider
 
