@@ -15,6 +15,7 @@ from testing_support.builder import (
     build_in_memory_session_manager,
     build_runtime_execution_context_for_tests,
     canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
 )
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -79,6 +80,7 @@ class _StepBridgeAgent(IntergraxAgent):
 @pytest.mark.gate
 async def test_intergrax_agent_run_agent_run_request() -> None:
     agent = _CounterAgent()
+    run_id = canonical_run_id_for_tests("direct-agent-run")
     request = AgentRunRequest(
         input="hello",
         identity=RequestIdentity(
@@ -86,13 +88,13 @@ async def test_intergrax_agent_run_agent_run_request() -> None:
             user_id="user-1",
             principal_type=PrincipalType.USER,
         ),
-        metadata={"run_id": "run-direct"},
+        metadata={"run_id": run_id},
     )
     result = await agent.run(request)
     assert result.status == AgentRunStatus.SUCCEEDED
     assert result.terminal_reason == TerminalReason.GOAL_MET
     assert result.output == {"steps": 3}
-    assert result.run_id == "run-direct"
+    assert result.run_id == run_id
     assert result.trace.steps
 
 
