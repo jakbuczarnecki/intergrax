@@ -22,13 +22,14 @@ from legal_application.host.settings import LegalBackendSettings
 from lab_application.host.settings import LabApplicationSettings
 from poc_template_application.manifest import build_poc_template_manifest
 from research_application.host.wiring import build_research_environment_profile
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _request() -> RuntimeRequest:
-    return RuntimeRequest(
+    return build_runtime_request_for_tests(
+        seed="session-ref",
         tenant_id="tenant-ref",
         agent_id="echo",
         user_id="user-ref",

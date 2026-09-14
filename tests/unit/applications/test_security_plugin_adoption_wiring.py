@@ -130,11 +130,9 @@ def _reset_plugin_state() -> None:
 
 @pytest.fixture(autouse=True)
 def _stub_environment_llm_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        environment_wiring_module,
-        "resolve_environment_llm_adapter",
-        lambda _env: FakeLLMAdapter(),
-    )
+    from testing_support.application_environment_test_support import stub_environment_llm_adapter
+
+    stub_environment_llm_adapter(monkeypatch)
 
 
 def _install_eps(monkeypatch: pytest.MonkeyPatch, entries: list[_EntryPoint]) -> None:

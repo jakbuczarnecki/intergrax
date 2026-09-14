@@ -8,7 +8,7 @@
 #
 # Feature-branch pushes do not trigger CI (avoids duplicate runs when a PR is open).
 # Full regression: `uv run pytest tests/unit -m "gate and not no_ci"` locally or nightly CI.
-# Local full suite: scripts\ci\test.bat unit  (uv sync --extra dev)
+# Local full suite: uv sync --extra dev --extra dev-unit-cert
 
 name: Regression gate
 
@@ -187,8 +187,8 @@ jobs:
           enable-cache: true
           python-version: "3.12"
 
-      - name: Install dependencies (CI minimal)
-        run: uv sync --extra dev-ci --frozen
+      - name: Install dependencies (CI minimal + unit cert)
+        run: uv sync --extra dev-ci --extra dev-unit-cert --frozen
 
       - name: Environment conformance (CI profile)
         run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci

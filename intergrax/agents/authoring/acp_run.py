@@ -7,6 +7,9 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from intergrax.agents.authoring.acp_execution_budget_wiring import (
+    resolve_acp_execution_budget_ledger_factory,
+)
 from intergrax.agents.authoring.acp_session_host import (
     ACP_HOST_CONTEXT_KEY,
     ACPSessionHostContext,
@@ -231,6 +234,22 @@ async def run_acp_session(
         execution_id=execution_id,
         parent_execution_id=peek_active_parent_execution_id(),
     )
+    from intergrax.runtime.execution.active_execution_budget import (
+        bind_root_execution_budget,
+        reset_active_execution_budget,
+    )
+
+    budget_ledger_factory = resolve_acp_execution_budget_ledger_factory(host)
+    budget_ledger = budget_ledger_factory.create_ledger(
+        None,
+        tenant_id=merged.tenant_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=budget_ledger,
+    )
     try:
         return await _run_acp_session_bound(
             agent=agent,
@@ -245,6 +264,7 @@ async def run_acp_session(
             started=started,
         )
     finally:
+        reset_active_execution_budget(budget_token)
         reset_active_execution_identity(identity_token)
 
 
@@ -489,6 +509,9 @@ async def _run_acp_session_bound(
         attach_acp_catalog_exec_ctx,
         close_acp_catalog_exec_ctx,
     )
+    from intergrax.runtime.workspace.exec_ctx_isolation import isolation_structured_data_from_exec_ctx
+
+    last_isolation_structured: dict[str, Any] = {}
 
     for _ in range(max_iterations):
         loop_step_ctx = step_ctx
@@ -537,6 +560,11 @@ async def _run_acp_session_bound(
             step_ctx.metadata.pop("uaep_exec_ctx", None)
             step_ctx_holder[0] = step_ctx
         finally:
+            exec_ctx_for_isolation = loop_step_ctx.metadata.get("uaep_exec_ctx")
+            if isinstance(exec_ctx_for_isolation, RuntimeExecutionContext):
+                last_isolation_structured = isolation_structured_data_from_exec_ctx(
+                    exec_ctx_for_isolation,
+                )
             close_acp_catalog_exec_ctx(loop_step_ctx)
 
     if last_outcome is None or last_record is None:
@@ -577,15 +605,16 @@ async def _run_acp_session_bound(
         agent_id=merged.agent_id,
         step_index=step_ctx.step_index,
     )
-    from intergrax.runtime.workspace.exec_ctx_isolation import isolation_structured_data_from_exec_ctx
-
     structured_data: dict[str, Any] = {
         AcpStructuredDataKey.TRACE_SUMMARY: _trace_summary_payload(
             kernel_ctx.run_trace,
             terminal_reason=terminal_reason,
         ),
     }
-    structured_data.update(isolation_structured_data_from_exec_ctx(_exec_ctx_from_step(step_ctx)))
+    isolation_payload = last_isolation_structured or isolation_structured_data_from_exec_ctx(
+        _exec_ctx_from_step(step_ctx),
+    )
+    structured_data.update(isolation_payload)
     # Preserve typed domain summaries for TaskResult / product handoff (LKW search/index).
     if isinstance(last_outcome.output, dict):
         for key in ("search_summary", "ingest_summary", "domain_summary"):

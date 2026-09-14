@@ -5,11 +5,12 @@
 Verification answers **„czy ta wersja decyzji spełnia wymagania poprawności?”** - structurally, deterministically, evidentially, and (when configured) semantically. Verification is **not** authorization, **not** HITL, **not** revision, and **not** finalization of an **Authoritative Decision**.
 
 > [!IMPORTANT]
-> **Maturity boundary:**
+> **Maturity boundary (multi-axis):**
 >
-> - **Architecture:** **TARGET CANON - FROZEN** (paired with [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)).
-> - **Implementation:** Verification Pipeline implementation migrated and active. Legacy Critic verification runtime retired (DS-MIG-04).
-> - **Remaining:** production qualification tracked in [`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md). Semantic verification trust hardening **ENTERPRISE CLOSED** (DS-VER-ADVERSARIAL-SEMANTIC).
+> - **Architecture semantics:** **FROZEN / CANONICAL** (paired with [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md)).
+> - **Implementation:** **CURRENT / ACTIVE** — compositional Verification Pipeline; legacy Critic verification runtime **retired** (DS-MIG-04).
+> - **Qualification:** Verification stages are in the **DS-E2E-15J QUALIFIED WITH OBSERVATIONS** bundle ([`maintainers/plans/DECISION_VERIFICATION.md`](../maintainers/plans/DECISION_VERIFICATION.md)); real external-model adversarial resistance and some producer-independence paths remain bounded qualification items — not universal SaaS claims.
+> - **Semantic trust hardening:** **ENTERPRISE CLOSED** (DS-VER-ADVERSARIAL-SEMANTIC).
 
 **Primary audience:** Principal / Staff engineers configuring verification stages, rubric provenance, producer/verifier independence, and challenge → revision handoff.
 
@@ -45,7 +46,7 @@ Decision Verification provides **ordered stage composition, typed stage contract
 | **Producer / verifier** | Meaningful independence required; self-judge modes explicit |
 | **Fail-closed** | Missing rubric provenance, unavailable required stage → no synthetic pass |
 | **Evaluation boundary** | Online / shadow / offline eval **outside** pipeline ownership |
-| **Maturity** | **A4 target / I0** - see [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md#current-maturity) |
+| **Maturity** | **A4 / I3 / P2 / E1** (verification in DS-E2E-15J bundle) — see [Current maturity](#current-maturity) |
 
 ---
 
@@ -292,6 +293,21 @@ Challenges bind Decision ID + Decision Version + execution identity.
 ```text
 Producer / verifier independence is proven or explicitly waived.
 ```
+
+---
+
+## Current maturity
+
+| Axis | Level | Rationale |
+| ---- | ----- | --------- |
+| **Architecture (A)** | **A4** | Frozen pipeline canon; verification ≠ authorization ≠ finalization |
+| **Implementation (I)** | **I3** | Stage contracts, pipeline orchestration, production composition shipped |
+| **Production (P)** | **P2** | Qualified inside DS-E2E-15J integrated + Docker E2E proofs; external SaaS / multi-host not claimed |
+| **Evidence (E)** | **E1** | DS-E2E-15J production qualification + stage unit/integration gates |
+
+**Proven pluggable seams (CURRENT):** typed verification stage registration (`intergrax.decision_verification_stages` entry-point group) + pipeline factory composition — see [Plugin boundary](#plugin-boundary).
+
+**EXTENSIBILITY_GAP (report only):** not every legacy CVL helper name is a public port; offline/shadow eval remains outside pipeline ownership.
 
 ---
 

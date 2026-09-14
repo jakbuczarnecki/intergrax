@@ -26,6 +26,17 @@ from intergrax.applications.contracts.application_package import ApplicationDepe
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.skills.registry.bootstrap import reset_default_skills_for_tests
+from intergrax.tools.registry.bootstrap import reset_default_tools_bootstrap
+from intergrax.tools.registry.catalog import clear_tool_catalog
+from intergrax.core.catalog_bootstrap import reset_tier0_catalog_bootstrap_for_tests
+
+
+def _reset_global_catalog_state_for_tests() -> None:
+    clear_tool_catalog()
+    reset_default_tools_bootstrap()
+    reset_default_skills_for_tests()
+    reset_tier0_catalog_bootstrap_for_tests()
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -54,6 +65,7 @@ def _empty_snapshot() -> HarnessRegistrySnapshot:
 
 
 def test_manifest_binding_contract_id_consistent_across_consumers() -> None:
+    _reset_global_catalog_state_for_tests()
     manifest = _reference_manifest()
     contract_id = resolve_binding_contract_id(manifest.enabled_agents()[0])
 

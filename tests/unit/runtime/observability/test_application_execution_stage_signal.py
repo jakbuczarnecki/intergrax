@@ -19,6 +19,10 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     mint_task_id,
 )
+from intergrax.contracts.event_delivery import EventPriority
+from intergrax.contracts.execution_evidence.persistence_boundary_errors import (
+    MandatoryEvidencePersistenceError,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_kind_registry import clear_event_kind_registry
 from intergrax.runtime.events.runtime_event import RuntimeEventType
@@ -30,6 +34,10 @@ from intergrax.runtime.observability.application_execution_stage_signal import (
     register_application_execution_stage_domain_signals,
 )
 from intergrax.runtime.events.event_kind import DomainSignalError
+from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.observability.event_delivery.runtime_event_delivery import (
+    delivery_priority_for_runtime_event,
+)
 
 pytestmark = pytest.mark.gate
 
@@ -147,3 +155,62 @@ def test_signal_correlation_mismatch_raises_contract_error_not_emission_error() 
     with pytest.raises(ApplicationExecutionStageSignalError, match="must match correlation"):
         emit_application_execution_stage_signal(bus, correlation=correlation, signal=signal)
     assert not bus.history
+
+
+class _MandatoryPersistenceFailingStore(InMemoryRuntimeEventStore):
+    def append(self, event, *, tenant_id: str):
+        raise OSError("simulated mandatory persistence backend outage")
+
+
+def _sample_stage_emit_inputs() -> tuple[
+    ApplicationExecutionCorrelation,
+    ApplicationExecutionStageSignal,
+]:
+    correlation = ApplicationExecutionCorrelation(
+        tenant_id="tenant-vpi",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+        scenario_execution_correlation_id="550e8400-e29b-41d4-a716-446655440000",
+    )
+    signal = ApplicationExecutionStageSignal(
+        application_slug="verified_product_identification",
+        scenario_execution_correlation_id=correlation.scenario_execution_correlation_id,
+        sequence=0,
+        stage_id="retrieval",
+        event_category="retrieval_channel",
+        severity=EventSeverity.INFO,
+        summary="retrieval channel=lexical status=succeeded candidates=3",
+    )
+    return correlation, signal
+
+
+def test_runtime_emitter_translates_mandatory_persistence_failure_to_public_emission_error() -> None:
+    bus = RuntimeEventBus(
+        persistence=_MandatoryPersistenceFailingStore(),
+        record_history=True,
+    )
+    correlation, signal = _sample_stage_emit_inputs()
+    with pytest.raises(ApplicationExecutionStageSignalEmissionError) as raised:
+        emit_application_execution_stage_signal(
+            bus,
+            correlation=correlation,
+            signal=signal,
+            production_mode=True,
+        )
+    assert isinstance(raised.value.__cause__, MandatoryEvidencePersistenceError)
+    assert not bus.history
+
+
+def test_stage_signal_runtime_delivery_priority_is_not_critical() -> None:
+    bus = RuntimeEventBus(record_history=True)
+    correlation, signal = _sample_stage_emit_inputs()
+    event = emit_application_execution_stage_signal(
+        bus,
+        correlation=correlation,
+        signal=signal,
+        production_mode=True,
+    )
+    priority = delivery_priority_for_runtime_event(event)
+    assert priority is not EventPriority.CRITICAL

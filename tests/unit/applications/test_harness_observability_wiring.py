@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
 from intergrax.applications._shared.observability_assembly_resolver import (
     ObservabilityAssemblyError,
     assert_observability_assembly_valid,
@@ -93,5 +93,5 @@ def test_build_harness_host_runtime_wires_observability_stores() -> None:
     manifest = build_lab_manifest(settings)
     env = manifest.environment
     assert env is not None
-    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     assert runtime.observability.trace_store is not None

@@ -60,7 +60,7 @@ Current feature pairs:
 | 15 | `MODALITY` | [`MODALITY.md`](MODALITY.md) | [`../maintainers/plans/MODALITY.md`](../maintainers/plans/MODALITY.md) |
 | 16 | `OBSERVABILITY` | [`OBSERVABILITY.md`](OBSERVABILITY.md) | [`../maintainers/plans/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md) |
 | 17 | `RELIABILITY_FAILURE_AND_HITL` | [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) | [`../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md`](../maintainers/plans/RELIABILITY_FAILURE_AND_HITL.md) |
-| 18 | `CRITIC_VERIFICATION` *(CURRENT implementation snapshot - not target canonical domain owner)* | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) | [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md) - pending clean-cut migration to [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) |
+| 18 | `CRITIC_VERIFICATION` *(LEGACY / HISTORICAL reference — canonical decision authority: [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md))* | [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) | [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md) - retained for history; not current decision authority |
 | 19 | `ADAPTIVE_HARNESS_INTELLIGENCE` | [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md) | [`../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md`](../maintainers/plans/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
 | 20 | `ELASTIC_CAPACITY_AND_SCALING` | [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) | [`../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md`](../maintainers/plans/ELASTIC_CAPACITY_AND_SCALING.md) |
 | 21 | `EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE` | [`EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) | [`../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md`](../maintainers/plans/EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE.md) |
@@ -114,7 +114,7 @@ Every canonical architecture artifact is classified **exactly once**. Do not pro
 | [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) | Verification pipeline canon - subordinate verification hub |
 | [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) | Deliberation / council canon - subordinate deliberation hub |
 
-**CURRENT implementation snapshot** (primary-24 row #18 only - not target canonical domain owner): [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) ↔ [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md).
+**LEGACY / HISTORICAL** (primary-24 row #18 only — not current decision authority): [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md) ↔ [`../maintainers/plans/CRITIC_VERIFICATION.md`](../maintainers/plans/CRITIC_VERIFICATION.md). **Canonical:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) (Execution-hosted semantic capability; Council = `DecisionStrategy`).
 
 **Cross-layer index:** [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) - compact `SYS-INV-*` authority; domain pairs remain semantic owners. **Remediation:** **CLA-CANON-TOPOLOGY-INTEGRITY** in [`PLATFORM_FOUNDATION` plan](../maintainers/plans/PLATFORM_FOUNDATION.md) - **ACCEPTED / PLANNED** only.
 
@@ -159,6 +159,8 @@ Execution: [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.
 ---
 
 ## Agent in the harness environment
+
+> **Execution boundary note (HARNESS-Y1):** Diagrams below describe **current harness wiring** on orchestrated lab paths (UnifiedTaskRunner → NexusLoop). Cross-domain consumers **MUST** depend on Execution-owned contracts and the public execution boundary per [UEA](UNIFIED_EXECUTION_ARCHITECTURE.md) — Nexus is a **private** orchestration implementation, not a public integration surface.
 
 **Hub summary for architects, researchers, and AI crawlers** - full canon in [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §13–§40 · plan [Phase ACP](../maintainers/plans/AGENT_CONTRACTS_AND_ASSEMBLY.md).
 

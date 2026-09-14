@@ -8,6 +8,16 @@ from typing import Final, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    validate_attempt_id,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.policy_bundle_provenance import (
     has_attested_policy_bundle_provenance,
     strip_policy_bundle_provenance_identifier,
@@ -38,8 +48,10 @@ class GovernedContinuationApprovalGrant(BaseModel):
     continuation_request_id: str = _NON_EMPTY
     side_effect_scope_id: str = _NON_EMPTY
     side_effect_scope_digest: str | None = None
-    task_id: str = _NON_EMPTY
-    run_id: str = _NON_EMPTY
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
     operation_id: str = _NON_EMPTY
     resource_scope: str | None = None
     policy_rule_id: str | None = None
@@ -54,8 +66,6 @@ class GovernedContinuationApprovalGrant(BaseModel):
         "grant_id",
         "continuation_request_id",
         "side_effect_scope_id",
-        "task_id",
-        "run_id",
         "operation_id",
         "pause_id",
         "human_request_id",
@@ -67,6 +77,26 @@ class GovernedContinuationApprovalGrant(BaseModel):
         if not normalized:
             raise ValueError("field must be non-empty")
         return normalized
+
+    @field_validator("task_id", mode="before")
+    @classmethod
+    def _validate_task_id(cls, value: object) -> TaskId:
+        return validate_task_id(value)
+
+    @field_validator("run_id", mode="before")
+    @classmethod
+    def _validate_run_id(cls, value: object) -> RunId:
+        return validate_run_id(value)
+
+    @field_validator("attempt_id", mode="before")
+    @classmethod
+    def _validate_attempt_id(cls, value: object) -> AttemptId:
+        return validate_attempt_id(value)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
 
     @field_validator("resource_scope", "policy_rule_id")
     @classmethod

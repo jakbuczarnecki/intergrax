@@ -196,17 +196,49 @@ A Virtual Worker:
 
 Virtual Workers may need to discover Agent, Skill, and Tool capabilities dynamically; that discovery remains separate from lifecycle, enablement, and execution. Frozen architecture: [Capability Catalog & Discovery](CAPABILITY_CATALOG_AND_DISCOVERY.md) (**implementation planned**).
 
-## Decision System inside Nexus execution
+## Platform execution model
 
-The **Decision System** is the platform capability that leads a decision from candidate proposal through optional deliberation, verification, revision, and resolution to an **authoritative lifecycle outcome** - executed as a **Decision Lifecycle model inside Nexus**, not as a second runtime.
+The **Execution Engine** is the **sole legal execution authority**. Application, agent, or API work enters one governed **Execution** boundary; the engine selects an execution strategy (direct inference, agentic execution, or orchestration). **Orchestration** may use **Nexus** as a **private** implementation to schedule child Executions — Nexus is an orchestration engine behind Execution-owned contracts, not a public execution API, root runtime, or peer authority.
+
+```text
+Application / Agent / API
+        ↓
+Execution Engine
+        ↓
+selected execution strategy
+        ├─ inference
+        ├─ agentic
+        └─ orchestration → Nexus (private)
+```
+
+Deeper contracts: [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md).
+
+## Decision capability under Execution
+
+The **Decision System** is a **semantic capability hosted by Execution**. It leads a decision from candidate proposal through optional deliberation, verification, revision, and resolution to an **authoritative lifecycle outcome** — without owning platform execution lifecycle or invoking work outside the frozen Execution boundary.
+
+```text
+Execution
+   ↓
+optional Decision capability
+   ↓
+proposal / verification / revision / adjudication
+   ↓
+authoritative decision outcome
+   ↓
+Execution-controlled work
+```
+
+**Decision Strategies** (single model, rule-based, hybrid, Council, and other contract-compliant providers) are **replaceable strategy implementations**, not separate runtimes. Legacy **Critic** documentation is **historical only** — not current decision authority.
 
 | Concern | Owner |
 | ------- | ----- |
 | Decision correctness (ACCEPTED / REJECTED / UNRESOLVED) | Decision System |
+| Execution lifecycle and legal execution authority | Execution Engine |
 | Execution authorization | Governed Execution / Policy |
-| Side effects | Nexus |
+| Orchestration implementation (when selected) | Nexus (private, behind Execution contracts) |
 
-**Canonical path:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) — hosted inside canonical Execution; governance mints `DecisionExecutionAuthorization` before `ExecutionRequest` work. Enterprise qualification: [`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md). **Certified core freeze (maintainers):** Decision System **CLOSED**, Execution Engine **FROZEN**, Certified Core Platform **FROZEN** — [`INTEGRAX_CORE_PLATFORM_FREEZE.md`](../maintainers/qualification/INTEGRAX_CORE_PLATFORM_FREEZE.md); future roadmap capabilities evolve outside that frozen core.
+**Canonical path:** [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) · [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](DECISION_DELIBERATION.md) — governance mints `DecisionExecutionAuthorization` before `ExecutionRequest` work. Enterprise qualification: [`DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md`](../maintainers/qualification/DS-E2E-15J-DECISION-SYSTEM-FINAL-ARCHITECTURE-CLOSURE.md). **Certified core freeze (maintainers):** Decision System **CLOSED**, Execution Engine **FROZEN**, Certified Core Platform **FROZEN** — [`INTEGRAX_CORE_PLATFORM_FREEZE.md`](../maintainers/qualification/INTEGRAX_CORE_PLATFORM_FREEZE.md); future roadmap capabilities evolve outside that frozen core.
 
 ## LKW as the active reference product
 

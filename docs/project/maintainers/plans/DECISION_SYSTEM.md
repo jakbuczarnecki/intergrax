@@ -1,5 +1,9 @@
 # Decision System - Implementation Plan
 
+**Classification:** `IMPLEMENTED` / `HISTORICAL PLAN` (canonical architecture supersedes active planning)
+**Status:** All closed phases implemented; use [`architecture/DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) for current semantics
+**Canonical parent:** [`architecture/DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md)
+
 **Architecture (1:1):** [`architecture/DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md)
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
@@ -17,7 +21,7 @@
 **Do not read this entire file in one session.**
 
 - **Implement / audit default:** architecture frozen banner · **Current status** table · Critic disposition (historical) · DS-E2E qualification record links.
-- **Use** `Read` with offset/limit - open **P0/P1** rows with Status ≠ Done in **one** phase section only.
+- **Use** `Read` with offset/limit - open **P0/P1** rows with Status   Done in **one** phase section only.
 - **Skip** **Done** / closed unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) read-scope block only.
 - **Paired architecture:** [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md) · [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) - one per session max.
@@ -359,7 +363,7 @@ Real Docker E2E qualification **completed** for the certified Decision + canonic
 |----|----------|------|--------|
 | DS-E2E-01 | P0 | Real single-model Decision System path | **QUALIFIED** — DS-E2E-15J Docker + `tests/integration/decision_system/test_real_single_model.py` |
 | DS-E2E-02 | P0 | Real multi-model Council (≥2 distinct model identities) | **QUALIFIED** — fail-closed independence gate; Docker evidence in DS-E2E-15J |
-| DS-E2E-03 | P0 | Real independent semantic verifier (producer model ≠ verifier model) | **QUALIFIED** — fail-closed independence gate; Docker evidence in DS-E2E-15J |
+| DS-E2E-03 | P0 | Real independent semantic verifier (producer model   verifier model) | **QUALIFIED** — fail-closed independence gate; Docker evidence in DS-E2E-15J |
 | DS-E2E-04 | P0 | Real HITL pause/resume | **QUALIFIED** — DS-E2E-15J + `tests/integration/decision_system/test_hitl_pause_resume.py` |
 | DS-E2E-05 | P0 | Governed real side effect: ALLOW and DENY | **QUALIFIED** — DS-E2E-15J canonical governance matrix + `test_governed_side_effect.py` |
 | DS-E2E-06 | P1 | Docker container kill + durable resume (not subprocess-only) | **QUALIFIED** — `testing_support/decision_e2e/docker_qualification.py`; subprocess retained as DS-REC regression |

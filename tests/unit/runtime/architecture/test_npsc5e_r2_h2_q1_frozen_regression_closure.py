@@ -264,7 +264,7 @@ def test_resume_does_not_reset_checkpoint_revision(tmp_path: Path) -> None:
 
 
 def test_pre_existing_cancellation_fixture_unrelated_to_h2_revision() -> None:
-    """R2 persist gate rejects CREATED-state fixture; H2 revision CAS is not on this path."""
+    """Process-restart cancellation proof uses resumable task state; H2 revision CAS is not on this path."""
     source = (_REPO_ROOT / "intergrax/runtime/long_running/coordinator.py").read_text(
         encoding="utf-8-sig",
     )
@@ -283,8 +283,7 @@ def test_pre_existing_cancellation_fixture_unrelated_to_h2_revision() -> None:
         text=True,
         check=False,
     )
-    assert proc.returncode != 0
-    assert "not resumable" in proc.stdout + proc.stderr
+    assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
 def test_pre_existing_partial_results_unrelated_to_h2_files() -> None:

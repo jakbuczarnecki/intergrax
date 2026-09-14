@@ -1,7 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Canonical execution reconstruction projection (DIAG-2)."""
+"""Shared factual execution reconstruction from canonical evidence (OBS-BOUNDARY-1).
+
+Semantic owner: Evidence Plane / shared factual reconstruction — not diagnostic interpretation.
+Physical package: transitional under ``runtime.diagnostics`` until OBS-RECONSTRUCTION-1.
+"""
 
 from __future__ import annotations
 

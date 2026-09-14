@@ -11,6 +11,7 @@ from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_run_enums import AgentRunStatus, CognitivePattern
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import build_runtime_request_for_tests, canonical_governed_execution_scope
 
 
 @pytest.mark.unit
@@ -49,15 +50,16 @@ async def test_echo_still_supports_uaep_after_migration() -> None:
     agent = EchoAgent()
     assert supports_uaep(agent) is True
     engine = AgentEngine({"echo": agent})
-    result = await engine.run_with_result(
-        RuntimeRequest(
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            agent_id="echo",
-            message="uaep compat",
-            metadata={"run_id": "run_echo_mig", "task_id": "task_echo_mig"},
-        )
+    request = build_runtime_request_for_tests(
+        seed="echo-mig",
+        tenant_id="t1",
+        user_id="u1",
+        session_id="s1",
+        agent_id="echo",
+        message="uaep compat",
+        metadata={"run_id": "run_echo_mig", "task_id": "task_echo_mig"},
     )
+    with canonical_governed_execution_scope("echo-mig"):
+        result = await engine.run_with_result(request)
     assert result.status == AgentExecutionStatus.COMPLETED
     assert "uaep compat" in result.summary

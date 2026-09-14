@@ -7,11 +7,17 @@ from __future__ import annotations
 import pytest
 
 from testing_support.research_llm_test_support import configured_research_llm
+from testing_support.application_environment_test_support import stub_environment_llm_adapter
 
 _CURSOR_SECRET_ENV = "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET"
 _CURSOR_SECRET_VALUE = "unit-test-diagnostic-problem-list-cursor-secret"
 
 __all__ = ["configured_research_llm"]
+
+
+@pytest.fixture(autouse=True)
+def _stub_tier3_environment_llm_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
+    stub_environment_llm_adapter(monkeypatch)
 
 
 @pytest.fixture(autouse=True)

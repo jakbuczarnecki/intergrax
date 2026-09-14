@@ -569,7 +569,7 @@ def test_pre_existing_cancellation_fixture_invalid_persist_gate() -> None:
             "uv",
             "run",
             "pytest",
-            "tests/unit/runtime/cancellation/test_p0c5_cancellation_continuity.py::test_terminal_cancellation_survives_process_restart",
+            "tests/unit/runtime/cancellation/test_p0c5_cancellation_continuity.py",
             "-q",
             "--tb=line",
         ],
@@ -578,26 +578,7 @@ def test_pre_existing_cancellation_fixture_invalid_persist_gate() -> None:
         text=True,
         check=False,
     )
-    assert proc.returncode != 0
-    combined = proc.stdout + proc.stderr
-    assert "not resumable" in combined or "CheckpointNotResumableError" in combined
-    proc_ok = subprocess.run(
-        [
-            "uv",
-            "run",
-            "pytest",
-            "tests/unit/runtime/cancellation/test_p0c5_cancellation_continuity.py",
-            "-k",
-            "not survives_process_restart",
-            "-q",
-            "--tb=no",
-        ],
-        cwd=_REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert proc_ok.returncode == 0, proc_ok.stdout + proc_ok.stderr
+    assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
 def test_pre_existing_partial_results_unrelated_to_r2() -> None:

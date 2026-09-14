@@ -7,6 +7,9 @@ from __future__ import annotations
 from intergrax.applications._shared.agent_certification_wiring import apply_roster_agent_governance
 from intergrax.applications._shared.budget_wiring import product_agent_budget_slice
 from intergrax.applications._shared.ownership_wiring import standard_product_operational_ownership
+from intergrax.applications._shared.reference_capability_bundle import lab_reference_tool_profile
+from intergrax.applications._shared.skill_wiring import legal_skill_profile
+from intergrax.skills.registry.profile import SkillProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -73,6 +76,19 @@ def _dispute_sim_environment() -> ApplicationEnvironmentProfile:
         .with_harness_memory()
         .with_reference_host_platform_defaults(multi_agent_critic=True)
     )
+    dispute_skills = SkillProfile(
+        enabled_bundles=["harness", *legal_skill_profile().enabled_bundles, "memory", "research"],
+    )
+    capability_stack = base.capabilities.model_copy(
+        update={
+            "skills": dispute_skills,
+            "tools": lab_reference_tool_profile(harness_tools=True),
+            "context": base.capabilities.context.model_copy(
+                update={"enable_rag": True, "enable_websearch": True},
+            ),
+        },
+    )
+    base = base.model_copy(update={"capabilities": capability_stack})
     return apply_roster_agent_governance(base, agents=_DISPUTE_SIM_AGENTS, app_id="dispute_sim")
 
 

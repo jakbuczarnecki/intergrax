@@ -25,18 +25,16 @@ pytestmark = pytest.mark.unit
 
 def test_terminal_acceptance_diagnostic_exact_gate_values() -> None:
     diagnostic = build_terminal_acceptance_diagnostic(
-        critic_verdict_passed=True,
+        platform_decision_accepted=True,
         has_supported_diagnosis=True,
         completion_mode=COMPLETION_SUPPORTED_DIAGNOSIS,
-        validation_errors=("unsupported_inference:example",),
         revision_pass=True,
         evidence_gathering_stop_reason="planner_budget_exhausted",
     )
     assert diagnostic == TerminalAcceptanceDiagnostic(
-        critic_verdict_passed=True,
+        platform_decision_accepted=True,
         has_supported_diagnosis=True,
         completion_mode=COMPLETION_SUPPORTED_DIAGNOSIS,
-        validation_errors=("unsupported_inference:example",),
         revision_pass=True,
         evidence_gathering_stop_reason="planner_budget_exhausted",
     )
@@ -44,16 +42,15 @@ def test_terminal_acceptance_diagnostic_exact_gate_values() -> None:
 
 def test_terminal_acceptance_diagnostic_does_not_change_outcome() -> None:
     diagnostic = build_terminal_acceptance_diagnostic(
-        critic_verdict_passed=True,
+        platform_decision_accepted=True,
         has_supported_diagnosis=False,
         completion_mode=COMPLETION_UNRESOLVED,
-        validation_errors=(),
         revision_pass=False,
         evidence_gathering_stop_reason="",
     )
     assert (
         derive_terminal_outcome(
-            critic_verdict_passed=diagnostic.critic_verdict_passed,
+            decision_accepted=diagnostic.platform_decision_accepted,
             has_supported_diagnosis=diagnostic.has_supported_diagnosis,
             completion_mode=diagnostic.completion_mode,
         )
@@ -61,7 +58,7 @@ def test_terminal_acceptance_diagnostic_does_not_change_outcome() -> None:
     )
     assert (
         derive_terminal_outcome(
-            critic_verdict_passed=True,
+            decision_accepted=True,
             has_supported_diagnosis=True,
             completion_mode=COMPLETION_SUPPORTED_DIAGNOSIS,
         )
@@ -71,10 +68,9 @@ def test_terminal_acceptance_diagnostic_does_not_change_outcome() -> None:
 
 def test_terminal_acceptance_diagnostic_is_deterministic() -> None:
     kwargs = {
-        "critic_verdict_passed": False,
+        "platform_decision_accepted": False,
         "has_supported_diagnosis": True,
         "completion_mode": COMPLETION_SUPPORTED_DIAGNOSIS,
-        "validation_errors": ("unsupported_inference:h1_only_causal_diagnosis_insufficient",),
         "revision_pass": False,
         "evidence_gathering_stop_reason": "critic_follow_up_complete",
     }
@@ -85,18 +81,16 @@ def test_terminal_acceptance_diagnostic_is_deterministic() -> None:
 
 def test_terminal_acceptance_diagnostic_snapshots_are_independent() -> None:
     snapshot_a = build_terminal_acceptance_diagnostic(
-        critic_verdict_passed=True,
+        platform_decision_accepted=True,
         has_supported_diagnosis=True,
         completion_mode=COMPLETION_SUPPORTED_DIAGNOSIS,
-        validation_errors=(),
         revision_pass=True,
         evidence_gathering_stop_reason="stop_a",
     )
     snapshot_b = build_terminal_acceptance_diagnostic(
-        critic_verdict_passed=False,
+        platform_decision_accepted=False,
         has_supported_diagnosis=False,
         completion_mode=COMPLETION_UNRESOLVED,
-        validation_errors=("unsupported_inference:example",),
         revision_pass=False,
         evidence_gathering_stop_reason="stop_b",
     )
@@ -110,10 +104,9 @@ def test_persist_terminal_acceptance_diagnostic_writes_json(tmp_path, monkeypatc
     path = tmp_path / "diagnostic.json"
     monkeypatch.setenv(TERMINAL_ACCEPTANCE_DIAGNOSTIC_PATH_ENV, str(path))
     diagnostic = build_terminal_acceptance_diagnostic(
-        critic_verdict_passed=True,
+        platform_decision_accepted=True,
         has_supported_diagnosis=True,
         completion_mode=COMPLETION_SUPPORTED_DIAGNOSIS,
-        validation_errors=("unsupported_inference:example",),
         revision_pass=True,
         evidence_gathering_stop_reason="planner_budget_exhausted",
     )

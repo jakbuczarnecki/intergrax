@@ -15,6 +15,7 @@ from intergrax.contracts.execution_identity import (
     TaskId,
     mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -96,6 +97,7 @@ def _identity(*, attempt_id: AttemptId | None = None) -> BackgroundExecutionIden
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=attempt_id or mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
 
 

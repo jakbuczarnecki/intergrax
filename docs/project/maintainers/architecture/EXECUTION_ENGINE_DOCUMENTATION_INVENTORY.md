@@ -1,6 +1,12 @@
-# Execution Engine — Documentation Inventory (P0)
+# Execution Engine — Documentation Inventory (P0 + post-freeze)
 
-**Status:** `INVENTORY` (classification only — no mass rewrites)
+**Status:** `INVENTORY` (classification + post-freeze reconciliation index)
+**Classification:** `INVENTORY SSOT`
+**Audience:** Maintainers, auditors
+**Canonical parent:** [`EXECUTION_ENGINE.md`](EXECUTION_ENGINE.md)
+**Last architecture reconciliation:** 2026-09-14 (EE-POST-FREEZE-FINAL-R1)
+**Post-freeze audit:** [`../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md) (**PASS**)
+**Documentation reconciliation:** [`../qualification/EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md`](../qualification/EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md)
 
 **Ownership reference (unchanged):**
 
@@ -103,9 +109,10 @@ Hub links to canonical owners only; it does not own normative semantics (see hub
 | --- | --- | --- |
 | `docs/project/architecture/OBSERVABILITY.md` | **CANONICAL** | Observability spine |
 | `docs/project/architecture/assets/fullsize/observability-evidence-spine.md` | **CANONICAL** (diagram asset) | Evidence spine diagram |
-| `docs/project/maintainers/architecture/NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md` | **CANONICAL** | 5F evidence plane; R1 **FROZEN / PASS**; R2 active |
+| `docs/project/maintainers/architecture/NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md` | **CANONICAL** | 5F evidence plane; R1–R4 + Final **FROZEN / PASS** |
 | `docs/project/maintainers/qualification/NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md` | **CANONICAL** (freeze) | 5F/R1 Final |
-| `docs/project/maintainers/qualification/NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md` | **ACTIVE** | R2 implemented; await R2 Final freeze |
+| `docs/project/maintainers/qualification/NPSC_5F_R2_FINAL_JOURNAL_COMPLETENESS_ORDERING_QUALIFICATION_AND_FREEZE.md` | **CANONICAL** (freeze) | 5F/R2 Final **FROZEN / PASS** |
+| `docs/project/maintainers/qualification/NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md` | **HISTORICAL** | Pre–R2 Final implementation record |
 | `docs/project/technical/platform/execution_evidence_*.md` | **SUPPORTING** / **PLANNED** | Implementation plans where present |
 
 ### Scale / resilience
@@ -122,6 +129,9 @@ Hub links to canonical owners only; it does not own normative semantics (see hub
 | Document | Classification |
 | --- | --- |
 | `docs/project/maintainers/architecture/EXECUTION_ENGINE.md` | **CANONICAL** (`MAINTAINER_HUB`) |
+| `docs/project/maintainers/architecture/EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md` | **CANONICAL** (frozen enterprise map) |
+| `docs/project/maintainers/qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md` | **QUALIFICATION** (post-freeze PASS) |
+| `docs/project/maintainers/qualification/EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md` | **QUALIFICATION** (doc reconciliation PASS) |
 | `EXECUTION_CERTIFICATION_ACCELERATION_P0.md` | **CANONICAL** (P0 inventory) |
 | `EXECUTION_CERTIFICATION_ACCELERATION_R1.md` | **CANONICAL** (qual) — R1 **QUALIFIED** |
 | `EXECUTION_CERTIFICATION_ACCELERATION_R2.md` | **CANONICAL** (qual) — R2 **QUALIFIED** |

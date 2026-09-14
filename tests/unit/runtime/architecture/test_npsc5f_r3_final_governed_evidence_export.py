@@ -237,7 +237,7 @@ def test_mandatory_frozen_suite_passes(label: str, targets: list[str]) -> None:
 
 
 def test_r3_final_canonical_predecessor_shas_recorded() -> None:
-    assert R3_IMPLEMENTATION_SHA == "0346face3ef68d8f21504822a26f8f45f2384cf9"
+    assert R3_IMPLEMENTATION_SHA == "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
     assert R2_FINAL_SHA.startswith("76c9284")
     assert R2_IMPLEMENTATION_SHA.startswith("6325074")
     assert R1_FINAL_SHA.startswith("455c09f")
@@ -568,5 +568,5 @@ def test_r3_final_no_false_full_snapshot_marketing_in_export_module() -> None:
 
 @pytest.mark.gate
 def test_npsc5f_r3_final_qualification_gate() -> None:
-    assert R3_IMPLEMENTATION_SHA == "0346face3ef68d8f21504822a26f8f45f2384cf9"
+    assert R3_IMPLEMENTATION_SHA == "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
     assert FORBIDDEN_EXPORT_CONTENT_FIELDS.issuperset({"prompt", "token", "tool_args"})

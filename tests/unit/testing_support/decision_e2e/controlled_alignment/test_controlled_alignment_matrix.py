@@ -188,11 +188,8 @@ async def test_matrix_zero_budget_exhausted() -> None:
     bundle = build_fixture_runtime_bundle(
         llm_adapter_override=ModelOvercommitStimulusLLM(persist_misalignment=True),
     )
-    with pytest.raises(PreReconciliationValidationError):
-        await execute_resolved_skeleton(
-            bundle.bundle,
-            evaluator_loop_max_iterations=1,
-        )
+    with pytest.raises(RuntimeError, match="incident_terminal_state_not_accepted"):
+        await execute_resolved_skeleton(bundle.bundle)
 
 
 @pytest.mark.asyncio

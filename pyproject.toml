@@ -317,6 +317,21 @@ dev-ci-rag = [
   "opentelemetry-exporter-otlp-proto-grpc>=1.27,<2",
   "qdrant-client>=1.9,<2",
 ]
+# HARDENING-9.1 — minimal optional deps so ``pytest tests/unit --collect-only`` is error-free.
+# Ownership mirrors existing extras (do not use ``uv sync --all-extras``).
+# Local maintainer cert: ``uv sync --extra dev --extra dev-unit-cert``
+# CI nightly gate parity: ``uv sync --extra dev-ci --extra dev-unit-cert --frozen``
+dev-unit-cert = [
+  "fastmcp>=3.3.1,<4",
+  "langchain-core>=0.3,<2.0",
+  "qdrant-client>=1.9,<2",
+  "anthropic>=0.25,<1",
+  "tiktoken>=0.7,<1",
+  "pgvector>=0.3",
+  "torch==2.2.2",
+  "sentence-transformers>=3.0,<6",
+  "transformers>=4.41,<5",
+]
 integrations-sentry = ["sentry-sdk>=2.0"]
 integrations-kafka = [
   "confluent-kafka>=2.3.0",

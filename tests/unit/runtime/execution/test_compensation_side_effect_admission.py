@@ -124,8 +124,6 @@ async def test_u2_governance_denial_surfaces_as_failed_claim_semantics() -> None
 
 @pytest.mark.asyncio
 async def test_u2_production_wiring_builds_admitted_execution_port() -> None:
-    from dataclasses import dataclass
-
     from intergrax.applications._shared.compensation_side_effect_wiring import (
         build_compensation_side_effect_execution,
     )
@@ -133,17 +131,10 @@ async def test_u2_production_wiring_builds_admitted_execution_port() -> None:
         CompensationSideEffectExecutionPort,
     )
 
-    @dataclass
-    class _NexusStub:
-        execution_budget_ledger_factory: object | None = None
-        run_budget: object | None = None
-        execution_lineage_persistence: object | None = None
-
     async def _invoke(**kwargs):  # type: ignore[no-untyped-def]
         return DeclarativeToolInvokeResult(status="success")
 
     port = build_compensation_side_effect_execution(
-        _NexusStub(),  # type: ignore[arg-type]
         RecordingExecutionBoundDeclarativeToolInvoker(_invoke),
     )
     assert isinstance(port, CompensationSideEffectExecutionPort)

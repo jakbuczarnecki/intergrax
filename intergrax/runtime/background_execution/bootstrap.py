@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
 )
@@ -33,6 +34,7 @@ class BackgroundExecutionIdentity:
     task_id: TaskId
     run_id: RunId
     attempt_id: AttemptId
+    execution_id: ExecutionId
 
 
 def _resolve_tenant_scope(
@@ -87,6 +89,7 @@ def resolve_background_execution(
         task_id=persisted.task_id,
         run_id=persisted.run_id,
         attempt_id=persisted.attempt_id,
+        execution_id=persisted.execution_id,
     )
 
 

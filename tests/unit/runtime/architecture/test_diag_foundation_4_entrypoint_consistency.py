@@ -280,6 +280,7 @@ def test_df4_background_task_uses_shared_terminal_diagnostic_path(
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
 
     def handler(

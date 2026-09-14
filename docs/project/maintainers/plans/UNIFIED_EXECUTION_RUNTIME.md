@@ -20,9 +20,19 @@
 - UAEP is **agent-specific**; Nexus is **not** required for direct inference or ordinary agentic execution
 - UER coordinates Governance/Budget/Observability/Checkpoint; does not own their authorities
 
-**Known implementation gaps (CURRENT):** canonical UER foundations exist (`ExecutionId`, `ExecutionBoundary`, `StrategyExecutionRouter`); full entry-path adoption, five-ID background propagation, subtree cancellation, and budget/authority convergence **PARTIAL**; `UnifiedTaskRunner` routes through Nexus on many paths; agent-centric `GraphExecutor`; incomplete hierarchical budget dimensions on some paths.
+**Frozen core (CERTIFIED — do not replan as open core work):** per UER hub — `ExecutionId`, root `ExecutionRuntime`, `ExecutionBoundary`, `StrategyExecutionRouter`, `RuntimeEvent.execution_id`, child Execution admission, certified recovery/checkpoint semantics on approved Execution boundaries.
+
+**Open work (consumer / adoption only — PARTIAL):** legacy harness routing convergence (`UnifiedTaskRunner` / residual Nexus-shaped paths); five-ID evidence on every observability export/journal surface; background `TaskHandler` dispatch vs universal `execution.execute` admission ([`BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md) **HARNESS-Y3**); subtree cancellation and pause/resume adoption; hierarchical budget on residual paths; external queue provider integrations.
+
+**Not future core:** implement `ExecutionId`, finish `ExecutionRuntime`, introduce `ExecutionBoundary`, or make Nexus mandatory for all execution strategies (Nexus = orchestration strategy only).
 
 **High-level migration order:** see UER hub [Implementation readiness §5](../../architecture/UNIFIED_EXECUTION_RUNTIME.md#5-migration-order-high-level). Detailed code mapping: [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](../../architecture/UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md) (**UE-DOC-0.9**).
+
+### Architecture sync - HARNESS-Y3 (2026-09-14)
+
+**Docs synchronized:** [`BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md), [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](../../architecture/satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md) maturity banner, this plan hub §UE-DOC-0.4 adoption split.
+
+**Background:** queue/worker = transport + control plane; Execution Engine = identity, attempt, lifecycle authority. See BG-EXEC intake in Background Tasks architecture.
 
 ### Architecture sync - UE-DOC-0.9 (2026-08-26)
 

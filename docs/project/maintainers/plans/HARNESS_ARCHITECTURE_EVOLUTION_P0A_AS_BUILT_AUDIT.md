@@ -905,3 +905,143 @@ Highest-value remaining areas:
 No feature code should be changed under this audit commit.
 
 The next action is a bounded documentation synchronization of the canonical CURRENT sections listed in §8. After that sync, P0A can be marked CLOSED and P0B can start with the two authority blockers.
+
+---
+
+# 11. HARNESS-REBASE-EE1 addendum (2026-09-14)
+
+**Task:** HARNESS-REBASE-EE1 — Harness Architecture Roadmap re-baseline against frozen Enterprise Execution Engine  
+**Audit HEAD:** `a189282b35e7a4ac549489f0d06b7acd271e9a5b` (`development`, matches `origin/development` at audit time)  
+**Production code changed:** NONE (documentation / classification only)
+
+## Executive summary
+
+Enterprise qualification and post-freeze audits confirm the **Execution Engine is the sole canonical execution authority** with frozen contracts, bypass protection, and recovery-plane freeze. The harness roadmap must not schedule fundamental UER re-convergence. Remaining harness work is **composition, adoption, read models, and explicit gaps** — not rebuilding `ExecutionRuntime` / identity / strategy ownership.
+
+**Execution Engine verdict:** `ENTERPRISE_FROZEN_CANONICAL`
+
+## Evidence matrix (Phase 1)
+
+| Concern | Canonical owner | Current evidence | Status |
+| --- | --- | --- | --- |
+| execution identity | `identity_authority.py` | NPSC-3C freeze; EE-A2; `test_execution_identity_single_authority_gate` | PASS |
+| lifecycle | `ExecutionRuntime` | NPSC-3C; EE-FINAL cross-session cert | PASS |
+| admission (root) | `HostTaskExecutionPort` / `host_task.py` | NPSC-3G; enterprise verification diagram | PASS |
+| child execution | `ChildExecutionRunner` / child mint paths | UER child paths; NPSC-5A–5D gates | PASS |
+| strategy routing | `StrategyExecutionRouter` | NPSC-3C ownership table | PASS |
+| host ingress | Tier-3 → `HostTaskExecutionExecutor` | NPSC-3G; zero tier-3 `UnifiedTaskRunner` factory bypass | PASS |
+| background ingress | background mint via identity authority | NPSC-3C lifecycle diagram | PASS |
+| governance boundary | `agent_governance/` evaluation-only | NPSC-4.x; `test_ee_b3_a_governance_bypass_gate.py` | PASS |
+| bypass protection | architecture gates | `test_ee_final_arch_zero_execution_bypass.py`, `test_platform_execution_unification_u5_final_zero_bypass.py`, POST_FREEZE gap audit PASS | PASS |
+| Nexus boundary | private orchestration backend | NPSC-3C §2; Nexus `handle_task` without root mint | PASS |
+| recovery | NPSC-5E Final plane | `test_npsc5e_final_recovery_plane_qualification_and_freeze.py` | FROZEN |
+
+## Changed roadmap classifications (EE1)
+
+| Initiative | Prior (roadmap 2026-09-02) | EE1 re-baseline |
+| --- | --- | --- |
+| A | CURRENT / PARTIAL — finish convergence | **FROZEN / ENTERPRISE** — adoption/conformance only |
+| I | PARTIAL / TARGET — new seam | PARTIAL — P2.1-S1 closed; **P2.1-S2 adoption** |
+| O | TARGET | **PARTIAL** (topology exec) + **TARGET** (governed proposal path) |
+| N | GAP / PARTIAL | **GAP** (no shared invariant runner) |
+| AF | CURRENT / PARTIAL | **FROZEN / PARTIAL** (plane frozen; consumer gaps remain) |
+| Y | PARTIAL | **URGENT / PARTIAL** |
+| DS (cross-cutting) | (not in matrix) | CURRENT / QUALIFIED — hosted by Execution |
+| DIAG (cross-cutting) | (not in matrix) | CURRENT / ENTERPRISE — not invariant service |
+
+## Frozen foundations (do not rebuild in harness roadmap)
+
+- Execution Engine ownership (`intergrax/runtime/execution/` freeze discipline)
+- NPSC-5E recovery plane (R1/R2/R3)
+- Decision System as Execution-hosted semantic capability (not DecisionRuntime)
+- Central Diagnostics deterministic spine (evidence consumer)
+
+## Real remaining gaps (non-blocking for EE freeze)
+
+- Runtime Invariant Service catalog/runner (Initiative N)
+- Governed dynamic topology **proposal** path (Initiative O — distinct from shipped fan-out execution)
+- External/subagent provider **production adoption** (P2.1-S2)
+- Runtime Inspection read-model API (Initiative C)
+- Canonical doc CURRENT drift (Initiative Y — **Y1 closed** 2026-09-14 for UEA/UER/Nexus/hub; satellites and domain pairs remain)
+- Residual intake helper debt (`task_run_bridge.mint_intake_execution_identity`) — documented in enterprise verification §10
+
+## ADOPTION_GAP samples (report only — not fixed in EE1)
+
+Cross-domain imports of Nexus implementation types where Execution-owned ports should be preferred:
+
+| Area | Example | Expected boundary |
+| --- | --- | --- |
+| Tier-2 agents | `agents/*/…` → `RuntimeRequest`, `RuntimeContext`, `DiagnosticPayload` | Agent engine / Execution work ports |
+| Tier-3 hosts | `applications/*/host/execution_wiring.py` → direct `NexusLoop` wiring | HostTaskExecution + Execution strategy composition |
+| MCP | `applications/_shared/mcp_nexus_server.py` | Host execution ingress, not Nexus as public API |
+
+**Recommended next task:** bounded **P2.1-S2** or **host/agent Nexus decoupling adoption** audit with gate-backed migration plan (single bounded ingress family per task).
+
+## Decision / Diagnostics alignment (summary)
+
+- **Decision System:** implemented/active; authoritative decision authority; Council = strategy; qualification DS-E2E-15J with observations — see [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md).
+- **Diagnostics:** canonical deterministic engine; `RuntimeEvent` = evidence; `Problem` = derived — see [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) and DIAGNOSTIC_* qualification matrix. **Not** Runtime Invariant Service.
+
+## Workspace note (EE1 session)
+
+Unrelated dirty worktree (unit test files under `tests/unit/…`, `testing_support/`) was **not** staged for the EE1 documentation commit. Scope for EE1: documentation-only paths listed in the task.
+
+## HARNESS-Y1 addendum (2026-09-14)
+
+**Audited / synchronized (CURRENT claims):** `UNIFIED_EXECUTION_ARCHITECTURE.md`, `UNIFIED_EXECUTION_RUNTIME.md`, `NEXUS_EXECUTION_FLOW.md`, `intergrax_runtime_architecture.md` (Critic row + Nexus wiring note), roadmap Initiative Y status.
+
+**Stale claims removed:** `ExecutionId` “not yet canonical”; UER “implementation PARTIAL” without frozen-core vs consumer-adoption split; Critic as CURRENT decision authority in hub registry.
+
+**Remaining doc drift (Initiative Y, post-Y2):** UER satellites, `DECISION_SYSTEM.md` cross-refs, Background Tasks CURRENT tables, maintainer plan CURRENT rows, public/community maps.
+
+## HARNESS-Y2 addendum (2026-09-14)
+
+**Audited / synchronized:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md), [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) — frozen five-ID `RuntimeEvent` as **CURRENT** contract; emit-path **OBS-COVERAGE-1**; **ADOPTION / PROJECTION GAP** for journal/export/DIAG surfaces; `ObservabilityExporter` / `RuntimeEventPersistence` contract-first; Diagnostics ≠ Runtime Invariant Service; `ProblemId` ≠ `ExecutionId`; `ProblemGroupingStrategyRegistry` documented as proven strategy seam.
+
+**Stale claims removed:** `ExecutionId` as TARGET-only on `RuntimeEvent`; “migrated paths / PARTIAL contract” wording conflating projection lag with core identity; DIAG implying `ExecutionId` not yet on canonical events.
+
+**Extensibility gaps (report only):** Runtime Invariant Service (Initiative N); full OBS-COVERAGE-1 writer certification; journal Execution Tree projection adoption.
+
+## HARNESS-Y3 addendum (2026-09-14)
+
+**Audited / synchronized:** [`BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md), [`satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md`](../../architecture/satellites/UNIFIED_EXECUTION_RUNTIME_runtime_extended.md), [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) plan hub §UE-DOC-0.4.
+
+**Corrected claims:** Background Tasks as parallel execution runtime / `WorkerRuntime` as execution authority; stale “mint new `AttemptId` on every worker redelivery” (superseded by persisted transport identity + `admit_background_execution_reentry`); conflating frozen Execution core PARTIAL with consumer adoption.
+
+**Implementation / adoption debt (report only):** universal `execution.execute` admission for all `TaskHandler` paths; formal `TaskRegistry` port; enqueue-side transport envelopes with full runtime identity.
+
+**Extensibility gaps (report only):** `TaskRegistry` port ABC; unified worker provider port beyond concrete worker classes.
+
+**Remaining doc drift (Initiative Y, post-Y3):** public/community maps, `DECISION_SYSTEM.md` cross-refs, diagrams and non-primary maintainer CURRENT rows outside Y3 scope.
+
+## HARNESS-Y4 addendum (2026-09-14)
+
+**Audited public docs:** `README.md`, `docs/project/community/PUBLIC_DOCUMENTATION_MAP.md`, `docs/project/technical/DOCUMENTATION_MAP.md`, `docs/project/architecture/ARCHITECTURE_OVERVIEW.md`.
+
+**Corrected claims:** “Decision System inside Nexus execution”; README/platform table presenting **Critic** as **CURRENT** production decision path; technical map Critic **CURRENT** snapshot line; public navigation missing first-contact **Execution** and **Diagnostics** routes; README “Execution migrating” vs frozen Execution Engine authority.
+
+**Remaining active drift (post-Y4):** maintainer-plan CURRENT rows; README diagram alt text / full-size companion pages; deep `DECISION_SYSTEM.md` satellite cross-refs; non-authoritative historical ADR index phrases.
+
+**Historical-only drift preserved:** `CRITIC_VERIFICATION.md` remains linked as **HISTORICAL**; Nexus orchestration internals remain behind technical routes — not public execution API.
+
+**Y closeout readiness:** **NO** — active contradictory CURRENT docs may remain outside Y4 file budget (maintainer rows, assets).
+
+**Production code changed:** **NO**
+
+## HARNESS-Y5 addendum (2026-09-14)
+
+**Audited deep docs:** [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md), [`DECISION_VERIFICATION.md`](../../architecture/DECISION_VERIFICATION.md), [`DECISION_DELIBERATION.md`](../../architecture/DECISION_DELIBERATION.md) — multi-axis maturity (architecture FROZEN · implementation ACTIVE · qualification DS-E2E-15J · adoption PARTIAL where unproven); external `DecisionStrategy` authority rule; canonical Execution hosting (not Nexus-owned lifecycle).
+
+**Maintainer rows corrected:** [`DECISION_VERIFICATION.md`](DECISION_VERIFICATION.md) plan — production qualification **PLANNED** → **QUALIFIED WITH OBSERVATIONS** (DS-E2E-15J bundle).
+
+**Companion / asset text:** [`assets/fullsize/decision-system-flagship.md`](../../architecture/assets/fullsize/decision-system-flagship.md) alt text — removed Nexus-owned lifecycle claim.
+
+**Nexus cross-ref:** [`NEXUS_EXECUTION_FLOW.md`](../../architecture/NEXUS_EXECUTION_FLOW.md) Decision neighbor row aligned with Execution-hosted Decision capability.
+
+**Remaining historical drift (non-authoritative):** `CRITIC_VERIFICATION.md` snapshot; deliberation SVG subcaption “Runs inside Nexus budgets”; maintainer NPSC/Nexus historical fan-out notes; `PLATFORM_FOUNDATION.md` Tier-3 composition shorthand.
+
+**Y closeout matrix (Y5):** Y-CLOSE-1..7 **PASS** after Y5 sync (see Initiative Y section in roadmap).
+
+**Initiative Y final verdict:** **CLOSED** — Y1–Y5 documentation synchronization complete.
+
+**Production code changed:** **NO**

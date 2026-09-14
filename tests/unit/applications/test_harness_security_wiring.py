@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
 from intergrax.applications._shared.runtime_config_bridge import materialize_runtime_config
 from intergrax.applications._shared.security_assembly_resolver import (
     SecurityAssemblyError,
@@ -32,7 +32,7 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_runtime_event_persistence,
 )
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import build_runtime_request_for_tests, FakeLLMAdapter
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
 
@@ -96,16 +96,17 @@ def test_validate_security_wiring_rejects_mismatched_options() -> None:
 
 def test_materialize_runtime_config_applies_security_profile() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="sec.runtime")
-    request = RuntimeRequest(
-        message="hello",
+    request = build_runtime_request_for_tests(
+        seed="sec-runtime",
         tenant_id="t1",
         agent_id="echo",
         user_id="user-1",
         session_id="session-1",
+        message="hello",
     )
     manifest = build_lab_manifest(LabApplicationSettings.from_env())
     build_ctx = ApplicationBuildContext.for_manifest(manifest, environment=env)
-    config = materialize_runtime_config(request, build_ctx, env)
+    config = materialize_runtime_config(request, build_ctx, env, llm_adapter=FakeLLMAdapter())
     assert config.security_profile is not None
     assert config.security_profile.prompt_defense_enabled == env.security_profile.prompt_defense_enabled
 
@@ -115,7 +116,7 @@ def test_build_harness_host_runtime_wires_security_middleware() -> None:
     manifest = build_lab_manifest(settings)
     env = manifest.environment
     assert env is not None
-    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     pipeline = resolve_harness_host_middleware_pipeline(runtime)  # noqa: SLF001
     assert isinstance(pipeline, MiddlewarePipeline)
     names = {middleware.name for middleware in pipeline._middleware}  # noqa: SLF001

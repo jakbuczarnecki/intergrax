@@ -26,13 +26,14 @@ from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _request() -> RuntimeRequest:
-    return RuntimeRequest(
+    return build_runtime_request_for_tests(
+        seed="catalog-bridge",
         tenant_id="tenant-ts",
         agent_id="echo",
         user_id="user-ts",

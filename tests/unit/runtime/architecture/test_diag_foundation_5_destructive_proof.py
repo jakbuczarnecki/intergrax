@@ -100,6 +100,10 @@ def _stub_llm(monkeypatch: pytest.MonkeyPatch) -> None:
         "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
         _resolve,
     )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.environment_wiring.resolve_optional_environment_llm_adapter",
+        lambda env, **_: adapter,
+    )
 
 
 def test_df5_entrypoint_consistency_prerequisite_from_df4() -> None:
@@ -186,6 +190,7 @@ def test_df5_case_c_product_without_attached_diagnostics_fails_closed(
 def test_df5_case_d_production_scenario_without_diagnostics_fails(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    _stub_llm: None,
 ) -> None:
     monkeypatch.setattr(
         "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_trigger",
@@ -205,6 +210,7 @@ def test_df5_case_d_production_scenario_without_diagnostics_fails(
 
 def test_df5_case_d_production_scenario_with_diagnostics_attaches(
     tmp_path: Path,
+    _stub_llm: None,
 ) -> None:
     composition = build_valid_minimal_production_scenario_fixture(
         tmp_path,

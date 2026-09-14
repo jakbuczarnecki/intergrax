@@ -21,12 +21,6 @@ from intergrax.contracts.runtime_execution_policy_admission import (
     WORKER_ROOT_EXECUTION_OPERATION,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.runtime.governance.runtime_execution_policy_admission import (
-    RuntimeExecutionPolicyAdmissionEvaluator,
-)
-from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
-
-
 def _map_runtime_policy_action(
     decision: PolicyDecision,
 ) -> RootExecutionAuthorityAdmissionDisposition:
@@ -59,18 +53,24 @@ def _narrow_collaborative_scopes(
     return tuple(scope for scope in collaborative_scopes if scope in approved)
 
 
+def _approved_scopes_exceed_collaborative_authority(
+    collaborative_scopes: tuple[str, ...],
+    runtime_approved_scopes: tuple[str, ...] | None,
+) -> bool:
+    if runtime_approved_scopes is None:
+        return False
+    collaborative = set(collaborative_scopes)
+    return not set(runtime_approved_scopes).issubset(collaborative)
+
+
 class RootExecutionAuthorityAdmissionService:
     """Runtime admission — collaborative ALLOW is necessary but not sufficient."""
 
     def __init__(
         self,
         *,
-        runtime_policy_admission: RuntimeExecutionPolicyAdmissionPort | None = None,
+        runtime_policy_admission: RuntimeExecutionPolicyAdmissionPort,
     ) -> None:
-        if runtime_policy_admission is None:
-            runtime_policy_admission = RuntimeExecutionPolicyAdmissionEvaluator(
-                policy_engine=RuntimePolicyEngine(),
-            )
         self._runtime_policy_admission = runtime_policy_admission
 
     def authorize(
@@ -93,6 +93,18 @@ class RootExecutionAuthorityAdmissionService:
                 execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
             )
         )
+        if _approved_scopes_exceed_collaborative_authority(
+            request.collaborative_authority_scopes,
+            runtime_result.approved_scopes,
+        ):
+            return RootExecutionAuthorityAdmissionResult(
+                disposition=RootExecutionAuthorityAdmissionDisposition.DENIED,
+                policy_decision=PolicyDecision(
+                    action=PolicyAction.DENY,
+                    reason="runtime_approved_scopes_exceed_collaborative_authority",
+                    policy_rule_id="runtime.root_execution_admission.scope_widening",
+                ),
+            )
         runtime_decision = runtime_result.policy_decision
         disposition = _map_runtime_policy_action(runtime_decision)
         if disposition is not RootExecutionAuthorityAdmissionDisposition.ALLOWED:

@@ -147,6 +147,7 @@ def test_broker_worker_path_persists_required_causal_evidence() -> None:
         task_id=records[0].target.task_id,
         run_id=records[0].target.run_id,
         attempt_id=records[0].target.attempt_id,
+        execution_id=records[0].target.execution_id,
     )
     _assert_causal_matrix(
         persistence=persistence,
@@ -198,6 +199,7 @@ def test_worker_runtime_path_persists_required_causal_evidence() -> None:
         task_id=records[0].target.task_id,
         run_id=records[0].target.run_id,
         attempt_id=records[0].target.attempt_id,
+        execution_id=records[0].target.execution_id,
     )
     _assert_causal_matrix(
         persistence=persistence,
@@ -280,6 +282,7 @@ def test_document_store_worker_path_persists_required_causal_evidence() -> None:
         task_id=records[0].target.task_id,
         run_id=records[0].target.run_id,
         attempt_id=records[0].target.attempt_id,
+        execution_id=records[0].target.execution_id,
     )
     _assert_causal_matrix(
         persistence=persistence,

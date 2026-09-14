@@ -18,6 +18,7 @@ from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_run_trace import GatewayCallStatus
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from testing_support.builder import build_runtime_execution_context_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -74,10 +75,8 @@ async def test_runtime_execution_context_records_catalog_tool_calls() -> None:
                 duration_ms=7,
             )
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed="tool-invoker-trace",
         agent_id="local_indexer",
         tool_gateway=_Gateway(),
     )

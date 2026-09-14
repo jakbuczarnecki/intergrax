@@ -21,7 +21,7 @@ from intergrax.applications._shared.diagnostic_assembly_resolver import (
     DiagnosticWiring,
     resolve_central_diagnostics_required,
 )
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
 from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
 from intergrax.applications._shared.health_dashboard_wiring import (
     resolve_health_dashboard_wiring,
@@ -284,7 +284,7 @@ def test_lab_runtime_optional_diagnostics_explicit_payload(
     manifest = build_lab_manifest(settings)
     env = manifest.environment
     assert env is not None
-    runtime = build_harness_host_runtime(manifest, env, settings=settings)
+    runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     facts = project_host_auditability_health_facts_from_runtime(
         runtime,
         diagnostic_read_side_ready=False,

@@ -18,7 +18,11 @@ from intergrax.runtime.observability.export_attributes import (
 )
 
 if TYPE_CHECKING:
-    from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
+    from intergrax.contracts.agent_run_trace import (
+        GatewayCallStatus,
+        RagCallRecord,
+        ToolCallRecord,
+    )
     from intergrax.runtime.events.runtime_event import RuntimeEvent
     from intergrax.runtime.observability.journal_export import JournalRef
 
@@ -76,6 +80,7 @@ _SAFE_RUNTIME_EVENT_PAYLOAD_KEYS: frozenset[str] = frozenset(
     }
 )
 
+
 class ExportRecordKind(StrEnum):
     RUNTIME_EVENT = "runtime_event"
     TOOL_CALL = "tool_call"
@@ -100,7 +105,9 @@ class ObservabilityExportEnvelope(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["observability_export_envelope.v1"] = OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA
+    schema_version: Literal["observability_export_envelope.v1"] = (
+        OBSERVABILITY_EXPORT_ENVELOPE_SCHEMA
+    )
     record_kind: ExportRecordKind
     recorded_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -138,8 +145,12 @@ class ObservabilityExportEnvelope(BaseModel):
     problem_error_code: str = ""
 
     application_attributes: ApplicationObservabilityAttributes | None = None
-    sanitized_application_attributes: SanitizedApplicationObservabilityAttributes | None = None
-    causal_evidence_source: CausalEvidenceExportSource | None = None
+    sanitized_application_attributes: (
+        SanitizedApplicationObservabilityAttributes | None
+    ) = None
+    causal_evidence_source: (
+        CausalEvidenceExportSource | LegacyCausalEvidenceExportSource | None
+    ) = None
 
 
 class RuntimeEventExportSource(BaseModel):
@@ -147,7 +158,9 @@ class RuntimeEventExportSource(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["runtime_event_export_source.v1"] = "runtime_event_export_source.v1"
+    schema_version: Literal["runtime_event_export_source.v1"] = (
+        "runtime_event_export_source.v1"
+    )
     event_id: str
     run_id: str
     task_id: str
@@ -165,12 +178,14 @@ class RuntimeEventExportSource(BaseModel):
     safe_payload: dict[str, str | int] = Field(default_factory=dict)
 
 
-class CausalEvidenceExportSource(BaseModel):
-    """Typed causal-evidence source for observability export projection (DIAG-1)."""
+class LegacyCausalEvidenceExportSource(BaseModel):
+    """Frozen v1 causal-evidence export shape (no target_execution_id)."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["causal_evidence_export_source.v1"] = "causal_evidence_export_source.v1"
+    schema_version: Literal["causal_evidence_export_source.v1"] = (
+        "causal_evidence_export_source.v1"
+    )
     evidence_id: str
     relation_kind: str
     tenant_id: str
@@ -179,6 +194,26 @@ class CausalEvidenceExportSource(BaseModel):
     target_task_id: str
     target_run_id: str
     target_attempt_id: str
+    recorded_at: datetime
+
+
+class CausalEvidenceExportSource(BaseModel):
+    """Typed causal-evidence export source with required target_execution_id (v2)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["causal_evidence_export_source.v2"] = (
+        "causal_evidence_export_source.v2"
+    )
+    evidence_id: str
+    relation_kind: str
+    tenant_id: str
+    transport_provider: str
+    transport_task_id: str
+    target_task_id: str
+    target_run_id: str
+    target_attempt_id: str
+    target_execution_id: str
     recorded_at: datetime
 
 
@@ -203,7 +238,9 @@ class GatewayCallExportSource(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["gateway_call_export_source.v1"] = "gateway_call_export_source.v1"
+    schema_version: Literal["gateway_call_export_source.v1"] = (
+        "gateway_call_export_source.v1"
+    )
     record_kind: Literal[ExportRecordKind.TOOL_CALL, ExportRecordKind.RAG_CALL]
     call_id: str
     run_id: str
@@ -284,7 +321,11 @@ def _export_structure_has_no_forbidden_keys(value: object) -> bool:
     return True
 
 
-from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
+from intergrax.contracts.agent_run_trace import (
+    GatewayCallStatus,
+    RagCallRecord,
+    ToolCallRecord,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.observability.journal_export import JournalRef
 
@@ -326,7 +367,9 @@ def _status_from_safe_payload(safe_payload: dict[str, str | int]) -> ExportStatu
     return ExportStatus.UNKNOWN
 
 
-def runtime_event_export_source_from_event(event: RuntimeEvent) -> RuntimeEventExportSource:
+def runtime_event_export_source_from_event(
+    event: RuntimeEvent,
+) -> RuntimeEventExportSource:
     safe_payload = _extract_safe_payload(event.payload)
     return RuntimeEventExportSource(
         event_id=event.event_id,
@@ -394,7 +437,9 @@ def gateway_call_export_source_from_rag_call(
     )
 
 
-def envelope_from_runtime_event_source(source: RuntimeEventExportSource) -> ObservabilityExportEnvelope:
+def envelope_from_runtime_event_source(
+    source: RuntimeEventExportSource,
+) -> ObservabilityExportEnvelope:
     safe_payload = source.safe_payload
     counts: dict[str, int] = {}
     for count_key in ("hit_count", "event_count", "parser_trace_count"):
@@ -407,7 +452,9 @@ def envelope_from_runtime_event_source(source: RuntimeEventExportSource) -> Obse
         duration_ms = safe_payload.get("duration_ms")
         latency_ms = duration_ms if isinstance(duration_ms, int) else None
 
-    schema_id = str(safe_payload.get("payload_schema_id") or safe_payload.get("schema_id") or "")
+    schema_id = str(
+        safe_payload.get("payload_schema_id") or safe_payload.get("schema_id") or ""
+    )
 
     return ObservabilityExportEnvelope(
         record_kind=ExportRecordKind.RUNTIME_EVENT,
@@ -437,10 +484,14 @@ def envelope_from_runtime_event_source(source: RuntimeEventExportSource) -> Obse
 
 
 def envelope_from_runtime_event(event: RuntimeEvent) -> ObservabilityExportEnvelope:
-    return envelope_from_runtime_event_source(runtime_event_export_source_from_event(event))
+    return envelope_from_runtime_event_source(
+        runtime_event_export_source_from_event(event)
+    )
 
 
-def envelope_from_gateway_call_source(source: GatewayCallExportSource) -> ObservabilityExportEnvelope:
+def envelope_from_gateway_call_source(
+    source: GatewayCallExportSource,
+) -> ObservabilityExportEnvelope:
     counts: dict[str, int] = {}
     if source.hit_count:
         counts["hit_count"] = source.hit_count

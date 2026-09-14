@@ -321,6 +321,7 @@ def test_bootstrap_persists_task_run_and_attempt_in_identity_store() -> None:
     assert str(identity.task_id).encode("utf-8") in stored
     assert str(identity.run_id).encode("utf-8") in stored
     assert str(identity.attempt_id).encode("utf-8") in stored
+    assert str(identity.execution_id).encode("utf-8") in stored
 
 
 def test_concurrent_first_resolution_returns_single_canonical_identity() -> None:
@@ -355,6 +356,7 @@ def test_concurrent_first_resolution_returns_single_canonical_identity() -> None
     assert first.task_id == second.task_id
     assert first.run_id == second.run_id
     assert first.attempt_id == second.attempt_id
+    assert first.execution_id == second.execution_id
 
 
 def test_kv_corrupted_identity_record_fails_closed() -> None:
@@ -377,7 +379,7 @@ def test_document_store_corrupted_identity_record_fails_closed() -> None:
     transport = _transport(provider="document_store", transport_task_id="corrupt-doc")
     store.put(
         DocumentRecord(
-            partition_key="intergrax.bg_exec_identity.v1:tenant-a",
+            partition_key="intergrax.bg_exec_identity.v2:tenant-a",
             row_key="document_store:corrupt-doc",
             data={"task_id": "task_" + "a" * 32, "run_id": "run_" + "b" * 32},
         )

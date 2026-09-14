@@ -6,78 +6,56 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
-from intergrax.contracts.execution_identity import (
-    AttemptId,
-    RunId,
-    TaskId,
-    validate_attempt_id,
-    validate_run_id,
-    validate_task_id,
-)
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentRecord,
     DocumentStore,
 )
+from intergrax.contracts.npsc5f_compatibility import (
+    BackgroundExecutionIdentityConflictError,
+)
+from intergrax.runtime.background_execution.identity_dual_read import (
+    reconcile_dual_read_records,
+)
+from intergrax.runtime.background_execution.identity_record_codec import (
+    BG_EXEC_IDENTITY_DOCUMENT_PARTITION_V1,
+    BG_EXEC_IDENTITY_DOCUMENT_PARTITION_V2,
+    InvalidBackgroundExecutionIdentityV1RecordError,
+    InvalidBackgroundExecutionIdentityV2RecordError,
+    decode_background_identity_kv_record,
+    decode_document_identity_v1_record,
+    decode_document_identity_v2_record,
+    encode_background_identity_v2_record,
+    same_identity_triplet,
+)
+from intergrax.runtime.background_execution.identity_types import (
+    PersistedBackgroundExecutionIdentity,
+)
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
-from intergrax.runtime.execution.identity_authority import (
-    BackgroundTransportIdentity,
-    mint_background_transport_identity,
+from intergrax.runtime.execution.identity_authority import BackgroundTransportIdentity
+from intergrax.runtime.observability.causal_evidence_enrichment import (
+    CanonicalExecutionIdLookupPort,
 )
 
-_IDENTITY_RECORD_SEPARATOR = "\n"
 _KV_KEY_PREFIX = "bg_exec_identity"
-_DOCUMENT_STORE_PARTITION_PREFIX = "intergrax.bg_exec_identity.v1"
-
-
-@dataclass(frozen=True, slots=True)
-class PersistedBackgroundExecutionIdentity:
-    """Durable canonical TaskId/RunId/AttemptId for one transport execution."""
-
-    task_id: TaskId
-    run_id: RunId
-    attempt_id: AttemptId
-
-
-def _encode_identity_record(
-    *,
-    task_id: TaskId,
-    run_id: RunId,
-    attempt_id: AttemptId,
-) -> bytes:
-    return (
-        f"{task_id}{_IDENTITY_RECORD_SEPARATOR}"
-        f"{run_id}{_IDENTITY_RECORD_SEPARATOR}"
-        f"{attempt_id}"
-    ).encode("utf-8")
-
-
-def _decode_identity_record(raw: bytes) -> PersistedBackgroundExecutionIdentity:
-    try:
-        parts = raw.decode("utf-8").split(_IDENTITY_RECORD_SEPARATOR)
-    except UnicodeDecodeError as exc:
-        raise RuntimeError("invalid background execution identity record") from exc
-    if len(parts) != 3:
-        raise RuntimeError("invalid background execution identity record")
-    task_raw, run_raw, attempt_raw = parts
-    return PersistedBackgroundExecutionIdentity(
-        task_id=validate_task_id(task_raw),
-        run_id=validate_run_id(run_raw),
-        attempt_id=validate_attempt_id(attempt_raw),
-    )
 
 
 def _kv_storage_key(transport_ref: BackgroundTransportExecutionRef) -> str:
-    return f"{_KV_KEY_PREFIX}:{transport_ref.provider}:{transport_ref.transport_task_id}"
+    return (
+        f"{_KV_KEY_PREFIX}:{transport_ref.provider}:{transport_ref.transport_task_id}"
+    )
 
 
-def _document_partition(tenant_id: str) -> str:
-    return f"{_DOCUMENT_STORE_PARTITION_PREFIX}:{tenant_id}"
+def _document_partition_v2(tenant_id: str) -> str:
+    return f"{BG_EXEC_IDENTITY_DOCUMENT_PARTITION_V2}:{tenant_id}"
+
+
+def _document_partition_v1(tenant_id: str) -> str:
+    return f"{BG_EXEC_IDENTITY_DOCUMENT_PARTITION_V1}:{tenant_id}"
 
 
 def _document_row_key(transport_ref: BackgroundTransportExecutionRef) -> str:
@@ -106,8 +84,14 @@ class BackgroundExecutionIdentityPersistence(ABC):
 class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersistence):
     """DistributedKVStore-backed execution identity registry."""
 
-    def __init__(self, kv_store: DistributedKVStore) -> None:
+    def __init__(
+        self,
+        kv_store: DistributedKVStore,
+        *,
+        legacy_lookup: CanonicalExecutionIdLookupPort | None = None,
+    ) -> None:
         self._kv_store = kv_store
+        self._legacy_lookup = legacy_lookup
 
     def load(
         self,
@@ -120,7 +104,23 @@ class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersis
         )
         if existing is None:
             return None
-        return _decode_identity_record(existing)
+        try:
+            decoded = decode_background_identity_kv_record(existing)
+        except ValueError as exc:
+            raise RuntimeError("invalid background execution identity record") from exc
+        if decoded.kind == "complete_v2":
+            return reconcile_dual_read_records(
+                v2_candidate=decoded,
+                v1_candidate=None,
+                tenant_id=transport_ref.tenant_id,
+                lookup=self._legacy_lookup,
+            )
+        return reconcile_dual_read_records(
+            v2_candidate=None,
+            v1_candidate=decoded,
+            tenant_id=transport_ref.tenant_id,
+            lookup=self._legacy_lookup,
+        )
 
     def store_if_absent(
         self,
@@ -128,10 +128,11 @@ class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersis
         identity: BackgroundTransportIdentity,
     ) -> PersistedBackgroundExecutionIdentity:
         key = _kv_storage_key(transport_ref)
-        encoded = _encode_identity_record(
+        encoded = encode_background_identity_v2_record(
             task_id=identity.task_id,
             run_id=identity.run_id,
             attempt_id=identity.attempt_id,
+            execution_id=identity.execution_id,
         )
         if self._kv_store.compare_and_set(
             tenant_id=transport_ref.tenant_id,
@@ -143,12 +144,16 @@ class KvBackgroundExecutionIdentityPersistence(BackgroundExecutionIdentityPersis
                 task_id=identity.task_id,
                 run_id=identity.run_id,
                 attempt_id=identity.attempt_id,
+                execution_id=identity.execution_id,
             )
 
         raced = self._kv_store.get(tenant_id=transport_ref.tenant_id, key=key)
         if raced is None:
             raise RuntimeError("background execution identity resolution failed")
-        return _decode_identity_record(raced)
+        loaded = self.load(transport_ref)
+        if loaded is None:
+            raise RuntimeError("background execution identity resolution failed")
+        return loaded
 
 
 class DocumentStoreBackgroundExecutionIdentityPersistence(
@@ -156,30 +161,69 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
 ):
     """ConditionalDocumentStore-backed execution identity registry."""
 
-    def __init__(self, document_store: ConditionalDocumentStore) -> None:
+    def __init__(
+        self,
+        document_store: ConditionalDocumentStore,
+        *,
+        legacy_lookup: CanonicalExecutionIdLookupPort | None = None,
+    ) -> None:
         if not isinstance(document_store, ConditionalDocumentStore):
             raise TypeError(
                 "background execution identity persistence requires ConditionalDocumentStore"
             )
         self._document_store = document_store
+        self._legacy_lookup = legacy_lookup
 
     def load(
         self,
         transport_ref: BackgroundTransportExecutionRef,
     ) -> PersistedBackgroundExecutionIdentity | None:
-        partition_key = _document_partition(transport_ref.tenant_id)
         row_key = _document_row_key(transport_ref)
-        existing = self._document_store.get(partition_key, row_key)
-        if existing is None:
+        v2_partition = _document_partition_v2(transport_ref.tenant_id)
+        v1_partition = _document_partition_v1(transport_ref.tenant_id)
+        v2_record = self._document_store.get(v2_partition, row_key)
+        v1_record = self._document_store.get(v1_partition, row_key)
+        v2_candidate = None
+        v1_candidate = None
+        if v2_record is not None:
+            try:
+                v2_candidate = decode_document_identity_v2_record(dict(v2_record.data))
+            except InvalidBackgroundExecutionIdentityV2RecordError:
+                raise
+            except ValueError as exc:
+                raise RuntimeError(
+                    "invalid background execution identity record"
+                ) from exc
+        if v1_record is not None:
+            try:
+                decoded_v1 = decode_document_identity_v1_record(dict(v1_record.data))
+            except InvalidBackgroundExecutionIdentityV1RecordError:
+                raise
+            except ValueError as exc:
+                raise RuntimeError(
+                    "invalid background execution identity record"
+                ) from exc
+            if v1_candidate is None:
+                v1_candidate = decoded_v1
+            elif not same_identity_triplet(v1_candidate, decoded_v1):
+                raise BackgroundExecutionIdentityConflictError(
+                    "conflicting v1 background identity records",
+                )
+        if v2_candidate is None and v1_candidate is None:
             return None
-        return self._record_to_identity(existing)
+        return reconcile_dual_read_records(
+            v2_candidate=v2_candidate,
+            v1_candidate=v1_candidate,
+            tenant_id=transport_ref.tenant_id,
+            lookup=self._legacy_lookup,
+        )
 
     def store_if_absent(
         self,
         transport_ref: BackgroundTransportExecutionRef,
         identity: BackgroundTransportIdentity,
     ) -> PersistedBackgroundExecutionIdentity:
-        partition_key = _document_partition(transport_ref.tenant_id)
+        partition_key = _document_partition_v2(transport_ref.tenant_id)
         row_key = _document_row_key(transport_ref)
         document = DocumentRecord(
             partition_key=partition_key,
@@ -188,6 +232,7 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
                 "task_id": str(identity.task_id),
                 "run_id": str(identity.run_id),
                 "attempt_id": str(identity.attempt_id),
+                "execution_id": str(identity.execution_id),
             },
         )
         if self._document_store.put_if_absent(document):
@@ -195,35 +240,20 @@ class DocumentStoreBackgroundExecutionIdentityPersistence(
                 task_id=identity.task_id,
                 run_id=identity.run_id,
                 attempt_id=identity.attempt_id,
+                execution_id=identity.execution_id,
             )
 
-        raced = self._document_store.get(partition_key, row_key)
-        if raced is None:
+        loaded = self.load(transport_ref)
+        if loaded is None:
             raise RuntimeError("background execution identity resolution failed")
-        return self._record_to_identity(raced)
-
-    @staticmethod
-    def _record_to_identity(record: DocumentRecord) -> PersistedBackgroundExecutionIdentity:
-        task_raw = record.data.get("task_id")
-        run_raw = record.data.get("run_id")
-        attempt_raw = record.data.get("attempt_id")
-        if (
-            not isinstance(task_raw, str)
-            or not isinstance(run_raw, str)
-            or not isinstance(attempt_raw, str)
-        ):
-            raise RuntimeError("invalid background execution identity record")
-        return PersistedBackgroundExecutionIdentity(
-            task_id=validate_task_id(task_raw),
-            run_id=validate_run_id(run_raw),
-            attempt_id=validate_attempt_id(attempt_raw),
-        )
+        return loaded
 
 
 def wire_background_execution_identity_persistence(
     *,
     kv_store: DistributedKVStore | None = None,
     document_store: DocumentStore | None = None,
+    legacy_lookup: CanonicalExecutionIdLookupPort | None = None,
 ) -> BackgroundExecutionIdentityPersistence:
     """Platform composition boundary: storage capability → identity persistence."""
     if kv_store is not None and document_store is not None:
@@ -232,9 +262,24 @@ def wire_background_execution_identity_persistence(
             "document_store, not both",
         )
     if kv_store is not None:
-        return KvBackgroundExecutionIdentityPersistence(kv_store)
+        return KvBackgroundExecutionIdentityPersistence(
+            kv_store,
+            legacy_lookup=legacy_lookup,
+        )
     if document_store is not None:
-        return DocumentStoreBackgroundExecutionIdentityPersistence(document_store)
+        return DocumentStoreBackgroundExecutionIdentityPersistence(
+            document_store,
+            legacy_lookup=legacy_lookup,
+        )
     raise ValueError(
         "wire_background_execution_identity_persistence requires kv_store or document_store",
     )
+
+
+__all__ = [
+    "BackgroundExecutionIdentityPersistence",
+    "DocumentStoreBackgroundExecutionIdentityPersistence",
+    "KvBackgroundExecutionIdentityPersistence",
+    "PersistedBackgroundExecutionIdentity",
+    "wire_background_execution_identity_persistence",
+]

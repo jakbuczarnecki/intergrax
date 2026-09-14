@@ -12,6 +12,14 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.contracts.execution_identity import (
+    peek_active_execution_id,
+    peek_active_execution_identity,
+    require_active_execution_id,
+    require_active_execution_identity,
+    validate_attempt_id,
+    validate_execution_id,
+)
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.declarative_hitl import DeclarativeHitlPendingApproval
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt
@@ -184,6 +192,8 @@ class HumanPauseCoordinator:
         pause_id: str | None = None,
         human_request_id: str | None = None,
         run_id: str | None = None,
+        attempt_id: str | None = None,
+        execution_id: str | None = None,
         response_text: str | None = None,
     ) -> HumanApprovalResolution:
         gov = task.runtime.governance
@@ -222,6 +232,48 @@ class HumanPauseCoordinator:
             if gov.human_request.request_id != active_request_id:
                 raise HumanApprovalResolutionError("human_request identity mismatch")
 
+        governed = (
+            gov.human_request.governed_continuation
+            if gov.human_request is not None
+            else None
+        )
+        if governed is not None:
+            has_attempt = attempt_id is not None
+            has_execution = execution_id is not None
+            if has_attempt != has_execution:
+                raise HumanApprovalResolutionError(
+                    "attempt_id and execution_id must be supplied together for governed continuation",
+                )
+            if has_attempt:
+                resolved_attempt = str(validate_attempt_id(attempt_id))
+                resolved_execution = str(validate_execution_id(execution_id))
+                active_identity = peek_active_execution_identity()
+                if active_identity is not None:
+                    _, active_attempt = active_identity
+                    active_execution = peek_active_execution_id()
+                    if active_execution is None:
+                        raise HumanApprovalResolutionError("active ExecutionId required")
+                    if (
+                        str(active_attempt) != resolved_attempt
+                        or str(active_execution) != resolved_execution
+                    ):
+                        raise HumanApprovalResolutionError(
+                            "execution identity does not match active execution",
+                        )
+            else:
+                _, active_attempt = require_active_execution_identity()
+                active_execution = require_active_execution_id()
+                resolved_attempt = str(active_attempt)
+                resolved_execution = str(active_execution)
+            if str(governed.attempt_id) != resolved_attempt:
+                raise HumanApprovalResolutionError("governed continuation attempt_id mismatch")
+            if str(governed.execution_id) != resolved_execution:
+                raise HumanApprovalResolutionError(
+                    "governed continuation execution_id mismatch",
+                )
+            attempt_id = resolved_attempt
+            execution_id = resolved_execution
+
         resolution = HumanApprovalResolution(
             task_id=task.task_id,
             pause_id=active_pause_id,
@@ -230,6 +282,8 @@ class HumanPauseCoordinator:
             approver=approver,
             resolved_at=datetime.now(timezone.utc).isoformat(),
             run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
             response_text=response_text or task.options.human.response_text,
         )
         gov.hitl_resolution = resolution

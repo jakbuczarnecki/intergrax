@@ -380,6 +380,7 @@ def test_background_execution_inherits_terminal_diagnostic_trigger(
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
     admit_background_execution_handler(
         transport_ref=transport_ref,
@@ -420,6 +421,7 @@ def test_background_execution_records_diagnostic_failure_evidence(
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
 
     def handler(

@@ -3,12 +3,9 @@
 import pytest
 
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord
-from intergrax.contracts.runtime_execution_context import (
-    RAG_RETRIEVE_TOOL_ID,
-    RuntimeExecutionContext,
-    build_rag_call_record,
-)
+from intergrax.contracts.runtime_execution_context import RAG_RETRIEVE_TOOL_ID, build_rag_call_record
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from testing_support.builder import build_runtime_execution_context_for_tests
 
 
 class _Gateway:
@@ -23,9 +20,8 @@ class _Gateway:
 @pytest.mark.gate
 @pytest.mark.asyncio
 async def test_invoke_tool_records_pending_rag_call_for_rag_retrieve() -> None:
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed="rag-retrieve",
         agent_id="local_search",
         tool_gateway=_Gateway(
             ToolResponse(
@@ -65,9 +61,8 @@ async def test_invoke_tool_records_pending_rag_call_for_rag_retrieve() -> None:
 @pytest.mark.gate
 @pytest.mark.asyncio
 async def test_invoke_tool_does_not_record_rag_call_for_non_rag_tools() -> None:
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed="non-rag-tool",
         agent_id="demo",
         tool_gateway=_Gateway(
             ToolResponse(
@@ -96,9 +91,8 @@ async def test_invoke_tool_does_not_record_rag_call_for_non_rag_tools() -> None:
 @pytest.mark.gate
 @pytest.mark.asyncio
 async def test_invoke_tool_does_not_record_rag_call_for_rag_ingest_document() -> None:
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed="rag-ingest",
         agent_id="local_indexer",
         tool_gateway=_Gateway(
             ToolResponse(

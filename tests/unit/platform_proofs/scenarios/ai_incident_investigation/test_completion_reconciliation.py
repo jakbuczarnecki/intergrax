@@ -173,7 +173,7 @@ def test_t4_reconciled_state_passes_terminal_gate() -> None:
         evidence_gathering_stop_reason="planner_final_answer",
     )
     outcome = derive_terminal_outcome(
-        critic_verdict_passed=True,
+        decision_accepted=True,
         has_supported_diagnosis=True,
         completion_mode=reconciled.completion_mode.value,
     )

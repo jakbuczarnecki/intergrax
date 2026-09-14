@@ -58,6 +58,9 @@ def minimal_echo_scenario_manifest(
 def production_attached_environment(profile_id: str) -> ApplicationEnvironmentProfile:
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
     environment.execution_mode = ExecutionMode.STRICT
+    environment.orchestration_profile = environment.orchestration_profile.model_copy(
+        update={"max_parallel_nodes": 4, "max_inflight_nodes": 4},
+    )
     return environment
 
 

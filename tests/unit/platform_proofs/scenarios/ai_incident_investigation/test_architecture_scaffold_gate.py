@@ -21,7 +21,6 @@ from platform_proofs.scenarios.ai_incident_investigation.application.runtime_com
     prepare_incident_execution_runtime,
 )
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario import (
-    execute_resolved_skeleton,
     STANDALONE_SCENARIO_TENANT_ID,
 )
 from platform_proofs.scenarios.ai_incident_investigation.fixtures.runtime_bundle import (
@@ -106,6 +105,15 @@ async def test_platform_execution_persists_terminal_runtime_event() -> None:
 @pytest.mark.asyncio
 async def test_tenant_invariant_standalone() -> None:
     bundle = build_runtime_bundle()
-    result = await execute_resolved_skeleton(bundle)
-    assert result.execution_tenant_id == STANDALONE_SCENARIO_TENANT_ID
+    composition = bundle.runtime_composition
+    prepare_incident_execution_runtime(composition)
+    platform_result = await execute_scenario_task(
+        composition.platform,
+        ScenarioExecutionRequest(
+            tenant_id=STANDALONE_SCENARIO_TENANT_ID,
+            message="Investigate Line 4 target attainment degradation",
+            capability=INVESTIGATOR_CAPABILITY,
+        ),
+    )
+    assert platform_result.task_result.state.value == "completed"
     assert bundle.runtime_composition.platform.tenant_id == STANDALONE_SCENARIO_TENANT_ID

@@ -15,7 +15,6 @@ from testing_support.execution_qualification.contracts import (
     QualificationRunManifest,
 )
 from testing_support.execution_qualification.coordinator import (
-    validate_and_run,
     validate_and_run_measured,
 )
 from testing_support.execution_qualification.performance_snapshot import (
@@ -33,7 +32,11 @@ from testing_support.execution_qualification.frozen_pytest_adapter import (
     manifest_from_adapted_suites,
 )
 
-NPSC5E_R3_CROSS_DB_EXCLUSIVE_RESOURCE_ID = "npsc5e-r3-cross-db"
+from testing_support.execution_qualification.catalog.labels import (
+    NPSC5E_R3_CROSS_DB_EXCLUSIVE_RESOURCE_ID,
+    NPSC5E_R3_EXCLUSIVE_RESOURCE_BY_LABEL,
+    NPSC5E_R3_MANDATORY_LABEL_TO_SUITE_ID,
+)
 
 NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL = (
     EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL
@@ -41,31 +44,6 @@ NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL = (
 
 # Full-matrix suites may be long-running; bounded coordinator requires a positive timeout.
 NPSC5E_R3_EXECUTION_QUALIFICATION_SUITE_TIMEOUT_SECONDS = 6 * 3600.0
-
-NPSC5E_R3_MANDATORY_LABEL_TO_SUITE_ID: dict[str, str] = {
-    "R1 Final": "npsc5e-r3.mandatory.r1-final",
-    "R2 Final": "npsc5e-r3.mandatory.r2-final",
-    "R3 implementation gate": "npsc5e-r3.mandatory.r3-implementation-gate",
-    "P0A": "npsc5e-r3.mandatory.p0a",
-    "DG_001": "npsc5e-r3.mandatory.dg-001",
-    "NPSC-5A": "npsc5e-r3.mandatory.npsc-5a",
-    "NPSC-5B Final": "npsc5e-r3.mandatory.npsc-5b-final",
-    "NPSC-5C": "npsc5e-r3.mandatory.npsc-5c",
-    "NPSC-5D Final": "npsc5e-r3.mandatory.npsc-5d-final",
-    "HITL R3": "npsc5e-r3.mandatory.hitl-r3",
-    "Attempt lifecycle": "npsc5e-r3.mandatory.attempt-lifecycle",
-    "Child execution": "npsc5e-r3.mandatory.child-execution",
-    "Terminal": "npsc5e-r3.mandatory.terminal",
-    "Cancellation": "npsc5e-r3.mandatory.cancellation",
-    "Checkpoint store": "npsc5e-r3.mandatory.checkpoint-store",
-    "Long-running": "npsc5e-r3.mandatory.long-running",
-    "Fan-out": "npsc5e-r3.mandatory.fan-out",
-}
-
-NPSC5E_R3_EXCLUSIVE_RESOURCE_BY_LABEL: dict[str, str] = {
-    "R3 implementation gate": NPSC5E_R3_CROSS_DB_EXCLUSIVE_RESOURCE_ID,
-}
-
 
 def build_npsc5e_r3_mandatory_projections(
     source: FrozenPytestSuiteSource,
@@ -148,3 +126,18 @@ def run_npsc5e_r3_mandatory_qualification_measured(
         raise AssertionError(f"execution qualification infrastructure failure: {exc}") from exc
     assert_execution_qualification_pass(measured.result, label_by_suite_id=label_by_suite_id)
     return measured
+
+
+__all__ = [
+    "NPSC5E_R3_CROSS_DB_EXCLUSIVE_RESOURCE_ID",
+    "NPSC5E_R3_EXCLUSIVE_RESOURCE_BY_LABEL",
+    "NPSC5E_R3_MANDATORY_LABEL_TO_SUITE_ID",
+    "NPSC5E_R3_EXECUTION_QUALIFICATION_DEFAULT_MAX_PARALLEL",
+    "NPSC5E_R3_EXECUTION_QUALIFICATION_SUITE_TIMEOUT_SECONDS",
+    "build_npsc5e_r3_mandatory_manifest",
+    "build_npsc5e_r3_mandatory_projections",
+    "label_by_suite_id_from_projections",
+    "npsc5e_r3_qualification_run_config",
+    "run_npsc5e_r3_mandatory_qualification",
+    "run_npsc5e_r3_mandatory_qualification_measured",
+]

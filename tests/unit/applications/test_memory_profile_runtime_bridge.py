@@ -24,13 +24,14 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 
 def _runtime_request() -> RuntimeRequest:
-    return RuntimeRequest(
+    return build_runtime_request_for_tests(
+        seed="memory-bridge",
         tenant_id="tenant-mem",
         agent_id="agent_mem",
         user_id="user_mem",
@@ -146,7 +147,7 @@ def test_materialize_runtime_config_uses_default_harness_when_not_strict() -> No
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.harness-default")
     harness = default_reference_harness()
 
-    config = materialize_runtime_config(_runtime_request(), harness, env)
+    config = materialize_runtime_config(_runtime_request(), harness, env, llm_adapter=FakeLLMAdapter())
 
     assert config.llm_adapter is not None
     assert config.enable_task_memory is True

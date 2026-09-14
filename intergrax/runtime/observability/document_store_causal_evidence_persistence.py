@@ -66,6 +66,7 @@ from intergrax.runtime.observability.causal_evidence_query_cursor import (
 
 from intergrax.runtime.observability.causal_evidence_record_codec import (
     decode_causal_evidence_record,
+    decode_causal_evidence_record_v2,
     encode_causal_evidence_record,
 )
 
@@ -885,7 +886,7 @@ class DocumentStoreCausalEvidencePersistence(CausalEvidencePersistence):
                 "canonical causal evidence record missing for index",
             )
 
-        return decode_causal_evidence_record(dict(record.data))
+        return decode_causal_evidence_record_v2(dict(record.data))
 
     def _ensure_indexes(
         self,
@@ -1060,7 +1061,7 @@ class DocumentStoreCausalEvidencePersistence(CausalEvidencePersistence):
 
     def _document_to_evidence(self, document: DocumentRecord) -> PlatformCausalEvidence:
 
-        return decode_causal_evidence_record(dict(document.data))
+        return decode_causal_evidence_record_v2(dict(document.data))
 
     def _resolve_existing_record_and_repair_indexes(
         self,
@@ -1143,7 +1144,14 @@ class DocumentStoreCausalEvidencePersistence(CausalEvidencePersistence):
             return decode_causal_evidence_index_v2(data).evidence_id
 
         if schema_version == _LEGACY_RECORD_SCHEMA:
-            return str(decode_causal_evidence_record(data).evidence_id)
+            decoded = decode_causal_evidence_record(data)
+            if decoded.kind == "legacy_incomplete_v1" and decoded.legacy_v1 is not None:
+                return str(decoded.legacy_v1.evidence_id)
+            if decoded.complete_v2 is not None:
+                return str(decoded.complete_v2.evidence_id)
+            raise CausalEvidencePersistenceIntegrityError(
+                "legacy causal evidence record missing evidence_id",
+            )
 
         raise CausalEvidencePersistenceIntegrityError(
             "unsupported causal evidence index schema",

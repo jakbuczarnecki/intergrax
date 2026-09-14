@@ -9,8 +9,8 @@ from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
 
-from platform_proofs.scenarios.indirect_prompt_injection.application.order_provider_client import (
-    OrderProviderClient,
+from platform_proofs.scenarios.indirect_prompt_injection.application.order_operations_port import (
+    OrderOperationsPort,
 )
 from platform_proofs.scenarios.indirect_prompt_injection.application.order_provider_models import (
     OrderProviderNote,
@@ -80,7 +80,7 @@ def _order_tool_contract(
 
 
 class _OrderGetHandler(ToolHandler[OrderIdInput, OrderGetOutput]):
-    def __init__(self, client: OrderProviderClient) -> None:
+    def __init__(self, client: OrderOperationsPort) -> None:
         self._client = client
 
     def execute(self, request: ToolExecutionRequest[OrderIdInput]) -> OrderGetOutput:
@@ -94,7 +94,7 @@ class _OrderGetHandler(ToolHandler[OrderIdInput, OrderGetOutput]):
 
 
 class _OrderGetNotesHandler(ToolHandler[OrderIdInput, OrderNotesOutput]):
-    def __init__(self, client: OrderProviderClient) -> None:
+    def __init__(self, client: OrderOperationsPort) -> None:
         self._client = client
 
     def execute(self, request: ToolExecutionRequest[OrderIdInput]) -> OrderNotesOutput:
@@ -105,7 +105,7 @@ class _OrderGetNotesHandler(ToolHandler[OrderIdInput, OrderNotesOutput]):
 class _UpdateShippingAddressHandler(
     ToolHandler[UpdateShippingAddressInput, UpdateShippingAddressOutput]
 ):
-    def __init__(self, client: OrderProviderClient) -> None:
+    def __init__(self, client: OrderOperationsPort) -> None:
         self._client = client
 
     def execute(
@@ -127,7 +127,7 @@ class _UpdateShippingAddressHandler(
 def register_scenario_tools(
     registry: ToolRegistry,
     *,
-    provider_client: OrderProviderClient,
+    provider_client: OrderOperationsPort,
 ) -> None:
     registry.register(
         _order_tool_contract(

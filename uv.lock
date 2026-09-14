@@ -1726,6 +1726,18 @@ dev-ci-rag = [
     { name = "opentelemetry-sdk", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "qdrant-client", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+dev-unit-cert = [
+    { name = "anthropic", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "fastmcp", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "langchain-core", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pgvector", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "qdrant-client", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "sentence-transformers", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "tiktoken", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "torch", version = "2.2.2", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "platform_machine == 'aarch64' and sys_platform == 'linux'" },
+    { name = "torch", version = "2.2.2+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or sys_platform == 'win32'" },
+    { name = "transformers", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
 harness-author = [
     { name = "fastapi", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "python-dotenv", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1922,6 +1934,7 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", marker = "extra == 'integrations-slack'", specifier = ">=3.9" },
+    { name = "anthropic", marker = "extra == 'dev-unit-cert'", specifier = ">=0.25,<1" },
     { name = "anthropic", marker = "extra == 'llm-all'", specifier = ">=0.25,<1" },
     { name = "anthropic", marker = "extra == 'llm-anthropic'", specifier = ">=0.25,<1" },
     { name = "azure-identity", marker = "extra == 'dev'", specifier = ">=1.19" },
@@ -1946,6 +1959,7 @@ requires-dist = [
     { name = "e2b", marker = "extra == 'integrations-e2b'", specifier = ">=2.0,<3" },
     { name = "fastapi", specifier = ">=0.115,<1" },
     { name = "fastapi", marker = "extra == 'harness-author'", specifier = ">=0.115,<1" },
+    { name = "fastmcp", marker = "extra == 'dev-unit-cert'", specifier = ">=3.3.1,<4" },
     { name = "fastmcp", marker = "extra == 'mcp'", specifier = ">=3.3.1,<4" },
     { name = "google-auth", marker = "extra == 'dev'", specifier = ">=2.29" },
     { name = "google-genai", marker = "extra == 'llm-all'", specifier = ">=0.3,<2" },
@@ -1956,6 +1970,7 @@ requires-dist = [
     { name = "langchain-community", marker = "extra == 'parsing-pdf'", specifier = ">=0.3,<0.5" },
     { name = "langchain-community", marker = "extra == 'rag-langchain-loaders'", specifier = ">=0.3,<0.5" },
     { name = "langchain-core", marker = "extra == 'dev-ci-rag'", specifier = ">=0.3,<2.0" },
+    { name = "langchain-core", marker = "extra == 'dev-unit-cert'", specifier = ">=0.3,<2.0" },
     { name = "langchain-core", marker = "extra == 'llm-langchain-ollama'", specifier = ">=0.3,<2.0" },
     { name = "langchain-ollama", marker = "extra == 'llm-langchain-ollama'", specifier = ">=0.2,<2.0" },
     { name = "langchain-ollama", marker = "extra == 'rag-langchain-embeddings'", specifier = ">=0.2,<2.0" },
@@ -1989,6 +2004,7 @@ requires-dist = [
     { name = "opentelemetry-sdk", marker = "extra == 'dev-ci-rag'", specifier = ">=1.27,<2" },
     { name = "opentelemetry-sdk", marker = "extra == 'observability-otlp'", specifier = ">=1.27,<2" },
     { name = "pandas", marker = "extra == 'parsing-office'", specifier = ">=2.1.4,<3" },
+    { name = "pgvector", marker = "extra == 'dev-unit-cert'", specifier = ">=0.3" },
     { name = "pgvector", marker = "extra == 'integrations-pgvector'", specifier = ">=0.3" },
     { name = "pika", marker = "extra == 'dev'", specifier = ">=1.3.2" },
     { name = "pillow", marker = "extra == 'media-image'", specifier = ">=11.0,<13" },
@@ -2020,11 +2036,13 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0,<7" },
     { name = "pyyaml", marker = "extra == 'harness-author'", specifier = ">=6.0,<7" },
     { name = "qdrant-client", marker = "extra == 'dev-ci-rag'", specifier = ">=1.9,<2" },
+    { name = "qdrant-client", marker = "extra == 'dev-unit-cert'", specifier = ">=1.9,<2" },
     { name = "qdrant-client", marker = "extra == 'vector-qdrant'", specifier = ">=1.9,<2" },
     { name = "redis", marker = "extra == 'dev'", specifier = ">=5.0" },
     { name = "redis", marker = "extra == 'dev-ci'", specifier = ">=5.0" },
     { name = "redis", marker = "extra == 'integrations-kafka'", specifier = ">=5.0" },
     { name = "ruff", marker = "extra == 'dev'" },
+    { name = "sentence-transformers", marker = "extra == 'dev-unit-cert'", specifier = ">=3.0,<6" },
     { name = "sentence-transformers", marker = "extra == 'rag-local-embeddings'", specifier = ">=3.0,<6" },
     { name = "sentry-sdk", marker = "extra == 'integrations-harness'", specifier = ">=2.0" },
     { name = "sentry-sdk", marker = "extra == 'integrations-sentry'", specifier = ">=2.0" },
@@ -2032,6 +2050,7 @@ requires-dist = [
     { name = "starlette", specifier = ">=0.41,<1" },
     { name = "streamlit", marker = "extra == 'ui-streamlit'", specifier = ">=1.39,<2" },
     { name = "tiktoken", specifier = ">=0.7,<1" },
+    { name = "tiktoken", marker = "extra == 'dev-unit-cert'", specifier = ">=0.7,<1" },
     { name = "tiktoken", marker = "extra == 'llm-all'", specifier = ">=0.7,<1" },
     { name = "tiktoken", marker = "extra == 'llm-anthropic'", specifier = ">=0.7,<1" },
     { name = "tiktoken", marker = "extra == 'llm-bedrock'", specifier = ">=0.7,<1" },
@@ -2044,9 +2063,11 @@ requires-dist = [
     { name = "tiktoken", marker = "extra == 'llm-openai'", specifier = ">=0.7,<1" },
     { name = "tiktoken", marker = "extra == 'llm-vertex'", specifier = ">=0.7,<1" },
     { name = "tiktoken", marker = "extra == 'llm-vllm'", specifier = ">=0.7,<1" },
+    { name = "torch", marker = "extra == 'dev-unit-cert'", specifier = "==2.2.2", index = "https://download.pytorch.org/whl/cpu" },
     { name = "torch", marker = "extra == 'rag-local-embeddings'", specifier = "==2.2.2", index = "https://download.pytorch.org/whl/cpu" },
     { name = "tqdm", specifier = ">=4.66,<5" },
     { name = "trafilatura", marker = "extra == 'parsing-web'", specifier = ">=1.8,<3" },
+    { name = "transformers", marker = "extra == 'dev-unit-cert'", specifier = ">=4.41,<5" },
     { name = "transformers", marker = "extra == 'rag-local-embeddings'", specifier = ">=4.41,<5" },
     { name = "unstructured", marker = "extra == 'dev'", specifier = ">=0.12" },
     { name = "uvicorn", specifier = ">=0.30,<1" },
@@ -2056,7 +2077,7 @@ requires-dist = [
     { name = "xlrd", marker = "extra == 'parsing-office'", specifier = ">=2.0,<3" },
     { name = "yt-dlp", marker = "extra == 'media-youtube'", specifier = ">=2024.0,<2027" },
 ]
-provides-extras = ["integrations-neo4j", "integrations-e2b", "vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "observability-otlp", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "dev-ci-rag", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-postgresql", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
+provides-extras = ["integrations-neo4j", "integrations-e2b", "vector-chroma", "vector-qdrant", "vector-pinecone", "parsing-web", "parsing-office", "parsing-pdf", "parsing-ocr", "media-youtube", "media-video", "media-image", "media-ocr", "media-whisper", "ui-streamlit", "mcp", "rag-local-embeddings", "rag-langchain-loaders", "rag-langchain-embeddings", "rag-langchain-splitters", "harness-author", "observability-otlp", "langgraph-legacy", "llm-openai", "llm-anthropic", "llm-mistral", "llm-ollama", "llm-langchain-ollama", "llm-gemini", "llm-bedrock", "llm-groq", "llm-vllm", "llm-compat", "llm-vertex", "llm-cohere-native", "llm-all", "dev", "dev-ci", "dev-ci-rag", "dev-unit-cert", "integrations-sentry", "integrations-kafka", "integrations-mongodb", "integrations-postgresql", "integrations-pgvector", "integrations-harness", "integrations-guardrails", "integrations-slack"]
 
 [package.metadata.requires-dev]
 platform-proofs-vpi-dataset = [{ name = "pyarrow", specifier = ">=18,<22" }]

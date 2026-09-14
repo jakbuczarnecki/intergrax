@@ -88,9 +88,9 @@ class QualificationCoordinator:
         manifest: QualificationRunManifest,
         config: QualificationRunConfig,
     ) -> ExecutionQualificationMeasuredRun:
-        wall_start = time.monotonic()
+        wall_start = time.perf_counter()
         result = self._run_inner(manifest, config)
-        wall_duration = time.monotonic() - wall_start
+        wall_duration = max(time.perf_counter() - wall_start, 1e-9)
         return attach_performance_snapshot(
             result,
             wall_duration_seconds=wall_duration,

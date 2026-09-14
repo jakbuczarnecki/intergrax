@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.tracing.diagnostics import DEFAULT_REDACTED_TEXT, DiagnosticPayload
+from intergrax.contracts.tracing.diagnostics import (
+    DEFAULT_REDACTED_TEXT,
+    DiagnosticPayload,
+)
 from intergrax.contracts.tracing.events import (
     ToolCallTrace,
     TraceArtifactRef,

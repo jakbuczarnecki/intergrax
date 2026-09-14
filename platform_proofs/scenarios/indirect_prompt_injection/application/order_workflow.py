@@ -22,7 +22,6 @@ from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
 
 from platform_proofs.scenarios.indirect_prompt_injection.application.observability import (
-    OrderPolicyDenialDiagV1,
     OrderRetrievalDiagV1,
     OrderWorkflowCompletionDiagV1,
 )
@@ -108,6 +107,19 @@ def _policy_evaluations_from_trace(runtime_state: RuntimeState) -> tuple[dict[st
         ):
             evaluations.append(payload.to_dict())
     return tuple(evaluations)
+
+
+def matched_policy_rule_ids_from_evaluations(
+    policy_evaluations: tuple[dict[str, object], ...],
+) -> tuple[str, ...]:
+    matched: list[str] = []
+    for evaluation in policy_evaluations:
+        if str(evaluation.get("action", "")).lower() != "deny":
+            continue
+        raw_ids = evaluation.get("matched_rule_ids")
+        if isinstance(raw_ids, list):
+            matched.extend(str(rule_id) for rule_id in raw_ids)
+    return tuple(dict.fromkeys(matched))
 
 
 def _extract_write_proposal(
@@ -248,23 +260,12 @@ def execute_order_workflow(
             invocation_mode=ToolInvocationMode.BOUNDED_REACT,
         )
         investigation_proof = loop_result.investigation_proof
-    except DeclarativePolicyViolationError as exc:
+    except DeclarativePolicyViolationError:
         policy_denied = True
-        matched_rule_ids = exc.matched_rule_ids
-        runtime_state.trace_event(
-            component=TraceComponent.TOOLS,
-            step="order_policy_denial",
-            message="Governance denied sensitive write tool proposal.",
-            level=TraceLevel.WARNING,
-            payload=OrderPolicyDenialDiagV1(
-                tool_id=exc.tool_id,
-                matched_rule_ids=exc.matched_rule_ids,
-                reasons=exc.reasons,
-            ),
-        )
 
     tool_traces = tuple(runtime_state.tool_traces)
     policy_evaluations = _policy_evaluations_from_trace(runtime_state)
+    matched_rule_ids = matched_policy_rule_ids_from_evaluations(policy_evaluations)
     write_tool_proposed = _extract_write_proposal(tool_traces, policy_evaluations)
     write_tool_executed = _extract_write_executed(tool_traces)
     planner_rounds = _planner_rounds_from_investigation_proof(investigation_proof)
@@ -305,9 +306,8 @@ def execute_order_workflow(
         payload=OrderWorkflowCompletionDiagV1(
             workflow_kind=workflow.value,
             outcome=outcome,
-            write_tool_proposed=write_tool_proposed,
-            write_tool_executed=write_tool_executed,
-            policy_denied=policy_denied,
+            order_id=order_id,
+            retrieved_note_count=len(notes),
         ),
     )
 

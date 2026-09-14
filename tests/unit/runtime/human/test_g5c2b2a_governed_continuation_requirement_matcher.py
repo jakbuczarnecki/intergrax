@@ -6,6 +6,12 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
@@ -16,10 +22,14 @@ from intergrax.runtime.human.governed_continuation_grant import matches_current_
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-TASK_ID = "task-matcher-1"
-RUN_ID = "run-matcher-1"
-RUN_OTHER = "run-matcher-2"
-TASK_OTHER = "task-matcher-2"
+TASK_ID = mint_task_id()
+RUN_ID = mint_run_id()
+RUN_OTHER = mint_run_id()
+TASK_OTHER = mint_task_id()
+ATTEMPT_ID = mint_attempt_id()
+ATTEMPT_OTHER = mint_attempt_id()
+EXECUTION_ID = mint_execution_id()
+EXECUTION_OTHER = mint_execution_id()
 OPERATION = "collaborative.document.delete"
 OPERATION_OTHER = "collaborative.document.publish"
 RESOURCE = "document-123"
@@ -41,6 +51,8 @@ def _side_effect(
     *,
     task_id: str = TASK_ID,
     run_id: str = RUN_ID,
+    attempt_id: str = ATTEMPT_ID,
+    execution_id: str = EXECUTION_ID,
     side_effect_scope_id: str = SCOPE_1,
     side_effect_scope_digest: str | None = None,
 ) -> MeaningfulSideEffectRequest:
@@ -51,6 +63,8 @@ def _side_effect(
         side_effect_scope_digest=side_effect_scope_digest,
         task_id=task_id,
         run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
     )
 
 
@@ -58,6 +72,8 @@ def _grant(
     *,
     task_id: str = TASK_ID,
     run_id: str = RUN_ID,
+    attempt_id: str = ATTEMPT_ID,
+    execution_id: str = EXECUTION_ID,
     operation_id: str = OPERATION,
     resource_scope: str | None = RESOURCE,
     side_effect_scope_id: str = SCOPE_1,
@@ -74,6 +90,8 @@ def _grant(
         side_effect_scope_digest=side_effect_scope_digest,
         task_id=task_id,
         run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
         operation_id=operation_id,
         resource_scope=resource_scope,
         policy_rule_id=policy_rule_id,
@@ -177,6 +195,24 @@ def test_task_mismatch_no_match() -> None:
 def test_run_mismatch_no_match() -> None:
     grant = _grant()
     side_effect = _side_effect(run_id=RUN_OTHER)
+    assert _match(grant, side_effect=side_effect) is False
+
+
+def test_execution_mismatch_no_match() -> None:
+    grant = _grant()
+    side_effect = _side_effect(execution_id=EXECUTION_OTHER)
+    assert _match(grant, side_effect=side_effect) is False
+
+
+def test_attempt_mismatch_no_match() -> None:
+    grant = _grant()
+    side_effect = _side_effect(attempt_id=ATTEMPT_OTHER)
+    assert _match(grant, side_effect=side_effect) is False
+
+
+def test_attempt_and_execution_mismatch_no_match() -> None:
+    grant = _grant()
+    side_effect = _side_effect(attempt_id=ATTEMPT_OTHER, execution_id=EXECUTION_OTHER)
     assert _match(grant, side_effect=side_effect) is False
 
 

@@ -14,16 +14,18 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from intergrax.contracts.execution_identity import (
     AttemptId,
     EventId,
+    ExecutionId,
     RunId,
     TaskId,
     mint_event_id,
     validate_attempt_id,
     validate_event_id,
+    validate_execution_id,
     validate_run_id,
     validate_task_id,
 )
 
-PLATFORM_CAUSAL_EVIDENCE_SCHEMA = "platform_causal_evidence.v1"
+PLATFORM_CAUSAL_EVIDENCE_SCHEMA = "platform_causal_evidence.v2"
 
 
 class CausalRelationKind(StrEnum):
@@ -61,6 +63,7 @@ class RuntimeExecutionRef(BaseModel):
     task_id: TaskId
     run_id: RunId
     attempt_id: AttemptId
+    execution_id: ExecutionId
     tenant_id: str
 
     @field_validator("task_id", mode="before")
@@ -77,6 +80,11 @@ class RuntimeExecutionRef(BaseModel):
     @classmethod
     def _validate_attempt_id_field(cls, value: object) -> AttemptId:
         return validate_attempt_id(value)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id_field(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
 
     @field_validator("tenant_id")
     @classmethod
@@ -95,7 +103,7 @@ class PlatformCausalEvidence(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["platform_causal_evidence.v1"] = PLATFORM_CAUSAL_EVIDENCE_SCHEMA
+    schema_version: Literal["platform_causal_evidence.v2"] = PLATFORM_CAUSAL_EVIDENCE_SCHEMA
     evidence_id: EventId = Field(default_factory=mint_event_id)
     relation_kind: CausalRelationKind
     tenant_id: str

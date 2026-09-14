@@ -27,7 +27,7 @@ from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
     build_agent_runtime_governance_boundary,
 )
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
 from testing_support.u3_factory_only_agent import (
     FactoryOnlyAgent,
     build_factory_only_agent,
@@ -38,18 +38,18 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _CAP = "factory-only.run"
 
 
-def _runtime_request(**overrides: object) -> RuntimeRequest:
-    base = {
-        "tenant_id": "tenant-a",
-        "agent_id": "echo",
-        "user_id": "user",
-        "session_id": "session",
-        "message": "probe",
-        "task_id": "task_01234567890123456789012345678901",
-        "run_id": "run_01234567890123456789012345678901",
-    }
-    base.update(overrides)
-    return RuntimeRequest(**base)
+def _runtime_request(**overrides: str) -> RuntimeRequest:
+    return build_runtime_request_for_tests(
+        seed=overrides.pop("seed", "gov-mat"),
+        tenant_id=overrides.pop("tenant_id", "tenant-a"),
+        agent_id=overrides.pop("agent_id", "echo"),
+        user_id=overrides.pop("user_id", "user"),
+        session_id=overrides.pop("session_id", "session"),
+        message=overrides.pop("message", "probe"),
+        task_id=overrides.pop("task_id", None),
+        run_id=overrides.pop("run_id", None),
+        metadata=overrides.pop("metadata", None),
+    )
 
 
 def _echo_manifest(*agents: AgentBinding) -> ApplicationManifest:
@@ -170,7 +170,7 @@ def test_production_materialize_requires_agent_registry_on_build_context() -> No
     )
     request = _runtime_request(tenant_id="tenant-prod", agent_id="echo")
     with pytest.raises(AgentRuntimeGovernanceMaterializationError, match="agent_registry"):
-        materialize_runtime_config(request, build_ctx, env)
+        materialize_runtime_config(request, build_ctx, env, llm_adapter=FakeLLMAdapter())
 
 
 def test_production_materialize_wires_grants_from_manifest_and_registry() -> None:

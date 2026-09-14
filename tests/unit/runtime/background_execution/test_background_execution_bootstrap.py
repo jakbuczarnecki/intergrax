@@ -18,9 +18,12 @@ from intergrax.background_tasks.state_store import TaskResultStore, TaskStateSto
 from intergrax.background_tasks.worker_runtime import WorkerRuntime
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
     mint_attempt_id,
+    mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     peek_active_execution_identity,
@@ -199,6 +202,7 @@ def test_broker_worker_path_uses_central_bootstrap() -> None:
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
 
     with patch(
@@ -259,6 +263,7 @@ def test_worker_runtime_path_uses_central_bootstrap() -> None:
         task_id=mint_task_id(),
         run_id=mint_run_id(),
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
     request = TaskRequest(
         tenant_id="tenant-a",
@@ -317,6 +322,7 @@ def test_identity_propagated_without_re_minting_at_handler() -> None:
         task_id=TaskId("task_" + "a" * 32),
         run_id=RunId("run_" + "b" * 32),
         attempt_id=AttemptId("attempt_" + "c" * 32),
+        execution_id=ExecutionId("exec_" + "d" * 32),
     )
 
     with patch(
@@ -350,6 +356,7 @@ def test_nexus_worker_preserves_bootstrap_identity_end_to_end() -> None:
         task_id=TaskId("task_" + "d" * 32),
         run_id=RunId("run_" + "e" * 32),
         attempt_id=AttemptId("attempt_" + "f" * 32),
+        execution_id=ExecutionId("exec_" + "g" * 32),
     )
     task = Task(
         tenant_id="tenant-a",

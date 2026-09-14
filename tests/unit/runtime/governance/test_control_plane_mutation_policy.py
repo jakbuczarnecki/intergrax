@@ -14,7 +14,14 @@ from intergrax.applications._shared.task_control_governance import (
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.runtime_policy_bundle import (
     PolicyBundleRule,
@@ -44,6 +51,18 @@ def _principal(*, user_id: str = "operator-1") -> RequestIdentity:
     )
 
 
+def _with_active_execution_for_request(request: object):
+    from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
+
+    assert isinstance(request, ControlPlaneMutationRequest)
+    assert request.run_id is not None
+    return bind_active_execution_identity(
+        run_id=request.run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+
+
 def _bundle(*rules: PolicyBundleRule):
     return build_immutable_runtime_policy_bundle(
         bundle_id="cpm-adapter-pack",
@@ -54,15 +73,27 @@ def _bundle(*rules: PolicyBundleRule):
 
 
 def test_control_plane_mutation_maps_mutation_type_to_match_action() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
     request = build_cancel_task_execution_mutation_request(
         principal=_principal(),
         tenant_id=_TENANT,
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
+        task_id=task_id,
+        run_id=run_id,
         mutation_id="mut-1",
         current_state=TaskState.RUNNING,
     )
-    side_effect = control_plane_mutation_to_meaningful_side_effect_request(request)
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        side_effect = control_plane_mutation_to_meaningful_side_effect_request(request)
+    finally:
+        reset_active_execution_identity(token)
     assert side_effect.action == MUTATION_TYPE_CANCEL_TASK_EXECUTION
     assert side_effect.principal_id == "operator-1"
     assert side_effect.tenant_id == _TENANT
@@ -87,7 +118,11 @@ def test_bundle_backed_evaluator_allow_on_explicit_match() -> None:
         mutation_id="mut-allow",
         current_state=TaskState.RUNNING,
     )
-    decision = evaluator.evaluate(request)
+    token = _with_active_execution_for_request(request)
+    try:
+        decision = evaluator.evaluate(request)
+    finally:
+        reset_active_execution_identity(token)
     assert decision.action is PolicyAction.ALLOW
     assert decision.policy_rule_id == "task_control.cancel"
     assert evaluator.bundle_evaluator.calls[-1].principal_id == "caller-42"
@@ -112,7 +147,11 @@ def test_bundle_backed_evaluator_fail_closed_without_match() -> None:
         mutation_id="mut-deny",
         current_state=TaskState.RUNNING,
     )
-    decision = evaluator.evaluate(request)
+    token = _with_active_execution_for_request(request)
+    try:
+        decision = evaluator.evaluate(request)
+    finally:
+        reset_active_execution_identity(token)
     assert decision.action is PolicyAction.DENY
     assert decision.policy_rule_id == "bundle.no_match"
 
@@ -136,6 +175,10 @@ def test_bundle_backed_evaluator_require_human_from_explicit_rule() -> None:
         mutation_id="mut-human",
         current_state=TaskState.RUNNING,
     )
-    decision = evaluator.evaluate(request)
+    token = _with_active_execution_for_request(request)
+    try:
+        decision = evaluator.evaluate(request)
+    finally:
+        reset_active_execution_identity(token)
     assert decision.action is PolicyAction.REQUIRE_HUMAN
     assert decision.policy_rule_id == "task_control.cancel_human"

@@ -1,8 +1,11 @@
 # Execution Engine — Maintainer Hub
 
-**Classification:** `MAINTAINER_HUB`  
-**Status:** Canonical maintainer entry point (navigation and consolidated status only)  
-**Audience:** Maintainers, qualification operators, Cursor implementation sessions  
+**Classification:** `MAINTAINER_HUB`
+**Status:** Enterprise-certified · frozen for current platform stage · post-freeze gap audit **PASS** ([`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md))
+**Audience:** Maintainers, qualification operators, Cursor implementation sessions
+**Canonical parent:** — (hub)
+**Related qualification:** [`EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md`](../qualification/EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md) · post-freeze reconciliation [`EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md`](../qualification/EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md)
+**Last architecture reconciliation:** 2026-09-14 (EE-POST-FREEZE-FINAL-R1)
 
 **This document does not own detailed execution semantics.** Normative cross-domain semantics remain in [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) (`META_ARCHITECTURE`). Domain lifecycle, topology, recovery, evidence, and qualification proofs remain with their listed canonical owners below.
 
@@ -27,6 +30,23 @@ It answers:
 | Where do I change configuration? | [Operator configuration](#12-operator-configuration) |
 
 It does **not** replace implementation detail in UER, Nexus, NPSC planes, or qualification records.
+
+### Start here (recommended reading order)
+
+1. **This hub** — [`EXECUTION_ENGINE.md`](EXECUTION_ENGINE.md)
+2. **Frozen enterprise map** — [`EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md`](EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md)
+3. **Decision System (semantic layer inside Execution)** — [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md)
+4. **Ownership / identity / governance** — UEA, UER, [`GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md), ownership model
+5. **Recovery / evidence / observability** — NPSC-5E, NPSC-5F, [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)
+6. **Qualification evidence** — EE-FINAL + [`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md)
+
+| Audience | Start with |
+| --- | --- |
+| Architect | FINAL_ENTERPRISE_ARCHITECTURE + UEA + DECISION_SYSTEM |
+| Maintainer | This hub + domain owner doc for the plane you touch |
+| Operator | Graceful shutdown model + production runbooks |
+| Plugin developer | TOOLS + unified entry zero-bypass model |
+| Auditor | Post-freeze gap audit + P0 bypass inventory + EE-FINAL certification |
 
 ### Navigation rule (do not start in the wrong place)
 
@@ -184,7 +204,7 @@ Normative flow diagrams: UEA diagram pack and [`NEXUS_EXECUTION_FLOW.md`](../../
 | Nexus | NEXUS_EXECUTION_FLOW | **CANONICAL** |
 | Multi-agent production | NPSC_5_MULTI_AGENT | **CANONICAL**; 5D **FROZEN / PASS** |
 | Recovery | NPSC-5E architecture + Final freeze | **FROZEN / PASS** (recovery plane) |
-| Evidence | NPSC-5F + OBSERVABILITY | **ACTIVE**; 5F/R1 **FROZEN / PASS**; 5F/R2 implemented, not final-frozen |
+| Evidence | NPSC-5F + OBSERVABILITY | **FROZEN / PASS** (R1–R4 Final + Final); R3 + Final **REQUALIFIED / RE-FROZEN** @ `cd0217ef0…` · EE-FINAL-02 reconciliation **PASS** |
 | Scale / resilience | ENTERPRISE_EXECUTION_SCALE_RESILIENCE | **CANONICAL** maintainer architecture; W0/W1 qualification records |
 
 ---
@@ -209,7 +229,7 @@ Policy contracts and service boundaries: NPSC-5E architecture and [`NPSC_5E_FINA
 
 ## 9. Evidence, lineage, and observability
 
-**Observability spine:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)  
+**Observability spine:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md)
 **Evidence plane architecture:** [`NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md`](NPSC_5F_EXECUTION_EVIDENCE_REPLAY_OBSERVABILITY_ARCHITECTURE.md)
 
 Hub-level topics:
@@ -223,7 +243,7 @@ Hub-level topics:
 | Diagnostics | DG-001 architecture + qualification read integration |
 | Export / signals | OBSERVABILITY export boundary |
 
-**Current qualified implementation note:** NPSC-5F/R1 durable commit and tenant integrity are **FROZEN / PASS**. NPSC-5F/R2 journal completeness/ordering is **implementation complete** — await R2 Final qualification/freeze (see [`NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md`](../qualification/NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md)).
+**Current qualified implementation note:** NPSC-5F/R1–R4 and NPSC-5F Final are **FROZEN / PASS** (R1–R4 Final qualification records; [`NPSC_5F_FINAL_EVIDENCE_PLANE_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_FINAL_EVIDENCE_PLANE_QUALIFICATION_AND_FREEZE.md)). Post-freeze evidence-plane drift was **REQUALIFIED / RE-FROZEN** for NPSC-5F R3 + Final @ `cd0217ef0cbf2386f5f6134c30cfb80adf6ecddb` and reconciled under EE-FINAL-02 ([`EE_FINAL_02_NPSC5F_FROZEN_PLANE_DRIFT_RECONCILIATION_AND_ENTERPRISE_RE_FREEZE.md`](../qualification/EE_FINAL_02_NPSC5F_FROZEN_PLANE_DRIFT_RECONCILIATION_AND_ENTERPRISE_RE_FREEZE.md) **PASS**).
 
 Evidence must not decide whether execution may run or mutate recovery authority (NPSC-5F core principle).
 
@@ -304,7 +324,11 @@ Implementation: `testing_support/execution_qualification/configuration.py` (`res
 | Multi-agent governance (5D) | [`NPSC_5D_FINAL_MULTI_AGENT_GOVERNANCE_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5D_FINAL_MULTI_AGENT_GOVERNANCE_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
 | Recovery plane (5E) | [`NPSC_5E_FINAL_RECOVERY_PLANE_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5E_FINAL_RECOVERY_PLANE_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
 | Evidence durability (5F/R1) | [`NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R1_FINAL_DURABLE_EVIDENCE_COMMIT_TENANT_INTEGRITY_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
-| Evidence journal (5F/R2) | [`NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md`](../qualification/NPSC_5F_R2_JOURNAL_COMPLETENESS_ORDERING.md) | **ACTIVE** (not FROZEN) |
+| Evidence journal (5F/R2) | [`NPSC_5F_R2_FINAL_JOURNAL_COMPLETENESS_ORDERING_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R2_FINAL_JOURNAL_COMPLETENESS_ORDERING_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
+| Evidence export (5F/R3) | [`NPSC_5F_R3_FINAL_GOVERNED_EVIDENCE_EXPORT_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R3_FINAL_GOVERNED_EVIDENCE_EXPORT_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
+| Evidence reconstruction (5F/R4) | [`NPSC_5F_R4_FINAL_RECONSTRUCTION_QUALITY_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_R4_FINAL_RECONSTRUCTION_QUALITY_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
+| Evidence plane Final | [`NPSC_5F_FINAL_EVIDENCE_PLANE_QUALIFICATION_AND_FREEZE.md`](../qualification/NPSC_5F_FINAL_EVIDENCE_PLANE_QUALIFICATION_AND_FREEZE.md) | **FROZEN / PASS** |
+| NPSC-5F post-freeze re-freeze | [`EE_FINAL_02_NPSC5F_FROZEN_PLANE_DRIFT_RECONCILIATION_AND_ENTERPRISE_RE_FREEZE.md`](../qualification/EE_FINAL_02_NPSC5F_FROZEN_PLANE_DRIFT_RECONCILIATION_AND_ENTERPRISE_RE_FREEZE.md) | **PASS** (compatible evolution) |
 | Diagnostic lineage (DG-001 R1) | [`DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_READ_INTEGRATION_R1.md`](../qualification/DG_001_MULTI_AGENT_DIAGNOSTIC_LINEAGE_READ_INTEGRATION_R1.md) | **CANONICAL** qual record |
 | Qualification runner | P0 + R1 + R2 + R3 acceleration records | **QUALIFIED** chain |
 | Scale / resilience | W0 / W1 qualification docs | **QUALIFIED** tranches (see scale architecture) |
@@ -331,6 +355,9 @@ Implementation: `testing_support/execution_qualification/configuration.py` (`res
 | Scale / resilience | [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md`](ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md) | P0 inventory qual **SUPPORTING** |
 | Qualification runner | [`EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md`](EXECUTION_QUALIFICATION_ACCELERATION_ARCHITECTURE.md) | **QUALIFICATION EVIDENCE:** P0–R3 records |
 | Maintainer doc inventory | [`EXECUTION_ENGINE_DOCUMENTATION_INVENTORY.md`](EXECUTION_ENGINE_DOCUMENTATION_INVENTORY.md) | Classification only |
+| Final enterprise architecture | [`EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md`](EXECUTION_ENGINE_FINAL_ENTERPRISE_ARCHITECTURE.md) | **CANONICAL** frozen technical map |
+| Decision System | [`DECISION_SYSTEM.md`](../../architecture/DECISION_SYSTEM.md) | Semantic lifecycle hosted by Execution |
+| Post-freeze gap audit | [`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md) | **QUALIFICATION** independent PASS |
 | Implementation map | [`UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md`](../../architecture/UNIFIED_EXECUTION_IMPLEMENTATION_MAP.md) | **SUPPORTING** |
 
 ---
@@ -372,10 +399,12 @@ Do not delete or rename historical artifacts as part of hub maintenance.
 | UEA | **CANONICAL** `META_ARCHITECTURE` |
 | UER / Nexus / Tools / Observability domain docs | **CANONICAL** |
 | NPSC-5E recovery plane | **FROZEN / PASS** |
-| NPSC-5F evidence plane | **ACTIVE**; R1 **FROZEN / PASS**; R2 pending final freeze |
+| NPSC-5F evidence plane | **FROZEN / PASS** (R1–R4 Final + Final); **REQUALIFIED / RE-FROZEN** (R3 + Final) · EE-FINAL-02 **PASS** |
 | Qualification acceleration | **R3 QUALIFIED**; R3A ENV contract implemented |
 | Scale / resilience | **CANONICAL** maintainer architecture + W0/W1 quals |
-| Next maintainer milestone | Final Execution Engine certification / freeze (separate task) |
+| EE-FINAL enterprise certification | **CLOSED / FROZEN** — [`EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md`](../qualification/EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md) |
+| Post-freeze exhaustive gap audit | **PASS** — [`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md) |
+| Execution Engine workstream | **FINAL** — build new capabilities on canonical engine only |
 
 ---
 

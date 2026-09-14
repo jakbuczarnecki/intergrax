@@ -42,6 +42,7 @@ from intergrax.contracts.governed_proof import (
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
+    resolve_meaningful_side_effect_execution_identity,
 )
 from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
@@ -860,13 +861,21 @@ class ExternalWorkAdapter:
             )
 
         try:
+            task_id, run_id, attempt_id, execution_id = (
+                resolve_meaningful_side_effect_execution_identity(
+                    task_id=resolved_task,
+                    run_id=resolved_run,
+                )
+            )
             side_effect_request = MeaningfulSideEffectRequest(
                 action=action,
                 kinds=kinds,
                 side_effect_scope_id=resolved_scope_id,
                 side_effect_scope_digest=side_effect_scope_digest,
-                task_id=resolved_task,
-                run_id=resolved_run,
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
                 principal_id=resolved_principal,
                 tenant_id=resolved_tenant,
                 resource=resource,

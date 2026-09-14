@@ -272,9 +272,9 @@ not as a first-contact route.
 
 | Platform area | What it provides | Explore |
 | --- | --- | --- |
-| **Runtime & Orchestration** | Unified execution, workflow orchestration, and Nexus execution paths | [Unified Execution Runtime](docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Orchestration](docs/project/architecture/ORCHESTRATION.md) · [Nexus Execution Flow](docs/project/architecture/NEXUS_EXECUTION_FLOW.md) |
+| **Runtime & Orchestration** | **Execution Engine** as sole legal execution authority; orchestration strategy with **Nexus** as private implementation behind Execution contracts | [Unified Execution Architecture](docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) · [Unified Execution Runtime](docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md) · [Orchestration](docs/project/architecture/ORCHESTRATION.md) · [Nexus Execution Flow](docs/project/architecture/NEXUS_EXECUTION_FLOW.md) (orchestration internals — not public execution API) |
 | **Agents & Reasoning** | Agent contracts, reasoning and cognition, adaptive harness intelligence | [Agent Contracts & Assembly](docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) · [Reasoning & Cognition](docs/project/architecture/REASONING_AND_COGNITION.md) · [Adaptive Harness Intelligence](docs/project/architecture/ADAPTIVE_HARNESS_INTELLIGENCE.md) |
-| **Decision & Verification** | Decision lifecycle, compositional verification, and deliberation strategies inside Nexus - **target canon**; production remains Critic until migration | [Decision System](docs/project/architecture/DECISION_SYSTEM.md) · [Decision Verification](docs/project/architecture/DECISION_VERIFICATION.md) · [Decision Deliberation](docs/project/architecture/DECISION_DELIBERATION.md) · **CURRENT:** [Critic Verification](docs/project/architecture/CRITIC_VERIFICATION.md) |
+| **Decision & Verification** | Decision lifecycle hosted by **Execution** — verification, deliberation, and pluggable **Decision Strategies** (not separate runtimes) | [Decision System](docs/project/architecture/DECISION_SYSTEM.md) · [Decision Verification](docs/project/architecture/DECISION_VERIFICATION.md) · [Decision Deliberation](docs/project/architecture/DECISION_DELIBERATION.md) · **Historical:** [Critic Verification](docs/project/architecture/CRITIC_VERIFICATION.md) (legacy snapshot — not current decision authority) |
 | **Knowledge & Retrieval** | Retrieval, grounding, and knowledge-source integration boundaries | [RAG](docs/project/architecture/RAG.md) · [Knowledge Source Integrations](docs/project/architecture/KNOWLEDGE_SOURCE_INTEGRATIONS.md) |
 | **Memory & Context** | Durable memory, context engineering, and unified context lifecycle | [Memory](docs/project/architecture/MEMORY.md) · [Context Engineering](docs/project/architecture/CONTEXT_ENGINEERING.md) · [Unified Context Lifecycle](docs/project/architecture/UNIFIED_CONTEXT_LIFECYCLE.md) |
 | **Tools, Skills & Integrations** | Tools, skills, integrations, LLM adapters, and code-craft surfaces | [Tools](docs/project/architecture/TOOLS.md) · [Skills](docs/project/architecture/SKILLS.md) · [Integrations](docs/project/architecture/INTEGRATIONS.md) · [LLM Adapters](docs/project/architecture/LLM_ADAPTERS.md) · [Code Craft](docs/project/architecture/CODE_CRAFT.md) |
@@ -302,11 +302,13 @@ Project-level mental model:
 
 ## One execution model across the platform
 
-Intergrax uses one execution model across the platform: workloads may be direct
-inference, autonomous agent execution, or orchestration through Nexus for child
-Executions - without forcing every request through the same orchestration machinery.
-Execution is the common governed unit; identity, authority, budgets, observability,
-diagnostics, and recovery stay correlated across the execution tree.
+Intergrax uses one execution model across the platform: the **Execution Engine** is
+the sole legal execution authority. Workloads may be direct inference, autonomous
+agent execution, or orchestration (with **Nexus** as the private orchestration
+implementation) for child Executions — without forcing every request through the
+same orchestration machinery. Execution is the common governed unit; identity,
+authority, budgets, observability, diagnostics, and recovery stay correlated across
+the execution tree.
 
 <a href="docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md">
 <picture>
@@ -318,9 +320,9 @@ diagnostics, and recovery stay correlated across the execution tree.
 
 [Explore the Unified Execution Architecture](docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md)
 
-The unified model is the frozen target architecture; implementation is migrating
-toward it, and linked domain documents distinguish target semantics from current
-runtime state.
+The **Execution Engine** core is **frozen** enterprise execution authority; linked
+domain documents distinguish certified core semantics from bounded adoption gaps on
+specific consumer paths.
 
 ---
 
@@ -329,17 +331,19 @@ runtime state.
 Intergrax does not have to treat the first model output as the final decision.
 A governed run can treat model output as a **candidate**, run **verification**,
 surface **disagreement**, apply bounded **revision**, and reach an **authoritative
-outcome** - separate from **execution authorization** and Nexus side effects.
+outcome** — separate from **execution authorization** and **Execution-controlled**
+work (including orchestration side effects when an orchestration strategy is selected).
 
-> **Maturity:** Decision System architecture is **frozen target canon** (A4).
-> Runtime migration is **planned**; production correctness remains the **Critic /
-> CVL path** until clean-cut migration. Council is **not shipped**.
+> **Maturity:** **Decision System** semantics are **canonical** and **hosted by
+> Execution** (certified core). **Critic** docs are **historical** only — not
+> current decision authority. **Council** is a **Decision Strategy** direction;
+> not all strategy surfaces are universally shipped.
 
 <a href="docs/project/assets/public/readme/fullsize/intergrax-decision-system.md">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/readme/intergrax-decision-system-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/readme/intergrax-decision-system-light.png">
-  <img src="docs/project/assets/public/readme/intergrax-decision-system-light.png" alt="Decision quality before execution: candidate proposal through verification and resolution to separate authorization and Nexus execution; target architecture frozen with Critic as current production path.">
+  <img src="docs/project/assets/public/readme/intergrax-decision-system-light.png" alt="Decision quality before execution: candidate proposal through verification and resolution to authoritative outcome, separate from execution authorization and Execution-controlled work; Decision System hosted by Execution.">
 </picture>
 </a>
 

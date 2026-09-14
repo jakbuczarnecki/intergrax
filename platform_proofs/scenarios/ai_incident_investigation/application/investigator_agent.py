@@ -58,11 +58,12 @@ from platform_proofs.scenarios.ai_incident_investigation.application.validation 
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from platform_proofs.scenarios.ai_incident_investigation.application.incident_scope import IncidentScope
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
-    DEFAULT_EVALUATOR_LOOP_MAX_ITERATIONS,
     INVESTIGATOR_NODE_ID,
     ScenarioRuntimeComposition,
     build_agent_runtime_context,
 )
+
+_COMPLETION_ALIGNMENT_CORRECTION_BUDGET = 1
 from platform_proofs.scenarios.ai_incident_investigation.application.scenario_contract import (  # noqa: F401
     COMPARISON_EVIDENCE_ID,
     COMPLETION_SUPPORTED_DIAGNOSIS,
@@ -107,10 +108,10 @@ def _is_revision(ctx: RuntimeExecutionContext) -> bool:
     return isinstance(raw_feedback, list) and bool(raw_feedback)
 
 
-def _evaluator_iterations_remaining_after_current_pass(is_revision: bool) -> int:
+def _alignment_correction_budget_remaining(is_revision: bool) -> int:
     if is_revision:
         return 0
-    return max(0, DEFAULT_EVALUATOR_LOOP_MAX_ITERATIONS - 1)
+    return _COMPLETION_ALIGNMENT_CORRECTION_BUDGET
 
 
 def _build_alignment_revision_context_from_prior(
@@ -285,7 +286,7 @@ class IncidentInvestigatorAgent(Agent):
                 has_supported_diagnosis=has_supported_diagnosis,
             )
         )
-        budget_remaining = _evaluator_iterations_remaining_after_current_pass(is_revision)
+        budget_remaining = _alignment_correction_budget_remaining(is_revision)
         correction_decision = correction_decision_for_domain_alignment(
             completion_mode=completion_mode,
             has_supported_diagnosis=has_supported_diagnosis,

@@ -49,7 +49,9 @@ ORDER_ASSISTANT_CAPABILITY = "indirect_prompt_injection.assist"
 SYNTHETIC_SCENARIO_TENANT_ID = "synthetic-scenario-indirect_prompt_injection"
 
 
-def _scenario_lab_manifest(environment: ApplicationEnvironmentProfile) -> ApplicationManifest:
+def build_order_assistant_lab_manifest(
+    environment: ApplicationEnvironmentProfile,
+) -> ApplicationManifest:
     return ApplicationManifest.lab(
         app_id="scenario_indirect_prompt_injection",
         name="AI Order Assistant",
@@ -112,7 +114,7 @@ def build_scenario_runtime_composition(
         nodes=[GraphNode(agent_id=ORDER_ASSISTANT_AGENT_ID)],
         trigger_capabilities=[ORDER_ASSISTANT_CAPABILITY],
     )
-    manifest = _scenario_lab_manifest(environment)
+    manifest = build_order_assistant_lab_manifest(environment)
     platform = build_scenario_runtime_from_environment(
         environment=environment,
         registry=roster,

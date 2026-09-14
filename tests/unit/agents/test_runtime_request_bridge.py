@@ -20,7 +20,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, build_runtime_request_for_tests
 
 
 class _BridgeAgent(IntergraxAgent):
@@ -54,7 +54,8 @@ class _BridgeAgent(IntergraxAgent):
 @pytest.mark.gate
 def test_runtime_request_to_agent_run_maps_identity() -> None:
     agent = _BridgeAgent()
-    runtime_request = RuntimeRequest(
+    runtime_request = build_runtime_request_for_tests(
+        seed="bridge-identity",
         agent_id="bridge-agent",
         user_id="user-9",
         session_id="sess-1",
@@ -71,7 +72,8 @@ def test_runtime_request_to_agent_run_maps_identity() -> None:
 @pytest.mark.unit
 @pytest.mark.gate
 def test_acp_session_enabled_reads_metadata_flag() -> None:
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="acp-flag",
         agent_id="a",
         user_id="u",
         session_id="s",
@@ -85,7 +87,8 @@ def test_acp_session_enabled_reads_metadata_flag() -> None:
 @pytest.mark.gate
 async def test_agent_engine_acp_session_bridge() -> None:
     agent = _BridgeAgent()
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="acp-bridge",
         agent_id="bridge-agent",
         user_id="user-1",
         session_id="sess-1",
@@ -107,7 +110,8 @@ def test_runtime_request_with_model_envelope_uses_final_user_as_acp_input() -> N
         ChatMessage(role="user", content="final objective", entry_id="final"),
     ]
     envelope = build_model_input_messages_envelope(messages)
-    runtime_request = RuntimeRequest(
+    runtime_request = build_runtime_request_for_tests(
+        seed="model-envelope",
         agent_id="bridge-agent",
         user_id="user-1",
         session_id="sess-1",
@@ -128,7 +132,8 @@ def test_runtime_request_with_model_envelope_uses_final_user_as_acp_input() -> N
 @pytest.mark.gate
 def test_runtime_request_malformed_model_envelope_fails_before_execution() -> None:
     agent = _BridgeAgent()
-    runtime_request = RuntimeRequest(
+    runtime_request = build_runtime_request_for_tests(
+        seed="malformed-envelope",
         agent_id="bridge-agent",
         user_id="user-1",
         session_id="sess-1",

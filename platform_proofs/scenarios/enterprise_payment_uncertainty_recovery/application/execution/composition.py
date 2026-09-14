@@ -33,7 +33,9 @@ from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.applicati
 )
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.tracing.recorder import (
     RecordingScenarioExecutionTrace,
-    ScenarioExecutionTraceScope,
+)
+from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.lab.tracing_scope import (
+    mint_lab_scenario_execution_trace_scope,
 )
 from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.contracts.application.references import (
     LabBusinessReferences,
@@ -90,7 +92,7 @@ def build_lab_execution_composition(
     capture = ExternalPaymentCaptureService(store)
     if execution_trace is None:
         execution_trace = RecordingScenarioExecutionTrace(
-            scope=ScenarioExecutionTraceScope.mint(
+            scope=mint_lab_scenario_execution_trace_scope(
                 correlation_id=refs.payment_intent_reference,
                 scenario_id="ERL-QUAL-004",
                 variant_id="payment_completed_after_unknown",

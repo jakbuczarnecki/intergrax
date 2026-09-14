@@ -55,6 +55,8 @@ def compose_governed_continuation_from_enforcement(
         reason=resolved_reason,
         task_id=side_effect.task_id,
         run_id=side_effect.run_id,
+        attempt_id=side_effect.attempt_id,
+        execution_id=side_effect.execution_id,
         source_agent_id=source_agent_id,
         source_step_id=source_step_id,
         prompt=(

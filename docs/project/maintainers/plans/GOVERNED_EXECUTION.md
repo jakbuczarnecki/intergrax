@@ -11,13 +11,30 @@
 
 ## Current state
 
-Governed Execution mechanisms already exist in the platform (policy evaluation, meaningful-side-effect contracts, collaborative-work enforcement, HITL continuation). AUDIT-5 identified accepted gaps requiring remediation. **None of the PG-FIX blocks below are implemented or verified** by audit persistence; later parallel development commits must not be treated as closure of these historical findings.
+Governed Execution mechanisms already exist in the platform (policy evaluation, meaningful-side-effect contracts, collaborative-work enforcement, HITL continuation). AUDIT-5 identified accepted gaps requiring remediation.
+
+**GR-0 rebase (2026-09-14, HEAD `fe2edc8077234437b13345daaf46633867fe8f31`):** Post–Unified Execution Runtime audit reconciles **code truth** with this plan. Canonical gap inventory and enterprise roadmap: [`qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](../qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md).
+
+**PG-FIX summary after rebase (distinct from AUDIT-5 persistence):**
+
+| Block | IMPLEMENTED (code) | VERIFIED | CLOSED |
+| ----- | ------------------ | -------- | ------ |
+| PG-FIX-A | Core spine (`CollaborativeWorkEnforcementGate`, `MeaningfulSideEffectAuthorizationBoundary`) | Partial — targeted tests / adapter paths | **No** — not every consumer; identity gaps |
+| PG-FIX-B | `RuntimePolicyEngine` specificity / precedence | Partial — `test_pg_fix_b_*` | **No** |
+| PG-FIX-C | Scoped grant + consume-before-effect mechanism | Partial — G5C tests; **no Attempt/Execution binding** | **No** |
+| PG-FIX-D | Typed rule matching (no `rule_id` suffix dispatch) | Partial — `test_pg_fix_d_*` | **No** |
+
+Historical AUDIT-5 rows remain authoritative **context**; they are **not** erased. Closure requires GR-1+ (identity rebind, UER HITL, evidence, qualification).
+
+**Active roadmap:** **GR-0** complete → **GR-1** (Execution Identity Rebinding) next. See gap ledger § GR enterprise roadmap.
+
+Audit persistence alone never constitutes implementation or verification evidence.
 
 ## Accepted remediation blocks
 
 ### PG-FIX-A - Canonical side-effect governance spine
 
-**Status:** IMPLEMENTED (not VERIFIED/CLOSED)
+**Status:** IMPLEMENTED (core) — VERIFIED partial — **not CLOSED** (GR-0; see gap ledger GOV-GAP-005, GOV-REBASE-02)
 
 **Findings:**
 
@@ -39,7 +56,7 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 
 ### PG-FIX-B - Safe policy resolution semantics
 
-**Status:** ACCEPTED / PLANNED
+**Status:** IMPLEMENTED — VERIFIED partial (`tests/unit/runtime/policy/test_pg_fix_b_side_effect_policy_precedence.py`) — **not CLOSED** (GR-4 requalification)
 
 **Finding:**
 
@@ -58,7 +75,7 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 
 ### PG-FIX-C - Scoped approval consumption
 
-**Status:** ACCEPTED / PLANNED
+**Status:** IMPLEMENTED (mechanism) — VERIFIED partial (G5C-2B tests) — **not CLOSED** — platform identity conformance **OPEN** (GR-1 / GOV-REBASE-01)
 
 **Finding:**
 
@@ -76,11 +93,11 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 - Wrong/stale/mismatched grant fails closed.
 - DENY is never overridden merely because approval exists.
 
-**Note:** Later parallel G5C commits may exist on current development. Do not mark this block implemented or verified from those commits. Historical audit remains tied to its audited SHA.
+**Note:** G5C commits implemented the historical mechanism; GR-0 confirms mechanism soundness separate from Attempt/Execution binding. AUDIT-5 SHA context preserved in [`POLICY_GOVERNANCE.md`](../../audit_results/2026-08-18/POLICY_GOVERNANCE.md).
 
 ### PG-FIX-D - Explicit policy matching
 
-**Status:** ACCEPTED / PLANNED
+**Status:** IMPLEMENTED — VERIFIED partial (`test_pg_fix_d_explicit_policy_action_matching.py`) — **not CLOSED** (GR-4)
 
 **Finding:**
 
@@ -140,6 +157,30 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 
 ## Verification expectations
 
-Implementation requires code, tests, and independent verification before any block moves beyond **ACCEPTED / PLANNED**. Audit persistence does not constitute implementation or verification evidence.
+Implementation requires code, tests, and independent verification before any block moves to **CLOSED**. Audit persistence does not constitute implementation or verification evidence.
+
+## GR enterprise roadmap (post–UER rebase)
+
+Frozen at GR-0. Full rows, evidence, and old G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](../qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md).
+
+| ID | Task | Status |
+| --- | --- | --- |
+| GR-0 | Architecture Rebase & Gap Ledger | Complete (this rebase) |
+| GR-1 | Execution Identity Rebinding | **NEXT** |
+| GR-2 | Execution Admission Governance | Planned |
+| GR-3 | Inner Evaluation Spine Reconciliation | Planned |
+| GR-4 | Policy Resolution & Catalog Requalification | Planned |
+| GR-5 | HITL / Governed Continuation Execution Rebase | Planned |
+| GR-6 | Decision → Governance Integration | Planned |
+| GR-7 | External Effect / Reliability Boundary | Planned |
+| GR-8 | Governance Evidence Integration | Planned |
+| GR-9 | Diagnostic Consumption Proof | Planned |
+| GR-10 | Execution Strategy Coverage | Planned |
+| GR-11 | Plugin & Enterprise Extensibility Certification | Planned |
+| GR-12 | Control-Plane Governance | Planned |
+| GR-13 | Full Governance Proof Matrix | Planned |
+| GR-14 | Real Application Integration — LKW | Planned |
+| GR-15 | Governance UX / Application Contract | Planned |
+| GR-16 | Enterprise Qualification & Claims | Planned |
 
 ---

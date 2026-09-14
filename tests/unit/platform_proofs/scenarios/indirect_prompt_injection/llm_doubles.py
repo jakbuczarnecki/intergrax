@@ -18,6 +18,10 @@ class WriteProposingOrderLLM(LLMAdapter):
     provider = "test"
     model = "write-proposer"
 
+    @property
+    def context_window_tokens(self) -> int:
+        return 8192
+
     def generate_messages(
         self,
         messages: list[ChatMessage],
@@ -63,6 +67,10 @@ class WriteProposingOrderLLM(LLMAdapter):
 class SummaryOnlyOrderLLM(LLMAdapter):
     provider = "test"
     model = "summary-only"
+
+    @property
+    def context_window_tokens(self) -> int:
+        return 8192
 
     def generate_messages(
         self,

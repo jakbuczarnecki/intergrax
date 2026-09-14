@@ -4,13 +4,14 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SkipValidation
 
 from typing import Any
 
 from intergrax.contracts.agent_run_binding import AgentRunBinding
 from intergrax.contracts.runtime_environment import RuntimeEnvironmentProfile
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
+from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 
 ACP_HOST_CONTEXT_KEY = AcpMetadataKey.HOST_CONTEXT
 
@@ -26,3 +27,7 @@ class ACPSessionHostContext(BaseModel):
     decision_flow_gate: Any = Field(default=None, exclude=True)
     notification_adapter: Any = Field(default=None, exclude=True)
     budget_reaction_hook: Any = Field(default=None, exclude=True)
+    execution_budget_ledger_factory: SkipValidation[ExecutionBudgetLedgerFactory | None] = Field(
+        default=None,
+        exclude=True,
+    )
