@@ -42,6 +42,7 @@ PROBLEM_KIND_PLATFORM_OBSERVABILITY_EXPORT_FAILURE = "platform.observability_exp
 PROBLEM_KIND_PLATFORM_UNEXPECTED_STATE = "platform.unexpected_state"
 PROBLEM_KIND_PLATFORM_APPLICATION_FAILURE = "platform.application_failure"
 PROBLEM_KIND_PLATFORM_FUNCTIONAL_OUTCOME_INVALID = "platform.functional_outcome_invalid"
+PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY = "platform.external_effect_reliability"
 
 PROBLEM_SOURCE_LAYER_VALIDATION = "validation"
 

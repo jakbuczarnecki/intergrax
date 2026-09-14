@@ -403,6 +403,9 @@ ReliabilityDiagnosticBridge (runtime internal)
 DiagnosticOrchestrator / ProblemLifecycleEngine
 ```
 
+**Phase B (ERL-DIAG-001B) ownership:** `intergrax/runtime/diagnostics/reliability/` — `ReliabilityDiagnosticHandoff` → `PlatformProblemSignal` (`platform.external_effect_reliability`) + `DiagnosticSignalSubjectScope` (`application_id=erl`, `instance_id=reliability_case_id`); orchestration via injected `ReliabilityDiagnosticOrchestrationPort` only (no direct persistence).
+```
+
 **REJECTED:** Observer-only on trace tail without lifecycle commit (race + incomplete facts).
 
 ---
@@ -768,7 +771,7 @@ flowchart TB
 | ID | Question | Status |
 | --- | --- | --- |
 | OQ-1 | Package name: `enterprise_reliability.diagnostics` vs `diagnostics.reliability` | **DECIDED** — `intergrax.contracts.enterprise_reliability.diagnostics` |
-| OQ-2 | Sync vs async bridge default for orchestrator handoff | **OPEN** (recommend sync MVP, async under load) |
+| OQ-2 | Sync vs async bridge default for orchestrator handoff | **DECIDED FOR MVP** — synchronous `ReliabilityDiagnosticBridge.on_observation` → `DiagnosticOrchestrator.run` (bounded, failure-contained) |
 | OQ-3 | Exact `PersistedProblem` / occurrence extension schema | **OPEN** (implementation) |
 | OQ-4 | Read model authz integration for evidence ref resolution | **OPEN** |
 | OQ-5 | Whether ERL case transition journal persistence is required before replay-from-store | **OPEN** (emit-at-commit sufficient for MVP) |
