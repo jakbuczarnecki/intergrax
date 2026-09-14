@@ -4,7 +4,10 @@
 
 from __future__ import annotations
 
+from typing import List
+
 from intergrax.contracts.execution_identity import EventId
+from intergrax.runtime.events.execution_position import ExecutionEventPosition
 from intergrax.runtime.events.persistence_contract import (
     PositionedRuntimeEvent,
     RuntimeEventPersistence,
@@ -27,19 +30,19 @@ class FailOnAppendPersistence(RuntimeEventPersistence):
         self._fail_on = fail_on
         self._counter = call_counter()
 
-    def append(self, event: RuntimeEvent, *, tenant_id: str) -> None:
+    def append(self, event: RuntimeEvent, *, tenant_id: str) -> PositionedRuntimeEvent:
         raise_on_call(self._fail_on, counter=self._counter)
-        self._inner.append(event, tenant_id=tenant_id)
+        return self._inner.append(event, tenant_id=tenant_id)
 
     def list_positioned_for_run(
         self,
-        run_id,
+        run_id: str,
         *,
         tenant_id: str,
         limit: int = 1000,
-        through=None,
-        after=None,
-    ):
+        through: ExecutionEventPosition | None = None,
+        after: ExecutionEventPosition | None = None,
+    ) -> List[PositionedRuntimeEvent]:
         return self._inner.list_positioned_for_run(
             run_id,
             tenant_id=tenant_id,
@@ -48,7 +51,13 @@ class FailOnAppendPersistence(RuntimeEventPersistence):
             after=after,
         )
 
-    def list_for_task(self, task_id, *, tenant_id: str, limit: int = 1000):
+    def list_for_task(
+        self,
+        task_id: str,
+        *,
+        tenant_id: str,
+        limit: int = 1000,
+    ) -> List[RuntimeEvent]:
         return self._inner.list_for_task(task_id, tenant_id=tenant_id, limit=limit)
 
     def list_positioned_for_task_grouped_by_run(
