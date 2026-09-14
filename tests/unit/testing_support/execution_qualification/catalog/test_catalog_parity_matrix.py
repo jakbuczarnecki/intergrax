@@ -32,6 +32,9 @@ from testing_support.execution_qualification.catalog.profile_builders import (
     NPSC5F_R3_PROFILE_ID,
     NPSC5F_R4_PROFILE_ID,
 )
+from testing_support.execution_qualification.final_semantic_pytest import (
+    profile_final_semantic_argument_sets,
+)
 from testing_support.npsc5f_r1_qualification_profile import dag_required_target_set
 
 _PROFILE_TO_MANDATORY: dict[str, object] = {
@@ -62,7 +65,11 @@ def _assert_parity(
     compiled = catalog.compile_profile(profile_id)
     legacy_set = _legacy_leaf_arg_set(mandatory)
     dag_set = dag_required_target_set(compiled.plan)
-    assert legacy_set == dag_set, profile_id
+    allowed_semantic = profile_final_semantic_argument_sets(profile_id)
+    missing = legacy_set - dag_set
+    unexpected = dag_set - legacy_set - allowed_semantic
+    assert not missing, (profile_id, missing)
+    assert not unexpected, (profile_id, unexpected)
 
 
 def test_parity_npsc5f_r1_final() -> None:

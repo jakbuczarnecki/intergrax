@@ -526,14 +526,23 @@ NPSC5F_R4_MANDATORY_REGRESSION_SUITES: FrozenPytestSuiteSource = (
     ),
 )
 
+def _npsc5f_final_recovery_pytest_targets() -> list[str]:
+    from testing_support.execution_qualification.final_semantic_pytest import (
+        npsc5f_final_recovery_pytest_arguments,
+    )
+
+    paths = (
+        "tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py",
+        "tests/unit/runtime/architecture/test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py",
+        "tests/unit/runtime/architecture/test_npsc5e_r3_final_child_fanout_partial_recovery_qualification.py",
+    )
+    return list(npsc5f_final_recovery_pytest_arguments(paths))
+
+
 _NPSC5F_FINAL_EXTRA_SUITES: FrozenPytestSuiteSource = (
     (
         "Recovery",
-        [
-            "tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py",
-            "tests/unit/runtime/architecture/test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py",
-            "tests/unit/runtime/architecture/test_npsc5e_r3_final_child_fanout_partial_recovery_qualification.py",
-        ],
+        _npsc5f_final_recovery_pytest_targets(),
     ),
     (
         "NPSC-5E Final",

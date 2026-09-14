@@ -249,6 +249,7 @@ def _run_pytest(targets: list[str]) -> subprocess.CompletedProcess[str]:
     )
 
 
+@pytest.mark.legacy_embedded_qualification_harness
 @pytest.mark.parametrize(("label", "targets"), _MANDATORY_SUITES, ids=[label for label, _ in _MANDATORY_SUITES])
 def test_mandatory_frozen_suite_passes(label: str, targets: list[str]) -> None:
     proc = _run_pytest(targets)
