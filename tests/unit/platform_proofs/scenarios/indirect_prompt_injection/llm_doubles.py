@@ -36,6 +36,9 @@ class WriteProposingOrderLLM(LLMAdapter):
     def supports_tools(self) -> bool:
         return True
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return True
+
     def generate_with_tools(
         self,
         messages: list[ChatMessage],
@@ -84,6 +87,9 @@ class SummaryOnlyOrderLLM(LLMAdapter):
         return LLMAdapterResponse(content="Order #48291 is processing.", tool_calls=())
 
     def supports_tools(self) -> bool:
+        return True
+
+    def supports_strict_tool_argument_conformance(self) -> bool:
         return True
 
     def generate_with_tools(

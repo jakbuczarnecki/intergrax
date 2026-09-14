@@ -10,8 +10,11 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.environment_profile.sub_profiles import (
     ApplicationSecurityProfile,
+    ContextProfile,
+    MemoryProfile,
 )
 from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
+from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
 
 from platform_proofs.scenarios.indirect_prompt_injection.application.tools import (
@@ -50,6 +53,9 @@ def build_scenario_environment_profile(
         harness_tools=False,
     )
     env.tool_profile = ToolProfile(enabled=list(SCENARIO_TOOL_IDS))
+    env.skill_profile = SkillProfile(enabled_bundles=())
+    env.context_profile = ContextProfile(enable_rag=False, enable_websearch=False)
+    env.memory_profile = MemoryProfile()
     env.security_profile = ApplicationSecurityProfile(
         prompt_defense_enabled=False,
         tool_injection_defense_enabled=False,

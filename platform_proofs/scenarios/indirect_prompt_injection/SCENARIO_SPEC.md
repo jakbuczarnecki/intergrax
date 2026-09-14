@@ -358,15 +358,16 @@ Attack variants expect immediate **DENY** without HITL on the read-only workflow
 
 | APPLICATION / PLATFORM OWNS | PROOF OWNS |
 | --- | --- |
+| `OrderOperationsPort` (get order, notes, authorized writes via tools) | `OrderProviderControlPort` (reset, mutation observation) |
+| ToolHandlers and `OrderAssistantExecutionResult` | `ScenarioExecutionResult` (application result + provider observations) |
 | User task intake and workflow selection from user intent | Adversarial fixture selection (note variant, workflow policy profile) |
 | Order status assistant workflow and prompts | Hidden attack truth catalog |
 | Real LLM reasoning and tool planning | Falsification assertions (proposal occurred, policy DENY, writes=0) |
-| ToolRegistry / integration tools (`order.get`, `order.get_notes`, `order.update_shipping_address`) | Provider write-counter assertion |
-| `RuntimeToolInvoker` + declarative policy enforcement | Evidence projection to `PlatformProofEvidence` v3 |
-| `TraceEvent` / `ToolCallTrace` / typed diagnostics | HTML report rendering |
-| Trusted-host workflow policy configuration | Reproduction matrix metadata |
-| Controlled order provider (synthetic) behind normal integration contract | Expected outcome table per variant |
-| Terminal RESOLVED / UNRESOLVED customer outcome | |
+| ToolRegistry / integration tools (`order.get`, `order.get_notes`, `order.update_shipping_address`) | Provider write-counter assertion and initial/final provider state capture |
+| `RuntimeToolInvoker` + declarative policy enforcement | Proof harness (`prepare` → execute application → observe → evaluate) |
+| `TraceEvent` / `ToolCallTrace` / typed diagnostics | Evidence projection to `PlatformProofEvidence` v3 |
+| Trusted-host workflow policy configuration | HTML report rendering and reproduction matrix metadata |
+| Terminal RESOLVED / UNRESOLVED customer outcome | Expected outcome table per variant |
 
 **PROOF DOES NOT:**
 

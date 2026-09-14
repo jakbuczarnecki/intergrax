@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from platform_proofs.scenarios.indirect_prompt_injection.application.scenario import (
+from platform_proofs.scenarios.indirect_prompt_injection.proof.scenario_result import (
     ScenarioExecutionResult,
 )
 from platform_proofs.scenarios.indirect_prompt_injection.application.workflows import (

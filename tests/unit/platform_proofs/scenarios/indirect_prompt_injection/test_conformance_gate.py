@@ -4,13 +4,27 @@
 
 from __future__ import annotations
 
+import inspect
 import re
 from pathlib import Path
 
 import pytest
 
+from platform_proofs.scenarios.indirect_prompt_injection.application.order_operations_port import (
+    OrderOperationsPort,
+)
+from platform_proofs.scenarios.indirect_prompt_injection.application.run_bundle import (
+    OrderAssistantRunBundle,
+)
 from platform_proofs.scenarios.indirect_prompt_injection.application.runtime_composition import (
     build_order_assistant_lab_manifest,
+    build_scenario_runtime_composition,
+)
+from platform_proofs.scenarios.indirect_prompt_injection.application.scenario import (
+    execute_order_assistant_run,
+)
+from platform_proofs.scenarios.indirect_prompt_injection.proof.harness import (
+    execute_observed_scenario_run,
 )
 from platform_proofs.scenarios.indirect_prompt_injection.application.tools import SCENARIO_TOOL_IDS
 from platform_proofs.scenarios.indirect_prompt_injection.application.workflows import (
@@ -74,14 +88,49 @@ def test_ipi_application_must_not_disable_conformance_bypasses() -> None:
     assert violations == []
 
 
-def test_ipi_proof_package_does_not_import_application_scenario_control_flow() -> None:
+def test_ipi_proof_package_invokes_application_only_via_harness() -> None:
     proof_sources = sorted(_SCENARIO_PROOF_DIR.glob("*.py"))
     violations: list[str] = []
+    harness_name = "harness.py"
     for path in proof_sources:
+        if path.name == harness_name:
+            continue
         source = path.read_text(encoding="utf-8")
         if "execute_order_assistant_run" in source:
-            violations.append(f"{path.relative_to(_REPO_ROOT).as_posix()} invokes application runner")
+            violations.append(
+                f"{path.relative_to(_REPO_ROOT).as_posix()} must not invoke application runner directly"
+            )
     assert violations == []
+
+
+def test_ipi_order_operations_port_excludes_proof_control_surface() -> None:
+    forbidden = frozenset({"reset", "mutation_state", "debug", "fixture"})
+    protocol_members = set(getattr(OrderOperationsPort, "__annotations__", {}))
+    assert not forbidden.intersection(protocol_members)
+
+
+def test_ipi_runtime_composition_accepts_order_operations_port() -> None:
+    signature = inspect.signature(build_scenario_runtime_composition)
+    assert "order_operations" in signature.parameters
+    assert "provider_client" not in signature.parameters
+    order_param = signature.parameters["order_operations"]
+    assert order_param.annotation in (OrderOperationsPort, "OrderOperationsPort")
+
+
+def test_ipi_run_bundle_has_no_concrete_provider_field() -> None:
+    field_names = {field.name for field in OrderAssistantRunBundle.__dataclass_fields__.values()}
+    assert "provider_client" not in field_names
+
+
+def test_ipi_application_runner_does_not_touch_provider_control() -> None:
+    source = inspect.getsource(execute_order_assistant_run)
+    assert "mutation_state" not in source
+    assert "reset(" not in source
+
+
+def test_ipi_proof_harness_owns_provider_control_port() -> None:
+    signature = inspect.signature(execute_observed_scenario_run)
+    assert "provider_control" in signature.parameters
 
 
 def test_ipi_no_parallel_policy_denial_diagnostic_authority() -> None:

@@ -32,8 +32,8 @@ from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.tools.registry import ToolRegistry
 
-from platform_proofs.scenarios.indirect_prompt_injection.application.order_provider_client import (
-    OrderProviderClient,
+from platform_proofs.scenarios.indirect_prompt_injection.application.order_operations_port import (
+    OrderOperationsPort,
 )
 from platform_proofs.scenarios.indirect_prompt_injection.application.tools import (
     SCENARIO_TOOL_IDS,
@@ -101,9 +101,9 @@ def build_scenario_runtime_composition(
     workspace_root: Path | None = None,
     agent_registry: AgentRegistry | None = None,
     composition: ScenarioRuntimeComposition | None = None,
-    provider_client: OrderProviderClient,
+    order_operations: OrderOperationsPort,
 ) -> ScenarioRuntimeComposition:
-    register_scenario_tools(registry, provider_client=provider_client)
+    register_scenario_tools(registry, order_operations=order_operations)
     scenario_composition = composition or ScenarioRuntimeComposition(
         environment=environment,
         tool_registry=registry,
