@@ -19,6 +19,7 @@ from testing_support.execution_qualification.catalog.mandatory_sources import (
     NPSC5F_R1_FINAL_MANDATORY,
     NPSC5F_R2_FINAL_MANDATORY,
     NPSC5F_R3_FINAL_MANDATORY,
+    NPSC5F_R4_MANDATORY_REGRESSION_SUITES,
 )
 from testing_support.execution_qualification.catalog.profile_builders import (
     NPSC5E_FINAL_PROFILE_ID,
@@ -41,7 +42,7 @@ _PROFILE_TO_MANDATORY: dict[str, object] = {
     NPSC5E_FINAL_PROFILE_ID: NPSC5E_FINAL_MANDATORY,
     NPSC5F_R2_PROFILE_ID: NPSC5F_R2_FINAL_MANDATORY,
     NPSC5F_R3_PROFILE_ID: NPSC5F_R3_FINAL_MANDATORY,
-    NPSC5F_R4_PROFILE_ID: None,
+    NPSC5F_R4_PROFILE_ID: NPSC5F_R4_MANDATORY_REGRESSION_SUITES,
     NPSC5F_FINAL_PROFILE_ID: NPSC5F_FINAL_MANDATORY_REGRESSION_SUITES,
 }
 
@@ -93,10 +94,6 @@ def test_parity_npsc5f_r3_final() -> None:
 
 
 def test_parity_npsc5f_r4_final() -> None:
-    from testing_support.execution_qualification.catalog.mandatory_sources import (
-        NPSC5F_R4_MANDATORY_REGRESSION_SUITES,
-    )
-
     _assert_parity(NPSC5F_R4_PROFILE_ID, NPSC5F_R4_MANDATORY_REGRESSION_SUITES)
 
 

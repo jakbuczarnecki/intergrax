@@ -7,12 +7,6 @@ from __future__ import annotations
 from testing_support.execution_qualification.frozen_pytest_adapter import (
     FrozenPytestSuiteSource,
 )
-from testing_support.npsc5f_final_regression_matrix import (
-    MANDATORY_REGRESSION_SUITES as NPSC5F_FINAL_MANDATORY_REGRESSION_SUITES,
-)
-from testing_support.npsc5f_r4_regression_matrix import (
-    MANDATORY_REGRESSION_SUITES as NPSC5F_R4_MANDATORY_REGRESSION_SUITES,
-)
 
 NPSC5E_R3_FINAL_MANDATORY: FrozenPytestSuiteSource = (
     (
@@ -436,6 +430,172 @@ NPSC5E_R1_FINAL_MANDATORY: FrozenPytestSuiteSource = (
             "tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py"
         ],
     ),
+)
+
+NPSC5F_R4_MANDATORY_REGRESSION_SUITES: FrozenPytestSuiteSource = (
+    (
+        "R4 implementation gate",
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_r4_reconstruction_asof_bitemporal.py",
+        ],
+    ),
+    (
+        "R3 Final",
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_r3_final_governed_evidence_export.py",
+        ],
+    ),
+    (
+        "R2 Final",
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_r2_final_journal_completeness_ordering.py",
+        ],
+    ),
+    (
+        "R1 Final",
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_r1_final_durable_evidence_commit_tenant_integrity.py",
+        ],
+    ),
+    (
+        "NPSC-5F P0",
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_p0_execution_evidence_architecture_reconciliation.py",
+        ],
+    ),
+    (
+        "TRACE-ASOF",
+        [
+            "tests/unit/runtime/events/test_execution_position_asof.py",
+            "tests/unit/runtime/events/test_asof_projection.py",
+        ],
+    ),
+    (
+        "TRACE-BITEMP",
+        [
+            "tests/unit/contracts/test_bitemporal_revision_ordering.py",
+            "tests/unit/contracts/test_bitemporal_knowledge.py",
+            "tests/unit/runtime/observability/test_knowledge_reconstruction.py",
+        ],
+    ),
+    (
+        "Execution reconstruction",
+        ["tests/unit/runtime/diagnostics/test_execution_reconstruction.py"],
+    ),
+    (
+        "DG_001",
+        [
+            "tests/unit/contracts/test_execution_lineage_contracts.py",
+            "tests/unit/runtime/execution/lineage/",
+        ],
+    ),
+    (
+        "NPSC-5E Final",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py",
+        ],
+    ),
+    (
+        "NPSC-5D Final",
+        [
+            "tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py",
+        ],
+    ),
+    (
+        "NPSC-5C",
+        [
+            "tests/unit/runtime/architecture/test_npsc5c_coordination_intent_gate.py",
+            "tests/unit/runtime/architecture/test_npsc5c_decision_projection_gate.py",
+        ],
+    ),
+    (
+        "NPSC-5B Final",
+        [
+            "tests/unit/runtime/architecture/test_npsc5b_final_production_fanout_fanin_qualification.py",
+        ],
+    ),
+    (
+        "NPSC-5A",
+        [
+            "tests/unit/runtime/architecture/test_npsc5a_multi_agent_coordination_gate.py"
+        ],
+    ),
+    (
+        "R4 Final drift sentinel",
+        ["tests/unit/testing_support/test_npsc5f_r4_final_protected_drift.py"],
+    ),
+)
+
+_NPSC5F_FINAL_EXTRA_SUITES: FrozenPytestSuiteSource = (
+    (
+        "Recovery",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py",
+            "tests/unit/runtime/architecture/test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py",
+            "tests/unit/runtime/architecture/test_npsc5e_r3_final_child_fanout_partial_recovery_qualification.py",
+        ],
+    ),
+    (
+        "NPSC-5E Final",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py",
+        ],
+    ),
+    (
+        "HITL R3",
+        ["tests/unit/runtime/architecture/test_npsc5d_r3_governed_continuation.py"],
+    ),
+    (
+        "Child execution",
+        [
+            "tests/unit/runtime/execution/test_child_execution.py",
+            "tests/unit/runtime/execution/authority/test_child_execution_authority_policy.py",
+        ],
+    ),
+    (
+        "Checkpoint",
+        [
+            "tests/unit/runtime/long_running/test_checkpoint_store.py",
+            "tests/unit/runtime/long_running/test_runtime_checkpoint.py",
+        ],
+    ),
+    (
+        "Retry",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py",
+        ],
+    ),
+    (
+        "Cancellation",
+        [
+            "tests/unit/runtime/cancellation/test_p0c5_cancellation_continuity.py",
+            "tests/unit/runtime/cancellation/test_p0c5a_explicit_terminal_wiring.py",
+        ],
+    ),
+    (
+        "Evidence",
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_p0_execution_evidence_architecture_reconciliation.py",
+            "tests/unit/runtime/architecture/test_npsc5f_enterprise_evidence_certification.py",
+            "tests/unit/runtime/architecture/test_npsc5f_r1_durable_evidence_persistence_boundary_resignoff.py",
+            "tests/unit/runtime/events/test_evidence_persistence_boundary.py",
+        ],
+    ),
+    (
+        "NPSC-5D Final",
+        [
+            "tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py",
+        ],
+    ),
+    (
+        "NPSC-5F Final drift sentinel",
+        ["tests/unit/testing_support/test_npsc5f_final_protected_drift.py"],
+    ),
+)
+
+NPSC5F_FINAL_MANDATORY_REGRESSION_SUITES: FrozenPytestSuiteSource = (
+    *NPSC5F_R4_MANDATORY_REGRESSION_SUITES,
+    *_NPSC5F_FINAL_EXTRA_SUITES,
 )
 
 __all__ = [

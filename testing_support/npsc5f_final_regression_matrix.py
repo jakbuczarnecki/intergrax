@@ -7,10 +7,10 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from testing_support.npsc5f_r4_regression_matrix import (
-    MANDATORY_REGRESSION_SUITES as _R4_MANDATORY_REGRESSION_SUITES,
-    flatten_regression_targets,
+from testing_support.execution_qualification.catalog.mandatory_sources import (
+    NPSC5F_FINAL_MANDATORY_REGRESSION_SUITES,
 )
+from testing_support.npsc5f_r4_regression_matrix import flatten_regression_targets
 
 # Exclude orchestrators and nested ``uv run pytest`` / ruff / pyright fan-out tests.
 _PYTEST_MATRIX_KEXPR = (
@@ -26,70 +26,8 @@ _PYTEST_MATRIX_KEXPR = (
     "not test_terminal_cancellation_survives_process_restart"
 )
 
-_NPSC5F_FINAL_EXTRA_SUITES: tuple[tuple[str, list[str]], ...] = (
-    (
-        "Recovery",
-        [
-            "tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py",
-            "tests/unit/runtime/architecture/test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py",
-            "tests/unit/runtime/architecture/test_npsc5e_r3_final_child_fanout_partial_recovery_qualification.py",
-        ],
-    ),
-    (
-        "NPSC-5E Final",
-        ["tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py"],
-    ),
-    (
-        "HITL R3",
-        ["tests/unit/runtime/architecture/test_npsc5d_r3_governed_continuation.py"],
-    ),
-    (
-        "Child execution",
-        [
-            "tests/unit/runtime/execution/test_child_execution.py",
-            "tests/unit/runtime/execution/authority/test_child_execution_authority_policy.py",
-        ],
-    ),
-    (
-        "Checkpoint",
-        [
-            "tests/unit/runtime/long_running/test_checkpoint_store.py",
-            "tests/unit/runtime/long_running/test_runtime_checkpoint.py",
-        ],
-    ),
-    (
-        "Retry",
-        ["tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py"],
-    ),
-    (
-        "Cancellation",
-        [
-            "tests/unit/runtime/cancellation/test_p0c5_cancellation_continuity.py",
-            "tests/unit/runtime/cancellation/test_p0c5a_explicit_terminal_wiring.py",
-        ],
-    ),
-    (
-        "Evidence",
-        [
-            "tests/unit/runtime/architecture/test_npsc5f_p0_execution_evidence_architecture_reconciliation.py",
-            "tests/unit/runtime/architecture/test_npsc5f_enterprise_evidence_certification.py",
-            "tests/unit/runtime/architecture/test_npsc5f_r1_durable_evidence_persistence_boundary_resignoff.py",
-            "tests/unit/runtime/events/test_evidence_persistence_boundary.py",
-        ],
-    ),
-    (
-        "NPSC-5D Final",
-        ["tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py"],
-    ),
-    (
-        "NPSC-5F Final drift sentinel",
-        ["tests/unit/testing_support/test_npsc5f_final_protected_drift.py"],
-    ),
-)
-
 MANDATORY_REGRESSION_SUITES: tuple[tuple[str, list[str]], ...] = (
-    *_R4_MANDATORY_REGRESSION_SUITES,
-    *_NPSC5F_FINAL_EXTRA_SUITES,
+    NPSC5F_FINAL_MANDATORY_REGRESSION_SUITES
 )
 
 

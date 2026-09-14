@@ -10,12 +10,23 @@ import inspect
 import pkgutil
 from pathlib import Path
 
+import pytest
+
 from testing_support.execution_qualification import aggregate as aggregate_module
 from testing_support.execution_qualification.catalog.composition import (
     build_default_qualification_catalog,
 )
 from testing_support.execution_qualification.catalog.expansion import (
     is_nested_orchestrator_leaf,
+)
+from testing_support.execution_qualification.catalog.orchestrators import (
+    CANONICAL_ORCHESTRATOR_PATHS,
+)
+from testing_support.execution_qualification.catalog.profile_builders import (
+    PROFILE_BUILDERS,
+)
+from testing_support.execution_qualification.catalog.suite_registry import (
+    pytest_to_suite_id_registry,
 )
 from testing_support.execution_qualification.plan_runner import (
     run_qualification_execution_plan,
@@ -28,9 +39,13 @@ from testing_support.execution_qualification.coordinator import QualificationCoo
 from ..fake_executor import FakeQualificationSuiteExecutor
 
 
-def test_canonical_qualification_catalog_has_no_nested_pytest_orchestrator_leaves() -> (
-    None
-):
+def test_all_canonical_profiles_compile() -> None:
+    catalog = build_default_qualification_catalog()
+    for profile_id in catalog.profile_ids:
+        catalog.compile_profile(profile_id)
+
+
+def test_all_canonical_profiles_are_free_of_nested_pytest_orchestrator_leaves() -> None:
     catalog = build_default_qualification_catalog()
     for profile_id in catalog.profile_ids:
         compiled = catalog.compile_profile(profile_id)
@@ -59,6 +74,58 @@ def test_each_canonical_leaf_suite_id_is_unique() -> None:
         assert len(compiled.plan.leaf_suite_ids) == len(
             set(compiled.plan.leaf_suite_ids)
         )
+
+
+def test_no_canonical_profile_contains_any_known_orchestrator_as_leaf() -> None:
+    catalog = build_default_qualification_catalog()
+    for profile_id in catalog.profile_ids:
+        compiled = catalog.compile_profile(profile_id)
+        for suite_id in compiled.plan.leaf_suite_ids:
+            suite = compiled.suite_by_id[suite_id]
+            if len(suite.pytest_arguments) == 1:
+                assert suite.pytest_arguments[0] not in CANONICAL_ORCHESTRATOR_PATHS, (
+                    f"{profile_id}: {suite_id} -> {suite.pytest_arguments[0]}"
+                )
+
+
+def test_canonical_catalog_does_not_depend_on_legacy_regression_matrix_modules() -> (
+    None
+):
+    catalog_root = Path("testing_support/execution_qualification/catalog")
+    forbidden = (
+        "testing_support.npsc5f_r4_regression_matrix",
+        "testing_support.npsc5f_final_regression_matrix",
+    )
+    for path in catalog_root.rglob("*.py"):
+        source = path.read_text(encoding="utf-8")
+        for fragment in forbidden:
+            assert fragment not in source, (path.as_posix(), fragment)
+
+
+def test_default_catalog_profile_builder_map_is_immutable() -> None:
+    from collections.abc import MutableMapping
+    from types import MappingProxyType
+    from typing import cast
+
+    assert isinstance(PROFILE_BUILDERS, MappingProxyType)
+    mutable_view = cast(
+        MutableMapping[str, object],
+        PROFILE_BUILDERS,
+    )
+    with pytest.raises(TypeError):
+        mutable_view["x"] = lambda: None
+
+
+def test_normalized_pytest_args_map_to_at_most_one_suite_id() -> None:
+    registry = pytest_to_suite_id_registry()
+    by_args: dict[tuple[str, ...], str] = {}
+    for args, suite_id in registry.items():
+        if args in by_args and by_args[args] != suite_id:
+            raise AssertionError(
+                f"duplicate suite identity for {args!r}: "
+                f"{by_args[args]!r} vs {suite_id!r}",
+            )
+        by_args[args] = suite_id
 
 
 def test_no_canonical_catalog_imports_tests_unit_runtime_architecture() -> None:

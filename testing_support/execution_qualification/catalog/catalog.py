@@ -4,14 +4,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 
 from testing_support.execution_qualification.catalog.contracts import (
     CompiledCatalogProfile,
 )
 from testing_support.execution_qualification.catalog.profile_builders import (
     PROFILE_BUILDERS,
+    QualificationProfileBuilder,
 )
 from testing_support.execution_qualification.catalog.validation import (
     validate_compiled_profile,
@@ -26,11 +27,14 @@ class QualificationCatalog:
     """Explicit composition of canonical qualification profiles (no dynamic registry)."""
 
     profile_ids: tuple[str, ...]
+    profile_builders: Mapping[str, QualificationProfileBuilder] = field(
+        default_factory=lambda: PROFILE_BUILDERS,
+    )
 
     def compile_profile(self, profile_id: str) -> CompiledCatalogProfile:
         if profile_id not in self.profile_ids:
             raise KeyError(f"unknown profile_id: {profile_id!r}")
-        builder: Callable[[], CompiledCatalogProfile] = PROFILE_BUILDERS[profile_id]
+        builder = self.profile_builders[profile_id]
         compiled = builder()
         validate_compiled_profile(compiled)
         return compiled

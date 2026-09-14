@@ -10,11 +10,14 @@ from testing_support.execution_qualification.catalog.normalize import (
     normalize_pytest_arguments,
 )
 from testing_support.execution_qualification.catalog.orchestrators import (
-    LEGACY_ORCHESTRATOR_EXPANSION_PATHS,
-    orchestrator_mandatory_lookup,
+    CANONICAL_ORCHESTRATOR_PATHS,
+    orchestrator_expansion_mapping,
 )
 from testing_support.execution_qualification.frozen_pytest_adapter import (
     FrozenPytestSuiteSource,
+)
+from testing_support.execution_qualification.graph_contracts import (
+    QualificationDependencyCycleError,
 )
 
 
@@ -37,9 +40,9 @@ def _orchestrator_expansion(targets: list[str]) -> FrozenPytestSuiteSource | Non
     if len(targets) != 1:
         return None
     normalized = normalize_pytest_arguments(targets)[0]
-    if normalized not in LEGACY_ORCHESTRATOR_EXPANSION_PATHS:
+    if normalized not in CANONICAL_ORCHESTRATOR_PATHS:
         return None
-    return orchestrator_mandatory_lookup()[normalized]
+    return orchestrator_expansion_mapping()[normalized]
 
 
 def expand_mandatory_subprocesses(
@@ -47,21 +50,35 @@ def expand_mandatory_subprocesses(
 ) -> tuple[CatalogRequiredTarget, ...]:
     expanded: list[CatalogRequiredTarget] = []
     for display_label, targets in source:
-        expanded.extend(_expand_one_mandatory(display_label, targets))
+        expanded.extend(
+            _expand_one_mandatory(display_label, targets, expanding=frozenset()),
+        )
     return tuple(expanded)
 
 
 def _expand_one_mandatory(
     display_label: str,
     targets: list[str],
+    *,
+    expanding: frozenset[str],
 ) -> tuple[CatalogRequiredTarget, ...]:
     nested = _orchestrator_expansion(targets)
     if nested is None:
         return (CatalogRequiredTarget.from_targets(display_label, targets),)
+    normalized = normalize_pytest_arguments(targets)[0]
+    if normalized in expanding:
+        raise QualificationDependencyCycleError((*expanding, normalized))
+    next_expanding = expanding | frozenset({normalized})
     expanded: list[CatalogRequiredTarget] = []
     for child_label, child_targets in nested:
         child_path = f"{display_label}>{child_label}"
-        expanded.extend(_expand_one_mandatory(child_path, child_targets))
+        expanded.extend(
+            _expand_one_mandatory(
+                child_path,
+                child_targets,
+                expanding=next_expanding,
+            ),
+        )
     return tuple(expanded)
 
 
@@ -82,5 +99,5 @@ def unique_required_leaf_targets(
 def is_nested_orchestrator_leaf(pytest_arguments: tuple[str, ...]) -> bool:
     return (
         len(pytest_arguments) == 1
-        and pytest_arguments[0] in LEGACY_ORCHESTRATOR_EXPANSION_PATHS
+        and pytest_arguments[0] in CANONICAL_ORCHESTRATOR_PATHS
     )

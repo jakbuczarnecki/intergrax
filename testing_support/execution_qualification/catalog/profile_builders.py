@@ -27,6 +27,7 @@ from testing_support.execution_qualification.catalog.mandatory_sources import (
     NPSC5F_R1_FINAL_MANDATORY,
     NPSC5F_R2_FINAL_MANDATORY,
     NPSC5F_R3_FINAL_MANDATORY,
+    NPSC5F_R4_MANDATORY_REGRESSION_SUITES,
 )
 from testing_support.execution_qualification.catalog.suite_registry import (
     suite_id_for_pytest_arguments,
@@ -331,50 +332,24 @@ def build_npsc5e_final_profile() -> CompiledCatalogProfile:
 
 
 def build_npsc5f_r2_profile() -> CompiledCatalogProfile:
-    from testing_support.execution_qualification.catalog.labels import (
-        NPSC5F_R2_DIRECT_LABEL_TO_SUITE_ID,
-        SHARED_DG001_SUITE_ID,
-        SHARED_NPSC5D_SUITE_ID,
-    )
-
-    return _npsc5f_r1_style_profile(
+    return _flat_profile(
         profile_id=NPSC5F_R2_PROFILE_ID,
         root_gate_id="npsc5f-r2.final",
-        top_mandatory=NPSC5F_R2_FINAL_MANDATORY,
-        direct_label_to_suite_id=NPSC5F_R2_DIRECT_LABEL_TO_SUITE_ID,
-        npsc5e_expansion_mandatory=NPSC5E_FINAL_MANDATORY,
-        skip_direct_labels=frozenset({"NPSC-5E Final"}),
-        direct_branch="npsc5f-r2.direct",
-        npsc5e_branch="npsc5e-r3.expanded",
-        shared_suite_ids=(SHARED_DG001_SUITE_ID, SHARED_NPSC5D_SUITE_ID),
+        mandatory=NPSC5F_R2_FINAL_MANDATORY,
+        branch="npsc5f-r2",
     )
 
 
 def build_npsc5f_r3_profile() -> CompiledCatalogProfile:
-    from testing_support.execution_qualification.catalog.labels import (
-        NPSC5F_R3_DIRECT_LABEL_TO_SUITE_ID,
-        SHARED_DG001_SUITE_ID,
-        SHARED_NPSC5D_SUITE_ID,
-    )
-
-    return _npsc5f_r1_style_profile(
+    return _flat_profile(
         profile_id=NPSC5F_R3_PROFILE_ID,
         root_gate_id="npsc5f-r3.final",
-        top_mandatory=NPSC5F_R3_FINAL_MANDATORY,
-        direct_label_to_suite_id=NPSC5F_R3_DIRECT_LABEL_TO_SUITE_ID,
-        npsc5e_expansion_mandatory=NPSC5E_FINAL_MANDATORY,
-        skip_direct_labels=frozenset({"NPSC-5E Final"}),
-        direct_branch="npsc5f-r3.direct",
-        npsc5e_branch="npsc5e-r3.expanded",
-        shared_suite_ids=(SHARED_DG001_SUITE_ID, SHARED_NPSC5D_SUITE_ID),
+        mandatory=NPSC5F_R3_FINAL_MANDATORY,
+        branch="npsc5f-r3",
     )
 
 
 def build_npsc5f_r4_profile() -> CompiledCatalogProfile:
-    from testing_support.execution_qualification.catalog.mandatory_sources import (
-        NPSC5F_R4_MANDATORY_REGRESSION_SUITES,
-    )
-
     return _flat_profile(
         profile_id=NPSC5F_R4_PROFILE_ID,
         root_gate_id="npsc5f-r4.final",
@@ -392,7 +367,9 @@ def build_npsc5f_final_profile() -> CompiledCatalogProfile:
     )
 
 
-PROFILE_BUILDERS: dict[str, Callable[[], CompiledCatalogProfile]] = {
+QualificationProfileBuilder = Callable[[], CompiledCatalogProfile]
+
+_PROFILE_BUILDER_MAP: dict[str, QualificationProfileBuilder] = {
     NPSC5F_R1_PROFILE_ID: build_npsc5f_r1_profile,
     NPSC5E_R3_PROFILE_ID: build_npsc5e_r3_profile,
     NPSC5E_R2_PROFILE_ID: build_npsc5e_r2_profile,
@@ -403,3 +380,7 @@ PROFILE_BUILDERS: dict[str, Callable[[], CompiledCatalogProfile]] = {
     NPSC5F_R4_PROFILE_ID: build_npsc5f_r4_profile,
     NPSC5F_FINAL_PROFILE_ID: build_npsc5f_final_profile,
 }
+
+PROFILE_BUILDERS: Mapping[str, QualificationProfileBuilder] = MappingProxyType(
+    _PROFILE_BUILDER_MAP,
+)
