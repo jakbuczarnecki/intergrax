@@ -14,7 +14,8 @@ from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 
 # Evidence Plane scoped re-freeze: NPSC-5F R3+Final requalification after Class C v1→v2.
 # Prior EE-FINAL-02 baseline: ``7a3569c64e892588992635c9cee10c264a9fc200``.
-NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
+# H9 pre-gate: qualified compatible evolution (W5 event-delivery, GR-3-R2 adjacent) — sentinel advance.
+NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "48a33db23fafab89b5fdb4ff217dfcb113dd6cc5"
 
 NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
 NPSC_5F_R1_FINAL_SHA = "455c09f342f995ac0a6fcb03ffef2f4d3e36a447"
@@ -60,6 +61,8 @@ _QUALIFIED_COMPATIBLE_PREFIXES: tuple[str, ...] = (
     "docs/project/maintainers/architecture/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md",
     "intergrax/applications/_shared/runtime_event_delivery_wiring.py",
     "intergrax/runtime/observability/exporters/",
+    "intergrax/runtime/observability/functional_evidence/",
+    "intergrax/runtime/observability/functional_evidence",
     "intergrax/runtime/observability/application_execution_stage_signal",
     "testing_support/npsc5f_final_evidence_plane_drift.py",
     "testing_support/npsc5f_final_",

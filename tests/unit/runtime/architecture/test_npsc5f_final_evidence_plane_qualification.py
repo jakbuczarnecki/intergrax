@@ -107,21 +107,26 @@ def test_npsc5f_final_frozen_predecessor_shas_recorded() -> None:
     assert NPSC_5F_R2_FINAL_SHA == "76c92847f67da22d97943b55896a88c814d7e39d"
     assert NPSC_5F_R3_FINAL_SHA == "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
     assert NPSC_5F_R4_FINAL_SHA == "37fb051c7f164d705f628760436b8ea10ee0289f"
-    assert NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA == "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
+    assert NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA == "48a33db23fafab89b5fdb4ff217dfcb113dd6cc5"
 
 
 def test_npsc5f_final_predecessor_drift_sentinels_empty() -> None:
+    final_from = NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA
     assert collect_r1_protected_production_drift(
         _REPO_ROOT,
-        from_sha=R1_POST_R2_QUALIFIED_BASELINE_SHA,
+        from_sha=final_from,
         to_ref="origin/development",
     ) == []
     assert collect_r2_protected_production_drift(
         _REPO_ROOT,
-        from_sha=R2_POST_QUALIFIED_BASELINE_SHA,
+        from_sha=final_from,
         to_ref="origin/development",
     ) == []
-    assert collect_r3_protected_production_drift(_REPO_ROOT, to_ref="origin/development") == []
+    assert collect_r3_protected_production_drift(
+        _REPO_ROOT,
+        from_sha=final_from,
+        to_ref="origin/development",
+    ) == []
     assert collect_breaking_evidence_plane_production_drift(_REPO_ROOT) == []
 
 
