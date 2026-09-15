@@ -2274,7 +2274,7 @@ Replay semantics are attempt-scoped: reconstruction and as-of projections respec
 
 **TRACE-1A–TRACE-1C (Done / Closed)** delivered the strict journal on the harness path. Frozen five-ID `RuntimeEvent` and `RuntimeExecutionRef` are **CURRENT**. Remaining gaps are **adoption / implementation debt**, not contract rollback:
 
-- emit-path writer certification incomplete on some producers (**OBS-COVERAGE-1**)
+- emit-path writer certification — **OBS-COVERAGE-1 Done** (P1 paths **PROVEN**; DG-005 cross-topology **NOT PROVEN** — see [Platform Evidence Coverage Matrix](#platform-evidence-coverage-matrix-obs-coverage-1))
 - Unified Run Journal / export envelopes — Execution Tree fields (**ADOPTION / PROJECTION GAP**)
 - DIAG operator read models — execution-aware correlation on all surfaces (**ADOPTION / PROJECTION GAP**)
 - background worker bootstrap mints `AttemptId` on redelivery (UEA conflict — **implementation debt**)
@@ -2303,6 +2303,85 @@ Unused legacy contracts are removed rather than preserved.
 If an old capability is still genuinely used by the current repo runtime, tests, or product path: migrate that live code directly to the canonical contract, then **delete** the old path. Do **not** preserve both.
 
 Temporary recognition of legacy shapes is acceptable only during a bounded implementation step when technically unavoidable - it is **not** target architecture.
+
+---
+
+## Platform Evidence Coverage Matrix (OBS-COVERAGE-1)
+
+**Status:** **Done** (2026-09-15) · **Verdict:** **PASS WITH P2 LIMITATIONS** (all P1 production-critical execution-scoped paths **PROVEN**; DG-005 cross-process RuntimeEvent topology **NOT PROVEN**)
+
+**Certification gates:** `tests/unit/runtime/observability/test_obs_coverage_1_certification.py` · existing UE-9B / UE-9BR1 / OBS-FUNCTIONAL / OBS-CAUSAL / scenario architecture gates.
+
+### Evidence families (inventory)
+
+| Evidence family | Owner | Identity scope | Persistence port |
+| --- | --- | --- | --- |
+| `RuntimeEvent` | Observability | execution-scoped five-ID | `RuntimeEventPersistence` |
+| `PlatformFunctionalEvidence` | Evidence Plane / OBS | `PipelineEvidenceScope` five-ID | `FunctionalEvidencePersistence` |
+| `PlatformCausalEvidence` | Evidence Plane | `RuntimeExecutionRef` on execution targets | `CausalEvidencePersistence` |
+| Execution lineage | Execution | parent/child `ExecutionId` | `ExecutionLineagePersistence` |
+| Terminal diagnostic request | Diagnostics integration | run-scoped; attempt/execution optional pair | N/A (integration) |
+| Non-execution host/bootstrap signals | Application / transport | explicit non-execution subject | typed failure producers (DG-001B) |
+
+### Execution path coverage
+
+| Path | Semantic scope | Required identity | Proof | Verdict |
+| --- | --- | --- | --- | --- |
+| P1 root terminal success | execution-scoped | five-ID | `test_ue_9b_*`, `test_terminal_diagnostic_production_e2e` | **PROVEN** |
+| P1 root terminal failure | execution-scoped | five-ID | `test_execution_failure_evidence_r2*` | **PROVEN** |
+| P2 graph / child | execution-scoped | distinct `ExecutionId` | `test_ue_9b_*`, lineage admission tests | **PROVEN** |
+| P3 retry / redelivery | execution-scoped | new attempt + execution | `test_ue_9b_runtime_event_execution_id` | **PROVEN** |
+| P4 delegation | execution-scoped + lineage | parent + child `ExecutionId` | `test_ue_9b_*`, `test_host_task_resume_lineage_identity` | **PROVEN** |
+| P5 background / async | execution-scoped | `BackgroundExecutionIdentity` | `test_background_causal_evidence_admission_paths` | **PROVEN** |
+| P6 transport → causal | execution-scoped target | `RuntimeExecutionRef` five-ID | `test_causal_evidence_contract` | **PROVEN** |
+| P7 scenario / application | baseline host | no private execution authority | `scenario_architecture_conformance` | **PROVEN** |
+| P8 functional evidence | execution-scoped | `PipelineEvidenceScope` | `test_obs_functional_evidence_contract_boundary` | **PROVEN** |
+| P9 terminal ordering | ordering | persist terminal RE before DIAG dispatch | `test_obs_coverage_1_certification`, `test_obs_diag_port_1_gates` | **PROVEN** |
+| P10 failure facts | execution-scoped | canonical failure request IDs | `test_execution_failure_evidence_r2` | **PROVEN** |
+| P11 checkpoint / resume | execution-scoped | UEA resume semantics | partial lineage proofs | **PARTIAL** |
+| P12 HITL interrupt | execution-scoped | same execution unless UEA forks | human-response tests | **PARTIAL** |
+| DG-005 cross-topology | transport-scoped | shared RE store host↔worker | qualification ledger only | **NOT PROVEN** |
+| Host bootstrap failure | non-execution | typed subject, no `ExecutionId` | DG-001B architecture | **PROVEN** |
+
+### Identity authority (writers)
+
+| ID | Authority | How production writers receive it |
+| --- | --- | --- |
+| `tenant_id` | Task / request context | `Task.tenant_id`, `EmitContext`, validated failure requests |
+| `task_id` | Task lifecycle | `Task`, `RuntimeExecutionContext`, kernel context |
+| `run_id` | Run lifecycle | `ActiveExecutionIdentity`, `require_active_execution_identity()` |
+| `attempt_id` | Attempt lifecycle | `ActiveExecutionIdentity`, attempt boundaries on redelivery |
+| `execution_id` | Execution authority | `require_active_execution_id()`, `RuntimeExecutionContext`, validated evidence requests — **not** OBS mint |
+
+### RuntimeEvent writer audit (production)
+
+| Writer / factory | `execution_id` source | Verdict |
+| --- | --- | --- |
+| `runtime_event_from_task_state` / `NexusRuntimeEventPublisher` | `require_active_execution_id()` | **PROVEN** |
+| `HarnessKernel._emit` | active execution context | **PROVEN** |
+| `emit_platform_event` / `EmitContext` | `ctx.execution_id` | **PROVEN** |
+| UAEP / `RuntimeExecutionContext` emitters | `ctx.execution_id` | **PROVEN** |
+| Failure / external-op recorders | validated request fields | **PROVEN** |
+| Context/skill recording, trace middleware, graph executor | active identity helpers | **PROVEN** |
+
+**Gate:** OBS `events/` + `observability/` production code must not call `mint_execution_id()` (conformance helpers excluded).
+
+### Known limitations (P2 / follow-up)
+
+| Gap | Severity | Follow-up |
+| --- | --- | --- |
+| DG-005 cross-topology RuntimeEvent persistence | P2 qualification | Separate qualification; not OBS-COVERAGE-1 blocker |
+| TraceEvent run-only Plane B | P2 conditional | **OBS-TRACE-1** if consumers require attempt/execution |
+| Reconstruction package placement | P1 architecture | **OBS-RECONSTRUCTION-1** |
+| DIAG cross-layer E2E conformance | P1 | **OBS-DIAG-CONFORMANCE** |
+
+### Architecture gates (OBS-COVERAGE-1)
+
+1. Canonical `RuntimeEvent` writers supply `ExecutionId` at construction (UE-9BR1 AST gate).
+2. Observability production code does not mint `ExecutionId` (OBS-COVERAGE-1 gate).
+3. Initialized platform scenarios must not define forbidden execution/diagnostic authority (`scenario_architecture_conformance`).
+4. Functional evidence uses `PipelineEvidenceScope` with required `execution_id`.
+5. Causal execution refs require `execution_id` on `RuntimeExecutionRef`.
 
 ---
 

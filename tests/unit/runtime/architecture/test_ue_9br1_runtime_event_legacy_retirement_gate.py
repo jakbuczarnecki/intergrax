@@ -41,6 +41,7 @@ _EXCLUDED_PARTS = frozenset({"__pycache__", "tests"})
 _CONFORMANCE_EXCLUDED = frozenset(
     {
         "persistence_conformance.py",
+        "functional_evidence_persistence_conformance.py",
     }
 )
 
