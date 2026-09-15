@@ -11,7 +11,6 @@ from intergrax.contracts.canonical_inner_governance import (
     require_active_execution_for_meaningful_side_effect,
 )
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
-from intergrax.runtime.task.active_task_registry import ActiveTaskRegistryTaskScopeResolver
 
 
 class DefaultCanonicalInnerExecutionGuard(CanonicalInnerExecutionGuardPort):
@@ -22,9 +21,9 @@ class DefaultCanonicalInnerExecutionGuard(CanonicalInnerExecutionGuardPort):
     def __init__(
         self,
         *,
-        task_scope: ActiveExecutionTaskScopePort | None = None,
+        task_scope: ActiveExecutionTaskScopePort,
     ) -> None:
-        self._task_scope = task_scope or ActiveTaskRegistryTaskScopeResolver()
+        self._task_scope = task_scope
 
     def assert_meaningful_side_effect_bound(
         self,

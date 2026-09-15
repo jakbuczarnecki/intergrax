@@ -12,6 +12,7 @@ import pytest
 from tests.unit.runtime.architecture.gr3_inner_enforcement_ast import (
     InnerEnforcementViolation,
     collect_forbidden_concrete_inner_guard_imports,
+    collect_forbidden_concrete_task_scope_imports_in_default_guard,
     collect_unauthorized_authorize_and_execute_calls,
 )
 from tests.unit.runtime.architecture.gr3_inner_enforcement_gate_policy import (
@@ -133,4 +134,50 @@ def helper(boundary, request, execute):
         name="_gr3_negative_fixture.py",
     )
     violations = collect_unauthorized_authorize_and_execute_calls(tree, rel_path=rel)
+    assert violations == []
+
+
+DEFAULT_CANONICAL_INNER_GUARD_REL = (
+    "intergrax/runtime/governance/canonical_inner_execution_guard.py"
+)
+
+
+def test_default_inner_guard_has_no_concrete_task_scope_import() -> None:
+    path = REPO_ROOT / DEFAULT_CANONICAL_INNER_GUARD_REL
+    rel = _rel(path)
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    violations = collect_forbidden_concrete_task_scope_imports_in_default_guard(
+        tree,
+        rel_path=rel,
+    )
+    messages = [v.as_message() for v in violations]
+    assert violations == [], messages
+
+
+def test_gate_detects_synthetic_task_scope_resolver_import_in_default_guard() -> None:
+    _, tree, rel = _parse_fixture(
+        """
+from intergrax.runtime.task.active_task_registry import ActiveTaskRegistryTaskScopeResolver
+from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
+""",
+        name="_gr3_default_guard_task_scope_import_fixture.py",
+    )
+    violations = collect_forbidden_concrete_task_scope_imports_in_default_guard(
+        tree,
+        rel_path=rel,
+    )
+    assert len(violations) == 1
+
+
+def test_gate_negative_control_task_scope_contract_import_in_default_guard() -> None:
+    _, tree, rel = _parse_fixture(
+        """
+from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
+""",
+        name="_gr3_default_guard_contract_import_fixture.py",
+    )
+    violations = collect_forbidden_concrete_task_scope_imports_in_default_guard(
+        tree,
+        rel_path=rel,
+    )
     assert violations == []
