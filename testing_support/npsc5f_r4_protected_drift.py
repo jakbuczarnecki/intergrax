@@ -14,7 +14,8 @@ R4_IMPLEMENTATION_SHA = "37fb051c7f164d705f628760436b8ea10ee0289f"
 # Re-baselined @ INTEGRAx-QUALIFICATION-CANONICAL-FAIL-DIAGNOSTICS (SSOT regression matrix, commit 1dc93afab).
 # Prior R4 post-qualified baseline: ``dffe2ae52a6938e0620ae4a3cc5e4be760e7f2f7``.
 # OBS-RECONSTRUCTION-1: qualified relocation — diagnostics factual surface → observability/reconstruction.
-R4_POST_QUALIFIED_BASELINE_SHA = "743a3865198e8fcec53029f935fbedc4cae6f9df"
+# OBS-ASOF-REBASE-R1: historical service wiring for optional ExecutionLineageAsOfReader (read-only).
+R4_POST_QUALIFIED_BASELINE_SHA = "52b9dc41ed7dd83e5516d852f1ef7295cc0b10af"
 
 _R4_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {

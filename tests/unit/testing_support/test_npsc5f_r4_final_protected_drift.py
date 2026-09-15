@@ -62,7 +62,7 @@ def test_r4_final_implementation_sha_recorded() -> None:
 
 
 def test_r4_final_post_qualified_baseline_sha_recorded() -> None:
-    assert R4_POST_QUALIFIED_BASELINE_SHA == "743a3865198e8fcec53029f935fbedc4cae6f9df"
+    assert R4_POST_QUALIFIED_BASELINE_SHA == "52b9dc41ed7dd83e5516d852f1ef7295cc0b10af"
 
 
 def test_r4_final_no_unqualified_protected_drift_since_implementation() -> None:

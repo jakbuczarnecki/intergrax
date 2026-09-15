@@ -53,13 +53,13 @@ uv run pytest tests/unit -m "gate and not no_ci" -q --tb=line -p no:xdist
 | RC-07 | STALE_GUARD (public docs contracts) | 25 | NO | `HARDENING_9_PUBLIC_DOCS_GUARD_REFRESH` |
 | RC-08 | OPTIONAL_INTEGRATION_ENVIRONMENT | 35E + 11F | NO | CI/local extras: `llm-langchain-ollama`, `llm-ollama` |
 | RC-09 | PRE_EXISTING_BASELINE (testing_support→tests) | 1 | **YES** | `HARDENING_9_TESTING_SUPPORT_IMPORT_DECOUPLING` |
-| RC-10 | PRODUCTION_DEFECT (syntax in Tier-3 test) | 1 | **YES** | `HARDENING_9_LKW_SENTRY_PROOF_SYNTAX_REPAIR` |
+| RC-10 | TEST_SYNTAX_REGRESSION / REPOSITORY_TEST_ARTIFACT_DEFECT (syntax in Tier-3 test) | 1 | **YES** | `HARDENING_9_LKW_SENTRY_PROOF_SYNTAX_REPAIR` |
 | RC-11 | STALE_FIXTURE / host wiring | ~40 | NO | `HARDENING_9_APPLICATIONS_HOST_COMPOSITION_FIXTURES` |
 | RC-12 | STALE_GUARD (scaffold / ADR) | 6 | NO | `HARDENING_9_SCAFFOLD_GUARD_REFRESH` |
 | RC-13 | ENVIRONMENT | 2 | NO | `ANTHROPIC_API_KEY` for Claude adapter tests |
 | RC-14 | UNRELATED / misc assertions | ~15 | NO | Per-file narrow tasks |
 
-**H9 independent blockers:** **6** (RC-01, RC-02, RC-03, RC-09, RC-10; RC-01 also invalidates “NPSC5F CLOSED” at this SHA).
+**H9 independent blockers:** **5** (RC-01, RC-02, RC-03, RC-09, RC-10; RC-01 also invalidates “NPSC5F CLOSED” at pre-re-freeze SHA).
 
 ## RC-01 — NPSC-5F mandatory matrix (proven)
 
