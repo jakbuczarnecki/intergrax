@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4 — ownership FROZEN / ACCEPTED** (ADR-MP-005); **MP-4A — APPROVED / CLOSED**
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4R0 — CURRENT** (core rebase; ADR-MP-009)
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
-**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4)
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4D** — Authority integration (**READY_FOR_REVIEW**)
-**Next task:** MP-4E — Persistence boundary (after MP-4D review)
+**Current active task:** **MP-4R0** — Core rebase & supersession gate
+**Next task:** Independent MP-4R0 audit → **MP-4R1 NOT STARTED**
 
 ---
 
@@ -193,39 +193,43 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 
 ---
 
-## MP-4 - Decision / Approval / Governance + HITL bridge
+## MP-4R — Decision integration (canonical core rebase)
 
-**Domain plan (1:1):** [`DECISION_APPROVAL_GOVERNANCE.md`](../../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md) · **ADR:** [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md)
+**Domain plan (1:1):** [`DECISION_APPROVAL_GOVERNANCE.md`](../../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md) · **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md)
 
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **Ownership FROZEN / ACCEPTED** — ADR-MP-005 **Accepted**; **MP-4A APPROVED / CLOSED**; **MP-4B READY_FOR_REVIEW**; **MP-4C READY_FOR_REVIEW**; MP-4D…MP-4H **NOT STARTED** |
-| **Purpose** | Collaborative Decision, Approval, and Governance semantics with explicit bridge to Governed Execution HITL when execution must pause. |
-| **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) |
-| **Dependencies** | MP-1 **CLOSED**; MP-2 **APPROVED / CLOSED**; MP-3 ownership **FROZEN** |
-| **Exact scope** | MP-4A ownership freeze; MP-4B…H decomposition — see domain plan |
-| **REUSED EXISTING CAPABILITY** | MP-1 Principal/authority; Governed Execution HITL + policy; `ExecutionProvenanceRef`; evidence references |
-| **NEW CAPABILITY REQUIRED** | Decision/Approval/Governance contracts (MP-4B+); HITL bridge contract (MP-4C) |
-| **Explicit out of scope** | Runtime orchestration; artifact lifecycle ownership; execution ownership; ACL duplication; persistence in MP-4A |
-| **Architecture/ADR gate** | ADR-MP-005 **Accepted** at MP-4A |
-| **Pre-implementation domain-sync gate** | MP-4A closure → MP-4B opens |
-| **User-visible outcome** | Explicit collaborative approvals that can pause and resume governed execution |
-| **Acceptance criteria** | Anti-substitution rules frozen; dependency direction frozen; reuse audit complete; no CW/UER leakage |
-| **Expected proof/evidence** | `check_docs_domain_pairs.py`; leakage greps; ADR compliance |
+| **Status** | **MP-4R0 CURRENT** — legacy MP-4B/C/D **FROZEN** pending convergence; MP-4R1…R8 **NOT STARTED** |
+| **Purpose** | Multiplayer **bindings/projections** over canonical Decision, Governance/HITL, Execution continuation, Evidence, and Diagnostics — no duplicate authorities |
+| **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) + Collaborative Work for work primitives |
+| **Dependencies** | MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3 ownership **FROZEN**; canonical Decision + GR-5 continuation |
+| **Architecture/ADR gate** | ADR-MP-009 **Accepted** at MP-4R0 |
+| **User-visible outcome** | Collaborative work associated with canonical decisions and governed execution without parallel decision/approval stores |
 
-### MP-4 slice status
+### MP-4R slice status
 
 | Slice | Scope | Status |
 |-------|-------|--------|
-| MP-4A | Ownership + contracts freeze | **APPROVED / CLOSED** |
-| MP-4B | Decision contracts | **READY_FOR_REVIEW** |
-| MP-4C | Approval / HITL contracts | **READY_FOR_REVIEW** |
-| MP-4D | Authority integration | **READY_FOR_REVIEW** |
-| MP-4E | Persistence boundary | NOT STARTED |
-| MP-4F | Evidence / provenance integration | NOT STARTED |
-| MP-4G | Qualification | NOT STARTED |
-| MP-4H | Final closure audit | NOT STARTED |
+| **MP-4R0** | Core rebase & supersession gate | **CURRENT** |
+| MP-4R1 | Decision contract convergence | NOT STARTED |
+| MP-4R2 | Human review / Approval convergence | NOT STARTED |
+| MP-4R3 | Execution continuation integration | NOT STARTED |
+| MP-4R4 | Collaborative decision binding | NOT STARTED |
+| MP-4R5 | Evidence Plane adoption | NOT STARTED |
+| MP-4R6 | Legacy removal & migration | NOT STARTED |
+| MP-4R7 | Enterprise integration qualification | NOT STARTED |
+| MP-4R8 | Final closure audit | NOT STARTED |
+
+### Legacy MP-4 (historical)
+
+| Slice | Status |
+|-------|--------|
+| MP-4A | SUPERSEDED_BY_MP4R0 |
+| MP-4B | FROZEN_PENDING_CONVERGENCE |
+| MP-4C | FROZEN_PENDING_CONVERGENCE |
+| MP-4D | FROZEN_PENDING_AUTHORITY_REBASE |
+| MP-4E–H | CANCELLED / REPLACED by MP-4R* |
 
 ---
 

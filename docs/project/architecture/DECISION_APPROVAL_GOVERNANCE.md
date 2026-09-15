@@ -4,216 +4,169 @@ Intergrax is source-available under the Intergrax Evaluation and Collaboration L
 See LICENSE for permitted evaluation, collaboration, and contribution use.
 -->
 
-# Decision / Approval / Governance — Collaborative Semantics (MP-4)
+# Decision / Approval / Governance — Multiplayer integration (MP-4 / MP-4R)
 
-**Status:** **MP-4A — APPROVED / CLOSED** (ownership + contracts freeze) · **MP-4B — READY_FOR_REVIEW** · **MP-4C — READY_FOR_REVIEW** · **MP-4D — READY_FOR_REVIEW** · MP-4E…MP-4H **NOT STARTED**
-**ADR:** [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md)
-**Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md) (reference-only boundary)
+**Status:** **MP-4R0 — CURRENT** (core rebase & supersession gate) · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `FROZEN_PENDING_CONVERGENCE` · **MP-4C** `FROZEN_PENDING_CONVERGENCE` · **MP-4D** `FROZEN_PENDING_AUTHORITY_REBASE` · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8
+**ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
+**Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (1:1):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
 
 ---
 
 ## Purpose
 
-Freeze semantic ownership, domain boundaries, contract direction, and anti-substitution rules for Multiplayer **Decision**, **Approval**, and **Governance** primitives before any MP-4 runtime, persistence, or workflow-engine implementation.
+Define how **Multiplayer** integrates with canonical platform authorities for Decision, human authorization (Governance/HITL), Execution continuation, Evidence, and Diagnostics — **without** creating parallel lifecycle or truth sources.
 
-This hub does **not** implement contracts, repositories, services, orchestration, or storage.
+MP-4R0 performs ownership rebase, legacy inventory, supersession, and architecture gates. It does **not** delete legacy MP-4B–D production modules.
 
 ---
 
-## Semantic ownership (frozen)
+## Canonical ownership (frozen at MP-4R0)
 
-Three distinct collaborative domains on the Multiplayer plane. Each owns its lifecycle and authoritative state; none substitutes for Collaborative Work artifacts or Unified Execution runtime state.
+| Capability | Canonical owner | Multiplayer role |
+|------------|-----------------|------------------|
+| Decision identity / version | Decision System (`decision_identity`, …) | References / bindings only (MP-4R4+) |
+| Decision lifecycle / resolution / finalization | Decision System + Execution host | None — no second lifecycle |
+| Decision human review semantics | Decision System + canonical HITL contracts | Bridge via platform contracts only |
+| Authorization / `REQUIRE_HUMAN` | Governance / HITL | Consume — do not re-own |
+| Human authorization evidence | Governance / HITL + Evidence contracts | Link — do not own facts |
+| Pause / wait / resume | Execution Engine | None |
+| Public continuation boundary | `ExecutionContinuationPort` | Integrate via port (MP-4R3) |
+| Execution identity / lifecycle | Execution Engine | `ExecutionProvenanceRef` references only |
+| Orchestration | Nexus **internal** to Execution Engine | **No public Nexus dependency** |
+| Principal / membership / delegation | MP-1 (Collaborative Work) | Reuse |
+| WorkItem / Assignment | Multiplayer Collaborative Work (MP-2) | Owner |
+| WorkArtifact / WorkArtifactVersion | Multiplayer Collaborative Work (MP-3) | Owner |
+| Evidence facts | Observability / Evidence Plane | Emit/link canonical facts (MP-4R5) |
+| Historical factual reconstruction | Shared Evidence Plane reconstruction | None |
+| Diagnostic interpretation | Central Diagnostics | Read/integration via canonical contracts |
+| Multiplayer Decision integration | Multiplayer plane | **Collaborative binding / projection only** |
+
+**Hard invariants:**
 
 ```text
-Decision Domain
-    |
-    +-- Decision identity
-    +-- Decision lifecycle
-    +-- Decision outcome
-
-Approval Domain
-    |
-    +-- approval requests
-    +-- approval lifecycle
-    +-- human actions (HITL as domain process — not runtime state substitution)
-
-Governance Domain (collaborative)
-    |
-    +-- policies (collaborative governance posture for decisions/approvals)
-    +-- controls (decision/approval gate requirements)
-    +-- governance evidence (linkage to platform evidence — not evidence ownership)
+Multiplayer MUST NOT own a second Decision lifecycle.
+Multiplayer MUST NOT own a second Approval/HITL authority.
+Multiplayer MUST NOT own Execution lifecycle.
+Multiplayer MUST NOT expose Nexus.
+Multiplayer MUST NOT own evidence truth.
+Multiplayer MUST NOT own diagnostic interpretation.
 ```
 
-| Capability | Owner | Notes |
-|------------|-------|-------|
-| WorkItem / Assignment / shared-work lifecycle | Collaborative Work (MP-2) | Reference only |
-| WorkArtifact / WorkArtifactVersion | Collaborative Work (MP-3) | Reference only |
-| **Decision** identity, lifecycle, outcome | **Decision Domain (MP-4)** | What choice was made |
-| **Approval** request, lifecycle, human actions | **Approval Domain (MP-4)** | Who approved/rejected and when |
-| **Collaborative governance** posture, controls, evidence linkage | **Governance Domain (MP-4)** | Not GOVERNED_EXECUTION enforcement |
-| Task / Run / Attempt / Execution lifecycle | Unified Execution Runtime | Execution lifecycle only |
-| Policy evaluation at execution boundary | Governed Execution | Reuse — not re-owned |
-| Proof / attestation records | Evidence / Proof Receipts | Reference only |
-| Principal / membership / delegation | Collaborative Work (MP-1) | Reuse — not re-owned |
+---
 
-**GOVERNED_EXECUTION vs MP-4 Governance:** [`GOVERNED_EXECUTION`](GOVERNED_EXECUTION.md) owns execution-centric policy enforcement, HITL pause/resume machinery at the execution boundary, and governed continuation. MP-4 **Governance Domain** owns collaborative governance semantics for decision/approval workflows (which policies apply to a decision context, control requirements, governance evidence linkage). MP-4 **consumes** Governed Execution outcomes; it does **not** duplicate execution-boundary enforcement or own `TaskState` / pause machinery.
+## Target integration model
+
+```text
+                PLATFORM CORE
+
+      Canonical Decision System
+                │
+        Governance / HITL
+                │
+      ExecutionContinuationPort
+                │
+         Execution Engine
+                │
+           Evidence Plane
+                │
+           Diagnostics
+
+                ↑
+       typed references / bindings
+
+          MULTIPLAYER PLANE
+                │
+       WorkItem / Assignment
+                │
+ WorkArtifact / WorkArtifactVersion
+```
 
 ---
 
-## Absolute boundaries
+## Legacy MP-4 inventory (frozen — no deletion in MP-4R0)
 
-### Collaborative Work — remains owner (no MP-4 leakage)
+| Component | Location | Classification (MP-4R0) |
+|-----------|----------|-------------------------|
+| MP-4B Decision contracts | `intergrax/contracts/decision.py` | `REPLACE_WITH_CANONICAL` → `decision_identity` / DS-CORE; `REMOVE_AFTER_CALLER_PROOF` |
+| MP-4C Approval contracts | `intergrax/contracts/approval.py` | `REPLACE_WITH_CANONICAL` → `decision_human_review` + Governance/HITL; `REMOVE_AFTER_CALLER_PROOF` |
+| MP-4D Approval service | `intergrax/approval/` | `MIGRATE` authority path to Governance/HITL + MP-1 `CollaborativeWorkEnforcementGate`; not a second HITL runtime |
+| Contract / service tests | `tests/unit/contracts/test_decision_contracts.py`, `test_approval_*`, `tests/unit/approval/*` | `KEEP` until MP-4R6 caller proof |
+| Architecture gates MP-4B–D | `tests/unit/contracts/test_*_architecture_gates.py`, `tests/unit/approval/test_approval_authority_architecture_gates.py` | `KEEP` — quarantine legacy surface |
+| MP-4R0 collaborative gates | `tests/unit/runtime/architecture/test_mp4r0_multiplayer_rebase_architecture_gates.py` | `KEEP` — protect new boundaries |
 
-Collaborative Work **continues to own**:
+**Caller audit (production):** `intergrax/contracts/decision.py` consumers are **only** legacy MP-4C (`approval.py`) and unit tests — **no** runtime Decision System consumer. Canonical Decision uses `intergrax/contracts/decision_identity.py` and related DS-CORE modules.
 
-- WorkItem, WorkArtifact, WorkArtifactVersion
-- Execution linkage references (`ExecutionProvenanceRef` on WorkItem links / artifact versions)
-- Content references (`ArtifactContentRef`)
-
-Collaborative Work **must not add**:
-
-- Decision, Approval, or HumanReviewState fields on WorkItem / WorkArtifact / WorkArtifactVersion
-- GovernanceStatus on artifact lifecycle
-- `DRAFT` / `REVIEW` / `APPROVED` / `ARCHIVED` status on WorkArtifactVersion (MP-4 owns approval semantics separately)
-
-### Unified Execution Runtime / Nexus — remains owner (no MP-4 leakage)
-
-UER **continues to own**:
-
-- Task, Run, Attempt, Execution identity and lifecycle
-- Scheduling, orchestration, retries
-
-UER **must not add**:
-
-- Decision lifecycle, Approval lifecycle, or Governance workflow as execution-state substitutes
-- `ExecutionState.WAITING_FOR_HUMAN` (or equivalent) as approval-workflow replacement — HITL pause remains execution-boundary machinery; Approval is a separate domain process that may **bridge** to HITL
+**Unique collaborative capability audit:** workspace-scoped `Decision` aggregate in MP-4B does **not** justify a second Decision authority — collaborative association is a **binding** concern (MP-4R4), not lifecycle ownership.
 
 ---
 
-## Anti-substitution rules (frozen)
+## Anti-substitution rules (retained — canonical owners)
 
 | Forbidden | Correct model |
 |-----------|---------------|
-| Decision encoded as WorkArtifact body or WorkItem state | Decision is a distinct primitive; may **reference** WorkItem / WorkArtifactVersion |
-| `WorkArtifactVersion.status = APPROVED` | Approval references `WorkArtifactVersionId`; approval lifecycle is Approval Domain |
-| HumanReviewState on WorkItem / Assignment | Approval request + approval lifecycle in Approval Domain |
-| `ExecutionState.WAITING_FOR_HUMAN` substituting approval workflow | Approval Domain process; optional **bridge** to existing Nexus HITL pause/resume only |
-| Decision outcome substituting TaskState / RunState | Decision outcome references execution via neutral `ExecutionProvenanceRef` when applicable |
-| Governance evidence record substituting ProofReceipt | Governance evidence **references** platform evidence; Proof Receipts remains owner |
-| Approval/evidence alone authorizing execution | MP-INV-23 — authorization remains policy + Governed Execution path |
+| Decision encoded as WorkArtifact body or WorkItem state | Canonical Decision + optional WorkItem binding |
+| `WorkArtifactVersion.status = APPROVED` | Human review / governance outcomes via canonical contracts |
+| `ExecutionState` substituting approval workflow | Governance/HITL + `ExecutionContinuationPort` |
+| Decision outcome substituting TaskState / RunState | `ExecutionProvenanceRef` when correlated |
+| Governance evidence substituting ProofReceipt | Evidence Plane owns facts; linkage only |
+| Approval/evidence alone authorizing execution | MP-INV-23 — Governed Execution path |
 
-**Normative invariants (Multiplayer register):** MP-INV-09 (Decision ≠ HITL), MP-INV-23 (approval/evidence ≠ execution authorization).
+**Normative:** MP-INV-09 (Decision ≠ HITL), MP-INV-23 (approval/evidence ≠ execution authorization).
 
 ---
 
-## Dependency direction (frozen)
+## Contract-first integration (frozen)
 
 ```text
-intergrax/contracts/
-    |
-    +-- decision contracts        (MP-4B — `intergrax/contracts/decision.py`)
-    +-- approval contracts        (MP-4C — `intergrax/contracts/approval.py`)
-    +-- governance contracts      (MP-4D+ — future; posture/evidence linkage)
-
-collaborative_work (MP-1…MP-3)
-    |
-    +-- references only (WorkItemId, WorkArtifactVersionId, Principal, ExecutionProvenanceRef)
-
-execution runtime (UER / Nexus)
-    |
-    +-- execution lifecycle only; optional HITL bridge consumer
-
-governed_execution
-    |
-    +-- policy evaluation + HITL machinery — reuse, not import into MP-4 contracts
+Multiplayer
+   ↓
+stable platform contract / port
+   ↓
+configured platform implementation
 ```
 
-**Forbidden production import directions (MP-4 contracts and services, when implemented):**
+**Forbidden for new Multiplayer production modules:**
 
-| Forbidden import / coupling | Reason |
-|----------------------------|--------|
-| `intergrax.runtime.nexus.*` | No Nexus orchestration ownership in MP-4 |
-| `GraphExecutor`, Nexus task graph internals | Orchestration is UER |
-| `TaskState`, Run lifecycle mutation from MP-4 | Execution state is UER |
-| WorkItem lifecycle ownership from MP-4 | Collaborative Work owns WorkItem |
-| ProofReceipt ownership / mutation | Evidence subsystem owns receipts |
-| Memory lifecycle ownership | Memory domain |
-| UCL / OptimizationArtifact ownership | UCL domain |
-| New Principal / ACL subsystem | Reuse MP-1 authority |
+- `intergrax.runtime.nexus.*`, `GraphExecutor`, `NexusLoop`, `NexusIntakeRunner`
+- New `DecisionId` / `DecisionLifecycle*` / `DecisionRuntime` / `MultiplayerDecisionEngine` (outside legacy quarantine)
+- `MultiplayerHitlEngine`, `ApprovalRuntime`, `HumanReviewRuntime`
+- `EvidenceStore`, `ExecutionReconstructor`, `DiagnosticEngine`, `ProblemLifecycleEngine` as Multiplayer-owned authorities
 
-**Allowed reference pattern:** neutral Tier-0 contracts (`ExecutionProvenanceRef`, `CollaborativePrincipal`, evidence reference handles) via `intergrax/contracts/*` only — no runtime module imports.
+**Reuse (mandatory):** `ExecutionContinuationPort`, Decision System contracts, Governance/HITL contracts, Evidence Plane contracts, Diagnostic read surfaces, MP-1 authority.
 
 ---
 
-## Existing contract reuse audit (frozen)
+## MP-4R roadmap (replaces MP-4E…MP-4H)
 
-Before any new MP-4 types, implementation **must reuse** existing platform contracts.
+| Slice | Status |
+|-------|--------|
+| **MP-4R0** — Core rebase & supersession gate | **CURRENT** |
+| MP-4R1 — Decision contract convergence | NOT STARTED |
+| MP-4R2 — Human review / Approval convergence | NOT STARTED |
+| MP-4R3 — Execution continuation integration | NOT STARTED |
+| MP-4R4 — Collaborative decision binding | NOT STARTED |
+| MP-4R5 — Evidence Plane adoption | NOT STARTED |
+| MP-4R6 — Legacy removal & migration | NOT STARTED |
+| MP-4R7 — Enterprise integration qualification | NOT STARTED |
+| MP-4R8 — Final closure audit | NOT STARTED |
 
-| Need | Reuse (owner) | Do not create |
-|------|---------------|---------------|
-| Actor identity | `CollaborativePrincipal`, MP-1 membership/delegation | `NewPrincipal`, `NewUserIdentity`, artifact-specific user types |
-| Authorization evaluation | `EffectiveAuthorityRequest` / `EffectiveAuthorityDecision`, `PolicyDecision` / `PolicyAction` | Second ACL engine, `ArtifactApprover` hierarchy |
-| Execution linkage | `ExecutionProvenanceRef` (Tier-0) | `NewExecutionIdentity`, embedding Task/Run in Decision identity |
-| Evidence linkage | Existing evidence / proof reference patterns | ProofReceipt as Decision identity; mutable evidence on Decision |
-| Workspace scope | `tenant_id` + `workspace_id` from Collaborative Work conventions | Parallel tenancy model |
-
-**Audit conclusion (MP-4A):** no new identity, ACL, or execution-identity subsystem required. MP-4B…MP-4F introduce **decision/approval/governance-specific** contracts only where reuse is insufficient — each slice must cite reuse table compliance in its gate.
-
----
-
-## Cross-domain reference model (conceptual — not implementation)
-
-```text
-WorkItem (CW)
-  → may reference zero..N Decision (Decision Domain)
-  → may reference WorkArtifactVersion (CW) independently of Decision
-
-Decision (Decision Domain)
-  → records what choice was made + outcome
-  → may reference WorkArtifactVersionId (not own artifact lifecycle)
-  → may reference ExecutionProvenanceRef (optional)
-
-Approval (Approval Domain)
-  → approval request + lifecycle + human actions
-  → references WorkArtifactVersionId and/or DecisionId (not substitute artifact state)
-  → may bridge to Governed Execution HITL for execution pause/resume
-
-Governance evidence (Governance Domain)
-  → collaborative governance posture + control satisfaction
-  → references platform evidence handles — does not own ProofReceipt
-```
+Detail: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md).
 
 ---
 
-## Non-goals (MP-4 program)
+## Legacy slice status (historical)
 
-Explicitly **out of scope** for MP-4 architecture and all slices until separately gated:
-
-- Runtime orchestration or workflow engine inside MP-4
-- WorkArtifact / WorkArtifactVersion lifecycle ownership
-- Task / Run / Attempt / Execution lifecycle ownership
-- ACL or Principal subsystem duplication
-- Persistence implementation (MP-4E)
-- Slack / channel adapter ownership of Decision semantics
-- Relabeling Nexus HITL rows as MP-4 implementation
-
----
-
-## Implementation roadmap (decomposition frozen)
-
-Full slice rows: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md).
-
-| Slice | Scope | Status |
-|-------|-------|--------|
-| **MP-4A** | Ownership + contracts freeze (this gate) | **APPROVED / CLOSED** |
-| **MP-4B** | Decision contracts | **READY_FOR_REVIEW** |
-| MP-4C | Approval / HITL contracts | **READY_FOR_REVIEW** |
-| MP-4D | Authority integration | **READY_FOR_REVIEW** |
-| MP-4E | Persistence boundary | NOT STARTED |
-| MP-4F | Evidence / provenance integration | NOT STARTED |
-| MP-4G | Qualification | NOT STARTED |
-| MP-4H | Final closure audit | NOT STARTED |
+| Stary slice | Status |
+|-------------|--------|
+| MP-4A | `SUPERSEDED_BY_MP4R0` |
+| MP-4B | `FROZEN_PENDING_CONVERGENCE` |
+| MP-4C | `FROZEN_PENDING_CONVERGENCE` |
+| MP-4D | `FROZEN_PENDING_AUTHORITY_REBASE` |
+| MP-4E | `CANCELLED_BEFORE_START` |
+| MP-4F | `CANCELLED_REPLACED_BY_EVIDENCE_ADOPTION` |
+| MP-4G | `CANCELLED_IN_OLD_FORM` |
+| MP-4H | `REPLACED_BY_MP4R8` |
 
 ---
 
@@ -221,8 +174,9 @@ Full slice rows: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/D
 
 | Document | Role |
 |----------|------|
-| [`COLLABORATIVE_WORK.md`](COLLABORATIVE_WORK.md) | Collaborative work plane; MP-4 non-leakage boundary |
-| [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) | Execution-boundary policy + canonical HITL |
-| [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md) | HITL reliability semantics |
-| [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) | Execution identity boundary |
-| [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md) | Multi-layer feature coordination |
+| [`DECISION_SYSTEM.md`](DECISION_SYSTEM.md) | Canonical Decision authority |
+| [`GOVERNED_EXECUTION.md`](GOVERNED_EXECUTION.md) | Governance / HITL |
+| [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) | Execution + internal Nexus |
+| [`OBSERVABILITY.md`](OBSERVABILITY.md) | Evidence Plane |
+| [`DIAGNOSTICS.md`](DIAGNOSTICS.md) | Diagnostic interpretation |
+| [`COLLABORATIVE_WORK.md`](COLLABORATIVE_WORK.md) | MP-1…MP-3 ownership |
