@@ -448,9 +448,12 @@ class UserProfileManager:
             if entry.metadata is None:
                 entry.metadata = {}
         else:
+            from intergrax.memory.contracts.enterprise_memory_record import MemoryProvenance
+
             entry = UserProfileMemoryEntry(
                 content=str(entry_or_content),
                 metadata=metadata or {},
+                provenance=MemoryProvenance(),
             )
 
         profile.memory_entries.append(entry)
@@ -502,12 +505,17 @@ class UserProfileManager:
         profile = await self._get_store_profile(user_id)
 
         matched: UserProfileMemoryEntry | None = None
+        semantic_change = False
         for entry in profile.memory_entries:
             if entry.entry_id == entry_id:
-                if content is not None:
+                if content is not None and content != entry.content:
                     entry.content = content
-                if metadata is not None:
+                    semantic_change = True
+                if metadata is not None and metadata != entry.metadata:
                     entry.metadata = metadata
+                    semantic_change = True
+                if semantic_change:
+                    entry.bump_revision_for_semantic_change()
                 entry.modified = True
                 matched = entry
                 break
@@ -517,7 +525,7 @@ class UserProfileManager:
 
         await self._save_store_profile(profile)
 
-        if content is not None:
+        if semantic_change:
             outcome = await self._memory_lifecycle.apply_after_primary_upsert(
                 operation=MemoryLifecycleOperation.UPDATE,
                 user_id=user_id,

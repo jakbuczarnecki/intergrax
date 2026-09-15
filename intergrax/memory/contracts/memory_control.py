@@ -13,6 +13,11 @@ from intergrax.memory.contracts.memory_lifecycle import (
     MemoryLifecycleOutcome,
     MemoryReconciliationOutcome,
 )
+from intergrax.memory.contracts.enterprise_memory_record import (
+    MemoryProvenance,
+    MemoryRecordGovernance,
+    MemoryRecordTrust,
+)
 from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
 
 __all__ = [
@@ -135,6 +140,9 @@ class MemoryControlRememberRequest:
     kind: MemoryKind = MemoryKind.OTHER
     title: str | None = None
     task_value_json: str | None = None
+    provenance: MemoryProvenance | None = None
+    trust: MemoryRecordTrust | None = None
+    governance: MemoryRecordGovernance | None = None
 
 
 @dataclass(frozen=True, slots=True)

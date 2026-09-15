@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -19,6 +19,7 @@ from intergrax.memory.strategies import (
     MemoryStrategySet,
     build_default_memory_strategies,
 )
+from intergrax.memory.memory_entry_materialization import materialize_user_profile_memory_entry
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory import (
     MemoryImportance,
@@ -125,7 +126,10 @@ class SessionMemoryConsolidationService:
         if not extraction_result.candidates:
             return []
 
-        entries = [self._materialize_entry(candidate) for candidate in extraction_result.candidates]
+        entries = [
+            self._materialize_entry(candidate, run_id=run_id)
+            for candidate in extraction_result.candidates
+        ]
 
         profile = await self._profile_manager.get_profile(user_id)
         now_iso = SystemTimeProvider.utc_now().isoformat()
@@ -167,25 +171,17 @@ class SessionMemoryConsolidationService:
 
         return stored_entries
 
-    def _materialize_entry(self, candidate: MemoryCandidate) -> UserProfileMemoryEntry:
-        metadata: Dict[str, Any] = {
-            "tags": list(candidate.tags),
-            "source": candidate.source,
-        }
-        if candidate.structured_summary is not None:
-            metadata["structured_summary"] = candidate.structured_summary.model_dump(mode="json")
-        if candidate.kind.value == "episodic_event":
-            metadata["structured"] = True
-
-        return UserProfileMemoryEntry(
-            content=candidate.content,
-            session_id=candidate.session_id,
-            kind=candidate.kind,
-            title=candidate.title,
-            importance=candidate.importance,
-            metadata=metadata,
-            deleted=False,
-            modified=False,
+    def _materialize_entry(
+        self,
+        candidate: MemoryCandidate,
+        *,
+        run_id: Optional[str] = None,
+    ) -> UserProfileMemoryEntry:
+        strategy_id = self._strategies.extraction.strategy_id
+        return materialize_user_profile_memory_entry(
+            candidate,
+            strategy_id=strategy_id,
+            run_id=run_id,
         )
 
     def _prepare_conversation_for_prompt(

@@ -6,10 +6,17 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 import uuid
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
+from intergrax.memory.contracts.enterprise_memory_record import (
+    MemoryProvenance,
+    MemoryRecordGovernance,
+    MemoryRecordLineage,
+    MemoryRecordTrust,
+    validate_memory_record_invariants,
+)
 from intergrax.utils.time_provider import SystemTimeProvider
 
 
@@ -50,14 +57,18 @@ class UserProfileMemoryEntryNotFoundError(LookupError):
 @dataclass
 class UserProfileMemoryEntry:
     """
-    Long-term memory entry for a user profile.
+    Canonical enterprise memory record for user long-term memory (MEM-ENT-5).
 
-    Stores stable facts, insights, or notes about the user.
-    Can also store session-related summaries, linked via session_id.
+    Stable ``entry_id`` is the memory identity; ``revision`` increments on semantic
+    mutations. Typed provenance, trust, governance, and lineage are persisted
+    independently of vendor storage.
     """
 
-    # Persistent identifier in the storage backend.
+    # Persistent stable memory identifier (unchanged across revisions).
     entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)
+
+    # Monotonic record revision (>= 1); not derived from timestamps.
+    revision: int = 1
 
     # Main content of the memory entry (human-readable text).
     content: str = ""
@@ -83,6 +94,15 @@ class UserProfileMemoryEntry:
         default_factory=lambda: SystemTimeProvider.utc_now().isoformat()
     )
 
+    # Record lifecycle timestamp (distinct from fact validity below).
+    updated_at: Optional[str] = None
+
+    provenance: MemoryProvenance = field(default_factory=MemoryProvenance)
+    trust: MemoryRecordTrust = field(default_factory=MemoryRecordTrust)
+    governance: MemoryRecordGovernance = field(default_factory=MemoryRecordGovernance)
+    lineage: MemoryRecordLineage = field(default_factory=MemoryRecordLineage)
+    evidence_refs: Tuple[str, ...] = ()
+
     # Additional, less frequently queried metadata.
     # Example: {"tags": ["intergrax", "memory", "profiles"], "source": "session_summarizer"}
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -94,6 +114,39 @@ class UserProfileMemoryEntry:
     # Unit-of-work flags used by the manager/store.
     deleted: bool = False
     modified: bool = False
+
+    @property
+    def memory_id(self) -> str:
+        return self.entry_id
+
+    def __post_init__(self) -> None:
+        validate_memory_record_invariants(
+            memory_id=self.entry_id,
+            revision=self.revision,
+            valid_from=self.valid_from,
+            valid_until=self.valid_until,
+            trust=self.trust,
+            lineage=self.lineage,
+            evidence_refs=self.evidence_refs,
+        )
+
+    def bump_revision_for_semantic_change(self) -> None:
+        """Increment revision after a persisted semantic mutation."""
+        self.revision += 1
+        self.updated_at = SystemTimeProvider.utc_now().isoformat()
+        validate_memory_record_invariants(
+            memory_id=self.entry_id,
+            revision=self.revision,
+            valid_from=self.valid_from,
+            valid_until=self.valid_until,
+            trust=self.trust,
+            lineage=self.lineage,
+            evidence_refs=self.evidence_refs,
+        )
+
+
+# Public alias — single canonical persisted memory entity.
+EnterpriseMemoryRecord = UserProfileMemoryEntry
 
 
 @dataclass

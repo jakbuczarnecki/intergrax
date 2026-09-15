@@ -73,6 +73,8 @@ class UserProfileLtmVectorProjection:
             {
                 "user_id": user_id,
                 "entry_id": entry.entry_id,
+                "memory_id": entry.memory_id,
+                "revision": entry.revision,
                 "kind": kind_value,
                 "deleted": 0,
                 "index_domain": LTM_INDEX_DOMAIN,

@@ -35,6 +35,13 @@ from intergrax.memory.contracts.memory_control import (
 )
 from intergrax.memory.contracts.memory_lifecycle import MemoryReconciliationOutcome
 from intergrax.memory.memory_temporal import is_memory_entry_active
+from intergrax.memory.contracts.enterprise_memory_record import (
+    MemoryProvenance,
+    MemoryRecordGovernance,
+    MemoryRecordSourceType,
+    MemoryRecordTrust,
+    MemoryTrustClass,
+)
 from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecyclePartialError
@@ -266,10 +273,19 @@ class DefaultMemoryControlPlane:
             content = request.content.strip()
             if not content:
                 raise ValueError("remember requires content or entry")
+            provenance = request.provenance or MemoryProvenance(
+                source_type=MemoryRecordSourceType.USER_EXPLICIT,
+            )
+            trust = request.trust or MemoryRecordTrust(
+                trust_class=MemoryTrustClass.USER_EXPLICIT,
+            )
             entry = UserProfileMemoryEntry(
                 content=content,
                 kind=request.kind,
                 title=request.title,
+                provenance=provenance,
+                trust=trust,
+                governance=request.governance or MemoryRecordGovernance(),
             )
         try:
             capability_result = await self.user_profile.add_memory_entry(user_id, entry)
