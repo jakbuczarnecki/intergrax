@@ -53,7 +53,11 @@ def build_default_wired_meaningful_side_effect_authorization_boundary(
     task_scope: ActiveExecutionTaskScopePort | None = None,
 ) -> MeaningfulSideEffectAuthorizationBoundary:
     """Production-default wiring — constructs platform default inner guard explicitly."""
-    resolved_task_scope = task_scope or ActiveTaskRegistryTaskScopeResolver()
+    resolved_task_scope = (
+        task_scope
+        if task_scope is not None
+        else ActiveTaskRegistryTaskScopeResolver()
+    )
     return build_meaningful_side_effect_authorization_boundary(
         enforcement_gate=enforcement_gate,
         inner_execution_guard=build_canonical_inner_execution_guard(
