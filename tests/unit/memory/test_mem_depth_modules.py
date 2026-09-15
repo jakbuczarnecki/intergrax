@@ -9,6 +9,9 @@ import pytest
 from intergrax.contracts.delegation import DelegationSpec, ExploreDelegationProfile
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.entity_graph_memory import EntityGraphMemoryStore, EntityEdge, EntityNode
+from intergrax.memory.stores.in_memory_entity_temporal_memory_store import (
+    InMemoryEntityTemporalMemoryStore,
+)
 from intergrax.memory.session_summary_schema import SessionSummarySchema
 from intergrax.memory.stores.postgres_memory_backend_rfc import evaluate_postgres_memory_backend_spike
 from intergrax.memory.user_profile_dedup import deduplicate_memory_entries
@@ -48,7 +51,7 @@ def test_structured_session_summary_roundtrip() -> None:
 
 
 def test_entity_graph_neighbors() -> None:
-    store = EntityGraphMemoryStore()
+    store = EntityGraphMemoryStore(backend=InMemoryEntityTemporalMemoryStore())
     store.upsert_node(EntityNode(entity_id="u1", label="Artur"))
     store.upsert_node(EntityNode(entity_id="proj1", label="Intergrax"))
     store.add_edge(EntityEdge(source_id="u1", target_id="proj1", relation="works_on"))

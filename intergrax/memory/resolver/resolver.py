@@ -15,6 +15,7 @@ from intergrax.memory.resolver.discovery import (
 )
 from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
 from intergrax.memory.resolver.materialization import MemoryStoreMaterializationContext
+from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryStore
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
 
@@ -73,6 +74,18 @@ def _validate_user_profile_store(store: object, *, plugin_id: str) -> UserProfil
     return store
 
 
+def _validate_entity_temporal_memory_store(
+    store: object,
+    *,
+    plugin_id: str,
+) -> EntityTemporalMemoryStore:
+    if not isinstance(store, EntityTemporalMemoryStore):
+        raise MemoryStorePluginResolutionError(
+            f"Memory store plugin {plugin_id!r} returned invalid EntityTemporalMemoryStore"
+        )
+    return store
+
+
 def _validate_session_storage(store: object, *, plugin_id: str) -> SessionStorage:
     if not isinstance(store, SessionStorage):
         raise MemoryStorePluginResolutionError(
@@ -102,6 +115,29 @@ def materialize_user_profile_store(
             f"Memory store plugin {plugin_id!r} failed to materialize user profile store"
         ) from exc
     return _validate_user_profile_store(store, plugin_id=plugin_id)
+
+
+def materialize_entity_temporal_memory_store(
+    plugin_id: str,
+    ctx: MemoryStoreMaterializationContext,
+    *,
+    catalog: MemoryStorePluginCatalog,
+) -> EntityTemporalMemoryStore:
+    """Materialize one external ``EntityTemporalMemoryStore`` from an explicit plugin id."""
+    record = _select_classified_plugin(
+        plugin_id,
+        expected_kind=MemoryStorePluginKind.ENTITY_TEMPORAL,
+        catalog=catalog,
+    )
+    try:
+        store = record.plugin_type.create_entity_temporal_memory_store(
+            **_user_profile_factory_kwargs(ctx)
+        )
+    except Exception as exc:
+        raise MemoryStorePluginResolutionError(
+            f"Memory store plugin {plugin_id!r} failed to materialize entity temporal store"
+        ) from exc
+    return _validate_entity_temporal_memory_store(store, plugin_id=plugin_id)
 
 
 def materialize_session_storage(

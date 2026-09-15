@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
+    from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryStore
     from intergrax.memory.user_profile_store import UserProfileStore
     from intergrax.runtime.nexus.session.session_storage import SessionStorage
 
@@ -31,3 +32,17 @@ class SessionStoragePlugin(Protocol):
 
     @classmethod
     def create_session_storage(cls, **kwargs: Any) -> SessionStorage: ...
+
+
+@runtime_checkable
+class EntityTemporalMemoryStorePlugin(Protocol):
+    """Plugin that materializes an ``EntityTemporalMemoryStore`` backend."""
+
+    @classmethod
+    def plugin_id(cls) -> str: ...
+
+    @classmethod
+    def create_entity_temporal_memory_store(
+        cls,
+        **kwargs: Any,
+    ) -> EntityTemporalMemoryStore: ...

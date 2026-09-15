@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import timezone
 
 from intergrax.memory.contracts.entity_temporal_memory import (
     EntityMemoryScope,
@@ -21,6 +20,52 @@ from intergrax.memory.contracts.entity_temporal_memory import (
 )
 
 
+def _source_revision_stale(stored_revision: int | None, incoming_revision: int | None) -> bool:
+    if stored_revision is None or incoming_revision is None:
+        return False
+    return incoming_revision < stored_revision
+
+
+def _entity_projection_equal(existing: EntityRecord, incoming: EntityRecord) -> bool:
+    return (
+        existing.entity_id == incoming.entity_id
+        and existing.canonical_name == incoming.canonical_name
+        and existing.entity_type == incoming.entity_type
+        and existing.revision == incoming.revision
+        and existing.created_at == incoming.created_at
+        and existing.updated_at == incoming.updated_at
+        and existing.aliases == incoming.aliases
+        and existing.provenance == incoming.provenance
+        and existing.trust == incoming.trust
+        and existing.governance == incoming.governance
+        and existing.evidence_refs == incoming.evidence_refs
+        and existing.source_memory_id == incoming.source_memory_id
+        and existing.source_memory_revision == incoming.source_memory_revision
+    )
+
+
+def _relation_projection_equal(
+    existing: EntityRelationRecord,
+    incoming: EntityRelationRecord,
+) -> bool:
+    return (
+        existing.relation_id == incoming.relation_id
+        and existing.source_entity_id == incoming.source_entity_id
+        and existing.target_entity_id == incoming.target_entity_id
+        and existing.relation_type == incoming.relation_type
+        and existing.revision == incoming.revision
+        and existing.valid_from == incoming.valid_from
+        and existing.valid_until == incoming.valid_until
+        and existing.provenance == incoming.provenance
+        and existing.trust == incoming.trust
+        and existing.governance == incoming.governance
+        and existing.evidence_refs == incoming.evidence_refs
+        and existing.lineage == incoming.lineage
+        and existing.source_memory_id == incoming.source_memory_id
+        and existing.source_memory_revision == incoming.source_memory_revision
+    )
+
+
 class InMemoryEntityTemporalMemoryStore:
     """Vendor-neutral in-memory ``EntityTemporalMemoryStore``."""
 
@@ -31,11 +76,21 @@ class InMemoryEntityTemporalMemoryStore:
     def upsert_entity(self, scope: EntityMemoryScope, record: EntityRecord) -> EntityRecord:
         key = (scope.tenant_id, record.entity_id)
         existing = self._entities.get(key)
-        if existing is not None and existing.entity_id == record.entity_id:
-            merged = replace(
-                record,
-                revision=max(existing.revision, record.revision),
-            )
+        if existing is not None:
+            if _source_revision_stale(
+                existing.source_memory_revision,
+                record.source_memory_revision,
+            ):
+                return existing
+            if record.source_memory_id is not None and _entity_projection_equal(existing, record):
+                return existing
+            if record.source_memory_id is None:
+                merged = replace(
+                    record,
+                    revision=max(existing.revision, record.revision),
+                )
+            else:
+                merged = record
         else:
             merged = record
         self._entities[key] = merged
@@ -43,6 +98,9 @@ class InMemoryEntityTemporalMemoryStore:
 
     def get_entity(self, scope: EntityMemoryScope, entity_id: str) -> EntityRecord | None:
         return self._entities.get((scope.tenant_id, entity_id))
+
+    def get_relation(self, scope: EntityMemoryScope, relation_id: str) -> EntityRelationRecord | None:
+        return self._relations.get((scope.tenant_id, relation_id))
 
     def upsert_relation(
         self,
@@ -53,10 +111,20 @@ class InMemoryEntityTemporalMemoryStore:
         key = (scope.tenant_id, record.relation_id)
         existing = self._relations.get(key)
         if existing is not None:
-            merged = replace(
-                record,
-                revision=max(existing.revision, record.revision),
-            )
+            if _source_revision_stale(
+                existing.source_memory_revision,
+                record.source_memory_revision,
+            ):
+                return existing
+            if record.source_memory_id is not None and _relation_projection_equal(existing, record):
+                return existing
+            if record.source_memory_id is None:
+                merged = replace(
+                    record,
+                    revision=max(existing.revision, record.revision),
+                )
+            else:
+                merged = record
         else:
             merged = record
         self._relations[key] = merged
@@ -70,8 +138,6 @@ class InMemoryEntityTemporalMemoryStore:
         as_of = query.as_of
         if as_of is None:
             raise EntityTemporalMemoryViolation("as_of is required for entity relation query")
-        if as_of.tzinfo is None:
-            as_of = as_of.replace(tzinfo=timezone.utc)
 
         type_filter = {value.strip() for value in query.relation_types if value.strip()}
         matched: list[EntityRelationRecord] = []

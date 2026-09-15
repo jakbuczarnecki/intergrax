@@ -4,9 +4,27 @@
 
 from __future__ import annotations
 
+import inspect
 from datetime import datetime, timezone
 
 import pytest
+
+from intergrax.applications._shared.entity_graph_wiring import resolve_entity_temporal_memory_store
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    MemoryProfile,
+)
+from intergrax.memory.resolver.discovery import (
+    MemoryStorePluginCatalog,
+    discover_classified_memory_store_plugins,
+)
+from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
+from intergrax.memory.resolver.materialization import MemoryStoreMaterializationContext
+from intergrax.memory.resolver.resolver import materialize_entity_temporal_memory_store
+from intergrax.memory.stores.in_memory_entity_temporal_memory_plugin import (
+    DEFAULT_IN_MEMORY_ENTITY_TEMPORAL_PLUGIN_ID,
+    InMemoryEntityTemporalMemoryStorePlugin,
+)
 
 from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryProvenance,
@@ -23,6 +41,7 @@ from intergrax.memory.contracts.entity_temporal_memory import (
     EntityRelationResult,
     EntityTemporalMemoryNotFound,
     EntityTemporalMemoryStore,
+    EntityTemporalMemoryViolation,
     EntityTypeRef,
     RelationTypeRef,
     entity_memory_entity_id_for_entry,
@@ -377,3 +396,204 @@ def test_is_entity_relation_active_at_fact_2025_only() -> None:
         relation,
         as_of=datetime(2026, 6, 1, tzinfo=timezone.utc),
     )
+
+
+def test_mixed_valid_from_valid_until_rejected() -> None:
+    with pytest.raises(EntityTemporalMemoryViolation):
+        EntityRelationRecord(
+            relation_id="rel:mix",
+            source_entity_id="s",
+            target_entity_id="t",
+            relation_type=RelationTypeRef("knows"),
+            revision=1,
+            valid_from="2025-01-01T00:00:00+00:00",
+            valid_until="2026-01-01T00:00:00",
+        )
+
+
+def test_as_of_awareness_must_match_relation_bounds() -> None:
+    aware_relation = EntityRelationRecord(
+        relation_id="rel:aware",
+        source_entity_id="s",
+        target_entity_id="t",
+        relation_type=RelationTypeRef("knows"),
+        revision=1,
+        valid_from="2025-01-01T00:00:00+00:00",
+    )
+    with pytest.raises(EntityTemporalMemoryViolation):
+        is_entity_relation_active_at(aware_relation, as_of=datetime(2025, 6, 1))
+    naive_relation = EntityRelationRecord(
+        relation_id="rel:naive",
+        source_entity_id="s",
+        target_entity_id="t",
+        relation_type=RelationTypeRef("knows"),
+        revision=1,
+        valid_from="2025-01-01T00:00:00",
+    )
+    with pytest.raises(EntityTemporalMemoryViolation):
+        is_entity_relation_active_at(
+            naive_relation,
+            as_of=datetime(2025, 6, 1, tzinfo=timezone.utc),
+        )
+
+
+def test_naive_ordering_year_boundary() -> None:
+    older = EntityRelationRecord(
+        relation_id="rel:older",
+        source_entity_id="s",
+        target_entity_id="t",
+        relation_type=RelationTypeRef("knows"),
+        revision=1,
+        valid_from="2025-12-31T00:00:00",
+    )
+    newer = EntityRelationRecord(
+        relation_id="rel:newer",
+        source_entity_id="s",
+        target_entity_id="t",
+        relation_type=RelationTypeRef("knows"),
+        revision=1,
+        valid_from="2026-01-01T00:00:00",
+    )
+    ordered = order_entity_relations_deterministic((older, newer))
+    assert ordered[0].relation_id == "rel:newer"
+
+
+def test_equal_valid_from_orders_by_relation_id() -> None:
+    rel_b = EntityRelationRecord(
+        relation_id="rel:b",
+        source_entity_id="s",
+        target_entity_id="t",
+        relation_type=RelationTypeRef("knows"),
+        revision=1,
+        valid_from="2025-01-01T00:00:00+00:00",
+    )
+    rel_a = EntityRelationRecord(
+        relation_id="rel:a",
+        source_entity_id="s",
+        target_entity_id="t",
+        relation_type=RelationTypeRef("knows"),
+        revision=1,
+        valid_from="2025-01-01T00:00:00+00:00",
+    )
+    ordered = order_entity_relations_deterministic((rel_b, rel_a))
+    assert ordered[0].relation_id == "rel:a"
+
+
+def test_stale_source_revision_preserves_projection_content() -> None:
+    store = InMemoryEntityTemporalMemoryStore()
+    indexer = DefaultEntityMemoryIndexer(store)
+    scope = _scope("tenant-stale", "user-1")
+    provenance = MemoryProvenance(source_type=MemoryRecordSourceType.SESSION_EXTRACTION)
+    indexer.index_memory_entry(
+        scope,
+        UserProfileMemoryEntry(
+            entry_id="mem-stale",
+            content="version four",
+            kind=MemoryKind.USER_FACT,
+            revision=4,
+            provenance=provenance,
+        ),
+    )
+    indexer.index_memory_entry(
+        scope,
+        UserProfileMemoryEntry(
+            entry_id="mem-stale",
+            content="version three",
+            kind=MemoryKind.USER_FACT,
+            revision=3,
+            provenance=provenance,
+        ),
+    )
+    entity_id = entity_memory_entity_id_for_entry(scope, "mem-stale")
+    projected = store.get_entity(scope, entity_id)
+    assert projected is not None
+    assert projected.source_memory_revision == 4
+    assert projected.canonical_name == "version four"
+
+
+def test_user_qualifier_prevents_cross_user_entity_id_collision() -> None:
+    scope_a = EntityMemoryScope(tenant_id="tenant-T", user_id="user-A")
+    scope_b = EntityMemoryScope(tenant_id="tenant-T", user_id="user-B")
+    assert entity_memory_entity_id_for_entry(scope_a, "mem-1") != entity_memory_entity_id_for_entry(
+        scope_b,
+        "mem-1",
+    )
+
+
+def test_indexer_entry_parameter_is_not_object() -> None:
+    signature = inspect.signature(DefaultEntityMemoryIndexer.index_memory_entry)
+    entry_param = signature.parameters["entry"]
+    assert entry_param.annotation is not object
+
+
+class _FakeEntityTemporalMemoryStorePlugin:
+    @classmethod
+    def plugin_id(cls) -> str:
+        return "test.fake_entity_temporal"
+
+    @classmethod
+    def create_entity_temporal_memory_store(cls, **kwargs: object) -> _RecordingEntityStore:
+        return _RecordingEntityStore()
+
+
+def test_plugin_resolution_default_in_memory() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults()
+    store = resolve_entity_temporal_memory_store(env)
+    assert store is not None
+    assert isinstance(store, InMemoryEntityTemporalMemoryStore)
+
+
+def test_plugin_resolution_external_provider() -> None:
+    env = ApplicationEnvironmentProfile(
+        memory_profile=MemoryProfile(
+            enable_entity_graph_memory=True,
+            entity_temporal_memory_store_plugin_id=_FakeEntityTemporalMemoryStorePlugin.plugin_id(),
+        ),
+    )
+    discovery = discover_classified_memory_store_plugins(
+        discover_entry_points=False,
+        explicit_plugins=(
+            InMemoryEntityTemporalMemoryStorePlugin,
+            _FakeEntityTemporalMemoryStorePlugin,
+        ),
+    )
+    catalog = MemoryStorePluginCatalog.from_discovery(discovery)
+    ctx = MemoryStoreMaterializationContext(
+        env=env,
+        tenant_id=None,
+        integration_profile=env.integration_profile,
+    )
+    store = materialize_entity_temporal_memory_store(
+        _FakeEntityTemporalMemoryStorePlugin.plugin_id(),
+        ctx,
+        catalog=catalog,
+    )
+    assert isinstance(store, _RecordingEntityStore)
+
+
+def test_plugin_resolution_invalid_provider_fails() -> None:
+    env = ApplicationEnvironmentProfile(
+        memory_profile=MemoryProfile(
+            enable_entity_graph_memory=True,
+            entity_temporal_memory_store_plugin_id="plugin.does.not.exist",
+        ),
+    )
+    discovery = discover_classified_memory_store_plugins(
+        discover_entry_points=False,
+        explicit_plugins=(InMemoryEntityTemporalMemoryStorePlugin,),
+    )
+    catalog = MemoryStorePluginCatalog.from_discovery(discovery)
+    ctx = MemoryStoreMaterializationContext(
+        env=env,
+        tenant_id=None,
+        integration_profile=env.integration_profile,
+    )
+    with pytest.raises(MemoryStorePluginResolutionError):
+        materialize_entity_temporal_memory_store("plugin.does.not.exist", ctx, catalog=catalog)
+
+
+def test_entity_graph_memory_disabled_returns_none() -> None:
+    env = ApplicationEnvironmentProfile(
+        memory_profile=MemoryProfile(enable_entity_graph_memory=False),
+    )
+    assert resolve_entity_temporal_memory_store(env) is None

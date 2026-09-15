@@ -16,7 +16,31 @@ from intergrax.memory.contracts.entity_temporal_memory import (
     entity_memory_relation_id_for_has_memory,
     entity_memory_user_entity_id,
 )
-from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
+from intergrax.memory.contracts.memory_models import MemoryKind, UserProfileMemoryEntry
+
+
+def _source_revision_stale(
+    stored_revision: int | None,
+    incoming_revision: int,
+) -> bool:
+    return stored_revision is not None and incoming_revision < stored_revision
+
+
+def _entity_payload_unchanged(existing: EntityRecord, incoming: EntityRecord) -> bool:
+    return (
+        existing.canonical_name == incoming.canonical_name
+        and existing.entity_type == incoming.entity_type
+        and existing.created_at == incoming.created_at
+        and existing.updated_at == incoming.updated_at
+        and existing.aliases == incoming.aliases
+        and existing.provenance == incoming.provenance
+        and existing.trust == incoming.trust
+        and existing.governance == incoming.governance
+        and existing.evidence_refs == incoming.evidence_refs
+        and existing.source_memory_id == incoming.source_memory_id
+        and existing.source_memory_revision == incoming.source_memory_revision
+        and existing.revision == incoming.revision
+    )
 
 
 class DefaultEntityMemoryIndexer:
@@ -28,10 +52,8 @@ class DefaultEntityMemoryIndexer:
     def index_memory_entry(
         self,
         scope: EntityMemoryScope,
-        entry: object,
+        entry: UserProfileMemoryEntry,
     ) -> None:
-        if not isinstance(entry, UserProfileMemoryEntry):
-            raise TypeError("entry must be UserProfileMemoryEntry")
         if entry.deleted:
             self.remove_memory_entry(scope, entry.entry_id)
             return
@@ -48,27 +70,30 @@ class DefaultEntityMemoryIndexer:
         )
         memory_entity_id = entity_memory_entity_id_for_entry(scope, entry.entry_id)
         existing = self._store.get_entity(scope, memory_entity_id)
-        revision = entry.revision
-        if existing is not None:
-            revision = max(existing.revision, entry.revision)
+        if existing is not None and _source_revision_stale(
+            existing.source_memory_revision,
+            entry.revision,
+        ):
+            return
 
-        self._store.upsert_entity(
-            scope,
-            EntityRecord(
-                entity_id=memory_entity_id,
-                entity_type=EntityTypeRef(entity_type),
-                canonical_name=content[:120],
-                revision=revision,
-                created_at=entry.created_at,
-                updated_at=entry.updated_at,
-                provenance=entry.provenance,
-                trust=entry.trust,
-                governance=entry.governance,
-                evidence_refs=entry.evidence_refs,
-                source_memory_id=entry.entry_id,
-                source_memory_revision=entry.revision,
-            ),
+        incoming_entity = EntityRecord(
+            entity_id=memory_entity_id,
+            entity_type=EntityTypeRef(entity_type),
+            canonical_name=content[:120],
+            revision=entry.revision,
+            created_at=entry.created_at,
+            updated_at=entry.updated_at,
+            provenance=entry.provenance,
+            trust=entry.trust,
+            governance=entry.governance,
+            evidence_refs=entry.evidence_refs,
+            source_memory_id=entry.entry_id,
+            source_memory_revision=entry.revision,
         )
+        if existing is not None and _entity_payload_unchanged(existing, incoming_entity):
+            return
+
+        self._store.upsert_entity(scope, incoming_entity)
 
         user_entity_id = entity_memory_user_entity_id(scope)
         user_existing = self._store.get_entity(scope, user_entity_id)

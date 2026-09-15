@@ -5,10 +5,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from intergrax.memory.contracts.entity_temporal_memory import (
+    EntityEnumerationCapability,
     EntityMemoryScope,
     EntityRecord,
     EntityRelationDirection,
@@ -18,9 +19,7 @@ from intergrax.memory.contracts.entity_temporal_memory import (
     EntityTypeRef,
     RelationTypeRef,
 )
-from intergrax.memory.stores.in_memory_entity_temporal_memory_store import (
-    InMemoryEntityTemporalMemoryStore,
-)
+from intergrax.utils.time_provider import SystemTimeProvider, TimeProvider
 
 _LEGACY_TENANT_ID = "legacy-default"
 
@@ -51,14 +50,14 @@ class EntityGraphMemoryStore:
 
     def __init__(
         self,
-        backend: EntityTemporalMemoryStore | None = None,
+        backend: EntityTemporalMemoryStore,
         *,
         tenant_id: str = _LEGACY_TENANT_ID,
+        time_provider: TimeProvider | None = None,
     ) -> None:
-        self._backend: EntityTemporalMemoryStore = (
-            backend if backend is not None else InMemoryEntityTemporalMemoryStore()
-        )
+        self._backend = backend
         self._tenant_id = tenant_id
+        self._time_provider = time_provider or SystemTimeProvider()
 
     @property
     def entity_temporal_store(self) -> EntityTemporalMemoryStore:
@@ -99,7 +98,7 @@ class EntityGraphMemoryStore:
         as_of: datetime | None = None,
     ) -> List[EntityNode]:
         scope = EntityMemoryScope(tenant_id=self._tenant_id)
-        reference = as_of or datetime(2100, 1, 1, tzinfo=timezone.utc)
+        reference = as_of if as_of is not None else self._time_provider.utc_now()
         result = self._backend.query_relations(
             scope,
             EntityRelationQuery(
@@ -130,7 +129,7 @@ class EntityGraphMemoryStore:
         return nodes
 
     def list_nodes(self) -> List[EntityNode]:
-        if not isinstance(self._backend, InMemoryEntityTemporalMemoryStore):
+        if not isinstance(self._backend, EntityEnumerationCapability):
             return []
         scope = EntityMemoryScope(tenant_id=self._tenant_id)
         nodes: List[EntityNode] = []

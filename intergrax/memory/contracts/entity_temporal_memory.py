@@ -16,6 +16,23 @@ from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryRecordTrust,
     parse_memory_record_timestamp,
 )
+from intergrax.memory.contracts.temporal_chronology import (
+    memory_chronological_ordinal,
+    memory_timestamps_same_awareness,
+)
+from intergrax.memory.contracts.memory_models import UserProfileMemoryEntry
+
+
+def _require_matching_timestamp_awareness(
+    left: datetime,
+    right: datetime,
+    *,
+    context: str,
+) -> None:
+    if not memory_timestamps_same_awareness(left, right):
+        raise EntityTemporalMemoryViolation(
+            f"{context}: timezone-aware and naive timestamps are not comparable"
+        )
 
 __all__ = [
     "EntityMemoryIndexer",
@@ -29,6 +46,7 @@ __all__ = [
     "EntityTemporalMemoryNotFound",
     "EntityTemporalMemoryStore",
     "EntityTemporalMemoryViolation",
+    "EntityEnumerationCapability",
     "EntityTypeRef",
     "RelationTypeRef",
     "entity_memory_entity_id_for_entry",
@@ -53,7 +71,11 @@ class EntityTemporalMemoryViolation(ValueError, EntityTemporalMemoryError):
 
 @dataclass(frozen=True, slots=True)
 class EntityMemoryScope:
-    """Tenant-isolated scope for entity/temporal memory (canonical tenant authority)."""
+    """Entity/temporal projection scope.
+
+    Storage isolation authority is ``tenant_id`` only. ``user_id`` and ``workspace_id`` are
+    domain context qualifiers; derived entity ids embed tenant/user to avoid collisions.
+    """
 
     tenant_id: str
     user_id: str | None = None
@@ -135,12 +157,13 @@ class EntityRelationRecord:
         if self.valid_from and self.valid_until:
             from_dt = parse_memory_record_timestamp("valid_from", self.valid_from)
             until_dt = parse_memory_record_timestamp("valid_until", self.valid_until)
-            if from_dt.tzinfo is not None and until_dt.tzinfo is not None:
-                if from_dt > until_dt:
-                    raise EntityTemporalMemoryViolation("valid_from must not be after valid_until")
-            elif from_dt.tzinfo is None and until_dt.tzinfo is None:
-                if from_dt > until_dt:
-                    raise EntityTemporalMemoryViolation("valid_from must not be after valid_until")
+            _require_matching_timestamp_awareness(
+                from_dt,
+                until_dt,
+                context="relation valid_from/valid_until",
+            )
+            if from_dt > until_dt:
+                raise EntityTemporalMemoryViolation("valid_from must not be after valid_until")
 
 
 class EntityRelationDirection(str, Enum):
@@ -169,25 +192,49 @@ class EntityRelationResult:
     relations: tuple[EntityRelationRecord, ...]
 
 
+def _relation_bound_datetimes(
+    relation: EntityRelationRecord,
+) -> tuple[datetime | None, datetime | None]:
+    from_dt: datetime | None = None
+    until_dt: datetime | None = None
+    if relation.valid_from:
+        from_dt = parse_memory_record_timestamp("valid_from", relation.valid_from)
+    if relation.valid_until:
+        until_dt = parse_memory_record_timestamp("valid_until", relation.valid_until)
+    if from_dt is not None and until_dt is not None:
+        _require_matching_timestamp_awareness(
+            from_dt,
+            until_dt,
+            context="relation valid_from/valid_until",
+        )
+    return from_dt, until_dt
+
+
+def _require_as_of_compatible_with_bounds(
+    as_of: datetime,
+    from_dt: datetime | None,
+    until_dt: datetime | None,
+) -> None:
+    bound: datetime | None = from_dt if from_dt is not None else until_dt
+    if bound is None:
+        return
+    _require_matching_timestamp_awareness(as_of, bound, context="as_of vs relation bounds")
+
+
 def is_entity_relation_active_at(
     relation: EntityRelationRecord,
     *,
     as_of: datetime,
 ) -> bool:
     """Return True when relation is active at ``as_of`` (exclusive valid_until)."""
-    if as_of.tzinfo is None and (
-        (relation.valid_from and parse_memory_record_timestamp("valid_from", relation.valid_from).tzinfo)
-        or (relation.valid_until and parse_memory_record_timestamp("valid_until", relation.valid_until).tzinfo)
-    ):
-        raise EntityTemporalMemoryViolation(
-            "as_of must be timezone-aware when relation bounds are aware"
-        )
-    if relation.valid_from:
-        from_dt = parse_memory_record_timestamp("valid_from", relation.valid_from)
+    from_dt, until_dt = _relation_bound_datetimes(relation)
+    _require_as_of_compatible_with_bounds(as_of, from_dt, until_dt)
+    if from_dt is not None:
+        _require_matching_timestamp_awareness(as_of, from_dt, context="as_of vs valid_from")
         if as_of < from_dt:
             return False
-    if relation.valid_until:
-        until_dt = parse_memory_record_timestamp("valid_until", relation.valid_until)
+    if until_dt is not None:
+        _require_matching_timestamp_awareness(as_of, until_dt, context="as_of vs valid_until")
         if as_of >= until_dt:
             return False
     return True
@@ -199,10 +246,7 @@ def order_entity_relations_deterministic(
     def sort_key(item: EntityRelationRecord) -> tuple[float, str]:
         if item.valid_from:
             from_dt = parse_memory_record_timestamp("valid_from", item.valid_from)
-            if from_dt.tzinfo is None:
-                primary = from_dt.timestamp()
-            else:
-                primary = from_dt.timestamp()
+            primary = memory_chronological_ordinal(from_dt)
         else:
             primary = float("-inf")
         return (-primary, item.relation_id)
@@ -262,13 +306,20 @@ class EntityTemporalMemoryStore(Protocol):
 
 
 @runtime_checkable
+class EntityEnumerationCapability(Protocol):
+    """Optional capability for listing entities in a tenant scope (legacy enumeration)."""
+
+    def list_entities(self, scope: EntityMemoryScope) -> tuple[EntityRecord, ...]: ...
+
+
+@runtime_checkable
 class EntityMemoryIndexer(Protocol):
     """Indexes canonical memory records into entity/temporal projection."""
 
     def index_memory_entry(
         self,
         scope: EntityMemoryScope,
-        entry: object,
+        entry: UserProfileMemoryEntry,
     ) -> None: ...
 
     def remove_memory_entry(
