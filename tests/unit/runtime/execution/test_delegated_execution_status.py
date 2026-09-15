@@ -17,6 +17,7 @@ from intergrax.contracts.delegated_execution_control import (
     DelegatedExecutionControlOperation,
     DelegatedExecutionControlOutcomeCategory,
     DelegatedExecutionControlRequest,
+    DelegatedExecutionDurableControlOutcomeCategory,
     delegated_control_outcome,
 )
 from intergrax.contracts.delegated_execution_invocation_binding import (
@@ -46,7 +47,11 @@ from intergrax.contracts.delegated_execution_status import (
     DelegatedExecutionStatusRequest,
 )
 from intergrax.contracts.delegated_invocation_correlation import (
+    DELEGATED_INVOCATION_CORRELATION_INTEGRITY_FAILURE_MESSAGE,
+    DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE,
+    DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
     DelegatedInvocationCorrelationIntegrityError,
+    DelegatedInvocationCorrelationNotFoundError,
     DelegatedInvocationCorrelationPersistenceError,
     DelegatedInvocationCorrelationRecord,
 )
@@ -501,7 +506,12 @@ async def test_s2c2_t14_durable_control_lookup() -> None:
         binding.execution_id,
         DelegatedExecutionControlOperation.CANCEL,
     )
-    assert outcome.category is DelegatedExecutionControlOutcomeCategory.ACCEPTED
+    assert (
+        outcome.category
+        is DelegatedExecutionDurableControlOutcomeCategory.RESOLVED_CONTROL
+    )
+    assert outcome.control_outcome is not None
+    assert outcome.control_outcome.category is DelegatedExecutionControlOutcomeCategory.ACCEPTED
     assert len(provider.cancel_calls) == 1
     assert (
         provider.cancel_calls[0].invocation_binding.execution_id == binding.execution_id
@@ -628,3 +638,95 @@ async def test_correlation_persistence_unavailable_typed() -> None:
 def test_status_contract_frozen_model() -> None:
     source = _STATUS_CONTRACT.read_text(encoding="utf-8")
     assert "dict[str, Any]" not in source
+
+
+_DURABLE_CONTROL_MODULE = (
+    _REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "execution"
+    / "delegated_execution"
+    / "durable_control_service.py"
+)
+_RESOLVER_CONTRACT = (
+    _REPO_ROOT / "intergrax" / "contracts" / "delegated_execution_provider_resolver.py"
+)
+
+
+def test_c1_t1_correlation_not_found_typed() -> None:
+    store = InMemoryDelegatedInvocationCorrelationStore()
+    service = DelegatedInvocationCorrelationService(store)
+    with pytest.raises(DelegatedInvocationCorrelationNotFoundError):
+        service.load_binding_by_execution_id(mint_execution_id())
+
+
+@pytest.mark.asyncio
+async def test_c1_t5_status_failure_message_sanitized() -> None:
+    class LeakyLookup:
+        def load_binding_by_execution_id(self, execution_id: object):
+            raise DelegatedInvocationCorrelationPersistenceError(
+                "postgres password=secret internal-node-4",
+            )
+
+    provider = FakeStatusProvider()
+    service = DelegatedExecutionStatusReadService(
+        LeakyLookup(),
+        MappingDelegatedExecutionProviderResolver({provider.provider_id: provider}),
+        clock=lambda: _T1,
+    )
+    outcome = await service.read_status_by_execution_id(mint_execution_id())
+    assert "password=secret" not in (outcome.failure_message or "")
+    assert (
+        outcome.failure_message
+        == DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE
+    )
+
+
+@pytest.mark.asyncio
+async def test_c1_t2_status_not_found_stable_message() -> None:
+    store = InMemoryDelegatedInvocationCorrelationStore()
+    correlation = DelegatedInvocationCorrelationService(store)
+    provider = FakeStatusProvider()
+    service = _status_service(correlation, provider)
+    outcome = await service.read_status_by_execution_id(mint_execution_id())
+    assert outcome.failure_message == DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE
+
+
+@pytest.mark.asyncio
+async def test_c1_t3_status_integrity_stable_message() -> None:
+    class BrokenLookup:
+        def load_binding_by_execution_id(self, execution_id: object):
+            raise DelegatedInvocationCorrelationIntegrityError("binding digest invalid")
+
+    provider = FakeStatusProvider()
+    service = DelegatedExecutionStatusReadService(
+        BrokenLookup(),
+        MappingDelegatedExecutionProviderResolver({provider.provider_id: provider}),
+        clock=lambda: _T1,
+    )
+    outcome = await service.read_status_by_execution_id(mint_execution_id())
+    assert (
+        outcome.failure_message
+        == DELEGATED_INVOCATION_CORRELATION_INTEGRITY_FAILURE_MESSAGE
+    )
+    assert "binding digest" not in (outcome.failure_message or "")
+
+
+def test_c1_t17_resolver_contract_no_any() -> None:
+    source = _RESOLVER_CONTRACT.read_text(encoding="utf-8")
+    assert "Any" not in source
+
+
+def test_c1_t22_durable_control_no_synthetic_tokens() -> None:
+    source = _DURABLE_CONTROL_MODULE.read_text(encoding="utf-8")
+    forbidden = (
+        "synthetic",
+        "_SYNTHETIC",
+        "mint_execution_id",
+        "mint_run_id",
+        "mint_attempt_id",
+        "mint_delegated_execution_invocation_binding",
+        "ProviderInvocation(",
+    )
+    for token in forbidden:
+        assert token not in source

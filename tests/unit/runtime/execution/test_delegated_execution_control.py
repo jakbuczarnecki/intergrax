@@ -18,8 +18,20 @@ from intergrax.contracts.delegated_execution_control import (
     DelegatedExecutionControlOutcome,
     DelegatedExecutionControlOutcomeCategory,
     DelegatedExecutionControlRequest,
+    DelegatedExecutionDurableControlOutcomeCategory,
     DelegatedExecutionInterruptProvider,
     delegated_control_outcome,
+)
+from intergrax.contracts.delegated_execution_provider_resolver import (
+    DelegatedExecutionProviderResolver,
+)
+from intergrax.contracts.delegated_invocation_correlation import (
+    DELEGATED_INVOCATION_CORRELATION_INTEGRITY_FAILURE_MESSAGE,
+    DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE,
+    DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
+    DelegatedInvocationCorrelationIntegrityError,
+    DelegatedInvocationCorrelationNotFoundError,
+    DelegatedInvocationCorrelationPersistenceError,
 )
 from intergrax.contracts.delegated_execution_invocation_binding import (
     DelegatedExecutionInvocationBinding,
@@ -53,8 +65,20 @@ from intergrax.contracts.provider_invocation import (
 from intergrax.runtime.execution.delegated_execution.control_service import (
     DelegatedExecutionControlService,
 )
+from intergrax.runtime.execution.delegated_execution.correlation_persistence import (
+    InMemoryDelegatedInvocationCorrelationStore,
+)
+from intergrax.runtime.execution.delegated_execution.correlation_service import (
+    DelegatedInvocationCorrelationService,
+)
+from intergrax.runtime.execution.delegated_execution.durable_control_service import (
+    DelegatedExecutionDurableControlService,
+)
 from intergrax.runtime.execution.delegated_execution.local_provider import (
     LocalDelegatedExecutionProvider,
+)
+from intergrax.runtime.execution.delegated_execution.provider_resolver import (
+    MappingDelegatedExecutionProviderResolver,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -67,6 +91,17 @@ _CONTROL_SERVICE_MODULE = (
     / "execution"
     / "delegated_execution"
     / "control_service.py"
+)
+_DURABLE_CONTROL_MODULE = (
+    _REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "execution"
+    / "delegated_execution"
+    / "durable_control_service.py"
+)
+_RESOLVER_CONTRACT = (
+    _REPO_ROOT / "intergrax" / "contracts" / "delegated_execution_provider_resolver.py"
 )
 _BINDING_MODULE = (
     _REPO_ROOT / "intergrax" / "contracts" / "delegated_execution_invocation_binding.py"
@@ -781,3 +816,216 @@ def test_c1_architecture_gate_binding_no_reflection() -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             assert node.func.id not in forbidden
+
+
+class _TrackingResolver(DelegatedExecutionProviderResolver):
+    def __init__(self, provider: FakeControlProvider) -> None:
+        self._provider = provider
+        self.resolve_calls = 0
+
+    def resolve(self, provider_id: str):
+        self.resolve_calls += 1
+        if provider_id == self._provider.provider_id:
+            return self._provider
+        return None
+
+
+def _durable_service(
+    correlation: DelegatedInvocationCorrelationService,
+    provider: FakeControlProvider,
+) -> DelegatedExecutionDurableControlService:
+    return DelegatedExecutionDurableControlService(
+        correlation,
+        MappingDelegatedExecutionProviderResolver({provider.provider_id: provider}),
+    )
+
+
+def _persist_control_binding(
+    provider: FakeControlProvider,
+) -> tuple[DelegatedInvocationCorrelationService, DelegatedExecutionInvocationBinding]:
+    binding = _control_request(
+        provider_id=provider.provider_id,
+        operation=DelegatedExecutionControlOperation.CANCEL,
+    ).invocation_binding
+    store = InMemoryDelegatedInvocationCorrelationStore()
+    correlation = DelegatedInvocationCorrelationService(store)
+    correlation.persist_binding(binding, persisted_at=_T0)
+    return correlation, binding
+
+
+@pytest.mark.asyncio
+async def test_s2c2_c1_t6_durable_control_not_found() -> None:
+    provider = FakeControlProvider()
+    correlation = DelegatedInvocationCorrelationService(
+        InMemoryDelegatedInvocationCorrelationStore(),
+    )
+    durable = _durable_service(correlation, provider)
+    outcome = await durable.apply_control_by_execution_id(
+        mint_execution_id(),
+        DelegatedExecutionControlOperation.CANCEL,
+    )
+    assert (
+        outcome.category
+        is DelegatedExecutionDurableControlOutcomeCategory.CORRELATION_NOT_FOUND
+    )
+    assert outcome.failure_message == DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE
+    assert provider._cancel_calls == []
+
+
+@pytest.mark.asyncio
+async def test_s2c2_c1_t7_durable_control_integrity_failure() -> None:
+    provider = FakeControlProvider()
+
+    class BrokenLookup:
+        def load_binding_by_execution_id(self, execution_id: object):
+            raise DelegatedInvocationCorrelationIntegrityError("corrupt")
+
+    durable = DelegatedExecutionDurableControlService(
+        BrokenLookup(),
+        MappingDelegatedExecutionProviderResolver({provider.provider_id: provider}),
+    )
+    outcome = await durable.apply_control_by_execution_id(
+        mint_execution_id(),
+        DelegatedExecutionControlOperation.CANCEL,
+    )
+    assert (
+        outcome.category
+        is DelegatedExecutionDurableControlOutcomeCategory.CORRELATION_INTEGRITY_FAILURE
+    )
+    assert (
+        outcome.failure_message
+        == DELEGATED_INVOCATION_CORRELATION_INTEGRITY_FAILURE_MESSAGE
+    )
+    assert provider._cancel_calls == []
+
+
+@pytest.mark.asyncio
+async def test_s2c2_c1_t8_durable_control_persistence_failure() -> None:
+    provider = FakeControlProvider()
+
+    class BrokenLookup:
+        def load_binding_by_execution_id(self, execution_id: object):
+            raise DelegatedInvocationCorrelationPersistenceError("down")
+
+    durable = DelegatedExecutionDurableControlService(
+        BrokenLookup(),
+        MappingDelegatedExecutionProviderResolver({provider.provider_id: provider}),
+    )
+    outcome = await durable.apply_control_by_execution_id(
+        mint_execution_id(),
+        DelegatedExecutionControlOperation.CANCEL,
+    )
+    assert (
+        outcome.category
+        is DelegatedExecutionDurableControlOutcomeCategory.CORRELATION_PERSISTENCE_UNAVAILABLE
+    )
+    assert provider._cancel_calls == []
+
+
+@pytest.mark.asyncio
+async def test_s2c2_c1_t11_resolver_not_called_on_lookup_failure() -> None:
+    provider = FakeControlProvider()
+    resolver = _TrackingResolver(provider)
+
+    class BrokenLookup:
+        def load_binding_by_execution_id(self, execution_id: object):
+            raise DelegatedInvocationCorrelationNotFoundError(
+                DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE,
+            )
+
+    durable = DelegatedExecutionDurableControlService(BrokenLookup(), resolver)
+    await durable.apply_control_by_execution_id(
+        mint_execution_id(),
+        DelegatedExecutionControlOperation.CANCEL,
+    )
+    assert resolver.resolve_calls == 0
+    assert provider._cancel_calls == []
+
+
+@pytest.mark.asyncio
+async def test_s2c2_c1_t13_real_durable_control_success() -> None:
+    provider = FakeControlProvider()
+    correlation, binding = _persist_control_binding(provider)
+    durable = _durable_service(correlation, provider)
+    outcome = await durable.apply_control_by_execution_id(
+        binding.execution_id,
+        DelegatedExecutionControlOperation.CANCEL,
+    )
+    assert (
+        outcome.category
+        is DelegatedExecutionDurableControlOutcomeCategory.RESOLVED_CONTROL
+    )
+    assert outcome.control_outcome is not None
+    assert outcome.control_outcome.category is DelegatedExecutionControlOutcomeCategory.ACCEPTED
+    assert len(provider._cancel_calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_s2c2_c1_t14_provider_unavailable_with_real_binding() -> None:
+    provider = FakeControlProvider(provider_id="bound-provider")
+    correlation, binding = _persist_control_binding(provider)
+    durable = DelegatedExecutionDurableControlService(
+        correlation,
+        MappingDelegatedExecutionProviderResolver({}),
+    )
+    outcome = await durable.apply_control_by_execution_id(
+        binding.execution_id,
+        DelegatedExecutionControlOperation.CANCEL,
+    )
+    assert (
+        outcome.category
+        is DelegatedExecutionDurableControlOutcomeCategory.RESOLVED_CONTROL
+    )
+    assert outcome.control_outcome is not None
+    assert (
+        outcome.control_outcome.category
+        is DelegatedExecutionControlOutcomeCategory.PROVIDER_BINDING_MISMATCH
+    )
+
+
+@pytest.mark.asyncio
+async def test_s2c2_c1_t15_provider_id_mismatch_fail_closed() -> None:
+    bound = FakeControlProvider(provider_id="bound-provider")
+    resolved = FakeControlProvider(provider_id="other-provider")
+    correlation, binding = _persist_control_binding(bound)
+    durable = DelegatedExecutionDurableControlService(
+        correlation,
+        MappingDelegatedExecutionProviderResolver(
+            {bound.provider_id: resolved},
+        ),
+    )
+    outcome = await durable.apply_control_by_execution_id(
+        binding.execution_id,
+        DelegatedExecutionControlOperation.CANCEL,
+    )
+    assert (
+        outcome.control_outcome is not None
+        and outcome.control_outcome.category
+        is DelegatedExecutionControlOutcomeCategory.PROVIDER_BINDING_MISMATCH
+    )
+    assert bound._cancel_calls == []
+    assert resolved._cancel_calls == []
+
+
+def test_s2c2_c1_t18_custom_resolver_contract() -> None:
+    provider = FakeControlProvider()
+    resolver = _TrackingResolver(provider)
+    assert resolver.resolve(provider.provider_id) is provider
+
+
+def test_s2c2_c1_t20_durable_control_no_reflection() -> None:
+    tree = ast.parse(_DURABLE_CONTROL_MODULE.read_text(encoding="utf-8"))
+    forbidden = {"hasattr", "getattr", "setattr"}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            assert node.func.id not in forbidden
+
+
+def test_s2c2_c1_t21_durable_control_no_global_registry() -> None:
+    source = _DURABLE_CONTROL_MODULE.read_text(encoding="utf-8")
+    assert "global " not in source
+    assert "Registry" not in source
+
+
+def test_s2c2_c1_t17_resolver_abi_no_any() -> None:
+    assert "Any" not in _RESOLVER_CONTRACT.read_text(encoding="utf-8")

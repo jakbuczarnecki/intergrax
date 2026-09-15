@@ -574,6 +574,8 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2C1-C1 — correlation failure normalization and explicit durability policy = CLOSED** (all post-dispatch correlation persistence/conflict/integrity errors normalize to typed ``PLATFORM_FAILURE``; validated provider evidence preserved; required durability fails composition when durable store missing).
 
+**P2.1-S2C2-C1 — durable control truthfulness, typed correlation failures and resolver ABI hardening = CLOSED** (no synthetic binding/identity on lookup failure; ``DelegatedInvocationCorrelationNotFoundError``; platform-owned failure messages; ``DelegatedExecutionDurableControlOutcome``; ``DelegatedExecutionProviderHandle`` resolver ABI without ``Any``).
+
 **P2.1-S2C2 — provider-neutral delegated status read model and durable lookup = CLOSED** (``ExecutionId`` → durable ``DelegatedInvocationCorrelationLookup`` → ``DelegatedExecutionStatusProvider`` → typed ``DelegatedExecutionStatusView``; ``supports_status_read`` capability; durable ``apply_control_by_execution_id`` reuses S2B control core).
 
 **P2.1-S2C = PARTIAL** (S2C1 + S2C2 CLOSED; list / continuation remain OPEN).

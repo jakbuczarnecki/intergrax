@@ -4,9 +4,29 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
-from intergrax.contracts.delegated_execution_provider import DelegatedExecutionProvider
+from intergrax.contracts.delegated_execution_provider import DelegatedExecutionCapabilities
+
+
+@runtime_checkable
+class DelegatedExecutionProviderHandle(Protocol):
+    """Minimal provider identity surface for status/control resolution."""
+
+    @property
+    def provider_id(self) -> str:
+        """Stable provider identifier."""
+        ...
+
+    @property
+    def provider_version(self) -> str:
+        """Provider implementation version."""
+        ...
+
+    @property
+    def capabilities(self) -> DelegatedExecutionCapabilities:
+        """Declared provider capabilities."""
+        ...
 
 
 @runtime_checkable
@@ -16,9 +36,12 @@ class DelegatedExecutionProviderResolver(Protocol):
     def resolve(
         self,
         provider_id: str,
-    ) -> DelegatedExecutionProvider[Any, Any] | None:
+    ) -> DelegatedExecutionProviderHandle | None:
         """Return the configured provider or ``None`` when not registered."""
         ...
 
 
-__all__ = ["DelegatedExecutionProviderResolver"]
+__all__ = [
+    "DelegatedExecutionProviderHandle",
+    "DelegatedExecutionProviderResolver",
+]

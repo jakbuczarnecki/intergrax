@@ -5,10 +5,9 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
 
-from intergrax.contracts.delegated_execution_provider import DelegatedExecutionProvider
 from intergrax.contracts.delegated_execution_provider_resolver import (
+    DelegatedExecutionProviderHandle,
     DelegatedExecutionProviderResolver,
 )
 
@@ -20,14 +19,14 @@ class MappingDelegatedExecutionProviderResolver(DelegatedExecutionProviderResolv
 
     def __init__(
         self,
-        providers: Mapping[str, DelegatedExecutionProvider[Any, Any]],
+        providers: Mapping[str, DelegatedExecutionProviderHandle],
     ) -> None:
         self._providers = dict(providers)
 
     def resolve(
         self,
         provider_id: str,
-    ) -> DelegatedExecutionProvider[Any, Any] | None:
+    ) -> DelegatedExecutionProviderHandle | None:
         normalized = provider_id.strip()
         if not normalized:
             return None

@@ -11,8 +11,10 @@ from intergrax.contracts.delegated_execution_invocation_binding import (
     DelegatedExecutionInvocationBinding,
 )
 from intergrax.contracts.delegated_invocation_correlation import (
+    DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE,
     DelegatedInvocationCorrelationConflictError,
     DelegatedInvocationCorrelationIntegrityError,
+    DelegatedInvocationCorrelationNotFoundError,
     DelegatedInvocationCorrelationPersistenceError,
     DelegatedInvocationCorrelationRecord,
     DelegatedInvocationCorrelationStore,
@@ -83,8 +85,8 @@ class DelegatedInvocationCorrelationService(DelegatedInvocationCorrelationLookup
                 "delegated invocation correlation load failed",
             ) from exc
         if record is None:
-            raise DelegatedInvocationCorrelationIntegrityError(
-                "delegated invocation correlation not found",
+            raise DelegatedInvocationCorrelationNotFoundError(
+                DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE,
             )
         return record.binding
 

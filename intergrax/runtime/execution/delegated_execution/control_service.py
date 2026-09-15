@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-from typing import TypeVar
-
 from intergrax.contracts.delegated_execution_control import (
     DelegatedExecutionCancelProvider,
     DelegatedExecutionControlOperation,
@@ -16,13 +14,10 @@ from intergrax.contracts.delegated_execution_control import (
     delegated_control_outcome,
     provider_control_outcome_matches_request,
 )
-from intergrax.contracts.delegated_execution_provider import (
-    DelegatedExecutionProvider,
-    DelegatedExecutionTransportError,
+from intergrax.contracts.delegated_execution_provider import DelegatedExecutionTransportError
+from intergrax.contracts.delegated_execution_provider_resolver import (
+    DelegatedExecutionProviderHandle,
 )
-
-RequestT = TypeVar("RequestT")
-ResultT = TypeVar("ResultT")
 
 _UNSUPPORTED_MESSAGE = "provider does not advertise this control capability"
 _BINDING_MISMATCH_MESSAGE = "control request provider does not match bound provider"
@@ -44,7 +39,7 @@ class DelegatedExecutionControlService:
 
     def __init__(
         self,
-        provider: DelegatedExecutionProvider[RequestT, ResultT],
+        provider: DelegatedExecutionProviderHandle,
     ) -> None:
         self._provider = provider
 

@@ -23,7 +23,11 @@ from intergrax.contracts.delegated_execution_status import (
     provider_status_observation_matches_binding,
 )
 from intergrax.contracts.delegated_invocation_correlation import (
+    DELEGATED_INVOCATION_CORRELATION_INTEGRITY_FAILURE_MESSAGE,
+    DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE,
+    DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
     DelegatedInvocationCorrelationIntegrityError,
+    DelegatedInvocationCorrelationNotFoundError,
     DelegatedInvocationCorrelationPersistenceError,
 )
 from intergrax.contracts.execution_identity import ExecutionId, RunId, validate_execution_id
@@ -31,7 +35,6 @@ from intergrax.runtime.execution.delegated_execution.correlation_service import 
     DelegatedInvocationCorrelationLookup,
 )
 
-_CORRELATION_NOT_FOUND = "delegated invocation correlation not found"
 _UNSUPPORTED_MESSAGE = "provider does not advertise status read capability"
 _BINDING_MISMATCH_MESSAGE = "resolved provider does not match bound provider_id"
 _CONTRACT_MESSAGE = (
@@ -68,26 +71,26 @@ class DelegatedExecutionStatusReadService:
         normalized = validate_execution_id(execution_id)
         try:
             binding = self._correlation_lookup.load_binding_by_execution_id(normalized)
-        except DelegatedInvocationCorrelationIntegrityError as exc:
-            if str(exc) == _CORRELATION_NOT_FOUND:
-                return _status_failure(
-                    category=DelegatedExecutionStatusOutcomeCategory.CORRELATION_NOT_FOUND,
-                    execution_id=normalized,
-                    failure_code="CORRELATION_NOT_FOUND",
-                    failure_message=str(exc),
-                )
+        except DelegatedInvocationCorrelationNotFoundError:
+            return _status_failure(
+                category=DelegatedExecutionStatusOutcomeCategory.CORRELATION_NOT_FOUND,
+                execution_id=normalized,
+                failure_code="CORRELATION_NOT_FOUND",
+                failure_message=DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE,
+            )
+        except DelegatedInvocationCorrelationIntegrityError:
             return _status_failure(
                 category=DelegatedExecutionStatusOutcomeCategory.CORRELATION_INTEGRITY_FAILURE,
                 execution_id=normalized,
                 failure_code="CORRELATION_INTEGRITY_FAILURE",
-                failure_message=str(exc),
+                failure_message=DELEGATED_INVOCATION_CORRELATION_INTEGRITY_FAILURE_MESSAGE,
             )
-        except DelegatedInvocationCorrelationPersistenceError as exc:
+        except DelegatedInvocationCorrelationPersistenceError:
             return _status_failure(
                 category=DelegatedExecutionStatusOutcomeCategory.CORRELATION_PERSISTENCE_UNAVAILABLE,
                 execution_id=normalized,
                 failure_code="CORRELATION_PERSISTENCE_UNAVAILABLE",
-                failure_message=str(exc),
+                failure_message=DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
             )
 
         bound_provider_id = binding.provider_invocation.provider_id

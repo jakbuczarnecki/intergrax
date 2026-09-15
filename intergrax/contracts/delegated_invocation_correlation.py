@@ -28,6 +28,21 @@ class DelegatedInvocationCorrelationError(RuntimeError):
     """Base error for delegated invocation correlation persistence."""
 
 
+DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE: Final = (
+    "delegated invocation correlation was not found"
+)
+DELEGATED_INVOCATION_CORRELATION_INTEGRITY_FAILURE_MESSAGE: Final = (
+    "delegated invocation correlation failed integrity validation"
+)
+DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE: Final = (
+    "delegated invocation correlation storage is unavailable"
+)
+
+
+class DelegatedInvocationCorrelationNotFoundError(DelegatedInvocationCorrelationError):
+    """Raised when no durable correlation exists for the requested execution."""
+
+
 class DelegatedInvocationCorrelationConflictError(DelegatedInvocationCorrelationError):
     """Raised when a different provider invocation is bound to the same execution."""
 
@@ -118,8 +133,12 @@ class DelegatedInvocationCorrelationStore(ABC):
 
 
 __all__ = [
+    "DELEGATED_INVOCATION_CORRELATION_INTEGRITY_FAILURE_MESSAGE",
+    "DELEGATED_INVOCATION_CORRELATION_NOT_FOUND_MESSAGE",
+    "DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE",
     "DelegatedInvocationCorrelationCompositionError",
     "DelegatedInvocationCorrelationConflictError",
+    "DelegatedInvocationCorrelationNotFoundError",
     "DelegatedInvocationCorrelationDurabilityMode",
     "DelegatedInvocationCorrelationDurabilityPolicy",
     "DelegatedInvocationCorrelationError",
