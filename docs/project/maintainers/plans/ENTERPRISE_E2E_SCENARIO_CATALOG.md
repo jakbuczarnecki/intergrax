@@ -5,18 +5,24 @@
 **Selection status:** **FROZEN**  
 **Scenario count:** **30** (7 previously frozen · 23 newly frozen in v1 portfolio freeze)  
 **Last frozen:** 2026-09-14  
-**Task:** SCENARIO-CATALOG-FREEZE-30-DOCS-R1
+**Task:** SCENARIO-CATALOG-FREEZE-30-DOCS-R1 · **Authority ratification:** SCENARIO-CATALOG-FREEZE-30-DOCS-R2
 
 ---
 
 ## Authority and boundaries
 
+This file is the **Canonical Single Source of Truth (SSOT)** for the **selection-frozen Enterprise E2E Scenario Portfolio v1**: which problems are in the portfolio, catalog numbers **1–30**, slug identity, **Selection status: FROZEN**, and portfolio membership (7 previously frozen · 23 newly frozen).
+
 | Role | Document |
 |------|----------|
-| **Frozen problem portfolio (this file)** | Selected enterprise E2E problems for future design, quality gates, and proof work |
+| **Frozen problem portfolio (this file)** | Selection-frozen enterprise E2E problems for future design, quality gates, and proof work |
 | Framework / filesystem inventory | [`E2E_SCENARIO_FRAMEWORK_AUDIT.md`](../../architecture/E2E_SCENARIO_FRAMEWORK_AUDIT.md) |
 | Public in-development scenario presentation | [`PROOF_LIBRARY.md`](../../proofs/PROOF_LIBRARY.md) |
-| Per-package lifecycle truth | `platform_proofs/scenarios/<slug>/SCENARIO_SPEC.md` frontmatter |
+| **Current** per-package lifecycle | `platform_proofs/scenarios/<slug>/SCENARIO_SPEC.md` YAML frontmatter |
+
+**Current scenario lifecycle is never sourced from this catalog.** The authoritative current lifecycle is always the YAML frontmatter in `platform_proofs/scenarios/<slug>/SCENARIO_SPEC.md`.
+
+**This catalog is not authority for:** current scenario-package lifecycle, implementation status, executable status, verified status, or public proof acceptance.
 
 **This catalog is not:**
 
@@ -33,7 +39,7 @@ Adding, removing, or replacing a scenario after v1 freeze requires an explicit *
 | Term | Meaning in this catalog |
 |------|-------------------------|
 | **Selection status: FROZEN** | The **problem** is approved and frozen into portfolio v1 |
-| **Lifecycle** (separate column) | Platform Proof package stage from `SCENARIO_SPEC.md` when a package exists |
+| **Lifecycle at v1 freeze** (separate column) | Historical snapshot: `lifecycle` from `SCENARIO_SPEC.md` frontmatter **at portfolio v1 freeze** when a package existed; not updated when packages advance |
 | **No package** | No design package yet; frozen selection does not imply `create_scenario_proof.py` has been run |
 
 Frozen **does not** mean: implemented, initialized, executable, verified, production-ready, or proof-accepted.
@@ -73,7 +79,7 @@ A frozen scenario **must**:
 
 ## Frozen catalog (30)
 
-| # | Scenario | Problem (summary) | Slug | Package | Lifecycle (`SCENARIO_SPEC`) | Frozen in v1 |
+| # | Scenario | Problem (summary) | Slug | Package | Lifecycle at v1 freeze | Frozen in v1 |
 |---|----------|-------------------|------|---------|----------------------------|--------------|
 | 1 | AI Incident Investigation | Operational investigation with incomplete, conflicting, or misleading evidence; competing hypotheses, falsification, and **UNRESOLVED** as a valid outcome | `ai_incident_investigation` | Yes | `EXECUTABLE` | Previously frozen |
 | 2 | Strategic Decision Council / Decision Engine | Complex strategic decision requiring multiple perspectives, conflicting assessments, evidence, and an auditable final disposition | `strategic_decision_council` | Yes | `DESIGN` | Previously frozen |
@@ -106,7 +112,7 @@ A frozen scenario **must**:
 | 29 | Shadow / Rogue Agent Lifecycle | Many team-created agents lose owners, stale credentials, old models, or operate outside governance | `shadow_rogue_agent_lifecycle` | No | — | Newly frozen |
 | 30 | Emergency Product Recall / Stop-Ship | Defective batch requires tracing dependents, stopping sale/ship, and auditable safe state across systems | `emergency_product_recall_stop_ship` | No | — | Newly frozen |
 
-**Lifecycle column** reflects `SCENARIO_SPEC.md` YAML at v1 freeze time. Reconcile from package frontmatter after any lifecycle change; do not infer lifecycle from selection status.
+**Lifecycle at v1 freeze** is a **historical snapshot** only: values were taken from `SCENARIO_SPEC.md` YAML when portfolio v1 was frozen (**Last frozen:** 2026-09-14). Do **not** update this column when package lifecycle changes later. For **current** lifecycle, read `platform_proofs/scenarios/<slug>/SCENARIO_SPEC.md` frontmatter. Do not infer lifecycle from selection status or from this snapshot.
 
 ---
 
@@ -150,4 +156,4 @@ After v1 freeze:
 
 1. Open an explicit portfolio change (addendum or v2) with rationale.
 2. Update this table and counts; preserve historical rows or dated addenda per [`PRODUCT_PORTFOLIO_SELECTION.md`](../product-portfolio/PRODUCT_PORTFOLIO_SELECTION.md) integrity pattern.
-3. Do **not** silently alter lifecycle in this file—read from `SCENARIO_SPEC.md` or mark package absent.
+3. Do **not** rewrite lifecycle snapshot cells to mirror current package state; portfolio addenda may record a **new** freeze snapshot date if governance requires it. For live lifecycle, use `SCENARIO_SPEC.md` only.

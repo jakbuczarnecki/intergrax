@@ -29,7 +29,7 @@ Execution uses the shared **scenario runtime baseline** (`intergrax.applications
 
 **Related but separate:** `testing_support/decision_e2e/` hosts **behavioral / model-matrix qualification** (e.g. DS-E2E-15J tracks, local AI incident qualification). That layer consumes scenario application code paths but is **not** the authoring scaffold for new Platform Proof scenarios.
 
-**ERL-QUAL-004** is implemented as scenario package `enterprise_payment_uncertainty_recovery` (catalog #4 in the frozen portfolio). A separate **design-only** payment-adjacent template, `payment_exception_recovery`, is **not** catalog #4 and is **not** part of frozen portfolio v1—see [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](../maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md). ERL program context: [`ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md`](../maintainers/plans/ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md).
+**ERL-QUAL-004** exists as scenario package `enterprise_payment_uncertainty_recovery` with lifecycle **IMPLEMENTATION_INITIALIZED** (catalog #4 in the frozen portfolio). A separate **design-only** payment-adjacent template, `payment_exception_recovery`, is **not** catalog #4 and is **not** part of frozen portfolio v1—see [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](../maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md). ERL program context: [`ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md`](../maintainers/plans/ENTERPRISE_RELIABILITY_LAYER_IMPLEMENTATION_PLAN.md).
 
 ---
 
