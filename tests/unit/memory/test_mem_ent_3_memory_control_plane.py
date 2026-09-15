@@ -298,6 +298,33 @@ class _FakeMemoryControlPlane:
 
         return MemoryControlForgetResult(scope=scope.kind)
 
+    async def apply_memory_supersession(
+        self,
+        identity: RequestIdentity,
+        scope: MemoryControlScopeRef,
+        intent: object,
+    ) -> object:
+        from intergrax.memory.contracts.memory_control import MemoryControlSupersessionApplyResult
+        from intergrax.memory.contracts.memory_lifecycle import (
+            MemoryLifecycleDisposition,
+            MemoryLifecycleOperation,
+            MemoryLifecycleOutcome,
+        )
+
+        return MemoryControlSupersessionApplyResult(
+            scope=scope.kind,
+            superseded_memory_id="",
+            superseding_memory_id="",
+            lifecycle=MemoryLifecycleOutcome(
+                operation=MemoryLifecycleOperation.UPDATE,
+                disposition=MemoryLifecycleDisposition.COMPLETE,
+                user_id="",
+                memory_entity_ids=(),
+                primary_applied=True,
+                projection_evidence=(),
+            ),
+        )
+
     async def reconcile(
         self,
         identity: RequestIdentity,

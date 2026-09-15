@@ -5,7 +5,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
+from dataclasses import replace
 from typing import Optional, Dict, Any, List, Union
+
+from intergrax.memory.contracts.enterprise_memory_record import MemoryRecordLineage
 
 from intergrax.memory.user_profile_memory import (
     UserProfile,
@@ -536,6 +539,63 @@ class UserProfileManager:
         matched.modified = False
 
         return profile
+
+    async def apply_memory_supersession_with_lifecycle(
+        self,
+        user_id: str,
+        *,
+        superseded_memory_id: str,
+        superseding_memory_id: str,
+    ) -> UserProfileMemoryMutationResult:
+        """Apply reciprocal lineage supersession via primary store + projection lifecycle."""
+        if superseded_memory_id == superseding_memory_id:
+            raise ValueError("supersession cannot target the same memory id")
+
+        profile = await self._get_store_profile(user_id)
+        superseded: UserProfileMemoryEntry | None = None
+        superseding: UserProfileMemoryEntry | None = None
+        for entry in profile.memory_entries:
+            if entry.entry_id == superseded_memory_id:
+                superseded = entry
+            elif entry.entry_id == superseding_memory_id:
+                superseding = entry
+
+        if superseded is None or superseding is None:
+            missing = superseded_memory_id if superseded is None else superseding_memory_id
+            raise UserProfileMemoryEntryNotFoundError(missing)
+
+        superseded.lineage = replace(
+            superseded.lineage,
+            superseded_by_memory_id=superseding_memory_id,
+        )
+        superseding.lineage = replace(
+            superseding.lineage,
+            supersedes_memory_id=superseded_memory_id,
+        )
+        superseded.bump_revision_for_semantic_change()
+        superseding.bump_revision_for_semantic_change()
+        superseded.modified = True
+        superseding.modified = True
+
+        await self._save_store_profile(profile)
+
+        outcome = await self._memory_lifecycle.apply_after_primary_upsert(
+            operation=MemoryLifecycleOperation.UPDATE,
+            user_id=user_id,
+            entry=superseded,
+        )
+        self._memory_lifecycle.raise_if_partial(outcome)
+        outcome_b = await self._memory_lifecycle.apply_after_primary_upsert(
+            operation=MemoryLifecycleOperation.UPDATE,
+            user_id=user_id,
+            entry=superseding,
+        )
+        self._memory_lifecycle.raise_if_partial(outcome_b)
+
+        superseded.modified = False
+        superseding.modified = False
+
+        return UserProfileMemoryMutationResult(entry=superseding, lifecycle=outcome_b)
 
     async def remove_memory_entry_with_lifecycle(
         self,

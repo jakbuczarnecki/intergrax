@@ -19,6 +19,11 @@ from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryRecordTrust,
 )
 from intergrax.memory.contracts.memory_models import MemoryKind, UserProfileMemoryEntry
+from intergrax.memory.contracts.memory_recall import (
+    MemoryRankingScore,
+    MemoryRecallReasonCode,
+    MemorySupersessionIntent,
+)
 
 __all__ = [
     "EpisodicMemoryCapability",
@@ -44,6 +49,7 @@ __all__ = [
     "UserMemoryRecallCapabilityResult",
     "UserMemoryRememberCapabilityResult",
     "UserProfileMemoryCapability",
+    "MemoryControlSupersessionApplyResult",
     "user_memory_scope",
 ]
 
@@ -170,6 +176,17 @@ class MemoryControlRecallItem:
     content: str
     kind: MemoryKind
     score: float | None = None
+    score_breakdown: MemoryRankingScore | None = None
+    reason_codes: tuple[MemoryRecallReasonCode, ...] = ()
+    conflict_unresolved: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryControlSupersessionApplyResult:
+    scope: MemoryControlPlaneScope
+    superseded_memory_id: str
+    superseding_memory_id: str
+    lifecycle: MemoryLifecycleOutcome
 
 
 @dataclass(frozen=True, slots=True)
@@ -239,6 +256,12 @@ class UserProfileMemoryCapability(Protocol):
         user_id: str,
     ) -> MemoryReconciliationOutcome: ...
 
+    async def apply_memory_supersession(
+        self,
+        user_id: str,
+        intent: MemorySupersessionIntent,
+    ) -> MemoryControlSupersessionApplyResult: ...
+
 
 @runtime_checkable
 class TaskMemoryCapability(Protocol):
@@ -292,6 +315,13 @@ class MemoryControlPlane(Protocol):
         scope: MemoryControlScopeRef,
         request: MemoryControlForgetRequest,
     ) -> MemoryControlForgetResult: ...
+
+    async def apply_memory_supersession(
+        self,
+        identity: RequestIdentity,
+        scope: MemoryControlScopeRef,
+        intent: MemorySupersessionIntent,
+    ) -> MemoryControlSupersessionApplyResult: ...
 
     async def reconcile(
         self,

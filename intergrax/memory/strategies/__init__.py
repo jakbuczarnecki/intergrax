@@ -20,9 +20,22 @@ from intergrax.memory.strategies.models import (
     MemoryPromotionResult,
 )
 from intergrax.memory.strategies.protocols import (
+    MemoryConflictDetectionStrategy,
+    MemoryConflictResolutionStrategy,
     MemoryDeduplicationStrategy,
     MemoryExtractionStrategy,
     MemoryPromotionStrategy,
+    MemoryRankingStrategy,
+)
+from intergrax.memory.strategies.recall_models import (
+    MemoryConflict,
+    MemoryConflictKind,
+    MemoryConflictResolutionAction,
+    MemoryRankingScore,
+    MemoryRecallCandidate,
+    MemoryRecallReasonCode,
+    MemoryRetrievalSource,
+    MemorySupersessionIntent,
 )
 
 __all__ = [
@@ -38,6 +51,17 @@ __all__ = [
     "MemoryPromotionRequest",
     "MemoryPromotionResult",
     "MemoryPromotionStrategy",
+    "MemoryConflict",
+    "MemoryConflictDetectionStrategy",
+    "MemoryConflictKind",
+    "MemoryConflictResolutionAction",
+    "MemoryConflictResolutionStrategy",
+    "MemoryRankingScore",
+    "MemoryRankingStrategy",
+    "MemoryRecallCandidate",
+    "MemoryRecallReasonCode",
+    "MemoryRetrievalSource",
+    "MemorySupersessionIntent",
     "MemoryStrategyContractError",
     "MemoryStrategyError",
     "MemoryStrategyProviderError",

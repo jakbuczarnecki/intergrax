@@ -26,6 +26,7 @@ from intergrax.memory.contracts.memory_control import (
     MemoryControlRememberRequest,
     MemoryControlRememberResult,
     MemoryControlScopeRef,
+    MemoryControlSupersessionApplyResult,
     MemoryControlUnsupportedScope,
     TaskMemoryCapability,
     UserMemoryForgetCapabilityResult,
@@ -43,6 +44,19 @@ from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryTrustClass,
 )
 from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
+from intergrax.memory.recall.pipeline import run_recall_decision_pipeline
+from intergrax.memory.recall.retrieval import (
+    UserMemoryRecallRetrievalConfig,
+    candidates_from_profile_scan,
+    candidates_from_semantic_search,
+    semantic_retrieval_top_k,
+)
+from intergrax.memory.recall_strategy_bundle import (
+    MemoryRecallStrategySet,
+    build_default_memory_recall_strategies,
+)
+from intergrax.memory.strategies.errors import MemoryStrategyError
+from intergrax.memory.contracts.memory_recall import MemoryRecallReasonCode, MemorySupersessionIntent
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecyclePartialError
 
@@ -188,12 +202,79 @@ class UserProfileManagerMemoryCapability:
     async def reconcile_memory_projections(self, user_id: str) -> MemoryReconciliationOutcome:
         return await self._manager.reconcile_memory_projections(user_id)
 
+    async def apply_memory_supersession(
+        self,
+        user_id: str,
+        intent: MemorySupersessionIntent,
+    ) -> MemoryControlSupersessionApplyResult:
+        try:
+            mutation = await self._manager.apply_memory_supersession_with_lifecycle(
+                user_id,
+                superseded_memory_id=intent.superseded_memory_id,
+                superseding_memory_id=intent.superseding_memory_id,
+            )
+        except Exception as exc:
+            raise _map_capability_mutation_error(exc) from exc
+        if mutation.lifecycle.requires_reconciliation:
+            raise MemoryControlPartialLifecycleError(mutation.lifecycle)
+        return MemoryControlSupersessionApplyResult(
+            scope=MemoryControlPlaneScope.USER,
+            superseded_memory_id=intent.superseded_memory_id,
+            superseding_memory_id=intent.superseding_memory_id,
+            lifecycle=mutation.lifecycle,
+        )
+
+
+def _recall_strategies_or_default(
+    recall: MemoryRecallStrategySet | None,
+) -> MemoryRecallStrategySet:
+    return recall if recall is not None else build_default_memory_recall_strategies()
+
+
+def _pipeline_to_recall_result(
+    pipeline_result: object,
+    *,
+    scope: MemoryControlPlaneScope,
+    used_semantic: bool,
+    reason: str,
+) -> MemoryControlRecallResult:
+    from intergrax.memory.recall.pipeline import MemoryRecallPipelineResult
+
+    if not isinstance(pipeline_result, MemoryRecallPipelineResult):
+        raise MemoryControlBackendError("invalid recall pipeline result")
+    unresolved = pipeline_result.unresolved_conflict_entry_ids
+    items: list[MemoryControlRecallItem] = []
+    for ranked in pipeline_result.ranked:
+        record = ranked.candidate.record
+        reason_codes = list(ranked.reason_codes)
+        if record.entry_id in unresolved:
+            reason_codes.append(MemoryRecallReasonCode.CONFLICT_UNRESOLVED)
+        items.append(
+            MemoryControlRecallItem(
+                entry_id=record.entry_id,
+                content=record.content,
+                kind=record.kind,
+                score=ranked.score.total,
+                score_breakdown=ranked.score,
+                reason_codes=tuple(reason_codes),
+                conflict_unresolved=record.entry_id in unresolved,
+            )
+        )
+    return MemoryControlRecallResult(
+        scope=scope,
+        items=tuple(items),
+        used_semantic=used_semantic,
+        reason=reason,
+    )
+
 
 @dataclass(slots=True)
 class DefaultMemoryControlPlane:
     user_profile: UserProfileMemoryCapability | None = None
     task_memory: TaskMemoryCapability | None = None
     episodic: EpisodicMemoryCapability | None = None
+    recall_strategies: MemoryRecallStrategySet | None = None
+    recall_retrieval_config: UserMemoryRecallRetrievalConfig | None = None
 
     async def remember(
         self,
@@ -220,6 +301,29 @@ class DefaultMemoryControlPlane:
         if scope.kind is MemoryControlPlaneScope.SESSION:
             return await self._recall_session(scope, request)
         raise MemoryControlUnsupportedScope(f"unsupported scope for recall: {scope.kind.value}")
+
+    async def apply_memory_supersession(
+        self,
+        identity: RequestIdentity,
+        scope: MemoryControlScopeRef,
+        intent: MemorySupersessionIntent,
+    ) -> MemoryControlSupersessionApplyResult:
+        _assert_scope_authorized(identity, scope)
+        if scope.kind is not MemoryControlPlaneScope.USER:
+            raise MemoryControlUnsupportedScope(
+                f"unsupported scope for supersession apply: {scope.kind.value}"
+            )
+        if self.user_profile is None:
+            raise MemoryControlUnsupportedScope("user profile memory capability not configured")
+        user_id = scope.user_id or ""
+        try:
+            return await self.user_profile.apply_memory_supersession(user_id, intent)
+        except MemoryControlPartialLifecycleError:
+            raise
+        except MemoryControlBackendError:
+            raise
+        except Exception as exc:
+            raise MemoryControlBackendError(str(exc)) from exc
 
     async def forget(
         self,
@@ -310,66 +414,63 @@ class DefaultMemoryControlPlane:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
         user_id = scope.user_id or ""
         query = request.query.strip()
-        if query and self.user_profile.is_longterm_rag_enabled():
-            try:
+        strategies = _recall_strategies_or_default(self.recall_strategies)
+        retrieval_config = self.recall_retrieval_config or UserMemoryRecallRetrievalConfig()
+        try:
+            if query and self.user_profile.is_longterm_rag_enabled():
+                retrieval_k = semantic_retrieval_top_k(request.top_k, retrieval_config)
                 search_result = await self.user_profile.search_longterm_memory(
                     user_id,
                     query,
-                    top_k=request.top_k,
+                    top_k=retrieval_k,
                     score_threshold=request.score_threshold,
                 )
-            except MemoryControlBackendError:
-                raise
-            except Exception as exc:
-                raise MemoryControlBackendError(str(exc)) from exc
-            return self._recall_from_capability_search(search_result, query_present=True)
-        entries = await self.user_profile.list_active_memory_entries(user_id)
-        items: list[MemoryControlRecallItem] = []
-        needle = query.lower() if query else None
-        for entry in entries:
-            if needle is not None and needle not in (entry.content or "").lower():
-                continue
-            items.append(
-                MemoryControlRecallItem(
-                    entry_id=entry.entry_id,
-                    content=entry.content,
-                    kind=entry.kind,
-                    score=None,
+                candidates = candidates_from_semantic_search(search_result)
+                pipeline_result = run_recall_decision_pipeline(
+                    candidates=candidates,
+                    query=query,
+                    top_k=request.top_k,
+                    ranking=strategies.ranking,
+                    conflict_detection=strategies.conflict_detection,
+                    conflict_resolution=strategies.conflict_resolution,
                 )
-            )
-            if len(items) >= request.top_k:
-                break
-        reason = "keyword" if needle else "profile_scan"
-        return MemoryControlRecallResult(
-            scope=MemoryControlPlaneScope.USER,
-            items=tuple(items),
-            used_semantic=False,
-            reason=reason,
-        )
-
-    def _recall_from_capability_search(
-        self,
-        search_result: UserMemoryRecallCapabilityResult,
-        *,
-        query_present: bool,
-    ) -> MemoryControlRecallResult:
-        items: list[MemoryControlRecallItem] = []
-        for index, hit in enumerate(search_result.entries):
-            score_val = search_result.scores[index] if index < len(search_result.scores) else None
-            items.append(
-                MemoryControlRecallItem(
-                    entry_id=hit.entry_id,
-                    content=hit.content,
-                    kind=hit.kind,
-                    score=score_val,
+                return _pipeline_to_recall_result(
+                    pipeline_result,
+                    scope=MemoryControlPlaneScope.USER,
+                    used_semantic=search_result.used_semantic,
+                    reason=search_result.reason,
                 )
+            entries = await self.user_profile.list_active_memory_entries(user_id)
+            candidate_limit = max(
+                request.top_k,
+                request.top_k * retrieval_config.retrieval_candidate_multiplier,
             )
-        return MemoryControlRecallResult(
-            scope=MemoryControlPlaneScope.USER,
-            items=tuple(items),
-            used_semantic=search_result.used_semantic and query_present,
-            reason=search_result.reason,
-        )
+            candidates = candidates_from_profile_scan(
+                entries,
+                query=query,
+                candidate_limit=candidate_limit,
+            )
+            pipeline_result = run_recall_decision_pipeline(
+                candidates=candidates,
+                query=query,
+                top_k=request.top_k,
+                ranking=strategies.ranking,
+                conflict_detection=strategies.conflict_detection,
+                conflict_resolution=strategies.conflict_resolution,
+            )
+            reason = "keyword" if query else "profile_scan"
+            return _pipeline_to_recall_result(
+                pipeline_result,
+                scope=MemoryControlPlaneScope.USER,
+                used_semantic=False,
+                reason=reason,
+            )
+        except MemoryStrategyError as exc:
+            raise MemoryControlBackendError(str(exc)) from exc
+        except MemoryControlBackendError:
+            raise
+        except Exception as exc:
+            raise MemoryControlBackendError(str(exc)) from exc
 
     async def _forget_user(
         self,
