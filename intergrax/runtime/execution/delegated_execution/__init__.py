@@ -9,6 +9,9 @@ from intergrax.runtime.execution.delegated_execution.local_provider import (
     LocalDelegatedExecutionDelegate,
     LocalDelegatedExecutionProvider,
 )
+from intergrax.runtime.execution.delegated_execution.continuation_service import (
+    DelegatedExecutionContinuationService,
+)
 from intergrax.runtime.execution.delegated_execution.control_service import (
     DelegatedExecutionControlService,
 )
@@ -29,6 +32,7 @@ from intergrax.runtime.execution.delegated_execution.service import (
 )
 
 __all__ = [
+    "DelegatedExecutionContinuationService",
     "DelegatedExecutionControlService",
     "DelegatedExecutionDurableControlService",
     "DelegatedExecutionStatusReadService",

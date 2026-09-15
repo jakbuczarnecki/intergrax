@@ -586,11 +586,13 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2C3 = CLOSED** (S2C3 read model + C1 query scaling + C2 maintenance backfill).
 
-**P2.1-S2C = PARTIAL** (S2C1 + S2C2 + S2C3 CLOSED; continuation / reattachment remain OPEN).
+**P2.1-S2C4 — durable delegated reattachment boundary = CLOSED** (``ExecutionId`` → durable ``DelegatedInvocationCorrelationLookup`` → ``DelegatedExecutionReattachmentProvider`` → typed ``DelegatedExecutionContinuationOutcome``; ``supports_reattachment`` capability; pure provider-plane reattachment without identity minting, correlation mutation, lifecycle transition, or automatic retry).
 
-**P2.1-S2 = OPEN** (S2C1–S2C3 CLOSED; remaining S2C continuation and further adoption slices).
+**P2.1-S2C = CLOSED** (S2C1–S2C4 durable correlation, status/control lookup, query, reattachment).
 
-Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`
+**P2.1-S2 = OPEN** (S2C CLOSED; remaining S2 adoption slices beyond durable correlation plane).
+
+Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`, `tests/unit/runtime/execution/test_delegated_execution_continuation.py`
 
 ## Remaining work (P2.1-S2 — adoption slices after S2A, not new seam)
 
