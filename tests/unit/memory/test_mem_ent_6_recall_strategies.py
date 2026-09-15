@@ -168,6 +168,104 @@ def test_ranking_tie_break_prefers_newer_timestamp() -> None:
     assert [r.candidate.record.entry_id for r in result.ranked] == ["newer", "older"]
 
 
+_NAIVE_TIE_CREATED = "2020-06-15T12:00:00"
+
+
+def _naive_tie_candidates(
+    older_updated: str,
+    newer_updated: str,
+    *,
+    older_id: str = "older",
+    newer_id: str = "newer",
+    shared_score: float = 0.75,
+) -> tuple[MemoryRecallCandidate, MemoryRecallCandidate]:
+    older = _candidate(
+        _entry(
+            older_id,
+            "x",
+            created_at=_NAIVE_TIE_CREATED,
+            updated_at=older_updated,
+        ),
+        shared_score,
+    )
+    newer = _candidate(
+        _entry(
+            newer_id,
+            "y",
+            created_at=_NAIVE_TIE_CREATED,
+            updated_at=newer_updated,
+        ),
+        shared_score,
+    )
+    return older, newer
+
+
+def test_ranking_naive_tie_break_year_boundary() -> None:
+    ranker = EnterpriseMemoryRankingStrategy()
+    older, newer = _naive_tie_candidates(
+        "2025-12-31T23:59:59",
+        "2026-01-01T00:00:00",
+    )
+    result = ranker.rank(_rank_request((older, newer), top_k=2))
+    assert [r.candidate.record.entry_id for r in result.ranked] == ["newer", "older"]
+
+
+def test_ranking_naive_tie_break_month_boundary() -> None:
+    ranker = EnterpriseMemoryRankingStrategy()
+    older, newer = _naive_tie_candidates(
+        "2026-01-31T23:59:59",
+        "2026-02-01T00:00:00",
+    )
+    result = ranker.rank(_rank_request((older, newer), top_k=2))
+    assert [r.candidate.record.entry_id for r in result.ranked] == ["newer", "older"]
+
+
+def test_ranking_naive_tie_break_leap_day_boundary() -> None:
+    ranker = EnterpriseMemoryRankingStrategy()
+    older, newer = _naive_tie_candidates(
+        "2024-02-29T23:59:59",
+        "2024-03-01T00:00:00",
+    )
+    result = ranker.rank(_rank_request((older, newer), top_k=2))
+    assert [r.candidate.record.entry_id for r in result.ranked] == ["newer", "older"]
+
+
+def test_ranking_naive_tie_break_microseconds() -> None:
+    ranker = EnterpriseMemoryRankingStrategy()
+    older, newer = _naive_tie_candidates(
+        "2026-06-01T10:00:00.000000",
+        "2026-06-01T10:00:00.000001",
+    )
+    result = ranker.rank(_rank_request((older, newer), top_k=2))
+    assert [r.candidate.record.entry_id for r in result.ranked] == ["newer", "older"]
+
+
+def test_ranking_aware_tie_break_uses_instant_not_lexical() -> None:
+    ranker = EnterpriseMemoryRankingStrategy()
+    shared_score = 0.75
+    shared_created = "2020-06-15T12:00:00+00:00"
+    earlier_instant = _candidate(
+        _entry(
+            "earlier",
+            "x",
+            created_at=shared_created,
+            updated_at="2026-06-01T10:00:00+02:00",
+        ),
+        shared_score,
+    )
+    later_instant = _candidate(
+        _entry(
+            "later",
+            "y",
+            created_at=shared_created,
+            updated_at="2026-06-01T09:30:00+00:00",
+        ),
+        shared_score,
+    )
+    result = ranker.rank(_rank_request((earlier_instant, later_instant), top_k=2))
+    assert [r.candidate.record.entry_id for r in result.ranked] == ["later", "earlier"]
+
+
 def test_freshness_depends_on_explicit_as_of() -> None:
     ranker = EnterpriseMemoryRankingStrategy()
     entry = _candidate(
@@ -599,6 +697,7 @@ async def test_custom_ranker_failure_surfaces_as_backend_error() -> None:
 class SelectiveFailProjection:
     fail_entry_ids: frozenset[str] = frozenset()
     projection_id: str = "selective_fail"
+    always_fail: bool = False
     upsert_calls: list[str] = field(default_factory=list)
 
     async def upsert_memory_entry(
@@ -607,7 +706,7 @@ class SelectiveFailProjection:
         entry: UserProfileMemoryEntry,
     ) -> None:
         self.upsert_calls.append(entry.entry_id)
-        if entry.entry_id in self.fail_entry_ids:
+        if self.always_fail or entry.entry_id in self.fail_entry_ids:
             raise TimeoutError("projection failed")
 
     async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
@@ -711,3 +810,150 @@ async def test_supersession_projection_both_fail_aggregates_evidence() -> None:
             ),
         )
     assert len(exc_info.value.lifecycle.projection_evidence) >= 2
+
+
+async def _supersession_with_projections(
+    *projections: SelectiveFailProjection,
+) -> tuple[DefaultMemoryControlPlane, RequestIdentity, object, object]:
+    store = InMemoryUserProfileStore()
+    manager = UserProfileManager(
+        store,
+        tenant_id=_TENANT,
+        memory_projections=projections,
+    )
+    plane = DefaultMemoryControlPlane(
+        user_profile=UserProfileManagerMemoryCapability(_manager=manager),
+    )
+    identity = RequestIdentity(
+        tenant_id=_TENANT,
+        user_id=_USER,
+        principal_type=PrincipalType.USER,
+        auth_subject=_USER,
+    )
+    scope = user_memory_scope(identity)
+    older = await plane.remember(
+        identity, scope, MemoryControlRememberRequest(content="old", title="fact")
+    )
+    newer = await plane.remember(
+        identity, scope, MemoryControlRememberRequest(content="new", title="fact")
+    )
+    return plane, identity, scope, older, newer
+
+
+@pytest.mark.asyncio
+async def test_supersession_dual_projection_success_success_consistent() -> None:
+    projection_a = SelectiveFailProjection(projection_id="projection_a")
+    projection_b = SelectiveFailProjection(projection_id="projection_b")
+    plane, identity, scope, older, newer = await _supersession_with_projections(
+        projection_a,
+        projection_b,
+    )
+    assert older.entry_id and newer.entry_id
+    result = await plane.apply_memory_supersession(
+        identity,
+        scope,
+        MemorySupersessionIntent(
+            superseded_memory_id=older.entry_id,
+            superseding_memory_id=newer.entry_id,
+            reason="test",
+        ),
+    )
+    assert result.lifecycle.disposition is MemoryLifecycleDisposition.CONSISTENT
+    assert older.entry_id in projection_a.upsert_calls
+    assert newer.entry_id in projection_a.upsert_calls
+    assert older.entry_id in projection_b.upsert_calls
+    assert newer.entry_id in projection_b.upsert_calls
+
+
+@pytest.mark.asyncio
+async def test_supersession_dual_projection_partial_success() -> None:
+    projection_a = SelectiveFailProjection(projection_id="projection_a")
+    projection_b = SelectiveFailProjection(projection_id="projection_b")
+    plane, identity, scope, older, newer = await _supersession_with_projections(
+        projection_a,
+        projection_b,
+    )
+    assert older.entry_id and newer.entry_id
+    projection_a.always_fail = True
+    with pytest.raises(MemoryControlPartialLifecycleError) as exc_info:
+        await plane.apply_memory_supersession(
+            identity,
+            scope,
+            MemorySupersessionIntent(
+                superseded_memory_id=older.entry_id,
+                superseding_memory_id=newer.entry_id,
+                reason="test",
+            ),
+        )
+    lifecycle = exc_info.value.lifecycle
+    assert lifecycle.disposition is MemoryLifecycleDisposition.PARTIAL_PROJECTION_FAILURE
+    assert older.entry_id in lifecycle.memory_entity_ids
+    assert newer.entry_id in lifecycle.memory_entity_ids
+    failed_a = [
+        ev
+        for ev in lifecycle.projection_evidence
+        if ev.projection_id == "projection_a" and not ev.succeeded
+    ]
+    assert failed_a
+
+
+@pytest.mark.asyncio
+async def test_supersession_dual_projection_success_partial() -> None:
+    projection_a = SelectiveFailProjection(projection_id="projection_a")
+    projection_b = SelectiveFailProjection(projection_id="projection_b")
+    plane, identity, scope, older, newer = await _supersession_with_projections(
+        projection_a,
+        projection_b,
+    )
+    assert older.entry_id and newer.entry_id
+    projection_b.fail_entry_ids = frozenset({older.entry_id})
+    with pytest.raises(MemoryControlPartialLifecycleError) as exc_info:
+        await plane.apply_memory_supersession(
+            identity,
+            scope,
+            MemorySupersessionIntent(
+                superseded_memory_id=older.entry_id,
+                superseding_memory_id=newer.entry_id,
+                reason="test",
+            ),
+        )
+    lifecycle = exc_info.value.lifecycle
+    assert lifecycle.disposition is MemoryLifecycleDisposition.PARTIAL_PROJECTION_FAILURE
+    assert older.entry_id in lifecycle.memory_entity_ids
+    assert newer.entry_id in lifecycle.memory_entity_ids
+    assert older.entry_id in projection_a.upsert_calls
+    assert newer.entry_id in projection_a.upsert_calls
+    assert older.entry_id in projection_b.upsert_calls
+    assert newer.entry_id in projection_b.upsert_calls
+    failed_b = [
+        ev
+        for ev in lifecycle.projection_evidence
+        if ev.projection_id == "projection_b" and not ev.succeeded
+    ]
+    assert failed_b
+
+
+@pytest.mark.asyncio
+async def test_supersession_dual_projection_partial_partial() -> None:
+    projection_a = SelectiveFailProjection(projection_id="projection_a")
+    projection_b = SelectiveFailProjection(projection_id="projection_b")
+    plane, identity, scope, older, newer = await _supersession_with_projections(
+        projection_a,
+        projection_b,
+    )
+    assert older.entry_id and newer.entry_id
+    projection_a.always_fail = True
+    projection_b.always_fail = True
+    with pytest.raises(MemoryControlPartialLifecycleError) as exc_info:
+        await plane.apply_memory_supersession(
+            identity,
+            scope,
+            MemorySupersessionIntent(
+                superseded_memory_id=older.entry_id,
+                superseding_memory_id=newer.entry_id,
+                reason="test",
+            ),
+        )
+    lifecycle = exc_info.value.lifecycle
+    assert lifecycle.disposition is MemoryLifecycleDisposition.PARTIAL_PROJECTION_FAILURE
+    assert len(lifecycle.projection_evidence) >= 4

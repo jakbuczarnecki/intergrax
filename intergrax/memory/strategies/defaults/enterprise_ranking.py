@@ -85,15 +85,13 @@ def _freshness_component(
 
 
 def _naive_chronological_ordinal(dt: datetime) -> float:
-    return (
-        dt.year * 366.0 * 86400.0
-        + dt.month * 31.0 * 86400.0
-        + dt.day * 86400.0
-        + dt.hour * 3600.0
+    seconds_since_midnight = (
+        dt.hour * 3600.0
         + dt.minute * 60.0
         + dt.second
         + dt.microsecond / 1_000_000.0
     )
+    return dt.toordinal() * 86400.0 + seconds_since_midnight
 
 
 def _recency_ordinal(updated_at: str | None, created_at: str) -> float:
