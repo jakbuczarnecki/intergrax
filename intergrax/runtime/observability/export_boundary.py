@@ -16,6 +16,9 @@ from intergrax.runtime.observability.export_attributes import (
     ObservabilityArtifactReference,
     SanitizedApplicationObservabilityAttributes,
 )
+from intergrax.runtime.observability.runtime_event_export_models import (
+    RuntimeEventExportSource,
+)
 
 if TYPE_CHECKING:
     from intergrax.contracts.agent_run_trace import (
@@ -132,31 +135,6 @@ class ObservabilityExportEnvelope(BaseModel):
     causal_evidence_source: (
         CausalEvidenceExportSource | LegacyCausalEvidenceExportSource | None
     ) = None
-
-
-class RuntimeEventExportSource(BaseModel):
-    """Typed runtime-event source for deferred lifecycle wiring (OBS-EXPORT-2)."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    schema_version: Literal["runtime_event_export_source.v1"] = (
-        "runtime_event_export_source.v1"
-    )
-    event_id: str
-    run_id: str
-    task_id: str
-    attempt_id: str = ""
-    execution_id: str = ""
-    event_type: str
-    agent_id: str = ""
-    tenant_id: str = ""
-    correlation_id: str = ""
-    occurred_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    execution_phase: str = ""
-    parent_event_id: str = ""
-    w3c_traceparent: str = ""
-    w3c_tracestate: str = ""
-    safe_payload: dict[str, str | int] = Field(default_factory=dict)
 
 
 class LegacyCausalEvidenceExportSource(BaseModel):
@@ -309,9 +287,6 @@ from intergrax.contracts.agent_run_trace import (
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.observability.journal_export import JournalRef
-from intergrax.runtime.observability.runtime_event_export_mapping import (
-    runtime_event_export_source_from_event,
-)
 
 GatewayCallExportSource.model_rebuild()
 
@@ -539,3 +514,8 @@ def envelope_with_observability_extensions(
     if not updates:
         return envelope
     return envelope.model_copy(update=updates)
+
+
+from intergrax.runtime.observability.runtime_event_export_mapping import (  # noqa: E402
+    runtime_event_export_source_from_event,
+)

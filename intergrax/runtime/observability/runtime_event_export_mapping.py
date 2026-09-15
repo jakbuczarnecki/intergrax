@@ -5,8 +5,14 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.events.runtime_event import RuntimeEvent
-from intergrax.runtime.observability.export_boundary import RuntimeEventExportSource
+from typing import TYPE_CHECKING
+
+from intergrax.runtime.observability.runtime_event_export_models import (
+    RuntimeEventExportSource,
+)
+
+if TYPE_CHECKING:
+    from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 _SAFE_RUNTIME_EVENT_PAYLOAD_KEYS: frozenset[str] = frozenset(
     {
