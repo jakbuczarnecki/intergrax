@@ -11,7 +11,7 @@ application_vs_proof_ownership: COMPLETED
 # Scenario Specification
 
 **Scenario:** ERL-QUAL-004 — Enterprise Payment Uncertainty Recovery  
-**Status:** ACCEPTED FOR IMPLEMENTATION / NOT_INITIALIZED — ERL-QUAL-004 Scenario Quality Gate **READY_FOR_IMPLEMENTATION**; implementation preparation (INTERGRAX FIT, GAP DECISION) complete. `init_scenario_implementation.py` may run next; no proof executable yet.
+**Status:** **IMPLEMENTATION_INITIALIZED** (`implementation_status: INITIALIZED`) — ERL-QUAL-004 design accepted; implementation preparation complete (INTERGRAX FIT, GAP DECISION, observability contract, application vs proof ownership). Scenario package and implementation scaffold are initialized; subsequent work is scenario implementation, integration, qualification, and proof completion. This state is not EXECUTABLE, VERIFIED, proof-accepted, or production-ready.
 
 [← Back to public Scenario page](README.md)
 
@@ -284,7 +284,7 @@ Integrax transforms unknown external payment outcomes into a **controlled recove
 
 ### Limitations
 
-Definition accepted for implementation; proof build not started. Capability names reference Enterprise Reliability Layer architecture—**foundation exists**; end-to-end lab wiring and scenario application are implementation work, not claims of universal production readiness. Simulated provider behavior in proof must use normal application contracts, not proof-only shortcuts on canonical paths.
+Scenario package and implementation scaffold initialized (IMPLEMENTATION_INITIALIZED). Capability names reference Enterprise Reliability Layer architecture—**foundation exists**; end-to-end lab wiring, executable proof, and qualification remain implementation work—not claims of EXECUTABLE/VERIFIED status or universal production readiness. Simulated provider behavior in proof must use normal application contracts, not proof-only shortcuts on canonical paths.
 
 ### Required future visual assets _(documentation only)_
 
@@ -325,7 +325,7 @@ Audit basis: ERL-QUAL-004 Scenario Quality Gate (`docs/project/architecture/ERL_
 | Which require **proof implementation**? | Scenario application (order/payment/inventory workflow), controlled payment provider fixture, ERL/runtime lab composition, proof evaluator and evidence projection. |
 | Which are **outside current scope**? | Integrax as payment processor; PCI certification; binding to a specific PSP product; merchant fraud/chargeback processes; hero SVG and technical diagrams (architect-owned follow-up). |
 
-**Scaffold decision:** **unblocked** for `init_scenario_implementation.py` — `intergrax_fit: COMPLETED`, `gap_decision: RESOLVED` in frontmatter.
+**Scaffold decision:** **initialized** — implementation scaffold in place; frontmatter records `intergrax_fit: COMPLETED`, `gap_decision: RESOLVED`, `implementation_status: INITIALIZED`.
 
 ---
 
@@ -351,6 +351,6 @@ Frontmatter `gap_decision: RESOLVED`. Decisions use implementation-preparation v
 
 ## E. PROOF BUILD
 
-**NOT STARTED** — unblocked for implementation scaffold init; executable proof remains future work after `init_scenario_implementation.py`.
+**NOT EXECUTABLE / NOT VERIFIED** — implementation scaffold initialized; proof implementation, integration, and qualification remain in progress under the scenario lifecycle (not proof-accepted).
 
 Before first proof run confirm: production-capable application exists; canonical path has no prohibited fake/test shortcuts; controlled providers use normal application contracts; real model boundary configured if AI behavior is material.
