@@ -44,13 +44,13 @@ RELIABILITY_CONSERVATIVE_SEVERITY_STRATEGY_ID = ReliabilityDiagnosticSeverityStr
     "intergrax.diagnostics.external_effect_reliability.severity.conservative.v1",
 )
 RELIABILITY_CONSERVATIVE_SEVERITY_STRATEGY_VERSION = ReliabilityDiagnosticSeverityStrategyVersion(
-    "1",
+    "2",
 )
 RELIABILITY_CONSERVATIVE_RECOMMENDATION_STRATEGY_ID = ReliabilityDiagnosticRecommendationStrategyId(
     "intergrax.diagnostics.external_effect_reliability.recommendation.conservative.v1",
 )
 RELIABILITY_CONSERVATIVE_RECOMMENDATION_STRATEGY_VERSION = (
-    ReliabilityDiagnosticRecommendationStrategyVersion("1")
+    ReliabilityDiagnosticRecommendationStrategyVersion("2")
 )
 
 MAX_RELIABILITY_CLASSIFICATION_EXPLANATION_LEN = 512

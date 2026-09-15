@@ -50,7 +50,7 @@ class ConservativeReliabilitySeverityStrategy:
             strategy_version=self.strategy_version,
             reason_code=reason_code,
             safe_explanation=(
-                "Conservative platform default severity from reliability signal facts."
+                "Fact-bound conservative severity from signal kind and automation-safety hint only."
             ),
         )
 
@@ -70,9 +70,8 @@ def _conservative_severity_for_facts(
     ):
         base = ExternalEffectReliabilityDiagnosticSeverity.WARNING
         return _elevate_for_unsafe_automation(base, safety, signal_kind.value.lower())
-    if signal_kind is ExternalEffectReliabilitySignalKind.TRUTH_ESTABLISHED:
-        return ExternalEffectReliabilityDiagnosticSeverity.INFO, "truth_established"
     if signal_kind in (
+        ExternalEffectReliabilitySignalKind.TRUTH_ESTABLISHED,
         ExternalEffectReliabilitySignalKind.GOVERNANCE_POSTURE,
         ExternalEffectReliabilitySignalKind.RECOVERY_POSTURE,
         ExternalEffectReliabilitySignalKind.RESOLUTION_POSTURE,

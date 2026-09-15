@@ -383,6 +383,8 @@ Domain **wording** ("retry may double-charge") via `DiagnosticExtensionEvidence`
 
 All defaults: deterministic, conservative, auditable, domain-neutral.
 
+**DEFAULT CLASSIFICATION IS FACT-BOUND AND NO-GUESSING (001D-H):** Platform default severity and recommendation strategies classify only from facts present in `ExternalEffectReliabilityDiagnosticClassificationContext` (signal kind, lifecycle state, automation-safety hint, artifact ref presence). Posture signals (`GOVERNANCE_POSTURE`, `RECOVERY_POSTURE`, `RESOLUTION_POSTURE`) do **not** imply disposition or outcome. `TRUTH_ESTABLISHED` means external truth is known — not a positive business outcome and not “no operator action required.” Strong recommendations (`REQUEST_APPROVAL`, `NO_OPERATOR_ACTION_REQUIRED`, `CRITICAL`) require explicit supporting facts or a **custom** replaceable strategy — not signal-name inference alone.
+
 ---
 
 ## 14. Hosted execution integration
