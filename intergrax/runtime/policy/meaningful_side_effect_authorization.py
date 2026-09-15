@@ -14,12 +14,20 @@ from dataclasses import dataclass
 from typing import TypeVar
 
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
+from intergrax.contracts.canonical_inner_governance import (
+    CanonicalInnerExecutionGuardPort,
+    CanonicalInnerGovernanceViolation,
+)
 from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
     CollaborativeWorkEnforcementResult,
+    PolicyCompositionResult,
 )
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.governance.canonical_inner_execution_guard import (
+    DefaultCanonicalInnerExecutionGuard,
+)
 from intergrax.runtime.human.governed_continuation_bridge import (
     apply_governed_continuation_pause,
     compose_governed_continuation_from_enforcement,
@@ -48,8 +56,62 @@ class MeaningfulSideEffectAuthorizationResult:
 class MeaningfulSideEffectAuthorizationBoundary:
     """Shared production boundary for collaborative enforcement before side effects."""
 
-    def __init__(self, *, enforcement_gate: CollaborativeWorkEnforcementGate) -> None:
+    def __init__(
+        self,
+        *,
+        enforcement_gate: CollaborativeWorkEnforcementGate,
+        inner_execution_guard: CanonicalInnerExecutionGuardPort | None = None,
+    ) -> None:
         self._enforcement_gate = enforcement_gate
+        self._inner_execution_guard = (
+            inner_execution_guard or DefaultCanonicalInnerExecutionGuard()
+        )
+
+    @staticmethod
+    def _inner_enforcement_denied(
+        request: CollaborativeWorkEnforcementRequest,
+        *,
+        reason: str,
+    ) -> MeaningfulSideEffectAuthorizationResult:
+        deny = PolicyDecision(
+            action=PolicyAction.DENY,
+            reason=reason,
+            policy_rule_id="platform.canonical_inner_enforcement",
+        )
+        composition = PolicyCompositionResult(
+            decision=deny,
+            collaborative_authority=deny,
+        )
+        enforcement_result = CollaborativeWorkEnforcementResult(
+            operation_id=request.operation_id,
+            authority_scope=request.resource_scope,
+            composition=composition,
+        )
+        return MeaningfulSideEffectAuthorizationResult(
+            permitted=False,
+            decision=deny,
+            enforcement_result=enforcement_result,
+            requires_governed_continuation=False,
+            governed_continuation_request=None,
+        )
+
+    def _assert_inner_execution(
+        self,
+        request: CollaborativeWorkEnforcementRequest,
+    ) -> MeaningfulSideEffectAuthorizationResult | None:
+        side_effect = request.meaningful_side_effect_request
+        if side_effect is None:
+            return self._inner_enforcement_denied(
+                request,
+                reason="meaningful side effect request required for inner enforcement",
+            )
+        try:
+            self._inner_execution_guard.assert_meaningful_side_effect_bound(side_effect)
+        except CanonicalInnerGovernanceViolation as exc:
+            return self._inner_enforcement_denied(request, reason=exc.reason)
+        except RuntimeError as exc:
+            return self._inner_enforcement_denied(request, reason=str(exc))
+        return None
 
     def authorize(
         self,
@@ -58,6 +120,9 @@ class MeaningfulSideEffectAuthorizationBoundary:
         source_agent_id: str = "platform.meaningful_side_effect",
         source_step_id: str | None = None,
     ) -> MeaningfulSideEffectAuthorizationResult:
+        inner_block = self._assert_inner_execution(request)
+        if inner_block is not None:
+            return inner_block
         enforcement_result = self._enforcement_gate.evaluate(request)
         decision = enforcement_result.composition.decision
         action = decision.action

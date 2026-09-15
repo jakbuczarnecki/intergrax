@@ -45,6 +45,11 @@ from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from intergrax.runtime.governance.canonical_inner_execution_guard import (
+    DefaultCanonicalInnerExecutionGuard,
+)
+from tests.unit.runtime.governance.gr3_test_support import StaticActiveTaskScope
+from intergrax.contracts.execution_identity import TaskId, mint_task_id, validate_task_id
 
 _EXTERNAL_WORK_OPERATIONS = (
     ACTION_CREATE_EXTERNAL_WORK,
@@ -75,6 +80,7 @@ def seed_external_work_authorization_boundary(
     resource_allow_scopes: tuple[str, ...] = (),
     resource_deny_scopes: tuple[str, ...] = (),
     extra_principal_grants: dict[str, tuple[str, ...]] | None = None,
+    active_task_id: str | None = None,
 ) -> MeaningfulSideEffectAuthorizationBoundary:
     """Seed in-memory collaborative-work state for External Work convergence tests."""
     membership_repo = InMemoryWorkspaceMembershipRepository()
@@ -205,7 +211,15 @@ def seed_external_work_authorization_boundary(
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=runtime,
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate)
+    resolved_task_id = (
+        validate_task_id(active_task_id) if active_task_id is not None else mint_task_id()
+    )
+    return MeaningfulSideEffectAuthorizationBoundary(
+        enforcement_gate=gate,
+        inner_execution_guard=DefaultCanonicalInnerExecutionGuard(
+            task_scope=StaticActiveTaskScope(resolved_task_id),
+        ),
+    )
 
 
 def allow_external_work_boundary(
