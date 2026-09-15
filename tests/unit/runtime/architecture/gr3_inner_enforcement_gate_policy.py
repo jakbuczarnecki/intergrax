@@ -27,3 +27,7 @@ TEST_TREE_PREFIXES: tuple[str, ...] = (
     "tests/",
     "testing_support/",
 )
+
+MEANINGFUL_SIDE_EFFECT_POLICY_BOUNDARY_REL: str = (
+    "intergrax/runtime/policy/meaningful_side_effect_authorization.py"
+)

@@ -25,9 +25,6 @@ from intergrax.contracts.collaborative_work import (
 )
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.runtime.governance.canonical_inner_execution_guard import (
-    DefaultCanonicalInnerExecutionGuard,
-)
 from intergrax.runtime.human.governed_continuation_bridge import (
     apply_governed_continuation_pause,
     compose_governed_continuation_from_enforcement,
@@ -60,12 +57,10 @@ class MeaningfulSideEffectAuthorizationBoundary:
         self,
         *,
         enforcement_gate: CollaborativeWorkEnforcementGate,
-        inner_execution_guard: CanonicalInnerExecutionGuardPort | None = None,
+        inner_execution_guard: CanonicalInnerExecutionGuardPort,
     ) -> None:
         self._enforcement_gate = enforcement_gate
-        self._inner_execution_guard = (
-            inner_execution_guard or DefaultCanonicalInnerExecutionGuard()
-        )
+        self._inner_execution_guard = inner_execution_guard
 
     @staticmethod
     def _inner_enforcement_denied(

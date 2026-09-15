@@ -61,6 +61,9 @@ from intergrax.contracts.collaborative_work import (
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectKind, MeaningfulSideEffectRequest
 from intergrax.contracts.money import MoneyAmount
 from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.runtime.governance.meaningful_side_effect_authorization_composition import (
+    build_default_wired_meaningful_side_effect_authorization_boundary,
+)
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )
@@ -211,7 +214,9 @@ def _seed_gate(
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=runtime,
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate), membership_repo
+    return build_default_wired_meaningful_side_effect_authorization_boundary(
+        enforcement_gate=gate,
+    ), membership_repo
 
 
 def _adapter_call(

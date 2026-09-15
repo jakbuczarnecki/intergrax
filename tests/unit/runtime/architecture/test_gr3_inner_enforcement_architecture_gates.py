@@ -11,10 +11,12 @@ import pytest
 
 from tests.unit.runtime.architecture.gr3_inner_enforcement_ast import (
     InnerEnforcementViolation,
+    collect_forbidden_concrete_inner_guard_imports,
     collect_unauthorized_authorize_and_execute_calls,
 )
 from tests.unit.runtime.architecture.gr3_inner_enforcement_gate_policy import (
     AUTHORIZE_AND_EXECUTE_CALL_ALLOWLIST,
+    MEANINGFUL_SIDE_EFFECT_POLICY_BOUNDARY_REL,
     PRODUCTION_SCAN_ROOTS,
     REPO_ROOT,
     TEST_TREE_PREFIXES,
@@ -83,6 +85,43 @@ def rogue(boundary, request):
     )
     violations = collect_unauthorized_authorize_and_execute_calls(tree, rel_path=rel)
     assert len(violations) == 1
+
+
+def test_meaningful_side_effect_policy_boundary_has_no_concrete_guard_import() -> None:
+    path = REPO_ROOT / MEANINGFUL_SIDE_EFFECT_POLICY_BOUNDARY_REL
+    rel = _rel(path)
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    violations = collect_forbidden_concrete_inner_guard_imports(tree, rel_path=rel)
+    messages = [v.as_message() for v in violations]
+    assert violations == [], messages
+
+
+def test_gate_detects_synthetic_concrete_guard_import_in_policy_boundary() -> None:
+    _, tree, rel = _parse_fixture(
+        """
+from intergrax.runtime.governance.canonical_inner_execution_guard import (
+    DefaultCanonicalInnerExecutionGuard,
+)
+from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
+""",
+        name="_gr3_policy_boundary_guard_import_fixture.py",
+    )
+    violations = collect_forbidden_concrete_inner_guard_imports(tree, rel_path=rel)
+    assert len(violations) == 1
+
+
+def test_gate_negative_control_contract_import_in_policy_boundary() -> None:
+    _, tree, rel = _parse_fixture(
+        """
+from intergrax.contracts.canonical_inner_governance import (
+    CanonicalInnerExecutionGuardPort,
+    CanonicalInnerGovernanceViolation,
+)
+""",
+        name="_gr3_policy_boundary_contract_import_fixture.py",
+    )
+    violations = collect_forbidden_concrete_inner_guard_imports(tree, rel_path=rel)
+    assert violations == []
 
 
 def test_gate_negative_control_allowlisted_module_shape() -> None:
