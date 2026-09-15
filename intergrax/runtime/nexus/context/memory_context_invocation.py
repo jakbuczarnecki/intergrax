@@ -6,6 +6,10 @@ from __future__ import annotations
 
 from typing import Any
 
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.request_identity_spine import (
+    verified_request_identity_for_memory_recall,
+)
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_handle_rows import ltm_entry_row
 from intergrax.runtime.nexus.context.provider_handles import (
@@ -19,6 +23,14 @@ from intergrax.runtime.nexus.tracing.memory.user_longterm_memory_summary import 
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.runtime.task_memory.metrics import memory_platform_metrics
+
+
+def _trusted_recall_identity(request: RuntimeRequest) -> RequestIdentity | None:
+    return verified_request_identity_for_memory_recall(
+        request.canonical_identity,
+        metadata=request.metadata,
+        legacy_tenant_id=request.tenant_id,
+    )
 
 
 def memory_profile_handle_snapshot(config: RuntimeConfig) -> dict[str, Any]:
@@ -41,8 +53,12 @@ async def populate_request_memory_recall_metadata(
     if not query:
         return
 
-    user_id = str(request.user_id or request.metadata.get("user_id") or "")
-    tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
+    identity = _trusted_recall_identity(request)
+    if identity is None:
+        return
+
+    user_id = identity.user_id or ""
+    tenant_id = identity.tenant_id
     session_id = str(request.session_id or request.metadata.get("session_id") or "")
 
     if config.enable_user_longterm_memory and user_id:
@@ -78,9 +94,10 @@ async def run_longterm_memory_context(state: RuntimeState) -> None:
         return
 
     session_manager = state.context.session_manager
-    user_id = str(state.request.user_id or state.request.metadata.get("user_id") or "")
+    identity = _trusted_recall_identity(state.request)
+    user_id = (identity.user_id or "") if identity is not None else ""
     query = (state.request.message or "").strip()
-    if not user_id or not query:
+    if identity is None or not user_id or not query:
         return
 
     result = await session_manager.search_user_longterm_memory(
@@ -136,10 +153,14 @@ async def run_session_semantic_recall_context(state: RuntimeState) -> None:
         return
 
     session_manager = state.context.session_manager
+    identity = _trusted_recall_identity(state.request)
+    if identity is None:
+        return
+
     query = (state.request.message or "").strip()
-    tenant_id = str(state.request.tenant_id or "default")
+    tenant_id = identity.tenant_id
     session_id = str(state.request.session_id or "")
-    user_id = str(state.request.user_id or state.request.metadata.get("user_id") or "") or None
+    user_id = identity.user_id or None
     if not query or not session_id:
         return
 
