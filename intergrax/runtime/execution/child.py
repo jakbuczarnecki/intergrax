@@ -11,10 +11,10 @@ from intergrax.contracts.execution_continuation_state_store import ExecutionCont
 from intergrax.contracts.execution_identity import (
     ExecutionId,
     TaskId,
+    peek_active_execution_task_id,
     require_active_execution_id,
     require_active_execution_identity,
 )
-from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.contracts.execution_lineage import ExecutionLineageIntegrityError
 from intergrax.runtime.execution.identity_authority import (
     default_execution_identity_authority,
@@ -175,7 +175,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             global_deadline_monotonic=inherited_deadline,
         )
 
-        task_id: TaskId | None = ActiveTaskRegistry.peek_task_id_for_run(parent_run_id)
+        task_id: TaskId | None = peek_active_execution_task_id()
         identity = ExecutionIdentityBinding(
             run_id=parent_run_id,
             attempt_id=parent_attempt_id,

@@ -137,6 +137,7 @@ class ExecutionContinuationErrorCode(StrEnum):
     EXECUTION_PROGRESS_BLOCKED = "execution_progress_blocked"
     AMBIGUOUS_IDENTITY = "ambiguous_identity"
     STORE_QUERY_FAILED = "store_query_failed"
+    INCOMPLETE_EXECUTION_IDENTITY = "incomplete_execution_identity"
 
 
 class ExecutionContinuationError(ValueError):

@@ -636,6 +636,7 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
         execution_id=hosting_root_execution_id,
         authority=ParentExecutionAuthority.unrestricted_root(),
         tenant_id=tenant_id,
+        task_id=task_id,
     )
 
     await runtime.execute(_RootProbeRequest(message="orchestrate"), root_context)
@@ -855,6 +856,7 @@ async def test_malformed_physical_checkpoint_fails_without_mutating_decision_che
         execution_id=hosting_root_execution_id,
         authority=ParentExecutionAuthority.unrestricted_root(),
         tenant_id=tenant_id,
+        task_id=task_id,
     )
     await runtime.execute(_RootProbeRequest(message="orchestrate"), root_context)
 

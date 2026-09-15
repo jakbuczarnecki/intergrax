@@ -31,12 +31,14 @@ from intergrax.runtime.execution.active_execution_continuation_store import (
 from intergrax.runtime.execution.continuation.lifecycle_driver import (
     ExecutionContinuationLifecycleDriver,
 )
+from intergrax.runtime.execution.continuation.execution_continuation_identity import (
+    require_execution_continuation_identity,
+)
 from intergrax.runtime.execution.continuation.progress_gate import (
     assert_canonical_execution_may_progress,
     load_pending_for_execution_progress,
 )
 from intergrax.runtime.execution.continuation.service import ExecutionContinuationService
-from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
     reset_active_execution_authority,
@@ -117,6 +119,7 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
                 attempt_id=self._identity.attempt_id,
                 execution_id=self._identity.execution_id,
                 parent_execution_id=self._identity.parent_execution_id,
+                task_id=self._identity.task_id,
             )
         if self._authority is not None:
             authority_token = bind_active_execution_authority(
@@ -138,21 +141,6 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
         if self._continuation_state_store is not None:
             return self._continuation_state_store
         return peek_active_execution_continuation_state_store()
-
-    def _continuation_identity_for_progress_gate(self) -> ExecutionContinuationIdentity | None:
-        if self._identity is None:
-            return None
-        task_id = self._identity.task_id
-        if task_id is None:
-            task_id = ActiveTaskRegistry.peek_task_id_for_run(self._identity.run_id)
-        if task_id is None:
-            return None
-        return ExecutionContinuationIdentity(
-            task_id=task_id,
-            run_id=self._identity.run_id,
-            attempt_id=self._identity.attempt_id,
-            execution_id=self._identity.execution_id,
-        )
 
     def _record_safe_pause_after_quiescence(
         self,
@@ -178,12 +166,9 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
 
     async def _run_admission_and_delegate(self, request: RequestT) -> ResultT:
         store = self._resolve_continuation_state_store()
-        continuation_identity = (
-            self._continuation_identity_for_progress_gate()
-            if store is not None
-            else None
-        )
-        if store is not None and continuation_identity is not None:
+        continuation_identity: ExecutionContinuationIdentity | None = None
+        if store is not None:
+            continuation_identity = require_execution_continuation_identity(self._identity)
             assert_canonical_execution_may_progress(
                 store=store,
                 identity=continuation_identity,
