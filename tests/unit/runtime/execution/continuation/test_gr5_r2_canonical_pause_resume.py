@@ -33,11 +33,15 @@ from intergrax.contracts.governed_continuation_correlation import (
 from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
 from intergrax.runtime.execution.continuation.composition import (
+    ExecutionEngineContinuationDependencies,
     wire_execution_continuation_port,
     wire_execution_engine_continuation_dependencies,
 )
 from intergrax.runtime.execution.continuation.persistence import (
     InMemoryExecutionContinuationStateStore,
+)
+from intergrax.runtime.execution.continuation.lifecycle_driver import (
+    ExecutionContinuationLifecycleDriver,
 )
 from intergrax.runtime.execution.continuation.service import ExecutionContinuationService
 from testing_support.builder import canonical_run_id_for_tests, canonical_task_id_for_tests
@@ -134,13 +138,24 @@ def _assert_four_ids_unchanged(pending: PendingExecutionContinuation) -> None:
     assert pending.governed_correlation == _governed_correlation()
 
 
-def _drive_to_waiting(port: ExecutionContinuationPort) -> PendingExecutionContinuation:
+def _drive_to_waiting(
+    deps: ExecutionEngineContinuationDependencies,
+) -> PendingExecutionContinuation:
+    port = deps.continuation
+    driver = deps.lifecycle_driver
     port.request_pause(_pause_request())
-    paused = port.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION_ID))
+    paused = driver.record_execution_reached_safe_pause(
+        _CONTINUATION_ID,
+        execution_pause_established=True,
+    )
     assert paused.lifecycle_state is ExecutionContinuationLifecycleState.PAUSED
-    waiting = port.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION_ID))
+    waiting = driver.record_ready_for_human_resolution(_CONTINUATION_ID)
     assert waiting.lifecycle_state is ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN
     return waiting
+
+
+def _deps() -> ExecutionEngineContinuationDependencies:
+    return wire_execution_engine_continuation_dependencies()
 
 
 def test_request_pause_creates_pause_requested_revision_one() -> None:
@@ -160,21 +175,27 @@ def test_duplicate_pause_rejected() -> None:
 
 
 def test_internal_progression_pause_requested_to_waiting() -> None:
-    port = _port()
+    deps = _deps()
+    port = deps.continuation
+    driver = deps.lifecycle_driver
     created = port.request_pause(_pause_request())
     assert created.lifecycle_state is ExecutionContinuationLifecycleState.PAUSE_REQUESTED
-    paused = port.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION_ID))
+    paused = driver.record_execution_reached_safe_pause(
+        _CONTINUATION_ID,
+        execution_pause_established=True,
+    )
     assert paused.lifecycle_state is ExecutionContinuationLifecycleState.PAUSED
     assert paused.revision == created.revision + 1
-    waiting = port.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION_ID))
+    waiting = driver.record_ready_for_human_resolution(_CONTINUATION_ID)
     assert waiting.lifecycle_state is ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN
     assert waiting.revision == paused.revision + 1
     _assert_four_ids_unchanged(waiting)
 
 
 def test_approve_and_resume_spine() -> None:
-    port = _port()
-    waiting = _drive_to_waiting(port)
+    deps = _deps()
+    waiting = _drive_to_waiting(deps)
+    port = deps.continuation
     approved = port.apply_resolution(_resolution_command(expected_revision=waiting.revision))
     assert approved.lifecycle_state is ExecutionContinuationLifecycleState.RESUME_AUTHORIZED
     assert approved.revision == waiting.revision + 1
@@ -198,8 +219,9 @@ def test_approve_and_resume_spine() -> None:
     ],
 )
 def test_resolution_terminal_verdicts_block_resume(verdict: ExecutionHumanVerdict) -> None:
-    port = _port()
-    waiting = _drive_to_waiting(port)
+    deps = _deps()
+    waiting = _drive_to_waiting(deps)
+    port = deps.continuation
     resolved = port.apply_resolution(
         _resolution_command(expected_revision=waiting.revision, verdict=verdict),
     )
@@ -218,7 +240,13 @@ def test_cancel_lifecycle_semantics_via_store() -> None:
     store = InMemoryExecutionContinuationStateStore()
     service = ExecutionContinuationService(store)
     port: ExecutionContinuationPort = service
-    waiting = _drive_to_waiting(port)
+    driver = ExecutionContinuationLifecycleDriver(service)
+    port.request_pause(_pause_request())
+    driver.record_execution_reached_safe_pause(
+        _CONTINUATION_ID,
+        execution_pause_established=True,
+    )
+    waiting = driver.record_ready_for_human_resolution(_CONTINUATION_ID)
     cancelled_state = advance_continuation_lifecycle(
         waiting.lifecycle_state,
         ExecutionContinuationTransition.CANCEL_CONTINUATION,
@@ -242,8 +270,9 @@ def test_cancel_lifecycle_semantics_via_store() -> None:
 
 
 def test_stale_resolution_and_resume() -> None:
-    port = _port()
-    waiting = _drive_to_waiting(port)
+    deps = _deps()
+    port = deps.continuation
+    waiting = _drive_to_waiting(deps)
     with pytest.raises(ExecutionContinuationError) as stale_resolution:
         port.apply_resolution(_resolution_command(expected_revision=waiting.revision - 1))
     assert stale_resolution.value.code is ExecutionContinuationErrorCode.STALE_REVISION
@@ -269,8 +298,9 @@ def test_stale_resolution_and_resume() -> None:
     ],
 )
 def test_resolution_identity_mismatch_blocked(field: str, value: object) -> None:
-    port = _port()
-    waiting = _drive_to_waiting(port)
+    deps = _deps()
+    port = deps.continuation
+    waiting = _drive_to_waiting(deps)
     with pytest.raises(ExecutionContinuationError) as exc:
         port.apply_resolution(
             _resolution_command(
@@ -282,8 +312,9 @@ def test_resolution_identity_mismatch_blocked(field: str, value: object) -> None
 
 
 def test_governed_scope_regression() -> None:
-    port = _port()
-    waiting = _drive_to_waiting(port)
+    deps = _deps()
+    port = deps.continuation
+    waiting = _drive_to_waiting(deps)
     with pytest.raises(ExecutionContinuationError) as exc:
         port.apply_resolution(
             _resolution_command(
@@ -293,11 +324,16 @@ def test_governed_scope_regression() -> None:
         )
     assert exc.value.code is ExecutionContinuationErrorCode.SCOPE_MISMATCH
 
-    port2 = _port()
+    deps2 = wire_execution_engine_continuation_dependencies()
+    port2 = deps2.continuation
+    driver2 = deps2.lifecycle_driver
     digest_correlation = _governed_correlation(side_effect_scope_digest=_SCOPE_DIGEST)
     port2.request_pause(_pause_request(governed_correlation=digest_correlation))
-    port2.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION_ID))
-    waiting_digest = port2.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION_ID))
+    driver2.record_execution_reached_safe_pause(
+        _CONTINUATION_ID,
+        execution_pause_established=True,
+    )
+    waiting_digest = driver2.record_ready_for_human_resolution(_CONTINUATION_ID)
     with pytest.raises(ExecutionContinuationError) as digest_exc:
         port2.apply_resolution(
             _resolution_command(
@@ -309,8 +345,9 @@ def test_governed_scope_regression() -> None:
 
 
 def test_double_resolution_and_double_resume_blocked() -> None:
-    port = _port()
-    waiting = _drive_to_waiting(port)
+    deps = _deps()
+    port = deps.continuation
+    waiting = _drive_to_waiting(deps)
     approved = port.apply_resolution(_resolution_command(expected_revision=waiting.revision))
     with pytest.raises(ExecutionContinuationError) as double_resolution:
         port.apply_resolution(_resolution_command(expected_revision=approved.revision))
@@ -335,8 +372,9 @@ def test_double_resolution_and_double_resume_blocked() -> None:
 
 
 def test_concurrent_resolution_max_one_success() -> None:
-    port = _port()
-    waiting = _drive_to_waiting(port)
+    deps = _deps()
+    port = deps.continuation
+    waiting = _drive_to_waiting(deps)
     barrier = threading.Barrier(2)
     results: list[ExecutionContinuationError | PendingExecutionContinuation] = []
 
@@ -367,8 +405,9 @@ def test_concurrent_resolution_max_one_success() -> None:
 
 
 def test_concurrent_resume_max_one_success() -> None:
-    port = _port()
-    waiting = _drive_to_waiting(port)
+    deps = _deps()
+    port = deps.continuation
+    waiting = _drive_to_waiting(deps)
     approved = port.apply_resolution(_resolution_command(expected_revision=waiting.revision))
     barrier = threading.Barrier(2)
     results: list[ExecutionContinuationError | PendingExecutionContinuation] = []
@@ -411,8 +450,9 @@ def test_resume_does_not_invoke_root_admission() -> None:
             raise AssertionError("root admission must not run for continuation resume")
 
     _ = _RootAdmissionSpy()
-    port = _port()
-    waiting = _drive_to_waiting(port)
+    deps = _deps()
+    port = deps.continuation
+    waiting = _drive_to_waiting(deps)
     approved = port.apply_resolution(_resolution_command(expected_revision=waiting.revision))
     port.resume(
         ExecutionContinuationResumeCommand(

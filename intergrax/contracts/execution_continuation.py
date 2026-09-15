@@ -134,6 +134,7 @@ class ExecutionContinuationErrorCode(StrEnum):
     INVALID_RESOLUTION = "invalid_resolution"
     SCOPE_MISMATCH = "scope_mismatch"
     DUPLICATE_CONTINUATION = "duplicate_continuation"
+    EXECUTION_PROGRESS_BLOCKED = "execution_progress_blocked"
 
 
 class ExecutionContinuationError(ValueError):
@@ -240,6 +241,29 @@ def validate_continuation_revision(value: object) -> int:
     if value < 1:
         raise ValueError("continuation revision must be >= 1")
     return value
+
+
+_PROGRESS_BLOCKING_LIFECYCLE_STATES: frozenset[ExecutionContinuationLifecycleState] = frozenset(
+    {
+        ExecutionContinuationLifecycleState.PAUSED,
+        ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN,
+        ExecutionContinuationLifecycleState.RESUME_AUTHORIZED,
+        ExecutionContinuationLifecycleState.REJECTED,
+        ExecutionContinuationLifecycleState.ESCALATED,
+        ExecutionContinuationLifecycleState.CANCELLED,
+    },
+)
+
+
+def execution_continuation_lifecycle_blocks_execution_progress(
+    state: ExecutionContinuationLifecycleState,
+) -> bool:
+    """Platform invariant: when true, canonical Execution must not progress blocked work.
+
+    ``PAUSE_REQUESTED`` is intentionally excluded — pause is requested but the Engine may
+    still reach a safe quiescence point. ``RESUMED`` clears the gate for the same Execution.
+    """
+    return state in _PROGRESS_BLOCKING_LIFECYCLE_STATES
 
 
 def advance_continuation_lifecycle(
@@ -636,6 +660,7 @@ __all__ = [
     "SCHEMA_EXECUTION_CONTINUATION_RESOLUTION_V1",
     "SCHEMA_PENDING_EXECUTION_CONTINUATION_V1",
     "advance_continuation_lifecycle",
+    "execution_continuation_lifecycle_blocks_execution_progress",
     "apply_resolution_to_pending",
     "apply_resume_to_pending",
     "assert_execution_continuation_identity_match",

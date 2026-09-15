@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from intergrax.contracts.execution_continuation import ExecutionContinuationPort
 from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
 from intergrax.runtime.execution.continuation.persistence import wire_execution_continuation_state_store
+from intergrax.runtime.execution.continuation.lifecycle_driver import (
+    ExecutionContinuationLifecycleDriver,
+)
 from intergrax.runtime.execution.continuation.service import (
     ExecutionContinuationService,
     execution_continuation_port,
@@ -21,6 +24,7 @@ class ExecutionEngineContinuationDependencies:
 
     continuation: ExecutionContinuationPort
     continuation_service: ExecutionContinuationService
+    lifecycle_driver: ExecutionContinuationLifecycleDriver
 
 
 def wire_execution_continuation_port(
@@ -40,9 +44,11 @@ def wire_execution_engine_continuation_dependencies(
     """Canonical Execution Engine composition boundary for GR-5 continuation."""
     store = wire_execution_continuation_state_store(state_store=state_store)
     service = ExecutionContinuationService(store)
+    driver = ExecutionContinuationLifecycleDriver(service)
     return ExecutionEngineContinuationDependencies(
         continuation=execution_continuation_port(service),
         continuation_service=service,
+        lifecycle_driver=driver,
     )
 
 
