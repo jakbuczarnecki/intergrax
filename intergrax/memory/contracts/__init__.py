@@ -2,6 +2,13 @@
 
 """Memory store plugin contracts."""
 
+from intergrax.memory.contracts.memory_lifecycle import (
+    MemoryLifecycleDisposition,
+    MemoryLifecycleOperation,
+    MemoryLifecycleOutcome,
+    MemoryReconciliationOutcome,
+    UserProfileMemoryProjection,
+)
 from intergrax.memory.contracts.memory_store_plugin import (
     SessionStoragePlugin,
     UserProfileStorePlugin,
@@ -16,4 +23,9 @@ __all__ = [
     "SessionTurnIndexStore",
     "SessionTurnIndexStorePlugin",
     "UserProfileStorePlugin",
+    "MemoryLifecycleDisposition",
+    "MemoryLifecycleOperation",
+    "MemoryLifecycleOutcome",
+    "MemoryReconciliationOutcome",
+    "UserProfileMemoryProjection",
 ]
