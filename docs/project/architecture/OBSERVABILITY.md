@@ -199,6 +199,8 @@ DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · opera
 
 **Import debt (OBS-RECONSTRUCTION-1):** `HistoricalReconstructionService` and shared `ExecutionReconstructor` live under Observability; Diagnostics **imports** `runtime.observability.reconstruction` — not the reverse. Functional evidence contracts and providers remain under `intergrax.contracts.functional_evidence` and `intergrax.runtime.observability.functional_evidence` (**OBS-FUNCTIONAL-CONTRACTS-1** / **R1** closed).
 
+**OBS-DIAG-CONFORMANCE-R1 (closed):** Evidence Plane exposes factual reconstruction through neutral read contract **`ExecutionReconstructionReader`** (`intergrax.contracts.execution_reconstruction`). Default implementation remains **`ExecutionReconstructor`**. Diagnostic consumers depend on the contract only; composition roots may still construct the default implementation.
+
 **Architecture gate:** `runtime.observability.reconstruction` MUST NOT import `runtime.diagnostics.*` (see `test_obs_reconstruction_1_architecture.py`). **Unrelated existing debt:** `qualification_runtime_trace.py` may still import DIAG for completion alignment — not reconstruction.
 
 **TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** Shared reconstruction **package** placement closed (**OBS-RECONSTRUCTION-1**). **OBS-ASOF-REBASE** closes the canonical **E-axis** historical execution query path (journal prefix + shared `ExecutionReconstructor` + optional `ExecutionLineageReader`). **OBS-BITEMP-REBASE** closes full **E/K/V/S** temporal composition without axis mixing (2026-09-15). **TRACE-ASOF-3** → **NOT REQUIRED** (conditional materialization; logical rebuild at E is sufficient). **TRACE-ASOF-4** unblocked for typed public query surfaces that delegate to the same canonical path.
@@ -2468,7 +2470,7 @@ Manifest `PROVEN` labels in `COVERAGE_PATH_PROOFS` are **metadata only**; execut
 | DG-005 cross-topology RuntimeEvent persistence | P2 qualification | Separate qualification; not OBS-COVERAGE-1 blocker |
 | TraceEvent run-only Plane B | — closed | **OBS-TRACE-1** — **NOT REQUIRED** (no production Trace consumer needs attempt/execution on `TraceEvent`) |
 | Reconstruction package placement | P1 architecture | **OBS-RECONSTRUCTION-1** |
-| DIAG cross-layer E2E conformance | P1 | **Closed (OBS-DIAG-CONFORMANCE)** — `pytest -m obs_diag_conformance` |
+| DIAG cross-layer E2E conformance | P1 | **PASS / CLOSED (OBS-DIAG-CONFORMANCE + R1 contract boundary)** — `pytest -m obs_diag_conformance` |
 
 ### Architecture gates (OBS-COVERAGE-1)
 

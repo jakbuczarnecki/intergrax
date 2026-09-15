@@ -20,7 +20,7 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticSignalSubjectScope,
     validate_orchestration_request,
 )
-from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
+from intergrax.contracts.execution_reconstruction import ExecutionReconstructionReader
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingAssessmentInput,
@@ -45,7 +45,7 @@ class DiagnosticOrchestrator:
 
     def __init__(
         self,
-        execution_reconstructor: ExecutionReconstructor,
+        execution_reconstructor: ExecutionReconstructionReader,
         lifecycle_analyzer: LifecycleAnomalyAnalyzer,
         assessment_builder: DiagnosticAssessmentBuilder,
         grouping_engine: ProblemGroupingEngine,

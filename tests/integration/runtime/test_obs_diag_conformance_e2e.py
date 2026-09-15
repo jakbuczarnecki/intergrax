@@ -356,23 +356,36 @@ def test_custom_grouping_strategy_delegates_through_contract() -> None:
     assert len(grouped.candidates) == 1
 
 
-def test_injected_execution_reconstructor_substitute() -> None:
+def test_injected_custom_execution_reconstruction_reader() -> None:
+    from intergrax.runtime.observability.reconstruction import ExecutionReconstruction
+
     runtime_store = InMemoryRuntimeEventStore()
     task_id, run_id = _seed_retry_violation_sequence(runtime_store)
     calls: list[tuple[str, object, object]] = []
-
-    class _RecordingReconstructor(ExecutionReconstructor):
-        def reconstruct_execution(self, tenant_id, task_id, run_id, **kwargs):
-            calls.append((tenant_id, task_id, run_id))
-            return super().reconstruct_execution(tenant_id, task_id, run_id, **kwargs)
-
-    reconstructor = _RecordingReconstructor(
+    default = ExecutionReconstructor(
         runtime_events=runtime_store,
         causal_evidence=InMemoryCausalEvidencePersistence(),
     )
+
+    class _CustomExecutionReconstructionReader:
+        def reconstruct_execution(self, tenant_id, task_id, run_id, *, execution_as_of=None):
+            calls.append((tenant_id, task_id, run_id))
+            return default.reconstruct_execution(
+                tenant_id,
+                task_id,
+                run_id,
+                execution_as_of=execution_as_of,
+            )
+
+    reader = _CustomExecutionReconstructionReader()
     orchestrator, _, _, _ = _build_orchestrator(
         runtime_store=runtime_store,
-        execution_reconstructor=reconstructor,
+        execution_reconstructor=reader,
     )
-    orchestrator.run(_request(_scope(task_id, run_id)))
+    result = orchestrator.run(_request(_scope(task_id, run_id)))
     assert calls == [(_TENANT, task_id, run_id)]
+    assert result.execution_results[0].assessment.has_findings
+    assert isinstance(
+        reader.reconstruct_execution(_TENANT, task_id, run_id),
+        ExecutionReconstruction,
+    )

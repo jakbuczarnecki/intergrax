@@ -16,6 +16,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _DIAG_ROOT = _REPO_ROOT / "intergrax" / "runtime" / "diagnostics"
 _RECONSTRUCTION_PKG = _REPO_ROOT / "intergrax" / "runtime" / "observability" / "reconstruction"
 _ORCHESTRATOR = _DIAG_ROOT / "diagnostic_orchestrator.py"
+_READ_SERVICE = _DIAG_ROOT / "diagnostic_read_service.py"
 
 _EXECUTION_CANONICAL_SPINE = (
     "diagnostic_orchestrator.py",
@@ -85,9 +86,42 @@ def test_reconstruction_package_does_not_import_diagnostics() -> None:
         assert "intergrax.runtime.diagnostics" not in text, path.relative_to(_REPO_ROOT)
 
 
-def test_diagnostic_orchestrator_imports_shared_reconstruction_only() -> None:
+def test_diagnostic_read_service_constructor_depends_on_reconstruction_reader() -> None:
+    tree = ast.parse(_READ_SERVICE.read_text(encoding="utf-8-sig"))
+    init_method: ast.FunctionDef | None = None
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "DiagnosticReadService":
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef) and item.name == "__init__":
+                    init_method = item
+    assert init_method is not None
+    source = ast.get_source_segment(_READ_SERVICE.read_text(encoding="utf-8-sig"), init_method)
+    assert source is not None
+    assert "ExecutionReconstructionReader" in source
+    assert "ExecutionReconstructor" not in source
+
+
+def test_diagnostic_orchestrator_imports_reconstruction_reader_contract() -> None:
     imports = _module_imports(_ORCHESTRATOR)
-    assert "intergrax.runtime.observability.reconstruction" in imports
+    assert "intergrax.contracts.execution_reconstruction" in imports
+    text = _ORCHESTRATOR.read_text(encoding="utf-8")
+    assert "ExecutionReconstructionReader" in text
+    assert "ExecutionReconstructor" not in text
+
+
+def test_diagnostic_orchestrator_constructor_depends_on_reconstruction_reader() -> None:
+    tree = ast.parse(_ORCHESTRATOR.read_text(encoding="utf-8-sig"))
+    init_method: ast.FunctionDef | None = None
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "DiagnosticOrchestrator":
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef) and item.name == "__init__":
+                    init_method = item
+    assert init_method is not None
+    source = ast.get_source_segment(_ORCHESTRATOR.read_text(encoding="utf-8-sig"), init_method)
+    assert source is not None
+    assert "ExecutionReconstructionReader" in source
+    assert "ExecutionReconstructor" not in source
 
 
 def test_diagnostic_orchestrator_does_not_import_execution_persistence_ports() -> None:

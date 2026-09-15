@@ -128,11 +128,15 @@ Central Diagnostics remains the **only** owner of diagnostic interpretation: ano
 | --------- | ---------------- | ----- |
 | `LifecycleAnomalyAnalyzer`, `ExecutionFailureAnalyzer`, `DiagnosticAssessmentBuilder` | Central Diagnostics | Yes |
 | `ProblemGroupingEngine`, `ProblemLifecycleEngine`, `DiagnosticOrchestrator` | Central Diagnostics | Yes |
-| `ExecutionReconstructor` → `ExecutionReconstruction` | Shared factual reconstruction (Evidence Plane) | **No** — consumer input only |
+| `ExecutionReconstructionReader` → `ExecutionReconstruction` | Shared factual reconstruction contract (Evidence Plane) | **No** — consumer input only |
 | `FunctionalDiagnosticAnalyzer` | Central Diagnostics | Yes |
 | `PlatformFunctionalEvidence` recording | Observability (facts); contracts → **OBS-FUNCTIONAL-CONTRACTS-1** | No |
 
 Hub: [`OBSERVABILITY.md`](OBSERVABILITY.md#obs-boundary-1--evidence--reconstruction--diagnostics-ownership-freeze-closed-2026-09-13).
+
+### OBS-DIAG-CONFORMANCE-R1 — Reconstruction contract boundary (closed)
+
+Diagnostics consumers depend on **`ExecutionReconstructionReader`** (read-only, provider-neutral port). Default platform implementation remains **`ExecutionReconstructor`** (single production class). Custom replacements conform structurally without subclassing the reconstructor.
 
 ### OBS-DIAG-CONFORMANCE — Evidence → Reconstruction → Diagnostics (closed)
 
@@ -164,13 +168,13 @@ OPERATOR READ MODEL (DiagnosticReadService)
 | Layer | Owns |
 | ----- | ---- |
 | Execution | lifecycle, `ExecutionId` / `AttemptId`, Execution Tree |
-| Evidence Plane | persisted canonical facts, `ExecutionReconstructor` |
+| Evidence Plane | persisted canonical facts, `ExecutionReconstructionReader` / default `ExecutionReconstructor` |
 | Diagnostics | interpretation, `Problem` lifecycle, operator diagnostic views |
 | Operators | read-only composed views via `DiagnosticReadService` |
 
 | Mechanism | Contract / module | Default implementation | Custom replacement |
 | --------- | ----------------- | ---------------------- | ------------------ |
-| Factual reconstruction | `ExecutionReconstructor` (`runtime.observability.reconstruction`) | In-memory / durable OBS stores | Inject alternate reconstructor instance at composition root (single class definition in production) |
+| Factual reconstruction contract | `ExecutionReconstructionReader` (`intergrax.contracts.execution_reconstruction`) | Default: `ExecutionReconstructor` | External `ExecutionReconstructionReader` at composition root (single `ExecutionReconstructor` class in production) |
 | Grouping strategy | `ProblemGroupingStrategy` + `ProblemGroupingStrategyRegistry` | `DeterministicProblemGroupingStrategy` | Register additional `ProblemGroupingStrategy` |
 | Problem persistence | `ProblemPersistence` / `ProblemOccurrencePersistence` | Application-wired durable or `InMemoryProblemPersistence` | Provider implementations in integration layer |
 | Terminal diagnostic dispatch | `TerminalExecutionDiagnosticPort` | Central adapter → `DiagnosticOrchestrator` | External port implementation |
