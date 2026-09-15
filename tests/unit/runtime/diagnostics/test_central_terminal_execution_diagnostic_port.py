@@ -10,7 +10,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
+    TerminalDiagnosticDispatchResult,
     TerminalDiagnosticDispatchStatus,
+    TerminalExecutionDiagnosticPort,
     TerminalExecutionDiagnosticRequest,
 )
 from intergrax.contracts.execution_identity import (
@@ -153,3 +155,33 @@ def test_central_port_isolates_trigger_failure() -> None:
 
     assert result is not None
     assert result.status is TerminalDiagnosticDispatchStatus.FAILED_ISOLATED
+
+
+def test_terminal_execution_diagnostic_port_accepts_custom_injected_implementation() -> None:
+    """Enterprise proof: diagnostics boundary is contract-injected, not concrete-bound."""
+
+    class _RecordingPort:
+        def __init__(self) -> None:
+            self.requests: list[TerminalExecutionDiagnosticRequest] = []
+
+        def dispatch_terminal_execution(
+            self,
+            request: TerminalExecutionDiagnosticRequest,
+        ) -> TerminalDiagnosticDispatchResult:
+            self.requests.append(request)
+            return TerminalDiagnosticDispatchResult(
+                status=TerminalDiagnosticDispatchStatus.SKIPPED,
+            )
+
+    custom: TerminalExecutionDiagnosticPort = _RecordingPort()  # type: ignore[assignment]
+    request = TerminalExecutionDiagnosticRequest(
+        tenant_id="tenant-a",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        observed_at=_OBSERVED_AT,
+    )
+    result = custom.dispatch_terminal_execution(request)
+
+    assert result is not None
+    assert result.status is TerminalDiagnosticDispatchStatus.SKIPPED
+    assert custom.requests == [request]

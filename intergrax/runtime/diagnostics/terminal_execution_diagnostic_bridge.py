@@ -8,6 +8,8 @@ from __future__ import annotations
 from datetime import datetime
 
 from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
     bind_active_execution_identity,
@@ -29,6 +31,30 @@ from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 
 class TerminalDiagnosticIdentityMismatchError(RuntimeError):
     """Raised when terminal diagnostic evidence write identity does not match execution binding."""
+
+
+def execution_identity_binding_from_terminal_correlation(
+    *,
+    run_id: RunId,
+    attempt_id: AttemptId | None,
+    execution_id: ExecutionId | None,
+) -> ExecutionIdentityBinding | None:
+    """
+    Map neutral terminal diagnostic correlation (contract request fields) to execution binding.
+
+    Owned here (composition-adjacent bridge) so port adapters stay free of execution.boundary.
+    """
+    if attempt_id is None:
+        return None
+    if execution_id is None:
+        raise ValueError(
+            "execution_id is required when attempt_id is present for terminal diagnostic correlation",
+        )
+    return ExecutionIdentityBinding(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
 
 
 def _persist_diagnostic_subsystem_failure(
@@ -150,5 +176,6 @@ def invoke_terminal_execution_diagnostics(
 
 __all__ = [
     "TerminalDiagnosticIdentityMismatchError",
+    "execution_identity_binding_from_terminal_correlation",
     "invoke_terminal_execution_diagnostics",
 ]
