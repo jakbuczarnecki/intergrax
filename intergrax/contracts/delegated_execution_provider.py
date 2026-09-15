@@ -85,6 +85,7 @@ class DelegatedExecutionOutcomeCategory(StrEnum):
     PROVIDER_FAILURE = "provider_failure"
     TRANSPORT_FAILURE = "transport_failure"
     UNSUPPORTED = "unsupported"
+    PLATFORM_FAILURE = "platform_failure"
 
 
 class DelegatedExecutionBudgetBounds(BaseModel):
@@ -248,6 +249,7 @@ class DelegatedExecutionOutcome(Generic[ResultT]):
         if self.category in {
             DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE,
             DelegatedExecutionOutcomeCategory.TRANSPORT_FAILURE,
+            DelegatedExecutionOutcomeCategory.PLATFORM_FAILURE,
         } and not (self.failure_code and self.failure_code.strip()):
             raise DelegatedExecutionContractError(
                 "provider and transport failures require failure_code",

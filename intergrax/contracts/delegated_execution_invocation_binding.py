@@ -181,6 +181,28 @@ def assert_provider_outcome_has_no_invocation_binding(
         )
 
 
+def delegated_invocation_correlation_persistence_failure(
+    *,
+    provider_invocation: ProviderInvocation,
+    provider_outcome: object,
+    failure_message: str,
+) -> DelegatedExecutionOutcome[ResultT]:
+    """Fail closed when durable correlation cannot be stored after provider dispatch."""
+    from intergrax.contracts.provider_invocation import ProviderInvocationOutcome
+
+    if not isinstance(provider_outcome, ProviderInvocationOutcome):
+        raise DelegatedExecutionContractError(
+            "provider_outcome required for correlation persistence failure",
+        )
+    return delegated_failure_outcome(
+        category=DelegatedExecutionOutcomeCategory.PLATFORM_FAILURE,
+        failure_code="INVOCATION_CORRELATION_PERSISTENCE_FAILURE",
+        failure_message=failure_message,
+        provider_invocation=provider_invocation,
+        provider_outcome=provider_outcome,
+    )
+
+
 def enrich_delegated_outcome_with_platform_invocation_binding(
     *,
     outcome: DelegatedExecutionOutcome[ResultT],
@@ -204,6 +226,7 @@ def enrich_delegated_outcome_with_platform_invocation_binding(
 __all__ = [
     "DelegatedExecutionInvocationBinding",
     "assert_provider_outcome_has_no_invocation_binding",
+    "delegated_invocation_correlation_persistence_failure",
     "delegated_provider_outcome_contract_mismatch_failure",
     "enrich_delegated_outcome_with_platform_invocation_binding",
     "mint_delegated_execution_invocation_binding",

@@ -570,7 +570,11 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2B = CLOSED** (S2A adoption + S2B control + C1 correlation + C2 authoritative binding issuance + C3 platform binding ownership + C4 contract-violation evidence sanitization).
 
-**P2.1-S2 = OPEN** (S2C durability / status / continuation next).
+**P2.1-S2C1 — durable delegated invocation correlation foundation = CLOSED** (platform ``DelegatedInvocationCorrelationStore`` + persistence after platform-issued binding; lookup by child ``ExecutionId``; optional at composition when store unset).
+
+**P2.1-S2C = PARTIAL** (S2C1 correlation durability CLOSED; status / list / continuation remain OPEN).
+
+**P2.1-S2 = OPEN** (S2C1 CLOSED; remaining S2C status/list/continuation and further adoption slices).
 
 Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`
 

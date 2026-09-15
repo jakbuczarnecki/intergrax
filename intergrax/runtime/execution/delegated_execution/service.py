@@ -11,8 +11,13 @@ from pydantic import ValidationError
 
 from intergrax.contracts.delegated_execution_invocation_binding import (
     assert_provider_outcome_has_no_invocation_binding,
+    delegated_invocation_correlation_persistence_failure,
     delegated_provider_outcome_contract_mismatch_failure,
     enrich_delegated_outcome_with_platform_invocation_binding,
+)
+from intergrax.contracts.delegated_invocation_correlation import (
+    DelegatedInvocationCorrelationPersistenceError,
+    DelegatedInvocationCorrelationStore,
 )
 from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionContractError,
@@ -45,6 +50,9 @@ from intergrax.runtime.execution.budget.policy import (
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.delegated_execution.context_projection import (
     project_delegated_execution_context,
+)
+from intergrax.runtime.execution.delegated_execution.correlation_service import (
+    DelegatedInvocationCorrelationService,
 )
 from intergrax.runtime.execution.active_execution_budget import require_active_execution_budget
 from intergrax.runtime.governance.active_execution_authority import (
@@ -89,13 +97,16 @@ class _DelegatedProviderDispatchDelegate(
 ):
     """Routes admitted child execution state into provider-neutral dispatch."""
 
-    __slots__ = ("_provider",)
+    __slots__ = ("_correlation_service", "_provider")
 
     def __init__(
         self,
         provider: DelegatedExecutionProvider[RequestT, ResultT],
+        *,
+        correlation_service: DelegatedInvocationCorrelationService | None = None,
     ) -> None:
         self._provider = provider
+        self._correlation_service = correlation_service
 
     async def execute(
         self,
@@ -144,7 +155,7 @@ class _DelegatedProviderDispatchDelegate(
             )
         payload_digest = digest_delegated_execution_payload(work.payload)
         try:
-            return enrich_delegated_outcome_with_platform_invocation_binding(
+            enriched = enrich_delegated_outcome_with_platform_invocation_binding(
                 outcome=outcome,
                 context=context,
                 operation=work.operation,
@@ -156,6 +167,27 @@ class _DelegatedProviderDispatchDelegate(
                     "provider outcome failed platform invocation correlation checks"
                 ),
             )
+        binding = enriched.invocation_binding
+        if binding is None or self._correlation_service is None:
+            return enriched
+        try:
+            self._correlation_service.persist_binding(binding)
+        except DelegatedInvocationCorrelationPersistenceError:
+            if enriched.provider_invocation is None or enriched.provider_outcome is None:
+                return delegated_provider_outcome_contract_mismatch_failure(
+                    failure_message=(
+                        "correlation persistence failed without provider evidence"
+                    ),
+                )
+            return delegated_invocation_correlation_persistence_failure(
+                provider_invocation=enriched.provider_invocation,
+                provider_outcome=enriched.provider_outcome,
+                failure_message=(
+                    "provider dispatch succeeded but durable invocation "
+                    "correlation persistence failed"
+                ),
+            )
+        return enriched
 
 
 class DelegatedExecutionService(Generic[RequestT, ResultT]):
@@ -175,8 +207,16 @@ class DelegatedExecutionService(Generic[RequestT, ResultT]):
         ledger: ExecutionBudgetLedger | None = None,
         authority_policy: ExecutionAuthorityPolicy | None = None,
         budget_policy: ExecutionBudgetAllocationPolicy | None = None,
+        correlation_store: DelegatedInvocationCorrelationStore | None = None,
+        correlation_service: DelegatedInvocationCorrelationService | None = None,
     ) -> None:
-        self._dispatch_delegate = _DelegatedProviderDispatchDelegate(provider)
+        resolved_correlation = correlation_service
+        if resolved_correlation is None and correlation_store is not None:
+            resolved_correlation = DelegatedInvocationCorrelationService(correlation_store)
+        self._dispatch_delegate = _DelegatedProviderDispatchDelegate(
+            provider,
+            correlation_service=resolved_correlation,
+        )
         self._child_runner = ChildExecutionRunner[
             DelegatedExecutionWorkUnit[RequestT],
             DelegatedExecutionOutcome[ResultT],
@@ -222,6 +262,8 @@ def delegated_execution_service(
     ledger: ExecutionBudgetLedger | None = None,
     authority_policy: ExecutionAuthorityPolicy | None = None,
     budget_policy: ExecutionBudgetAllocationPolicy | None = None,
+    correlation_store: DelegatedInvocationCorrelationStore | None = None,
+    correlation_service: DelegatedInvocationCorrelationService | None = None,
 ) -> DelegatedExecutionService[RequestT, ResultT]:
     """Composition helper for the canonical delegated execution adoption path."""
     return DelegatedExecutionService(
@@ -229,6 +271,8 @@ def delegated_execution_service(
         ledger=ledger,
         authority_policy=authority_policy,
         budget_policy=budget_policy,
+        correlation_store=correlation_store,
+        correlation_service=correlation_service,
     )
 
 
