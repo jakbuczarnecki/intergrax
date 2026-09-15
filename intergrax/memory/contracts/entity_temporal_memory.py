@@ -264,9 +264,19 @@ def entity_memory_user_entity_id(scope: EntityMemoryScope) -> str:
     return f"ent:user:{scope.tenant_id}:{user}"
 
 
-def _entity_memory_projection_qualifier(value: str | None) -> str:
-    stripped = (value or "").strip()
-    return stripped if stripped else "-"
+def _entity_memory_length_prefixed_segment(value: str) -> str:
+    return f"{len(value)}:{value}"
+
+
+def _entity_memory_encoded_workspace_qualifier(workspace_id: str | None) -> str:
+    if workspace_id is None:
+        return "0:"
+    stripped = workspace_id.strip()
+    if not stripped:
+        raise EntityTemporalMemoryViolation(
+            "workspace_id when set must be non-empty for memory projection identity"
+        )
+    return _entity_memory_length_prefixed_segment(stripped)
 
 
 def entity_memory_source_projection_key(
@@ -274,24 +284,28 @@ def entity_memory_source_projection_key(
     source_memory_id: str,
 ) -> str:
     """Deterministic canonical identity for a memory-sourced derived projection in ``scope``."""
+    tenant = (scope.tenant_id or "").strip()
+    if not tenant:
+        raise EntityTemporalMemoryViolation("tenant_id required for memory projection identity")
     memory_id = (source_memory_id or "").strip()
     if not memory_id:
         raise EntityTemporalMemoryViolation("source_memory_id must be non-empty")
     user = (scope.user_id or "").strip()
     if not user:
         raise EntityTemporalMemoryViolation("user_id required for memory projection identity")
-    workspace = _entity_memory_projection_qualifier(scope.workspace_id)
-    return f"{scope.tenant_id}:{user}:{workspace}:{memory_id}"
+    workspace = _entity_memory_encoded_workspace_qualifier(scope.workspace_id)
+    segments = (
+        _entity_memory_length_prefixed_segment(tenant),
+        _entity_memory_length_prefixed_segment(user),
+        workspace,
+        _entity_memory_length_prefixed_segment(memory_id),
+    )
+    return "|".join(segments)
 
 
 def entity_memory_entity_id_for_entry(scope: EntityMemoryScope, memory_entry_id: str) -> str:
-    entry_id = (memory_entry_id or "").strip()
-    if not entry_id:
-        raise EntityTemporalMemoryViolation("memory_entry_id must be non-empty")
-    user = (scope.user_id or "").strip()
-    if not user:
-        raise EntityTemporalMemoryViolation("user_id required for memory-derived entity id")
-    return f"ent:memory:{scope.tenant_id}:{user}:{entry_id}"
+    projection_key = entity_memory_source_projection_key(scope, memory_entry_id)
+    return f"ent:memory:{projection_key}"
 
 
 def entity_memory_relation_id_for_has_memory(

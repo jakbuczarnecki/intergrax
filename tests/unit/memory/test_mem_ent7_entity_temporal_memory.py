@@ -392,11 +392,12 @@ def test_external_store_injectable_without_core_changes() -> None:
 def test_external_store_can_derive_scoped_delete_from_contract_helpers() -> None:
     scope = EntityMemoryScope(tenant_id="T", user_id="A", workspace_id="ws")
     source_id = "mem-1"
+    projection_key = entity_memory_source_projection_key(scope, source_id)
     relation_id = entity_memory_relation_id_for_has_memory(scope, source_id)
     entity_id = entity_memory_entity_id_for_entry(scope, source_id)
-    assert relation_id.startswith("rel:has_memory:")
-    assert "ws" in relation_id
-    assert entity_id == f"ent:memory:T:A:{source_id}"
+    assert relation_id == f"rel:has_memory:{projection_key}"
+    assert entity_id == f"ent:memory:{projection_key}"
+    assert "2:ws" in projection_key
 
 
 def test_is_entity_relation_active_at_fact_2025_only() -> None:
@@ -546,12 +547,23 @@ def _memory_entry(entry_id: str, *, revision: int = 1, content: str = "fact") ->
 def test_entity_memory_source_projection_key_stable_and_scoped() -> None:
     scope_a = EntityMemoryScope(tenant_id="T", user_id="A")
     scope_b = EntityMemoryScope(tenant_id="T", user_id="B")
+    scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="A", workspace_id="W1")
+    scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="A", workspace_id="W2")
+    scope_t2 = EntityMemoryScope(tenant_id="T2", user_id="A")
     assert entity_memory_source_projection_key(scope_a, "M") == entity_memory_source_projection_key(
         scope_a,
         "M",
     )
     assert entity_memory_source_projection_key(scope_a, "M") != entity_memory_source_projection_key(
         scope_b,
+        "M",
+    )
+    assert entity_memory_source_projection_key(scope_ws1, "M") != entity_memory_source_projection_key(
+        scope_ws2,
+        "M",
+    )
+    assert entity_memory_source_projection_key(scope_a, "M") != entity_memory_source_projection_key(
+        scope_t2,
         "M",
     )
 
@@ -713,16 +725,146 @@ def test_stale_revision_on_one_user_does_not_affect_sibling_user() -> None:
 
 
 def test_workspace_qualifier_participates_in_relation_projection_identity() -> None:
-    """Memory-derived entity ids use tenant+user+source; relation/delete keys also include workspace."""
     scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="ws-1")
     scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="ws-2")
+    scope_no_ws = EntityMemoryScope(tenant_id="T", user_id="U")
     rel_1 = entity_memory_relation_id_for_has_memory(scope_ws1, "M")
     rel_2 = entity_memory_relation_id_for_has_memory(scope_ws2, "M")
+    ent_1 = entity_memory_entity_id_for_entry(scope_ws1, "M")
+    ent_2 = entity_memory_entity_id_for_entry(scope_ws2, "M")
     assert rel_1 != rel_2
-    assert entity_memory_entity_id_for_entry(scope_ws1, "M") == entity_memory_entity_id_for_entry(
-        scope_ws2,
+    assert ent_1 != ent_2
+    assert entity_memory_entity_id_for_entry(scope_no_ws, "M") == entity_memory_entity_id_for_entry(
+        scope_no_ws,
         "M",
     )
+
+
+def test_projection_key_delimiter_collision_resistance() -> None:
+    scope_ab_c = EntityMemoryScope(tenant_id="T", user_id="a:b", workspace_id="c")
+    scope_a_bc = EntityMemoryScope(tenant_id="T", user_id="a", workspace_id="b:c")
+    assert entity_memory_source_projection_key(scope_ab_c, "M") != entity_memory_source_projection_key(
+        scope_a_bc,
+        "M",
+    )
+    assert entity_memory_entity_id_for_entry(scope_ab_c, "M") != entity_memory_entity_id_for_entry(
+        scope_a_bc,
+        "M",
+    )
+
+
+def test_projection_key_absent_workspace_not_colliding_with_dash_workspace() -> None:
+    scope_none = EntityMemoryScope(tenant_id="T", user_id="U")
+    scope_dash = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="-")
+    assert entity_memory_source_projection_key(scope_none, "M") != entity_memory_source_projection_key(
+        scope_dash,
+        "M",
+    )
+
+
+def test_same_tenant_same_source_different_workspaces_both_projections_exist() -> None:
+    store = InMemoryEntityTemporalMemoryStore()
+    indexer = DefaultEntityMemoryIndexer(store)
+    scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W1")
+    scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W2")
+    source_id = "M"
+    indexer.index_memory_entry(scope_ws1, _memory_entry(source_id, revision=5))
+    indexer.index_memory_entry(scope_ws2, _memory_entry(source_id, revision=3))
+
+    entity_1 = entity_memory_entity_id_for_entry(scope_ws1, source_id)
+    entity_2 = entity_memory_entity_id_for_entry(scope_ws2, source_id)
+    rel_1 = entity_memory_relation_id_for_has_memory(scope_ws1, source_id)
+    rel_2 = entity_memory_relation_id_for_has_memory(scope_ws2, source_id)
+    user_id = entity_memory_user_entity_id(scope_ws1)
+
+    assert entity_1 != entity_2
+    assert rel_1 != rel_2
+    assert store.get_entity(scope_ws1, entity_1) is not None
+    assert store.get_entity(scope_ws2, entity_2) is not None
+    assert _relation_exists(store, scope_ws1, user_entity_id=user_id, relation_id=rel_1)
+    assert _relation_exists(store, scope_ws2, user_entity_id=user_id, relation_id=rel_2)
+
+
+def test_delete_by_source_memory_removes_only_scoped_workspace_w1() -> None:
+    store = InMemoryEntityTemporalMemoryStore()
+    indexer = DefaultEntityMemoryIndexer(store)
+    scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W1")
+    scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W2")
+    source_id = "M"
+    indexer.index_memory_entry(scope_ws1, _memory_entry(source_id, revision=5))
+    indexer.index_memory_entry(scope_ws2, _memory_entry(source_id, revision=3))
+
+    entity_1 = entity_memory_entity_id_for_entry(scope_ws1, source_id)
+    entity_2 = entity_memory_entity_id_for_entry(scope_ws2, source_id)
+    rel_1 = entity_memory_relation_id_for_has_memory(scope_ws1, source_id)
+    rel_2 = entity_memory_relation_id_for_has_memory(scope_ws2, source_id)
+    user_id = entity_memory_user_entity_id(scope_ws1)
+
+    removed = store.delete_by_source_memory(scope_ws1, source_id)
+    assert removed == 2
+    assert store.get_entity(scope_ws1, entity_1) is None
+    assert not _relation_exists(store, scope_ws1, user_entity_id=user_id, relation_id=rel_1)
+    assert store.get_entity(scope_ws2, entity_2) is not None
+    assert _relation_exists(store, scope_ws2, user_entity_id=user_id, relation_id=rel_2)
+    assert store.get_entity(scope_ws1, user_id) is not None
+
+
+def test_delete_by_source_memory_removes_only_scoped_workspace_w2() -> None:
+    store = InMemoryEntityTemporalMemoryStore()
+    indexer = DefaultEntityMemoryIndexer(store)
+    scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W1")
+    scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W2")
+    source_id = "M"
+    indexer.index_memory_entry(scope_ws1, _memory_entry(source_id))
+    indexer.index_memory_entry(scope_ws2, _memory_entry(source_id))
+
+    entity_2 = entity_memory_entity_id_for_entry(scope_ws2, source_id)
+    rel_2 = entity_memory_relation_id_for_has_memory(scope_ws2, source_id)
+    user_id = entity_memory_user_entity_id(scope_ws2)
+
+    store.delete_by_source_memory(scope_ws2, source_id)
+    assert store.get_entity(scope_ws2, entity_2) is None
+    assert not _relation_exists(store, scope_ws2, user_entity_id=user_id, relation_id=rel_2)
+    assert store.get_entity(scope_ws1, entity_memory_entity_id_for_entry(scope_ws1, source_id)) is not None
+
+
+def test_no_dangling_relations_after_workspace_scoped_delete() -> None:
+    store = InMemoryEntityTemporalMemoryStore()
+    indexer = DefaultEntityMemoryIndexer(store)
+    scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W1")
+    scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W2")
+    indexer.index_memory_entry(scope_ws1, _memory_entry("M", revision=1))
+    indexer.index_memory_entry(scope_ws2, _memory_entry("M", revision=1))
+    user_id = entity_memory_user_entity_id(scope_ws1)
+    store.delete_by_source_memory(scope_ws1, "M")
+
+    for scope in (scope_ws1, scope_ws2):
+        result = store.query_relations(
+            scope,
+            EntityRelationQuery(
+                entity_id=user_id,
+                direction=EntityRelationDirection.OUTBOUND,
+                as_of=datetime(2025, 1, 1, tzinfo=timezone.utc),
+                limit=50,
+            ),
+        )
+        for rel in result.relations:
+            assert store.get_entity(scope, rel.target_entity_id) is not None
+
+
+def test_stale_revision_on_one_workspace_does_not_affect_sibling_workspace() -> None:
+    store = InMemoryEntityTemporalMemoryStore()
+    indexer = DefaultEntityMemoryIndexer(store)
+    scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W1")
+    scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W2")
+    indexer.index_memory_entry(scope_ws1, _memory_entry("M", revision=5, content="W1 v5"))
+    indexer.index_memory_entry(scope_ws2, _memory_entry("M", revision=3, content="W2 v3"))
+    indexer.index_memory_entry(scope_ws1, _memory_entry("M", revision=4, content="stale W1"))
+
+    entity_1 = store.get_entity(scope_ws1, entity_memory_entity_id_for_entry(scope_ws1, "M"))
+    entity_2 = store.get_entity(scope_ws2, entity_memory_entity_id_for_entry(scope_ws2, "M"))
+    assert entity_1 is not None and entity_1.source_memory_revision == 5
+    assert entity_2 is not None and entity_2.source_memory_revision == 3
 
 
 def test_user_qualifier_prevents_cross_user_entity_id_collision() -> None:
