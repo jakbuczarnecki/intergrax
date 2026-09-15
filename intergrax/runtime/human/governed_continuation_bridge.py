@@ -1,6 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Bridge governed continuation requests into canonical Nexus HITL pause lifecycle."""
+"""Bridge governed continuation requests into Task/Human projection (legacy graph path).
+
+Canonical lifecycle authority is :class:`~intergrax.contracts.execution_continuation.ExecutionContinuationPort`.
+Nexus is a private internal orchestration subsystem of the Execution Engine — not a public engine.
+"""
 
 from __future__ import annotations
 
@@ -118,7 +122,7 @@ def bridge_governed_continuation_to_execution_result(
     *,
     agent_id: str | None = None,
 ) -> AgentExecutionResult:
-    """Agent execution surface for Nexus graph pause composition."""
+    """Agent execution surface for internal graph pause composition (projection path)."""
     resolution = bridge_governed_continuation_to_governance(request)
     return AgentExecutionResult(
         agent_id=agent_id or request.source_agent_id,
@@ -136,6 +140,6 @@ def apply_governed_continuation_pause(
     task: Task,
     request: GovernedContinuationRequest,
 ) -> Task:
-    """Enter canonical WAITING_FOR_HUMAN via HumanPauseCoordinator."""
+    """Legacy Task pause projection — canonical WAITING requires ExecutionContinuationPort."""
     execution = bridge_governed_continuation_to_execution_result(request)
     return HumanPauseCoordinator.apply_pause(task, execution)

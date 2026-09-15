@@ -1,7 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Human-in-the-loop pause, resume, reject and escalation helpers (§42.9, §42.38)."""
+"""Human-in-the-loop pause projection, evidence, and compatibility helpers (§42.9, §42.38).
+
+GR-5-R3: canonical pause/resume lifecycle authority is
+:class:`intergrax.contracts.execution_continuation.ExecutionContinuationPort`.
+``HumanPauseCoordinator`` projects canonical continuation onto Task/Human state and
+records human evidence — it does **not** own lifecycle truth.
+"""
 
 from __future__ import annotations
 
@@ -12,6 +18,18 @@ from uuid import uuid4
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.contracts.execution_continuation import (
+    ExecutionContinuationLifecycleState,
+    ExecutionContinuationLookup,
+    ExecutionContinuationPort,
+    ExecutionContinuationResolutionCommand,
+    ExecutionHumanVerdict,
+    PendingExecutionContinuation,
+)
+from intergrax.contracts.execution_continuation_projection import (
+    ExecutionContinuationProjectionResult,
+    ExecutionContinuationProjectionSink,
+)
 from intergrax.contracts.execution_identity import (
     peek_active_execution_id,
     peek_active_execution_identity,
@@ -28,6 +46,9 @@ from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
 from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.interrupts.handler import GovernanceResolution
+from intergrax.runtime.task.execution_continuation_projection import (
+    wire_task_execution_continuation_projection_sink,
+)
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import (
     HumanApprovalResolution,
@@ -106,7 +127,12 @@ def approved_resolution_for_resume(
 
 
 class HumanPauseCoordinator:
-    """Persists pause state on tasks and supports approve/reject/escalate resume signals."""
+    """Projects canonical continuation onto Task/Human representation (compatibility facade).
+
+    Legacy graph paths may still call :meth:`apply_pause` without a canonical snapshot;
+    that path is non-authoritative and mints local pause identifiers. Canonical GR-5 flows
+    must use :meth:`project_continuation` after ``ExecutionContinuationPort`` transitions.
+    """
 
     @staticmethod
     def approved_resolution_for_resume(
@@ -126,7 +152,27 @@ class HumanPauseCoordinator:
         )
 
     @staticmethod
-    def apply_pause(task: Task, execution: AgentExecutionResult) -> Task:
+    def project_continuation(
+        task: Task,
+        pending: PendingExecutionContinuation,
+        projection_sink: ExecutionContinuationProjectionSink | None = None,
+    ) -> ExecutionContinuationProjectionResult:
+        """Project one canonical continuation snapshot onto Task (idempotent per revision)."""
+        sink = (
+            projection_sink
+            if projection_sink is not None
+            else wire_task_execution_continuation_projection_sink(task)
+        )
+        return sink.project(pending)
+
+    @staticmethod
+    def apply_pause(
+        task: Task,
+        execution: AgentExecutionResult,
+        *,
+        pause_id: str | None = None,
+    ) -> Task:
+        """Legacy/projection helper — does **not** establish canonical PAUSED/WAITING."""
         gov = task.runtime.governance
         if execution.human_request is not None:
             gov.hitl_resolution = None
@@ -139,7 +185,9 @@ class HumanPauseCoordinator:
             reason = ""
             if execution.agent_decision is not None:
                 reason = execution.agent_decision.reason
+            resolved_pause_id = pause_id if pause_id is not None else f"pause_{uuid4().hex[:12]}"
             record = PauseRecord(
+                pause_id=resolved_pause_id,
                 task_id=task.task_id,
                 human_request_id=execution.human_request.request_id,
                 reason=reason,
@@ -168,6 +216,7 @@ class HumanPauseCoordinator:
 
     @staticmethod
     def apply_resolution(task: Task, resolution: GovernanceResolution) -> Task:
+        """Project governance interrupt metadata — does **not** authorize canonical resume."""
         gov = task.runtime.governance
         if resolution.human_request is not None:
             HumanTimeoutCoordinator.attach_to_task(task, resolution.human_request)
@@ -179,6 +228,7 @@ class HumanPauseCoordinator:
 
     @staticmethod
     def clear_pause(task: Task) -> Task:
+        """Clear Task pause projection only — does **not** establish canonical RESUMED."""
         task.runtime.governance.paused = False
         task.sync_metadata()
         return task
@@ -196,6 +246,7 @@ class HumanPauseCoordinator:
         execution_id: str | None = None,
         response_text: str | None = None,
     ) -> HumanApprovalResolution:
+        """Record typed human decision evidence on Task — not canonical lifecycle authority."""
         gov = task.runtime.governance
         if gov.hitl_resolution is not None:
             raise HumanApprovalResolutionError("human approval already resolved")
@@ -291,6 +342,76 @@ class HumanPauseCoordinator:
         return resolution
 
     @staticmethod
+    def resolve_human_response_and_apply_canonical(
+        task: Task,
+        verdict: HumanResponseVerdict,
+        *,
+        approver: HumanApproverEvidence,
+        continuation: ExecutionContinuationPort,
+        projection_sink: ExecutionContinuationProjectionSink | None = None,
+        pause_id: str | None = None,
+        human_request_id: str | None = None,
+        run_id: str | None = None,
+        attempt_id: str | None = None,
+        execution_id: str | None = None,
+        response_text: str | None = None,
+    ) -> PendingExecutionContinuation:
+        """Human evidence first, then canonical ``apply_resolution``, then Task projection."""
+        HumanPauseCoordinator.resolve_human_response(
+            task,
+            verdict,
+            approver=approver,
+            pause_id=pause_id,
+            human_request_id=human_request_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            response_text=response_text,
+        )
+        gov = task.runtime.governance
+        governed = (
+            gov.human_request.governed_continuation if gov.human_request is not None else None
+        )
+        if governed is None:
+            raise HumanApprovalResolutionError(
+                "governed continuation correlation required for canonical resolution",
+            )
+        pending = continuation.get_pending(
+            ExecutionContinuationLookup(continuation_id=governed.continuation_request_id),
+        )
+        if verdict is HumanResponseVerdict.APPROVE:
+            execution_verdict = ExecutionHumanVerdict.APPROVE
+        elif verdict is HumanResponseVerdict.REJECT:
+            execution_verdict = ExecutionHumanVerdict.REJECT
+        elif verdict is HumanResponseVerdict.ESCALATE:
+            execution_verdict = ExecutionHumanVerdict.ESCALATE
+        else:
+            raise HumanApprovalResolutionError("unsupported verdict for canonical resolution")
+        pause_record = gov.pause_record
+        if pause_record is None:
+            raise HumanApprovalResolutionError("no active pause record")
+        command = ExecutionContinuationResolutionCommand(
+            continuation_id=governed.continuation_request_id,
+            identity=pending.identity,
+            expected_revision=pending.revision,
+            verdict=execution_verdict,
+            approver=approver,
+            human_request_id=pause_record.human_request_id,
+            pause_id=pause_record.pause_id,
+            operation_id=governed.operation_id,
+            side_effect_scope_id=governed.side_effect_scope_id,
+            side_effect_scope_digest=governed.side_effect_scope_digest,
+            resolved_at=datetime.now(timezone.utc).isoformat(),
+        )
+        updated = continuation.apply_resolution(command)
+        HumanPauseCoordinator.project_continuation(
+            task,
+            updated,
+            projection_sink=projection_sink,
+        )
+        return updated
+
+    @staticmethod
     def verdict_from_task(task: Task) -> Optional[HumanResponseVerdict]:
         raw = task.options.human.verdict
         if not raw:
@@ -302,14 +423,23 @@ class HumanPauseCoordinator:
 
     @staticmethod
     def is_resumed(task: Task) -> bool:
+        projected = task.runtime.governance.projected_continuation_lifecycle_state
+        if projected is not None:
+            return projected == ExecutionContinuationLifecycleState.RESUMED.value
         return task.options.human.is_resumed
 
     @staticmethod
     def is_rejected(task: Task) -> bool:
+        projected = task.runtime.governance.projected_continuation_lifecycle_state
+        if projected is not None:
+            return projected == ExecutionContinuationLifecycleState.REJECTED.value
         return task.options.human.is_rejected
 
     @staticmethod
     def is_escalated(task: Task) -> bool:
+        projected = task.runtime.governance.projected_continuation_lifecycle_state
+        if projected is not None:
+            return projected == ExecutionContinuationLifecycleState.ESCALATED.value
         return task.options.human.is_escalated
 
     @staticmethod

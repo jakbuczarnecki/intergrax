@@ -143,6 +143,9 @@ class HumanApprovalResolution(BaseModel):
 
 class TaskGovernanceState(BaseModel):
     paused: bool = False
+    projected_continuation_id: Optional[str] = None
+    projected_continuation_revision: Optional[int] = Field(default=None, ge=1)
+    projected_continuation_lifecycle_state: Optional[str] = None
     human_request: Optional[HumanRequest] = None
     human_request_created_at: Optional[str] = None
     human_request_expires_at: Optional[str] = None
