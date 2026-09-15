@@ -110,7 +110,7 @@ class DefaultEntityMemoryIndexer:
             ),
         )
 
-        relation_id = entity_memory_relation_id_for_has_memory(entry.entry_id)
+        relation_id = entity_memory_relation_id_for_has_memory(scope, entry.entry_id)
         self._store.upsert_relation(
             scope,
             EntityRelationRecord(

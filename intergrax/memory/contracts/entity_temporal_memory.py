@@ -51,6 +51,7 @@ __all__ = [
     "RelationTypeRef",
     "entity_memory_entity_id_for_entry",
     "entity_memory_relation_id_for_has_memory",
+    "entity_memory_source_projection_key",
     "entity_memory_user_entity_id",
     "is_entity_relation_active_at",
     "order_entity_relations_deterministic",
@@ -73,8 +74,10 @@ class EntityTemporalMemoryViolation(ValueError, EntityTemporalMemoryError):
 class EntityMemoryScope:
     """Entity/temporal projection scope.
 
-    Storage isolation authority is ``tenant_id`` only. ``user_id`` and ``workspace_id`` are
-    domain context qualifiers; derived entity ids embed tenant/user to avoid collisions.
+    ``tenant_id`` is the storage isolation authority (store keys partition by tenant).
+    ``user_id`` and ``workspace_id`` are projection/domain qualifiers: they do not change
+    storage authority but must participate in canonical derived projection identity and
+    scoped delete semantics so sibling users (or workspaces) under one tenant cannot collide.
     """
 
     tenant_id: str
@@ -261,6 +264,26 @@ def entity_memory_user_entity_id(scope: EntityMemoryScope) -> str:
     return f"ent:user:{scope.tenant_id}:{user}"
 
 
+def _entity_memory_projection_qualifier(value: str | None) -> str:
+    stripped = (value or "").strip()
+    return stripped if stripped else "-"
+
+
+def entity_memory_source_projection_key(
+    scope: EntityMemoryScope,
+    source_memory_id: str,
+) -> str:
+    """Deterministic canonical identity for a memory-sourced derived projection in ``scope``."""
+    memory_id = (source_memory_id or "").strip()
+    if not memory_id:
+        raise EntityTemporalMemoryViolation("source_memory_id must be non-empty")
+    user = (scope.user_id or "").strip()
+    if not user:
+        raise EntityTemporalMemoryViolation("user_id required for memory projection identity")
+    workspace = _entity_memory_projection_qualifier(scope.workspace_id)
+    return f"{scope.tenant_id}:{user}:{workspace}:{memory_id}"
+
+
 def entity_memory_entity_id_for_entry(scope: EntityMemoryScope, memory_entry_id: str) -> str:
     entry_id = (memory_entry_id or "").strip()
     if not entry_id:
@@ -271,11 +294,12 @@ def entity_memory_entity_id_for_entry(scope: EntityMemoryScope, memory_entry_id:
     return f"ent:memory:{scope.tenant_id}:{user}:{entry_id}"
 
 
-def entity_memory_relation_id_for_has_memory(source_memory_id: str) -> str:
-    memory_id = (source_memory_id or "").strip()
-    if not memory_id:
-        raise EntityTemporalMemoryViolation("source_memory_id must be non-empty")
-    return f"rel:has_memory:{memory_id}"
+def entity_memory_relation_id_for_has_memory(
+    scope: EntityMemoryScope,
+    source_memory_id: str,
+) -> str:
+    projection_key = entity_memory_source_projection_key(scope, source_memory_id)
+    return f"rel:has_memory:{projection_key}"
 
 
 @runtime_checkable

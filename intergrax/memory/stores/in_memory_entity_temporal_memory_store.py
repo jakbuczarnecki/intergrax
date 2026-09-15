@@ -15,6 +15,8 @@ from intergrax.memory.contracts.entity_temporal_memory import (
     EntityTemporalMemoryNotFound,
     EntityTemporalMemoryStore,
     EntityTemporalMemoryViolation,
+    entity_memory_entity_id_for_entry,
+    entity_memory_relation_id_for_has_memory,
     is_entity_relation_active_at,
     order_entity_relations_deterministic,
 )
@@ -175,22 +177,16 @@ class InMemoryEntityTemporalMemoryStore:
         if not memory_id:
             return 0
         removed = 0
-        relation_keys = [
-            key
-            for key, relation in self._relations.items()
-            if key[0] == scope.tenant_id and relation.source_memory_id == memory_id
-        ]
-        for key in relation_keys:
-            del self._relations[key]
+        relation_id = entity_memory_relation_id_for_has_memory(scope, memory_id)
+        relation_key = (scope.tenant_id, relation_id)
+        if relation_key in self._relations:
+            del self._relations[relation_key]
             removed += 1
 
-        entity_keys = [
-            key
-            for key, entity in self._entities.items()
-            if key[0] == scope.tenant_id and entity.source_memory_id == memory_id
-        ]
-        for key in entity_keys:
-            del self._entities[key]
+        memory_entity_id = entity_memory_entity_id_for_entry(scope, memory_id)
+        entity_key = (scope.tenant_id, memory_entity_id)
+        if entity_key in self._entities:
+            del self._entities[entity_key]
             removed += 1
         return removed
 
