@@ -7,9 +7,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
-from intergrax.memory.user_profile_memory import UserProfile, UserProfileMemoryEntry
+if TYPE_CHECKING:
+    from intergrax.memory.user_profile_memory import UserProfile, UserProfileMemoryEntry
 
 __all__ = [
     "MemoryLifecycleDisposition",
