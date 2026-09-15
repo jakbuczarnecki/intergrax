@@ -4,6 +4,14 @@
 from __future__ import annotations
 from intergrax.utils import attribute_access
 
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.memory.contracts.memory_control import (
+    MemoryControlAccessDenied,
+    MemoryControlPlane,
+    MemoryControlRecallRequest,
+    MemoryControlRememberRequest,
+    user_memory_scope,
+)
 from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
 from intergrax.tools._shared.async_dispatch import run_async
 from intergrax.tools.providers.ltm.contracts import (
@@ -51,10 +59,54 @@ def _keyword_hits(profile: object, query: str) -> list[LtmMemoryHit]:
     return hits
 
 
+def _control_plane_from_context(
+    ctx: ToolWiringContext,
+) -> tuple[MemoryControlPlane, RequestIdentity] | None:
+    plane = ctx.extras.get("memory_control_plane")
+    identity = ctx.extras.get("request_identity")
+    if isinstance(plane, MemoryControlPlane) and isinstance(identity, RequestIdentity):
+        return plane, identity
+    return None
+
+
+def _assert_tool_user_matches_identity(params_user_id: str, identity: RequestIdentity) -> None:
+    requested = params_user_id.strip()
+    canonical = (identity.user_id or "").strip()
+    if requested and canonical and requested != canonical:
+        raise MemoryControlAccessDenied("ltm user_id conflicts with canonical RequestIdentity")
+
+
 def ltm_search(ctx: ToolWiringContext, params: LtmSearchInput) -> LtmSearchOutput:
+    control = _control_plane_from_context(ctx)
+    query = params.query.strip()
+    if control is not None:
+        plane, identity = control
+        _assert_tool_user_matches_identity(params.user_id, identity)
+        scope = user_memory_scope(identity)
+        recall = run_async(
+            plane.recall(
+                identity,
+                scope,
+                MemoryControlRecallRequest(query=query, top_k=params.top_k),
+            )
+        )
+        hits = [
+            LtmMemoryHit(
+                entry_id=item.entry_id,
+                content=item.content,
+                kind=item.kind.value,
+                score=float(item.score or 0.0),
+            )
+            for item in recall.items
+        ]
+        return LtmSearchOutput(
+            used=bool(hits),
+            hits=hits,
+            reason=recall.reason,
+        )
+
     manager = _require_user_profile_manager(ctx)
     user_id = params.user_id.strip()
-    query = params.query.strip()
 
     if manager.is_longterm_rag_enabled():
         result = run_async(
@@ -89,6 +141,32 @@ def ltm_search(ctx: ToolWiringContext, params: LtmSearchInput) -> LtmSearchOutpu
 
 
 def ltm_write_fact(ctx: ToolWiringContext, params: LtmWriteFactInput) -> LtmWriteFactOutput:
+    control = _control_plane_from_context(ctx)
+    if control is not None:
+        plane, identity = control
+        _assert_tool_user_matches_identity(params.user_id, identity)
+        scope = user_memory_scope(identity)
+        kind_name = params.kind.strip().lower() or "user_fact"
+        try:
+            kind = MemoryKind(kind_name)
+        except ValueError:
+            kind = MemoryKind.OTHER
+        remembered = run_async(
+            plane.remember(
+                identity,
+                scope,
+                MemoryControlRememberRequest(
+                    content=params.content.strip(),
+                    kind=kind,
+                    title=params.title.strip() or None,
+                ),
+            )
+        )
+        return LtmWriteFactOutput(
+            written=True,
+            entry_id=remembered.entry_id or "",
+        )
+
     manager = _require_user_profile_manager(ctx)
     kind_name = params.kind.strip().lower() or "user_fact"
     try:

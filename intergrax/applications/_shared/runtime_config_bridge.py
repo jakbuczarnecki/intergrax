@@ -273,11 +273,20 @@ def build_runtime_context_from_environment(
         rag_stack=rag_stack,
     )
     if config.tool_wiring_context is not None:
+        from intergrax.applications._shared.memory_control_wiring import (
+            build_default_memory_control_plane,
+        )
+
         extras = dict(config.tool_wiring_context.extras)
         extras["session_manager"] = session_manager
+        if request.canonical_identity is not None:
+            extras["request_identity"] = request.canonical_identity
         replace_kwargs: dict[str, object] = {"extras": extras}
         if session_manager.user_profile_manager is not None:
             replace_kwargs["user_profile_manager"] = session_manager.user_profile_manager
+            extras["memory_control_plane"] = build_default_memory_control_plane(
+                user_profile_manager=session_manager.user_profile_manager,
+            )
         config.tool_wiring_context = replace(config.tool_wiring_context, **replace_kwargs)
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
     return RuntimeContext.build(

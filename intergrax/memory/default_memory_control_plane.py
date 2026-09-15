@@ -1,0 +1,366 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Default Memory Control Plane — routes to injected capabilities (MEM-ENT-3)."""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.memory.contracts.memory_control import (
+    EpisodicMemoryCapability,
+    MemoryControlAccessDenied,
+    MemoryControlBackendError,
+    MemoryControlForgetRequest,
+    MemoryControlForgetResult,
+    MemoryControlNotFound,
+    MemoryControlPlaneScope,
+    MemoryControlRecallItem,
+    MemoryControlRecallRequest,
+    MemoryControlRecallResult,
+    MemoryControlReconcileRequest,
+    MemoryControlReconcileResult,
+    MemoryControlRememberRequest,
+    MemoryControlRememberResult,
+    MemoryControlScopeRef,
+    MemoryControlUnsupportedScope,
+    TaskMemoryCapability,
+    UserProfileMemoryCapability,
+)
+from intergrax.memory.memory_temporal import is_memory_entry_active
+from intergrax.memory.user_profile_memory import UserProfile, UserProfileMemoryEntry
+from intergrax.memory.user_profile_manager import UserProfileManager
+
+__all__ = ["DefaultMemoryControlPlane", "UserProfileManagerMemoryCapability"]
+
+
+def _assert_scope_authorized(
+    identity: RequestIdentity,
+    scope: MemoryControlScopeRef,
+) -> None:
+    if scope.tenant_id != identity.tenant_id:
+        raise MemoryControlAccessDenied("scope tenant_id conflicts with canonical identity")
+    if scope.kind is MemoryControlPlaneScope.USER:
+        canonical_user = (identity.user_id or "").strip()
+        scope_user = (scope.user_id or "").strip()
+        if not scope_user or scope_user != canonical_user:
+            raise MemoryControlAccessDenied("user memory scope conflicts with canonical user_id")
+    if scope.kind is MemoryControlPlaneScope.SESSION:
+        if not (scope.session_id or "").strip():
+            raise MemoryControlAccessDenied("session scope requires session_id")
+
+
+@dataclass(slots=True)
+class UserProfileManagerMemoryCapability:
+    """Adapter from ``UserProfileManager`` to ``UserProfileMemoryCapability``."""
+
+    _manager: UserProfileManager
+
+    async def add_memory_entry(
+        self,
+        user_id: str,
+        entry: UserProfileMemoryEntry,
+    ) -> UserProfileMemoryEntry:
+        return await self._manager.add_memory_entry(user_id, entry)
+
+    async def remove_memory_entry(self, user_id: str, entry_id: str) -> object:
+        return await self._manager.remove_memory_entry(user_id, entry_id)
+
+    async def get_profile(self, user_id: str) -> object:
+        return await self._manager.get_profile(user_id)
+
+    def is_longterm_rag_enabled(self) -> bool:
+        return self._manager.is_longterm_rag_enabled()
+
+    async def search_longterm_memory(
+        self,
+        user_id: str,
+        query: str,
+        *,
+        top_k: int | None = None,
+        score_threshold: float | None = None,
+    ) -> object:
+        return await self._manager.search_longterm_memory(
+            user_id,
+            query,
+            top_k=top_k,
+            score_threshold=score_threshold,
+        )
+
+    async def reconcile_memory_projections(self, user_id: str) -> object:
+        return await self._manager.reconcile_memory_projections(user_id)
+
+
+@dataclass(slots=True)
+class DefaultMemoryControlPlane:
+    user_profile: UserProfileMemoryCapability | None = None
+    task_memory: TaskMemoryCapability | None = None
+    episodic: EpisodicMemoryCapability | None = None
+
+    async def remember(
+        self,
+        identity: RequestIdentity,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlRememberRequest,
+    ) -> MemoryControlRememberResult:
+        _assert_scope_authorized(identity, scope)
+        if scope.kind is MemoryControlPlaneScope.USER:
+            return await self._remember_user(scope, request)
+        if scope.kind is MemoryControlPlaneScope.TASK:
+            return await self._remember_task(scope, request)
+        raise MemoryControlUnsupportedScope(f"unsupported scope for remember: {scope.kind.value}")
+
+    async def recall(
+        self,
+        identity: RequestIdentity,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlRecallRequest,
+    ) -> MemoryControlRecallResult:
+        _assert_scope_authorized(identity, scope)
+        if scope.kind is MemoryControlPlaneScope.USER:
+            return await self._recall_user(scope, request)
+        if scope.kind is MemoryControlPlaneScope.SESSION:
+            return await self._recall_session(scope, request)
+        raise MemoryControlUnsupportedScope(f"unsupported scope for recall: {scope.kind.value}")
+
+    async def forget(
+        self,
+        identity: RequestIdentity,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlForgetRequest,
+    ) -> MemoryControlForgetResult:
+        _assert_scope_authorized(identity, scope)
+        if scope.kind is MemoryControlPlaneScope.USER:
+            return await self._forget_user(scope, request)
+        if scope.kind is MemoryControlPlaneScope.TASK:
+            return await self._forget_task(scope, request)
+        raise MemoryControlUnsupportedScope(f"unsupported scope for forget: {scope.kind.value}")
+
+    async def reconcile(
+        self,
+        identity: RequestIdentity,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlReconcileRequest,
+    ) -> MemoryControlReconcileResult:
+        _assert_scope_authorized(identity, scope)
+        if scope.kind is not MemoryControlPlaneScope.USER:
+            raise MemoryControlUnsupportedScope(
+                f"reconcile supported only for USER scope, got {scope.kind.value}"
+            )
+        if self.user_profile is None:
+            raise MemoryControlUnsupportedScope("user profile memory capability not configured")
+        user_id = scope.user_id or ""
+        try:
+            outcome = await self.user_profile.reconcile_memory_projections(user_id)
+        except Exception as exc:
+            raise MemoryControlBackendError(str(exc)) from exc
+        return MemoryControlReconcileResult(
+            scope=MemoryControlPlaneScope.USER,
+            reconciliation=outcome,
+        )
+
+    async def _remember_user(
+        self,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlRememberRequest,
+    ) -> MemoryControlRememberResult:
+        if self.user_profile is None:
+            raise MemoryControlUnsupportedScope("user profile memory capability not configured")
+        user_id = scope.user_id or ""
+        if request.entry is not None:
+            entry = request.entry
+        else:
+            content = request.content.strip()
+            if not content:
+                raise ValueError("remember requires content or entry")
+            entry = UserProfileMemoryEntry(
+                content=content,
+                kind=request.kind,
+                title=request.title,
+            )
+        try:
+            saved = await self.user_profile.add_memory_entry(user_id, entry)
+        except Exception as exc:
+            raise MemoryControlBackendError(str(exc)) from exc
+        return MemoryControlRememberResult(
+            scope=MemoryControlPlaneScope.USER,
+            entry_id=saved.entry_id,
+        )
+
+    async def _recall_user(
+        self,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlRecallRequest,
+    ) -> MemoryControlRecallResult:
+        if self.user_profile is None:
+            raise MemoryControlUnsupportedScope("user profile memory capability not configured")
+        user_id = scope.user_id or ""
+        query = request.query.strip()
+        if query and self.user_profile.is_longterm_rag_enabled():
+            raw = await self.user_profile.search_longterm_memory(
+                user_id,
+                query,
+                top_k=request.top_k,
+                score_threshold=request.score_threshold,
+            )
+            return self._recall_from_search_result(raw, query_present=True)
+        profile = await self.user_profile.get_profile(user_id)
+        if not isinstance(profile, UserProfile):
+            raise MemoryControlBackendError("unexpected profile type")
+        entries = list(profile.memory_entries)
+        items: list[MemoryControlRecallItem] = []
+        needle = query.lower() if query else None
+        for entry in entries:
+            if not is_memory_entry_active(entry):
+                continue
+            if needle is not None and needle not in (entry.content or "").lower():
+                continue
+            items.append(
+                MemoryControlRecallItem(
+                    entry_id=entry.entry_id,
+                    content=entry.content,
+                    kind=entry.kind,
+                    score=None,
+                )
+            )
+            if len(items) >= request.top_k:
+                break
+        reason = "keyword" if needle else "profile_scan"
+        return MemoryControlRecallResult(
+            scope=MemoryControlPlaneScope.USER,
+            items=tuple(items),
+            used_semantic=False,
+            reason=reason,
+        )
+
+    def _recall_from_search_result(
+        self,
+        raw: object,
+        *,
+        query_present: bool,
+    ) -> MemoryControlRecallResult:
+        if not isinstance(raw, dict):
+            raise MemoryControlBackendError("unexpected search result shape")
+        hits = raw.get("hits") or []
+        scores = raw.get("scores") or []
+        debug = raw.get("debug") or {}
+        used = bool(debug.get("used")) if isinstance(debug, dict) else False
+        items: list[MemoryControlRecallItem] = []
+        for index, hit in enumerate(hits):
+            if not isinstance(hit, UserProfileMemoryEntry):
+                continue
+            score_val = float(scores[index]) if index < len(scores) else None
+            items.append(
+                MemoryControlRecallItem(
+                    entry_id=hit.entry_id,
+                    content=hit.content,
+                    kind=hit.kind,
+                    score=score_val,
+                )
+            )
+        reason = str(debug.get("reason") or "semantic") if isinstance(debug, dict) else "semantic"
+        return MemoryControlRecallResult(
+            scope=MemoryControlPlaneScope.USER,
+            items=tuple(items),
+            used_semantic=used and query_present,
+            reason=reason,
+        )
+
+    async def _forget_user(
+        self,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlForgetRequest,
+    ) -> MemoryControlForgetResult:
+        if self.user_profile is None:
+            raise MemoryControlUnsupportedScope("user profile memory capability not configured")
+        entry_id = request.entry_id.strip()
+        if not entry_id:
+            raise ValueError("forget requires entry_id for USER scope")
+        user_id = scope.user_id or ""
+        profile = await self.user_profile.get_profile(user_id)
+        if not isinstance(profile, UserProfile):
+            raise MemoryControlBackendError("unexpected profile type")
+        active_ids = {
+            e.entry_id for e in profile.memory_entries if is_memory_entry_active(e)
+        }
+        if entry_id not in active_ids:
+            raise MemoryControlNotFound(f"memory entry not active: {entry_id}")
+        try:
+            await self.user_profile.remove_memory_entry(user_id, entry_id)
+        except Exception as exc:
+            raise MemoryControlBackendError(str(exc)) from exc
+        profile_after = await self.user_profile.get_profile(user_id)
+        if not isinstance(profile_after, UserProfile):
+            raise MemoryControlBackendError("unexpected profile type")
+        for entry in profile_after.memory_entries:
+            if entry.entry_id == entry_id and is_memory_entry_active(entry):
+                raise MemoryControlBackendError("forget left entry active in primary store")
+        return MemoryControlForgetResult(
+            scope=MemoryControlPlaneScope.USER,
+            entry_id=entry_id,
+        )
+
+    async def _remember_task(
+        self,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlRememberRequest,
+    ) -> MemoryControlRememberResult:
+        if self.task_memory is None:
+            raise MemoryControlUnsupportedScope("task memory capability not configured")
+        namespace = (scope.task_namespace or "").strip()
+        key = (scope.task_key or "").strip()
+        if not namespace or not key:
+            raise MemoryControlAccessDenied("task remember requires task_namespace and task_key on scope")
+        payload = request.task_value_json or request.content
+        if not payload.strip():
+            raise ValueError("task remember requires task_value_json or content")
+        try:
+            parsed: dict[str, object] = json.loads(payload)
+        except json.JSONDecodeError:
+            parsed = {"value": payload}
+        await self.task_memory.write(namespace, key, parsed)
+        return MemoryControlRememberResult(
+            scope=MemoryControlPlaneScope.TASK,
+            task_written=True,
+        )
+
+    async def _forget_task(
+        self,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlForgetRequest,
+    ) -> MemoryControlForgetResult:
+        if self.task_memory is None:
+            raise MemoryControlUnsupportedScope("task memory capability not configured")
+        namespace = (request.task_namespace or scope.task_namespace or "").strip()
+        key = (request.task_key or scope.task_key or "").strip()
+        if not namespace or not key:
+            raise MemoryControlAccessDenied("task forget requires namespace and key")
+        deleted = await self.task_memory.delete(namespace, key)
+        if not deleted:
+            raise MemoryControlNotFound(f"task memory key not found: {namespace}/{key}")
+        return MemoryControlForgetResult(
+            scope=MemoryControlPlaneScope.TASK,
+            task_deleted=True,
+        )
+
+    async def _recall_session(
+        self,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlRecallRequest,
+    ) -> MemoryControlRecallResult:
+        if self.episodic is None:
+            raise MemoryControlUnsupportedScope("episodic memory capability not configured")
+        session_id = scope.session_id or ""
+        items = await self.episodic.recall_session_turns(
+            tenant_id=scope.tenant_id,
+            session_id=session_id,
+            query=request.query,
+            top_k=request.top_k,
+        )
+        return MemoryControlRecallResult(
+            scope=MemoryControlPlaneScope.SESSION,
+            items=items,
+            used_semantic=bool(request.query.strip()),
+            reason="session_episodic",
+        )

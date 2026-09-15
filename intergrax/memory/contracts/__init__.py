@@ -13,6 +13,11 @@ from intergrax.memory.contracts.memory_store_plugin import (
     SessionStoragePlugin,
     UserProfileStorePlugin,
 )
+from intergrax.memory.contracts.memory_control import (
+    MemoryControlPlane,
+    MemoryControlPlaneScope,
+    MemoryControlScopeRef,
+)
 from intergrax.memory.contracts.session_turn_index import (
     SessionTurnIndexStore,
     SessionTurnIndexStorePlugin,
@@ -28,4 +33,7 @@ __all__ = [
     "MemoryLifecycleOutcome",
     "MemoryReconciliationOutcome",
     "UserProfileMemoryProjection",
+    "MemoryControlPlane",
+    "MemoryControlPlaneScope",
+    "MemoryControlScopeRef",
 ]
