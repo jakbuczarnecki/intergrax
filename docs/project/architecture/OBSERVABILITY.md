@@ -234,7 +234,23 @@ HistoricalReconstructionService.reconstruct (E + K + bitemporal query compositio
 
 **TRACE-ASOF-3 decision:** **NOT REQUIRED** — no measurable need for materialized projection revisions when logical rebuild from positioned evidence is canonical and certified.
 
-**Limitation (explicit):** `ExecutionLineageReader` does not yet expose an **E-scoped** lineage boundary; attempt discovery during as-of reconstruction may reflect run-level lineage while runtime events are prefix-filtered at **E**. Full Execution Tree at historical **E** without heuristics may require contract extension (**OBS-BITEMP-REBASE** / ADR), not timestamp filtering.
+### E-Scoped Lineage Semantics (OBS-ASOF-REBASE-R1)
+
+**Authority:** Execution owns durable lineage writes (`ExecutionLineagePersistence`); Evidence Plane reads via neutral ports only — Observability does not mint `ExecutionId` / `AttemptId` / `ExecutionEventPosition`.
+
+**At explicit `execution_as_of` (inclusive `AsOfBoundary`):**
+
+| Capability | Behavior |
+| ---------- | -------- |
+| `ExecutionLineageReader` only (current run snapshot) | Lineage enrichment is **disabled** — discovery metadata `NOT_APPLICABLE`; attempts come from RuntimeEvent prefix ± causal evidence only. Current lineage is **never** merged silently. |
+| `ExecutionLineageAsOfReader` injected alongside | Provider returns `reader_at_execution_boundary(boundary)` — facts must be bound to **E** at write time (no `discovery_position` / `admission_position` treated as `ExecutionEventPosition` without formal mapping). |
+| No lineage configured | Unchanged — no discovery metadata. |
+
+**Current reconstruction (`execution_as_of is None`):** full run-level `ExecutionLineageReader` + discovery snapshot semantics unchanged.
+
+**Knowledge vs execution:** lineage facts *visible at E* are not the same axis as later durable knowledge about prior execution; full E+K lineage composition remains **OBS-BITEMP-REBASE**.
+
+**Gates:** `tests/unit/runtime/observability/reconstruction/test_obs_asof_rebase_r1_lineage_integrity.py` (append immunity, future attempt/child, current view, no timestamp filtering).
 
 ### Signal families (no universal payload bag)
 

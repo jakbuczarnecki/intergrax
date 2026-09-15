@@ -10,6 +10,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.contracts.execution_event_position import AsOfBoundary
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -265,6 +266,22 @@ def validate_admission_page_limit(
     return validate_lineage_page_limit(limit, hard_maximum=hard_maximum)
 
 
+class ExecutionLineageAsOfReader(ABC):
+    """Optional capability: lineage reads bounded to an inclusive execution as-of boundary.
+
+    Providers that persist canonical execution-position binding at lineage admission time
+    implement this port. Evidence Plane reconstruction MUST NOT treat ``discovery_position``
+    or ``admission_position`` as ``ExecutionEventPosition`` without an explicit contract mapping.
+    """
+
+    @abstractmethod
+    def reader_at_execution_boundary(
+        self,
+        boundary: AsOfBoundary,
+    ) -> ExecutionLineageReader:
+        """Return a read-only lineage reader whose facts are visible at ``boundary`` (inclusive)."""
+
+
 class ExecutionLineageReader(ABC):
     """Read-only execution lineage port for diagnostics and derived projections."""
 
@@ -408,6 +425,7 @@ class ExecutionLineagePersistence(ExecutionLineageReader, ABC):
 
 
 __all__ = [
+    "ExecutionLineageAsOfReader",
     "ExecutionLineageAdmissionPage",
     "ExecutionLineageAdmissionRecord",
     "ExecutionLineageAttemptClosureKind",

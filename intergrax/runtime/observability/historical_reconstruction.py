@@ -14,7 +14,10 @@ from intergrax.contracts.bitemporal_knowledge import (
     KnowledgeRevisionId,
     RevisionOrderingAuthority,
 )
-from intergrax.contracts.execution_lineage import ExecutionLineageReader
+from intergrax.contracts.execution_lineage import (
+    ExecutionLineageAsOfReader,
+    ExecutionLineageReader,
+)
 from intergrax.contracts.execution_identity import validate_task_id
 from intergrax.contracts.historical_reconstruction import (
     ExecutionHistoricalReconstructionRequest,
@@ -93,6 +96,7 @@ class HistoricalReconstructionService:
         revision_ordering: RevisionOrderingAuthority,
         *,
         execution_lineage: ExecutionLineageReader | None = None,
+        execution_lineage_as_of: ExecutionLineageAsOfReader | None = None,
         execution_reconstructor: ExecutionReconstructor | None = None,
     ) -> None:
         self._runtime_events = runtime_events
@@ -102,6 +106,7 @@ class HistoricalReconstructionService:
             runtime_events,
             causal_evidence,
             execution_lineage,
+            execution_lineage_as_of,
         )
 
     def reconstruct(

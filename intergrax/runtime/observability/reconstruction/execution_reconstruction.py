@@ -20,6 +20,7 @@ from intergrax.contracts.execution_identity import (
     validate_task_id,
 )
 from intergrax.contracts.execution_lineage import (
+    ExecutionLineageAsOfReader,
     ExecutionLineageAttemptDiscoveryRecord,
     ExecutionLineageDiscoveryCoverageOrigin,
     ExecutionLineageDiscoveryRunState,
@@ -64,12 +65,14 @@ class RuntimeHistoryCompleteness(StrEnum):
 class ExecutionAttemptDiscoveryReadStatus(StrEnum):
     AVAILABLE = "available"
     UNAVAILABLE = "unavailable"
+    NOT_APPLICABLE = "not_applicable"
 
 
 class ExecutionAttemptDiscoveryCompleteness(StrEnum):
     COMPLETE = "complete"
     LEGACY_UNKNOWN = "legacy_unknown"
     TRUNCATED = "truncated"
+    NOT_APPLICABLE = "not_applicable"
 
 
 @dataclass(frozen=True, slots=True)
@@ -180,6 +183,7 @@ class ExecutionReconstructor:
         runtime_events: EvidencePersistencePort,
         causal_evidence: CausalEvidencePersistence,
         execution_lineage: ExecutionLineageReader | None = None,
+        execution_lineage_as_of: ExecutionLineageAsOfReader | None = None,
         *,
         initial_lineage_page_limit: int = 100,
         max_lineage_records: int = 10_000,
@@ -193,6 +197,7 @@ class ExecutionReconstructor:
         self._runtime_events = runtime_events
         self._causal_evidence = causal_evidence
         self._execution_lineage = execution_lineage
+        self._execution_lineage_as_of = execution_lineage_as_of
         self._initial_lineage_page_limit = initial_lineage_page_limit
         self._max_lineage_records = max_lineage_records
         self._initial_attempt_discovery_page_limit = (
@@ -266,20 +271,24 @@ class ExecutionReconstructor:
                 run_id=run_id,
             )
 
-        discovery_snapshot = _load_run_discovery_snapshot(
-            self._execution_lineage,
-            tenant_id=tenant_id,
-            task_id=task_id,
-            run_id=run_id,
-            page_limit=self._initial_attempt_discovery_page_limit,
-            max_records=self._max_attempt_discovery_records,
-            max_retries=self._max_attempt_discovery_snapshot_retries,
+        lineage_reader, discovery_snapshot, lineage_enrichment_at_e = (
+            _resolve_lineage_enrichment_for_reconstruction(
+                execution_as_of=execution_as_of,
+                execution_lineage=self._execution_lineage,
+                execution_lineage_as_of=self._execution_lineage_as_of,
+                tenant_id=tenant_id,
+                task_id=task_id,
+                run_id=run_id,
+                page_limit=self._initial_attempt_discovery_page_limit,
+                max_records=self._max_attempt_discovery_records,
+                max_retries=self._max_attempt_discovery_snapshot_retries,
+            )
         )
 
         attempt_build = _build_attempts(
             causal,
             positioned,
-            execution_lineage=self._execution_lineage,
+            execution_lineage=lineage_reader,
             tenant_id=tenant_id,
             task_id=task_id,
             run_id=run_id,
@@ -287,6 +296,11 @@ class ExecutionReconstructor:
             max_lineage_records=self._max_lineage_records,
             max_lineage_snapshot_retries=self._max_lineage_snapshot_retries,
             discovery_snapshot=discovery_snapshot,
+            lineage_configured_for_metadata=(
+                self._execution_lineage is not None
+                or self._execution_lineage_as_of is not None
+            ),
+            lineage_enrichment_at_execution_boundary=lineage_enrichment_at_e,
         )
         discovery_read_status = attempt_build.discovery_read_status
         discovery_completeness = attempt_build.discovery_completeness
@@ -301,6 +315,84 @@ class ExecutionReconstructor:
             attempt_discovery_read_status=discovery_read_status,
             attempt_discovery_completeness=discovery_completeness,
         )
+
+
+def _run_discovery_snapshot_not_applicable_at_execution_boundary() -> _RunDiscoverySnapshot:
+    return _RunDiscoverySnapshot(
+        records=(),
+        run_state_before=None,
+        run_state_after=None,
+        truncated=False,
+        read_status=ExecutionAttemptDiscoveryReadStatus.NOT_APPLICABLE,
+        completeness=ExecutionAttemptDiscoveryCompleteness.NOT_APPLICABLE,
+    )
+
+
+def _resolve_lineage_enrichment_for_reconstruction(
+    *,
+    execution_as_of: AsOfBoundary | None,
+    execution_lineage: ExecutionLineageReader | None,
+    execution_lineage_as_of: ExecutionLineageAsOfReader | None,
+    tenant_id: str,
+    task_id: TaskId,
+    run_id: RunId,
+    page_limit: int,
+    max_records: int,
+    max_retries: int,
+) -> tuple[
+    ExecutionLineageReader | None,
+    _RunDiscoverySnapshot,
+    bool,
+]:
+    """Return lineage reader, discovery snapshot, and whether E-scoped lineage enrichment is active."""
+    if execution_as_of is None:
+        discovery_snapshot = _load_run_discovery_snapshot(
+            execution_lineage,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            page_limit=page_limit,
+            max_records=max_records,
+            max_retries=max_retries,
+        )
+        return execution_lineage, discovery_snapshot, False
+
+    if execution_lineage_as_of is not None:
+        if execution_as_of.run_id != run_id:
+            raise ExecutionReconstructionIntegrityError(
+                "execution_as_of.run_id must match reconstruct_execution run_id",
+            )
+        scoped_reader = execution_lineage_as_of.reader_at_execution_boundary(
+            execution_as_of,
+        )
+        discovery_snapshot = _load_run_discovery_snapshot(
+            scoped_reader,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            page_limit=page_limit,
+            max_records=max_records,
+            max_retries=max_retries,
+        )
+        return scoped_reader, discovery_snapshot, True
+
+    if execution_lineage is not None:
+        return (
+            None,
+            _run_discovery_snapshot_not_applicable_at_execution_boundary(),
+            False,
+        )
+
+    discovery_snapshot = _load_run_discovery_snapshot(
+        None,
+        tenant_id=tenant_id,
+        task_id=task_id,
+        run_id=run_id,
+        page_limit=page_limit,
+        max_records=max_records,
+        max_retries=max_retries,
+    )
+    return None, discovery_snapshot, False
 
 
 def _load_run_discovery_snapshot(
@@ -472,12 +564,21 @@ def _effective_attempt_discovery_metadata(
     *,
     discovery_only_candidate_unavailable: bool,
     lineage_configured: bool,
+    lineage_enrichment_at_execution_boundary: bool,
+    lineage_enrichment_disabled_at_execution_boundary: bool,
 ) -> tuple[
     ExecutionAttemptDiscoveryReadStatus | None,
     ExecutionAttemptDiscoveryCompleteness | None,
 ]:
     if not lineage_configured:
         return None, None
+    if lineage_enrichment_disabled_at_execution_boundary:
+        return (
+            ExecutionAttemptDiscoveryReadStatus.NOT_APPLICABLE,
+            ExecutionAttemptDiscoveryCompleteness.NOT_APPLICABLE,
+        )
+    if lineage_enrichment_at_execution_boundary:
+        return snapshot.read_status, snapshot.completeness
     if discovery_only_candidate_unavailable:
         return ExecutionAttemptDiscoveryReadStatus.UNAVAILABLE, None
     return snapshot.read_status, snapshot.completeness
@@ -574,6 +675,8 @@ def _build_attempts(
     max_lineage_records: int,
     max_lineage_snapshot_retries: int,
     discovery_snapshot: _RunDiscoverySnapshot,
+    lineage_configured_for_metadata: bool,
+    lineage_enrichment_at_execution_boundary: bool,
 ) -> _AttemptBuildResult:
     causal_by_attempt: dict[AttemptId, list[PlatformCausalEvidence]] = {}
     for evidence in causal:
@@ -637,11 +740,21 @@ def _build_attempts(
                 discovery_only_candidate_unavailable = True
                 continue
         attempts.append(reconstructed)
+    lineage_enrichment_disabled_at_execution_boundary = (
+        lineage_configured_for_metadata
+        and not lineage_enrichment_at_execution_boundary
+        and discovery_snapshot.read_status
+        is ExecutionAttemptDiscoveryReadStatus.NOT_APPLICABLE
+    )
     discovery_read_status, discovery_completeness = (
         _effective_attempt_discovery_metadata(
             discovery_snapshot,
             discovery_only_candidate_unavailable=discovery_only_candidate_unavailable,
-            lineage_configured=execution_lineage is not None,
+            lineage_configured=lineage_configured_for_metadata,
+            lineage_enrichment_at_execution_boundary=lineage_enrichment_at_execution_boundary,
+            lineage_enrichment_disabled_at_execution_boundary=(
+                lineage_enrichment_disabled_at_execution_boundary
+            ),
         )
     )
     return _AttemptBuildResult(
