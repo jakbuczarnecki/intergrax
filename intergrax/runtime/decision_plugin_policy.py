@@ -36,6 +36,9 @@ class DecisionPluginLoadPolicy:
     requested_strategy_plugins: tuple[PlatformPluginSelectionRef, ...] | None = None
     requested_verification_stage_plugins: tuple[PlatformPluginSelectionRef, ...] | None = None
     requested_artifact_plugins: tuple[PlatformPluginSelectionRef, ...] | None = None
+    requested_exposure_selection_strategy_plugins: (
+        tuple[PlatformPluginSelectionRef, ...] | None
+    ) = None
 
 
 def production_admission_rejection_for_spec(

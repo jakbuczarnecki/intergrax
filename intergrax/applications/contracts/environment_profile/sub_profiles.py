@@ -377,6 +377,7 @@ class DecisionPluginProfile(BaseModel):
     verification_stage_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
     strategy_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
     artifact_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
+    exposure_selection_strategy_plugin: PlatformPluginSelectionRef | None = None
     require_manifest_capability_binding: bool = False
 
     @model_validator(mode="after")
