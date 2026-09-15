@@ -16,7 +16,9 @@ from intergrax.applications._shared.harness_principal import (
     HarnessAuthenticatedPrincipal,
     harness_principal_to_approver_evidence,
 )
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+from tests.unit.applications.harness_canonical_task_routes_test_support import (
+    mount_canonical_harness_task_routes_for_tests,
+)
 from intergrax.applications._shared.task_control import (
     HitlResumeValidationError,
     _materialize_hitl_resume_input,
@@ -418,10 +420,8 @@ def test_c7_http_tenant_conflict() -> None:
         resolved_api_key=None,
         tenant_required=True,
     )
-    runner = MagicMock()
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app,
-        task_runner=runner,
         checkpoint_store=_FakeCheckpointStore(_checkpoint_with_pause()),
         mutation_boundary=boundary,
     )

@@ -16,19 +16,17 @@ from intergrax.runtime.long_running.scheduler import (
     ENV_SCHEDULER_POLL_SECONDS,
     HostTaskResumeExecutor,
     LongRunningScheduler,
-    UnifiedTaskResumeExecutor,
 )
 from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.task.task import Task
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 TaskEnricher = Callable[[Task], Task]
 
 
 @dataclass(frozen=True)
 class LongRunningSchedulerWiring:
-    """In-process scheduler bound to checkpoint store + UnifiedTaskRunner."""
+    """In-process scheduler bound to checkpoint store + host task resume executor."""
 
     scheduler: LongRunningScheduler
 
@@ -43,33 +41,6 @@ def _poll_interval_seconds(explicit: Optional[float]) -> float:
         except ValueError:
             pass
     return DEFAULT_SCHEDULER_POLL_SECONDS
-
-
-def wire_long_running_scheduler(
-    *,
-    checkpoint_store: TaskCheckpointPersistence,
-    task_runner: UnifiedTaskRunner,
-    notification_adapter: NotificationAdapter | None = None,
-    poll_interval_seconds: Optional[float] = None,
-    enabled: bool = True,
-) -> LongRunningSchedulerWiring | None:
-    """
-    Build ``LongRunningScheduler`` for HITL timeout enforcement and delayed resumes.
-
-    Call ``scheduler.start()`` on app startup and ``scheduler.stop()`` on shutdown.
-    """
-    if not enabled:
-        return None
-    scheduler = LongRunningScheduler(
-        checkpoint_store,
-        UnifiedTaskResumeExecutor(task_runner),
-        schedule_store=checkpoint_store,
-        ledger=checkpoint_store,
-        notification_adapter=notification_adapter,
-        poll_interval_seconds=_poll_interval_seconds(poll_interval_seconds),
-        execution_terminal=task_runner.nexus_loop.execution_terminal,
-    )
-    return LongRunningSchedulerWiring(scheduler=scheduler)
 
 
 def wire_long_running_scheduler_with_host_execution(

@@ -231,3 +231,20 @@ No **STOP / ARCHITECTURE DECISION REQUIRED** for RB-2A findings — remediation 
 - [x] L5/L6 empty (no unproven critical claims)
 - [x] Remediation slices bounded; no frozen EE mutation
 - [x] No production code changes in RB-2A
+
+---
+
+## RB-2B1 — Dead compatibility surface retirement (@ `ed780d47e7bc60e0ac019fb9bee8961dac9493c5`)
+
+| Candidate | Verdict | Production callers before → after | Notes |
+|-----------|---------|-------------------------------------|-------|
+| `mount_harness_task_routes` | **DELETED** | 0 → 0 | Canonical: `mount_canonical_harness_task_routes` + `wire_harness_task_control`. Unit tests migrated via `mount_canonical_harness_task_routes_for_tests`. |
+| `build_task_runner_with_enricher` | **DELETED** | 0 → 0 | Enrichment remains `build_reliability_task_enricher` / composition; `UnifiedTaskRunner` constructed directly in eval/test-only paths. |
+| `wire_long_running_scheduler(UnifiedTaskRunner)` | **DELETED** | 0 → 0 | Canonical: `wire_long_running_scheduler_with_host_execution` / `wire_harness_host_long_running_scheduler`. |
+| `UnifiedTaskRunner` | **KEEP TEMPORARILY** | unchanged | RB-2A adapter; not in scope for deletion. |
+
+**Zero production execution bypass count:** **0** (unchanged).  
+**Frozen Execution Engine:** not modified.  
+**Pluginability:** public surfaces remain `HostTaskExecutionPort`, `TaskExecutor`, scheduler host wiring contracts.
+
+**RB2B1_BASELINE_HEAD:** `ed780d47e7bc60e0ac019fb9bee8961dac9493c5`

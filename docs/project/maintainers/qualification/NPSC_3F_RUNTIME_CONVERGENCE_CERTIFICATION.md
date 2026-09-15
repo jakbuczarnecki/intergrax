@@ -88,8 +88,8 @@ StrategyExecutionRouter → Nexus orchestration
 | Item | Classification | Owner | Retirement plan |
 | ---- | -------------- | ----- | --------------- |
 | `resolve_harness_host_nexus_loop_legacy` | harness compat seam | platform harness | retain for plugin/observability wiring only |
-| `mount_harness_task_routes` | legacy test/direct-mount API | task control | unit tests only; production uses `mount_canonical_harness_task_routes` |
-| `wire_long_running_scheduler` | legacy scheduler API | long_running | definition retained; harness hosts use `wire_harness_host_long_running_scheduler` |
+| `mount_harness_task_routes` | **DELETED @ RB-2B1** — was legacy test/direct-mount API | tests migrated to `mount_canonical_harness_task_routes` |
+| `wire_long_running_scheduler` | **DELETED @ RB-2B1** — harness uses `wire_harness_host_long_running_scheduler` |
 | `build_task_runner_with_enricher` + `NexusTaskExecutionAdapter` | fastapi_core run dispatch | queue/run service | classified non-root harness execution; uses thin `execute_root_task` adapter, not lifecycle owner |
 | `UnifiedTaskRunner` | scheduler/eval thin adapter module | runtime.task | allowed as primitive; forbidden as harness composition root |
 
