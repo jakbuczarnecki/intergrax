@@ -7,13 +7,13 @@ Mandatory P1 execution proof (not manifest metadata):
 ``uv run pytest tests/unit tests/integration/runtime/test_terminal_diagnostic_production_e2e.py -m obs_coverage_p1``
 """
 
+from __future__ import annotations
+
 OBS_COVERAGE_P1_QUALIFICATION_COMMAND = (
     "uv run pytest tests/unit "
     "tests/integration/runtime/test_terminal_diagnostic_production_e2e.py "
     "-m obs_coverage_p1"
 )
-
-from __future__ import annotations
 
 import ast
 from dataclasses import dataclass
