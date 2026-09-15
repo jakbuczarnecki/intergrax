@@ -87,7 +87,7 @@ NO DUPLICATE AUTHORITIES. NO PARALLEL SOURCES OF TRUTH.
 | Reliability recovery semantics | Enterprise Reliability |
 | Functional evidence facts | Evidence Plane (`intergrax.contracts.functional_evidence` — OBS records; DIAG consumes) |
 | Causal relationships | Evidence Plane (`PlatformCausalEvidence`) |
-| Factual reconstruction | **Evidence Plane (semantic owner)**; implementation today: `ExecutionReconstructor` + `HistoricalReconstructionService` (**transitional placement**, OBS-RECONSTRUCTION-1) |
+| Factual reconstruction | **Evidence Plane (semantic and physical owner)** | `intergrax.runtime.observability.reconstruction` (**OBS-RECONSTRUCTION-1** closed) |
 | Diagnostic interpretation | Central Diagnostics |
 | Problem lifecycle | Central Diagnostics |
 | Plane B operational detail | `intergrax.contracts.tracing` (`TraceEvent`) |
@@ -150,7 +150,7 @@ Observability → records facts (must not depend on DIAG for evidence **contract
 Diagnostics → consumes evidence + shared factual reconstruction
 ```
 
-**Functional evidence (OBS-FUNCTIONAL-CONTRACTS-1 / R1):** Contracts belong to the Evidence Plane (`intergrax.contracts.functional_evidence`, `platform_functional_evidence.v2`, five-ID `PipelineEvidenceScope`). Provider implementations are pluggable behind `FunctionalEvidencePersistence` under `intergrax.runtime.observability.functional_evidence` (composition via `wire_functional_evidence_runtime(persistence=...)`). Observability runtime consumes the port only — it does **not** import `runtime.diagnostics.*` for functional evidence. Diagnostics is a consumer/interpreter of evidence, not owner of contracts or providers. Query pagination order uses `(recorded_at, evidence_id)` — stable pagination, not execution/causal authority. **Remaining debt:** `execution_reconstruction` wiring still under DIAG import path (**OBS-RECONSTRUCTION-1**).
+**Functional evidence (OBS-FUNCTIONAL-CONTRACTS-1 / R1):** Contracts belong to the Evidence Plane (`intergrax.contracts.functional_evidence`, `platform_functional_evidence.v2`, five-ID `PipelineEvidenceScope`). Provider implementations are pluggable behind `FunctionalEvidencePersistence` under `intergrax.runtime.observability.functional_evidence` (composition via `wire_functional_evidence_runtime(persistence=...)`). Observability runtime consumes the port only — it does **not** import `runtime.diagnostics.*` for functional evidence. Diagnostics is a consumer/interpreter of evidence, not owner of contracts or providers. Query pagination order uses `(recorded_at, evidence_id)` — stable pagination, not execution/causal authority. **OBS → DIAG reconstruction import debt = CLOSED** (**OBS-RECONSTRUCTION-1**).
 
 ### Factual reconstruction vs diagnostic interpretation
 
@@ -172,7 +172,7 @@ Shared factual reconstruction (deterministic, completeness-explicit)
 | `reconstruct_run_execution_as_of` | Yes | No |
 | `HistoricalReconstructionService` | Yes — composes E/K views | No |
 
-**Verdict (OBS-REBASE-1):** Factual reconstruction is **not** DIAG-only semantically. **Do not** add a second reconstructor. **OBS-RECONSTRUCTION-1** will relocate/neutralize the shared factual core while DIAG keeps interpretation-only consumers.
+**Verdict (OBS-REBASE-1):** Factual reconstruction is **not** DIAG-only semantically. **Do not** add a second reconstructor. **OBS-RECONSTRUCTION-1** relocated the shared factual core to `intergrax.runtime.observability.reconstruction`; DIAG remains interpretation-only consumers.
 
 ## OBS-BOUNDARY-1 — Evidence / reconstruction / diagnostics ownership freeze (closed 2026-09-13)
 
@@ -188,20 +188,20 @@ FACTUAL RECONSTRUCTION (shared deterministic rebuild — today `ExecutionReconst
 DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · operator views)
 ```
 
-| Layer | Semantic owner | Physical package today (transitional) |
-| ----- | ---------------- | ------------------------------------- |
+| Layer | Semantic owner | Physical package |
+| ----- | ---------------- | ---------------- |
 | Execution truth | Execution Runtime | `intergrax.runtime` execution path |
 | Evidence facts | Observability / Evidence Plane | `intergrax.runtime.observability` + `EvidencePersistencePort` |
-| Factual reconstruction | **Evidence Plane (semantic)** | `intergrax.runtime.diagnostics.execution_reconstruction` (**OBS-RECONSTRUCTION-1**) |
+| Factual reconstruction | **Evidence Plane** | `intergrax.runtime.observability.reconstruction` |
 | Diagnostic interpretation | Central Diagnostics | `intergrax.runtime.diagnostics` (orchestrator, Problem lifecycle, analyzers) |
 
 **Frozen:** Observability records facts; it does not decide operational meaning. Diagnostics interprets facts; it does not mint execution identity, own evidence persistence, or maintain a competing Execution Tree.
 
-**Documented import debt (current):** `runtime.observability` may still import `runtime.diagnostics` for **shared factual reconstruction** wiring only. Functional evidence contracts and providers live under `intergrax.contracts.functional_evidence` and `intergrax.runtime.observability.functional_evidence` (**OBS-FUNCTIONAL-CONTRACTS-1** / **R1** closed). **OBS-RECONSTRUCTION-1** relocates the reconstruction package; no compatibility shims; no second reconstructor in Observability.
+**Import debt (OBS-RECONSTRUCTION-1):** `HistoricalReconstructionService` and shared `ExecutionReconstructor` live under Observability; Diagnostics **imports** `runtime.observability.reconstruction` — not the reverse. Functional evidence contracts and providers remain under `intergrax.contracts.functional_evidence` and `intergrax.runtime.observability.functional_evidence` (**OBS-FUNCTIONAL-CONTRACTS-1** / **R1** closed).
 
-**Future architecture gate (after reconstruction migration):** `runtime.observability` MUST NOT import `runtime.diagnostics.*` except an explicit temporary allowlist — enforced in **OBS-RECONSTRUCTION-1**, not before.
+**Architecture gate:** `runtime.observability.reconstruction` MUST NOT import `runtime.diagnostics.*` (see `test_obs_reconstruction_1_architecture.py`). **Unrelated existing debt:** `qualification_runtime_trace.py` may still import DIAG for completion alignment — not reconstruction.
 
-**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** **BLOCKED BY** shared reconstruction **package** placement (**OBS-RECONSTRUCTION-1**, **OBS-ASOF-REBASE**). **TRACE-ASOF-3** remains **conditional / defer** (materialization only when measurably required).
+**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** Shared reconstruction **package** placement closed (**OBS-RECONSTRUCTION-1**); further work remains **OBS-ASOF-REBASE** / **OBS-BITEMP-REBASE**. **TRACE-ASOF-3** remains **conditional / defer** (materialization only when measurably required).
 
 ### Signal families (no universal payload bag)
 
@@ -1269,7 +1269,7 @@ Transport redelivery alone must **not** create new runtime identity.
 | `RuntimeEventPersistence` | Canonical persisted evidence authority - accepted `RuntimeEvent` history with persistence-owned `ExecutionEventPosition` |
 | `CausalEvidencePersistence` | Canonical persisted relation evidence authority - immutable `PlatformCausalEvidence` linking transport to execution |
 
-**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)` (implementation under `intergrax.runtime.diagnostics.execution_reconstruction` today; **semantic owner:** Evidence Plane shared factual reconstruction — see [OBS-REBASE-1](#obs-rebase-1--platform-ssot-frozen-2026-09-13)). It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only. Diagnostics and `HistoricalReconstructionService` **consume** this layer; they do not own persisted evidence.
+**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)` (`intergrax.runtime.observability.reconstruction`; **semantic and physical owner:** Evidence Plane shared factual reconstruction — see [OBS-REBASE-1](#obs-rebase-1--platform-ssot-frozen-2026-09-13)). It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only. Diagnostics and `HistoricalReconstructionService` **consume** this layer; they do not own persisted evidence.
 
 **Ordering rules (do not mix):**
 
@@ -1285,7 +1285,7 @@ Transport redelivery alone must **not** create new runtime identity.
 
 **Integrity:** facts returned outside the requested `tenant_id` / `TaskId` / `RunId` scope fail closed with `ExecutionReconstructionIntegrityError` - no silent filtering.
 
-**Code references:** `intergrax/runtime/diagnostics/execution_reconstruction.py`.
+**Code references:** `intergrax/runtime/observability/reconstruction/`.
 
 ### Lifecycle anomaly analysis (DIAG-3)
 

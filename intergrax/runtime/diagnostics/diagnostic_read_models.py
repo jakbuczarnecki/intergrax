@@ -15,11 +15,11 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageSegmentLifecycle,
 )
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
-from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
+from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
     ExecutionLineageCompleteness,
     ExecutionLineageReadStatus,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionAttemptDiscoveryCompleteness,
     ExecutionAttemptDiscoveryReadStatus,
 )

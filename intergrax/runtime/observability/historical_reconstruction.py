@@ -23,7 +23,7 @@ from intergrax.contracts.historical_reconstruction import (
     KnowledgeBoundaryNotFinalizedError,
     revision_admissible_at_bitemporal_query,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionAttemptDiscoveryCompleteness,
     ExecutionAttemptDiscoveryReadStatus,
     ExecutionReconstruction,

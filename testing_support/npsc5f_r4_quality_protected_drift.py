@@ -8,12 +8,12 @@ import subprocess
 from collections.abc import Iterable
 from pathlib import Path
 
-R4_QUALITY_IMPLEMENTATION_SHA = "84e704eec611e7b24eb82b0be4fe98172c512739"
+R4_QUALITY_IMPLEMENTATION_SHA = "4aa4781c2511fb8fe7218ba4bd51c7c227a562c0"
 
 _R4_QUALITY_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {
-        "intergrax/runtime/diagnostics/execution_reconstruction.py",
-        "intergrax/runtime/diagnostics/execution_lineage_reconstruction.py",
+        "intergrax/runtime/observability/reconstruction/execution_reconstruction.py",
+        "intergrax/runtime/observability/reconstruction/execution_lineage_reconstruction.py",
     },
 )
 

@@ -49,13 +49,13 @@ from intergrax.integrations.contracts.document_store import (
     DocumentQueryPageV1,
     DocumentRecord,
 )
-from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
+from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
     ExecutionLineageCompleteness,
     ExecutionLineageReadStatus,
     ExecutionLineageReconstructionIntegrityError,
     reconstruct_attempt_lineage,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionAttemptDiscoveryCompleteness,
     ExecutionAttemptDiscoveryReadStatus,
     ExecutionReconstructionIntegrityError,

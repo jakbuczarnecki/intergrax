@@ -31,7 +31,7 @@ from intergrax.runtime.diagnostics.document_store_problem_occurrence_persistence
     wire_problem_occurrence_persistence,
 )
 from intergrax.runtime.diagnostics.document_store_problem_persistence import wire_problem_persistence
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingEngine,

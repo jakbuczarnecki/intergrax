@@ -29,7 +29,7 @@ from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrch
 from intergrax.runtime.diagnostics.diagnostic_problem_grouping_feature_projector import (
     DiagnosticProblemGroupingFeatureProjector,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstructionIntegrityError,
     ExecutionReconstructor,
     RuntimeHistoryCompleteness,

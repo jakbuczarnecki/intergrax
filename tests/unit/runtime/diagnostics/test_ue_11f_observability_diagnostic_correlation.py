@@ -39,7 +39,7 @@ from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrch
 from intergrax.runtime.diagnostics.diagnostic_problem_grouping_feature_projector import (
     DiagnosticProblemGroupingFeatureProjector,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.diagnostics.problem_grouping import (

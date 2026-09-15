@@ -25,7 +25,7 @@ from intergrax.runtime.diagnostics.document_store_problem_occurrence_persistence
 from intergrax.runtime.diagnostics.document_store_problem_persistence import (
     wire_problem_persistence,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstructor,
 )
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (

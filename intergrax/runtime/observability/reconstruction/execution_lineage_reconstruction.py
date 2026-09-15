@@ -1,7 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Derived execution lineage reconstruction helpers (DG-001 read integration R1)."""
+"""Derived execution lineage reconstruction helpers (DG-001 read integration R1).
+
+Semantic and physical owner: Evidence Plane / shared factual reconstruction.
+"""
 
 from __future__ import annotations
 

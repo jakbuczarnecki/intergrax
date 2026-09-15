@@ -44,7 +44,7 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticAssessmentBuilder,
     DiagnosticFindingKind,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType

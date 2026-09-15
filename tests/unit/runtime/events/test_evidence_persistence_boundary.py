@@ -16,7 +16,7 @@ from intergrax.contracts.execution_evidence.persistence_boundary_errors import (
 )
 from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.contracts.execution_identity import EventId, mint_run_id, mint_task_id
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.events.evidence_persistence_adapter import (
     RuntimeEventPersistenceEvidenceAdapter,
     as_evidence_persistence_port,
@@ -119,7 +119,9 @@ class _DelegateEvidencePersistencePort:
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _EVENT_BUS_PATH = _REPO_ROOT / "intergrax/runtime/events/event_bus.py"
 _EXECUTION_ROOT = _REPO_ROOT / "intergrax/runtime/execution"
-_RECONSTRUCTION_PATH = _REPO_ROOT / "intergrax/runtime/diagnostics/execution_reconstruction.py"
+_RECONSTRUCTION_PATH = (
+    _REPO_ROOT / "intergrax/runtime/observability/reconstruction/execution_reconstruction.py"
+)
 _UNIFIED_RUN_JOURNAL_PATH = _REPO_ROOT / "intergrax/runtime/events/unified_run_journal.py"
 
 

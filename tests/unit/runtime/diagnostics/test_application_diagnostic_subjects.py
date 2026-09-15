@@ -34,7 +34,7 @@ from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
     lifecycle_engine_for_tests,
 )
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,

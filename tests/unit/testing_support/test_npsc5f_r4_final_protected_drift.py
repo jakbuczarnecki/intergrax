@@ -37,7 +37,7 @@ def test_r4_final_drift_classifier_allows_asof_projection_surface() -> None:
 
 
 def test_r4_final_drift_classifier_allows_execution_reconstruction_diag() -> None:
-    path = "intergrax/runtime/diagnostics/execution_reconstruction.py"
+    path = "intergrax/runtime/observability/reconstruction/execution_reconstruction.py"
     assert classify_r4_protected_drift([path]) == []
 
 

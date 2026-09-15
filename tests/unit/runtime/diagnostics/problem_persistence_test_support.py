@@ -176,7 +176,7 @@ def build_diagnostic_orchestrator_stack_for_tests(
     )
     from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
     from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
-    from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+    from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
     from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
     from intergrax.runtime.diagnostics.problem_grouping import (
         ProblemGroupingEngine,

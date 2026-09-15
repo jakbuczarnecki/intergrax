@@ -31,7 +31,7 @@ from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     STRATEGY_ID,
     DeterministicProblemGroupingStrategy,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstruction,
     RuntimeHistoryCompleteness,
 )

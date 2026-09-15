@@ -26,7 +26,7 @@ def test_r4_quality_drift_classifier_allows_historical_reconstruction() -> None:
 
 
 def test_r4_quality_drift_classifier_blocks_execution_reconstruction() -> None:
-    path = "intergrax/runtime/diagnostics/execution_reconstruction.py"
+    path = "intergrax/runtime/observability/reconstruction/execution_reconstruction.py"
     assert is_r4_quality_protected_production_path(path)
     assert classify_r4_quality_protected_drift([path]) == [path]
 
@@ -37,7 +37,7 @@ def test_r4_quality_drift_classifier_allows_qualification_gate() -> None:
 
 
 def test_r4_quality_implementation_sha_recorded() -> None:
-    assert R4_QUALITY_IMPLEMENTATION_SHA == "84e704eec611e7b24eb82b0be4fe98172c512739"
+    assert R4_QUALITY_IMPLEMENTATION_SHA == "4aa4781c2511fb8fe7218ba4bd51c7c227a562c0"
 
 
 def test_r4_quality_no_unqualified_protected_drift_since_implementation() -> None:

@@ -122,7 +122,7 @@ Central Diagnostics remains the **only** owner of diagnostic interpretation: ano
 
 `ExecutionReconstructor` and `ExecutionReconstruction` are **shared factual reconstruction** (journal prefix, causal evidence, optional lineage, completeness, tenant/run scope validation). They **do not** classify root cause, mint Problems, or emit diagnostic certainty. DIAG **consumes** reconstruction; it does **not** own evidence recording or Execution Tree authority.
 
-**Package placement:** implementation lives under `intergrax.runtime.diagnostics` today for historical wiring only. **Semantic owner:** Evidence Plane / shared factual reconstruction — relocation tracked as **OBS-RECONSTRUCTION-1** (no duplicate engine in Observability).
+**Physical ownership:** `intergrax.runtime.observability.reconstruction` (**OBS-RECONSTRUCTION-1** closed). **Semantic owner:** Evidence Plane / shared factual reconstruction. Diagnostics **consumes** shared factual reconstruction; it does **not** own reconstruction.
 
 | Component | Owner (semantic) | DIAG? |
 | --------- | ---------------- | ----- |

@@ -18,7 +18,7 @@ from intergrax.contracts.execution_identity import (
     mint_execution_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstructionIntegrityError,
     ExecutionReconstructor,
     RuntimeHistoryCompleteness,

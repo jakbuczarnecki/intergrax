@@ -24,7 +24,7 @@ _FORBIDDEN_RUNTIME_SYMBOLS = frozenset(
 _FORBIDDEN_RUNTIME_MODULES = frozenset(
     {
         "intergrax.runtime.diagnostics.problem_persistence",
-        "intergrax.runtime.diagnostics.execution_reconstruction",
+        "intergrax.runtime.observability.reconstruction",
         "intergrax.runtime.diagnostics.problem_grouping",
         "intergrax.runtime.diagnostics.diagnostic_orchestrator",
     }

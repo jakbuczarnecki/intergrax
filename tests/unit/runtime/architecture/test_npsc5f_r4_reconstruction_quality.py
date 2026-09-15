@@ -20,7 +20,7 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     mint_task_id,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstructionIntegrityError,
     ExecutionReconstructor,
     RuntimeHistoryCompleteness,
@@ -37,7 +37,9 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _TENANT_A = "tenant-r4-quality-a"
 _TENANT_B = "tenant-r4-quality-b"
 
-_RECONSTRUCTION_MODULE = _REPO_ROOT / "intergrax/runtime/diagnostics/execution_reconstruction.py"
+_RECONSTRUCTION_MODULE = (
+    _REPO_ROOT / "intergrax/runtime/observability/reconstruction/execution_reconstruction.py"
+)
 
 _FORBIDDEN_CONTROL_PLANE = frozenset(
     {

@@ -28,7 +28,7 @@ _R4_EXPLICITLY_NOT_FILE_FROZEN_PREFIXES: tuple[str, ...] = (
     "intergrax/runtime/events/",
     "intergrax/contracts/bitemporal_knowledge.py",
     "intergrax/runtime/events/asof_projection.py",
-    "intergrax/runtime/diagnostics/execution_reconstruction.py",
+    "intergrax/runtime/observability/reconstruction/",
 )
 
 

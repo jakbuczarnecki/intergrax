@@ -24,7 +24,7 @@ from intergrax.runtime.diagnostics.diagnostic_precision import (
     DiagnosticCertainty,
     DiagnosticPrecision,
 )
-from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
+from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
     ExecutionLineageReadStatus,
 )
 from intergrax.runtime.events.payload_registry import validate_payload_envelope

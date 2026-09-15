@@ -3,8 +3,7 @@
 
 """Shared factual execution reconstruction from canonical evidence (OBS-BOUNDARY-1).
 
-Semantic owner: Evidence Plane / shared factual reconstruction — not diagnostic interpretation.
-Physical package: transitional under ``runtime.diagnostics`` until OBS-RECONSTRUCTION-1.
+Semantic and physical owner: Evidence Plane / shared factual reconstruction — not diagnostic interpretation.
 """
 
 from __future__ import annotations
@@ -30,7 +29,7 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageUnavailableError,
     build_execution_lineage_run_scope,
 )
-from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
+from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
     ExecutionLineageCompleteness,
     ExecutionLineageReadStatus,
     ExecutionLineageReconstructionIntegrityError,

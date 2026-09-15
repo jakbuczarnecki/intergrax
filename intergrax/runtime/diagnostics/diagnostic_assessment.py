@@ -30,7 +30,7 @@ from intergrax.runtime.diagnostics.external_operation_failure_analysis import (
 from intergrax.runtime.diagnostics.multi_agent_failure_localization import (
     ExecutionFailureTopologyAnalyzer,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstruction
+from intergrax.runtime.observability.reconstruction import ExecutionReconstruction
 from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnalysis,
     LifecycleAnomaly,

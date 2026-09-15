@@ -402,7 +402,7 @@ NPSC5F_R2_FINAL_MANDATORY: FrozenPytestSuiteSource = (
     ),
     (
         "Execution reconstruction",
-        ["tests/unit/runtime/diagnostics/test_execution_reconstruction.py"],
+        ["tests/unit/runtime/observability/reconstruction/test_execution_reconstruction.py"],
     ),
     (
         "NPSC-5E Final",
@@ -490,7 +490,7 @@ NPSC5F_R3_FINAL_MANDATORY: FrozenPytestSuiteSource = (
     ),
     (
         "Execution reconstruction",
-        ["tests/unit/runtime/diagnostics/test_execution_reconstruction.py"],
+        ["tests/unit/runtime/observability/reconstruction/test_execution_reconstruction.py"],
     ),
     (
         "NPSC-5E Final",
@@ -574,7 +574,7 @@ NPSC5F_R4_MANDATORY_REGRESSION_SUITES: FrozenPytestSuiteSource = (
     ),
     (
         "Execution reconstruction",
-        ["tests/unit/runtime/diagnostics/test_execution_reconstruction.py"],
+        ["tests/unit/runtime/observability/reconstruction/test_execution_reconstruction.py"],
     ),
     (
         "DG_001",

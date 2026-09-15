@@ -28,11 +28,11 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageUnavailableError,
     build_execution_lineage_attempt_scope,
 )
-from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
+from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
     ExecutionLineageCompleteness,
     ExecutionLineageReadStatus,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstructionIntegrityError,
     ExecutionReconstructor,
 )

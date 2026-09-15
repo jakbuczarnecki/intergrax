@@ -28,7 +28,7 @@ def test_final_drift_classifier_unrelated_execution_surface() -> None:
 
 
 def test_final_drift_classifier_unrelated_diagnostics() -> None:
-    path = "intergrax/runtime/diagnostics/execution_reconstruction.py"
+    path = "intergrax/runtime/diagnostics/diagnostic_orchestrator.py"
     assert classify_evidence_plane_drift_path(path) is EvidencePlaneDriftClass.UNRELATED
 
 
