@@ -23,6 +23,7 @@ from intergrax.memory.contracts.memory_lifecycle import (
     MemoryReconciliationOutcome,
     UserProfileMemoryMutationResult,
     UserProfileMemoryProjection,
+    aggregate_memory_lifecycle_outcomes,
 )
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecycleCoordinator
 from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN, resolve_memory_index_collection
@@ -579,23 +580,27 @@ class UserProfileManager:
 
         await self._save_store_profile(profile)
 
-        outcome = await self._memory_lifecycle.apply_after_primary_upsert(
+        outcome_a = await self._memory_lifecycle.apply_after_primary_upsert(
             operation=MemoryLifecycleOperation.UPDATE,
             user_id=user_id,
             entry=superseded,
         )
-        self._memory_lifecycle.raise_if_partial(outcome)
         outcome_b = await self._memory_lifecycle.apply_after_primary_upsert(
             operation=MemoryLifecycleOperation.UPDATE,
             user_id=user_id,
             entry=superseding,
         )
-        self._memory_lifecycle.raise_if_partial(outcome_b)
+        aggregated = aggregate_memory_lifecycle_outcomes(
+            operation=MemoryLifecycleOperation.UPDATE,
+            user_id=user_id,
+            outcomes=(outcome_a, outcome_b),
+        )
+        self._memory_lifecycle.raise_if_partial(aggregated)
 
         superseded.modified = False
         superseding.modified = False
 
-        return UserProfileMemoryMutationResult(entry=superseding, lifecycle=outcome_b)
+        return UserProfileMemoryMutationResult(entry=superseding, lifecycle=aggregated)
 
     async def remove_memory_entry_with_lifecycle(
         self,

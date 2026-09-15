@@ -5,9 +5,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 
-from intergrax.memory.contracts.enterprise_memory_record import MemoryTrustClass
+from intergrax.memory.contracts.enterprise_memory_record import (
+    MemoryTrustClass,
+    parse_memory_record_timestamp,
+)
 from intergrax.memory.memory_temporal import is_memory_entry_active
 from intergrax.memory.strategies.recall_models import (
     MemoryRankedCandidate,
@@ -19,17 +22,29 @@ from intergrax.memory.strategies.recall_models import (
 from intergrax.memory.strategies.recall_validation import validate_ranking_result
 
 
-def _parse_ts(value: str | None) -> datetime | None:
+def _optional_record_timestamp(field_name: str, value: str | None) -> datetime | None:
     text = (value or "").strip()
     if not text:
         return None
     try:
-        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        return parse_memory_record_timestamp(field_name, text)
     except ValueError:
         return None
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed
+
+
+def _timestamps_comparable(left: datetime, right: datetime) -> bool:
+    left_aware = left.tzinfo is not None
+    right_aware = right.tzinfo is not None
+    return left_aware == right_aware
+
+
+def _parse_as_of(as_of_iso: str | None) -> datetime | None:
+    if as_of_iso is None:
+        return None
+    text = as_of_iso.strip()
+    if not text:
+        return None
+    return parse_memory_record_timestamp("as_of", text)
 
 
 def _trust_component(trust_class: MemoryTrustClass, confidence: float | None) -> float:
@@ -45,12 +60,21 @@ def _trust_component(trust_class: MemoryTrustClass, confidence: float | None) ->
     return base
 
 
-def _freshness_component(updated_at: str | None, created_at: str) -> float:
-    anchor = _parse_ts(updated_at) or _parse_ts(created_at)
+def _freshness_component(
+    updated_at: str | None,
+    created_at: str,
+    as_of: datetime | None,
+) -> float:
+    if as_of is None:
+        return 0.5
+    anchor = _optional_record_timestamp("updated_at", updated_at) or _optional_record_timestamp(
+        "created_at", created_at
+    )
     if anchor is None:
         return 0.5
-    now = datetime.now(tz=timezone.utc)
-    age_days = max(0.0, (now - anchor).total_seconds() / 86400.0)
+    if not _timestamps_comparable(anchor, as_of):
+        return 0.5
+    age_days = max(0.0, (as_of - anchor).total_seconds() / 86400.0)
     if age_days <= 1.0:
         return 1.0
     if age_days <= 30.0:
@@ -58,6 +82,30 @@ def _freshness_component(updated_at: str | None, created_at: str) -> float:
     if age_days <= 180.0:
         return 0.55
     return 0.35
+
+
+def _naive_chronological_ordinal(dt: datetime) -> float:
+    return (
+        dt.year * 366.0 * 86400.0
+        + dt.month * 31.0 * 86400.0
+        + dt.day * 86400.0
+        + dt.hour * 3600.0
+        + dt.minute * 60.0
+        + dt.second
+        + dt.microsecond / 1_000_000.0
+    )
+
+
+def _recency_ordinal(updated_at: str | None, created_at: str) -> float:
+    """Sortable recency key: larger means newer; missing timestamps sort last."""
+    anchor = _optional_record_timestamp("updated_at", updated_at) or _optional_record_timestamp(
+        "created_at", created_at
+    )
+    if anchor is None:
+        return float("-inf")
+    if anchor.tzinfo is not None:
+        return anchor.timestamp()
+    return _naive_chronological_ordinal(anchor)
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,6 +125,7 @@ class EnterpriseMemoryRankingStrategy:
         self._config = config or EnterpriseMemoryRankingConfig()
 
     def rank(self, request: MemoryRankingRequest) -> MemoryRankingResult:
+        as_of = _parse_as_of(request.as_of_iso)
         scored: list[MemoryRankedCandidate] = []
         for candidate in request.candidates:
             record = candidate.record
@@ -85,8 +134,12 @@ class EnterpriseMemoryRankingStrategy:
             relevance = candidate.retrieval_score if candidate.retrieval_score is not None else 0.4
             relevance = max(0.0, min(1.0, relevance))
             trust_val = _trust_component(record.trust.trust_class, record.trust.confidence)
-            temporal_val = 1.0 if is_memory_entry_active(record) else 0.0
-            freshness_val = _freshness_component(record.updated_at, record.created_at)
+            temporal_val = (
+                1.0
+                if is_memory_entry_active(record, as_of=as_of)
+                else 0.0
+            )
+            freshness_val = _freshness_component(record.updated_at, record.created_at, as_of)
             supersession_adj = 0.0
             if record.lineage.superseded_by_memory_id:
                 supersession_adj = -self._config.superseded_penalty
@@ -123,10 +176,13 @@ class EnterpriseMemoryRankingStrategy:
                 )
             )
 
-        def sort_key(item: MemoryRankedCandidate) -> tuple[float, str, str]:
+        def sort_key(item: MemoryRankedCandidate) -> tuple[float, float, str]:
             record = item.candidate.record
-            updated = record.updated_at or record.created_at or ""
-            return (-item.score.total, updated, record.entry_id)
+            return (
+                -item.score.total,
+                -_recency_ordinal(record.updated_at, record.created_at),
+                record.entry_id,
+            )
 
         scored.sort(key=sort_key)
         if request.top_k > 0:

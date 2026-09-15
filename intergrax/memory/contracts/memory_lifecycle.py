@@ -15,6 +15,7 @@ __all__ = [
     "MemoryLifecycleDisposition",
     "MemoryLifecycleOperation",
     "MemoryLifecycleOutcome",
+    "aggregate_memory_lifecycle_outcomes",
     "UserProfileMemoryMutationResult",
     "MemoryProjectionFailureCategory",
     "MemoryProjectionFailureEvidence",
@@ -85,6 +86,41 @@ class MemoryLifecycleOutcome:
     @property
     def requires_reconciliation(self) -> bool:
         return self.disposition is MemoryLifecycleDisposition.PARTIAL_PROJECTION_FAILURE
+
+
+def aggregate_memory_lifecycle_outcomes(
+    *,
+    operation: MemoryLifecycleOperation,
+    user_id: str,
+    outcomes: Sequence[MemoryLifecycleOutcome],
+) -> MemoryLifecycleOutcome:
+    """Merge projection evidence and disposition for multi-record mutations."""
+    ordered = tuple(outcomes)
+    if not ordered:
+        raise ValueError("aggregate_memory_lifecycle_outcomes requires at least one outcome")
+    entity_ids: list[str] = []
+    for outcome in ordered:
+        for memory_id in outcome.memory_entity_ids:
+            if memory_id not in entity_ids:
+                entity_ids.append(memory_id)
+    evidence: list[MemoryProjectionOperationEvidence] = []
+    for outcome in ordered:
+        evidence.extend(outcome.projection_evidence)
+    if any(
+        outcome.disposition is MemoryLifecycleDisposition.PARTIAL_PROJECTION_FAILURE
+        for outcome in ordered
+    ):
+        disposition = MemoryLifecycleDisposition.PARTIAL_PROJECTION_FAILURE
+    else:
+        disposition = MemoryLifecycleDisposition.CONSISTENT
+    return MemoryLifecycleOutcome(
+        operation=operation,
+        disposition=disposition,
+        user_id=user_id,
+        memory_entity_ids=tuple(entity_ids),
+        primary_applied=all(outcome.primary_applied for outcome in ordered),
+        projection_evidence=tuple(evidence),
+    )
 
 
 @dataclass(frozen=True, slots=True)

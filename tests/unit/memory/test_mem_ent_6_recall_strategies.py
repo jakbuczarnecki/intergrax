@@ -5,7 +5,8 @@
 from __future__ import annotations
 
 import copy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Sequence
 
 import pytest
 
@@ -20,9 +21,14 @@ from intergrax.memory.contracts.enterprise_memory_record import (
 )
 from intergrax.memory.contracts.memory_control import (
     MemoryControlBackendError,
+    MemoryControlPartialLifecycleError,
     MemoryControlRecallRequest,
     MemoryControlRememberRequest,
     user_memory_scope,
+)
+from intergrax.memory.contracts.memory_lifecycle import (
+    MemoryLifecycleDisposition,
+    UserProfileMemoryReconciliationContext,
 )
 from intergrax.memory.contracts.memory_models import MemoryKind, UserProfileMemoryEntry
 from intergrax.memory.default_memory_control_plane import (
@@ -39,6 +45,7 @@ from intergrax.memory.strategies.defaults.conservative_conflict import (
 from intergrax.memory.strategies.defaults.enterprise_ranking import EnterpriseMemoryRankingStrategy
 from intergrax.memory.strategies.errors import MemoryStrategyContractError
 from intergrax.memory.strategies.recall_models import (
+    MemoryConflictKind,
     MemoryConflictResolutionAction,
     MemoryRankingRequest,
     MemoryRankingResult,
@@ -48,6 +55,7 @@ from intergrax.memory.strategies.recall_models import (
     MemoryRetrievalSource,
     MemorySupersessionIntent,
 )
+from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 from intergrax.memory.strategies.recall_validation import validate_ranking_result
 from intergrax.memory.user_profile_manager import UserProfileManager
 
@@ -55,6 +63,8 @@ pytestmark = pytest.mark.gate
 
 _TENANT = "tenant-mem6"
 _USER = "user-mem6"
+_FIXED_AS_OF = "2026-06-15T12:00:00+00:00"
+_FIXED_CREATED = "2026-01-01T00:00:00+00:00"
 
 
 def _entry(
@@ -67,6 +77,9 @@ def _entry(
     confidence: float | None = None,
     superseded_by: str | None = None,
     valid_until: str | None = None,
+    valid_from: str | None = None,
+    created_at: str = _FIXED_CREATED,
+    updated_at: str | None = None,
 ) -> UserProfileMemoryEntry:
     return UserProfileMemoryEntry(
         entry_id=entry_id,
@@ -74,10 +87,27 @@ def _entry(
         content=content,
         kind=MemoryKind.USER_FACT,
         title=title,
+        created_at=created_at,
+        updated_at=updated_at,
         trust=MemoryRecordTrust(trust_class=trust_class, confidence=confidence),
         provenance=MemoryProvenance(source_type=MemoryRecordSourceType.USER_EXPLICIT),
         lineage=MemoryRecordLineage(superseded_by_memory_id=superseded_by),
         valid_until=valid_until,
+        valid_from=valid_from,
+    )
+
+
+def _rank_request(
+    entries: tuple[MemoryRecallCandidate, ...],
+    *,
+    top_k: int = 10,
+    as_of_iso: str | None = _FIXED_AS_OF,
+) -> MemoryRankingRequest:
+    return MemoryRankingRequest(
+        candidates=entries,
+        query="q",
+        top_k=top_k,
+        as_of_iso=as_of_iso,
     )
 
 
@@ -96,24 +126,82 @@ def test_deterministic_ranking_is_stable() -> None:
         _candidate(_entry("b", "two"), 0.7),
         _candidate(_entry("c", "three"), 0.7),
     )
-    request = MemoryRankingRequest(candidates=entries, query="q", top_k=3)
-    first = ranker.rank(request)
-    second = ranker.rank(request)
-    assert [r.candidate.record.entry_id for r in first.ranked] == [
-        r.candidate.record.entry_id for r in second.ranked
-    ]
-    assert [r.score.total for r in first.ranked] == [r.score.total for r in second.ranked]
+    request = _rank_request(entries, top_k=3)
+    scores = [ranker.rank(request).ranked for _ in range(5)]
+    first_ids = [r.candidate.record.entry_id for r in scores[0]]
+    first_totals = [r.score.total for r in scores[0]]
+    for run in scores[1:]:
+        assert [r.candidate.record.entry_id for r in run] == first_ids
+        assert [r.score.total for r in run] == first_totals
 
 
 def test_ranking_tie_break_uses_memory_id() -> None:
     ranker = EnterpriseMemoryRankingStrategy()
     shared_score = 0.75
+    shared_ts = "2026-03-01T10:00:00+00:00"
     entries = (
-        _candidate(_entry("zzzz", "x", title="t"), shared_score),
-        _candidate(_entry("aaaa", "y", title="t"), shared_score),
+        _candidate(
+            _entry("zzzz", "x", title="t", created_at=shared_ts, updated_at=shared_ts),
+            shared_score,
+        ),
+        _candidate(
+            _entry("aaaa", "y", title="t", created_at=shared_ts, updated_at=shared_ts),
+            shared_score,
+        ),
     )
-    result = ranker.rank(MemoryRankingRequest(candidates=entries, query="q", top_k=2))
+    result = ranker.rank(_rank_request(entries, top_k=2))
     assert [r.candidate.record.entry_id for r in result.ranked] == ["aaaa", "zzzz"]
+
+
+def test_ranking_tie_break_prefers_newer_timestamp() -> None:
+    ranker = EnterpriseMemoryRankingStrategy()
+    shared_score = 0.75
+    older = _candidate(
+        _entry("older", "x", created_at="2026-01-01T00:00:00+00:00"),
+        shared_score,
+    )
+    newer = _candidate(
+        _entry("newer", "y", created_at="2026-06-01T00:00:00+00:00"),
+        shared_score,
+    )
+    result = ranker.rank(_rank_request((older, newer), top_k=2))
+    assert [r.candidate.record.entry_id for r in result.ranked] == ["newer", "older"]
+
+
+def test_freshness_depends_on_explicit_as_of() -> None:
+    ranker = EnterpriseMemoryRankingStrategy()
+    entry = _candidate(
+        _entry("e1", "fact", created_at="2020-01-01T00:00:00+00:00"),
+        0.5,
+    )
+    recent_reference = ranker.rank(
+        _rank_request((entry,), as_of_iso="2020-01-02T00:00:00+00:00")
+    ).ranked[0].score.freshness
+    stale_reference = ranker.rank(
+        _rank_request((entry,), as_of_iso="2021-06-01T00:00:00+00:00")
+    ).ranked[0].score.freshness
+    assert recent_reference > stale_reference
+
+
+def test_enterprise_ranking_has_no_hidden_wall_clock() -> None:
+    import inspect
+
+    from intergrax.memory.strategies.defaults import enterprise_ranking
+
+    source = inspect.getsource(enterprise_ranking)
+    assert "datetime.now" not in source
+
+
+def test_mixed_naive_and_aware_as_of_yields_neutral_freshness() -> None:
+    ranker = EnterpriseMemoryRankingStrategy()
+    aware = _candidate(
+        _entry("a", "x", created_at="2026-01-01T00:00:00+00:00"),
+        0.8,
+    )
+    result = ranker.rank(
+        _rank_request((aware,), as_of_iso="2026-06-01T00:00:00")
+    )
+    assert result.ranked[0].score.freshness == 0.5
 
 
 def test_trust_contributes_without_absolute_override() -> None:
@@ -126,9 +214,7 @@ def test_trust_contributes_without_absolute_override() -> None:
         _entry("high", "fact", trust_class=MemoryTrustClass.USER_EXPLICIT, confidence=0.95),
         0.55,
     )
-    result = ranker.rank(
-        MemoryRankingRequest(candidates=(low_trust, high_trust), query="q", top_k=2)
-    )
+    result = ranker.rank(_rank_request((low_trust, high_trust), top_k=2))
     assert result.ranked[0].candidate.record.entry_id == "low"
     assert result.ranked[1].score.total < result.ranked[0].score.total
 
@@ -137,9 +223,7 @@ def test_superseded_record_excluded_from_default_ranking() -> None:
     ranker = EnterpriseMemoryRankingStrategy()
     active = _candidate(_entry("active", "current"))
     superseded = _candidate(_entry("old", "stale", superseded_by="active"))
-    result = ranker.rank(
-        MemoryRankingRequest(candidates=(active, superseded), query="q", top_k=5)
-    )
+    result = ranker.rank(_rank_request((active, superseded), top_k=5))
     assert [r.candidate.record.entry_id for r in result.ranked] == ["active"]
 
 
@@ -215,7 +299,7 @@ def test_conflict_detection_for_same_subject_different_content() -> None:
 
     result = detector.detect(MemoryConflictDetectionRequest(ranked=ranked))
     assert len(result.conflicts) == 1
-    assert result.conflicts[0].kind.value in {"contradiction", "potential_supersession"}
+    assert result.conflicts[0].kind is MemoryConflictKind.CONTRADICTION
 
 
 def test_unrelated_records_do_not_conflict() -> None:
@@ -268,6 +352,54 @@ def test_resolver_keep_both_when_ambiguous() -> None:
     assert result.decisions[0].action is MemoryConflictResolutionAction.KEEP_BOTH
 
 
+def test_resolver_ignores_cross_record_revision_for_recency() -> None:
+    from intergrax.memory.strategies.recall_models import (
+        MemoryConflict,
+        MemoryConflictResolutionRequest,
+    )
+
+    resolver = FailSafeMemoryConflictResolutionStrategy()
+    high_revision = _entry(
+        "high-rev",
+        "old fact",
+        title="fact",
+        revision=10,
+        valid_from="2020-01-01T00:00:00+00:00",
+    )
+    low_revision = _entry(
+        "low-rev",
+        "new fact",
+        title="fact",
+        revision=1,
+        valid_from="2026-01-01T00:00:00+00:00",
+    )
+    ranked = (
+        MemoryRankedCandidate(
+            candidate=_candidate(high_revision, 0.9),
+            score=MemoryRankingScore(total=0.9),
+        ),
+        MemoryRankedCandidate(
+            candidate=_candidate(low_revision, 0.5),
+            score=MemoryRankingScore(total=0.5),
+        ),
+    )
+    conflicts = (
+        MemoryConflict(
+            conflict_id="high-rev:low-rev",
+            records=(high_revision, low_revision),
+            kind=MemoryConflictKind.POTENTIAL_SUPERSESSION,
+            reason="test",
+        ),
+    )
+    result = resolver.resolve(
+        MemoryConflictResolutionRequest(conflicts=conflicts, ranked=ranked)
+    )
+    intent = result.decisions[0].supersession_intent
+    assert intent is not None
+    assert intent.superseding_memory_id == "low-rev"
+    assert intent.superseded_memory_id == "high-rev"
+
+
 def test_resolver_supersede_without_mutation() -> None:
     from intergrax.memory.strategies.recall_models import (
         MemoryConflict,
@@ -276,8 +408,20 @@ def test_resolver_supersede_without_mutation() -> None:
     )
 
     resolver = FailSafeMemoryConflictResolutionStrategy()
-    left = _entry("older", "old value", title="fact", revision=1)
-    right = _entry("newer", "new value", title="fact", revision=3)
+    left = _entry(
+        "older",
+        "old value",
+        title="fact",
+        revision=1,
+        valid_from="2024-01-01T00:00:00+00:00",
+    )
+    right = _entry(
+        "newer",
+        "new value",
+        title="fact",
+        revision=1,
+        valid_from="2026-01-01T00:00:00+00:00",
+    )
     before = (copy.deepcopy(left), copy.deepcopy(right))
     ranked = (
         MemoryRankedCandidate(
@@ -449,3 +593,121 @@ async def test_custom_ranker_failure_surfaces_as_backend_error() -> None:
     await plane.remember(identity, scope, MemoryControlRememberRequest(content="x"))
     with pytest.raises(MemoryControlBackendError):
         await plane.recall(identity, scope, MemoryControlRecallRequest(top_k=5))
+
+
+@dataclass
+class SelectiveFailProjection:
+    fail_entry_ids: frozenset[str] = frozenset()
+    projection_id: str = "selective_fail"
+    upsert_calls: list[str] = field(default_factory=list)
+
+    async def upsert_memory_entry(
+        self,
+        user_id: str,
+        entry: UserProfileMemoryEntry,
+    ) -> None:
+        self.upsert_calls.append(entry.entry_id)
+        if entry.entry_id in self.fail_entry_ids:
+            raise TimeoutError("projection failed")
+
+    async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+        return None
+
+    async def reconcile(
+        self,
+        context: UserProfileMemoryReconciliationContext,
+    ):
+        from intergrax.memory.contracts.memory_lifecycle import (
+            MemoryProjectionReconciliationDisposition,
+            MemoryProjectionReconciliationResult,
+        )
+
+        return MemoryProjectionReconciliationResult(
+            projection_id=self.projection_id,
+            disposition=MemoryProjectionReconciliationDisposition.CONSISTENT,
+        )
+
+
+@pytest.mark.asyncio
+async def test_supersession_projection_partial_attempts_both_entries() -> None:
+    store = InMemoryUserProfileStore()
+    projection = SelectiveFailProjection(fail_entry_ids=frozenset())
+    manager = UserProfileManager(
+        store,
+        tenant_id=_TENANT,
+        memory_projections=(projection,),
+    )
+    plane = DefaultMemoryControlPlane(
+        user_profile=UserProfileManagerMemoryCapability(_manager=manager),
+    )
+    identity = RequestIdentity(
+        tenant_id=_TENANT,
+        user_id=_USER,
+        principal_type=PrincipalType.USER,
+        auth_subject=_USER,
+    )
+    scope = user_memory_scope(identity)
+    older = await plane.remember(
+        identity, scope, MemoryControlRememberRequest(content="old", title="fact")
+    )
+    newer = await plane.remember(
+        identity, scope, MemoryControlRememberRequest(content="new", title="fact")
+    )
+    assert older.entry_id and newer.entry_id
+    projection.fail_entry_ids = frozenset({older.entry_id})
+    with pytest.raises(MemoryControlPartialLifecycleError) as exc_info:
+        await plane.apply_memory_supersession(
+            identity,
+            scope,
+            MemorySupersessionIntent(
+                superseded_memory_id=older.entry_id,
+                superseding_memory_id=newer.entry_id,
+                reason="test",
+            ),
+        )
+    lifecycle = exc_info.value.lifecycle
+    assert lifecycle.disposition is MemoryLifecycleDisposition.PARTIAL_PROJECTION_FAILURE
+    assert older.entry_id in lifecycle.memory_entity_ids
+    assert newer.entry_id in lifecycle.memory_entity_ids
+    assert older.entry_id in projection.upsert_calls
+    assert newer.entry_id in projection.upsert_calls
+
+
+@pytest.mark.asyncio
+async def test_supersession_projection_both_fail_aggregates_evidence() -> None:
+    store = InMemoryUserProfileStore()
+    projection = SelectiveFailProjection()
+    manager = UserProfileManager(
+        store,
+        tenant_id=_TENANT,
+        memory_projections=(projection,),
+    )
+    plane = DefaultMemoryControlPlane(
+        user_profile=UserProfileManagerMemoryCapability(_manager=manager),
+    )
+    identity = RequestIdentity(
+        tenant_id=_TENANT,
+        user_id=_USER,
+        principal_type=PrincipalType.USER,
+        auth_subject=_USER,
+    )
+    scope = user_memory_scope(identity)
+    older = await plane.remember(
+        identity, scope, MemoryControlRememberRequest(content="old", title="fact")
+    )
+    newer = await plane.remember(
+        identity, scope, MemoryControlRememberRequest(content="new", title="fact")
+    )
+    assert older.entry_id and newer.entry_id
+    projection.fail_entry_ids = frozenset({older.entry_id, newer.entry_id})
+    with pytest.raises(MemoryControlPartialLifecycleError) as exc_info:
+        await plane.apply_memory_supersession(
+            identity,
+            scope,
+            MemorySupersessionIntent(
+                superseded_memory_id=older.entry_id,
+                superseding_memory_id=newer.entry_id,
+                reason="test",
+            ),
+        )
+    assert len(exc_info.value.lifecycle.projection_evidence) >= 2

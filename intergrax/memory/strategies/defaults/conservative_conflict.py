@@ -5,7 +5,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
+from intergrax.memory.contracts.enterprise_memory_record import parse_memory_record_timestamp
+from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 from intergrax.memory.strategies.recall_models import (
     MemoryConflict,
     MemoryConflictDetectionRequest,
@@ -41,6 +44,39 @@ def _same_subject_key(a: MemoryRankedCandidate, b: MemoryRankedCandidate) -> boo
     return bool(key_a and key_b and key_a == key_b)
 
 
+def _valid_from_instant(record: UserProfileMemoryEntry) -> datetime | None:
+    value = record.valid_from
+    if value is None:
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    try:
+        return parse_memory_record_timestamp("valid_from", text)
+    except ValueError:
+        return None
+
+
+def _semantic_supersession_evidence(
+    left: UserProfileMemoryEntry,
+    right: UserProfileMemoryEntry,
+) -> tuple[UserProfileMemoryEntry, UserProfileMemoryEntry] | None:
+    """Return (older, newer) when valid_from provides unambiguous ordering."""
+    left_vf = _valid_from_instant(left)
+    right_vf = _valid_from_instant(right)
+    if left_vf is None or right_vf is None:
+        return None
+    if left_vf.tzinfo is not None and right_vf.tzinfo is None:
+        return None
+    if left_vf.tzinfo is None and right_vf.tzinfo is not None:
+        return None
+    if left_vf == right_vf:
+        return None
+    if left_vf < right_vf:
+        return left, right
+    return right, left
+
+
 @dataclass(frozen=True, slots=True)
 class ConservativeConflictDetectionConfig:
     max_pairwise_candidates: int = 32
@@ -68,7 +104,7 @@ class ConservativeMemoryConflictDetectionStrategy:
                     continue
                 conflict_id = f"{left_rec.entry_id}:{right_rec.entry_id}"
                 kind = MemoryConflictKind.CONTRADICTION
-                if left_rec.revision != right_rec.revision:
+                if _semantic_supersession_evidence(left_rec, right_rec) is not None:
                     kind = MemoryConflictKind.POTENTIAL_SUPERSESSION
                 conflicts.append(
                     MemoryConflict(
@@ -112,22 +148,9 @@ class FailSafeMemoryConflictResolutionStrategy:
                 )
                 continue
             if conflict.kind is MemoryConflictKind.POTENTIAL_SUPERSESSION:
-                newer_ranked = (
-                    first_ranked
-                    if first.revision >= second.revision
-                    else second_ranked
-                )
-                older_ranked = (
-                    second_ranked
-                    if newer_ranked is first_ranked
-                    else first_ranked
-                )
-                newer_rec = newer_ranked.candidate.record
-                older_rec = older_ranked.candidate.record
-                if (
-                    newer_rec.revision > older_rec.revision
-                    and newer_ranked.score.total > older_ranked.score.total
-                ):
+                ordered = _semantic_supersession_evidence(first, second)
+                if ordered is not None:
+                    older_rec, newer_rec = ordered
                     decisions.append(
                         MemoryConflictResolutionDecision(
                             conflict_id=conflict.conflict_id,
@@ -135,7 +158,7 @@ class FailSafeMemoryConflictResolutionStrategy:
                             supersession_intent=MemorySupersessionIntent(
                                 superseded_memory_id=older_rec.entry_id,
                                 superseding_memory_id=newer_rec.entry_id,
-                                reason="higher_revision_and_rank_score",
+                                reason="valid_from_semantic_ordering",
                             ),
                             reason="clear_supersession_evidence",
                         )

@@ -42,11 +42,13 @@ def run_recall_decision_pipeline(
     conflict_detection: MemoryConflictDetectionStrategy | None = None,
     conflict_resolution: MemoryConflictResolutionStrategy | None = None,
     max_pairwise_candidates: int = 32,
+    as_of_iso: str | None = None,
 ) -> MemoryRecallPipelineResult:
     ranking_request = MemoryRankingRequest(
         candidates=candidates,
         query=query,
         top_k=top_k,
+        as_of_iso=as_of_iso,
     )
     ranking_result = ranking.rank(ranking_request)
     validate_ranking_result(ranking_request, ranking_result)

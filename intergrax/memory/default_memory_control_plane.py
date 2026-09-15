@@ -59,6 +59,7 @@ from intergrax.memory.strategies.errors import MemoryStrategyError
 from intergrax.memory.contracts.memory_recall import MemoryRecallReasonCode, MemorySupersessionIntent
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecyclePartialError
+from intergrax.utils.time_provider import SystemTimeProvider, TimeProvider
 
 __all__ = ["DefaultMemoryControlPlane", "UserProfileManagerMemoryCapability"]
 
@@ -275,6 +276,7 @@ class DefaultMemoryControlPlane:
     episodic: EpisodicMemoryCapability | None = None
     recall_strategies: MemoryRecallStrategySet | None = None
     recall_retrieval_config: UserMemoryRecallRetrievalConfig | None = None
+    time_provider: type[TimeProvider] = SystemTimeProvider
 
     async def remember(
         self,
@@ -416,6 +418,7 @@ class DefaultMemoryControlPlane:
         query = request.query.strip()
         strategies = _recall_strategies_or_default(self.recall_strategies)
         retrieval_config = self.recall_retrieval_config or UserMemoryRecallRetrievalConfig()
+        as_of_iso = self.time_provider.utc_now().isoformat()
         try:
             if query and self.user_profile.is_longterm_rag_enabled():
                 retrieval_k = semantic_retrieval_top_k(request.top_k, retrieval_config)
@@ -433,6 +436,7 @@ class DefaultMemoryControlPlane:
                     ranking=strategies.ranking,
                     conflict_detection=strategies.conflict_detection,
                     conflict_resolution=strategies.conflict_resolution,
+                    as_of_iso=as_of_iso,
                 )
                 return _pipeline_to_recall_result(
                     pipeline_result,
@@ -457,6 +461,7 @@ class DefaultMemoryControlPlane:
                 ranking=strategies.ranking,
                 conflict_detection=strategies.conflict_detection,
                 conflict_resolution=strategies.conflict_resolution,
+                as_of_iso=as_of_iso,
             )
             reason = "keyword" if query else "profile_scan"
             return _pipeline_to_recall_result(
