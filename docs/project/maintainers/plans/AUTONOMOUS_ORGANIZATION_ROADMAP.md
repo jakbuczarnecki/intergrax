@@ -45,7 +45,7 @@ This table is the **only** canonical implementation priority record for the prog
 
 **Scenarios:** VO-S01, VO-S02
 
-**Outcome gate:** The organization can ** arise from mission** (plus constraints and resources) and can **create and retire** capabilities / structures without a predefined org chart.
+**Outcome gate:** The organization can **arise from mission** (plus constraints and resources) and can **create and retire** capabilities / structures without a predefined org chart.
 
 **Capability emphasis:** Mission → goals; capability gap discovery; acquisition/composition; venture lifecycle teardown (see Capability Model clusters 1, 4, 5, 6, 10, 11).
 
@@ -134,4 +134,4 @@ Parallel track reference: [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](ENTERPRISE_E2E_
 
 ## Success criteria (program-level, not per scenario)
 
-A epoch is **not** complete when design docs exist. It completes when associated scenarios reach **accepted proof outcomes** under normal Proof Library discipline — adversarial cases, evidence, and honest falsification — without VO-specific runtimes or bypass paths.
+An epoch is **not** complete when design docs exist. It completes when associated scenarios reach **accepted proof outcomes** under normal Proof Library discipline — adversarial cases, evidence, and honest falsification — without VO-specific runtimes or bypass paths.

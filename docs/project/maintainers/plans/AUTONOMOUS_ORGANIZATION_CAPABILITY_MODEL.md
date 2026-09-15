@@ -253,6 +253,6 @@ Scenarios should map discovered gaps to **one or more clusters** when stopping f
 
 ## Platform contract-first reminder
 
-Every generic mechanism discovered through this model must land as a **reusable platform contract** (AO-P8). Scenario-local implementations of generic concerns are ** disqualifying** unless explicitly bounded to non-generic, problem-specific surface area.
+Every generic mechanism discovered through this model must land as a **reusable platform contract** (AO-P8). Scenario-local implementations of generic concerns are **disqualifying** unless explicitly bounded to non-generic, problem-specific surface area.
 
 If a gap implies a **new execution authority** or core boundary move → **ARCHITECTURAL DECISION REQUIRED** — do not implement inside a scenario session by default.

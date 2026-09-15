@@ -112,15 +112,15 @@ Recorded in [`AUTONOMOUS_ORGANIZATION_ROADMAP.md`](AUTONOMOUS_ORGANIZATION_ROADM
 
 ## VO-S04 — Distribution Bottleneck & Organizational Self-Evaluation
 
-**Real problem:** Outcomes degrade because work piles up between units — the org must detect **structural** bottlenecks, not blame individual runs.
+**Real problem:** Product outcomes, retention, activation, and customer value look strong; engineering delivery works — yet pipeline, distribution, and customer acquisition underperform, acquisition cost may be high, and resources are visibly skewed toward engineering and product. Global business results stay weak while no one tells the system to “create a Growth Team” or “reorganize sales.” The org must infer from **business evidence** that weak outcomes may stem from **organizational structure** or **misallocation of capabilities and resources**.
 
-**Fundamental purpose:** Prove **organizational self-evaluation** and targeted structural adjustment.
+**Fundamental purpose:** Prove **organizational self-evaluation** — business evidence → organizational hypothesis → structural and resource evaluation (and targeted adjustment under governance).
 
-**Unique pressure:** Metrics implicate **topology**, not a single failed execution.
+**Unique pressure:** Major parts of the organization can each look locally healthy while **global** business performance remains poor.
 
-**Exclusions:** Not pure APM tuning; not worker-level retry without org diagnosis.
+**Exclusions:** Not work-queue or inter-unit workflow optimization; not APM or generic process-bottleneck detection; not a prescribed answer such as a named Growth Team.
 
-**North Star relation:** Closed loop from outcomes → **fitness assessment** → structural change proposal under governance.
+**North Star relation:** Closed loop from **business evidence** → **organizational hypothesis** → structural or resource change proposal under governance.
 
 ---
 
@@ -182,15 +182,15 @@ Recorded in [`AUTONOMOUS_ORGANIZATION_ROADMAP.md`](AUTONOMOUS_ORGANIZATION_ROADM
 
 ## VO-S09 — Strategic Mandate Change With Existing Commitments
 
-**Real problem:** Board or regulator shifts top-level mandate while legacy commitments and brands remain legally binding.
+**Real problem:** Legitimate human authority shifts the **strategic mandate** (e.g. from maximize expansion/growth to preserve cash, reach profitability, protect strategic customers) while the organization continues under the **same constitution** and authority boundaries. Legacy goals, initiatives, capabilities, and legal or contractual commitments remain until reconciled.
 
-**Fundamental purpose:** Prove **mandate migration** — realign goals and structure without unconstitutional authority expansion.
+**Fundamental purpose:** Prove **mandate migration** — assess which existing goals stay valid or become invalid, which capabilities remain needed, which initiatives to end, how to change resource allocation, whether reorganization is required, and which commitments must still be fulfilled — without unconstitutional authority expansion (AO-P5).
 
-**Unique pressure:** External **constitution-level input change** with internal state lag.
+**Unique pressure:** The mandate answers *what strategic outcome to pursue now*; the constitution answers *non-self-modifiable boundaries* — mandate changes at the top while goals, structure, and commitments **lag** the new direction.
 
-**Exclusions:** Not voluntary pivot only; must respect AO-P5 (no self-expansion of authority).
+**Exclusions:** Not a change to constitution or authority limits; not voluntary pivot only without legacy commitments; must respect AO-P5 (no self-expansion of authority).
 
-**North Star relation:** Tests **goal system + constitution** interaction over time.
+**North Star relation:** Tests **goal system** realignment to a new **strategic mandate** with constitution and authority boundaries unchanged.
 
 ---
 
