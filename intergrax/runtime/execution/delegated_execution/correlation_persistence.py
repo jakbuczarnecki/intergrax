@@ -36,6 +36,9 @@ from intergrax.integrations.contracts.document_store import (
     DocumentDataSort,
     DocumentRecord,
 )
+from intergrax.runtime.execution.delegated_execution.correlation_query_cursor import (
+    DelegatedCorrelationQueryCursorCodec,
+)
 
 _DOCUMENT_PARTITION = "intergrax.delegated_invocation_correlation.v1"
 _QUERY_PARENT_EXECUTION_ID = "query_parent_execution_id"
@@ -89,10 +92,6 @@ class InMemoryDelegatedInvocationCorrelationBackend:
     """Shared in-memory record map for write and query adapters."""
 
     def __init__(self) -> None:
-        from intergrax.runtime.execution.delegated_execution.correlation_query_cursor import (
-            DelegatedCorrelationQueryCursorCodec,
-        )
-
         self._lock = threading.Lock()
         self._records: dict[str, DelegatedInvocationCorrelationRecord] = {}
         self.query_cursor_codec = DelegatedCorrelationQueryCursorCodec(
@@ -198,7 +197,9 @@ class DocumentStoreDelegatedInvocationCorrelationStore(
         return _document_to_correlation(document)
 
 
-def _document_to_correlation(document: DocumentRecord) -> DelegatedInvocationCorrelationRecord:
+def _document_to_correlation(
+    document: DocumentRecord,
+) -> DelegatedInvocationCorrelationRecord:
     raw = document.data.get("correlation")
     if not isinstance(raw, str):
         raise DelegatedInvocationCorrelationIntegrityError(
