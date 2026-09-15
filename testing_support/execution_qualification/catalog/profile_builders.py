@@ -315,6 +315,8 @@ def build_npsc5e_r3_profile() -> CompiledCatalogProfile:
         CatalogRequiredTarget,
     )
     from testing_support.execution_qualification.final_semantic_pytest import (
+        NPSC5E_R2_FINAL_SEMANTIC_SUITE_ID,
+        npsc5e_r2_final_embedded_predecessor_suite_ids,
         npsc5e_r3_final_semantic_pytest_arguments,
     )
 
@@ -329,6 +331,11 @@ def build_npsc5e_r3_profile() -> CompiledCatalogProfile:
                 pytest_arguments=npsc5e_r3_final_semantic_pytest_arguments(),
             ),
         ),
+        leaf_gate_extra_requires={
+            NPSC5E_R2_FINAL_SEMANTIC_SUITE_ID: (
+                npsc5e_r2_final_embedded_predecessor_suite_ids()
+            ),
+        },
     )
 
 
@@ -337,7 +344,9 @@ def build_npsc5e_r2_profile() -> CompiledCatalogProfile:
         CatalogRequiredTarget,
     )
     from testing_support.execution_qualification.final_semantic_pytest import (
+        NPSC5E_R2_FINAL_SEMANTIC_SUITE_ID,
         NPSC5E_R2_H2_Q1_SEMANTIC_SUITE_ID,
+        npsc5e_r2_final_embedded_predecessor_suite_ids,
         npsc5e_r2_final_semantic_pytest_arguments,
         npsc5e_r2_h2_q1_embedded_predecessor_suite_ids,
     )
@@ -354,6 +363,9 @@ def build_npsc5e_r2_profile() -> CompiledCatalogProfile:
             ),
         ),
         leaf_gate_extra_requires={
+            NPSC5E_R2_FINAL_SEMANTIC_SUITE_ID: (
+                npsc5e_r2_final_embedded_predecessor_suite_ids()
+            ),
             NPSC5E_R2_H2_Q1_SEMANTIC_SUITE_ID: (
                 npsc5e_r2_h2_q1_embedded_predecessor_suite_ids()
             ),

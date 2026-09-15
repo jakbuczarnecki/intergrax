@@ -8,6 +8,7 @@ from testing_support.execution_qualification.catalog.normalize import (
     normalize_pytest_arguments,
 )
 from testing_support.execution_qualification.catalog.mandatory_sources import (
+    NPSC5E_R2_FINAL_EMBEDDED_PREDECESSOR_LABELS,
     NPSC5E_R2_FINAL_MANDATORY,
     NPSC5E_R2_H2_Q1_EMBEDDED_PREDECESSOR_LABELS,
 )
@@ -53,6 +54,27 @@ def npsc5e_r2_h2_q1_semantic_pytest_arguments() -> tuple[str, ...]:
 _R2_H2_Q1_EMBEDDED_LABEL_ALIASES: dict[str, str] = {
     "DG_001 lineage": "DG_001",
 }
+
+
+def npsc5e_r2_final_embedded_predecessor_suite_ids() -> tuple[str, ...]:
+    from testing_support.execution_qualification.catalog.suite_registry import (
+        suite_id_for_pytest_arguments,
+    )
+
+    mandatory_by_label = dict(NPSC5E_R2_FINAL_MANDATORY)
+    suite_ids: list[str] = []
+    seen: set[str] = set()
+    for label in NPSC5E_R2_FINAL_EMBEDDED_PREDECESSOR_LABELS:
+        targets = mandatory_by_label[label]
+        suite_id = suite_id_for_pytest_arguments(normalize_pytest_arguments(targets))
+        if suite_id in seen:
+            raise ValueError(
+                f"ambiguous predecessor resolution for R2 Final label {label!r}: "
+                f"{suite_id!r}",
+            )
+        seen.add(suite_id)
+        suite_ids.append(suite_id)
+    return tuple(suite_ids)
 
 
 def npsc5e_r2_h2_q1_embedded_predecessor_suite_ids() -> tuple[str, ...]:

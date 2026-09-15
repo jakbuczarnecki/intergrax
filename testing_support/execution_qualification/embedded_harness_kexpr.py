@@ -48,3 +48,10 @@ def embedded_harness_test_names() -> frozenset[str]:
 
 def embedded_harness_call_names() -> frozenset[str]:
     return _EMBEDDED_HARNESS_CALL_NAMES
+
+
+def pytest_k_expression_excludes_embedded_harness(k_expr: str) -> bool:
+    return "test_mandatory_frozen_suite_passes" in k_expr and (
+        k_expr == CANONICAL_FINAL_EMBEDDED_HARNESS_KEXPR
+        or k_expr == R2_H2_Q1_EMBEDDED_HARNESS_KEXPR
+    )

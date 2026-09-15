@@ -9,6 +9,7 @@ from testing_support.execution_qualification.frozen_pytest_adapter import (
 )
 
 from testing_support.execution_qualification.embedded_harness_kexpr import (
+    CANONICAL_FINAL_EMBEDDED_HARNESS_KEXPR,
     R2_H2_Q1_EMBEDDED_HARNESS_KEXPR,
 )
 
@@ -36,6 +37,27 @@ NPSC5E_R2_H2_Q1_EMBEDDED_PREDECESSOR_LABELS: tuple[str, ...] = (
     "Long-running",
 )
 
+NPSC5E_R2_FINAL_EMBEDDED_PREDECESSOR_LABELS: tuple[str, ...] = (
+    "R1 Final",
+    "R2 Original",
+    "R2-H1",
+    "R2-H2",
+    "R2-H2-Q1",
+    "P0A",
+    "DG_001",
+    "NPSC-5D Final",
+    "HITL R3",
+    "NPSC-5A",
+    "NPSC-5B",
+    "NPSC-5C",
+    "Attempt lifecycle",
+    "Child execution",
+    "Terminal",
+    "Cancellation",
+    "Checkpoint store",
+    "Long-running",
+)
+
 NPSC5E_R3_FINAL_MANDATORY: FrozenPytestSuiteSource = (
     (
         "R1 Final",
@@ -44,9 +66,37 @@ NPSC5E_R3_FINAL_MANDATORY: FrozenPytestSuiteSource = (
         ],
     ),
     (
+        "R2 Original",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_r2_checkpoint_durable_resume_hardening.py"
+        ],
+    ),
+    (
+        "R2-H1",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_r2_h1_authority_stale_checkpoint_closure.py"
+        ],
+    ),
+    (
+        "R2-H2",
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_r2_h2_checkpoint_revision_stale_writer_protection.py"
+        ],
+    ),
+    (
+        "R2-H2-Q1",
+        [
+            NPSC5E_R2_H2_Q1_ORCHESTRATOR_PATH,
+            "-k",
+            R2_H2_Q1_EMBEDDED_HARNESS_KEXPR,
+        ],
+    ),
+    (
         "R2 Final",
         [
-            "tests/unit/runtime/architecture/test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py"
+            "tests/unit/runtime/architecture/test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py",
+            "-k",
+            CANONICAL_FINAL_EMBEDDED_HARNESS_KEXPR,
         ],
     ),
     (
@@ -642,6 +692,7 @@ __all__ = [
     "NPSC5E_FINAL_MANDATORY",
     "NPSC5E_R1_FINAL_MANDATORY",
     "NPSC5E_R2_FINAL_MANDATORY",
+    "NPSC5E_R2_FINAL_EMBEDDED_PREDECESSOR_LABELS",
     "NPSC5E_R2_H2_Q1_EMBEDDED_PREDECESSOR_LABELS",
     "NPSC5E_R2_H2_Q1_ORCHESTRATOR_PATH",
     "NPSC5E_R3_FINAL_MANDATORY",

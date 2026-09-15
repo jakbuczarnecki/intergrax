@@ -65,6 +65,9 @@ from tests.unit.agent_distribution.test_delegated_subtasks import (
 from tests.unit.agent_distribution.test_physical_delegation_governance_boundary import (
     _CountingSelector,
 )
+from testing_support.execution_qualification.catalog.mandatory_sources import (
+    NPSC5E_R3_FINAL_MANDATORY,
+)
 from tests.unit.runtime.architecture.npsc5e_r3_final_execution_qualification import (
     run_npsc5e_r3_mandatory_qualification,
 )
@@ -97,71 +100,8 @@ _R3_PRODUCTION_SURFACE = (
     "intergrax/runtime/long_running/runtime_checkpoint.py",
 )
 
-_MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
-    ("R1 Final", ["tests/unit/runtime/architecture/test_npsc5e_r1_final_retry_attempt_qualification.py"]),
-    ("R2 Final", ["tests/unit/runtime/architecture/test_npsc5e_r2_final_checkpoint_durable_resume_qualification.py"]),
-    (
-        "R3 implementation gate",
-        ["tests/unit/runtime/architecture/test_npsc5e_r3_child_fanout_partial_recovery.py"],
-    ),
-    ("P0A", ["tests/unit/runtime/architecture/test_npsc5e_p0a_execution_lineage_baseline_qualification.py"]),
-    (
-        "DG_001",
-        [
-            "tests/unit/contracts/test_execution_lineage_contracts.py",
-            "tests/unit/runtime/execution/lineage/",
-        ],
-    ),
-    ("NPSC-5A", ["tests/unit/runtime/architecture/test_npsc5a_coordination_delegation_e2e.py"]),
-    (
-        "NPSC-5B Final",
-        ["tests/unit/runtime/architecture/test_npsc5b_final_production_fanout_fanin_qualification.py"],
-    ),
-    ("NPSC-5C", ["tests/unit/runtime/architecture/test_npsc5c_decision_execution_e2e.py"]),
-    (
-        "NPSC-5D Final",
-        ["tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py"],
-    ),
-    ("HITL R3", ["tests/unit/runtime/architecture/test_npsc5d_r3_governed_continuation.py"]),
-    (
-        "Attempt lifecycle",
-        [
-            "tests/unit/runtime/execution/test_attempt_lifecycle.py",
-            "tests/unit/runtime/execution/test_attempt_lifecycle_durability_gate.py",
-            "tests/conformance/runtime/durability/test_attempt_lifecycle.py",
-        ],
-    ),
-    (
-        "Child execution",
-        [
-            "tests/unit/runtime/execution/test_child_execution.py",
-            "tests/unit/runtime/execution/authority/test_child_execution_authority_policy.py",
-        ],
-    ),
-    ("Terminal", ["tests/unit/runtime/execution/test_p0c6_terminal_outcome_convergence.py"]),
-    (
-        "Cancellation",
-        [
-            "tests/unit/runtime/cancellation/test_p0c5_cancellation_continuity.py",
-            "-k",
-            "not survives_process_restart",
-            "tests/unit/runtime/cancellation/test_p0c5a_explicit_terminal_wiring.py",
-            "tests/unit/applications/test_task_control_governed_resume.py",
-        ],
-    ),
-    ("Checkpoint store", ["tests/unit/runtime/long_running/test_checkpoint_store.py"]),
-    (
-        "Long-running",
-        [
-            "tests/unit/runtime/long_running/test_pcm_scheduler_integrity.py",
-            "tests/unit/runtime/long_running/test_pba_fix_a_checkpoint_port_consumption.py",
-            "tests/unit/runtime/long_running/test_runtime_checkpoint.py",
-            "tests/unit/runtime/long_running/test_resume_planner.py",
-            "tests/unit/runtime/long_running/test_ue_9c_execution_tree_checkpoint.py",
-            "tests/unit/runtime/long_running/test_p0c3_recovery_state_authority.py",
-        ],
-    ),
-    ("Fan-out", ["tests/unit/agent_distribution/test_bounded_multi_agent_fanout.py"]),
+_MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = tuple(
+    (label, list(targets)) for label, targets in NPSC5E_R3_FINAL_MANDATORY
 )
 
 

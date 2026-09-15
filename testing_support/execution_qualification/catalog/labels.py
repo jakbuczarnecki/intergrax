@@ -15,7 +15,11 @@ NPSC5E_R3_CROSS_DB_EXCLUSIVE_RESOURCE_ID = "npsc5e-r3-cross-db"
 
 NPSC5E_R3_MANDATORY_LABEL_TO_SUITE_ID: dict[str, str] = {
     "R1 Final": "npsc5e-r3.mandatory.r1-final",
-    "R2 Final": "npsc5e-r3.mandatory.r2-final",
+    "R2 Final": "npsc5e-r2.final-semantic",
+    "R2 Original": "npsc5e-r3.mandatory.r2-original",
+    "R2-H1": "npsc5e-r3.mandatory.r2-h1",
+    "R2-H2": "npsc5e-r3.mandatory.r2-h2",
+    "R2-H2-Q1": "npsc5e-r3.mandatory.r2-h2-q1",
     "R3 implementation gate": "npsc5e-r3.mandatory.r3-implementation-gate",
     "P0A": "npsc5e-r3.mandatory.p0a",
     "DG_001": "npsc5e-r3.mandatory.dg-001",
