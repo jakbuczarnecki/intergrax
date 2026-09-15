@@ -587,10 +587,18 @@ class ExternalWorkAdapter:
         if not resolved_run_id:
             return None
         correlation = result.snapshot.correlation
+        canonical_task, canonical_run, attempt_id, execution_id = (
+            resolve_meaningful_side_effect_execution_identity(
+                task_id=correlation.task_id,
+                run_id=resolved_run_id,
+            )
+        )
         return GovernedContinuationRequest(
             reason=ContinuationReason.QUOTE,
-            task_id=correlation.task_id,
-            run_id=resolved_run_id,
+            task_id=canonical_task,
+            run_id=canonical_run,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
             source_agent_id=source_agent_id,
             source_step_id=source_step_id,
             prompt="External work quote requires governed continuation before side effects",
@@ -644,12 +652,27 @@ class ExternalWorkAdapter:
                     "error_retryable": False,
                 }
             )
-        blocker = self.surface_continuation_blocker(
-            result,
-            run_id=resolved_run_id,
-            source_agent_id=source_agent_id,
-            source_step_id=source_step_id,
-        )
+        try:
+            blocker = self.surface_continuation_blocker(
+                result,
+                run_id=resolved_run_id,
+                source_agent_id=source_agent_id,
+                source_step_id=source_step_id,
+            )
+        except (RuntimeError, ValueError):
+            return result.model_copy(
+                update={
+                    "used": False,
+                    "reason": "continuation_correlation_failed",
+                    "continuation": None,
+                    "error_code": ExternalWorkErrorCode.INVALID_REQUEST,
+                    "error_message": (
+                        "A governed continuation blocker requires canonical "
+                        "active execution identity."
+                    ),
+                    "error_retryable": False,
+                }
+            )
         if blocker is None:
             return result
         return result.model_copy(
@@ -988,10 +1011,18 @@ class ExternalWorkAdapter:
             if blocker is not None:
                 blocker = blocker.model_copy(update={"reason": continuation_reason})
             else:
+                task_id, run_id, attempt_id, execution_id = (
+                    resolve_meaningful_side_effect_execution_identity(
+                        task_id=resolved_task,
+                        run_id=resolved_run,
+                    )
+                )
                 blocker = GovernedContinuationRequest(
                     reason=continuation_reason,
-                    task_id=resolved_task,
-                    run_id=resolved_run,
+                    task_id=task_id,
+                    run_id=run_id,
+                    attempt_id=attempt_id,
+                    execution_id=execution_id,
                     source_agent_id="external_contractor_adapter",
                     prompt=(
                         f"Meaningful side effect {action} requires governed continuation "

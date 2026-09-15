@@ -27,8 +27,17 @@ from external_contractor_adapter.tests.fakes.deterministic_external_work import 
 from external_contractor_adapter.tests.fakes.deterministic_side_effect_policy import (
     DeterministicMeaningfulSideEffectPolicy,
 )
+from intergrax.contracts.execution_identity import (
+    peek_active_execution_id,
+    peek_active_execution_identity,
+)
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
+from testing_support.builder import (
+    canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
+    canonical_task_id_for_tests,
+)
 from intergrax.contracts.external_work import ExternalWorkStatus, QuoteAcceptanceEvidence
 from intergrax.contracts.governed_continuation import (
     ContinuationReason,
@@ -83,6 +92,10 @@ def _adapter(fake: DeterministicExternalWorkFake | None = None) -> ExternalWorkA
     return adapter
 
 
+def _canonical_ids(seed: str) -> tuple[str, str]:
+    return canonical_task_id_for_tests(seed), canonical_run_id_for_tests(seed)
+
+
 def _acceptance(**overrides: object) -> QuoteAcceptanceEvidence:
     payload: dict[str, object] = {
         "acceptance_id": "acc-gec4-1",
@@ -105,28 +118,31 @@ def _acceptance(**overrides: object) -> QuoteAcceptanceEvidence:
 def test_continuation_blocker_surfaced_for_quote() -> None:
     fake = DeterministicExternalWorkFake()
     adapter = _adapter(fake)
-    mapped = adapter.create_and_map(
-        adapter.build_create_request(
-            task_id="task-gec4",
-            run_id="run-gec4",
-            metadata=_meta(),
-        ),
-        principal_id="u1",
-        tenant_id="tenant-a",
-    )
-    blocker = adapter.surface_continuation_blocker(mapped, run_id="run-gec4")
-    assert blocker is not None
-    assert blocker.reason is ContinuationReason.QUOTE
-    assert blocker.task_id == "task-gec4"
-    assert blocker.run_id == "run-gec4"
-    assert blocker.run_id != blocker.task_id
-    assert blocker.correlation["external_task_id"].startswith("ext-gec3-")
-    assert blocker.context["quote_id"] == "q-gec3-1"
-    surfaced = adapter.with_continuation_surface(mapped, run_id="run-gec4")
-    assert surfaced.reason == "continuation_blocked"
-    assert surfaced.continuation is not None
-    assert surfaced.continuation.reason is ContinuationReason.QUOTE
-    assert surfaced.continuation.run_id == "run-gec4"
+    seed = "gec4-quote-blocker"
+    task_id, run_id = _canonical_ids(seed)
+    with canonical_execution_identity_scope(seed):
+        mapped = adapter.create_and_map(
+            adapter.build_create_request(
+                task_id=task_id,
+                run_id=run_id,
+                metadata=_meta(),
+            ),
+            principal_id="u1",
+            tenant_id="tenant-a",
+        )
+        blocker = adapter.surface_continuation_blocker(mapped, run_id=run_id)
+        assert blocker is not None
+        assert blocker.reason is ContinuationReason.QUOTE
+        assert blocker.task_id == task_id
+        assert blocker.run_id == run_id
+        assert blocker.run_id != blocker.task_id
+        assert blocker.correlation["external_task_id"].startswith("ext-gec3-")
+        assert blocker.context["quote_id"] == "q-gec3-1"
+        surfaced = adapter.with_continuation_surface(mapped, run_id=run_id)
+        assert surfaced.reason == "continuation_blocked"
+        assert surfaced.continuation is not None
+        assert surfaced.continuation.reason is ContinuationReason.QUOTE
+        assert surfaced.continuation.run_id == run_id
 
 
 @pytest.mark.unit
@@ -134,23 +150,26 @@ def test_continuation_blocker_surfaced_for_quote() -> None:
 def test_continuation_preserves_distinct_task_and_run_identity() -> None:
     fake = DeterministicExternalWorkFake()
     adapter = _adapter(fake)
-    mapped = adapter.create_and_map(
-        adapter.build_create_request(
-            task_id="task-123",
-            run_id="run-456",
-            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-identity"}),
-        ),
-        principal_id="u1",
-        tenant_id="tenant-a",
-    )
-    continuation = adapter.surface_continuation_blocker(mapped, run_id="run-456")
-    assert continuation is not None
-    assert continuation.task_id == "task-123"
-    assert continuation.run_id == "run-456"
-    assert continuation.run_id != continuation.task_id
-    # Correlation fields remain unchanged (optional run_id forwarded as stored).
-    assert continuation.correlation["task_id"] == "task-123"
-    assert continuation.correlation["run_id"] == "run-456"
+    seed = "gec4-distinct-task-run"
+    task_id, run_id = _canonical_ids(seed)
+    with canonical_execution_identity_scope(seed):
+        mapped = adapter.create_and_map(
+            adapter.build_create_request(
+                task_id=task_id,
+                run_id=run_id,
+                metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-identity"}),
+            ),
+            principal_id="u1",
+            tenant_id="tenant-a",
+        )
+        continuation = adapter.surface_continuation_blocker(mapped, run_id=run_id)
+        assert continuation is not None
+        assert continuation.task_id == task_id
+        assert continuation.run_id == run_id
+        assert continuation.run_id != continuation.task_id
+        # Correlation fields remain unchanged (optional run_id forwarded as stored).
+        assert continuation.correlation["task_id"] == task_id
+        assert continuation.correlation["run_id"] == run_id
 
 
 @pytest.mark.unit
@@ -172,17 +191,20 @@ def test_missing_run_id_fails_closed_without_task_fallback() -> None:
     assert denied_create.used is False
     assert denied_create.reason == "side_effect_identity_missing"
     # Create with a real run_id, then prove continuation surface never fabricates one.
-    mapped = adapter.create_and_map(
-        adapter.build_create_request(
-            task_id="task-no-run",
-            run_id="run-for-snapshot",
-            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-run"}),
-        ),
-        principal_id="u1",
-        tenant_id="tenant-a",
-    )
+    seed = "gec4-no-run-fallback"
+    task_id, run_id = _canonical_ids(seed)
+    with canonical_execution_identity_scope(seed):
+        mapped = adapter.create_and_map(
+            adapter.build_create_request(
+                task_id=task_id,
+                run_id=run_id,
+                metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-run"}),
+            ),
+            principal_id="u1",
+            tenant_id="tenant-a",
+        )
     assert mapped.snapshot is not None
-    assert mapped.snapshot.correlation.task_id == "task-no-run"
+    assert mapped.snapshot.correlation.task_id == task_id
     blocker = adapter.surface_continuation_blocker(mapped, run_id="")
     assert blocker is None
     result = adapter.with_continuation_surface(mapped, run_id=None)
@@ -216,18 +238,21 @@ def test_missing_run_id_fails_closed_without_task_fallback() -> None:
 def test_interrupt_composition_reuses_nexus_handler() -> None:
     fake = DeterministicExternalWorkFake()
     adapter = _adapter(fake)
-    mapped = adapter.create_and_map(
-        adapter.build_create_request(
-            task_id="task-int",
-            run_id="run-int",
-            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-int"}),
-        ),
-        principal_id="u1",
-        tenant_id="tenant-a",
-    )
-    blocker = adapter.surface_continuation_blocker(mapped, run_id="run-int")
+    seed = "gec4-interrupt"
+    task_id, run_id = _canonical_ids(seed)
+    with canonical_execution_identity_scope(seed):
+        mapped = adapter.create_and_map(
+            adapter.build_create_request(
+                task_id=task_id,
+                run_id=run_id,
+                metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-int"}),
+            ),
+            principal_id="u1",
+            tenant_id="tenant-a",
+        )
+        blocker = adapter.surface_continuation_blocker(mapped, run_id=run_id)
     assert blocker is not None
-    assert blocker.run_id == "run-int"
+    assert blocker.run_id == run_id
     interrupt = compose_continuation_interrupt(blocker)
     resolution = ExecutionInterruptHandler().resolve_interrupt(interrupt)
     assert resolution.should_pause is True
@@ -239,21 +264,26 @@ def test_interrupt_composition_reuses_nexus_handler() -> None:
 @pytest.mark.gate
 def test_correlation_preserved_across_continuation_surface() -> None:
     fake = DeterministicExternalWorkFake()
-    result = adapt_from_step_metadata(
-        fake,
-        task_id="task-corr",
-        run_id="run-corr",
-        message="scope",
-        metadata=_meta(
-            **{
-                META_IDEMPOTENCY_KEY: "idem-corr",
-                "external_work.principal_id": "u1",
-                "external_work.tenant_id": "tenant-a",
-        "external_work.workspace_ref": "workspace-a",
-            }
-        ),
-        authorization_boundary=allow_adapter(DeterministicExternalWorkFake(), policy=_allow_policy())[0].authorization_boundary,
-    )
+    seed = "gec4-corr-surface"
+    task_id, run_id = _canonical_ids(seed)
+    with canonical_execution_identity_scope(seed):
+        result = adapt_from_step_metadata(
+            fake,
+            task_id=task_id,
+            run_id=run_id,
+            message="scope",
+            metadata=_meta(
+                **{
+                    META_IDEMPOTENCY_KEY: "idem-corr",
+                    "external_work.principal_id": "u1",
+                    "external_work.tenant_id": "tenant-a",
+                    "external_work.workspace_ref": "workspace-a",
+                }
+            ),
+            authorization_boundary=allow_adapter(
+                DeterministicExternalWorkFake(), policy=_allow_policy()
+            )[0].authorization_boundary,
+        )
     assert result.used is True
     assert result.reason == "continuation_blocked"
     assert result.snapshot is not None
@@ -261,8 +291,8 @@ def test_correlation_preserved_across_continuation_surface() -> None:
     corr = result.snapshot.correlation
     assert result.continuation.correlation["external_task_id"] == corr.external_task_id
     assert result.continuation.correlation["idempotency_key"] == "idem-corr"
-    assert result.continuation.task_id == "task-corr"
-    assert result.continuation.run_id == "run-corr"
+    assert result.continuation.task_id == task_id
+    assert result.continuation.run_id == run_id
     assert result.continuation.run_id != result.continuation.task_id
 
 
@@ -271,16 +301,19 @@ def test_correlation_preserved_across_continuation_surface() -> None:
 def test_continuation_evidence_propagation_without_tier2_governance() -> None:
     fake = DeterministicExternalWorkFake()
     adapter = _adapter(fake)
-    created = adapter.create_and_map(
-        adapter.build_create_request(
-            task_id="task-ev",
-            run_id="run-ev",
-            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-ev"}),
-        ),
-        enrich=False,
-        principal_id="u1",
-        tenant_id="tenant-a",
-    )
+    seed = "gec4-evidence"
+    task_id, run_id = _canonical_ids(seed)
+    with canonical_execution_identity_scope(seed):
+        created = adapter.create_and_map(
+            adapter.build_create_request(
+                task_id=task_id,
+                run_id=run_id,
+                metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-ev"}),
+            ),
+            enrich=False,
+            principal_id="u1",
+            tenant_id="tenant-a",
+        )
     assert created.snapshot is not None and created.quote is not None
     evidence = attach_continuation_refs_to_quote_acceptance(
         _acceptance(quote_id=created.quote.quote_id),
@@ -289,15 +322,16 @@ def test_continuation_evidence_propagation_without_tier2_governance() -> None:
         policy_decision_ref="pol_prop",
     )
     refs = continuation_evidence_refs_from_quote_acceptance(evidence)
-    forwarded = adapter.forward_continuation_evidence(
-        created.snapshot.correlation,
-        reason=ContinuationReason.QUOTE,
-        evidence=evidence,
-        idempotency_key="idem-accept-gec4",
-        principal_id="u1",
-        tenant_id="tenant-a",
-        workspace_id="workspace-a",
-    )
+    with canonical_execution_identity_scope(seed):
+        forwarded = adapter.forward_continuation_evidence(
+            created.snapshot.correlation,
+            reason=ContinuationReason.QUOTE,
+            evidence=evidence,
+            idempotency_key="idem-accept-gec4",
+            principal_id="u1",
+            tenant_id="tenant-a",
+            workspace_id="workspace-a",
+        )
     assert forwarded.used is True
     assert forwarded.status == ExternalWorkStatus.ACCEPTED
     assert refs.hitl_decision_id == "hdec_prop"
@@ -361,31 +395,35 @@ def test_no_transport_coupling_in_continuation_path() -> None:
 def test_adapt_metadata_resume_forwards_evidence() -> None:
     fake = DeterministicExternalWorkFake()
     policy = _allow_policy()
-    boot = allow_adapter(fake, policy=policy)[0].create_and_map(
-        allow_adapter(fake, policy=policy)[0].build_create_request(
-            task_id="task-resume",
-            run_id="run-resume",
-            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-resume"}),
-        ),
-        enrich=False,
-        principal_id="u1",
-        tenant_id="tenant-a",
-    )
-    assert boot.quote is not None
-    result = adapt_from_step_metadata(
-        fake,
-        task_id="task-resume",
-        run_id="run-resume",
-        message="scope",
-        metadata=_meta(
-            **{
-                META_IDEMPOTENCY_KEY: "idem-resume",
-                META_QUOTE_ACCEPTANCE: _acceptance(quote_id=boot.quote.quote_id),
-                META_ACCEPTANCE_IDEMPOTENCY_KEY: "idem-accept-resume",
-            }
-        ),
-        authorization_boundary=allow_adapter(DeterministicExternalWorkFake(), policy=policy)[0].authorization_boundary,
-    )
+    seed = "gec4-resume"
+    task_id, run_id = _canonical_ids(seed)
+    adapter_bundle = allow_adapter(fake, policy=policy)[0]
+    with canonical_execution_identity_scope(seed):
+        boot = adapter_bundle.create_and_map(
+            adapter_bundle.build_create_request(
+                task_id=task_id,
+                run_id=run_id,
+                metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-resume"}),
+            ),
+            enrich=False,
+            principal_id="u1",
+            tenant_id="tenant-a",
+        )
+        assert boot.quote is not None
+        result = adapt_from_step_metadata(
+            fake,
+            task_id=task_id,
+            run_id=run_id,
+            message="scope",
+            metadata=_meta(
+                **{
+                    META_IDEMPOTENCY_KEY: "idem-resume",
+                    META_QUOTE_ACCEPTANCE: _acceptance(quote_id=boot.quote.quote_id),
+                    META_ACCEPTANCE_IDEMPOTENCY_KEY: "idem-accept-resume",
+                }
+            ),
+            authorization_boundary=adapter_bundle.authorization_boundary,
+        )
     assert result.used is True
     assert result.status == ExternalWorkStatus.ACCEPTED
     assert result.continuation is None
@@ -397,16 +435,19 @@ def test_adapt_metadata_resume_forwards_evidence() -> None:
 def test_non_quote_continuation_reason_not_owned_by_adapter() -> None:
     fake = DeterministicExternalWorkFake()
     adapter = _adapter(fake)
-    created = adapter.create_and_map(
-        adapter.build_create_request(
-            task_id="task-sec",
-            run_id="run-sec",
-            metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-sec"}),
-        ),
-        enrich=False,
-        principal_id="u1",
-        tenant_id="tenant-a",
-    )
+    seed = "gec4-security"
+    task_id, run_id = _canonical_ids(seed)
+    with canonical_execution_identity_scope(seed):
+        created = adapter.create_and_map(
+            adapter.build_create_request(
+                task_id=task_id,
+                run_id=run_id,
+                metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-sec"}),
+            ),
+            enrich=False,
+            principal_id="u1",
+            tenant_id="tenant-a",
+        )
     assert created.snapshot is not None and created.quote is not None
     result = adapter.forward_continuation_evidence(
         created.snapshot.correlation,
@@ -416,3 +457,66 @@ def test_non_quote_continuation_reason_not_owned_by_adapter() -> None:
     )
     assert result.used is False
     assert result.reason == "continuation_reason_unsupported"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_quote_continuation_blocker_carries_canonical_execution_identity() -> None:
+    fake = DeterministicExternalWorkFake()
+    adapter = _adapter(fake)
+    seed = "gec4-canonical-identity"
+    task_id, run_id = _canonical_ids(seed)
+    with canonical_execution_identity_scope(seed):
+        active_run, active_attempt = peek_active_execution_identity() or (None, None)
+        active_execution = peek_active_execution_id()
+        assert active_run == run_id
+        assert active_attempt is not None
+        assert active_execution is not None
+        mapped = adapter.create_and_map(
+            adapter.build_create_request(
+                task_id=task_id,
+                run_id=run_id,
+                metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-canonical-id"}),
+            ),
+            principal_id="u1",
+            tenant_id="tenant-a",
+        )
+        blocker = adapter.surface_continuation_blocker(mapped, run_id=run_id)
+    assert blocker is not None
+    assert blocker.reason is ContinuationReason.QUOTE
+    assert blocker.task_id == task_id
+    assert blocker.run_id == run_id
+    assert blocker.attempt_id == active_attempt
+    assert blocker.execution_id == active_execution
+    typed = blocker.to_correlation()
+    assert typed.task_id == blocker.task_id
+    assert typed.run_id == blocker.run_id
+    assert typed.attempt_id == blocker.attempt_id
+    assert typed.execution_id == blocker.execution_id
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_quote_continuation_fails_closed_without_active_execution_identity() -> None:
+    fake = DeterministicExternalWorkFake()
+    adapter = _adapter(fake)
+    seed = "gec4-fail-closed"
+    task_id, run_id = _canonical_ids(seed)
+    with canonical_execution_identity_scope(seed):
+        mapped = adapter.create_and_map(
+            adapter.build_create_request(
+                task_id=task_id,
+                run_id=run_id,
+                metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-fail-closed"}),
+            ),
+            principal_id="u1",
+            tenant_id="tenant-a",
+        )
+    with pytest.raises(RuntimeError, match="active execution identity"):
+        adapter.surface_continuation_blocker(mapped, run_id=run_id)
+    surfaced = adapter.with_continuation_surface(mapped, run_id=run_id)
+    assert surfaced.used is False
+    assert surfaced.reason == "continuation_correlation_failed"
+    assert surfaced.continuation is None
+    assert surfaced.error_message is not None
+    assert "execution identity" in surfaced.error_message.lower()
