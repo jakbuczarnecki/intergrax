@@ -131,5 +131,8 @@ def test_build_harness_host_runtime_wires_cost_policy_bundle() -> None:
     assert env is not None
     runtime = build_harness_host_runtime_for_tests(manifest, env, settings=settings)
     assert runtime.cost.budget_policy is not None
-    assert runtime.env_wiring.policy_bundle.budget == runtime.cost.budget_policy
+    assert isinstance(
+        runtime.env_wiring.policy_bundle.domain_fragments.get("cost_governance"),
+        dict,
+    )
     assert "cost_governance" in runtime.env_wiring.policy_bundle.domain_fragments

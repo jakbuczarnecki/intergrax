@@ -14,11 +14,9 @@ pytestmark = pytest.mark.unit
 REPO_ROOT = Path(__file__).resolve().parents[4]
 POLICY_ROOT = REPO_ROOT / "intergrax" / "runtime" / "policy"
 
-# Documented adapter/wiring modules (GOV-GAP-011 residual — GR-4-R1 target).
+# Documented adapter/wiring modules (GOV-GAP-011 residual — post GR-4-R1).
 NEXUS_COUPLING_ALLOWLIST = frozenset(
     {
-        "policy_bundle.py",
-        "tool_policy_resolution.py",
         "compliance_profiles.py",
         "execution_mode_defaults.py",
         "policy_trace_diagnostics.py",
@@ -53,6 +51,14 @@ def test_policy_neutral_core_has_no_undocumented_nexus_imports() -> None:
         if imports:
             violations.append(f"{rel}: {sorted(set(imports))}")
     assert violations == [], "undocumented Nexus imports in policy core:\n" + "\n".join(violations)
+
+
+def test_policy_bundle_and_tool_resolution_have_zero_nexus_imports() -> None:
+    for name in ("policy_bundle.py", "tool_policy_resolution.py"):
+        path = POLICY_ROOT / name
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        imports = _nexus_imports_in_tree(tree)
+        assert imports == [], f"{name} must not import Nexus: {imports}"
 
 
 def test_runtime_policy_bundle_evaluator_has_no_rule_id_suffix_dispatch() -> None:

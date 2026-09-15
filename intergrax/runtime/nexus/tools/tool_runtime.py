@@ -167,12 +167,14 @@ class ToolRuntime:
             merge_provider_metadata_into_request,
         )
         from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
-        from intergrax.runtime.policy.tool_policy_resolution import resolve_allowed_tools_from_config
+        from intergrax.runtime.nexus.policy.tool_policy_resolution_adapter import (
+            resolve_allowed_tools_from_runtime_config,
+        )
         from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 
         cfg = state.context.config
         incoming_plan = plan.normalized()
-        effective_allowed = resolve_allowed_tools_from_config(cfg, explicit=allowed_tools)
+        effective_allowed = resolve_allowed_tools_from_runtime_config(cfg, explicit=allowed_tools)
         has_authoritative_scope = (
             allowed_tools is not None
             or effective_allowed is not None
@@ -278,10 +280,12 @@ class ToolRuntime:
     ) -> ToolResponse:
         """§42.12 gateway entry — prefer over direct ``invoke`` from agent code."""
         from intergrax.runtime.nexus.tools.tool_gateway import RuntimeToolGateway
-        from intergrax.runtime.policy.tool_policy_resolution import resolve_allowed_tools_from_config
+        from intergrax.runtime.nexus.policy.tool_policy_resolution_adapter import (
+            resolve_allowed_tools_from_runtime_config,
+        )
 
         cfg = state.context.config
-        effective_allowed = resolve_allowed_tools_from_config(cfg, explicit=allowed_tools)
+        effective_allowed = resolve_allowed_tools_from_runtime_config(cfg, explicit=allowed_tools)
         gateway = RuntimeToolGateway.for_state(
             state,
             allowed_tools=effective_allowed,

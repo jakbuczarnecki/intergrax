@@ -27,8 +27,6 @@ def merge_skill_policy_fragments(
         fragments[fragment_id] = {"source": "skill_pack", "id": fragment_id}
     return RuntimePolicyBundle(
         tool_access=bundle.tool_access,
-        budget=bundle.budget,
-        plan_loop=bundle.plan_loop,
         require_human_on_critical=bundle.require_human_on_critical,
         domain_fragments=fragments,
         policy_catalog=bundle.policy_catalog,
