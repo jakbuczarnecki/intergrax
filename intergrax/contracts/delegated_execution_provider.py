@@ -131,6 +131,7 @@ class DelegatedExecutionCapabilities(BaseModel):
     supports_resume: bool = False
     supports_streaming: bool = False
     supports_interrupt: bool = False
+    supports_status_read: bool = False
 
     @field_validator("provider_id")
     @classmethod

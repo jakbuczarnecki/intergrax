@@ -574,9 +574,11 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2C1-C1 — correlation failure normalization and explicit durability policy = CLOSED** (all post-dispatch correlation persistence/conflict/integrity errors normalize to typed ``PLATFORM_FAILURE``; validated provider evidence preserved; required durability fails composition when durable store missing).
 
-**P2.1-S2C = PARTIAL** (S2C1 correlation durability CLOSED; status / list / continuation remain OPEN).
+**P2.1-S2C2 — provider-neutral delegated status read model and durable lookup = CLOSED** (``ExecutionId`` → durable ``DelegatedInvocationCorrelationLookup`` → ``DelegatedExecutionStatusProvider`` → typed ``DelegatedExecutionStatusView``; ``supports_status_read`` capability; durable ``apply_control_by_execution_id`` reuses S2B control core).
 
-**P2.1-S2 = OPEN** (S2C1 CLOSED; remaining S2C status/list/continuation and further adoption slices).
+**P2.1-S2C = PARTIAL** (S2C1 + S2C2 CLOSED; list / continuation remain OPEN).
+
+**P2.1-S2 = OPEN** (S2C1–S2C2 CLOSED; remaining S2C list/continuation and further adoption slices).
 
 Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`
 
