@@ -94,7 +94,8 @@ def test_custom_health_implementation_via_protocol() -> None:
     health.mark_unhealthy()
     result = bounded.publish(_DELIVERABLE, priority=EventPriority.BEST_EFFORT)
     assert result.disposition is EventDeliveryDisposition.REJECTED
-    bounded.close()
+    with pytest.raises(EventDeliveryBoundaryError):
+        bounded.close()
 
 
 def test_dead_worker_before_publish_marks_unhealthy_and_rejects() -> None:
