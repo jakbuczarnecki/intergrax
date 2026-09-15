@@ -18,7 +18,9 @@ from intergrax.contracts.decision_exposure_selection import (
     DecisionExposureSelectionSuccessReason,
     HostPublicationClass,
 )
-from intergrax.contracts.execution_identity import AttemptId, validate_attempt_id
+from intergrax.runtime.execution.decision_exposure_selection_validation import (
+    validate_single_attempt_partition_for_selection,
+)
 
 HOST_TERMINAL_DECISION_EXPOSURE_SELECTOR_ID = "platform.host_terminal_decision_exposure"
 
@@ -41,25 +43,6 @@ def _candidate_sort_key(
     )
 
 
-def _validate_single_attempt_partition(
-    candidates: tuple[DecisionExposureCandidate[object], ...],
-) -> AttemptId | DecisionExposureSelectionFailure:
-    if not candidates:
-        return DecisionExposureSelectionFailure(
-            reason_code=DecisionExposureSelectionFailureCode.NO_ELIGIBLE_TERMINAL_CANDIDATE,
-            detail="no candidates supplied for selection",
-        )
-    attempt_ids: set[AttemptId] = set()
-    for candidate in candidates:
-        attempt_ids.add(validate_attempt_id(candidate.execution_lineage.attempt_id))
-    if len(attempt_ids) != 1:
-        return DecisionExposureSelectionFailure(
-            reason_code=DecisionExposureSelectionFailureCode.INVALID_CANDIDATE_SET,
-            detail="candidates must belong to exactly one effective attempt",
-        )
-    return next(iter(attempt_ids))
-
-
 class HostTerminalDecisionExposureSelector:
     """Reusable default strategy: eligible host-terminal candidates only."""
 
@@ -74,7 +57,7 @@ class HostTerminalDecisionExposureSelector:
     ) -> DecisionExposureSelectionDecision[object] | DecisionExposureSelectionFailure:
         if type(policy) is not DecisionExposurePublicationPolicy:
             raise TypeError("policy must be DecisionExposurePublicationPolicy")
-        attempt_check = _validate_single_attempt_partition(candidates)
+        attempt_check = validate_single_attempt_partition_for_selection(candidates)
         if type(attempt_check) is DecisionExposureSelectionFailure:
             return attempt_check
         eligible = [

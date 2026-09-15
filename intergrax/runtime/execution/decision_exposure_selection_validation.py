@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Post-strategy host validation for Decision exposure selection (P0-B-D1-I1-A-R1)."""
+"""Pre/post-strategy host validation for Decision exposure selection (I1-A-R1/R2)."""
 
 from __future__ import annotations
 
@@ -16,8 +16,41 @@ from intergrax.contracts.decision_exposure_selection import (
     DecisionExposureSelectionStrategy,
     HostPublicationClass,
 )
+from intergrax.contracts.execution_identity import AttemptId, validate_attempt_id
 
 T = TypeVar("T")
+
+
+def validate_decision_exposure_candidate_set(
+    candidates: tuple[DecisionExposureCandidate[T], ...],
+) -> DecisionExposureSelectionFailure | None:
+    """Reject mixed execution attempts before any selection strategy runs."""
+    if not candidates:
+        return None
+    attempt_ids: set[AttemptId] = set()
+    for candidate in candidates:
+        attempt_ids.add(validate_attempt_id(candidate.execution_lineage.attempt_id))
+    if len(attempt_ids) != 1:
+        return DecisionExposureSelectionFailure(
+            reason_code=DecisionExposureSelectionFailureCode.INVALID_CANDIDATE_SET,
+            detail="candidates must belong to exactly one effective attempt",
+        )
+    return None
+
+
+def validate_single_attempt_partition_for_selection(
+    candidates: tuple[DecisionExposureCandidate[T], ...],
+) -> AttemptId | DecisionExposureSelectionFailure:
+    """Default-selector partition guard (empty set + single-attempt invariant)."""
+    if not candidates:
+        return DecisionExposureSelectionFailure(
+            reason_code=DecisionExposureSelectionFailureCode.NO_ELIGIBLE_TERMINAL_CANDIDATE,
+            detail="no candidates supplied for selection",
+        )
+    mixed = validate_decision_exposure_candidate_set(candidates)
+    if mixed is not None:
+        return mixed
+    return validate_attempt_id(candidates[0].execution_lineage.attempt_id)
 
 
 def validate_decision_exposure_selection_decision(
@@ -55,6 +88,9 @@ def run_validated_decision_exposure_selection(
     candidates: tuple[DecisionExposureCandidate[T], ...],
 ) -> DecisionExposureSelectionDecision[T] | DecisionExposureSelectionFailure:
     """Invoke strategy then enforce platform trust invariants on the outcome."""
+    pre_validation = validate_decision_exposure_candidate_set(candidates)
+    if pre_validation is not None:
+        return pre_validation
     outcome = strategy.select(policy, candidates)
     if isinstance(outcome, DecisionExposureSelectionFailure):
         return outcome
