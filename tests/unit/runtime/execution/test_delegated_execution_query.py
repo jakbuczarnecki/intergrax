@@ -59,9 +59,20 @@ from intergrax.runtime.execution.delegated_execution.correlation_persistence imp
     InMemoryDelegatedInvocationCorrelationStore,
     _DOCUMENT_PARTITION,
 )
+from intergrax.runtime.execution.delegated_execution.correlation_query_cursor import (
+    DelegatedCorrelationQueryCursorCodec,
+)
 from intergrax.runtime.execution.delegated_execution.correlation_query_persistence import (
     DocumentStoreDelegatedInvocationCorrelationQueryStore,
     paired_in_memory_correlation_stores,
+)
+from intergrax.contracts.delegated_execution_query import (
+    DelegatedInvocationCorrelationQueryStorePage,
+    delegated_correlation_backend_scan_limit,
+)
+from intergrax.runtime.execution.delegated_execution.correlation_persistence import (
+    backfill_correlation_document_query_index,
+    encode_correlation_record,
 )
 from intergrax.runtime.execution.delegated_execution.correlation_service import (
     DelegatedInvocationCorrelationService,
@@ -347,7 +358,10 @@ def test_s2c3_t12_cursor_invalid() -> None:
 def test_s2c3_t13_corrupted_record_fail_closed() -> None:
     doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
     write = DocumentStoreDelegatedInvocationCorrelationStore(doc)
-    query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(doc)
+    query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
     correlation = DelegatedInvocationCorrelationService(write)
     binding = _binding()
     correlation.persist_binding(binding, persisted_at=_T0)
@@ -370,15 +384,15 @@ def test_s2c3_t13_corrupted_record_fail_closed() -> None:
 
 def test_s2c3_t14_storage_unavailable() -> None:
     class BrokenStore(DelegatedInvocationCorrelationQueryStore):
-        def query_correlations(self, query: DelegatedInvocationCorrelationQuery):
-            raise RuntimeError("mongo socket reset")
+        @property
+        def cursor_codec(self) -> DelegatedCorrelationQueryCursorCodec:
+            return DelegatedCorrelationQueryCursorCodec(secret=_CURSOR_SECRET)
 
-        def has_more_after_page(
+        def query_page(
             self,
             query: DelegatedInvocationCorrelationQuery,
-            last_record: DelegatedInvocationCorrelationRecord,
-        ) -> bool:
-            return False
+        ) -> DelegatedInvocationCorrelationQueryStorePage:
+            raise RuntimeError("mongo socket reset")
 
     service = DelegatedExecutionQueryService(BrokenStore())
     with pytest.raises(DelegatedInvocationCorrelationPersistenceError) as exc:
@@ -425,15 +439,15 @@ def test_s2c3_t16_no_correlation_writes() -> None:
 
 def test_s2c3_t17_query_store_pluginability() -> None:
     class StaticQueryStore(DelegatedInvocationCorrelationQueryStore):
-        def query_correlations(self, query: DelegatedInvocationCorrelationQuery):
-            return ()
+        @property
+        def cursor_codec(self) -> DelegatedCorrelationQueryCursorCodec:
+            return DelegatedCorrelationQueryCursorCodec(secret=_CURSOR_SECRET)
 
-        def has_more_after_page(
+        def query_page(
             self,
             query: DelegatedInvocationCorrelationQuery,
-            last_record: DelegatedInvocationCorrelationRecord,
-        ) -> bool:
-            return False
+        ) -> DelegatedInvocationCorrelationQueryStorePage:
+            return DelegatedInvocationCorrelationQueryStorePage(records=(), has_more=False)
 
     page = DelegatedExecutionQueryService(StaticQueryStore()).query_delegated_executions(
         DelegatedInvocationCorrelationQuery(),
@@ -535,14 +549,20 @@ async def test_s2c3_t23_s2c2_regression_status_lookup() -> None:
 def test_s2c3_t24_restart_like_durable_query() -> None:
     doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
     write = DocumentStoreDelegatedInvocationCorrelationStore(doc)
-    query_a = DocumentStoreDelegatedInvocationCorrelationQueryStore(doc)
+    query_a = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
     correlation = DelegatedInvocationCorrelationService(write)
     binding = _binding()
     correlation.persist_binding(binding, persisted_at=_T0)
     page_a = DelegatedExecutionQueryService(query_a).query_delegated_executions(
         DelegatedInvocationCorrelationQuery(page_size=10),
     )
-    query_b = DocumentStoreDelegatedInvocationCorrelationQueryStore(doc)
+    query_b = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
     page_b = DelegatedExecutionQueryService(query_b).query_delegated_executions(
         DelegatedInvocationCorrelationQuery(page_size=10),
     )
@@ -573,3 +593,284 @@ def test_s2c3_architecture_gate_no_nexus() -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
             assert "runtime.nexus" not in node.module
+
+
+class _InstrumentedDocumentStore(InMemoryDocumentStore):
+    def __init__(self, *, cursor_secret: bytes) -> None:
+        super().__init__(cursor_secret=cursor_secret)
+        self.query_call_count = 0
+        self.query_cursors_used: list[str | None] = []
+        self.last_query_limit: int | None = None
+
+    def query(self, partition_key: str, **kwargs):
+        self.query_call_count += 1
+        self.query_cursors_used.append(kwargs.get("cursor"))
+        self.last_query_limit = kwargs.get("limit")
+        return super().query(partition_key, **kwargs)
+
+
+def _seed_document_store(
+    doc: InMemoryDocumentStore,
+    *,
+    count: int,
+    provider_id: str = "rare_provider",
+    parent: ExecutionId | None = None,
+    base_time: datetime = _T0,
+) -> None:
+    write = DocumentStoreDelegatedInvocationCorrelationStore(doc)
+    correlation = DelegatedInvocationCorrelationService(write)
+    for index in range(count):
+        binding = _binding(
+            provider_id=provider_id,
+            parent=parent,
+            invocation_id=f"seed-{index}",
+        )
+        correlation.persist_binding(
+            binding,
+            persisted_at=base_time + timedelta(seconds=index),
+        )
+
+
+def test_c1_t1_rare_filter_bounded_backend_scan() -> None:
+    doc = _InstrumentedDocumentStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=200, provider_id="common")
+    _seed_document_store(
+        doc,
+        count=1,
+        provider_id="needle",
+        base_time=_T0 + timedelta(days=1),
+    )
+    query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
+    service = DelegatedExecutionQueryService(query_store)
+    page = service.query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(provider_id="needle", page_size=100),
+    )
+    assert len(page.items) == 1
+    assert doc.query_call_count == 1
+    assert doc.last_query_limit == delegated_correlation_backend_scan_limit(100)
+
+
+def test_c1_t2_short_page_when_scan_budget_exhausted() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    write = DocumentStoreDelegatedInvocationCorrelationStore(doc)
+    correlation = DelegatedInvocationCorrelationService(write)
+    for index in range(87):
+        binding = _binding(provider_id="drop", invocation_id=f"drop-a-{index}")
+        correlation.persist_binding(
+            binding,
+            persisted_at=_T0 + timedelta(hours=1, seconds=index),
+        )
+    for index in range(13):
+        binding = _binding(provider_id="keep", invocation_id=f"keep-{index}")
+        correlation.persist_binding(
+            binding,
+            persisted_at=_T0 + timedelta(hours=2, seconds=index),
+        )
+    for index in range(40):
+        binding = _binding(provider_id="drop", invocation_id=f"drop-b-{index}")
+        correlation.persist_binding(binding, persisted_at=_T0 + timedelta(seconds=index))
+    query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
+    service = DelegatedExecutionQueryService(query_store)
+    page = service.query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(provider_id="keep", page_size=100),
+    )
+    assert len(page.items) == 13
+    assert page.has_more is True
+    assert page.next_cursor is not None
+
+
+def test_c1_t3_next_page_resumes_backend_cursor() -> None:
+    doc = _InstrumentedDocumentStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=250)
+    query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
+    service = DelegatedExecutionQueryService(query_store)
+    first = service.query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(page_size=100),
+    )
+    assert first.has_more is True
+    second = service.query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(page_size=100, cursor=first.next_cursor),
+    )
+    assert doc.query_call_count == 2
+    assert doc.query_cursors_used[1] is not None
+    assert doc.query_cursors_used[1] != doc.query_cursors_used[0]
+
+
+def test_c1_t4_no_rescan_of_previous_backend_pages() -> None:
+    doc = _InstrumentedDocumentStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=180)
+    query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
+    service = DelegatedExecutionQueryService(query_store)
+    first = service.query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(page_size=100),
+    )
+    second = service.query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(page_size=100, cursor=first.next_cursor),
+    )
+    assert doc.query_cursors_used[0] is None
+    assert doc.query_cursors_used[1] is not None
+    assert doc.query_cursors_used[1] != doc.query_cursors_used[0]
+
+
+def test_c1_t7_cursor_query_binding_rejects_filter_change() -> None:
+    correlation, query_service = _query_stack()
+    _persist_many(correlation, 4)
+    first = query_service.query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(page_size=2),
+    )
+    with pytest.raises(DelegatedExecutionQueryInvalidCursorError):
+        query_service.query_delegated_executions(
+            DelegatedInvocationCorrelationQuery(
+                page_size=2,
+                cursor=first.next_cursor,
+                provider_id="other",
+            ),
+        )
+
+
+def test_c1_t8_cursor_tampering_rejected() -> None:
+    correlation, query_service = _query_stack()
+    _persist_many(correlation, 3)
+    first = query_service.query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(page_size=1),
+    )
+    tampered = f"{first.next_cursor}invalid"
+    with pytest.raises(DelegatedExecutionQueryInvalidCursorError):
+        query_service.query_delegated_executions(
+            DelegatedInvocationCorrelationQuery(page_size=1, cursor=tampered),
+        )
+
+
+def test_c1_t9_cursor_backend_continuation_roundtrip() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=150)
+    query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
+    service = DelegatedExecutionQueryService(query_store)
+    first = service.query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(page_size=50),
+    )
+    second = service.query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(page_size=50, cursor=first.next_cursor),
+    )
+    first_ids = {str(item.execution_id) for item in first.items}
+    second_ids = {str(item.execution_id) for item in second.items}
+    assert first_ids.isdisjoint(second_ids)
+
+
+def test_c1_t11_legacy_record_exact_lookup() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    write = DocumentStoreDelegatedInvocationCorrelationStore(doc)
+    correlation = DelegatedInvocationCorrelationService(write)
+    binding = _binding()
+    correlation.persist_binding(binding, persisted_at=_T0)
+    loaded = correlation.load_binding_by_execution_id(binding.execution_id)
+    assert loaded == binding
+
+
+def test_c1_t12_legacy_record_query_discoverability() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    binding = _binding()
+    record = DelegatedInvocationCorrelationRecord(
+        binding=binding,
+        persisted_at=_T0,
+    )
+    doc.put(
+        DocumentRecord(
+            partition_key=_DOCUMENT_PARTITION,
+            row_key=str(binding.execution_id),
+            data={"correlation": encode_correlation_record(record).decode("utf-8")},
+        ),
+    )
+    query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
+    page = DelegatedExecutionQueryService(query_store).query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(
+            parent_execution_id=binding.parent_execution_id,
+            page_size=10,
+        ),
+    )
+    assert len(page.items) == 1
+    assert page.items[0].execution_id == binding.execution_id
+
+
+def test_c1_t14_mixed_legacy_and_indexed_dataset() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    write = DocumentStoreDelegatedInvocationCorrelationStore(doc)
+    correlation = DelegatedInvocationCorrelationService(write)
+    indexed = _binding(invocation_id="indexed")
+    correlation.persist_binding(indexed, persisted_at=_T0)
+    legacy_binding = _binding(invocation_id="legacy")
+    legacy_record = DelegatedInvocationCorrelationRecord(
+        binding=legacy_binding,
+        persisted_at=_T0 + timedelta(seconds=1),
+    )
+    doc.put(
+        DocumentRecord(
+            partition_key=_DOCUMENT_PARTITION,
+            row_key=str(legacy_binding.execution_id),
+            data={"correlation": encode_correlation_record(legacy_record).decode("utf-8")},
+        ),
+    )
+    backfill_correlation_document_query_index(doc, batch_size=10)
+    query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
+    page = DelegatedExecutionQueryService(query_store).query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(page_size=10),
+    )
+    assert len(page.items) == 2
+
+
+def test_c1_t15_run_id_filter_bounded() -> None:
+    doc = _InstrumentedDocumentStore(cursor_secret=_CURSOR_SECRET)
+    write = DocumentStoreDelegatedInvocationCorrelationStore(doc)
+    correlation = DelegatedInvocationCorrelationService(write)
+    target_run = mint_run_id()
+    for index in range(30):
+        binding = _binding(run_id=target_run if index == 29 else None, invocation_id=f"r-{index}")
+        correlation.persist_binding(binding, persisted_at=_T0 + timedelta(seconds=index))
+    query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(
+        doc,
+        cursor_secret=_CURSOR_SECRET,
+    )
+    page = DelegatedExecutionQueryService(query_store).query_delegated_executions(
+        DelegatedInvocationCorrelationQuery(run_id=target_run, page_size=30),
+    )
+    assert len(page.items) == 1
+    assert doc.query_call_count == 1
+
+
+def test_c1_backfill_restores_query_index() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    binding = _binding()
+    record = DelegatedInvocationCorrelationRecord(binding=binding, persisted_at=_T0)
+    doc.put(
+        DocumentRecord(
+            partition_key=_DOCUMENT_PARTITION,
+            row_key=str(binding.execution_id),
+            data={"correlation": encode_correlation_record(record).decode("utf-8")},
+        ),
+    )
+    updated = backfill_correlation_document_query_index(doc, batch_size=10)
+    assert updated == 1
+    stored = doc.get(_DOCUMENT_PARTITION, str(binding.execution_id))
+    assert stored is not None
+    assert "query_run_id" in stored.data

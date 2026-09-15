@@ -21,9 +21,9 @@ from intergrax.contracts.delegated_invocation_correlation import (
     DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
     DelegatedInvocationCorrelationIntegrityError,
     DelegatedInvocationCorrelationPersistenceError,
-    DelegatedInvocationCorrelationRecord,
 )
 from intergrax.runtime.execution.delegated_execution.correlation_query_cursor import (
+    DelegatedCorrelationQueryCursorCodec,
     encode_delegated_correlation_query_cursor,
 )
 
@@ -35,10 +35,16 @@ class DelegatedExecutionQueryService(DelegatedExecutionQueryPort):
     Does not call providers or mutate Execution lifecycle or correlation records.
     """
 
-    __slots__ = ("_query_store",)
+    __slots__ = ("_cursor_codec", "_query_store")
 
-    def __init__(self, query_store: DelegatedInvocationCorrelationQueryStore) -> None:
+    def __init__(
+        self,
+        query_store: DelegatedInvocationCorrelationQueryStore,
+        *,
+        cursor_codec: DelegatedCorrelationQueryCursorCodec | None = None,
+    ) -> None:
         self._query_store = query_store
+        self._cursor_codec = cursor_codec or query_store.cursor_codec
 
     def query_delegated_executions(
         self,
@@ -46,7 +52,7 @@ class DelegatedExecutionQueryService(DelegatedExecutionQueryPort):
     ) -> DelegatedExecutionQueryPage:
         normalized = _validate_query(query)
         try:
-            records = self._query_store.query_correlations(normalized)
+            store_page = self._query_store.query_page(normalized)
         except DelegatedExecutionQueryInvalidCursorError:
             raise
         except DelegatedInvocationCorrelationIntegrityError:
@@ -58,23 +64,29 @@ class DelegatedExecutionQueryService(DelegatedExecutionQueryPort):
                 DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
             ) from exc
 
+        records = store_page.records
         views = tuple(correlation_view_from_record(record) for record in records)
-        if not records:
-            return DelegatedExecutionQueryPage(items=(), next_cursor=None, has_more=False)
-
-        last_record = records[-1]
-        has_more = self._query_store.has_more_after_page(normalized, last_record)
-        next_cursor = None
-        if has_more:
-            next_cursor = encode_delegated_correlation_query_cursor(
-                query=normalized,
-                last_persisted_at=last_record.persisted_at,
-                last_execution_id=last_record.binding.execution_id,
+        if not store_page.has_more:
+            return DelegatedExecutionQueryPage(
+                items=views,
+                next_cursor=None,
+                has_more=False,
             )
+
+        last_record = records[-1] if records else None
+        next_cursor = encode_delegated_correlation_query_cursor(
+            codec=self._cursor_codec,
+            query=normalized,
+            last_persisted_at=last_record.persisted_at if last_record is not None else None,
+            last_execution_id=(
+                last_record.binding.execution_id if last_record is not None else None
+            ),
+            document_store_cursor=store_page.backend_continuation_cursor,
+        )
         return DelegatedExecutionQueryPage(
             items=views,
             next_cursor=next_cursor,
-            has_more=has_more,
+            has_more=True,
         )
 
 

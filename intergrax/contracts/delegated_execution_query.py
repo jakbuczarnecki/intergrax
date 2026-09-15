@@ -34,6 +34,16 @@ SCHEMA_DELEGATED_EXECUTION_CORRELATION_VIEW_V1: Final = (
 
 DEFAULT_DELEGATED_CORRELATION_QUERY_PAGE_SIZE: Final = 100
 MAX_DELEGATED_CORRELATION_QUERY_PAGE_SIZE: Final = 500
+MAX_DELEGATED_CORRELATION_BACKEND_PAGES_PER_QUERY: Final = 1
+
+
+def delegated_correlation_backend_scan_limit(page_size: int) -> int:
+    """Hard per-logical-page backend row budget (one DocumentStore query)."""
+    if isinstance(page_size, bool) or not isinstance(page_size, int):
+        raise TypeError("page_size must be a positive integer")
+    if page_size < 1 or page_size > MAX_DELEGATED_CORRELATION_QUERY_PAGE_SIZE:
+        raise ValueError("page_size out of bounds")
+    return page_size
 
 DELEGATED_EXECUTION_QUERY_INVALID_CURSOR_MESSAGE: Final = (
     "delegated execution query cursor is invalid"
@@ -159,29 +169,33 @@ class DelegatedExecutionQueryPage(BaseModel):
     has_more: bool = False
 
 
+class DelegatedInvocationCorrelationQueryStorePage(BaseModel):
+    """Bounded store page including backend continuation for opaque cursor encoding."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    records: tuple[DelegatedInvocationCorrelationRecord, ...]
+    has_more: bool = False
+    backend_continuation_cursor: str | None = None
+
+
 class DelegatedInvocationCorrelationQueryStore(ABC):
     """Read-only, provider-neutral query port over persisted correlation records."""
 
     @abstractmethod
-    def query_correlations(
+    def query_page(
         self,
         query: DelegatedInvocationCorrelationQuery,
-    ) -> tuple[DelegatedInvocationCorrelationRecord, ...]:
+    ) -> DelegatedInvocationCorrelationQueryStorePage:
         """
-        Return up to ``query.page_size`` records for this page.
+        Return one bounded logical page.
 
-        Implementations must apply filters with AND semantics, order by
-        ``persisted_at`` descending with ``execution_id`` tie-breaker, and
-        honor ``query.cursor`` when continuing a page.
+        Implementations must perform at most
+        ``MAX_DELEGATED_CORRELATION_BACKEND_PAGES_PER_QUERY`` backend fetches,
+        apply filters with AND semantics, order by ``persisted_at`` descending
+        with ``execution_id`` tie-breaker, and preserve backend continuation
+        state for the next page.
         """
-
-    @abstractmethod
-    def has_more_after_page(
-        self,
-        query: DelegatedInvocationCorrelationQuery,
-        last_record: DelegatedInvocationCorrelationRecord,
-    ) -> bool:
-        """Return whether another page exists after ``last_record`` for ``query``."""
 
 
 @runtime_checkable
@@ -224,7 +238,10 @@ __all__ = [
     "DelegatedExecutionQueryValidationError",
     "DelegatedInvocationCorrelationQuery",
     "DelegatedInvocationCorrelationQueryStore",
+    "DelegatedInvocationCorrelationQueryStorePage",
+    "MAX_DELEGATED_CORRELATION_BACKEND_PAGES_PER_QUERY",
     "MAX_DELEGATED_CORRELATION_QUERY_PAGE_SIZE",
+    "delegated_correlation_backend_scan_limit",
     "SCHEMA_DELEGATED_EXECUTION_CORRELATION_VIEW_V1",
     "SCHEMA_DELEGATED_INVOCATION_CORRELATION_QUERY_V1",
     "correlation_view_from_record",

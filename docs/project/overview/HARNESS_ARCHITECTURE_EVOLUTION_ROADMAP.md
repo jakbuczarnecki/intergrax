@@ -580,7 +580,9 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2C3 — delegated operation list and query read model = CLOSED** (``DelegatedExecutionQueryPort`` → ``DelegatedExecutionQueryService`` → ``DelegatedInvocationCorrelationQueryStore``; typed ``DelegatedInvocationCorrelationQuery`` + ``DelegatedExecutionCorrelationView``; bounded opaque keyset pagination over persisted correlation facts only — no provider calls, no lifecycle mutation).
 
-**P2.1-S2C = PARTIAL** (S2C1 + S2C2 + S2C3 CLOSED; continuation / reattachment remain OPEN).
+**P2.1-S2C3-C1 — bounded query scaling, backend continuation and legacy correlation compatibility = CLOSED** (hard per-page ``DocumentStore`` scan budget; ``DelegatedInvocationCorrelationQueryStorePage`` with backend continuation; HMAC authenticated delegated query cursors; legacy correlation discoverability via decoded-record filters + optional ``backfill_correlation_document_query_index``).
+
+**P2.1-S2C = PARTIAL** (S2C1 + S2C2 + S2C3 + S2C3-C1 CLOSED; continuation / reattachment remain OPEN).
 
 **P2.1-S2 = OPEN** (S2C1–S2C3 CLOSED; remaining S2C continuation and further adoption slices).
 
