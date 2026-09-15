@@ -8,7 +8,7 @@ import subprocess
 from collections.abc import Iterable
 from pathlib import Path
 
-R4_QUALITY_IMPLEMENTATION_SHA = "4aa4781c2511fb8fe7218ba4bd51c7c227a562c0"
+R4_QUALITY_IMPLEMENTATION_SHA = "743a3865198e8fcec53029f935fbedc4cae6f9df"
 
 _R4_QUALITY_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {
