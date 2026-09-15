@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from contextvars import Token
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
@@ -66,9 +67,6 @@ from intergrax.runtime.execution.boundary import (
     ExecutionBoundary,
     ExecutionDelegate,
     ExecutionIdentityBinding,
-)
-from intergrax.runtime.execution.continuation.persistence import (
-    wire_execution_continuation_state_store,
 )
 from intergrax.runtime.execution.budget.ledger import (
     ExecutionBudgetLedgerFactory,
@@ -152,6 +150,10 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
 
     Resolves root identity, binds authority and budget, routes through
     :class:`ExecutionBoundary` and :class:`StrategyExecutionRouter`.
+
+    Continuation capability is **disabled** when ``continuation_state_store`` is
+    ``None``; inject a :class:`~intergrax.contracts.execution_continuation_state_store.ExecutionContinuationStateStore`
+    implementation to enable mandatory four-ID progress enforcement.
     """
 
     __slots__ = (
@@ -206,9 +208,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._execution_lineage_persistence = execution_lineage_persistence
         self._execution_capacity_admission = execution_capacity_admission
         self._failure_evidence_recorder = failure_evidence_recorder
-        self._continuation_state_store = wire_execution_continuation_state_store(
-            state_store=continuation_state_store,
-        )
+        self._continuation_state_store = continuation_state_store
 
     async def execute(
         self,
@@ -321,9 +321,11 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                     recorder=self._failure_evidence_recorder,
                 ),
             )
-        continuation_token = bind_active_execution_continuation_state_store(
-            self._continuation_state_store,
-        )
+        continuation_token: Token[ExecutionContinuationStateStore | None] | None = None
+        if self._continuation_state_store is not None:
+            continuation_token = bind_active_execution_continuation_state_store(
+                self._continuation_state_store,
+            )
         try:
             if self._decision_lifecycle_host is not None:
                 host_token = bind_active_decision_lifecycle_host(
@@ -343,7 +345,8 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 )
             return await boundary.execute(request)
         finally:
-            reset_active_execution_continuation_state_store(continuation_token)
+            if continuation_token is not None:
+                reset_active_execution_continuation_state_store(continuation_token)
             if evidence_token is not None:
                 reset_active_execution_evidence_context(evidence_token)
             if lineage_token is not None and degradation_token is not None:

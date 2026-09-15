@@ -31,7 +31,7 @@ def wire_execution_continuation_port(
     *,
     state_store: ExecutionContinuationStateStore | None = None,
 ) -> ExecutionContinuationPort:
-    """Resolve continuation port; explicit ``state_store=None`` uses in-memory default."""
+    """Dedicated continuation composition; ``state_store=None`` uses in-memory default."""
     store = wire_execution_continuation_state_store(state_store=state_store)
     service = ExecutionContinuationService(store)
     return execution_continuation_port(service)

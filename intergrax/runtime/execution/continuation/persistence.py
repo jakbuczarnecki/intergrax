@@ -93,17 +93,23 @@ class InMemoryExecutionContinuationStateStore(ExecutionContinuationStateStore):
             return True
 
 
+def default_execution_continuation_state_store() -> InMemoryExecutionContinuationStateStore:
+    """Process-local default for explicit continuation composition (not restart-safe)."""
+    return InMemoryExecutionContinuationStateStore()
+
+
 def wire_execution_continuation_state_store(
     *,
     state_store: ExecutionContinuationStateStore | None = None,
 ) -> ExecutionContinuationStateStore:
-    """Platform composition boundary: optional injected store or in-memory default."""
+    """Dedicated continuation composition: ``None`` selects in-memory default store."""
     if state_store is not None:
         return state_store
-    return InMemoryExecutionContinuationStateStore()
+    return default_execution_continuation_state_store()
 
 
 __all__ = [
     "InMemoryExecutionContinuationStateStore",
+    "default_execution_continuation_state_store",
     "wire_execution_continuation_state_store",
 ]

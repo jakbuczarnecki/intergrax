@@ -28,6 +28,9 @@ from intergrax.contracts.execution_capacity_admission import (
 from intergrax.contracts.execution_failure_evidence import (
     ExecutionFailureEvidenceRecorder,
 )
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 from intergrax.contracts.recovery_admission import RecoveryAdmissionPort
 from intergrax.contracts.root_execution_launch import (
@@ -300,6 +303,7 @@ class HostTaskExecution:
     _failure_evidence_recorder: ExecutionFailureEvidenceRecorder | None = None
     _recovery_admission: RecoveryAdmissionPort | None = None
     _execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None
+    _continuation_state_store: ExecutionContinuationStateStore | None = None
 
     def _launcher_for_task(
         self,
@@ -354,6 +358,7 @@ class HostTaskExecution:
             execution_lineage_persistence=self._execution_lineage_persistence,
             failure_evidence_recorder=self._failure_evidence_recorder,
             execution_capacity_admission=execution_capacity_admission,
+            continuation_state_store=self._continuation_state_store,
         )
 
     async def execute(

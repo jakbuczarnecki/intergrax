@@ -12,6 +12,9 @@ from intergrax.runtime.execution.effective_profile_revision_admission import (
 from intergrax.runtime.execution.failure_evidence.runtime_event_recorder import (
     RuntimeEventExecutionFailureEvidenceRecorder,
 )
+from intergrax.runtime.execution.continuation.persistence import (
+    wire_execution_continuation_state_store,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_task_terminal import (
     build_nexus_host_task_terminal_publisher,
@@ -48,6 +51,7 @@ def build_host_task_execution(
             nexus_loop.event_bus,
         ),
         _root_authority_admission=root_authority_admission,
+        _continuation_state_store=wire_execution_continuation_state_store(),
     )
 
 
