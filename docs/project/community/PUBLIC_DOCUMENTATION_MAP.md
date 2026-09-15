@@ -82,7 +82,7 @@ with Try LKW as the repository’s primary product action.
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore Virtual Workforce / Virtual Workers | [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work](../architecture/AUTONOMOUS_WORK.md) |
 | Explore dynamic capability discovery, Agent/Skill/Tool ecosystem, or future marketplace architecture | [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) — frozen architecture for governed federated Agent/Skill/Tool discovery; implementation planned |
-| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) · [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) - see [Strategic directions](#strategic-directions) below |
+| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Autonomous Organization](../overview/AUTONOMOUS_ORGANIZATION.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) · [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) - see [Strategic directions](#strategic-directions) below |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore Scenario Proofs (problem-first) | [Proof Library](../proofs/PROOF_LIBRARY.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
@@ -187,6 +187,14 @@ Future ecosystem and platform directions - **not** current product proofs and **
 
 [Open the Virtual Workforce overview](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work architecture](../architecture/AUTONOMOUS_WORK.md)
 
+### Autonomous Organization
+
+**Strategic Initiative — North Star program; not a shipped product or platform domain**
+
+Strategic North Star exploring governed organizations that can form and evolve capabilities, responsibilities, and structure around mission and constraints.
+
+[Open the Autonomous Organization overview](../overview/AUTONOMOUS_ORGANIZATION.md)
+
 ### Platform Extensibility / Plugins
 
 **Strategic platform capability - canonical architecture frozen with implemented slices; complete third-party E2E qualification not established**
@@ -238,6 +246,7 @@ Use the [intent table](#start-by-what-you-want-to-do) first. This quick index he
 | [LKW Platform Proof](../../../applications/local_workspace_application/docs/proof/LKW_PLATFORM_PROOF.md) | Guided LKW product proof path |
 | [Token Optimization guide](../capabilities/token_optimization/README.md) | Token Optimization engine overview and proof catalog |
 | [Agent Marketplace concept](../overview/AGENT_MARKETPLACE.md) | Future ecosystem direction - governed agent distribution concept and reference architecture (not a shipped product) |
+| [Autonomous Organization overview](../overview/AUTONOMOUS_ORGANIZATION.md) | Strategic North Star program — governed self-organizing virtual organization (not an implemented runtime) |
 | [Intergrax Proofs](../proofs/PROOFS.md) | Current evidence status / public evidence dashboard - status legend and verification paths |
 | [Intergrax Proof Library](../proofs/PROOF_LIBRARY.md) | Problem-first Scenario Proof catalog - difficult real-world problems and executable scenarios |
 
