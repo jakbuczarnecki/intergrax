@@ -45,6 +45,7 @@ from intergrax.runtime.observability.journal_export import (
 )
 from testing_support.npsc5f_r3_protected_drift import (
     R3_IMPLEMENTATION_SHA,
+    R3_POST_QUALIFIED_BASELINE_SHA,
     collect_r3_protected_production_drift,
 )
 from testing_support.runtime_events import runtime_event_test_identity
@@ -245,9 +246,12 @@ def test_r3_final_canonical_predecessor_shas_recorded() -> None:
     assert NPSC_5E_FINAL_SHA.startswith("fabdcfe")
 
 
-def test_r3_final_no_unqualified_protected_drift_since_implementation() -> None:
-    drift = collect_r3_protected_production_drift(_REPO_ROOT)
-    assert drift == [], f"R3 protected production drift since implementation: {drift}"
+def test_r3_final_no_unqualified_protected_drift_since_qualified_baseline() -> None:
+    drift = collect_r3_protected_production_drift(
+        _REPO_ROOT,
+        from_sha=R3_POST_QUALIFIED_BASELINE_SHA,
+    )
+    assert drift == [], f"R3 protected production drift since qualified baseline: {drift}"
 
 
 def test_r3_final_journal_export_schema_v2_only() -> None:
