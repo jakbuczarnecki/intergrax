@@ -10,6 +10,7 @@ from intergrax.applications._shared.application_decision_composition import (
     ApplicationDecisionComposition,
     ApplicationDecisionWiringSpec,
     compose_application_decision,
+    compose_application_decision_exposure_selection,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.environment_profile.sub_profiles import DecisionProfile
@@ -141,9 +142,15 @@ def wire_application_decision_flow(
 def apply_application_decision_wiring(
     nexus: NexusLoop,
     wiring: ApplicationDecisionWiring,
+    *,
+    environment: ApplicationEnvironmentProfile | None = None,
 ) -> None:
     """Attach resolved Decision flow gate to an existing ``NexusLoop`` instance."""
     nexus.apply_decision_flow_gate(
         wiring.gate,
         verify_uaep_step=wiring.verify_uaep_step,
+        verify_graph_final=wiring.verify_graph_final,
     )
+    if environment is not None:
+        exposure_selection = compose_application_decision_exposure_selection(environment)
+        nexus.apply_decision_exposure_selection(exposure_selection)

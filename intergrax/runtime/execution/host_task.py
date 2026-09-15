@@ -485,11 +485,16 @@ class HostTaskExecution:
                 ),
             )
             if launch_result.disposition is not RootExecutionLaunchDisposition.LAUNCHED:
+                from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+                    terminal_task_result_exposure_no_decision_gate,
+                )
+
                 return TaskResult(
                     task_id=task.task_id,
                     run_id=identity.run_id,
                     state=TaskState.FAILED,
                     answer=f"root execution admission {launch_result.disposition.value}",
+                    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
                 )
             assert launch_result.intake_result is not None
             return launch_result.intake_result.result

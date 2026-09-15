@@ -22,3 +22,20 @@ class TaskState(str, Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
     EXPIRED = "expired"
+
+
+_TERMINAL_TASK_STATES_FOR_EXPOSURE = frozenset(
+    {
+        TaskState.COMPLETED,
+        TaskState.PARTIALLY_COMPLETED,
+        TaskState.FAILED,
+        TaskState.CANCELLED,
+        TaskState.EXPIRED,
+    },
+)
+
+
+def task_state_requires_authoritative_exposure(state: TaskState) -> bool:
+    if type(state) is not TaskState:
+        raise TypeError("state must be TaskState")
+    return state in _TERMINAL_TASK_STATES_FOR_EXPOSURE

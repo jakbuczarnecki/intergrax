@@ -28,6 +28,7 @@ from intergrax.runtime.nexus.response.final_response_composer import FinalRespon
 from intergrax.runtime.nexus.retry.retry_engine import RetryRecord
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
+from intergrax.contracts.decision_authoritative_exposure import AuthoritativeDecisionExposure
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.task_contract import (
     TaskExecutionMetrics,
@@ -62,6 +63,7 @@ def build_nexus_task_result(
     shadow_manager: ShadowWorkspaceManager,
     sandbox_manager: SandboxSessionManager,
     run_id: Optional["RunId"] = None,
+    authoritative_decision_exposure: AuthoritativeDecisionExposure[object] | None = None,
 ) -> TaskResult:
     primary = executions[-1] if executions else None
     composer_meta = composer.compose_metadata(
@@ -161,6 +163,7 @@ def build_nexus_task_result(
         agent_id=primary.agent_id if primary else task.agent_id,
         execution_result=primary,
         summary=summary,
+        authoritative_decision_exposure=authoritative_decision_exposure,
         metadata=dict(composer_meta),
     )
     for key in (
