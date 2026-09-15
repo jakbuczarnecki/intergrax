@@ -22,6 +22,7 @@ __all__ = [
     "MemoryControlForgetRequest",
     "MemoryControlForgetResult",
     "MemoryControlNotFound",
+    "MemoryControlPartialLifecycleError",
     "MemoryControlPlane",
     "MemoryControlPlaneScope",
     "MemoryControlRecallItem",
@@ -34,6 +35,9 @@ __all__ = [
     "MemoryControlScopeRef",
     "MemoryControlUnsupportedScope",
     "TaskMemoryCapability",
+    "UserMemoryForgetCapabilityResult",
+    "UserMemoryRecallCapabilityResult",
+    "UserMemoryRememberCapabilityResult",
     "UserProfileMemoryCapability",
     "user_memory_scope",
 ]
@@ -61,6 +65,43 @@ class MemoryControlNotFound(LookupError):
 
 class MemoryControlBackendError(RuntimeError):
     """Underlying memory capability failed."""
+
+
+class MemoryControlPartialLifecycleError(RuntimeError):
+    """Primary mutation applied but projection lifecycle did not complete."""
+
+    def __init__(
+        self,
+        lifecycle: MemoryLifecycleOutcome,
+        *,
+        cause: BaseException | None = None,
+    ) -> None:
+        super().__init__(
+            f"memory control partial lifecycle: operation={lifecycle.operation.value}, "
+            f"user_id={lifecycle.user_id}"
+        )
+        self.lifecycle = lifecycle
+        self.__cause__ = cause
+
+
+@dataclass(frozen=True, slots=True)
+class UserMemoryRememberCapabilityResult:
+    entry: UserProfileMemoryEntry
+    lifecycle: MemoryLifecycleOutcome
+
+
+@dataclass(frozen=True, slots=True)
+class UserMemoryForgetCapabilityResult:
+    entry_id: str
+    lifecycle: MemoryLifecycleOutcome
+
+
+@dataclass(frozen=True, slots=True)
+class UserMemoryRecallCapabilityResult:
+    entries: tuple[UserProfileMemoryEntry, ...]
+    scores: tuple[float | None, ...]
+    used_semantic: bool
+    reason: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,11 +202,18 @@ class UserProfileMemoryCapability(Protocol):
         self,
         user_id: str,
         entry: UserProfileMemoryEntry,
-    ) -> UserProfileMemoryEntry: ...
+    ) -> UserMemoryRememberCapabilityResult: ...
 
-    async def remove_memory_entry(self, user_id: str, entry_id: str) -> object: ...
+    async def remove_memory_entry(
+        self,
+        user_id: str,
+        entry_id: str,
+    ) -> UserMemoryForgetCapabilityResult: ...
 
-    async def get_profile(self, user_id: str) -> object: ...
+    async def list_active_memory_entries(
+        self,
+        user_id: str,
+    ) -> tuple[UserProfileMemoryEntry, ...]: ...
 
     def is_longterm_rag_enabled(self) -> bool: ...
 
@@ -176,7 +224,7 @@ class UserProfileMemoryCapability(Protocol):
         *,
         top_k: int | None = None,
         score_threshold: float | None = None,
-    ) -> object: ...
+    ) -> UserMemoryRecallCapabilityResult: ...
 
     async def reconcile_memory_projections(
         self,

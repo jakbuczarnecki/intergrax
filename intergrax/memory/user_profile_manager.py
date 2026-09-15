@@ -14,8 +14,11 @@ from intergrax.memory.user_profile_memory import (
 )
 from intergrax.memory.memory_temporal import filter_active_memory_entries, is_memory_entry_active
 from intergrax.memory.contracts.memory_lifecycle import (
+    MemoryLifecycleDisposition,
     MemoryLifecycleOperation,
+    MemoryLifecycleOutcome,
     MemoryReconciliationOutcome,
+    UserProfileMemoryMutationResult,
     UserProfileMemoryProjection,
 )
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecycleCoordinator
@@ -431,26 +434,17 @@ class UserProfileManager:
     # Long-term memory management
     # ---------------------------------------------------------------------
 
-    async def add_memory_entry(
+    async def add_memory_entry_with_lifecycle(
         self,
         user_id: str,
         entry_or_content: Union[UserProfileMemoryEntry, str],
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> UserProfileMemoryEntry:
-        """
-        Append a new long-term memory entry to the user's profile.
-
-        This method only updates the profile aggregate and persists it via
-        the store. It does NOT call any LLM and does NOT update
-        `system_instructions` automatically.
-
-        Returns the updated UserProfile for convenience.
-        """
+    ) -> UserProfileMemoryMutationResult:
+        """Append memory entry and return lifecycle outcome (no raise on partial projection)."""
         profile = await self._get_store_profile(user_id)
 
         if isinstance(entry_or_content, UserProfileMemoryEntry):
             entry = entry_or_content
-            # Ensure metadata dict exists (avoid None)
             if entry.metadata is None:
                 entry.metadata = {}
         else:
@@ -468,9 +462,31 @@ class UserProfileManager:
             user_id=user_id,
             entry=entry,
         )
-        self._memory_lifecycle.raise_if_partial(outcome)
+        return UserProfileMemoryMutationResult(entry=entry, lifecycle=outcome)
 
-        return entry
+    async def add_memory_entry(
+        self,
+        user_id: str,
+        entry_or_content: Union[UserProfileMemoryEntry, str],
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> UserProfileMemoryEntry:
+        """
+        Append a new long-term memory entry to the user's profile.
+
+        This method only updates the profile aggregate and persists it via
+        the store. It does NOT call any LLM and does NOT update
+        `system_instructions` automatically.
+
+        Returns the updated UserProfile for convenience.
+        """
+        mutation = await self.add_memory_entry_with_lifecycle(
+            user_id,
+            entry_or_content,
+            metadata=metadata,
+        )
+        self._memory_lifecycle.raise_if_partial(mutation.lifecycle)
+        assert mutation.entry is not None
+        return mutation.entry
 
     async def update_memory_entry(
         self,
@@ -513,14 +529,12 @@ class UserProfileManager:
 
         return profile
 
-    async def remove_memory_entry(
+    async def remove_memory_entry_with_lifecycle(
         self,
         user_id: str,
         entry_id: str,
-    ) -> UserProfile:
-        """
-        Remove a single long-term memory entry identified by `entry_id`.
-        """
+    ) -> UserProfileMemoryMutationResult:
+        """Soft-delete entry and return lifecycle outcome (no raise on partial projection)."""
         profile = await self._get_store_profile(user_id)
 
         found = False
@@ -531,8 +545,18 @@ class UserProfileManager:
                 break
 
         if not found:
-            return profile
-       
+            return UserProfileMemoryMutationResult(
+                entry=None,
+                lifecycle=MemoryLifecycleOutcome(
+                    operation=MemoryLifecycleOperation.DELETE_ENTRY,
+                    disposition=MemoryLifecycleDisposition.UNCHANGED,
+                    user_id=user_id,
+                    memory_entity_ids=(),
+                    primary_applied=False,
+                    projection_evidence=(),
+                ),
+            )
+
         await self._save_store_profile(profile)
 
         outcome = await self._memory_lifecycle.apply_after_primary_deletes(
@@ -540,9 +564,19 @@ class UserProfileManager:
             user_id=user_id,
             entry_ids=(entry_id,),
         )
-        self._memory_lifecycle.raise_if_partial(outcome)
+        return UserProfileMemoryMutationResult(entry=None, lifecycle=outcome)
 
-        return profile
+    async def remove_memory_entry(
+        self,
+        user_id: str,
+        entry_id: str,
+    ) -> UserProfile:
+        """
+        Remove a single long-term memory entry identified by `entry_id`.
+        """
+        mutation = await self.remove_memory_entry_with_lifecycle(user_id, entry_id)
+        self._memory_lifecycle.raise_if_partial(mutation.lifecycle)
+        return await self._get_store_profile(user_id)
 
 
     async def clear_memory(self, user_id: str) -> UserProfile:

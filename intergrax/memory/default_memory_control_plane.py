@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from typing import Any
 
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.memory_control import (
@@ -15,6 +16,7 @@ from intergrax.memory.contracts.memory_control import (
     MemoryControlForgetRequest,
     MemoryControlForgetResult,
     MemoryControlNotFound,
+    MemoryControlPartialLifecycleError,
     MemoryControlPlaneScope,
     MemoryControlRecallItem,
     MemoryControlRecallRequest,
@@ -26,11 +28,16 @@ from intergrax.memory.contracts.memory_control import (
     MemoryControlScopeRef,
     MemoryControlUnsupportedScope,
     TaskMemoryCapability,
+    UserMemoryForgetCapabilityResult,
+    UserMemoryRecallCapabilityResult,
+    UserMemoryRememberCapabilityResult,
     UserProfileMemoryCapability,
 )
+from intergrax.memory.contracts.memory_lifecycle import MemoryReconciliationOutcome
 from intergrax.memory.memory_temporal import is_memory_entry_active
-from intergrax.memory.user_profile_memory import UserProfile, UserProfileMemoryEntry
+from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 from intergrax.memory.user_profile_manager import UserProfileManager
+from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecyclePartialError
 
 __all__ = ["DefaultMemoryControlPlane", "UserProfileManagerMemoryCapability"]
 
@@ -51,6 +58,51 @@ def _assert_scope_authorized(
             raise MemoryControlAccessDenied("session scope requires session_id")
 
 
+def _map_capability_mutation_error(exc: BaseException) -> BaseException:
+    if isinstance(exc, MemoryControlPartialLifecycleError):
+        return exc
+    if isinstance(exc, UserProfileMemoryLifecyclePartialError):
+        return MemoryControlPartialLifecycleError(exc.outcome, cause=exc)
+    return MemoryControlBackendError(str(exc))
+
+
+def adapt_manager_search_result(raw: dict[str, Any]) -> UserMemoryRecallCapabilityResult:
+    """Translate legacy manager search dict into a typed capability result."""
+    if not isinstance(raw, dict):
+        raise MemoryControlBackendError("unexpected search result shape")
+    hits_raw = raw.get("hits")
+    scores_raw = raw.get("scores")
+    debug_raw = raw.get("debug")
+    if hits_raw is None or scores_raw is None:
+        raise MemoryControlBackendError("search result missing hits or scores")
+    if not isinstance(hits_raw, list) or not isinstance(scores_raw, list):
+        raise MemoryControlBackendError("search result hits/scores must be lists")
+    entries: list[UserProfileMemoryEntry] = []
+    for hit in hits_raw:
+        if not isinstance(hit, UserProfileMemoryEntry):
+            raise MemoryControlBackendError("search hit is not a memory entry")
+        entries.append(hit)
+    if len(entries) != len(scores_raw):
+        raise MemoryControlBackendError("search hits and scores length mismatch")
+    scores: list[float | None] = []
+    for score in scores_raw:
+        if score is None:
+            scores.append(None)
+        else:
+            scores.append(float(score))
+    used = False
+    reason = "semantic"
+    if isinstance(debug_raw, dict):
+        used = bool(debug_raw.get("used"))
+        reason = str(debug_raw.get("reason") or reason)
+    return UserMemoryRecallCapabilityResult(
+        entries=tuple(entries),
+        scores=tuple(scores),
+        used_semantic=used,
+        reason=reason,
+    )
+
+
 @dataclass(slots=True)
 class UserProfileManagerMemoryCapability:
     """Adapter from ``UserProfileManager`` to ``UserProfileMemoryCapability``."""
@@ -61,14 +113,46 @@ class UserProfileManagerMemoryCapability:
         self,
         user_id: str,
         entry: UserProfileMemoryEntry,
-    ) -> UserProfileMemoryEntry:
-        return await self._manager.add_memory_entry(user_id, entry)
+    ) -> UserMemoryRememberCapabilityResult:
+        try:
+            mutation = await self._manager.add_memory_entry_with_lifecycle(user_id, entry)
+        except Exception as exc:
+            raise _map_capability_mutation_error(exc) from exc
+        if mutation.entry is None:
+            raise MemoryControlBackendError("remember produced no entry")
+        if mutation.lifecycle.requires_reconciliation:
+            raise MemoryControlPartialLifecycleError(mutation.lifecycle)
+        return UserMemoryRememberCapabilityResult(
+            entry=mutation.entry,
+            lifecycle=mutation.lifecycle,
+        )
 
-    async def remove_memory_entry(self, user_id: str, entry_id: str) -> object:
-        return await self._manager.remove_memory_entry(user_id, entry_id)
+    async def remove_memory_entry(
+        self,
+        user_id: str,
+        entry_id: str,
+    ) -> UserMemoryForgetCapabilityResult:
+        try:
+            mutation = await self._manager.remove_memory_entry_with_lifecycle(user_id, entry_id)
+        except Exception as exc:
+            raise _map_capability_mutation_error(exc) from exc
+        if not mutation.lifecycle.primary_applied:
+            raise MemoryControlNotFound(f"memory entry not active: {entry_id}")
+        if mutation.lifecycle.requires_reconciliation:
+            raise MemoryControlPartialLifecycleError(mutation.lifecycle)
+        return UserMemoryForgetCapabilityResult(
+            entry_id=entry_id,
+            lifecycle=mutation.lifecycle,
+        )
 
-    async def get_profile(self, user_id: str) -> object:
-        return await self._manager.get_profile(user_id)
+    async def list_active_memory_entries(
+        self,
+        user_id: str,
+    ) -> tuple[UserProfileMemoryEntry, ...]:
+        profile = await self._manager.get_profile(user_id)
+        return tuple(
+            entry for entry in profile.memory_entries if is_memory_entry_active(entry)
+        )
 
     def is_longterm_rag_enabled(self) -> bool:
         return self._manager.is_longterm_rag_enabled()
@@ -80,15 +164,21 @@ class UserProfileManagerMemoryCapability:
         *,
         top_k: int | None = None,
         score_threshold: float | None = None,
-    ) -> object:
-        return await self._manager.search_longterm_memory(
-            user_id,
-            query,
-            top_k=top_k,
-            score_threshold=score_threshold,
-        )
+    ) -> UserMemoryRecallCapabilityResult:
+        try:
+            raw = await self._manager.search_longterm_memory(
+                user_id,
+                query,
+                top_k=top_k,
+                score_threshold=score_threshold,
+            )
+        except Exception as exc:
+            raise MemoryControlBackendError(str(exc)) from exc
+        if not isinstance(raw, dict):
+            raise MemoryControlBackendError("unexpected search result shape")
+        return adapt_manager_search_result(raw)
 
-    async def reconcile_memory_projections(self, user_id: str) -> object:
+    async def reconcile_memory_projections(self, user_id: str) -> MemoryReconciliationOutcome:
         return await self._manager.reconcile_memory_projections(user_id)
 
 
@@ -153,6 +243,8 @@ class DefaultMemoryControlPlane:
         user_id = scope.user_id or ""
         try:
             outcome = await self.user_profile.reconcile_memory_projections(user_id)
+        except MemoryControlPartialLifecycleError:
+            raise
         except Exception as exc:
             raise MemoryControlBackendError(str(exc)) from exc
         return MemoryControlReconcileResult(
@@ -180,12 +272,17 @@ class DefaultMemoryControlPlane:
                 title=request.title,
             )
         try:
-            saved = await self.user_profile.add_memory_entry(user_id, entry)
+            capability_result = await self.user_profile.add_memory_entry(user_id, entry)
+        except MemoryControlPartialLifecycleError:
+            raise
+        except MemoryControlBackendError:
+            raise
         except Exception as exc:
             raise MemoryControlBackendError(str(exc)) from exc
         return MemoryControlRememberResult(
             scope=MemoryControlPlaneScope.USER,
-            entry_id=saved.entry_id,
+            entry_id=capability_result.entry.entry_id,
+            lifecycle=capability_result.lifecycle,
         )
 
     async def _recall_user(
@@ -198,22 +295,22 @@ class DefaultMemoryControlPlane:
         user_id = scope.user_id or ""
         query = request.query.strip()
         if query and self.user_profile.is_longterm_rag_enabled():
-            raw = await self.user_profile.search_longterm_memory(
-                user_id,
-                query,
-                top_k=request.top_k,
-                score_threshold=request.score_threshold,
-            )
-            return self._recall_from_search_result(raw, query_present=True)
-        profile = await self.user_profile.get_profile(user_id)
-        if not isinstance(profile, UserProfile):
-            raise MemoryControlBackendError("unexpected profile type")
-        entries = list(profile.memory_entries)
+            try:
+                search_result = await self.user_profile.search_longterm_memory(
+                    user_id,
+                    query,
+                    top_k=request.top_k,
+                    score_threshold=request.score_threshold,
+                )
+            except MemoryControlBackendError:
+                raise
+            except Exception as exc:
+                raise MemoryControlBackendError(str(exc)) from exc
+            return self._recall_from_capability_search(search_result, query_present=True)
+        entries = await self.user_profile.list_active_memory_entries(user_id)
         items: list[MemoryControlRecallItem] = []
         needle = query.lower() if query else None
         for entry in entries:
-            if not is_memory_entry_active(entry):
-                continue
             if needle is not None and needle not in (entry.content or "").lower():
                 continue
             items.append(
@@ -234,23 +331,15 @@ class DefaultMemoryControlPlane:
             reason=reason,
         )
 
-    def _recall_from_search_result(
+    def _recall_from_capability_search(
         self,
-        raw: object,
+        search_result: UserMemoryRecallCapabilityResult,
         *,
         query_present: bool,
     ) -> MemoryControlRecallResult:
-        if not isinstance(raw, dict):
-            raise MemoryControlBackendError("unexpected search result shape")
-        hits = raw.get("hits") or []
-        scores = raw.get("scores") or []
-        debug = raw.get("debug") or {}
-        used = bool(debug.get("used")) if isinstance(debug, dict) else False
         items: list[MemoryControlRecallItem] = []
-        for index, hit in enumerate(hits):
-            if not isinstance(hit, UserProfileMemoryEntry):
-                continue
-            score_val = float(scores[index]) if index < len(scores) else None
+        for index, hit in enumerate(search_result.entries):
+            score_val = search_result.scores[index] if index < len(search_result.scores) else None
             items.append(
                 MemoryControlRecallItem(
                     entry_id=hit.entry_id,
@@ -259,12 +348,11 @@ class DefaultMemoryControlPlane:
                     score=score_val,
                 )
             )
-        reason = str(debug.get("reason") or "semantic") if isinstance(debug, dict) else "semantic"
         return MemoryControlRecallResult(
             scope=MemoryControlPlaneScope.USER,
             items=tuple(items),
-            used_semantic=used and query_present,
-            reason=reason,
+            used_semantic=search_result.used_semantic and query_present,
+            reason=search_result.reason,
         )
 
     async def _forget_user(
@@ -278,27 +366,28 @@ class DefaultMemoryControlPlane:
         if not entry_id:
             raise ValueError("forget requires entry_id for USER scope")
         user_id = scope.user_id or ""
-        profile = await self.user_profile.get_profile(user_id)
-        if not isinstance(profile, UserProfile):
-            raise MemoryControlBackendError("unexpected profile type")
-        active_ids = {
-            e.entry_id for e in profile.memory_entries if is_memory_entry_active(e)
-        }
+        active_entries = await self.user_profile.list_active_memory_entries(user_id)
+        active_ids = {entry.entry_id for entry in active_entries}
         if entry_id not in active_ids:
             raise MemoryControlNotFound(f"memory entry not active: {entry_id}")
         try:
-            await self.user_profile.remove_memory_entry(user_id, entry_id)
+            capability_result = await self.user_profile.remove_memory_entry(user_id, entry_id)
+        except MemoryControlPartialLifecycleError:
+            raise
+        except MemoryControlNotFound:
+            raise
+        except MemoryControlBackendError:
+            raise
         except Exception as exc:
             raise MemoryControlBackendError(str(exc)) from exc
-        profile_after = await self.user_profile.get_profile(user_id)
-        if not isinstance(profile_after, UserProfile):
-            raise MemoryControlBackendError("unexpected profile type")
-        for entry in profile_after.memory_entries:
-            if entry.entry_id == entry_id and is_memory_entry_active(entry):
+        entries_after = await self.user_profile.list_active_memory_entries(user_id)
+        for entry in entries_after:
+            if entry.entry_id == entry_id:
                 raise MemoryControlBackendError("forget left entry active in primary store")
         return MemoryControlForgetResult(
             scope=MemoryControlPlaneScope.USER,
             entry_id=entry_id,
+            lifecycle=capability_result.lifecycle,
         )
 
     async def _remember_task(

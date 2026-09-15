@@ -15,6 +15,7 @@ __all__ = [
     "MemoryLifecycleDisposition",
     "MemoryLifecycleOperation",
     "MemoryLifecycleOutcome",
+    "UserProfileMemoryMutationResult",
     "MemoryProjectionFailureCategory",
     "MemoryProjectionFailureEvidence",
     "MemoryProjectionOperation",
@@ -84,6 +85,14 @@ class MemoryLifecycleOutcome:
     @property
     def requires_reconciliation(self) -> bool:
         return self.disposition is MemoryLifecycleDisposition.PARTIAL_PROJECTION_FAILURE
+
+
+@dataclass(frozen=True, slots=True)
+class UserProfileMemoryMutationResult:
+    """Primary mutation result with lifecycle outcome (MEM-ENT-3R)."""
+
+    lifecycle: MemoryLifecycleOutcome
+    entry: UserProfileMemoryEntry | None = None
 
 
 @dataclass(frozen=True, slots=True)
