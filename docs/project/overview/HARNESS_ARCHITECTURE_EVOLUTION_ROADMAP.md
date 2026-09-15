@@ -566,7 +566,9 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2B-C3 — provider-supplied binding rejection = CLOSED** (provider ``execute`` outcomes MUST NOT carry ``invocation_binding``; fail-closed at S2A gate + enrichment helper).
 
-**P2.1-S2B = CLOSED** (S2A adoption + S2B control + C1 correlation + C2 authoritative binding issuance + C3 platform binding ownership).
+**P2.1-S2B-C4 — provider evidence sanitization on contract violation = CLOSED** (``OUTCOME_CONTRACT_MISMATCH`` drops unvalidated ``provider_invocation`` / ``provider_outcome`` / ``invocation_binding`` / ``result``; platform-owned failure only).
+
+**P2.1-S2B = CLOSED** (S2A adoption + S2B control + C1 correlation + C2 authoritative binding issuance + C3 platform binding ownership + C4 contract-violation evidence sanitization).
 
 **P2.1-S2 = OPEN** (S2C durability / status / continuation next).
 

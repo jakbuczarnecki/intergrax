@@ -11,16 +11,15 @@ from pydantic import ValidationError
 
 from intergrax.contracts.delegated_execution_invocation_binding import (
     assert_provider_outcome_has_no_invocation_binding,
+    delegated_provider_outcome_contract_mismatch_failure,
     enrich_delegated_outcome_with_platform_invocation_binding,
 )
 from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionContractError,
     DelegatedExecutionOperationMetadata,
     DelegatedExecutionOutcome,
-    DelegatedExecutionOutcomeCategory,
     DelegatedExecutionProvider,
     DelegatedExecutionRequest,
-    delegated_failure_outcome,
     digest_delegated_execution_payload,
 )
 from intergrax.contracts.execution_identity import (
@@ -138,14 +137,10 @@ class _DelegatedProviderDispatchDelegate(
         try:
             assert_provider_outcome_has_no_invocation_binding(outcome)
         except DelegatedExecutionContractError:
-            return delegated_failure_outcome(
-                category=DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE,
-                failure_code="OUTCOME_CONTRACT_MISMATCH",
+            return delegated_provider_outcome_contract_mismatch_failure(
                 failure_message=(
                     "provider outcome contains platform-owned invocation binding"
                 ),
-                provider_invocation=outcome.provider_invocation,
-                provider_outcome=outcome.provider_outcome,
             )
         payload_digest = digest_delegated_execution_payload(work.payload)
         try:
@@ -156,14 +151,10 @@ class _DelegatedProviderDispatchDelegate(
                 payload_digest=payload_digest,
             )
         except (ValidationError, DelegatedExecutionContractError, ValueError):
-            return delegated_failure_outcome(
-                category=DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE,
-                failure_code="OUTCOME_CONTRACT_MISMATCH",
+            return delegated_provider_outcome_contract_mismatch_failure(
                 failure_message=(
                     "provider outcome failed platform invocation correlation checks"
                 ),
-                provider_invocation=outcome.provider_invocation,
-                provider_outcome=outcome.provider_outcome,
             )
 
 

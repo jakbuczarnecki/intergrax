@@ -22,7 +22,9 @@ from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionContractError,
     DelegatedExecutionOperationMetadata,
     DelegatedExecutionOutcome,
+    DelegatedExecutionOutcomeCategory,
     assert_provider_native_ids_distinct_from_execution,
+    delegated_failure_outcome,
     digest_delegated_execution_request,
 )
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
@@ -154,6 +156,20 @@ def mint_delegated_execution_invocation_binding(
     )
 
 
+def delegated_provider_outcome_contract_mismatch_failure(
+    *,
+    failure_message: str,
+) -> DelegatedExecutionOutcome[ResultT]:
+    """Platform-owned failure with no unvalidated provider correlation evidence."""
+    return delegated_failure_outcome(
+        category=DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE,
+        failure_code="OUTCOME_CONTRACT_MISMATCH",
+        failure_message=failure_message,
+        provider_invocation=None,
+        provider_outcome=None,
+    )
+
+
 def assert_provider_outcome_has_no_invocation_binding(
     outcome: DelegatedExecutionOutcome[ResultT],
 ) -> None:
@@ -188,6 +204,7 @@ def enrich_delegated_outcome_with_platform_invocation_binding(
 __all__ = [
     "DelegatedExecutionInvocationBinding",
     "assert_provider_outcome_has_no_invocation_binding",
+    "delegated_provider_outcome_contract_mismatch_failure",
     "enrich_delegated_outcome_with_platform_invocation_binding",
     "mint_delegated_execution_invocation_binding",
 ]
