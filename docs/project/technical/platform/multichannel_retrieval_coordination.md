@@ -25,9 +25,22 @@ Each operation's declared `channel_key` is authoritative for the plan. `execute(
 
 Depend on `MultiChannelRetrievalCoordinator[TResult]` and inject an implementation (default: `SequentialMultiChannelRetrievalCoordinator`). No plugin registry is required for v1.
 
-## Non-goals (v1)
+## Rank fusion (P1C)
 
-- Rank fusion (RRF) — separate capability (P1C consolidation)
+Canonical platform module: `intergrax.rag.retrieval.fusion`.
+
+```text
+Ranked candidate lists per channel
+  → RankFusionStrategyPort
+  → default ReciprocalRankFusionStrategy (RRF)
+  → fused ranked candidates (+ optional provenance)
+```
+
+RRF formula (0-based channel rank): `score(d) += 1 / (rrf_k + rank + 1)` per channel.
+Typed config: `RankFusionConfiguration` (`rrf_k`, default `60`). Scenario offer-grain fusion
+remains a VPI plugin; it reuses `reciprocal_rank_contribution` from this module.
+
+## Non-goals (v1)
 - Retries, concurrency, or provider execution inside the coordinator
 - Product/catalog DTOs or VPI channel enums
 - Diagnostic spine integration (**P1B**, not part of P1A)

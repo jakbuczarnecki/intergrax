@@ -16,6 +16,7 @@ from platform_proofs.scenarios.verified_product_identification.application.domai
 from platform_proofs.scenarios.verified_product_identification.application.domain.source import (
     SourceRecordRef,
 )
+from intergrax.rag.retrieval.fusion import reciprocal_rank_contribution
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,16 +95,6 @@ class OfferCandidateFusionRequest:
     def __post_init__(self) -> None:
         if type(self.limit) is not int or self.limit <= 0:
             raise ValueError("limit must be a positive int")
-
-
-def reciprocal_rank_contribution(*, rank: int, rrf_k: int) -> float:
-    """Compute one channel contribution using zero-based rank: ``1 / (rrf_k + rank + 1)``."""
-
-    if type(rank) is not int or rank < 0:
-        raise ValueError("rank must be a non-negative int")
-    if type(rrf_k) is not int or rrf_k <= 0:
-        raise ValueError("rrf_k must be a positive int")
-    return 1.0 / (rrf_k + rank + 1)
 
 
 def _validate_positive_finite(value: float, *, field_name: str) -> None:
