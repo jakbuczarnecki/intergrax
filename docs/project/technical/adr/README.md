@@ -119,6 +119,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-RAG-002](entries/2026-09-15/ADR-RAG-002.md) | Canonical rank fusion semantics (P1C-D1) | Accepted (design) |
 | [ADR-OBS-005](entries/2026-09-14/ADR-OBS-005.md) | Runtime event delivery failure contract (`EventSinkPort`) — P1B-D1-R2 + P1B-R3-D1 bounded completion semantics | Proposed |
 | [ADR-DECISION-001](entries/2026-09-14/ADR-DECISION-001.md) | Public authoritative decision exposure at execution boundary (SCENARIO-1-P0-B-D1) | Proposed |
+| [ADR-GR-5-001](entries/2026-09-15/ADR-GR-5-001.md) | Canonical Execution HITL continuation ownership (`ExecutionContinuationPort`; Nexus internal) | Accepted (architecture) |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0…GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 

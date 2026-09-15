@@ -170,7 +170,10 @@ Frozen at GR-0. Full rows, evidence, and old G-stage disposition: [`GOVERNANCE_A
 | GR-2 | Execution Admission Governance | Planned |
 | GR-3 | Inner Evaluation Spine Reconciliation | Planned |
 | GR-4 | Policy Resolution & Catalog Requalification | Planned |
-| GR-5 | HITL / Governed Continuation Execution Rebase | Planned |
+| GR-5-ADR1 | Canonical Execution HITL Continuation Ownership | **Done** — [ADR-GR-5-001](../../technical/adr/entries/2026-09-15/ADR-GR-5-001.md) (`ExecutionContinuationPort`; Nexus internal) |
+| GR-5-R1 | Canonical Execution Continuation Contract | **Next** |
+| GR-5-R2–R5 | Pause/resume integration, projection, Nexus internal HITL, restart qual | Planned (see ADR §13) |
+| GR-5 | HITL / Governed Continuation Execution Rebase | Open |
 | GR-6 | Decision → Governance Integration | Planned |
 | GR-7 | External Effect / Reliability Boundary | Planned |
 | GR-8 | Governance Evidence Integration | Planned |

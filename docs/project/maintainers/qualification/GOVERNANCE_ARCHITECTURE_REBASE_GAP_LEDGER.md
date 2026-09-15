@@ -8,6 +8,8 @@
 
 **Purpose:** Evidence-based gap inventory after platform-wide execution-centric rebase. Supersedes stale maintainer PG-FIX status rows where code truth differs; does not erase historical audit references.
 
+**GR-5-ADR1 HEAD:** `9336beff5ec72c747b440e63f3fb2dddc0b4bf8d` on `development` — canonical HITL continuation ownership: [ADR-GR-5-001](../../technical/adr/entries/2026-09-15/ADR-GR-5-001.md). Verdict: **`INTRODUCE_CANONICAL_EXECUTION_CONTINUATION_CONTRACT`** (`ExecutionContinuationPort`). Nexus = **internal** Execution Engine orchestration; not external peer layer.
+
 ---
 
 ## Executive summary
@@ -25,7 +27,7 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 | GOV-REBASE-01 | **CLOSED** | P0 | GR-1: `GovernedContinuationApprovalGrant`, correlation, and `matches_current_requirement` bind `task_id` + `run_id` + `attempt_id` + `execution_id`. |
 | GOV-REBASE-02 | **CLOSED** | P0 | GR-1: `MeaningfulSideEffectRequest` requires canonical four-ID execution identity; governed continuation chain propagates without loss. |
 | GOV-REBASE-03 | **CONFIRMED** | P1 | `authorize_and_execute` calls `lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)` and `HumanPauseCoordinator` on `Task` governance state (`meaningful_side_effect_authorization.py`, `governed_continuation_bridge.py`). Canonical arch assigns pause/resume to UER — implementation still Task/Nexus-centric. |
-| GOV-REBASE-04 | **PARTIAL** | P1 | Production HITL bridge avoids direct `nexus.*` import except `declarative_hitl_grant` → `RuntimeRequest`. Pause/resume semantics and tests remain Nexus-orchestration-shaped; inference/agentic HITL not qualified. Arch target: HITL independent of Nexus. |
+| GOV-REBASE-04 | **PARTIAL** | P1 | Production HITL bridge avoids direct `nexus.*` import except `declarative_hitl_grant` → `RuntimeRequest`. Pause/resume semantics and tests remain Nexus-orchestration-shaped; inference/agentic HITL not qualified. Arch target (GR-5-ADR1): HITL via **`ExecutionContinuationPort`**; Nexus orchestrates **internally** for ORCHESTRATION — not a second execution truth. |
 | GOV-REBASE-05 | **PARTIAL** | P1 | `authorize_and_execute` runs caller `execute` callback after auth — not a second `ExecutionBoundary`, but can execute **outside** active canonical Execution context when caller omits UER binding (`agents/external_contractor_adapter/external_work_adapter.py` call site). Inner-op pattern (A) is intended; enforcement of (A) is **gap**. |
 | GOV-REBASE-06 | **PARTIAL** | P1 | No `DecisionId`/version on meaningful-side-effect or governed-continuation contracts. `ContinuationEvidenceRefs.hitl_decision_id` is HITL store id, not Decision System authority. Decision-derived effects lack typed Decision provenance where required. |
 | GOV-REBASE-07 | **CONFIRMED** | P1 | Policy decisions use `audit_payload` on `PolicyDecision`; no systematic RuntimeEvent emission with five-ID correlation from governance spine. `governance_audit_event` is separate agent-governance channel — risk of parallel audit semantics. |
@@ -41,7 +43,7 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | GOV-GAP-001 | P0 | Identity | GR-1-R1: atomic Attempt+Execution resolution; no hybrid caller/active assembly | Authorization bound to AttemptId + ExecutionId where security-sensitive | Pre-R1 partial override could mix caller Attempt with active Execution | Cross-attempt side-effect authorization | GR-1-R1 resolver + pause atomic bind | GR-0 audit | GR-1-R1 | `meaningful_side_effect.py`, `pause.py`, `test_meaningful_side_effect_execution_identity_resolution.py` | **CLOSED** |
 | GOV-GAP-002 | P0 | Identity | GR-1: `HumanApprovalResolution` carries attempt/execution; governed pause validates correlation | Resolution correlated to active Execution | Residual UER pause ownership (GR-5) | HITL replay if resolution forged | GR-1 pause validation + grant derivation | GR-1 | GR-5 | `task_contract.py`, `pause.py` | **VERIFIED** |
-| GOV-GAP-003 | P1 | HITL ownership | TaskLifecycle `WAITING_FOR_HUMAN`; Task governance blob | UER owns PAUSE/WAIT/RESUME same Execution | Doc/code split on pause owner | Nexus-shaped pause on non-orchestration strategies | Rebase pause onto Execution lifecycle; Task bridge only | UER APIs | GR-5 | `meaningful_side_effect_authorization.py`, `governed_continuation_bridge.py` | OPEN |
+| GOV-GAP-003 | P1 | HITL ownership | TaskLifecycle `WAITING_FOR_HUMAN`; Task governance blob | UER owns PAUSE/WAIT/RESUME same Execution via `ExecutionContinuationPort` (ADR-GR-5-001) | Doc/code split on pause owner | Nexus-shaped pause on non-orchestration strategies | GR-5-R1 contract + GR-5-R2+ integration; Task projection only | GR-5-ADR1 | GR-5-R1 | `meaningful_side_effect_authorization.py`, `governed_continuation_bridge.py`, ADR-GR-5-001 | OPEN (design **DONE**) |
 | GOV-GAP-004 | P1 | Nexus coupling | Governed continuation docstrings + AgentExecutionResult bridge | HITL without mandatory Nexus | Orchestration-only proof for HITL path | Agentic/inference hosts lack qualified HITL | Strategy-neutral HITL entry; qualify non-Nexus paths | GR-5 | GR-5, GR-10 | `governed_continuation.py` (module doc), `governed_continuation_bridge.py` | OPEN |
 | GOV-GAP-005 | P1 | Execution boundary | GR-3 + GR-3-R1 + **GR-3-R2**: contract-only `MeaningfulSideEffectAuthorizationBoundary`; `DefaultCanonicalInnerExecutionGuard` requires `ActiveExecutionTaskScopePort`; `ActiveTaskRegistryTaskScopeResolver` only in `meaningful_side_effect_authorization_composition.py`; four-ID inner enforcement + `authorize_and_execute` allowlist gate | Side effects only inside admitted Execution | Residual Reliability delivery semantics (GR-7) | Hidden concrete in reusable consumers | GR-3-R1/R2 explicit composition + architecture import gates | GR-1, GR-2 | GR-7 | `canonical_inner_execution_guard.py`, `meaningful_side_effect_authorization_composition.py`, `test_gr3_*`, `test_gr3_r1_*`, `test_gr3_r2_*` | **CANDIDATE CLOSED** (gap: GR-7; **GR-3-R1 DONE**; **GR-3-R2 DONE** — independent GitHub audit pending) |
 | GOV-GAP-006 | P1 | Decision integration | No DecisionId/version on governance contracts | Provenance only for decision-derived consequential effects | Cannot prove authorization matches decision version | V2 decision reuses V1 approval | Neutral provenance ref + Decision binding where material | Decision System contracts | GR-6 | contracts grep; `DECISION_SYSTEM.md` | OPEN |
@@ -226,7 +228,7 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 | --- | --- | --- | --- | --- |
 | PG-FIX-A | **Yes** (core spine) | **Partial** (adapter + unit tests) | **No** | `CollaborativeWorkEnforcementGate` + `MeaningfulSideEffectAuthorizationBoundary`; universal consumer coverage not proven |
 | PG-FIX-B | **Yes** | **Yes** (`test_pg_fix_b_side_effect_policy_precedence.py`, GR-4 132-test slice) | **No** (enterprise sign-off GR-13) | Deterministic specificity + conservative tie-break in `RuntimePolicyEngine` |
-| PG-FIX-C | **Yes** (mechanism) | **Partial** (G5C / PG-FIX-C tests) | **No** | Identity conformance **CLOSED** (GR-1); UER HITL ownership open (GR-5) |
+| PG-FIX-C | **Yes** (mechanism) | **Partial** (G5C / PG-FIX-C tests) | **No** | Grant semantics **VERIFIED** (GR-1); lifecycle ownership **OPEN** (GR-5-R2+ per ADR-GR-5-001) |
 | PG-FIX-D | **Yes** (typed matching) | **Yes** (`test_pg_fix_d_explicit_policy_action_matching.py`) | **No** (enterprise sign-off GR-13) | Explicit `match_action`; legacy suffix path fails closed |
 
 Historical AUDIT-5 findings remain valid context; closure requires identity rebind + enterprise qualification (GR-13).
@@ -249,7 +251,13 @@ Historical AUDIT-5 findings remain valid context; closure requires identity rebi
 | GR-3 | Canonical Inner Enforcement | **CANDIDATE CLOSED** (GR-3-R1 **DONE**, GR-3-R2 **DONE**); PG-FIX-A harness drift remains non-blocking for composition | Active Execution four-ID binding; contract-first inner guard + task scope | GR-1, GR-2 | PG-FIX-A membership proofs | Yes | `test_gr3_*`, `test_gr3_r1_*`, `test_gr3_r2_*`, architecture AST gates |
 | GR-4 | Policy & Plugin Requalification | **CANDIDATE CLOSED** (independent GitHub audit pending); **GR-4-R1** = Nexus-neutral `RuntimePolicyBundle` assembly | Deterministic fail-closed policy resolution; contract-first handlers/catalog; no new framework | GR-3 | G2C, PG-FIX-B/D | Yes (qualification + gate) | `test_pg_fix_b_*`, `test_pg_fix_d_*`, `test_policy_registry.py`, `test_policy_plugin_contribution.py`, `test_gr4_policy_core_architecture_gates.py` |
 | GR-4-R1 | Policy bundle Nexus decouple | **PLANNED** | Replace Nexus types in bundle assembly with neutral contracts + adapters | GR-4 | GOV-GAP-011 residual | Yes | Neutral bundle types; migrate `policy_bundle.py` / `tool_policy_resolution.py` |
-| GR-5 | HITL / Governed Continuation Rebase | PLANNED | UER pause/resume; scoped approval preserved | GR-1 | G5*, PG-FIX-C | Yes | HITL E2E per strategy |
+| GR-5-ADR1 | Canonical Execution HITL Continuation Ownership | **DONE** | One lifecycle authority; Nexus internal; `ExecutionContinuationPort` direction | GR-1 | — | No (docs) | ADR-GR-5-001 |
+| GR-5-R1 | Canonical Execution Continuation Contract | **NEXT** | Typed port + DTOs in contracts | GR-5-ADR1 | — | Yes | Contract + boundary tests |
+| GR-5-R2 | Canonical Pause/Resume Integration | PLANNED | UER owns transitions; not root admission on resume | GR-5-R1 | — | Yes | Lifecycle integration tests |
+| GR-5-R3 | Task / HumanPauseCoordinator projection alignment | PLANNED | `WAITING_FOR_HUMAN` derived from canonical state | GR-5-R2 | — | Yes | Projection parity tests |
+| GR-5-R4 | Nexus internal HITL lifecycle integration | PLANNED | Intake/graph runners via port | GR-5-R2 | — | Yes | Orchestration HITL qual |
+| GR-5-R5 | Checkpoint restart + exact identity qualification | PLANNED | Pause → restart → same four IDs | GR-5-R3, GR-5-R4 | — | Yes | Restart qualification |
+| GR-5 | HITL / Governed Continuation Rebase | **OPEN** | End-to-end same-Execution pause/resume | GR-5-R1…R5 | G5*, PG-FIX-C | Yes | HITL E2E per strategy |
 | GR-6 | Decision → Governance Integration | PLANNED | Decision provenance where material | GR-1 | — | Yes | Decision-version binding tests |
 | GR-7 | Reliability / External Effect Boundary | PLANNED | Authorization vs retry/idempotency | GR-3, GR-5 | — | Yes | Reliability boundary tests |
 | GR-8 | Governance Evidence Integration | PLANNED | Five-ID correlated facts in Evidence Plane | GR-1 | — | Yes | RuntimeEvent correlation tests |
@@ -272,12 +280,12 @@ Historical AUDIT-5 findings remain valid context; closure requires identity rebi
 | Five-ID identity | Execution Runtime / contracts | ContextVar + partial contract adoption | **Partial** |
 | Execution authority (child) | ExecutionAuthorityPolicy | `execution/authority/policy.py` | **Yes** (narrowing) |
 | Policy / inner evaluation | Governance plane | RuntimePolicyEngine, collaborative gate | **Partial** |
-| HITL authorization | Governance | Human pause + grants on Task | **Partial** |
+| HITL authorization | Governance | Human pause + grants on Task | **Partial** (grant **VERIFIED**; lifecycle port **OPEN**) |
 | Decision correctness | Decision System | Separate; weak Governance link | **Partial** |
 | Reliability / retry | Reliability | Not owned by governance spine | **Yes** |
 | Evidence facts | Observability | Partial / parallel audit events | **Partial** |
 | Diagnostics | Central Diagnostics | Policy trace diagnostics only | **Yes** (no auth coupling) |
-| Nexus | Orchestration strategy | Still primary HITL resume path | **Partial** vs target |
+| Nexus | Internal Execution orchestration | Primary **internal** HITL resume machinery (orchestration) | **Partial** — must route through `ExecutionContinuationPort` (GR-5-R4) |
 
 ---
 
