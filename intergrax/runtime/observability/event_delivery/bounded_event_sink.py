@@ -25,6 +25,7 @@ from intergrax.contracts.event_delivery import (
     EventDeliveryPostAdmissionFailureObserverPort,
     EventDeliveryResult,
     EventPriority,
+    EventSinkHealthPort,
     EventSinkHealthState,
     EventSinkPort,
     effective_event_delivery_obligation,
@@ -108,7 +109,7 @@ class BoundedEventSink:
         *,
         obligation_policy: EventDeliveryObligationPolicyPort | None = None,
         late_failure_observer: EventDeliveryPostAdmissionFailureObserverPort | None = None,
-        health: MutableEventSinkHealth | None = None,
+        health: EventSinkHealthPort | None = None,
     ) -> None:
         self._downstream = downstream
         self._policy = policy
@@ -127,6 +128,7 @@ class BoundedEventSink:
             maxsize=policy.max_capacity,
         )
         self._stop = threading.Event()
+        self._worker_drained_normally = threading.Event()
         self._worker = threading.Thread(target=self._drain_loop, name="w5a-event-drain", daemon=True)
         self._worker.start()
 
@@ -152,6 +154,15 @@ class BoundedEventSink:
         depth = self.pending_depth
 
         if self._health.health_state() is EventSinkHealthState.UNHEALTHY:
+            return self._make_result(
+                disposition=EventDeliveryDisposition.REJECTED,
+                priority=priority,
+                obligation=obligation,
+                buffered_depth=depth,
+            )
+
+        if not self._stop.is_set() and not self._worker.is_alive():
+            self._health.mark_unhealthy()
             return self._make_result(
                 disposition=EventDeliveryDisposition.REJECTED,
                 priority=priority,
@@ -247,6 +258,13 @@ class BoundedEventSink:
     def close(self) -> None:
         if self._stop.is_set():
             return
+        if not self._worker.is_alive() and not self._worker_drained_normally.is_set():
+            self._stop.set()
+            self._health.mark_unhealthy()
+            raise EventDeliveryBoundaryError(
+                kind=EventDeliveryBoundaryFailureKind.SINK_UNAVAILABLE,
+                message="bounded event drain worker is not alive",
+            )
         self._stop.set()
         self._enqueue_shutdown_sentinel()
         self._worker.join(timeout=self._policy.drain_shutdown_timeout_seconds)
@@ -370,7 +388,31 @@ class BoundedEventSink:
         except Exception:
             logger.exception("late admission failure observer failed")
 
+    def _completion_deadline_expired(self, item: _QueuedItem) -> bool:
+        if item.obligation is not EventDeliveryObligation.COMPLETION:
+            return False
+        if item.completion_deadline is None:
+            return False
+        return time.monotonic() >= item.completion_deadline
+
     def _process_item(self, item: _QueuedItem) -> None:
+        if self._completion_deadline_expired(item):
+            boundary_error = EventDeliveryBoundaryError(
+                kind=EventDeliveryBoundaryFailureKind.COMPLETION_TIMEOUT,
+                message="completion deadline expired before downstream work",
+                deliverable_event_id=item.event.event_id,
+            )
+            if item.completion is not None:
+                item.completion.deliver_boundary(boundary_error)
+                return
+            self._notify_late_failure(
+                deliverable=item.event,
+                priority=item.priority,
+                disposition=EventDeliveryDisposition.REJECTED,
+                boundary_kind=EventDeliveryBoundaryFailureKind.COMPLETION_TIMEOUT,
+            )
+            return
+
         downstream_deadline = item.completion_deadline
         try:
             raw = self._downstream.publish(
@@ -427,11 +469,16 @@ class BoundedEventSink:
             )
 
     def _drain_loop(self) -> None:
-        while True:
-            item = self._queue.get()
-            try:
-                if item is None:
-                    break
-                self._process_item(item)
-            finally:
-                self._queue.task_done()
+        try:
+            while True:
+                item = self._queue.get()
+                try:
+                    if item is None:
+                        self._worker_drained_normally.set()
+                        break
+                    self._process_item(item)
+                finally:
+                    self._queue.task_done()
+        except Exception:
+            self._health.mark_unhealthy()
+            logger.exception("bounded event drain worker terminated unexpectedly")

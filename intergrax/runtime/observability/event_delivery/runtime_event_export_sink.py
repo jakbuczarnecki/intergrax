@@ -75,6 +75,13 @@ class RuntimeEventExportSink:
                 buffered_depth=0,
                 obligation=obligation,
             )
+        if deadline is not None and deadline <= time.monotonic():
+            raise EventDeliveryBoundaryError(
+                kind=EventDeliveryBoundaryFailureKind.COMPLETION_TIMEOUT,
+                message="export deadline already expired",
+                deliverable_event_id=event.event_id,
+            )
+
         self._pending_exports += 1
         depth = self._pending_exports
         started = time.monotonic()
@@ -83,7 +90,7 @@ class RuntimeEventExportSink:
             metrics.record_export_attempt()
         export_timeout = 30.0
         if deadline is not None:
-            export_timeout = max(0.001, deadline - time.monotonic())
+            export_timeout = deadline - time.monotonic()
         try:
             self._runner.run(
                 self._export_sink.export(event.export_payload),
