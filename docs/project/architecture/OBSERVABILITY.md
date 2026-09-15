@@ -201,7 +201,7 @@ DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · opera
 
 **Architecture gate:** `runtime.observability.reconstruction` MUST NOT import `runtime.diagnostics.*` (see `test_obs_reconstruction_1_architecture.py`). **Unrelated existing debt:** `qualification_runtime_trace.py` may still import DIAG for completion alignment — not reconstruction.
 
-**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** Shared reconstruction **package** placement closed (**OBS-RECONSTRUCTION-1**). **OBS-ASOF-REBASE** closes the canonical **E-axis** historical execution query path (journal prefix + shared `ExecutionReconstructor` + optional `ExecutionLineageReader`). **OBS-BITEMP-REBASE** remains for full E/K/V/S composition without axis mixing. **TRACE-ASOF-3** → **NOT REQUIRED** (conditional materialization; logical rebuild at E is sufficient). **TRACE-ASOF-4** unblocked for typed public query surfaces that delegate to the same canonical path.
+**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** Shared reconstruction **package** placement closed (**OBS-RECONSTRUCTION-1**). **OBS-ASOF-REBASE** closes the canonical **E-axis** historical execution query path (journal prefix + shared `ExecutionReconstructor` + optional `ExecutionLineageReader`). **OBS-BITEMP-REBASE** closes full **E/K/V/S** temporal composition without axis mixing (2026-09-15). **TRACE-ASOF-3** → **NOT REQUIRED** (conditional materialization; logical rebuild at E is sufficient). **TRACE-ASOF-4** unblocked for typed public query surfaces that delegate to the same canonical path.
 
 ## OBS-ASOF-REBASE — Historical execution query rebase (closed 2026-09-15)
 
@@ -228,7 +228,47 @@ HistoricalReconstructionService.reconstruct (E + K + bitemporal query compositio
 | `ExecutionReconstructor` | Factual execution + attempts + causal join at **E** | `runtime.observability.reconstruction` |
 | `HistoricalReconstructionService` | Composition only — not a second reconstructor | Observability |
 
-**Frozen semantics:** READ ONLY · DERIVED · DETERMINISTIC · NON-AUTHORITATIVE. Same `AsOfBoundary` remains stable after later appends (append immunity). Fail-closed on scope mismatch, missing boundary, truncated prefix. **E** authority is `ExecutionEventPosition` only — not `timestamp` / `recorded_at` / `created_at`. **K** / valid time / system time remain separate axes (see **OBS-BITEMP-REBASE**).
+**Frozen semantics:** READ ONLY · DERIVED · DETERMINISTIC · NON-AUTHORITATIVE. Same `AsOfBoundary` remains stable after later appends (append immunity). Fail-closed on scope mismatch, missing boundary, truncated prefix. **E** authority is `ExecutionEventPosition` only — not `timestamp` / `recorded_at` / `created_at`. **K** / valid time / system time are separate axes — certified under **OBS-BITEMP-REBASE** (below).
+
+## OBS-BITEMP-REBASE — E/K/V/S Temporal Coordinate (closed 2026-09-15)
+
+**Goal:** Execution history (**E**), knowledge revision order (**K**), domain valid time (**V**), and platform system time (**S**) are four independent, explicitly typed axes. Ordering on one axis does not establish ordering on another. Canonical historical queries never infer E/K/V/S from timestamps, `recorded_at`, or implicit “now”.
+
+**Historical coordinate (typed contracts):**
+
+```text
+Execution scope (tenant_id + RunId)
+  + E  → AsOfBoundary (RunId + inclusive ExecutionEventPosition)
+  + K  → KnowledgeRevisionWatermark (RevisionOrderingAuthority finalized prefix)
+  + V/S → BitemporalKnowledgeBasis (ValidTimeBasis + SystemTimeBasis query)
+        ↓
+HistoricalReconstructionService.reconstruct
+        ↓
+ExecutionHistoricalReconstruction (basis + execution + knowledge_view + limitations)
+```
+
+| Axis | Means | Authority | Must not be confused with |
+| ---- | ----- | --------- | ------------------------- |
+| **E** | execution acceptance order | `ExecutionEventPosition` + positioned `RuntimeEvent` journal | K, V, S |
+| **K** | which knowledge revisions are durably ordered / knowable | `RevisionOrderingAuthority` + `KnowledgeRevisionWatermark` | E, V, S |
+| **V** | when a fact is valid in the modeled domain | `ValidTimeBasis` | S, K, E |
+| **S** | when the platform stored / knew the revision | `SystemTimeBasis` | V, K, E |
+
+**Reconstruction flow (frozen order):**
+
+```text
+E prefix (journal + ExecutionReconstructor at AsOfBoundary)
+        \
+         HistoricalReconstructionService
+        /
+K prefix (records_through watermark) → V/S admissibility (revision_admissible_at_bitemporal_query) → reducer
+```
+
+**Frozen semantics:** `requested K <= finalized K` or `KnowledgeBoundaryNotFinalizedError`. No fallback to latest K. K prefix is applied before V/S filtering (no V-before-K leakage). `HistoricalReconstructionBasis` / `request.to_basis()` carry the full coordinate. `knowledge_bitemporal_filtered` is informational only. Same scope + E + K + V/S → same derived result after later execution/knowledge appends (append immunity).
+
+**Architecture gates:** `tests/unit/runtime/architecture/test_obs_bitemp_rebase_architecture.py`, `test_obs_bitemp_rebase_qualification.py`, plus NPSC-5F/R4 and OBS-ASOF-REBASE suites. Lineage at **E** remains **OBS-ASOF-REBASE-R1** (`test_obs_asof_rebase_r1_lineage_integrity.py`).
+
+**TRACE-BITEMP-4 decision:** **CONDITIONAL** — thin public typed surface only if a caller cannot use `ExecutionHistoricalReconstructionRequest` + `HistoricalReconstructionService` directly; no second composition core.
 
 **Architecture gates:** `tests/unit/runtime/architecture/test_obs_asof_rebase_architecture.py`, `test_obs_asof_rebase_qualification.py`, existing TRACE-ASOF-1/2 and NPSC-5F/R4 suites.
 
@@ -248,7 +288,7 @@ HistoricalReconstructionService.reconstruct (E + K + bitemporal query compositio
 
 **Current reconstruction (`execution_as_of is None`):** full run-level `ExecutionLineageReader` + discovery snapshot semantics unchanged.
 
-**Knowledge vs execution:** lineage facts *visible at E* are not the same axis as later durable knowledge about prior execution; full E+K lineage composition remains **OBS-BITEMP-REBASE**.
+**Knowledge vs execution:** lineage facts *visible at E* are not the same axis as later durable knowledge about prior execution; E+K composition is certified under **OBS-BITEMP-REBASE** (K does not filter execution; E does not order knowledge).
 
 **Gates:** `tests/unit/runtime/observability/reconstruction/test_obs_asof_rebase_r1_lineage_integrity.py` (append immunity, future attempt/child, current view, no timestamp filtering).
 

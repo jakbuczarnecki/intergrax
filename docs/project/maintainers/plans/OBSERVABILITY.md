@@ -69,11 +69,11 @@
 | 8 | **OBS-ASOF-REBASE** | P1/P2 | **Done / Closed** (2026-09-15); **R1 lineage integrity** — **Done** (E-scoped / explicit disable) | Historical execution query on canonical **E** + shared reconstruction; lineage at **E** via `ExecutionLineageAsOfReader` or explicit `NOT_APPLICABLE` — [arch § E-Scoped Lineage](../../architecture/OBSERVABILITY.md#e-scoped-lineage-semantics-obs-asof-rebase-r1) |
 | 8R1 | **OBS-ASOF-REBASE-R1** | P1 | **Done** | Prevent current lineage from contaminating as-of reconstruction; optional E-capability port |
 | 9 | **TRACE-ASOF-3** | Conditional | **NOT REQUIRED** | Materialization only if measurably required; logical as-of at **E** is canonical after OBS-ASOF-REBASE |
-| 10 | **OBS-BITEMP-REBASE** | P2 | Planned | E/K/V/S composition without axis mixing |
+| 10 | **OBS-BITEMP-REBASE** | P2 | **Done / Closed** (2026-09-15) | E/K/V/S independent temporal coordinate — [arch § OBS-BITEMP-REBASE](../../architecture/OBSERVABILITY.md#obs-bitemp-rebase--ekvs-temporal-coordinate-closed-2026-09-15) |
 | 11 | **OBS-DIAG-CONFORMANCE** | P1 | Planned | E2E proof Producer → Evidence → Reconstruction → DIAG |
 | 12 | **OBS-FINAL-CERTIFICATION** | P1 | Planned | Enterprise Observability closure |
 
-**TRACE-ASOF-4** and **TRACE-BITEMP-4** remain **Planned**; **TRACE-ASOF-4** is unblocked to delegate to the OBS-ASOF-REBASE canonical path. **TRACE-BITEMP-4** remains blocked on **OBS-BITEMP-REBASE**.
+**TRACE-ASOF-4** and **TRACE-BITEMP-4** remain **Planned / Conditional**; **TRACE-ASOF-4** may delegate to OBS-ASOF-REBASE. **TRACE-BITEMP-4** is unblocked for optional thin public surface only (core composition closed under OBS-BITEMP-REBASE).
 
 Closed TRACE phases (1A–1C, ASOF-1/2, BITEMP-1/3, NPSC-5F evidence plane) stay **Done** — not duplicated as active work below.
 
