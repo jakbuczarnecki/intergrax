@@ -11,7 +11,9 @@ from typing import Callable, Optional
 from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.interaction_service import DebugInteractionIntakeService
-from intergrax.runtime.governance.execution_admission_composition import build_reference_allowing_root_execution_authority_admission
+from intergrax.runtime.governance.execution_admission_composition import (
+    build_reference_allowing_root_execution_authority_admission,
+)
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.debug.store import open_default_task_checkpoint_persistence
@@ -20,7 +22,9 @@ from intergrax.runtime.interactions.verification.factory import create_inbound_v
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from testing_support.agent_registry_bootstrap import build_organization_worker_registry
+from intergrax.dev_support.agent_registry_bootstrap import (
+    build_organization_worker_registry,
+)
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import TaskLongRunningOptions
 
@@ -80,7 +84,9 @@ def create_organization_worker_lab_app(
     Intake → Nexus → HITL pause → notification → ``POST …/human-response`` resume.
     """
     resolved_registry = registry or build_organization_worker_registry()
-    checkpoint_store = open_default_task_checkpoint_persistence(db_path=checkpoints_db_path)
+    checkpoint_store = open_default_task_checkpoint_persistence(
+        db_path=checkpoints_db_path
+    )
     nexus_loop = NexusLoop(
         resolved_registry,
         checkpoint_store=checkpoint_store,

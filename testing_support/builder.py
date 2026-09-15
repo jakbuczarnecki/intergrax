@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import dataclass
 from datetime import datetime
 import os
 from pathlib import Path
@@ -18,7 +17,9 @@ import pytest
 from numpy.typing import NDArray
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+)
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
@@ -27,24 +28,40 @@ from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvid
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
-from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import (
+    BaseVectorstoreManager,
+)
 from intergrax.rag.vectorstore.providers.inmemory_vectorstore import InMemoryVectorStore
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
-from intergrax.runtime.governance.execution_guard import ExecutionGuard, GovernanceEvaluation
-from intergrax.runtime.governance.service import GovernanceService
+from intergrax.runtime.governance.execution_guard import (
+    ExecutionGuard,
+    GovernanceEvaluation,
+)
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from intergrax.runtime.nexus.session.in_memory_session_storage import (
+    InMemorySessionStorage,
+)
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 from intergrax.runtime.replay.policy import PolicyDecision, PolicyDecisionType
 from intergrax.runtime.replay.regression import RegressionSignals
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext, ToolGateway
+from intergrax.contracts.runtime_execution_context import (
+    RuntimeExecutionContext,
+    ToolGateway,
+)
 from intergrax.tools.core.contracts import ToolContract
+from intergrax.dev_support import (
+    execution_identity_scope as _dev_execution_identity_scope,
+)
 
+canonical_run_id_for_tests = _dev_execution_identity_scope.canonical_run_id_for_tests
+canonical_execution_identity_scope = (
+    _dev_execution_identity_scope.canonical_execution_identity_scope
+)
 
 
 class FakeLLMAdapter(LLMAdapter):
@@ -64,7 +81,6 @@ class FakeLLMAdapter(LLMAdapter):
     def context_window_tokens(self) -> int:
         # Large enough for tests; avoids truncation logic influencing results.
         return 128_000
-
 
     def __init__(
         self,
@@ -202,8 +218,8 @@ class DummyExecutionGuard(ExecutionGuard):
             regression=regression,
         )
 
+
 class FakeEmbeddingProvider(EmbeddingProvider):
-    
     def __init__(
         self,
     ) -> None:
@@ -213,13 +229,12 @@ class FakeEmbeddingProvider(EmbeddingProvider):
         return "fake"
 
     def _ensure_model(self) -> None:
-        pass        
+        pass
 
     def _resolve_dim(self) -> None:
 
         if self._dim is None:
             self._dim = 256
-            
 
     def dimension(self) -> int:
 
@@ -252,7 +267,11 @@ def require_ollama_reachable(
     """
 
     default_ollama_base_url = "http://127.0.0.1:11434"
-    raw = (base_url or os.environ.get("OLLAMA_HOST") or default_ollama_base_url).strip().rstrip("/")
+    raw = (
+        (base_url or os.environ.get("OLLAMA_HOST") or default_ollama_base_url)
+        .strip()
+        .rstrip("/")
+    )
     tags_url = f"{raw}/api/tags"
     try:
         urllib.request.urlopen(tags_url, timeout=timeout_sec)
@@ -277,8 +296,14 @@ def require_vllm_reachable(
 
     default_vllm_base_url = "http://127.0.0.1:8000/v1"
     raw = (
-        base_url or os.environ.get("INTERGRAX_DEFAULT_VLLM_BASE_URL") or default_vllm_base_url
-    ).strip().rstrip("/")
+        (
+            base_url
+            or os.environ.get("INTERGRAX_DEFAULT_VLLM_BASE_URL")
+            or default_vllm_base_url
+        )
+        .strip()
+        .rstrip("/")
+    )
     models_url = f"{raw}/models"
     try:
         urllib.request.urlopen(models_url, timeout=timeout_sec)
@@ -303,11 +328,15 @@ def require_vllm_embed_reachable(
 
     default_embed_base_url = "http://127.0.0.1:8101/v1"
     raw = (
-        base_url
-        or os.environ.get("INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL")
-        or os.environ.get("INTERGRAX_DEFAULT_VLLM_BASE_URL")
-        or default_embed_base_url
-    ).strip().rstrip("/")
+        (
+            base_url
+            or os.environ.get("INTERGRAX_DEFAULT_VLLM_EMBED_BASE_URL")
+            or os.environ.get("INTERGRAX_DEFAULT_VLLM_BASE_URL")
+            or default_embed_base_url
+        )
+        .strip()
+        .rstrip("/")
+    )
     models_url = f"{raw}/models"
     try:
         urllib.request.urlopen(models_url, timeout=timeout_sec)
@@ -333,10 +362,14 @@ def require_llama_cpp_reachable(
 
     default_llama_cpp_base_url = "http://127.0.0.1:8102/v1"
     raw = (
-        base_url
-        or os.environ.get("INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL")
-        or default_llama_cpp_base_url
-    ).strip().rstrip("/")
+        (
+            base_url
+            or os.environ.get("INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL")
+            or default_llama_cpp_base_url
+        )
+        .strip()
+        .rstrip("/")
+    )
     models_url = f"{raw}/models"
     try:
         urllib.request.urlopen(models_url, timeout=timeout_sec)
@@ -365,11 +398,15 @@ def require_llama_cpp_embed_reachable(
 
     default_embed_base_url = "http://127.0.0.1:8103/v1"
     raw = (
-        base_url
-        or os.environ.get("INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_BASE_URL")
-        or os.environ.get("INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL")
-        or default_embed_base_url
-    ).strip().rstrip("/")
+        (
+            base_url
+            or os.environ.get("INTERGRAX_DEFAULT_LLAMA_CPP_EMBED_BASE_URL")
+            or os.environ.get("INTERGRAX_DEFAULT_LLAMA_CPP_BASE_URL")
+            or default_embed_base_url
+        )
+        .strip()
+        .rstrip("/")
+    )
     models_url = f"{raw}/models"
     try:
         urllib.request.urlopen(models_url, timeout=timeout_sec)
@@ -384,7 +421,10 @@ def build_in_memory_session_manager() -> SessionManager:
     storage = InMemorySessionStorage()
     return SessionManager(storage)
 
-def build_in_memory_vectorstore_manager(*, tenant_id: Optional[str] = None)-> BaseVectorstoreManager:
+
+def build_in_memory_vectorstore_manager(
+    *, tenant_id: Optional[str] = None
+) -> BaseVectorstoreManager:
     if tenant_id is None:
         tenant_id = "in_memory_tenant_id"
 
@@ -462,18 +502,6 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
     return RuntimeState(context=ctx, run_id=canonical_run_id, request=request)
 
 
-def canonical_run_id_for_tests(run_id: str) -> str:
-    """Canonical RunId aligned with :func:`build_runtime_state_for_tests`."""
-    from hashlib import sha256
-
-    from intergrax.contracts.execution_identity import RunId, validate_run_id
-
-    if run_id.startswith("run_") and len(run_id) == 36:
-        return validate_run_id(run_id)
-    digest = sha256(run_id.encode()).hexdigest()[:32]
-    return validate_run_id(f"run_{digest}")
-
-
 def canonical_task_id_for_tests(seed: str) -> str:
     """Canonical TaskId correlated with :func:`canonical_run_id_for_tests` for the same seed."""
     from hashlib import sha256
@@ -504,10 +532,14 @@ def build_runtime_request_for_tests(
     from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
 
     resolved_task_id = (
-        validate_task_id(task_id) if task_id is not None else canonical_task_id_for_tests(seed)
+        validate_task_id(task_id)
+        if task_id is not None
+        else canonical_task_id_for_tests(seed)
     )
     resolved_run_id = (
-        validate_run_id(run_id) if run_id is not None else canonical_run_id_for_tests(seed)
+        validate_run_id(run_id)
+        if run_id is not None
+        else canonical_run_id_for_tests(seed)
     )
     request = RuntimeRequest(
         tenant_id=tenant_id,
@@ -549,16 +581,22 @@ def build_runtime_execution_context_for_tests(
     )
 
     resolved_task_id = (
-        validate_task_id(task_id) if task_id is not None else canonical_task_id_for_tests(seed)
+        validate_task_id(task_id)
+        if task_id is not None
+        else canonical_task_id_for_tests(seed)
     )
     resolved_run_id = (
-        validate_run_id(run_id) if run_id is not None else canonical_run_id_for_tests(seed)
+        validate_run_id(run_id)
+        if run_id is not None
+        else canonical_run_id_for_tests(seed)
     )
     resolved_attempt_id = (
         validate_attempt_id(attempt_id) if attempt_id is not None else mint_attempt_id()
     )
     resolved_execution_id = (
-        validate_execution_id(execution_id) if execution_id is not None else mint_execution_id()
+        validate_execution_id(execution_id)
+        if execution_id is not None
+        else mint_execution_id()
     )
     from intergrax.contracts.agent_run import RequestIdentity
     from intergrax.contracts.agent_run_enums import PrincipalType
@@ -579,33 +617,6 @@ def build_runtime_execution_context_for_tests(
             auth_subject="test-user",
         ),
     )
-
-
-@contextmanager
-def canonical_execution_identity_scope(run_id: str):
-    """
-    Bind canonical active execution identity for tool-loop unit tests.
-
-    ``run_id`` may be a seed string or canonical ``run_…`` value matching
-    ``RuntimeState.run_id`` from :func:`build_runtime_state_for_tests`.
-    """
-    from intergrax.contracts.execution_identity import (
-        bind_active_execution_identity,
-        mint_attempt_id,
-        mint_execution_id,
-        reset_active_execution_identity,
-    )
-
-    canonical_run_id = canonical_run_id_for_tests(run_id)
-    token = bind_active_execution_identity(
-        run_id=canonical_run_id,
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
-    )
-    try:
-        yield canonical_run_id
-    finally:
-        reset_active_execution_identity(token)
 
 
 @contextmanager
@@ -686,11 +697,15 @@ class DummyRunStore(RunStore):
             run_id=current.run_id,
             status=status,
             error_type=error_type if error_type is not None else current.error_type,
-            error_message=error_message if error_message is not None else current.error_message,
+            error_message=error_message
+            if error_message is not None
+            else current.error_message,
             started_at=started_at if started_at is not None else current.started_at,
             finished_at=finished_at if finished_at is not None else current.finished_at,
             duration_ms=duration_ms if duration_ms is not None else current.duration_ms,
-            result_payload=result_payload if result_payload is not None else current.result_payload,
+            result_payload=result_payload
+            if result_payload is not None
+            else current.result_payload,
         )
 
         self._runs[run_id] = updated
@@ -708,7 +723,8 @@ def tools_agent_make_contract(tool_id: str, input_model, output_model):
         side_effects=False,
     )
 
-def prepare_sqlite_db(name:str)->Path:
+
+def prepare_sqlite_db(name: str) -> Path:
     db_path = Path(f"temp_documents/{name}")
     db_path.parent.mkdir(parents=True, exist_ok=True)
     if db_path.exists():

@@ -17,7 +17,9 @@ from pydantic import BaseModel, Field
 
 from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
-from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_trace_store
+from intergrax.integrations.providers.relational_store.sqlite import (
+    create_sqlite_trace_store,
+)
 from intergrax.experiments.composition import resolve_experiment_persistence
 from intergrax.experiments.models import (
     ExperimentDecision,
@@ -84,7 +86,7 @@ class ExperimentSession:
 
     Example (notebook or script)::
 
-        from testing_support.agent_registry_bootstrap import build_harness_registry
+        from intergrax.dev_support.agent_registry_bootstrap import build_harness_registry
 
         session = ExperimentSession(trace_db=Path("build/notebook_trace.db"))
         record = session.register(RegisterExperimentRequest(...))
