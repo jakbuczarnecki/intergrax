@@ -20,7 +20,10 @@ from intergrax.contracts.event_delivery import (
     make_deliverable_event,
     make_observability_export_payload,
 )
-from intergrax.runtime.observability.event_delivery import BoundedEventSink, InMemoryEventSink
+from intergrax.runtime.observability.event_delivery import (
+    BoundedEventSink,
+    InMemoryEventSink,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -56,11 +59,18 @@ def test_best_effort_overflow_allows_drop_execution_continues() -> None:
 
 
 def test_critical_overflow_fail_closed_no_silent_loss() -> None:
-    gate = threading.Event()
+    worker_entered_downstream = threading.Event()
+    release_downstream = threading.Event()
+    downstream_deliveries: list[str] = []
+    deliveries_lock = threading.Lock()
 
-    class _GatedDownstream:
+    class _PhasedGatedDownstream:
         def publish(self, event, *, priority, deadline=None) -> EventDeliveryResult:
-            gate.wait(timeout=10.0)
+            worker_entered_downstream.set()
+            if not release_downstream.wait(timeout=10.0):
+                raise TimeoutError("downstream release timed out")
+            with deliveries_lock:
+                downstream_deliveries.append(event.event_id)
             return EventDeliveryResult(
                 disposition=EventDeliveryDisposition.ACCEPTED,
                 priority=priority,
@@ -69,34 +79,71 @@ def test_critical_overflow_fail_closed_no_silent_loss() -> None:
             )
 
         def close(self) -> None:
-            gate.set()
+            release_downstream.set()
 
     policy = EventDeliveryPolicy(max_capacity=10)
-    sink = BoundedEventSink(_GatedDownstream(), policy)
-    results: list[EventDeliveryResult] = []
-    lock = threading.Lock()
-    start_barrier = threading.Barrier(12)
+    sink = BoundedEventSink(_PhasedGatedDownstream(), policy)
+    errors: list[BaseException] = []
+    sync_timeout = 10.0
 
-    def _publish_one(label: str) -> None:
-        start_barrier.wait(timeout=5.0)
-        result = sink.publish(_event(label), priority=EventPriority.CRITICAL)
-        with lock:
-            results.append(result)
+    def _first_in_flight() -> None:
+        try:
+            sink.publish(_event("c-in-flight"), priority=EventPriority.CRITICAL)
+        except BaseException as exc:
+            errors.append(exc)
 
-    threads = [threading.Thread(target=_publish_one, args=(f"c-{i}",)) for i in range(11)]
+    first_publisher = threading.Thread(
+        target=_first_in_flight, name="w5a-first-critical"
+    )
+    first_publisher.start()
+    assert worker_entered_downstream.wait(timeout=sync_timeout)
 
-    def _release_when_ready() -> None:
-        start_barrier.wait(timeout=5.0)
-        time.sleep(0.3)
-        gate.set()
+    fill_barrier = threading.Barrier(policy.max_capacity)
 
-    threads.append(threading.Thread(target=_release_when_ready))
-    for thread in threads:
+    def _fill_queue_slot(label: str) -> None:
+        try:
+            fill_barrier.wait(timeout=sync_timeout)
+            sink.publish(_event(label), priority=EventPriority.CRITICAL)
+        except BaseException as exc:
+            errors.append(exc)
+
+    fill_publishers = [
+        threading.Thread(
+            target=_fill_queue_slot,
+            args=(f"c-fill-{index}",),
+            name=f"w5a-fill-{index}",
+        )
+        for index in range(policy.max_capacity)
+    ]
+    for thread in fill_publishers:
         thread.start()
-    for thread in threads:
-        thread.join(timeout=15.0)
-    assert any(r.disposition is EventDeliveryDisposition.REJECTED for r in results)
+
+    depth_deadline = time.monotonic() + sync_timeout
+    while sink.pending_depth < policy.max_capacity:
+        if time.monotonic() >= depth_deadline:
+            pytest.fail(
+                f"queue never reached capacity: pending_depth={sink.pending_depth} "
+                f"max_capacity={policy.max_capacity}",
+            )
+
+    overflow_result = sink.publish(
+        _event("c-overflow"), priority=EventPriority.CRITICAL
+    )
+    assert overflow_result.disposition is EventDeliveryDisposition.REJECTED
+    assert "c-overflow" not in downstream_deliveries
+
+    release_downstream.set()
+    first_publisher.join(timeout=sync_timeout)
+    for thread in fill_publishers:
+        thread.join(timeout=sync_timeout)
+
+    assert errors == []
+    assert not first_publisher.is_alive()
+    for thread in fill_publishers:
+        assert not thread.is_alive()
+
     sink.close()
+    assert len(downstream_deliveries) == policy.max_capacity + 1
 
 
 def test_slow_consumer_does_not_block_producer() -> None:
