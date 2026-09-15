@@ -161,7 +161,7 @@ Shared factual reconstruction (deterministic, completeness-explicit)
         ├── Central Diagnostics (LifecycleAnomalyAnalyzer, DiagnosticAssessmentBuilder, …)
         ├── AsOf / RunExecutionAsOfProjection (pure reducers on journal prefix)
         ├── Audit / operator factual tooling
-        └── Future temporal composition (E+K) — OBS-ASOF-REBASE / OBS-BITEMP-REBASE
+        └── Historical execution at E — **OBS-ASOF-REBASE** (closed); E+K/V/S composition — **OBS-BITEMP-REBASE**
 ```
 
 | Component | Factual | Diagnostic |
@@ -201,7 +201,40 @@ DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · opera
 
 **Architecture gate:** `runtime.observability.reconstruction` MUST NOT import `runtime.diagnostics.*` (see `test_obs_reconstruction_1_architecture.py`). **Unrelated existing debt:** `qualification_runtime_trace.py` may still import DIAG for completion alignment — not reconstruction.
 
-**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** Shared reconstruction **package** placement closed (**OBS-RECONSTRUCTION-1**); further work remains **OBS-ASOF-REBASE** / **OBS-BITEMP-REBASE**. **TRACE-ASOF-3** remains **conditional / defer** (materialization only when measurably required).
+**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** Shared reconstruction **package** placement closed (**OBS-RECONSTRUCTION-1**). **OBS-ASOF-REBASE** closes the canonical **E-axis** historical execution query path (journal prefix + shared `ExecutionReconstructor` + optional `ExecutionLineageReader`). **OBS-BITEMP-REBASE** remains for full E/K/V/S composition without axis mixing. **TRACE-ASOF-3** → **NOT REQUIRED** (conditional materialization; logical rebuild at E is sufficient). **TRACE-ASOF-4** unblocked for typed public query surfaces that delegate to the same canonical path.
+
+## OBS-ASOF-REBASE — Historical execution query rebase (closed 2026-09-15)
+
+**Goal:** All historical execution views at explicit **E** compose only from canonical positioned `RuntimeEvent` evidence, optional Execution Tree facts via `ExecutionLineageReader`, shared factual reconstruction, and inclusive `AsOfBoundary` — without DIAG-owned history, timestamp-boundary selection, or duplicate reconstructors.
+
+**Canonical read path:**
+
+```text
+AsOfBoundary (RunId + inclusive ExecutionEventPosition)
+        ↓
+load_positioned_run_journal_through → positioned prefix
+        ↓
+reconstruct_run_execution_as_of → RunExecutionAsOfProjection (lifecycle reducer)
+        +
+ExecutionReconstructor.reconstruct_execution(..., execution_as_of=boundary)
+        ↓
+HistoricalReconstructionService.reconstruct (E + K + bitemporal query composition)
+```
+
+| Entry | Role | Owner |
+| ----- | ---- | ----- |
+| `load_positioned_run_journal_through` | Prefix completeness + exact boundary existence | Evidence / journal (R2) |
+| `reconstruct_run_execution_as_of` | Run lifecycle projection at **E** | Evidence / as-of reducer |
+| `ExecutionReconstructor` | Factual execution + attempts + causal join at **E** | `runtime.observability.reconstruction` |
+| `HistoricalReconstructionService` | Composition only — not a second reconstructor | Observability |
+
+**Frozen semantics:** READ ONLY · DERIVED · DETERMINISTIC · NON-AUTHORITATIVE. Same `AsOfBoundary` remains stable after later appends (append immunity). Fail-closed on scope mismatch, missing boundary, truncated prefix. **E** authority is `ExecutionEventPosition` only — not `timestamp` / `recorded_at` / `created_at`. **K** / valid time / system time remain separate axes (see **OBS-BITEMP-REBASE**).
+
+**Architecture gates:** `tests/unit/runtime/architecture/test_obs_asof_rebase_architecture.py`, `test_obs_asof_rebase_qualification.py`, existing TRACE-ASOF-1/2 and NPSC-5F/R4 suites.
+
+**TRACE-ASOF-3 decision:** **NOT REQUIRED** — no measurable need for materialized projection revisions when logical rebuild from positioned evidence is canonical and certified.
+
+**Limitation (explicit):** `ExecutionLineageReader` does not yet expose an **E-scoped** lineage boundary; attempt discovery during as-of reconstruction may reflect run-level lineage while runtime events are prefix-filtered at **E**. Full Execution Tree at historical **E** without heuristics may require contract extension (**OBS-BITEMP-REBASE** / ADR), not timestamp filtering.
 
 ### Signal families (no universal payload bag)
 

@@ -66,13 +66,13 @@
 | 5 | **OBS-COVERAGE-1** | P1 | **Done / Closed** (2026-09-15) | Platform evidence coverage matrix — P1 paths **PROVEN**; DG-005 **NOT PROVEN** (P2) — [arch matrix](../../architecture/OBSERVABILITY.md#platform-evidence-coverage-matrix-obs-coverage-1) |
 | 6 | **OBS-TRACE-1** | P2 | **Done / Closed (NOT REQUIRED)** | Qualified producers/consumers — `TraceEvent` stays run-scoped; gates `test_obs_trace_1_qualification.py` |
 | 7 | **OBS-RECONSTRUCTION-1** | P1 | **Done / Closed** | Single shared factual reconstruction module owned by Evidence Plane (`runtime.observability.reconstruction`); DIAG consumes only |
-| 8 | **OBS-ASOF-REBASE** | P1/P2 | Planned | Historical execution query on Execution Tree + shared reconstruction |
-| 9 | **TRACE-ASOF-3** | Conditional | **Blocked** — defer | Materialization only when measurably required; blocked on OBS-RECONSTRUCTION-1 / OBS-ASOF-REBASE |
+| 8 | **OBS-ASOF-REBASE** | P1/P2 | **Done / Closed** (2026-09-15) | Historical execution query on canonical **E** + Execution Tree ports + shared reconstruction — [arch § OBS-ASOF-REBASE](../../architecture/OBSERVABILITY.md#obs-asof-rebase--historical-execution-query-rebase-closed-2026-09-15) |
+| 9 | **TRACE-ASOF-3** | Conditional | **NOT REQUIRED** | Materialization only if measurably required; logical as-of at **E** is canonical after OBS-ASOF-REBASE |
 | 10 | **OBS-BITEMP-REBASE** | P2 | Planned | E/K/V/S composition without axis mixing |
 | 11 | **OBS-DIAG-CONFORMANCE** | P1 | Planned | E2E proof Producer → Evidence → Reconstruction → DIAG |
 | 12 | **OBS-FINAL-CERTIFICATION** | P1 | Planned | Enterprise Observability closure |
 
-**TRACE-ASOF-4** and **TRACE-BITEMP-4** remain **Planned** but **blocked** on shared reconstruction ownership (**OBS-RECONSTRUCTION-1**, **OBS-ASOF-REBASE**) — do not treat them as parallel active delivery until unblocked.
+**TRACE-ASOF-4** and **TRACE-BITEMP-4** remain **Planned**; **TRACE-ASOF-4** is unblocked to delegate to the OBS-ASOF-REBASE canonical path. **TRACE-BITEMP-4** remains blocked on **OBS-BITEMP-REBASE**.
 
 Closed TRACE phases (1A–1C, ASOF-1/2, BITEMP-1/3, NPSC-5F evidence plane) stay **Done** — not duplicated as active work below.
 
@@ -122,8 +122,8 @@ Architecture: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md#observabi
 |----|----------|--------|------|------------|----------------------|
 | **TRACE-ASOF-1** | P1 | Done / Closed (`02462d96897daa4ea19d96dce776768a03cbbf53`) | Resolve deterministic historical boundary: run-scoped `ExecutionEventPosition` at persistence acceptance; `PositionedRuntimeEvent` wrapper; typed inclusive `AsOfBoundary`; positioned read prefix; no timestamp-only ambiguity | TRACE-1C | `append` returns canonical position; idempotent `EventId` reuse; journal/list order follows execution position |
 | **TRACE-ASOF-2** | P1 | Done / Closed (`d0cfad1eeecbf3167e3955b93d4a2ef82de09b4f`) | First canonical logical execution projection: `RunExecutionAsOfProjection` from positioned `RuntimeEvent` prefix via pure reducer `project_run_execution_as_of`; read orchestration `reconstruct_run_execution_as_of` + `load_positioned_run_journal_through`; `RunExecutionLifecycleStatus` from `RuntimeEventType` only (no payload parsing); attempt-aware; `HistoricalEventReference` provenance; logical-only (no materialization); exact `AsOfBoundary` existence required | TRACE-ASOF-1; TRACE-BITEMP-1 | Logical projection rebuildable from journal; no new source of truth; exact boundary event must exist (`RunExecutionBoundaryNotFoundError`); prefix completeness verified (limit pagination fail-closed); unknown history fails explicitly; stable historical coordinate after later appends |
-| **TRACE-ASOF-3** | P2 | **Blocked / conditional** (OBS-REBASE-1) | Only if projections are materialized: immutable projection revisions; explicit `revision_id`; explicit `supersedes`; rebuildability | TRACE-ASOF-2; **OBS-RECONSTRUCTION-1** | Skippable if materialization not needed; defer until shared reconstruction package placement |
-| **TRACE-ASOF-4** | P1 | **Blocked** (OBS-REBASE-1) | Typed public/internal **execution-as-of** query at **E** | TRACE-ASOF-2; **OBS-ASOF-REBASE** / **OBS-RECONSTRUCTION-1** | Unblock after shared factual reconstruction; not bitemporal knowledge semantics |
+| **TRACE-ASOF-3** | P2 | **NOT REQUIRED** (OBS-ASOF-REBASE) | Only if projections are materialized: immutable projection revisions; explicit `revision_id`; explicit `supersedes`; rebuildability | TRACE-ASOF-2; **OBS-RECONSTRUCTION-1**; **OBS-ASOF-REBASE** | Skipped — logical rebuild at **E** is canonical |
+| **TRACE-ASOF-4** | P1 | **Planned** (unblocked) | Typed public/internal **execution-as-of** query at **E** | TRACE-ASOF-2; **OBS-ASOF-REBASE** | Must delegate to `HistoricalReconstructionService` / `reconstruct_run_execution_as_of`; not bitemporal knowledge semantics |
 
 **TRACE-ASOF-1 evidence chain** (independently audited; final acceptance `02462d96897daa4ea19d96dce776768a03cbbf53`): `ae618fc81817497dbbcf018d92c95856f2d44115` → `d88253dbcfaa470597f93d91eec6a80a30e77007` → `98a2d186d9b512048c01024b67f1e707d72240ee` → `a7a931c6a5c4356e9bd49d7d9f8b5787e9a826b6` → `02462d96897daa4ea19d96dce776768a03cbbf53`.
 
