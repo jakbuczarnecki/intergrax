@@ -200,5 +200,5 @@ Additional note: observed functional blocker on `runtime-observability` leaf (se
 
 ```text
 VERIFIED PLATFORM SHA (intended)     = 9979e3b3af64b436708d0e95fac669dc9ef6e3d1
-DOCUMENTATION COMMIT SHA             = pending commit on `development`
+DOCUMENTATION COMMIT SHA             = fc81cc5fd606fddcf2a7896b37a58a9f4649a0fe
 ```
