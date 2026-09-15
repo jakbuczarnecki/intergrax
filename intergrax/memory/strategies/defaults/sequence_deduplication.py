@@ -11,7 +11,7 @@ from intergrax.memory.strategies.models import (
     MemoryDeduplicationRequest,
     MemoryDeduplicationResult,
 )
-from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
+from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 
 
 @dataclass(frozen=True)
@@ -48,8 +48,6 @@ class SequenceMatcherMemoryDeduplicationStrategy:
                     continue
                 if _similarity(prior.content, candidate.content) >= threshold:
                     duplicate = True
-                    if candidate.kind in {MemoryKind.USER_FACT, MemoryKind.PREFERENCE}:
-                        prior.valid_until = candidate.created_at or prior.valid_until
                     break
             if duplicate:
                 rejected.append(candidate)

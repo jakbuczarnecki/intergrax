@@ -20,9 +20,7 @@ def deduplicate_memory_entries(
     *,
     similarity_threshold: float = 0.88,
 ) -> List[UserProfileMemoryEntry]:
-    """
-    Drop near-duplicate incoming entries; supersede stale facts when newer arrives.
-    """
+    """Drop near-duplicate incoming entries (classification only; supersession deferred MEM-ENT-6)."""
     strategy = SequenceMatcherMemoryDeduplicationStrategy(
         SequenceMatcherDeduplicationConfig(similarity_threshold=similarity_threshold)
     )

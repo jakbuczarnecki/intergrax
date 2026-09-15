@@ -359,3 +359,112 @@ def test_build_default_strategies_respects_deduplication_configuration() -> None
     assert isinstance(strategies.extraction, LlmMemoryExtractionStrategy)
     assert isinstance(strategies.deduplication, SequenceMatcherMemoryDeduplicationStrategy)
     assert strategies.deduplication.similarity_threshold == 0.75
+
+
+def _entry_snapshot(entry: UserProfileMemoryEntry) -> tuple:
+    return (
+        entry.valid_until,
+        entry.deleted,
+        entry.modified,
+        entry.content,
+        dict(entry.metadata),
+        entry.valid_from,
+    )
+
+
+def _dedup(
+    strategy: SequenceMatcherMemoryDeduplicationStrategy,
+    existing: tuple[UserProfileMemoryEntry, ...],
+    incoming: tuple[UserProfileMemoryEntry, ...],
+) -> MemoryDeduplicationResult:
+    return strategy.deduplicate(MemoryDeduplicationRequest(existing=existing, incoming=incoming))
+
+
+def test_default_dedup_does_not_mutate_existing_valid_until_on_duplicate() -> None:
+    prior = UserProfileMemoryEntry(content="Senior Python engineer", kind=MemoryKind.USER_FACT)
+    assert prior.valid_until is None
+    candidate = UserProfileMemoryEntry(
+        content="Senior python engineer.",
+        kind=MemoryKind.USER_FACT,
+        created_at="2026-01-02T00:00:00+00:00",
+    )
+    before_prior = _entry_snapshot(prior)
+    before_candidate = _entry_snapshot(candidate)
+    strategy = SequenceMatcherMemoryDeduplicationStrategy()
+    result = _dedup(strategy, (prior,), (candidate,))
+    assert prior.valid_until is None
+    assert _entry_snapshot(prior) == before_prior
+    assert _entry_snapshot(candidate) == before_candidate
+    assert result.accepted == ()
+    assert result.rejected_as_duplicate == (candidate,)
+
+
+def test_default_dedup_does_not_mutate_incoming_fields() -> None:
+    prior = UserProfileMemoryEntry(content="unrelated fact", kind=MemoryKind.USER_FACT)
+    candidate = UserProfileMemoryEntry(
+        content="Another unique preference text",
+        kind=MemoryKind.PREFERENCE,
+        deleted=False,
+        modified=False,
+        metadata={"tags": ["a"], "source": "test"},
+    )
+    before = _entry_snapshot(candidate)
+    strategy = SequenceMatcherMemoryDeduplicationStrategy(
+        SequenceMatcherDeduplicationConfig(similarity_threshold=0.99)
+    )
+    result = _dedup(strategy, (prior,), (candidate,))
+    assert _entry_snapshot(candidate) == before
+    assert result.accepted == (candidate,)
+    assert result.rejected_as_duplicate == ()
+
+
+def test_default_dedup_batch_second_similar_candidate_rejected_without_mutation() -> None:
+    strategy = SequenceMatcherMemoryDeduplicationStrategy()
+    candidate_a = UserProfileMemoryEntry(content="Team uses Python 3.12", kind=MemoryKind.USER_FACT)
+    candidate_b = UserProfileMemoryEntry(content="Team uses python 3.12.", kind=MemoryKind.USER_FACT)
+    snap_a_before = _entry_snapshot(candidate_a)
+    snap_b_before = _entry_snapshot(candidate_b)
+    result = _dedup(strategy, (), (candidate_a, candidate_b))
+    assert result.accepted == (candidate_a,)
+    assert result.rejected_as_duplicate == (candidate_b,)
+    assert _entry_snapshot(candidate_a) == snap_a_before
+    assert _entry_snapshot(candidate_b) == snap_b_before
+
+
+def test_default_dedup_threshold_below_accepts_above_rejects() -> None:
+    existing = (
+        UserProfileMemoryEntry(content="Senior Python engineer", kind=MemoryKind.USER_FACT),
+    )
+    near = UserProfileMemoryEntry(content="Senior python engineer.", kind=MemoryKind.USER_FACT)
+    far = UserProfileMemoryEntry(
+        content="Completely different topic about databases",
+        kind=MemoryKind.USER_FACT,
+    )
+    strict = SequenceMatcherMemoryDeduplicationStrategy(
+        SequenceMatcherDeduplicationConfig(similarity_threshold=0.99)
+    )
+    loose = SequenceMatcherMemoryDeduplicationStrategy(
+        SequenceMatcherDeduplicationConfig(similarity_threshold=0.5)
+    )
+    assert _dedup(strict, existing, (near,)).accepted == (near,)
+    assert _dedup(loose, existing, (near,)).accepted == ()
+    assert _dedup(strict, existing, (far,)).accepted == (far,)
+
+
+def test_default_dedup_strategy_has_no_storage_dependencies() -> None:
+    strategy = SequenceMatcherMemoryDeduplicationStrategy()
+    assert strategy.deduplicate(
+        MemoryDeduplicationRequest(existing=(), incoming=())
+    ) == MemoryDeduplicationResult(accepted=(), rejected_as_duplicate=())
+
+
+def test_legacy_dedup_helper_rejects_duplicate_without_mutating_existing() -> None:
+    from intergrax.memory.user_profile_dedup import deduplicate_memory_entries
+
+    prior = UserProfileMemoryEntry(content="Senior Python engineer", kind=MemoryKind.USER_FACT)
+    incoming = UserProfileMemoryEntry(content="Senior python engineer.", kind=MemoryKind.USER_FACT)
+    before = _entry_snapshot(prior)
+    accepted = deduplicate_memory_entries([prior], [incoming])
+    assert accepted == []
+    assert prior.valid_until is None
+    assert _entry_snapshot(prior) == before
