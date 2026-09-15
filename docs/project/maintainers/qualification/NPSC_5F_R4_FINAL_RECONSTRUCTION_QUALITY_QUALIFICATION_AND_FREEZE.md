@@ -33,6 +33,7 @@ Invariant:
 | Label | SHA |
 | ----- | --- |
 | **R4 reconstruction quality implementation** | `84e704eec611e7b24eb82b0be4fe98172c512739` |
+| **OBS-RECONSTRUCTION-1 qualified relocation baseline** | `743a3865198e8fcec53029f935fbedc4cae6f9df` |
 | **R4 Final qualification sign-off** | Recorded on merge commit containing this document |
 
 **Production code changed in R4 Final task:** NO (qualification, drift helper, regression matrix, final gate, docs only).
@@ -69,8 +70,10 @@ Reconstruction is **not** persisted and **not** authoritative for live execution
 
 ## Protected production surfaces (drift-scoped)
 
-- `intergrax/runtime/diagnostics/execution_reconstruction.py`
-- `intergrax/runtime/diagnostics/execution_lineage_reconstruction.py`
+- `intergrax/runtime/observability/reconstruction/execution_reconstruction.py`
+- `intergrax/runtime/observability/reconstruction/execution_lineage_reconstruction.py`
+
+(Prior diagnostics paths — relocation only @ `743a3865198e8fcec53029f935fbedc4cae6f9df`; semantics unchanged.)
 
 Historical as-of / bitemporal composition (`HistoricalReconstructionService`) remains under the separate R4 as-of freeze — not file-frozen by this record.
 

@@ -15,7 +15,9 @@ from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 # Evidence Plane scoped re-freeze: NPSC-5F R3+Final requalification after Class C v1→v2.
 # Prior EE-FINAL-02 baseline: ``7a3569c64e892588992635c9cee10c264a9fc200``.
 # H9 pre-gate: qualified compatible evolution (W5 event-delivery, GR-3-R2 adjacent) — sentinel advance.
-NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "48a33db23fafab89b5fdb4ff217dfcb113dd6cc5"
+# Prior H9 interim baseline: ``48a33db23fafab89b5fdb4ff217dfcb113dd6cc5``.
+# OBS-RECONSTRUCTION-1: factual reconstruction relocation to Evidence Plane (read-only, contract-first).
+NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "743a3865198e8fcec53029f935fbedc4cae6f9df"
 
 NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
 NPSC_5F_R1_FINAL_SHA = "455c09f342f995ac0a6fcb03ffef2f4d3e36a447"

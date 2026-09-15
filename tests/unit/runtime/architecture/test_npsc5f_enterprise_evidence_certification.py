@@ -19,7 +19,12 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _EXECUTION_ROOT = _REPO_ROOT / "intergrax" / "runtime" / "execution"
 _EVENT_BUS_PATH = _REPO_ROOT / "intergrax" / "runtime" / "events" / "event_bus.py"
 _RECONSTRUCTION_PATHS = (
-    _REPO_ROOT / "intergrax" / "runtime" / "diagnostics" / "execution_reconstruction.py",
+    _REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "observability"
+    / "reconstruction"
+    / "execution_reconstruction.py",
     _REPO_ROOT / "intergrax" / "runtime" / "observability" / "historical_reconstruction.py",
 )
 _EVENTS_TOP_LEVEL = _REPO_ROOT / "intergrax" / "runtime" / "events"

@@ -42,7 +42,7 @@ def test_r4_quality_final_mandatory_suite_labels_recorded() -> None:
 
 
 def test_r4_quality_final_canonical_predecessor_shas_recorded() -> None:
-    assert R4_QUALITY_IMPLEMENTATION_SHA == "84e704eec611e7b24eb82b0be4fe98172c512739"
+    assert R4_QUALITY_IMPLEMENTATION_SHA == "743a3865198e8fcec53029f935fbedc4cae6f9df"
     assert R3_FINAL_SHA.startswith("0346fac")
     assert R2_FINAL_SHA.startswith("76c9284")
     assert R1_FINAL_SHA.startswith("455c09f")
