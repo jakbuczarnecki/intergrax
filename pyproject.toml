@@ -384,6 +384,7 @@ markers = [
   "asyncio: Async tests using pytest-asyncio.",
   "gate: Minimal pre-P4.2 regression gate (deterministic, no network).",
   "obs_coverage_p1: OBS-COVERAGE-1 mandatory P1 evidence qualification (deterministic; no nested pytest).",
+  "obs_trace_1: OBS-TRACE-1 TraceEvent correlation qualification (Plane B; deterministic).",
   "ci_smoke: Lightweight representative subset for PR/merge CI (<~30s).",
   "no_ci: Excluded from GitHub CI — infra-heavy (FastAPI, SQLite, MCP, sleeps, threading).",
   "external_proof: Real external integration proof (Docker-backed); required in dedicated CI job only.",

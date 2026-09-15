@@ -240,7 +240,7 @@ Reference: VPI `platform_proofs/scenarios/verified_product_identification/applic
 | Functional evidence contracts live under `runtime.diagnostics` while OBS records | — | — | **Closed (OBS-FUNCTIONAL-CONTRACTS-1 / R1)** — `intergrax.contracts.functional_evidence` | — |
 | `ExecutionReconstructor` package placement under `diagnostics` | P1 | Evidence + DIAG | Shared factual layer semantically OBS; single implementation today | **OBS-RECONSTRUCTION-1** |
 | Emit-path `ExecutionId` coverage not fully certified on all paths | — | — | **Closed (OBS-COVERAGE-1 / R1)** — mandatory `pytest -m obs_coverage_p1` qualification | — |
-| `TraceEvent` correlates primarily via `run_id` | P2 | Contracts / Plane B | May need stronger canonical correlation for some consumers | **OBS-TRACE-1** (conditional) |
+| `TraceEvent` correlates primarily via `run_id` | — | — | **Closed (OBS-TRACE-1)** — run-scoped Plane B; execution correlation via `RuntimeEvent` / lineage | — |
 | OBS → DIAG imports for reconstruction (functional evidence moved) | P1 | Architecture | Dependency direction vs frozen flow (boundary decided in OBS-BOUNDARY-1) | **OBS-RECONSTRUCTION-1** |
 
 ### Evidence Plane freeze (NPSC-5F enterprise certification)
@@ -2377,7 +2377,7 @@ Manifest `PROVEN` labels in `COVERAGE_PATH_PROOFS` are **metadata only**; execut
 | Gap | Severity | Follow-up |
 | --- | --- | --- |
 | DG-005 cross-topology RuntimeEvent persistence | P2 qualification | Separate qualification; not OBS-COVERAGE-1 blocker |
-| TraceEvent run-only Plane B | P2 conditional | **OBS-TRACE-1** if consumers require attempt/execution |
+| TraceEvent run-only Plane B | — closed | **OBS-TRACE-1** — **NOT REQUIRED** (no production Trace consumer needs attempt/execution on `TraceEvent`) |
 | Reconstruction package placement | P1 architecture | **OBS-RECONSTRUCTION-1** |
 | DIAG cross-layer E2E conformance | P1 | **OBS-DIAG-CONFORMANCE** |
 
@@ -2388,6 +2388,72 @@ Manifest `PROVEN` labels in `COVERAGE_PATH_PROOFS` are **metadata only**; execut
 3. Initialized platform scenarios must not define forbidden execution/diagnostic authority (`scenario_architecture_conformance`).
 4. Functional evidence uses `PipelineEvidenceScope` with required `execution_id`.
 5. Causal execution refs require `execution_id` on `RuntimeExecutionRef`.
+
+---
+
+## OBS-TRACE-1 Decision — Trace correlation (closed NOT REQUIRED)
+
+**Status:** **Done / Closed** — `TraceEvent` remains **intentionally run-scoped** Plane B telemetry. Execution-level correlation belongs to **`RuntimeEvent`**, **Execution Lineage**, and shared factual reconstruction — not to duplicated fields on `TraceEvent`.
+
+**Qualification:** `uv run pytest tests/unit/runtime/observability/test_obs_trace_1_qualification.py -m obs_trace_1`
+
+### TraceEvent contract (as qualified)
+
+| Field | Required | Semantic role |
+| ----- | -------- | ------------- |
+| `event_id` | yes | Stable row identity (telemetry; not `EventId` authority) |
+| `run_id` | yes | **Primary Plane B correlation** (run-scoped narrative) |
+| `seq` | yes | Per-emitter ordering within a run trace stream |
+| `ts_utc` | yes | Wall-clock stamp (not execution position) |
+| `level`, `component`, `step`, `message` | yes | Diagnostic taxonomy + human-readable line |
+| `payload` | no | Typed `DiagnosticPayload` |
+| `tags` | no | JSON-safe attributes (`task_id`, `tenant_id`, … — not canonical ID substitutes) |
+| `artifact_refs` | no | Artifact pointers |
+
+**Scope verdict:** **run-scoped** with optional **task/tenant hints in `tags`** — **not** execution-scoped, **not** attempt-scoped on the contract.
+
+### Producer summary
+
+| Producer | Scope | Identity source | Verdict |
+| -------- | ----- | --------------- | ------- |
+| `TaskTraceEmitter` / `PersistingTaskTraceEmitter` | run trace stream | `run_id` on `TraceEvent`; attempt for **bridge only** via active execution identity | RUN trace + canonical bus mirror |
+| `TraceEmittingMiddleware` | canonical journal | `RuntimeEvent` with active five-ID | **No `TraceEvent`** |
+| `ObservabilityEmitter` | dual emit | trace row run-scoped; bus via bridge | RUN trace |
+| Nexus / codecraft / parser / ACP bridges | component trace | run_id + tags | RUN trace |
+
+**Invariant:** trace plane code must **not** call `mint_execution_id()` / `mint_attempt_id()` (AST gate in `test_obs_trace_1_qualification.py`).
+
+### Consumer requirement matrix (abbreviated)
+
+| Consumer | Uses TraceEvent for | Run enough? | Attempt on TraceEvent? | Execution on TraceEvent? | Canonical alternative |
+| -------- | ------------------- | ----------- | ------------------------ | ------------------------ | --------------------- |
+| Unified Run Journal | — (excludes Plane B rows) | — | no | no | `RuntimeEvent` persistence |
+| Execution reconstruction / DIAG orchestration | — | — | no | no | `RuntimeEvent` + lineage |
+| `trace_bridge` | mirror to bus | yes | **via active identity**, not TraceEvent field | same | `RuntimeEvent` |
+| Trace persistence / debug / metrics / replay | run telemetry | yes | no | no | optional journal from runtime store |
+| Journal OTLP export | parser + journal snapshot | yes | no | no | `build_unified_run_journal` |
+
+**Real consumer requiring stronger TraceEvent correlation:** **NO** — retry/parallel execution differentiation for **canonical** behavior is proven on **`RuntimeEvent`** (`test_task_trace_event_bus.py`, `test_ue_9b_runtime_event_execution_id.py`, OBS-COVERAGE-1 matrix), not on persisted `TraceEvent` rows.
+
+### Architecture
+
+```text
+Execution (mint AttemptId / ExecutionId)
+        ↓
+RuntimeEvent / ExecutionLineage     ← canonical execution evidence
+        ↓
+shared reconstruction (OBS-RECONSTRUCTION-1 migrates package only)
+
+TraceEvent (run_id + seq + tags)    ← auxiliary Plane B (no execution authority)
+```
+
+### Architecture gates (OBS-TRACE-1)
+
+1. Trace plane production modules do not mint `ExecutionId` / `AttemptId`.
+2. `TraceEvent` contract has no `attempt_id` / `execution_id` fields (frozen NOT REQUIRED).
+3. Factual reconstruction entrypoints do not import `TraceEvent` as an evidence source.
+4. `TraceEmittingMiddleware` publishes `RuntimeEvent` only.
+5. Unified Run Journal does not ingest `PersistedRun` trace rows as execution truth.
 
 ---
 
