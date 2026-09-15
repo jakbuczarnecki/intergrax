@@ -13,12 +13,17 @@ from intergrax.contracts.enterprise_reliability.case_lifecycle import (
 )
 from intergrax.contracts.enterprise_reliability.diagnostics import (
     AutomationSafetyHint,
+    ExternalEffectReliabilityDiagnosticClassificationContext,
     ExternalEffectReliabilityDiagnosticSeverity,
     ExternalEffectReliabilityObservation,
     ExternalEffectReliabilityOperatorRecommendationKind,
+    ExternalEffectReliabilityRecommendationDecision,
+    ExternalEffectReliabilitySeverityDecision,
     ExternalEffectReliabilitySignalKind,
     ReliabilityDiagnosticArtifactRefs,
     ReliabilityDiagnosticCorrelation,
+    ReliabilityDiagnosticRecommendationStrategyId,
+    ReliabilityDiagnosticRecommendationStrategyVersion,
     build_reliability_diagnostic_classification_context,
 )
 from intergrax.runtime.diagnostics.reliability.conservative_reliability_recommendation_strategy import (
@@ -167,6 +172,84 @@ def test_custom_plugins_may_still_escalate_and_use_strong_recommendations() -> N
     assert (
         result.recommendation.recommendation_kind
         is ExternalEffectReliabilityOperatorRecommendationKind.ESCALATE_TO_OPERATOR
+    )
+
+
+class _RequestApprovalRecommendationPlugin:
+    """External plugin — may infer REQUEST_APPROVAL when policy facts exist outside defaults."""
+
+    @property
+    def strategy_id(self) -> ReliabilityDiagnosticRecommendationStrategyId:
+        return ReliabilityDiagnosticRecommendationStrategyId(
+            "test.external.erl_diagnostics_plugins.request_approval.v1",
+        )
+
+    @property
+    def strategy_version(self) -> ReliabilityDiagnosticRecommendationStrategyVersion:
+        return ReliabilityDiagnosticRecommendationStrategyVersion("1")
+
+    def recommend(
+        self,
+        context: ExternalEffectReliabilityDiagnosticClassificationContext,
+        severity: ExternalEffectReliabilitySeverityDecision,
+    ) -> ExternalEffectReliabilityRecommendationDecision:
+        _ = (context.signal_kind, severity.severity)
+        return ExternalEffectReliabilityRecommendationDecision(
+            recommendation_kind=ExternalEffectReliabilityOperatorRecommendationKind.REQUEST_APPROVAL,
+            strategy_id=self.strategy_id,
+            strategy_version=self.strategy_version,
+            reason_code="plugin_governance_approval_required",
+            safe_explanation="External plugin determined approval is required from enriched policy facts.",
+        )
+
+
+class _NoOperatorActionRecommendationPlugin:
+    @property
+    def strategy_id(self) -> ReliabilityDiagnosticRecommendationStrategyId:
+        return ReliabilityDiagnosticRecommendationStrategyId(
+            "test.external.erl_diagnostics_plugins.no_operator_action.v1",
+        )
+
+    @property
+    def strategy_version(self) -> ReliabilityDiagnosticRecommendationStrategyVersion:
+        return ReliabilityDiagnosticRecommendationStrategyVersion("1")
+
+    def recommend(
+        self,
+        context: ExternalEffectReliabilityDiagnosticClassificationContext,
+        severity: ExternalEffectReliabilitySeverityDecision,
+    ) -> ExternalEffectReliabilityRecommendationDecision:
+        _ = (context.signal_kind, severity.severity)
+        return ExternalEffectReliabilityRecommendationDecision(
+            recommendation_kind=(
+                ExternalEffectReliabilityOperatorRecommendationKind.NO_OPERATOR_ACTION_REQUIRED
+            ),
+            strategy_id=self.strategy_id,
+            strategy_version=self.strategy_version,
+            reason_code="plugin_no_action_required",
+            safe_explanation="External plugin determined no operator action is required from enriched facts.",
+        )
+
+
+def test_custom_recommendation_plugins_may_return_request_approval_and_no_action() -> None:
+    ctx = build_reliability_diagnostic_classification_context(
+        _observation(ExternalEffectReliabilitySignalKind.GOVERNANCE_POSTURE),
+    )
+    approval = build_reliability_diagnostic_classification_service(
+        recommendation_strategy=_RequestApprovalRecommendationPlugin(),
+    ).classify(ctx)
+    assert approval.recommendation is not None
+    assert (
+        approval.recommendation.recommendation_kind
+        is ExternalEffectReliabilityOperatorRecommendationKind.REQUEST_APPROVAL
+    )
+    no_action = build_reliability_diagnostic_classification_service(
+        recommendation_strategy=_NoOperatorActionRecommendationPlugin(),
+    ).classify(ctx)
+    assert no_action.recommendation is not None
+    assert (
+        no_action.recommendation.recommendation_kind
+        is ExternalEffectReliabilityOperatorRecommendationKind.NO_OPERATOR_ACTION_REQUIRED
     )
 
 
