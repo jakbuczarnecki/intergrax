@@ -53,4 +53,4 @@ Dataset (manifest + variant slice)
 - `tests/unit/platform_proofs/scenarios/enterprise_payment_uncertainty_recovery/test_erl_qual_004_full_execution_architecture.py`
 - `tests/unit/platform_proofs/scenarios/enterprise_payment_uncertainty_recovery/test_erl_qual_004_execution_tracing.py`
 
-Tracing design: [`docs/ERL_QUAL_004_TRACING_INTEGRATION.md`](../../../../docs/ERL_QUAL_004_TRACING_INTEGRATION.md).
+Tracing design: [ERL_QUAL_004_TRACING_INTEGRATION.md](ERL_QUAL_004_TRACING_INTEGRATION.md).
