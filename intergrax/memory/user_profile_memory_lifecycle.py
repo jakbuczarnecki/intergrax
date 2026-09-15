@@ -12,6 +12,7 @@ from intergrax.memory.contracts.memory_lifecycle import (
     MemoryLifecycleOutcome,
     MemoryProjectionOperation,
     MemoryProjectionOperationEvidence,
+    MemoryProjectionReconciliationDisposition,
     MemoryReconciliationDisposition,
     MemoryReconciliationOutcome,
     UserProfileMemoryProjection,
@@ -117,10 +118,10 @@ class UserProfileMemoryLifecycleCoordinator:
             authoritative_active_entry_ids=active_ids,
         )
         evidence: list[MemoryProjectionOperationEvidence] = []
-        repaired = False
+        any_repaired = False
         for projection in self._projections:
             try:
-                await projection.reconcile(context)
+                result = await projection.reconcile(context)
                 evidence.append(
                     MemoryProjectionOperationEvidence(
                         projection_id=projection.projection_id,
@@ -128,8 +129,12 @@ class UserProfileMemoryLifecycleCoordinator:
                         succeeded=True,
                     )
                 )
-                repaired = True
-            except BaseException as exc:
+                if (
+                    result.disposition
+                    is MemoryProjectionReconciliationDisposition.REPAIRED
+                ):
+                    any_repaired = True
+            except Exception as exc:
                 failure = classify_memory_projection_failure(
                     projection_id=projection.projection_id,
                     operation=MemoryProjectionOperation.REBUILD,
@@ -145,7 +150,7 @@ class UserProfileMemoryLifecycleCoordinator:
                 )
         if any(not item.succeeded for item in evidence):
             disposition = MemoryReconciliationDisposition.FAILED
-        elif repaired and self._projections:
+        elif any_repaired:
             disposition = MemoryReconciliationDisposition.REPAIRED
         else:
             disposition = MemoryReconciliationDisposition.CONSISTENT
@@ -174,7 +179,7 @@ class UserProfileMemoryLifecycleCoordinator:
                         succeeded=True,
                     )
                 )
-            except BaseException as exc:
+            except Exception as exc:
                 failure = classify_memory_projection_failure(
                     projection_id=projection.projection_id,
                     operation=MemoryProjectionOperation.UPSERT,
@@ -208,7 +213,7 @@ class UserProfileMemoryLifecycleCoordinator:
                         succeeded=True,
                     )
                 )
-            except BaseException as exc:
+            except Exception as exc:
                 failure = classify_memory_projection_failure(
                     projection_id=projection.projection_id,
                     operation=MemoryProjectionOperation.DELETE,

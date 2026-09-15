@@ -9,6 +9,7 @@ import math
 
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
+    VectorStoreContractError,
     VectorStoreHit,
     VectorStoreRecord,
     VectorStoreScope,
@@ -170,6 +171,26 @@ class InMemoryVectorStore(LexicalHybridSupport, BaseVectorStore):
             self._matches_scope(payload, scope)
             for payload in self._payloads.values()
         )
+
+    def list_vector_ids_by_metadata(
+        self,
+        *,
+        scope: VectorStoreScope,
+        metadata_filter: Optional[MetadataFilter] = None,
+        limit: int = 10_000,
+    ) -> List[str]:
+        validate_scope(scope, tenant_id=self._tenant_id)
+        if type(limit) is not int or limit <= 0:
+            raise VectorStoreContractError("limit must be an exact positive int")
+        effective_filter = MetadataFilter.for_scope(scope, metadata_filter)
+        matched: List[str] = []
+        for vector_id, payload in self._payloads.items():
+            if not effective_filter.matches_payload(payload):
+                continue
+            matched.append(vector_id)
+            if len(matched) >= limit:
+                break
+        return matched
 
     def list_collections(self) -> List[str]:
         return [f"inmemory:{self._tenant_id}"]

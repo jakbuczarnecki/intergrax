@@ -461,6 +461,28 @@ class VectorstoreManager(BaseVectorstoreManager):
             return store.get_document(document_id.strip())
         raise RuntimeError("vectorstore_get_document_not_supported")
 
+    def list_vector_ids_by_metadata(
+        self,
+        *,
+        scope: VectorStoreScope | None = None,
+        metadata_filter: MetadataFilter | None = None,
+        limit: int = 10_000,
+    ) -> tuple[str, ...]:
+        resolved_scope = self._resolve_scope(scope)
+        self._enforce_access("read", resolved_scope)
+        if type(limit) is not int or limit <= 0:
+            raise VectorStoreContractError("limit must be an exact positive int")
+        provider_filter = MetadataFilter.for_scope(resolved_scope, metadata_filter)
+        provider_ids = self._store.list_vector_ids_by_metadata(
+            scope=resolved_scope,
+            metadata_filter=provider_filter,
+            limit=limit,
+        )
+        return tuple(
+            require_non_empty_str(vector_id, field_name="vector_id")
+            for vector_id in provider_ids
+        )
+
     def search_by_metadata(
         self,
         *,

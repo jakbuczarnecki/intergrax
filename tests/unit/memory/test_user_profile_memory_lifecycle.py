@@ -10,9 +10,13 @@ import pytest
 from intergrax.memory.contracts.memory_lifecycle import (
     MemoryLifecycleDisposition,
     MemoryLifecycleOperation,
+    MemoryProjectionFailureCategory,
+    MemoryProjectionReconciliationDisposition,
+    MemoryProjectionReconciliationResult,
     MemoryReconciliationDisposition,
     UserProfileMemoryReconciliationContext,
 )
+from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecycleCoordinator
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory import (
@@ -55,21 +59,36 @@ class RecordingMemoryProjection:
         for entry_id in entry_ids:
             self.indexed_entry_ids.discard(entry_id)
 
-    async def reconcile(self, context: UserProfileMemoryReconciliationContext) -> None:
+    async def reconcile(
+        self,
+        context: UserProfileMemoryReconciliationContext,
+    ) -> MemoryProjectionReconciliationResult:
         self.reconcile_calls += 1
         expected = set(context.authoritative_active_entry_ids)
         orphans = self.indexed_entry_ids - expected
+        changed = bool(orphans)
         if orphans:
             await self.delete_memory_entries(tuple(sorted(orphans)))
         if context.profile is None:
             if self.indexed_entry_ids:
+                changed = True
                 await self.delete_memory_entries(tuple(sorted(self.indexed_entry_ids)))
-            return
-        for entry in context.profile.memory_entries:
-            if entry.deleted:
-                continue
-            if entry.entry_id not in self.indexed_entry_ids:
-                await self.upsert_memory_entry(context.user_id, entry)
+        else:
+            for entry in context.profile.memory_entries:
+                if entry.deleted:
+                    continue
+                if entry.entry_id not in self.indexed_entry_ids:
+                    changed = True
+                    await self.upsert_memory_entry(context.user_id, entry)
+        disposition = (
+            MemoryProjectionReconciliationDisposition.REPAIRED
+            if changed
+            else MemoryProjectionReconciliationDisposition.CONSISTENT
+        )
+        return MemoryProjectionReconciliationResult(
+            projection_id=self.projection_id,
+            disposition=disposition,
+        )
 
 
 def _manager(
@@ -232,6 +251,70 @@ async def test_reconcile_after_clear_removes_orphans() -> None:
 
     assert outcome.disposition is MemoryReconciliationDisposition.REPAIRED
     assert projection.indexed_entry_ids == set()
+
+
+@pytest.mark.asyncio
+async def test_reconcile_consistent_when_projection_already_consistent() -> None:
+    store = InMemoryUserProfileStore()
+    await _seed_profile(store, "u1", "e1")
+    projection = RecordingMemoryProjection(indexed_entry_ids={"e1"})
+    mgr = _manager(store, projection)
+
+    outcome = await mgr.reconcile_memory_projections("u1")
+
+    assert outcome.disposition is MemoryReconciliationDisposition.CONSISTENT
+    assert projection.upsert_calls == []
+
+
+@pytest.mark.asyncio
+async def test_reconcile_coordinator_failed_when_one_projection_raises() -> None:
+    store = InMemoryUserProfileStore()
+    await _seed_profile(store, "u1", "e1")
+    ok_projection = RecordingMemoryProjection(
+        projection_id="ok",
+        indexed_entry_ids={"e1"},
+    )
+
+    class FailingProjection:
+        projection_id = "failing"
+
+        async def upsert_memory_entry(self, user_id: str, entry: UserProfileMemoryEntry) -> None:
+            raise AssertionError("not used")
+
+        async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+            raise AssertionError("not used")
+
+        async def reconcile(
+            self,
+            context: UserProfileMemoryReconciliationContext,
+        ) -> MemoryProjectionReconciliationResult:
+            raise TimeoutError("projection read failed")
+
+    coordinator = UserProfileMemoryLifecycleCoordinator(
+        projections=(ok_projection, FailingProjection()),
+    )
+    profile = await store.get_profile(tenant_id="tenant-a", user_id="u1")
+    outcome = await coordinator.reconcile_user(user_id="u1", profile=profile)
+
+    assert outcome.disposition is MemoryReconciliationDisposition.FAILED
+    failed = [item for item in outcome.projection_evidence if not item.succeeded]
+    assert len(failed) == 1
+    assert failed[0].failure is not None
+    assert failed[0].failure.category is MemoryProjectionFailureCategory.RETRYABLE
+
+
+@pytest.mark.asyncio
+async def test_reconcile_idempotent_second_pass_consistent() -> None:
+    store = InMemoryUserProfileStore()
+    await _seed_profile(store, "u1", "e1")
+    projection = RecordingMemoryProjection()
+    mgr = _manager(store, projection)
+
+    first = await mgr.reconcile_memory_projections("u1")
+    second = await mgr.reconcile_memory_projections("u1")
+
+    assert first.disposition is MemoryReconciliationDisposition.REPAIRED
+    assert second.disposition is MemoryReconciliationDisposition.CONSISTENT
 
 
 @pytest.mark.asyncio

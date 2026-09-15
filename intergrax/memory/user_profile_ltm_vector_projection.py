@@ -8,12 +8,16 @@ import json
 from collections.abc import Sequence
 
 from intergrax.knowledge.contracts import KnowledgeDocument
-from intergrax.memory.contracts.memory_lifecycle import UserProfileMemoryReconciliationContext
+from intergrax.memory.contracts.memory_lifecycle import (
+    MemoryProjectionReconciliationDisposition,
+    MemoryProjectionReconciliationResult,
+    UserProfileMemoryReconciliationContext,
+)
 from intergrax.memory.memory_temporal import filter_active_memory_entries
 from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN, resolve_memory_index_collection
 from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
-from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreRecord, VectorStoreScope
+from intergrax.rag.vectorstore.contracts.native_vectorstore import MetadataFilter, VectorStoreRecord, VectorStoreScope
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 __all__ = ["UserProfileLtmVectorProjection", "LTM_VECTOR_PROJECTION_ID"]
@@ -116,35 +120,49 @@ class UserProfileLtmVectorProjection:
             return
         self._vectorstore_manager.delete(ids, scope=self._vector_scope())
 
-    async def reconcile(self, context: UserProfileMemoryReconciliationContext) -> None:
-        expected_ids = set(context.authoritative_active_entry_ids)
+    async def reconcile(
+        self,
+        context: UserProfileMemoryReconciliationContext,
+    ) -> MemoryProjectionReconciliationResult:
         indexed_ids = self._indexed_entry_ids_for_user(context.user_id)
+        expected_ids = set(context.authoritative_active_entry_ids)
         orphan_ids = indexed_ids - expected_ids
+        missing_ids = expected_ids - indexed_ids
+        changed = False
         if orphan_ids:
             await self.delete_memory_entries(sorted(orphan_ids))
-        if context.profile is None:
-            if indexed_ids:
-                await self.delete_memory_entries(sorted(indexed_ids))
-            return
-        active_entries = filter_active_memory_entries(context.profile.memory_entries)
-        for entry in active_entries:
-            if entry.entry_id not in indexed_ids:
-                await self.upsert_memory_entry(context.user_id, entry)
+            changed = True
+        if context.profile is not None:
+            active_entries = filter_active_memory_entries(context.profile.memory_entries)
+            for entry in active_entries:
+                if entry.entry_id in missing_ids:
+                    await self.upsert_memory_entry(context.user_id, entry)
+                    changed = True
+        disposition = (
+            MemoryProjectionReconciliationDisposition.REPAIRED
+            if changed
+            else MemoryProjectionReconciliationDisposition.CONSISTENT
+        )
+        return MemoryProjectionReconciliationResult(
+            projection_id=self.projection_id,
+            disposition=disposition,
+        )
 
     def _indexed_entry_ids_for_user(self, user_id: str) -> set[str]:
         scope = self._vector_scope()
-        try:
-            hits = self._vectorstore_manager.search_by_metadata(
-                conditions={
-                    "user_id": user_id,
-                    "index_domain": LTM_INDEX_DOMAIN,
-                    "tenant_id": scope.tenant_id,
-                },
-                limit=10_000,
-            )
-        except RuntimeError:
-            return set()
-        return {str(hit["id"]) for hit in hits if "id" in hit}
+        metadata_filter = MetadataFilter(
+            conditions={
+                "user_id": user_id,
+                "index_domain": LTM_INDEX_DOMAIN,
+                "collection_name": self._ltm_collection_name,
+            }
+        )
+        vector_ids = self._vectorstore_manager.list_vector_ids_by_metadata(
+            scope=scope,
+            metadata_filter=metadata_filter,
+            limit=10_000,
+        )
+        return set(vector_ids)
 
     def _sanitize_vectorstore_metadata(self, meta: dict[str, object]) -> dict[str, object]:
         out: dict[str, object] = {}

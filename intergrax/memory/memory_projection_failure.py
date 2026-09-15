@@ -20,7 +20,7 @@ def classify_memory_projection_failure(
     *,
     projection_id: str,
     operation: MemoryProjectionOperation,
-    exc: BaseException,
+    exc: Exception,
 ) -> MemoryProjectionFailureEvidence:
     if isinstance(exc, (TimeoutError, ConnectionError, OSError)):
         category = MemoryProjectionFailureCategory.RETRYABLE

@@ -19,6 +19,8 @@ __all__ = [
     "MemoryProjectionFailureEvidence",
     "MemoryProjectionOperation",
     "MemoryProjectionOperationEvidence",
+    "MemoryProjectionReconciliationDisposition",
+    "MemoryProjectionReconciliationResult",
     "MemoryReconciliationDisposition",
     "MemoryReconciliationOutcome",
     "UserProfileMemoryProjection",
@@ -91,6 +93,17 @@ class UserProfileMemoryReconciliationContext:
     authoritative_active_entry_ids: frozenset[str]
 
 
+class MemoryProjectionReconciliationDisposition(str, Enum):
+    CONSISTENT = "consistent"
+    REPAIRED = "repaired"
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryProjectionReconciliationResult:
+    projection_id: str
+    disposition: MemoryProjectionReconciliationDisposition
+
+
 class UserProfileMemoryProjection(Protocol):
     """Pluggable derived representation for user-profile long-term memory."""
 
@@ -111,7 +124,7 @@ class UserProfileMemoryProjection(Protocol):
     async def reconcile(
         self,
         context: UserProfileMemoryReconciliationContext,
-    ) -> None: ...
+    ) -> MemoryProjectionReconciliationResult: ...
 
 
 class MemoryReconciliationDisposition(str, Enum):
