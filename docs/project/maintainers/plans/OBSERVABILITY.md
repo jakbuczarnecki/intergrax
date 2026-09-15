@@ -70,7 +70,7 @@
 | 8R1 | **OBS-ASOF-REBASE-R1** | P1 | **Done** | Prevent current lineage from contaminating as-of reconstruction; optional E-capability port |
 | 9 | **TRACE-ASOF-3** | Conditional | **NOT REQUIRED** | Materialization only if measurably required; logical as-of at **E** is canonical after OBS-ASOF-REBASE |
 | 10 | **OBS-BITEMP-REBASE** | P2 | **Done / Closed** (2026-09-15) | E/K/V/S independent temporal coordinate — [arch § OBS-BITEMP-REBASE](../../architecture/OBSERVABILITY.md#obs-bitemp-rebase--ekvs-temporal-coordinate-closed-2026-09-15) |
-| 11 | **OBS-DIAG-CONFORMANCE** | P1 | Planned | E2E proof Producer → Evidence → Reconstruction → DIAG |
+| 11 | **OBS-DIAG-CONFORMANCE** | P1 | **Done / Closed** (2026-09-15) | E2E proof Producer → Evidence → Reconstruction → DIAG — `pytest -m obs_diag_conformance` |
 | 12 | **OBS-FINAL-CERTIFICATION** | P1 | Planned | Enterprise Observability closure |
 
 **TRACE-ASOF-4** and **TRACE-BITEMP-4** remain **Planned / Conditional**; **TRACE-ASOF-4** may delegate to OBS-ASOF-REBASE. **TRACE-BITEMP-4** is unblocked for optional thin public surface only (core composition closed under OBS-BITEMP-REBASE).

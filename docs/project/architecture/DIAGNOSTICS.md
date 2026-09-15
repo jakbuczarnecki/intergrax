@@ -52,9 +52,9 @@ Central diagnostics answers:
 
 > **What did the platform deterministically detect and persist as a recurring operational Problem?**
 
-It is implemented under `intergrax/runtime/diagnostics/` as a **single spine**:
+It is implemented under `intergrax/runtime/diagnostics/` as a **single spine** (interpretation only — factual reconstruction is **shared** under `intergrax.runtime.observability.reconstruction`, consumed not owned):
 
-- `ExecutionReconstructor` - factual reconstruction from canonical evidence
+- `ExecutionReconstructor` → `ExecutionReconstruction` — **Evidence Plane shared factual reconstruction** (**OBS-RECONSTRUCTION-1**); DIAG imports and consumes only
 - `LifecycleAnomalyAnalyzer` + `DiagnosticAssessmentBuilder` + `ExecutionFailureAnalyzer` - deterministic assessment (lifecycle anomalies plus durable `EXECUTION_FAILED` execution-boundary facts — R2)
 - `ProblemGroupingEngine` + `ProblemGroupingStrategyRegistry` - structural grouping hypotheses (strategy id → registered `ProblemGroupingStrategy`; **proven pluggable seam** — strategies propose; engine validates; `ProblemId` lifecycle remains in `ProblemLifecycleEngine`)
 - `ProblemLifecycleEngine` - stable `Problem` identity and lifecycle
@@ -133,6 +133,51 @@ Central Diagnostics remains the **only** owner of diagnostic interpretation: ano
 | `PlatformFunctionalEvidence` recording | Observability (facts); contracts → **OBS-FUNCTIONAL-CONTRACTS-1** | No |
 
 Hub: [`OBSERVABILITY.md`](OBSERVABILITY.md#obs-boundary-1--evidence--reconstruction--diagnostics-ownership-freeze-closed-2026-09-13).
+
+### OBS-DIAG-CONFORMANCE — Evidence → Reconstruction → Diagnostics (closed)
+
+**Frozen invariant:**
+
+```text
+OBSERVABILITY OWNS FACTS.
+DIAGNOSTICS OWNS INTERPRETATION.
+FACTUAL RECONSTRUCTION IS SHARED.
+NO DUPLICATE EXECUTION TRUTH.
+```
+
+**Canonical flow:**
+
+```text
+PRODUCER (Execution / Decision / Reliability)
+   ↓
+CANONICAL EVIDENCE (RuntimeEvent / causal / functional / lineage)
+   ↓
+SHARED FACTUAL RECONSTRUCTION (ExecutionReconstructor)
+   ↓
+DIAGNOSTIC INTERPRETATION (LifecycleAnomalyAnalyzer → DiagnosticAssessmentBuilder → …)
+   ↓
+PROBLEM LIFECYCLE (ProblemGroupingEngine → ProblemLifecycleEngine)
+   ↓
+OPERATOR READ MODEL (DiagnosticReadService)
+```
+
+| Layer | Owns |
+| ----- | ---- |
+| Execution | lifecycle, `ExecutionId` / `AttemptId`, Execution Tree |
+| Evidence Plane | persisted canonical facts, `ExecutionReconstructor` |
+| Diagnostics | interpretation, `Problem` lifecycle, operator diagnostic views |
+| Operators | read-only composed views via `DiagnosticReadService` |
+
+| Mechanism | Contract / module | Default implementation | Custom replacement |
+| --------- | ----------------- | ---------------------- | ------------------ |
+| Factual reconstruction | `ExecutionReconstructor` (`runtime.observability.reconstruction`) | In-memory / durable OBS stores | Inject alternate reconstructor instance at composition root (single class definition in production) |
+| Grouping strategy | `ProblemGroupingStrategy` + `ProblemGroupingStrategyRegistry` | `DeterministicProblemGroupingStrategy` | Register additional `ProblemGroupingStrategy` |
+| Problem persistence | `ProblemPersistence` / `ProblemOccurrencePersistence` | Application-wired durable or `InMemoryProblemPersistence` | Provider implementations in integration layer |
+| Terminal diagnostic dispatch | `TerminalExecutionDiagnosticPort` | Central adapter → `DiagnosticOrchestrator` | External port implementation |
+| Reliability bridge | `ReliabilityDiagnosticOrchestrationPort` | Narrow invoke port | Alternate adapter |
+| Decision context (read) | `DecisionContextProvider` | Optional wired provider | Replace at read-service composition |
+
+**Qualification:** `uv run pytest -m obs_diag_conformance` — architecture gates (`test_obs_diag_conformance_architecture.py`), E2E spine (`test_obs_diag_conformance_e2e.py`), manifest (`test_obs_diag_conformance_qualification.py`); plus existing `test_obs_reconstruction_1_architecture.py` and diagnostic orchestrator/read suites.
 
 ---
 

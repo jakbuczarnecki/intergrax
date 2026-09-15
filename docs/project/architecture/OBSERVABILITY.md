@@ -2468,7 +2468,7 @@ Manifest `PROVEN` labels in `COVERAGE_PATH_PROOFS` are **metadata only**; execut
 | DG-005 cross-topology RuntimeEvent persistence | P2 qualification | Separate qualification; not OBS-COVERAGE-1 blocker |
 | TraceEvent run-only Plane B | — closed | **OBS-TRACE-1** — **NOT REQUIRED** (no production Trace consumer needs attempt/execution on `TraceEvent`) |
 | Reconstruction package placement | P1 architecture | **OBS-RECONSTRUCTION-1** |
-| DIAG cross-layer E2E conformance | P1 | **OBS-DIAG-CONFORMANCE** |
+| DIAG cross-layer E2E conformance | P1 | **Closed (OBS-DIAG-CONFORMANCE)** — `pytest -m obs_diag_conformance` |
 
 ### Architecture gates (OBS-COVERAGE-1)
 
