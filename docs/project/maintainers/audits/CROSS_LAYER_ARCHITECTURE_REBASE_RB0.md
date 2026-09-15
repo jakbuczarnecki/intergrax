@@ -1,6 +1,6 @@
 # RB-0 — Current Architecture Rebaseline & Historical Finding Migration
 
-**Task:** RB-0  
+**Task:** RB-0 (baseline) · **RB-1** traceability hardening complete @ ledger below  
 **Type:** Read-only cross-layer audit / migration ledger (no production semantics changed)  
 **Architecture epoch:** Post–Execution Engine freeze · Decision System canonical · NPSC-5E/5F evidence/recovery qualification  
 **Report date:** 2026-09-15  
@@ -8,16 +8,17 @@
 | Gate | Value |
 |------|-------|
 | **RB0_BASELINE_HEAD** | `0c810fdeebd6edc85106b88cea6008ce50682c09` |
+| **RB1_BASELINE_HEAD** | `fdb571588acd5bf9b823dc986f589ffe33f9ef30` |
 | **Branch** | `development` |
-| **HEAD == origin/development** | **YES** (at analysis start; re-verify after push) |
+| **HEAD == origin/development** | **YES** @ RB-1 analysis (`fdb571588…`) |
 | **Historical audit baseline (immutable)** | [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/) |
 | **Supplementary enterprise audit** | [`PLATFORM_WIDE_ENTERPRISE_AUDIT.md`](PLATFORM_WIDE_ENTERPRISE_AUDIT.md) (2026-09-03) |
 
 **Supersedes:** Any pre-RB-0 cross-layer remediation ordering derived only from the 2026-08-18 campaign rollup **without** Execution Engine / Decision System / NPSC-5E·5F freeze context. Per-layer audit verdicts in `2026-08-18` remain **frozen facts**; this document assigns **migration class** only.
 
-**Full per-finding ledger:** [`CROSS_LAYER_ARCHITECTURE_REBASE_RB0_LEDGER.md`](CROSS_LAYER_ARCHITECTURE_REBASE_RB0_LEDGER.md) (217 register rows).
+**Full per-finding ledger (RB-1 hardened):** [`CROSS_LAYER_ARCHITECTURE_REBASE_RB0_LEDGER.md`](CROSS_LAYER_ARCHITECTURE_REBASE_RB0_LEDGER.md) (217 rows · index + detail register · evidence @ `RB1_BASELINE_HEAD`).
 
-**Parallel-session note (working tree at baseline):** Uncommitted WIP touching `functional_evidence` contracts/runtime and `platform_proofs/scenarios/delegated_authority_confused_deputy/` — **not** part of RB-0. Collision risk **HIGH** for RB-4 / diagnostics remediation.
+**Parallel-session note:** Post-RB-0 commits through `fdb571588` landed functional_evidence contract work (`8556c9b97`, `fdb571588`) — **RB-4 collision BLOCKED** until stable. Local uncommitted WIP on memory/delegated execution is **out of RB-1 scope**; re-verify affected rows before RB-2/RB-7 implementation.
 
 ---
 
@@ -243,8 +244,8 @@ Campaign OBSERVABILITY_EVIDENCE ACCEPTED → **E** (export adoption, cross-layer
 | Stream | Purpose | Owner | Excluded | Depends on | Class mix |
 |--------|---------|-------|----------|------------|-----------|
 | **RB-0** | Rebaseline + ledger | Platform architecture | — | — | DOC (**done**) |
-| **RB-1** | Close traceability gaps; SYSTEM_INVARIANTS / hub topology (CLA-01/02) | PLATFORM_FOUNDATION | Runtime | RB-0 | DOC |
-| **RB-2** | Zero-bypass residuals; UER-FIX on consumers; intake normalization | Execution adoption | **EE core mutation** | RB-0, U5 | CODE/COMPOSITION |
+| **RB-1** | Historical finding traceability & classification hardening | Platform architecture | Runtime | RB-0 | DOC (**done**) |
+| **RB-2** | Zero-bypass residuals; UER-FIX on consumers; intake normalization | Execution adoption | **EE core mutation** | RB-0, RB-1, U5 | CODE/COMPOSITION (**NEXT**) |
 | **RB-3** | Decision authority; CVL → strategies | Decision System | Second runtime | RB-0 | MIGRATION/QUAL |
 | **RB-4** | Obs/diag/evidence integrity; functional evidence semantics | Observability + Diagnostics | Recovery | RB-0, NPSC-5F | CODE/ARCH |
 | **RB-5** | Side-effect + control-plane convergence | Governed Execution | PG spine rewrite | RB-0, PLATFORM-SE ADR | **ARCH DECISION** + CODE |
@@ -293,9 +294,28 @@ Campaign OBSERVABILITY_EVIDENCE ACCEPTED → **E** (export adoption, cross-layer
 
 ---
 
-## 16. RB-0 completion statement
+## 16. RB-1 remediation priority queue (current risk @ `RB1_BASELINE_HEAD`)
 
-- Analysis derived from **current** canonical docs + qualification artifacts @ `RB0_BASELINE_HEAD`, not from pre-freeze memory alone.
-- **No** production runtime, contract, test, or plugin code changed by RB-0 commits.
-- Historical `docs/audit_results/2026-08-18` observations remain **immutable**; migration classes are additive.
+| Rank | Finding theme | Cur sev | Class | Workstream | Next action (summary) |
+|-----:|---------------|---------|-------|------------|------------------------|
+| 1 | MODALITY trust boundary (02–05) | HIGH | F | RB-5 | ADR-MEDIA-1 before any media-path remediation |
+| 2 | ADAPTIVE_HARNESS_INTELLIGENCE control-plane mutations (03–06) | HIGH | F | RB-5 | ADR-CP-1 taxonomy for promotion mutations |
+| 3 | SECURITY_BOUNDARIES convergence (04–06) | HIGH | F | RB-5 | ADR-SE-1 / security authority convergence |
+| 4 | STRATEGIC_HARNESS_MODEL admission (01–10) | HIGH | C | RB-2 | Prove HostTaskExecution → ExecutionRuntime on all production ingress |
+| 5 | INTERFACE_TASK_INTAKE normalization (01–06) | HIGH | E | RB-2 | Zero legacy intake bypass; parity with U5 inventory |
+| 6 | EXECUTION_RUNTIME consumer proofs (01–05) | HIGH | E | RB-2 | UER-FIX re-verification without EE core edits |
+| 7 | OBSERVABILITY_EVIDENCE / functional_evidence (01–06) | MEDIUM | E | RB-4 | **BLOCKED** — complete contract adoption post `8556c9b97` |
+| 8 | CROSS_LAYER_ARCHITECTURE composition (01–03,05–06) | HIGH | F | RB-8 | ADR-COMP-1 then qualification evaluator |
+| 9 | CRITIC_VERIFICATION legacy stack (01–06) | MEDIUM | B | RB-3 | Retire CVL as primary; Decision strategies only |
+| 10 | CONTEXT_ENGINEERING mandatory sources (campaign HIGH) | HIGH | D | RB-7 | Close CE findings with contract tests @ HEAD |
+
+**RB-1 classification @ ledger:** A=35, B=6, C=16 (all with distinct current owner), D=102, E=42, F=16. **C owner corrections:** 16 (SHM + REASONING_PLANNING). **A downgrades:** 0. **Production bypass flags:** LEGACY on SHM/ITI/EXECUTION_RUNTIME open rows (no PRODUCTION bypass in U5 inventory).
+
+---
+
+## 17. RB-0 / RB-1 completion statement
+
+- Analysis derived from **current** canonical docs + qualification artifacts @ `RB1_BASELINE_HEAD`, not from pre-freeze memory alone.
+- **No** production runtime, contract, test, or plugin code changed by RB-0/RB-1 documentation commits.
+- Historical `docs/audit_results/2026-08-18` observations remain **immutable**; migration classes are additive with RB-1 evidence fields.
 - Old campaign implementation ordering is **superseded** by §12 roadmap conditioned on Execution/Decision/Evidence freeze.
