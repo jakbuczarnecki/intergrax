@@ -26,7 +26,11 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_CANCEL_EXTERNAL_WORK,
     ACTION_CREATE_EXTERNAL_WORK,
 )
-from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import (
+    EXTERNAL_WORK_TEST_RUN_ID as _RUN,
+    EXTERNAL_WORK_TEST_TASK_ID as _TASK,
+    allow_adapter,
+)
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
@@ -106,8 +110,8 @@ def test_governed_create_produces_proof_profile() -> None:
     adapter = allow_adapter(DeterministicExternalWorkFake(), policy=_allow())[0]
     result = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-gec6",
-            run_id="run-gec6",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(),
         ),
         principal_id="u1",
@@ -120,8 +124,8 @@ def test_governed_create_produces_proof_profile() -> None:
     proof = result.proof
     assert proof.policy_action is PolicyAction.ALLOW
     assert proof.policy_rule_id == result.policy_decision.policy_rule_id
-    assert proof.task_id == "task-gec6"
-    assert proof.run_id == "run-gec6"
+    assert proof.task_id == _TASK
+    assert proof.run_id == _RUN
     assert proof.correlation_id == "corr-gec6-1"
     assert proof.idempotency_key == "idem-gec6-1"
     assert proof.provider_id == "gec3_deterministic_fake"
@@ -140,8 +144,8 @@ def test_accept_quote_proof_references_governance_evidence() -> None:
     adapter = allow_adapter(DeterministicExternalWorkFake(), policy=_allow())[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-gec6-acc",
-            run_id="run-gec6-acc",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-gec6-acc"}),
         ),
         principal_id="u1",
@@ -171,8 +175,8 @@ def test_accept_quote_proof_references_governance_evidence() -> None:
     # Evidence is referenced, not embedded as a full acceptance payload.
     assert "quote_version" not in ev.model_dump()
     assert "actor" not in ev.model_dump()
-    assert accepted.proof.task_id == "task-gec6-acc"
-    assert accepted.proof.run_id == "run-gec6-acc"
+    assert accepted.proof.task_id == _TASK
+    assert accepted.proof.run_id == _RUN
     assert accepted.proof.idempotency_key == "idem-gec6-accept"
     assert accepted.proof.correlation_id == created.snapshot.correlation.correlation_id
 
@@ -192,8 +196,8 @@ def test_gec5_policy_flow_unchanged_deny_before_provider() -> None:
     adapter = allow_adapter(_Rec(), policy=policy)[0]
     result = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-deny",
-            run_id="run-deny",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-deny"}),
         ),
         principal_id="u1",
@@ -241,8 +245,8 @@ def test_create_then_accept_in_one_call_composes_accept_proof() -> None:
     # Simpler path: create once, accept via create_and_map with evidence.
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-combo",
-            run_id="run-combo",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-combo"}),
         ),
         principal_id="u1",
@@ -253,8 +257,8 @@ def test_create_then_accept_in_one_call_composes_accept_proof() -> None:
     # Re-enter with same idempotency → same correlated work, then forward accept.
     result = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-combo",
-            run_id="run-combo",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(
                 **{
                     META_IDEMPOTENCY_KEY: "idem-combo",
@@ -283,8 +287,8 @@ def test_cancel_under_allow_always_returns_non_null_proof() -> None:
     adapter = allow_adapter(fake, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-gec6-cancel",
-            run_id="run-gec6-cancel",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-gec6-cancel"}),
         ),
         principal_id="u1",
@@ -305,7 +309,7 @@ def test_cancel_under_allow_always_returns_non_null_proof() -> None:
     assert cancelled.proof is not None
     assert cancelled.proof.action == ACTION_CANCEL_EXTERNAL_WORK
     assert cancelled.proof.governance_evidence is None
-    assert cancelled.proof.run_id == "run-gec6-cancel"
+    assert cancelled.proof.run_id == _RUN
     assert cancelled.proof.principal_id == "u1"
     assert cancelled.policy_decision is not None
     assert cancelled.proof.policy_action is cancelled.policy_decision.action
@@ -320,8 +324,8 @@ def test_create_and_accept_proof_mandatory_no_missing_run_id_fallback() -> None:
     adapter, _ = allow_adapter(fake, policy=_allow())
     result = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-proof-must",
-            run_id="run-proof-must",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-proof-must"}),
         ),
         principal_id="u1",
@@ -334,7 +338,7 @@ def test_create_and_accept_proof_mandatory_no_missing_run_id_fallback() -> None:
 
     missing = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-proof-missing-run",
+            task_id=_TASK,
             run_id=None,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-proof-missing-run"}),
         ),
@@ -356,8 +360,8 @@ def test_missing_proof_identity_fails_before_provider_accept_and_cancel() -> Non
     adapter = allow_adapter(fake, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-pre-provider",
-            run_id="run-pre-provider",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-pre-provider"}),
         ),
         principal_id="u1",
@@ -410,8 +414,8 @@ def test_policy_and_proof_share_validated_run_id_and_principal() -> None:
     )
     result = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-same-id",
-            run_id="run-same-id",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-same-id"}),
         ),
         principal_id="principal-same",
@@ -421,7 +425,7 @@ def test_policy_and_proof_share_validated_run_id_and_principal() -> None:
     assert result.used is True
     assert result.proof is not None
     assert len(policy.calls) == 1
-    assert policy.calls[0].run_id == "run-same-id"
+    assert policy.calls[0].run_id == _RUN
     assert policy.calls[0].principal_id == "principal-same"
     assert result.proof.run_id == policy.calls[0].run_id
     assert result.proof.principal_id == policy.calls[0].principal_id
@@ -438,6 +442,6 @@ def test_no_silent_post_execution_proof_fallback_in_source() -> None:
     assert "if create_run_id is None or not create_run_id.strip():" not in source
     assert "if accept_run_id is None or not accept_run_id.strip():" not in source
     assert "if cancel_run_id is None or not cancel_run_id.strip():" not in source
-    assert "_AuthorizedSideEffect" in source
+    assert "_ExecutedSideEffect" in source
     assert "proof_composition_invariant_failed" in source
     assert "Proof composition is mandatory" in source or "mandatory" in source.lower()

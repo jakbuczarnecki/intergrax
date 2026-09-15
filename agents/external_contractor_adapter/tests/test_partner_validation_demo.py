@@ -35,7 +35,11 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
     ACTION_CREATE_EXTERNAL_WORK,
 )
-from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import (
+    EXTERNAL_WORK_TEST_RUN_ID as _RUN_ID,
+    EXTERNAL_WORK_TEST_TASK_ID as _TASK_ID,
+    allow_adapter,
+)
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
@@ -51,8 +55,6 @@ from intergrax.contracts.runtime_policy import PolicyAction
 
 _DIGEST = "sha256:" + ("ab" * 32)
 _T0 = datetime(2026, 7, 20, 18, 0, 0, tzinfo=timezone.utc)
-_TASK_ID = "task-partner-demo"
-_RUN_ID = "run-partner-demo"
 _PROVIDER_ID = "gec3_deterministic_fake"
 _CORR_ID = "corr-partner-demo"
 _CREATE_IDEMP = "idem-partner-create"
@@ -86,6 +88,7 @@ def test_partner_validation_governed_execution_demo() -> None:
         tenant_id="partner-demo-tenant",
         workspace_id="workspace-a",
         principal_id="partner-demo-user",
+        active_task_id=_TASK_ID,
     )
 
     created = adapter.create_and_map(

@@ -28,6 +28,14 @@ from intergrax.contracts.governed_continuation import (
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler
 from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanDecisionRecord, HumanResponseVerdict
+from testing_support.builder import canonical_run_id_for_tests, canonical_task_id_for_tests
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
+
+_GC_SEED = "gc-contract-test"
+_GC_TASK = canonical_task_id_for_tests(_GC_SEED)
+_GC_RUN = canonical_run_id_for_tests(_GC_SEED)
+_GC_ATTEMPT = mint_attempt_id()
+_GC_EXECUTION = mint_execution_id()
 
 _DIGEST = "sha256:" + ("ab" * 32)
 _T0 = datetime(2026, 7, 20, 16, 0, 0, tzinfo=timezone.utc)
@@ -45,8 +53,10 @@ _FORBIDDEN_RUNTIME_NAMES = {
 def _request(**overrides: object) -> GovernedContinuationRequest:
     payload: dict[str, object] = {
         "reason": ContinuationReason.QUOTE,
-        "task_id": "task-gc-1",
-        "run_id": "run-gc-1",
+        "task_id": _GC_TASK,
+        "run_id": _GC_RUN,
+        "attempt_id": _GC_ATTEMPT,
+        "execution_id": _GC_EXECUTION,
         "source_agent_id": "external_contractor_adapter",
         "prompt": "Quote requires governed continuation",
         "correlation": {
@@ -91,8 +101,8 @@ def test_compose_continuation_interrupt_reuses_execution_interrupt() -> None:
     assert interrupt.interrupt_id == "int_gc_fixed"
     assert interrupt.interrupt_type is InterruptType.HUMAN_JUDGMENT_REQUIRED
     assert interrupt.blocking is True
-    assert interrupt.task_id == "task-gc-1"
-    assert interrupt.run_id == "run-gc-1"
+    assert interrupt.task_id == _GC_TASK
+    assert interrupt.run_id == _GC_RUN
     assert continuation_reason_from_interrupt(interrupt) is ContinuationReason.QUOTE
     assert interrupt.metadata[META_CONTINUATION_REASON] == "quote"
     assert interrupt.metadata["continuation.correlation"]["external_task_id"] == "ext-1"

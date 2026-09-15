@@ -73,7 +73,11 @@ from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )
+from intergrax.runtime.governance.canonical_inner_execution_guard import (
+    DefaultCanonicalInnerExecutionGuard,
+)
 from intergrax.runtime.task.task import Task, TaskState
+from tests.unit.runtime.governance.gr3_test_support import StaticActiveTaskScope
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -237,7 +241,12 @@ def _seed_boundary() -> MeaningfulSideEffectAuthorizationBoundary:
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=MutableRuntimePolicyEvaluator(_decision()),
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate)
+    return MeaningfulSideEffectAuthorizationBoundary(
+        enforcement_gate=gate,
+        inner_execution_guard=DefaultCanonicalInnerExecutionGuard(
+            task_scope=StaticActiveTaskScope(_TASK_ID),
+        ),
+    )
 
 
 def _step_ctx(

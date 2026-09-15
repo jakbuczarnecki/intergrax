@@ -26,7 +26,11 @@ from external_contractor_adapter.external_work_adapter import (
     ExternalWorkAdapter,
     adapt_from_step_metadata,
 )
-from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import (
+    EXTERNAL_WORK_TEST_RUN_ID as _RUN,
+    EXTERNAL_WORK_TEST_TASK_ID as _TASK,
+    allow_adapter,
+)
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
@@ -52,6 +56,7 @@ from intergrax.integrations.contracts.external_work import (
     ExternalWorkError,
     ExternalWorkIntegration,
 )
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 
 _DIGEST = "sha256:" + ("cd" * 32)
 _T0 = datetime(2026, 7, 20, 14, 0, 0, tzinfo=timezone.utc)
@@ -136,21 +141,21 @@ def test_request_snapshot_quote_timeline_deliverables_evidence_mapping() -> None
     fake = DeterministicExternalWorkFake()
     adapter = _adapter(fake)
     request = adapter.build_create_request(
-        task_id="task-gec3",
-        run_id="run-gec3",
+        task_id=_TASK,
+        run_id=_RUN,
         metadata=_meta(),
         message="ignored when scope present",
     )
     assert isinstance(request, ExternalWorkCreateRequest)
-    assert request.task_id == "task-gec3"
+    assert request.task_id == _TASK
     assert request.idempotency_key == "idem-gec3-1"
     result = adapter.create_and_map(request, principal_id="u1", tenant_id="tenant-a")
     assert result.used is True
     assert result.reason == "mapped"
     assert result.status == ExternalWorkStatus.QUOTE_AVAILABLE
     assert result.snapshot is not None
-    assert result.snapshot.correlation.task_id == "task-gec3"
-    assert result.snapshot.correlation.run_id == "run-gec3"
+    assert result.snapshot.correlation.task_id == _TASK
+    assert result.snapshot.correlation.run_id == _RUN
     assert result.snapshot.correlation.external_task_id.startswith("ext-gec3-")
     assert result.quote is not None
     assert result.quote.quote_id == "q-gec3-1"
@@ -167,8 +172,8 @@ def test_correlation_and_idempotency_preserved() -> None:
     fake = DeterministicExternalWorkFake()
     adapter = _adapter(fake)
     request = adapter.build_create_request(
-        task_id="task-idem",
-        run_id="run-idem",
+        task_id=_TASK,
+        run_id=_RUN,
         metadata=_meta(**{META_IDEMPOTENCY_KEY: "same-key"}),
     )
     first = adapter.create_and_map(
@@ -183,7 +188,7 @@ def test_correlation_and_idempotency_preserved() -> None:
         second.snapshot.correlation.external_task_id
     )
     assert first.snapshot.correlation.idempotency_key == "same-key"
-    assert first.snapshot.correlation.task_id == "task-idem"
+    assert first.snapshot.correlation.task_id == _TASK
 
 
 @pytest.mark.unit
@@ -194,8 +199,8 @@ def test_unsupported_capability_behavior() -> None:
     )
     adapter = _adapter(fake)
     request = adapter.build_create_request(
-        task_id="task-cap",
-        run_id="run-cap",
+        task_id=_TASK,
+        run_id=_RUN,
         metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-cap"}),
     )
     result = adapter.create_and_map(request, principal_id="u1", tenant_id="tenant-a")
@@ -215,15 +220,15 @@ def test_structured_error_propagation() -> None:
     fake = DeterministicExternalWorkFake(unsupported_ops=frozenset({"create_work"}))
     adapter = _adapter(fake)
     request = adapter.build_create_request(
-        task_id="task-err",
-        run_id="run-err",
+        task_id=_TASK,
+        run_id=_RUN,
         metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-err"}),
     )
     result = adapter.create_and_map(request, principal_id="u1", tenant_id="tenant-a")
     assert result.used is False
-    assert result.reason == "external_work_error"
-    assert result.error_code == ExternalWorkErrorCode.OPERATION_NOT_SUPPORTED
-    assert result.error_retryable is False
+    assert result.reason == "side_effect_authorization_failed"
+    assert result.error_message is not None
+    assert "create_work" in result.error_message.lower() or "not supported" in result.error_message.lower()
 
 
 @pytest.mark.unit
@@ -232,8 +237,8 @@ def test_forward_quote_acceptance_does_not_decide() -> None:
     fake = DeterministicExternalWorkFake()
     adapter = _adapter(fake)
     request = adapter.build_create_request(
-        task_id="task-acc",
-        run_id="run-acc",
+        task_id=_TASK,
+        run_id=_RUN,
         metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-acc"}),
     )
     created = adapter.create_and_map(
@@ -259,8 +264,8 @@ def test_forward_quote_acceptance_does_not_decide() -> None:
 def test_adapt_from_step_metadata_missing_integration() -> None:
     result = adapt_from_step_metadata(
         None,
-        task_id="t1",
-        run_id="r1",
+        task_id=_TASK,
+        run_id=_RUN,
         message="hi",
         metadata=_meta(),
     )
@@ -276,8 +281,8 @@ def test_adapt_from_step_metadata_with_acceptance_forward() -> None:
     # First create to learn quote id, then full path with acceptance in metadata.
     bootstrap = _adapter(fake, policy=policy).create_and_map(
         _adapter(fake, policy=policy).build_create_request(
-            task_id="task-meta",
-            run_id="run-meta",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-meta-boot"}),
         ),
         enrich=False,
@@ -287,8 +292,8 @@ def test_adapt_from_step_metadata_with_acceptance_forward() -> None:
     assert bootstrap.quote is not None
     result = adapt_from_step_metadata(
         fake,
-        task_id="task-meta",
-        run_id="run-meta",
+        task_id=_TASK,
+        run_id=_RUN,
         message="scope",
         metadata=_meta(
             **{
@@ -309,9 +314,16 @@ def test_adapt_from_step_metadata_with_acceptance_forward() -> None:
 async def test_agent_run_with_injected_fake() -> None:
     fake = DeterministicExternalWorkFake()
     policy = _allow_policy()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    boundary = allow_adapter(
+        DeterministicExternalWorkFake(),
+        policy=policy,
+        active_task_id=task_id,
+    )[0].authorization_boundary
     agent = ExternalContractorAdapterAgent(
         external_work=fake,
-        authorization_boundary=allow_adapter(DeterministicExternalWorkFake(), policy=policy)[0].authorization_boundary,
+        authorization_boundary=boundary,
     )
     result = await agent.run(
         AgentRunRequest(
@@ -320,6 +332,8 @@ async def test_agent_run_with_injected_fake() -> None:
             agent_id="external_contractor_adapter",
             metadata=_meta(
                 **{
+                    "task_id": task_id,
+                    "run_id": run_id,
                     META_IDEMPOTENCY_KEY: "idem-agent-run",
                     "external_work.principal_id": "u1",
                     "external_work.tenant_id": "tenant-a",

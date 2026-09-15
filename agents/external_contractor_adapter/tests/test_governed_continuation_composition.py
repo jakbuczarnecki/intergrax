@@ -87,8 +87,16 @@ def _allow_policy() -> DeterministicMeaningfulSideEffectPolicy:
     return DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW)
 
 
-def _adapter(fake: DeterministicExternalWorkFake | None = None) -> ExternalWorkAdapter:
-    adapter, _ = allow_adapter(fake or DeterministicExternalWorkFake(), policy=_allow_policy())
+def _adapter(
+    fake: DeterministicExternalWorkFake | None = None,
+    *,
+    task_id: str | None = None,
+) -> ExternalWorkAdapter:
+    adapter, _ = allow_adapter(
+        fake or DeterministicExternalWorkFake(),
+        policy=_allow_policy(),
+        active_task_id=task_id,
+    )
     return adapter
 
 
@@ -117,10 +125,10 @@ def _acceptance(**overrides: object) -> QuoteAcceptanceEvidence:
 @pytest.mark.gate
 def test_continuation_blocker_surfaced_for_quote() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = _adapter(fake)
     seed = "gec4-quote-blocker"
     task_id, run_id = _canonical_ids(seed)
     with canonical_execution_identity_scope(seed):
+        adapter = _adapter(fake, task_id=task_id)
         mapped = adapter.create_and_map(
             adapter.build_create_request(
                 task_id=task_id,
@@ -149,10 +157,10 @@ def test_continuation_blocker_surfaced_for_quote() -> None:
 @pytest.mark.gate
 def test_continuation_preserves_distinct_task_and_run_identity() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = _adapter(fake)
     seed = "gec4-distinct-task-run"
     task_id, run_id = _canonical_ids(seed)
     with canonical_execution_identity_scope(seed):
+        adapter = _adapter(fake, task_id=task_id)
         mapped = adapter.create_and_map(
             adapter.build_create_request(
                 task_id=task_id,
@@ -181,7 +189,7 @@ def test_missing_run_id_fails_closed_without_task_fallback() -> None:
     # GEC-5: meaningful create requires real Nexus run_id (fail closed).
     denied_create = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-no-run",
+            task_id=canonical_task_id_for_tests("gec4-no-run-deny"),
             run_id=None,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-run"}),
         ),
@@ -194,6 +202,7 @@ def test_missing_run_id_fails_closed_without_task_fallback() -> None:
     seed = "gec4-no-run-fallback"
     task_id, run_id = _canonical_ids(seed)
     with canonical_execution_identity_scope(seed):
+        adapter = _adapter(fake, task_id=task_id)
         mapped = adapter.create_and_map(
             adapter.build_create_request(
                 task_id=task_id,
@@ -219,7 +228,7 @@ def test_missing_run_id_fails_closed_without_task_fallback() -> None:
     assert summary.get("continuation") is None
     via_step = adapt_from_step_metadata(
         fake,
-        task_id="task-no-run-step",
+        task_id=canonical_task_id_for_tests("gec4-no-run-step"),
         run_id=None,
         message="scope",
         metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-run-step"}),
@@ -237,10 +246,10 @@ def test_missing_run_id_fails_closed_without_task_fallback() -> None:
 @pytest.mark.gate
 def test_interrupt_composition_reuses_nexus_handler() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = _adapter(fake)
     seed = "gec4-interrupt"
     task_id, run_id = _canonical_ids(seed)
     with canonical_execution_identity_scope(seed):
+        adapter = _adapter(fake, task_id=task_id)
         mapped = adapter.create_and_map(
             adapter.build_create_request(
                 task_id=task_id,
@@ -281,7 +290,9 @@ def test_correlation_preserved_across_continuation_surface() -> None:
                 }
             ),
             authorization_boundary=allow_adapter(
-                DeterministicExternalWorkFake(), policy=_allow_policy()
+                DeterministicExternalWorkFake(),
+                policy=_allow_policy(),
+                active_task_id=task_id,
             )[0].authorization_boundary,
         )
     assert result.used is True
@@ -300,10 +311,10 @@ def test_correlation_preserved_across_continuation_surface() -> None:
 @pytest.mark.gate
 def test_continuation_evidence_propagation_without_tier2_governance() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = _adapter(fake)
     seed = "gec4-evidence"
     task_id, run_id = _canonical_ids(seed)
     with canonical_execution_identity_scope(seed):
+        adapter = _adapter(fake, task_id=task_id)
         created = adapter.create_and_map(
             adapter.build_create_request(
                 task_id=task_id,
@@ -397,7 +408,11 @@ def test_adapt_metadata_resume_forwards_evidence() -> None:
     policy = _allow_policy()
     seed = "gec4-resume"
     task_id, run_id = _canonical_ids(seed)
-    adapter_bundle = allow_adapter(fake, policy=policy)[0]
+    adapter_bundle = allow_adapter(
+        fake,
+        policy=policy,
+        active_task_id=task_id,
+    )[0]
     with canonical_execution_identity_scope(seed):
         boot = adapter_bundle.create_and_map(
             adapter_bundle.build_create_request(
@@ -434,10 +449,10 @@ def test_adapt_metadata_resume_forwards_evidence() -> None:
 @pytest.mark.gate
 def test_non_quote_continuation_reason_not_owned_by_adapter() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = _adapter(fake)
     seed = "gec4-security"
     task_id, run_id = _canonical_ids(seed)
     with canonical_execution_identity_scope(seed):
+        adapter = _adapter(fake, task_id=task_id)
         created = adapter.create_and_map(
             adapter.build_create_request(
                 task_id=task_id,
@@ -463,10 +478,10 @@ def test_non_quote_continuation_reason_not_owned_by_adapter() -> None:
 @pytest.mark.gate
 def test_quote_continuation_blocker_carries_canonical_execution_identity() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = _adapter(fake)
     seed = "gec4-canonical-identity"
     task_id, run_id = _canonical_ids(seed)
     with canonical_execution_identity_scope(seed):
+        adapter = _adapter(fake, task_id=task_id)
         active_run, active_attempt = peek_active_execution_identity() or (None, None)
         active_execution = peek_active_execution_id()
         assert active_run == run_id
@@ -499,10 +514,10 @@ def test_quote_continuation_blocker_carries_canonical_execution_identity() -> No
 @pytest.mark.gate
 def test_quote_continuation_fails_closed_without_active_execution_identity() -> None:
     fake = DeterministicExternalWorkFake()
-    adapter = _adapter(fake)
     seed = "gec4-fail-closed"
     task_id, run_id = _canonical_ids(seed)
     with canonical_execution_identity_scope(seed):
+        adapter = _adapter(fake, task_id=task_id)
         mapped = adapter.create_and_map(
             adapter.build_create_request(
                 task_id=task_id,
@@ -512,7 +527,7 @@ def test_quote_continuation_fails_closed_without_active_execution_identity() -> 
             principal_id="u1",
             tenant_id="tenant-a",
         )
-    with pytest.raises(RuntimeError, match="active execution identity"):
+    with pytest.raises(ValueError, match="run_id does not match active execution"):
         adapter.surface_continuation_blocker(mapped, run_id=run_id)
     surfaced = adapter.with_continuation_surface(mapped, run_id=run_id)
     assert surfaced.used is False

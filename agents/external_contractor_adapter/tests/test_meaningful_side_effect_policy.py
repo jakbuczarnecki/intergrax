@@ -25,11 +25,14 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
     ACTION_CREATE_EXTERNAL_WORK,
 )
-from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import (
+    EXTERNAL_WORK_TEST_RUN_ID as _RUN,
+    EXTERNAL_WORK_TEST_TASK_ID as _TASK,
+    allow_adapter,
+)
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
-from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
 from external_contractor_adapter.tests.fakes.deterministic_side_effect_policy import (
     DeterministicMeaningfulSideEffectPolicy,
 )
@@ -112,8 +115,8 @@ def test_quote_receipt_is_observational_no_accept_policy() -> None:
     adapter = allow_adapter(integration, policy=policy)[0]
     result = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-obs",
-            run_id="run-obs",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(),
         ),
         principal_id="u1",
@@ -136,8 +139,8 @@ def test_accept_quote_classified_as_meaningful_side_effect() -> None:
     adapter = allow_adapter(integration, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-cls",
-            run_id="run-cls",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-cls"}),
         ),
         enrich=False,
@@ -169,8 +172,8 @@ def test_policy_before_accept_ordering_allow_once() -> None:
     adapter = allow_adapter(integration, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-ord",
-            run_id="run-ord",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-ord"}),
         ),
         enrich=False,
@@ -212,8 +215,8 @@ def test_deny_prevents_provider_accept_call() -> None:
     adapter = allow_adapter(integration, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-deny",
-            run_id="run-deny",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-deny"}),
         ),
         enrich=False,
@@ -249,8 +252,8 @@ def test_require_human_surfaces_continuation_no_provider_call() -> None:
     adapter = allow_adapter(integration, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-gov",
-            run_id="run-gov",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-gov"}),
         ),
         enrich=False,
@@ -269,8 +272,8 @@ def test_require_human_surfaces_continuation_no_provider_call() -> None:
     assert gated.reason == "side_effect_governance_required"
     assert gated.continuation is not None
     assert gated.continuation.reason is ContinuationReason.QUOTE
-    assert gated.continuation.task_id == "task-gov"
-    assert gated.continuation.run_id == "run-gov"
+    assert gated.continuation.task_id == _TASK
+    assert gated.continuation.run_id == _RUN
     assert "integration.accept_quote" not in call_log
 
 
@@ -281,8 +284,8 @@ def test_missing_policy_and_indeterminate_fail_closed() -> None:
     bare = ExternalWorkAdapter(fake, authorization_boundary=None)
     denied = bare.create_and_map(
         bare.build_create_request(
-            task_id="task-miss",
-            run_id="run-miss",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-miss"}),
         ),
         principal_id="u1",
@@ -299,8 +302,8 @@ def test_missing_policy_and_indeterminate_fail_closed() -> None:
     adapter = allow_adapter(fake, policy=engine)[0]
     indeterminate = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-indet",
-            run_id="run-indet",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-indet"}),
         ),
         principal_id="u1",
@@ -326,8 +329,8 @@ def test_evidence_presence_is_not_authorization() -> None:
     adapter = allow_adapter(integration, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-ev",
-            run_id="run-ev",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-ev"}),
         ),
         enrich=False,
@@ -361,8 +364,8 @@ def test_execution_identity_forwarded_or_explicitly_missing() -> None:
 
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-id-sem",
-            run_id="run-id-sem",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-id-sem"}),
         ),
         enrich=False,
@@ -371,15 +374,15 @@ def test_execution_identity_forwarded_or_explicitly_missing() -> None:
     )
     assert created.used is True
     assert len(policy.calls) == 1
-    assert policy.calls[0].run_id == "run-id-sem"
+    assert policy.calls[0].run_id == _RUN
     assert policy.calls[0].run_id != ""
     assert created.snapshot is not None
-    assert created.snapshot.correlation.run_id == "run-id-sem"
+    assert created.snapshot.correlation.run_id == _RUN
 
     policy.calls.clear()
     missing = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-id-missing",
+            task_id=_TASK,
             run_id=None,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-id-missing"}),
         ),
@@ -428,8 +431,8 @@ def test_preserves_identity_correlation_idempotency_and_payload() -> None:
     adapter = allow_adapter(fake, policy=policy)[0]
     created = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-preserve",
-            run_id="run-preserve",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-preserve"}),
         ),
         enrich=False,
@@ -448,8 +451,8 @@ def test_preserves_identity_correlation_idempotency_and_payload() -> None:
     assert forwarded.used is True
     assert forwarded.snapshot is not None
     corr = forwarded.snapshot.correlation
-    assert corr.task_id == "task-preserve"
-    assert corr.run_id == "run-preserve"
+    assert corr.task_id == _TASK
+    assert corr.run_id == _RUN
     assert corr.provider_id == "gec3_deterministic_fake"
     assert corr.idempotency_key == "idem-preserve"
     accept_req = [c for c in policy.calls if c.action == ACTION_ACCEPT_QUOTE][-1]
@@ -491,8 +494,8 @@ def test_adapt_from_step_metadata_wires_policy() -> None:
     integration = _RecordingIntegration(call_log=call_log)
     result = adapt_from_step_metadata(
         integration,
-        task_id="task-step",
-        run_id="run-step",
+        task_id=_TASK,
+        run_id=_RUN,
         message="scope",
         metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-step"}),
         authorization_boundary=allow_adapter(DeterministicExternalWorkFake(), policy=policy)[0].authorization_boundary,
