@@ -38,7 +38,9 @@ from intergrax.runtime.observability.persistence_conformance import sample_runti
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_RECONSTRUCTION_PATH = _REPO_ROOT / "intergrax/runtime/diagnostics/execution_reconstruction.py"
+_RECONSTRUCTION_PATH = (
+    _REPO_ROOT / "intergrax/runtime/observability/reconstruction/execution_reconstruction.py"
+)
 _UNIFIED_RUN_JOURNAL_PATH = _REPO_ROOT / "intergrax/runtime/events/unified_run_journal.py"
 
 

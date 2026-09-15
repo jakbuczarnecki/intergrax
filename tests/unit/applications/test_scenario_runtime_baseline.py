@@ -45,6 +45,9 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.decision_flow import DecisionFlowScope
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.contracts.validation import ValidationResult
 
@@ -490,6 +493,7 @@ async def test_execute_scenario_task_routes_trigger_capability_to_orchestration(
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="routed",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(StrategyExecutionRouter, "execute", _capture_execute):
@@ -523,6 +527,7 @@ async def test_execute_scenario_task_keeps_non_trigger_capability_on_agent_path(
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="agent",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(StrategyExecutionRouter, "execute", _capture_execute):
@@ -562,6 +567,7 @@ async def test_execute_scenario_task_honors_pipeline_capability_suffix(
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="pipeline",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(StrategyExecutionRouter, "execute", _capture_execute):

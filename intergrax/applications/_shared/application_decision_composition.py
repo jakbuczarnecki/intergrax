@@ -72,6 +72,10 @@ from intergrax.runtime.decision_verification_stages.trajectory import (
     TRAJECTORY_VERIFICATION_STAGE_KIND,
     TrajectoryVerificationStage,
 )
+from intergrax.runtime.execution.decision_exposure_selection_composition import (
+    DecisionExposureSelectionComposition,
+    compose_decision_exposure_selection,
+)
 from intergrax.contracts.semantic_verification import SemanticJudge
 from intergrax.tools.providers.eval.contracts import (
     EvalJudgeInput,
@@ -203,6 +207,11 @@ def _decision_plugin_load_policy(
         ),
         requested_artifact_plugins=(
             tuple(profile.artifact_plugins) if profile.artifact_plugins else None
+        ),
+        requested_exposure_selection_strategy_plugins=(
+            (profile.exposure_selection_strategy_plugin,)
+            if profile.exposure_selection_strategy_plugin is not None
+            else None
         ),
     )
 
@@ -440,6 +449,23 @@ def _activated_strategy_names(registry: DecisionStrategyRegistry) -> tuple[str, 
 
 def _activated_artifact_names(registry: DecisionArtifactKindRegistry) -> tuple[str, ...]:
     return tuple(sorted(str(kind) for kind in registry.kinds))
+
+
+def compose_application_decision_exposure_selection(
+    environment: ApplicationEnvironmentProfile,
+) -> DecisionExposureSelectionComposition:
+    """Compose exposure selection strategy for one application host (I1-A-R1)."""
+    if type(environment) is not ApplicationEnvironmentProfile:
+        raise TypeError("environment must be ApplicationEnvironmentProfile")
+    profile = environment.decision_profile.plugins
+    policy = _decision_plugin_load_policy(
+        profile,
+        execution_mode=environment.execution_mode,
+    )
+    return compose_decision_exposure_selection(
+        policy=policy,
+        selection_ref=profile.exposure_selection_strategy_plugin,
+    )
 
 
 def compose_application_decision(

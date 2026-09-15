@@ -71,7 +71,7 @@ _MINT_ALLOWED_FILES = frozenset(
         "intergrax/runtime/execution/decision_finalization_conformance.py",
         "intergrax/runtime/observability/persistence_conformance.py",
         "intergrax/runtime/diagnostics/persistence_conformance.py",
-        "intergrax/runtime/diagnostics/functional_evidence_persistence_conformance.py",
+        "intergrax/runtime/observability/functional_evidence/functional_evidence_persistence_conformance.py",
         "intergrax/collaborative_work/repository_qualification_suite.py",
         "intergrax/experiments/workflow.py",
         "intergrax/core/qualification/functional_qualification_runner.py",

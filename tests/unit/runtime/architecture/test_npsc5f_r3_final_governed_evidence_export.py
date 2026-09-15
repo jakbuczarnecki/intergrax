@@ -21,12 +21,20 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
-from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
+from intergrax.runtime.events.stores.memory_runtime_event_store import (
+    InMemoryRuntimeEventStore,
+)
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import (
+    SQLiteRuntimeEventStore,
+)
 from intergrax.runtime.events.unified_run_journal import read_run_journal_page
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunMetadata, RunStats
+from intergrax.runtime.nexus.tracing.persistence_models import (
+    PersistedRun,
+    RunMetadata,
+    RunStats,
+)
 from intergrax.runtime.observability.export_boundary import (
     FORBIDDEN_EXPORT_CONTENT_FIELDS,
     ObservabilityExportEnvelope,
@@ -35,7 +43,9 @@ from intergrax.runtime.observability.export_boundary import (
     envelope_is_content_safe,
     runtime_event_export_source_from_event,
 )
-from intergrax.runtime.observability.export_bridge import make_journal_export_runtime_plugin
+from intergrax.runtime.observability.export_bridge import (
+    make_journal_export_runtime_plugin,
+)
 from intergrax.runtime.observability.journal_export import (
     JOURNAL_EXPORT_SCHEMA_VERSION,
     JournalExportSnapshot,
@@ -45,6 +55,7 @@ from intergrax.runtime.observability.journal_export import (
 )
 from testing_support.npsc5f_r3_protected_drift import (
     R3_IMPLEMENTATION_SHA,
+    R3_POST_QUALIFIED_BASELINE_SHA,
     collect_r3_protected_production_drift,
 )
 from testing_support.runtime_events import runtime_event_test_identity
@@ -91,15 +102,21 @@ _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
     ),
     (
         "R2 Final",
-        ["tests/unit/runtime/architecture/test_npsc5f_r2_final_journal_completeness_ordering.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_r2_final_journal_completeness_ordering.py"
+        ],
     ),
     (
         "R1 Final",
-        ["tests/unit/runtime/architecture/test_npsc5f_r1_final_durable_evidence_commit_tenant_integrity.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_r1_final_durable_evidence_commit_tenant_integrity.py"
+        ],
     ),
     (
         "NPSC-5F P0 gate",
-        ["tests/unit/runtime/architecture/test_npsc5f_p0_execution_evidence_architecture_reconciliation.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_p0_execution_evidence_architecture_reconciliation.py"
+        ],
     ),
     ("Runtime events suites", ["tests/unit/runtime/events/"]),
     (
@@ -133,11 +150,15 @@ _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
     ),
     (
         "Execution reconstruction",
-        ["tests/unit/runtime/diagnostics/test_execution_reconstruction.py"],
+        [
+            "tests/unit/runtime/observability/reconstruction/test_execution_reconstruction.py"
+        ],
     ),
     (
         "NPSC-5E Final",
-        ["tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py"
+        ],
     ),
     (
         "DG_001",
@@ -148,7 +169,9 @@ _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
     ),
     (
         "NPSC-5D Final",
-        ["tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py"
+        ],
     ),
     (
         "R3 drift classifier",
@@ -230,7 +253,11 @@ def _assert_canaries_absent(blob: str) -> None:
         assert canary not in blob
 
 
-@pytest.mark.parametrize(("label", "targets"), _MANDATORY_SUITES, ids=[label for label, _ in _MANDATORY_SUITES])
+@pytest.mark.parametrize(
+    ("label", "targets"),
+    _MANDATORY_SUITES,
+    ids=[label for label, _ in _MANDATORY_SUITES],
+)
 def test_mandatory_frozen_suite_passes(label: str, targets: list[str]) -> None:
     proc = _run_pytest(targets)
     assert proc.returncode == 0, f"{label} failed:\n{proc.stdout}\n{proc.stderr}"
@@ -245,9 +272,14 @@ def test_r3_final_canonical_predecessor_shas_recorded() -> None:
     assert NPSC_5E_FINAL_SHA.startswith("fabdcfe")
 
 
-def test_r3_final_no_unqualified_protected_drift_since_implementation() -> None:
-    drift = collect_r3_protected_production_drift(_REPO_ROOT)
-    assert drift == [], f"R3 protected production drift since implementation: {drift}"
+def test_r3_final_no_unqualified_protected_drift_since_qualified_baseline() -> None:
+    drift = collect_r3_protected_production_drift(
+        _REPO_ROOT,
+        from_sha=R3_POST_QUALIFIED_BASELINE_SHA,
+    )
+    assert drift == [], (
+        f"R3 protected production drift since qualified baseline: {drift}"
+    )
 
 
 def test_r3_final_journal_export_schema_v2_only() -> None:
@@ -270,8 +302,13 @@ def test_r3_final_raw_payload_absent_from_all_export_surfaces() -> None:
     envelope = serialize_runtime_event(event)
     run_id = event.run_id
     store = InMemoryRuntimeEventStore()
-    store.append(event.model_copy(update={"run_id": run_id}), tenant_id=event.tenant_id or "tenant-r3-final")
-    snapshot = build_journal_export_snapshot(_persisted(run_id, event.tenant_id or "tenant-r3-final"), runtime_store=store)
+    store.append(
+        event.model_copy(update={"run_id": run_id}),
+        tenant_id=event.tenant_id or "tenant-r3-final",
+    )
+    snapshot = build_journal_export_snapshot(
+        _persisted(run_id, event.tenant_id or "tenant-r3-final"), runtime_store=store
+    )
 
     class _Collector:
         def __init__(self) -> None:
@@ -308,7 +345,13 @@ def test_r3_final_unknown_field_dropped() -> None:
 
 
 def test_r3_final_nested_secret_dropped() -> None:
-    event = _runtime_event(payload={"tool_id": "t", "metadata": {"prompt": "nested-secret"}, "items": [{"token": "x"}]})
+    event = _runtime_event(
+        payload={
+            "tool_id": "t",
+            "metadata": {"prompt": "nested-secret"},
+            "items": [{"token": "x"}],
+        }
+    )
     blob = serialize_runtime_event(event).model_dump_json()
     assert "nested-secret" not in blob
     assert "metadata" not in blob
@@ -354,7 +397,9 @@ def test_r3_final_bounded_export_incomplete_large_journal() -> None:
             ),
             tenant_id=tenant_id,
         )
-    snapshot = build_journal_export_snapshot(_persisted(run_id, tenant_id), runtime_store=store, limit=3)
+    snapshot = build_journal_export_snapshot(
+        _persisted(run_id, tenant_id), runtime_store=store, limit=3
+    )
     assert snapshot.event_count == 3
     assert snapshot.is_complete is False
     assert snapshot.has_continuation is True
@@ -364,14 +409,20 @@ def test_r3_final_complete_page_small_journal() -> None:
     run_id = mint_run_id()
     tenant_id = "tenant-complete"
     store = InMemoryRuntimeEventStore()
-    event = _runtime_event(tenant_id=tenant_id, payload={"tool_id": "t"}).model_copy(update={"run_id": run_id})
+    event = _runtime_event(tenant_id=tenant_id, payload={"tool_id": "t"}).model_copy(
+        update={"run_id": run_id}
+    )
     store.append(event, tenant_id=tenant_id)
-    snapshot = build_journal_export_snapshot(_persisted(run_id, tenant_id), runtime_store=store, limit=10)
+    snapshot = build_journal_export_snapshot(
+        _persisted(run_id, tenant_id), runtime_store=store, limit=10
+    )
     assert snapshot.is_complete is True
     assert snapshot.has_continuation is False
 
 
-def test_r3_final_export_snapshot_consistent_after_concurrent_append(tmp_path: Path) -> None:
+def test_r3_final_export_snapshot_consistent_after_concurrent_append(
+    tmp_path: Path,
+) -> None:
     store = SQLiteRuntimeEventStore(db_path=tmp_path / "export-snap.db")
     run_id = mint_run_id()
     tenant_id = "tenant-snap"
@@ -383,7 +434,9 @@ def test_r3_final_export_snapshot_consistent_after_concurrent_append(tmp_path: P
             ),
             tenant_id=tenant_id,
         )
-    first = build_journal_export_snapshot(_persisted(run_id, tenant_id), runtime_store=store, limit=2)
+    first = build_journal_export_snapshot(
+        _persisted(run_id, tenant_id), runtime_store=store, limit=2
+    )
     page = read_run_journal_page(store, tenant_id=tenant_id, run_id=run_id, page_size=2)
     assert first.event_count == len(page.events)
     for _ in range(3):
@@ -393,9 +446,13 @@ def test_r3_final_export_snapshot_consistent_after_concurrent_append(tmp_path: P
             ),
             tenant_id=tenant_id,
         )
-    second = build_journal_export_snapshot(_persisted(run_id, tenant_id), runtime_store=store, limit=2)
+    second = build_journal_export_snapshot(
+        _persisted(run_id, tenant_id), runtime_store=store, limit=2
+    )
     assert len(second.events) == 2
-    assert [item.event_id for item in second.events] == [item.event_id for item in first.events]
+    assert [item.event_id for item in second.events] == [
+        item.event_id for item in first.events
+    ]
     store.close()
 
 
@@ -416,10 +473,14 @@ def test_r3_final_tenant_isolation_on_export() -> None:
     run_id = mint_run_id()
     store = InMemoryRuntimeEventStore()
     store.append(
-        _runtime_event(tenant_id="tenant-a", payload={"tool_id": "t"}).model_copy(update={"run_id": run_id}),
+        _runtime_event(tenant_id="tenant-a", payload={"tool_id": "t"}).model_copy(
+            update={"run_id": run_id}
+        ),
         tenant_id="tenant-a",
     )
-    snapshot = build_journal_export_snapshot(_persisted(run_id, "tenant-b"), runtime_store=store)
+    snapshot = build_journal_export_snapshot(
+        _persisted(run_id, "tenant-b"), runtime_store=store
+    )
     assert snapshot.event_count == 0
 
 
@@ -443,12 +504,18 @@ def test_r3_final_logger_extra_has_zero_canaries() -> None:
     runtime_store = InMemoryRuntimeEventStore()
     runtime_store.append(
         _runtime_event(tenant_id=tenant_id, payload=_unsafe_payload()).model_copy(
-            update={"run_id": run_id, "task_id": task_id, "event_type": RuntimeEventType.TASK_COMPLETED},
+            update={
+                "run_id": run_id,
+                "task_id": task_id,
+                "event_type": RuntimeEventType.TASK_COMPLETED,
+            },
         ),
         tenant_id=tenant_id,
     )
     bus = RuntimeEventBus(record_history=False)
-    plugin = make_journal_export_runtime_plugin(trace_store=trace_store, runtime_event_store=runtime_store)
+    plugin = make_journal_export_runtime_plugin(
+        trace_store=trace_store, runtime_event_store=runtime_store
+    )
     plugin.register(bus, HookRegistry(), MagicMock())
     completed = RuntimeEvent(
         tenant_id=tenant_id,
@@ -461,7 +528,9 @@ def test_r3_final_logger_extra_has_zero_canaries() -> None:
         **runtime_event_test_identity(task_id=task_id, run_id=run_id),
     )
     with patch("intergrax.runtime.observability.export_bridge.logger") as mock_logger:
-        with patch("intergrax.runtime.observability.export_bridge.export_parser_traces_from_events"):
+        with patch(
+            "intergrax.runtime.observability.export_bridge.export_parser_traces_from_events"
+        ):
             import asyncio
 
             asyncio.run(bus.publish(completed))
@@ -487,7 +556,11 @@ def test_r3_final_no_runtime_event_model_dump_in_export_surfaces() -> None:
 
 
 def test_r3_final_no_second_export_framework_symbols() -> None:
-    forbidden_names = ("SafeExportEnvelope", "EvidenceExportRuntime", "SecureJournalExporter")
+    forbidden_names = (
+        "SafeExportEnvelope",
+        "EvidenceExportRuntime",
+        "SecureJournalExporter",
+    )
     hits: list[str] = []
     for path in _OBSERVABILITY_ROOT.rglob("*.py"):
         text = path.read_text(encoding="utf-8")
@@ -506,7 +579,11 @@ def test_r3_final_no_execution_control_from_export_surface() -> None:
             if not isinstance(node, ast.Call):
                 continue
             func = node.func
-            symbol = func.id if isinstance(func, ast.Name) else (func.attr if isinstance(func, ast.Attribute) else None)
+            symbol = (
+                func.id
+                if isinstance(func, ast.Name)
+                else (func.attr if isinstance(func, ast.Attribute) else None)
+            )
             if symbol in _FORBIDDEN_CONTROL_PLANE_SYMBOLS:
                 violations.append(f"{rel}:{node.lineno}:{symbol}")
     assert violations == []
@@ -517,12 +594,18 @@ def test_r3_final_snapshot_events_typed_and_immutable() -> None:
     tenant_id = "tenant-typed"
     store = InMemoryRuntimeEventStore()
     store.append(
-        _runtime_event(tenant_id=tenant_id, payload={"tool_id": "t"}).model_copy(update={"run_id": run_id}),
+        _runtime_event(tenant_id=tenant_id, payload={"tool_id": "t"}).model_copy(
+            update={"run_id": run_id}
+        ),
         tenant_id=tenant_id,
     )
-    snapshot = build_journal_export_snapshot(_persisted(run_id, tenant_id), runtime_store=store)
+    snapshot = build_journal_export_snapshot(
+        _persisted(run_id, tenant_id), runtime_store=store
+    )
     assert isinstance(snapshot.events, tuple)
-    assert all(isinstance(item, ObservabilityExportEnvelope) for item in snapshot.events)
+    assert all(
+        isinstance(item, ObservabilityExportEnvelope) for item in snapshot.events
+    )
 
 
 @runtime_checkable

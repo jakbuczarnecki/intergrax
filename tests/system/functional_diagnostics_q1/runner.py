@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, validate_run_id, validate_task_id
 from intergrax.core.qualification.functional_diagnostic_comparator import compare_qualification_case
 from intergrax.core.qualification.functional_diagnostic_expectation import (
     QualificationCaseComparison,
@@ -27,13 +27,13 @@ from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import Functio
 from intergrax.runtime.diagnostics.functional_diagnostic_analysis import (
     FunctionalDiagnosticCheckStatus,
 )
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceScope,
     PlatformFunctionalEvidence,
 )
 from intergrax.runtime.diagnostics.functional_validation_lookup import FunctionalValidationEvidenceLookup
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.diagnostics.specifications.c1_rag_functional_diagnostic_specification import (
@@ -331,6 +331,8 @@ def _resope_evidence_items(
         tenant_id=tenant_id,
         task_id=validate_task_id(task_id),
         run_id=validate_run_id(run_id),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
     return tuple(item.model_copy(update={"scope": scope}) for item in items)
 
@@ -481,6 +483,8 @@ def _run_case(
         tenant_id=config.tenant_id,
         task_id=validate_task_id(scope_response.task_id),
         run_id=validate_run_id(scope_response.run_id),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
     validation = build_independent_validation_evidence(
         pipeline_scope,
@@ -628,6 +632,8 @@ def run_evidence_independence_probe(
         tenant_id=config.tenant_id,
         task_id=validate_task_id(response.task_id),
         run_id=validate_run_id(response.run_id),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
     FunctionalDiagnosticAnalyzer(wiring.persistence).analyze(
         tenant_id=config.tenant_id,

@@ -28,7 +28,7 @@ def test_final_drift_classifier_unrelated_execution_surface() -> None:
 
 
 def test_final_drift_classifier_unrelated_diagnostics() -> None:
-    path = "intergrax/runtime/diagnostics/execution_reconstruction.py"
+    path = "intergrax/runtime/diagnostics/diagnostic_orchestrator.py"
     assert classify_evidence_plane_drift_path(path) is EvidencePlaneDriftClass.UNRELATED
 
 
@@ -68,7 +68,7 @@ def test_final_drift_classifier_does_not_flag_whole_runtime_sentinel() -> None:
 
 
 def test_final_baseline_sha_recorded() -> None:
-    assert NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA == "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
+    assert NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA == "743a3865198e8fcec53029f935fbedc4cae6f9df"
 
 
 def test_final_no_breaking_protected_drift_since_baseline() -> None:

@@ -28,7 +28,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 
-from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, validate_run_id, validate_task_id
 from intergrax.core.qualification.functional_diagnostic_comparator import compare_qualification_case
 from intergrax.core.qualification.functional_qualification_attempts import (
     QualificationAttemptPolicy,
@@ -51,14 +51,14 @@ from intergrax.runtime.diagnostics.diagnostic_assessment_composer import Diagnos
 from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
 from intergrax.runtime.diagnostics.functional_diagnostic_analysis import FunctionalDiagnosticCheckStatus
 from intergrax.runtime.diagnostics.functional_operator_projection import FunctionalOperatorOutcomeStatus
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceScope,
     PipelineOperationStatus,
     PlatformFunctionalEvidence,
 )
 from intergrax.runtime.diagnostics.functional_validation_lookup import FunctionalValidationEvidenceLookup
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.diagnostics.specifications.q3_web_search_functional_diagnostic_specification import (
@@ -681,6 +681,8 @@ def _run_case(
         tenant_id=config.tenant_id,
         task_id=validate_task_id(response.task_id),
         run_id=validate_run_id(response.run_id),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
     expected_source_ref = resolve_expected_official_source_ref(provider_candidates)
     query_validation = build_query_validation_evidence(

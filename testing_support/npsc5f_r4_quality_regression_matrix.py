@@ -20,7 +20,7 @@ MANDATORY_REGRESSION_SUITES: tuple[tuple[str, list[str]], ...] = (
     ),
     (
         "Execution reconstruction",
-        ["tests/unit/runtime/diagnostics/test_execution_reconstruction.py"],
+        ["tests/unit/runtime/observability/reconstruction/test_execution_reconstruction.py"],
     ),
     (
         "R3 Final",

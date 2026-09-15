@@ -16,11 +16,11 @@ from intergrax.contracts.multi_agent_failure_localization import (
 )
 from typing import TYPE_CHECKING
 
-from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
+from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
     ExecutionLineageReadStatus,
     ReconstructedAttemptLineage,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstruction
+from intergrax.runtime.observability.reconstruction import ExecutionReconstruction
 
 from intergrax.runtime.diagnostics.diagnostic_precision import DiagnosticPrecision
 

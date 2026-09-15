@@ -84,23 +84,29 @@ def _conservative_recommendation(
             "automation_safety_limit",
             "Automation safety limits apply; perform manual investigation.",
         )
-    if signal_kind is ExternalEffectReliabilitySignalKind.GOVERNANCE_POSTURE:
-        return (
-            ExternalEffectReliabilityOperatorRecommendationKind.REQUEST_APPROVAL,
-            "governance_posture",
-            "Governance posture requires operator review; request approval if applicable.",
-        )
     if signal_kind is ExternalEffectReliabilitySignalKind.TRUTH_ESTABLISHED:
         return (
-            ExternalEffectReliabilityOperatorRecommendationKind.NO_OPERATOR_ACTION_REQUIRED,
+            ExternalEffectReliabilityOperatorRecommendationKind.OBSERVE,
             "truth_established",
-            "Truth is established; no operator action required from this signal alone.",
+            "External truth is established; review linked resolution and evidence before acting.",
+        )
+    if signal_kind is ExternalEffectReliabilitySignalKind.GOVERNANCE_POSTURE:
+        return (
+            ExternalEffectReliabilityOperatorRecommendationKind.OBSERVE,
+            "governance_posture",
+            "Governance posture is available; review the authoritative governance decision.",
+        )
+    if signal_kind is ExternalEffectReliabilitySignalKind.RESOLUTION_POSTURE:
+        return (
+            ExternalEffectReliabilityOperatorRecommendationKind.OBSERVE,
+            "resolution_posture",
+            "Resolution posture is available; review linked resolution and evidence.",
         )
     if signal_kind is ExternalEffectReliabilitySignalKind.RECOVERY_POSTURE:
         return (
             ExternalEffectReliabilityOperatorRecommendationKind.OBSERVE,
             "recovery_posture",
-            "Observe recovery posture and linked evidence.",
+            "Recovery posture is available; review linked evidence before acting.",
         )
     if severity is ExternalEffectReliabilityDiagnosticSeverity.ERROR:
         return (

@@ -10,7 +10,7 @@ from web_search_qualifier.url_identity import (
     is_official_python_release_source,
     url_from_artifact_ref,
 )
-from intergrax.runtime.diagnostics.functional_evidence import PipelineEvidenceScope
+from intergrax.contracts.functional_evidence import PipelineEvidenceScope
 from intergrax.runtime.diagnostics.functional_validation import (
     DiagnosticExecutionCorrelation,
     ExpectedActualRelation,

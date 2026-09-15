@@ -38,6 +38,9 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembershipRole,
 )
 from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.runtime.governance.meaningful_side_effect_authorization_composition import (
+    build_default_wired_meaningful_side_effect_authorization_boundary,
+)
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )
@@ -122,4 +125,6 @@ def build_external_work_authorization_boundary(
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=runtime_policy_evaluator,  # type: ignore[arg-type]
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate)
+    return build_default_wired_meaningful_side_effect_authorization_boundary(
+        enforcement_gate=gate,
+    )

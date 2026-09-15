@@ -36,7 +36,12 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.contracts.governed_continuation import (
     ContinuationReason,
     GovernedContinuationRequest,
@@ -61,6 +66,11 @@ from intergrax.runtime.policy.meaningful_side_effect_authorization import (
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
+from tests.unit.runtime.governance.gr3_test_support import (
+    bound_gr3_active_execution,
+    default_gr3_identity_bundle,
+    default_gr3_inner_guard,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -73,6 +83,7 @@ _SCOPE = "document.delete"
 _RESOURCE_S1 = "document-123"
 _RESOURCE_S2 = "document-456"
 _NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
+_TASK_ID, _RUN_ID, _ATTEMPT_ID, _EXECUTION_ID = default_gr3_identity_bundle()
 
 
 def _task(task_id: str | None = None) -> Task:
@@ -173,7 +184,10 @@ def _seed_gate(
             )
         ),
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate), membership
+    return MeaningfulSideEffectAuthorizationBoundary(
+        enforcement_gate=gate,
+        inner_execution_guard=default_gr3_inner_guard(_TASK_ID),
+    ), membership
 
 
 def _enforcement_request(
@@ -181,8 +195,8 @@ def _enforcement_request(
     *,
     operation_id: str = _OPERATION_S1,
     resource_scope: str = _RESOURCE_S1,
-    task_id: str = "task-1",
-    run_id: str = "run-1",
+    task_id: str = _TASK_ID,
+    run_id: str = _RUN_ID,
 ) -> CollaborativeWorkEnforcementRequest:
     return CollaborativeWorkEnforcementRequest(
         tenant_id=_TENANT,
@@ -197,11 +211,23 @@ def _enforcement_request(
             side_effect_scope_id=f"scope-{resource_scope}",
             task_id=task_id,
             run_id=run_id,
+            attempt_id=_ATTEMPT_ID,
+            execution_id=_EXECUTION_ID,
             principal_id=_ACTING,
             tenant_id=_TENANT,
             resource=resource_scope,
         ),
     )
+
+
+@pytest.fixture
+def gr3_active_execution():
+    with bound_gr3_active_execution(
+        run_id=_RUN_ID,
+        attempt_id=_ATTEMPT_ID,
+        execution_id=_EXECUTION_ID,
+    ):
+        yield
 
 
 def _continuation_request(
@@ -212,8 +238,10 @@ def _continuation_request(
 ) -> GovernedContinuationRequest:
     return GovernedContinuationRequest(
         reason=ContinuationReason.COMPLIANCE,
-        task_id="task-1",
-        run_id="run-1",
+        task_id=_TASK_ID,
+        run_id=_RUN_ID,
+        attempt_id=_ATTEMPT_ID,
+        execution_id=_EXECUTION_ID,
         source_agent_id="agent-test",
         prompt="continuation required",
         continuation_request_id=continuation_request_id,
@@ -225,7 +253,7 @@ def _continuation_request(
     )
 
 
-def test_require_human_produces_canonical_pause_composition() -> None:
+def test_require_human_produces_canonical_pause_composition(gr3_active_execution) -> None:
     boundary, membership = _seed_gate(
         runtime_policy=RuntimePolicyEngine(
             meaningful_side_effect_rules=(
@@ -301,7 +329,7 @@ def test_exact_continuation_correlation_distinguishes_s1_from_s2() -> None:
     assert corr_s1.continuation_request_id != corr_s2.continuation_request_id
 
 
-def test_deny_does_not_create_hitl_or_continuation() -> None:
+def test_deny_does_not_create_hitl_or_continuation(gr3_active_execution) -> None:
     boundary, membership = _seed_gate(
         runtime_policy=RuntimePolicyEngine(
             meaningful_side_effect_rules=(
@@ -337,7 +365,7 @@ def test_deny_does_not_create_hitl_or_continuation() -> None:
     assert task.runtime.governance.execution_interrupt is None
 
 
-def test_allow_does_not_pause() -> None:
+def test_allow_does_not_pause(gr3_active_execution) -> None:
     boundary, membership = _seed_gate()
     task = _task()
     lifecycle = TaskLifecycle()
@@ -357,7 +385,7 @@ def test_allow_does_not_pause() -> None:
     assert task.runtime.governance.pause_record is None
 
 
-def test_continuation_request_is_not_execution_authority() -> None:
+def test_continuation_request_is_not_execution_authority(gr3_active_execution) -> None:
     continuation = _continuation_request()
     execution = bridge_governed_continuation_to_execution_result(continuation)
     assert execution.status.value == "needs_input"

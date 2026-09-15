@@ -20,7 +20,7 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticSignalSubjectScope,
     validate_orchestration_request,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingAssessmentInput,

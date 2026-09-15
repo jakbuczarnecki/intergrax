@@ -21,6 +21,9 @@ from intergrax.applications._shared.diagnostic_read_wiring import (
     HostDiagnosticReadDependencies,
     build_diagnostic_read_service,
 )
+from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
+    wrap_terminal_execution_diagnostic_trigger,
+)
 from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_terminal_execution_diagnostic_trigger,
     resolve_host_diagnostic_runtime_dependencies,
@@ -292,7 +295,9 @@ def build_dg001_canonical_multi_agent_diagnostic_harness(
         runtime_event_store=runtime_store,
         execution_lineage_persistence=lineage,
     )
-    loop.attach_terminal_diagnostic_trigger(trigger)
+    loop.attach_terminal_diagnostic_trigger(
+        wrap_terminal_execution_diagnostic_trigger(trigger, event_bus=loop.event_bus),
+    )
     return Dg001CanonicalMultiAgentDiagnosticHarness(
         nexus_loop=loop,
         runner=UnifiedTaskRunner(loop),

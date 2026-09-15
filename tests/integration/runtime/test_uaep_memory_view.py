@@ -2,10 +2,14 @@
 
 import pytest
 
+from dataclasses import replace
+
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.memory_write_policy import MemoryWritePolicy
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
@@ -15,7 +19,21 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task_memory import InMemoryTaskMemoryStore
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_request_for_tests,
+    canonical_execution_identity_scope,
+)
+
+
+def _verified_canonical_identity(*, tenant_id: str = "t1", user_id: str = "u1") -> RequestIdentity:
+    return RequestIdentity(
+        tenant_id=tenant_id,
+        user_id=user_id,
+        principal_type=PrincipalType.USER,
+        auth_subject=user_id,
+    )
 
 
 class _MemoryUaepAgent(Agent):
@@ -74,16 +92,21 @@ async def test_uaep_executor_wires_memory_view():
     store = InMemoryTaskMemoryStore()
     executor = UAEPExecutor(event_bus=bus, task_memory_store=store)
     agent = _MemoryUaepAgent()
-    request = RuntimeRequest(
-        tenant_id="t1",
-        user_id="u1",
-        session_id="s1",
-        agent_id="memory-agent",
-        message="persist memory",
-        metadata={"run_id": "run_mem_1", "task_id": "task_mem_1"},
+    request = replace(
+        build_runtime_request_for_tests(
+            seed="uaep-memory-view-1",
+            tenant_id="t1",
+            agent_id="memory-agent",
+            user_id="u1",
+            session_id="s1",
+            message="persist memory",
+        ),
+        canonical_identity=_verified_canonical_identity(tenant_id="t1"),
     )
+    task_id = str(request.task_id)
 
-    answer, validation, _governance = await executor.execute(agent, request)
+    with canonical_execution_identity_scope(str(request.run_id)):
+        answer, validation, _governance = await executor.execute(agent, request)
 
     assert validation.valid
     assert "Acme Q1" in answer.answer
@@ -96,7 +119,7 @@ async def test_uaep_executor_wires_memory_view():
     assert len(memory_events) >= 2
     persisted = store.get(
         tenant_id="t1",
-        task_id="task_mem_1",
+        task_id=task_id,
         namespace="vendor_report",
         key="draft",
     )
@@ -117,15 +140,19 @@ async def test_uaep_executor_without_store_leaves_memory_view_none():
             assert ctx.memory_view is None
             return StepOutput(step_id=step.step_id, summary="no memory")
 
-    request = RuntimeRequest(
-        tenant_id="t1",
-        user_id="u1",
-        session_id="s1",
-        agent_id="memory-agent",
-        message="skip",
-        metadata={"run_id": "run_mem_2", "task_id": "task_mem_2"},
+    request = replace(
+        build_runtime_request_for_tests(
+            seed="uaep-memory-view-2",
+            tenant_id="t1",
+            agent_id="memory-agent",
+            user_id="u1",
+            session_id="s1",
+            message="skip",
+        ),
+        canonical_identity=_verified_canonical_identity(tenant_id="t1"),
     )
 
-    answer, validation, _, _ = await executor.execute(_NoMemoryAgent(), request)
+    with canonical_execution_identity_scope(str(request.run_id)):
+        answer, validation, _governance = await executor.execute(_NoMemoryAgent(), request)
     assert validation.valid
     assert answer.answer == "no memory"

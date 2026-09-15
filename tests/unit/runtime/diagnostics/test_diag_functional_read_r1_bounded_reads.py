@@ -8,13 +8,19 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_event_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    mint_attempt_id,
+    mint_event_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
     DocumentStoreFunctionalEvidencePersistence,
 )
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceProvenance,
     PipelineEvidenceScope,
@@ -22,21 +28,21 @@ from intergrax.runtime.diagnostics.functional_evidence import (
     PipelineOperationStatus,
     PlatformFunctionalEvidence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_execution_index import (
     encode_execution_index_v1,
     execution_index_v1_row_key,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceIntegrityError,
     FunctionalEvidenceQueryRequest,
     functional_evidence_query_order_key,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
     collect_all_evidence,
     sample_functional_evidence,
     sample_functional_evidence_scope,
 )
-from intergrax.runtime.diagnostics.functional_evidence_record_codec import encode_functional_evidence_record
+from intergrax.runtime.observability.functional_evidence.functional_evidence_record_codec import encode_functional_evidence_record
 
 pytestmark = pytest.mark.unit
 
@@ -81,7 +87,8 @@ def _operation_evidence(
         tenant_id=scope.tenant_id,
         task_id=scope.task_id,
         run_id=scope.run_id,
-        attempt_id=attempt_id or scope.attempt_id,
+        attempt_id=AttemptId(attempt_id) if attempt_id is not None else scope.attempt_id,
+        execution_id=scope.execution_id,
     )
     return PlatformFunctionalEvidence(
         evidence_id=evidence_id or mint_event_id(),

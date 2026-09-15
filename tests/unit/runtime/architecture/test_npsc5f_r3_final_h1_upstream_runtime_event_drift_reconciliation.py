@@ -51,7 +51,11 @@ from testing_support.npsc5f_r3_h1_upstream_event_drift import (
     classify_post_r3_event_surface_change,
     collect_post_r3_event_surface_paths,
 )
-from testing_support.npsc5f_r3_protected_drift import R3_IMPLEMENTATION_SHA, collect_r3_protected_production_drift
+from testing_support.npsc5f_r3_protected_drift import (
+    R3_IMPLEMENTATION_SHA,
+    R3_POST_QUALIFIED_BASELINE_SHA,
+    collect_r3_protected_production_drift,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -198,7 +202,10 @@ def test_npsc5f_r3_h1_sentinel_baselines_after_qualified_drift() -> None:
         _REPO_ROOT,
         from_sha=R2_POST_QUALIFIED_BASELINE_SHA,
     ) == []
-    assert collect_r3_protected_production_drift(_REPO_ROOT) == []
+    assert collect_r3_protected_production_drift(
+        _REPO_ROOT,
+        from_sha=R3_POST_QUALIFIED_BASELINE_SHA,
+    ) == []
 
 
 def test_npsc5f_r3_h1_runtime_event_drift_was_captured_before_baseline_advancement() -> None:

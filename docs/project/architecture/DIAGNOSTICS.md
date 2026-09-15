@@ -122,7 +122,7 @@ Central Diagnostics remains the **only** owner of diagnostic interpretation: ano
 
 `ExecutionReconstructor` and `ExecutionReconstruction` are **shared factual reconstruction** (journal prefix, causal evidence, optional lineage, completeness, tenant/run scope validation). They **do not** classify root cause, mint Problems, or emit diagnostic certainty. DIAG **consumes** reconstruction; it does **not** own evidence recording or Execution Tree authority.
 
-**Package placement:** implementation lives under `intergrax.runtime.diagnostics` today for historical wiring only. **Semantic owner:** Evidence Plane / shared factual reconstruction — relocation tracked as **OBS-RECONSTRUCTION-1** (no duplicate engine in Observability).
+**Physical ownership:** `intergrax.runtime.observability.reconstruction` (**OBS-RECONSTRUCTION-1** closed). **Semantic owner:** Evidence Plane / shared factual reconstruction. Diagnostics **consumes** shared factual reconstruction; it does **not** own reconstruction.
 
 | Component | Owner (semantic) | DIAG? |
 | --------- | ---------------- | ----- |
@@ -158,8 +158,8 @@ Production order on the terminal execution path:
 runtime operation
   → RuntimeEventBus publish/record
   → RuntimeEventPersistence append          # canonical evidence first
-  → terminal diagnostic trigger (when wired)
-  → DiagnosticOrchestrator
+  → TerminalExecutionDiagnosticPort (when wired)
+  → central adapter → DiagnosticOrchestrator
   → ProblemLifecycleEngine.reconcile
   → ProblemPersistence
   → DiagnosticReadService (read path)
@@ -170,7 +170,8 @@ flowchart TB
     EX[Execution Runtime]
     BUS[RuntimeEventBus]
     REP[RuntimeEventPersistence]
-    TRG[TerminalExecutionDiagnosticTrigger]
+    PORT[TerminalExecutionDiagnosticPort]
+    ADP[Central diagnostic adapter]
     ORC[DiagnosticOrchestrator]
     REC[ExecutionReconstructor / Analysis]
     PLC[ProblemLifecycleEngine]
@@ -179,7 +180,7 @@ flowchart TB
     READ[DiagnosticReadService]
 
     EX --> BUS --> REP
-    REP --> TRG --> ORC
+    REP --> PORT --> ADP --> ORC
     ORC --> REC --> PLC --> PP --> DS
     PP --> READ
     REP --> READ
@@ -414,6 +415,8 @@ Problem Store failure **cannot** change execution truth.
 | `attempt_id` (`AttemptId`) | Global try of the run - on `RuntimeEvent`; do not conflate with `RunId` |
 | `execution_id` (`ExecutionId`) | Schedulable unit — **required** on canonical `RuntimeEvent` (**CURRENT** frozen contract); Diagnostics **consumes**, never mints |
 | `problem_id` (`ProblemId`) | Diagnostic-domain identity for reconciled `Problem` state — **not** interchangeable with `ExecutionId` |
+
+**Terminal diagnostic port (`TerminalExecutionDiagnosticRequest`):** orchestration scope remains **run-level** (`tenant_id` + `task_id` + `run_id`). `AttemptId` and `ExecutionId` are an optional correlation pair — both absent or both present; partial correlation is invalid. `tenant_id` must be canonical at the boundary (no silent trim).
 
 Do not mix `RunId`, `ExecutionId`, `AttemptId`, or `ProblemId` in diagnostic contracts. End-to-end operator correlation on every read model is **not** claimed where legacy producers or projections still omit fields — see **ADOPTION / PROJECTION GAP** in [`OBSERVABILITY.md`](OBSERVABILITY.md).
 
@@ -839,7 +842,7 @@ deterministic findings / limitations
 optional higher-level inference later (NOT in F1/F2)
 ```
 
-**Code references:** `functional_validation.py` · `functional_validation_evidence.py` · `functional_evidence.py` · `functional_evidence_persistence.py` · `functional_evidence_query_cursor.py` · `functional_evidence_reconstruction.py` · `functional_evidence_record_codec.py` · `document_store_functional_evidence_persistence.py` · `in_memory_functional_evidence_persistence.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
+**Code references:** Contracts — `intergrax/contracts/functional_evidence/`. Persistence providers — `intergrax/runtime/observability/functional_evidence/` (DIAG consumes `FunctionalEvidencePersistence` only). DIAG reconstruction — `functional_evidence_reconstruction.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
 
 ### Functional evidence persistence qualification (F1-R2 / D1)
 

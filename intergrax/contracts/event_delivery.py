@@ -273,6 +273,8 @@ class EventDeliveryPostAdmissionFailureObserverPort(Protocol):
 class EventSinkHealthPort(Protocol):
     def health_state(self) -> EventSinkHealthState: ...
 
+    def mark_unhealthy(self) -> None: ...
+
 
 @runtime_checkable
 class EventSinkDeliveryReactionPort(Protocol):

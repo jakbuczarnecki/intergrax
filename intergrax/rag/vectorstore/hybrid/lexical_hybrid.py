@@ -14,19 +14,8 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     VectorStoreScope,
 )
 from intergrax.rag.vectorstore.providers.native_provider_boundary import native_hit
+from intergrax.rag.retrieval.fusion import reciprocal_rank_fusion
 from intergrax.rag.vectorstore.sparse.lexical_index import LexicalIndex
-
-
-def reciprocal_rank_fusion(
-    ranked_lists: Sequence[Sequence[str]],
-    *,
-    k: int = 60,
-) -> List[tuple[str, float]]:
-    scores: Dict[str, float] = {}
-    for ranked in ranked_lists:
-        for rank, doc_id in enumerate(ranked):
-            scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank + 1)
-    return sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
 
 class LexicalHybridSupport:

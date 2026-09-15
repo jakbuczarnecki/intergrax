@@ -7,6 +7,9 @@ from __future__ import annotations
 import pytest
 
 from echo.echo_agent import EchoAgent
+from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
+    wrap_terminal_execution_diagnostic_trigger,
+)
 from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_terminal_execution_diagnostic_trigger,
     resolve_host_diagnostic_runtime_dependencies,
@@ -95,7 +98,9 @@ def _build_diagnostic_nexus_loop(
         trace_store=stores.trace_store,
         runtime_event_store=runtime_store,
     )
-    loop.attach_terminal_diagnostic_trigger(trigger)
+    loop.attach_terminal_diagnostic_trigger(
+        wrap_terminal_execution_diagnostic_trigger(trigger, event_bus=loop.event_bus),
+    )
     if inject_violation:
         loop.event_bus.subscribe(
             _inject_violation_after_completed(

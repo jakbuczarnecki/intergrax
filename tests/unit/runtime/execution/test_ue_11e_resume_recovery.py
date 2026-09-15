@@ -66,6 +66,9 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
@@ -685,7 +688,8 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
         assert active_run_id == run_id
         assert active_attempt_id == attempt_id
         await resume_executor.execute(resume_graph, task)
-        return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _handle_task_via_graph)
     runner = UnifiedTaskRunner(loop)

@@ -18,6 +18,9 @@ NPSC5E_R3_FINAL_ORCHESTRATOR_PATH = (
     "tests/unit/runtime/architecture/"
     "test_npsc5e_r3_final_child_fanout_partial_recovery_qualification.py"
 )
+NPSC5E_R3_IMPLEMENTATION_ORCHESTRATOR_PATH = (
+    "tests/unit/runtime/architecture/test_npsc5e_r3_child_fanout_partial_recovery.py"
+)
 NPSC5E_R2_H2_Q1_ORCHESTRATOR_PATH = (
     "tests/unit/runtime/architecture/test_npsc5e_r2_h2_q1_frozen_regression_closure.py"
 )

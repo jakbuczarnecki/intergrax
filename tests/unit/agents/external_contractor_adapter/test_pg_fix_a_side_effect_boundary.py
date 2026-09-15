@@ -40,6 +40,11 @@ from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
     MembershipResolutionMode,
 )
+from intergrax.contracts.execution_identity import validate_task_id
+from tests.unit.runtime.governance.gr3_test_support import (
+    bound_gr3_active_execution,
+    default_gr3_identity_bundle,
+)
 from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.money import MoneyAmount
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
@@ -52,10 +57,19 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _DIGEST = "sha256:" + ("cd" * 32)
 _TENANT = "tenant-a"
 _WORKSPACE = "workspace-a"
-_TASK = "task-pg-a1"
-_RUN = "run-pg-a1"
+_TASK, _RUN, _ATTEMPT, _EXECUTION = default_gr3_identity_bundle()
 _PRINCIPAL = "principal-pg-a1"
 _ADAPTER_PY = Path(__file__).resolve().parents[4] / "agents" / "external_contractor_adapter" / "external_work_adapter.py"
+
+
+@pytest.fixture(autouse=True)
+def _gr3_active_execution():
+    with bound_gr3_active_execution(
+        run_id=_RUN,
+        attempt_id=_ATTEMPT,
+        execution_id=_EXECUTION,
+    ):
+        yield
 
 
 class _RecordingIntegration(DeterministicExternalWorkFake):
@@ -211,7 +225,7 @@ def test_a3_missing_boundary_fails_closed() -> None:
 def test_a4_allow_executes_provider_once() -> None:
     call_log: list[str] = []
     runtime = DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW)
-    boundary = allow_external_work_boundary(
+    boundary = allow_external_work_boundary(active_task_id=_TASK,
         runtime_policy_evaluator=runtime,
         principal_id=_PRINCIPAL,
     )
@@ -245,7 +259,7 @@ def test_a6_require_human_without_grant_blocks_provider() -> None:
         default=PolicyAction.ALLOW,
         by_action={ACTION_ACCEPT_QUOTE: PolicyAction.REQUIRE_HUMAN},
     )
-    boundary = allow_external_work_boundary(
+    boundary = allow_external_work_boundary(active_task_id=_TASK,
         runtime_policy_evaluator=runtime,
         principal_id=_PRINCIPAL,
     )
@@ -294,7 +308,7 @@ def test_a8_deny_overrides_grant_blocks_provider() -> None:
 
 def test_a9_tenant_isolation_uses_real_gate() -> None:
     runtime = DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW)
-    boundary = seed_external_work_authorization_boundary(
+    boundary = seed_external_work_authorization_boundary(active_task_id=_TASK,
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
@@ -316,7 +330,7 @@ def test_a9_tenant_isolation_uses_real_gate() -> None:
 
 def test_a10_principal_without_authority_denied() -> None:
     runtime = DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW)
-    boundary = seed_external_work_authorization_boundary(
+    boundary = seed_external_work_authorization_boundary(active_task_id=_TASK,
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
@@ -335,7 +349,7 @@ def test_a10_principal_without_authority_denied() -> None:
 def test_a11_resource_scope_changes_authorization() -> None:
     other_digest = "sha256:" + ("ef" * 32)
     runtime = DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW)
-    boundary = seed_external_work_authorization_boundary(
+    boundary = seed_external_work_authorization_boundary(active_task_id=_TASK,
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
@@ -353,8 +367,8 @@ def test_a11_resource_scope_changes_authorization() -> None:
     assert denied.used is False
     allowed = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-other",
-            run_id="run-other",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_SCOPE_DIGEST: other_digest, META_IDEMPOTENCY_KEY: "idem-other"}),
         ),
         principal_id=_PRINCIPAL,
@@ -367,7 +381,7 @@ def test_a12_same_action_different_authority() -> None:
     call_log_allowed: list[str] = []
     call_log_denied: list[str] = []
     runtime = DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW)
-    boundary = seed_external_work_authorization_boundary(
+    boundary = seed_external_work_authorization_boundary(active_task_id=_TASK,
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
@@ -388,8 +402,8 @@ def test_a12_same_action_different_authority() -> None:
     )
     denied = adapter_denied.create_and_map(
         adapter_denied.build_create_request(
-            task_id="task-no-membership",
-            run_id="run-no-membership",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_IDEMPOTENCY_KEY: "idem-no-membership"}),
         ),
         principal_id="principal-without-membership",
@@ -474,7 +488,7 @@ def test_a16_authorization_before_provider_ordering() -> None:
 
 def test_adapt_from_step_metadata_wires_authorization_boundary() -> None:
     runtime = DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW)
-    boundary = allow_external_work_boundary(
+    boundary = allow_external_work_boundary(active_task_id=_TASK,
         runtime_policy_evaluator=runtime,
         principal_id=_PRINCIPAL,
     )

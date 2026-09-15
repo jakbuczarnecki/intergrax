@@ -5,11 +5,10 @@
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Mapping
 
 from intergrax.contracts.execution_identity import EventId, mint_event_id
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineCandidateFact,
     PipelineEvidenceKind,
     PipelineEvidenceProvenance,
@@ -22,11 +21,13 @@ from intergrax.runtime.diagnostics.functional_evidence import (
     PlatformFunctionalEvidence,
     ScoreSemantics,
     TypedPipelineScore,
+    require_tenant_id_from_exec_ctx,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistence,
 )
-from intergrax.runtime.observability.export_attributes import ObservabilityArtifactReference
+from intergrax.contracts.observability_artifact_reference import ObservabilityArtifactReference
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 
 _FUNCTIONAL_EVIDENCE_RECORDER_KEY = "functional_evidence_recorder"
 _SUPPRESS_KINDS_METADATA_KEY = "qualification_suppress_functional_evidence_kinds"
@@ -37,7 +38,7 @@ def functional_evidence_recorder_key() -> str:
     return _FUNCTIONAL_EVIDENCE_RECORDER_KEY
 
 
-def suppress_kinds_from_metadata(metadata: dict[str, Any]) -> frozenset[PipelineEvidenceKind]:
+def suppress_kinds_from_metadata(metadata: Mapping[str, object]) -> frozenset[PipelineEvidenceKind]:
     raw = metadata.get(_SUPPRESS_KINDS_METADATA_KEY)
     if not isinstance(raw, list):
         return frozenset()
@@ -94,18 +95,18 @@ class FunctionalEvidenceRecorder:
         *,
         tenant_id: str | None = None,
     ) -> PipelineEvidenceScope:
-        resolved_tenant = tenant_id
-        if resolved_tenant is None and exec_ctx.request is not None:
-            request_tenant = getattr(exec_ctx.request, "tenant_id", None)
-            if request_tenant and str(request_tenant).strip():
-                resolved_tenant = str(request_tenant).strip()
-        if resolved_tenant is None:
-            resolved_tenant = "default"
+        resolved_tenant = tenant_id if tenant_id is not None else require_tenant_id_from_exec_ctx(exec_ctx)
+        if type(resolved_tenant) is not str:
+            raise TypeError("tenant_id must be str")
+        normalized_tenant = resolved_tenant.strip()
+        if not normalized_tenant or resolved_tenant != normalized_tenant:
+            raise ValueError("tenant_id must be non-empty and normalized")
         return PipelineEvidenceScope(
-            tenant_id=resolved_tenant,
+            tenant_id=normalized_tenant,
             task_id=exec_ctx.task_id,
             run_id=exec_ctx.run_id,
             attempt_id=exec_ctx.attempt_id,
+            execution_id=exec_ctx.execution_id,
         )
 
     def record_operation_outcome(

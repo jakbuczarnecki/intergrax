@@ -58,6 +58,9 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from tests.unit.runtime.background_execution.reentry_admission_doubles import InMemoryKVStore
 
@@ -177,6 +180,7 @@ async def test_canonical_harness_execution_pins_revision_before_work() -> None:
             task_id=task.task_id,
             state=TaskState.COMPLETED,
             answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch(
@@ -233,7 +237,8 @@ async def test_r1_then_r2_old_execution_stays_on_r1() -> None:
     async def _capture_execute(self, request):
         nonlocal captured_execution_id
         captured_execution_id = require_active_execution_id()
-        return TaskResult(task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
 
     with patch(
         "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
@@ -259,6 +264,7 @@ async def test_r1_then_r2_old_execution_stays_on_r1() -> None:
             task_id=resumed_task.task_id,
             state=TaskState.COMPLETED,
             answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         ),
     ):
         await runtime_r2.execution.execute(resumed_task, execution_id=execution_id)
@@ -295,7 +301,8 @@ async def test_new_execution_after_r2_uses_r2() -> None:
     async def _capture_execute(self, request):
         nonlocal captured_execution_id
         captured_execution_id = require_active_execution_id()
-        return TaskResult(task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
 
     with patch(
         "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
@@ -423,7 +430,8 @@ async def test_resume_preserves_pinned_revision_not_current_host_revision() -> N
     async def _capture_first(self, request):
         nonlocal captured_execution_id
         captured_execution_id = require_active_execution_id()
-        return TaskResult(task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
 
     with patch(
         "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
@@ -453,6 +461,7 @@ async def test_resume_preserves_pinned_revision_not_current_host_revision() -> N
             task_id=resumed_task.task_id,
             state=TaskState.COMPLETED,
             answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         ),
     ):
         await runtime_r2.execution.execute(

@@ -172,7 +172,7 @@ def test_df5_case_c_product_without_attached_diagnostics_fails_closed(
     env = manifest.environment
     assert env is not None
     monkeypatch.setattr(
-        "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_trigger",
+        "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_port",
         lambda **_kwargs: None,
     )
     with pytest.raises(DiagnosticAssemblyError, match="could not be attached"):
@@ -193,7 +193,7 @@ def test_df5_case_d_production_scenario_without_diagnostics_fails(
     _stub_llm: None,
 ) -> None:
     monkeypatch.setattr(
-        "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_trigger",
+        "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_port",
         lambda **_kwargs: None,
     )
     with pytest.raises(ScenarioRuntimeBuildError, match="central diagnostics are required"):

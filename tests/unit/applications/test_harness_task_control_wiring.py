@@ -4,11 +4,14 @@ import pytest
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.autonomy_level import AutonomyLevel
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
-    build_task_runner_with_enricher,
 )
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from poc_template_application.host.factory import create_poc_template_application
 from poc_template_application.host.settings import PocTemplateApplicationSettings
 
@@ -54,10 +57,11 @@ async def test_unified_task_runner_applies_enricher() -> None:
             from intergrax.runtime.task.task import TaskResult, TaskState
 
             assert task.options.governance.autonomy_level is AutonomyLevel.MANUAL
-            return TaskResult(task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
+            return TaskResult(
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
 
     enricher = build_reliability_task_enricher(env)
-    runner = build_task_runner_with_enricher(_Loop(), enricher)  # type: ignore[arg-type]
+    runner = UnifiedTaskRunner(_Loop(), task_enricher=enricher)  # type: ignore[arg-type]
 
     await runner.run_task(
         Task(

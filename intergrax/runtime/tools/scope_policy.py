@@ -7,6 +7,20 @@ from typing import Protocol, runtime_checkable
 
 
 @runtime_checkable
+class ToolAllowListEnumeration(Protocol):
+    """
+    Optional capability for static allow-list intersection during policy resolution.
+
+    Dynamic ``ToolScopePolicy`` implementations without enumeration remain valid for
+    runtime invocation; they cannot participate in list-based intersection.
+    """
+
+    def allowed_tool_ids(self) -> frozenset[str]:
+        """Return the static tool id allow-list for intersection semantics."""
+        ...
+
+
+@runtime_checkable
 class ToolScopePolicy(Protocol):
     """
     Defines authorization contract for tool execution.

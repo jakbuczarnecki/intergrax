@@ -62,6 +62,8 @@ from intergrax.runtime.diagnostics.persistence_conformance import sample_problem
 
 _EXECUTION_DIR = Path("intergrax/runtime/execution")
 
+pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
+
 
 def test_a1_runtime_execution_ast_gate_no_private_nexus_publish() -> None:
     forbidden = (

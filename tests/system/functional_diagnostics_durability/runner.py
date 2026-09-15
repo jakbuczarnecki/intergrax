@@ -12,10 +12,16 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_event_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_event_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
   DocumentStoreFunctionalEvidencePersistence,
   wire_functional_evidence_persistence,
 )
@@ -23,7 +29,7 @@ from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import Functio
 from intergrax.runtime.diagnostics.functional_diagnostic_analysis import (
   FunctionalDiagnosticCheckStatus,
 )
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
   PipelineCandidateFact,
   PipelineEvidenceKind,
   PipelineEvidenceProvenance,
@@ -32,12 +38,12 @@ from intergrax.runtime.diagnostics.functional_evidence import (
   PipelineOperationStatus,
   PlatformFunctionalEvidence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
   FunctionalEvidencePersistence,
   FunctionalEvidencePersistenceConflictError,
   FunctionalEvidencePersistenceIntegrityError,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
   assert_functional_evidence_conflicting_append_fails_closed,
   assert_functional_evidence_cross_domain_round_trip,
   assert_functional_evidence_persistence_conformance,
@@ -47,7 +53,7 @@ from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance i
   sample_functional_evidence_scope,
 )
 from intergrax.runtime.diagnostics.functional_validation_lookup import FunctionalValidationEvidenceLookup
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
   InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.observability.export_attributes import ObservabilityArtifactReference
@@ -106,7 +112,7 @@ class _SyntheticFunctionalEvidencePersistence(FunctionalEvidencePersistence):
     return evidence
 
   def query_evidence(self, request):
-    from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+    from intergrax.contracts.functional_evidence.persistence import (
       FunctionalEvidenceQueryPage,
       FunctionalEvidenceQueryRequest,
       functional_evidence_query_order_key,
@@ -400,6 +406,7 @@ def _gate_contract_j() -> GateResult:
     task_id=mint_task_id(),
     run_id=mint_run_id(),
     attempt_id=mint_attempt_id(),
+    execution_id=mint_execution_id(),
   )
   persistence = _SyntheticFunctionalEvidencePersistence()
   evidence = PlatformFunctionalEvidence(

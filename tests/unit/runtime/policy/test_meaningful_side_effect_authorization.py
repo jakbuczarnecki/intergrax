@@ -36,6 +36,12 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
@@ -47,6 +53,11 @@ from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationResult,
 )
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from tests.unit.runtime.governance.gr3_test_support import (
+    bound_gr3_active_execution,
+    default_gr3_identity_bundle,
+    default_gr3_inner_guard,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -57,6 +68,7 @@ _OPERATION = "collaborative.document.delete"
 _SCOPE = "document.delete"
 _RESOURCE = "document-123"
 _NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
+_TASK_ID, _RUN_ID, _ATTEMPT_ID, _EXECUTION_ID = default_gr3_identity_bundle()
 
 def _seed_gate(
     *,
@@ -147,7 +159,10 @@ def _seed_gate(
             )
         ),
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate), membership
+    return MeaningfulSideEffectAuthorizationBoundary(
+        enforcement_gate=gate,
+        inner_execution_guard=default_gr3_inner_guard(_TASK_ID),
+    ), membership
 
 
 def _enforcement_request(membership: WorkspaceMembership) -> CollaborativeWorkEnforcementRequest:
@@ -162,8 +177,10 @@ def _enforcement_request(membership: WorkspaceMembership) -> CollaborativeWorkEn
             action=_OPERATION,
             kinds=(MeaningfulSideEffectKind.MUTATION,),
             side_effect_scope_id="scope-1",
-            task_id="task-1",
-            run_id="run-1",
+            task_id=_TASK_ID,
+            run_id=_RUN_ID,
+            attempt_id=_ATTEMPT_ID,
+            execution_id=_EXECUTION_ID,
             principal_id=_ACTING,
             tenant_id=_TENANT,
             resource=_RESOURCE,
@@ -171,7 +188,17 @@ def _enforcement_request(membership: WorkspaceMembership) -> CollaborativeWorkEn
     )
 
 
-def test_boundary_allow_permits_execution() -> None:
+@pytest.fixture
+def gr3_active_execution():
+    with bound_gr3_active_execution(
+        run_id=_RUN_ID,
+        attempt_id=_ATTEMPT_ID,
+        execution_id=_EXECUTION_ID,
+    ):
+        yield
+
+
+def test_boundary_allow_permits_execution(gr3_active_execution) -> None:
     boundary, membership = _seed_gate()
     executed: list[str] = []
 
@@ -183,7 +210,7 @@ def test_boundary_allow_permits_execution() -> None:
     assert executed == ["side-effect"]
 
 
-def test_boundary_deny_blocks_execution() -> None:
+def test_boundary_deny_blocks_execution(gr3_active_execution) -> None:
     boundary, membership = _seed_gate(seed_profile=False)
     executed: list[str] = []
 
@@ -197,7 +224,7 @@ def test_boundary_deny_blocks_execution() -> None:
     assert executed == []
 
 
-def test_boundary_require_human_does_not_become_allow() -> None:
+def test_boundary_require_human_does_not_become_allow(gr3_active_execution) -> None:
     boundary, membership = _seed_gate(
         runtime_policy=RuntimePolicyEngine(
             meaningful_side_effect_rules=(
@@ -217,14 +244,14 @@ def test_boundary_require_human_does_not_become_allow() -> None:
     assert authorization.governed_continuation_request.operation_id == _OPERATION
 
 
-def test_boundary_preserves_operation_and_principal_identities() -> None:
+def test_boundary_preserves_operation_and_principal_identities(gr3_active_execution) -> None:
     boundary, membership = _seed_gate()
     authorization = boundary.authorize(_enforcement_request(membership))
     assert authorization.enforcement_result.operation_id == _OPERATION
     assert authorization.enforcement_result.authority_scope == _SCOPE
 
 
-def test_missing_authoritative_state_fails_closed() -> None:
+def test_missing_authoritative_state_fails_closed(gr3_active_execution) -> None:
     empty_boundary = MeaningfulSideEffectAuthorizationBoundary(
         enforcement_gate=CollaborativeWorkEnforcementGate(
             profile_repository=InMemoryCollaborativeOperationPolicyProfileRepository(),
@@ -236,7 +263,8 @@ def test_missing_authoritative_state_fails_closed() -> None:
             ),
             policy_evaluator=CollaborativePolicyEvaluator(InMemoryCollaborativePolicyRepository()),
             runtime_policy_evaluator=RuntimePolicyEngine(),
-        )
+        ),
+        inner_execution_guard=default_gr3_inner_guard(_TASK_ID),
     )
     fake_membership = WorkspaceMembership(
         membership_id="membership-1",

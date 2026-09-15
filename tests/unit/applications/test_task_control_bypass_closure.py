@@ -29,7 +29,9 @@ from intergrax.applications._shared.harness_control_plane_policy_wiring import (
     build_harness_host_control_plane_policy_bundle,
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+from tests.unit.applications.harness_canonical_task_routes_test_support import (
+    mount_canonical_harness_task_routes_for_tests,
+)
 from intergrax.applications._shared.task_control import (
     _execute_autonomy_change,
     governed_cancel_active_task,
@@ -77,6 +79,9 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_run
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import RuntimePolicyBundleEvaluator
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
@@ -139,6 +144,15 @@ def _task(*, tenant_id: str = _TENANT, autonomy: AutonomyLevel = AutonomyLevel.A
     )
     task.options.governance.autonomy_level = autonomy
     return task
+
+
+def _completed_task_result() -> TaskResult:
+    return TaskResult(
+        task_id=_TASK_ID,
+        state=TaskState.COMPLETED,
+        answer="ok",
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+    )
 
 
 def _allow_boundary() -> tuple[ControlPlaneMutationAuthorizationBoundary, _RecordingEvaluator]:
@@ -264,9 +278,8 @@ async def test_taskcpm_b1_supported_cancel_route_reaches_coordinator_only_after_
         resolved_api_key=None,
         tenant_required=True,
     )
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app_deny,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=_deny_boundary(),
     )
     client_deny = TestClient(app_deny)
@@ -329,9 +342,8 @@ async def test_taskcpm_b4_supported_autonomy_route_reaches_mutation_only_through
         resolved_api_key=None,
         tenant_required=True,
     )
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app_deny,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=_deny_boundary(),
     )
     client_deny = TestClient(app_deny)
@@ -363,9 +375,8 @@ async def test_taskcpm_b4_supported_autonomy_route_reaches_mutation_only_through
         resolved_api_key=None,
         tenant_required=True,
     )
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app_allow,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=boundary,
     )
     client_allow = TestClient(app_allow)
@@ -395,7 +406,7 @@ async def test_taskcpm_b6_supported_operator_resume_reaches_runner_through_gover
     with patch(
         "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
-        return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
+        return_value=_completed_task_result(),
     ) as resume_call:
         outcome = await governed_resume_checkpoint_task(
             runner,
@@ -423,14 +434,12 @@ async def test_taskcpm_b7_supported_resume_route_reaches_runner_only_through_gov
         resolved_api_key=None,
         tenant_required=True,
     )
-    runner_deny = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control._resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_host_execution",
         new_callable=AsyncMock,
     ) as resume_deny:
-        mount_harness_task_routes(
+        mount_canonical_harness_task_routes_for_tests(
             app_deny,
-            task_runner=runner_deny,
             checkpoint_store=_StaticCheckpointStore(checkpoint),
             mutation_boundary=_deny_boundary(),
         )
@@ -455,15 +464,13 @@ async def test_taskcpm_b7_supported_resume_route_reaches_runner_only_through_gov
         tenant_required=True,
     )
     boundary, evaluator = _allow_boundary()
-    runner_allow = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control._resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_host_execution",
         new_callable=AsyncMock,
-        return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
+        return_value=_completed_task_result(),
     ) as resume_allow:
-        mount_harness_task_routes(
+        mount_canonical_harness_task_routes_for_tests(
             app_allow,
-            task_runner=runner_allow,
             checkpoint_store=_StaticCheckpointStore(checkpoint),
             mutation_boundary=boundary,
         )
@@ -491,7 +498,7 @@ async def test_taskcpm_b8_debug_hitl_resume_service_is_debug_lab_only() -> None:
     checkpoint = _checkpoint()
     host_execution = MagicMock()
     host_execution.execute = AsyncMock(
-        return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
+        return_value=_completed_task_result(),
     )
     service = DebugHitlResumeService(
         host_execution=host_execution,
@@ -604,9 +611,8 @@ async def test_taskcpm_b12b_lab_direct_mount_cancel_remains_fail_closed() -> Non
         resolved_api_key=None,
         tenant_required=True,
     )
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=None,
     )
     client = TestClient(app)

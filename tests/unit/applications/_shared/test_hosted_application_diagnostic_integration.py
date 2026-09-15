@@ -65,7 +65,7 @@ from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
 from intergrax.runtime.diagnostics.diagnostic_subject import DiagnosticSubjectKind
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstructor,
 )
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (

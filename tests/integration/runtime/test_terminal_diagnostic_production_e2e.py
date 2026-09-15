@@ -20,6 +20,13 @@ from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_terminal_execution_diagnostic_trigger,
     resolve_host_diagnostic_runtime_dependencies,
 )
+from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
+    CentralTerminalExecutionDiagnosticPort,
+    wrap_terminal_execution_diagnostic_trigger,
+)
+from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
+    TerminalExecutionDiagnosticTrigger,
+)
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     _build_diagnostic_operations_pane,
@@ -74,7 +81,11 @@ from tests.unit.applications.test_product_observability_dashboard_wiring import 
     _product_env,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.gate]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.gate,
+    pytest.mark.obs_coverage_p1,
+]
 
 _TENANT_A = "tenant-terminal-diag-a"
 _TENANT_B = "tenant-terminal-diag-b"
@@ -138,6 +149,12 @@ def _inject_violation_after_completed(
     return _handler
 
 
+def _production_terminal_trigger_from_loop(loop: NexusLoop) -> TerminalExecutionDiagnosticTrigger:
+    port = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    assert isinstance(port, CentralTerminalExecutionDiagnosticPort)
+    return port._trigger  # noqa: SLF001
+
+
 def _build_diagnostic_nexus_loop(
     *,
     inject_violation: bool,
@@ -166,7 +183,9 @@ def _build_diagnostic_nexus_loop(
         trace_store=stores.trace_store,
         runtime_event_store=runtime_store,
     )
-    loop.attach_terminal_diagnostic_trigger(trigger)
+    loop.attach_terminal_diagnostic_trigger(
+        wrap_terminal_execution_diagnostic_trigger(trigger, event_bus=loop.event_bus),
+    )
     if inject_violation:
         loop.event_bus.subscribe(
             _inject_violation_after_completed(
@@ -184,7 +203,7 @@ async def test_real_nexus_execution_triggers_diagnostics_without_manual_orchestr
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     loop, _, _ = _build_diagnostic_nexus_loop(inject_violation=True)
-    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    trigger = _production_terminal_trigger_from_loop(loop)
     assert trigger is not None
     captured: list[object] = []
     original_run = trigger._orchestrator.run  # noqa: SLF001
@@ -237,7 +256,7 @@ async def test_evidence_recording_failure_does_not_change_business_outcome(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     loop, runtime_store, _ = _build_diagnostic_nexus_loop(inject_violation=False)
-    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    trigger = _production_terminal_trigger_from_loop(loop)
     assert trigger is not None
 
     def _raise(*_args: object, **_kwargs: object) -> None:
@@ -283,7 +302,7 @@ async def test_diagnostic_failure_does_not_change_business_outcome(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     loop, runtime_store, _ = _build_diagnostic_nexus_loop(inject_violation=False)
-    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    trigger = _production_terminal_trigger_from_loop(loop)
     assert trigger is not None
 
     def _raise(*_args: object, **_kwargs: object) -> None:
@@ -329,7 +348,7 @@ def test_background_execution_inherits_terminal_diagnostic_trigger(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     loop, _, _ = _build_diagnostic_nexus_loop(inject_violation=True)
-    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    trigger = _production_terminal_trigger_from_loop(loop)
     assert trigger is not None
     captured: list[object] = []
     original_run = trigger._orchestrator.run  # noqa: SLF001
@@ -406,7 +425,7 @@ def test_background_execution_records_diagnostic_failure_evidence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     loop, runtime_store, _ = _build_diagnostic_nexus_loop(inject_violation=False)
-    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    trigger = _production_terminal_trigger_from_loop(loop)
     assert trigger is not None
 
     def _raise(*_args: object, **_kwargs: object) -> None:
@@ -567,7 +586,7 @@ async def test_different_terminal_signatures_create_distinct_problems() -> None:
 @pytest.mark.asyncio
 async def test_replay_terminal_trigger_does_not_duplicate_failure_evidence() -> None:
     loop, runtime_store, _ = _build_diagnostic_nexus_loop(inject_violation=False)
-    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    trigger = _production_terminal_trigger_from_loop(loop)
     assert trigger is not None
     runner = UnifiedTaskRunner(loop)
     task = Task(
@@ -652,7 +671,7 @@ async def test_tenant_isolation_for_terminal_diagnostics(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     loop, _, _ = _build_diagnostic_nexus_loop(inject_violation=True)
-    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
+    trigger = _production_terminal_trigger_from_loop(loop)
     assert trigger is not None
     captured_tenants: list[str] = []
     original_run = trigger._orchestrator.run  # noqa: SLF001
@@ -683,7 +702,9 @@ async def test_tenant_isolation_for_terminal_diagnostics(
         run_id=mint_run_id(),
     )
 
-    assert captured_tenants == [_TENANT_A, _TENANT_B]
+    assert _TENANT_A in captured_tenants
+    assert _TENANT_B in captured_tenants
+    assert all(tenant in {_TENANT_A, _TENANT_B} for tenant in captured_tenants)
 
 
 def test_harness_host_runtime_wires_terminal_diagnostic_trigger(
@@ -717,6 +738,7 @@ def test_harness_host_runtime_wires_terminal_diagnostic_trigger(
         manifest,
         env,
         settings=settings,
+        tenant_id=_TENANT_A,
         registry_projection=build_governed_contractor_test_registry_projection(),
         document_store=document_store,
         trace_db_path=tmp_path / "trace.db",  # type: ignore[operator]

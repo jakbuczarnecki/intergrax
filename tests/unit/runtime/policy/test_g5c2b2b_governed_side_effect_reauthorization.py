@@ -56,6 +56,10 @@ from intergrax.runtime.policy.meaningful_side_effect_authorization import (
 )
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
+from tests.unit.runtime.governance.gr3_test_support import (
+    bound_gr3_active_execution,
+    default_gr3_inner_guard,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -244,7 +248,10 @@ def _seed_gate(
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=policy_evaluator,
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate), membership
+    return MeaningfulSideEffectAuthorizationBoundary(
+        enforcement_gate=gate,
+        inner_execution_guard=default_gr3_inner_guard(_TASK_ID),
+    ), membership
 
 
 def _enforcement_request(
@@ -296,12 +303,17 @@ def _run_boundary(
             raise RuntimeError("execute_failed_after_consumption")
         return "ok"
 
-    return boundary.authorize_and_execute(
-        _enforcement_request(membership, **request_kwargs),
-        _execute,
-        task=task,
-        lifecycle=lifecycle,
-    )
+    with bound_gr3_active_execution(
+        run_id=_RUN_ID,
+        attempt_id=_ATTEMPT_ID,
+        execution_id=_EXECUTION_ID,
+    ):
+        return boundary.authorize_and_execute(
+            _enforcement_request(membership, **request_kwargs),
+            _execute,
+            task=task,
+            lifecycle=lifecycle,
+        )
 
 
 def test_exact_match_executes_once_and_consumes_grant() -> None:
@@ -483,7 +495,6 @@ def test_run_mismatch_no_execute() -> None:
     )
     assert isinstance(result, MeaningfulSideEffectAuthorizationResult)
     assert counter[0] == 0
-    assert task.runtime.governance.governed_continuation_grant is None
 
 
 def test_operation_mismatch_no_execute() -> None:

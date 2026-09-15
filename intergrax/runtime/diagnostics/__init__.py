@@ -87,7 +87,7 @@ from intergrax.runtime.diagnostics.providers.runtime_event_scope_provider import
     RUNTIME_EVENT_SCOPE_PROVIDER_ID,
     RuntimeEventScopeProvider,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstruction,
     ExecutionReconstructionIntegrityError,
     ExecutionReconstructor,

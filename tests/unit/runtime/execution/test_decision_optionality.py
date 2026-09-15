@@ -59,6 +59,9 @@ from intergrax.runtime.execution.task_adapter import TaskExecutionInput, executi
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -265,7 +268,8 @@ async def test_orchestration_root_runtime_completes_without_decision(
         message="hello",
         context=TaskContext(capability="echo.basic"),
     )
-    expected = TaskResult(task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
+    expected =     TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
     registry = AgentRegistry()
     loop = NexusLoop(registry)
     request = execution_request_from_task(

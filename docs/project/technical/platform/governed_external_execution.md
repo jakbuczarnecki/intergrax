@@ -52,7 +52,7 @@ User intent
   │
   ▼
 Tier-3 host (tenant / API / wiring)
-  │  injects ExternalWorkIntegration + MeaningfulSideEffectEvaluator
+  │  injects ExternalWorkIntegration + MeaningfulSideEffectAuthorizationBoundary
   ▼
 Provider-neutral request
   │  ExternalWorkCreateRequest / correlation / idempotency
@@ -117,7 +117,7 @@ Exactly one primary owner per capability. “Does not” columns eliminate ambig
 | **Host (Tier-3)** | `applications/governed_contractor_application` | Inject integrations + policy evaluator; tenant/env; public API; workspace allowlists; present quotes / HITL surfaces (product); observe proof metadata | Own External Work contracts; evaluate policy rules in the adapter; implement providers; treat proof as receipt/authz |
 | **Tier-2 adapter** | `agents/external_contractor_adapter` | Map/normalize External Work; preserve correlation + idempotency; surface/forward continuation; describe side effects; compose `GovernedProofProfile` after ALLOW + success | Decide accept/reject; resume Nexus; embed policy rules; persist/sign proofs; poll/retry engines; import `applications.*` |
 | **Provider** | Implements `ExternalWorkIntegration` | Execute discover/create/quote/accept/cancel/timeline/deliverables/evidence behind the Protocol | Evaluate policy; authorize acceptance; compose Intergrax proofs; own Nexus identity |
-| **Policy** | Runtime `PolicyEngine` / injected `MeaningfulSideEffectEvaluator` (prefer `RuntimePolicyBundleEvaluator` for attested packs) | Authorize or deny meaningful side effects before provider calls against a concrete `ImmutableRuntimePolicyBundle`; map REQUIRE_HUMAN to continuation | Resume Nexus; execute provider transport; invent business rules inside Tier-2 |
+| **Policy** | `MeaningfulSideEffectAuthorizationBoundary` (composed with `RuntimePolicyBundleEvaluator` / bundle-backed evaluators where hosts require attested packs) | Authorize or deny meaningful side effects before provider calls; map REQUIRE_HUMAN to governed continuation | Resume Nexus; execute provider transport; invent business rules inside Tier-2 |
 | **Continuation** | Platform composition + Nexus/HITL | Pause for governance; carry decision evidence; resume orchestration | Execute external work; decide commercial outcomes inside Tier-2; introduce `ContinuationRuntime` |
 | **Proof (`GovernedProofProfile`)** | Platform contract; Tier-2 composes | Describe who/what/run/policy refs/evidence refs/correlation after success | Authorize, resume, sign, hash, store, publish |
 | **Execution Evidence & Host Attestation** | Host + platform contracts (downstream of GEC) | Compose governed EBE, sign, emit portable ProofReceipt, verify offline | Own provider execution; live inside Tier-2; authorize side effects |
@@ -172,7 +172,7 @@ Target path:
 1. Implement ExternalWorkIntegration (sync Protocol)
 2. Bind via IntegrationProfile.external_work / host settings
 3. Inject into ExternalContractorAdapterAgent (or equivalent consumer)
-4. Supply MeaningfulSideEffectEvaluator (bundle-backed for attestation) + principal + real run_id
+4. Supply `MeaningfulSideEffectAuthorizationBoundary` (often composed with bundle-backed `RuntimePolicyBundleEvaluator`) + principal + real run_id
 5. Host orchestrator: ProviderInvocation → GovernedExecutionResult → attested receipt
 ```
 

@@ -249,7 +249,7 @@ def test_production_fail_closed_when_diagnostics_required_without_document_store
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(
-        "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_trigger",
+        "intergrax.applications._shared.diagnostic_runtime_wiring.try_build_terminal_execution_diagnostic_port",
         lambda **_kwargs: None,
     )
     environment = _production_attached_environment("scenario.production.no_diag")

@@ -1,35 +1,61 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Resolve effective tool allow-lists from RuntimeConfig policy bundle (Phase R-Policy)."""
+"""Resolve effective tool allow-lists from neutral policy inputs (Phase R-Policy, GR-4-R1)."""
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
+from intergrax.runtime.tools.scope_policy import (
+    ToolAllowListEnumeration,
+    ToolScopePolicy,
+)
 
 
-def resolve_allowed_tools_from_config(
-    config: RuntimeConfig,
+class ToolPolicyResolutionError(ValueError):
+    """Raised when upstream policy cannot be interpreted (fail-closed)."""
+
+
+def _upstream_allow_list(upstream_policy: ToolScopePolicy) -> list[str]:
+    if not isinstance(upstream_policy, ToolAllowListEnumeration):
+        raise ToolPolicyResolutionError(
+            "upstream_tool_policy_not_enumerable: "
+            "policy must implement allowed_tool_ids() for list intersection",
+        )
+    try:
+        raw = upstream_policy.allowed_tool_ids()
+    except Exception as exc:  # noqa: BLE001 — fail-closed boundary
+        raise ToolPolicyResolutionError(
+            "upstream_tool_policy_allowed_tool_ids_failed",
+        ) from exc
+    if not isinstance(raw, frozenset):
+        raise ToolPolicyResolutionError(
+            "upstream_tool_policy_allowed_tool_ids_invalid_type",
+        )
+    return sorted(raw)
+
+
+def resolve_allowed_tools(
     *,
-    explicit: Optional[Sequence[str]] = None,
-) -> Optional[Sequence[str]]:
+    upstream_policy: ToolScopePolicy | None = None,
+    explicit: Sequence[str] | None = None,
+) -> Sequence[str] | None:
     """
-    Resolve effective tool allow-list from Tier-3 ``RuntimePolicyBundle.tool_access``.
+    Resolve effective tool allow-list from neutral policy inputs.
 
-    Caller ``explicit`` scope narrows (intersects with) upstream policy; it never
-    expands a stricter bundle allow-list. A ``StaticToolScopePolicy`` on the bundle
-    yields a sorted upstream allow-list for :class:`ToolAccessPolicy`. When both
-    authorities apply, the result is their sorted intersection; an empty intersection
-    is ``[]`` (zero allowed tools), not ``None``.
+    Semantics:
+    - ``upstream_policy is None``: no upstream restriction (not the same as empty allow-list).
+    - ``upstream_policy`` with empty enumeration: zero tools allowed when explicit is absent.
+    - ``explicit is None``: no caller narrowing; use upstream only when present.
+    - ``explicit`` empty sequence: zero tools allowed (fail-closed), regardless of upstream.
+    - When both apply, result is sorted intersection; empty intersection is ``[]``, not ``None``.
     """
-    upstream: Optional[Sequence[str]] = None
-    bundle = config.policy_bundle
-    if bundle is not None and bundle.tool_access is not None:
-        access = bundle.tool_access
-        if isinstance(access, StaticToolScopePolicy):
-            upstream = sorted(access.allowed_tool_ids())
+    if explicit is not None and len(explicit) == 0:
+        return []
+
+    upstream: list[str] | None = None
+    if upstream_policy is not None:
+        upstream = _upstream_allow_list(upstream_policy)
 
     if upstream is None and explicit is None:
         return None

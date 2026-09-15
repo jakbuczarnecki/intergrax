@@ -6,7 +6,9 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+from contextlib import contextmanager
 from datetime import UTC, datetime
+from typing import Iterator
 from decimal import Decimal
 from pathlib import Path
 
@@ -39,6 +41,7 @@ from intergrax.collaborative_work.repository import (
     CreatePrincipalAuthorityGrantCommand,
     CreateWorkspaceMembershipCommand,
 )
+from intergrax.contracts.external_work import ExternalWorkStatus
 from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.collaborative_work import (
@@ -50,7 +53,9 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembershipRole,
 )
 from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
     mint_task_id,
+    reset_active_execution_identity,
     validate_attempt_id,
     validate_execution_id,
     validate_run_id,
@@ -68,7 +73,11 @@ from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )
+from intergrax.runtime.governance.canonical_inner_execution_guard import (
+    DefaultCanonicalInnerExecutionGuard,
+)
 from intergrax.runtime.task.task import Task, TaskState
+from tests.unit.runtime.governance.gr3_test_support import StaticActiveTaskScope
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -109,7 +118,11 @@ class _RecordingIntegration(DeterministicExternalWorkFake):
 
     def create_work(self, request):  # type: ignore[no-untyped-def]
         self.call_log.append("integration.create_work")
-        return super().create_work(request)
+        snapshot = super().create_work(request)
+        # PG-FIX-C R1 proves governed task binding — not QUOTE continuation surfacing.
+        return snapshot.model_copy(
+            update={"status": ExternalWorkStatus.CREATED, "quote": None},
+        )
 
 
 def _decision(*, action: PolicyAction = PolicyAction.REQUIRE_HUMAN) -> PolicyDecision:
@@ -123,6 +136,20 @@ def _decision(*, action: PolicyAction = PolicyAction.REQUIRE_HUMAN) -> PolicyDec
     )
 
 
+@contextmanager
+def _canonical_active_execution_identity() -> Iterator[None]:
+    """Mirror production: grant + side-effect identity from active execution context."""
+    token = bind_active_execution_identity(
+        run_id=_RUN_ID,
+        attempt_id=_ATTEMPT_ID,
+        execution_id=_EXECUTION_ID,
+    )
+    try:
+        yield
+    finally:
+        reset_active_execution_identity(token)
+
+
 def _grant() -> GovernedContinuationApprovalGrant:
     return GovernedContinuationApprovalGrant.model_validate(
         {
@@ -132,6 +159,8 @@ def _grant() -> GovernedContinuationApprovalGrant:
             "side_effect_scope_digest": _DIGEST,
             "task_id": _TASK_ID,
             "run_id": _RUN_ID,
+            "attempt_id": _ATTEMPT_ID,
+            "execution_id": _EXECUTION_ID,
             "operation_id": ACTION_CREATE_EXTERNAL_WORK,
             "resource_scope": _DIGEST,
             "policy_rule_id": _POLICY_RULE,
@@ -212,7 +241,12 @@ def _seed_boundary() -> MeaningfulSideEffectAuthorizationBoundary:
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=MutableRuntimePolicyEvaluator(_decision()),
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate)
+    return MeaningfulSideEffectAuthorizationBoundary(
+        enforcement_gate=gate,
+        inner_execution_guard=DefaultCanonicalInnerExecutionGuard(
+            task_scope=StaticActiveTaskScope(_TASK_ID),
+        ),
+    )
 
 
 def _step_ctx(
@@ -284,11 +318,12 @@ async def test_r3_trusted_binding_executes_once() -> None:
     binding = ActiveGovernedExecutionTask()
     token = binding.bind(task)
     try:
-        result = await run_domain_job(
-            _step_ctx(task),
-            external_work=_RecordingIntegration(call_log=log),
-            authorization_boundary=boundary,
-        )
+        with _canonical_active_execution_identity():
+            result = await run_domain_job(
+                _step_ctx(task),
+                external_work=_RecordingIntegration(call_log=log),
+                authorization_boundary=boundary,
+            )
     finally:
         binding.reset(token)
     assert result["domain_summary"]["used"] is True
@@ -312,11 +347,12 @@ async def test_r4_boundary_receives_exact_bound_task_instance() -> None:
     binding = ActiveGovernedExecutionTask()
     token = binding.bind(task)
     try:
-        await run_domain_job(
-            _step_ctx(task),
-            external_work=_RecordingIntegration(),
-            authorization_boundary=boundary,
-        )
+        with _canonical_active_execution_identity():
+            await run_domain_job(
+                _step_ctx(task),
+                external_work=_RecordingIntegration(),
+                authorization_boundary=boundary,
+            )
     finally:
         binding.reset(token)
     assert len(seen) == 1
@@ -400,11 +436,12 @@ async def test_r11_checkpoint_resume_uses_binding_not_metadata() -> None:
     binding = ActiveGovernedExecutionTask()
     token = binding.bind(restored)
     try:
-        result = await run_domain_job(
-            _step_ctx(restored, forged_task=restored),
-            external_work=_RecordingIntegration(call_log=log),
-            authorization_boundary=boundary,
-        )
+        with _canonical_active_execution_identity():
+            result = await run_domain_job(
+                _step_ctx(restored, forged_task=restored),
+                external_work=_RecordingIntegration(call_log=log),
+                authorization_boundary=boundary,
+            )
     finally:
         binding.reset(token)
     assert result["domain_summary"]["used"] is True

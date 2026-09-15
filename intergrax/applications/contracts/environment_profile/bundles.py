@@ -19,6 +19,9 @@ from intergrax.contracts.persistence_topology import (
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
 from intergrax.codecraft.profile import CodeCraftProfile
+from intergrax.contracts.delegated_invocation_correlation import (
+    DelegatedInvocationCorrelationDurabilityMode,
+)
 from intergrax.contracts.observability_export import ConfigurationError, ExporterKind
 from intergrax.contracts.reasoning_profile import ReasoningProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -309,6 +312,9 @@ class GovernanceBundle(BaseModel):
                 long_running_scheduler_enabled=True,
                 idempotency_enabled=True,
                 partial_results_enabled=True,
+                delegated_invocation_correlation_durability=(
+                    DelegatedInvocationCorrelationDurabilityMode.NON_DURABLE_TEST
+                ),
             ),
             diagnostics=DiagnosticProfile(posture=DiagnosticPosture.NOT_REQUIRED),
             observability=ObservabilityProfile(

@@ -7,6 +7,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import TaskResult, TaskState
 from research_application.host.factory import create_research_backend_app
 from research_application.tests.research_ac3_projection import build_research_test_registry_projection
@@ -39,6 +42,7 @@ def test_research_run_uses_unified_task_runner(research_client: TestClient) -> N
         state=TaskState.COMPLETED,
         answer="research summary",
         metadata={"graph_id": "g1", "agent_ids": ["research_a", "research_b"]},
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
     with patch(
         "intergrax.runtime.task.unified_task_runner.UnifiedTaskRunner.run_task",

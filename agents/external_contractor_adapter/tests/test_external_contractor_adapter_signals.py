@@ -9,6 +9,12 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_kind_registry import clear_event_kind_registry
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.observability.extension_sdk import agent_signal_event_kind
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import (
+    EXTERNAL_WORK_TEST_ATTEMPT_ID,
+    EXTERNAL_WORK_TEST_EXECUTION_ID,
+    EXTERNAL_WORK_TEST_RUN_ID,
+    EXTERNAL_WORK_TEST_TASK_ID,
+)
 from external_contractor_adapter.signals.emit import emit_milestone_reached
 from external_contractor_adapter.signals.registry import register_signal_schemas
 
@@ -25,7 +31,14 @@ def _register_agent_signal_kinds() -> None:
 
 def test_agent_signal_emits_domain_signal() -> None:
     bus = RuntimeEventBus(record_history=True)
-    ctx = EmitContext(task_id="task-1", run_id="run-1", tenant_id="tenant-a", bus=bus)
+    ctx = EmitContext(
+        task_id=EXTERNAL_WORK_TEST_TASK_ID,
+        run_id=EXTERNAL_WORK_TEST_RUN_ID,
+        attempt_id=EXTERNAL_WORK_TEST_ATTEMPT_ID,
+        execution_id=EXTERNAL_WORK_TEST_EXECUTION_ID,
+        tenant_id="tenant-a",
+        bus=bus,
+    )
     event = emit_milestone_reached(ctx, milestone="scaffold", detail="smoke")
     kind = agent_signal_event_kind("external_contractor_adapter", "milestone_reached")
     assert event.event_type == RuntimeEventType.DOMAIN_SIGNAL

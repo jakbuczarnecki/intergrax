@@ -26,6 +26,9 @@ from intergrax.runtime.registry.semver_compat import is_compatible_runtime
 from intergrax.runtime.reliability.step_retry_budget import StepRetryBudget
 from intergrax.runtime.security.pii_redaction import redact_pii
 from intergrax.runtime.security.tool_injection_guard import ToolInjectionError, assert_tool_input_safe
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import TaskResult, TaskState
 
 pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
@@ -69,6 +72,7 @@ def test_ideal_w2_partial_result_contract_on_task_result() -> None:
         task_id="t1",
         state=TaskState.PARTIALLY_COMPLETED,
         partial=PartialResultContract(completed_steps=("s1",), partial_answer="partial"),
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
     assert result.partial is not None
     assert result.partial.completed_steps == ("s1",)

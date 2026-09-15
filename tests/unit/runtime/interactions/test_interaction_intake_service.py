@@ -8,6 +8,9 @@ from pathlib import Path
 import pytest
 
 from intergrax.runtime.interactions.intake_service import InteractionIntakeService
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 
@@ -29,7 +32,8 @@ class _RecordingExecutor:
         self.execute_calls += 1
         prepared = self.prepare(task)
         self.last_task = prepared
-        return TaskResult(task_id=prepared.task_id, state=TaskState.COMPLETED, answer="ok")
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=prepared.task_id, state=TaskState.COMPLETED, answer="ok")
 
 
 class _RejectingVerifier:
@@ -47,7 +51,8 @@ class _CountingExecutor:
 
     async def execute(self, task: Task) -> TaskResult:
         self.execute_calls += 1
-        return TaskResult(task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
 
 
 def test_interaction_intake_service_signature_has_no_nexus_loop() -> None:

@@ -10,6 +10,9 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult, Age
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import TaskResult, TaskState
 from platform_proofs.scenarios.indirect_prompt_injection.application.execution_result import (
     OrderAssistantExecutionResult,
@@ -122,6 +125,7 @@ async def test_application_survival_without_proof_evaluator(monkeypatch: pytest.
                 run_id="run-survival",
                 state=TaskState.COMPLETED,
                 execution_result=execution,
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             ),
             task_id="task-1",
             run_id="run-survival",

@@ -109,6 +109,7 @@ class GraphPhaseOutcome:
     plan: Optional[NexusPlan] = None
     final_validation: Optional[ValidationResult] = None
     deferred_persisted_trace_finalize: Optional["DeferredPersistedTraceFinalize"] = None
+    graph_final_decision_evaluated: bool = False
 
 
 @dataclass
@@ -128,6 +129,7 @@ class NexusGraphRunner:
     max_run_retries: int = 0
     production_mode: bool = False
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
+    decision_exposure_session: object | None = None
 
     def _attempt_retry_service(self) -> ExecutionAttemptRetryService:
         return ExecutionAttemptRetryService(
@@ -408,6 +410,19 @@ class NexusGraphRunner:
                     self.decision_flow_gate,
                     flow_request,
                 )
+                if self.decision_exposure_session is not None:
+                    from intergrax.runtime.nexus.orchestration.nexus_decision_exposure import (
+                        NexusDecisionExposureRunSession,
+                        append_graph_decision_flow_exposure_candidate,
+                    )
+
+                    session = self.decision_exposure_session
+                    if type(session) is NexusDecisionExposureRunSession:
+                        append_graph_decision_flow_exposure_candidate(
+                            session,
+                            flow_result=flow_result,
+                            identity_seed=identity_seed,
+                        )
                 if flow_result.host_action is DecisionFlowHostAction.PENDING_HUMAN:
                     executions[-1] = executions[-1].model_copy(
                         update={"status": AgentExecutionStatus.NEEDS_INPUT},
@@ -452,6 +467,15 @@ class NexusGraphRunner:
             hold_persisted_trace_finalize=hold_persisted_trace_finalize,
         )
 
+        graph_final_evaluated = False
+        exposure_session = self.decision_exposure_session
+        if exposure_session is not None:
+            from intergrax.runtime.nexus.orchestration.nexus_decision_exposure import (
+                NexusDecisionExposureRunSession,
+            )
+
+            if type(exposure_session) is NexusDecisionExposureRunSession:
+                graph_final_evaluated = exposure_session.graph_final_evaluation_occurred
         return GraphPhaseOutcome(
             executions=executions,
             retry_records=retry_records,
@@ -459,6 +483,7 @@ class NexusGraphRunner:
             plan=plan,
             final_validation=final_validation,
             deferred_persisted_trace_finalize=deferred_finalize,
+            graph_final_decision_evaluated=graph_final_evaluated,
         )
 
     async def _handle_cancellation(

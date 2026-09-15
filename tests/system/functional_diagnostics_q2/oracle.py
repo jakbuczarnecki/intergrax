@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from intergrax.tools.providers.workspace.service import WORKSPACE_SEARCH_TOOL_ID
-from intergrax.runtime.diagnostics.functional_evidence import PipelineEvidenceScope
+from intergrax.contracts.functional_evidence import PipelineEvidenceScope
 from intergrax.runtime.diagnostics.functional_validation import (
     DiagnosticExecutionCorrelation,
     ExpectedActualRelation,

@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any
-
 from fastapi import FastAPI
 
 from intergrax.applications._shared.harness_control_plane_governance_wiring import (
@@ -40,7 +38,6 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.task.task import Task
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 TaskEnricher = Callable[[Task], Task]
 
@@ -130,11 +127,3 @@ def wire_harness_task_control(
             mutation_boundary=resolved_boundary,
         )
     return enricher
-
-
-def build_task_runner_with_enricher(
-    nexus_loop: Any,
-    enricher: TaskEnricher | None,
-) -> UnifiedTaskRunner:
-    """UnifiedTaskRunner that applies enricher on every ``run_task`` / ``run_runtime_request``."""
-    return UnifiedTaskRunner(nexus_loop, task_enricher=enricher)

@@ -12,32 +12,32 @@ import pytest
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
     DocumentStoreFunctionalEvidencePersistence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_execution_index import (
     encode_execution_index_v1,
     encode_execution_index_v2,
     execution_index_v1_row_key,
     execution_index_v2_row_key_from_evidence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_index_rebuilder import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_index_rebuilder import (
     FunctionalEvidenceIndexRebuilder,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceIntegrityError,
     FunctionalEvidenceQueryRequest,
     functional_evidence_query_order_key,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
     collect_all_evidence,
     sample_functional_evidence,
     sample_functional_evidence_scope,
 )
-from intergrax.runtime.diagnostics.functional_evidence_projection_state import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_projection_state import (
     FunctionalEvidenceProjectionStateStore,
 )
-from intergrax.runtime.diagnostics.functional_evidence_record_codec import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_record_codec import (
     encode_functional_evidence_record,
 )
 
@@ -404,7 +404,7 @@ def test_filtered_pagination_after_recovery() -> None:
     fixtures = _seed_v1_only_legacy(store, scope, 30)
     _write_partial_v2(store, scope, fixtures, count=4)
     persistence = _persistence(store)
-    from intergrax.runtime.diagnostics.functional_evidence import PipelineEvidenceKind
+    from intergrax.contracts.functional_evidence import PipelineEvidenceKind
 
     collected: list = []
     cursor: str | None = None

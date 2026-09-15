@@ -56,7 +56,7 @@ from tests.unit.runtime.background_execution.reentry_admission_doubles import (
     admission_kwargs,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
 
 
 class _Output(BaseModel):

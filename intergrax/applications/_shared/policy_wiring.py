@@ -159,7 +159,7 @@ def wire_policy_bundle(
         if package_qualifications is not None
         else None
     )
-    base = build_runtime_policy_bundle(
+    return build_runtime_policy_bundle(
         require_human_on_critical=resolve_require_human_on_critical(env),
         domain_fragments={
             **env.domain_policy_fragments,
@@ -170,18 +170,6 @@ def wire_policy_bundle(
         policy_rules=env.policy_rules,
         discover_entry_points=discover_plugins_enabled(),
         package_qualification_lookup=qualification_lookup,
-    )
-    if cost_wiring.budget_policy is None:
-        return base
-    return RuntimePolicyBundle(
-        tool_access=base.tool_access,
-        budget=cost_wiring.budget_policy,
-        plan_loop=base.plan_loop,
-        require_human_on_critical=base.require_human_on_critical,
-        domain_fragments=base.domain_fragments,
-        policy_catalog=base.policy_catalog,
-        configuration_contract_registry=base.configuration_contract_registry,
-        declarative_policy_runtime=base.declarative_policy_runtime,
     )
 
 

@@ -21,6 +21,9 @@ from intergrax.runtime.long_running.scheduler_claim import ScheduledResumeCancel
 from intergrax.runtime.long_running.scheduled_resume import ScheduledResume, ScheduledResumeStatus
 from intergrax.runtime.long_running.scheduled_resume import ScheduledResumePersistence
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -46,7 +49,8 @@ class _CountingNotificationAdapter(NotificationAdapter):
 
 
 def _ok_result(task_id: str = "task-1") -> TaskResult:
-    return TaskResult(task_id=task_id, state=TaskState.FAILED, success=True)
+    return TaskResult(
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task_id, state=TaskState.FAILED, success=True)
 
 
 def _scheduled_pause_checkpoint(task_id: str = "task-1") -> TaskCheckpoint:

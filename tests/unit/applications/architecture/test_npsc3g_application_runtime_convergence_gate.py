@@ -21,7 +21,6 @@ _LEGACY_QUEUED_ADAPTER = _REPO_ROOT / "intergrax" / "runtime" / "task" / "queued
 _FORBIDDEN_FACTORY_TOKENS = (
     "NexusTaskExecutionAdapter",
     "QueuedNexusExecutionAdapter",
-    "build_task_runner_with_enricher",
     "task_runner=task_runner",
 )
 

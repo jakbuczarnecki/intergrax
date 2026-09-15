@@ -14,6 +14,9 @@ from intergrax.applications.contracts.application_recovery_contract import (
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.org_policy import OrganizationalPolicyEnvelope
 from intergrax.contracts.agent_budget import BudgetReactionProfile
+from intergrax.contracts.delegated_invocation_correlation import (
+    DelegatedInvocationCorrelationDurabilityMode,
+)
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.routing import LLMRoutingProfile
 from intergrax.runtime.adaptive.contracts import UtilityWeights
@@ -1030,6 +1033,9 @@ class ApplicationEnvironmentProfile(BaseModel):
                     partial_results_enabled=True,
                     middleware_hook_timeout_seconds=0.25,
                     recovery_contract=standard_strict_product_recovery_contract(),
+                    delegated_invocation_correlation_durability=(
+                        DelegatedInvocationCorrelationDurabilityMode.REQUIRED
+                    ),
                 ),
                 observability=GovernanceBundle.production_slo().observability,
                 cost=CostProfile(

@@ -10,24 +10,26 @@ import binascii
 import os
 import sys
 
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
     DocumentStoreFunctionalEvidencePersistence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceConflictError,
     FunctionalEvidencePersistenceError,
     FunctionalEvidenceQueryRequest,
 )
 from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
     validate_attempt_id,
     validate_run_id,
     validate_task_id,
 )
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceScope,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
     collect_all_evidence,
     sample_functional_evidence,
 )
@@ -246,11 +248,16 @@ def _worker_conflict(args: argparse.Namespace) -> int:
     )
     conflict_scope = PipelineEvidenceScope(
         tenant_id=f"s1-conflict-{args.collection_name}",
-        task_id=validate_task_id(_isolated_scope_id("task_", args.collection_name, str(args.worker_index), "task")),
-        run_id=validate_run_id(_isolated_scope_id("run_", args.collection_name, str(args.worker_index), "run")),
+        task_id=validate_task_id(
+            _isolated_scope_id("task_", args.collection_name, str(args.worker_index), "task"),
+        ),
+        run_id=validate_run_id(
+            _isolated_scope_id("run_", args.collection_name, str(args.worker_index), "run"),
+        ),
         attempt_id=validate_attempt_id(
             _isolated_scope_id("attempt_", args.collection_name, str(args.worker_index), "attempt"),
         ),
+        execution_id=mint_execution_id(),
     )
     original = sample_functional_evidence(
         scope=conflict_scope,

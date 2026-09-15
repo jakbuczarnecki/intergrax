@@ -16,6 +16,8 @@
 | **Evidence Plane re-freeze baseline** | `7a3569c64e892588992635c9cee10c264a9fc200` |
 | R2 post-qualified baseline (EE-FINAL-02) | `7a3569c64e892588992635c9cee10c264a9fc200` |
 | R4 post-qualified baseline (EE-FINAL-02) | `7a3569c64e892588992635c9cee10c264a9fc200` |
+| H9 interim Evidence Plane baseline | `48a33db23fafab89b5fdb4ff217dfcb113dd6cc5` |
+| **OBS-RECONSTRUCTION-1 qualified re-freeze** | `743a3865198e8fcec53029f935fbedc4cae6f9df` |
 
 ## Drift window (`3bec620` → `7a3569c64`)
 
@@ -65,3 +67,13 @@ Matrix: `testing_support/npsc5f_final_regression_matrix.py` via `test_npsc5f_fin
 **PASS** — Parallel post-freeze work qualified as **compatible evolution**. Sentinels advanced to `7a3569c64e892588992635c9cee10c264a9fc200` without new authority or bypass surfaces.
 
 **Production code changed in reconciliation task:** NO — qualification / sentinel baseline updates only.
+
+## OBS-RECONSTRUCTION-1 drift window (`48a33db` → `743a386`)
+
+| Path | Typ | Klasyfikacja |
+|------|-----|--------------|
+| `intergrax/runtime/diagnostics/execution_reconstruction.py` → `intergrax/runtime/observability/reconstruction/execution_reconstruction.py` | PATH_RELOCATION | QUALIFIED_COMPATIBLE — factual owner Evidence Plane |
+| `intergrax/runtime/observability/reconstruction/*` | RELOCATION ONLY | QUALIFIED_COMPATIBLE — import rewires, no new authority |
+| `intergrax/runtime/observability/historical_reconstruction.py` | Import boundary | QUALIFIED_COMPATIBLE — consumes canonical reconstruction package |
+
+Sentinels `NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA` and `R4_POST_QUALIFIED_BASELINE_SHA` advanced to `743a3865198e8fcec53029f935fbedc4cae6f9df` with `test_obs_reconstruction_1_architecture.py` and NPSC-5F regression matrix evidence.

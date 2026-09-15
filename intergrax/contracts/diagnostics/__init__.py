@@ -25,6 +25,12 @@ from intergrax.contracts.diagnostics.problem_persistence import (
 )
 from intergrax.contracts.diagnostics.reconciliation_key import ProblemReconciliationKey
 from intergrax.contracts.diagnostics.subject_ref import ProblemGroupingSubjectRef
+from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
+    TerminalDiagnosticDispatchResult,
+    TerminalDiagnosticDispatchStatus,
+    TerminalExecutionDiagnosticPort,
+    TerminalExecutionDiagnosticRequest,
+)
 
 __all__ = [
     "DiagnosticProblemRepository",
@@ -39,4 +45,8 @@ __all__ = [
     "ProblemPersistenceIntegrityReason",
     "ProblemReconciliationKey",
     "ProblemStatus",
+    "TerminalDiagnosticDispatchResult",
+    "TerminalDiagnosticDispatchStatus",
+    "TerminalExecutionDiagnosticPort",
+    "TerminalExecutionDiagnosticRequest",
 ]

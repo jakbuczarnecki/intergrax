@@ -29,6 +29,9 @@ from intergrax.contracts.execution_identity import (
     validate_task_id,
 )
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_run_bridge import (
     new_run_id,
@@ -354,6 +357,7 @@ async def test_unified_task_runner_mints_attempt_at_run_boundary():
                 task_id=task.task_id,
                 run_id=run_id,
                 state=TaskState.COMPLETED,
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             )
 
         async def publish_orchestration_root_terminal_runtime(self, task: Task) -> None:
@@ -411,6 +415,7 @@ async def test_handle_task_initial_execution_consumes_bound_identity(monkeypatch
             task_id=task.task_id,
             run_id=active_run_id,
             state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
@@ -453,6 +458,7 @@ async def test_handle_task_resume_preserves_run_and_attempt_id(monkeypatch):
             task_id=task.task_id,
             run_id=run_id,
             state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
@@ -489,6 +495,7 @@ async def test_handle_task_resume_does_not_mint_attempt_id(monkeypatch):
             task_id=task.task_id,
             run_id=run_id,
             state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
@@ -561,6 +568,7 @@ async def test_unified_task_runner_resume_uses_checkpoint_identity(monkeypatch):
             task_id=task.task_id,
             run_id=run_id,
             state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     monkeypatch.setattr(loop, "handle_task", _fake_handle_task)

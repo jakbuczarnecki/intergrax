@@ -454,7 +454,7 @@ def test_budget_reconstruction_preserves_declarative_runtime() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="policy.budget")
     env.policy_rules = _profile()
     bundle = wire_policy_bundle(env)
-    assert bundle.budget is not None
+    assert isinstance(bundle.domain_fragments.get("cost_governance"), dict)
     runtime = bundle.declarative_policy_runtime
     assert runtime is not None
     assert len(runtime.rules) == 1
@@ -762,7 +762,7 @@ def test_budget_reconstruction_preserves_policy_catalog(
     expected = base.policy_catalog.resolve(policy_id=_POLICY_ID, version=_POLICY_VERSION)
     monkeypatch.setenv("INTERGRAX_DISCOVER_PLUGINS", "true")
     bundle = wire_policy_bundle(env, package_qualifications=qualifications)
-    assert bundle.budget is not None
+    assert isinstance(bundle.domain_fragments.get("cost_governance"), dict)
     assert bundle.policy_catalog.resolve(
         policy_id=_POLICY_ID,
         version=_POLICY_VERSION,

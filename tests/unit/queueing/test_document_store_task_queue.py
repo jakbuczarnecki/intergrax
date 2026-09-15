@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.queueing.contracts.task_queue import TaskRequest, TaskStatus
 from intergrax.queueing.providers.document_store import DocumentStoreTaskQueue
@@ -18,6 +20,8 @@ from intergrax.runtime.observability.document_store_causal_evidence_persistence 
 )
 from intergrax.tools.execution_models import ToolExecutionResult
 from pydantic import BaseModel
+
+pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
 
 
 class _Out(BaseModel):

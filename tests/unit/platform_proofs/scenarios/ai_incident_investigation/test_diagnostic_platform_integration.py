@@ -25,7 +25,7 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
 from intergrax.runtime.diagnostics.diagnostic_read_models import DiagnosticOccurrenceReadStatus
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
 from intergrax.runtime.diagnostics.investigation_contracts import (
     IncidentInvestigationIntegrityError,

@@ -9,8 +9,20 @@ from intergrax.runtime.execution.delegated_execution.local_provider import (
     LocalDelegatedExecutionDelegate,
     LocalDelegatedExecutionProvider,
 )
+from intergrax.runtime.execution.delegated_execution.continuation_service import (
+    DelegatedExecutionContinuationService,
+)
 from intergrax.runtime.execution.delegated_execution.control_service import (
     DelegatedExecutionControlService,
+)
+from intergrax.runtime.execution.delegated_execution.durable_control_service import (
+    DelegatedExecutionDurableControlService,
+)
+from intergrax.runtime.execution.delegated_execution.provider_resolver import (
+    MappingDelegatedExecutionProviderResolver,
+)
+from intergrax.runtime.execution.delegated_execution.status_service import (
+    DelegatedExecutionStatusReadService,
 )
 from intergrax.runtime.execution.delegated_execution.service import (
     DelegatedExecutionPort,
@@ -20,7 +32,11 @@ from intergrax.runtime.execution.delegated_execution.service import (
 )
 
 __all__ = [
+    "DelegatedExecutionContinuationService",
     "DelegatedExecutionControlService",
+    "DelegatedExecutionDurableControlService",
+    "DelegatedExecutionStatusReadService",
+    "MappingDelegatedExecutionProviderResolver",
     "DelegatedExecutionPort",
     "DelegatedExecutionService",
     "DelegatedExecutionWorkUnit",

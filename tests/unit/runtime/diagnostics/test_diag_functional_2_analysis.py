@@ -7,8 +7,10 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from intergrax.contracts.execution_identity import (
+    AttemptId,
     mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
@@ -41,7 +43,7 @@ from intergrax.runtime.diagnostics.functional_diagnostic_specification import (
     ValidationOutcomeRequirement,
     validate_functional_diagnostic_specification,
 )
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineCandidateFact,
     PipelineEvidenceKind,
     PipelineEvidenceProvenance,
@@ -65,7 +67,7 @@ from intergrax.runtime.diagnostics.functional_validation import (
 from intergrax.runtime.diagnostics.functional_validation_lookup import (
     FunctionalValidationEvidenceLookup,
 )
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.observability.export_attributes import ObservabilityArtifactReference
@@ -98,7 +100,8 @@ def _scope(
         tenant_id=tenant_id,
         task_id=task_id or mint_task_id(),
         run_id=run_id or mint_run_id(),
-        attempt_id=attempt_id,
+        attempt_id=AttemptId(attempt_id) if attempt_id is not None else mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
 
 
@@ -655,6 +658,7 @@ def test_f3_10_attempt_isolation() -> None:
         task_id=scope.task_id,
         run_id=scope.run_id,
         attempt_id=attempt_b,
+        execution_id=mint_execution_id(),
     )
     persistence = _persistence()
     _append(persistence, _operation(scope_b, operation_id="search"))

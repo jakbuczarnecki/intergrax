@@ -26,7 +26,7 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
 from intergrax.runtime.diagnostics.diagnostic_assessment_composer import (
     DiagnosticAssessmentComposer,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.functional_diagnostic_analysis import (
     FunctionalDiagnosticAnalysis,
     FunctionalDiagnosticCheckResult,

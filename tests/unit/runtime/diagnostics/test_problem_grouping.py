@@ -43,7 +43,7 @@ from intergrax.runtime.diagnostics.problem_grouping_features import (
     ProblemGroupingRepresentationVersion,
     project_assessment_features,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore

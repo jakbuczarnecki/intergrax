@@ -33,7 +33,7 @@ from intergrax.contracts.execution_lineage import (
 from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticOccurrenceReadStatus,
 )
-from intergrax.runtime.diagnostics.execution_lineage_reconstruction import (
+from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
     ExecutionLineageReadStatus,
     reconstruct_attempt_lineage,
 )

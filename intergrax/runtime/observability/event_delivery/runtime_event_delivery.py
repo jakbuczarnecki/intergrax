@@ -16,7 +16,9 @@ from intergrax.contracts.event_delivery import (
     ObservabilityExportPayload,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.observability.export_boundary import runtime_event_export_source_from_event
+from intergrax.runtime.observability.runtime_event_export_mapping import (
+    runtime_event_export_source_from_event,
+)
 
 
 class UnclassifiedRuntimeEventDeliveryError(ValueError):

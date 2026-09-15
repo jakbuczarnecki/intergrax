@@ -208,6 +208,7 @@ async def execute_root_task(
     ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     run_budget: RunBudget | None = None,
 ) -> TaskResult:
+    """execute_root_task: INTERNAL CERTIFIED HARNESS ENTRY (scheduler / resume bridge)."""
     segment_predecessor_root_execution_id = None
     resume_plan_token = None
     if resume_checkpoint is not None and resume_checkpoint.runtime is not None:

@@ -14,7 +14,7 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
     DocumentStoreFunctionalEvidencePersistence,
 )
 from tests.system.functional_diagnostics_durability.runner import run_contract_qualification

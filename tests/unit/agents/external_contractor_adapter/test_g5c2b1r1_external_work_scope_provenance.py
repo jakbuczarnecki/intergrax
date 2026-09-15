@@ -4,11 +4,17 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 
-from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import (
+    EXTERNAL_WORK_TEST_RUN_ID as _RUN_ID,
+    EXTERNAL_WORK_TEST_TASK_ID as _TASK_ID,
+    allow_adapter,
+    bound_external_work_test_execution,
+)
+from external_contractor_adapter.tests.fakes.deterministic_external_work import (
+    DeterministicExternalWorkFake,
+)
 from external_contractor_adapter.external_work_adapter import ExternalWorkAdapter
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
@@ -41,8 +47,6 @@ _COMMITMENT_MUTATION = (
 _DIGEST_1 = "sha256:" + ("ab" * 32)
 _DIGEST_2 = "sha256:" + ("cd" * 32)
 _IDEM_KEY = "idem-shared-key"
-_TASK_ID = "task-ew-1"
-_RUN_ID = "run-ew-1"
 _PRINCIPAL = "principal-ew-1"
 _QUOTE_ID = "quote-1"
 
@@ -60,14 +64,21 @@ class _CapturingEvaluator:
         return self._decision
 
 
+@pytest.fixture(autouse=True)
+def _bound_scope_provenance_execution() -> None:
+    with bound_external_work_test_execution():
+        yield
+
+
 def _adapter(decision: PolicyDecision) -> tuple[ExternalWorkAdapter, _CapturingEvaluator]:
     evaluator = _CapturingEvaluator(decision)
     adapter, _ = allow_adapter(
-        MagicMock(),
+        DeterministicExternalWorkFake(),
         policy=evaluator,
         principal_id=_PRINCIPAL,
         tenant_id="tenant-a",
         workspace_id="workspace-a",
+        active_task_id=_TASK_ID,
     )
     return adapter, evaluator
 
@@ -136,27 +147,18 @@ def test_create_binds_idempotency_key_and_scope_digest() -> None:
         PolicyDecision(action=PolicyAction.ALLOW, reason="allow")
     )
     request = _create_request(scope_digest=_DIGEST_1)
-    gate = adapter._evaluate_side_effect(
-        action=ACTION_CREATE_EXTERNAL_WORK,
-        kinds=_MUTATION,
-        side_effect_scope_id=request.idempotency_key,
-        side_effect_scope_digest=request.scope_digest,
-        task_id=request.task_id,
-        run_id=request.run_id,
+    result = adapter.create_and_map(
+        request,
+        enrich=False,
         principal_id=_PRINCIPAL,
         tenant_id="tenant-a",
-        workspace_id="workspace-a",
-        resource=request.scope_digest,
-        external_target=request.provider_id,
-        correlation={},
-        context={},
-        continuation_reason=ContinuationReason.PROCUREMENT,
     )
+    assert result.used is True
     assert evaluator.requests
     captured = evaluator.requests[0]
+    assert captured.action == ACTION_CREATE_EXTERNAL_WORK
     assert captured.side_effect_scope_id == _IDEM_KEY
     assert captured.side_effect_scope_digest == _DIGEST_1
-    assert gate is not None
 
 
 def test_same_idempotency_key_different_scope_digest_are_distinct() -> None:
@@ -164,22 +166,11 @@ def test_same_idempotency_key_different_scope_digest_are_distinct() -> None:
         PolicyDecision(action=PolicyAction.ALLOW, reason="allow")
     )
     for digest in (_DIGEST_1, _DIGEST_2):
-        request = _create_request(scope_digest=digest)
-        adapter._evaluate_side_effect(
-            action=ACTION_CREATE_EXTERNAL_WORK,
-            kinds=_MUTATION,
-            side_effect_scope_id=request.idempotency_key,
-            side_effect_scope_digest=request.scope_digest,
-            task_id=request.task_id,
-            run_id=request.run_id,
+        adapter.create_and_map(
+            _create_request(scope_digest=digest),
+            enrich=False,
             principal_id=_PRINCIPAL,
             tenant_id="tenant-a",
-            workspace_id="workspace-a",
-            resource=request.scope_digest,
-            external_target=request.provider_id,
-            correlation={},
-            context={},
-            continuation_reason=ContinuationReason.PROCUREMENT,
         )
     assert len(evaluator.requests) == 2
     assert evaluator.requests[0].side_effect_scope_id == evaluator.requests[1].side_effect_scope_id
@@ -259,21 +250,13 @@ def test_quote_scopes_with_same_idempotency_key_remain_distinct() -> None:
     )
     for version, digest in ((1, _DIGEST_1), (2, _DIGEST_2)):
         acceptance = _acceptance(scope_digest=digest, quote_version=version)
-        adapter._evaluate_side_effect(
-            action=ACTION_ACCEPT_QUOTE,
-            kinds=_COMMITMENT_MUTATION,
-            side_effect_scope_id=_IDEM_KEY,
-            side_effect_scope_digest=quote_acceptance_side_effect_scope_digest(acceptance),
-            task_id=_TASK_ID,
-            run_id=_RUN_ID,
+        adapter.forward_quote_acceptance(
+            _correlation(),
+            acceptance,
+            idempotency_key=_IDEM_KEY,
             principal_id=_PRINCIPAL,
-            tenant_id="tenant-a",
+            enrich=False,
             workspace_id="workspace-a",
-            resource=acceptance.scope_digest,
-            external_target="provider-1",
-            correlation={},
-            context={},
-            continuation_reason=ContinuationReason.QUOTE,
         )
     digests = {req.side_effect_scope_digest for req in evaluator.requests}
     assert len(digests) == 2
@@ -284,23 +267,16 @@ def test_cancel_uses_idempotency_key_without_fabricated_digest() -> None:
         PolicyDecision(action=PolicyAction.ALLOW, reason="allow")
     )
     cancel_idem = "cancel-proposal-1"
-    adapter._evaluate_side_effect(
-        action=ACTION_CANCEL_EXTERNAL_WORK,
-        kinds=_MUTATION,
-        side_effect_scope_id=cancel_idem,
-        side_effect_scope_digest=None,
-        task_id=_TASK_ID,
-        run_id=_RUN_ID,
+    adapter.cancel_and_map(
+        _correlation(),
+        idempotency_key=cancel_idem,
         principal_id=_PRINCIPAL,
         tenant_id="tenant-a",
         workspace_id="workspace-a",
-        resource=_correlation().external_task_id,
-        external_target="provider-1",
-        correlation={},
-        context={},
-        continuation_reason=ContinuationReason.PROCUREMENT,
+        enrich=False,
     )
     captured = evaluator.requests[0]
+    assert captured.action == ACTION_CANCEL_EXTERNAL_WORK
     assert captured.side_effect_scope_id == cancel_idem
     assert captured.side_effect_scope_digest is None
 

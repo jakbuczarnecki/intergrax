@@ -55,6 +55,12 @@ def compare_document_sort_keys(
         right_value = right_values[index]
         if left_value == right_value:
             continue
+        if left_value is None:
+            if right_value is None:
+                continue
+            return 1 if spec.direction == "desc" else -1
+        if right_value is None:
+            return -1 if spec.direction == "desc" else 1
         if spec.direction == "asc":
             if left_value < right_value:
                 return -1

@@ -41,6 +41,9 @@ from intergrax.applications.contracts.profile_resolution import (
     EffectiveProfileRevisionScope,
 )
 from intergrax.contracts.execution_identity import ExecutionId, mint_execution_id, mint_task_id
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
@@ -415,6 +418,7 @@ async def test_new_execution_after_failed_preparation_pins_old_active() -> None:
             task_id=_echo_task().task_id,
             state=TaskState.COMPLETED,
             answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch(
@@ -461,6 +465,7 @@ async def test_new_execution_after_successful_activation_pins_new_revision() -> 
             task_id=_echo_task().task_id,
             state=TaskState.COMPLETED,
             answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch(

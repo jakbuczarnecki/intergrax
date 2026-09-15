@@ -19,7 +19,7 @@ from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     DeterministicProblemGroupingStrategy,
     build_deterministic_problem_signature,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnomalyAnalyzer,
     LifecycleAnomalyKind,

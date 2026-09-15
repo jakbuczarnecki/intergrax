@@ -47,7 +47,12 @@ from intergrax.contracts.collaborative_work import (
     PolicyLayerApplicability,
     WorkspaceMembershipRole,
 )
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.money import MoneyAmount
@@ -69,14 +74,24 @@ from intergrax.runtime.policy.meaningful_side_effect_authorization import (
 )
 from intergrax.runtime.task.task import Task, TaskState
 
+from intergrax.runtime.governance.canonical_inner_execution_guard import (
+    DefaultCanonicalInnerExecutionGuard,
+)
+from tests.unit.runtime.governance.gr3_test_support import (
+    StaticActiveTaskScope,
+    bound_gr3_active_execution,
+)
+
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _TENANT = "tenant-a"
 _WORKSPACE = "workspace-a"
 _TASK_ID = mint_task_id()
-_RUN_ID = "run-pg-fix-c"
+_RUN_ID = mint_run_id()
 _OTHER_TASK = mint_task_id()
-_OTHER_RUN = "run-pg-fix-c-other"
+_OTHER_RUN = mint_run_id()
+_ATTEMPT_ID = mint_attempt_id()
+_EXECUTION_ID = mint_execution_id()
 _PRINCIPAL = "principal-pg-c"
 _DIGEST = "sha256:" + ("cd" * 32)
 _OTHER_DIGEST = "sha256:" + ("ef" * 32)
@@ -132,6 +147,8 @@ def _grant(**overrides: object) -> GovernedContinuationApprovalGrant:
         "side_effect_scope_digest": _DIGEST,
         "task_id": _TASK_ID,
         "run_id": _RUN_ID,
+        "attempt_id": _ATTEMPT_ID,
+        "execution_id": _EXECUTION_ID,
         "operation_id": ACTION_CREATE_EXTERNAL_WORK,
         "resource_scope": _DIGEST,
         "policy_rule_id": _POLICY_RULE,
@@ -225,7 +242,12 @@ def _seed_boundary(
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=evaluator,
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate)
+    return MeaningfulSideEffectAuthorizationBoundary(
+        enforcement_gate=gate,
+        inner_execution_guard=DefaultCanonicalInnerExecutionGuard(
+            task_scope=StaticActiveTaskScope(_TASK_ID),
+        ),
+    )
 
 
 def _task(task_id: str = _TASK_ID) -> Task:
@@ -271,6 +293,16 @@ def _create(
         tenant_id=_TENANT,
         task=task,
     )
+
+
+@pytest.fixture(autouse=True)
+def _bound_pg_fix_c_execution() -> None:
+    with bound_gr3_active_execution(
+        run_id=_RUN_ID,
+        attempt_id=_ATTEMPT_ID,
+        execution_id=_EXECUTION_ID,
+    ):
+        yield
 
 
 def test_c1_matching_exact_grant_executes_once() -> None:
@@ -408,6 +440,8 @@ def test_c15_approval_provenance_still_required() -> None:
         reason=ContinuationReason.COMPLIANCE,
         task_id=_TASK_ID,
         run_id=_RUN_ID,
+        attempt_id=_ATTEMPT_ID,
+        execution_id=_EXECUTION_ID,
         source_agent_id="agent-test",
         prompt="continuation required",
         continuation_request_id="gcr_pg_c15",

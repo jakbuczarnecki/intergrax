@@ -411,13 +411,15 @@ def test_r3_no_execution_control_from_observability_export_surface() -> None:
 
 
 def test_r3_no_reflection_on_safe_projection_symbols() -> None:
-    boundary = (_OBSERVABILITY_ROOT / "export_boundary.py").read_text(encoding="utf-8")
-    for symbol in (
-        "runtime_event_export_source_from_event",
-        "envelope_from_runtime_event_source",
-        "_extract_safe_payload",
-    ):
-        block = boundary.split(f"def {symbol}")[1].split("\ndef ")[0]
+    symbol_sources = {
+        "envelope_from_runtime_event_source": _OBSERVABILITY_ROOT / "export_boundary.py",
+        "runtime_event_export_source_from_event": _OBSERVABILITY_ROOT
+        / "runtime_event_export_mapping.py",
+        "_extract_safe_payload": _OBSERVABILITY_ROOT / "runtime_event_export_mapping.py",
+    }
+    for symbol, path in symbol_sources.items():
+        source = path.read_text(encoding="utf-8")
+        block = source.split(f"def {symbol}")[1].split("\ndef ")[0]
         assert not re.search(r"\b(getattr|setattr|hasattr)\(", block)
 
 

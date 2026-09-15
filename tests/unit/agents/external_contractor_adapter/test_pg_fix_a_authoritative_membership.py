@@ -61,8 +61,16 @@ from intergrax.contracts.collaborative_work import (
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectKind, MeaningfulSideEffectRequest
 from intergrax.contracts.money import MoneyAmount
 from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.runtime.governance.meaningful_side_effect_authorization_composition import (
+    build_default_wired_meaningful_side_effect_authorization_boundary,
+)
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
+)
+from tests.unit.runtime.governance.gr3_test_support import (
+    StaticActiveTaskScope,
+    bound_gr3_active_execution,
+    default_gr3_identity_bundle,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -70,11 +78,20 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _DIGEST = "sha256:" + ("cd" * 32)
 _TENANT = "tenant-a"
 _WORKSPACE = "workspace-a"
-_TASK = "task-auth-membership"
-_RUN = "run-auth-membership"
+_TASK, _RUN, _ATTEMPT, _EXECUTION = default_gr3_identity_bundle()
 _PRINCIPAL = "principal-pg-a1"
 _SCOPE = "external_work.mutate"
 _NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
+
+
+@pytest.fixture(autouse=True)
+def _gr3_active_execution():
+    with bound_gr3_active_execution(
+        run_id=_RUN,
+        attempt_id=_ATTEMPT,
+        execution_id=_EXECUTION,
+    ):
+        yield
 
 
 class _RecordingIntegration(DeterministicExternalWorkFake):
@@ -211,7 +228,10 @@ def _seed_gate(
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=runtime,
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate), membership_repo
+    return build_default_wired_meaningful_side_effect_authorization_boundary(
+        enforcement_gate=gate,
+        task_scope=StaticActiveTaskScope(_TASK),
+    ), membership_repo
 
 
 def _adapter_call(
@@ -293,6 +313,8 @@ def test_wrong_membership_id_denies_then_canonical_allows() -> None:
             side_effect_scope_id="scope-wrong-id",
             task_id=_TASK,
             run_id=_RUN,
+            attempt_id=_ATTEMPT,
+            execution_id=_EXECUTION,
             principal_id=_PRINCIPAL,
             tenant_id=_TENANT,
             resource=_DIGEST,
@@ -339,6 +361,7 @@ def test_insufficient_base_authority_scope_denies() -> None:
         principal_id=_PRINCIPAL,
         runtime_policy_evaluator=DeterministicMeaningfulSideEffectPolicy(default=PolicyAction.ALLOW),
         extra_principal_grants={"weak-principal": ("external_work.read",)},
+        active_task_id=_TASK,
     )
     denied = _adapter_call(
         boundary,
@@ -375,8 +398,8 @@ def test_resource_scope_uses_repository_authority() -> None:
     )
     allowed = adapter.create_and_map(
         adapter.build_create_request(
-            task_id="task-resource-allow",
-            run_id="run-resource-allow",
+            task_id=_TASK,
+            run_id=_RUN,
             metadata=_meta(**{META_SCOPE_DIGEST: other_digest, META_IDEMPOTENCY_KEY: "idem-resource-allow"}),
         ),
         principal_id=_PRINCIPAL,

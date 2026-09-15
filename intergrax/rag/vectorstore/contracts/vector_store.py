@@ -13,6 +13,7 @@ from numpy.typing import NDArray
 
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
+    VectorStoreContractError,
     VectorStoreHit,
     VectorStoreRecord,
     VectorStoreScope,
@@ -62,6 +63,18 @@ class VectorStore(ABC):
     def count(self, *, scope: VectorStoreScope) -> int:
         """Count only vectors belonging to the authoritative scope."""
         raise NotImplementedError
+
+    def list_vector_ids_by_metadata(
+        self,
+        *,
+        scope: VectorStoreScope,
+        metadata_filter: MetadataFilter | None = None,
+        limit: int = 10_000,
+    ) -> Sequence[str]:
+        """List persisted vector IDs within scope matching the metadata filter."""
+        raise VectorStoreContractError(
+            "provider does not support scoped metadata listing"
+        )
 
     def list_source_record_ids(
         self,

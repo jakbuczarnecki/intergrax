@@ -119,7 +119,7 @@ Additional:
 | ---- | -------------- | ----- |
 | `UnifiedTaskRunner` | internal primitive | scheduler legacy API / eval paths; not application run root |
 | `mount_harness_task_routes` | legacy test API | NPSC-3F documented |
-| `build_task_runner_with_enricher` | task_control helper | retained for legacy harness_task_routes only |
+| `build_task_runner_with_enricher` | **DELETED @ RB-2B1** | was legacy harness_task_routes only |
 | Celery logical task name `nexus.task.v2` | transport label | handler now routes through host execution |
 
 ---

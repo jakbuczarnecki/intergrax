@@ -10,6 +10,7 @@ from pathlib import Path
 
 # Re-qualified / re-frozen after Class C v1→v2 (scoped reopen through persistence hardening).
 R3_IMPLEMENTATION_SHA = "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
+R3_POST_QUALIFIED_BASELINE_SHA = "48a33db23fafab89b5fdb4ff217dfcb113dd6cc5"
 
 _R3_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {

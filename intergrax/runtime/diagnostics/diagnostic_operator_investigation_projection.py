@@ -43,7 +43,7 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticProblemOccurrenceView,
     DiagnosticProblemSummary,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstruction
+from intergrax.runtime.observability.reconstruction import ExecutionReconstruction
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.contracts.predictive_investigation_read import (
     RelatedPredictiveHistoryEntryView,

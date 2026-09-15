@@ -17,7 +17,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.environment_profile.sub_profiles import ObservabilityProfile
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import STRATEGY_ID
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingEngine
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingStrategyRegistry

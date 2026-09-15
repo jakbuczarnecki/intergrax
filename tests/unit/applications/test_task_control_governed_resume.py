@@ -22,7 +22,9 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
 from intergrax.applications._shared.harness_control_plane_policy_wiring import (
     build_harness_host_control_plane_policy_bundle,
 )
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+from tests.unit.applications.harness_canonical_task_routes_test_support import (
+    mount_canonical_harness_task_routes_for_tests,
+)
 from intergrax.applications._shared.task_control import (
     HitlResumeValidationError,
     TaskControlValidationError,
@@ -79,6 +81,9 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import (
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
+)
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
@@ -190,6 +195,7 @@ def _task_result() -> TaskResult:
         task_id=str(_TASK_ID),
         state=TaskState.COMPLETED,
         answer="done",
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
 
 
@@ -804,15 +810,13 @@ async def test_taskcpm_r20_http_caller_request_identity_preserved() -> None:
         resolved_api_key=None,
         tenant_required=True,
     )
-    runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control._resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_host_execution",
         new_callable=AsyncMock,
         return_value=_task_result(),
     ):
-        mount_harness_task_routes(
+        mount_canonical_harness_task_routes_for_tests(
             app,
-            task_runner=runner,
             checkpoint_store=_StaticCheckpointStore(checkpoint),
             mutation_boundary=boundary,
         )
@@ -881,15 +885,12 @@ def test_taskcpm_r24_supported_route_requires_governance_boundary() -> None:
         resolved_api_key=None,
         tenant_required=True,
     )
-    runner = AsyncMock(spec=UnifiedTaskRunner)
     with patch(
-        "intergrax.applications._shared.task_control._resume_task_with_token",
+        "intergrax.applications._shared.task_control._resume_task_with_host_execution",
         new_callable=AsyncMock,
-        return_value=_task_result(),
     ) as resume_call:
-        mount_harness_task_routes(
+        mount_canonical_harness_task_routes_for_tests(
             app,
-            task_runner=runner,
             checkpoint_store=_StaticCheckpointStore(checkpoint),
             mutation_boundary=None,
         )
@@ -961,9 +962,8 @@ def test_taskcpm_r_http_unauthenticated_returns_401() -> None:
         resolved_api_key=None,
         tenant_required=True,
     )
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app,
-        task_runner=AsyncMock(spec=UnifiedTaskRunner),
         checkpoint_store=_StaticCheckpointStore(checkpoint),
         mutation_boundary=boundary,
     )

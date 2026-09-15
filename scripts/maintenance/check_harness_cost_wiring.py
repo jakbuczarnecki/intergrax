@@ -49,16 +49,16 @@ def main() -> int:
         notification_adapter=integrations.notification_adapter,
     )
 
-    policy_bundle = runtime.env_wiring.policy_bundle
+    cost_wiring = wire_application_cost(env)
     if env.cost_profile.budget_enforcement_enabled:
-        if not isinstance(policy_bundle.budget, BudgetPolicy):
+        if cost_wiring.budget_policy is None or not isinstance(cost_wiring.budget_policy, BudgetPolicy):
             print("lab host must wire BudgetPolicy when budget_enforcement_enabled")
             return 1
         if wiring.run_budget is None:
             print("lab host must wire run budget limits when cost_profile sets limits")
             return 1
 
-    cost_fragment = policy_bundle.domain_fragments.get("cost_governance")
+    cost_fragment = runtime.env_wiring.policy_bundle.domain_fragments.get("cost_governance")
     if not isinstance(cost_fragment, dict):
         print("lab host policy bundle must include cost_governance domain fragment")
         return 1

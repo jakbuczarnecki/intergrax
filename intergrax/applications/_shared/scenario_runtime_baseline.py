@@ -187,6 +187,10 @@ class ScenarioRuntimeExecutionResult:
     tenant_id: str
     deferred_persisted_trace_finalize: DeferredPersistedTraceFinalize | None = None
 
+    @property
+    def authoritative_decision_exposure(self):
+        return self.task_result.authoritative_decision_exposure
+
 
 def validate_scenario_tenant_id(tenant_id: str) -> str:
     """Validate explicit tenant id before scenario execution or wiring."""
@@ -280,7 +284,11 @@ def rewire_scenario_decision_wiring(
     )
     if validation_engine is not None:
         composition.nexus_loop.apply_validation_engine(validation_engine)
-    apply_application_decision_wiring(composition.nexus_loop, decision_wiring)
+    apply_application_decision_wiring(
+        composition.nexus_loop,
+        decision_wiring,
+        environment=environment,
+    )
 
 
 def rebuild_scenario_runtime_from_composition(

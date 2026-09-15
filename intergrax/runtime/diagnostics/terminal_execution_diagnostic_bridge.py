@@ -22,7 +22,6 @@ from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import 
 )
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTrigger,
-    TerminalExecutionDiagnosticTriggerProtocol,
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
@@ -76,7 +75,7 @@ def _persist_diagnostic_subsystem_failure(
 
 
 def invoke_terminal_execution_diagnostics(
-    trigger: TerminalExecutionDiagnosticTriggerProtocol | None,
+    trigger: TerminalExecutionDiagnosticTrigger | None,
     *,
     tenant_id: str,
     task_id: TaskId,

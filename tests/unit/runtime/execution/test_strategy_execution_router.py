@@ -36,6 +36,9 @@ from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyReso
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import execution_request_from_task
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = pytest.mark.unit
@@ -241,6 +244,7 @@ async def test_orchestration_router_delegates_only_to_orchestration_executor() -
             task_id=mint_task_id(),
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
     )
     task = Task(

@@ -7,7 +7,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.diagnostics.functional_evidence import PipelineOperationStatus
+from intergrax.contracts.functional_evidence import PipelineOperationStatus
 from intergrax.runtime.diagnostics.specifications.q4_model_routing_functional_diagnostic_specification import (
     Q4_MODEL_GENERATE_OPERATION_ID,
     Q4_MODEL_QUERY_ID,

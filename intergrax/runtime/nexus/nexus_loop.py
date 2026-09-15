@@ -144,8 +144,9 @@ from intergrax.runtime.execution.execution_terminal.persistence import (
     terminal_reason_for_task_state,
     validate_terminal_run_id_consistency,
 )
-from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
-    TerminalExecutionDiagnosticTriggerProtocol,
+from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
+    TerminalExecutionDiagnosticPort,
+    TerminalExecutionDiagnosticRequest,
 )
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
@@ -218,8 +219,7 @@ class NexusLoop:
         denied_planner_model_ids: tuple[str, ...] = (),
         planner_model_id: str | None = None,
         governance_service: GovernanceService | None = None,
-        terminal_diagnostic_trigger: TerminalExecutionDiagnosticTriggerProtocol
-        | None = None,
+        terminal_diagnostic_trigger: TerminalExecutionDiagnosticPort | None = None,
         authority_policy: "ExecutionAuthorityPolicy | None" = None,
         budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
         execution_budget_ledger_factory: "ExecutionBudgetLedgerFactory | None" = None,
@@ -422,6 +422,9 @@ class NexusLoop:
         )
         self._hold_persisted_trace_finalize = False
         self._pending_deferred_persisted_trace_finalize = None
+        self._decision_exposure_selection = None
+        self._decision_flow_verify_graph_final = False
+        self._decision_exposure_session = None
 
     def set_hold_persisted_trace_finalize(self, hold: bool) -> None:
         """When True, graph success defers persisted trace finalize for scenario observability."""
@@ -472,13 +475,93 @@ class NexusLoop:
         gate: Optional["DecisionFlowGate[AgentExecutionResult]"],
         *,
         verify_uaep_step: bool = False,
+        verify_graph_final: bool = True,
     ) -> None:
         """Attach Decision flow authority to graph and UAEP execution surfaces."""
         self._graph_executor.apply_decision_flow_gate(gate)
         self._graph_runner.decision_flow_gate = gate
+        self._decision_flow_verify_graph_final = verify_graph_final
         self._engine.uaep_executor.set_decision_flow_gate(
             gate,
             verify_uaep_step=verify_uaep_step,
+        )
+
+    def apply_decision_exposure_selection(
+        self,
+        composition: object,
+    ) -> None:
+        from intergrax.runtime.execution.decision_exposure_selection_composition import (
+            DecisionExposureSelectionComposition,
+        )
+
+        if type(composition) is not DecisionExposureSelectionComposition:
+            raise TypeError("composition must be DecisionExposureSelectionComposition")
+        self._decision_exposure_selection = composition
+
+    def _begin_decision_exposure_session(self) -> None:
+        from intergrax.runtime.decision_flow import DecisionFlowScope
+        from intergrax.runtime.execution.decision_exposure_collector import (
+            DecisionExposureCandidateCollector,
+        )
+        from intergrax.runtime.nexus.orchestration.nexus_decision_exposure import (
+            NexusDecisionExposureRunSession,
+        )
+
+        gate = self._graph_runner.decision_flow_gate
+        graph_final_gate_enabled = (
+            gate is not None
+            and self._decision_flow_verify_graph_final
+            and gate.supports_scope(DecisionFlowScope.GRAPH_FINAL)
+            and self._decision_exposure_selection is not None
+        )
+        if not graph_final_gate_enabled:
+            self._decision_exposure_session = None
+            self._graph_runner.decision_exposure_session = None
+            return
+        session = NexusDecisionExposureRunSession(
+            collector=DecisionExposureCandidateCollector(),
+            selection=self._decision_exposure_selection,
+            graph_final_gate_enabled=True,
+        )
+        self._decision_exposure_session = session
+        self._graph_runner.decision_exposure_session = session
+
+    def _clear_decision_exposure_session(self) -> None:
+        self._decision_exposure_session = None
+        self._graph_runner.decision_exposure_session = None
+
+    def _resolve_authoritative_decision_exposure(
+        self,
+        task: Task,
+    ) -> object | None:
+        from intergrax.runtime.nexus.orchestration.nexus_decision_exposure import (
+            resolve_authoritative_decision_exposure_for_task,
+        )
+
+        run_id, _ = require_active_execution_identity()
+        return resolve_authoritative_decision_exposure_for_task(
+            task_state=task.state,
+            tenant_id=task.tenant_id,
+            run_id=run_id,
+            attempt_lifecycle=self._attempt_lifecycle,
+            session=self._decision_exposure_session,
+        )
+
+    def _with_authoritative_decision_exposure(
+        self,
+        task: Task,
+        result: TaskResult,
+    ) -> TaskResult:
+        if result.authoritative_decision_exposure is not None:
+            return result
+        exposure = self._resolve_authoritative_decision_exposure(task)
+        if exposure is None:
+            return result
+        return result.model_copy(
+            update={
+                "authoritative_decision_exposure": exposure,
+                "state": task.state,
+            },
         )
 
     def peek_decision_flow_gate(
@@ -581,14 +664,30 @@ class NexusLoop:
     async def _handle_task_impl(self, task: Task) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
         self._trace_emitter = trace_emitter
+        self._begin_decision_exposure_session()
+        try:
+            return await self._handle_task_impl_with_exposure_session(
+                task,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+            )
+        finally:
+            self._clear_decision_exposure_session()
 
+    async def _handle_task_impl_with_exposure_session(
+        self,
+        task: Task,
+        *,
+        lifecycle: TaskLifecycle,
+        trace_emitter: TaskTraceEmitter,
+    ) -> TaskResult:
         intake = await self._intake_runner.run(
             task,
             lifecycle=lifecycle,
             trace_emitter=trace_emitter,
         )
         if intake.early_result is not None:
-            return intake.early_result
+            return self._with_authoritative_decision_exposure(task, intake.early_result)
 
         planning = await self._planning_runner.run(
             task,
@@ -596,7 +695,7 @@ class NexusLoop:
             trace_emitter=trace_emitter,
         )
         if planning.early_result is not None:
-            return planning.early_result
+            return self._with_authoritative_decision_exposure(task, planning.early_result)
         plan = planning.plan
         if plan is None:
             raise RuntimeError("planning phase completed without plan or early result")
@@ -618,7 +717,7 @@ class NexusLoop:
                 phase.deferred_persisted_trace_finalize
             )
         if phase.early_result is not None:
-            return phase.early_result
+            return self._with_authoritative_decision_exposure(task, phase.early_result)
         assert phase.executions is not None
         assert phase.retry_records is not None
         assert phase.graph is not None
@@ -767,6 +866,12 @@ class NexusLoop:
             run_budget=self._run_budget,
         )
 
+    def _resolve_authoritative_decision_exposure_for_build(
+        self,
+        task: Task,
+    ) -> object | None:
+        return self._resolve_authoritative_decision_exposure(task)
+
     def _build_result(
         self,
         task: Task,
@@ -779,6 +884,7 @@ class NexusLoop:
         retry_records: List[RetryRecord],
         graph_id: str,
     ) -> TaskResult:
+        exposure = self._resolve_authoritative_decision_exposure_for_build(task)
         result = build_nexus_task_result(
             task,
             trace_emitter,
@@ -793,6 +899,7 @@ class NexusLoop:
             shadow_manager=self._shadow_manager,
             sandbox_manager=self._sandbox_manager,
             run_id=require_active_execution_identity()[0],
+            authoritative_decision_exposure=exposure,
         )
         return result
 
@@ -844,9 +951,9 @@ class NexusLoop:
 
     def attach_terminal_diagnostic_trigger(
         self,
-        trigger: TerminalExecutionDiagnosticTriggerProtocol,
+        trigger: TerminalExecutionDiagnosticPort,
     ) -> None:
-        """Attach platform terminal diagnostic trigger after host composition."""
+        """Attach terminal diagnostic integration port after host composition."""
         self._terminal_diagnostic_trigger = trigger
 
     def _seal_execution_lineage_after_terminal(
@@ -960,25 +1067,32 @@ class NexusLoop:
     ) -> RuntimeEvent:
         terminal_event = await self._events.publish_terminal(task)
         if self._terminal_diagnostic_trigger is not None:
-            from intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge import (
-                invoke_terminal_execution_diagnostics,
-            )
+            from intergrax.logging import IntergraxLogging
 
-            from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
-
-            invoke_terminal_execution_diagnostics(
-                self._terminal_diagnostic_trigger,
-                tenant_id=task.tenant_id,
-                task_id=task.task_id,
-                run_id=terminal_event.run_id,
-                observed_at=terminal_event.timestamp,
-                event_bus=self._event_bus,
-                execution_identity=ExecutionIdentityBinding(
-                    run_id=terminal_event.run_id,
-                    attempt_id=terminal_event.attempt_id,
-                    execution_id=terminal_event.execution_id,
-                ),
+            diagnostic_logger = IntergraxLogging.get_logger(
+                __name__,
+                component="diagnostics",
             )
+            try:
+                self._terminal_diagnostic_trigger.dispatch_terminal_execution(
+                    TerminalExecutionDiagnosticRequest(
+                        tenant_id=task.tenant_id,
+                        task_id=task.task_id,
+                        run_id=terminal_event.run_id,
+                        observed_at=terminal_event.timestamp,
+                        attempt_id=terminal_event.attempt_id,
+                        execution_id=terminal_event.execution_id,
+                    ),
+                )
+            except Exception:
+                diagnostic_logger.exception(
+                    "Terminal execution diagnostic dispatch failed",
+                    extra={
+                        "tenant_id": task.tenant_id,
+                        "task_id": str(task.task_id),
+                        "run_id": str(terminal_event.run_id),
+                    },
+                )
         return terminal_event
 
     def _resolve_lifecycle(self, task: Task) -> tuple[TaskLifecycle, TaskTraceEmitter]:

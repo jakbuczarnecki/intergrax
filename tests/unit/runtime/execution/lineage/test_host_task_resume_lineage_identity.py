@@ -28,6 +28,9 @@ from intergrax.runtime.execution.lineage.persistence import (
     InMemoryExecutionLineagePersistence,
 )
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+from intergrax.runtime.governance.execution_admission_composition import (
+    build_reference_allowing_root_execution_authority_admission,
+)
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
     minimal_runtime_checkpoint,
 )
@@ -37,6 +40,8 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
+
+pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
 
 
 def _checkpoint(
@@ -152,7 +157,11 @@ def _build_host_execution(
         ),
     )
     nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
-    return build_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
+    return build_host_task_execution(
+        nexus_loop,
+        orchestration_triggers=frozenset(),
+        root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
+    )
 
 
 @pytest.mark.asyncio

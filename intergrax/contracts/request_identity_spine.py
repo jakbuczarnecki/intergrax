@@ -55,6 +55,21 @@ def api_key_service_request_identity(
     )
 
 
+def verified_request_identity_for_memory_recall(
+    canonical_identity: RequestIdentity | None,
+    *,
+    metadata: Mapping[str, Any],
+    legacy_tenant_id: str | None = None,
+) -> RequestIdentity | None:
+    """Verified canonical identity for memory recall; None when absent (no synthesis)."""
+    if canonical_identity is None:
+        return None
+    assert_untrusted_metadata_identity_compatible(canonical_identity, metadata)
+    if legacy_tenant_id is not None and str(legacy_tenant_id) != canonical_identity.tenant_id:
+        raise ValueError("request tenant_id conflicts with canonical RequestIdentity")
+    return canonical_identity
+
+
 def assert_untrusted_metadata_identity_compatible(
     canonical: RequestIdentity,
     metadata: Mapping[str, Any],

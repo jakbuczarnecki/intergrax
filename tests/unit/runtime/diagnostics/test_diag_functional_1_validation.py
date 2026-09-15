@@ -7,12 +7,14 @@ from datetime import datetime, timezone
 import pytest
 
 from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceProvenance,
     PipelineEvidenceScope,
@@ -20,7 +22,7 @@ from intergrax.runtime.diagnostics.functional_evidence import (
     PipelineOperationStatus,
     PlatformFunctionalEvidence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceConflictError,
     FunctionalEvidencePersistenceIntegrityError,
     FunctionalEvidenceQueryRequest,
@@ -42,7 +44,7 @@ from intergrax.runtime.diagnostics.functional_validation import (
     validate_functional_validation_correlation,
     validate_problem_signal_correlation_alignment,
 )
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
@@ -163,6 +165,8 @@ def test_t4_tenant_mismatch_fails_closed() -> None:
             tenant_id=correlation.tenant_id,
             task_id=correlation.task_id,
             run_id=correlation.run_id,
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
         ),
         provenance=PipelineEvidenceProvenance(
             producer_component="diag.test",
@@ -204,6 +208,8 @@ def test_t5_duplicate_functional_evidence_is_idempotent() -> None:
             tenant_id=correlation.tenant_id,
             task_id=correlation.task_id,
             run_id=correlation.run_id,
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
         ),
         provenance=PipelineEvidenceProvenance(
             producer_component="diag.test",
@@ -245,6 +251,8 @@ def test_t6_out_of_order_evidence_has_deterministic_reconstruction_order() -> No
                 tenant_id=correlation.tenant_id,
                 task_id=correlation.task_id,
                 run_id=correlation.run_id,
+                attempt_id=mint_attempt_id(),
+                execution_id=mint_execution_id(),
             ),
             provenance=PipelineEvidenceProvenance(
                 producer_component="diag.test",

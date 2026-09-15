@@ -29,6 +29,10 @@ from intergrax.contracts.decision_strategy import (
     DecisionStrategyRegistry,
     register_decision_strategy,
 )
+from intergrax.contracts.decision_exposure_selection import (
+    DECISION_EXPOSURE_SELECTION_STRATEGY_CAPABILITY_ID,
+    DecisionExposureSelectionStrategy,
+)
 from intergrax.contracts.decision_verification_stage import (
     T,
     VerificationStage,
@@ -37,6 +41,7 @@ from intergrax.contracts.decision_verification_stage import (
     VerificationStageRegistry,
     register_verification_stage,
 )
+from intergrax.core.plugins.selection_ref import PlatformPluginSelectionRef
 from intergrax.contracts.decision.integration.composition import (
     DecisionIntegrationCompositionProvider,
 )
@@ -50,12 +55,16 @@ from intergrax.core.plugins.admission import (
 )
 from intergrax.core.plugins.discovery import (
     EP_DECISION_ARTIFACT_KINDS,
+    EP_DECISION_EXPOSURE_SELECTION_STRATEGIES,
     EP_DECISION_STRATEGIES,
     EP_DECISION_VERIFICATION_STAGES,
     EntryPointLoadResult,
     EntryPointSpec,
     instantiate_entry_point_target,
     load_entry_point_targets_for_specs,
+)
+from intergrax.runtime.execution.host_terminal_decision_exposure_selector import (
+    default_decision_exposure_selection_strategy,
 )
 from intergrax.runtime.decision_plugin_policy import DecisionPluginLoadPolicy
 from intergrax.runtime.decision_plugin_pre_load import (
@@ -91,6 +100,12 @@ class VerificationStagePluginLoadOutcome(Generic[T]):
 @dataclass(frozen=True, slots=True)
 class DecisionArtifactKindPluginLoadOutcome:
     registry: DecisionArtifactKindRegistry
+    report: DomainPluginLoadReport
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionExposureSelectionPluginLoadOutcome:
+    strategy: DecisionExposureSelectionStrategy[object] | None
     report: DomainPluginLoadReport
 
 
@@ -154,6 +169,18 @@ def _resolve_strategy_registration(
         "Decision strategy entry point must return DecisionStrategy or "
         "DecisionStrategyRegistration",
     )
+
+
+def _resolve_exposure_selection_strategy(
+    target: object,
+) -> DecisionExposureSelectionStrategy[object]:
+    resolved = instantiate_entry_point_target(target)
+    if not isinstance(resolved, DecisionExposureSelectionStrategy):
+        raise TypeError(
+            "Decision exposure selection entry point must return "
+            "DecisionExposureSelectionStrategy",
+        )
+    return resolved
 
 
 def _resolve_artifact_kind_contribution(
@@ -490,6 +517,109 @@ def load_decision_artifact_kind_plugins(
         registry=current,
         report=_build_report(
             group=EP_DECISION_ARTIFACT_KINDS,
+            accepted=accepted,
+            rejected=rejected,
+            failed=failed,
+        ),
+    )
+
+
+def load_decision_exposure_selection_strategy_plugin(
+    *,
+    policy: DecisionPluginLoadPolicy | None = None,
+    selection_ref: PlatformPluginSelectionRef | None = None,
+) -> DecisionExposureSelectionPluginLoadOutcome:
+    """Load zero or one exposure selection strategy after canonical pre-load admission."""
+    chosen = policy if policy is not None else DecisionPluginLoadPolicy()
+    if selection_ref is None:
+        return DecisionExposureSelectionPluginLoadOutcome(
+            strategy=default_decision_exposure_selection_strategy(),
+            report=DomainPluginLoadReport.empty(EP_DECISION_EXPOSURE_SELECTION_STRATEGIES),
+        )
+
+    plan = plan_decision_plugin_admission(
+        EP_DECISION_EXPOSURE_SELECTION_STRATEGIES,
+        domain=DECISION_PLUGIN_DOMAIN,
+        required_capability_id=DECISION_EXPOSURE_SELECTION_STRATEGY_CAPABILITY_ID,
+        policy=chosen,
+        requested_plugins=chosen.requested_exposure_selection_strategy_plugins
+        if chosen.requested_exposure_selection_strategy_plugins is not None
+        else (selection_ref,),
+    )
+    accepted: list[EntryPointSpec] = []
+    rejected: list[PluginAdmissionRejection] = list(plan.rejected)
+    failed: list[EntryPointLoadResult] = []
+    loaded_strategy: DecisionExposureSelectionStrategy[object] | None = None
+
+    admitted_specs = _admitted_entry_point_specs(plan)
+    if not admitted_specs:
+        return DecisionExposureSelectionPluginLoadOutcome(
+            strategy=None,
+            report=_build_report(
+                group=EP_DECISION_EXPOSURE_SELECTION_STRATEGIES,
+                accepted=accepted,
+                rejected=rejected,
+                failed=failed,
+            ),
+        )
+
+    for result in load_entry_point_targets_for_specs(
+        admitted_specs,
+        on_load_failure=chosen.on_load_failure,
+    ):
+        if result.error is not None:
+            failed.append(result)
+            continue
+
+        try:
+            instance = _resolve_exposure_selection_strategy(result.target)
+        except (TypeError, ValueError) as exc:
+            rejected.append(
+                PluginAdmissionRejection(
+                    spec=result.spec,
+                    reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
+                    reason=str(exc),
+                    fail_closed=True,
+                ),
+            )
+            continue
+        except Exception as exc:
+            if chosen.on_load_failure == "fail_fast":
+                raise
+            failed.append(EntryPointLoadResult(spec=result.spec, error=exc))
+            continue
+
+        runtime_id = instance.strategy_id
+        expected_plugin_id = plan.expected_plugin_id_for(result.spec)
+        if expected_plugin_id is not None and runtime_id != expected_plugin_id:
+            rejected.append(
+                _runtime_identity_mismatch_rejection(
+                    result.spec,
+                    expected_plugin_id=expected_plugin_id,
+                    runtime_kind=runtime_id,
+                ),
+            )
+            continue
+
+        if loaded_strategy is not None:
+            rejected.append(
+                PluginAdmissionRejection(
+                    spec=result.spec,
+                    reason_code=PluginAdmissionReasonCode.PLUGIN_ID_COLLISION,
+                    reason="multiple exposure selection strategies admitted for one host",
+                    plugin_id=runtime_id,
+                    fail_closed=True,
+                ),
+            )
+            continue
+
+        loaded_strategy = instance
+        accepted.append(result.spec)
+
+    return DecisionExposureSelectionPluginLoadOutcome(
+        strategy=loaded_strategy,
+        report=_build_report(
+            group=EP_DECISION_EXPOSURE_SELECTION_STRATEGIES,
             accepted=accepted,
             rejected=rejected,
             failed=failed,

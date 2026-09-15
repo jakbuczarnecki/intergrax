@@ -30,6 +30,9 @@ from intergrax.runtime.execution.boundary import (
     ExecutionBoundary,
     ExecutionIdentityBinding,
 )
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -129,7 +132,8 @@ def _minimal_task() -> Task:
 
 
 def _minimal_task_result() -> TaskResult:
-    return TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED, answer="ok")
+    return TaskResult(
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=mint_task_id(), state=TaskState.COMPLETED, answer="ok")
 
 
 @pytest.mark.asyncio

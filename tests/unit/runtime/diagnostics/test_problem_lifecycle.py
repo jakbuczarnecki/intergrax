@@ -14,7 +14,7 @@ from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     DeterministicProblemGroupingStrategy,
 )
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
 )

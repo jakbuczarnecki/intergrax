@@ -4,18 +4,30 @@
 
 from __future__ import annotations
 
-import json
+from collections.abc import Sequence
+from dataclasses import replace
 from typing import Optional, Dict, Any, List, Union
 
-from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.memory.contracts.enterprise_memory_record import MemoryRecordLineage
+
 from intergrax.memory.user_profile_memory import (
     UserProfile,
     UserProfileMemoryEntry,
     UserProfileMemoryEntryNotFoundError,
 )
 from intergrax.memory.memory_temporal import filter_active_memory_entries, is_memory_entry_active
-from intergrax.memory.memory_vector_namespace import resolve_memory_index_collection
-from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN
+from intergrax.memory.contracts.memory_lifecycle import (
+    MemoryLifecycleDisposition,
+    MemoryLifecycleOperation,
+    MemoryLifecycleOutcome,
+    MemoryReconciliationOutcome,
+    UserProfileMemoryMutationResult,
+    UserProfileMemoryProjection,
+    aggregate_memory_lifecycle_outcomes,
+)
+from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecycleCoordinator
+from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN, resolve_memory_index_collection
+from intergrax.memory.user_profile_ltm_vector_projection import UserProfileLtmVectorProjection
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
@@ -24,7 +36,6 @@ from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
-    VectorStoreRecord,
     VectorStoreScope,
 )
 
@@ -61,6 +72,7 @@ class UserProfileManager:
             tenant_id: str = "default",
             vector_index_namespace: str | None = None,
             workspace_id: str | None = None,
+            memory_projections: Sequence[UserProfileMemoryProjection] | None = None,
     ) -> None:
         self._store = store
         self._tenant_id = tenant_id
@@ -81,6 +93,27 @@ class UserProfileManager:
         # Retrieval defaults (can be overridden per call)
         self._longterm_top_k = int(longterm_top_k)
         self._longterm_score_threshold = float(longterm_score_threshold)
+        self._memory_lifecycle = UserProfileMemoryLifecycleCoordinator(
+            projections=self._resolve_memory_projections(memory_projections),
+        )
+
+    def _resolve_memory_projections(
+        self,
+        configured: Sequence[UserProfileMemoryProjection] | None,
+    ) -> tuple[UserProfileMemoryProjection, ...]:
+        if configured is not None:
+            return tuple(configured)
+        if self._embedding_manager is not None and self._vectorstore_manager is not None:
+            return (
+                UserProfileLtmVectorProjection(
+                    embedding_manager=self._embedding_manager,
+                    vectorstore_manager=self._vectorstore_manager,
+                    tenant_id=self._tenant_id,
+                    vector_index_namespace=self._vector_index_namespace,
+                    workspace_id=self._workspace_id,
+                ),
+            )
+        return ()
 
     async def _get_store_profile(self, user_id: str) -> UserProfile:
         return await self._store.get_profile(tenant_id=self._tenant_id, user_id=user_id)
@@ -161,103 +194,6 @@ class UserProfileManager:
             "scores": scores,
             "debug": debug,
         }
-
-    async def _index_upsert_entry(self, user_id: str, entry: UserProfileMemoryEntry) -> None:
-        """
-        Upsert a single memory entry into the vector store (if enabled).
-        Engine does not know about this.
-        """
-        if not self.is_longterm_rag_enabled():
-            return
-        if entry.deleted:
-            return
-
-        text = (entry.content or "").strip()
-        if not text:
-            return
-
-        meta = dict(entry.metadata or {})
-        meta.update(
-            {
-                "user_id": user_id,
-                "entry_id": entry.entry_id,
-                "kind": entry.kind.value if hasattr(entry.kind, "value") else str(entry.kind),
-                "deleted": 1 if entry.deleted else 0,
-                "index_domain": LTM_INDEX_DOMAIN,
-                "collection_name": self._ltm_collection_name,
-            }
-        )
-        
-        meta = self._sanitize_vectorstore_metadata(meta)
-        scope = self._vector_scope()
-        doc = KnowledgeDocument.model_validate(
-            {
-                "schema_version": 1,
-                "identity": {
-                    "document_id": entry.entry_id,
-                    "root_document_id": entry.entry_id,
-                },
-                "scope": {
-                    "tenant_id": scope.tenant_id,
-                    "namespace": scope.namespace,
-                    "workspace_id": scope.workspace_id,
-                },
-                "content": text,
-                "metadata": meta,
-                "provenance": {
-                    "source_kind": "user_profile_memory",
-                    "source_id": entry.entry_id,
-                    "source_parent_id": user_id,
-                },
-            }
-        )
-
-        emb = self._embedding_manager.embed_texts([text])  # np.ndarray [1, D] or list[list[float]]
-        self._vectorstore_manager.add_records(
-            [
-                VectorStoreRecord(
-                    document=doc,
-                    embedding=emb[0],
-                    vector_id=entry.entry_id,
-                )
-            ],
-            scope=scope,
-        )
-
-    def _sanitize_vectorstore_metadata(self, meta: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Chroma (and some other vectorstores) accept only scalar metadata values:
-        str | int | float | bool | None.
-        We normalize lists/dicts to stable strings.
-        """
-        out: Dict[str, Any] = {}
-        for k, v in (meta or {}).items():
-            if v is None or isinstance(v, (str, int, float, bool)):
-                out[k] = v
-                continue
-
-            if isinstance(v, (list, tuple)):
-                # Preserve information but keep scalar type
-                out[k] = ",".join(str(x) for x in v)
-                continue
-
-            if isinstance(v, dict):
-                out[k] = json.dumps(v, ensure_ascii=False, separators=(",", ":"))
-                continue
-
-            out[k] = str(v)
-
-        return out
-
-    async def _index_delete_entry(self, entry_id: str) -> None:
-        """
-        Delete a memory entry vector by id (if enabled).
-        """
-        if not self.is_longterm_rag_enabled():
-            return
-        if not entry_id:
-            return
-        self._vectorstore_manager.delete([entry_id], scope=self._vector_scope())
 
     
     async def search_longterm_memory(
@@ -435,7 +371,20 @@ class UserProfileManager:
 
         This operation is typically used for cleanup or account deletion flows.
         """
+        profile = await self._get_store_profile(user_id)
+        entry_ids = [entry.entry_id for entry in profile.memory_entries]
         await self._delete_store_profile(user_id)
+        outcome = await self._memory_lifecycle.apply_after_primary_deletes(
+            operation=MemoryLifecycleOperation.DELETE_PROFILE,
+            user_id=user_id,
+            entry_ids=entry_ids,
+        )
+        self._memory_lifecycle.raise_if_partial(outcome)
+
+    async def reconcile_memory_projections(self, user_id: str) -> MemoryReconciliationOutcome:
+        """Rebuild derived projections from authoritative profile state."""
+        profile = await self._get_store_profile(user_id)
+        return await self._memory_lifecycle.reconcile_user(user_id=user_id, profile=profile)
 
     # ---------------------------------------------------------------------
     # System instructions management
@@ -489,6 +438,39 @@ class UserProfileManager:
     # Long-term memory management
     # ---------------------------------------------------------------------
 
+    async def add_memory_entry_with_lifecycle(
+        self,
+        user_id: str,
+        entry_or_content: Union[UserProfileMemoryEntry, str],
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> UserProfileMemoryMutationResult:
+        """Append memory entry and return lifecycle outcome (no raise on partial projection)."""
+        profile = await self._get_store_profile(user_id)
+
+        if isinstance(entry_or_content, UserProfileMemoryEntry):
+            entry = entry_or_content
+            if entry.metadata is None:
+                entry.metadata = {}
+        else:
+            from intergrax.memory.contracts.enterprise_memory_record import MemoryProvenance
+
+            entry = UserProfileMemoryEntry(
+                content=str(entry_or_content),
+                metadata=metadata or {},
+                provenance=MemoryProvenance(),
+            )
+
+        profile.memory_entries.append(entry)
+
+        await self._save_store_profile(profile)
+
+        outcome = await self._memory_lifecycle.apply_after_primary_upsert(
+            operation=MemoryLifecycleOperation.WRITE,
+            user_id=user_id,
+            entry=entry,
+        )
+        return UserProfileMemoryMutationResult(entry=entry, lifecycle=outcome)
+
     async def add_memory_entry(
         self,
         user_id: str,
@@ -504,27 +486,14 @@ class UserProfileManager:
 
         Returns the updated UserProfile for convenience.
         """
-        profile = await self._get_store_profile(user_id)
-
-        if isinstance(entry_or_content, UserProfileMemoryEntry):
-            entry = entry_or_content
-            # Ensure metadata dict exists (avoid None)
-            if entry.metadata is None:
-                entry.metadata = {}
-        else:
-            entry = UserProfileMemoryEntry(
-                content=str(entry_or_content),
-                metadata=metadata or {},
-            )
-
-        profile.memory_entries.append(entry)
-
-        await self._save_store_profile(profile)
-
-        # Long-term memory vector index (optional)
-        await self._index_upsert_entry(user_id=user_id, entry=entry)
-        
-        return entry
+        mutation = await self.add_memory_entry_with_lifecycle(
+            user_id,
+            entry_or_content,
+            metadata=metadata,
+        )
+        self._memory_lifecycle.raise_if_partial(mutation.lifecycle)
+        assert mutation.entry is not None
+        return mutation.entry
 
     async def update_memory_entry(
         self,
@@ -540,12 +509,17 @@ class UserProfileManager:
         profile = await self._get_store_profile(user_id)
 
         matched: UserProfileMemoryEntry | None = None
+        semantic_change = False
         for entry in profile.memory_entries:
             if entry.entry_id == entry_id:
-                if content is not None:
+                if content is not None and content != entry.content:
                     entry.content = content
-                if metadata is not None:
+                    semantic_change = True
+                if metadata is not None and metadata != entry.metadata:
                     entry.metadata = metadata
+                    semantic_change = True
+                if semantic_change:
+                    entry.bump_revision_for_semantic_change()
                 entry.modified = True
                 matched = entry
                 break
@@ -555,21 +529,85 @@ class UserProfileManager:
 
         await self._save_store_profile(profile)
 
-        if content is not None:
-            await self._index_upsert_entry(user_id=user_id, entry=matched)
+        if semantic_change:
+            outcome = await self._memory_lifecycle.apply_after_primary_upsert(
+                operation=MemoryLifecycleOperation.UPDATE,
+                user_id=user_id,
+                entry=matched,
+            )
+            self._memory_lifecycle.raise_if_partial(outcome)
 
         matched.modified = False
 
         return profile
 
-    async def remove_memory_entry(
+    async def apply_memory_supersession_with_lifecycle(
+        self,
+        user_id: str,
+        *,
+        superseded_memory_id: str,
+        superseding_memory_id: str,
+    ) -> UserProfileMemoryMutationResult:
+        """Apply reciprocal lineage supersession via primary store + projection lifecycle."""
+        if superseded_memory_id == superseding_memory_id:
+            raise ValueError("supersession cannot target the same memory id")
+
+        profile = await self._get_store_profile(user_id)
+        superseded: UserProfileMemoryEntry | None = None
+        superseding: UserProfileMemoryEntry | None = None
+        for entry in profile.memory_entries:
+            if entry.entry_id == superseded_memory_id:
+                superseded = entry
+            elif entry.entry_id == superseding_memory_id:
+                superseding = entry
+
+        if superseded is None or superseding is None:
+            missing = superseded_memory_id if superseded is None else superseding_memory_id
+            raise UserProfileMemoryEntryNotFoundError(missing)
+
+        superseded.lineage = replace(
+            superseded.lineage,
+            superseded_by_memory_id=superseding_memory_id,
+        )
+        superseding.lineage = replace(
+            superseding.lineage,
+            supersedes_memory_id=superseded_memory_id,
+        )
+        superseded.bump_revision_for_semantic_change()
+        superseding.bump_revision_for_semantic_change()
+        superseded.modified = True
+        superseding.modified = True
+
+        await self._save_store_profile(profile)
+
+        outcome_a = await self._memory_lifecycle.apply_after_primary_upsert(
+            operation=MemoryLifecycleOperation.UPDATE,
+            user_id=user_id,
+            entry=superseded,
+        )
+        outcome_b = await self._memory_lifecycle.apply_after_primary_upsert(
+            operation=MemoryLifecycleOperation.UPDATE,
+            user_id=user_id,
+            entry=superseding,
+        )
+        aggregated = aggregate_memory_lifecycle_outcomes(
+            operation=MemoryLifecycleOperation.UPDATE,
+            user_id=user_id,
+            outcomes=(outcome_a, outcome_b),
+        )
+        self._memory_lifecycle.raise_if_partial(aggregated)
+
+        superseded.modified = False
+        superseding.modified = False
+
+        return UserProfileMemoryMutationResult(entry=superseding, lifecycle=aggregated)
+
+    async def remove_memory_entry_with_lifecycle(
         self,
         user_id: str,
         entry_id: str,
-    ) -> UserProfile:
-        """
-        Remove a single long-term memory entry identified by `entry_id`.
-        """
+    ) -> UserProfileMemoryMutationResult:
+        """Soft-delete entry and return lifecycle outcome (no raise on partial projection)."""
         profile = await self._get_store_profile(user_id)
 
         found = False
@@ -580,14 +618,38 @@ class UserProfileManager:
                 break
 
         if not found:
-            return profile
-       
+            return UserProfileMemoryMutationResult(
+                entry=None,
+                lifecycle=MemoryLifecycleOutcome(
+                    operation=MemoryLifecycleOperation.DELETE_ENTRY,
+                    disposition=MemoryLifecycleDisposition.UNCHANGED,
+                    user_id=user_id,
+                    memory_entity_ids=(),
+                    primary_applied=False,
+                    projection_evidence=(),
+                ),
+            )
+
         await self._save_store_profile(profile)
 
-        # Keep rerieval deterministic: remove from vector index on soft delete
-        await self._index_delete_entry(entry_id=entry_id)
+        outcome = await self._memory_lifecycle.apply_after_primary_deletes(
+            operation=MemoryLifecycleOperation.DELETE_ENTRY,
+            user_id=user_id,
+            entry_ids=(entry_id,),
+        )
+        return UserProfileMemoryMutationResult(entry=None, lifecycle=outcome)
 
-        return profile
+    async def remove_memory_entry(
+        self,
+        user_id: str,
+        entry_id: str,
+    ) -> UserProfile:
+        """
+        Remove a single long-term memory entry identified by `entry_id`.
+        """
+        mutation = await self.remove_memory_entry_with_lifecycle(user_id, entry_id)
+        self._memory_lifecycle.raise_if_partial(mutation.lifecycle)
+        return await self._get_store_profile(user_id)
 
 
     async def clear_memory(self, user_id: str) -> UserProfile:
@@ -597,17 +659,23 @@ class UserProfileManager:
         This is usually used for privacy/cleanup flows or when the application
         decides to reset user-level memory.
         """
-        profile = await self._get_store_profile(user_id)     
-        
+        profile = await self._get_store_profile(user_id)
+
+        entry_ids = [entry.entry_id for entry in profile.memory_entries if not entry.deleted]
         changed = False
         for entry in profile.memory_entries:
             if not entry.deleted:
-                entry.deleted=True  
+                entry.deleted = True
                 changed = True
-        
+
         if changed:
             await self._save_store_profile(profile)
-            # profile.memory_entries.clear()
+            outcome = await self._memory_lifecycle.apply_after_primary_deletes(
+                operation=MemoryLifecycleOperation.CLEAR,
+                user_id=user_id,
+                entry_ids=entry_ids,
+            )
+            self._memory_lifecycle.raise_if_partial(outcome)
 
         return profile
     

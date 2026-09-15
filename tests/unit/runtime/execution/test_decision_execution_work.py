@@ -52,6 +52,9 @@ from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyReso
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -318,6 +321,7 @@ async def test_decision_facing_probe_submits_orchestration_without_nexus_import(
         task_id=task.task_id,
         state=TaskState.COMPLETED,
         answer="orchestrated",
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
     backend = FakeOrchestrationPort(expected, capture)
     router = OrchestrationOnlyRouter(task, backend)

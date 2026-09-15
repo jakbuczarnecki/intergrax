@@ -167,6 +167,8 @@ def test_u5_runtime_tool_invoker_construction_sites_are_approved_owners() -> Non
 def test_u5_ep14_declarative_wiring_forwards_governance_and_production_mode() -> None:
     wiring_source = _DECLARATIVE_WIRING.read_text(encoding="utf-8")
     assert "agent_runtime_governance=agent_runtime_governance" in wiring_source
+    assert "idempotency_store=idempotency_store" in wiring_source
+    assert "IdempotencyPreEffectCoordinator" in wiring_source
     assert "build_declarative_invoker_for_application_host" in wiring_source
     assert "production declarative tool invoker requires agent_runtime_governance" in wiring_source
 

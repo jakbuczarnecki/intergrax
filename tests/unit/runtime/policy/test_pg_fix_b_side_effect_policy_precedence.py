@@ -50,7 +50,12 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
@@ -65,6 +70,11 @@ from intergrax.runtime.policy.meaningful_side_effect_authorization import (
 )
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.task.task import Task
+from tests.unit.runtime.governance.gr3_test_support import (
+    bound_gr3_active_execution,
+    default_gr3_identity_bundle,
+    default_gr3_inner_guard,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -72,8 +82,7 @@ _ACTION = "DELETE_EXTERNAL_WORK"
 _DIGEST = "sha256:" + ("cd" * 32)
 _TENANT = "tenant-a"
 _WORKSPACE = "workspace-a"
-_TASK = "task-pg-b"
-_RUN = "run-pg-b"
+_TASK, _RUN, _ATTEMPT, _EXECUTION = default_gr3_identity_bundle()
 _PRINCIPAL = "principal-pg-b"
 _SCOPE = "external_work.mutate"
 _NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
@@ -86,6 +95,8 @@ def _request(**overrides: object) -> MeaningfulSideEffectRequest:
         "side_effect_scope_id": "scope-pg-b",
         "task_id": _TASK,
         "run_id": _RUN,
+        "attempt_id": _ATTEMPT,
+        "execution_id": _EXECUTION,
         "principal_id": _PRINCIPAL,
         "tenant_id": _TENANT,
     }
@@ -398,7 +409,10 @@ def _seed_external_work_boundary(
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=runtime_engine,
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate)
+    return MeaningfulSideEffectAuthorizationBoundary(
+        enforcement_gate=gate,
+        inner_execution_guard=default_gr3_inner_guard(_TASK),
+    )
 
 
 def test_b12_external_work_integration_broad_allow_cannot_bypass_specific_deny() -> None:
@@ -421,19 +435,24 @@ def test_b12_external_work_integration_broad_allow_cannot_bypass_specific_deny()
         _RecordingIntegration(call_log=call_log),
         authorization_boundary=boundary,
     )
-    denied = adapter.create_and_map(
-        adapter.build_create_request(task_id=_TASK, run_id=_RUN, metadata=_meta()),
-        principal_id=_PRINCIPAL,
-        tenant_id=_TENANT,
-    )
+    with bound_gr3_active_execution(
+        run_id=_RUN,
+        attempt_id=_ATTEMPT,
+        execution_id=_EXECUTION,
+    ):
+        denied = adapter.create_and_map(
+            adapter.build_create_request(task_id=_TASK, run_id=_RUN, metadata=_meta()),
+            principal_id=_PRINCIPAL,
+            tenant_id=_TENANT,
+        )
     assert denied.used is False
     assert denied.policy_decision is not None
     assert denied.policy_decision.action is PolicyAction.DENY
     assert call_log == []
 
 
-_TASK_ID = mint_task_id()
-_RUN_ID = "run-pg-b-grant"
+_TASK_ID = _TASK
+_RUN_ID = _RUN
 _OPERATION = ACTION_CREATE_EXTERNAL_WORK
 _BUNDLE_ID = "bundle-pg-b"
 _BUNDLE_V1 = "1.0.0"
@@ -448,6 +467,8 @@ def _grant() -> GovernedContinuationApprovalGrant:
         side_effect_scope_id="scope-pg-b",
         task_id=_TASK_ID,
         run_id=_RUN_ID,
+        attempt_id=_ATTEMPT,
+        execution_id=_EXECUTION,
         operation_id=_OPERATION,
         resource_scope=None,
         policy_rule_id=_POLICY_RULE,
@@ -524,7 +545,10 @@ def _seed_grant_boundary(
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=runtime_engine,
     )
-    boundary = MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate)
+    boundary = MeaningfulSideEffectAuthorizationBoundary(
+        enforcement_gate=gate,
+        inner_execution_guard=default_gr3_inner_guard(_TASK_ID),
+    )
     task = Task(tenant_id=_TENANT, user_id=_PRINCIPAL, message="x", task_id=_TASK_ID)
     return boundary, membership, task
 
@@ -563,15 +587,22 @@ def test_b13_deny_over_stored_grant_blocks_execution() -> None:
             side_effect_scope_id="scope-pg-b",
             task_id=_TASK_ID,
             run_id=_RUN_ID,
+            attempt_id=_ATTEMPT,
+            execution_id=_EXECUTION,
             principal_id=_PRINCIPAL,
             tenant_id=_TENANT,
         ),
     )
-    result = boundary.authorize_and_execute(
-        request,
-        _execute,
-        task=task,
-    )
+    with bound_gr3_active_execution(
+        run_id=_RUN_ID,
+        attempt_id=_ATTEMPT,
+        execution_id=_EXECUTION,
+    ):
+        result = boundary.authorize_and_execute(
+            request,
+            _execute,
+            task=task,
+        )
     assert isinstance(result, MeaningfulSideEffectAuthorizationResult)
     assert result.decision.action is PolicyAction.DENY
     assert counter[0] == 0

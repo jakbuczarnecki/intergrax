@@ -46,6 +46,9 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 _UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from echo.echo_agent import EchoAgent
 
@@ -93,7 +96,8 @@ def _fake_impl_factory(
         captured["run_id"] = run_id
         captured["attempt_id"] = attempt_id
         captured["execution_id"] = require_active_execution_id()
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     return _fake_impl
 
@@ -245,7 +249,8 @@ async def test_sequential_handle_task_invocations_require_separate_upstream_cont
     async def _capture(task: Task) -> TaskResult:
         run_id, _ = require_active_execution_identity()
         seen.append(require_active_execution_id())
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _capture)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="seq")

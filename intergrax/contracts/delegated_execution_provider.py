@@ -85,6 +85,7 @@ class DelegatedExecutionOutcomeCategory(StrEnum):
     PROVIDER_FAILURE = "provider_failure"
     TRANSPORT_FAILURE = "transport_failure"
     UNSUPPORTED = "unsupported"
+    PLATFORM_FAILURE = "platform_failure"
 
 
 class DelegatedExecutionBudgetBounds(BaseModel):
@@ -130,6 +131,8 @@ class DelegatedExecutionCapabilities(BaseModel):
     supports_resume: bool = False
     supports_streaming: bool = False
     supports_interrupt: bool = False
+    supports_status_read: bool = False
+    supports_reattachment: bool = False
 
     @field_validator("provider_id")
     @classmethod
@@ -219,7 +222,11 @@ class DelegatedExecutionRequest(Generic[RequestT]):
 
 @dataclass(frozen=True, slots=True)
 class DelegatedExecutionOutcome(Generic[ResultT]):
-    """Neutral provider outcome envelope for runtime adaptation."""
+    """Neutral provider outcome envelope for runtime adaptation.
+
+    ``invocation_binding`` is platform-owned enrichment minted on the
+    Execution-owned S2A path. Provider implementations MUST return it as None.
+    """
 
     category: DelegatedExecutionOutcomeCategory
     result: ResultT | None = None
@@ -244,6 +251,7 @@ class DelegatedExecutionOutcome(Generic[ResultT]):
         if self.category in {
             DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE,
             DelegatedExecutionOutcomeCategory.TRANSPORT_FAILURE,
+            DelegatedExecutionOutcomeCategory.PLATFORM_FAILURE,
         } and not (self.failure_code and self.failure_code.strip()):
             raise DelegatedExecutionContractError(
                 "provider and transport failures require failure_code",

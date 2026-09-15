@@ -85,9 +85,9 @@ NO DUPLICATE AUTHORITIES. NO PARALLEL SOURCES OF TRUTH.
 | Decision semantics | Decision System |
 | Authorization | Governance / HITL |
 | Reliability recovery semantics | Enterprise Reliability |
-| Functional evidence facts | Evidence Plane (contracts today under DIAG package — **gap**, see OBS-FUNCTIONAL-CONTRACTS-1) |
+| Functional evidence facts | Evidence Plane (`intergrax.contracts.functional_evidence` — OBS records; DIAG consumes) |
 | Causal relationships | Evidence Plane (`PlatformCausalEvidence`) |
-| Factual reconstruction | **Evidence Plane (semantic owner)**; implementation today: `ExecutionReconstructor` + `HistoricalReconstructionService` (**transitional placement**, OBS-RECONSTRUCTION-1) |
+| Factual reconstruction | **Evidence Plane (semantic and physical owner)** | `intergrax.runtime.observability.reconstruction` (**OBS-RECONSTRUCTION-1** closed) |
 | Diagnostic interpretation | Central Diagnostics |
 | Problem lifecycle | Central Diagnostics |
 | Plane B operational detail | `intergrax.contracts.tracing` (`TraceEvent`) |
@@ -150,7 +150,7 @@ Observability → records facts (must not depend on DIAG for evidence **contract
 Diagnostics → consumes evidence + shared factual reconstruction
 ```
 
-**Current inversion (documented, not fixed in OBS-REBASE-1):** `intergrax.runtime.observability` imports `intergrax.runtime.diagnostics.functional_evidence*` and `execution_reconstruction` for recording/wiring. Target: neutral contracts under `intergrax.contracts.*` + shared factual reconstruction owned by Evidence Plane package (**OBS-FUNCTIONAL-CONTRACTS-1**, **OBS-RECONSTRUCTION-1**).
+**Functional evidence (OBS-FUNCTIONAL-CONTRACTS-1 / R1):** Contracts belong to the Evidence Plane (`intergrax.contracts.functional_evidence`, `platform_functional_evidence.v2`, five-ID `PipelineEvidenceScope`). Provider implementations are pluggable behind `FunctionalEvidencePersistence` under `intergrax.runtime.observability.functional_evidence` (composition via `wire_functional_evidence_runtime(persistence=...)`). Observability runtime consumes the port only — it does **not** import `runtime.diagnostics.*` for functional evidence. Diagnostics is a consumer/interpreter of evidence, not owner of contracts or providers. Query pagination order uses `(recorded_at, evidence_id)` — stable pagination, not execution/causal authority. **OBS → DIAG reconstruction import debt = CLOSED** (**OBS-RECONSTRUCTION-1**).
 
 ### Factual reconstruction vs diagnostic interpretation
 
@@ -161,7 +161,7 @@ Shared factual reconstruction (deterministic, completeness-explicit)
         ├── Central Diagnostics (LifecycleAnomalyAnalyzer, DiagnosticAssessmentBuilder, …)
         ├── AsOf / RunExecutionAsOfProjection (pure reducers on journal prefix)
         ├── Audit / operator factual tooling
-        └── Future temporal composition (E+K) — OBS-ASOF-REBASE / OBS-BITEMP-REBASE
+        └── Historical execution at E — **OBS-ASOF-REBASE** (closed); E+K/V/S composition — **OBS-BITEMP-REBASE**
 ```
 
 | Component | Factual | Diagnostic |
@@ -172,7 +172,7 @@ Shared factual reconstruction (deterministic, completeness-explicit)
 | `reconstruct_run_execution_as_of` | Yes | No |
 | `HistoricalReconstructionService` | Yes — composes E/K views | No |
 
-**Verdict (OBS-REBASE-1):** Factual reconstruction is **not** DIAG-only semantically. **Do not** add a second reconstructor. **OBS-RECONSTRUCTION-1** will relocate/neutralize the shared factual core while DIAG keeps interpretation-only consumers.
+**Verdict (OBS-REBASE-1):** Factual reconstruction is **not** DIAG-only semantically. **Do not** add a second reconstructor. **OBS-RECONSTRUCTION-1** relocated the shared factual core to `intergrax.runtime.observability.reconstruction`; DIAG remains interpretation-only consumers.
 
 ## OBS-BOUNDARY-1 — Evidence / reconstruction / diagnostics ownership freeze (closed 2026-09-13)
 
@@ -188,20 +188,53 @@ FACTUAL RECONSTRUCTION (shared deterministic rebuild — today `ExecutionReconst
 DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · operator views)
 ```
 
-| Layer | Semantic owner | Physical package today (transitional) |
-| ----- | ---------------- | ------------------------------------- |
+| Layer | Semantic owner | Physical package |
+| ----- | ---------------- | ---------------- |
 | Execution truth | Execution Runtime | `intergrax.runtime` execution path |
 | Evidence facts | Observability / Evidence Plane | `intergrax.runtime.observability` + `EvidencePersistencePort` |
-| Factual reconstruction | **Evidence Plane (semantic)** | `intergrax.runtime.diagnostics.execution_reconstruction` (**OBS-RECONSTRUCTION-1**) |
+| Factual reconstruction | **Evidence Plane** | `intergrax.runtime.observability.reconstruction` |
 | Diagnostic interpretation | Central Diagnostics | `intergrax.runtime.diagnostics` (orchestrator, Problem lifecycle, analyzers) |
 
 **Frozen:** Observability records facts; it does not decide operational meaning. Diagnostics interprets facts; it does not mint execution identity, own evidence persistence, or maintain a competing Execution Tree.
 
-**Documented import debt (unchanged in this task):** `runtime.observability` imports `runtime.diagnostics` for functional evidence contracts and shared factual reconstruction wiring. Target dependency direction is frozen above; **OBS-FUNCTIONAL-CONTRACTS-1** and **OBS-RECONSTRUCTION-1** perform the moves. No compatibility shims; no second reconstructor in Observability.
+**Import debt (OBS-RECONSTRUCTION-1):** `HistoricalReconstructionService` and shared `ExecutionReconstructor` live under Observability; Diagnostics **imports** `runtime.observability.reconstruction` — not the reverse. Functional evidence contracts and providers remain under `intergrax.contracts.functional_evidence` and `intergrax.runtime.observability.functional_evidence` (**OBS-FUNCTIONAL-CONTRACTS-1** / **R1** closed).
 
-**Future architecture gate (after debt migration):** `runtime.observability` MUST NOT import `runtime.diagnostics.*` except explicit temporary allowlist — to be enforced in **OBS-RECONSTRUCTION-1** / **OBS-FUNCTIONAL-CONTRACTS-1**, not before.
+**Architecture gate:** `runtime.observability.reconstruction` MUST NOT import `runtime.diagnostics.*` (see `test_obs_reconstruction_1_architecture.py`). **Unrelated existing debt:** `qualification_runtime_trace.py` may still import DIAG for completion alignment — not reconstruction.
 
-**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** **BLOCKED BY** shared reconstruction **package** placement (**OBS-RECONSTRUCTION-1**, **OBS-ASOF-REBASE**). **TRACE-ASOF-3** remains **conditional / defer** (materialization only when measurably required).
+**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** Shared reconstruction **package** placement closed (**OBS-RECONSTRUCTION-1**). **OBS-ASOF-REBASE** closes the canonical **E-axis** historical execution query path (journal prefix + shared `ExecutionReconstructor` + optional `ExecutionLineageReader`). **OBS-BITEMP-REBASE** remains for full E/K/V/S composition without axis mixing. **TRACE-ASOF-3** → **NOT REQUIRED** (conditional materialization; logical rebuild at E is sufficient). **TRACE-ASOF-4** unblocked for typed public query surfaces that delegate to the same canonical path.
+
+## OBS-ASOF-REBASE — Historical execution query rebase (closed 2026-09-15)
+
+**Goal:** All historical execution views at explicit **E** compose only from canonical positioned `RuntimeEvent` evidence, optional Execution Tree facts via `ExecutionLineageReader`, shared factual reconstruction, and inclusive `AsOfBoundary` — without DIAG-owned history, timestamp-boundary selection, or duplicate reconstructors.
+
+**Canonical read path:**
+
+```text
+AsOfBoundary (RunId + inclusive ExecutionEventPosition)
+        ↓
+load_positioned_run_journal_through → positioned prefix
+        ↓
+reconstruct_run_execution_as_of → RunExecutionAsOfProjection (lifecycle reducer)
+        +
+ExecutionReconstructor.reconstruct_execution(..., execution_as_of=boundary)
+        ↓
+HistoricalReconstructionService.reconstruct (E + K + bitemporal query composition)
+```
+
+| Entry | Role | Owner |
+| ----- | ---- | ----- |
+| `load_positioned_run_journal_through` | Prefix completeness + exact boundary existence | Evidence / journal (R2) |
+| `reconstruct_run_execution_as_of` | Run lifecycle projection at **E** | Evidence / as-of reducer |
+| `ExecutionReconstructor` | Factual execution + attempts + causal join at **E** | `runtime.observability.reconstruction` |
+| `HistoricalReconstructionService` | Composition only — not a second reconstructor | Observability |
+
+**Frozen semantics:** READ ONLY · DERIVED · DETERMINISTIC · NON-AUTHORITATIVE. Same `AsOfBoundary` remains stable after later appends (append immunity). Fail-closed on scope mismatch, missing boundary, truncated prefix. **E** authority is `ExecutionEventPosition` only — not `timestamp` / `recorded_at` / `created_at`. **K** / valid time / system time remain separate axes (see **OBS-BITEMP-REBASE**).
+
+**Architecture gates:** `tests/unit/runtime/architecture/test_obs_asof_rebase_architecture.py`, `test_obs_asof_rebase_qualification.py`, existing TRACE-ASOF-1/2 and NPSC-5F/R4 suites.
+
+**TRACE-ASOF-3 decision:** **NOT REQUIRED** — no measurable need for materialized projection revisions when logical rebuild from positioned evidence is canonical and certified.
+
+**Limitation (explicit):** `ExecutionLineageReader` does not yet expose an **E-scoped** lineage boundary; attempt discovery during as-of reconstruction may reflect run-level lineage while runtime events are prefix-filtered at **E**. Full Execution Tree at historical **E** without heuristics may require contract extension (**OBS-BITEMP-REBASE** / ADR), not timestamp filtering.
 
 ### Signal families (no universal payload bag)
 
@@ -237,11 +270,11 @@ Reference: VPI `platform_proofs/scenarios/verified_product_identification/applic
 | ID | Severity | Owner | Reason | Next task |
 | -- | -------- | ----- | ------ | --------- |
 | Causal `RuntimeExecutionRef` without `ExecutionId` | — | — | **Closed (OBS-CAUSAL-2)** — `platform_causal_evidence.v2` | — |
-| Functional evidence contracts live under `runtime.diagnostics` while OBS records | P1 | Evidence Plane | Ownership inversion vs “OBS records, DIAG interprets” | **OBS-FUNCTIONAL-CONTRACTS-1** |
+| Functional evidence contracts live under `runtime.diagnostics` while OBS records | — | — | **Closed (OBS-FUNCTIONAL-CONTRACTS-1 / R1)** — `intergrax.contracts.functional_evidence` | — |
 | `ExecutionReconstructor` package placement under `diagnostics` | P1 | Evidence + DIAG | Shared factual layer semantically OBS; single implementation today | **OBS-RECONSTRUCTION-1** |
-| Emit-path `ExecutionId` coverage not fully certified on all paths | P1 | Execution + OBS | Contract requires `ExecutionId`; writers vary by path | **OBS-COVERAGE-1** |
-| `TraceEvent` correlates primarily via `run_id` | P2 | Contracts / Plane B | May need stronger canonical correlation for some consumers | **OBS-TRACE-1** (conditional) |
-| OBS → DIAG imports for functional evidence + reconstruction | P1 | Architecture | Dependency direction vs frozen flow (boundary decided in OBS-BOUNDARY-1) | **OBS-FUNCTIONAL-CONTRACTS-1**, **OBS-RECONSTRUCTION-1** |
+| Emit-path `ExecutionId` coverage not fully certified on all paths | — | — | **Closed (OBS-COVERAGE-1 / R1)** — mandatory `pytest -m obs_coverage_p1` qualification | — |
+| `TraceEvent` correlates primarily via `run_id` | — | — | **Closed (OBS-TRACE-1)** — run-scoped Plane B; execution correlation via `RuntimeEvent` / lineage | — |
+| OBS → DIAG imports for reconstruction (functional evidence moved) | P1 | Architecture | Dependency direction vs frozen flow (boundary decided in OBS-BOUNDARY-1) | **OBS-RECONSTRUCTION-1** |
 
 ### Evidence Plane freeze (NPSC-5F enterprise certification)
 
@@ -1222,7 +1255,7 @@ Diagnostic projections (`ExecutionReconstruction`, `LifecycleAnalysis`, `Diagnos
 
 **Incomplete evidence:** missing evidence does **not** authorize DIAG to invent lineage - represent truncation/limitation, retain uncertainty, do not guess parent Execution, do not promote `correlation_id` to lineage, do not claim root cause as proven.
 
-**Functional evidence boundary (DIAG-FUNCTIONAL-1 / R1–R2):** Observability records and exports typed functional/AI pipeline evidence (`PlatformFunctionalEvidence`) and problem signals carrying `FunctionalValidationEvidence`. Observability does **not** own functional diagnosis - it records facts such as `candidate rank=17 selected=False`; central DIAG interprets meaning. Functional evidence is correlated to execution identity but stored outside `RuntimeEvent` payloads. Direct inline `upstream_evidence_ids` are bounded (`MAX_DIRECT_UPSTREAM_EVIDENCE_REFS`); `relation_summary` is a safe bounded summary only. `PlatformProblemSignal` enforces functional-validation correlation invariants at model construction. Observability does **not** emit functional root-cause conclusions (`wrong_tool_selected`, `bad_retrieval`, `bad_model_choice`, etc.) - those belong to central DIAG interpretation. **Persistence qualification (R2):** `InMemoryFunctionalEvidencePersistence` is the conformance/reference provider only (correctness + contract semantics; not durable; not scale-qualified). Production durability and scale remain pending on a future DocumentStore/Mongo functional-evidence backend. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Functional diagnostics.
+**Functional evidence boundary (DIAG-FUNCTIONAL-1 / R1–R2):** Observability records and exports typed functional/AI pipeline evidence (`PlatformFunctionalEvidence`) and problem signals carrying `FunctionalValidationEvidence`. Observability does **not** own functional diagnosis - it records facts such as `candidate rank=17 selected=False`; central DIAG interprets meaning. Functional evidence is correlated to execution identity but stored outside `RuntimeEvent` payloads. Direct inline `upstream_evidence_ids` are bounded (`MAX_DIRECT_UPSTREAM_EVIDENCE_REFS`); `relation_summary` is a safe bounded summary only. `PlatformProblemSignal` enforces functional-validation correlation invariants at model construction. Observability does **not** emit functional root-cause conclusions (`wrong_tool_selected`, `bad_retrieval`, `bad_model_choice`, etc.) - those belong to central DIAG interpretation. **Persistence (OBS-FUNCTIONAL-CONTRACTS-1-R1):** Built-in providers (`InMemoryFunctionalEvidencePersistence`, `DocumentStoreFunctionalEvidencePersistence`) live under `intergrax.runtime.observability.functional_evidence` and are validated by `assert_functional_evidence_persistence_conformance`. Diagnostics receives the `FunctionalEvidencePersistence` port via composition only. See [`DIAGNOSTICS.md`](DIAGNOSTICS.md) § Functional diagnostics.
 
 ### Causal evidence plane (DIAG-1)
 
@@ -1269,7 +1302,7 @@ Transport redelivery alone must **not** create new runtime identity.
 | `RuntimeEventPersistence` | Canonical persisted evidence authority - accepted `RuntimeEvent` history with persistence-owned `ExecutionEventPosition` |
 | `CausalEvidencePersistence` | Canonical persisted relation evidence authority - immutable `PlatformCausalEvidence` linking transport to execution |
 
-**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)` (implementation under `intergrax.runtime.diagnostics.execution_reconstruction` today; **semantic owner:** Evidence Plane shared factual reconstruction — see [OBS-REBASE-1](#obs-rebase-1--platform-ssot-frozen-2026-09-13)). It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only. Diagnostics and `HistoricalReconstructionService` **consume** this layer; they do not own persisted evidence.
+**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)` (`intergrax.runtime.observability.reconstruction`; **semantic and physical owner:** Evidence Plane shared factual reconstruction — see [OBS-REBASE-1](#obs-rebase-1--platform-ssot-frozen-2026-09-13)). It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only. Diagnostics and `HistoricalReconstructionService` **consume** this layer; they do not own persisted evidence.
 
 **Ordering rules (do not mix):**
 
@@ -1285,7 +1318,7 @@ Transport redelivery alone must **not** create new runtime identity.
 
 **Integrity:** facts returned outside the requested `tenant_id` / `TaskId` / `RunId` scope fail closed with `ExecutionReconstructionIntegrityError` - no silent filtering.
 
-**Code references:** `intergrax/runtime/diagnostics/execution_reconstruction.py`.
+**Code references:** `intergrax/runtime/observability/reconstruction/`.
 
 ### Lifecycle anomaly analysis (DIAG-3)
 
@@ -1669,7 +1702,7 @@ DiagnosticReadService
 
 **Product observability dashboard (ONE-SPINE-1 / ONE-SPINE-2):** Tier-3 product hosts expose `ProductObservabilityDashboard` via GOV-PROD.1 wiring. Host composition (`wire_harness_product_observability_dashboard`) resolves the central `DiagnosticReadService` from shared platform persistence on the harness runtime - `wire_problem_persistence`, harness `RuntimeEventPersistence`, and `wire_causal_evidence_persistence` over the same `document_store` - then injects it into `resolve_product_observability_dashboard_wiring`. The `diagnostics` pane (`DiagnosticOperationsPane`) projects tenant-scoped `problem_count` / `open_problem_count`; `ready=True` means the central read service is connected to that shared diagnostic persistence, not a dashboard-local store. No synthetic causal chains, bootstrap run/task identities, or direct `ProblemPersistence` / `CausalEvidencePersistence` reads from dashboard code. `PlatformCausalEvidence` remains canonical relationship truth; the Diagnostic Engine is the only diagnostic interpretation spine.
 
-**Production terminal diagnostic trigger (ONE-SPINE-3):** After Nexus terminal execution truth is persisted (`NexusLoop._publish_terminal_runtime_event` → `NexusRuntimeEventPublisher.publish_terminal` → `RuntimeEventBus.publish`), harness hosts with shared `document_store` capabilities wire `TerminalExecutionDiagnosticTrigger` via `try_build_terminal_execution_diagnostic_trigger` / `diagnostic_runtime_wiring.py`. The trigger submits one bounded `DiagnosticOrchestrationRequest` per terminal execution scope to the canonical `DiagnosticOrchestrator` using the deterministic grouping strategy. Diagnostic post-processing failures are logged through `IntergraxLogging` (`component="diagnostics"`) and must not alter already-established business execution outcomes. Background MessageBus workers inherit this path when handlers execute through the same harness `NexusLoop`.
+**Production terminal diagnostic integration (ONE-SPINE-3 / OBS-DIAG-PORT-1):** After Nexus terminal execution truth is persisted (`NexusLoop._publish_terminal_runtime_event` → `NexusRuntimeEventPublisher.publish_terminal` → `RuntimeEventBus.publish`), `NexusLoop` dispatches a `TerminalExecutionDiagnosticRequest` through the neutral `TerminalExecutionDiagnosticPort` (`intergrax.contracts.diagnostics`). Harness hosts with shared `document_store` capabilities compose the central adapter via `try_build_terminal_execution_diagnostic_port` / `diagnostic_runtime_wiring.py` (adapter → `TerminalExecutionDiagnosticTrigger` → `DiagnosticOrchestrator`). Diagnostic post-processing failures are logged through `IntergraxLogging` (`component="diagnostics"`) and must not alter already-established business execution outcomes. Background MessageBus workers inherit this path when handlers execute through the same harness `NexusLoop`.
 
 **DIAG-FINAL-E2E external OTLP proof (slice only):** `tests/integration/runtime/test_diag_final_external_otel_e2e.py` exercises a PRODUCT harness host (`create_governed_contractor_backend_app` → HTTP `/run`) with SQLite `RuntimeEvent` persistence, `DocumentStore` Problem persistence, central `DiagnosticReadService`, and explicit `ObservabilityExportOperatorConfig` → real local OpenTelemetry Collector (Docker). The proof verifies Intergrax canonical truth independently of collector receipt and repeats execution with the collector stopped to show vendor outage does not erase RuntimeEvent/Problem truth. **Proven:** execution → RuntimeEvent → terminal diagnostics → Problem → optional OTLP export to an external collector; restart over shared storage paths. **Not proven:** full OBS-VENDOR qualification matrix, alternate observability vendors, or production deployment topologies beyond this governed-contractor host slice.
 
@@ -1678,16 +1711,16 @@ business execution completes
   ↓
 terminal RuntimeEvent persisted (canonical)
   ↓
-invoke_terminal_execution_diagnostics(...)
+TerminalExecutionDiagnosticPort.dispatch (neutral contract)
   ↓
-DiagnosticOrchestrator (derived)
+Central diagnostic adapter → DiagnosticOrchestrator (derived)
   ↓
 ProblemPersistence (shared document_store)
   ↓
 DiagnosticReadService / dashboard read path
 ```
 
-**Code references:** `intergrax/runtime/diagnostics/terminal_execution_diagnostic_trigger.py`, `intergrax/runtime/diagnostics/terminal_execution_diagnostic_bridge.py`, `intergrax/applications/_shared/diagnostic_runtime_wiring.py`, `intergrax/runtime/nexus/nexus_loop.py`.
+**Code references:** `intergrax/contracts/diagnostics/terminal_execution_diagnostic_port.py`, `intergrax/runtime/diagnostics/central_terminal_execution_diagnostic_port.py`, `intergrax/applications/_shared/diagnostic_runtime_wiring.py`, `intergrax/runtime/nexus/nexus_loop.py`.
 
 **Code references:** `intergrax/runtime/observability/product_observability_dashboard.py`, `intergrax/applications/_shared/product_observability_dashboard_wiring.py`, `intergrax/applications/_shared/diagnostic_read_wiring.py`.
 
@@ -2274,7 +2307,7 @@ Replay semantics are attempt-scoped: reconstruction and as-of projections respec
 
 **TRACE-1A–TRACE-1C (Done / Closed)** delivered the strict journal on the harness path. Frozen five-ID `RuntimeEvent` and `RuntimeExecutionRef` are **CURRENT**. Remaining gaps are **adoption / implementation debt**, not contract rollback:
 
-- emit-path writer certification incomplete on some producers (**OBS-COVERAGE-1**)
+- emit-path writer certification — **OBS-COVERAGE-1 Done** (P1 paths **PROVEN**; DG-005 cross-topology **NOT PROVEN** — see [Platform Evidence Coverage Matrix](#platform-evidence-coverage-matrix-obs-coverage-1))
 - Unified Run Journal / export envelopes — Execution Tree fields (**ADOPTION / PROJECTION GAP**)
 - DIAG operator read models — execution-aware correlation on all surfaces (**ADOPTION / PROJECTION GAP**)
 - background worker bootstrap mints `AttemptId` on redelivery (UEA conflict — **implementation debt**)
@@ -2303,6 +2336,157 @@ Unused legacy contracts are removed rather than preserved.
 If an old capability is still genuinely used by the current repo runtime, tests, or product path: migrate that live code directly to the canonical contract, then **delete** the old path. Do **not** preserve both.
 
 Temporary recognition of legacy shapes is acceptable only during a bounded implementation step when technically unavoidable - it is **not** target architecture.
+
+---
+
+## Platform Evidence Coverage Matrix (OBS-COVERAGE-1)
+
+**Status:** **Done** (2026-09-15) · **R1:** certification proof integrity (2026-09-15) · **Verdict:** **PASS WITH P2 LIMITATIONS** when mandatory P1 qualification passes (DG-005 cross-process RuntimeEvent topology **NOT PROVEN**)
+
+**Mandatory P1 qualification (canonical acceptance gate):**
+
+```bash
+uv run pytest tests/unit tests/integration/runtime/test_terminal_diagnostic_production_e2e.py -m obs_coverage_p1
+```
+
+Manifest `PROVEN` labels in `COVERAGE_PATH_PROOFS` are **metadata only**; execution proof is the qualification command above. **Architecture gates (metadata checks, AST/source invariants):** `tests/unit/runtime/observability/test_obs_coverage_1_certification.py` (manifest tests + `@pytest.mark.obs_coverage_p1` gates).
+
+### Evidence families (inventory)
+
+| Evidence family | Owner | Identity scope | Persistence port |
+| --- | --- | --- | --- |
+| `RuntimeEvent` | Observability | execution-scoped five-ID | `RuntimeEventPersistence` |
+| `PlatformFunctionalEvidence` | Evidence Plane / OBS | `PipelineEvidenceScope` five-ID | `FunctionalEvidencePersistence` |
+| `PlatformCausalEvidence` | Evidence Plane | `RuntimeExecutionRef` on execution targets | `CausalEvidencePersistence` |
+| Execution lineage | Execution | parent/child `ExecutionId` | `ExecutionLineagePersistence` |
+| Terminal diagnostic request | Diagnostics integration | run-scoped; attempt/execution optional pair | N/A (integration) |
+| Non-execution host/bootstrap signals | Application / transport | explicit non-execution subject | typed failure producers (DG-001B) |
+
+### Execution path coverage
+
+| Path | Semantic scope | Required identity | Proof | Verdict |
+| --- | --- | --- | --- | --- |
+| P1 root terminal success | execution-scoped | five-ID | `test_ue_9b_*`, `test_terminal_diagnostic_production_e2e` | **PROVEN** |
+| P1 root terminal failure | execution-scoped | five-ID | `test_execution_failure_evidence_r2*` | **PROVEN** |
+| P2 graph / child | execution-scoped | distinct `ExecutionId` | `test_ue_9b_*`, lineage admission tests | **PROVEN** |
+| P3 retry / redelivery | execution-scoped | new attempt + execution | `test_ue_9b_runtime_event_execution_id` | **PROVEN** |
+| P4 delegation | execution-scoped + lineage | parent + child `ExecutionId` | `test_ue_9b_*`, `test_host_task_resume_lineage_identity` | **PROVEN** |
+| P5 background / async | execution-scoped | `BackgroundExecutionIdentity` | `test_background_causal_evidence_admission_paths` | **PROVEN** |
+| P6 transport → causal | execution-scoped target | `RuntimeExecutionRef` five-ID | `test_causal_evidence_contract` | **PROVEN** |
+| P7 scenario / application | baseline host | no private execution authority | `scenario_architecture_conformance` | **PROVEN** |
+| P8 functional evidence | execution-scoped | `PipelineEvidenceScope` | `test_obs_functional_evidence_contract_boundary` | **PROVEN** |
+| P9 terminal ordering | ordering | persist terminal RE before DIAG dispatch | `test_obs_coverage_1_certification`, `test_obs_diag_port_1_gates` | **PROVEN** |
+| P10 failure facts | execution-scoped | canonical failure request IDs | `test_execution_failure_evidence_r2` | **PROVEN** |
+| P11 checkpoint / resume | execution-scoped | UEA resume semantics | partial lineage proofs | **PARTIAL** |
+| P12 HITL interrupt | execution-scoped | same execution unless UEA forks | human-response tests | **PARTIAL** |
+| DG-005 cross-topology | transport-scoped | shared RE store host↔worker | qualification ledger only | **NOT PROVEN** |
+| Host bootstrap failure | non-execution | typed subject, no `ExecutionId` | DG-001B architecture | **PROVEN** |
+
+### Identity authority (writers)
+
+| ID | Authority | How production writers receive it |
+| --- | --- | --- |
+| `tenant_id` | Task / request context | `Task.tenant_id`, `EmitContext`, validated failure requests |
+| `task_id` | Task lifecycle | `Task`, `RuntimeExecutionContext`, kernel context |
+| `run_id` | Run lifecycle | `ActiveExecutionIdentity`, `require_active_execution_identity()` |
+| `attempt_id` | Attempt lifecycle | `ActiveExecutionIdentity`, attempt boundaries on redelivery |
+| `execution_id` | Execution authority | `require_active_execution_id()`, `RuntimeExecutionContext`, validated evidence requests — **not** OBS mint |
+
+### RuntimeEvent writer audit (production)
+
+| Writer / factory | `execution_id` source | Verdict |
+| --- | --- | --- |
+| `runtime_event_from_task_state` / `NexusRuntimeEventPublisher` | `require_active_execution_id()` | **PROVEN** |
+| `HarnessKernel._emit` | active execution context | **PROVEN** |
+| `emit_platform_event` / `EmitContext` | `ctx.execution_id` | **PROVEN** |
+| UAEP / `RuntimeExecutionContext` emitters | `ctx.execution_id` | **PROVEN** |
+| Failure / external-op recorders | validated request fields | **PROVEN** |
+| Context/skill recording, trace middleware, graph executor | active identity helpers | **PROVEN** |
+
+**Gate:** OBS `events/` + `observability/` production code must not call `mint_execution_id()` (conformance helpers excluded).
+
+### Known limitations (P2 / follow-up)
+
+| Gap | Severity | Follow-up |
+| --- | --- | --- |
+| DG-005 cross-topology RuntimeEvent persistence | P2 qualification | Separate qualification; not OBS-COVERAGE-1 blocker |
+| TraceEvent run-only Plane B | — closed | **OBS-TRACE-1** — **NOT REQUIRED** (no production Trace consumer needs attempt/execution on `TraceEvent`) |
+| Reconstruction package placement | P1 architecture | **OBS-RECONSTRUCTION-1** |
+| DIAG cross-layer E2E conformance | P1 | **OBS-DIAG-CONFORMANCE** |
+
+### Architecture gates (OBS-COVERAGE-1)
+
+1. Canonical `RuntimeEvent` writers supply `ExecutionId` at construction (UE-9BR1 AST gate).
+2. Observability production code does not mint `ExecutionId` (OBS-COVERAGE-1 gate).
+3. Initialized platform scenarios must not define forbidden execution/diagnostic authority (`scenario_architecture_conformance`).
+4. Functional evidence uses `PipelineEvidenceScope` with required `execution_id`.
+5. Causal execution refs require `execution_id` on `RuntimeExecutionRef`.
+
+---
+
+## OBS-TRACE-1 Decision — Trace correlation (closed NOT REQUIRED)
+
+**Status:** **Done / Closed** — `TraceEvent` remains **intentionally run-scoped** Plane B telemetry. Execution-level correlation belongs to **`RuntimeEvent`**, **Execution Lineage**, and shared factual reconstruction — not to duplicated fields on `TraceEvent`.
+
+**Qualification:** `uv run pytest tests/unit/runtime/observability/test_obs_trace_1_qualification.py -m obs_trace_1`
+
+### TraceEvent contract (as qualified)
+
+| Field | Required | Semantic role |
+| ----- | -------- | ------------- |
+| `event_id` | yes | Stable row identity (telemetry; not `EventId` authority) |
+| `run_id` | yes | **Primary Plane B correlation** (run-scoped narrative) |
+| `seq` | yes | Per-emitter ordering within a run trace stream |
+| `ts_utc` | yes | Wall-clock stamp (not execution position) |
+| `level`, `component`, `step`, `message` | yes | Diagnostic taxonomy + human-readable line |
+| `payload` | no | Typed `DiagnosticPayload` |
+| `tags` | no | JSON-safe attributes (`task_id`, `tenant_id`, … — not canonical ID substitutes) |
+| `artifact_refs` | no | Artifact pointers |
+
+**Scope verdict:** **run-scoped** with optional **task/tenant hints in `tags`** — **not** execution-scoped, **not** attempt-scoped on the contract.
+
+### Producer summary
+
+| Producer | Scope | Identity source | Verdict |
+| -------- | ----- | --------------- | ------- |
+| `TaskTraceEmitter` / `PersistingTaskTraceEmitter` | run trace stream | `run_id` on `TraceEvent`; attempt for **bridge only** via active execution identity | RUN trace + canonical bus mirror |
+| `TraceEmittingMiddleware` | canonical journal | `RuntimeEvent` with active five-ID | **No `TraceEvent`** |
+| `ObservabilityEmitter` | dual emit | trace row run-scoped; bus via bridge | RUN trace |
+| Nexus / codecraft / parser / ACP bridges | component trace | run_id + tags | RUN trace |
+
+**Invariant:** trace plane code must **not** call `mint_execution_id()` / `mint_attempt_id()` (AST gate in `test_obs_trace_1_qualification.py`).
+
+### Consumer requirement matrix (abbreviated)
+
+| Consumer | Uses TraceEvent for | Run enough? | Attempt on TraceEvent? | Execution on TraceEvent? | Canonical alternative |
+| -------- | ------------------- | ----------- | ------------------------ | ------------------------ | --------------------- |
+| Unified Run Journal | — (excludes Plane B rows) | — | no | no | `RuntimeEvent` persistence |
+| Execution reconstruction / DIAG orchestration | — | — | no | no | `RuntimeEvent` + lineage |
+| `trace_bridge` | mirror to bus | yes | **via active identity**, not TraceEvent field | same | `RuntimeEvent` |
+| Trace persistence / debug / metrics / replay | run telemetry | yes | no | no | optional journal from runtime store |
+| Journal OTLP export | parser + journal snapshot | yes | no | no | `build_unified_run_journal` |
+
+**Real consumer requiring stronger TraceEvent correlation:** **NO** — retry/parallel execution differentiation for **canonical** behavior is proven on **`RuntimeEvent`** (`test_task_trace_event_bus.py`, `test_ue_9b_runtime_event_execution_id.py`, OBS-COVERAGE-1 matrix), not on persisted `TraceEvent` rows.
+
+### Architecture
+
+```text
+Execution (mint AttemptId / ExecutionId)
+        ↓
+RuntimeEvent / ExecutionLineage     ← canonical execution evidence
+        ↓
+shared reconstruction (OBS-RECONSTRUCTION-1 migrates package only)
+
+TraceEvent (run_id + seq + tags)    ← auxiliary Plane B (no execution authority)
+```
+
+### Architecture gates (OBS-TRACE-1)
+
+1. Trace plane production modules do not mint `ExecutionId` / `AttemptId`.
+2. `TraceEvent` contract has no `attempt_id` / `execution_id` fields (frozen NOT REQUIRED).
+3. Factual reconstruction entrypoints do not import `TraceEvent` as an evidence source.
+4. `TraceEmittingMiddleware` publishes `RuntimeEvent` only.
+5. Unified Run Journal does not ingest `PersistedRun` trace rows as execution truth.
 
 ---
 

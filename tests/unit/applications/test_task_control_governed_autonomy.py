@@ -21,7 +21,9 @@ from intergrax.applications._shared.harness_control_plane_policy_wiring import (
     build_harness_host_control_plane_policy_bundle,
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+from tests.unit.applications.harness_canonical_task_routes_test_support import (
+    mount_canonical_harness_task_routes_for_tests,
+)
 from intergrax.applications._shared.task_control import (
     TaskControlValidationError,
     governed_set_task_autonomy,
@@ -493,9 +495,8 @@ async def test_taskcpm_a15_http_route_projects_authenticated_principal() -> None
         resolved_api_key=None,
         tenant_required=True,
     )
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=boundary,
     )
     client = TestClient(app)
@@ -631,9 +632,8 @@ async def test_taskcpm_a20_lab_without_boundary_fail_closed() -> None:
         resolved_api_key=None,
         tenant_required=True,
     )
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=None,
     )
     client = TestClient(app)
@@ -658,9 +658,8 @@ def test_taskcpm_a21_http_route_requires_governed_request_shape() -> None:
         tenant_required=True,
     )
     boundary, _ = _allow_boundary()
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=boundary,
     )
     client = TestClient(app)
@@ -681,9 +680,8 @@ def test_taskcpm_a21b_http_unauthenticated_returns_401() -> None:
         tenant_required=True,
     )
     boundary, _ = _allow_boundary()
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=boundary,
     )
     client = TestClient(app)

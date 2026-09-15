@@ -10,8 +10,13 @@ from typing import Literal, Mapping, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.observability_artifact_reference import (
+    OBSERVABILITY_ARTIFACT_REFERENCE_SCHEMA,
+    ObservabilityArtifactReference,
+    looks_like_unsafe_observability_path,
+)
+
 APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA = "application_observability_attributes.v1"
-OBSERVABILITY_ARTIFACT_REFERENCE_SCHEMA = "observability_artifact_reference.v1"
 SANITIZED_APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA = (
     "sanitized_application_observability_attributes.v1"
 )
@@ -52,35 +57,6 @@ class ApplicationObservabilityAttributes(BaseModel):
         if self.operation is not None:
             exported[observability_attribute_key(self.namespace, "operation")] = self.operation
         return exported
-
-
-class ObservabilityArtifactReference(BaseModel):
-    """Typed, reference-only artifact metadata for observability export envelopes."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    schema_version: Literal["observability_artifact_reference.v1"] = (
-        OBSERVABILITY_ARTIFACT_REFERENCE_SCHEMA
-    )
-    artifact_ref: str = ""
-    sha256: str = ""
-    safe_relative_path: str = ""
-    schema_id: str = ""
-
-    @field_validator("artifact_ref", "safe_relative_path")
-    @classmethod
-    def _validate_relative_safe_path_fields(cls, value: str) -> str:
-        if value and _looks_like_unsafe_path(value):
-            raise ValueError("path fields must be relative-safe and must not contain path traversal")
-        return value
-
-    @model_validator(mode="after")
-    def _validate_at_least_one_reference_field(self) -> ObservabilityArtifactReference:
-        if not any((self.artifact_ref, self.sha256, self.safe_relative_path, self.schema_id)):
-            raise ValueError(
-                "At least one of artifact_ref, sha256, safe_relative_path, or schema_id must be present"
-            )
-        return self
 
 
 class SanitizedApplicationObservabilityAttributes(BaseModel):
@@ -139,18 +115,6 @@ def _field_name_from_attribute_key(key: str) -> str:
     return key.rsplit(".", 1)[-1]
 
 
-def _looks_like_unsafe_path(value: str) -> bool:
-    if not value:
-        return False
-    normalized = value.strip()
-    if normalized.startswith(("/", "\\")):
-        return True
-    if len(normalized) > 1 and normalized[1] == ":" and normalized[0].isalpha():
-        return True
-    parts = normalized.replace("\\", "/").split("/")
-    return ".." in parts
-
-
 def _hash_value(value: str) -> str:
     import hashlib
 
@@ -183,7 +147,7 @@ def sanitize_application_observability_attributes(
         if (
             strict_redaction
             and isinstance(safe_value, str)
-            and _looks_like_unsafe_path(safe_value)
+            and looks_like_unsafe_observability_path(safe_value)
         ):
             if hash_sensitive_paths:
                 sanitized[key] = _hash_value(safe_value)

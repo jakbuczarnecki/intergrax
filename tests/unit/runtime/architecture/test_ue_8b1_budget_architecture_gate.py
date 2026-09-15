@@ -114,10 +114,35 @@ def test_graph_executor_does_not_load_budget_entry_points() -> None:
     assert violations == []
 
 
+def _imports_from_module(path: Path, module: str) -> bool:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == module:
+            return True
+    return False
+
+
+def _defines_function(path: Path, name: str) -> bool:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    return any(isinstance(node, ast.FunctionDef) and node.name == name for node in tree.body)
+
+
 def test_registry_module_owns_budget_entry_point_loading() -> None:
+    rel = _REGISTRY_PATH.relative_to(_REPO_ROOT).as_posix()
+    assert _imports_from_module(_REGISTRY_PATH, "intergrax.core.plugins.discovery"), (
+        f"{rel} must delegate entry-point discovery to intergrax.core.plugins.discovery"
+    )
+    assert _defines_function(_REGISTRY_PATH, "load_execution_budget_allocation_policy"), (
+        f"{rel} must expose load_execution_budget_allocation_policy"
+    )
+    direct_entry_point_refs = _collect_forbidden_names(_REGISTRY_PATH, frozenset({"entry_points"}))
+    assert direct_entry_point_refs == [], (
+        f"{rel} must not call importlib.metadata.entry_points directly: {direct_entry_point_refs}"
+    )
     source = _REGISTRY_PATH.read_text(encoding="utf-8")
-    assert "entry_points" in source
-    assert "load_execution_budget_allocation_policy" in source
+    assert "importlib.metadata" not in source, (
+        f"{rel} must not import importlib.metadata directly"
+    )
 
 
 def test_child_execution_runner_does_not_inspect_run_budget_fields_directly() -> None:

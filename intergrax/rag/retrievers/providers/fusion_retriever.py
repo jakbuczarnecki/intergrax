@@ -6,12 +6,30 @@ from __future__ import annotations
 
 from dataclasses import replace
 
+from intergrax.rag.retrieval.fusion import (
+    RankFusionConfiguration,
+    RankFusionStrategyPort,
+    RankedRetrievalCandidate,
+    RankedRetrievalChannel,
+    ReciprocalRankFusionStrategy,
+)
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
     RetrievalHit,
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegistry
+
+
+def _retrieval_hit_identity(hit: RetrievalHit) -> str:
+    return "|".join(
+        (
+            hit.document.scope.tenant_id,
+            hit.document.scope.namespace or "",
+            hit.document.scope.workspace_id or "",
+            hit.vector_id or hit.document.identity.document_id,
+        )
+    )
 
 
 class FusionRetriever(BaseRetriever):
@@ -24,10 +42,14 @@ class FusionRetriever(BaseRetriever):
         *,
         retrievers: list[str],
         rrf_k: int = 60,
-    ) -> None:        
+        fusion_strategy: RankFusionStrategyPort[RetrievalHit] | None = None,
+    ) -> None:
         self._registry = registry
         self._retrievers = list(retrievers)
-        self._rrf_k = int(rrf_k)
+        configuration = RankFusionConfiguration(rrf_k=int(rrf_k))
+        self._fusion_strategy = fusion_strategy or ReciprocalRankFusionStrategy(
+            configuration=configuration,
+        )
 
     @classmethod
     def name(cls) -> str:
@@ -41,57 +63,37 @@ class FusionRetriever(BaseRetriever):
         if not query.query_text:
             return ()
 
-        results: dict[tuple[str, str | None, str | None, str], RetrievalHit] = {}
-        scores: dict[tuple[str, str | None, str | None, str], float] = {}
+        channels: list[RankedRetrievalChannel[RetrievalHit]] = []
 
         for retriever_name in self._retrievers:
-
             retriever = self._registry.get(retriever_name)
-
             candidates = retriever.retrieve(query)
-
+            ranked: list[RankedRetrievalCandidate[RetrievalHit]] = []
             for rank, cand in enumerate(candidates):
-                key = (
-                    cand.document.scope.tenant_id,
-                    cand.document.scope.namespace,
-                    cand.document.scope.workspace_id,
-                    cand.vector_id or cand.document.identity.document_id,
+                ranked.append(
+                    RankedRetrievalCandidate(
+                        candidate_id=_retrieval_hit_identity(cand),
+                        rank=rank,
+                        payload=cand,
+                    )
                 )
-                rrf_score = 1.0 / (self._rrf_k + rank + 1)
-                scores[key] = scores.get(key, 0.0) + rrf_score
-                if key not in results:
-                    results[key] = cand
-
-        fused = list(results.values())
-
-        fused.sort(
-            key=lambda c: scores[
-                (
-                    c.document.scope.tenant_id,
-                    c.document.scope.namespace,
-                    c.document.scope.workspace_id,
-                    c.vector_id or c.document.identity.document_id,
+            channels.append(
+                RankedRetrievalChannel(
+                    channel_key=retriever_name,
+                    candidates=tuple(ranked),
                 )
-            ],
-            reverse=True,
-        )
+            )
 
-        top_k = int(query.top_k)
+        fused = self._fusion_strategy.fuse(tuple(channels), limit=int(query.top_k))
 
         return tuple(
             replace(
-                cand,
-                score=scores[
-                    (
-                        cand.document.scope.tenant_id,
-                        cand.document.scope.namespace,
-                        cand.document.scope.workspace_id,
-                        cand.vector_id or cand.document.identity.document_id,
-                    )
-                ],
-                rank=rank,
+                item.payload,
+                score=item.fusion_score,
+                rank=item.fused_rank,
                 channel="hybrid",
                 retriever_name=self.name(),
             )
-            for rank, cand in enumerate(fused[:top_k])
+            for item in fused.candidates
+            if item.payload is not None
         )

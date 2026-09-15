@@ -25,9 +25,32 @@ Each operation's declared `channel_key` is authoritative for the plan. `execute(
 
 Depend on `MultiChannelRetrievalCoordinator[TResult]` and inject an implementation (default: `SequentialMultiChannelRetrievalCoordinator`). No plugin registry is required for v1.
 
-## Non-goals (v1)
+## Rank fusion (P1C / P1C-D1)
 
-- Rank fusion (RRF) — separate capability (P1C consolidation)
+**Canonical decision:** [ADR-RAG-002](../adr/entries/2026-09-15/ADR-RAG-002.md) (Accepted design). Supplements [ADR-RAG-001](../adr/entries/2026-09-13/ADR-RAG-001.md).
+
+Platform module: `intergrax.rag.retrieval.fusion`.
+
+```text
+retrievers / channel ops
+  → RankedRetrievalChannel (per channel)
+  → RankFusionStrategyPort (selected in composition / bootstrap — not inside consumer defaults)
+  → FusedRankedCandidate (+ channel evidence)
+  → (optional) PostFusionScoringStrategyPort — e.g. LexicalHybrid legacy alpha blend
+  → consumer / scenario policy
+```
+
+P1C initial implementation (`3bf79bb…`) is **not** audit-complete; P1C-R1 applies ADR-RAG-002.
+
+Key semantics (summary — full matrices in ADR):
+
+- **Rank authority:** list index is authoritative; `candidate.rank` must match index (Model C).
+- **Duplicates in channel / duplicate channel_key / payload mismatch:** contract violations (fail-fast).
+- **RRF math:** public `reciprocal_rank_contribution`; strategy `reciprocal-rank-fusion.v1`.
+- **VPI offer fusion:** domain plugin on `OfferCandidateFusionPort`; shares math primitive only.
+- **Fusion ≠ reranking:** `RRFReranker` out of scope for P1C-D1.
+
+## Non-goals (v1)
 - Retries, concurrency, or provider execution inside the coordinator
 - Product/catalog DTOs or VPI channel enums
 - Diagnostic spine integration (**P1B**, not part of P1A)

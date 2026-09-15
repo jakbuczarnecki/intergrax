@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from intergrax.contracts.execution_identity import EventId, validate_event_id
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstruction
+from intergrax.runtime.observability.reconstruction import ExecutionReconstruction
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubject
 from intergrax.runtime.diagnostics.problem_grouping_features import (
     CAUSAL_SOURCE_REF_KIND_MESSAGE_BUS_TASK,

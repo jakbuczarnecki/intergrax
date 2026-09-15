@@ -1,11 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""P2.1-S2B-C2 — authoritative invocation binding issuance on S2A path."""
+"""P2.1-S2B-C2/C3/C4 — S2A invocation binding issuance and provider rejection."""
 
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -21,6 +21,8 @@ from intergrax.contracts.delegated_execution_control import (
 )
 from intergrax.contracts.delegated_execution_invocation_binding import (
     DelegatedExecutionInvocationBinding,
+    assert_provider_outcome_has_no_invocation_binding,
+    enrich_delegated_outcome_with_platform_invocation_binding,
     mint_delegated_execution_invocation_binding,
 )
 from intergrax.contracts.delegated_execution_provider import (
@@ -34,6 +36,8 @@ from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionProvider,
     DelegatedExecutionRequest,
     assert_provider_native_ids_distinct_from_execution,
+    DelegatedExecutionContractError,
+    delegated_failure_outcome,
     delegated_success_outcome,
     digest_delegated_execution_payload,
     digest_delegated_execution_request,
@@ -435,6 +439,9 @@ async def test_c2_t13_spoofed_provider_outcome_fail_closed() -> None:
     assert outcome.category is DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE
     assert outcome.failure_code == "OUTCOME_CONTRACT_MISMATCH"
     assert outcome.invocation_binding is None
+    assert outcome.provider_invocation is None
+    assert outcome.provider_outcome is None
+    assert outcome.result is None
 
 
 def test_c2_t14_capability_gating_unchanged() -> None:
@@ -472,3 +479,395 @@ def test_c2_no_reflection_in_service_module() -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
             assert node.func.id not in forbidden
+
+
+def _mint_binding_for_request(
+    request: DelegatedExecutionRequest[EchoPayload],
+    *,
+    provider_id: str,
+) -> DelegatedExecutionInvocationBinding:
+    invocation = _invocation_for_request(provider_id=provider_id, request=request)
+    return mint_delegated_execution_invocation_binding(
+        context=request.context,
+        operation=request.operation,
+        payload_digest=digest_delegated_execution_payload(request.payload),
+        provider_invocation=invocation,
+    )
+
+
+class MaliciousBindingInjectingProvider(FakeS2AProvider):
+    """Test-only provider that attempts to self-issue platform invocation binding."""
+
+    def __init__(
+        self,
+        *,
+        inject_without_invocation: bool = False,
+        provider_id: str = "malicious_binding",
+    ) -> None:
+        super().__init__(provider_id=provider_id)
+        self._inject_without_invocation = inject_without_invocation
+
+    async def execute(
+        self,
+        request: DelegatedExecutionRequest[EchoPayload],
+    ) -> DelegatedExecutionOutcome[EchoResult]:
+        if self._inject_without_invocation:
+            self.last_request = request
+            forged = _mint_binding_for_request(request, provider_id=self._provider_id)
+            return DelegatedExecutionOutcome(
+                category=DelegatedExecutionOutcomeCategory.SUCCESS,
+                result=EchoResult(value=request.payload.value),
+                invocation_binding=forged,
+            )
+        outcome = await super().execute(request)
+        forged = _mint_binding_for_request(request, provider_id=self._provider_id)
+        return replace(outcome, invocation_binding=forged)
+
+
+@pytest.mark.asyncio
+async def test_c3_t1_provider_injects_binding_without_provider_invocation() -> None:
+    outcome = await _run_s2a(
+        MaliciousBindingInjectingProvider(inject_without_invocation=True),
+        require_success=False,
+    )
+    assert outcome.category is DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE
+    assert outcome.failure_code == "OUTCOME_CONTRACT_MISMATCH"
+    assert outcome.invocation_binding is None
+    assert outcome.provider_invocation is None
+    assert outcome.provider_outcome is None
+    assert outcome.result is None
+
+
+@pytest.mark.asyncio
+async def test_c3_t2_provider_injects_binding_with_provider_invocation() -> None:
+    outcome = await _run_s2a(MaliciousBindingInjectingProvider(), require_success=False)
+    assert outcome.category is DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE
+    assert outcome.failure_code == "OUTCOME_CONTRACT_MISMATCH"
+    assert outcome.invocation_binding is None
+    assert outcome.provider_invocation is None
+    assert outcome.provider_outcome is None
+    assert outcome.result is None
+
+
+@pytest.mark.asyncio
+async def test_c3_t3_provider_injects_exact_correct_binding_still_rejected() -> None:
+    """Authority test: valid binding content from provider is still illegal."""
+    outcome = await _run_s2a(MaliciousBindingInjectingProvider(), require_success=False)
+    assert outcome.category is DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE
+    assert outcome.invocation_binding is None
+
+
+@pytest.mark.asyncio
+async def test_c3_t4_normal_provider_platform_mints_binding() -> None:
+    outcome = await _run_s2a(FakeS2AProvider())
+    assert outcome.category is DelegatedExecutionOutcomeCategory.SUCCESS
+    assert outcome.invocation_binding is not None
+
+
+@pytest.mark.asyncio
+async def test_c3_t5_no_provider_invocation_binding_remains_none() -> None:
+    class NoInvocationProvider(FakeS2AProvider):
+        async def execute(
+            self,
+            request: DelegatedExecutionRequest[EchoPayload],
+        ) -> DelegatedExecutionOutcome[EchoResult]:
+            return delegated_failure_outcome(
+                category=DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE,
+                failure_code="PROVIDER_ERROR",
+                failure_message="no invocation evidence",
+            )
+
+    outcome = await _run_s2a(NoInvocationProvider(), require_success=False)
+    assert outcome.invocation_binding is None
+
+
+@pytest.mark.asyncio
+async def test_c3_t6_platform_binding_matches_admitted_child() -> None:
+    provider = FakeS2AProvider()
+    outcome = await _run_s2a(provider)
+    assert provider.last_request is not None
+    binding = outcome.invocation_binding
+    assert binding is not None
+    assert binding.execution_id == provider.last_request.context.execution_id
+
+
+@pytest.mark.asyncio
+async def test_c3_t7_spoofed_request_digest_still_fail_closed() -> None:
+    await test_c2_t13_spoofed_provider_outcome_fail_closed()
+
+
+@pytest.mark.asyncio
+async def test_c3_t8_control_uses_platform_issued_binding() -> None:
+    await test_c2_t12_control_consumes_s2a_binding()
+
+
+@pytest.mark.asyncio
+async def test_c3_t9_provider_supplied_binding_never_reaches_control() -> None:
+    provider = MaliciousBindingInjectingProvider()
+    outcome = await _run_s2a(provider, require_success=False)
+    assert outcome.invocation_binding is None
+    assert provider.last_request is not None
+    forged = _mint_binding_for_request(
+        provider.last_request,
+        provider_id=provider.provider_id,
+    )
+    assert outcome.invocation_binding != forged
+
+
+@pytest.mark.asyncio
+async def test_c3_t10_external_fake_provider_conformance() -> None:
+    outcome = await _run_s2a(FakeS2AProvider(provider_id="arbitrary_fake"))
+    assert outcome.category is DelegatedExecutionOutcomeCategory.SUCCESS
+    assert outcome.invocation_binding is not None
+
+
+@pytest.mark.asyncio
+async def test_c3_t11_local_provider_unchanged() -> None:
+    await test_c2_t10_local_provider_without_service_coupling()
+
+
+def test_c3_t12_c1_control_anti_spoofing_regression_in_control_suite() -> None:
+    control_tests = (
+        _REPO_ROOT
+        / "tests"
+        / "unit"
+        / "runtime"
+        / "execution"
+        / "test_delegated_execution_control.py"
+    )
+    source = control_tests.read_text(encoding="utf-8")
+    assert "CONTROL_OUTCOME_CONTRACT_MISMATCH" in source
+
+
+def test_c3_t13_capability_gating_unchanged() -> None:
+    test_c2_t14_capability_gating_unchanged()
+
+
+def test_c3_t14_no_reflection() -> None:
+    test_c2_no_reflection_in_service_module()
+
+
+def test_c3_t15_no_global_mutable_registry() -> None:
+    test_c2_t15_no_global_mutable_registry()
+
+
+def test_c3_enrichment_helper_rejects_provider_supplied_binding() -> None:
+    ctx = _context_for_child()
+    op = _operation()
+    inv = _invocation_for_context(ctx, op)
+    payload_digest = digest_delegated_execution_payload(EchoPayload(value="x"))
+    forged = mint_delegated_execution_invocation_binding(
+        context=ctx,
+        operation=op,
+        payload_digest=payload_digest,
+        provider_invocation=inv,
+    )
+    outcome = delegated_success_outcome(
+        result=EchoResult(value="x"),
+        provider_invocation=inv,
+        provider_outcome=ProviderInvocationOutcome.model_validate(
+            {
+                "invocation_id": inv.invocation_id,
+                "status": ProviderInvocationStatus.SUCCEEDED,
+                "completed_at": _T0.isoformat(),
+                "provider_request_id": inv.provider_request_id,
+                "provider_operation_id": inv.provider_operation_id,
+            }
+        ),
+    )
+    outcome = replace(outcome, invocation_binding=forged)
+    with pytest.raises(DelegatedExecutionContractError):
+        enrich_delegated_outcome_with_platform_invocation_binding(
+            outcome=outcome,
+            context=ctx,
+            operation=op,
+            payload_digest=payload_digest,
+        )
+
+
+def test_c3_service_module_asserts_provider_binding_gate() -> None:
+    source = _SERVICE_MODULE.read_text(encoding="utf-8")
+    assert "assert_provider_outcome_has_no_invocation_binding" in source
+
+
+def _assert_sanitized_contract_mismatch(
+    outcome: DelegatedExecutionOutcome[EchoResult],
+) -> None:
+    assert outcome.category is DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE
+    assert outcome.failure_code == "OUTCOME_CONTRACT_MISMATCH"
+    assert outcome.invocation_binding is None
+    assert outcome.provider_invocation is None
+    assert outcome.provider_outcome is None
+    assert outcome.result is None
+
+
+@pytest.mark.asyncio
+async def test_c4_t1_injected_binding_spoofed_invocation_and_outcome() -> None:
+    class SpoofedMaliciousProvider(MaliciousBindingInjectingProvider):
+        async def execute(
+            self,
+            request: DelegatedExecutionRequest[EchoPayload],
+        ) -> DelegatedExecutionOutcome[EchoResult]:
+            forged = _mint_binding_for_request(request, provider_id=self._provider_id)
+            other_ctx = _context_for_child()
+            spoofed_inv = _invocation_for_context(other_ctx, _operation())
+            spoofed_outcome = ProviderInvocationOutcome.model_validate(
+                {
+                    "invocation_id": "spoof-inv",
+                    "status": ProviderInvocationStatus.SUCCEEDED,
+                    "completed_at": _T0.isoformat(),
+                    "provider_request_id": "spoof-preq",
+                    "provider_operation_id": "spoof-pop",
+                }
+            )
+            return DelegatedExecutionOutcome(
+                category=DelegatedExecutionOutcomeCategory.SUCCESS,
+                result=EchoResult(value=request.payload.value),
+                invocation_binding=forged,
+                provider_invocation=spoofed_inv,
+                provider_outcome=spoofed_outcome,
+            )
+
+    _assert_sanitized_contract_mismatch(
+        await _run_s2a(SpoofedMaliciousProvider(), require_success=False),
+    )
+
+
+@pytest.mark.asyncio
+async def test_c4_t2_injected_binding_valid_looking_invocation_still_sanitized() -> None:
+    outcome = await _run_s2a(MaliciousBindingInjectingProvider(), require_success=False)
+    _assert_sanitized_contract_mismatch(outcome)
+
+
+@pytest.mark.asyncio
+async def test_c4_t3_valid_normal_provider_evidence_preserved() -> None:
+    outcome = await _run_s2a(FakeS2AProvider())
+    assert outcome.category is DelegatedExecutionOutcomeCategory.SUCCESS
+    assert outcome.invocation_binding is not None
+    assert outcome.provider_invocation is not None
+    assert outcome.provider_outcome is not None
+
+
+@pytest.mark.asyncio
+async def test_c4_t4_spoofed_request_digest_sanitized_evidence() -> None:
+    await test_c2_t13_spoofed_provider_outcome_fail_closed()
+
+
+@pytest.mark.asyncio
+async def test_c4_t5_wrong_provider_run_correlation_sanitized() -> None:
+    class WrongRunProvider(FakeS2AProvider):
+        async def execute(
+            self,
+            request: DelegatedExecutionRequest[EchoPayload],
+        ) -> DelegatedExecutionOutcome[EchoResult]:
+            outcome = await super().execute(request)
+            assert outcome.provider_invocation is not None
+            bad = outcome.provider_invocation.model_copy(
+                update={"run_id": "run-not-admitted-child"},
+            )
+            return delegated_success_outcome(
+                result=outcome.result,
+                provider_invocation=bad,
+                provider_outcome=outcome.provider_outcome,
+            )
+
+    _assert_sanitized_contract_mismatch(
+        await _run_s2a(WrongRunProvider(), require_success=False),
+    )
+
+
+@pytest.mark.asyncio
+async def test_c4_t6_wrong_operation_task_sanitized() -> None:
+    class WrongTaskProvider(FakeS2AProvider):
+        async def execute(
+            self,
+            request: DelegatedExecutionRequest[EchoPayload],
+        ) -> DelegatedExecutionOutcome[EchoResult]:
+            outcome = await super().execute(request)
+            assert outcome.provider_invocation is not None
+            bad = outcome.provider_invocation.model_copy(
+                update={"task_id": "task-not-dispatch"},
+            )
+            return delegated_success_outcome(
+                result=outcome.result,
+                provider_invocation=bad,
+                provider_outcome=outcome.provider_outcome,
+            )
+
+    _assert_sanitized_contract_mismatch(
+        await _run_s2a(WrongTaskProvider(), require_success=False),
+    )
+
+
+@pytest.mark.asyncio
+async def test_c4_t7_no_invocation_legal_failure_unchanged() -> None:
+    await test_c3_t5_no_provider_invocation_binding_remains_none()
+
+
+@pytest.mark.asyncio
+async def test_c4_t8_transport_failure_not_contract_mismatch() -> None:
+    class _TimeoutDelegate:
+        async def execute(
+            self,
+            request: DelegatedExecutionRequest[EchoPayload],
+        ) -> EchoResult:
+            raise TimeoutError("connect timed out")
+
+    provider = LocalDelegatedExecutionProvider(_TimeoutDelegate())
+    outcome = await _run_s2a(provider, require_success=False)
+    assert outcome.category is DelegatedExecutionOutcomeCategory.TRANSPORT_FAILURE
+    assert outcome.failure_code != "OUTCOME_CONTRACT_MISMATCH"
+
+
+@pytest.mark.asyncio
+async def test_c4_t11_contract_mismatch_carries_no_provider_correlation_evidence() -> None:
+    outcome = await _run_s2a(MaliciousBindingInjectingProvider(), require_success=False)
+    _assert_sanitized_contract_mismatch(outcome)
+
+
+@pytest.mark.asyncio
+async def test_c4_t12_failure_message_safe_no_provider_leaks() -> None:
+    outcome = await _run_s2a(
+        MaliciousBindingInjectingProvider(provider_id="vendor-secret-42"),
+        require_success=False,
+    )
+    _assert_sanitized_contract_mismatch(outcome)
+    assert outcome.failure_message is not None
+    msg = outcome.failure_message.lower()
+    assert "vendor-secret-42" not in msg
+    assert "spoof" not in msg
+    assert "timeouterror" not in msg
+    assert "exception" not in msg
+
+
+def test_c4_t9_c1_control_anti_spoofing_regression() -> None:
+    test_c3_t12_c1_control_anti_spoofing_regression_in_control_suite()
+
+
+@pytest.mark.asyncio
+async def test_c4_t10_c3_provider_binding_injection_regression() -> None:
+    await test_c3_t2_provider_injects_binding_with_provider_invocation()
+
+
+@pytest.mark.asyncio
+async def test_c4_t13_pluginability_arbitrary_provider_unchanged() -> None:
+    await test_c3_t10_external_fake_provider_conformance()
+
+
+def test_c4_t14_no_reflection() -> None:
+    test_c2_no_reflection_in_service_module()
+
+
+def test_c4_t15_no_global_mutable_registry_in_service() -> None:
+    test_c2_t15_no_global_mutable_registry()
+
+
+def test_c4_service_uses_sanitized_contract_mismatch_helper() -> None:
+    source = _SERVICE_MODULE.read_text(encoding="utf-8")
+    assert "delegated_provider_outcome_contract_mismatch_failure" in source
+    assert "provider_invocation=outcome.provider_invocation" not in source
+
+
+@pytest.mark.asyncio
+async def test_c4_e2e_root_child_s2a_malicious_provider_sanitized() -> None:
+    await test_c4_t1_injected_binding_spoofed_invocation_and_outcome()

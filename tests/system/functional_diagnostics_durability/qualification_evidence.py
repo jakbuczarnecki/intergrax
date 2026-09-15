@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from intergrax.contracts.execution_identity import mint_event_id
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
   PipelineArtifactLineageFact,
   PipelineCandidateFact,
   PipelineEvidenceKind,

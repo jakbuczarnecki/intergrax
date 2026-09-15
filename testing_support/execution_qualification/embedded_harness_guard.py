@@ -61,3 +61,15 @@ def inventory_embedded_harness_in_module(
 
 def module_contains_embedded_harness_calls(module_path: Path) -> bool:
     return bool(inventory_embedded_harness_in_module(module_path))
+
+
+def semantic_test_function_names_in_module(module_path: Path) -> frozenset[str]:
+    source = module_path.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    names = {
+        node.name
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
+    }
+    return frozenset(names - embedded_harness_test_names())

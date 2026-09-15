@@ -6,7 +6,7 @@ import pytest
 
 from intergrax.runtime.task_memory import InMemoryTaskMemoryStore, MemoryAccessPolicy, PolicyScopedMemoryView
 from intergrax.runtime.task_memory.memory_view import MemoryViewAccessDenied
-from testing_support.builder import build_runtime_execution_context_for_tests
+from testing_support.builder import build_runtime_execution_context_for_tests, canonical_task_id_for_tests
 
 pytestmark = pytest.mark.gate
 
@@ -70,7 +70,30 @@ def test_memory_view_requires_canonical_identity_on_context() -> None:
         PolicyScopedMemoryView(exec_ctx, InMemoryTaskMemoryStore())
 
 
-def test_task_scope_uses_execution_context_task_id_only() -> None:
-    exec_ctx = build_runtime_execution_context_for_tests(tenant_id=_CANONICAL_TENANT)
-    view = PolicyScopedMemoryView(exec_ctx, InMemoryTaskMemoryStore())
-    assert view._task_id == str(exec_ctx.task_id)
+@pytest.mark.asyncio
+async def test_task_scope_uses_execution_context_task_id_only() -> None:
+    task_id = canonical_task_id_for_tests("task-scope-proof")
+    exec_ctx = build_runtime_execution_context_for_tests(
+        tenant_id=_CANONICAL_TENANT,
+        task_id=task_id,
+    )
+    store = InMemoryTaskMemoryStore()
+    view = PolicyScopedMemoryView(exec_ctx, store)
+    await view.write("ns", "proof-key", {"v": 1})
+    stored = store.get(
+        tenant_id=_CANONICAL_TENANT,
+        task_id=task_id,
+        namespace="ns",
+        key="proof-key",
+    )
+    assert stored is not None
+    assert stored.value == {"v": 1}
+    assert (
+        store.get(
+            tenant_id=_CANONICAL_TENANT,
+            task_id=canonical_task_id_for_tests("other-task-scope"),
+            namespace="ns",
+            key="proof-key",
+        )
+        is None
+    )

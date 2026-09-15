@@ -28,7 +28,7 @@ from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
 from intergrax.runtime.nexus.retry.retry_engine import RetryRecord
 from intergrax.runtime.task.task import Task, TaskContext
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.obs_coverage_p1]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _RUNTIME_EVENT_MODULE = _REPO_ROOT / "intergrax" / "runtime" / "events" / "runtime_event.py"

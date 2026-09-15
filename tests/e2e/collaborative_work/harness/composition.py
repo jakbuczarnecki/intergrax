@@ -16,6 +16,9 @@ from intergrax.collaborative_work.persistence_provider import (
 )
 from intergrax.collaborative_work.policy_source import CollaborativePolicyEvaluator
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.runtime.governance.meaningful_side_effect_authorization_composition import (
+    build_default_wired_meaningful_side_effect_authorization_boundary,
+)
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )
@@ -50,7 +53,9 @@ def build_authorization_boundary(
         policy_evaluator=CollaborativePolicyEvaluator(bundle.policy),
         runtime_policy_evaluator=runtime_policy,
     )
-    return MeaningfulSideEffectAuthorizationBoundary(enforcement_gate=gate)
+    return build_default_wired_meaningful_side_effect_authorization_boundary(
+        enforcement_gate=gate,
+    )
 
 
 def open_multiplayer_e2e_context(

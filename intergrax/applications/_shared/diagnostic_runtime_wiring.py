@@ -31,7 +31,7 @@ from intergrax.runtime.diagnostics.document_store_problem_occurrence_persistence
     wire_problem_occurrence_persistence,
 )
 from intergrax.runtime.diagnostics.document_store_problem_persistence import wire_problem_persistence
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingEngine,
@@ -41,9 +41,16 @@ from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngi
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
+from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
+    TerminalExecutionDiagnosticPort,
+)
+from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
+    wrap_terminal_execution_diagnostic_trigger,
+)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTrigger,
 )
+from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
@@ -135,6 +142,34 @@ def try_build_terminal_execution_diagnostic_trigger(
     return build_terminal_execution_diagnostic_trigger(dependencies)
 
 
+def build_terminal_execution_diagnostic_port(
+    dependencies: HostDiagnosticReadDependencies,
+    *,
+    event_bus: RuntimeEventBus | None = None,
+) -> TerminalExecutionDiagnosticPort:
+    """Construct production terminal diagnostic port over shared orchestrator."""
+    return wrap_terminal_execution_diagnostic_trigger(
+        build_terminal_execution_diagnostic_trigger(dependencies),
+        event_bus=event_bus,
+    )
+
+
+def try_build_terminal_execution_diagnostic_port(
+    *,
+    env_wiring: ApplicationEnvironmentWiring,
+    observability: NexusObservabilityStores,
+    event_bus: RuntimeEventBus | None = None,
+) -> TerminalExecutionDiagnosticPort | None:
+    """Best-effort neutral port when required platform storage is available."""
+    dependencies = resolve_host_diagnostic_runtime_dependencies(
+        env_wiring=env_wiring,
+        observability=observability,
+    )
+    if dependencies is None:
+        return None
+    return build_terminal_execution_diagnostic_port(dependencies, event_bus=event_bus)
+
+
 def _diagnostic_prerequisite_gaps(
     *,
     env_wiring: ApplicationEnvironmentWiring,
@@ -167,11 +202,12 @@ def wire_terminal_execution_diagnostics(
         env_wiring=env_wiring,
         observability=observability,
     )
-    terminal_diagnostic_trigger = try_build_terminal_execution_diagnostic_trigger(
+    terminal_diagnostic_port = try_build_terminal_execution_diagnostic_port(
         env_wiring=env_wiring,
         observability=observability,
+        event_bus=nexus_loop.event_bus,
     )
-    attached = terminal_diagnostic_trigger is not None
+    attached = terminal_diagnostic_port is not None
     assert_diagnostic_assembly_valid(
         required=required,
         attached=attached,
@@ -179,7 +215,7 @@ def wire_terminal_execution_diagnostics(
         missing_runtime_events=missing_runtime_events,
     )
     if attached:
-        nexus_loop.attach_terminal_diagnostic_trigger(terminal_diagnostic_trigger)
+        nexus_loop.attach_terminal_diagnostic_trigger(terminal_diagnostic_port)
     return DiagnosticWiring(required=required, attached=attached)
 
 
@@ -194,9 +230,11 @@ def resolve_host_terminal_execution_diagnostic_trigger(
 
 __all__ = [
     "build_diagnostic_orchestrator",
+    "build_terminal_execution_diagnostic_port",
     "build_terminal_execution_diagnostic_trigger",
     "resolve_host_diagnostic_runtime_dependencies",
     "resolve_host_terminal_execution_diagnostic_trigger",
+    "try_build_terminal_execution_diagnostic_port",
     "try_build_terminal_execution_diagnostic_trigger",
     "wire_terminal_execution_diagnostics",
 ]

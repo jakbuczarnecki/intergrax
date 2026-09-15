@@ -18,15 +18,6 @@ _APPLICATIONS_ROOT = _REPO_ROOT / "applications"
 
 _FORBIDDEN_TOKENS = (
     "build_harness_host_task_runner",
-    "mount_harness_task_routes(",
-    "wire_long_running_scheduler(",
-)
-
-_ALLOWLIST = frozenset(
-    {
-        _SHARED_ROOT / "harness_task_routes.py",
-        _REPO_ROOT / "intergrax" / "runtime" / "long_running" / "wiring.py",
-    }
 )
 
 
@@ -47,8 +38,6 @@ def _scan_paths(roots: tuple[Path, ...]) -> list[Path]:
 
 
 def _token_violations(path: Path, tokens: tuple[str, ...]) -> list[str]:
-    if path in _ALLOWLIST:
-        return []
     try:
         source = path.read_text(encoding="utf-8-sig")
     except UnicodeDecodeError:
@@ -88,7 +77,6 @@ def test_npsc3f_task_control_wiring_uses_canonical_host_execution() -> None:
     assert "mount_canonical_harness_task_routes" in source
     assert "HostTaskExecutionExecutor" in source
     assert "host_execution: HostTaskExecutionPort" in source
-    assert "mount_harness_task_routes(" not in source
 
 
 def test_npsc3f_lab_fastapi_routes_through_host_execution() -> None:

@@ -17,6 +17,11 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     validate_task_id,
 )
+from intergrax.contracts.decision_authoritative_exposure import (
+    ExposureAccepted,
+    ExposureResolution,
+    ExposureUnevaluated,
+)
 from intergrax.contracts.partial_result_contract import PartialResultContract
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.runtime.task.task_contract import (
@@ -24,7 +29,7 @@ from intergrax.runtime.task.task_contract import (
     TaskResultSummary,
     TaskRuntimeState,
 )
-from intergrax.runtime.task.task_state import TaskState
+from intergrax.runtime.task.task_state import TaskState, task_state_requires_authoritative_exposure
 
 
 class TaskContext(BaseModel):
@@ -170,6 +175,12 @@ class TaskResult(BaseModel):
     execution_result: Optional[AgentExecutionResult] = None
     summary: TaskResultSummary = Field(default_factory=TaskResultSummary)
     partial: PartialResultContract | None = None
+    authoritative_decision_exposure: (
+        ExposureAccepted[object]
+        | ExposureResolution
+        | ExposureUnevaluated
+        | None
+    ) = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 
     @model_validator(mode="before")
@@ -188,6 +199,17 @@ class TaskResult(BaseModel):
                 data = dict(data)
                 data["summary"] = result_summary_from_metadata(metadata).model_dump()
         return data
+
+    @model_validator(mode="after")
+    def _validate_authoritative_decision_exposure_terminality(self) -> TaskResult:
+        if (
+            task_state_requires_authoritative_exposure(self.state)
+            and self.authoritative_decision_exposure is None
+        ):
+            raise ValueError(
+                "terminal TaskResult requires authoritative_decision_exposure",
+            )
+        return self
 
     def sync_metadata(self) -> None:
         from intergrax.runtime.task.task_metadata_bridge import sync_result_metadata

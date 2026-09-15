@@ -18,7 +18,7 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticOccurrenceReadStatus,
     DiagnosticReadUnavailableReason,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import ExecutionReconstructor
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.observability.operator_wiring import ObservabilityExportOperatorConfig
 from tests.integration.runtime.diag_final_otel_support import (

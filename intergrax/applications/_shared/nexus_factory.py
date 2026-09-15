@@ -289,5 +289,5 @@ def build_nexus_loop_from_environment(
     resolved_guardrail = guardrail_wiring or wire_application_guardrail(env)
     apply_application_guardrail_wiring(loop, resolved_guardrail, env)
     if decision_wiring is not None:
-        apply_application_decision_wiring(loop, decision_wiring)
+        apply_application_decision_wiring(loop, decision_wiring, environment=env)
     return loop

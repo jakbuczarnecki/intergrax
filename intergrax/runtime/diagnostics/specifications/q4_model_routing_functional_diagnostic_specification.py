@@ -22,7 +22,7 @@ from intergrax.runtime.diagnostics.functional_diagnostic_specification import (
     ValidationOutcomeRequirement,
     validate_functional_diagnostic_specification,
 )
-from intergrax.runtime.diagnostics.functional_evidence import PipelineOperationStatus
+from intergrax.contracts.functional_evidence import PipelineOperationStatus
 from intergrax.runtime.observability.functional_validation_evidence import FunctionalValidationOutcome
 
 Q4_MODEL_SPECIFICATION_ID = FunctionalDiagnosticSpecificationId(

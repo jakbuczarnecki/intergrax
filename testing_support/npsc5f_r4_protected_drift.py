@@ -12,7 +12,9 @@ R4_IMPLEMENTATION_SHA = "37fb051c7f164d705f628760436b8ea10ee0289f"
 
 # Post-qualified baseline: W5-H1 on GitHub — remote-reachable replacement for orphan ``8879dc8``.
 # Re-baselined @ INTEGRAx-QUALIFICATION-CANONICAL-FAIL-DIAGNOSTICS (SSOT regression matrix, commit 1dc93afab).
-R4_POST_QUALIFIED_BASELINE_SHA = "dffe2ae52a6938e0620ae4a3cc5e4be760e7f2f7"
+# Prior R4 post-qualified baseline: ``dffe2ae52a6938e0620ae4a3cc5e4be760e7f2f7``.
+# OBS-RECONSTRUCTION-1: qualified relocation — diagnostics factual surface → observability/reconstruction.
+R4_POST_QUALIFIED_BASELINE_SHA = "743a3865198e8fcec53029f935fbedc4cae6f9df"
 
 _R4_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {
@@ -28,7 +30,7 @@ _R4_EXPLICITLY_NOT_FILE_FROZEN_PREFIXES: tuple[str, ...] = (
     "intergrax/runtime/events/",
     "intergrax/contracts/bitemporal_knowledge.py",
     "intergrax/runtime/events/asof_projection.py",
-    "intergrax/runtime/diagnostics/execution_reconstruction.py",
+    "intergrax/runtime/observability/reconstruction/",
 )
 
 

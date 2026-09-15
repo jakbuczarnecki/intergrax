@@ -560,13 +560,39 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2B — capability-gated provider-native cancel/interrupt control propagation = CLOSED** (control plane only; canonical Execution lifecycle unchanged).
 
+**P2.1-S2B-C1 — invocation binding correlation contract = CLOSED** (platform-owned ``DelegatedExecutionInvocationBinding``; control consumes platform-issued binding only).
+
 **P2.1-S2B-C2 — authoritative S2A invocation binding issuance = CLOSED** (Execution-owned dispatch enriches outcomes with platform-issued ``DelegatedExecutionInvocationBinding``; no durable registry).
 
-**P2.1-S2B = CLOSED** (S2A adoption + S2B control + C1 correlation + C2 authoritative binding issuance).
+**P2.1-S2B-C3 — provider-supplied binding rejection = CLOSED** (provider ``execute`` outcomes MUST NOT carry ``invocation_binding``; fail-closed at S2A gate + enrichment helper).
 
-**P2.1-S2 = OPEN** (S2C durability / status / continuation next).
+**P2.1-S2B-C4 — provider evidence sanitization on contract violation = CLOSED** (``OUTCOME_CONTRACT_MISMATCH`` drops unvalidated ``provider_invocation`` / ``provider_outcome`` / ``invocation_binding`` / ``result``; platform-owned failure only).
 
-Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`
+**P2.1-S2B = CLOSED** (S2A adoption + S2B control + C1 correlation + C2 authoritative binding issuance + C3 platform binding ownership + C4 contract-violation evidence sanitization).
+
+**P2.1-S2C1 — durable delegated invocation correlation foundation = CLOSED** (platform ``DelegatedInvocationCorrelationStore`` + persistence after platform-issued binding; lookup by child ``ExecutionId``; explicit ``DelegatedInvocationCorrelationDurabilityPolicy`` via ``ApplicationEnvironmentProfile`` / composition — no silent non-durable fallback in production).
+
+**P2.1-S2C1-C1 — correlation failure normalization and explicit durability policy = CLOSED** (all post-dispatch correlation persistence/conflict/integrity errors normalize to typed ``PLATFORM_FAILURE``; validated provider evidence preserved; required durability fails composition when durable store missing).
+
+**P2.1-S2C2-C1 — durable control truthfulness, typed correlation failures and resolver ABI hardening = CLOSED** (no synthetic binding/identity on lookup failure; ``DelegatedInvocationCorrelationNotFoundError``; platform-owned failure messages; ``DelegatedExecutionDurableControlOutcome``; ``DelegatedExecutionProviderHandle`` resolver ABI without ``Any``).
+
+**P2.1-S2C2 — provider-neutral delegated status read model and durable lookup = CLOSED** (``ExecutionId`` → durable ``DelegatedInvocationCorrelationLookup`` → ``DelegatedExecutionStatusProvider`` → typed ``DelegatedExecutionStatusView``; ``supports_status_read`` capability; durable ``apply_control_by_execution_id`` reuses S2B control core).
+
+**P2.1-S2C3 — delegated operation list and query read model = CLOSED** (``DelegatedExecutionQueryPort`` → ``DelegatedExecutionQueryService`` → ``DelegatedInvocationCorrelationQueryStore``; typed ``DelegatedInvocationCorrelationQuery`` + ``DelegatedExecutionCorrelationView``; bounded opaque keyset pagination over persisted correlation facts only — no provider calls, no lifecycle mutation).
+
+**P2.1-S2C3-C1 — bounded query scaling, backend continuation and legacy correlation compatibility = CLOSED** (hard per-page ``DocumentStore`` scan budget; ``DelegatedInvocationCorrelationQueryStorePage`` with backend continuation; HMAC authenticated delegated query cursors; legacy correlation discoverability via decoded-record filters + optional ``backfill_correlation_document_query_index``).
+
+**P2.1-S2C3-C2 — bounded resumable legacy correlation query-index backfill = CLOSED** (``DelegatedCorrelationQueryIndexBackfillRequest`` / ``DelegatedCorrelationQueryIndexBackfillPage``; one call = one backend scan window bounded by ``scan_limit`` inspected rows; raw ``DocumentStore`` continuation cursor; no query-path writes).
+
+**P2.1-S2C3 = CLOSED** (S2C3 read model + C1 query scaling + C2 maintenance backfill).
+
+**P2.1-S2C4 — durable delegated reattachment boundary = CLOSED** (``ExecutionId`` → durable ``DelegatedInvocationCorrelationLookup`` → ``DelegatedExecutionReattachmentProvider`` → typed ``DelegatedExecutionContinuationOutcome``; ``supports_reattachment`` capability; pure provider-plane reattachment without identity minting, correlation mutation, lifecycle transition, or automatic retry).
+
+**P2.1-S2C = CLOSED** (S2C1–S2C4 durable correlation, status/control lookup, query, reattachment).
+
+**P2.1-S2 = OPEN** (S2C CLOSED; remaining S2 adoption slices beyond durable correlation plane).
+
+Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`, `tests/unit/runtime/execution/test_delegated_execution_continuation.py`
 
 ## Remaining work (P2.1-S2 — adoption slices after S2A, not new seam)
 

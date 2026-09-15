@@ -22,7 +22,9 @@ from intergrax.applications._shared.harness_control_plane_policy_wiring import (
     build_reference_production_lifecycle_policy_bundle,
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+from tests.unit.applications.harness_canonical_task_routes_test_support import (
+    mount_canonical_harness_task_routes_for_tests,
+)
 from intergrax.applications._shared.reference_production_governance_wiring import (
     build_reference_production_control_plane_governance,
 )
@@ -444,9 +446,8 @@ async def test_taskcpm_p11b_lab_direct_mount_fail_closed() -> None:
         resolved_api_key=None,
         tenant_required=True,
     )
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=None,
     )
     client = TestClient(app)

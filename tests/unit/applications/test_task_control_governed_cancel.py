@@ -12,7 +12,9 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from intergrax.applications._shared.harness_auth import HarnessAuthState
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+from tests.unit.applications.harness_canonical_task_routes_test_support import (
+    mount_canonical_harness_task_routes_for_tests,
+)
 from intergrax.applications._shared.task_control import (
     TaskControlValidationError,
     governed_cancel_active_task,
@@ -421,9 +423,8 @@ async def test_taskcpm_c11_http_route_projects_authenticated_principal() -> None
         resolved_api_key=None,
         tenant_required=True,
     )
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=boundary,
     )
     client = TestClient(app)

@@ -27,7 +27,9 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
     resolve_harness_task_control_mutation_boundary,
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from intergrax.applications._shared.harness_task_routes import mount_harness_task_routes
+from tests.unit.applications.harness_canonical_task_routes_test_support import (
+    mount_canonical_harness_task_routes_for_tests,
+)
 from intergrax.runtime.governance.control_plane_mutation_approval import (
     ApprovalConsumingControlPlaneMutationEvaluator,
 )
@@ -286,9 +288,8 @@ async def test_taskcpm_h5_missing_boundary_remains_fail_closed_on_direct_mount()
         resolved_api_key=None,
         tenant_required=True,
     )
-    mount_harness_task_routes(
+    mount_canonical_harness_task_routes_for_tests(
         app,
-        task_runner=UnifiedTaskRunner(object()),  # type: ignore[arg-type]
         mutation_boundary=None,
     )
     client = TestClient(app)

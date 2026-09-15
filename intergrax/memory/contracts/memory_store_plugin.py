@@ -4,10 +4,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
-from intergrax.memory.user_profile_store import UserProfileStore
-from intergrax.runtime.nexus.session.session_storage import SessionStorage
+if TYPE_CHECKING:
+    from intergrax.memory.user_profile_store import UserProfileStore
+    from intergrax.runtime.nexus.session.session_storage import SessionStorage
 
 
 @runtime_checkable

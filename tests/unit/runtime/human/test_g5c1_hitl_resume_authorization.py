@@ -32,6 +32,9 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import (
     minimal_runtime_checkpoint,
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task_contract import (
@@ -267,7 +270,8 @@ async def test_debug_service_submits_exact_pause_request_identity() -> None:
         captured["task"] = task_arg
         from intergrax.runtime.task.task import TaskResult
 
-        return TaskResult(task_id=task_arg.task_id, run_id=RUN_ID, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task_arg.task_id, run_id=RUN_ID, state=TaskState.COMPLETED)
 
     host_execution.execute = AsyncMock(side_effect=_execute)
     service = DebugHitlResumeService(host_execution=host_execution, checkpoint_store=store)

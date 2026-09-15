@@ -114,6 +114,84 @@ class DelegatedExecutionControlOutcome:
                 )
 
 
+class DelegatedExecutionDurableControlOutcomeCategory(StrEnum):
+    """Durable control adapter outcome — lookup failures vs resolved S2B control."""
+
+    RESOLVED_CONTROL = "resolved_control"
+    CORRELATION_NOT_FOUND = "correlation_not_found"
+    CORRELATION_INTEGRITY_FAILURE = "correlation_integrity_failure"
+    CORRELATION_PERSISTENCE_UNAVAILABLE = "correlation_persistence_unavailable"
+
+
+@dataclass(frozen=True, slots=True)
+class DelegatedExecutionDurableControlOutcome:
+    """ExecutionId lookup envelope without fabricating invocation binding."""
+
+    category: DelegatedExecutionDurableControlOutcomeCategory
+    requested_execution_id: ExecutionId
+    requested_operation: DelegatedExecutionControlOperation
+    control_outcome: DelegatedExecutionControlOutcome | None = None
+    failure_code: str | None = None
+    failure_message: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.category is DelegatedExecutionDurableControlOutcomeCategory.RESOLVED_CONTROL:
+            if self.control_outcome is None:
+                raise DelegatedExecutionContractError(
+                    "resolved durable control requires control_outcome",
+                )
+            if self.failure_code is not None or self.failure_message is not None:
+                raise DelegatedExecutionContractError(
+                    "resolved durable control cannot carry failure fields",
+                )
+            return
+        if self.control_outcome is not None:
+            raise DelegatedExecutionContractError(
+                "lookup-failure durable control cannot carry control_outcome",
+            )
+        if not (self.failure_code and self.failure_code.strip()):
+            raise DelegatedExecutionContractError(
+                "lookup-failure durable control requires failure_code",
+            )
+        if not (self.failure_message and self.failure_message.strip()):
+            raise DelegatedExecutionContractError(
+                "lookup-failure durable control requires failure_message",
+            )
+
+
+def durable_control_lookup_failure(
+    *,
+    category: DelegatedExecutionDurableControlOutcomeCategory,
+    requested_execution_id: ExecutionId,
+    requested_operation: DelegatedExecutionControlOperation,
+    failure_code: str,
+    failure_message: str,
+) -> DelegatedExecutionDurableControlOutcome:
+    """Typed durable control outcome when binding cannot be loaded."""
+    return DelegatedExecutionDurableControlOutcome(
+        category=category,
+        requested_execution_id=requested_execution_id,
+        requested_operation=requested_operation,
+        failure_code=failure_code,
+        failure_message=failure_message,
+    )
+
+
+def durable_control_resolved(
+    *,
+    requested_execution_id: ExecutionId,
+    requested_operation: DelegatedExecutionControlOperation,
+    control_outcome: DelegatedExecutionControlOutcome,
+) -> DelegatedExecutionDurableControlOutcome:
+    """Wrap an S2B control outcome after successful durable binding lookup."""
+    return DelegatedExecutionDurableControlOutcome(
+        category=DelegatedExecutionDurableControlOutcomeCategory.RESOLVED_CONTROL,
+        requested_execution_id=requested_execution_id,
+        requested_operation=requested_operation,
+        control_outcome=control_outcome,
+    )
+
+
 def delegated_control_outcome(
     *,
     category: DelegatedExecutionControlOutcomeCategory,
@@ -189,7 +267,11 @@ __all__ = [
     "DelegatedExecutionControlOutcome",
     "DelegatedExecutionControlOutcomeCategory",
     "DelegatedExecutionControlRequest",
+    "DelegatedExecutionDurableControlOutcome",
+    "DelegatedExecutionDurableControlOutcomeCategory",
     "DelegatedExecutionInterruptProvider",
     "delegated_control_outcome",
+    "durable_control_lookup_failure",
+    "durable_control_resolved",
     "provider_control_outcome_matches_request",
 ]

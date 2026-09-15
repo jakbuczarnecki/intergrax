@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from intergrax.contracts.execution_identity import AttemptId, EventId, RunId, TaskId
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstruction,
     RuntimeHistoryCompleteness,
     ReconstructedAttempt,

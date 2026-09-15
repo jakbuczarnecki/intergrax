@@ -22,7 +22,7 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
 from intergrax.runtime.diagnostics.diagnostic_lineage_projection import (
     project_execution_lineage_view,
 )
-from intergrax.runtime.diagnostics.execution_reconstruction import (
+from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstruction,
     ExecutionReconstructionIntegrityError,
     ExecutionReconstructor,
