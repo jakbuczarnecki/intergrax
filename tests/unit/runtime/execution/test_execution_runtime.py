@@ -238,7 +238,11 @@ async def test_orchestration_root_runtime_nexus_receives_active_context(
         captured["authority"] = require_active_execution_authority()
         captured["budget"] = peek_active_execution_budget()
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(
@@ -364,7 +368,11 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
         await _capture_shape()
         run_id, _ = require_active_execution_identity()
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        )
 
     loop._handle_task_impl = _orch_capture  # type: ignore[method-assign]
     await execute_root_task(
@@ -388,8 +396,13 @@ async def test_nexus_without_active_identity_fails(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(
         loop,
         "_handle_task_impl",
-        AsyncMock(return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
-TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED)),
+        AsyncMock(
+            return_value=TaskResult(
+                task_id=mint_task_id(),
+                state=TaskState.COMPLETED,
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            )
+        ),
     )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="fail")
 
@@ -409,8 +422,13 @@ async def test_nexus_without_active_authority_fails(
     monkeypatch.setattr(
         loop,
         "_handle_task_impl",
-        AsyncMock(return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
-TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED)),
+        AsyncMock(
+            return_value=TaskResult(
+                task_id=mint_task_id(),
+                state=TaskState.COMPLETED,
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            )
+        ),
     )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="fail")
     run_id = mint_run_id()
@@ -442,8 +460,13 @@ async def test_nexus_without_active_budget_fails(
     monkeypatch.setattr(
         loop,
         "_handle_task_impl",
-        AsyncMock(return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
-TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED)),
+        AsyncMock(
+            return_value=TaskResult(
+                task_id=mint_task_id(),
+                state=TaskState.COMPLETED,
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            )
+        ),
     )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="fail")
     run_id = mint_run_id()
@@ -484,7 +507,11 @@ async def test_resume_root_execution_id_matches_identity_through_lifecycle(
         captured["active_execution_id"] = require_active_execution_id()
         active_run_id, _ = require_active_execution_identity()
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+            task_id=task.task_id,
+            run_id=active_run_id,
+            state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(

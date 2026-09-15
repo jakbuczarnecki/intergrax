@@ -177,16 +177,24 @@ async def test_host_task_existing_binding_idempotent_restore() -> None:
     with patch(
         "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
         new_callable=AsyncMock,
-        return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
-TaskResult(task_id=task.task_id, state=TaskState.COMPLETED, answer="ok"),
+        return_value=TaskResult(
+            task_id=task.task_id,
+            state=TaskState.COMPLETED,
+            answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        ),
     ):
         await runtime.execution.execute(task, execution_id=execution_id)
 
     with patch(
         "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
         new_callable=AsyncMock,
-        return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
-TaskResult(task_id=task.task_id, state=TaskState.COMPLETED, answer="ok"),
+        return_value=TaskResult(
+            task_id=task.task_id,
+            state=TaskState.COMPLETED,
+            answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        ),
     ):
         await runtime.execution.execute(
             _echo_task(),
@@ -222,16 +230,24 @@ async def test_host_task_r1_preserved_under_r2_restore() -> None:
     with patch(
         "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
         new_callable=AsyncMock,
-        return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
-TaskResult(task_id=task.task_id, state=TaskState.COMPLETED, answer="ok"),
+        return_value=TaskResult(
+            task_id=task.task_id,
+            state=TaskState.COMPLETED,
+            answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        ),
     ):
         await runtime_r1.execution.execute(task, execution_id=execution_id)
 
     with patch(
         "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
         new_callable=AsyncMock,
-        return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
-TaskResult(task_id=task.task_id, state=TaskState.COMPLETED, answer="ok"),
+        return_value=TaskResult(
+            task_id=task.task_id,
+            state=TaskState.COMPLETED,
+            answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        ),
     ):
         await runtime_r2.execution.execute(
             _echo_task(),
@@ -328,7 +344,11 @@ async def test_missing_binding_reentry_no_meaningful_work() -> None:
         nonlocal captured_execution_id
         captured_execution_id = require_active_execution_id()
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=mint_task_id(), state=TaskState.COMPLETED, answer="ok")
+            task_id=mint_task_id(),
+            state=TaskState.COMPLETED,
+            answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        )
 
     with (
         patch(

@@ -233,7 +233,9 @@ async def test_taskreg_10_unified_task_runner_registers_canonical_run_identity()
         nonlocal seen_run_id
         seen_run_id = run_id
         return TaskResult(
-            task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
@@ -261,7 +263,9 @@ async def test_taskreg_11_unified_task_runner_cleanup_unregisters_same_run_ident
         assert binding is not None
         registered_run_ids.append(binding.run_id)
         return TaskResult(
-            task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
