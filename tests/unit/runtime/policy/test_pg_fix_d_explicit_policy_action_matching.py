@@ -21,9 +21,11 @@ from intergrax.contracts.runtime_policy_bundle import (
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
 )
+from tests.unit.runtime.governance.gr3_test_support import default_gr3_identity_bundle
 
 _T0 = datetime(2026, 7, 21, 9, 0, 0, tzinfo=timezone.utc)
 _ACTION = "CREATE_EXTERNAL_WORK"
+_TASK, _RUN, _ATTEMPT, _EXECUTION = default_gr3_identity_bundle()
 _EVALUATOR_SOURCE = (
     Path(__file__).resolve().parents[4]
     / "intergrax"
@@ -40,9 +42,11 @@ def _request(action: str = _ACTION) -> MeaningfulSideEffectRequest:
         action=action,
         kinds=(MeaningfulSideEffectKind.MUTATION,),
         side_effect_scope_id="scope-default",
-        task_id="t1",
-        run_id="r1",
-        principal_id="u1",
+        task_id=_TASK,
+        run_id=_RUN,
+        attempt_id=_ATTEMPT,
+        execution_id=_EXECUTION,
+        principal_id="principal-pg-fix-d",
     )
 
 

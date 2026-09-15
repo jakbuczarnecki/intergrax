@@ -364,7 +364,7 @@ def test_tier2_never_evaluates_governance_or_resumes() -> None:
         "HumanResponseVerdict",
     ):
         assert needle not in source
-    # May compose MeaningfulSideEffectEvaluator; must not embed approval rules.
+    # Must use injected authorization boundary; must not embed approval rules.
     assert "spending_limit" not in source.lower()
     assert "quote_value_threshold" not in source.lower()
     assert "does not own governance" in source.lower() or "never decide" in source.lower()

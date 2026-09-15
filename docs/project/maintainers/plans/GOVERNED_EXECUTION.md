@@ -19,10 +19,10 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 
 | Block | IMPLEMENTED (code) | VERIFIED | CLOSED |
 | ----- | ------------------ | -------- | ------ |
-| PG-FIX-A | Core spine (`CollaborativeWorkEnforcementGate`, `MeaningfulSideEffectAuthorizationBoundary`) | Partial — targeted tests / adapter paths | **No** — not every consumer; identity gaps |
-| PG-FIX-B | `RuntimePolicyEngine` specificity / precedence | Partial — `test_pg_fix_b_*` | **No** |
-| PG-FIX-C | Scoped grant + consume-before-effect mechanism | Partial — G5C tests; **no Attempt/Execution binding** | **No** |
-| PG-FIX-D | Typed rule matching (no `rule_id` suffix dispatch) | Partial — `test_pg_fix_d_*` | **No** |
+| PG-FIX-A | Core spine (`CollaborativeWorkEnforcementGate`, `MeaningfulSideEffectAuthorizationBoundary`) | Partial — targeted tests / adapter paths | **No** — not every consumer path qualified |
+| PG-FIX-B | `RuntimePolicyEngine` specificity / precedence | Partial — `test_pg_fix_b_*` | **No** — GR-4 requalification open |
+| PG-FIX-C | Scoped grant + consume-before-effect mechanism | Partial — G5C / PG-FIX-C tests; **Attempt/Execution binding (GR-1)** | **No** — UER HITL ownership gaps (GR-5) |
+| PG-FIX-D | Typed rule matching (no `rule_id` suffix dispatch) | Partial — `test_pg_fix_d_*` | **No** — GR-4 requalification open |
 
 Historical AUDIT-5 rows remain authoritative **context**; they are **not** erased. Closure requires GR-1+ (identity rebind, UER HITL, evidence, qualification).
 
@@ -75,7 +75,7 @@ Audit persistence alone never constitutes implementation or verification evidenc
 
 ### PG-FIX-C - Scoped approval consumption
 
-**Status:** IMPLEMENTED (mechanism) — VERIFIED partial (G5C-2B tests) — **not CLOSED** — platform identity conformance **OPEN** (GR-1 / GOV-REBASE-01)
+**Status:** IMPLEMENTED (mechanism) — VERIFIED partial (G5C-2B / PG-FIX-C tests) — **not CLOSED** — grant/side-effect identity **CLOSED** (GR-1); UER pause ownership **OPEN** (GR-5)
 
 **Finding:**
 

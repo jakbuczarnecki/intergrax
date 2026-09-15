@@ -158,9 +158,9 @@ Meaningful external side effects are authorized by the **platform policy boundar
 
 ```text
 Tier-3 composition root
-  → settings.meaningful_side_effect_policy  (MeaningfulSideEffectEvaluator)
+  → settings.meaningful_side_effect_authorization_boundary  (MeaningfulSideEffectAuthorizationBoundary)
   → ExternalContractorAdapterAgent
-  → ExternalWorkAdapter (describe action → evaluate → ALLOW/DENY/REQUIRE_HUMAN)
+  → ExternalWorkAdapter (describe action → authorize_and_execute → ALLOW/DENY/REQUIRE_HUMAN)
 ```
 
 | Outcome | Host / adapter behavior |

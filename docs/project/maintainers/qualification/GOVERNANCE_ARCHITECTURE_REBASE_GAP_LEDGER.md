@@ -1,6 +1,7 @@
 # Governance Architecture Rebase — Gap Ledger (GR-0)
 
 **Rebase audit HEAD (session):** `fe2edc8077234437b13345daaf46633867fe8f31` on `development`  
+**H9.2C maintainer/doc reconciliation HEAD:** `1de3b7fca6ca76e015c284ce21b8d543487ef677` on `development`  
 **Canonical architecture baseline:** Unified Execution Runtime, five-ID execution identity, Decision System, Evidence Plane, Central Diagnostics (verified against listed arch docs + production paths below).
 
 **Purpose:** Evidence-based gap inventory after platform-wide execution-centric rebase. Supersedes stale maintainer PG-FIX status rows where code truth differs; does not erase historical audit references.
@@ -27,7 +28,7 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 | GOV-REBASE-06 | **PARTIAL** | P1 | No `DecisionId`/version on meaningful-side-effect or governed-continuation contracts. `ContinuationEvidenceRefs.hitl_decision_id` is HITL store id, not Decision System authority. Decision-derived effects lack typed Decision provenance where required. |
 | GOV-REBASE-07 | **CONFIRMED** | P1 | Policy decisions use `audit_payload` on `PolicyDecision`; no systematic RuntimeEvent emission with five-ID correlation from governance spine. `governance_audit_event` is separate agent-governance channel — risk of parallel audit semantics. |
 | GOV-REBASE-08 | **CONFIRMED** | P1 | G3B table (`GOVERNED_EXECUTION.md`) wires most points via Nexus/UAEP; no qualified matrix for INFERENCE/AGENTIC meaningful-side-effect + HITL (see strategy matrix below). |
-| GOV-REBASE-09 | **CONFIRMED** | P2 | Maintainer plan still lists PG-FIX-B/C/D as ACCEPTED/PLANNED and arch Protocol v2.2 as “not implemented” while targeted tests exist (`test_pg_fix_*`, `test_g5c2b*`). |
+| GOV-REBASE-09 | **CLOSED** | P2 | H9.2C: maintainer plan + arch G3B / Protocol v2.2 pointers reconciled with PG-FIX mechanism tests (`test_pg_fix_*`, `test_g5c2b*`); enterprise CLOSED still not claimed. |
 | GOV-REBASE-10 | **CONFIRMED** | P1 | G3B + plan: **CONTROL_PLANE_MUTATION** remains **GAP**; domain tests (e.g. ECP) are partial slices, not platform-wide shared boundary. |
 
 ---
@@ -40,12 +41,12 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 | GOV-GAP-002 | P0 | Identity | GR-1: `HumanApprovalResolution` carries attempt/execution; governed pause validates correlation | Resolution correlated to active Execution | Residual UER pause ownership (GR-5) | HITL replay if resolution forged | GR-1 pause validation + grant derivation | GR-1 | GR-5 | `task_contract.py`, `pause.py` | **VERIFIED** |
 | GOV-GAP-003 | P1 | HITL ownership | TaskLifecycle `WAITING_FOR_HUMAN`; Task governance blob | UER owns PAUSE/WAIT/RESUME same Execution | Doc/code split on pause owner | Nexus-shaped pause on non-orchestration strategies | Rebase pause onto Execution lifecycle; Task bridge only | UER APIs | GR-5 | `meaningful_side_effect_authorization.py`, `governed_continuation_bridge.py` | OPEN |
 | GOV-GAP-004 | P1 | Nexus coupling | Governed continuation docstrings + AgentExecutionResult bridge | HITL without mandatory Nexus | Orchestration-only proof for HITL path | Agentic/inference hosts lack qualified HITL | Strategy-neutral HITL entry; qualify non-Nexus paths | GR-5 | GR-5, GR-10 | `governed_continuation.py` (module doc), `governed_continuation_bridge.py` | OPEN |
-| GOV-GAP-005 | P1 | Execution boundary | GR-3: `CanonicalInnerExecutionGuardPort` + exact four-ID match before policy/`execute`; production `authorize_and_execute` allowlist gate | Side effects only inside admitted Execution | Residual Reliability delivery semantics (GR-7) | Callback without active Execution | GR-3 inner guard + architecture gate | GR-1, GR-2 | GR-7 | `canonical_inner_governance.py`, `meaningful_side_effect_authorization.py`, `test_gr3_*` | **CANDIDATE CLOSED** (pending independent audit) |
+| GOV-GAP-005 | P1 | Execution boundary | GR-3 + GR-3-R1: contract-only `MeaningfulSideEffectAuthorizationBoundary`; default guard wired only in `meaningful_side_effect_authorization_composition.py`; four-ID inner enforcement + `authorize_and_execute` allowlist gate | Side effects only inside admitted Execution | Residual Reliability delivery semantics (GR-7) | Hidden concrete guard in policy consumer | GR-3-R1 explicit composition + architecture import gate | GR-1, GR-2 | GR-7 | `canonical_inner_governance.py`, `meaningful_side_effect_authorization.py`, `meaningful_side_effect_authorization_composition.py`, `test_gr3_*`, `test_gr3_r1_*` | **CANDIDATE CLOSED** (GR-3-R1 DONE; pending independent audit) |
 | GOV-GAP-006 | P1 | Decision integration | No DecisionId/version on governance contracts | Provenance only for decision-derived consequential effects | Cannot prove authorization matches decision version | V2 decision reuses V1 approval | Neutral provenance ref + Decision binding where material | Decision System contracts | GR-6 | contracts grep; `DECISION_SYSTEM.md` | OPEN |
 | GOV-GAP-007 | P1 | Evidence | Policy/HITL facts mostly in-memory Task state + `audit_payload` | Canonical Evidence Plane / RuntimeEvent with five IDs | Incomplete forensic reconstruction | Duplicate or missing governance facts | Emit correlated governance facts via observability ports | Observability | GR-8 | `runtime_policy_engine.py`, `agent_runtime_governance.py` | OPEN |
 | GOV-GAP-008 | P1 | Strategy coverage | G3B Nexus/UAEP-heavy COVERED rows | Matrix for INFERENCE/AGENTIC/ORCHESTRATION | “Nexus works” ≠ platform proof | Ungoverned paths on non-orchestration strategies | Qualification matrix + close gaps | GR-10 | GR-10 | `GOVERNED_EXECUTION.md` G3B table | OPEN |
 | GOV-GAP-009 | P1 | Control plane | CONTROL_PLANE_MUTATION GAP | Shared authority context per domain executor | No unified taxonomy enforcement | Unsafe platform mutations | Per-domain adoption of shared boundary; no god executor | Domain plans | GR-12 | plan CLA block; ECP tests partial | OPEN |
-| GOV-GAP-010 | P2 | Maintainer truth | Stale PG-FIX / Protocol v2.2 status in docs | IMPLEMENTED / VERIFIED / CLOSED distinguished | Operators mis-plan | False closure claims | Reconcile plan + arch pointers (GR-0) | GR-0 | GR-0 | `plans/GOVERNED_EXECUTION.md` | IN_PROGRESS |
+| GOV-GAP-010 | P2 | Maintainer truth | Stale PG-FIX / Protocol v2.2 status in docs | IMPLEMENTED / VERIFIED / CLOSED distinguished | Operators mis-plan | False closure claims | Reconcile plan + arch pointers (GR-0) | GR-0 | GR-0 | `plans/GOVERNED_EXECUTION.md` | **CLOSED** (H9.2C) |
 | GOV-GAP-011 | P2 | Policy plugins | Catalog + handler slices; Nexus types in `policy_bundle.py` | Vendor-neutral core; platform plugin admission | Residual Nexus coupling in policy assembly | Tier violation / test burden | Gradual decouple bundle assembly from Nexus models | Platform plugins | GR-4, GR-11 | `policy_bundle.py`, `tool_policy_resolution.py` | OPEN |
 | GOV-GAP-012 | P2 | Admission vs inner | GR-2 root admission (`RootExecutionAuthorityAdmissionPort`) vs GR-3 inner guard (`CanonicalInnerExecutionGuardPort`) — distinct contracts | Admission = may start Execution; inner = may proceed | Policy requalification still GR-4 | Misuse of admission as inner policy | Document ports; GR-4 closes policy plugin gaps | GR-2, GR-3 | GR-4 | `execution_admission_composition.py`, `canonical_inner_governance.py` | **PARTIAL** (inner vs root split documented; policy plugin gaps remain GR-4) |
 | GOV-GAP-013 | P0 | Root admission coverage | **GR-2-R3-R1:** AST invocation/import gates (`gr2_r3_model_c1_ast.py`); `execute_root_task` **INTERNAL CERTIFIED HARNESS ENTRY**; legacy caller allowlists in `gr2_r3_model_c1_gate_policy.py` | One platform-wide Governance gate before every root Execution (INFERENCE / AGENTIC / ORCHESTRATION) | Legacy harness path remains launcher-external but gated (not Tier-3 production entry) | Independent GitHub audit pending | GR-2-R3-R1 + GR-2-R3 qualification tests | GR-2-R3-R1 | GR-2, GR-10 | `test_gr2_r3_model_c1_architecture_gates.py`, `orchestration.py` | **CANDIDATE CLOSED** (pending independent audit) |
@@ -106,24 +107,24 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 
 | Contract / artifact | TaskId | RunId | AttemptId | ExecutionId |
 | --- | --- | --- | --- | --- |
-| MeaningfulSideEffectRequest | yes | yes | no | no |
-| GovernedContinuationRequest / Correlation | yes | yes | no | no |
-| GovernedContinuationApprovalGrant | yes | yes | no | no |
-| HumanApprovalResolution | yes | optional run | no | no |
-| Pause record | yes | — | no | no |
+| MeaningfulSideEffectRequest | yes | yes | yes | yes |
+| GovernedContinuationRequest / Correlation | yes | yes | yes | yes |
+| GovernedContinuationApprovalGrant | yes | yes | yes | yes |
+| HumanApprovalResolution | yes | optional run | optional | optional |
+| Pause record | yes | — | partial | partial |
 | Policy evidence (PolicyDecision) | via payload/context only | partial | no | no |
 
-**Cross-execution reuse:** Within same Task+Run, matching scope + policy bundle → **grant can authorize semantically identical side effect on another Execution/Attempt** → **P0**.
+**Cross-execution reuse (post–GR-1):** Grants and `matches_current_requirement` bind `attempt_id` + `execution_id`; mismatched Attempt/Execution fails closed — historical P0 closed (GOV-GAP-001).
 
 ### B — Attempt semantics (code truth, not invented)
 
 | Scenario | Approval validity (current) |
 | --- | --- |
-| Same Attempt / same Execution | Grant matches if task/run/scope/policy unchanged |
-| Same Run / new Attempt | **Still valid** (no attempt dimension) — **gap** |
-| Same Attempt / different Execution | **Still valid** if task/run/scope match — **gap** |
-| Resumed same Execution | Not bound to execution_id — **unclear / likely gap** |
-| New child Execution | Not bound to parent/child execution — **gap** |
+| Same Attempt / same Execution | Grant matches if task/run/scope/policy + attempt/execution unchanged |
+| Same Run / new Attempt | **Invalid** when grant attempt/execution differ — **conformant** (GR-1) |
+| Same Attempt / different Execution | **Invalid** when execution_id differs — **conformant** (GR-1) |
+| Resumed same Execution | Bound when resolution/grant carry matching execution_id |
+| New child Execution | Not authorized by parent Execution grant — **conformant** |
 
 ### C — HITL lifecycle
 
@@ -168,7 +169,7 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 
 | Dimension | Mechanism sound? | Platform identity conformance? |
 | --- | --- | --- |
-| Task/run/scope/policy/pause binding | **MECHANISM SOUND** (tests G5C-2B*) | **FAIL** (no attempt/execution) |
+| Task/run/scope/policy/pause binding | **MECHANISM SOUND** (tests G5C-2B*) | **PASS** (GR-1 attempt/execution on grant + matcher) |
 | consume-before-effect | **MECHANISM SOUND** | Reliability still owns retry/idempotency |
 
 ### J — Decision System
@@ -223,7 +224,7 @@ Governance **mechanisms** (collaborative-work enforcement gate, `MeaningfulSideE
 | --- | --- | --- | --- | --- |
 | PG-FIX-A | **Yes** (core spine) | **Partial** (adapter + unit tests) | **No** | `CollaborativeWorkEnforcementGate` + `MeaningfulSideEffectAuthorizationBoundary`; universal consumer coverage not proven |
 | PG-FIX-B | **Yes** | **Partial** (`test_pg_fix_b_*`) | **No** | Deterministic specificity in `RuntimePolicyEngine` |
-| PG-FIX-C | **Yes** (mechanism) | **Partial** (G5C tests) | **No** | Identity conformance fails GOV-REBASE-01 |
+| PG-FIX-C | **Yes** (mechanism) | **Partial** (G5C / PG-FIX-C tests) | **No** | Identity conformance **CLOSED** (GR-1); UER HITL ownership open (GR-5) |
 | PG-FIX-D | **Yes** (typed matching) | **Partial** (`test_pg_fix_d_*`) | **No** | `rule_id` suffix dispatch rejected in tests |
 
 Historical AUDIT-5 findings remain valid context; closure requires identity rebind + enterprise qualification (GR-13).
