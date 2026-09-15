@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+from enum import StrEnum
 from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -37,6 +38,28 @@ class DelegatedInvocationCorrelationIntegrityError(DelegatedInvocationCorrelatio
 
 class DelegatedInvocationCorrelationPersistenceError(DelegatedInvocationCorrelationError):
     """Raised when durable correlation storage is unavailable or fails."""
+
+
+class DelegatedInvocationCorrelationCompositionError(DelegatedInvocationCorrelationError):
+    """Raised when correlation durability policy and store wiring are inconsistent."""
+
+
+class DelegatedInvocationCorrelationDurabilityMode(StrEnum):
+    """Explicit delegated invocation correlation durability posture at composition."""
+
+    DISABLED = "disabled"
+    REQUIRED = "required"
+    NON_DURABLE_TEST = "non_durable_test"
+
+
+class DelegatedInvocationCorrelationDurabilityPolicy(BaseModel):
+    """Typed composition policy — no implicit constructor-arg durability."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    mode: DelegatedInvocationCorrelationDurabilityMode = (
+        DelegatedInvocationCorrelationDurabilityMode.DISABLED
+    )
 
 
 class DelegatedInvocationCorrelationRecord(BaseModel):
@@ -95,7 +118,10 @@ class DelegatedInvocationCorrelationStore(ABC):
 
 
 __all__ = [
+    "DelegatedInvocationCorrelationCompositionError",
     "DelegatedInvocationCorrelationConflictError",
+    "DelegatedInvocationCorrelationDurabilityMode",
+    "DelegatedInvocationCorrelationDurabilityPolicy",
     "DelegatedInvocationCorrelationError",
     "DelegatedInvocationCorrelationIntegrityError",
     "DelegatedInvocationCorrelationPersistenceError",

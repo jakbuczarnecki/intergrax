@@ -9,7 +9,9 @@ import threading
 from pydantic import ValidationError
 
 from intergrax.contracts.delegated_invocation_correlation import (
+    DelegatedInvocationCorrelationCompositionError,
     DelegatedInvocationCorrelationConflictError,
+    DelegatedInvocationCorrelationDurabilityMode,
     DelegatedInvocationCorrelationIntegrityError,
     DelegatedInvocationCorrelationPersistenceError,
     DelegatedInvocationCorrelationRecord,
@@ -138,12 +140,29 @@ def _document_to_correlation(document: DocumentRecord) -> DelegatedInvocationCor
 
 def wire_delegated_invocation_correlation_store(
     *,
+    durability_mode: DelegatedInvocationCorrelationDurabilityMode,
     document_store: ConditionalDocumentStore | None = None,
     in_memory_backend: InMemoryDelegatedInvocationCorrelationStore | None = None,
 ) -> DelegatedInvocationCorrelationStore:
-    """Composition helper for correlation store wiring."""
-    if document_store is not None:
+    """Composition helper for correlation store wiring (explicit durability mode)."""
+    if durability_mode is DelegatedInvocationCorrelationDurabilityMode.DISABLED:
+        raise DelegatedInvocationCorrelationCompositionError(
+            "disabled durability mode has no correlation store",
+        )
+    if durability_mode is DelegatedInvocationCorrelationDurabilityMode.REQUIRED:
+        if document_store is None:
+            raise DelegatedInvocationCorrelationCompositionError(
+                "durable document store required for required correlation durability",
+            )
+        if in_memory_backend is not None:
+            raise DelegatedInvocationCorrelationCompositionError(
+                "in-memory backend cannot be combined with required durable correlation",
+            )
         return DocumentStoreDelegatedInvocationCorrelationStore(document_store)
+    if document_store is not None:
+        raise DelegatedInvocationCorrelationCompositionError(
+            "document store cannot be used with non-durable test correlation mode",
+        )
     if in_memory_backend is not None:
         return in_memory_backend
     return InMemoryDelegatedInvocationCorrelationStore()

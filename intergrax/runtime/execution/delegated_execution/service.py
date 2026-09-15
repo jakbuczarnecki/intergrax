@@ -11,11 +11,17 @@ from pydantic import ValidationError
 
 from intergrax.contracts.delegated_execution_invocation_binding import (
     assert_provider_outcome_has_no_invocation_binding,
+    delegated_invocation_correlation_conflict_failure,
+    delegated_invocation_correlation_integrity_failure,
     delegated_invocation_correlation_persistence_failure,
     delegated_provider_outcome_contract_mismatch_failure,
     enrich_delegated_outcome_with_platform_invocation_binding,
 )
 from intergrax.contracts.delegated_invocation_correlation import (
+    DelegatedInvocationCorrelationCompositionError,
+    DelegatedInvocationCorrelationConflictError,
+    DelegatedInvocationCorrelationDurabilityPolicy,
+    DelegatedInvocationCorrelationIntegrityError,
     DelegatedInvocationCorrelationPersistenceError,
     DelegatedInvocationCorrelationStore,
 )
@@ -50,6 +56,9 @@ from intergrax.runtime.execution.budget.policy import (
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.delegated_execution.context_projection import (
     project_delegated_execution_context,
+)
+from intergrax.runtime.execution.delegated_execution.correlation_composition import (
+    resolve_delegated_invocation_correlation_service,
 )
 from intergrax.runtime.execution.delegated_execution.correlation_service import (
     DelegatedInvocationCorrelationService,
@@ -172,20 +181,30 @@ class _DelegatedProviderDispatchDelegate(
             return enriched
         try:
             self._correlation_service.persist_binding(binding)
-        except DelegatedInvocationCorrelationPersistenceError:
+        except (
+            DelegatedInvocationCorrelationPersistenceError,
+            DelegatedInvocationCorrelationConflictError,
+            DelegatedInvocationCorrelationIntegrityError,
+        ) as exc:
             if enriched.provider_invocation is None or enriched.provider_outcome is None:
                 return delegated_provider_outcome_contract_mismatch_failure(
                     failure_message=(
                         "correlation persistence failed without provider evidence"
                     ),
                 )
+            if isinstance(exc, DelegatedInvocationCorrelationConflictError):
+                return delegated_invocation_correlation_conflict_failure(
+                    provider_invocation=enriched.provider_invocation,
+                    provider_outcome=enriched.provider_outcome,
+                )
+            if isinstance(exc, DelegatedInvocationCorrelationIntegrityError):
+                return delegated_invocation_correlation_integrity_failure(
+                    provider_invocation=enriched.provider_invocation,
+                    provider_outcome=enriched.provider_outcome,
+                )
             return delegated_invocation_correlation_persistence_failure(
                 provider_invocation=enriched.provider_invocation,
                 provider_outcome=enriched.provider_outcome,
-                failure_message=(
-                    "provider dispatch succeeded but durable invocation "
-                    "correlation persistence failed"
-                ),
             )
         return enriched
 
@@ -207,12 +226,29 @@ class DelegatedExecutionService(Generic[RequestT, ResultT]):
         ledger: ExecutionBudgetLedger | None = None,
         authority_policy: ExecutionAuthorityPolicy | None = None,
         budget_policy: ExecutionBudgetAllocationPolicy | None = None,
+        correlation_durability_policy: (
+            DelegatedInvocationCorrelationDurabilityPolicy | None
+        ) = None,
         correlation_store: DelegatedInvocationCorrelationStore | None = None,
         correlation_service: DelegatedInvocationCorrelationService | None = None,
     ) -> None:
-        resolved_correlation = correlation_service
-        if resolved_correlation is None and correlation_store is not None:
-            resolved_correlation = DelegatedInvocationCorrelationService(correlation_store)
+        policy = (
+            correlation_durability_policy
+            or DelegatedInvocationCorrelationDurabilityPolicy()
+        )
+        if (
+            correlation_durability_policy is None
+            and (correlation_store is not None or correlation_service is not None)
+        ):
+            raise DelegatedInvocationCorrelationCompositionError(
+                "correlation_durability_policy required when wiring correlation store "
+                "or service",
+            )
+        resolved_correlation = resolve_delegated_invocation_correlation_service(
+            policy,
+            correlation_store=correlation_store,
+            correlation_service=correlation_service,
+        )
         self._dispatch_delegate = _DelegatedProviderDispatchDelegate(
             provider,
             correlation_service=resolved_correlation,
@@ -262,6 +298,9 @@ def delegated_execution_service(
     ledger: ExecutionBudgetLedger | None = None,
     authority_policy: ExecutionAuthorityPolicy | None = None,
     budget_policy: ExecutionBudgetAllocationPolicy | None = None,
+    correlation_durability_policy: (
+        DelegatedInvocationCorrelationDurabilityPolicy | None
+    ) = None,
     correlation_store: DelegatedInvocationCorrelationStore | None = None,
     correlation_service: DelegatedInvocationCorrelationService | None = None,
 ) -> DelegatedExecutionService[RequestT, ResultT]:
@@ -271,6 +310,7 @@ def delegated_execution_service(
         ledger=ledger,
         authority_policy=authority_policy,
         budget_policy=budget_policy,
+        correlation_durability_policy=correlation_durability_policy,
         correlation_store=correlation_store,
         correlation_service=correlation_service,
     )

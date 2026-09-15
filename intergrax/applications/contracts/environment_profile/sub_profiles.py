@@ -22,6 +22,9 @@ from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistenceProvider
+from intergrax.contracts.delegated_invocation_correlation import (
+    DelegatedInvocationCorrelationDurabilityMode,
+)
 from intergrax.contracts.execution_terminal import ExecutionTerminalPersistenceProvider
 from intergrax.contracts.observability_export import ExporterKind, OtlpProtocol
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
@@ -205,6 +208,9 @@ class ReliabilityProfile(BaseModel):
     execution_terminal_persistence_provider: ExecutionTerminalPersistenceProvider | None = None
     attempt_lifecycle_persistence_provider: AttemptLifecyclePersistenceProvider | None = None
     execution_lineage_persistence_provider: ExecutionLineagePersistenceProvider | None = None
+    delegated_invocation_correlation_durability: DelegatedInvocationCorrelationDurabilityMode = (
+        DelegatedInvocationCorrelationDurabilityMode.DISABLED
+    )
 
 
 class EventSubscriptionSpec(BaseModel):

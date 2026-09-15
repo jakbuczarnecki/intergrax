@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""P2.1-S2C — durable delegated invocation correlation foundation."""
+"""P2.1-S2C / S2C1-C1 — delegated invocation correlation durability."""
 
 from __future__ import annotations
 
@@ -29,8 +29,15 @@ from intergrax.contracts.delegated_execution_provider import (
     digest_delegated_execution_payload,
     digest_delegated_execution_request,
 )
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications._shared.delegated_invocation_correlation_wiring import (
+    resolve_delegated_invocation_correlation_for_host,
+)
 from intergrax.contracts.delegated_invocation_correlation import (
+    DelegatedInvocationCorrelationCompositionError,
     DelegatedInvocationCorrelationConflictError,
+    DelegatedInvocationCorrelationDurabilityMode,
+    DelegatedInvocationCorrelationDurabilityPolicy,
     DelegatedInvocationCorrelationIntegrityError,
     DelegatedInvocationCorrelationPersistenceError,
     DelegatedInvocationCorrelationRecord,
@@ -49,9 +56,13 @@ from intergrax.contracts.provider_invocation import (
 )
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.execution.delegated_execution.correlation_composition import (
+    resolve_delegated_invocation_correlation_service,
+)
 from intergrax.runtime.execution.delegated_execution.correlation_persistence import (
     InMemoryDelegatedInvocationCorrelationStore,
     decode_correlation_record,
+    wire_delegated_invocation_correlation_store,
 )
 from intergrax.runtime.execution.delegated_execution.correlation_service import (
     DelegatedInvocationCorrelationService,
@@ -79,6 +90,16 @@ _CORRELATION_SERVICE_MODULE = (
 _PROVIDER_CONTRACT = _REPO_ROOT / "intergrax" / "contracts" / "delegated_execution_provider.py"
 _T0 = datetime(2026, 9, 7, 8, 0, 0, tzinfo=timezone.utc)
 _UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
+
+_POLICY_DISABLED = DelegatedInvocationCorrelationDurabilityPolicy(
+    mode=DelegatedInvocationCorrelationDurabilityMode.DISABLED,
+)
+_POLICY_REQUIRED = DelegatedInvocationCorrelationDurabilityPolicy(
+    mode=DelegatedInvocationCorrelationDurabilityMode.REQUIRED,
+)
+_POLICY_NON_DURABLE_TEST = DelegatedInvocationCorrelationDurabilityPolicy(
+    mode=DelegatedInvocationCorrelationDurabilityMode.NON_DURABLE_TEST,
+)
 
 
 @dataclass(frozen=True)
@@ -230,6 +251,21 @@ class FailingCorrelationStore(DelegatedInvocationCorrelationStore):
         return None
 
 
+class _RaisingCorrelationStore(DelegatedInvocationCorrelationStore):
+    def __init__(self, exc: Exception) -> None:
+        self._exc = exc
+
+    @property
+    def is_durable(self) -> bool:
+        return True
+
+    def persist(self, record: DelegatedInvocationCorrelationRecord) -> None:
+        raise self._exc
+
+    def get_by_execution_id(self, execution_id):
+        return None
+
+
 class PluginCorrelationStore(DelegatedInvocationCorrelationStore):
     """Custom store proving pluginability without service changes."""
 
@@ -322,6 +358,7 @@ async def test_s2c_t1_persist_platform_issued_binding() -> None:
     service = delegated_execution_service(
         provider,
         ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_NON_DURABLE_TEST,
         correlation_store=backend,
     )
     outcome = await _run_under_root(service)
@@ -339,6 +376,7 @@ async def test_s2c_t2_lookup_by_execution_id() -> None:
     service = delegated_execution_service(
         _RecordingProvider(),
         ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_NON_DURABLE_TEST,
         correlation_store=backend,
     )
     outcome = await _run_under_root(service)
@@ -390,6 +428,7 @@ async def test_s2c_t7_restart_like_lookup() -> None:
     service_a = delegated_execution_service(
         _RecordingProvider(),
         ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_NON_DURABLE_TEST,
         correlation_store=shared,
     )
     outcome = await _run_under_root(service_a)
@@ -448,6 +487,7 @@ async def test_s2c_t14_provider_failure_does_not_write_correlation() -> None:
     service = delegated_execution_service(
         _FailingProvider(),
         ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_NON_DURABLE_TEST,
         correlation_store=store,
     )
     outcome = await _run_under_root(service)
@@ -461,6 +501,7 @@ async def test_s2c_t15_contract_mismatch_does_not_write_correlation() -> None:
     service = delegated_execution_service(
         _ContractMismatchProvider(),
         ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_NON_DURABLE_TEST,
         correlation_store=store,
     )
     outcome = await _run_under_root(service)
@@ -473,6 +514,7 @@ async def test_s2c_t17_persistence_failure_after_successful_binding() -> None:
     service = delegated_execution_service(
         _RecordingProvider(),
         ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_REQUIRED,
         correlation_store=FailingCorrelationStore(),
     )
     outcome = await _run_under_root(service)
@@ -480,9 +522,167 @@ async def test_s2c_t17_persistence_failure_after_successful_binding() -> None:
     assert outcome.failure_code == "INVOCATION_CORRELATION_PERSISTENCE_FAILURE"
     assert outcome.invocation_binding is None
     assert outcome.provider_invocation is not None
+    assert outcome.provider_outcome is not None
 
 
 def test_s2c_optional_store_skips_persistence() -> None:
     store = CountingCorrelationStore()
-    service = delegated_execution_service(_RecordingProvider(), ledger=_UNLIMITED_LEDGER)
+    service = delegated_execution_service(
+        _RecordingProvider(),
+        ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_DISABLED,
+    )
     assert store.persist_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_c1_t1_persistence_error_after_successful_dispatch() -> None:
+    provider = _RecordingProvider()
+    service = delegated_execution_service(
+        provider,
+        ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_REQUIRED,
+        correlation_store=FailingCorrelationStore(),
+    )
+    outcome = await _run_under_root(service)
+    assert outcome.category is DelegatedExecutionOutcomeCategory.PLATFORM_FAILURE
+    assert outcome.failure_code == "INVOCATION_CORRELATION_PERSISTENCE_FAILURE"
+    assert outcome.invocation_binding is None
+    assert outcome.provider_invocation is not None
+    assert outcome.provider_outcome is not None
+    assert len(provider.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_c1_t2_conflict_after_successful_dispatch() -> None:
+    service = delegated_execution_service(
+        _RecordingProvider(),
+        ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_REQUIRED,
+        correlation_store=_RaisingCorrelationStore(
+            DelegatedInvocationCorrelationConflictError("conflict"),
+        ),
+    )
+    outcome = await _run_under_root(service)
+    assert outcome.category is DelegatedExecutionOutcomeCategory.PLATFORM_FAILURE
+    assert outcome.failure_code == "INVOCATION_CORRELATION_CONFLICT"
+    assert outcome.provider_invocation is not None
+    assert outcome.provider_outcome is not None
+
+
+@pytest.mark.asyncio
+async def test_c1_t3_integrity_error_after_successful_dispatch() -> None:
+    service = delegated_execution_service(
+        _RecordingProvider(),
+        ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_REQUIRED,
+        correlation_store=_RaisingCorrelationStore(
+            DelegatedInvocationCorrelationIntegrityError("integrity"),
+        ),
+    )
+    outcome = await _run_under_root(service)
+    assert outcome.category is DelegatedExecutionOutcomeCategory.PLATFORM_FAILURE
+    assert outcome.failure_code == "INVOCATION_CORRELATION_INTEGRITY_FAILURE"
+    assert outcome.provider_invocation is not None
+    assert outcome.provider_outcome is not None
+
+
+@pytest.mark.asyncio
+async def test_c1_t5_contract_mismatch_still_sanitized() -> None:
+    store = CountingCorrelationStore()
+    service = delegated_execution_service(
+        _ContractMismatchProvider(),
+        ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_NON_DURABLE_TEST,
+        correlation_store=store,
+    )
+    outcome = await _run_under_root(service)
+    assert outcome.category is DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE
+    assert outcome.provider_invocation is None
+    assert outcome.provider_outcome is None
+
+
+def test_c1_t6_required_plus_durable_store_passes() -> None:
+    store = FailingCorrelationStore()
+    service = delegated_execution_service(
+        _RecordingProvider(),
+        ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_REQUIRED,
+        correlation_store=store,
+    )
+    assert service is not None
+
+
+def test_c1_t7_required_plus_no_store_fails_at_composition() -> None:
+    provider = _RecordingProvider()
+    with pytest.raises(DelegatedInvocationCorrelationCompositionError):
+        delegated_execution_service(
+            provider,
+            ledger=_UNLIMITED_LEDGER,
+            correlation_durability_policy=_POLICY_REQUIRED,
+        )
+    assert len(provider.calls) == 0
+
+
+def test_c1_t8_required_plus_non_durable_store_fails_at_composition() -> None:
+    provider = _RecordingProvider()
+    with pytest.raises(DelegatedInvocationCorrelationCompositionError):
+        delegated_execution_service(
+            provider,
+            ledger=_UNLIMITED_LEDGER,
+            correlation_durability_policy=_POLICY_REQUIRED,
+            correlation_store=InMemoryDelegatedInvocationCorrelationStore(),
+        )
+    assert len(provider.calls) == 0
+
+
+@pytest.mark.asyncio
+async def test_c1_t9_disabled_mode_skips_persistence() -> None:
+    store = CountingCorrelationStore()
+    provider = _RecordingProvider()
+    service = delegated_execution_service(
+        provider,
+        ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_DISABLED,
+    )
+    outcome = await _run_under_root(service)
+    assert outcome.category is DelegatedExecutionOutcomeCategory.SUCCESS
+    assert store.persist_calls == 0
+    assert len(provider.calls) == 1
+
+
+@pytest.mark.asyncio
+async def test_c1_t10_non_durable_test_mode_uses_in_memory() -> None:
+    backend = InMemoryDelegatedInvocationCorrelationStore()
+    service = delegated_execution_service(
+        _RecordingProvider(),
+        ledger=_UNLIMITED_LEDGER,
+        correlation_durability_policy=_POLICY_NON_DURABLE_TEST,
+        correlation_store=backend,
+    )
+    outcome = await _run_under_root(service)
+    assert outcome.invocation_binding is not None
+    assert backend.get_by_execution_id(outcome.invocation_binding.execution_id) is not None
+
+
+def test_c1_t11_wire_helper_without_durable_backend_fails() -> None:
+    with pytest.raises(DelegatedInvocationCorrelationCompositionError):
+        wire_delegated_invocation_correlation_store(
+            durability_mode=DelegatedInvocationCorrelationDurabilityMode.REQUIRED,
+        )
+
+
+def test_c1_t15_production_profile_requires_durable_store_at_composition() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="c1.production.gate")
+    assert (
+        env.governance.reliability.delegated_invocation_correlation_durability
+        is DelegatedInvocationCorrelationDurabilityMode.REQUIRED
+    )
+    with pytest.raises(DelegatedInvocationCorrelationCompositionError):
+        resolve_delegated_invocation_correlation_for_host(env, document_store=None)
+
+
+def test_c1_non_durable_test_without_store_materializes_in_memory() -> None:
+    service = resolve_delegated_invocation_correlation_service(_POLICY_NON_DURABLE_TEST)
+    assert service is not None
+    assert not service.store.is_durable

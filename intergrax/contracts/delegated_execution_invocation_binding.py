@@ -181,22 +181,78 @@ def assert_provider_outcome_has_no_invocation_binding(
         )
 
 
-def delegated_invocation_correlation_persistence_failure(
+_CORRELATION_PERSISTENCE_FAILURE_MESSAGE: Final = (
+    "provider dispatch succeeded but durable invocation correlation persistence failed"
+)
+_CORRELATION_CONFLICT_FAILURE_MESSAGE: Final = (
+    "provider dispatch succeeded but invocation correlation conflict was detected"
+)
+_CORRELATION_INTEGRITY_FAILURE_MESSAGE: Final = (
+    "provider dispatch succeeded but invocation correlation integrity checks failed"
+)
+
+
+def _delegated_invocation_correlation_platform_failure(
     *,
+    failure_code: str,
+    failure_message: str,
     provider_invocation: ProviderInvocation,
     provider_outcome: object,
-    failure_message: str,
 ) -> DelegatedExecutionOutcome[ResultT]:
-    """Fail closed when durable correlation cannot be stored after provider dispatch."""
     from intergrax.contracts.provider_invocation import ProviderInvocationOutcome
 
     if not isinstance(provider_outcome, ProviderInvocationOutcome):
         raise DelegatedExecutionContractError(
-            "provider_outcome required for correlation persistence failure",
+            "provider_outcome required for correlation platform failure",
         )
     return delegated_failure_outcome(
         category=DelegatedExecutionOutcomeCategory.PLATFORM_FAILURE,
+        failure_code=failure_code,
+        failure_message=failure_message,
+        provider_invocation=provider_invocation,
+        provider_outcome=provider_outcome,
+    )
+
+
+def delegated_invocation_correlation_persistence_failure(
+    *,
+    provider_invocation: ProviderInvocation,
+    provider_outcome: object,
+    failure_message: str = _CORRELATION_PERSISTENCE_FAILURE_MESSAGE,
+) -> DelegatedExecutionOutcome[ResultT]:
+    """Fail closed when durable correlation cannot be stored after provider dispatch."""
+    return _delegated_invocation_correlation_platform_failure(
         failure_code="INVOCATION_CORRELATION_PERSISTENCE_FAILURE",
+        failure_message=failure_message,
+        provider_invocation=provider_invocation,
+        provider_outcome=provider_outcome,
+    )
+
+
+def delegated_invocation_correlation_conflict_failure(
+    *,
+    provider_invocation: ProviderInvocation,
+    provider_outcome: object,
+    failure_message: str = _CORRELATION_CONFLICT_FAILURE_MESSAGE,
+) -> DelegatedExecutionOutcome[ResultT]:
+    """Fail closed when correlation binding conflicts after successful provider dispatch."""
+    return _delegated_invocation_correlation_platform_failure(
+        failure_code="INVOCATION_CORRELATION_CONFLICT",
+        failure_message=failure_message,
+        provider_invocation=provider_invocation,
+        provider_outcome=provider_outcome,
+    )
+
+
+def delegated_invocation_correlation_integrity_failure(
+    *,
+    provider_invocation: ProviderInvocation,
+    provider_outcome: object,
+    failure_message: str = _CORRELATION_INTEGRITY_FAILURE_MESSAGE,
+) -> DelegatedExecutionOutcome[ResultT]:
+    """Fail closed when correlation integrity fails after successful provider dispatch."""
+    return _delegated_invocation_correlation_platform_failure(
+        failure_code="INVOCATION_CORRELATION_INTEGRITY_FAILURE",
         failure_message=failure_message,
         provider_invocation=provider_invocation,
         provider_outcome=provider_outcome,
@@ -226,6 +282,8 @@ def enrich_delegated_outcome_with_platform_invocation_binding(
 __all__ = [
     "DelegatedExecutionInvocationBinding",
     "assert_provider_outcome_has_no_invocation_binding",
+    "delegated_invocation_correlation_conflict_failure",
+    "delegated_invocation_correlation_integrity_failure",
     "delegated_invocation_correlation_persistence_failure",
     "delegated_provider_outcome_contract_mismatch_failure",
     "enrich_delegated_outcome_with_platform_invocation_binding",

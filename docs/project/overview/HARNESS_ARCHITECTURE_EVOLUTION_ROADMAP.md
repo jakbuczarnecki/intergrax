@@ -570,7 +570,9 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2B = CLOSED** (S2A adoption + S2B control + C1 correlation + C2 authoritative binding issuance + C3 platform binding ownership + C4 contract-violation evidence sanitization).
 
-**P2.1-S2C1 — durable delegated invocation correlation foundation = CLOSED** (platform ``DelegatedInvocationCorrelationStore`` + persistence after platform-issued binding; lookup by child ``ExecutionId``; optional at composition when store unset).
+**P2.1-S2C1 — durable delegated invocation correlation foundation = CLOSED** (platform ``DelegatedInvocationCorrelationStore`` + persistence after platform-issued binding; lookup by child ``ExecutionId``; explicit ``DelegatedInvocationCorrelationDurabilityPolicy`` via ``ApplicationEnvironmentProfile`` / composition — no silent non-durable fallback in production).
+
+**P2.1-S2C1-C1 — correlation failure normalization and explicit durability policy = CLOSED** (all post-dispatch correlation persistence/conflict/integrity errors normalize to typed ``PLATFORM_FAILURE``; validated provider evidence preserved; required durability fails composition when durable store missing).
 
 **P2.1-S2C = PARTIAL** (S2C1 correlation durability CLOSED; status / list / continuation remain OPEN).
 
