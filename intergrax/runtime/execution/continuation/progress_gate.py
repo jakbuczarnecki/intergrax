@@ -27,13 +27,29 @@ def continuation_snapshot_blocks_execution_progress(
     return execution_continuation_lifecycle_blocks_execution_progress(pending.lifecycle_state)
 
 
+def load_pending_for_execution_progress(
+    *,
+    store: ExecutionContinuationStateStore,
+    identity: ExecutionContinuationIdentity,
+) -> PendingExecutionContinuation | None:
+    try:
+        return store.resolve_identity_for_execution_progress(identity)
+    except ExecutionContinuationError:
+        raise
+    except Exception as exc:
+        raise ExecutionContinuationError(
+            "continuation store query failed",
+            code=ExecutionContinuationErrorCode.STORE_QUERY_FAILED,
+        ) from exc
+
+
 def assert_canonical_execution_may_progress(
     *,
     store: ExecutionContinuationStateStore,
     identity: ExecutionContinuationIdentity,
 ) -> None:
     """Fail closed when continuation lifecycle blocks the active canonical Execution."""
-    pending = store.find_by_identity(identity)
+    pending = load_pending_for_execution_progress(store=store, identity=identity)
     if pending is None:
         return
     if execution_continuation_lifecycle_blocks_execution_progress(pending.lifecycle_state):
@@ -58,4 +74,5 @@ __all__ = [
     "assert_canonical_execution_may_progress",
     "continuation_snapshot_blocks_execution_progress",
     "execute_canonical_work_when_unblocked",
+    "load_pending_for_execution_progress",
 ]

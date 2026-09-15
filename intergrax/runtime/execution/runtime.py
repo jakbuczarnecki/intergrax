@@ -56,11 +56,19 @@ from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
     reset_active_execution_budget,
 )
+from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
+from intergrax.runtime.execution.active_execution_continuation_store import (
+    bind_active_execution_continuation_state_store,
+    reset_active_execution_continuation_state_store,
+)
 from intergrax.runtime.execution.boundary import (
     ExecutionAdmissionHook,
     ExecutionBoundary,
     ExecutionDelegate,
     ExecutionIdentityBinding,
+)
+from intergrax.runtime.execution.continuation.persistence import (
+    wire_execution_continuation_state_store,
 )
 from intergrax.runtime.execution.budget.ledger import (
     ExecutionBudgetLedgerFactory,
@@ -158,6 +166,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         "_execution_lineage_persistence",
         "_execution_capacity_admission",
         "_failure_evidence_recorder",
+        "_continuation_state_store",
     )
 
     def __init__(
@@ -180,6 +189,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         ) = None,
         execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None,
         failure_evidence_recorder: ExecutionFailureEvidenceRecorder | None = None,
+        continuation_state_store: ExecutionContinuationStateStore | None = None,
     ) -> None:
         self._delegate = delegate
         self._ledger_factory = (
@@ -196,6 +206,9 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._execution_lineage_persistence = execution_lineage_persistence
         self._execution_capacity_admission = execution_capacity_admission
         self._failure_evidence_recorder = failure_evidence_recorder
+        self._continuation_state_store = wire_execution_continuation_state_store(
+            state_store=continuation_state_store,
+        )
 
     async def execute(
         self,
@@ -247,6 +260,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             run_id=root_context.run_id,
             attempt_id=root_context.attempt_id,
             execution_id=execution_id,
+            task_id=root_context.task_id,
         )
         admission_hooks = self._admission_hooks
         lineage_token = None
@@ -280,6 +294,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             admission_hooks=admission_hooks,
             identity=binding,
             authority=root_context.authority,
+            continuation_state_store=self._continuation_state_store,
         )
         budget_token = bind_root_execution_budget(
             execution_id=execution_id,
@@ -306,6 +321,9 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                     recorder=self._failure_evidence_recorder,
                 ),
             )
+        continuation_token = bind_active_execution_continuation_state_store(
+            self._continuation_state_store,
+        )
         try:
             if self._decision_lifecycle_host is not None:
                 host_token = bind_active_decision_lifecycle_host(
@@ -325,6 +343,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 )
             return await boundary.execute(request)
         finally:
+            reset_active_execution_continuation_state_store(continuation_token)
             if evidence_token is not None:
                 reset_active_execution_evidence_context(evidence_token)
             if lineage_token is not None and degradation_token is not None:

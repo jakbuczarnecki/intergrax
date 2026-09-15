@@ -7,6 +7,8 @@ from __future__ import annotations
 import threading
 
 from intergrax.contracts.execution_continuation import (
+    ExecutionContinuationError,
+    ExecutionContinuationErrorCode,
     ExecutionContinuationIdentity,
     PendingExecutionContinuation,
 )
@@ -43,6 +45,28 @@ class InMemoryExecutionContinuationStateStore(ExecutionContinuationStateStore):
             ]
         if len(matches) != 1:
             return None
+        return matches[0]
+
+    def resolve_identity_for_execution_progress(
+        self,
+        identity: ExecutionContinuationIdentity,
+    ) -> PendingExecutionContinuation | None:
+        with self._lock:
+            matches = [
+                pending
+                for pending in self._by_id.values()
+                if pending.identity.task_id == identity.task_id
+                and pending.identity.run_id == identity.run_id
+                and pending.identity.attempt_id == identity.attempt_id
+                and pending.identity.execution_id == identity.execution_id
+            ]
+        if not matches:
+            return None
+        if len(matches) > 1:
+            raise ExecutionContinuationError(
+                "ambiguous continuation identity for execution progress",
+                code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
+            )
         return matches[0]
 
     def insert_if_absent(self, pending: PendingExecutionContinuation) -> bool:

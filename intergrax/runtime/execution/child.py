@@ -7,11 +7,14 @@ from __future__ import annotations
 
 from typing import Generic, TypeVar
 
+from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
 from intergrax.contracts.execution_identity import (
     ExecutionId,
+    TaskId,
     require_active_execution_id,
     require_active_execution_identity,
 )
+from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.contracts.execution_lineage import ExecutionLineageIntegrityError
 from intergrax.runtime.execution.identity_authority import (
     default_execution_identity_authority,
@@ -71,13 +74,19 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
     through :class:`ExecutionBoundary`.
     """
 
-    __slots__ = ("_authority_policy", "_budget_policy", "_ledger")
+    __slots__ = (
+        "_authority_policy",
+        "_budget_policy",
+        "_ledger",
+        "_continuation_state_store",
+    )
 
     def __init__(
         self,
         authority_policy: ExecutionAuthorityPolicy | None = None,
         budget_policy: ExecutionBudgetAllocationPolicy | None = None,
         ledger: ExecutionBudgetLedger | None = None,
+        continuation_state_store: ExecutionContinuationStateStore | None = None,
     ) -> None:
         self._authority_policy = (
             authority_policy
@@ -90,6 +99,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             else DefaultSharedPoolBudgetPolicy()
         )
         self._ledger = ledger
+        self._continuation_state_store = continuation_state_store
 
     async def execute(
         self,
@@ -165,11 +175,13 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             global_deadline_monotonic=inherited_deadline,
         )
 
+        task_id: TaskId | None = ActiveTaskRegistry.peek_task_id_for_run(parent_run_id)
         identity = ExecutionIdentityBinding(
             run_id=parent_run_id,
             attempt_id=parent_attempt_id,
             execution_id=child_execution_id,
             parent_execution_id=parent_execution_id,
+            task_id=task_id,
         )
         resolved_hooks = admission_hooks
         if lineage_state is not None:
@@ -187,6 +199,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             identity=identity,
             authority=child_authority,
             effective_delegation=effective,
+            continuation_state_store=self._continuation_state_store,
         )
         budget_token = bind_active_execution_budget(active_budget)
         try:

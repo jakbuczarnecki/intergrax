@@ -135,6 +135,8 @@ class ExecutionContinuationErrorCode(StrEnum):
     SCOPE_MISMATCH = "scope_mismatch"
     DUPLICATE_CONTINUATION = "duplicate_continuation"
     EXECUTION_PROGRESS_BLOCKED = "execution_progress_blocked"
+    AMBIGUOUS_IDENTITY = "ambiguous_identity"
+    STORE_QUERY_FAILED = "store_query_failed"
 
 
 class ExecutionContinuationError(ValueError):

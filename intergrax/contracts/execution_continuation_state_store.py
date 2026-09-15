@@ -33,6 +33,19 @@ class ExecutionContinuationStateStore(ABC):
         """Return the unique snapshot for exact four-ID identity, else ``None``."""
 
     @abstractmethod
+    def resolve_identity_for_execution_progress(
+        self,
+        identity: ExecutionContinuationIdentity,
+    ) -> PendingExecutionContinuation | None:
+        """
+        Progress-gate lookup for exact four-ID identity.
+
+        Returns ``None`` when no continuation exists. Raises
+        :class:`ExecutionContinuationError` with ``AMBIGUOUS_IDENTITY`` when more
+        than one snapshot matches (fail closed).
+        """
+
+    @abstractmethod
     def insert_if_absent(self, pending: PendingExecutionContinuation) -> bool:
         """Persist ``pending`` only when ``continuation_id`` is not yet present."""
 
