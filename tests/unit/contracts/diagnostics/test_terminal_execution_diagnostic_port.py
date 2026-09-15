@@ -14,7 +14,12 @@ from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
     TerminalDiagnosticDispatchStatus,
     TerminalExecutionDiagnosticRequest,
 )
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -30,6 +35,75 @@ def test_terminal_execution_diagnostic_request_validates_identity_and_time() -> 
         observed_at=datetime(2026, 8, 26, 12, 0, tzinfo=UTC),
     )
     assert request.tenant_id == "tenant-a"
+    assert request.attempt_id is None
+    assert request.execution_id is None
+
+
+def test_terminal_execution_diagnostic_request_accepts_full_correlation_pair() -> None:
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    request = TerminalExecutionDiagnosticRequest(
+        tenant_id="tenant-a",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        observed_at=datetime(2026, 8, 26, 12, 0, tzinfo=UTC),
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    assert request.attempt_id == attempt_id
+    assert request.execution_id == execution_id
+
+
+@pytest.mark.parametrize(
+    ("attempt_id", "execution_id"),
+    [
+        (mint_attempt_id(), None),
+        (None, mint_execution_id()),
+    ],
+)
+def test_terminal_execution_diagnostic_request_rejects_partial_correlation(
+    attempt_id: object,
+    execution_id: object,
+) -> None:
+    with pytest.raises(ValueError, match="attempt_id and execution_id"):
+        TerminalExecutionDiagnosticRequest(
+            tenant_id="tenant-a",
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            observed_at=datetime(2026, 8, 26, 12, 0, tzinfo=UTC),
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+        )
+
+
+@pytest.mark.parametrize(
+    "tenant_id",
+    ["", "   ", " tenant-a", "tenant-a "],
+)
+def test_terminal_execution_diagnostic_request_rejects_non_canonical_tenant(
+    tenant_id: str,
+) -> None:
+    with pytest.raises(ValueError):
+        TerminalExecutionDiagnosticRequest(
+            tenant_id=tenant_id,
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            observed_at=datetime(2026, 8, 26, 12, 0, tzinfo=UTC),
+        )
+
+
+def test_terminal_execution_diagnostic_request_enforces_pair_integrity_in_source() -> None:
+    contract_path = (
+        _REPO_ROOT
+        / "intergrax"
+        / "contracts"
+        / "diagnostics"
+        / "terminal_execution_diagnostic_port.py"
+    )
+    source = contract_path.read_text(encoding="utf-8")
+    assert "attempt_id is None" in source
+    assert "execution_id is None" in source
+    assert "model_validator" in source
 
 
 def test_terminal_execution_diagnostic_request_rejects_naive_timestamp() -> None:

@@ -416,6 +416,8 @@ Problem Store failure **cannot** change execution truth.
 | `execution_id` (`ExecutionId`) | Schedulable unit — **required** on canonical `RuntimeEvent` (**CURRENT** frozen contract); Diagnostics **consumes**, never mints |
 | `problem_id` (`ProblemId`) | Diagnostic-domain identity for reconciled `Problem` state — **not** interchangeable with `ExecutionId` |
 
+**Terminal diagnostic port (`TerminalExecutionDiagnosticRequest`):** orchestration scope remains **run-level** (`tenant_id` + `task_id` + `run_id`). `AttemptId` and `ExecutionId` are an optional correlation pair — both absent or both present; partial correlation is invalid. `tenant_id` must be canonical at the boundary (no silent trim).
+
 Do not mix `RunId`, `ExecutionId`, `AttemptId`, or `ProblemId` in diagnostic contracts. End-to-end operator correlation on every read model is **not** claimed where legacy producers or projections still omit fields — see **ADOPTION / PROJECTION GAP** in [`OBSERVABILITY.md`](OBSERVABILITY.md).
 
 ---

@@ -40,7 +40,7 @@ class CentralTerminalExecutionDiagnosticPort:
         request: TerminalExecutionDiagnosticRequest,
     ) -> TerminalDiagnosticDispatchResult | None:
         execution_identity: ExecutionIdentityBinding | None = None
-        if request.attempt_id is not None and request.execution_id is not None:
+        if request.attempt_id is not None:
             execution_identity = ExecutionIdentityBinding(
                 run_id=request.run_id,
                 attempt_id=request.attempt_id,

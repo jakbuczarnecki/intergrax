@@ -9,7 +9,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -44,8 +44,9 @@ class TerminalExecutionDiagnosticRequest(BaseModel):
     One terminal execution fact submitted for downstream diagnostic interpretation.
 
     Diagnostic orchestration scope is **run-level** (tenant + task + run). Attempt and
-    execution identifiers are correlation-only for failure evidence and must not change
-    run-scoped diagnostic grouping semantics.
+    execution identifiers are an optional correlation pair (both absent or both present);
+    partial correlation is invalid. They must not change run-scoped diagnostic grouping
+    semantics.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -59,11 +60,15 @@ class TerminalExecutionDiagnosticRequest(BaseModel):
 
     @field_validator("tenant_id")
     @classmethod
-    def _validate_tenant_id(cls, value: str) -> str:
-        resolved = value.strip()
-        if not resolved:
+    def _validate_tenant_id(cls, value: object) -> str:
+        if type(value) is not str:
+            raise ValueError("tenant_id must be a string")
+        normalized = value.strip()
+        if not normalized:
             raise ValueError("tenant_id must be non-empty")
-        return resolved
+        if normalized != value:
+            raise ValueError("tenant_id must be canonical (no leading or trailing whitespace)")
+        return value
 
     @field_validator("task_id", mode="before")
     @classmethod
@@ -95,6 +100,14 @@ class TerminalExecutionDiagnosticRequest(BaseModel):
         if value.tzinfo is None:
             raise ValueError("observed_at must be timezone-aware")
         return value
+
+    @model_validator(mode="after")
+    def _validate_attempt_execution_pair(self) -> TerminalExecutionDiagnosticRequest:
+        if (self.attempt_id is None) != (self.execution_id is None):
+            raise ValueError(
+                "attempt_id and execution_id must both be absent or both be present",
+            )
+        return self
 
 
 @runtime_checkable
