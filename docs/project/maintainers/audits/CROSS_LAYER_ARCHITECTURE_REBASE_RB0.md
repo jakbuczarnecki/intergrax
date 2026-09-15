@@ -1,6 +1,6 @@
 # RB-0 — Current Architecture Rebaseline & Historical Finding Migration
 
-**Task:** RB-0 (baseline) · **RB-1** traceability hardening complete @ ledger below  
+**Task:** RB-0 (baseline) · **RB-1** traceability · **RB-2A** execution adoption residuals @ ledger below  
 **Type:** Read-only cross-layer audit / migration ledger (no production semantics changed)  
 **Architecture epoch:** Post–Execution Engine freeze · Decision System canonical · NPSC-5E/5F evidence/recovery qualification  
 **Report date:** 2026-09-15  
@@ -9,16 +9,19 @@
 |------|-------|
 | **RB0_BASELINE_HEAD** | `0c810fdeebd6edc85106b88cea6008ce50682c09` |
 | **RB1_BASELINE_HEAD** | `fdb571588acd5bf9b823dc986f589ffe33f9ef30` |
+| **RB2A_BASELINE_HEAD** | `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7` |
 | **Branch** | `development` |
-| **HEAD == origin/development** | **YES** @ RB-1 analysis (`fdb571588…`) |
+| **HEAD == origin/development** | **YES** @ RB-2A (`4bcc0255…`) |
 | **Historical audit baseline (immutable)** | [`docs/audit_results/2026-08-18/`](../../audit_results/2026-08-18/) |
 | **Supplementary enterprise audit** | [`PLATFORM_WIDE_ENTERPRISE_AUDIT.md`](PLATFORM_WIDE_ENTERPRISE_AUDIT.md) (2026-09-03) |
 
 **Supersedes:** Any pre-RB-0 cross-layer remediation ordering derived only from the 2026-08-18 campaign rollup **without** Execution Engine / Decision System / NPSC-5E·5F freeze context. Per-layer audit verdicts in `2026-08-18` remain **frozen facts**; this document assigns **migration class** only.
 
-**Full per-finding ledger (RB-1 hardened):** [`CROSS_LAYER_ARCHITECTURE_REBASE_RB0_LEDGER.md`](CROSS_LAYER_ARCHITECTURE_REBASE_RB0_LEDGER.md) (217 rows · index + detail register · evidence @ `RB1_BASELINE_HEAD`).
+**Full per-finding ledger (RB-1 hardened, RB-2A refresh on RB-2 rows):** [`CROSS_LAYER_ARCHITECTURE_REBASE_RB0_LEDGER.md`](CROSS_LAYER_ARCHITECTURE_REBASE_RB0_LEDGER.md) (217 rows · index + detail register).
 
-**Parallel-session note:** Post-RB-0 commits through `fdb571588` landed functional_evidence contract work (`8556c9b97`, `fdb571588`) — **RB-4 collision BLOCKED** until stable. Local uncommitted WIP on memory/delegated execution is **out of RB-1 scope**; re-verify affected rows before RB-2/RB-7 implementation.
+**RB-2A artifact (subordinate):** [`EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md`](EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md) — **0 proven production execution bypasses** @ `RB2A_BASELINE_HEAD`; LEGACY flags = adoption/proof debt.
+
+**Parallel-session note:** Post-RB-1 commit `4bcc0255d` adds delegated correlation query read model (non-authority). Local uncommitted WIP (diagnostics/memory) is **out of RB-2A scope**; RB-4 remains **BLOCKED** on functional_evidence adoption.
 
 ---
 
@@ -245,7 +248,7 @@ Campaign OBSERVABILITY_EVIDENCE ACCEPTED → **E** (export adoption, cross-layer
 |--------|---------|-------|----------|------------|-----------|
 | **RB-0** | Rebaseline + ledger | Platform architecture | — | — | DOC (**done**) |
 | **RB-1** | Historical finding traceability & classification hardening | Platform architecture | Runtime | RB-0 | DOC (**done**) |
-| **RB-2** | Zero-bypass residuals; UER-FIX on consumers; intake normalization | Execution adoption | **EE core mutation** | RB-0, RB-1, U5 | CODE/COMPOSITION (**NEXT**) |
+| **RB-2** | Zero-bypass residuals; UER-FIX on consumers; intake normalization | Execution adoption | **EE core mutation** | RB-0, RB-1, U5 | RB-2A **done** (read-only); RB-2B+ **NEXT** |
 | **RB-3** | Decision authority; CVL → strategies | Decision System | Second runtime | RB-0 | MIGRATION/QUAL |
 | **RB-4** | Obs/diag/evidence integrity; functional evidence semantics | Observability + Diagnostics | Recovery | RB-0, NPSC-5F | CODE/ARCH |
 | **RB-5** | Side-effect + control-plane convergence | Governed Execution | PG spine rewrite | RB-0, PLATFORM-SE ADR | **ARCH DECISION** + CODE |

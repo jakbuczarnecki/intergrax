@@ -9,6 +9,11 @@
 
 Each finding appears in the **index** below and in **§3 Detail register** with: Finding ID, Historical Layer, Historical Severity, Historical Register Status, Historical Finding Summary, Historical Owner, Current Canonical Owner, Current Canonical Contract, Current Implementation Evidence, Current Qualification / Proof Evidence, Migration Class, Classification Rationale, Remaining Risk, Required Next Action, RB Workstream, Can Modify Without ADR?, Parallel Collision Risk, Frozen Owner Impact?, Evidence Freshness SHA, Current Risk Severity, Duplicate Owner Risk, Bypass Risk, Canonical Extension Contract (where relevant), External Implementation Possible?, Core Depends On Contract?, ADR cluster (F only).
 
+## Phase 0 — Delta since RB-1 (`fdb571588acd5bf9b823dc986f589ffe33f9ef30`)
+
+- `4bcc0255d` — Delegated correlation **query read model** (read-only consumer; RB-2A verified non-execution-authority)
+- **RB-2A** — Execution adoption residual audit @ `4bcc0255d` — [`EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md`](EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md) (0 proven production bypass)
+
 ## Phase 0 — Delta since RB-0 documentation (`c33451afd3400475f93bcaf671c46e225c91f306`)
 
 - `8556c9b97` — Diagnostics/functional_evidence contracts (OBSERVABILITY_EVIDENCE, RB-4)
@@ -1619,17 +1624,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** EXECUTION_RUNTIME
 - **Current Canonical Owner:** Execution Engine / UER
 - **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen); historical observation in `docs/audit_results/2026-08-18/EXECUTION_RUNTIME.md` @ UER-FIX-A
-- **Current Qualification / Proof Evidence:** Platform qualification gap \| Delta: 1bdb0798b delegated durability — consumer-only verification.
+- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
 - **Migration Class:** E
 - **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Architecture canonical; gap: PROOF.
-- **Required Next Action:** Re-run UER-FIX consumer proofs on agents/kernel; do not mutate Execution Engine core.
+- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
+- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -1643,17 +1648,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** EXECUTION_RUNTIME
 - **Current Canonical Owner:** Execution Engine / UER
 - **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen); historical observation in `docs/audit_results/2026-08-18/EXECUTION_RUNTIME.md` @ UER-FIX-B
-- **Current Qualification / Proof Evidence:** Platform qualification gap \| Delta: 1bdb0798b delegated durability — consumer-only verification.
+- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
 - **Migration Class:** E
 - **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Architecture canonical; gap: PROOF.
-- **Required Next Action:** Re-run UER-FIX consumer proofs on agents/kernel; do not mutate Execution Engine core.
+- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
+- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -1667,17 +1672,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** EXECUTION_RUNTIME
 - **Current Canonical Owner:** Execution Engine / UER
 - **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen); historical observation in `docs/audit_results/2026-08-18/EXECUTION_RUNTIME.md` @ UER-FIX-C
-- **Current Qualification / Proof Evidence:** Platform qualification gap \| Delta: 1bdb0798b delegated durability — consumer-only verification.
+- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
 - **Migration Class:** E
 - **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Architecture canonical; gap: PROOF.
-- **Required Next Action:** Re-run UER-FIX consumer proofs on agents/kernel; do not mutate Execution Engine core.
+- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
+- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -1691,17 +1696,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** EXECUTION_RUNTIME
 - **Current Canonical Owner:** Execution Engine / UER
 - **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen); historical observation in `docs/audit_results/2026-08-18/EXECUTION_RUNTIME.md` @ UER-FIX-D
-- **Current Qualification / Proof Evidence:** Platform qualification gap \| Delta: 1bdb0798b delegated durability — consumer-only verification.
+- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
 - **Migration Class:** E
 - **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Architecture canonical; gap: PROOF.
-- **Required Next Action:** Re-run UER-FIX consumer proofs on agents/kernel; do not mutate Execution Engine core.
+- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
+- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -1715,17 +1720,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** EXECUTION_RUNTIME
 - **Current Canonical Owner:** Execution Engine / UER
 - **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen); historical observation in `docs/audit_results/2026-08-18/EXECUTION_RUNTIME.md` @ UER-FIX-E
-- **Current Qualification / Proof Evidence:** Platform qualification gap \| Delta: 1bdb0798b delegated durability — consumer-only verification.
+- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
 - **Migration Class:** E
 - **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Architecture canonical; gap: PROOF.
-- **Required Next Action:** Re-run UER-FIX consumer proofs on agents/kernel; do not mutate Execution Engine core.
+- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
+- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -1739,17 +1744,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** EXECUTION_RUNTIME
 - **Current Canonical Owner:** Execution Engine / UER
 - **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen); historical observation in `docs/audit_results/2026-08-18/EXECUTION_RUNTIME.md` @ UER-FIX-E
-- **Current Qualification / Proof Evidence:** Platform qualification gap \| Delta: 1bdb0798b delegated durability — consumer-only verification.
+- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
 - **Migration Class:** E
 - **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Architecture canonical; gap: PROOF.
-- **Required Next Action:** Re-run UER-FIX consumer proofs on agents/kernel; do not mutate Execution Engine core.
+- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
+- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** MEDIUM
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -2210,17 +2215,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** INTERFACE_TASK_INTAKE
 - **Current Canonical Owner:** Tier-3 intake + ExecutionRuntime
 - **Current Canonical Contract:** `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence; historical observation in `docs/audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md` @ ITI-FIX-A
-- **Current Qualification / Proof Evidence:** Platform qualification gap
+- **Current Implementation Evidence:** `intergrax/runtime/interactions/intake_service.py`, `task_executor.py` HostTaskExecutionExecutor; `wire_harness_host_interaction_intake` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: production intake -> HostTaskExecutionExecutor -> HostTaskExecution -> ExecutionRuntime; NexusLoopTaskExecutor absent (L2). See RB2A artifact.
 - **Migration Class:** E
 - **Classification Rationale:** HostTaskExecution canonical; intake normalization adoption
-- **Remaining Risk:** Architecture canonical; gap: ADOPTION.
-- **Required Next Action:** Verify every production interaction ingress uses canonical execution admission; no direct Nexus root.
+- **Remaining Risk:** Gap: adoption qualification closure (RB-2B5); path is canonical @ HEAD.
+- **Required Next Action:** RB-2B5: Record adoption qualification; maintain NPSC-3C/3E gates.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -2234,17 +2239,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** INTERFACE_TASK_INTAKE
 - **Current Canonical Owner:** Tier-3 intake + ExecutionRuntime
 - **Current Canonical Contract:** `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence; historical observation in `docs/audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md` @ ITI-FIX-B
-- **Current Qualification / Proof Evidence:** Platform qualification gap
+- **Current Implementation Evidence:** `intergrax/runtime/interactions/intake_service.py`, `task_executor.py` HostTaskExecutionExecutor; `wire_harness_host_interaction_intake` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: production intake -> HostTaskExecutionExecutor -> HostTaskExecution -> ExecutionRuntime; NexusLoopTaskExecutor absent (L2). See RB2A artifact.
 - **Migration Class:** E
 - **Classification Rationale:** HostTaskExecution canonical; intake normalization adoption
-- **Remaining Risk:** Architecture canonical; gap: ADOPTION.
-- **Required Next Action:** Verify every production interaction ingress uses canonical execution admission; no direct Nexus root.
+- **Remaining Risk:** Gap: adoption qualification closure (RB-2B5); path is canonical @ HEAD.
+- **Required Next Action:** RB-2B5: Record adoption qualification; maintain NPSC-3C/3E gates.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -2258,17 +2263,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** INTERFACE_TASK_INTAKE
 - **Current Canonical Owner:** Tier-3 intake + ExecutionRuntime
 - **Current Canonical Contract:** `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence; historical observation in `docs/audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md` @ ITI-FIX-C
-- **Current Qualification / Proof Evidence:** Platform qualification gap
+- **Current Implementation Evidence:** `intergrax/runtime/interactions/intake_service.py`, `task_executor.py` HostTaskExecutionExecutor; `wire_harness_host_interaction_intake` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: production intake -> HostTaskExecutionExecutor -> HostTaskExecution -> ExecutionRuntime; NexusLoopTaskExecutor absent (L2). See RB2A artifact.
 - **Migration Class:** E
 - **Classification Rationale:** HostTaskExecution canonical; intake normalization adoption
-- **Remaining Risk:** Architecture canonical; gap: ADOPTION.
-- **Required Next Action:** Verify every production interaction ingress uses canonical execution admission; no direct Nexus root.
+- **Remaining Risk:** Gap: adoption qualification closure (RB-2B5); path is canonical @ HEAD.
+- **Required Next Action:** RB-2B5: Record adoption qualification; maintain NPSC-3C/3E gates.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -2282,17 +2287,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** INTERFACE_TASK_INTAKE
 - **Current Canonical Owner:** Tier-3 intake + ExecutionRuntime
 - **Current Canonical Contract:** `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence; historical observation in `docs/audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md` @ ITI-FIX-A
-- **Current Qualification / Proof Evidence:** Platform qualification gap
+- **Current Implementation Evidence:** `intergrax/runtime/interactions/intake_service.py`, `task_executor.py` HostTaskExecutionExecutor; `wire_harness_host_interaction_intake` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: production intake -> HostTaskExecutionExecutor -> HostTaskExecution -> ExecutionRuntime; NexusLoopTaskExecutor absent (L2). See RB2A artifact.
 - **Migration Class:** E
 - **Classification Rationale:** HostTaskExecution canonical; intake normalization adoption
-- **Remaining Risk:** Architecture canonical; gap: ADOPTION.
-- **Required Next Action:** Verify every production interaction ingress uses canonical execution admission; no direct Nexus root.
+- **Remaining Risk:** Gap: adoption qualification closure (RB-2B5); path is canonical @ HEAD.
+- **Required Next Action:** RB-2B5: Record adoption qualification; maintain NPSC-3C/3E gates.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** MEDIUM
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -2306,17 +2311,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** INTERFACE_TASK_INTAKE
 - **Current Canonical Owner:** Tier-3 intake + ExecutionRuntime
 - **Current Canonical Contract:** `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence; historical observation in `docs/audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md` @ ITI-FIX-C
-- **Current Qualification / Proof Evidence:** Platform qualification gap
+- **Current Implementation Evidence:** `intergrax/runtime/interactions/intake_service.py`, `task_executor.py` HostTaskExecutionExecutor; `wire_harness_host_interaction_intake` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: production intake -> HostTaskExecutionExecutor -> HostTaskExecution -> ExecutionRuntime; NexusLoopTaskExecutor absent (L2). See RB2A artifact.
 - **Migration Class:** E
 - **Classification Rationale:** HostTaskExecution canonical; intake normalization adoption
-- **Remaining Risk:** Architecture canonical; gap: ADOPTION.
-- **Required Next Action:** Verify every production interaction ingress uses canonical execution admission; no direct Nexus root.
+- **Remaining Risk:** Gap: adoption qualification closure (RB-2B5); path is canonical @ HEAD.
+- **Required Next Action:** RB-2B5: Record adoption qualification; maintain NPSC-3C/3E gates.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** MEDIUM
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -2330,17 +2335,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** INTERFACE_TASK_INTAKE
 - **Current Canonical Owner:** Tier-3 intake + ExecutionRuntime
 - **Current Canonical Contract:** `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence
-- **Current Implementation Evidence:** Canonical: `docs/project/architecture/TIER3_APPLICATION_ENVIRONMENT.md` intake + `NEXUS_EXECUTION_FLOW.md` convergence; historical observation in `docs/audit_results/2026-08-18/INTERFACE_TASK_INTAKE.md` @ ITI-FIX-D
-- **Current Qualification / Proof Evidence:** Platform qualification gap
+- **Current Implementation Evidence:** `intergrax/runtime/interactions/intake_service.py`, `task_executor.py` HostTaskExecutionExecutor; `wire_harness_host_interaction_intake` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: production intake -> HostTaskExecutionExecutor -> HostTaskExecution -> ExecutionRuntime; NexusLoopTaskExecutor absent (L2). See RB2A artifact.
 - **Migration Class:** E
 - **Classification Rationale:** HostTaskExecution canonical; intake normalization adoption
-- **Remaining Risk:** Architecture canonical; gap: ADOPTION.
-- **Required Next Action:** Verify every production interaction ingress uses canonical execution admission; no direct Nexus root.
+- **Remaining Risk:** Gap: adoption qualification closure (RB-2B5); path is canonical @ HEAD.
+- **Required Next Action:** RB-2B5: Record adoption qualification; maintain NPSC-3C/3E gates.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** MEDIUM
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -3240,17 +3245,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** ORCHESTRATION
 - **Current Canonical Owner:** Nexus (ORCHESTRATION strategy)
 - **Current Canonical Contract:** `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` (ORCHESTRATION strategy only)
-- **Current Implementation Evidence:** `intergrax/runtime/execution/` strategy router ORCHESTRATION; `intergrax/runtime/nexus/` GraphExecutor; `docs/project/architecture/NEXUS_EXECUTION_FLOW.md`
-- **Current Qualification / Proof Evidence:** `docs/project/maintainers/qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md` (0 production bypass)
+- **Current Implementation Evidence:** `intergrax/runtime/execution/strategy_router.py`, `intergrax/runtime/nexus/` under active ExecutionRuntime @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: Nexus internal to ORCHESTRATION strategy; U5 BYPASS=0 unchanged (L1 monitor).
 - **Migration Class:** A
 - **Classification Rationale:** Nexus orchestration semantics absorbed by frozen Execution Engine model
-- **Remaining Risk:** Residual: regression if frozen owners or adoption paths drift.
-- **Required Next Action:** Monitor via RB-9 recertification; no implementation without new finding.
+- **Remaining Risk:** Residual: regression monitor via RB-9; no bypass @ HEAD.
+- **Required Next Action:** RB-9: Recertification monitor only.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** LOW
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** NONE
@@ -3264,17 +3269,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** ORCHESTRATION
 - **Current Canonical Owner:** Nexus (ORCHESTRATION strategy)
 - **Current Canonical Contract:** `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` (ORCHESTRATION strategy only)
-- **Current Implementation Evidence:** `intergrax/runtime/execution/` strategy router ORCHESTRATION; `intergrax/runtime/nexus/` GraphExecutor; `docs/project/architecture/NEXUS_EXECUTION_FLOW.md`
-- **Current Qualification / Proof Evidence:** `docs/project/maintainers/qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md` (0 production bypass)
+- **Current Implementation Evidence:** `intergrax/runtime/execution/strategy_router.py`, `intergrax/runtime/nexus/` under active ExecutionRuntime @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: Nexus internal to ORCHESTRATION strategy; U5 BYPASS=0 unchanged (L1 monitor).
 - **Migration Class:** A
 - **Classification Rationale:** Nexus orchestration semantics absorbed by frozen Execution Engine model
-- **Remaining Risk:** Residual: regression if frozen owners or adoption paths drift.
-- **Required Next Action:** Monitor via RB-9 recertification; no implementation without new finding.
+- **Remaining Risk:** Residual: regression monitor via RB-9; no bypass @ HEAD.
+- **Required Next Action:** RB-9: Recertification monitor only.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** LOW
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** NONE
@@ -3288,17 +3293,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** ORCHESTRATION
 - **Current Canonical Owner:** Nexus (ORCHESTRATION strategy)
 - **Current Canonical Contract:** `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` (ORCHESTRATION strategy only)
-- **Current Implementation Evidence:** `intergrax/runtime/execution/` strategy router ORCHESTRATION; `intergrax/runtime/nexus/` GraphExecutor; `docs/project/architecture/NEXUS_EXECUTION_FLOW.md`
-- **Current Qualification / Proof Evidence:** `docs/project/maintainers/qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md` (0 production bypass)
+- **Current Implementation Evidence:** `intergrax/runtime/execution/strategy_router.py`, `intergrax/runtime/nexus/` under active ExecutionRuntime @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: Nexus internal to ORCHESTRATION strategy; U5 BYPASS=0 unchanged (L1 monitor).
 - **Migration Class:** A
 - **Classification Rationale:** Nexus orchestration semantics absorbed by frozen Execution Engine model
-- **Remaining Risk:** Residual: regression if frozen owners or adoption paths drift.
-- **Required Next Action:** Monitor via RB-9 recertification; no implementation without new finding.
+- **Remaining Risk:** Residual: regression monitor via RB-9; no bypass @ HEAD.
+- **Required Next Action:** RB-9: Recertification monitor only.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** LOW
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** NONE
@@ -3312,17 +3317,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** ORCHESTRATION
 - **Current Canonical Owner:** Nexus (ORCHESTRATION strategy)
 - **Current Canonical Contract:** `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` (ORCHESTRATION strategy only)
-- **Current Implementation Evidence:** `intergrax/runtime/execution/` strategy router ORCHESTRATION; `intergrax/runtime/nexus/` GraphExecutor; `docs/project/architecture/NEXUS_EXECUTION_FLOW.md`
-- **Current Qualification / Proof Evidence:** `docs/project/maintainers/qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md` (0 production bypass)
+- **Current Implementation Evidence:** `intergrax/runtime/execution/strategy_router.py`, `intergrax/runtime/nexus/` under active ExecutionRuntime @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: Nexus internal to ORCHESTRATION strategy; U5 BYPASS=0 unchanged (L1 monitor).
 - **Migration Class:** A
 - **Classification Rationale:** Nexus orchestration semantics absorbed by frozen Execution Engine model
-- **Remaining Risk:** Residual: regression if frozen owners or adoption paths drift.
-- **Required Next Action:** Monitor via RB-9 recertification; no implementation without new finding.
+- **Remaining Risk:** Residual: regression monitor via RB-9; no bypass @ HEAD.
+- **Required Next Action:** RB-9: Recertification monitor only.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** LOW
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** NONE
@@ -3336,17 +3341,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** ORCHESTRATION
 - **Current Canonical Owner:** Nexus (ORCHESTRATION strategy)
 - **Current Canonical Contract:** `docs/project/architecture/NEXUS_EXECUTION_FLOW.md` (ORCHESTRATION strategy only)
-- **Current Implementation Evidence:** `intergrax/runtime/execution/` strategy router ORCHESTRATION; `intergrax/runtime/nexus/` GraphExecutor; `docs/project/architecture/NEXUS_EXECUTION_FLOW.md`
-- **Current Qualification / Proof Evidence:** `docs/project/maintainers/qualification/PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY.md` (0 production bypass)
+- **Current Implementation Evidence:** `intergrax/runtime/execution/strategy_router.py`, `intergrax/runtime/nexus/` under active ExecutionRuntime @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: Nexus internal to ORCHESTRATION strategy; U5 BYPASS=0 unchanged (L1 monitor).
 - **Migration Class:** A
 - **Classification Rationale:** Nexus orchestration semantics absorbed by frozen Execution Engine model
-- **Remaining Risk:** Residual: regression if frozen owners or adoption paths drift.
-- **Required Next Action:** Monitor via RB-9 recertification; no implementation without new finding.
+- **Remaining Risk:** Residual: regression monitor via RB-9; no bypass @ HEAD.
+- **Required Next Action:** RB-9: Recertification monitor only.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** LOW
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** NONE
@@ -4668,17 +4673,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** STRATEGIC_HARNESS_MODEL
 - **Current Canonical Owner:** Tier-3 host composition + Execution Engine admission (HostTaskExecution)
 - **Current Canonical Contract:** UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`)
-- **Current Implementation Evidence:** Canonical: UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`); historical observation in `docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md` @ SHM-FIX-A
-- **Current Qualification / Proof Evidence:** Open campaign finding — code trace @ RB1_HEAD
+- **Current Implementation Evidence:** `HarnessHostRuntime.execution: HostTaskExecution` in `harness_host_runtime.py`; canonical routes `mount_canonical_harness_task_routes` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: HarnessHostRuntime.execution is HostTaskExecution; residual UnifiedTaskRunner symbols non-factory (L4 adoption). See RB2A artifact.
 - **Migration Class:** C
 - **Classification Rationale:** Historical owner `STRATEGIC_HARNESS_MODEL` ≠ current `Tier-3 host composition + Execution Engine admission (HostTaskExecution)`; responsibility migrated under frozen Execution/Decision boundaries. Harness → Execution Engine entry adoption
-- **Remaining Risk:** Legacy harness/intake paths may bypass canonical admission until RB-2 closes inventory.
-- **Required Next Action:** Prove all production task ingress uses HostTaskExecution → ExecutionRuntime; eliminate harness-local lifecycle semantics.
+- **Remaining Risk:** Gap: retire dead harness runner APIs + doc drift (RB-2B1/B3); production ingress canonical.
+- **Required Next Action:** RB-2B1/B3: Remove unused harness runner surfaces; refresh Tier-3 docs.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -4692,17 +4697,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** STRATEGIC_HARNESS_MODEL
 - **Current Canonical Owner:** Tier-3 host composition + Execution Engine admission (HostTaskExecution)
 - **Current Canonical Contract:** UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`)
-- **Current Implementation Evidence:** Canonical: UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`); historical observation in `docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md` @ SHM-FIX-A
-- **Current Qualification / Proof Evidence:** Open campaign finding — code trace @ RB1_HEAD
+- **Current Implementation Evidence:** `HarnessHostRuntime.execution: HostTaskExecution` in `harness_host_runtime.py`; canonical routes `mount_canonical_harness_task_routes` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: HarnessHostRuntime.execution is HostTaskExecution; residual UnifiedTaskRunner symbols non-factory (L4 adoption). See RB2A artifact.
 - **Migration Class:** C
 - **Classification Rationale:** Historical owner `STRATEGIC_HARNESS_MODEL` ≠ current `Tier-3 host composition + Execution Engine admission (HostTaskExecution)`; responsibility migrated under frozen Execution/Decision boundaries. Harness → Execution Engine entry adoption
-- **Remaining Risk:** Legacy harness/intake paths may bypass canonical admission until RB-2 closes inventory.
-- **Required Next Action:** Prove all production task ingress uses HostTaskExecution → ExecutionRuntime; eliminate harness-local lifecycle semantics.
+- **Remaining Risk:** Gap: retire dead harness runner APIs + doc drift (RB-2B1/B3); production ingress canonical.
+- **Required Next Action:** RB-2B1/B3: Remove unused harness runner surfaces; refresh Tier-3 docs.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -4716,17 +4721,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** STRATEGIC_HARNESS_MODEL
 - **Current Canonical Owner:** Tier-3 host composition + Execution Engine admission (HostTaskExecution)
 - **Current Canonical Contract:** UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`)
-- **Current Implementation Evidence:** Canonical: UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`); historical observation in `docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md` @ SHM-FIX-A
-- **Current Qualification / Proof Evidence:** Open campaign finding — code trace @ RB1_HEAD
+- **Current Implementation Evidence:** `HarnessHostRuntime.execution: HostTaskExecution` in `harness_host_runtime.py`; canonical routes `mount_canonical_harness_task_routes` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: HarnessHostRuntime.execution is HostTaskExecution; residual UnifiedTaskRunner symbols non-factory (L4 adoption). See RB2A artifact.
 - **Migration Class:** C
 - **Classification Rationale:** Historical owner `STRATEGIC_HARNESS_MODEL` ≠ current `Tier-3 host composition + Execution Engine admission (HostTaskExecution)`; responsibility migrated under frozen Execution/Decision boundaries. Harness → Execution Engine entry adoption
-- **Remaining Risk:** Legacy harness/intake paths may bypass canonical admission until RB-2 closes inventory.
-- **Required Next Action:** Prove all production task ingress uses HostTaskExecution → ExecutionRuntime; eliminate harness-local lifecycle semantics.
+- **Remaining Risk:** Gap: retire dead harness runner APIs + doc drift (RB-2B1/B3); production ingress canonical.
+- **Required Next Action:** RB-2B1/B3: Remove unused harness runner surfaces; refresh Tier-3 docs.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** MEDIUM
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -4740,17 +4745,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** STRATEGIC_HARNESS_MODEL
 - **Current Canonical Owner:** Tier-3 host composition + Execution Engine admission (HostTaskExecution)
 - **Current Canonical Contract:** UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`)
-- **Current Implementation Evidence:** Canonical: UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`); historical observation in `docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md` @ SHM-FIX-A
-- **Current Qualification / Proof Evidence:** Open campaign finding — code trace @ RB1_HEAD
+- **Current Implementation Evidence:** `HarnessHostRuntime.execution: HostTaskExecution` in `harness_host_runtime.py`; canonical routes `mount_canonical_harness_task_routes` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: HarnessHostRuntime.execution is HostTaskExecution; residual UnifiedTaskRunner symbols non-factory (L4 adoption). See RB2A artifact.
 - **Migration Class:** C
 - **Classification Rationale:** Historical owner `STRATEGIC_HARNESS_MODEL` ≠ current `Tier-3 host composition + Execution Engine admission (HostTaskExecution)`; responsibility migrated under frozen Execution/Decision boundaries. Harness → Execution Engine entry adoption
-- **Remaining Risk:** Legacy harness/intake paths may bypass canonical admission until RB-2 closes inventory.
-- **Required Next Action:** Prove all production task ingress uses HostTaskExecution → ExecutionRuntime; eliminate harness-local lifecycle semantics.
+- **Remaining Risk:** Gap: retire dead harness runner APIs + doc drift (RB-2B1/B3); production ingress canonical.
+- **Required Next Action:** RB-2B1/B3: Remove unused harness runner surfaces; refresh Tier-3 docs.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -4764,17 +4769,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** STRATEGIC_HARNESS_MODEL
 - **Current Canonical Owner:** Tier-3 host composition + Execution Engine admission (HostTaskExecution)
 - **Current Canonical Contract:** UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`)
-- **Current Implementation Evidence:** Canonical: UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`); historical observation in `docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md` @ SHM-FIX-C
-- **Current Qualification / Proof Evidence:** Open campaign finding — code trace @ RB1_HEAD
+- **Current Implementation Evidence:** `HarnessHostRuntime.execution: HostTaskExecution` in `harness_host_runtime.py`; canonical routes `mount_canonical_harness_task_routes` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: HarnessHostRuntime.execution is HostTaskExecution; residual UnifiedTaskRunner symbols non-factory (L4 adoption). See RB2A artifact.
 - **Migration Class:** C
 - **Classification Rationale:** Historical owner `STRATEGIC_HARNESS_MODEL` ≠ current `Tier-3 host composition + Execution Engine admission (HostTaskExecution)`; responsibility migrated under frozen Execution/Decision boundaries. Harness → Execution Engine entry adoption
-- **Remaining Risk:** Legacy harness/intake paths may bypass canonical admission until RB-2 closes inventory.
-- **Required Next Action:** Prove all production task ingress uses HostTaskExecution → ExecutionRuntime; eliminate harness-local lifecycle semantics.
+- **Remaining Risk:** Gap: retire dead harness runner APIs + doc drift (RB-2B1/B3); production ingress canonical.
+- **Required Next Action:** RB-2B1/B3: Remove unused harness runner surfaces; refresh Tier-3 docs.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** MEDIUM
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -4788,17 +4793,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** STRATEGIC_HARNESS_MODEL
 - **Current Canonical Owner:** Tier-3 host composition + Execution Engine admission (HostTaskExecution)
 - **Current Canonical Contract:** UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`)
-- **Current Implementation Evidence:** Canonical: UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`); historical observation in `docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md` @ SHM-FIX-B
-- **Current Qualification / Proof Evidence:** Open campaign finding — code trace @ RB1_HEAD
+- **Current Implementation Evidence:** `HarnessHostRuntime.execution: HostTaskExecution` in `harness_host_runtime.py`; canonical routes `mount_canonical_harness_task_routes` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: HarnessHostRuntime.execution is HostTaskExecution; residual UnifiedTaskRunner symbols non-factory (L4 adoption). See RB2A artifact.
 - **Migration Class:** C
 - **Classification Rationale:** Historical owner `STRATEGIC_HARNESS_MODEL` ≠ current `Tier-3 host composition + Execution Engine admission (HostTaskExecution)`; responsibility migrated under frozen Execution/Decision boundaries. Harness → Execution Engine entry adoption
-- **Remaining Risk:** Legacy harness/intake paths may bypass canonical admission until RB-2 closes inventory.
-- **Required Next Action:** Prove all production task ingress uses HostTaskExecution → ExecutionRuntime; eliminate harness-local lifecycle semantics.
+- **Remaining Risk:** Gap: retire dead harness runner APIs + doc drift (RB-2B1/B3); production ingress canonical.
+- **Required Next Action:** RB-2B1/B3: Remove unused harness runner surfaces; refresh Tier-3 docs.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -4812,17 +4817,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** STRATEGIC_HARNESS_MODEL
 - **Current Canonical Owner:** Tier-3 host composition + Execution Engine admission (HostTaskExecution)
 - **Current Canonical Contract:** UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`)
-- **Current Implementation Evidence:** Canonical: UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`); historical observation in `docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md` @ SHM-FIX-C
-- **Current Qualification / Proof Evidence:** Open campaign finding — code trace @ RB1_HEAD
+- **Current Implementation Evidence:** `HarnessHostRuntime.execution: HostTaskExecution` in `harness_host_runtime.py`; canonical routes `mount_canonical_harness_task_routes` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: HarnessHostRuntime.execution is HostTaskExecution; residual UnifiedTaskRunner symbols non-factory (L4 adoption). See RB2A artifact.
 - **Migration Class:** C
 - **Classification Rationale:** Historical owner `STRATEGIC_HARNESS_MODEL` ≠ current `Tier-3 host composition + Execution Engine admission (HostTaskExecution)`; responsibility migrated under frozen Execution/Decision boundaries. Harness → Execution Engine entry adoption
-- **Remaining Risk:** Legacy harness/intake paths may bypass canonical admission until RB-2 closes inventory.
-- **Required Next Action:** Prove all production task ingress uses HostTaskExecution → ExecutionRuntime; eliminate harness-local lifecycle semantics.
+- **Remaining Risk:** Gap: retire dead harness runner APIs + doc drift (RB-2B1/B3); production ingress canonical.
+- **Required Next Action:** RB-2B1/B3: Remove unused harness runner surfaces; refresh Tier-3 docs.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** MEDIUM
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -4836,17 +4841,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** STRATEGIC_HARNESS_MODEL
 - **Current Canonical Owner:** Tier-3 host composition + Execution Engine admission (HostTaskExecution)
 - **Current Canonical Contract:** UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`)
-- **Current Implementation Evidence:** Canonical: UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`); historical observation in `docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md` @ SHM-FIX-B
-- **Current Qualification / Proof Evidence:** Open campaign finding — code trace @ RB1_HEAD
+- **Current Implementation Evidence:** `HarnessHostRuntime.execution: HostTaskExecution` in `harness_host_runtime.py`; canonical routes `mount_canonical_harness_task_routes` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: HarnessHostRuntime.execution is HostTaskExecution; residual UnifiedTaskRunner symbols non-factory (L4 adoption). See RB2A artifact.
 - **Migration Class:** C
 - **Classification Rationale:** Historical owner `STRATEGIC_HARNESS_MODEL` ≠ current `Tier-3 host composition + Execution Engine admission (HostTaskExecution)`; responsibility migrated under frozen Execution/Decision boundaries. Harness → Execution Engine entry adoption
-- **Remaining Risk:** Legacy harness/intake paths may bypass canonical admission until RB-2 closes inventory.
-- **Required Next Action:** Prove all production task ingress uses HostTaskExecution → ExecutionRuntime; eliminate harness-local lifecycle semantics.
+- **Remaining Risk:** Gap: retire dead harness runner APIs + doc drift (RB-2B1/B3); production ingress canonical.
+- **Required Next Action:** RB-2B1/B3: Remove unused harness runner surfaces; refresh Tier-3 docs.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -4860,17 +4865,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** STRATEGIC_HARNESS_MODEL
 - **Current Canonical Owner:** Tier-3 host composition + Execution Engine admission (HostTaskExecution)
 - **Current Canonical Contract:** UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`)
-- **Current Implementation Evidence:** Canonical: UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`); historical observation in `docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md` @ SHM-FIX-B
-- **Current Qualification / Proof Evidence:** Open campaign finding — code trace @ RB1_HEAD
+- **Current Implementation Evidence:** `HarnessHostRuntime.execution: HostTaskExecution` in `harness_host_runtime.py`; canonical routes `mount_canonical_harness_task_routes` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: HarnessHostRuntime.execution is HostTaskExecution; residual UnifiedTaskRunner symbols non-factory (L4 adoption). See RB2A artifact.
 - **Migration Class:** C
 - **Classification Rationale:** Historical owner `STRATEGIC_HARNESS_MODEL` ≠ current `Tier-3 host composition + Execution Engine admission (HostTaskExecution)`; responsibility migrated under frozen Execution/Decision boundaries. Harness → Execution Engine entry adoption
-- **Remaining Risk:** Legacy harness/intake paths may bypass canonical admission until RB-2 closes inventory.
-- **Required Next Action:** Prove all production task ingress uses HostTaskExecution → ExecutionRuntime; eliminate harness-local lifecycle semantics.
+- **Remaining Risk:** Gap: retire dead harness runner APIs + doc drift (RB-2B1/B3); production ingress canonical.
+- **Required Next Action:** RB-2B1/B3: Remove unused harness runner surfaces; refresh Tier-3 docs.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -4884,17 +4889,17 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Owner:** STRATEGIC_HARNESS_MODEL
 - **Current Canonical Owner:** Tier-3 host composition + Execution Engine admission (HostTaskExecution)
 - **Current Canonical Contract:** UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`)
-- **Current Implementation Evidence:** Canonical: UEA §3 + `HostTaskExecution` / `ExecutionRuntime` admission (`docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md`); historical observation in `docs/audit_results/2026-08-18/STRATEGIC_HARNESS_MODEL.md` @ SHM-FIX-D
-- **Current Qualification / Proof Evidence:** Open campaign finding — code trace @ RB1_HEAD
+- **Current Implementation Evidence:** `HarnessHostRuntime.execution: HostTaskExecution` in `harness_host_runtime.py`; canonical routes `mount_canonical_harness_task_routes` @ 4bcc025
+- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: HarnessHostRuntime.execution is HostTaskExecution; residual UnifiedTaskRunner symbols non-factory (L4 adoption). See RB2A artifact.
 - **Migration Class:** C
 - **Classification Rationale:** Historical owner `STRATEGIC_HARNESS_MODEL` ≠ current `Tier-3 host composition + Execution Engine admission (HostTaskExecution)`; responsibility migrated under frozen Execution/Decision boundaries. Harness → Execution Engine entry adoption
-- **Remaining Risk:** Legacy harness/intake paths may bypass canonical admission until RB-2 closes inventory.
-- **Required Next Action:** Prove all production task ingress uses HostTaskExecution → ExecutionRuntime; eliminate harness-local lifecycle semantics.
+- **Remaining Risk:** Gap: retire dead harness runner APIs + doc drift (RB-2B1/B3); production ingress canonical.
+- **Required Next Action:** RB-2B1/B3: Remove unused harness runner surfaces; refresh Tier-3 docs.
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** NO
-- **Evidence Freshness SHA:** `fdb571588acd5bf9b823dc986f589ffe33f9ef30`
+- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
 - **Current Risk Severity:** MEDIUM
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
