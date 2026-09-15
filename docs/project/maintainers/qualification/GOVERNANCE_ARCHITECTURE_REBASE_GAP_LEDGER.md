@@ -10,6 +10,8 @@
 
 **GR-5-ADR1 HEAD:** `9336beff5ec72c747b440e63f3fb2dddc0b4bf8d` on `development` — canonical HITL continuation ownership: [ADR-GR-5-001](../../technical/adr/entries/2026-09-15/ADR-GR-5-001.md). Verdict: **`INTRODUCE_CANONICAL_EXECUTION_CONTINUATION_CONTRACT`** (`ExecutionContinuationPort`). Nexus = **internal** Execution Engine orchestration; not external peer layer.
 
+**GR-5-R1 HEAD:** `9979e3b3af64b436708d0e95fac669dc9ef6e3d1` base → commit on `development` — contract module `intergrax/contracts/execution_continuation.py` (two-phase `apply_resolution` / `resume`, CAS `revision`, `RESUME_AUTHORIZED` state). Runtime integration **not** in R1.
+
 ---
 
 ## Executive summary
@@ -252,8 +254,8 @@ Historical AUDIT-5 findings remain valid context; closure requires identity rebi
 | GR-4 | Policy & Plugin Requalification | **CANDIDATE CLOSED** (independent GitHub audit pending); **GR-4-R1** = Nexus-neutral `RuntimePolicyBundle` assembly | Deterministic fail-closed policy resolution; contract-first handlers/catalog; no new framework | GR-3 | G2C, PG-FIX-B/D | Yes (qualification + gate) | `test_pg_fix_b_*`, `test_pg_fix_d_*`, `test_policy_registry.py`, `test_policy_plugin_contribution.py`, `test_gr4_policy_core_architecture_gates.py` |
 | GR-4-R1 | Policy bundle Nexus decouple | **PLANNED** | Replace Nexus types in bundle assembly with neutral contracts + adapters | GR-4 | GOV-GAP-011 residual | Yes | Neutral bundle types; migrate `policy_bundle.py` / `tool_policy_resolution.py` |
 | GR-5-ADR1 | Canonical Execution HITL Continuation Ownership | **DONE** | One lifecycle authority; Nexus internal; `ExecutionContinuationPort` direction | GR-1 | — | No (docs) | ADR-GR-5-001 |
-| GR-5-R1 | Canonical Execution Continuation Contract | **NEXT** | Typed port + DTOs in contracts | GR-5-ADR1 | — | Yes | Contract + boundary tests |
-| GR-5-R2 | Canonical Pause/Resume Integration | PLANNED | UER owns transitions; not root admission on resume | GR-5-R1 | — | Yes | Lifecycle integration tests |
+| GR-5-R1 | Canonical Execution Continuation Contract | **DONE** | Typed `ExecutionContinuationPort` + DTOs (`execution_continuation.py`) | GR-5-ADR1 | — | Yes | Contract + boundary tests |
+| GR-5-R2 | Canonical Pause/Resume Integration | **NEXT** | UER owns transitions; not root admission on resume | GR-5-R1 | — | Yes | Lifecycle integration tests |
 | GR-5-R3 | Task / HumanPauseCoordinator projection alignment | PLANNED | `WAITING_FOR_HUMAN` derived from canonical state | GR-5-R2 | — | Yes | Projection parity tests |
 | GR-5-R4 | Nexus internal HITL lifecycle integration | PLANNED | Intake/graph runners via port | GR-5-R2 | — | Yes | Orchestration HITL qual |
 | GR-5-R5 | Checkpoint restart + exact identity qualification | PLANNED | Pause → restart → same four IDs | GR-5-R3, GR-5-R4 | — | Yes | Restart qualification |

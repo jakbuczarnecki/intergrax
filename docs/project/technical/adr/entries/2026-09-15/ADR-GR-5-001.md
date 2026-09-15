@@ -33,7 +33,7 @@ RUNNING → WAITING_FOR_HUMAN / PAUSED → RESUMED
 | `GovernedContinuationApprovalGrant` exact-scope, one-shot, stale mismatch fail-closed | Yes (GR-1 / PG-FIX-C mechanism tests) |
 | Duplicate resolution guarded (`HumanPauseCoordinator.resolve_human_response`) | Yes (`intergrax/runtime/human/pause.py`) |
 | `WAITING_FOR_HUMAN` driven via `TaskLifecycle` + checkpoint/Nexus flow | Yes (`meaningful_side_effect_authorization.py`, Nexus runners) |
-| Dedicated canonical Execution HITL continuation **port** in `intergrax/contracts` | **No** |
+| Dedicated canonical Execution HITL continuation **port** in `intergrax/contracts` | **Yes** (GR-5-R1 — `execution_continuation.py`) |
 | `ExecutionLifecyclePort` (ERL) | Yes — **recovery handoff only** (`apply_recovery_lifecycle_intent`), not HITL suspend/resume |
 
 ### 1.2 Corrected Execution Engine topology
@@ -131,7 +131,8 @@ EXECUTION ENGINE
 
 ## 9. Contract shape (GR-5-R1)
 
-Typed four IDs; `request_human_pause`, `get_pending`, `apply_resolution`, `resume` — see full narrative in gap ledger cross-link. No Nexus/vendor/UI types on public surface.
+**Implemented (GR-5-R1):** `intergrax/contracts/execution_continuation.py` — `ExecutionContinuationPort` with `request_pause`, `get_pending`, `apply_resolution`, `resume`; immutable `PendingExecutionContinuation`; CAS `revision`; lifecycle states include `RESUME_AUTHORIZED` between human approval and resume (two-phase model). `continuation_id` aligns with governed `continuation_request_id`. No Nexus/vendor/UI types on public surface.
+
 
 ## 10–12. Checkpoint, pluginability, future gates
 
@@ -141,15 +142,15 @@ Canonical state → injectable persistence → Task projection. Platform-fixed: 
 
 | ID | Goal |
 |----|------|
-| GR-5-R1 | Typed `ExecutionContinuationPort` + DTOs |
-| GR-5-R2 | UER owns pause/resume transitions |
+| GR-5-R1 | Typed `ExecutionContinuationPort` + DTOs (**DONE**) |
+| GR-5-R2 | UER owns pause/resume transitions (**NEXT**) |
 | GR-5-R3 | Task/HumanPauseCoordinator projection alignment |
 | GR-5-R4 | Nexus internal HITL integration via port |
 | GR-5-R5 | Restart + exact identity qualification |
 
 ## 14–18. Regression, risks, consequences, gap status
 
-PG-FIX-C grant **VERIFIED**; lifecycle ownership **OPEN**. GR-5-R1 **NEXT**. GR-6 **BLOCKED** on GR-5.
+PG-FIX-C grant **VERIFIED**; lifecycle ownership **OPEN** (GR-5-R2+). GR-5-R1 **DONE**. GR-6 **BLOCKED** on GR-5.
 
 ---
 
