@@ -10,6 +10,7 @@ import sys
 from intergrax.applications._shared.entity_graph_wiring import resolve_entity_graph_memory_store
 from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryStore
 from intergrax.memory.entity_graph_memory import EntityGraphMemoryStore, EntityNode
 
 
@@ -30,6 +31,9 @@ def main() -> int:
     store.upsert_node(EntityNode(entity_id="e1", label="Acme", entity_type="org"))
     if not isinstance(store, EntityGraphMemoryStore):
         print("unexpected entity graph store type", file=sys.stderr)
+        return 1
+    if not isinstance(store.entity_temporal_store, EntityTemporalMemoryStore):
+        print("entity graph store must expose EntityTemporalMemoryStore", file=sys.stderr)
         return 1
 
     print("OK: entity graph memory wiring")

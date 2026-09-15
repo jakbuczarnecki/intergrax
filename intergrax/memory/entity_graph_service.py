@@ -1,53 +1,54 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Entity graph indexing from LTM entries (MEM-DEPTH-5.1 runtime integration)."""
+"""Entity graph indexing from LTM entries (MEM-ENT-7 typed projection)."""
 
 from __future__ import annotations
 
-from intergrax.memory.entity_graph_memory import EntityEdge, EntityGraphMemoryStore, EntityNode
-from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
+from intergrax.memory.contracts.entity_temporal_memory import (
+    EntityMemoryIndexer,
+    EntityMemoryScope,
+    EntityTemporalMemoryStore,
+)
+from intergrax.memory.entity_memory_indexing import DefaultEntityMemoryIndexer
+from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 
 
 class EntityGraphMemoryService:
-    """Indexes user memory entries into the in-process entity graph store."""
+    """Indexes user memory entries via ``EntityMemoryIndexer`` (derived projection)."""
 
-    def __init__(self, store: EntityGraphMemoryStore) -> None:
+    def __init__(
+        self,
+        store: EntityTemporalMemoryStore,
+        *,
+        indexer: EntityMemoryIndexer | None = None,
+    ) -> None:
         self._store = store
+        self._indexer = indexer or DefaultEntityMemoryIndexer(store)
 
-    def index_memory_entry(self, *, user_id: str, entry: UserProfileMemoryEntry) -> None:
-        if entry.deleted:
-            return
-        content = (entry.content or "").strip()
-        if not content:
-            return
+    @property
+    def store(self) -> EntityTemporalMemoryStore:
+        return self._store
 
-        entity_type = entry.kind.value if isinstance(entry.kind, MemoryKind) else str(entry.kind)
-        node_id = f"{user_id}:{entry.entry_id}"
-        self._store.upsert_node(
-            EntityNode(
-                entity_id=node_id,
-                label=content[:120],
-                entity_type=entity_type,
-                attributes={"user_id": user_id, "entry_id": entry.entry_id},
-            )
-        )
-        user_node_id = f"user:{user_id}"
-        self._store.upsert_node(
-            EntityNode(
-                entity_id=user_node_id,
-                label=user_id,
-                entity_type="user",
-            )
-        )
-        self._store.add_edge(
-            EntityEdge(
-                source_id=user_node_id,
-                target_id=node_id,
-                relation="has_memory",
-                valid_from=entry.valid_from,
-                valid_until=entry.valid_until,
-            )
-        )
+    @property
+    def indexer(self) -> EntityMemoryIndexer:
+        return self._indexer
 
-    def neighbors_for_user(self, user_id: str) -> list[EntityNode]:
-        return self._store.neighbors(f"user:{user_id}")
+    def index_memory_entry(
+        self,
+        *,
+        tenant_id: str,
+        user_id: str,
+        entry: UserProfileMemoryEntry,
+    ) -> None:
+        scope = EntityMemoryScope(tenant_id=tenant_id, user_id=user_id)
+        self._indexer.index_memory_entry(scope, entry)
+
+    def remove_memory_entry(
+        self,
+        *,
+        tenant_id: str,
+        user_id: str,
+        memory_entry_id: str,
+    ) -> None:
+        scope = EntityMemoryScope(tenant_id=tenant_id, user_id=user_id)
+        self._indexer.remove_memory_entry(scope, memory_entry_id)

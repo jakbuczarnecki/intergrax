@@ -5,7 +5,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
+
+from intergrax.memory.contracts.entity_temporal_memory import (
+    EntityMemoryIndexer,
+    EntityMemoryScope,
+)
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -74,12 +79,12 @@ class SessionMemoryConsolidationService:
         strategies: MemoryStrategySet | None = None,
         llm: LLMAdapter | None = None,
         config: Optional[SessionMemoryConsolidationConfig] = None,
-        entity_graph_service: Any | None = None,
+        entity_memory_indexer: EntityMemoryIndexer | None = None,
     ) -> None:
         self._profile_manager = profile_manager
         self._instructions_service = instructions_service
         self._config = config or SessionMemoryConsolidationConfig()
-        self._entity_graph_service = entity_graph_service
+        self._entity_memory_indexer = entity_memory_indexer
 
         if strategies is not None:
             self._strategies = strategies
@@ -103,6 +108,8 @@ class SessionMemoryConsolidationService:
         session_id: str,
         messages: Sequence[ChatMessage],
         run_id: Optional[str] = None,
+        *,
+        tenant_id: str | None = None,
     ) -> List[UserProfileMemoryEntry]:
         trimmed = self._prepare_conversation_for_prompt(messages)
         if not trimmed:
@@ -159,8 +166,9 @@ class SessionMemoryConsolidationService:
                 continue
             stored = await self._profile_manager.add_memory_entry(user_id, decision.entry)
             stored_entries.append(stored)
-            if self._entity_graph_service is not None:
-                self._entity_graph_service.index_memory_entry(user_id=user_id, entry=stored)
+            if self._entity_memory_indexer is not None and tenant_id:
+                scope = EntityMemoryScope(tenant_id=tenant_id, user_id=user_id)
+                self._entity_memory_indexer.index_memory_entry(scope, stored)
 
         if stored_entries and self._config.regenerate_system_instructions:
             await self._instructions_service.build_and_save_system_instructions(
