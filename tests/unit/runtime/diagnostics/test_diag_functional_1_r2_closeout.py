@@ -12,11 +12,12 @@ import pytest
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
 from intergrax.contracts.functional_evidence_bounds import MAX_SUPPORTING_EVIDENCE_REFS
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceProvenance,
     PipelineEvidenceScope,
@@ -24,7 +25,7 @@ from intergrax.runtime.diagnostics.functional_evidence import (
     PipelineOperationStatus,
     PlatformFunctionalEvidence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidenceQueryRequest,
 )
 from intergrax.runtime.diagnostics.functional_evidence_reconstruction import (
@@ -49,6 +50,8 @@ def _scope() -> PipelineEvidenceScope:
         tenant_id="tenant-r2",
         task_id=mint_task_id(),
         run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
 
 
@@ -149,6 +152,7 @@ def test_filtered_query_scans_without_resorting_history() -> None:
         task_id=scope.task_id,
         run_id=scope.run_id,
         attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
     for index in range(20):
         persistence.append(_operation_evidence(scope, index=index))

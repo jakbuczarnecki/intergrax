@@ -15,8 +15,8 @@ from intergrax.runtime.diagnostics.document_store_functional_evidence_persistenc
     DocumentStoreFunctionalEvidencePersistence,
     wire_functional_evidence_persistence,
 )
-from intergrax.runtime.diagnostics.functional_evidence import PlatformFunctionalEvidence
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence import PlatformFunctionalEvidence
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistence,
     FunctionalEvidencePersistenceConflictError,
     FunctionalEvidencePersistenceIntegrityError,

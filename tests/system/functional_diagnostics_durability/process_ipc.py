@@ -33,14 +33,16 @@ class ExecutionIdentity:
   tenant_id: str
   task_id: str
   run_id: str
-  attempt_id: str | None
+  attempt_id: str
+  execution_id: str
 
-  def to_json_dict(self) -> dict[str, str | None]:
+  def to_json_dict(self) -> dict[str, str]:
     return {
       "tenant_id": self.tenant_id,
       "task_id": self.task_id,
       "run_id": self.run_id,
       "attempt_id": self.attempt_id,
+      "execution_id": self.execution_id,
     }
 
 
@@ -205,14 +207,12 @@ def _require_bool(value: object, field: str) -> bool:
 def _parse_identity(payload: object) -> ExecutionIdentity:
   if not isinstance(payload, dict):
     raise ValueError("execution_identity_invalid")
-  attempt_id = payload.get("attempt_id")
-  if attempt_id is not None and not isinstance(attempt_id, str):
-    raise ValueError("execution_identity_attempt_id_invalid")
   return ExecutionIdentity(
     tenant_id=_require_str(payload.get("tenant_id"), "tenant_id"),
     task_id=_require_str(payload.get("task_id"), "task_id"),
     run_id=_require_str(payload.get("run_id"), "run_id"),
-    attempt_id=attempt_id,
+    attempt_id=_require_str(payload.get("attempt_id"), "attempt_id"),
+    execution_id=_require_str(payload.get("execution_id"), "execution_id"),
   )
 
 

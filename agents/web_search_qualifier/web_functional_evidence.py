@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.diagnostics.functional_evidence import PipelineOperationStatus
+from intergrax.contracts.functional_evidence import PipelineOperationStatus
 from intergrax.runtime.diagnostics.specifications.q3_web_search_functional_diagnostic_specification import (
     Q3_WEB_EXTRACT_OPERATION_ID,
     Q3_WEB_QUERY_CONSTRUCT_OPERATION_ID,

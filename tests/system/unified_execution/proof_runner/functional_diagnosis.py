@@ -10,14 +10,14 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Literal
 
-from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, validate_run_id, validate_task_id
 from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
 from intergrax.runtime.diagnostics.functional_diagnostic_analysis import (
     FunctionalDiagnosticAnalysis,
     FunctionalDiagnosticCheckStatus,
 )
 from intergrax.runtime.diagnostics.functional_diagnostic_identity import FunctionalDiagnosticCheckId
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceScope,
     PlatformFunctionalEvidence,
@@ -135,7 +135,8 @@ def run_functional_diagnosis(
             tenant_id=tenant_id,
             task_id=validate_task_id(task_id),
             run_id=validate_run_id(run_id),
-            attempt_id=attempt_id,
+            attempt_id=attempt_id or mint_attempt_id(),
+            execution_id=mint_execution_id(),
         )
         evidence_texts = evidence_texts_from_lkw_response(
             answer=answer,

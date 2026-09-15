@@ -85,7 +85,7 @@ NO DUPLICATE AUTHORITIES. NO PARALLEL SOURCES OF TRUTH.
 | Decision semantics | Decision System |
 | Authorization | Governance / HITL |
 | Reliability recovery semantics | Enterprise Reliability |
-| Functional evidence facts | Evidence Plane (contracts today under DIAG package — **gap**, see OBS-FUNCTIONAL-CONTRACTS-1) |
+| Functional evidence facts | Evidence Plane (`intergrax.contracts.functional_evidence` — OBS records; DIAG consumes) |
 | Causal relationships | Evidence Plane (`PlatformCausalEvidence`) |
 | Factual reconstruction | **Evidence Plane (semantic owner)**; implementation today: `ExecutionReconstructor` + `HistoricalReconstructionService` (**transitional placement**, OBS-RECONSTRUCTION-1) |
 | Diagnostic interpretation | Central Diagnostics |
@@ -150,7 +150,7 @@ Observability → records facts (must not depend on DIAG for evidence **contract
 Diagnostics → consumes evidence + shared factual reconstruction
 ```
 
-**Current inversion (documented, not fixed in OBS-REBASE-1):** `intergrax.runtime.observability` imports `intergrax.runtime.diagnostics.functional_evidence*` and `execution_reconstruction` for recording/wiring. Target: neutral contracts under `intergrax.contracts.*` + shared factual reconstruction owned by Evidence Plane package (**OBS-FUNCTIONAL-CONTRACTS-1**, **OBS-RECONSTRUCTION-1**).
+**Functional evidence (OBS-FUNCTIONAL-CONTRACTS-1):** Neutral contracts live in `intergrax.contracts.functional_evidence` (`platform_functional_evidence.v2`, five-ID `PipelineEvidenceScope`). Observability records facts; persistence providers implement `FunctionalEvidencePersistence`; Diagnostics interprets via consumers only. Query pagination order uses `(recorded_at, evidence_id)` — stable pagination, not execution/causal authority. **Remaining debt:** `execution_reconstruction` wiring still under DIAG import path (**OBS-RECONSTRUCTION-1**).
 
 ### Factual reconstruction vs diagnostic interpretation
 

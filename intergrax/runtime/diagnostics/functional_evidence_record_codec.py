@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PLATFORM_FUNCTIONAL_EVIDENCE_SCHEMA,
     PlatformFunctionalEvidence,
 )

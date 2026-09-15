@@ -12,11 +12,14 @@ from pathlib import Path
 
 from intergrax.contracts.execution_identity import (
   AttemptId,
+  ExecutionId,
   mint_attempt_id,
+  mint_execution_id,
   mint_run_id,
   mint_task_id,
   validate_attempt_id,
   validate_event_id,
+  validate_execution_id,
   validate_run_id,
   validate_task_id,
 )
@@ -26,10 +29,10 @@ from intergrax.runtime.diagnostics.document_store_functional_evidence_persistenc
   DocumentStoreFunctionalEvidencePersistence,
 )
 from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
   PipelineEvidenceScope,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
   FunctionalEvidencePersistenceConflictError,
 )
 from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
@@ -113,14 +116,12 @@ def _build_persistence(
 
 
 def _scope_from_identity(identity: ExecutionIdentity) -> PipelineEvidenceScope:
-  attempt_id: AttemptId | None = None
-  if identity.attempt_id is not None:
-    attempt_id = validate_attempt_id(identity.attempt_id)
   return PipelineEvidenceScope(
     tenant_id=identity.tenant_id,
     task_id=validate_task_id(identity.task_id),
     run_id=validate_run_id(identity.run_id),
-    attempt_id=attempt_id,
+    attempt_id=validate_attempt_id(identity.attempt_id),
+    execution_id=validate_execution_id(identity.execution_id),
   )
 
 
@@ -163,12 +164,14 @@ def _identity_from_args(
   task_id: str | None,
   run_id: str | None,
   attempt_id: str | None,
+  execution_id: str | None = None,
 ) -> ExecutionIdentity:
   return ExecutionIdentity(
     tenant_id=tenant_id,
     task_id=task_id or str(mint_task_id()),
     run_id=run_id or str(mint_run_id()),
-    attempt_id=attempt_id,
+    attempt_id=attempt_id or str(mint_attempt_id()),
+    execution_id=execution_id or str(mint_execution_id()),
   )
 
 
@@ -262,11 +265,8 @@ def _run_read_main(
     tenant_id=str(identity_payload["tenant_id"]),
     task_id=str(identity_payload["task_id"]),
     run_id=str(identity_payload["run_id"]),
-    attempt_id=(
-      str(identity_payload["attempt_id"])
-      if identity_payload.get("attempt_id") is not None
-      else None
-    ),
+    attempt_id=str(identity_payload["attempt_id"]),
+    execution_id=str(identity_payload["execution_id"]),
   )
   scope = _scope_from_identity(identity)
   probe = _build_probe(collection_name)
@@ -315,11 +315,8 @@ def _run_idempotent_retry(
     tenant_id=str(identity_payload["tenant_id"]),
     task_id=str(identity_payload["task_id"]),
     run_id=str(identity_payload["run_id"]),
-    attempt_id=(
-      str(identity_payload["attempt_id"])
-      if identity_payload.get("attempt_id") is not None
-      else None
-    ),
+    attempt_id=str(identity_payload["attempt_id"]),
+    execution_id=str(identity_payload["execution_id"]),
   )
   scope = _scope_from_identity(identity)
   probe = _build_probe(collection_name)
@@ -372,11 +369,8 @@ def _run_conflict_append(
     tenant_id=str(identity_payload["tenant_id"]),
     task_id=str(identity_payload["task_id"]),
     run_id=str(identity_payload["run_id"]),
-    attempt_id=(
-      str(identity_payload["attempt_id"])
-      if identity_payload.get("attempt_id") is not None
-      else None
-    ),
+    attempt_id=str(identity_payload["attempt_id"]),
+    execution_id=str(identity_payload["execution_id"]),
   )
   scope = _scope_from_identity(identity)
   probe = _build_probe(collection_name)
@@ -424,13 +418,15 @@ def _run_tenant_write(
     tenant_id=scope_a.tenant_id,
     task_id=str(scope_a.task_id),
     run_id=str(scope_a.run_id),
-    attempt_id=str(scope_a.attempt_id) if scope_a.attempt_id is not None else None,
+    attempt_id=str(scope_a.attempt_id),
+    execution_id=str(scope_a.execution_id),
   )
   identity_b = ExecutionIdentity(
     tenant_id=scope_b.tenant_id,
     task_id=str(scope_b.task_id),
     run_id=str(scope_b.run_id),
-    attempt_id=str(scope_b.attempt_id) if scope_b.attempt_id is not None else None,
+    attempt_id=str(scope_b.attempt_id),
+    execution_id=str(scope_b.execution_id),
   )
   identity_file.write_text(
     json.dumps(
@@ -473,21 +469,15 @@ def _run_tenant_read(
     tenant_id=str(tenant_a_payload["tenant_id"]),
     task_id=str(tenant_a_payload["task_id"]),
     run_id=str(tenant_a_payload["run_id"]),
-    attempt_id=(
-      str(tenant_a_payload["attempt_id"])
-      if tenant_a_payload.get("attempt_id") is not None
-      else None
-    ),
+    attempt_id=str(tenant_a_payload["attempt_id"]),
+    execution_id=str(tenant_a_payload["execution_id"]),
   )
   identity_b = ExecutionIdentity(
     tenant_id=str(tenant_b_payload["tenant_id"]),
     task_id=str(tenant_b_payload["task_id"]),
     run_id=str(tenant_b_payload["run_id"]),
-    attempt_id=(
-      str(tenant_b_payload["attempt_id"])
-      if tenant_b_payload.get("attempt_id") is not None
-      else None
-    ),
+    attempt_id=str(tenant_b_payload["attempt_id"]),
+    execution_id=str(tenant_b_payload["execution_id"]),
   )
   if requested_tenant == identity_a.tenant_id:
     requested_identity = identity_a
@@ -515,6 +505,7 @@ def _run_tenant_read(
     task_id=other_scope.task_id,
     run_id=other_scope.run_id,
     attempt_id=other_scope.attempt_id,
+    execution_id=other_scope.execution_id,
   )
   leak_count = len(
     collect_all_evidence(
@@ -599,7 +590,8 @@ def _run_pagination_read(*, collection_name: str, identity_file: Path) -> None:
     tenant_id=str(identity_payload["tenant_id"]),
     task_id=str(identity_payload["task_id"]),
     run_id=str(identity_payload["run_id"]),
-    attempt_id=None,
+    attempt_id=str(identity_payload["attempt_id"]),
+    execution_id=str(identity_payload["execution_id"]),
   )
   scope = _scope_from_identity(identity)
   probe = _build_probe(collection_name)

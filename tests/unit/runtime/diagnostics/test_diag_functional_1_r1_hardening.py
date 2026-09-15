@@ -8,12 +8,14 @@ import pytest
 from pydantic import ValidationError
 
 from intergrax.contracts.execution_identity import (
+    AttemptId,
     mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceProvenance,
     PipelineEvidenceScope,
@@ -25,7 +27,7 @@ from intergrax.contracts.functional_evidence_bounds import (
     MAX_DIRECT_UPSTREAM_EVIDENCE_REFS,
     MAX_SUPPORTING_EVIDENCE_REFS,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceIntegrityError,
     FunctionalEvidenceQueryRequest,
     functional_evidence_query_order_key,
@@ -79,7 +81,8 @@ def _scope(
         tenant_id=tenant_id,
         task_id=task_id or mint_task_id(),
         run_id=run_id or mint_run_id(),
-        attempt_id=attempt_id,
+        attempt_id=AttemptId(attempt_id) if attempt_id is not None else mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
 
 

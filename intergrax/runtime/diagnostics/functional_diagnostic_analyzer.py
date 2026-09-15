@@ -31,12 +31,12 @@ from intergrax.runtime.diagnostics.functional_diagnostic_specification import (
     FunctionalDiagnosticSpecification,
     validate_functional_diagnostic_specification,
 )
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineOperationStatus,
     PlatformFunctionalEvidence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistence,
     FunctionalEvidencePersistenceIntegrityError,
     FunctionalEvidenceQueryRequest,
@@ -412,19 +412,22 @@ def _resolve_validation_lookup(
     attempt_id: AttemptId | None,
     validations: FunctionalValidationEvidenceLookup | None,
 ) -> FunctionalValidationEvidenceLookup:
+    resolved_attempt_id = attempt_id
+    if validations is not None and resolved_attempt_id is None:
+        resolved_attempt_id = validations.attempt_id
     if validations is None:
         return FunctionalValidationEvidenceLookup.for_scope(
             tenant_id=tenant_id,
             task_id=task_id,
             run_id=run_id,
-            attempt_id=attempt_id,
+            attempt_id=resolved_attempt_id,
             validations=(),
         )
     return FunctionalValidationEvidenceLookup.for_scope(
         tenant_id=tenant_id,
         task_id=task_id,
         run_id=run_id,
-        attempt_id=attempt_id,
+        attempt_id=resolved_attempt_id,
         validations=validations.validations,
     )
 

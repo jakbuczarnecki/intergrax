@@ -14,7 +14,7 @@ from intergrax.integrations.contracts.document_store import (
 from intergrax.integrations.contracts.document_store_query_cursor_provider import (
     DocumentStoreQueryCursorProvider,
 )
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PlatformFunctionalEvidence,
 )
@@ -44,7 +44,7 @@ from intergrax.runtime.diagnostics.functional_evidence_projection_repairer impor
 from intergrax.runtime.diagnostics.functional_evidence_projection_state import (
     FunctionalEvidenceProjectionStateStore,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistence,
     FunctionalEvidencePersistenceConflictError,
     FunctionalEvidencePersistenceIntegrityError,

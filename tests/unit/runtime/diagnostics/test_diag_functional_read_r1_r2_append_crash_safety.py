@@ -24,7 +24,7 @@ from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
     encode_execution_index_v2,
     execution_index_v2_row_key_from_evidence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceConflictError,
     FunctionalEvidencePersistenceIntegrityError,
     FunctionalEvidenceProjectionConsistencyPendingError,

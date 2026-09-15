@@ -7,7 +7,7 @@ from __future__ import annotations
 from fastapi import APIRouter, FastAPI, HTTPException, Query, status
 
 from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
-from intergrax.runtime.diagnostics.functional_evidence_persistence import FunctionalEvidenceQueryRequest
+from intergrax.contracts.functional_evidence.persistence import FunctionalEvidenceQueryRequest
 from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
     FunctionalEvidenceRuntimeWiring,
     functional_evidence_wiring_extra_key,

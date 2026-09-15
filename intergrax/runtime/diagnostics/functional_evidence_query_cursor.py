@@ -15,7 +15,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from intergrax.contracts.execution_identity import AttemptId, EventId, RunId, TaskId
-from intergrax.runtime.diagnostics.functional_evidence import PipelineEvidenceKind
+from intergrax.contracts.functional_evidence import PipelineEvidenceKind
 
 _FUNCTIONAL_EVIDENCE_CURSOR_SCHEMA = "intergrax.functional_evidence_query_cursor.v1"
 _FUNCTIONAL_EVIDENCE_CURSOR_MAX_TOKEN_LENGTH = 4096

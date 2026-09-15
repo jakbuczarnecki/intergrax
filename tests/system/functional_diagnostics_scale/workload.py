@@ -11,14 +11,16 @@ from datetime import datetime, timedelta, timezone
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    ExecutionId,
     RunId,
     TaskId,
     validate_attempt_id,
     validate_event_id,
+    validate_execution_id,
     validate_run_id,
     validate_task_id,
 )
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineArtifactLineageFact,
     PipelineCandidateFact,
     PipelineEvidenceKind,
@@ -87,6 +89,7 @@ class ScaleExecutionIdentity:
     task_id: TaskId
     run_id: RunId
     attempt_id: AttemptId
+    execution_id: ExecutionId
     execution_index: int
     is_heavy: bool
     analyzer_sample: bool
@@ -137,6 +140,14 @@ class FunctionalEvidenceWorkloadGenerator:
                         attempt_id=validate_attempt_id(
                             _deterministic_id(
                                 "attempt_",
+                                str(self._profile.seed),
+                                tenant_id,
+                                str(execution_index),
+                            ),
+                        ),
+                        execution_id=validate_execution_id(
+                            _deterministic_id(
+                                "execution_",
                                 str(self._profile.seed),
                                 tenant_id,
                                 str(execution_index),
@@ -285,6 +296,7 @@ class FunctionalEvidenceWorkloadGenerator:
             task_id=identity.task_id,
             run_id=identity.run_id,
             attempt_id=identity.attempt_id,
+            execution_id=identity.execution_id,
         )
         recorded_at = _BASE_TIME + timedelta(
             seconds=identity.execution_index,

@@ -8,10 +8,10 @@ import pytest
 
 from datetime import datetime, timezone
 
-from intergrax.contracts.execution_identity import mint_event_id, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, mint_event_id, mint_run_id, mint_task_id
 from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
 from intergrax.runtime.diagnostics.functional_diagnostic_analysis import FunctionalDiagnosticCheckStatus
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineCandidateFact,
     PipelineEvidenceKind,
     PipelineEvidenceProvenance,
@@ -167,6 +167,8 @@ def test_missing_selection_yields_inconclusive_without_proven_extraction_failure
         tenant_id="tenant-q3",
         task_id=mint_task_id(),
         run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
     query_validation = build_query_validation_evidence(
         scope,

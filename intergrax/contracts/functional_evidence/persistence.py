@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Platform-owned persistence contract for functional/AI pipeline evidence (DIAG-FUNCTIONAL-2)."""
+"""Provider-neutral persistence port for functional/AI pipeline evidence."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from intergrax.contracts.execution_identity import AttemptId, RunId, TaskId
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence.models import (
     PipelineEvidenceKind,
     PlatformFunctionalEvidence,
 )
@@ -19,7 +19,12 @@ from intergrax.runtime.diagnostics.functional_evidence import (
 def functional_evidence_query_order_key(
     evidence: PlatformFunctionalEvidence,
 ) -> tuple[datetime, str]:
-    """Canonical deterministic ordering for functional evidence queries."""
+    """
+    Stable key for deterministic query pagination.
+
+    Uses ``(recorded_at, evidence_id)`` only to order pages consistently.
+    This is **not** execution lifecycle ordering and **not** causal ordering.
+    """
     return (evidence.provenance.recorded_at, str(evidence.evidence_id))
 
 
@@ -72,7 +77,7 @@ class FunctionalEvidencePersistence(ABC):
     """
     Append-only store for ``PlatformFunctionalEvidence``.
 
-    Implementations live behind this contract. Core diagnostics does not import
+    Implementations live behind this contract. Platform core does not import
     vendor-specific storage backends.
     """
 
@@ -89,11 +94,10 @@ class FunctionalEvidencePersistence(ABC):
         """
         Return one bounded page of evidence for an execution scope.
 
-        Results are tenant-scoped and ordered by ``functional_evidence_query_order_key``.
+        Results are tenant-scoped and paginated using ``functional_evidence_query_order_key``
+        (stable pagination order, not execution authority).
         Pagination uses authenticated keyset cursors bound to the full query scope
         (tenant, task, run, optional attempt filter, optional kind filter).
-        One traversal is a monotonic ordered scan; late evidence inserted before
-        an already-consumed cursor may require a subsequent reconstruction cycle.
         """
 
 

@@ -10,13 +10,13 @@ from datetime import datetime
 from enum import StrEnum
 
 from intergrax.contracts.execution_identity import AttemptId, EventId, RunId, TaskId
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
 )
 from intergrax.contracts.functional_evidence_bounds import (
     MAX_SUPPORTING_EVIDENCE_REFS,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistence,
     FunctionalEvidenceQueryRequest,
 )

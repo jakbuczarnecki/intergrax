@@ -24,7 +24,7 @@ from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
 from intergrax.runtime.diagnostics.functional_evidence_index_rebuilder import (
     FunctionalEvidenceIndexRebuilder,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceIntegrityError,
     FunctionalEvidenceQueryRequest,
     functional_evidence_query_order_key,
@@ -404,7 +404,7 @@ def test_filtered_pagination_after_recovery() -> None:
     fixtures = _seed_v1_only_legacy(store, scope, 30)
     _write_partial_v2(store, scope, fixtures, count=4)
     persistence = _persistence(store)
-    from intergrax.runtime.diagnostics.functional_evidence import PipelineEvidenceKind
+    from intergrax.contracts.functional_evidence import PipelineEvidenceKind
 
     collected: list = []
     cursor: str | None = None

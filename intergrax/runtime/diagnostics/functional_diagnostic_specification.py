@@ -22,7 +22,7 @@ from intergrax.runtime.diagnostics.functional_diagnostic_identity import (
     validate_functional_diagnostic_specification_id,
     validate_functional_diagnostic_specification_version,
 )
-from intergrax.runtime.diagnostics.functional_evidence import PipelineOperationStatus
+from intergrax.contracts.functional_evidence import PipelineOperationStatus
 from intergrax.runtime.observability.functional_validation_evidence import FunctionalValidationOutcome
 
 

@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Literal
 
-from intergrax.contracts.execution_identity import AttemptId, RunId, TaskId
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId, TaskId
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PlatformFunctionalEvidence,
 )
@@ -23,6 +23,7 @@ _EVIDENCE_ID_FIELD = "evidence_id"
 _RECORDED_AT_FIELD = "recorded_at"
 _KIND_FIELD = "kind"
 _ATTEMPT_ID_FIELD = "attempt_id"
+_EXECUTION_ID_FIELD = "execution_id"
 _MAX_INDEX_MICROS = 10**16
 _MIN_INDEX_MICROS = 0
 _UTC_EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
@@ -42,7 +43,8 @@ class DecodedExecutionIndexV2:
     evidence_id: str
     recorded_at: datetime
     kind: PipelineEvidenceKind
-    attempt_id: AttemptId | None
+    attempt_id: AttemptId
+    execution_id: ExecutionId
     schema_version: Literal["intergrax.functional_evidence.index.v2"]
 
 
@@ -94,8 +96,8 @@ def encode_execution_index_v2(evidence: PlatformFunctionalEvidence) -> dict[str,
         _RECORDED_AT_FIELD: _encode_datetime(recorded_at),
         _KIND_FIELD: evidence.kind.value,
     }
-    if evidence.scope.attempt_id is not None:
-        payload[_ATTEMPT_ID_FIELD] = str(evidence.scope.attempt_id)
+    payload[_ATTEMPT_ID_FIELD] = str(evidence.scope.attempt_id)
+    payload[_EXECUTION_ID_FIELD] = str(evidence.scope.execution_id)
     return payload
 
 
@@ -128,17 +130,20 @@ def decode_execution_index_v2(data: object) -> DecodedExecutionIndexV2:
         raise ValueError("invalid functional evidence execution index kind")
     parsed_recorded_at = _decode_datetime(recorded_at)
     _validate_index_timestamp(parsed_recorded_at)
-    attempt_id: AttemptId | None = None
     raw_attempt_id = data.get(_ATTEMPT_ID_FIELD)
-    if raw_attempt_id is not None:
-        if not isinstance(raw_attempt_id, str) or not raw_attempt_id:
-            raise ValueError("invalid functional evidence execution index attempt_id")
-        attempt_id = AttemptId(raw_attempt_id)
+    if not isinstance(raw_attempt_id, str) or not raw_attempt_id:
+        raise ValueError("invalid functional evidence execution index attempt_id")
+    attempt_id = AttemptId(raw_attempt_id)
+    raw_execution_id = data.get(_EXECUTION_ID_FIELD)
+    if not isinstance(raw_execution_id, str) or not raw_execution_id:
+        raise ValueError("invalid functional evidence execution index execution_id")
+    execution_id = ExecutionId(raw_execution_id)
     return DecodedExecutionIndexV2(
         evidence_id=evidence_id,
         recorded_at=parsed_recorded_at,
         kind=PipelineEvidenceKind(kind),
         attempt_id=attempt_id,
+        execution_id=execution_id,
         schema_version=_INDEX_SCHEMA_V2,
     )
 

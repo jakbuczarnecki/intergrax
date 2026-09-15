@@ -11,7 +11,7 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, validate_run_id, validate_task_id
 from intergrax.tools.providers.workspace.service import WORKSPACE_SEARCH_TOOL_ID
 from intergrax.core.qualification.functional_diagnostic_comparator import compare_qualification_case
 from intergrax.core.qualification.functional_diagnostic_expectation import (
@@ -26,7 +26,7 @@ from intergrax.runtime.diagnostics.diagnostic_assessment_composer import Diagnos
 from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
 from intergrax.runtime.diagnostics.functional_diagnostic_analysis import FunctionalDiagnosticCheckStatus
 from intergrax.runtime.diagnostics.functional_operator_projection import FunctionalOperatorOutcomeStatus
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceScope,
     PipelineOperationStatus,
@@ -370,6 +370,8 @@ def _run_case(
         tenant_id=config.tenant_id,
         task_id=validate_task_id(response.task_id),
         run_id=validate_run_id(response.run_id),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
     )
     validation = build_independent_validation_evidence(
         pipeline_scope,

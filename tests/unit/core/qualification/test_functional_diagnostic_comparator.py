@@ -32,7 +32,7 @@ from intergrax.runtime.diagnostics.functional_diagnostic_specification import (
     FunctionalDiagnosticSpecification,
     OperationOutcomeStatusRequirement,
 )
-from intergrax.runtime.diagnostics.functional_evidence import PipelineOperationStatus
+from intergrax.contracts.functional_evidence import PipelineOperationStatus
 from intergrax.runtime.diagnostics.functional_operator_projection import FunctionalOperatorOutcomeStatus
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 

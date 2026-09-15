@@ -14,7 +14,7 @@ from intergrax.integrations.providers.document_store.mongodb.bundle import creat
 from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
     DocumentStoreFunctionalEvidencePersistence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidenceQueryRequest,
 )
 from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (

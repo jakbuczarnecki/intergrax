@@ -13,7 +13,7 @@ from intergrax.runtime.diagnostics.functional_validation import (
     FunctionalValidatorRef,
     functional_validation_evidence_id,
 )
-from intergrax.runtime.diagnostics.functional_evidence import PipelineEvidenceScope
+from intergrax.contracts.functional_evidence import PipelineEvidenceScope
 
 C1_ORACLE_VALIDATOR_ID = "c1.rag.date_oracle.v1"
 EXPECTED_INCIDENT_DATE = "2026-08-17"

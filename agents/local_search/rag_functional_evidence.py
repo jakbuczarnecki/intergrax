@@ -9,7 +9,7 @@ from local_search.retrieval_selection import (
     SearchRetrievalCandidate,
     artifact_ref_from_candidate,
 )
-from intergrax.runtime.diagnostics.functional_evidence import PipelineOperationStatus
+from intergrax.contracts.functional_evidence import PipelineOperationStatus
 from intergrax.runtime.diagnostics.specifications.c1_rag_functional_diagnostic_specification import (
     C1_RAG_QUERY_ID,
     C1_RAG_RETRIEVE_OPERATION_ID,

@@ -12,7 +12,7 @@ from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
     wire_functional_evidence_persistence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import FunctionalEvidencePersistence
+from intergrax.contracts.functional_evidence.persistence import FunctionalEvidencePersistence
 from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )

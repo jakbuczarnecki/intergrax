@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Generic typed functional/AI pipeline evidence foundation (DIAG-FUNCTIONAL-2)."""
+"""Neutral typed functional/AI pipeline evidence contracts (Evidence Plane)."""
 
 from __future__ import annotations
 
@@ -14,20 +14,24 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from intergrax.contracts.execution_identity import (
     AttemptId,
     EventId,
+    ExecutionId,
     RunId,
     TaskId,
     validate_attempt_id,
     validate_event_id,
+    validate_execution_id,
     validate_run_id,
     validate_task_id,
+)
+from intergrax.contracts.functional_evidence.correlation import (
+    FunctionalEvidenceExecutionCorrelation,
 )
 from intergrax.contracts.functional_evidence_bounds import (
     MAX_DIRECT_UPSTREAM_EVIDENCE_REFS,
 )
-from intergrax.runtime.observability.export_attributes import ObservabilityArtifactReference
-from intergrax.runtime.observability.functional_validation_evidence import DiagnosticExecutionCorrelation
+from intergrax.contracts.observability_artifact_reference import ObservabilityArtifactReference
 
-PLATFORM_FUNCTIONAL_EVIDENCE_SCHEMA = "platform_functional_evidence.v1"
+PLATFORM_FUNCTIONAL_EVIDENCE_SCHEMA = "platform_functional_evidence.v2"
 
 
 class PipelineEvidenceKind(StrEnum):
@@ -60,14 +64,15 @@ class ScoreSemantics(StrEnum):
 
 
 class PipelineEvidenceScope(BaseModel):
-    """Execution scope shared by all functional evidence facts."""
+    """Execution-scoped correlation for all functional evidence facts."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     tenant_id: str
     task_id: TaskId
     run_id: RunId
-    attempt_id: AttemptId | None = None
+    attempt_id: AttemptId
+    execution_id: ExecutionId
 
     @field_validator("task_id", mode="before")
     @classmethod
@@ -81,10 +86,13 @@ class PipelineEvidenceScope(BaseModel):
 
     @field_validator("attempt_id", mode="before")
     @classmethod
-    def _validate_attempt_id_field(cls, value: object) -> AttemptId | None:
-        if value is None:
-            return None
+    def _validate_attempt_id_field(cls, value: object) -> AttemptId:
         return validate_attempt_id(value)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id_field(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
 
     @field_validator("tenant_id")
     @classmethod
@@ -99,12 +107,16 @@ class PipelineEvidenceScope(BaseModel):
         return normalized
 
     @classmethod
-    def from_correlation(cls, correlation: DiagnosticExecutionCorrelation) -> PipelineEvidenceScope:
+    def from_correlation(
+        cls,
+        correlation: FunctionalEvidenceExecutionCorrelation,
+    ) -> PipelineEvidenceScope:
         return cls(
             tenant_id=correlation.tenant_id,
             task_id=correlation.task_id,
             run_id=correlation.run_id,
             attempt_id=correlation.attempt_id,
+            execution_id=correlation.execution_id,
         )
 
 
@@ -324,7 +336,7 @@ class PlatformFunctionalEvidence(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["platform_functional_evidence.v1"] = PLATFORM_FUNCTIONAL_EVIDENCE_SCHEMA
+    schema_version: Literal["platform_functional_evidence.v2"] = PLATFORM_FUNCTIONAL_EVIDENCE_SCHEMA
     evidence_id: EventId
     kind: PipelineEvidenceKind
     scope: PipelineEvidenceScope

@@ -10,14 +10,16 @@ from datetime import datetime, timedelta, timezone
 from intergrax.contracts.execution_identity import (
     AttemptId,
     EventId,
+    ExecutionId,
     RunId,
     TaskId,
     mint_attempt_id,
     mint_event_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
 )
-from intergrax.runtime.diagnostics.functional_evidence import (
+from intergrax.contracts.functional_evidence import (
     PipelineArtifactLineageFact,
     PipelineCandidateFact,
     PipelineEvidenceKind,
@@ -32,7 +34,7 @@ from intergrax.runtime.diagnostics.functional_evidence import (
     ScoreSemantics,
     TypedPipelineScore,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistence,
     FunctionalEvidencePersistenceConflictError,
     FunctionalEvidencePersistenceIntegrityError,
@@ -50,12 +52,14 @@ def sample_functional_evidence_scope(
     task_id: TaskId | None = None,
     run_id: RunId | None = None,
     attempt_id: AttemptId | None = None,
+    execution_id: ExecutionId | None = None,
 ) -> PipelineEvidenceScope:
     return PipelineEvidenceScope(
         tenant_id=tenant_id,
         task_id=task_id or mint_task_id(),
         run_id=run_id or mint_run_id(),
-        attempt_id=attempt_id,
+        attempt_id=attempt_id or mint_attempt_id(),
+        execution_id=execution_id or mint_execution_id(),
     )
 
 

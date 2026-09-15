@@ -21,7 +21,7 @@ from intergrax.runtime.diagnostics.functional_evidence_append_intent import (
     FunctionalEvidenceAppendFaultBoundary,
     FunctionalEvidenceAppendIntentStore,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence import (
+from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceIntegrityError,
 )
 from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
