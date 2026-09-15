@@ -200,26 +200,6 @@ class TaskResult(BaseModel):
                 data["summary"] = result_summary_from_metadata(metadata).model_dump()
         return data
 
-    @model_validator(mode="before")
-    @classmethod
-    def _default_terminal_authoritative_exposure(cls, data: Any) -> Any:
-        if not isinstance(data, dict):
-            return data
-        if "authoritative_decision_exposure" in data:
-            return data
-        state = data.get("state")
-        if state is not None and task_state_requires_authoritative_exposure(state):
-            updated = dict(data)
-            from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
-                terminal_task_result_exposure_no_decision_gate,
-            )
-
-            updated["authoritative_decision_exposure"] = (
-                terminal_task_result_exposure_no_decision_gate()
-            )
-            return updated
-        return data
-
     @model_validator(mode="after")
     def _validate_authoritative_decision_exposure_terminality(self) -> TaskResult:
         if (

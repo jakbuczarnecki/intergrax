@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum
 
 from intergrax.contracts.decision_authoritative_exposure import (
     AuthoritativeDecisionExposure,
@@ -42,8 +43,25 @@ from intergrax.runtime.execution.decision_exposure_selection_validation import (
 from intergrax.runtime.task.task_state import TaskState, task_state_requires_authoritative_exposure
 
 
+class NexusDecisionExposureFailureCode(str, Enum):
+    """Internal authoritative exposure resolution failure (not public Unevaluated reason)."""
+
+    UNSUPPORTED_TASK_STATE = "unsupported_task_state"
+    MISSING_EFFECTIVE_ATTEMPT = "missing_effective_attempt"
+    SELECTION_FAILED = "selection_failed"
+
+
 class NexusDecisionExposureError(RuntimeError):
     """Fail-closed authoritative exposure resolution failure."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        failure_code: NexusDecisionExposureFailureCode,
+    ) -> None:
+        super().__init__(message)
+        self.failure_code = failure_code
 
 
 GRAPH_HOST_DECISION_EXPOSURE_PUBLICATION_POLICY = DecisionExposurePublicationPolicy(
@@ -132,6 +150,7 @@ def resolve_authoritative_decision_exposure_for_task(
     if not task_state_requires_authoritative_exposure(task_state):
         raise NexusDecisionExposureError(
             f"unsupported task state for authoritative exposure: {task_state!r}",
+            failure_code=NexusDecisionExposureFailureCode.UNSUPPORTED_TASK_STATE,
         )
     resolved_run_id = validate_run_id(run_id)
     if session is None or not session.graph_final_gate_enabled:
@@ -156,6 +175,7 @@ def resolve_authoritative_decision_exposure_for_task(
     if effective_attempt_id is None:
         raise NexusDecisionExposureError(
             "terminal authoritative exposure requires effective attempt id",
+            failure_code=NexusDecisionExposureFailureCode.MISSING_EFFECTIVE_ATTEMPT,
         )
     candidates = session.collector.candidates_for_attempt(effective_attempt_id)
     if not candidates and task_state in {
@@ -175,6 +195,7 @@ def resolve_authoritative_decision_exposure_for_task(
         raise NexusDecisionExposureError(
             f"authoritative decision exposure selection failed: "
             f"{outcome.reason_code.value}: {outcome.detail}",
+            failure_code=NexusDecisionExposureFailureCode.SELECTION_FAILED,
         )
     return outcome.selected
 

@@ -77,6 +77,9 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_run
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import RuntimePolicyBundleEvaluator
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
@@ -395,7 +398,8 @@ async def test_taskcpm_b6_supported_operator_resume_reaches_runner_through_gover
     with patch(
         "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
-        return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
+        return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
     ) as resume_call:
         outcome = await governed_resume_checkpoint_task(
             runner,
@@ -459,7 +463,8 @@ async def test_taskcpm_b7_supported_resume_route_reaches_runner_only_through_gov
     with patch(
         "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
-        return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
+        return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
     ) as resume_allow:
         mount_harness_task_routes(
             app_allow,
@@ -491,7 +496,8 @@ async def test_taskcpm_b8_debug_hitl_resume_service_is_debug_lab_only() -> None:
     checkpoint = _checkpoint()
     host_execution = MagicMock()
     host_execution.execute = AsyncMock(
-        return_value=TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
+        return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+TaskResult(task_id=_TASK_ID, state=TaskState.COMPLETED, answer="ok"),
     )
     service = DebugHitlResumeService(
         host_execution=host_execution,

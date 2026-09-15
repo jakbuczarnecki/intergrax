@@ -9,6 +9,9 @@ from intergrax.contracts.agent_contract_meta import AgentExecutionMode
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -22,6 +25,7 @@ async def test_run_async_returns_pending_handle() -> None:
                 task_id=task.task_id,
                 state=TaskState.COMPLETED,
                 answer="ok",
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             )
 
     index = InMemoryAsyncTaskIndex()

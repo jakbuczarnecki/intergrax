@@ -57,6 +57,9 @@ from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from research_application.tests.research_ac3_projection import build_research_test_registry_projection
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_environment_profile
@@ -201,6 +204,7 @@ async def test_agentic_execution_does_not_require_caller_nexus() -> None:
                 run_id=mint_run_id(),
                 state=TaskState.COMPLETED,
                 answer="ok",
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             ),
         ):
             await runtime.execution.execute(task)
@@ -229,6 +233,7 @@ async def test_orchestration_execution_reaches_internal_nexus_backend() -> None:
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="pipeline",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         ),
     ) as handle_task_mock:
         await runtime.execution.execute(task)
@@ -269,6 +274,7 @@ async def test_public_execution_path_has_single_root_lifecycle() -> None:
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="one",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(ExecutionFacade, "execute", _count_facade_execute):

@@ -28,6 +28,9 @@ from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.host_task_terminal_publisher import HostTaskTerminalPublisher
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -124,6 +127,7 @@ async def test_completed_task_result_publishes_terminal_once() -> None:
             state=TaskState.COMPLETED,
             answer="ok",
             agent_id=task.agent_id,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         ),
     ):
         result = await execution.execute(task, run_id=run_id, attempt_id=attempt_id)
@@ -156,6 +160,7 @@ async def test_failed_task_result_publishes_terminal_once() -> None:
             state=TaskState.FAILED,
             answer="failed",
             agent_id=task.agent_id,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         ),
     ):
         result = await execution.execute(task, run_id=run_id, attempt_id=attempt_id)
@@ -203,6 +208,7 @@ async def test_missing_terminal_publisher_executes_without_error() -> None:
             state=TaskState.COMPLETED,
             answer="ok",
             agent_id=task.agent_id,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         ),
     ):
         result = await execution.execute(task)
@@ -233,6 +239,7 @@ async def test_nexus_adapter_delegates_terminal_publication() -> None:
                 state=TaskState.COMPLETED,
                 answer="ok",
                 agent_id=task.agent_id,
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             ),
         ):
             await execution.execute(task, run_id=run_id, attempt_id=attempt_id)

@@ -23,6 +23,9 @@ from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_run
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
@@ -45,6 +48,7 @@ def _runner_with_handle() -> tuple[UnifiedTaskRunner, MagicMock, AsyncMock]:
             task_id=mint_task_id(),
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
     )
     loop = MagicMock()
@@ -65,6 +69,7 @@ async def test_run_task_reaches_nexus_exactly_once_with_same_task() -> None:
         task_id=task.task_id,
         run_id=mint_run_id(),
         state=TaskState.COMPLETED,
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
 
     await runner.run_task(task)
@@ -207,6 +212,7 @@ async def test_run_task_task_enricher_runs_before_nexus() -> None:
             task_id=task.task_id,
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
     )
     loop = MagicMock()
@@ -286,7 +292,8 @@ async def test_concurrent_run_task_calls_use_isolated_delegate_identity() -> Non
     async def _handle(task: Task, *, run_id, attempt_id=None):
         seen.append((task.message, run_id, attempt_id))
         await gate.wait()
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     loop = MagicMock()
     loop.handle_task = _handle

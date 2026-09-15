@@ -115,6 +115,9 @@ from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
@@ -319,6 +322,7 @@ class _GraphOrchestrationBackend:
             task_id=task.task_id,
             run_id=active_run_id,
             state=TaskState.COMPLETED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
 

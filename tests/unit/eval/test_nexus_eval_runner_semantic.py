@@ -11,6 +11,9 @@ from intergrax.eval.eval_case import EvalCase
 from intergrax.eval.nexus_eval_runner import NexusEvalRunner
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import TaskResult, TaskState
 from intergrax.tools.providers.eval.contracts import EvalJudgeInput, EvalJudgeOutput
 
@@ -43,6 +46,7 @@ class _StubTaskRunner:
                 status=AgentExecutionStatus.COMPLETED,
                 summary="semantically equivalent answer",
             ),
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
 

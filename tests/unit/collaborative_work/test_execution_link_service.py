@@ -34,6 +34,9 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
 )
 from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import TaskResult
 from intergrax.runtime.task.task_state import TaskState
 
@@ -386,6 +389,7 @@ def test_runtime_task_completion_does_not_mutate_linked_work_item() -> None:
         run_id=execution.run_id,
         state=TaskState.COMPLETED,
         answer="done",
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
     assert task_result.state == TaskState.COMPLETED
     after = work_item_repo.get(

@@ -34,6 +34,9 @@ from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
@@ -52,7 +55,8 @@ async def test_orchestration_executor_invokes_handle_task_once_with_active_ident
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
-    expected = TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+    expected =     TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock(return_value=expected)
 
@@ -86,7 +90,8 @@ async def test_orchestration_router_resolves_orchestration_request_with_real_res
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
-    expected = TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+    expected =     TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock(return_value=expected)
     request = execution_request_from_task(
@@ -182,7 +187,8 @@ async def test_nexus_preserves_boundary_execution_id(monkeypatch: pytest.MonkeyP
         captured["run_id"] = active_run_id
         captured["attempt_id"] = active_attempt_id
         captured["execution_id"] = require_active_execution_id()
-        return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="execute")
@@ -220,7 +226,8 @@ async def test_nexus_does_not_rebind_when_boundary_execution_id_active(
     attempt_id = mint_attempt_id()
 
     async def _fake_impl(task: Task) -> TaskResult:
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="execute")
@@ -239,7 +246,8 @@ async def test_direct_legacy_nexus_call_fails_without_upstream_context(
     run_id = mint_run_id()
 
     async def _fake_impl(task: Task) -> TaskResult:
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="legacy")
@@ -260,7 +268,8 @@ async def test_nexus_fails_closed_on_active_identity_mismatch(
     execution_id = mint_execution_id()
 
     async def _fake_impl(task: Task) -> TaskResult:
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="mismatch")
@@ -289,7 +298,8 @@ async def test_unified_task_runner_mints_root_execution_id_per_invocation(
         captured["run_id"] = run_id
         captured["attempt_id"] = attempt_id
         captured["execution_id"] = require_active_execution_id()
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     runner = UnifiedTaskRunner(loop)
@@ -324,7 +334,8 @@ async def test_unified_task_runner_passes_same_concrete_attempt_to_nexus(
     async def _fake_impl(task: Task) -> TaskResult:
         run_id, attempt_id = require_active_execution_identity()
         seen_attempt_ids.append(attempt_id)
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     runner = UnifiedTaskRunner(loop)
@@ -354,7 +365,8 @@ async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
         seen_execution_ids.append(require_active_execution_id())
         assert active_run_id == run_id
         assert active_attempt_id == attempt_id
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     runner = UnifiedTaskRunner(loop)

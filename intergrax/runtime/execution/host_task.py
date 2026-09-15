@@ -127,6 +127,10 @@ def task_result_from_agent_execution(
     run_id: RunId,
     execution_result: AgentExecutionResult,
 ) -> TaskResult:
+    from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+        terminal_task_result_exposure_no_decision_gate,
+    )
+
     state = (
         TaskState.COMPLETED
         if execution_result.status is AgentExecutionStatus.COMPLETED
@@ -139,6 +143,7 @@ def task_result_from_agent_execution(
         answer=execution_result.summary,
         agent_id=execution_result.agent_id,
         execution_result=execution_result,
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
 
 

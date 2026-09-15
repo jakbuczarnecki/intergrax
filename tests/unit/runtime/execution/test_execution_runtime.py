@@ -54,6 +54,9 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 pytestmark = pytest.mark.unit
@@ -234,7 +237,8 @@ async def test_orchestration_root_runtime_nexus_receives_active_context(
         captured["execution_id"] = require_active_execution_id()
         captured["authority"] = require_active_execution_authority()
         captured["budget"] = peek_active_execution_budget()
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(
@@ -359,7 +363,8 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
     async def _orch_capture(task: Task) -> TaskResult:
         await _capture_shape()
         run_id, _ = require_active_execution_identity()
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     loop._handle_task_impl = _orch_capture  # type: ignore[method-assign]
     await execute_root_task(
@@ -383,7 +388,8 @@ async def test_nexus_without_active_identity_fails(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(
         loop,
         "_handle_task_impl",
-        AsyncMock(return_value=TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED)),
+        AsyncMock(return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED)),
     )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="fail")
 
@@ -403,7 +409,8 @@ async def test_nexus_without_active_authority_fails(
     monkeypatch.setattr(
         loop,
         "_handle_task_impl",
-        AsyncMock(return_value=TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED)),
+        AsyncMock(return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED)),
     )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="fail")
     run_id = mint_run_id()
@@ -435,7 +442,8 @@ async def test_nexus_without_active_budget_fails(
     monkeypatch.setattr(
         loop,
         "_handle_task_impl",
-        AsyncMock(return_value=TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED)),
+        AsyncMock(return_value=    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+TaskResult(task_id=mint_task_id(), state=TaskState.COMPLETED)),
     )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="fail")
     run_id = mint_run_id()
@@ -475,7 +483,8 @@ async def test_resume_root_execution_id_matches_identity_through_lifecycle(
     async def _fake_impl(task: Task) -> TaskResult:
         captured["active_execution_id"] = require_active_execution_id()
         active_run_id, _ = require_active_execution_identity()
-        return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(

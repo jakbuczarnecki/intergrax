@@ -20,6 +20,9 @@ from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import TaskResult, TaskState
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
@@ -75,6 +78,7 @@ async def test_shared_mcp_run_agent_uses_canonical_execution_facade() -> None:
                 run_id=mint_run_id(),
                 state=TaskState.COMPLETED,
                 answer="ok",
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             ),
         ):
             from fastmcp import Client
@@ -109,6 +113,7 @@ async def test_governed_contractor_mcp_adapt_does_not_root_call_nexus_handle_tas
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         ),
     ):
         from fastmcp import Client
@@ -145,6 +150,7 @@ async def test_governed_contractor_mcp_adapt_reaches_strategy_router_with_agenti
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="routed",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(StrategyExecutionRouter, "execute", _capture_execute):
@@ -183,6 +189,7 @@ async def test_research_mcp_pipeline_reaches_orchestration_strategy() -> None:
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="pipeline",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(StrategyExecutionRouter, "execute", _capture_execute):
@@ -222,6 +229,7 @@ async def test_mcp_root_execution_id_is_platform_owned() -> None:
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="identity",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(StrategyExecutionRouter, "execute", _capture_execute):
@@ -271,6 +279,7 @@ async def test_mcp_request_produces_single_root_execution_invocation() -> None:
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="one",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(ExecutionFacade, "execute", _count_facade_execute):

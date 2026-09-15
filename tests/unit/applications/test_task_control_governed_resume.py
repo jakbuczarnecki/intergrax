@@ -80,6 +80,9 @@ from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
 )
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
@@ -190,6 +193,7 @@ def _task_result() -> TaskResult:
         task_id=str(_TASK_ID),
         state=TaskState.COMPLETED,
         answer="done",
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
 
 

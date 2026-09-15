@@ -870,23 +870,7 @@ class NexusLoop:
         self,
         task: Task,
     ) -> object | None:
-        from intergrax.contracts.decision_authoritative_exposure import (
-            DecisionEvaluationScope,
-            ExposureUnevaluated,
-            ExposureUnevaluatedReason,
-        )
-        from intergrax.runtime.nexus.orchestration.nexus_decision_exposure import (
-            NexusDecisionExposureError,
-        )
-
-        try:
-            return self._resolve_authoritative_decision_exposure(task)
-        except NexusDecisionExposureError:
-            task.state = TaskState.FAILED
-            return ExposureUnevaluated(
-                scope=DecisionEvaluationScope.GRAPH_FINAL,
-                reason=ExposureUnevaluatedReason.SCOPE_NOT_EVALUATED,
-            )
+        return self._resolve_authoritative_decision_exposure(task)
 
     def _build_result(
         self,

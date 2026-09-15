@@ -35,6 +35,9 @@ from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
 from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -323,7 +326,8 @@ async def test_d6_checkpoint_resume_preserves_execution_identity(monkeypatch: py
         captured["run_id"] = run_id
         captured["attempt_id"] = attempt_id
         captured["task_id"] = task.task_id
-        return TaskResult(task_id=task.task_id, run_id=run_id or RUN_ID, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id or RUN_ID, state=TaskState.COMPLETED)
 
     class _FakeCheckpointStore:
         def get_by_token(self, task_id: str, tenant_id: str, resume_token: str) -> TaskCheckpoint | None:

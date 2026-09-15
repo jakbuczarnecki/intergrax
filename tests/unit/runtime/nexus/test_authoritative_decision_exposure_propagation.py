@@ -51,6 +51,7 @@ from intergrax.runtime.execution.decision_exposure_selection_composition import 
 )
 from intergrax.runtime.nexus.orchestration.nexus_decision_exposure import (
     NexusDecisionExposureError,
+    NexusDecisionExposureFailureCode,
     NexusDecisionExposureRunSession,
     resolve_authoritative_decision_exposure_for_task,
 )
@@ -234,7 +235,7 @@ def test_b13_ambiguous_candidates_fail_closed() -> None:
         subject="subj-b",
     )
     lifecycle = _lifecycle_with_attempt(tenant_id="t1", run_id=run_id, attempt_id=attempt)
-    with pytest.raises(NexusDecisionExposureError):
+    with pytest.raises(NexusDecisionExposureError) as exc_info:
         resolve_authoritative_decision_exposure_for_task(
             task_state=TaskState.COMPLETED,
             tenant_id="t1",
@@ -242,3 +243,82 @@ def test_b13_ambiguous_candidates_fail_closed() -> None:
             attempt_lifecycle=lifecycle,
             session=session,
         )
+    assert exc_info.value.failure_code is NexusDecisionExposureFailureCode.SELECTION_FAILED
+
+
+def test_r1_t1_terminal_completed_omitted_exposure_raises() -> None:
+    with pytest.raises(ValueError, match="authoritative_decision_exposure"):
+        TaskResult(task_id="task-1", state=TaskState.COMPLETED)
+
+
+def test_r1_t2_terminal_failed_omitted_exposure_raises() -> None:
+    with pytest.raises(ValueError, match="authoritative_decision_exposure"):
+        TaskResult(task_id="task-1", state=TaskState.FAILED)
+
+
+def test_r1_n2_gate_configured_execution_failed_before_decision() -> None:
+    session = _session()
+    lifecycle = AttemptLifecycleService(InMemoryAttemptLifecycleStore())
+    resolved = resolve_authoritative_decision_exposure_for_task(
+        task_state=TaskState.FAILED,
+        tenant_id="t1",
+        run_id=mint_run_id(),
+        attempt_lifecycle=lifecycle,
+        session=session,
+    )
+    assert type(resolved) is ExposureUnevaluated
+    assert (
+        resolved.reason is ExposureUnevaluatedReason.EXECUTION_FAILED_BEFORE_DECISION
+    )
+
+
+def test_r1_n3_gate_configured_cancelled_before_decision() -> None:
+    session = _session()
+    lifecycle = AttemptLifecycleService(InMemoryAttemptLifecycleStore())
+    resolved = resolve_authoritative_decision_exposure_for_task(
+        task_state=TaskState.CANCELLED,
+        tenant_id="t1",
+        run_id=mint_run_id(),
+        attempt_lifecycle=lifecycle,
+        session=session,
+    )
+    assert type(resolved) is ExposureUnevaluated
+    assert (
+        resolved.reason
+        is ExposureUnevaluatedReason.EXECUTION_CANCELLED_BEFORE_DECISION
+    )
+
+
+def test_r1_n4_scope_not_evaluated_when_graph_final_missing() -> None:
+    session = _session()
+    attempt = mint_attempt_id()
+    run_id = mint_run_id()
+    lifecycle = _lifecycle_with_attempt(tenant_id="t1", run_id=run_id, attempt_id=attempt)
+    resolved = resolve_authoritative_decision_exposure_for_task(
+        task_state=TaskState.COMPLETED,
+        tenant_id="t1",
+        run_id=run_id,
+        attempt_lifecycle=lifecycle,
+        session=session,
+    )
+    assert type(resolved) is ExposureUnevaluated
+    assert resolved.reason is ExposureUnevaluatedReason.SCOPE_NOT_EVALUATED
+
+
+def test_r1_s3_missing_effective_attempt_fail_closed() -> None:
+    session = _session()
+    session.graph_final_evaluation_occurred = True
+    run_id = mint_run_id()
+    lifecycle = AttemptLifecycleService(InMemoryAttemptLifecycleStore())
+    with pytest.raises(NexusDecisionExposureError) as exc_info:
+        resolve_authoritative_decision_exposure_for_task(
+            task_state=TaskState.COMPLETED,
+            tenant_id="t1",
+            run_id=run_id,
+            attempt_lifecycle=lifecycle,
+            session=session,
+        )
+    assert (
+        exc_info.value.failure_code
+        is NexusDecisionExposureFailureCode.MISSING_EFFECTIVE_ATTEMPT
+    )

@@ -9,6 +9,9 @@ from intergrax.experiments.workflow import (
     ensure_repo_root_on_path,
 )
 from testing_support.agent_registry_bootstrap import build_harness_registry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
@@ -83,6 +86,7 @@ def test_evaluate_against_criteria_expected_output():
         state=TaskState.COMPLETED,
         answer="echo: needle in haystack",
         metadata={"validation_valid": True},
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
     checks = evaluate_against_criteria(record, result)
     assert checks["expected_output_substring"] is True

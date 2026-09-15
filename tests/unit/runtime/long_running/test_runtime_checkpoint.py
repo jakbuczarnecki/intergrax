@@ -36,6 +36,9 @@ from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, Ex
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep
 from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import HumanApprovalResolution
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
@@ -354,7 +357,8 @@ async def test_unified_task_runner_resume_preserves_checkpoint_identity(monkeypa
     async def _fake_handle_task(task: Task, *, run_id, attempt_id=None) -> TaskResult:
         captured["run_id"] = run_id
         captured["attempt_id"] = attempt_id
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "handle_task", _fake_handle_task)
     runner = UnifiedTaskRunner(loop)
