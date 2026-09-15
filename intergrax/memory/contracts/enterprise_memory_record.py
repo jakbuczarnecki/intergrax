@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
 from intergrax.contracts.data_classification import DataClassification
 from intergrax.contracts.evidence_claims import validate_evidence_reference_id
@@ -80,16 +82,42 @@ class MemoryRecordLineage:
     superseded_by_memory_id: str | None = None
 
 
-def _parse_iso_pair(valid_from: str | None, valid_until: str | None) -> None:
+def parse_memory_record_timestamp(field_name: str, value: str) -> datetime:
+    """Parse a non-empty ISO-8601 timestamp string for memory record validation.
+
+    Supports offset-aware values, fractional seconds, and a trailing ``Z`` (UTC)
+    consistent with other memory-layer ISO parsing. Naive strings remain naive
+    (no implicit timezone). Raises ``ValueError`` when the value is empty or malformed.
+    """
+    text = (value or "").strip()
+    if not text:
+        raise ValueError(f"invalid {field_name}: empty timestamp")
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        raise ValueError(f"invalid {field_name}: malformed ISO timestamp") from None
+
+
+def _validate_temporal_window(valid_from: str | None, valid_until: str | None) -> None:
     if valid_from is None or valid_until is None:
         return
-    if valid_from > valid_until:
+    from_dt = parse_memory_record_timestamp("valid_from", valid_from)
+    until_dt = parse_memory_record_timestamp("valid_until", valid_until)
+    from_aware = from_dt.tzinfo is not None
+    until_aware = until_dt.tzinfo is not None
+    if from_aware != until_aware:
+        raise ValueError(
+            "valid_from and valid_until must both be timezone-aware or both naive"
+        )
+    if from_dt > until_dt:
         raise ValueError("valid_from must not be after valid_until")
 
 
 def _validate_confidence(confidence: float | None) -> None:
     if confidence is None:
         return
+    if not math.isfinite(confidence):
+        raise ValueError("confidence must be finite and between 0.0 and 1.0")
     if confidence < 0.0 or confidence > 1.0:
         raise ValueError("confidence must be between 0.0 and 1.0")
 
@@ -113,7 +141,7 @@ def validate_memory_record_invariants(
         raise ValueError("memory_id must be non-empty")
     if revision < 1:
         raise ValueError("revision must be >= 1")
-    _parse_iso_pair(valid_from, valid_until)
+    _validate_temporal_window(valid_from, valid_until)
     _validate_confidence(trust.confidence)
     _validate_evidence_refs(evidence_refs)
     if lineage.supersedes_memory_id and lineage.supersedes_memory_id == memory_id:

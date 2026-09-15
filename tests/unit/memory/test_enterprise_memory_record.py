@@ -60,6 +60,76 @@ def test_temporal_ordering_rejected() -> None:
         )
 
 
+def test_temporal_naive_valid_ordering_accepted() -> None:
+    UserProfileMemoryEntry(
+        content="x",
+        valid_from="2026-01-01T10:00:00",
+        valid_until="2026-01-01T11:00:00",
+    )
+
+
+def test_temporal_naive_invalid_ordering_rejected() -> None:
+    with pytest.raises(ValueError, match="valid_from must not be after valid_until"):
+        UserProfileMemoryEntry(
+            content="x",
+            valid_from="2026-01-01T12:00:00",
+            valid_until="2026-01-01T11:00:00",
+        )
+
+
+def test_temporal_offset_aware_valid_ordering_accepted() -> None:
+    """10:00+02:00 is 08:00 UTC, before 09:30+00:00 — must not use lexical compare."""
+    UserProfileMemoryEntry(
+        content="x",
+        valid_from="2026-01-01T10:00:00+02:00",
+        valid_until="2026-01-01T09:30:00+00:00",
+    )
+
+
+def test_temporal_offset_aware_invalid_ordering_rejected() -> None:
+    with pytest.raises(ValueError, match="valid_from must not be after valid_until"):
+        UserProfileMemoryEntry(
+            content="x",
+            valid_from="2026-01-01T12:00:00+02:00",
+            valid_until="2026-01-01T09:30:00+00:00",
+        )
+
+
+def test_temporal_mixed_naive_and_aware_rejected() -> None:
+    with pytest.raises(ValueError, match="timezone-aware or both naive"):
+        UserProfileMemoryEntry(
+            content="x",
+            valid_from="2026-01-01T10:00:00",
+            valid_until="2026-01-01T11:00:00+00:00",
+        )
+
+
+def test_temporal_malformed_valid_from_rejected() -> None:
+    with pytest.raises(ValueError, match="invalid valid_from"):
+        UserProfileMemoryEntry(
+            content="x",
+            valid_from="abc",
+            valid_until="2026-01-01T11:00:00",
+        )
+
+
+def test_temporal_malformed_valid_until_rejected() -> None:
+    with pytest.raises(ValueError, match="invalid valid_until"):
+        UserProfileMemoryEntry(
+            content="x",
+            valid_from="2026-01-01T10:00:00",
+            valid_until="2026-13-99",
+        )
+
+
+def test_temporal_z_suffix_accepted() -> None:
+    UserProfileMemoryEntry(
+        content="x",
+        valid_from="2026-01-01T10:00:00Z",
+        valid_until="2026-01-01T11:00:00+00:00",
+    )
+
+
 def test_confidence_out_of_range_rejected() -> None:
     with pytest.raises(ValueError, match="confidence"):
         UserProfileMemoryEntry(
@@ -71,6 +141,35 @@ def test_confidence_out_of_range_rejected() -> None:
             content="x",
             trust=MemoryRecordTrust(confidence=1.1),
         )
+
+
+def test_confidence_nan_rejected() -> None:
+    with pytest.raises(ValueError, match="confidence"):
+        UserProfileMemoryEntry(
+            content="x",
+            trust=MemoryRecordTrust(confidence=float("nan")),
+        )
+
+
+def test_confidence_positive_infinity_rejected() -> None:
+    with pytest.raises(ValueError, match="confidence"):
+        UserProfileMemoryEntry(
+            content="x",
+            trust=MemoryRecordTrust(confidence=float("inf")),
+        )
+
+
+def test_confidence_negative_infinity_rejected() -> None:
+    with pytest.raises(ValueError, match="confidence"):
+        UserProfileMemoryEntry(
+            content="x",
+            trust=MemoryRecordTrust(confidence=float("-inf")),
+        )
+
+
+def test_confidence_boundary_values_accepted() -> None:
+    UserProfileMemoryEntry(content="lo", trust=MemoryRecordTrust(confidence=0.0))
+    UserProfileMemoryEntry(content="hi", trust=MemoryRecordTrust(confidence=1.0))
 
 
 def test_self_supersession_rejected() -> None:
@@ -99,6 +198,10 @@ def test_serialization_roundtrip() -> None:
         trust=MemoryRecordTrust(trust_class=MemoryTrustClass.USER_EXPLICIT, confidence=0.9),
         governance=MemoryRecordGovernance(data_classification=DataClassification.CONFIDENTIAL),
         evidence_refs=("evidence.run-1",),
+        lineage=MemoryRecordLineage(supersedes_memory_id="prior-mem"),
+        valid_from="2026-01-01T10:00:00",
+        valid_until="2026-01-01T12:00:00",
+        updated_at="2026-06-15T08:00:00Z",
         revision=2,
     )
     restored = memory_entry_from_dict(memory_entry_to_dict(original))
@@ -108,6 +211,41 @@ def test_serialization_roundtrip() -> None:
     assert restored.trust.confidence == 0.9
     assert restored.governance.data_classification is DataClassification.CONFIDENTIAL
     assert restored.evidence_refs == ("evidence.run-1",)
+    assert restored.lineage.supersedes_memory_id == "prior-mem"
+    assert restored.valid_from == "2026-01-01T10:00:00"
+    assert restored.valid_until == "2026-01-01T12:00:00"
+    assert restored.updated_at == "2026-06-15T08:00:00Z"
+
+
+@pytest.mark.asyncio
+async def test_ltm_vector_projection_metadata_includes_memory_id_and_revision() -> None:
+    from unittest.mock import MagicMock
+
+    from intergrax.memory.user_profile_ltm_vector_projection import UserProfileLtmVectorProjection
+    from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreRecord
+
+    entry = UserProfileMemoryEntry(content="proj", revision=3)
+    embedding_manager = MagicMock()
+    embedding_manager.embed_texts.return_value = [[0.1, 0.2]]
+    captured: list[VectorStoreRecord] = []
+    vectorstore_manager = MagicMock()
+
+    def _capture_add(records: list[VectorStoreRecord], *, scope: object) -> None:
+        captured.extend(records)
+
+    vectorstore_manager.add_records = _capture_add
+
+    projection = UserProfileLtmVectorProjection(
+        embedding_manager=embedding_manager,
+        vectorstore_manager=vectorstore_manager,
+        tenant_id="tenant-1",
+        vector_index_namespace=None,
+        workspace_id=None,
+    )
+    await projection.upsert_memory_entry("user-1", entry)
+    meta = captured[0].document.metadata
+    assert meta["memory_id"] == entry.memory_id
+    assert meta["revision"] == 3
 
 
 @pytest.mark.asyncio
