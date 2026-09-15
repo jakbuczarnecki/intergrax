@@ -12,7 +12,9 @@ from pathlib import Path
 import pytest
 
 from intergrax.contracts.execution_identity import RunId, mint_run_id, mint_task_id
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.runtime.events.execution_position import ExecutionEventPosition
 from intergrax.runtime.events.persistence_contract import (
     NullRuntimeEventPersistence,
@@ -21,8 +23,12 @@ from intergrax.runtime.events.persistence_contract import (
 from intergrax.runtime.events.stores.document_backed_runtime_event_store import (
     DocumentBackedRuntimeEventStore,
 )
-from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
-from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
+from intergrax.runtime.events.stores.memory_runtime_event_store import (
+    InMemoryRuntimeEventStore,
+)
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import (
+    SQLiteRuntimeEventStore,
+)
 from intergrax.runtime.events.stores.validating_runtime_event_store import (
     ValidatingRuntimeEventPersistence,
 )
@@ -75,15 +81,21 @@ _REFLECTION_PATTERN = re.compile(r"\b(getattr|setattr|hasattr)\(")
 _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
     (
         "R2 implementation gate",
-        ["tests/unit/runtime/architecture/test_npsc5f_r2_journal_completeness_ordering.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_r2_journal_completeness_ordering.py"
+        ],
     ),
     (
         "R1 Final",
-        ["tests/unit/runtime/architecture/test_npsc5f_r1_final_durable_evidence_commit_tenant_integrity.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_r1_final_durable_evidence_commit_tenant_integrity.py"
+        ],
     ),
     (
         "NPSC-5F P0 gate",
-        ["tests/unit/runtime/architecture/test_npsc5f_p0_execution_evidence_architecture_reconciliation.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5f_p0_execution_evidence_architecture_reconciliation.py"
+        ],
     ),
     ("Runtime events suites", ["tests/unit/runtime/events/"]),
     (
@@ -106,11 +118,15 @@ _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
     ),
     (
         "Execution reconstruction",
-        ["tests/unit/runtime/diagnostics/test_execution_reconstruction.py"],
+        [
+            "tests/unit/runtime/observability/reconstruction/test_execution_reconstruction.py"
+        ],
     ),
     (
         "NPSC-5E Final",
-        ["tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5e_final_recovery_plane_qualification_and_freeze.py"
+        ],
     ),
     (
         "DG_001",
@@ -121,11 +137,15 @@ _MANDATORY_SUITES: tuple[tuple[str, list[str]], ...] = (
     ),
     (
         "NPSC-5D Final",
-        ["tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5d_final_multi_agent_governance_qualification.py"
+        ],
     ),
     (
         "NPSC-5B Final",
-        ["tests/unit/runtime/architecture/test_npsc5b_final_production_fanout_fanin_qualification.py"],
+        [
+            "tests/unit/runtime/architecture/test_npsc5b_final_production_fanout_fanin_qualification.py"
+        ],
     ),
     (
         "R2 drift classifier",
@@ -159,7 +179,11 @@ def _append_n(
         )
 
 
-@pytest.mark.parametrize(("label", "targets"), _MANDATORY_SUITES, ids=[label for label, _ in _MANDATORY_SUITES])
+@pytest.mark.parametrize(
+    ("label", "targets"),
+    _MANDATORY_SUITES,
+    ids=[label for label, _ in _MANDATORY_SUITES],
+)
 def test_mandatory_frozen_suite_passes(label: str, targets: list[str]) -> None:
     proc = _run_pytest(targets)
     assert proc.returncode == 0, f"{label} failed:\n{proc.stdout}\n{proc.stderr}"
@@ -178,7 +202,9 @@ def test_r2_final_no_unqualified_protected_drift_since_qualified_baseline() -> N
         _REPO_ROOT,
         from_sha=R2_POST_QUALIFIED_BASELINE_SHA,
     )
-    assert drift == [], f"R2 protected production drift since qualified baseline: {drift}"
+    assert drift == [], (
+        f"R2 protected production drift since qualified baseline: {drift}"
+    )
 
 
 def test_r2_page_completeness_cursor_invariant(tmp_path: Path) -> None:
@@ -270,7 +296,10 @@ def test_r2_sqlite_concurrent_append_respects_snapshot(tmp_path: Path) -> None:
     ("label", "factory"),
     [
         ("document", lambda: DocumentBackedRuntimeEventStore(InMemoryDocumentStore())),
-        ("validating", lambda: ValidatingRuntimeEventPersistence(InMemoryRuntimeEventStore())),
+        (
+            "validating",
+            lambda: ValidatingRuntimeEventPersistence(InMemoryRuntimeEventStore()),
+        ),
     ],
 )
 def test_r2_adapter_multi_page_no_duplicates(label: str, factory) -> None:
@@ -334,7 +363,10 @@ def test_r2_no_unsupported_chronology_claims_in_events_tree() -> None:
         for match in _FORBIDDEN_CHRONOLOGY_CLAIMS.finditer(text):
             line_start = text.rfind("\n", 0, match.start()) + 1
             line = text[line_start : text.find("\n", match.start())]
-            if "not task-global" in line.lower() or "not task-global chronology" in line.lower():
+            if (
+                "not task-global" in line.lower()
+                or "not task-global chronology" in line.lower()
+            ):
                 continue
             violations.append(f"{path.relative_to(_REPO_ROOT)}:{match.group(0)}")
     assert violations == []
@@ -377,14 +409,20 @@ def test_r2_no_execution_control_from_journal_surface() -> None:
             if not isinstance(node, ast.Call):
                 continue
             func = node.func
-            symbol = func.id if isinstance(func, ast.Name) else (func.attr if isinstance(func, ast.Attribute) else None)
+            symbol = (
+                func.id
+                if isinstance(func, ast.Name)
+                else (func.attr if isinstance(func, ast.Attribute) else None)
+            )
             if symbol in _FORBIDDEN_CONTROL_PLANE_SYMBOLS:
                 violations.append(f"{rel}:{node.lineno}:{symbol}")
     assert violations == []
 
 
 def test_r2_journal_read_surface_has_no_concrete_store_imports() -> None:
-    journal_path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
+    journal_path = (
+        _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
+    )
     source = journal_path.read_text(encoding="utf-8")
     assert "intergrax.runtime.events.stores" not in source
     assert "EvidencePersistencePort" in source
@@ -395,7 +433,9 @@ def test_r2_journal_read_surface_has_no_recovery_ownership() -> None:
         "intergrax.runtime.long_running",
         "intergrax.runtime.replay",
     )
-    journal_path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
+    journal_path = (
+        _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
+    )
     source = journal_path.read_text(encoding="utf-8")
     violations = [prefix for prefix in forbidden_prefixes if prefix in source]
     assert violations == []

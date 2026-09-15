@@ -33,7 +33,12 @@ _TRACE_PLANE_ROOTS = (
     _REPO_ROOT / "intergrax" / "agents" / "authoring" / "acp_routing_trace_bridge.py",
 )
 _RECONSTRUCTION_MODULES = (
-    _REPO_ROOT / "intergrax" / "runtime" / "diagnostics" / "execution_reconstruction.py",
+    _REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "observability"
+    / "reconstruction"
+    / "execution_reconstruction.py",
     _REPO_ROOT / "intergrax" / "runtime" / "diagnostics" / "diagnostic_orchestrator.py",
 )
 _EXCLUDED_PARTS = frozenset({"__pycache__", "tests"})
@@ -220,7 +225,9 @@ def test_trace_event_contract_is_run_scoped_without_execution_fields() -> None:
 
 @pytest.mark.obs_trace_1
 @pytest.mark.parametrize("entry", TRACE_CONSUMER_MATRIX, ids=lambda e: e.consumer)
-def test_no_trace_consumer_requires_trace_event_execution_correlation(entry: TraceConsumerQualification) -> None:
+def test_no_trace_consumer_requires_trace_event_execution_correlation(
+    entry: TraceConsumerQualification,
+) -> None:
     assert entry.status != "NEEDS_EXECUTION"
     assert entry.status != "NEEDS_ATTEMPT"
 
@@ -248,7 +255,12 @@ def test_gate_trace_middleware_emits_runtime_event_not_trace_event() -> None:
 
 
 @pytest.mark.obs_trace_1
-def test_gate_unified_journal_does_not_merge_plane_b_trace_as_execution_authority() -> None:
+def test_gate_unified_journal_does_not_merge_plane_b_trace_as_execution_authority() -> (
+    None
+):
     path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "unified_run_journal.py"
     source = path.read_text(encoding="utf-8")
-    assert "Plane B ``TraceEvent`` rows on ``PersistedRun`` are not converted here." in source
+    assert (
+        "Plane B ``TraceEvent`` rows on ``PersistedRun`` are not converted here."
+        in source
+    )
