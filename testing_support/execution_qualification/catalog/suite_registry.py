@@ -114,9 +114,11 @@ def _build_pytest_to_suite_id_registry() -> dict[tuple[str, ...], str]:
         NPSC5E_R2_FINAL_SEMANTIC_SUITE_ID,
         NPSC5E_R2_H2_Q1_SEMANTIC_SUITE_ID,
         NPSC5E_R3_FINAL_SEMANTIC_SUITE_ID,
+        NPSC5E_R3_IMPLEMENTATION_SEMANTIC_SUITE_ID,
         npsc5e_r2_final_semantic_pytest_arguments,
         npsc5e_r2_h2_q1_semantic_pytest_arguments,
         npsc5e_r3_final_semantic_pytest_arguments,
+        npsc5e_r3_implementation_semantic_pytest_arguments,
     )
 
     registry[npsc5e_r2_h2_q1_semantic_pytest_arguments()] = (
@@ -127,6 +129,9 @@ def _build_pytest_to_suite_id_registry() -> dict[tuple[str, ...], str]:
     )
     registry[npsc5e_r3_final_semantic_pytest_arguments()] = (
         NPSC5E_R3_FINAL_SEMANTIC_SUITE_ID
+    )
+    registry[npsc5e_r3_implementation_semantic_pytest_arguments()] = (
+        NPSC5E_R3_IMPLEMENTATION_SEMANTIC_SUITE_ID
     )
     return registry
 

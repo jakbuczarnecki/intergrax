@@ -69,6 +69,7 @@ def semantic_test_function_names_in_module(module_path: Path) -> frozenset[str]:
     names = {
         node.name
         for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name.startswith("test_")
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name.startswith("test_")
     }
     return frozenset(names - embedded_harness_test_names())

@@ -37,6 +37,18 @@ NPSC5E_R2_H2_Q1_EMBEDDED_PREDECESSOR_LABELS: tuple[str, ...] = (
     "Long-running",
 )
 
+NPSC5E_R3_IMPLEMENTATION_EMBEDDED_PREDECESSOR_LABELS: tuple[str, ...] = (
+    "R1 Final",
+    "R2 Final",
+    "P0A",
+    "DG_001",
+    "NPSC-5B",
+    "NPSC-5D Final",
+    "HITL R3",
+    "Child execution",
+    "Checkpoint store",
+)
+
 NPSC5E_R2_FINAL_EMBEDDED_PREDECESSOR_LABELS: tuple[str, ...] = (
     "R1 Final",
     "R2 Original",
@@ -102,7 +114,9 @@ NPSC5E_R3_FINAL_MANDATORY: FrozenPytestSuiteSource = (
     (
         "R3 implementation gate",
         [
-            "tests/unit/runtime/architecture/test_npsc5e_r3_child_fanout_partial_recovery.py"
+            "tests/unit/runtime/architecture/test_npsc5e_r3_child_fanout_partial_recovery.py",
+            "-k",
+            CANONICAL_FINAL_EMBEDDED_HARNESS_KEXPR,
         ],
     ),
     (
@@ -696,6 +710,7 @@ __all__ = [
     "NPSC5E_R2_H2_Q1_EMBEDDED_PREDECESSOR_LABELS",
     "NPSC5E_R2_H2_Q1_ORCHESTRATOR_PATH",
     "NPSC5E_R3_FINAL_MANDATORY",
+    "NPSC5E_R3_IMPLEMENTATION_EMBEDDED_PREDECESSOR_LABELS",
     "NPSC5F_FINAL_MANDATORY_REGRESSION_SUITES",
     "NPSC5F_R1_FINAL_MANDATORY",
     "NPSC5F_R2_FINAL_MANDATORY",

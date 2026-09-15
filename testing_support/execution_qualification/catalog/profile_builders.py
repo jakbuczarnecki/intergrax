@@ -316,8 +316,10 @@ def build_npsc5e_r3_profile() -> CompiledCatalogProfile:
     )
     from testing_support.execution_qualification.final_semantic_pytest import (
         NPSC5E_R2_FINAL_SEMANTIC_SUITE_ID,
+        NPSC5E_R3_IMPLEMENTATION_SEMANTIC_SUITE_ID,
         npsc5e_r2_final_embedded_predecessor_suite_ids,
         npsc5e_r3_final_semantic_pytest_arguments,
+        npsc5e_r3_implementation_embedded_predecessor_suite_ids,
     )
 
     return _flat_profile(
@@ -334,6 +336,9 @@ def build_npsc5e_r3_profile() -> CompiledCatalogProfile:
         leaf_gate_extra_requires={
             NPSC5E_R2_FINAL_SEMANTIC_SUITE_ID: (
                 npsc5e_r2_final_embedded_predecessor_suite_ids()
+            ),
+            NPSC5E_R3_IMPLEMENTATION_SEMANTIC_SUITE_ID: (
+                npsc5e_r3_implementation_embedded_predecessor_suite_ids()
             ),
         },
     )
