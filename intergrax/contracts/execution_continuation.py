@@ -36,6 +36,18 @@ Revision / CAS (successful transition):
 
 ``continuation_id`` is the stable continuation identity; it equals governed
 ``continuation_request_id`` when the pause is HITL-governed.
+
+When ``governed_correlation`` is present, ``continuation_id``, four-ID ``identity``,
+and ``reason`` must match that correlation at construction (fail closed).
+
+``human_request_id`` and ``pause_id`` on a pending snapshot are **authoritative**
+correlation identifiers when set; resolution commands must match exactly and must
+not replace canonical values.
+
+Governed resolution scope: ``operation_id`` and ``side_effect_scope_id`` (when set)
+must match exactly. When ``side_effect_scope_digest`` is set on correlation, the
+command digest must match; when correlation digest is ``None``, digest is not required
+and a command-only digest does not establish scope authority.
 """
 
 from __future__ import annotations
@@ -148,6 +160,49 @@ class ExecutionContinuationIdentity:
         object.__setattr__(self, "run_id", validate_run_id(self.run_id))
         object.__setattr__(self, "attempt_id", validate_attempt_id(self.attempt_id))
         object.__setattr__(self, "execution_id", validate_execution_id(self.execution_id))
+
+
+def assert_governed_correlation_matches_continuation(
+    *,
+    continuation_id: str,
+    identity: ExecutionContinuationIdentity,
+    reason: ContinuationReason,
+    governed_correlation: GovernedContinuationCorrelation | None,
+    label: str = "continuation",
+) -> None:
+    """Fail closed when governed correlation disagrees with continuation authority fields."""
+    if governed_correlation is None:
+        return
+    if continuation_id != governed_correlation.continuation_request_id:
+        raise ExecutionContinuationError(
+            f"{label} continuation_id mismatch with governed correlation",
+            code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
+        )
+    if identity.task_id != governed_correlation.task_id:
+        raise ExecutionContinuationError(
+            f"{label} task_id mismatch with governed correlation",
+            code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
+        )
+    if identity.run_id != governed_correlation.run_id:
+        raise ExecutionContinuationError(
+            f"{label} run_id mismatch with governed correlation",
+            code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
+        )
+    if identity.attempt_id != governed_correlation.attempt_id:
+        raise ExecutionContinuationError(
+            f"{label} attempt_id mismatch with governed correlation",
+            code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
+        )
+    if identity.execution_id != governed_correlation.execution_id:
+        raise ExecutionContinuationError(
+            f"{label} execution_id mismatch with governed correlation",
+            code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
+        )
+    if reason != governed_correlation.reason:
+        raise ExecutionContinuationError(
+            f"{label} reason mismatch with governed correlation",
+            code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
+        )
 
 
 def assert_execution_continuation_identity_match(
@@ -297,6 +352,15 @@ class PendingExecutionContinuation(BaseModel):
     def _identity_dataclass(self) -> Self:
         if not isinstance(self.identity, ExecutionContinuationIdentity):
             raise TypeError("identity must be ExecutionContinuationIdentity")
+        try:
+            assert_governed_correlation_matches_continuation(
+                continuation_id=self.continuation_id,
+                identity=self.identity,
+                reason=self.reason,
+                governed_correlation=self.governed_correlation,
+            )
+        except ExecutionContinuationError as exc:
+            raise ValueError(str(exc)) from exc
         return self
 
     @model_validator(mode="before")
@@ -331,6 +395,19 @@ class ExecutionPauseRequest(BaseModel):
         if not normalized:
             raise ValueError("continuation_id must be non-empty")
         return normalized
+
+    @model_validator(mode="after")
+    def _governed_correlation_consistency(self) -> Self:
+        try:
+            assert_governed_correlation_matches_continuation(
+                continuation_id=self.continuation_id,
+                identity=self.identity,
+                reason=self.reason,
+                governed_correlation=self.governed_correlation,
+            )
+        except ExecutionContinuationError as exc:
+            raise ValueError(str(exc)) from exc
+        return self
 
 
 class ExecutionContinuationLookup(BaseModel):
@@ -434,6 +511,26 @@ def assert_pending_matches_resolution_command(
                 "side_effect_scope_id mismatch",
                 code=ExecutionContinuationErrorCode.SCOPE_MISMATCH,
             )
+        if (
+            correlation.side_effect_scope_digest is not None
+            and command.side_effect_scope_digest != correlation.side_effect_scope_digest
+        ):
+            raise ExecutionContinuationError(
+                "side_effect_scope_digest mismatch",
+                code=ExecutionContinuationErrorCode.SCOPE_MISMATCH,
+            )
+    if pending.human_request_id is not None:
+        if command.human_request_id != pending.human_request_id:
+            raise ExecutionContinuationError(
+                "human_request_id mismatch",
+                code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
+            )
+    if pending.pause_id is not None:
+        if command.pause_id != pending.pause_id:
+            raise ExecutionContinuationError(
+                "pause_id mismatch",
+                code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
+            )
 
 
 def assert_pending_matches_resume_command(
@@ -474,15 +571,16 @@ def apply_resolution_to_pending(
         ExecutionContinuationTransition.APPLY_RESOLUTION,
         verdict=command.verdict,
     )
-    return pending.model_copy(
-        update={
-            "lifecycle_state": next_state,
-            "revision": pending.revision + 1,
-            "human_verdict": command.verdict,
-            "human_request_id": command.human_request_id,
-            "pause_id": command.pause_id or pending.pause_id,
-        },
-    )
+    update: dict[str, object] = {
+        "lifecycle_state": next_state,
+        "revision": pending.revision + 1,
+        "human_verdict": command.verdict,
+    }
+    if pending.human_request_id is None:
+        update["human_request_id"] = command.human_request_id
+    if pending.pause_id is None and command.pause_id is not None:
+        update["pause_id"] = command.pause_id
+    return pending.model_copy(update=update)
 
 
 def apply_resume_to_pending(
@@ -541,6 +639,7 @@ __all__ = [
     "apply_resolution_to_pending",
     "apply_resume_to_pending",
     "assert_execution_continuation_identity_match",
+    "assert_governed_correlation_matches_continuation",
     "assert_pending_matches_resolution_command",
     "assert_pending_matches_resume_command",
     "validate_continuation_revision",

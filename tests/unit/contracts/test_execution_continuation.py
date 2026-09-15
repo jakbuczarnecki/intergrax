@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from intergrax.contracts.execution_continuation import (
@@ -23,6 +25,7 @@ from intergrax.contracts.execution_continuation import (
     apply_resolution_to_pending,
     apply_resume_to_pending,
     assert_execution_continuation_identity_match,
+    assert_governed_correlation_matches_continuation,
     assert_pending_matches_resolution_command,
 )
 from intergrax.contracts.governed_continuation_correlation import (
@@ -39,6 +42,8 @@ _RUN = canonical_run_id_for_tests(_SEED)
 _ATTEMPT = mint_attempt_id()
 _EXECUTION = mint_execution_id()
 _CONTINUATION_ID = "gcr_gr5_r1_test"
+_SCOPE_DIGEST = "sha256:" + "a" * 64
+_OTHER_SCOPE_DIGEST = "sha256:" + "b" * 64
 
 
 def _identity(**overrides: object) -> ExecutionContinuationIdentity:
@@ -67,7 +72,11 @@ def _governed_correlation(**overrides: object) -> GovernedContinuationCorrelatio
     return GovernedContinuationCorrelation.model_validate(payload)
 
 
-def _waiting_pending(revision: int = 1) -> PendingExecutionContinuation:
+def _waiting_pending(
+    revision: int = 1,
+    *,
+    governed_correlation: GovernedContinuationCorrelation | None = None,
+) -> PendingExecutionContinuation:
     state = ExecutionContinuationLifecycleState.PAUSE_REQUESTED
     for transition in (
         ExecutionContinuationTransition.ADVANCE_TO_PAUSED,
@@ -80,7 +89,7 @@ def _waiting_pending(revision: int = 1) -> PendingExecutionContinuation:
         lifecycle_state=state,
         revision=revision,
         reason=ContinuationReason.SECURITY,
-        governed_correlation=_governed_correlation(),
+        governed_correlation=governed_correlation or _governed_correlation(),
         pause_id="pause_gr5",
         human_request_id="hr_gr5",
         requested_at="2026-09-15T00:00:00Z",
@@ -424,6 +433,174 @@ def test_scope_mismatch_blocks() -> None:
     with pytest.raises(ExecutionContinuationError) as exc:
         assert_pending_matches_resolution_command(pending, command)
     assert exc.value.code is ExecutionContinuationErrorCode.SCOPE_MISMATCH
+
+
+def test_side_effect_scope_id_mismatch_blocks() -> None:
+    pending = _waiting_pending()
+    command = _resolution_command(side_effect_scope_id="scope_other")
+    with pytest.raises(ExecutionContinuationError) as exc:
+        assert_pending_matches_resolution_command(pending, command)
+    assert exc.value.code is ExecutionContinuationErrorCode.SCOPE_MISMATCH
+
+
+def test_side_effect_scope_digest_mismatch_blocks() -> None:
+    pending = _waiting_pending(
+        governed_correlation=_governed_correlation(
+            side_effect_scope_digest=_SCOPE_DIGEST,
+        ),
+    )
+    command = _resolution_command(side_effect_scope_digest=_OTHER_SCOPE_DIGEST)
+    with pytest.raises(ExecutionContinuationError) as exc:
+        assert_pending_matches_resolution_command(pending, command)
+    assert exc.value.code is ExecutionContinuationErrorCode.SCOPE_MISMATCH
+
+
+def test_side_effect_scope_digest_match_allows_resolution() -> None:
+    pending = _waiting_pending(
+        governed_correlation=_governed_correlation(
+            side_effect_scope_digest=_SCOPE_DIGEST,
+        ),
+    )
+    command = _resolution_command(side_effect_scope_digest=_SCOPE_DIGEST)
+    approved = apply_resolution_to_pending(pending, command)
+    assert approved.lifecycle_state is ExecutionContinuationLifecycleState.RESUME_AUTHORIZED
+
+
+def test_correlation_without_digest_allows_resolution_without_command_digest() -> None:
+    pending = _waiting_pending()
+    command = _resolution_command(side_effect_scope_digest=_SCOPE_DIGEST)
+    approved = apply_resolution_to_pending(pending, command)
+    assert approved.lifecycle_state is ExecutionContinuationLifecycleState.RESUME_AUTHORIZED
+
+
+def test_human_request_id_mismatch_blocks() -> None:
+    pending = _waiting_pending()
+    command = _resolution_command(human_request_id="hr_wrong")
+    with pytest.raises(ExecutionContinuationError) as exc:
+        assert_pending_matches_resolution_command(pending, command)
+    assert exc.value.code is ExecutionContinuationErrorCode.IDENTITY_MISMATCH
+
+
+def test_pause_id_mismatch_blocks() -> None:
+    pending = _waiting_pending()
+    command = _resolution_command(pause_id="pause_wrong")
+    with pytest.raises(ExecutionContinuationError) as exc:
+        assert_pending_matches_resolution_command(pending, command)
+    assert exc.value.code is ExecutionContinuationErrorCode.IDENTITY_MISMATCH
+
+
+def test_resolution_does_not_overwrite_canonical_pause_id() -> None:
+    pending = _waiting_pending()
+    approved = apply_resolution_to_pending(pending, _resolution_command())
+    assert approved.pause_id == "pause_gr5"
+    assert approved.human_request_id == "hr_gr5"
+
+
+def test_reject_control_case() -> None:
+    pending = _waiting_pending()
+    rejected = apply_resolution_to_pending(
+        pending,
+        _resolution_command(verdict=ExecutionHumanVerdict.REJECT),
+    )
+    assert rejected.lifecycle_state is ExecutionContinuationLifecycleState.REJECTED
+
+
+def test_escalate_control_case() -> None:
+    pending = _waiting_pending()
+    escalated = apply_resolution_to_pending(
+        pending,
+        _resolution_command(verdict=ExecutionHumanVerdict.ESCALATE),
+    )
+    assert escalated.lifecycle_state is ExecutionContinuationLifecycleState.ESCALATED
+
+
+def _pending_payload(**overrides: object) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "continuation_id": _CONTINUATION_ID,
+        "identity": {
+            "task_id": _TASK,
+            "run_id": _RUN,
+            "attempt_id": _ATTEMPT,
+            "execution_id": _EXECUTION,
+        },
+        "lifecycle_state": ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN,
+        "revision": 1,
+        "reason": ContinuationReason.SECURITY,
+        "governed_correlation": _governed_correlation().model_dump(),
+    }
+    payload.update(overrides)
+    return payload
+
+
+@pytest.mark.parametrize(
+    "field,correlation_override",
+    [
+        ("continuation_id", {"continuation_request_id": "gcr_other"}),
+        ("identity", {"task_id": canonical_task_id_for_tests("split-task")}),
+        ("identity", {"run_id": canonical_run_id_for_tests("split-run")}),
+        ("identity", {"attempt_id": mint_attempt_id()}),
+        ("identity", {"execution_id": mint_execution_id()}),
+    ],
+    ids=[
+        "continuation_id",
+        "task_id",
+        "run_id",
+        "attempt_id",
+        "execution_id",
+    ],
+)
+def test_pending_construction_split_brain_blocked(
+    field: str,
+    correlation_override: dict[str, object],
+) -> None:
+    correlation = _governed_correlation(**correlation_override)
+    payload = _pending_payload(governed_correlation=correlation.model_dump())
+    if field == "continuation_id":
+        payload["continuation_id"] = "gcr_split_a"
+    with pytest.raises(ValueError, match="mismatch with governed correlation"):
+        PendingExecutionContinuation.model_validate(payload)
+
+
+def test_pause_request_continuation_id_split_brain_blocked() -> None:
+    with pytest.raises(ValueError, match="continuation_id mismatch"):
+        ExecutionPauseRequest(
+            identity=_identity(),
+            continuation_id="gcr_a",
+            reason=ContinuationReason.SECURITY,
+            governed_correlation=_governed_correlation(continuation_request_id="gcr_b"),
+        )
+
+
+def test_pending_reason_mismatch_blocked() -> None:
+    with pytest.raises(ValueError, match="reason mismatch"):
+        PendingExecutionContinuation(
+            continuation_id=_CONTINUATION_ID,
+            identity=_identity(),
+            lifecycle_state=ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN,
+            revision=1,
+            reason=ContinuationReason.QUOTE,
+            governed_correlation=_governed_correlation(reason=ContinuationReason.SECURITY),
+        )
+
+
+def test_serialized_restore_split_brain_rejected() -> None:
+    valid = _waiting_pending()
+    data = valid.model_dump(mode="json")
+    data["governed_correlation"]["execution_id"] = mint_execution_id()
+    raw = json.dumps(data)
+    with pytest.raises(ValueError, match="execution_id mismatch"):
+        PendingExecutionContinuation.model_validate_json(raw)
+
+
+def test_assert_governed_correlation_helper_direct() -> None:
+    with pytest.raises(ExecutionContinuationError) as exc:
+        assert_governed_correlation_matches_continuation(
+            continuation_id="x",
+            identity=_identity(),
+            reason=ContinuationReason.SECURITY,
+            governed_correlation=_governed_correlation(),
+        )
+    assert exc.value.code is ExecutionContinuationErrorCode.IDENTITY_MISMATCH
 
 
 def test_duplicate_resolution_semantic() -> None:
