@@ -11,16 +11,16 @@ import sys
 from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
 from intergrax.integrations.providers.document_store.mongodb.bundle import create_mongodb_document_store
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
     DocumentStoreFunctionalEvidencePersistence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_append_intent import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_append_intent import (
     FunctionalEvidenceAppendIntentStore,
 )
 from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidenceProjectionConsistencyPendingError,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
     collect_all_evidence,
 )
 

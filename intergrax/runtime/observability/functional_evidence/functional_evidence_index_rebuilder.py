@@ -14,7 +14,7 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
 )
 from intergrax.contracts.functional_evidence import PlatformFunctionalEvidence
-from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_execution_index import (
     decode_execution_index_v1,
     decode_execution_index_v2,
     encode_execution_index_v2,
@@ -26,10 +26,10 @@ from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
 from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceIntegrityError,
 )
-from intergrax.runtime.diagnostics.functional_evidence_projection_state import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_projection_state import (
     FunctionalEvidenceProjectionStateStore,
 )
-from intergrax.runtime.diagnostics.functional_evidence_record_codec import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_record_codec import (
     decode_functional_evidence_record,
 )
 

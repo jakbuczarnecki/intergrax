@@ -54,7 +54,7 @@ from intergrax.runtime.diagnostics.specifications.q4_model_routing_functional_di
     Q4_MODEL_QUERY_ID,
 )
 from intergrax.runtime.observability.export_attributes import ObservabilityArtifactReference
-from intergrax.runtime.diagnostics.functional_evidence_record_codec import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_record_codec import (
     encode_functional_evidence_record,
 )
 from tests.system.functional_diagnostics_scale.manifest import (

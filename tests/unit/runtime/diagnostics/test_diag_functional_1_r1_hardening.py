@@ -32,7 +32,7 @@ from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidenceQueryRequest,
     functional_evidence_query_order_key,
 )
-from intergrax.runtime.diagnostics.functional_evidence_query_cursor import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_query_cursor import (
     FunctionalEvidenceQueryCursorCodec,
 )
 from intergrax.runtime.diagnostics.functional_evidence_reconstruction import (
@@ -48,7 +48,7 @@ from intergrax.runtime.diagnostics.functional_validation import (
     FunctionalValidatorRef,
     functional_validation_evidence_id,
 )
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.observability.functional_validation_evidence import (

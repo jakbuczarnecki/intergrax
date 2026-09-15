@@ -839,7 +839,7 @@ deterministic findings / limitations
 optional higher-level inference later (NOT in F1/F2)
 ```
 
-**Code references:** `functional_validation.py` · `functional_validation_evidence.py` · `functional_evidence.py` · `functional_evidence_persistence.py` · `functional_evidence_query_cursor.py` · `functional_evidence_reconstruction.py` · `functional_evidence_record_codec.py` · `document_store_functional_evidence_persistence.py` · `in_memory_functional_evidence_persistence.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
+**Code references:** Contracts — `intergrax/contracts/functional_evidence/`. Persistence providers — `intergrax/runtime/observability/functional_evidence/` (DIAG consumes `FunctionalEvidencePersistence` only). DIAG reconstruction — `functional_evidence_reconstruction.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
 
 ### Functional evidence persistence qualification (F1-R2 / D1)
 

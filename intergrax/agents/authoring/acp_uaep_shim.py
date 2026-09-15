@@ -67,14 +67,18 @@ def apply_host_tool_invoker_to_runtime_context(
     apply_rag_from_tool_wiring_context(runtime_context.config, wiring_ctx)
 
 
-def _attach_functional_evidence_recorder_from_runtime_state(
+def _attach_functional_evidence_recorder_from_tool_wiring(
     exec_ctx: RuntimeExecutionContext,
+    runtime_context: RuntimeContext,
 ) -> None:
     from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
-        attach_functional_evidence_recorder_from_runtime_state,
+        attach_functional_evidence_recorder_from_tool_wiring,
     )
 
-    attach_functional_evidence_recorder_from_runtime_state(exec_ctx)
+    attach_functional_evidence_recorder_from_tool_wiring(
+        exec_ctx,
+        runtime_context.config.tool_wiring_context,
+    )
 
 
 def attach_acp_catalog_exec_ctx(
@@ -151,11 +155,7 @@ def attach_acp_catalog_exec_ctx(
     from intergrax.runtime.workspace.exec_ctx_isolation import attach_isolation_to_exec_ctx
 
     attach_isolation_to_exec_ctx(exec_ctx, runtime_request, task_id=resolved_task_id)
-    from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
-        attach_functional_evidence_recorder_from_runtime_state,
-    )
-
-    attach_functional_evidence_recorder_from_runtime_state(exec_ctx)
+    _attach_functional_evidence_recorder_from_tool_wiring(exec_ctx, runtime_context)
     step_ctx.metadata["uaep_exec_ctx"] = exec_ctx
 
 

@@ -21,7 +21,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
   DocumentStoreFunctionalEvidencePersistence,
   wire_functional_evidence_persistence,
 )
@@ -43,7 +43,7 @@ from intergrax.contracts.functional_evidence.persistence import (
   FunctionalEvidencePersistenceConflictError,
   FunctionalEvidencePersistenceIntegrityError,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
   assert_functional_evidence_conflicting_append_fails_closed,
   assert_functional_evidence_cross_domain_round_trip,
   assert_functional_evidence_persistence_conformance,
@@ -53,7 +53,7 @@ from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance i
   sample_functional_evidence_scope,
 )
 from intergrax.runtime.diagnostics.functional_validation_lookup import FunctionalValidationEvidenceLookup
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
   InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.observability.export_attributes import ObservabilityArtifactReference

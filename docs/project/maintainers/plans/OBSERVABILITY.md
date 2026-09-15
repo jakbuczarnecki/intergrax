@@ -62,6 +62,7 @@
 | 2 | **OBS-BOUNDARY-1** | P0 | **Done / Closed** (2026-09-13) | Freeze Evidence / shared factual reconstruction / Diagnostics semantic and dependency boundaries (import debt → OBS-FUNCTIONAL-CONTRACTS-1, OBS-RECONSTRUCTION-1) |
 | 3 | **OBS-CAUSAL-2** | P1 | **Done / Closed** (2026-09-13) | `RuntimeExecutionRef` + `platform_causal_evidence.v2` pin specific `ExecutionId`; no heuristics |
 | 4 | **OBS-FUNCTIONAL-CONTRACTS-1** | P1 | **Done** | Neutral `intergrax.contracts.functional_evidence`; OBS records without DIAG contract ownership |
+| 4R1 | **OBS-FUNCTIONAL-CONTRACTS-1-R1** | P1 | **Done** | Provider ownership under OBS; explicit `FunctionalEvidencePersistence` composition; no OBS→DIAG provider imports |
 | 5 | **OBS-COVERAGE-1** | P1 | Planned | Platform-wide evidence coverage matrix — all critical paths emit qualified five-ID evidence |
 | 6 | **OBS-TRACE-1** | P2 | Planned (conditional) | Public trace correlation hardening if consumers require beyond `run_id` |
 | 7 | **OBS-RECONSTRUCTION-1** | P1 | Planned | Single shared factual reconstruction module owned by Evidence Plane; DIAG consumes only |

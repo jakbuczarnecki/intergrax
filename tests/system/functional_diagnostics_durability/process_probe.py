@@ -25,7 +25,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
   DocumentStoreFunctionalEvidencePersistence,
 )
 from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import FunctionalDiagnosticAnalyzer
@@ -35,7 +35,7 @@ from intergrax.contracts.functional_evidence import (
 from intergrax.contracts.functional_evidence.persistence import (
   FunctionalEvidencePersistenceConflictError,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
   collect_all_evidence,
   sample_functional_evidence,
   sample_functional_evidence_scope,

@@ -13,12 +13,12 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
 )
 from intergrax.contracts.functional_evidence import PlatformFunctionalEvidence
-from intergrax.runtime.diagnostics.functional_evidence_append_intent import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_append_intent import (
     FunctionalEvidenceAppendIntentStore,
     decode_functional_evidence_append_intent,
     functional_evidence_append_pending_row_key_prefix,
 )
-from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_execution_index import (
     decode_execution_index_v1,
     decode_execution_index_v2,
     encode_execution_index_v1,
@@ -30,7 +30,7 @@ from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceIntegrityError,
     FunctionalEvidenceProjectionConsistencyPendingError,
 )
-from intergrax.runtime.diagnostics.functional_evidence_record_codec import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_record_codec import (
     decode_functional_evidence_record,
 )
 

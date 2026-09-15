@@ -44,7 +44,7 @@ from intergrax.runtime.diagnostics.functional_validation import (
     validate_functional_validation_correlation,
     validate_problem_signal_correlation_alignment,
 )
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType

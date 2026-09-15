@@ -6,11 +6,11 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
     sample_functional_evidence,
     sample_functional_evidence_scope,
 )
-from intergrax.runtime.diagnostics.functional_evidence_record_codec import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_record_codec import (
     decode_functional_evidence_record,
     decode_functional_evidence_record_bytes,
     encode_functional_evidence_record,

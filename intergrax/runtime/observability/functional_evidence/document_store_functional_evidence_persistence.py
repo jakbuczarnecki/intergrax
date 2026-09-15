@@ -18,7 +18,7 @@ from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PlatformFunctionalEvidence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_execution_index import (
     DecodedExecutionIndexV2,
     decode_execution_index_v1,
     decode_execution_index_v2,
@@ -30,18 +30,18 @@ from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
     execution_index_v2_row_key_prefix,
     index_v2_matches_filters,
 )
-from intergrax.runtime.diagnostics.functional_evidence_append_intent import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_append_intent import (
     FunctionalEvidenceAppendFaultBoundary,
     FunctionalEvidenceAppendFaultInjector,
     FunctionalEvidenceAppendIntentStore,
 )
-from intergrax.runtime.diagnostics.functional_evidence_index_rebuilder import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_index_rebuilder import (
     FunctionalEvidenceIndexRebuilder,
 )
-from intergrax.runtime.diagnostics.functional_evidence_projection_repairer import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_projection_repairer import (
     FunctionalEvidenceProjectionRepairer,
 )
-from intergrax.runtime.diagnostics.functional_evidence_projection_state import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_projection_state import (
     FunctionalEvidenceProjectionStateStore,
 )
 from intergrax.contracts.functional_evidence.persistence import (
@@ -52,11 +52,11 @@ from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidenceQueryRequest,
     functional_evidence_query_order_key,
 )
-from intergrax.runtime.diagnostics.functional_evidence_query_cursor import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_query_cursor import (
     FunctionalEvidenceQueryCursorCodec,
     FunctionalEvidenceQueryCursorError,
 )
-from intergrax.runtime.diagnostics.functional_evidence_record_codec import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_record_codec import (
     decode_functional_evidence_record,
     encode_functional_evidence_record,
 )
@@ -524,6 +524,23 @@ class DocumentStoreFunctionalEvidencePersistence(FunctionalEvidencePersistence):
             )
 
 
+def build_document_store_functional_evidence_persistence(
+    *,
+    document_store: DocumentStore,
+    cursor_secret: str | bytes,
+) -> DocumentStoreFunctionalEvidencePersistence:
+    secret_bytes = (
+        cursor_secret if isinstance(cursor_secret, bytes) else cursor_secret.encode("utf-8")
+    )
+    wired = wire_functional_evidence_persistence(
+        document_store=document_store,
+        cursor_secret=secret_bytes,
+    )
+    if not isinstance(wired, DocumentStoreFunctionalEvidencePersistence):
+        raise TypeError("document_store_functional_evidence_persistence_factory_failed")
+    return wired
+
+
 def wire_functional_evidence_persistence(
     *,
     document_store: DocumentStore | None = None,
@@ -659,5 +676,6 @@ def _validate_page_size(page_size: int) -> int:
 __all__ = [
     "DocumentStoreFunctionalEvidencePersistence",
     "DocumentStoreQueryCursorProvider",
+    "build_document_store_functional_evidence_persistence",
     "wire_functional_evidence_persistence",
 ]

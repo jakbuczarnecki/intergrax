@@ -49,7 +49,7 @@ from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidenceQueryRequest,
     functional_evidence_query_order_key,
 )
-from intergrax.runtime.diagnostics.functional_evidence_query_cursor import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_query_cursor import (
     FunctionalEvidenceQueryCursorCodec,
     FunctionalEvidenceQueryCursorError,
 )
@@ -308,4 +308,14 @@ def _validate_page_size(page_size: int) -> int:
     return page_size
 
 
-__all__ = ["InMemoryFunctionalEvidencePersistence"]
+def build_in_memory_functional_evidence_persistence(
+    *,
+    cursor_secret: str | bytes,
+) -> InMemoryFunctionalEvidencePersistence:
+    secret_bytes = (
+        cursor_secret if isinstance(cursor_secret, bytes) else cursor_secret.encode("utf-8")
+    )
+    return InMemoryFunctionalEvidencePersistence(cursor_secret=secret_bytes)
+
+
+__all__ = ["InMemoryFunctionalEvidencePersistence", "build_in_memory_functional_evidence_persistence"]

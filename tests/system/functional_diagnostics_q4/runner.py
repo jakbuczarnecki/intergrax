@@ -49,7 +49,7 @@ from intergrax.contracts.functional_evidence import (
     PipelineOperationStatus,
 )
 from intergrax.runtime.diagnostics.functional_validation_lookup import FunctionalValidationEvidenceLookup
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.diagnostics.specifications.q4_model_routing_functional_diagnostic_specification import (

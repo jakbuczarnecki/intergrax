@@ -13,7 +13,7 @@ from intergrax.contracts.execution_identity import mint_attempt_id, mint_executi
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.functional_evidence import PipelineEvidenceKind
 from intergrax.contracts.functional_evidence.persistence import FunctionalEvidenceQueryRequest
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest

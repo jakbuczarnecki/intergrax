@@ -15,24 +15,24 @@ from pathlib import Path
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
 from intergrax.integrations.contracts.document_store import DocumentRecord
 from intergrax.integrations.providers.document_store.mongodb.bundle import create_mongodb_document_store
-from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_execution_index import (
     encode_execution_index_v1,
     encode_execution_index_v2,
     execution_index_v1_row_key,
     execution_index_v2_row_key_from_evidence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_index_rebuilder import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_index_rebuilder import (
     FunctionalEvidenceIndexRebuilder,
 )
 from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistenceIntegrityError,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
     collect_all_evidence,
     sample_functional_evidence,
     sample_functional_evidence_scope,
 )
-from intergrax.runtime.diagnostics.functional_evidence_record_codec import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_record_codec import (
     encode_functional_evidence_record,
 )
 from tests.system.functional_diagnostics_scale.mongodb_backend import resolve_mongodb_uri

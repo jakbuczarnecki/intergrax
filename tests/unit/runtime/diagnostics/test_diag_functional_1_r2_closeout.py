@@ -31,7 +31,7 @@ from intergrax.contracts.functional_evidence.persistence import (
 from intergrax.runtime.diagnostics.functional_evidence_reconstruction import (
     FunctionalEvidenceReconstructor,
 )
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )
 

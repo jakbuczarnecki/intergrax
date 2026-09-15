@@ -15,11 +15,11 @@ from pathlib import Path
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
 from intergrax.integrations.providers.document_store.mongodb.bundle import create_mongodb_document_store
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
     DocumentStoreFunctionalEvidencePersistence,
 )
 from intergrax.contracts.functional_evidence.persistence import FunctionalEvidenceQueryRequest
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
     collect_all_evidence,
     sample_functional_evidence,
     sample_functional_evidence_scope,

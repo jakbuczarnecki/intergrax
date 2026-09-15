@@ -67,7 +67,7 @@ from intergrax.runtime.diagnostics.functional_validation import (
 from intergrax.runtime.diagnostics.functional_validation_lookup import (
     FunctionalValidationEvidenceLookup,
 )
-from intergrax.runtime.diagnostics.in_memory_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.in_memory_functional_evidence_persistence import (
     InMemoryFunctionalEvidencePersistence,
 )
 from intergrax.runtime.observability.export_attributes import ObservabilityArtifactReference

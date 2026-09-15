@@ -10,7 +10,7 @@ import binascii
 import os
 import sys
 
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
     DocumentStoreFunctionalEvidencePersistence,
 )
 from intergrax.contracts.functional_evidence.persistence import (
@@ -29,7 +29,7 @@ from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
     PipelineEvidenceScope,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
     collect_all_evidence,
     sample_functional_evidence,
 )

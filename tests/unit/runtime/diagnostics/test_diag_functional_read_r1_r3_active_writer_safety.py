@@ -12,15 +12,15 @@ import pytest
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from intergrax.runtime.diagnostics.document_store_functional_evidence_persistence import (
+from intergrax.runtime.observability.functional_evidence.document_store_functional_evidence_persistence import (
     DocumentStoreFunctionalEvidencePersistence,
 )
-from intergrax.runtime.diagnostics.functional_evidence_append_intent import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_append_intent import (
     FunctionalEvidenceAppendFaultBoundary,
     FunctionalEvidenceAppendIntentStore,
     functional_evidence_append_pending_row_key,
 )
-from intergrax.runtime.diagnostics.functional_evidence_execution_index import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_execution_index import (
     encode_execution_index_v2,
     execution_index_v2_row_key_from_evidence,
 )
@@ -32,17 +32,17 @@ from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidenceQueryRequest,
     functional_evidence_query_order_key,
 )
-from intergrax.runtime.diagnostics.functional_evidence_persistence_conformance import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_persistence_conformance import (
     collect_all_evidence,
     sample_functional_evidence,
     sample_functional_evidence_scope,
 )
-from intergrax.runtime.diagnostics.functional_evidence_projection_state import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_projection_state import (
     FunctionalEvidenceProjectionState,
     encode_functional_evidence_projection_state,
     functional_evidence_projection_state_row_key,
 )
-from intergrax.runtime.diagnostics.functional_evidence_record_codec import (
+from intergrax.runtime.observability.functional_evidence.functional_evidence_record_codec import (
     encode_functional_evidence_record,
 )
 
