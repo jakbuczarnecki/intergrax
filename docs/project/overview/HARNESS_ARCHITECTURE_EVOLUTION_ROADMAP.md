@@ -582,7 +582,11 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2C3-C1 — bounded query scaling, backend continuation and legacy correlation compatibility = CLOSED** (hard per-page ``DocumentStore`` scan budget; ``DelegatedInvocationCorrelationQueryStorePage`` with backend continuation; HMAC authenticated delegated query cursors; legacy correlation discoverability via decoded-record filters + optional ``backfill_correlation_document_query_index``).
 
-**P2.1-S2C = PARTIAL** (S2C1 + S2C2 + S2C3 + S2C3-C1 CLOSED; continuation / reattachment remain OPEN).
+**P2.1-S2C3-C2 — bounded resumable legacy correlation query-index backfill = CLOSED** (``DelegatedCorrelationQueryIndexBackfillRequest`` / ``DelegatedCorrelationQueryIndexBackfillPage``; one call = one backend scan window bounded by ``scan_limit`` inspected rows; raw ``DocumentStore`` continuation cursor; no query-path writes).
+
+**P2.1-S2C3 = CLOSED** (S2C3 read model + C1 query scaling + C2 maintenance backfill).
+
+**P2.1-S2C = PARTIAL** (S2C1 + S2C2 + S2C3 CLOSED; continuation / reattachment remain OPEN).
 
 **P2.1-S2 = OPEN** (S2C1–S2C3 CLOSED; remaining S2C continuation and further adoption slices).
 

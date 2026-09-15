@@ -11,7 +11,16 @@ from collections.abc import Mapping
 
 from pydantic import ValidationError
 
+from intergrax.contracts.delegated_correlation_query_index_backfill import (
+    DelegatedCorrelationQueryIndexBackfillPage,
+    DelegatedCorrelationQueryIndexBackfillRequest,
+    MAX_DELEGATED_CORRELATION_BACKEND_PAGES_PER_BACKFILL_CALL,
+)
+from intergrax.contracts.delegated_execution_query import (
+    delegated_correlation_backend_scan_limit,
+)
 from intergrax.contracts.delegated_invocation_correlation import (
+    DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
     DelegatedInvocationCorrelationCompositionError,
     DelegatedInvocationCorrelationConflictError,
     DelegatedInvocationCorrelationDurabilityMode,
@@ -201,49 +210,82 @@ def _document_to_correlation(document: DocumentRecord) -> DelegatedInvocationCor
 def backfill_correlation_document_query_index(
     document_store: ConditionalDocumentStore,
     *,
-    batch_size: int = 100,
-) -> int:
+    request: DelegatedCorrelationQueryIndexBackfillRequest | None = None,
+    scan_limit: int | None = None,
+    cursor: str | None = None,
+) -> DelegatedCorrelationQueryIndexBackfillPage:
     """
     Idempotent bounded backfill of query index fields on legacy correlation documents.
 
-    Does not run from the query read path; callers invoke explicitly during migration.
+    One call performs at most one DocumentStore query and inspects at most ``scan_limit``
+    backend rows (not successful updates). Does not run from the query read path.
     """
-    if isinstance(batch_size, bool) or not isinstance(batch_size, int):
-        raise TypeError("batch_size must be a positive integer")
-    if batch_size < 1 or batch_size > 500:
-        raise ValueError("batch_size out of bounds")
-    updated = 0
-    cursor: str | None = None
-    while updated < batch_size:
+    if request is None:
+        resolved_scan_limit = (
+            delegated_correlation_backend_scan_limit(scan_limit)
+            if scan_limit is not None
+            else delegated_correlation_backend_scan_limit(100)
+        )
+        request = DelegatedCorrelationQueryIndexBackfillRequest(
+            scan_limit=resolved_scan_limit,
+            cursor=cursor,
+        )
+    elif scan_limit is not None or cursor is not None:
+        raise TypeError(
+            "pass either request=DelegatedCorrelationQueryIndexBackfillRequest "
+            "or scan_limit/cursor, not both",
+        )
+    _ = MAX_DELEGATED_CORRELATION_BACKEND_PAGES_PER_BACKFILL_CALL
+    scan_limit = request.scan_limit
+    try:
         page = document_store.query(
             _DOCUMENT_PARTITION,
-            limit=batch_size - updated,
-            cursor=cursor,
+            limit=scan_limit,
+            cursor=request.cursor,
             sort=(DocumentDataSort(path="$row_key", direction="asc"),),
         )
-        if not page.documents:
-            break
-        for document in page.documents:
-            if document_has_complete_query_index(document.data):
-                continue
-            record = _document_to_correlation(document)
-            replacement = DocumentRecord(
-                partition_key=document.partition_key,
-                row_key=document.row_key,
-                data={
-                    **dict(document.data),
-                    **correlation_document_query_fields(record),
-                },
-                ttl_seconds=document.ttl_seconds,
+    except ValueError as exc:
+        raise DelegatedInvocationCorrelationPersistenceError(
+            DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
+        ) from exc
+    except Exception as exc:
+        raise DelegatedInvocationCorrelationPersistenceError(
+            DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
+        ) from exc
+
+    scanned_count = 0
+    updated_count = 0
+    for document in page.documents:
+        scanned_count += 1
+        if document_has_complete_query_index(document.data):
+            continue
+        record = _document_to_correlation(document)
+        replacement = DocumentRecord(
+            partition_key=document.partition_key,
+            row_key=document.row_key,
+            data={
+                **dict(document.data),
+                **correlation_document_query_fields(record),
+            },
+            ttl_seconds=document.ttl_seconds,
+        )
+        try:
+            replaced = document_store.replace_if_match(
+                expected=document,
+                replacement=replacement,
             )
-            if document_store.replace_if_match(expected=document, replacement=replacement):
-                updated += 1
-                if updated >= batch_size:
-                    break
-        if page.next_cursor is None:
-            break
-        cursor = page.next_cursor
-    return updated
+        except Exception as exc:
+            raise DelegatedInvocationCorrelationPersistenceError(
+                DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE,
+            ) from exc
+        if replaced:
+            updated_count += 1
+
+    return DelegatedCorrelationQueryIndexBackfillPage(
+        scanned_count=scanned_count,
+        updated_count=updated_count,
+        next_cursor=page.next_cursor,
+    )
 
 
 def wire_delegated_invocation_correlation_store(

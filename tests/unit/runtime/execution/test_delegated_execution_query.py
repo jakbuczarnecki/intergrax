@@ -53,7 +53,10 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.provider_invocation import ProviderInvocation
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.document_store import DocumentRecord
+from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
+    DocumentRecord,
+)
 from intergrax.runtime.execution.delegated_execution.correlation_persistence import (
     DocumentStoreDelegatedInvocationCorrelationStore,
     InMemoryDelegatedInvocationCorrelationStore,
@@ -69,6 +72,12 @@ from intergrax.runtime.execution.delegated_execution.correlation_query_persisten
 from intergrax.contracts.delegated_execution_query import (
     DelegatedInvocationCorrelationQueryStorePage,
     delegated_correlation_backend_scan_limit,
+)
+from intergrax.contracts.delegated_correlation_query_index_backfill import (
+    DelegatedCorrelationQueryIndexBackfillPage,
+    DelegatedCorrelationQueryIndexBackfillPort,
+    DelegatedCorrelationQueryIndexBackfillRequest,
+    MAX_DELEGATED_CORRELATION_BACKEND_PAGES_PER_BACKFILL_CALL,
 )
 from intergrax.runtime.execution.delegated_execution.correlation_persistence import (
     backfill_correlation_document_query_index,
@@ -99,6 +108,20 @@ _QUERY_SERVICE_MODULE = (
     / "query_service.py"
 )
 _QUERY_CONTRACT = _REPO_ROOT / "intergrax" / "contracts" / "delegated_execution_query.py"
+_BACKFILL_CONTRACT = (
+    _REPO_ROOT
+    / "intergrax"
+    / "contracts"
+    / "delegated_correlation_query_index_backfill.py"
+)
+_CORRELATION_PERSISTENCE_MODULE = (
+    _REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "execution"
+    / "delegated_execution"
+    / "correlation_persistence.py"
+)
 _T0 = datetime(2026, 9, 7, 8, 0, 0, tzinfo=timezone.utc)
 _PAYLOAD_DIGEST = "sha256:" + ("ab" * 32)
 _CURSOR_SECRET = b"c" * 32
@@ -609,6 +632,67 @@ class _InstrumentedDocumentStore(InMemoryDocumentStore):
         return super().query(partition_key, **kwargs)
 
 
+class _BackfillInstrumentedStore(_InstrumentedDocumentStore):
+    def __init__(self, *, cursor_secret: bytes) -> None:
+        super().__init__(cursor_secret=cursor_secret)
+        self.scanned_row_keys_by_call: list[frozenset[str]] = []
+
+    def query(self, partition_key: str, **kwargs):
+        page = super().query(partition_key, **kwargs)
+        self.scanned_row_keys_by_call.append(
+            frozenset(document.row_key for document in page.documents),
+        )
+        return page
+
+
+def _put_legacy_correlation(
+    doc: InMemoryDocumentStore,
+    *,
+    binding: DelegatedExecutionInvocationBinding,
+    persisted_at: datetime = _T0,
+    ttl_seconds: int | None = None,
+    extra_data: dict[str, str] | None = None,
+) -> str:
+    record = DelegatedInvocationCorrelationRecord(binding=binding, persisted_at=persisted_at)
+    correlation_text = encode_correlation_record(record).decode("utf-8")
+    data: dict[str, object] = {"correlation": correlation_text}
+    if extra_data:
+        data.update(extra_data)
+    doc.put(
+        DocumentRecord(
+            partition_key=_DOCUMENT_PARTITION,
+            row_key=str(binding.execution_id),
+            data=data,
+            ttl_seconds=ttl_seconds,
+        ),
+    )
+    return correlation_text
+
+
+def _backfill_all_pages(
+    doc: ConditionalDocumentStore,
+    *,
+    scan_limit: int = 100,
+) -> DelegatedCorrelationQueryIndexBackfillPage:
+    cursor: str | None = None
+    last = DelegatedCorrelationQueryIndexBackfillPage(
+        scanned_count=0,
+        updated_count=0,
+        next_cursor=None,
+    )
+    while True:
+        last = backfill_correlation_document_query_index(
+            doc,
+            request=DelegatedCorrelationQueryIndexBackfillRequest(
+                scan_limit=scan_limit,
+                cursor=cursor,
+            ),
+        )
+        cursor = last.next_cursor
+        if not last.has_more:
+            return last
+
+
 def _seed_document_store(
     doc: InMemoryDocumentStore,
     *,
@@ -828,7 +912,7 @@ def test_c1_t14_mixed_legacy_and_indexed_dataset() -> None:
             data={"correlation": encode_correlation_record(legacy_record).decode("utf-8")},
         ),
     )
-    backfill_correlation_document_query_index(doc, batch_size=10)
+    _backfill_all_pages(doc, scan_limit=10)
     query_store = DocumentStoreDelegatedInvocationCorrelationQueryStore(
         doc,
         cursor_secret=_CURSOR_SECRET,
@@ -869,8 +953,324 @@ def test_c1_backfill_restores_query_index() -> None:
             data={"correlation": encode_correlation_record(record).decode("utf-8")},
         ),
     )
-    updated = backfill_correlation_document_query_index(doc, batch_size=10)
-    assert updated == 1
+    page = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=10),
+    )
+    assert page.updated_count == 1
     stored = doc.get(_DOCUMENT_PARTITION, str(binding.execution_id))
     assert stored is not None
     assert "query_run_id" in stored.data
+
+
+def test_c2_t1_hard_scan_bound_on_already_migrated() -> None:
+    doc = _BackfillInstrumentedStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=10_000)
+    page = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=100),
+    )
+    assert doc.query_call_count == 1
+    assert doc.last_query_limit == 100
+    assert page.scanned_count <= 100
+    assert page.scanned_count == 100
+
+
+def test_c2_t2_zero_update_page_still_has_more() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=250)
+    page = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=100),
+    )
+    assert page.scanned_count == 100
+    assert page.updated_count == 0
+    assert page.has_more is True
+    assert page.next_cursor is not None
+
+
+def test_c2_t3_resume_page_two_uses_backend_cursor() -> None:
+    doc = _BackfillInstrumentedStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=250)
+    first = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=100),
+    )
+    second = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(
+            scan_limit=100,
+            cursor=first.next_cursor,
+        ),
+    )
+    assert doc.query_cursors_used[0] is None
+    assert doc.query_cursors_used[1] == first.next_cursor
+    assert second.scanned_count == 100
+
+
+def test_c2_t4_no_rescan_between_pages() -> None:
+    doc = _BackfillInstrumentedStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=250)
+    first = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=100),
+    )
+    second = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(
+            scan_limit=100,
+            cursor=first.next_cursor,
+        ),
+    )
+    assert doc.scanned_row_keys_by_call[0].isdisjoint(doc.scanned_row_keys_by_call[1])
+    assert first.scanned_count == 100
+    assert second.scanned_count == 100
+
+
+def test_c2_t5_mixed_page_counts() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=60)
+    for index in range(40):
+        _put_legacy_correlation(
+            doc,
+            binding=_binding(invocation_id=f"legacy-{index}"),
+            persisted_at=_T0 + timedelta(days=1, seconds=index),
+        )
+    page = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=100),
+    )
+    assert page.scanned_count == 100
+    assert page.updated_count == 40
+
+
+def test_c2_t6_all_legacy_page() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    for index in range(100):
+        _put_legacy_correlation(
+            doc,
+            binding=_binding(invocation_id=f"only-legacy-{index}"),
+            persisted_at=_T0 + timedelta(seconds=index),
+        )
+    page = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=100),
+    )
+    assert page.scanned_count == 100
+    assert page.updated_count == 100
+
+
+def test_c2_t7_last_page_has_more_false() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=50)
+    page = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=100),
+    )
+    assert page.scanned_count == 50
+    assert page.has_more is False
+    assert page.next_cursor is None
+
+
+def test_c2_t8_invalid_scan_limit_zero() -> None:
+    with pytest.raises(ValueError):
+        DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=0)
+
+
+def test_c2_t9_invalid_scan_limit_over_max() -> None:
+    with pytest.raises(ValueError):
+        DelegatedCorrelationQueryIndexBackfillRequest(
+            scan_limit=MAX_DELEGATED_CORRELATION_QUERY_PAGE_SIZE + 1,
+        )
+
+
+def test_c2_t10_bool_scan_limit_rejected() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    with pytest.raises(TypeError):
+        backfill_correlation_document_query_index(doc, scan_limit=True)
+
+
+def test_c2_t11_idempotent_second_full_pass() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    for index in range(120):
+        _put_legacy_correlation(
+            doc,
+            binding=_binding(invocation_id=f"idempotent-{index}"),
+            persisted_at=_T0 + timedelta(seconds=index),
+        )
+    _backfill_all_pages(doc, scan_limit=50)
+    cursor: str | None = None
+    total_updated = 0
+    while True:
+        page = backfill_correlation_document_query_index(
+            doc,
+            request=DelegatedCorrelationQueryIndexBackfillRequest(
+                scan_limit=50,
+                cursor=cursor,
+            ),
+        )
+        total_updated += page.updated_count
+        cursor = page.next_cursor
+        if not page.has_more:
+            break
+    assert total_updated == 0
+
+
+def test_c2_t12_correlation_bytes_preserved() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    binding = _binding(invocation_id="preserve-correlation")
+    before = _put_legacy_correlation(doc, binding=binding)
+    backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=10),
+    )
+    stored = doc.get(_DOCUMENT_PARTITION, str(binding.execution_id))
+    assert stored is not None
+    assert stored.data["correlation"] == before
+
+
+def test_c2_t13_ttl_preserved() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    binding = _binding(invocation_id="preserve-ttl")
+    _put_legacy_correlation(doc, binding=binding, ttl_seconds=7200)
+    backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=10),
+    )
+    stored = doc.get(_DOCUMENT_PARTITION, str(binding.execution_id))
+    assert stored is not None
+    assert stored.ttl_seconds == 7200
+
+
+def test_c2_t14_other_metadata_preserved() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    binding = _binding(invocation_id="preserve-meta")
+    _put_legacy_correlation(
+        doc,
+        binding=binding,
+        extra_data={"custom_meta": "keep-me"},
+    )
+    backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=10),
+    )
+    stored = doc.get(_DOCUMENT_PARTITION, str(binding.execution_id))
+    assert stored is not None
+    assert stored.data["custom_meta"] == "keep-me"
+
+
+def test_c2_t15_cas_conflict_does_not_increment_updated() -> None:
+    class _CasRejectStore(InMemoryDocumentStore):
+        def replace_if_match(self, expected, replacement):
+            return False
+
+    doc = _CasRejectStore(cursor_secret=_CURSOR_SECRET)
+    _put_legacy_correlation(doc, binding=_binding(invocation_id="cas"))
+    page = backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=10),
+    )
+    assert page.scanned_count == 1
+    assert page.updated_count == 0
+
+
+def test_c2_t16_corrupted_record_fail_closed() -> None:
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    doc.put(
+        DocumentRecord(
+            partition_key=_DOCUMENT_PARTITION,
+            row_key="corrupt-backfill",
+            data={"correlation": "not-json"},
+        ),
+    )
+    with pytest.raises(DelegatedInvocationCorrelationIntegrityError):
+        backfill_correlation_document_query_index(
+            doc,
+            request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=10),
+        )
+
+
+def test_c2_t17_query_failure_stable_message() -> None:
+    class _BrokenQueryStore(InMemoryDocumentStore):
+        def query(self, partition_key: str, **kwargs):
+            raise RuntimeError("vendor socket reset")
+
+    doc = _BrokenQueryStore(cursor_secret=_CURSOR_SECRET)
+    with pytest.raises(DelegatedInvocationCorrelationPersistenceError) as exc:
+        backfill_correlation_document_query_index(
+            doc,
+            request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=10),
+        )
+    assert str(exc.value) == DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE
+    assert "vendor" not in str(exc.value)
+
+
+def test_c2_t18_replace_failure_stable_message() -> None:
+    class _BrokenReplaceStore(InMemoryDocumentStore):
+        def replace_if_match(self, expected, replacement):
+            raise RuntimeError("disk full")
+
+    doc = _BrokenReplaceStore(cursor_secret=_CURSOR_SECRET)
+    _put_legacy_correlation(doc, binding=_binding(invocation_id="replace-fail"))
+    with pytest.raises(DelegatedInvocationCorrelationPersistenceError) as exc:
+        backfill_correlation_document_query_index(
+            doc,
+            request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=10),
+        )
+    assert str(exc.value) == DELEGATED_INVOCATION_CORRELATION_PERSISTENCE_UNAVAILABLE_MESSAGE
+    assert "disk" not in str(exc.value)
+
+
+def test_c2_t19_query_path_does_not_call_backfill() -> None:
+    source = _QUERY_SERVICE_MODULE.read_text(encoding="utf-8")
+    assert "backfill_correlation_document_query_index" not in source
+
+
+def test_c2_t20_no_global_migration_state() -> None:
+    source = _CORRELATION_PERSISTENCE_MODULE.read_text(encoding="utf-8")
+    assert "migration_registry" not in source.lower()
+    assert "cursor_registry" not in source.lower()
+
+
+def test_c2_t21_backfill_no_reflection() -> None:
+    tree = ast.parse(_CORRELATION_PERSISTENCE_MODULE.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            assert node.func.id not in {"getattr", "hasattr", "setattr"}
+
+
+def test_c2_t22_backfill_contract_no_any_abi() -> None:
+    source = _BACKFILL_CONTRACT.read_text(encoding="utf-8")
+    assert "Any" not in source
+    assert "dict[str, Any]" not in source
+
+
+def test_c2_t23_custom_backfill_port() -> None:
+    class Adapter(DelegatedCorrelationQueryIndexBackfillPort):
+        def __init__(self, store: ConditionalDocumentStore) -> None:
+            self._store = store
+
+        def backfill_correlation_query_index_page(
+            self,
+            request: DelegatedCorrelationQueryIndexBackfillRequest,
+        ) -> DelegatedCorrelationQueryIndexBackfillPage:
+            return backfill_correlation_document_query_index(self._store, request=request)
+
+    doc = InMemoryDocumentStore(cursor_secret=_CURSOR_SECRET)
+    _put_legacy_correlation(doc, binding=_binding(invocation_id="port"))
+    adapter = Adapter(doc)
+    page = adapter.backfill_correlation_query_index_page(
+        DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=10),
+    )
+    assert page.updated_count == 1
+
+
+def test_c2_t24_max_one_backend_page_per_call() -> None:
+    assert MAX_DELEGATED_CORRELATION_BACKEND_PAGES_PER_BACKFILL_CALL == 1
+    doc = _InstrumentedDocumentStore(cursor_secret=_CURSOR_SECRET)
+    _seed_document_store(doc, count=500)
+    backfill_correlation_document_query_index(
+        doc,
+        request=DelegatedCorrelationQueryIndexBackfillRequest(scan_limit=100),
+    )
+    assert doc.query_call_count == 1
