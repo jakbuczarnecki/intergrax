@@ -34,7 +34,11 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.gate,
+    pytest.mark.obs_coverage_p1,
+]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _NEXUS_LOOP = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "nexus_loop.py"

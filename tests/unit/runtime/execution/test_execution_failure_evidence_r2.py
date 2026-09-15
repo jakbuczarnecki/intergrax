@@ -25,6 +25,8 @@ from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventTyp
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_taxonomy import EventCategory, RetentionClass
 
+pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
+
 
 def test_execution_failed_catalog_registration() -> None:
     entry = get_catalog_entry(RuntimeEventType.EXECUTION_FAILED)

@@ -1,6 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""OBS-COVERAGE-1 — platform evidence coverage certification (gates + proof map)."""
+"""OBS-COVERAGE-1 — platform evidence coverage certification (gates + proof map).
+
+Mandatory P1 execution proof (not manifest metadata):
+
+``uv run pytest tests/unit tests/integration/runtime/test_terminal_diagnostic_production_e2e.py -m obs_coverage_p1``
+"""
+
+OBS_COVERAGE_P1_QUALIFICATION_COMMAND = (
+    "uv run pytest tests/unit "
+    "tests/integration/runtime/test_terminal_diagnostic_production_e2e.py "
+    "-m obs_coverage_p1"
+)
 
 from __future__ import annotations
 
@@ -247,50 +258,51 @@ def _collect_runtime_event_without_execution_id() -> list[str]:
 
 
 @pytest.mark.parametrize("entry", COVERAGE_PATH_PROOFS, ids=lambda e: e.path_id)
-def test_coverage_proof_modules_exist(entry: CoveragePathProof) -> None:
+def test_coverage_manifest_references_existing_proof_modules(entry: CoveragePathProof) -> None:
     for rel in entry.proof_modules:
         path = _REPO_ROOT / rel
         assert path.is_file(), f"missing proof module for {entry.path_id}: {rel}"
 
 
-def test_p1_critical_paths_are_proven() -> None:
+def test_coverage_manifest_contains_all_required_p1_paths() -> None:
     by_id = {entry.path_id: entry for entry in COVERAGE_PATH_PROOFS}
     missing = sorted(P1_PATHS - by_id.keys())
     assert missing == []
-    not_proven = sorted(
-        path_id
-        for path_id in P1_PATHS
-        if by_id[path_id].verdict != "PROVEN"
-    )
-    assert not_proven == []
 
 
+@pytest.mark.obs_coverage_p1
 def test_gate_obs_does_not_mint_execution_id() -> None:
     assert _collect_forbidden_mint_calls() == []
 
 
+@pytest.mark.obs_coverage_p1
 def test_gate_runtime_event_constructions_include_execution_id() -> None:
     assert _collect_runtime_event_without_execution_id() == []
 
 
+@pytest.mark.obs_coverage_p1
 def test_gate_runtime_event_execution_id_field_required() -> None:
     assert RuntimeEvent.model_fields["execution_id"].is_required()
 
 
+@pytest.mark.obs_coverage_p1
 def test_gate_pipeline_evidence_scope_requires_execution_id() -> None:
     assert "execution_id" in PipelineEvidenceScope.model_fields
     assert PipelineEvidenceScope.model_fields["execution_id"].is_required()
 
 
+@pytest.mark.obs_coverage_p1
 def test_gate_runtime_execution_ref_requires_execution_id() -> None:
     assert "execution_id" in RuntimeExecutionRef.model_fields
     assert RuntimeExecutionRef.model_fields["execution_id"].is_required()
 
 
+@pytest.mark.obs_coverage_p1
 def test_gate_initialized_scenarios_do_not_bypass_canonical_execution() -> None:
     assert_all_initialized_scenario_architectures(_REPO_ROOT)
 
 
+@pytest.mark.obs_coverage_p1
 def test_gate_terminal_runtime_event_published_before_diagnostic_dispatch() -> None:
     source = _NEXUS_LOOP.read_text(encoding="utf-8")
     publish_idx = source.index("terminal_event = await self._events.publish_terminal(task)")
@@ -301,6 +313,7 @@ def test_gate_terminal_runtime_event_published_before_diagnostic_dispatch() -> N
     assert publish_idx < dispatch_idx
 
 
+@pytest.mark.obs_coverage_p1
 def test_gate_event_bus_persists_before_handlers() -> None:
     bus_path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "event_bus.py"
     source = bus_path.read_text(encoding="utf-8")

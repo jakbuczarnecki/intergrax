@@ -78,7 +78,7 @@ Closed TRACE phases (1A–1C, ASOF-1/2, BITEMP-1/3, NPSC-5F evidence plane) stay
 
 ### Platform Evidence Coverage Matrix (OBS-COVERAGE-1)
 
-**SSOT:** architecture hub [Platform Evidence Coverage Matrix](../../architecture/OBSERVABILITY.md#platform-evidence-coverage-matrix-obs-coverage-1). **Certification tests:** `tests/unit/runtime/observability/test_obs_coverage_1_certification.py`. **Verdict:** PASS WITH P2 LIMITATIONS (DG-005 **NOT PROVEN**).
+**SSOT:** architecture hub [Platform Evidence Coverage Matrix](../../architecture/OBSERVABILITY.md#platform-evidence-coverage-matrix-obs-coverage-1). **Mandatory P1 qualification:** `uv run pytest tests/unit tests/integration/runtime/test_terminal_diagnostic_production_e2e.py -m obs_coverage_p1`. **Manifest / architecture gates:** `tests/unit/runtime/observability/test_obs_coverage_1_certification.py`. **Verdict:** PASS WITH P2 LIMITATIONS when qualification passes (DG-005 **NOT PROVEN**).
 
 ---
 

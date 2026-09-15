@@ -197,9 +197,9 @@ DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · opera
 
 **Frozen:** Observability records facts; it does not decide operational meaning. Diagnostics interprets facts; it does not mint execution identity, own evidence persistence, or maintain a competing Execution Tree.
 
-**Documented import debt (unchanged in this task):** `runtime.observability` imports `runtime.diagnostics` for functional evidence contracts and shared factual reconstruction wiring. Target dependency direction is frozen above; **OBS-FUNCTIONAL-CONTRACTS-1** and **OBS-RECONSTRUCTION-1** perform the moves. No compatibility shims; no second reconstructor in Observability.
+**Documented import debt (current):** `runtime.observability` may still import `runtime.diagnostics` for **shared factual reconstruction** wiring only. Functional evidence contracts and providers live under `intergrax.contracts.functional_evidence` and `intergrax.runtime.observability.functional_evidence` (**OBS-FUNCTIONAL-CONTRACTS-1** / **R1** closed). **OBS-RECONSTRUCTION-1** relocates the reconstruction package; no compatibility shims; no second reconstructor in Observability.
 
-**Future architecture gate (after debt migration):** `runtime.observability` MUST NOT import `runtime.diagnostics.*` except explicit temporary allowlist — to be enforced in **OBS-RECONSTRUCTION-1** / **OBS-FUNCTIONAL-CONTRACTS-1**, not before.
+**Future architecture gate (after reconstruction migration):** `runtime.observability` MUST NOT import `runtime.diagnostics.*` except an explicit temporary allowlist — enforced in **OBS-RECONSTRUCTION-1**, not before.
 
 **TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** **BLOCKED BY** shared reconstruction **package** placement (**OBS-RECONSTRUCTION-1**, **OBS-ASOF-REBASE**). **TRACE-ASOF-3** remains **conditional / defer** (materialization only when measurably required).
 
@@ -237,11 +237,11 @@ Reference: VPI `platform_proofs/scenarios/verified_product_identification/applic
 | ID | Severity | Owner | Reason | Next task |
 | -- | -------- | ----- | ------ | --------- |
 | Causal `RuntimeExecutionRef` without `ExecutionId` | — | — | **Closed (OBS-CAUSAL-2)** — `platform_causal_evidence.v2` | — |
-| Functional evidence contracts live under `runtime.diagnostics` while OBS records | P1 | Evidence Plane | Ownership inversion vs “OBS records, DIAG interprets” | **OBS-FUNCTIONAL-CONTRACTS-1** |
+| Functional evidence contracts live under `runtime.diagnostics` while OBS records | — | — | **Closed (OBS-FUNCTIONAL-CONTRACTS-1 / R1)** — `intergrax.contracts.functional_evidence` | — |
 | `ExecutionReconstructor` package placement under `diagnostics` | P1 | Evidence + DIAG | Shared factual layer semantically OBS; single implementation today | **OBS-RECONSTRUCTION-1** |
-| Emit-path `ExecutionId` coverage not fully certified on all paths | P1 | Execution + OBS | Contract requires `ExecutionId`; writers vary by path | **OBS-COVERAGE-1** |
+| Emit-path `ExecutionId` coverage not fully certified on all paths | — | — | **Closed (OBS-COVERAGE-1 / R1)** — mandatory `pytest -m obs_coverage_p1` qualification | — |
 | `TraceEvent` correlates primarily via `run_id` | P2 | Contracts / Plane B | May need stronger canonical correlation for some consumers | **OBS-TRACE-1** (conditional) |
-| OBS → DIAG imports for functional evidence + reconstruction | P1 | Architecture | Dependency direction vs frozen flow (boundary decided in OBS-BOUNDARY-1) | **OBS-FUNCTIONAL-CONTRACTS-1**, **OBS-RECONSTRUCTION-1** |
+| OBS → DIAG imports for reconstruction (functional evidence moved) | P1 | Architecture | Dependency direction vs frozen flow (boundary decided in OBS-BOUNDARY-1) | **OBS-RECONSTRUCTION-1** |
 
 ### Evidence Plane freeze (NPSC-5F enterprise certification)
 
@@ -2308,9 +2308,15 @@ Temporary recognition of legacy shapes is acceptable only during a bounded imple
 
 ## Platform Evidence Coverage Matrix (OBS-COVERAGE-1)
 
-**Status:** **Done** (2026-09-15) · **Verdict:** **PASS WITH P2 LIMITATIONS** (all P1 production-critical execution-scoped paths **PROVEN**; DG-005 cross-process RuntimeEvent topology **NOT PROVEN**)
+**Status:** **Done** (2026-09-15) · **R1:** certification proof integrity (2026-09-15) · **Verdict:** **PASS WITH P2 LIMITATIONS** when mandatory P1 qualification passes (DG-005 cross-process RuntimeEvent topology **NOT PROVEN**)
 
-**Certification gates:** `tests/unit/runtime/observability/test_obs_coverage_1_certification.py` · existing UE-9B / UE-9BR1 / OBS-FUNCTIONAL / OBS-CAUSAL / scenario architecture gates.
+**Mandatory P1 qualification (canonical acceptance gate):**
+
+```bash
+uv run pytest tests/unit tests/integration/runtime/test_terminal_diagnostic_production_e2e.py -m obs_coverage_p1
+```
+
+Manifest `PROVEN` labels in `COVERAGE_PATH_PROOFS` are **metadata only**; execution proof is the qualification command above. **Architecture gates (metadata checks, AST/source invariants):** `tests/unit/runtime/observability/test_obs_coverage_1_certification.py` (manifest tests + `@pytest.mark.obs_coverage_p1` gates).
 
 ### Evidence families (inventory)
 

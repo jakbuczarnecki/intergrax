@@ -31,7 +31,7 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
 
 _TENANT_A = "tenant-a"
 _TENANT_B = "tenant-b"

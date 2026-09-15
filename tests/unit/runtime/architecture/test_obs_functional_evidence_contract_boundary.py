@@ -38,7 +38,7 @@ from intergrax.runtime.observability.functional_evidence.document_store_function
     DocumentStoreFunctionalEvidencePersistence,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _OBSERVABILITY_ROOT = _REPO_ROOT / "intergrax" / "runtime" / "observability"

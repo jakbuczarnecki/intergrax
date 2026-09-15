@@ -41,6 +41,8 @@ from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
+pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
+
 
 def _checkpoint(
     *,

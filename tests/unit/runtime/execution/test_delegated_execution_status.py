@@ -78,7 +78,11 @@ from intergrax.runtime.execution.delegated_execution.status_service import (
     DelegatedExecutionStatusReadService,
 )
 
-pytestmark = [pytest.mark.unit, pytest.mark.gate]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.gate,
+    pytest.mark.obs_coverage_p1,
+]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _STATUS_SERVICE_MODULE = (

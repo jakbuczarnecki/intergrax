@@ -43,6 +43,8 @@ from intergrax.contracts.execution_identity import (
 )
 from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
+pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
+
 
 @pytest.mark.asyncio
 async def test_root_admission_before_delegate() -> None:

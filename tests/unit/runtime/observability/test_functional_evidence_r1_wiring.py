@@ -27,7 +27,7 @@ from intergrax.runtime.observability.functional_evidence_runtime_wiring import (
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
 
 
 @dataclass

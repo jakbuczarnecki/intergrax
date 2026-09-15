@@ -81,7 +81,11 @@ from tests.unit.applications.test_product_observability_dashboard_wiring import 
     _product_env,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.gate]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.gate,
+    pytest.mark.obs_coverage_p1,
+]
 
 _TENANT_A = "tenant-terminal-diag-a"
 _TENANT_B = "tenant-terminal-diag-b"
@@ -734,6 +738,7 @@ def test_harness_host_runtime_wires_terminal_diagnostic_trigger(
         manifest,
         env,
         settings=settings,
+        tenant_id=_TENANT_A,
         registry_projection=build_governed_contractor_test_registry_projection(),
         document_store=document_store,
         trace_db_path=tmp_path / "trace.db",  # type: ignore[operator]
