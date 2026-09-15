@@ -2,235 +2,26 @@
 # Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-from __future__ import annotations
+"""Public re-export surface for user-profile memory domain models."""
 
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
-import uuid
-
-from intergrax.globals.settings import GLOBAL_SETTINGS
-from intergrax.memory.contracts.enterprise_memory_record import (
-    MemoryProvenance,
-    MemoryRecordGovernance,
-    MemoryRecordLineage,
-    MemoryRecordTrust,
-    validate_memory_record_invariants,
+from intergrax.memory.contracts.memory_models import (
+    EnterpriseMemoryRecord,
+    MemoryImportance,
+    MemoryKind,
+    UserIdentity,
+    UserPreferences,
+    UserProfile,
+    UserProfileMemoryEntry,
+    UserProfileMemoryEntryNotFoundError,
 )
-from intergrax.utils.time_provider import SystemTimeProvider
 
-
-# ---------------------------------------------------------------------------
-# Core domain models for user / org profile and prompt bundles.
-# These models are intentionally independent from any storage or engine logic.
-# They represent the "language" in which we describe identities, preferences
-# and how they should be injected into LLM prompts.
-# ---------------------------------------------------------------------------
-
-class MemoryKind(Enum):
-    USER_FACT = "user_fact"
-    PREFERENCE = "preference"
-    SESSION_SUMMARY = "session_summary"
-    EPISODIC_EVENT = "episodic_event"
-    SEMANTIC = "semantic"
-    PROCEDURAL = "procedural"
-    ORG_FACT = "org_fact"
-    POLICY = "policy"
-    OTHER = "other"
-
-
-class MemoryImportance(Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    CRITICAL = "critical"
-
-
-class UserProfileMemoryEntryNotFoundError(LookupError):
-    """Raised when a memory entry id does not exist on the user profile."""
-
-    def __init__(self, entry_id: str) -> None:
-        super().__init__(f"memory entry not found: {entry_id}")
-        self.entry_id = entry_id
-
-
-@dataclass
-class UserProfileMemoryEntry:
-    """
-    Canonical enterprise memory record for user long-term memory (MEM-ENT-5).
-
-    Stable ``entry_id`` is the memory identity; ``revision`` increments on semantic
-    mutations. Typed provenance, trust, governance, and lineage are persisted
-    independently of vendor storage.
-    """
-
-    # Persistent stable memory identifier (unchanged across revisions).
-    entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)
-
-    # Monotonic record revision (>= 1); not derived from timestamps.
-    revision: int = 1
-
-    # Main content of the memory entry (human-readable text).
-    content: str = ""
-
-    # Optional link to the session from which this entry was derived.
-    # None means "not tied to a specific session".
-    session_id: Optional[str] = None
-
-    # High-level type of this memory entry.
-    # Useful for filtering, retrieval strategies, and UI.
-    kind: MemoryKind = MemoryKind.OTHER
-
-    # Short human-readable title (e.g. "Summary of session 2025-12-09").
-    title: Optional[str] = None
-
-    # Importance level used to prioritize entries during retrieval.
-    importance: MemoryImportance = MemoryImportance.MEDIUM
-
-    # Creation timestamp in ISO format (UTC).
-    # You can also store datetime and convert in the store layer;
-    # here we keep string for easier serialization.
-    created_at: str = field(
-        default_factory=lambda: SystemTimeProvider.utc_now().isoformat()
-    )
-
-    # Record lifecycle timestamp (distinct from fact validity below).
-    updated_at: Optional[str] = None
-
-    provenance: MemoryProvenance = field(default_factory=MemoryProvenance)
-    trust: MemoryRecordTrust = field(default_factory=MemoryRecordTrust)
-    governance: MemoryRecordGovernance = field(default_factory=MemoryRecordGovernance)
-    lineage: MemoryRecordLineage = field(default_factory=MemoryRecordLineage)
-    evidence_refs: Tuple[str, ...] = ()
-
-    # Additional, less frequently queried metadata.
-    # Example: {"tags": ["intergrax", "memory", "profiles"], "source": "session_summarizer"}
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-    # Temporal validity (Phase MEM-DEPTH-5.2).
-    valid_from: Optional[str] = None
-    valid_until: Optional[str] = None
-
-    # Unit-of-work flags used by the manager/store.
-    deleted: bool = False
-    modified: bool = False
-
-    @property
-    def memory_id(self) -> str:
-        return self.entry_id
-
-    def __post_init__(self) -> None:
-        validate_memory_record_invariants(
-            memory_id=self.entry_id,
-            revision=self.revision,
-            valid_from=self.valid_from,
-            valid_until=self.valid_until,
-            trust=self.trust,
-            lineage=self.lineage,
-            evidence_refs=self.evidence_refs,
-        )
-
-    def bump_revision_for_semantic_change(self) -> None:
-        """Increment revision after a persisted semantic mutation."""
-        self.revision += 1
-        self.updated_at = SystemTimeProvider.utc_now().isoformat()
-        validate_memory_record_invariants(
-            memory_id=self.entry_id,
-            revision=self.revision,
-            valid_from=self.valid_from,
-            valid_until=self.valid_until,
-            trust=self.trust,
-            lineage=self.lineage,
-            evidence_refs=self.evidence_refs,
-        )
-
-
-# Public alias — single canonical persisted memory entity.
-EnterpriseMemoryRecord = UserProfileMemoryEntry
-
-
-@dataclass
-class UserIdentity:
-    """
-    High-level description of who the user is.
-
-    This is a domain model, not something that must be sent directly to the LLM.
-    It can be summarized and transformed into instructions when needed.
-    """
-
-    user_id: str
-
-    # Human-level description
-    display_name: Optional[str] = None          # e.g. "Artur"
-    role: Optional[str] = None                  # e.g. "Senior .NET / Python Engineer"
-    domain_expertise: Optional[str] = None      # e.g. "AI runtimes, RAG, ERP systems"
-
-    # Environment / locale
-    language: Optional[str] = GLOBAL_SETTINGS.default_language             # e.g. "pl", "en"
-    locale: Optional[str] = GLOBAL_SETTINGS.default_locale                # e.g. "pl-PL"
-    timezone: Optional[str] = GLOBAL_SETTINGS.default_timezone              # e.g. "Europe/Warsaw"
-
-
-@dataclass
-class UserPreferences:
-    """
-    Stable user preferences that influence how the runtime and the LLM
-    should behave by default.
-
-    These preferences can be:
-    - mirrored into system instructions (for the LLM),
-    - and used programmatically by the runtime (e.g. to set max_tokens).
-    """
-
-    # Answer language & style
-    preferred_language: Optional[str] = None    # e.g. "pl", "en"
-    answer_length: Optional[str] = None         # e.g. "short", "detailed"
-    tone: Optional[str] = None                  # e.g. "technical", "formal", "casual"
-
-    # Formatting & content rules
-    no_emojis_in_code: bool = False
-    no_emojis_in_docs: bool = False
-    prefer_markdown: bool = True
-    prefer_code_blocks: bool = True
-
-    # Project / domain context (high-level)
-    default_project_context: Optional[str] = None
-    # e.g. "Building Intergrax nexus Runtime and Mooff ERP platform"
-
-    # Arbitrary extra preferences to keep this extensible
-    extra: Dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class UserProfile:
-    """
-    Canonical user profile aggregate.
-
-    It separates:
-    - identity      (who the user is),
-    - preferences   (how the user wants the system to behave),
-    - system instructions (short, compressed natural-language description
-                           used as a base for LLM system prompts),
-    - memory        (long-term factual and conceptual notes about the user).
-    """
-
-    identity: UserIdentity
-    preferences: UserPreferences
-
-    # Short natural-language instructions used directly (or almost directly)
-    # as system-level instructions for the runtime. This should be kept small
-    # and periodically re-generated / compressed.
-    system_instructions: Optional[str] = None
-
-    # Long-term memory entries about the user (facts, insights, stable notes).
-    # These are not sent directly to the LLM by default; they are used to
-    # derive or update `system_instructions` and other summaries.
-    memory_entries: List[UserProfileMemoryEntry] = field(default_factory=list)
-
-    # Versioning / metadata hook if needed.
-    version: int = 1    
-
-    entry_id: str = field(default_factory=lambda: uuid.uuid4().hex)
-    deleted: bool = False
-    modified: bool = False
-
+__all__ = [
+    "EnterpriseMemoryRecord",
+    "MemoryImportance",
+    "MemoryKind",
+    "UserIdentity",
+    "UserPreferences",
+    "UserProfile",
+    "UserProfileMemoryEntry",
+    "UserProfileMemoryEntryNotFoundError",
+]

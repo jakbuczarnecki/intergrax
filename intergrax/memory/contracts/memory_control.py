@@ -18,7 +18,7 @@ from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryRecordGovernance,
     MemoryRecordTrust,
 )
-from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
+from intergrax.memory.contracts.memory_models import MemoryKind, UserProfileMemoryEntry
 
 __all__ = [
     "EpisodicMemoryCapability",
