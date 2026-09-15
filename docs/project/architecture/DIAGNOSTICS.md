@@ -158,8 +158,8 @@ Production order on the terminal execution path:
 runtime operation
   → RuntimeEventBus publish/record
   → RuntimeEventPersistence append          # canonical evidence first
-  → terminal diagnostic trigger (when wired)
-  → DiagnosticOrchestrator
+  → TerminalExecutionDiagnosticPort (when wired)
+  → central adapter → DiagnosticOrchestrator
   → ProblemLifecycleEngine.reconcile
   → ProblemPersistence
   → DiagnosticReadService (read path)
@@ -170,7 +170,8 @@ flowchart TB
     EX[Execution Runtime]
     BUS[RuntimeEventBus]
     REP[RuntimeEventPersistence]
-    TRG[TerminalExecutionDiagnosticTrigger]
+    PORT[TerminalExecutionDiagnosticPort]
+    ADP[Central diagnostic adapter]
     ORC[DiagnosticOrchestrator]
     REC[ExecutionReconstructor / Analysis]
     PLC[ProblemLifecycleEngine]
@@ -179,7 +180,7 @@ flowchart TB
     READ[DiagnosticReadService]
 
     EX --> BUS --> REP
-    REP --> TRG --> ORC
+    REP --> PORT --> ADP --> ORC
     ORC --> REC --> PLC --> PP --> DS
     PP --> READ
     REP --> READ

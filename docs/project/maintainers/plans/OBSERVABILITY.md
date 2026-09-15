@@ -831,7 +831,7 @@ Policy owns sanitization before export; forbidden fields are dropped or hashed.
 **Architecture:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) ONE spine · HOST-DIAG-2/3 · queue causal evidence · `HarnessHostRuntime`
 **Status:** **Registered roadmap only** - no implementation in bootstrap/ledger reconciliation slice
 
-**Proven gap:** APPLICATION DIAGNOSTIC BASELINE NOT GUARANTEED. Current development has typed non-execution diagnostic subjects (HOST-DIAG-2), hosted failure projection (HOST-DIAG-3), terminal execution diagnostic trigger (ONE-SPINE-3), and scaffold observability templates - but **no universal enforcement** that every Tier-3 / scaffold-generated application includes canonical execution identity, RuntimeEvent persistence, diagnostic reconstruction visibility, queue causal evidence, and transport → execution continuity before domain logic ships.
+**Proven gap:** APPLICATION DIAGNOSTIC BASELINE NOT GUARANTEED. Current development has typed non-execution diagnostic subjects (HOST-DIAG-2), hosted failure projection (HOST-DIAG-3), neutral `TerminalExecutionDiagnosticPort` terminal integration (ONE-SPINE-3 / OBS-DIAG-PORT-1), and scaffold observability templates - but **no universal enforcement** that every Tier-3 / scaffold-generated application includes canonical execution identity, RuntimeEvent persistence, diagnostic reconstruction visibility, queue causal evidence, and transport → execution continuity before domain logic ships.
 
 **Required future baseline (conceptual):**
 

@@ -144,8 +144,9 @@ from intergrax.runtime.execution.execution_terminal.persistence import (
     terminal_reason_for_task_state,
     validate_terminal_run_id_consistency,
 )
-from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
-    TerminalExecutionDiagnosticTriggerProtocol,
+from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
+    TerminalExecutionDiagnosticPort,
+    TerminalExecutionDiagnosticRequest,
 )
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
@@ -218,8 +219,7 @@ class NexusLoop:
         denied_planner_model_ids: tuple[str, ...] = (),
         planner_model_id: str | None = None,
         governance_service: GovernanceService | None = None,
-        terminal_diagnostic_trigger: TerminalExecutionDiagnosticTriggerProtocol
-        | None = None,
+        terminal_diagnostic_trigger: TerminalExecutionDiagnosticPort | None = None,
         authority_policy: "ExecutionAuthorityPolicy | None" = None,
         budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
         execution_budget_ledger_factory: "ExecutionBudgetLedgerFactory | None" = None,
@@ -951,9 +951,9 @@ class NexusLoop:
 
     def attach_terminal_diagnostic_trigger(
         self,
-        trigger: TerminalExecutionDiagnosticTriggerProtocol,
+        trigger: TerminalExecutionDiagnosticPort,
     ) -> None:
-        """Attach platform terminal diagnostic trigger after host composition."""
+        """Attach terminal diagnostic integration port after host composition."""
         self._terminal_diagnostic_trigger = trigger
 
     def _seal_execution_lineage_after_terminal(
@@ -1067,25 +1067,32 @@ class NexusLoop:
     ) -> RuntimeEvent:
         terminal_event = await self._events.publish_terminal(task)
         if self._terminal_diagnostic_trigger is not None:
-            from intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge import (
-                invoke_terminal_execution_diagnostics,
-            )
+            from intergrax.logging import IntergraxLogging
 
-            from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
-
-            invoke_terminal_execution_diagnostics(
-                self._terminal_diagnostic_trigger,
-                tenant_id=task.tenant_id,
-                task_id=task.task_id,
-                run_id=terminal_event.run_id,
-                observed_at=terminal_event.timestamp,
-                event_bus=self._event_bus,
-                execution_identity=ExecutionIdentityBinding(
-                    run_id=terminal_event.run_id,
-                    attempt_id=terminal_event.attempt_id,
-                    execution_id=terminal_event.execution_id,
-                ),
+            diagnostic_logger = IntergraxLogging.get_logger(
+                __name__,
+                component="diagnostics",
             )
+            try:
+                self._terminal_diagnostic_trigger.dispatch_terminal_execution(
+                    TerminalExecutionDiagnosticRequest(
+                        tenant_id=task.tenant_id,
+                        task_id=task.task_id,
+                        run_id=terminal_event.run_id,
+                        observed_at=terminal_event.timestamp,
+                        attempt_id=terminal_event.attempt_id,
+                        execution_id=terminal_event.execution_id,
+                    ),
+                )
+            except Exception:
+                diagnostic_logger.exception(
+                    "Terminal execution diagnostic dispatch failed",
+                    extra={
+                        "tenant_id": task.tenant_id,
+                        "task_id": str(task.task_id),
+                        "run_id": str(terminal_event.run_id),
+                    },
+                )
         return terminal_event
 
     def _resolve_lifecycle(self, task: Task) -> tuple[TaskLifecycle, TaskTraceEmitter]:

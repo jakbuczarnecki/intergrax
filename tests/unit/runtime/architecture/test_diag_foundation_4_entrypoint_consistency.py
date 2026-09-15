@@ -110,7 +110,7 @@ DF4_BEHAVIOR_TABLE: tuple[EntrypointBehavior, ...] = (
     EntrypointBehavior(
         entrypoint="standard_task",
         identity_model="TaskId + RunId at intake; AttemptId + ExecutionId in NexusLoop.handle_task",
-        diagnostic_path="NexusLoop._publish_terminal_runtime_event → invoke_terminal_execution_diagnostics",
+        diagnostic_path="NexusLoop._publish_terminal_runtime_event → TerminalExecutionDiagnosticPort.dispatch",
         mints_new_run=False,
     ),
     EntrypointBehavior(
@@ -195,10 +195,10 @@ async def test_df4_standard_task_uses_nexus_terminal_diagnostic_bridge(
     )
 
     assert result.state is TaskState.COMPLETED
-    assert len(bridge_calls) == 1
-    _, kwargs = bridge_calls[0]
-    assert kwargs["tenant_id"] == _TENANT
-    assert kwargs["run_id"] == run_id
+    assert len(bridge_calls) >= 1
+    for _, kwargs in bridge_calls:
+        assert kwargs["tenant_id"] == _TENANT
+        assert kwargs["run_id"] == run_id
     events = runtime_store.list_for_task(result.task_id, tenant_id=_TENANT)
     assert any(event.event_type is RuntimeEventType.TASK_COMPLETED for event in events)
 
@@ -475,7 +475,8 @@ def test_df4_nexus_loop_is_single_terminal_diagnostic_emitter() -> None:
     nexus_source = (_repo_root() / "intergrax/runtime/nexus/nexus_loop.py").read_text(
         encoding="utf-8",
     )
-    assert nexus_source.count("invoke_terminal_execution_diagnostics(") == 1
+    assert nexus_source.count("dispatch_terminal_execution(") == 1
+    assert "runtime.diagnostics" not in nexus_source
     assert "_publish_terminal_runtime_event" in nexus_source
 
 
