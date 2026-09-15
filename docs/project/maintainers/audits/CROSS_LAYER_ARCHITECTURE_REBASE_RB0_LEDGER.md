@@ -103,12 +103,12 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 | AUDIT-20260818-END_TO_END_SYSTEM-04 | HIGH | ACCEPTED | E | MEDIUM | END_TO_END_SYSTEM | RB-8 | NO | NONE | NONE | MEDIUM | — |
 | AUDIT-20260818-END_TO_END_SYSTEM-05 | MEDIUM | ACCEPTED | E | MEDIUM | END_TO_END_SYSTEM | RB-8 | NO | NONE | NONE | MEDIUM | — |
 | AUDIT-20260818-END_TO_END_SYSTEM-06 | MEDIUM | ACCEPTED | E | MEDIUM | END_TO_END_SYSTEM | RB-8 | NO | NONE | NONE | MEDIUM | — |
-| AUDIT-20260818-EXECUTION_RUNTIME-01 | HIGH | ACCEPTED | E | HIGH | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | — |
-| AUDIT-20260818-EXECUTION_RUNTIME-02 | HIGH | ACCEPTED | E | HIGH | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | — |
-| AUDIT-20260818-EXECUTION_RUNTIME-03 | HIGH | ACCEPTED | E | HIGH | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | — |
-| AUDIT-20260818-EXECUTION_RUNTIME-04 | HIGH | ACCEPTED | E | HIGH | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | — |
-| AUDIT-20260818-EXECUTION_RUNTIME-05 | HIGH | ACCEPTED | E | HIGH | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | — |
-| AUDIT-20260818-EXECUTION_RUNTIME-06 | MEDIUM | ACCEPTED | E | MEDIUM | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | — |
+| AUDIT-20260818-EXECUTION_RUNTIME-01 | HIGH | ACCEPTED | D | HIGH | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | UER-FIX-A consumer |
+| AUDIT-20260818-EXECUTION_RUNTIME-02 | HIGH | ACCEPTED | F | HIGH | HarnessKernel / UER | RB-2 | ADR-FIRST | NONE | LEGACY | HIGH | UER-FIX-B frozen EE |
+| AUDIT-20260818-EXECUTION_RUNTIME-03 | HIGH | ACCEPTED | D | HIGH | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | UER-FIX-C consumer |
+| AUDIT-20260818-EXECUTION_RUNTIME-04 | HIGH | ACCEPTED | D | HIGH | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | UER-FIX-D consumer |
+| AUDIT-20260818-EXECUTION_RUNTIME-05 | HIGH | ACCEPTED | D | HIGH | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | UER-FIX-E consumer |
+| AUDIT-20260818-EXECUTION_RUNTIME-06 | MEDIUM | ACCEPTED | D | MEDIUM | Execution Engine / UER | RB-2 | CONSUMER-ONLY | NONE | LEGACY | HIGH | UER-FIX-E consumer |
 | AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-01 | HIGH | ACCEPTED | D | HIGH | EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | RB-8 | NO | NONE | NONE | MEDIUM | — |
 | AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-02 | HIGH | ACCEPTED | D | HIGH | EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | RB-8 | NO | NONE | NONE | MEDIUM | — |
 | AUDIT-20260818-EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE-03 | HIGH | ACCEPTED | D | HIGH | EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | RB-8 | NO | NONE | NONE | MEDIUM | — |
@@ -1625,16 +1625,16 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Current Canonical Owner:** Execution Engine / UER
 - **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
 - **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
-- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
-- **Migration Class:** E
-- **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
-- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
+- **Current Qualification / Proof Evidence:** RB-2B2 @ `6ec2345cbf4db6091160965aada3965bde454dbd`: behavioral `test_rb2b2_uer01_*`; `acp_run.py` still `PolicyEngine()` — see [`RB_2B2_UER_CONSUMER_REQUALIFICATION.md`](../qualification/RB_2B2_UER_CONSUMER_REQUALIFICATION.md).
+- **Migration Class:** D
+- **Classification Rationale:** Historical UER-FIX-A defect persists on direct ACP consumer; not an ExecutionRuntime bypass
+- **Remaining Risk:** Host/Nexus policy universe can diverge from direct ACP session policy engine instance
+- **Required Next Action:** Consumer fix: propagate host policy engine via `ACPSessionHostContext` / composition (no EE reopen)
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
+- **Evidence Freshness SHA:** `6ec2345cbf4db6091160965aada3965bde454dbd`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -1646,19 +1646,19 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Register Status:** ACCEPTED
 - **Historical Finding Summary:** RELIABILITY — remediation block UER-FIX-B; operator accepted 2026-08-19
 - **Historical Owner:** EXECUTION_RUNTIME
-- **Current Canonical Owner:** Execution Engine / UER
+- **Current Canonical Owner:** HarnessKernel / frozen EE
 - **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
-- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
-- **Migration Class:** E
-- **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
-- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
+- **Current Implementation Evidence:** `intergrax/runtime/kernel/step_kernel.py` merge-before-failure @ `6ec2345c`
+- **Current Qualification / Proof Evidence:** RB-2B2 @ `6ec2345c`: `test_rb2b2_uer02_kernel_merged_state_survives_failed_tool_step` — see [`RB_2B2_UER_CONSUMER_REQUALIFICATION.md`](../qualification/RB_2B2_UER_CONSUMER_REQUALIFICATION.md).
+- **Migration Class:** F
+- **Classification Rationale:** UER-FIX-B requires frozen `HarnessKernel` amendment — ADR before implementation
+- **Remaining Risk:** Resume/audit can observe state inconsistent with failed step record
+- **Required Next Action:** ADR / STOP: atomic step commit on frozen kernel (NPSC-3C boundary)
 - **RB Workstream:** RB-2
-- **Can Modify Without ADR?:** YES
+- **Can Modify Without ADR?:** NO
 - **Parallel Collision Risk:** HIGH
-- **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
+- **Frozen Owner Impact?:** YES
+- **Evidence Freshness SHA:** `6ec2345cbf4db6091160965aada3965bde454dbd`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -1670,19 +1670,19 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Register Status:** ACCEPTED
 - **Historical Finding Summary:** IMPLEMENTATION/ARCHITECTURE DRIFT — remediation block UER-FIX-C; operator accepted 2026-08-19
 - **Historical Owner:** EXECUTION_RUNTIME
-- **Current Canonical Owner:** Execution Engine / UER
+- **Current Canonical Owner:** Direct ACP consumer + checkpoint contract
 - **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
-- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
-- **Migration Class:** E
-- **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
-- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
+- **Current Implementation Evidence:** `acp_run.py` `_resolve_acp_session_identity`; `AgentRunCheckpoint` without `attempt_id` @ `6ec2345c`
+- **Current Qualification / Proof Evidence:** RB-2B2 @ `6ec2345c`: `test_rb2b2_uer03_acp_resume_still_mints_execution_identity` — see [`RB_2B2_UER_CONSUMER_REQUALIFICATION.md`](../qualification/RB_2B2_UER_CONSUMER_REQUALIFICATION.md).
+- **Migration Class:** D
+- **Classification Rationale:** Resume-without-retry attempt continuity not proven on direct ACP path
+- **Remaining Risk:** Observability / recovery spine attempt mismatch on ACP checkpoint resume
+- **Required Next Action:** Consumer + checkpoint contract: persist/bind AttemptId on resume-without-retry
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
+- **Evidence Freshness SHA:** `6ec2345cbf4db6091160965aada3965bde454dbd`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -1694,19 +1694,19 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Register Status:** ACCEPTED
 - **Historical Finding Summary:** RELIABILITY — remediation block UER-FIX-D; operator accepted 2026-08-19
 - **Historical Owner:** EXECUTION_RUNTIME
-- **Current Canonical Owner:** Execution Engine / UER
+- **Current Canonical Owner:** Direct ACP consumer (`acp_run` / `step_loop`)
 - **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
-- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
-- **Migration Class:** E
-- **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
-- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
+- **Current Implementation Evidence:** `step_loop.py` budget-only catch; no session exception boundary @ `6ec2345c`
+- **Current Qualification / Proof Evidence:** RB-2B2 @ `6ec2345c`: `test_rb2b2_uer04_unexpected_agent_exception_escapes_acp_session` — see [`RB_2B2_UER_CONSUMER_REQUALIFICATION.md`](../qualification/RB_2B2_UER_CONSUMER_REQUALIFICATION.md).
+- **Migration Class:** D
+- **Classification Rationale:** Typed terminal FAILED boundary missing for normal agent/domain exceptions on direct ACP
+- **Remaining Risk:** Callers may observe raw exceptions instead of governed `AgentRunResult`
+- **Required Next Action:** Consumer fix: universal typed terminal boundary around ACP session loop
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
+- **Evidence Freshness SHA:** `6ec2345cbf4db6091160965aada3965bde454dbd`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -1718,19 +1718,19 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Register Status:** ACCEPTED
 - **Historical Finding Summary:** RELIABILITY — remediation block UER-FIX-E; operator accepted 2026-08-19
 - **Historical Owner:** EXECUTION_RUNTIME
-- **Current Canonical Owner:** Execution Engine / UER
-- **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
-- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
-- **Migration Class:** E
-- **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
-- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
+- **Current Canonical Owner:** Task cancellation + ACP session consumer
+- **Current Canonical Contract:** `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md`
+- **Current Implementation Evidence:** `CancellationCoordinator` metadata-only; ACP loop without cancel checks @ `6ec2345c`
+- **Current Qualification / Proof Evidence:** RB-2B2 @ `6ec2345c`: code trace — no cooperative cancel in `intergrax/agents/authoring/` — see [`RB_2B2_UER_CONSUMER_REQUALIFICATION.md`](../qualification/RB_2B2_UER_CONSUMER_REQUALIFICATION.md).
+- **Migration Class:** D
+- **Classification Rationale:** Accepted cancellation does not reach in-flight ACP iterations
+- **Remaining Risk:** Operator cancel acceptance while agent loop continues until step return
+- **Required Next Action:** Wire cooperative cancellation channel into ACP step/LLM/tool boundaries
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
 - **Parallel Collision Risk:** HIGH
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
+- **Evidence Freshness SHA:** `6ec2345cbf4db6091160965aada3965bde454dbd`
 - **Current Risk Severity:** HIGH
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY
@@ -1742,19 +1742,19 @@ Re-evaluated ledger rows: OBSERVABILITY_EVIDENCE (all), MEMORY (all), EXECUTION_
 - **Historical Register Status:** ACCEPTED
 - **Historical Finding Summary:** RELIABILITY — remediation block UER-FIX-E; operator accepted 2026-08-19
 - **Historical Owner:** EXECUTION_RUNTIME
-- **Current Canonical Owner:** Execution Engine / UER
-- **Current Canonical Contract:** `docs/project/architecture/UNIFIED_EXECUTION_RUNTIME.md` (EE frozen)
-- **Current Implementation Evidence:** `intergrax/runtime/execution/runtime.py` ExecutionRuntime @ 4bcc025; consumer paths per U5 P0 inventory; RB-2A trace in EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md
-- **Current Qualification / Proof Evidence:** RB-2A @ 4bcc025: EE frozen canonical; 0 proven production bypass; UER-FIX consumer re-proof remains (L1). See EXECUTION_ADOPTION_RESIDUAL_AUDIT_RB2A.md.
-- **Migration Class:** E
-- **Classification Rationale:** Do not reopen EE; re-verify UER-FIX on consumer paths
-- **Remaining Risk:** Gap: UER-FIX consumer proofs @ HEAD — not EE core; not a production bypass.
-- **Required Next Action:** RB-2B2: Re-run UER-FIX consumer proofs @ 4bcc0255d; do not mutate Execution Engine.
+- **Current Canonical Owner:** Cancellation coordinator + `AgentCheckpointStore` port
+- **Current Canonical Contract:** `docs/project/architecture/RELIABILITY_FAILURE_AND_HITL.md`
+- **Current Implementation Evidence:** `clear_checkpoint_state` pointer-only; checkpoint save/get without invalidate @ `6ec2345c`
+- **Current Qualification / Proof Evidence:** RB-2B2 @ `6ec2345c`: historical reproduction still valid — see [`RB_2B2_UER_CONSUMER_REQUALIFICATION.md`](../qualification/RB_2B2_UER_CONSUMER_REQUALIFICATION.md).
+- **Migration Class:** D
+- **Classification Rationale:** Cancelled runs can retain resumable ACP checkpoint material in store
+- **Remaining Risk:** Stale checkpoint authority if resume flag supplied after cancel
+- **Required Next Action:** Port + consumer: tombstone/invalidate checkpoint on cooperative cancel
 - **RB Workstream:** RB-2
 - **Can Modify Without ADR?:** YES
-- **Parallel Collision Risk:** HIGH
+- **Parallel Collision Risk:** MEDIUM
 - **Frozen Owner Impact?:** CONSUMER-ONLY
-- **Evidence Freshness SHA:** `4bcc0255dd21f082d74749fd5e0c2fc6003c83c7`
+- **Evidence Freshness SHA:** `6ec2345cbf4db6091160965aada3965bde454dbd`
 - **Current Risk Severity:** MEDIUM
 - **Duplicate Owner Risk:** NONE
 - **Bypass Risk:** LEGACY

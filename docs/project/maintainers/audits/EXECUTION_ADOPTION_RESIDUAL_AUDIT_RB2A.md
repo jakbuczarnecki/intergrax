@@ -205,7 +205,7 @@ Detail register patches: ledger § Phase RB-2A delta + per-finding fields update
 | Slice | Scope | Owner boundary |
 |-------|-------|----------------|
 | **RB-2B1** | Retire dead harness execution surfaces: `mount_harness_task_routes`, `build_task_runner_with_enricher`, unused `wire_long_running_scheduler` | `intergrax/applications/_shared`, `runtime/long_running/wiring.py` |
-| **RB-2B2** | UER-FIX consumer re-proof @ HEAD (agents/kernel) without EE core edits | Consumers only |
+| **RB-2B2** | UER-FIX consumer re-proof @ HEAD (agents/kernel) without EE core edits | **DONE** — [`RB_2B2_UER_CONSUMER_REQUALIFICATION.md`](../qualification/RB_2B2_UER_CONSUMER_REQUALIFICATION.md) @ `6ec2345c`; 0×A; UER-02 → **F** |
 | **RB-2B3** | Tier-3 doc drift (`UnifiedTaskRunner` references in application docs) | `applications/*/docs` |
 | **RB-2B4** | U5 + P0 inventory re-qualification session @ `4bcc0255d` (incl. delegated query non-authority) | Qualification docs + gate HEAD stamp |
 | **RB-2B5** | SHM/ITI adoption closure record + convergence gate expansion if needed | RB-8 qualification companion |
