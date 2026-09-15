@@ -25,6 +25,20 @@ from intergrax.integrations.contracts.document_store import (
 )
 
 _DOCUMENT_PARTITION = "intergrax.delegated_invocation_correlation.v1"
+_QUERY_PARENT_EXECUTION_ID = "query_parent_execution_id"
+_QUERY_PROVIDER_ID = "query_provider_id"
+_QUERY_PERSISTED_AT = "query_persisted_at"
+
+
+def correlation_document_query_fields(
+    record: DelegatedInvocationCorrelationRecord,
+) -> dict[str, str]:
+    """Denormalized query index fields (logical: parent_execution_id, provider_id, persisted_at)."""
+    return {
+        _QUERY_PARENT_EXECUTION_ID: str(record.binding.parent_execution_id),
+        _QUERY_PROVIDER_ID: record.binding.provider_id,
+        _QUERY_PERSISTED_AT: record.persisted_at.isoformat(),
+    }
 
 
 def encode_correlation_record(record: DelegatedInvocationCorrelationRecord) -> bytes:
@@ -46,18 +60,22 @@ def decode_correlation_record(raw: bytes) -> DelegatedInvocationCorrelationRecor
         ) from exc
 
 
-class InMemoryDelegatedInvocationCorrelationStore(DelegatedInvocationCorrelationStore):
-    """Shared-backend in-memory store for tests and single-process hosts."""
+class InMemoryDelegatedInvocationCorrelationBackend:
+    """Shared in-memory record map for write and query adapters."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._records: dict[str, DelegatedInvocationCorrelationRecord] = {}
 
-    @property
-    def is_durable(self) -> bool:
-        return False
+    def snapshot_records(self) -> tuple[DelegatedInvocationCorrelationRecord, ...]:
+        with self._lock:
+            return tuple(self._records.values())
 
-    def persist(self, record: DelegatedInvocationCorrelationRecord) -> None:
+    def get_record(self, key: str) -> DelegatedInvocationCorrelationRecord | None:
+        with self._lock:
+            return self._records.get(key)
+
+    def persist_record(self, record: DelegatedInvocationCorrelationRecord) -> None:
         key = str(record.binding.execution_id)
         with self._lock:
             existing = self._records.get(key)
@@ -70,13 +88,29 @@ class InMemoryDelegatedInvocationCorrelationStore(DelegatedInvocationCorrelation
                 "delegated invocation correlation conflict for execution_id",
             )
 
+
+class InMemoryDelegatedInvocationCorrelationStore(DelegatedInvocationCorrelationStore):
+    """Shared-backend in-memory store for tests and single-process hosts."""
+
+    def __init__(
+        self,
+        backend: InMemoryDelegatedInvocationCorrelationBackend | None = None,
+    ) -> None:
+        self._backend = backend or InMemoryDelegatedInvocationCorrelationBackend()
+
+    @property
+    def is_durable(self) -> bool:
+        return False
+
+    def persist(self, record: DelegatedInvocationCorrelationRecord) -> None:
+        self._backend.persist_record(record)
+
     def get_by_execution_id(
         self,
         execution_id: ExecutionId,
     ) -> DelegatedInvocationCorrelationRecord | None:
         key = str(validate_execution_id(execution_id))
-        with self._lock:
-            return self._records.get(key)
+        return self._backend.get_record(key)
 
 
 class DocumentStoreDelegatedInvocationCorrelationStore(
@@ -108,7 +142,10 @@ class DocumentStoreDelegatedInvocationCorrelationStore(
         document = DocumentRecord(
             partition_key=_DOCUMENT_PARTITION,
             row_key=row_key,
-            data={"correlation": encode_correlation_record(record).decode("utf-8")},
+            data={
+                "correlation": encode_correlation_record(record).decode("utf-8"),
+                **correlation_document_query_fields(record),
+            },
         )
         if not self._document_store.put_if_absent(document):
             stored = self.get_by_execution_id(record.binding.execution_id)
@@ -170,7 +207,9 @@ def wire_delegated_invocation_correlation_store(
 
 __all__ = [
     "DocumentStoreDelegatedInvocationCorrelationStore",
+    "InMemoryDelegatedInvocationCorrelationBackend",
     "InMemoryDelegatedInvocationCorrelationStore",
+    "correlation_document_query_fields",
     "decode_correlation_record",
     "encode_correlation_record",
     "wire_delegated_invocation_correlation_store",
