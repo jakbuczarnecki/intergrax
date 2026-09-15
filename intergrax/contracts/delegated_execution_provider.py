@@ -219,7 +219,11 @@ class DelegatedExecutionRequest(Generic[RequestT]):
 
 @dataclass(frozen=True, slots=True)
 class DelegatedExecutionOutcome(Generic[ResultT]):
-    """Neutral provider outcome envelope for runtime adaptation."""
+    """Neutral provider outcome envelope for runtime adaptation.
+
+    ``invocation_binding`` is platform-owned enrichment minted on the
+    Execution-owned S2A path. Provider implementations MUST return it as None.
+    """
 
     category: DelegatedExecutionOutcomeCategory
     result: ResultT | None = None

@@ -560,9 +560,13 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2B — capability-gated provider-native cancel/interrupt control propagation = CLOSED** (control plane only; canonical Execution lifecycle unchanged).
 
+**P2.1-S2B-C1 — invocation binding correlation contract = CLOSED** (platform-owned ``DelegatedExecutionInvocationBinding``; control consumes platform-issued binding only).
+
 **P2.1-S2B-C2 — authoritative S2A invocation binding issuance = CLOSED** (Execution-owned dispatch enriches outcomes with platform-issued ``DelegatedExecutionInvocationBinding``; no durable registry).
 
-**P2.1-S2B = CLOSED** (S2A adoption + S2B control + C1 correlation + C2 authoritative binding issuance).
+**P2.1-S2B-C3 — provider-supplied binding rejection = CLOSED** (provider ``execute`` outcomes MUST NOT carry ``invocation_binding``; fail-closed at S2A gate + enrichment helper).
+
+**P2.1-S2B = CLOSED** (S2A adoption + S2B control + C1 correlation + C2 authoritative binding issuance + C3 platform binding ownership).
 
 **P2.1-S2 = OPEN** (S2C durability / status / continuation next).
 

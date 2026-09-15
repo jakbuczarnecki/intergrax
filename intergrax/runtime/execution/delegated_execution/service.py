@@ -10,6 +10,7 @@ from typing import Generic, Protocol, TypeVar, runtime_checkable
 from pydantic import ValidationError
 
 from intergrax.contracts.delegated_execution_invocation_binding import (
+    assert_provider_outcome_has_no_invocation_binding,
     enrich_delegated_outcome_with_platform_invocation_binding,
 )
 from intergrax.contracts.delegated_execution_provider import (
@@ -134,6 +135,18 @@ class _DelegatedProviderDispatchDelegate(
             operation=work.operation,
         )
         outcome = await self._provider.execute(provider_request)
+        try:
+            assert_provider_outcome_has_no_invocation_binding(outcome)
+        except DelegatedExecutionContractError:
+            return delegated_failure_outcome(
+                category=DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE,
+                failure_code="OUTCOME_CONTRACT_MISMATCH",
+                failure_message=(
+                    "provider outcome contains platform-owned invocation binding"
+                ),
+                provider_invocation=outcome.provider_invocation,
+                provider_outcome=outcome.provider_outcome,
+            )
         payload_digest = digest_delegated_execution_payload(work.payload)
         try:
             return enrich_delegated_outcome_with_platform_invocation_binding(

@@ -154,6 +154,17 @@ def mint_delegated_execution_invocation_binding(
     )
 
 
+def assert_provider_outcome_has_no_invocation_binding(
+    outcome: DelegatedExecutionOutcome[ResultT],
+) -> None:
+    """Reject provider-supplied platform-owned invocation correlation."""
+    if outcome.invocation_binding is not None:
+        raise DelegatedExecutionContractError(
+            "provider outcome must not carry invocation_binding; "
+            "platform-owned enrichment only",
+        )
+
+
 def enrich_delegated_outcome_with_platform_invocation_binding(
     *,
     outcome: DelegatedExecutionOutcome[ResultT],
@@ -162,6 +173,7 @@ def enrich_delegated_outcome_with_platform_invocation_binding(
     payload_digest: str,
 ) -> DelegatedExecutionOutcome[ResultT]:
     """Attach platform-issued binding on the Execution-owned S2A dispatch path."""
+    assert_provider_outcome_has_no_invocation_binding(outcome)
     if outcome.provider_invocation is None:
         return outcome
     binding = mint_delegated_execution_invocation_binding(
@@ -175,6 +187,7 @@ def enrich_delegated_outcome_with_platform_invocation_binding(
 
 __all__ = [
     "DelegatedExecutionInvocationBinding",
+    "assert_provider_outcome_has_no_invocation_binding",
     "enrich_delegated_outcome_with_platform_invocation_binding",
     "mint_delegated_execution_invocation_binding",
 ]
