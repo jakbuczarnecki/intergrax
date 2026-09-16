@@ -302,3 +302,32 @@ def test_marketplace_service_does_not_import_ranking_with_commercial_metadata() 
     imported = _collect_imports(tree)
     assert "intergrax.capability_catalog.ranking" not in imported
     assert "intergrax.contracts.marketplace.commercial" not in imported
+
+
+def test_me10_r2_handoff_delivery_lifecycle_not_trace_authority() -> None:
+    delivery = importlib.import_module("intergrax.marketplace.handoff_traceability.delivery")
+    src = Path(delivery.__file__).read_text(encoding="utf-8")
+    deliver_body = src.split("def deliver")[1].split("def _release_after_consumer_failure")[0]
+    assert "record_handoff" not in deliver_body
+    assert "mark_delivered" in deliver_body
+    assert "reserve" in deliver_body
+
+
+def test_me10_r2_contracts_do_not_import_marketplace_providers() -> None:
+    contracts_path = (
+        _package_root("intergrax.contracts.marketplace") / "handoff_traceability.py"
+    )
+    text = contracts_path.read_text(encoding="utf-8")
+    assert "intergrax.marketplace" not in text
+    assert "InMemory" not in text
+
+
+def test_me10_r2_no_global_handoff_dedupe_registry_in_delivery_core() -> None:
+    admission = importlib.import_module("intergrax.marketplace.handoff_traceability.admission")
+    delivery = importlib.import_module("intergrax.marketplace.handoff_traceability.delivery")
+    for module in (admission, delivery):
+        src = Path(module.__file__).read_text(encoding="utf-8").lower()
+        assert "global_dedupe" not in src
+        assert "dedupe_registry" not in src
+    delivery_src = Path(delivery.__file__).read_text(encoding="utf-8")
+    assert "_delivery_lock" not in delivery_src

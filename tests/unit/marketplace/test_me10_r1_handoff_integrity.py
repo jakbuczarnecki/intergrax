@@ -131,7 +131,13 @@ class _RecordingTrace:
 
 
 class _FailingAdmission:
-    def admit(self, envelope: CapabilityHandoffEnvelope) -> CapabilityHandoffDeliveryAdmissionResult:
+    def reserve(self, envelope: CapabilityHandoffEnvelope) -> CapabilityHandoffDeliveryAdmissionResult:
+        raise RuntimeError("admission store unavailable")
+
+    def mark_delivered(self, handoff_id: str) -> None:
+        raise RuntimeError("admission store unavailable")
+
+    def mark_delivery_failed(self, handoff_id: str) -> None:
         raise RuntimeError("admission store unavailable")
 
 
@@ -139,12 +145,18 @@ class _CustomAdmission:
     """Structural provider — no platform subclass."""
 
     def __init__(self) -> None:
-        self.admit_calls = 0
+        self.reserve_calls = 0
         self._inner = InMemoryCapabilityHandoffDeliveryAdmission()
 
-    def admit(self, envelope: CapabilityHandoffEnvelope) -> CapabilityHandoffDeliveryAdmissionResult:
-        self.admit_calls += 1
-        return self._inner.admit(envelope)
+    def reserve(self, envelope: CapabilityHandoffEnvelope) -> CapabilityHandoffDeliveryAdmissionResult:
+        self.reserve_calls += 1
+        return self._inner.reserve(envelope)
+
+    def mark_delivered(self, handoff_id: str) -> None:
+        self._inner.mark_delivered(handoff_id)
+
+    def mark_delivery_failed(self, handoff_id: str) -> None:
+        self._inner.mark_delivery_failed(handoff_id)
 
 
 def _delivery(
@@ -170,7 +182,7 @@ def test_reproducer_consumer_identity_mismatch_rejected_with_zero_side_effects()
         service.deliver(envelope)
     assert consumer.calls == 0
     assert trace.calls == 0
-    assert admission.admitted_handoff_ids() == ()
+    assert admission.delivered_handoff_ids() == ()
 
 
 def test_duplicate_delivery_without_trace_provider_invokes_consumer_once() -> None:
@@ -269,7 +281,7 @@ def test_structural_custom_delivery_admission_provider() -> None:
     envelope = _envelope(consumer_id="consumer-B")
     service.deliver(envelope)
     service.deliver(envelope)
-    assert custom.admit_calls == 2
+    assert custom.reserve_calls == 2
     assert consumer.calls == 1
 
 
@@ -297,7 +309,10 @@ def test_concurrent_duplicate_delivery_invokes_consumer_at_most_once() -> None:
     assert not errors
     assert consumer.calls == 1
     assert CapabilityHandoffDeliveryDisposition.DELIVERED in results
-    assert CapabilityHandoffDeliveryDisposition.DUPLICATE_SKIPPED in results
+    assert (
+        CapabilityHandoffDeliveryDisposition.DUPLICATE_SKIPPED in results
+        or CapabilityHandoffDeliveryDisposition.IN_PROGRESS_SKIPPED in results
+    )
 
 
 def test_orchestrator_does_not_accept_arbitrary_downstream_consumer_id() -> None:
@@ -319,7 +334,7 @@ def test_delivery_idempotency_not_gated_on_trace_evidence_only() -> None:
     package = importlib.import_module("intergrax.marketplace.handoff_traceability.delivery")
     src = Path(package.__file__).read_text(encoding="utf-8")
     assert "delivery_admission" in src
-    assert "DUPLICATE_IDENTICAL_PAYLOAD" in src
+    assert "ALREADY_DELIVERED_IDENTICAL" in src
     assert "duplicate = not recorded" not in src
 
 

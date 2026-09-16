@@ -382,7 +382,21 @@ validate envelope
     → observational trace evidence (best-effort; does not gate business delivery)
 ```
 
-Delivery idempotency is **idempotent duplicate admission** within the configured admission provider scope (reference in-memory provider is process-local only — not a distributed exactly-once guarantee). `CapabilityHandoffTraceEvidenceConsumer` does not control whether the business consumer runs.
+Delivery idempotency is **provider-scoped idempotent delivery lifecycle** within the configured admission provider (reference in-memory provider is process-local only). **ME-10 does NOT guarantee distributed exactly-once delivery.**
+
+**ME-10-R2 (implemented):** Delivery lifecycle separates reservation from successful delivery:
+
+```text
+ABSENT
+  → reserve → IN_PROGRESS (RESERVED_NEW)
+      ├─ consumer failure → mark_delivery_failed → retry allowed (reservation released)
+      └─ consumer success → mark_delivered → DELIVERED
+DELIVERED + identical envelope → DUPLICATE_SKIPPED (no consumer)
+IN_PROGRESS + concurrent identical → IN_PROGRESS_SKIPPED (no consumer)
+consumer success + mark_delivered failure → CapabilityHandoffDeliveryOutcomeUncertainError
+```
+
+`CapabilityHandoffDeliveryAdmission` owns `reserve` / `mark_delivered` / `mark_delivery_failed`. `CapabilityHandoffTraceEvidenceConsumer` remains observational only and does not control whether the business consumer runs.
 
 Hard invariants:
 
@@ -599,6 +613,20 @@ Proofs: `tests/unit/marketplace/test_me9_multi_tenant_private_marketplace.py`, `
 
 ---
 
+## ME-11-C1 — Cache observability and metadata freshness (correction)
+
+Snapshot cache materializes **canonical capability snapshots only** (pre-visibility). External cache plugins are untrusted infrastructure: cached values must pass integrity validation (`COMPLETE` federation, `source_ids` match cache key) before a HIT is observed or returned; invalid entries fall back to authority under `FALLBACK_TO_AUTHORITY` or raise `CapabilityCatalogSnapshotCacheIntegrityError` under `PROPAGATE`.
+
+Cache lifecycle observers are **non-authoritative** (`CapabilityCatalogSnapshotCacheObserverFailurePolicy.BEST_EFFORT` default): observer failure must not change hit/miss/write/invalidate outcomes or the returned snapshot.
+
+`MarketplaceCatalogService` reconciles marketplace product metadata to the **same** canonical snapshot used for each request (list/detail/search join) — construction-time metadata indexes are forbidden; stale metadata must never widen access.
+
+Default generation tokens `()` mean cache identity changes when federation source composition changes or on explicit `invalidate_cached_snapshot()` / custom generation policy — **not** automatic detection of arbitrary in-source content changes without generation or invalidation.
+
+Proofs: `tests/unit/marketplace/test_me11_c1_cache_observability_metadata_freshness.py`, `tests/unit/marketplace/test_me11_scale_resilience_caching.py`.
+
+---
+
 ## ME-11 — Scale / resilience / caching (closed)
 
 Canonical read path with optional materialized snapshot cache **before** visibility narrowing:
@@ -629,7 +657,7 @@ Stale data must not widen access
 Cache failure must not redefine business result
 ```
 
-Snapshot cache keys are federation-scoped (`source_ids` + optional generation tokens) — never tenant/org post-visibility results. Cache write occurs only after a **complete** validated snapshot is produced. Partial snapshots are not cached. Programming defects from sources or cache plugins propagate; expected source outages use `CapabilityCatalogSourceFailure` and federation policy.
+Snapshot cache keys are federation-scoped (`source_ids` + optional generation tokens) — never tenant/org post-visibility results. Cache write occurs only after a **complete** validated snapshot is produced. Partial snapshots are not cached and are not accepted as valid cache hits. Programming defects from sources or cache plugins propagate; expected source outages use `CapabilityCatalogSourceFailure` and federation policy. Fresh canonical snapshot + stale marketplace metadata is forbidden.
 
 Proofs: `tests/unit/marketplace/test_me11_scale_resilience_caching.py`, federation updates in `tests/unit/capability_catalog/test_federation.py`.
 

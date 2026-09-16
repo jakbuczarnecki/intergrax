@@ -146,13 +146,23 @@ class CapabilityHandoffEnvelope(BaseModel):
 class CapabilityHandoffDeliveryDisposition(StrEnum):
     DELIVERED = "delivered"
     DUPLICATE_SKIPPED = "duplicate_skipped"
+    IN_PROGRESS_SKIPPED = "in_progress_skipped"
+
+
+class CapabilityHandoffDeliveryLifecycleState(StrEnum):
+    """Logical delivery lifecycle — provider-scoped, not distributed exactly-once."""
+
+    IN_PROGRESS = "in_progress"
+    FAILED_RETRYABLE = "failed_retryable"
+    DELIVERED = "delivered"
 
 
 class CapabilityHandoffDeliveryAdmissionVerdict(StrEnum):
-    """Result of atomic handoff admission — delivery control, not observational trace."""
+    """Result of atomic handoff reservation — delivery control, not observational trace."""
 
-    ADMITTED_NEW = "admitted_new"
-    DUPLICATE_IDENTICAL_PAYLOAD = "duplicate_identical_payload"
+    RESERVED_NEW = "reserved_new"
+    ALREADY_DELIVERED_IDENTICAL = "already_delivered_identical"
+    IN_PROGRESS_IDENTICAL = "in_progress_identical"
 
 
 class CapabilityHandoffDeliveryAdmissionResult(BaseModel):
@@ -168,6 +178,22 @@ class CapabilityHandoffIdentityConflictError(Exception):
 
 class CapabilityHandoffDeliveryAdmissionError(Exception):
     """Delivery idempotency authority failed — delivery must not proceed."""
+
+
+class CapabilityHandoffDeliveryLifecycleTransitionError(CapabilityHandoffDeliveryAdmissionError):
+    """Lifecycle transition failed after a bounded delivery step — must not be ignored."""
+
+
+class CapabilityHandoffDeliveryOutcomeUncertainError(CapabilityHandoffDeliveryAdmissionError):
+    """Consumer may have succeeded but delivered state could not be committed."""
+
+
+class CapabilityHandoffDeliveryLifecycleRecord(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    handoff_id: str = Field(min_length=1)
+    envelope: CapabilityHandoffEnvelope
+    state: CapabilityHandoffDeliveryLifecycleState
 
 
 class CapabilityHandoffDeliveryResult(BaseModel):
@@ -192,10 +218,16 @@ class CapabilityHandoffConsumer(Protocol):
 
 @runtime_checkable
 class CapabilityHandoffDeliveryAdmission(Protocol):
-    """Mandatory delivery idempotency authority — independent of trace persistence."""
+    """Mandatory delivery lifecycle authority — independent of trace persistence."""
 
-    def admit(self, envelope: CapabilityHandoffEnvelope) -> CapabilityHandoffDeliveryAdmissionResult:
-        """Atomically admit a handoff; raise ``CapabilityHandoffIdentityConflictError`` on payload clash."""
+    def reserve(self, envelope: CapabilityHandoffEnvelope) -> CapabilityHandoffDeliveryAdmissionResult:
+        """Atomically reserve a delivery attempt; raise ``CapabilityHandoffIdentityConflictError`` on clash."""
+
+    def mark_delivered(self, handoff_id: str) -> None:
+        """Commit successful delivery after downstream consumer succeeds."""
+
+    def mark_delivery_failed(self, handoff_id: str) -> None:
+        """Release an in-progress reservation so an identical envelope may retry."""
 
 
 @runtime_checkable
@@ -220,6 +252,10 @@ __all__ = [
     "CapabilityHandoffDeliveryAdmissionResult",
     "CapabilityHandoffDeliveryAdmissionVerdict",
     "CapabilityHandoffDeliveryDisposition",
+    "CapabilityHandoffDeliveryLifecycleRecord",
+    "CapabilityHandoffDeliveryLifecycleState",
+    "CapabilityHandoffDeliveryLifecycleTransitionError",
+    "CapabilityHandoffDeliveryOutcomeUncertainError",
     "CapabilityHandoffDeliveryResult",
     "CapabilityHandoffEnvelope",
     "CapabilityHandoffIdentityConflictError",
