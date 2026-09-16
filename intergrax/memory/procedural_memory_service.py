@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.memory_security_governance import (
     CanonicalMemoryGovernanceSourceAuthority,
+    MemoryGovernanceDenied,
     MemoryGovernanceEvaluationRequest,
     MemoryGovernanceOperation,
     MemoryGovernanceRecordSnapshot,
@@ -31,6 +32,10 @@ from intergrax.memory.contracts.procedural_memory import (
     procedure_id_for_source_memory,
 )
 from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
+from intergrax.memory.memory_specialized_disclosure_governance import (
+    evaluate_memory_disclosure,
+    memory_security_context_for_recall,
+)
 from intergrax.memory.memory_specialized_mutation_governance import (
     enforce_specialized_memory_mutation,
     governance_snapshot_from_procedure_record,
@@ -112,14 +117,31 @@ class ProceduralMemoryService:
 
     def recall_procedures(
         self,
+        identity: RequestIdentity,
         scope: ProceduralMemoryScope,
         query: ProcedureQuery,
         context: ProcedureRecallContext,
     ) -> ProcedureRecallResult:
         candidates = self._store.query_procedure_candidates(scope, query)
+        recall_context = memory_security_context_for_recall(identity, scope)
+        disclosed: list[ProcedureRecord] = []
+        for record in candidates:
+            try:
+                sources = self._canonical_source_records(
+                    scope, record, MemoryGovernanceOperation.RECALL
+                )
+            except MemoryGovernanceDenied:
+                continue
+            if evaluate_memory_disclosure(
+                self._security_governance,
+                recall_context,
+                governance_snapshot_from_procedure_record(record),
+                source_records=sources,
+            ):
+                disclosed.append(record)
         applicable = tuple(
             record
-            for record in candidates
+            for record in disclosed
             if self._strategies.applicability.is_applicable(record, context, query=query)
         )
         ranked = self._strategies.ranking.rank(applicable, context)

@@ -675,12 +675,14 @@ class LongHorizonMemoryCapability(Protocol):
 
     def recall(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         query: LongHorizonRecallQuery,
     ) -> LongHorizonRecallResult: ...
 
     def traverse_lineage(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         request: LineageTraversalRequest,
     ) -> LineageTraversalResult: ...

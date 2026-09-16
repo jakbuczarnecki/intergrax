@@ -36,6 +36,7 @@ def _require_matching_timestamp_awareness(
         )
 
 __all__ = [
+    "EntityTemporalMemoryCapability",
     "EntityMemoryIndexer",
     "EntityMemoryScope",
     "EntityRecord",
@@ -349,6 +350,25 @@ class EntityEnumerationCapability(Protocol):
     """Optional capability for listing entities in a tenant scope (legacy enumeration)."""
 
     def list_entities(self, scope: EntityMemoryScope) -> tuple[EntityRecord, ...]: ...
+
+
+@runtime_checkable
+class EntityTemporalMemoryCapability(Protocol):
+    """Governed entity/temporal disclosure surface."""
+
+    def get_entity(
+        self,
+        identity: RequestIdentity,
+        scope: EntityMemoryScope,
+        entity_id: str,
+    ) -> EntityRecord | None: ...
+
+    def query_relations(
+        self,
+        identity: RequestIdentity,
+        scope: EntityMemoryScope,
+        query: EntityRelationQuery,
+    ) -> EntityRelationResult: ...
 
 
 @runtime_checkable

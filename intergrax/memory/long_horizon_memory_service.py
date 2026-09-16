@@ -53,6 +53,11 @@ from intergrax.memory.contracts.memory_security_governance import (
     validate_canonical_governance_source_snapshot,
 )
 from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
+from intergrax.memory.memory_specialized_disclosure_governance import (
+    evaluate_memory_disclosure,
+    filter_memory_disclosure_candidates,
+    memory_security_context_for_recall,
+)
 from intergrax.memory.memory_specialized_mutation_governance import (
     enforce_specialized_memory_mutation,
     governance_snapshot_from_long_horizon_summary,
@@ -434,8 +439,41 @@ class LongHorizonMemoryService:
             return "updated"
         raise LongHorizonMemoryViolation("summary revision regression during compaction")
 
+    def _summary_permits_disclosure(
+        self,
+        identity: RequestIdentity,
+        scope: LongHorizonMemoryScope,
+        record: LongHorizonSummaryRecord,
+    ) -> bool:
+        context = memory_security_context_for_recall(identity, scope)
+        return evaluate_memory_disclosure(
+            self._security_governance,
+            context,
+            governance_snapshot_from_long_horizon_summary(record),
+        )
+
+    def _source_ref_permits_disclosure(
+        self,
+        identity: RequestIdentity,
+        scope: LongHorizonMemoryScope,
+        ref: MemorySourceRef,
+    ) -> bool:
+        try:
+            snapshot = resolve_governance_source_record_snapshot(
+                self._governance_source_authority,
+                scope,
+                ref.memory_id,
+                ref.revision,
+                operation=MemoryGovernanceOperation.RECALL,
+            )
+        except MemoryGovernanceDenied:
+            return False
+        context = memory_security_context_for_recall(identity, scope)
+        return evaluate_memory_disclosure(self._security_governance, context, snapshot)
+
     def recall(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         query: LongHorizonRecallQuery,
     ) -> LongHorizonRecallResult:
@@ -448,17 +486,32 @@ class LongHorizonMemoryService:
             limit=query.limit,
         )
         candidates = self._store.query_summaries(scope, bounded_query)
-        ranked = self._strategies.recall.rank(candidates, bounded_query)
+        recall_context = memory_security_context_for_recall(identity, scope)
+        disclosed = filter_memory_disclosure_candidates(
+            self._security_governance,
+            recall_context,
+            candidates,
+            to_snapshot=governance_snapshot_from_long_horizon_summary,
+        )
+        ranked = self._strategies.recall.rank(disclosed, bounded_query)
         return LongHorizonRecallResult(summaries=ranked[: bounded_query.limit])
 
     def traverse_lineage(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         request: LineageTraversalRequest,
     ) -> LineageTraversalResult:
         root = self._store.get_summary(scope, request.summary_id)
         if root is None:
             raise LongHorizonMemoryViolation("summary not found for lineage traversal")
+        if not self._summary_permits_disclosure(identity, scope, root):
+            return LineageTraversalResult(
+                visited_summaries=(),
+                canonical_source_refs=(),
+                truncated=False,
+                cycle_detected=False,
+            )
 
         visited_summaries: list[LongHorizonSummaryRecord] = []
         canonical_refs: list[MemorySourceRef] = []
@@ -478,6 +531,8 @@ class LongHorizonMemoryService:
             if sid in visited_ids:
                 cycle_detected = True
                 return
+            if not self._summary_permits_disclosure(identity, scope, record):
+                return
             visited_ids.add(sid)
             visited_summaries.append(record)
 
@@ -486,7 +541,8 @@ class LongHorizonMemoryService:
                     if len(canonical_refs) >= request.max_nodes:
                         truncated = True
                         return
-                    canonical_refs.append(ref)
+                    if self._source_ref_permits_disclosure(identity, scope, ref):
+                        canonical_refs.append(ref)
                 return
 
             for child_ref in record.child_summary_refs:

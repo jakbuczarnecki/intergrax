@@ -421,6 +421,7 @@ def test_lineage_traversal_to_canonical_sources() -> None:
     service._store.upsert_summary(scope, leaf)
     service._store.upsert_summary(scope, parent)
     result = service.traverse_lineage(
+        _identity(scope.tenant_id, scope.user_id or "user-a"),
         scope,
         LineageTraversalRequest(summary_id="parent", max_depth=4, max_nodes=16),
     )
@@ -435,6 +436,7 @@ def test_traversal_respects_max_nodes() -> None:
     service._store.upsert_summary(scope, leaf)
     service._store.upsert_summary(scope, parent)
     result = service.traverse_lineage(
+        _identity(scope.tenant_id, scope.user_id or "user-a"),
         scope,
         LineageTraversalRequest(summary_id="parent", max_depth=8, max_nodes=1),
     )
@@ -451,6 +453,7 @@ def test_traversal_cycle_fail_closed() -> None:
     service = _service(store)
     with pytest.raises(LongHorizonMemoryViolation):
         service.traverse_lineage(
+            _identity(scope.tenant_id, scope.user_id or "user-a"),
             scope,
             LineageTraversalRequest(summary_id="a", max_depth=8, max_nodes=32),
         )

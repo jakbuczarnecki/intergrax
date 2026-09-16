@@ -480,6 +480,7 @@ class ProcedureMemoryCapability(Protocol):
 
     def recall_procedures(
         self,
+        identity: RequestIdentity,
         scope: ProceduralMemoryScope,
         query: ProcedureQuery,
         context: ProcedureRecallContext,

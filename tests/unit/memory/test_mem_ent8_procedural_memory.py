@@ -165,11 +165,13 @@ def test_tenant_isolation() -> None:
     service.remember_procedure(_identity("T1"), _scope("T1"), _procedure("proc-shared"))
     service.remember_procedure(_identity("T2"), _scope("T2"), _procedure("proc-shared"))
     r1 = service.recall_procedures(
+        _identity("T1"),
         _scope("T1"),
         ProcedureQuery(limit=5),
         ProcedureRecallContext(),
     )
     r2 = service.recall_procedures(
+        _identity("T2"),
         _scope("T2"),
         ProcedureQuery(limit=5),
         ProcedureRecallContext(),
@@ -184,11 +186,13 @@ def test_workspace_scope_isolation() -> None:
     service.remember_procedure(_identity("T"), _scope("T", workspace="W1"), _procedure("proc-w"))
     service.remember_procedure(_identity("T"), _scope("T", workspace="W2"), _procedure("proc-w"))
     w1 = service.recall_procedures(
+        _identity("T"),
         _scope("T", workspace="W1"),
         ProcedureQuery(limit=5),
         ProcedureRecallContext(),
     )
     w2 = service.recall_procedures(
+        _identity("T"),
         _scope("T", workspace="W2"),
         ProcedureQuery(limit=5),
         ProcedureRecallContext(),
@@ -203,11 +207,13 @@ def test_applicability_required_capability() -> None:
     service.remember_procedure(_identity_for_scope(scope), scope, _procedure("with-cap", capabilities=("billing",)))
     service.remember_procedure(_identity_for_scope(scope), scope, _procedure("no-cap"))
     with_cap = service.recall_procedures(
+        _identity_for_scope(scope),
         scope,
         ProcedureQuery(limit=10),
         ProcedureRecallContext(available_capabilities=("billing",)),
     )
     without = service.recall_procedures(
+        _identity_for_scope(scope),
         scope,
         ProcedureQuery(limit=10),
         ProcedureRecallContext(available_capabilities=()),
@@ -232,8 +238,8 @@ def test_ranking_deterministic_and_tie_break() -> None:
     service.remember_procedure(_identity_for_scope(scope), scope, _procedure("proc-b", quality=0.5))
     service.remember_procedure(_identity_for_scope(scope), scope, _procedure("proc-a", quality=0.5))
     ctx = ProcedureRecallContext(available_capabilities=())
-    first = service.recall_procedures(scope, ProcedureQuery(limit=10), ctx)
-    second = service.recall_procedures(scope, ProcedureQuery(limit=10), ctx)
+    first = service.recall_procedures(_identity_for_scope(scope), scope, ProcedureQuery(limit=10), ctx)
+    second = service.recall_procedures(_identity_for_scope(scope), scope, ProcedureQuery(limit=10), ctx)
     assert [p.procedure_id for p in first.procedures] == [p.procedure_id for p in second.procedures]
 
 
@@ -251,12 +257,14 @@ def test_supersession_recall_excludes_superseded_by_default() -> None:
         ),
     )
     active = service.recall_procedures(
+        _identity_for_scope(scope),
         scope,
         ProcedureQuery(limit=10),
         ProcedureRecallContext(),
     )
     assert {p.procedure_id for p in active.procedures} == {"proc-B"}
     history = service.recall_procedures(
+        _identity_for_scope(scope),
         scope,
         ProcedureQuery(limit=10, include_history=True, statuses=(ProcedureStatus.SUPERSEDED,)),
         ProcedureRecallContext(),
@@ -341,6 +349,7 @@ def test_recall_bounded_limit() -> None:
     for idx in range(5):
         service.remember_procedure(_identity_for_scope(scope), scope, _procedure(f"proc-{idx}"))
     result = service.recall_procedures(
+        _identity_for_scope(scope),
         scope,
         ProcedureQuery(limit=2),
         ProcedureRecallContext(),
@@ -365,6 +374,7 @@ def test_temporal_applicability_as_of() -> None:
     )
     service.remember_procedure(_identity_for_scope(scope), scope, record)
     inside = service.recall_procedures(
+        _identity_for_scope(scope),
         scope,
         ProcedureQuery(
             limit=5,
@@ -373,6 +383,7 @@ def test_temporal_applicability_as_of() -> None:
         ProcedureRecallContext(),
     )
     outside = service.recall_procedures(
+        _identity_for_scope(scope),
         scope,
         ProcedureQuery(
             limit=5,
