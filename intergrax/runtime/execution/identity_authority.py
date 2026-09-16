@@ -17,6 +17,10 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     mint_task_id,
 )
+from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.resume_planner import (
+    execution_identity_from_checkpoint,
+)
 from intergrax.contracts.execution_identity_authority import (
     ExecutionIdentityAuthorityPort,
     MintedExecutionIdentity,
@@ -97,8 +101,43 @@ def mint_root_execution_identity(
     """Mint canonical generic root identity for one root execution invocation."""
     return RootTaskIdentity(
         run_id=run_id or default_execution_identity_authority.mint_run_identity(),
-        attempt_id=attempt_id or default_execution_identity_authority.mint_attempt_identity(),
+        attempt_id=attempt_id
+        or default_execution_identity_authority.mint_attempt_identity(),
         execution_id=execution_id or mint_execution_id(),
+    )
+
+
+def resolve_root_task_identity(
+    *,
+    run_id: RunId | None = None,
+    attempt_id: AttemptId | None = None,
+    execution_id: ExecutionId | None = None,
+    resume_checkpoint: TaskCheckpoint | None = None,
+) -> RootTaskIdentity:
+    """Resolve root identity, honoring durable resume checkpoint four-ID inputs when present."""
+    if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
+        checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
+            resume_checkpoint,
+        )
+        if run_id is not None and run_id != checkpoint_run_id:
+            raise ValueError(
+                "explicit run_id conflicts with resume checkpoint identity: "
+                f"{run_id!r} != {checkpoint_run_id!r}"
+            )
+        if attempt_id is not None and attempt_id != checkpoint_attempt_id:
+            raise ValueError(
+                "explicit attempt_id conflicts with resume checkpoint identity: "
+                f"{attempt_id!r} != {checkpoint_attempt_id!r}"
+            )
+        return mint_root_execution_identity(
+            run_id=checkpoint_run_id,
+            attempt_id=checkpoint_attempt_id,
+            execution_id=execution_id,
+        )
+    return mint_root_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
     )
 
 
@@ -132,4 +171,5 @@ __all__ = [
     "mint_child_execution_id",
     "mint_retry_attempt_id",
     "mint_root_execution_identity",
+    "resolve_root_task_identity",
 ]

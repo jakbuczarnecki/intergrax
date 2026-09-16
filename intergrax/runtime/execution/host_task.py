@@ -57,7 +57,6 @@ from intergrax.runtime.execution.active_execution_resume import (
     bind_active_execution_resume_plan,
     reset_active_execution_resume_plan,
 )
-from intergrax.runtime.execution.orchestration import resolve_root_task_identity
 from intergrax.runtime.execution.host_root_execution_intake import (
     HostFacadeRootExecutionIntake,
     HostRootExecutionIntakePayload,
@@ -381,12 +380,21 @@ class HostTaskExecution:
             capabilities=capabilities,
             output_type=TaskResult,
         )
-        identity = resolve_root_task_identity(
-            run_id=run_id,
-            attempt_id=attempt_id,
-            execution_id=execution_id,
-            resume_checkpoint=resume_checkpoint,
+        parent_authority = resolve_root_parent_execution_authority(
+            task.execution_authority,
         )
+        resolved_root = resolve_root_execution_context(
+            RootExecutionOptions(
+                authority=parent_authority,
+                tenant_id=task.tenant_id,
+                task_id=task.task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+                resume_checkpoint=resume_checkpoint,
+            ),
+        )
+        identity = resolved_root
         segment_predecessor_root_execution_id = None
         resume_plan_token = None
         if resume_checkpoint is not None and resume_checkpoint.runtime is not None:

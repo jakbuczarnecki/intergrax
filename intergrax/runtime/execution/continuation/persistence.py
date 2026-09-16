@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import copy
 import threading
-from typing import Any
+from intergrax.contracts.structured_json_value import StructuredJsonObject
 
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationError,
@@ -16,7 +16,9 @@ from intergrax.contracts.execution_continuation import (
     execution_continuation_lifecycle_is_terminal,
     execution_continuation_lifecycle_permits_successor_episode,
 )
-from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -108,7 +110,9 @@ class InMemoryExecutionContinuationStateStore(ExecutionContinuationStateStore):
             current_id = self._current_by_identity.get(key)
             if current_id is not None:
                 predecessor = self._by_id.get(current_id)
-                if predecessor is None or not _identity_matches(predecessor, pending.identity):
+                if predecessor is None or not _identity_matches(
+                    predecessor, pending.identity
+                ):
                     raise ExecutionContinuationError(
                         "current continuation pointer inconsistent with identity",
                         code=ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY,
@@ -143,7 +147,10 @@ class InMemoryExecutionContinuationStateStore(ExecutionContinuationStateStore):
         expected: PendingExecutionContinuation,
         updated: PendingExecutionContinuation,
     ) -> bool:
-        if continuation_id != expected.continuation_id or continuation_id != updated.continuation_id:
+        if (
+            continuation_id != expected.continuation_id
+            or continuation_id != updated.continuation_id
+        ):
             return False
         with self._lock:
             current = self._by_id.get(continuation_id)
@@ -160,7 +167,9 @@ class InMemoryExecutionContinuationStateStore(ExecutionContinuationStateStore):
             pending
             for pending in self._by_id.values()
             if _identity_matches(pending, identity)
-            and not execution_continuation_lifecycle_is_terminal(pending.lifecycle_state)
+            and not execution_continuation_lifecycle_is_terminal(
+                pending.lifecycle_state
+            )
         ]
 
     def _resolve_current_episode_locked(
@@ -229,7 +238,9 @@ class BackingExecutionContinuationStateStore(InMemoryExecutionContinuationStateS
         return False
 
 
-class ReconstructedDurableExecutionContinuationStateStore(BackingExecutionContinuationStateStore):
+class ReconstructedDurableExecutionContinuationStateStore(
+    BackingExecutionContinuationStateStore
+):
     """Store over backing reconstructed from serialized durable export (restart-qualified)."""
 
     @property
@@ -239,7 +250,7 @@ class ReconstructedDurableExecutionContinuationStateStore(BackingExecutionContin
 
 def export_durable_continuation_state(
     backing: ExecutionContinuationDurableBacking,
-) -> dict[str, Any]:
+) -> StructuredJsonObject:
     """Export a deep, JSON-compatible durable snapshot (no mutable aliases to backing)."""
     with backing._lock:
         records = {
@@ -265,13 +276,15 @@ def export_durable_continuation_state(
     )
 
 
-def _identity_from_durable_key_fields(raw: dict[str, Any]) -> ExecutionContinuationIdentity:
+def _identity_from_durable_key_fields(
+    raw: StructuredJsonObject,
+) -> ExecutionContinuationIdentity:
     try:
         return ExecutionContinuationIdentity(
-            task_id=TaskId(raw["task_id"]),
-            run_id=RunId(raw["run_id"]),
-            attempt_id=AttemptId(raw["attempt_id"]),
-            execution_id=ExecutionId(raw["execution_id"]),
+            task_id=TaskId(str(raw["task_id"])),
+            run_id=RunId(str(raw["run_id"])),
+            attempt_id=AttemptId(str(raw["attempt_id"])),
+            execution_id=ExecutionId(str(raw["execution_id"])),
         )
     except (KeyError, TypeError, ValueError) as exc:
         raise ExecutionContinuationError(
@@ -305,7 +318,9 @@ def _validate_restored_store_invariants(
             )
 
 
-def restore_durable_continuation_backing(payload: dict[str, Any]) -> ExecutionContinuationDurableBacking:
+def restore_durable_continuation_backing(
+    payload: StructuredJsonObject,
+) -> ExecutionContinuationDurableBacking:
     """Construct a new backing from serialized durable state (new lock, new dicts)."""
     if payload.get("schema_version") != DURABLE_CONTINUATION_STATE_SCHEMA_V1:
         raise ExecutionContinuationError(
@@ -375,7 +390,7 @@ def reconstructed_durable_execution_continuation_state_store(
 
 
 def execution_continuation_state_store_from_durable_export(
-    payload: dict[str, Any],
+    payload: StructuredJsonObject,
 ) -> ReconstructedDurableExecutionContinuationStateStore:
     """Deserialize durable export into a restart-qualified continuation store."""
     backing = restore_durable_continuation_backing(payload)
@@ -389,7 +404,9 @@ def backing_execution_continuation_state_store(
     return BackingExecutionContinuationStateStore(backing)
 
 
-def default_execution_continuation_state_store() -> InMemoryExecutionContinuationStateStore:
+def default_execution_continuation_state_store() -> (
+    InMemoryExecutionContinuationStateStore
+):
     """Process-local default for explicit continuation composition (not restart-safe)."""
     return InMemoryExecutionContinuationStateStore()
 

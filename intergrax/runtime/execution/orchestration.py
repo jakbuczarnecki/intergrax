@@ -12,7 +12,6 @@ from intergrax.contracts.delegation_authority import (
 )
 from intergrax.contracts.execution_identity import (
     AttemptId,
-    ExecutionId,
     RunId,
     require_active_execution_id,
     require_active_execution_identity,
@@ -27,8 +26,10 @@ from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRe
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionContext,
+)
+from intergrax.runtime.execution.identity_authority import (
     RootTaskIdentity,
-    mint_root_execution_identity,
+    resolve_root_task_identity,
 )
 from intergrax.runtime.execution.decision_lifecycle_host import (
     CanonicalDecisionLifecycleHost,
@@ -82,39 +83,6 @@ class NexusOrchestrationPort(Protocol):
         run_id: RunId,
         attempt_id: AttemptId | None = None,
     ) -> TaskResult: ...
-
-
-def resolve_root_task_identity(
-    *,
-    run_id: RunId | None = None,
-    attempt_id: AttemptId | None = None,
-    execution_id: ExecutionId | None = None,
-    resume_checkpoint: TaskCheckpoint | None = None,
-) -> RootTaskIdentity:
-    if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
-        checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
-            resume_checkpoint
-        )
-        if run_id is not None and run_id != checkpoint_run_id:
-            raise ValueError(
-                "explicit run_id conflicts with resume checkpoint identity: "
-                f"{run_id!r} != {checkpoint_run_id!r}"
-            )
-        if attempt_id is not None and attempt_id != checkpoint_attempt_id:
-            raise ValueError(
-                "explicit attempt_id conflicts with resume checkpoint identity: "
-                f"{attempt_id!r} != {checkpoint_attempt_id!r}"
-            )
-        return mint_root_execution_identity(
-            run_id=checkpoint_run_id,
-            attempt_id=checkpoint_attempt_id,
-            execution_id=execution_id,
-        )
-    return mint_root_execution_identity(
-        run_id=run_id,
-        attempt_id=attempt_id,
-        execution_id=execution_id,
-    )
 
 
 class OrchestrationExecutor:
@@ -295,3 +263,12 @@ async def execute_root_task(
     finally:
         if resume_plan_token is not None:
             reset_active_execution_resume_plan(resume_plan_token)
+
+
+__all__ = [
+    "NexusOrchestrationPort",
+    "OrchestrationExecutor",
+    "TaskBoundOrchestrationDelegate",
+    "execute_root_task",
+    "resolve_root_task_identity",
+]

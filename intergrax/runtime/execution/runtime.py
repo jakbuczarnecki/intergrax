@@ -57,7 +57,9 @@ from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
     reset_active_execution_budget,
 )
-from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
 from intergrax.runtime.execution.active_execution_continuation_store import (
     bind_active_execution_continuation_state_store,
     reset_active_execution_continuation_state_store,
@@ -81,13 +83,9 @@ from intergrax.runtime.execution.lineage.root_activation import (
     validate_root_lineage_inputs,
 )
 from intergrax.runtime.execution.identity_authority import (
-    BackgroundTransportIdentity,
-    RootTaskIdentity,
-    mint_background_transport_identity,
-    mint_child_execution_id,
-    mint_retry_attempt_id,
-    mint_root_execution_identity,
+    resolve_root_task_identity,
 )
+from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 RequestT = TypeVar("RequestT")
@@ -122,16 +120,18 @@ class RootExecutionOptions:
     tenant_id: str | None = None
     task_id: TaskId | None = None
     segment_predecessor_root_execution_id: ExecutionId | None = None
+    resume_checkpoint: TaskCheckpoint | None = None
 
 
 def resolve_root_execution_context(
     options: RootExecutionOptions,
 ) -> RootExecutionContext:
     """Resolve typed root context; mints RunId and AttemptId when omitted."""
-    identity = mint_root_execution_identity(
+    identity = resolve_root_task_identity(
         run_id=options.run_id,
         attempt_id=options.attempt_id,
         execution_id=options.execution_id,
+        resume_checkpoint=options.resume_checkpoint,
     )
     return RootExecutionContext(
         run_id=identity.run_id,

@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from typing import Any
+from typing import cast
+
+from intergrax.contracts.structured_json_value import StructuredJsonValue
 
 from intergrax.contracts.execution_identity import (
     validate_attempt_id,
@@ -38,7 +40,9 @@ _DISCOVERY_SCHEMA_V1 = 1
 _SCHEMA_VERSION = 1
 
 
-def _reject_unknown_keys(payload: Mapping[str, Any], allowed: frozenset[str]) -> None:
+def _reject_unknown_keys(
+    payload: Mapping[str, StructuredJsonValue], allowed: frozenset[str]
+) -> None:
     unknown = set(payload.keys()) - set(allowed)
     if unknown:
         raise ExecutionLineageError(
@@ -46,9 +50,19 @@ def _reject_unknown_keys(payload: Mapping[str, Any], allowed: frozenset[str]) ->
         )
 
 
+def _nested_object_payload(
+    payload: Mapping[str, StructuredJsonValue],
+    key: str,
+) -> Mapping[str, StructuredJsonValue]:
+    nested = payload[key]
+    if not isinstance(nested, Mapping):
+        raise ExecutionLineageError(f"invalid execution lineage nested field {key!r}")
+    return cast(Mapping[str, StructuredJsonValue], nested)
+
+
 def encode_execution_lineage_attempt_scope(
     scope: ExecutionLineageAttemptScope,
-) -> dict[str, Any]:
+) -> dict[str, StructuredJsonValue]:
     return {
         "schema_version": _SCHEMA_VERSION,
         "tenant_id": scope.tenant_id,
@@ -59,7 +73,7 @@ def encode_execution_lineage_attempt_scope(
 
 
 def decode_execution_lineage_attempt_scope(
-    payload: Mapping[str, Any],
+    payload: Mapping[str, StructuredJsonValue],
 ) -> ExecutionLineageAttemptScope:
     _reject_unknown_keys(
         payload,
@@ -79,7 +93,7 @@ def decode_execution_lineage_attempt_scope(
 
 def encode_execution_lineage_attempt_state(
     state: ExecutionLineageAttemptState,
-) -> dict[str, Any]:
+) -> dict[str, StructuredJsonValue]:
     return {
         "schema_version": _ATTEMPT_STATE_SCHEMA_V2,
         "scope": encode_execution_lineage_attempt_scope(state.scope),
@@ -100,7 +114,7 @@ def encode_execution_lineage_attempt_state(
 
 
 def decode_execution_lineage_attempt_state(
-    payload: Mapping[str, Any],
+    payload: Mapping[str, StructuredJsonValue],
 ) -> ExecutionLineageAttemptState:
     schema_version = payload.get("schema_version")
     if schema_version == _ATTEMPT_STATE_SCHEMA_V1:
@@ -148,7 +162,9 @@ def decode_execution_lineage_attempt_state(
     )
     active_segment = payload.get("active_segment_root_execution_id")
     return ExecutionLineageAttemptState(
-        scope=decode_execution_lineage_attempt_scope(payload["scope"]),
+        scope=decode_execution_lineage_attempt_scope(
+            _nested_object_payload(payload, "scope")
+        ),
         generation=_require_positive_int(payload.get("generation"), label="generation"),
         next_admission_position=_require_positive_int(
             payload.get("next_admission_position"),
@@ -168,7 +184,7 @@ def decode_execution_lineage_attempt_state(
 
 def encode_execution_lineage_segment_record(
     record: ExecutionLineageSegmentRecord,
-) -> dict[str, Any]:
+) -> dict[str, StructuredJsonValue]:
     return {
         "schema_version": _SCHEMA_VERSION,
         "scope": encode_execution_lineage_attempt_scope(record.scope),
@@ -183,7 +199,7 @@ def encode_execution_lineage_segment_record(
 
 
 def decode_execution_lineage_segment_record(
-    payload: Mapping[str, Any],
+    payload: Mapping[str, StructuredJsonValue],
 ) -> ExecutionLineageSegmentRecord:
     _reject_unknown_keys(
         payload,
@@ -203,7 +219,9 @@ def decode_execution_lineage_segment_record(
         )
     predecessor = payload.get("predecessor_root_execution_id")
     return ExecutionLineageSegmentRecord(
-        scope=decode_execution_lineage_attempt_scope(payload["scope"]),
+        scope=decode_execution_lineage_attempt_scope(
+            _nested_object_payload(payload, "scope")
+        ),
         root_execution_id=validate_execution_id(payload["root_execution_id"]),
         predecessor_root_execution_id=(
             validate_execution_id(predecessor) if predecessor is not None else None
@@ -214,7 +232,7 @@ def decode_execution_lineage_segment_record(
 
 def encode_execution_lineage_admission_record(
     record: ExecutionLineageAdmissionRecord,
-) -> dict[str, Any]:
+) -> dict[str, StructuredJsonValue]:
     return {
         "schema_version": _SCHEMA_VERSION,
         "scope": encode_execution_lineage_attempt_scope(record.scope),
@@ -231,7 +249,7 @@ def encode_execution_lineage_admission_record(
 
 
 def decode_execution_lineage_admission_record(
-    payload: Mapping[str, Any],
+    payload: Mapping[str, StructuredJsonValue],
 ) -> ExecutionLineageAdmissionRecord:
     _reject_unknown_keys(
         payload,
@@ -253,7 +271,9 @@ def decode_execution_lineage_admission_record(
         )
     parent = payload.get("parent_execution_id")
     return ExecutionLineageAdmissionRecord(
-        scope=decode_execution_lineage_attempt_scope(payload["scope"]),
+        scope=decode_execution_lineage_attempt_scope(
+            _nested_object_payload(payload, "scope")
+        ),
         segment_root_execution_id=validate_execution_id(
             payload["segment_root_execution_id"]
         ),
@@ -275,7 +295,7 @@ def decode_execution_lineage_admission_record(
 
 def encode_execution_lineage_seal_record(
     record: ExecutionLineageSealRecord,
-) -> dict[str, Any]:
+) -> dict[str, StructuredJsonValue]:
     return {
         "schema_version": _SCHEMA_VERSION,
         "scope": encode_execution_lineage_attempt_scope(record.scope),
@@ -285,7 +305,7 @@ def encode_execution_lineage_seal_record(
 
 
 def decode_execution_lineage_seal_record(
-    payload: Mapping[str, Any],
+    payload: Mapping[str, StructuredJsonValue],
 ) -> ExecutionLineageSealRecord:
     _reject_unknown_keys(
         payload,
@@ -294,7 +314,9 @@ def decode_execution_lineage_seal_record(
     if payload.get("schema_version") != _SCHEMA_VERSION:
         raise ExecutionLineageError("unsupported execution lineage seal schema version")
     return ExecutionLineageSealRecord(
-        scope=decode_execution_lineage_attempt_scope(payload["scope"]),
+        scope=decode_execution_lineage_attempt_scope(
+            _nested_object_payload(payload, "scope")
+        ),
         closure_kind=ExecutionLineageAttemptClosureKind(payload["closure_kind"]),
         degraded=bool(payload.get("degraded")),
     )
@@ -321,7 +343,9 @@ def decode_execution_lineage_attempt_state_bytes(
         ) from exc
     if not isinstance(payload, dict):
         raise ExecutionLineageError("invalid execution lineage attempt state payload")
-    return decode_execution_lineage_attempt_state(payload)
+    return decode_execution_lineage_attempt_state(
+        cast(Mapping[str, StructuredJsonValue], payload),
+    )
 
 
 def _require_positive_int(raw: object, *, label: str) -> int:
@@ -338,7 +362,7 @@ def _require_non_negative_int(raw: object, *, label: str) -> int:
 
 def encode_execution_lineage_run_scope(
     run_scope: ExecutionLineageRunScope,
-) -> dict[str, Any]:
+) -> dict[str, StructuredJsonValue]:
     return {
         "schema_version": _DISCOVERY_SCHEMA_V1,
         "tenant_id": run_scope.tenant_id,
@@ -348,7 +372,7 @@ def encode_execution_lineage_run_scope(
 
 
 def decode_execution_lineage_run_scope(
-    payload: Mapping[str, Any],
+    payload: Mapping[str, StructuredJsonValue],
 ) -> ExecutionLineageRunScope:
     _reject_unknown_keys(
         payload,
@@ -367,7 +391,7 @@ def decode_execution_lineage_run_scope(
 
 def encode_execution_lineage_attempt_discovery_record(
     record: ExecutionLineageAttemptDiscoveryRecord,
-) -> dict[str, Any]:
+) -> dict[str, StructuredJsonValue]:
     return {
         "schema_version": _DISCOVERY_SCHEMA_V1,
         "run_scope": encode_execution_lineage_run_scope(record.run_scope),
@@ -377,7 +401,7 @@ def encode_execution_lineage_attempt_discovery_record(
 
 
 def decode_execution_lineage_attempt_discovery_record(
-    payload: Mapping[str, Any],
+    payload: Mapping[str, StructuredJsonValue],
 ) -> ExecutionLineageAttemptDiscoveryRecord:
     _reject_unknown_keys(
         payload,
@@ -388,7 +412,9 @@ def decode_execution_lineage_attempt_discovery_record(
             "unsupported execution lineage attempt discovery schema version",
         )
     return ExecutionLineageAttemptDiscoveryRecord(
-        run_scope=decode_execution_lineage_run_scope(payload["run_scope"]),
+        run_scope=decode_execution_lineage_run_scope(
+            _nested_object_payload(payload, "run_scope")
+        ),
         attempt_id=validate_attempt_id(payload["attempt_id"]),
         discovery_position=_require_positive_int(
             payload.get("discovery_position"),
@@ -399,7 +425,7 @@ def decode_execution_lineage_attempt_discovery_record(
 
 def encode_execution_lineage_discovery_run_state(
     state: ExecutionLineageDiscoveryRunState,
-) -> dict[str, Any]:
+) -> dict[str, StructuredJsonValue]:
     return {
         "schema_version": _DISCOVERY_SCHEMA_V1,
         "run_scope": encode_execution_lineage_run_scope(state.run_scope),
@@ -413,7 +439,7 @@ def encode_execution_lineage_discovery_run_state(
 
 
 def decode_execution_lineage_discovery_run_state(
-    payload: Mapping[str, Any],
+    payload: Mapping[str, StructuredJsonValue],
 ) -> ExecutionLineageDiscoveryRunState:
     _reject_unknown_keys(
         payload,
@@ -440,7 +466,9 @@ def decode_execution_lineage_discovery_run_state(
     )
     coverage_version = payload.get("coverage_contract_version")
     return ExecutionLineageDiscoveryRunState(
-        run_scope=decode_execution_lineage_run_scope(payload["run_scope"]),
+        run_scope=decode_execution_lineage_run_scope(
+            _nested_object_payload(payload, "run_scope")
+        ),
         generation=_require_non_negative_int(
             payload.get("generation"), label="generation"
         ),
@@ -449,7 +477,10 @@ def decode_execution_lineage_discovery_run_state(
             label="next_discovery_position",
         ),
         coverage_contract_version=(
-            int(coverage_version) if coverage_version is not None else None
+            coverage_version
+            if isinstance(coverage_version, int)
+            and not isinstance(coverage_version, bool)
+            else None
         ),
         coverage_origin=coverage_origin,
     )
