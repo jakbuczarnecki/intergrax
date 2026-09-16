@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -19,7 +20,10 @@ from intergrax.memory.contracts.entity_temporal_memory import (
     EntityMemoryScope,
     entity_memory_source_projection_key,
 )
-from intergrax.memory.contracts.temporal_chronology import memory_timestamps_same_awareness
+from intergrax.memory.contracts.temporal_chronology import (
+    memory_chronological_ordinal,
+    memory_timestamps_same_awareness,
+)
 
 ProceduralMemoryScope = EntityMemoryScope
 
@@ -155,6 +159,10 @@ class ProcedureOutcomeEvidence:
     def __post_init__(self) -> None:
         if self.success_count < 0 or self.failure_count < 0:
             raise ProcedureMemoryViolation("outcome counts must be >= 0")
+        if self.quality_score is not None and not math.isfinite(self.quality_score):
+            raise ProcedureMemoryViolation("quality_score must be finite")
+        if self.last_success_at:
+            parse_memory_record_timestamp("last_success_at", self.last_success_at)
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,6 +170,8 @@ class ProcedureRecord:
     procedure_id: str
     procedure_type: ProcedureTypeRef
     title: str
+    source_memory_id: str
+    source_memory_revision: int
     revision: int = 1
     status: ProcedureStatus = ProcedureStatus.ACTIVE
     steps: tuple[ProcedureStep, ...] = ()
@@ -171,8 +181,6 @@ class ProcedureRecord:
     governance: MemoryRecordGovernance = field(default_factory=MemoryRecordGovernance)
     outcome_evidence: ProcedureOutcomeEvidence = field(default_factory=ProcedureOutcomeEvidence)
     evidence_refs: tuple[str, ...] = ()
-    source_memory_id: str | None = None
-    source_memory_revision: int | None = None
     superseded_by_procedure_id: str | None = None
     created_at: str = ""
     updated_at: str | None = None
@@ -190,6 +198,11 @@ class ProcedureRecord:
             raise ProcedureMemoryViolation(
                 "superseded procedures require superseded_by_procedure_id"
             )
+        if not (self.source_memory_id or "").strip():
+            raise ProcedureMemoryViolation("source_memory_id is required for procedural projection")
+        if self.source_memory_revision < 1:
+            raise ProcedureMemoryViolation("source_memory_revision must be >= 1")
+        _validate_procedure_steps(self.steps)
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,6 +240,29 @@ class ProcedureRecallResult:
 class ProcedureSupersessionRequest:
     superseded_procedure_id: str
     superseding_record: ProcedureRecord
+
+    def __post_init__(self) -> None:
+        if (
+            self.superseded_procedure_id.strip()
+            == self.superseding_record.procedure_id.strip()
+        ):
+            raise ProcedureMemoryViolation("procedure cannot supersede itself")
+
+
+def _validate_procedure_steps(steps: tuple[ProcedureStep, ...]) -> None:
+    seen_ids: set[str] = set()
+    seen_positions: set[int] = set()
+    previous_position: int | None = None
+    for step in steps:
+        if step.step_id in seen_ids:
+            raise ProcedureMemoryViolation(f"duplicate step_id: {step.step_id}")
+        seen_ids.add(step.step_id)
+        if step.position in seen_positions:
+            raise ProcedureMemoryViolation(f"duplicate position: {step.position}")
+        seen_positions.add(step.position)
+        if previous_position is not None and step.position <= previous_position:
+            raise ProcedureMemoryViolation("steps must be strictly ascending by position")
+        previous_position = step.position
 
 
 def procedure_memory_source_projection_key(
@@ -285,9 +321,9 @@ def is_procedure_temporally_active(
 def _procedure_updated_ordinal(record: ProcedureRecord) -> float:
     stamp = record.updated_at or record.created_at
     if not stamp:
-        return float("-inf")
+        return float("inf")
     parsed = parse_memory_record_timestamp("updated_at", stamp)
-    return -parsed.timestamp()
+    return -memory_chronological_ordinal(parsed)
 
 
 def order_procedures_deterministic(

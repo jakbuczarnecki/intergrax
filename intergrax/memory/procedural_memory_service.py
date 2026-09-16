@@ -49,6 +49,7 @@ class ProceduralMemoryService:
         scope: ProceduralMemoryScope,
         record: ProcedureRecord,
     ) -> ProcedureRecord:
+        """Upsert a canonical procedural projection (requires source memory linkage)."""
         return self._store.upsert_procedure(scope, record)
 
     def recall_procedures(

@@ -35,6 +35,8 @@ class DefaultProceduralMemoryIndexer:
             procedure_id=procedure_id,
             procedure_type=ProcedureTypeRef("canonical_memory_projection"),
             title=title[:512],
+            source_memory_id=entry.entry_id,
+            source_memory_revision=max(1, int(entry.revision or 1)),
             revision=max(1, int(entry.revision or 1)),
             status=ProcedureStatus.ACTIVE if not entry.deleted else ProcedureStatus.DISABLED,
             steps=(),
@@ -42,8 +44,6 @@ class DefaultProceduralMemoryIndexer:
             trust=entry.trust,
             governance=entry.governance,
             evidence_refs=entry.evidence_refs,
-            source_memory_id=entry.entry_id,
-            source_memory_revision=max(1, int(entry.revision or 1)),
             created_at=entry.created_at or "",
             updated_at=entry.updated_at,
         )

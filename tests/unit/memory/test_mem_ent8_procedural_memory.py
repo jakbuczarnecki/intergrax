@@ -8,6 +8,7 @@ import inspect
 import json
 from dataclasses import asdict
 from datetime import datetime, timezone
+import math
 
 import pytest
 
@@ -78,30 +79,36 @@ def _procedure(
     quality: float | None = None,
     source_memory_id: str | None = None,
     source_memory_revision: int | None = None,
+    steps: tuple[ProcedureStep, ...] | None = None,
+    created_at: str = "2025-01-01T00:00:00+00:00",
+    updated_at: str | None = "2025-02-01T00:00:00+00:00",
 ) -> ProcedureRecord:
+    mem_id = source_memory_id if source_memory_id is not None else f"src-{procedure_id}"
+    mem_rev = source_memory_revision if source_memory_revision is not None else revision
+    default_steps = (
+        ProcedureStep(
+            step_id="s1",
+            position=0,
+            action_kind=ProcedureActionKind.TOOL_ACTION,
+            instruction="invoke capability",
+            tool_reference=ProcedureToolReference(tool_capability_id="pay"),
+        ),
+    )
     return ProcedureRecord(
         procedure_id=procedure_id,
         procedure_type=ProcedureTypeRef("runbook"),
         title=f"title-{procedure_id}",
+        source_memory_id=mem_id,
+        source_memory_revision=mem_rev,
         revision=revision,
         status=status,
-        steps=(
-            ProcedureStep(
-                step_id="s1",
-                position=0,
-                action_kind=ProcedureActionKind.TOOL_ACTION,
-                instruction="invoke capability",
-                tool_reference=ProcedureToolReference(tool_capability_id="pay"),
-            ),
-        ),
+        steps=steps if steps is not None else default_steps,
         applicability=ProcedureApplicability(required_capabilities=capabilities),
         outcome_evidence=ProcedureOutcomeEvidence(quality_score=quality),
         provenance=MemoryProvenance(source_type=MemoryRecordSourceType.USER_EXPLICIT),
         trust=MemoryRecordTrust(trust_class=MemoryTrustClass.USER_EXPLICIT),
-        created_at="2025-01-01T00:00:00+00:00",
-        updated_at="2025-02-01T00:00:00+00:00",
-        source_memory_id=source_memory_id,
-        source_memory_revision=source_memory_revision,
+        created_at=created_at,
+        updated_at=updated_at,
     )
 
 
@@ -121,16 +128,18 @@ def test_procedure_record_contract_invariants() -> None:
             procedure_id="",
             procedure_type=ProcedureTypeRef("x"),
             title="t",
+            source_memory_id="mem-1",
+            source_memory_revision=1,
         )
 
 
 def test_procedure_versioning_same_id() -> None:
     store = InMemoryProceduralMemoryStore()
     scope = _scope("tenant-1")
-    store.upsert_procedure(scope, _procedure("proc-P", revision=1))
+    store.upsert_procedure(scope, _procedure("proc-P", revision=1, source_memory_revision=1))
     updated = store.upsert_procedure(
         scope,
-        _procedure("proc-P", revision=2, quality=0.9),
+        _procedure("proc-P", revision=2, quality=0.9, source_memory_revision=2),
     )
     assert updated.revision == 2
     assert store.get_procedure(scope, "proc-P") is not None
@@ -215,7 +224,8 @@ def test_ranking_deterministic_and_tie_break() -> None:
 
 
 def test_supersession_recall_excludes_superseded_by_default() -> None:
-    service = _service()
+    store = InMemoryProceduralMemoryStore()
+    service = _service(store)
     scope = _scope("T")
     service.remember_procedure(scope, _procedure("proc-A"))
     service.supersede_procedure(
@@ -237,7 +247,7 @@ def test_supersession_recall_excludes_superseded_by_default() -> None:
         ProcedureRecallContext(),
     )
     assert any(p.procedure_id == "proc-A" for p in history.procedures)
-    superseded = service._store.get_procedure(scope, "proc-A")
+    superseded = store.get_procedure(scope, "proc-A")
     assert superseded is not None
     assert superseded.status is ProcedureStatus.SUPERSEDED
     assert superseded.superseded_by_procedure_id == "proc-B"
@@ -335,6 +345,8 @@ def test_temporal_applicability_as_of() -> None:
             valid_until="2025-12-01T00:00:00+00:00",
         ),
         created_at="2025-01-01T00:00:00+00:00",
+        source_memory_id="mem-temporal",
+        source_memory_revision=1,
     )
     service.remember_procedure(scope, record)
     inside = service.recall_procedures(
@@ -463,3 +475,195 @@ def test_procedural_contracts_no_vendor_imports() -> None:
 
 def test_default_plugin_id_constant() -> None:
     assert DEFAULT_IN_MEMORY_PROCEDURAL_PLUGIN_ID.startswith("intergrax.")
+
+
+def test_procedure_record_requires_source_memory_id() -> None:
+    with pytest.raises(ProcedureMemoryViolation):
+        ProcedureRecord(
+            procedure_id="p1",
+            procedure_type=ProcedureTypeRef("runbook"),
+            title="t",
+            source_memory_id="",
+            source_memory_revision=1,
+        )
+
+
+def test_procedure_record_requires_source_memory_revision() -> None:
+    with pytest.raises(TypeError):
+        ProcedureRecord(
+            procedure_id="p1",
+            procedure_type=ProcedureTypeRef("runbook"),
+            title="t",
+            source_memory_id="mem-1",
+        )
+
+
+def test_procedure_record_source_revision_must_be_positive() -> None:
+    with pytest.raises(ProcedureMemoryViolation):
+        _procedure("p1", source_memory_revision=0)
+    with pytest.raises(ProcedureMemoryViolation):
+        _procedure("p1", source_memory_revision=-1)
+
+
+def test_quality_score_must_be_finite() -> None:
+    for bad in (math.nan, math.inf, -math.inf):
+        with pytest.raises(ProcedureMemoryViolation):
+            ProcedureOutcomeEvidence(quality_score=bad)
+
+
+def test_duplicate_step_id_rejected() -> None:
+    steps = (
+        ProcedureStep(
+            step_id="s1",
+            position=0,
+            action_kind=ProcedureActionKind.VALIDATION,
+            instruction="a",
+        ),
+        ProcedureStep(
+            step_id="s1",
+            position=1,
+            action_kind=ProcedureActionKind.VALIDATION,
+            instruction="b",
+        ),
+    )
+    with pytest.raises(ProcedureMemoryViolation):
+        _procedure("dup-id", steps=steps)
+
+
+def test_duplicate_step_position_rejected() -> None:
+    steps = (
+        ProcedureStep(
+            step_id="s1",
+            position=0,
+            action_kind=ProcedureActionKind.VALIDATION,
+            instruction="a",
+        ),
+        ProcedureStep(
+            step_id="s2",
+            position=0,
+            action_kind=ProcedureActionKind.VALIDATION,
+            instruction="b",
+        ),
+    )
+    with pytest.raises(ProcedureMemoryViolation):
+        _procedure("dup-pos", steps=steps)
+
+
+def test_unsorted_steps_by_position_rejected() -> None:
+    steps = (
+        ProcedureStep(
+            step_id="s2",
+            position=1,
+            action_kind=ProcedureActionKind.VALIDATION,
+            instruction="b",
+        ),
+        ProcedureStep(
+            step_id="s1",
+            position=0,
+            action_kind=ProcedureActionKind.VALIDATION,
+            instruction="a",
+        ),
+    )
+    with pytest.raises(ProcedureMemoryViolation):
+        _procedure("unsorted", steps=steps)
+
+
+def test_temporal_ranking_naive_year_boundary() -> None:
+    older = _procedure(
+        "older",
+        created_at="2025-12-31T23:59:59",
+        updated_at="2025-12-31T23:59:59",
+    )
+    newer = _procedure(
+        "newer",
+        created_at="2026-01-01T00:00:00",
+        updated_at="2026-01-01T00:00:00",
+    )
+    ordered = order_procedures_deterministic((older, newer))
+    assert [p.procedure_id for p in ordered] == ["newer", "older"]
+
+
+def test_temporal_ranking_naive_month_boundary() -> None:
+    older = _procedure(
+        "older",
+        created_at="2025-01-31T12:00:00",
+        updated_at="2025-01-31T12:00:00",
+    )
+    newer = _procedure(
+        "newer",
+        created_at="2025-02-01T00:00:00",
+        updated_at="2025-02-01T00:00:00",
+    )
+    ordered = order_procedures_deterministic((older, newer))
+    assert [p.procedure_id for p in ordered] == ["newer", "older"]
+
+
+def test_temporal_ranking_aware_instant_ordering() -> None:
+    earlier = _procedure(
+        "earlier",
+        created_at="2025-06-01T10:00:00+00:00",
+        updated_at="2025-06-01T10:00:00+00:00",
+    )
+    later = _procedure(
+        "later",
+        created_at="2025-06-01T11:00:00+00:00",
+        updated_at="2025-06-01T11:00:00+00:00",
+    )
+    ordered = order_procedures_deterministic((earlier, later))
+    assert [p.procedure_id for p in ordered] == ["later", "earlier"]
+
+
+def test_temporal_ranking_missing_timestamp_lowest_priority() -> None:
+    with_ts = _procedure("with-ts")
+    no_ts = _procedure("no-ts", created_at="", updated_at=None)
+    ordered = order_procedures_deterministic((no_ts, with_ts))
+    assert ordered[0].procedure_id == "with-ts"
+
+
+def test_self_supersession_rejected_and_preserves_active() -> None:
+    store = InMemoryProceduralMemoryStore()
+    scope = _scope("T")
+    record = _procedure("proc-A")
+    store.upsert_procedure(scope, record)
+    with pytest.raises(ProcedureMemoryViolation):
+        store.apply_supersession(
+            scope,
+            ProcedureSupersessionRequest(
+                superseded_procedure_id="proc-A",
+                superseding_record=_procedure("proc-A"),
+            ),
+        )
+    unchanged = store.get_procedure(scope, "proc-A")
+    assert unchanged is not None
+    assert unchanged.status is ProcedureStatus.ACTIVE
+
+
+def test_same_source_revision_conflicting_payload_rejected() -> None:
+    store = InMemoryProceduralMemoryStore()
+    scope = _scope("T")
+    pid = procedure_id_for_source_memory(scope, "mem-1")
+    store.upsert_procedure(
+        scope,
+        _procedure(pid, source_memory_id="mem-1", source_memory_revision=4, quality=0.1),
+    )
+    with pytest.raises(ProcedureMemoryViolation):
+        store.upsert_procedure(
+            scope,
+            _procedure(pid, source_memory_id="mem-1", source_memory_revision=4, quality=0.9),
+        )
+
+
+def test_higher_source_revision_updates_projection() -> None:
+    store = InMemoryProceduralMemoryStore()
+    scope = _scope("T")
+    pid = procedure_id_for_source_memory(scope, "mem-1")
+    store.upsert_procedure(
+        scope,
+        _procedure(pid, source_memory_id="mem-1", source_memory_revision=4, quality=0.1),
+    )
+    updated = store.upsert_procedure(
+        scope,
+        _procedure(pid, source_memory_id="mem-1", source_memory_revision=5, quality=0.9),
+    )
+    assert updated.source_memory_revision == 5
+    assert updated.outcome_evidence.quality_score == 0.9

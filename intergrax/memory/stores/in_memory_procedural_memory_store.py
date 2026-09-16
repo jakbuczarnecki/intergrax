@@ -49,6 +49,26 @@ def _procedure_projection_equal(existing: ProcedureRecord, incoming: ProcedureRe
     return existing == incoming
 
 
+def _resolve_upsert(
+    existing: ProcedureRecord | None,
+    record: ProcedureRecord,
+) -> ProcedureRecord:
+    if existing is None:
+        return record
+    if _source_revision_stale(
+        existing.source_memory_revision,
+        record.source_memory_revision,
+    ):
+        return existing
+    if record.source_memory_revision == existing.source_memory_revision:
+        if _procedure_projection_equal(existing, record):
+            return existing
+        raise ProcedureMemoryViolation(
+            "conflicting procedural projection for the same source memory revision"
+        )
+    return record
+
+
 class InMemoryProceduralMemoryStore:
     """Vendor-neutral in-memory ``ProcedureMemoryStore``."""
 
@@ -62,23 +82,9 @@ class InMemoryProceduralMemoryStore:
     ) -> ProcedureRecord:
         key = _storage_key(scope, record.procedure_id)
         existing = self._records.get(key)
-        if existing is not None:
-            if _source_revision_stale(
-                existing.source_memory_revision,
-                record.source_memory_revision,
-            ):
-                return existing
-            if record.source_memory_id is not None and _procedure_projection_equal(existing, record):
-                return existing
-            if record.source_memory_id is None:
-                merged = replace(
-                    record,
-                    revision=max(existing.revision, record.revision),
-                )
-            else:
-                merged = record
-        else:
-            merged = record
+        merged = _resolve_upsert(existing, record)
+        if existing is not None and merged is existing:
+            return existing
         self._records[key] = merged
         return merged
 
@@ -142,15 +148,19 @@ class InMemoryProceduralMemoryStore:
         superseding = request.superseding_record
         if superseding.status is not ProcedureStatus.ACTIVE:
             raise ProcedureMemoryViolation("superseding record must be ACTIVE")
-        new_id = superseding.procedure_id.strip()
+        if request.superseded_procedure_id.strip() == superseding.procedure_id.strip():
+            raise ProcedureMemoryViolation("procedure cannot supersede itself")
+        new_key = _storage_key(scope, superseding.procedure_id)
+        existing_new = self._records.get(new_key)
+        merged_new = _resolve_upsert(existing_new, superseding)
         superseded = replace(
             existing,
             status=ProcedureStatus.SUPERSEDED,
-            superseded_by_procedure_id=new_id,
+            superseded_by_procedure_id=superseding.procedure_id.strip(),
         )
         self._records[old_key] = superseded
-        upserted = self.upsert_procedure(scope, superseding)
-        return superseded, upserted
+        self._records[new_key] = merged_new
+        return superseded, merged_new
 
     def delete_by_source_memory(self, scope: ProceduralMemoryScope, source_memory_id: str) -> int:
         memory_id = (source_memory_id or "").strip()
