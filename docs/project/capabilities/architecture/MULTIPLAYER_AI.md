@@ -30,7 +30,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 **B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented and closed in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence, production PostgreSQL qualification). Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
 
-**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4R0…MP-4R3 CLOSED**; **MP-4R4 — READY_FOR_INDEPENDENT_AUDIT** (`CollaborativeDecisionBinding` → exact `DecisionProposalRef`; Multiplayer-owned association only); MP-4B/MP-4C/MP-4D **RETIRED** — see [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap. **MP-4R5 NOT STARTED.**
+**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4R0…MP-4R3 CLOSED**; **MP-4R4 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** (`CollaborativeDecisionBinding` → exact `DecisionProposalRef`; Multiplayer-owned association only; live PostgreSQL qualification **PASSED**); MP-4B/MP-4C/MP-4D **RETIRED** — see [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap. **MP-4R5 NOT STARTED.**
 
 **D. Proof boundary.** Runtime / public **E2E proof for Multiplayer AI as a product capability is not established**. Architecture and partial MP-1 implementation do not imply end-to-end collaborative product readiness.
 
@@ -103,8 +103,8 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4R3 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** (execution continuation integration; ADR-MP-009)
-**Next task:** Independent MP-4R4 audit — **MP-4R5 NOT STARTED**
+**Current active task:** **MP-4R4 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** (collaborative decision binding; live PostgreSQL qualification **PASSED**)
+**Next task:** Final independent MP-4R4 closure audit — **MP-4R5 NOT STARTED**
 
 ## Cursor read scope (token budget)
 
@@ -458,7 +458,7 @@ not replace existing Evidence.
 
 ### MP-4R — Canonical core integration (replaces pre-rebase MP-4 program)
 
-**Status:** **MP-4R3 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** — ADR-MP-009 **Accepted**; MP-4R0…MP-4R2 **CLOSED**; MP-4B/MP-4C/MP-4D **RETIRED**; MP-4R4…MP-4R8 **NOT STARTED**.
+**Status:** **MP-4R4 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** — ADR-MP-009 **Accepted**; MP-4R0…MP-4R3 **CLOSED**; MP-4B/MP-4C/MP-4D **RETIRED**; live PostgreSQL `CollaborativeDecisionBinding` qualification **PASSED**; MP-4R5…MP-4R8 **NOT STARTED**.
 
 **Intent:** Associate collaborative work (WorkItem, WorkArtifact) with **canonical** Decision, Governance/HITL, Execution continuation (`ExecutionContinuationPort`), Evidence, and Diagnostics — without owning Decision lifecycle, Approval/HITL authority, execution state, evidence facts, or diagnostic interpretation.
 
@@ -472,7 +472,7 @@ not replace existing Evidence.
 
 **Legacy removed (MP-4R2):** `intergrax/contracts/approval.py`, `intergrax/approval/` — human judgment via canonical `decision_human_review` + Governance/HITL. MP-4B module **removed** (MP-4R1); `intergrax/contracts/decision/` = Integration SPI only.
 
-**Next active task:** **Final independent MP-4R3 closure audit** → MP-4R4 **NOT STARTED**.
+**Next active task:** **Final independent MP-4R4 closure audit** — **MP-4R5 NOT STARTED**.
 
 ---
 
