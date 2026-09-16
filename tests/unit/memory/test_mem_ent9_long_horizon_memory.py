@@ -64,6 +64,9 @@ from intergrax.memory.stores.in_memory_long_horizon_memory_plugin import (
 from intergrax.memory.stores.in_memory_long_horizon_memory_store import (
     InMemoryLongHorizonMemoryStore,
 )
+from tests.unit.memory.governance_source_fixtures import (
+    PermissiveCanonicalGovernanceSourceAuthority,
+)
 
 pytestmark = pytest.mark.gate
 
@@ -172,6 +175,7 @@ def _service(
         _store=store or InMemoryLongHorizonMemoryStore(),
         _strategies=build_default_long_horizon_strategies(),
         _source_authority=authority or _ScopedSourceAuthority(resolved_scope),
+        _governance_source_authority=PermissiveCanonicalGovernanceSourceAuthority(),
         _security_governance=build_default_memory_security_governance_service(),
     )
 

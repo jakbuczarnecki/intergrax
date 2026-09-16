@@ -48,6 +48,7 @@ from intergrax.memory.contracts.procedural_memory import (
 )
 from intergrax.memory.procedural_memory_indexing import DefaultProceduralMemoryIndexer
 from intergrax.memory.procedural_memory_service import ProceduralMemoryService, build_default_procedural_memory_strategies
+from tests.unit.memory.governance_source_fixtures import PermissiveCanonicalGovernanceSourceAuthority
 from intergrax.memory.resolver.discovery import (
     MemoryStorePluginCatalog,
     discover_classified_memory_store_plugins,
@@ -128,6 +129,7 @@ def _service(store: InMemoryProceduralMemoryStore | None = None) -> ProceduralMe
         _store=store or InMemoryProceduralMemoryStore(),
         _strategies=build_default_procedural_memory_strategies(),
         _security_governance=build_default_memory_security_governance_service(),
+        _governance_source_authority=PermissiveCanonicalGovernanceSourceAuthority(),
     )
 
 

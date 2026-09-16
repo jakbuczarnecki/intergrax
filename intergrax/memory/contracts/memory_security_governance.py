@@ -7,9 +7,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.memory.contracts.entity_temporal_memory import EntityMemoryScope
 from intergrax.contracts.data_classification import DataClassification
 from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryProvenance,
@@ -22,6 +23,12 @@ from intergrax.memory.contracts.memory_control import MemoryControlScopeRef
 from intergrax.memory.contracts.memory_models import MemoryKind, UserProfileMemoryEntry
 
 __all__ = [
+    "CanonicalMemoryGovernanceEntryReader",
+    "CanonicalMemoryGovernanceSourceAuthority",
+    "CanonicalMemoryGovernanceSourceMismatch",
+    "CanonicalMemoryGovernanceSourceNotFound",
+    "CanonicalMemoryGovernanceSourceSnapshot",
+    "CanonicalMemoryGovernanceSourceViolation",
     "MemoryAdmissionPolicy",
     "MemoryAuthorizationPolicy",
     "MemoryGovernanceConstraint",
@@ -41,7 +48,69 @@ __all__ = [
     "MemorySecurityStrategySet",
     "MemoryTrustEvaluationPolicy",
     "MemoryTrustEvaluationResult",
+    "validate_canonical_governance_source_snapshot",
 ]
+
+
+class CanonicalMemoryGovernanceSourceViolation(Exception):
+    """Neutral failure resolving canonical governance metadata for a memory revision."""
+
+
+class CanonicalMemoryGovernanceSourceNotFound(CanonicalMemoryGovernanceSourceViolation):
+    """Canonical governance metadata is unavailable for the requested identity."""
+
+
+class CanonicalMemoryGovernanceSourceMismatch(CanonicalMemoryGovernanceSourceViolation):
+    """Resolved canonical governance metadata does not match the requested identity."""
+
+
+@dataclass(frozen=True, slots=True)
+class CanonicalMemoryGovernanceSourceSnapshot:
+    memory_id: str
+    revision: int
+    provenance: MemoryProvenance
+    trust: MemoryRecordTrust
+    governance: MemoryRecordGovernance
+    kind: MemoryKind | None = None
+
+
+def validate_canonical_governance_source_snapshot(
+    memory_id: str,
+    revision: int,
+    snapshot: CanonicalMemoryGovernanceSourceSnapshot,
+) -> None:
+    if snapshot.memory_id != memory_id:
+        raise CanonicalMemoryGovernanceSourceMismatch(
+            "canonical governance authority returned unexpected memory_id"
+        )
+    if snapshot.revision != revision:
+        raise CanonicalMemoryGovernanceSourceMismatch(
+            "canonical governance authority returned unexpected revision"
+        )
+
+
+@runtime_checkable
+class CanonicalMemoryGovernanceSourceAuthority(Protocol):
+    """Resolve governance metadata for an exact canonical memory revision (scope-bound)."""
+
+    def resolve_canonical_governance_source(
+        self,
+        scope: EntityMemoryScope,
+        memory_id: str,
+        revision: int,
+    ) -> CanonicalMemoryGovernanceSourceSnapshot: ...
+
+
+@runtime_checkable
+class CanonicalMemoryGovernanceEntryReader(Protocol):
+    """Sync read of canonical memory entry governance fields at an exact revision."""
+
+    def read_governance_entry(
+        self,
+        scope: EntityMemoryScope,
+        memory_id: str,
+        revision: int,
+    ) -> UserProfileMemoryEntry | None: ...
 
 
 class MemoryGovernanceOperation(str, Enum):

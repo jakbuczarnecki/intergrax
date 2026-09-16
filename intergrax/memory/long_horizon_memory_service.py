@@ -7,14 +7,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.memory.contracts.enterprise_memory_record import (
-    MemoryProvenance,
-    MemoryRecordGovernance,
-    MemoryRecordSourceType,
-    MemoryRecordTrust,
-    MemoryTrustClass,
-)
-from intergrax.memory.contracts.memory_models import MemoryKind
 from intergrax.memory.contracts.long_horizon_memory import (
     CanonicalMemorySourceAuthority,
     ChildSummaryRef,
@@ -52,17 +44,21 @@ from intergrax.memory.contracts.long_horizon_memory import (
     validate_canonical_source_snapshot,
 )
 from intergrax.memory.contracts.memory_security_governance import (
+    CanonicalMemoryGovernanceSourceAuthority,
     MemoryGovernanceDenied,
     MemoryGovernanceEvaluationRequest,
     MemoryGovernanceOperation,
     MemoryGovernanceRecordSnapshot,
     MemoryGovernanceTarget,
+    validate_canonical_governance_source_snapshot,
 )
 from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
 from intergrax.memory.memory_specialized_mutation_governance import (
     enforce_specialized_memory_mutation,
     governance_snapshot_from_long_horizon_summary,
     memory_security_context_for_mutation,
+    resolve_governance_source_record_snapshot,
+    specialized_mutation_denied_for_canonical_source,
 )
 
 __all__ = [
@@ -122,6 +118,7 @@ class LongHorizonMemoryService:
     _store: LongHorizonMemoryStore
     _strategies: LongHorizonMemoryStrategySet
     _source_authority: CanonicalMemorySourceAuthority
+    _governance_source_authority: CanonicalMemoryGovernanceSourceAuthority
     _security_governance: MemorySecurityGovernanceService
     _policy: LongHorizonPolicyConfig = LongHorizonPolicyConfig()
 
@@ -145,9 +142,16 @@ class LongHorizonMemoryService:
                 max_batch=self._policy.max_source_batch,
             )
             node_kind = SummaryNodeKind.LEAF
+            leaf_operation = MemoryGovernanceOperation.COMPACT
             for batch in batches:
                 try:
                     canonical_batch = self._resolve_canonical_source_batch(request.scope, batch)
+                    for source in canonical_batch:
+                        self._assert_governance_matches_content_authority(
+                            request.scope,
+                            source,
+                            leaf_operation,
+                        )
                     record, skipped_idempotent = self._materialize_summary(
                         scope=request.scope,
                         target_level=request.target_level,
@@ -165,7 +169,10 @@ class LongHorizonMemoryService:
                         record,
                         node_kind=node_kind,
                         source_records=self._source_governance_snapshots(
-                            request.scope, canonical_batch, ()
+                            request.scope,
+                            canonical_batch,
+                            (),
+                            operation=leaf_operation,
                         ),
                     )
                     outcome = self._persist_summary(request.scope, record)
@@ -194,6 +201,7 @@ class LongHorizonMemoryService:
                 max_batch=self._policy.max_source_batch,
             )
             node_kind = SummaryNodeKind.AGGREGATE
+            promote_operation = MemoryGovernanceOperation.PROMOTE
             for batch in batches:
                 try:
                     _validate_children_scope(request.scope, self._store, batch)
@@ -214,7 +222,10 @@ class LongHorizonMemoryService:
                         record,
                         node_kind=node_kind,
                         source_records=self._source_governance_snapshots(
-                            request.scope, (), batch
+                            request.scope,
+                            (),
+                            batch,
+                            operation=promote_operation,
                         ),
                     )
                     outcome = self._persist_summary(request.scope, record)
@@ -266,6 +277,8 @@ class LongHorizonMemoryService:
         scope: LongHorizonMemoryScope,
         sources: tuple[LongHorizonCompactionSource, ...],
         children: tuple[LongHorizonSummaryRecord, ...],
+        *,
+        operation: MemoryGovernanceOperation,
     ) -> tuple[MemoryGovernanceRecordSnapshot, ...]:
         snapshots: list[MemoryGovernanceRecordSnapshot] = []
         for child in children:
@@ -275,19 +288,47 @@ class LongHorizonMemoryService:
         for source in sources:
             preview = source.content[:256] if source.content else None
             snapshots.append(
-                MemoryGovernanceRecordSnapshot(
-                    memory_id=source.memory_id,
-                    revision=source.revision,
-                    kind=MemoryKind.OTHER,
-                    provenance=MemoryProvenance(
-                        source_type=MemoryRecordSourceType.SYSTEM,
-                    ),
-                    trust=MemoryRecordTrust(trust_class=MemoryTrustClass.SYSTEM_GENERATED),
-                    governance=MemoryRecordGovernance(),
+                resolve_governance_source_record_snapshot(
+                    self._governance_source_authority,
+                    scope,
+                    source.memory_id,
+                    source.revision,
+                    operation=operation,
                     content_preview=preview,
                 )
             )
         return tuple(snapshots)
+
+    def _assert_governance_matches_content_authority(
+        self,
+        scope: LongHorizonMemoryScope,
+        source: LongHorizonCompactionSource,
+        operation: MemoryGovernanceOperation,
+    ) -> None:
+        try:
+            governance = self._governance_source_authority.resolve_canonical_governance_source(
+                scope,
+                source.memory_id,
+                source.revision,
+            )
+        except Exception as exc:
+            raise specialized_mutation_denied_for_canonical_source(operation, str(exc)) from exc
+        validate_canonical_governance_source_snapshot(
+            source.memory_id,
+            source.revision,
+            governance,
+        )
+        content = self._source_authority.resolve_canonical_source(
+            scope,
+            source.memory_id,
+            source.revision,
+        )
+        validate_canonical_source_snapshot(source, content)
+        if content.memory_id != governance.memory_id or content.revision != governance.revision:
+            raise specialized_mutation_denied_for_canonical_source(
+                operation,
+                "canonical content and governance authorities disagree on memory identity",
+            )
 
     def _resolve_canonical_source_batch(
         self,

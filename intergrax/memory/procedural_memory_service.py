@@ -8,8 +8,10 @@ from dataclasses import dataclass
 
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.memory_security_governance import (
+    CanonicalMemoryGovernanceSourceAuthority,
     MemoryGovernanceEvaluationRequest,
     MemoryGovernanceOperation,
+    MemoryGovernanceRecordSnapshot,
     MemoryGovernanceTarget,
 )
 from intergrax.memory.contracts.procedural_memory import (
@@ -34,6 +36,7 @@ from intergrax.memory.memory_specialized_mutation_governance import (
     governance_snapshot_from_procedure_record,
     governance_target_for_procedure,
     memory_security_context_for_mutation,
+    resolve_governance_source_record_snapshot,
 )
 
 __all__ = ["ProceduralMemoryService", "ProceduralMemoryStrategySet"]
@@ -59,6 +62,24 @@ class ProceduralMemoryService:
     _store: ProcedureMemoryStore
     _strategies: ProceduralMemoryStrategySet
     _security_governance: MemorySecurityGovernanceService
+    _governance_source_authority: CanonicalMemoryGovernanceSourceAuthority
+
+    def _canonical_source_records(
+        self,
+        scope: ProceduralMemoryScope,
+        record: ProcedureRecord,
+        operation: MemoryGovernanceOperation,
+    ) -> tuple[MemoryGovernanceRecordSnapshot, ...]:
+        preview = record.title[:256] if record.title else None
+        snapshot = resolve_governance_source_record_snapshot(
+            self._governance_source_authority,
+            scope,
+            record.source_memory_id,
+            record.source_memory_revision,
+            operation=operation,
+            content_preview=preview,
+        )
+        return (snapshot,)
 
     def remember_procedure(
         self,
@@ -73,18 +94,18 @@ class ProceduralMemoryService:
             if existing is not None
             else MemoryGovernanceOperation.REMEMBER
         )
-        source_snapshot = governance_snapshot_from_procedure_record(record)
+        proposed_snapshot = governance_snapshot_from_procedure_record(record)
         enforce_specialized_memory_mutation(
             self._security_governance,
             MemoryGovernanceEvaluationRequest(
                 context=memory_security_context_for_mutation(identity, scope, operation),
-                proposed_record=source_snapshot,
+                proposed_record=proposed_snapshot,
                 existing_record=(
                     governance_snapshot_from_procedure_record(existing)
                     if existing is not None
                     else None
                 ),
-                source_records=(source_snapshot,),
+                source_records=self._canonical_source_records(scope, record, operation),
             ),
         )
         return self._store.upsert_procedure(scope, record)
@@ -114,16 +135,15 @@ class ProceduralMemoryService:
         existing = self._store.get_procedure(scope, procedure_id)
         if existing is None:
             return None
+        operation = MemoryGovernanceOperation.UPDATE
         enforce_specialized_memory_mutation(
             self._security_governance,
             MemoryGovernanceEvaluationRequest(
-                context=memory_security_context_for_mutation(
-                    identity, scope, MemoryGovernanceOperation.UPDATE
-                ),
+                context=memory_security_context_for_mutation(identity, scope, operation),
                 target=governance_target_for_procedure(procedure_id),
                 existing_record=governance_snapshot_from_procedure_record(existing),
                 proposed_record=governance_snapshot_from_procedure_record(existing),
-                source_records=(governance_snapshot_from_procedure_record(existing),),
+                source_records=self._canonical_source_records(scope, existing, operation),
             ),
         )
         return self._store.deprecate_procedure(scope, procedure_id)
@@ -137,21 +157,21 @@ class ProceduralMemoryService:
         existing = self._store.get_procedure(scope, request.superseded_procedure_id)
         if existing is None:
             raise ProcedureMemoryViolation("superseded procedure not found")
+        operation = MemoryGovernanceOperation.SUPERSEDE
         superseding_snapshot = governance_snapshot_from_procedure_record(
             request.superseding_record
         )
         enforce_specialized_memory_mutation(
             self._security_governance,
             MemoryGovernanceEvaluationRequest(
-                context=memory_security_context_for_mutation(
-                    identity, scope, MemoryGovernanceOperation.SUPERSEDE
-                ),
+                context=memory_security_context_for_mutation(identity, scope, operation),
                 target=governance_target_for_procedure(request.superseded_procedure_id),
                 existing_record=governance_snapshot_from_procedure_record(existing),
                 proposed_record=superseding_snapshot,
-                source_records=(
-                    governance_snapshot_from_procedure_record(existing),
-                    superseding_snapshot,
+                source_records=self._canonical_source_records(
+                    scope,
+                    request.superseding_record,
+                    operation,
                 ),
             ),
         )
@@ -168,14 +188,18 @@ class ProceduralMemoryService:
             procedure_id = procedure_id_for_source_memory(scope, memory_id)
             existing = self._store.get_procedure(scope, procedure_id)
             if existing is not None:
+                operation = MemoryGovernanceOperation.DELETE
                 enforce_specialized_memory_mutation(
                     self._security_governance,
                     MemoryGovernanceEvaluationRequest(
                         context=memory_security_context_for_mutation(
-                            identity, scope, MemoryGovernanceOperation.DELETE
+                            identity, scope, operation
                         ),
                         target=MemoryGovernanceTarget(memory_id=memory_id),
                         existing_record=governance_snapshot_from_procedure_record(existing),
+                        source_records=self._canonical_source_records(
+                            scope, existing, operation
+                        ),
                     ),
                 )
         return self._store.delete_by_source_memory(scope, source_memory_id)

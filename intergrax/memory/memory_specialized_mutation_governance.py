@@ -13,24 +13,36 @@ from intergrax.memory.contracts.entity_temporal_memory import (
 from intergrax.memory.contracts.long_horizon_memory import LongHorizonSummaryRecord
 from intergrax.memory.contracts.memory_control import MemoryControlPlaneScope, MemoryControlScopeRef
 from intergrax.memory.contracts.memory_models import MemoryKind, UserProfileMemoryEntry
+from intergrax.memory.contracts.entity_temporal_memory import EntityMemoryScope
 from intergrax.memory.contracts.memory_security_governance import (
+    CanonicalMemoryGovernanceSourceAuthority,
+    CanonicalMemoryGovernanceSourceSnapshot,
+    CanonicalMemoryGovernanceSourceViolation,
+    MemoryGovernanceDecision,
     MemoryGovernanceDenied,
     MemoryGovernanceEvaluationRequest,
     MemoryGovernanceOperation,
+    MemoryGovernanceOutcome,
+    MemoryGovernanceReasonCode,
     MemoryGovernanceRecordSnapshot,
     MemoryGovernanceTarget,
     MemorySecurityContext,
+    validate_canonical_governance_source_snapshot,
 )
 from intergrax.memory.contracts.procedural_memory import ProcedureRecord
 from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
 
 __all__ = [
     "enforce_specialized_memory_mutation",
+    "governance_snapshot_from_canonical_source",
     "governance_snapshot_from_entity_record",
     "governance_snapshot_from_long_horizon_summary",
     "governance_snapshot_from_procedure_record",
+    "governance_source_snapshot_from_user_entry",
     "memory_control_scope_from_entity_scope",
     "memory_security_context_for_mutation",
+    "resolve_governance_source_record_snapshot",
+    "specialized_mutation_denied_for_canonical_source",
 ]
 
 
@@ -95,6 +107,59 @@ def governance_snapshot_from_entity_relation(
     )
 
 
+def governance_snapshot_from_canonical_source(
+    snapshot: CanonicalMemoryGovernanceSourceSnapshot,
+    *,
+    content_preview: str | None = None,
+) -> MemoryGovernanceRecordSnapshot:
+    kind = snapshot.kind if snapshot.kind is not None else MemoryKind.OTHER
+    return MemoryGovernanceRecordSnapshot(
+        memory_id=snapshot.memory_id,
+        revision=snapshot.revision,
+        kind=kind,
+        provenance=snapshot.provenance,
+        trust=snapshot.trust,
+        governance=snapshot.governance,
+        content_preview=content_preview,
+    )
+
+
+def specialized_mutation_denied_for_canonical_source(
+    operation: MemoryGovernanceOperation,
+    message: str,
+) -> MemoryGovernanceDenied:
+    decision = MemoryGovernanceDecision(
+        outcome=MemoryGovernanceOutcome.DENY,
+        reason_code=MemoryGovernanceReasonCode.GOVERNANCE_DENY,
+        policy_id="memory.canonical_governance_source",
+        policy_version="1.0.0",
+        operation=operation,
+    )
+    return MemoryGovernanceDenied(message, decision=decision)
+
+
+def resolve_governance_source_record_snapshot(
+    authority: CanonicalMemoryGovernanceSourceAuthority,
+    scope: EntityMemoryScope,
+    memory_id: str,
+    revision: int,
+    *,
+    operation: MemoryGovernanceOperation,
+    content_preview: str | None = None,
+) -> MemoryGovernanceRecordSnapshot:
+    try:
+        canonical = authority.resolve_canonical_governance_source(scope, memory_id, revision)
+    except CanonicalMemoryGovernanceSourceViolation as exc:
+        raise specialized_mutation_denied_for_canonical_source(operation, str(exc)) from exc
+    except Exception as exc:
+        raise specialized_mutation_denied_for_canonical_source(
+            operation,
+            f"canonical governance source resolution failed: {exc}",
+        ) from exc
+    validate_canonical_governance_source_snapshot(memory_id, revision, canonical)
+    return governance_snapshot_from_canonical_source(canonical, content_preview=content_preview)
+
+
 def governance_snapshot_from_procedure_record(
     record: ProcedureRecord,
 ) -> MemoryGovernanceRecordSnapshot:
@@ -126,12 +191,6 @@ def governance_snapshot_from_long_horizon_summary(
 
 
 def _cross_scope_decision(operation: MemoryGovernanceOperation) -> MemoryGovernanceDecision:
-    from intergrax.memory.contracts.memory_security_governance import (
-        MemoryGovernanceDecision,
-        MemoryGovernanceOutcome,
-        MemoryGovernanceReasonCode,
-    )
-
     return MemoryGovernanceDecision(
         outcome=MemoryGovernanceOutcome.DENY,
         reason_code=MemoryGovernanceReasonCode.CROSS_SCOPE,

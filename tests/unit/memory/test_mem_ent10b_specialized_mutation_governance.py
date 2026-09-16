@@ -88,6 +88,17 @@ from intergrax.memory.stores.in_memory_procedural_memory_store import (
 from intergrax.memory.strategies.defaults.memory_security_governance import (
     build_default_memory_security_strategy_set,
 )
+from intergrax.memory.contracts.memory_security_governance import (
+    CanonicalMemoryGovernanceSourceMismatch,
+    CanonicalMemoryGovernanceSourceSnapshot,
+    validate_canonical_governance_source_snapshot,
+)
+from tests.unit.memory.governance_source_fixtures import (
+    PermissiveCanonicalGovernanceSourceAuthority,
+    ScopedCanonicalGovernanceSourceAuthority,
+    model_inference_governance_snapshot,
+    restricted_governance_snapshot,
+)
 
 pytestmark = pytest.mark.gate
 
@@ -177,26 +188,37 @@ def test_entity_cross_scope_before_mutation() -> None:
     assert store.get_entity(scope, entity_memory_entity_id_for_entry(scope, entry.entry_id)) is None
 
 
+def _procedural_scope() -> EntityMemoryScope:
+    return EntityMemoryScope(tenant_id=_TENANT, user_id=_USER)
+
+
+def _procedural_service(
+    store: InMemoryProceduralMemoryStore | None = None,
+    governance: MemorySecurityGovernanceService | None = None,
+    governance_source: ScopedCanonicalGovernanceSourceAuthority | None = None,
+) -> ProceduralMemoryService:
+    scope = _procedural_scope()
+    return ProceduralMemoryService(
+        _store=store or InMemoryProceduralMemoryStore(),
+        _strategies=build_default_procedural_memory_strategies(),
+        _security_governance=governance or build_default_memory_security_governance_service(),
+        _governance_source_authority=governance_source
+        or ScopedCanonicalGovernanceSourceAuthority(scope=scope),
+    )
+
+
 def test_procedural_remember_allow() -> None:
     store = InMemoryProceduralMemoryStore()
-    service = ProceduralMemoryService(
-        _store=store,
-        _strategies=build_default_procedural_memory_strategies(),
-        _security_governance=build_default_memory_security_governance_service(),
-    )
-    scope = EntityMemoryScope(tenant_id=_TENANT, user_id=_USER)
+    service = _procedural_service(store=store)
+    scope = _procedural_scope()
     service.remember_procedure(_identity(), scope, _procedure())
     assert store.get_procedure(scope, "proc-1") is not None
 
 
 def test_procedural_remember_deny() -> None:
     store = InMemoryProceduralMemoryStore()
-    service = ProceduralMemoryService(
-        _store=store,
-        _strategies=build_default_procedural_memory_strategies(),
-        _security_governance=_deny_governance(),
-    )
-    scope = EntityMemoryScope(tenant_id=_TENANT, user_id=_USER)
+    service = _procedural_service(store=store, governance=_deny_governance())
+    scope = _procedural_scope()
     with pytest.raises(MemoryGovernanceDenied):
         service.remember_procedure(_identity(), scope, _procedure())
     assert store.get_procedure(scope, "proc-1") is None
@@ -205,12 +227,8 @@ def test_procedural_remember_deny() -> None:
 def test_procedural_supersede_deny_keeps_active() -> None:
     store = InMemoryProceduralMemoryStore()
     allow = build_default_memory_security_governance_service()
-    service = ProceduralMemoryService(
-        _store=store,
-        _strategies=build_default_procedural_memory_strategies(),
-        _security_governance=allow,
-    )
-    scope = EntityMemoryScope(tenant_id=_TENANT, user_id=_USER)
+    service = _procedural_service(store=store, governance=allow)
+    scope = _procedural_scope()
     service.remember_procedure(_identity(), scope, _procedure("old"))
     service._security_governance = _deny_governance()
     with pytest.raises(MemoryGovernanceDenied):
@@ -230,12 +248,14 @@ def test_procedural_supersede_deny_keeps_active() -> None:
 
 def test_procedural_trust_escalation_denied() -> None:
     store = InMemoryProceduralMemoryStore()
-    service = ProceduralMemoryService(
-        _store=store,
-        _strategies=build_default_procedural_memory_strategies(),
-        _security_governance=build_default_memory_security_governance_service(),
+    scope = _procedural_scope()
+    authority = ScopedCanonicalGovernanceSourceAuthority(
+        scope=scope,
+        snapshots={
+            ("mem-src", 1): model_inference_governance_snapshot("mem-src", 1),
+        },
     )
-    scope = EntityMemoryScope(tenant_id=_TENANT, user_id=_USER)
+    service = _procedural_service(store=store, governance_source=authority)
     escalated = ProcedureRecord(
         procedure_id="proc-esc",
         procedure_type=ProcedureTypeRef("test"),
@@ -274,10 +294,12 @@ def _lh_service(
     governance: MemorySecurityGovernanceService | None = None,
 ) -> LongHorizonMemoryService:
     scope = LongHorizonMemoryScope(tenant_id=_TENANT, user_id=_USER)
+    gov_authority = ScopedCanonicalGovernanceSourceAuthority(scope=scope)
     return LongHorizonMemoryService(
         _store=store or InMemoryLongHorizonMemoryStore(),
         _strategies=build_default_long_horizon_strategies(),
         _source_authority=_ScopedAuthority(scope),
+        _governance_source_authority=gov_authority,
         _security_governance=governance or build_default_memory_security_governance_service(),
     )
 
@@ -386,8 +408,7 @@ def test_shared_governance_instance_in_wiring() -> None:
         )
     )
     governance = resolve_memory_security_governance_service()
-    procedural = resolve_procedural_memory_capability(env, security_governance=governance)
-    assert procedural is not None
+    gov_authority = PermissiveCanonicalGovernanceSourceAuthority()
 
     class _Authority:
         def resolve_canonical_source(self, scope, memory_id: str, revision: int):
@@ -398,9 +419,17 @@ def test_shared_governance_instance_in_wiring() -> None:
                 observed_at="2025-01-01T00:00:00+00:00",
             )
 
+    procedural = resolve_procedural_memory_capability(
+        env,
+        governance_source_authority=gov_authority,
+        security_governance=governance,
+    )
+    assert procedural is not None
+
     long_horizon = resolve_long_horizon_memory_capability(
         env,
         source_authority=_Authority(),
+        governance_source_authority=gov_authority,
         security_governance=governance,
     )
     assert long_horizon is not None
@@ -408,6 +437,77 @@ def test_shared_governance_instance_in_wiring() -> None:
     assert procedural._security_governance is governance
     assert long_horizon._security_governance is governance
     assert plane.security_governance is governance
+
+
+def test_long_horizon_restricted_raw_source_denied() -> None:
+    scope = LongHorizonMemoryScope(tenant_id=_TENANT, user_id=_USER)
+    authority = ScopedCanonicalGovernanceSourceAuthority(
+        scope=scope,
+        snapshots={("m1", 1): restricted_governance_snapshot("m1", 1)},
+    )
+    service = LongHorizonMemoryService(
+        _store=InMemoryLongHorizonMemoryStore(),
+        _strategies=build_default_long_horizon_strategies(),
+        _source_authority=_ScopedAuthority(scope),
+        _governance_source_authority=authority,
+        _security_governance=build_default_memory_security_governance_service(),
+    )
+    request = LongHorizonCompactionRequest(
+        identity=_identity(),
+        scope=scope,
+        target_level=1,
+        sources=(
+            LongHorizonCompactionSource(
+                memory_id="m1",
+                revision=1,
+                content="alpha content",
+                observed_at="2025-01-01T00:00:00+00:00",
+            ),
+        ),
+    )
+    result = service.compact(request)
+    assert not result.created
+    assert result.failures
+
+
+def test_procedural_missing_canonical_source_zero_mutation() -> None:
+    scope = _procedural_scope()
+    authority = ScopedCanonicalGovernanceSourceAuthority(scope=scope, default_factory=False)
+    service = _procedural_service(governance_source=authority)
+    with pytest.raises(MemoryGovernanceDenied):
+        service.remember_procedure(_identity(), scope, _procedure())
+    assert service._store.get_procedure(scope, "proc-1") is None
+
+
+def test_canonical_governance_postcondition_validation() -> None:
+    snapshot = CanonicalMemoryGovernanceSourceSnapshot(
+        memory_id="M2",
+        revision=4,
+        provenance=MemoryProvenance(source_type=MemoryRecordSourceType.USER_EXPLICIT),
+        trust=MemoryRecordTrust(trust_class=MemoryTrustClass.USER_EXPLICIT),
+        governance=MemoryRecordGovernance(),
+    )
+    with pytest.raises(CanonicalMemoryGovernanceSourceMismatch):
+        validate_canonical_governance_source_snapshot("M1", 4, snapshot)
+
+
+def test_specialized_services_do_not_fabricate_system_governance() -> None:
+    forbidden = (
+        "SYSTEM_GENERATED",
+        "MemoryRecordGovernance()",
+        "MemoryRecordSourceType.SYSTEM",
+    )
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    paths = (
+        root / "intergrax/memory/procedural_memory_service.py",
+        root / "intergrax/memory/long_horizon_memory_service.py",
+    )
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        for token in forbidden:
+            assert token not in text, f"{token} found in {path.name}"
 
 
 def test_specialized_services_do_not_import_default_policies() -> None:

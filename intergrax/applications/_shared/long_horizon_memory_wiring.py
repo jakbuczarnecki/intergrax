@@ -10,6 +10,9 @@ from intergrax.memory.contracts.long_horizon_memory import (
     LongHorizonMemoryStore,
     LongHorizonMemoryViolation,
 )
+from intergrax.memory.contracts.memory_security_governance import (
+    CanonicalMemoryGovernanceSourceAuthority,
+)
 from intergrax.applications._shared.memory_security_governance_wiring import (
     resolve_memory_security_governance_service,
 )
@@ -59,6 +62,7 @@ def resolve_long_horizon_memory_capability(
     env: ApplicationEnvironmentProfile,
     *,
     source_authority: CanonicalMemorySourceAuthority | None = None,
+    governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
     security_governance: MemorySecurityGovernanceService | None = None,
 ) -> LongHorizonMemoryService | None:
     """Materialize long-horizon memory capability when enabled."""
@@ -69,6 +73,10 @@ def resolve_long_horizon_memory_capability(
         raise LongHorizonMemoryViolation(
             "long-horizon memory capability requires CanonicalMemorySourceAuthority"
         )
+    if governance_source_authority is None:
+        raise LongHorizonMemoryViolation(
+            "long-horizon memory capability requires CanonicalMemoryGovernanceSourceAuthority"
+        )
     governance = resolve_memory_security_governance_service(
         security_governance=security_governance,
     )
@@ -76,5 +84,6 @@ def resolve_long_horizon_memory_capability(
         _store=store,
         _strategies=build_default_long_horizon_strategies(),
         _source_authority=source_authority,
+        _governance_source_authority=governance_source_authority,
         _security_governance=governance,
     )
