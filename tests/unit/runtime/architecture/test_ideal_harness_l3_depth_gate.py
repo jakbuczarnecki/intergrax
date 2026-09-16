@@ -46,16 +46,32 @@ pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 
+_CI_SCRIPTS = REPO_ROOT / "scripts" / "ci"
+if str(_CI_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_CI_SCRIPTS))
+from script_paths import resolve_script  # noqa: E402
+
 
 def test_ideal_l3_error_taxonomy_covers_ideal_families() -> None:
     assert family_for_code(RuntimeErrorCode.QUALITY_ERROR) is HarnessErrorFamily.QUALITY
-    assert family_for_code(RuntimeErrorCode.DEPENDENCY_ERROR) is HarnessErrorFamily.DEPENDENCY
+    assert (
+        family_for_code(RuntimeErrorCode.DEPENDENCY_ERROR)
+        is HarnessErrorFamily.DEPENDENCY
+    )
     assert family_for_code(RuntimeErrorCode.RUNTIME_ERROR) is HarnessErrorFamily.RUNTIME
-    assert recovery_for_code(RuntimeErrorCode.DEPENDENCY_ERROR).value == "retry_with_backoff"
+    assert (
+        recovery_for_code(RuntimeErrorCode.DEPENDENCY_ERROR).value
+        == "retry_with_backoff"
+    )
     assert is_quality_failure(RuntimeErrorCode.QUALITY_ERROR)
     assert is_dependency_failure(RuntimeErrorCode.TIMEOUT)
-    assert ErrorClassifier.classify(ConnectionError("down")) is RuntimeErrorCode.DEPENDENCY_ERROR
-    assert ErrorClassifier.classify(RuntimeError("race")) is RuntimeErrorCode.RUNTIME_ERROR
+    assert (
+        ErrorClassifier.classify(ConnectionError("down"))
+        is RuntimeErrorCode.DEPENDENCY_ERROR
+    )
+    assert (
+        ErrorClassifier.classify(RuntimeError("race")) is RuntimeErrorCode.RUNTIME_ERROR
+    )
 
 
 def test_ideal_l3_data_classification_enforcement() -> None:
@@ -142,7 +158,7 @@ def test_ideal_l3_harness_slo_catalog() -> None:
 
 
 def test_ideal_l3_umbrella_gate_script() -> None:
-    script = REPO_ROOT / "scripts" / "check_ideal_harness_l3_gates.py"
+    script = resolve_script("check_ideal_harness_l3_gates.py")
     completed = subprocess.run(
         [sys.executable, str(script)],
         cwd=REPO_ROOT,
