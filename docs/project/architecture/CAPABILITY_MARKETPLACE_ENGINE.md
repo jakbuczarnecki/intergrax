@@ -355,11 +355,36 @@ Discovery/handoff traceability is a **future** ME-10 concern. V1 emits usage eve
 
 **Capability Metering** owns usage event shape and consumer ports. Marketplace may attach **display-only** commercial metadata; settlement and billing remain external.
 
+Hard invariants:
+
+```text
+usage != pricing
+usage != billing
+commercial metadata != charge authority
+Marketplace != Billing
+```
+
+Canonical flow:
+
+```text
+Exact capability release (provenance on usage event)
+        ↓
+authoritative usage producer (domain / execution boundary — not listing views)
+        ↓
+CapabilityUsageEvent (immutable factual measurement)
+        ↓
+CapabilityUsageRecorder → CapabilityUsageConsumer (pluggable sink)
+        ↓
+external metering / billing consumer
+```
+
+Marketplace listing/search/recommendation **must not** emit capability usage events (product analytics is a separate concern).
+
 ---
 
 ## 18. Commercial boundary
 
-Publisher and commercial metadata are **presentation** contracts only. No checkout, purchase, or grant APIs in marketplace package (forbidden API names gated by tests).
+Publisher and commercial metadata are **presentation** contracts only (`MarketplaceCommercialMetadata`: labels, display price text, opaque `pricing_reference` — not charge authority). No checkout, purchase, or grant APIs in marketplace package (forbidden API names gated by tests). No `calculate_price`, invoicing, or settlement in marketplace core.
 
 ---
 
@@ -460,6 +485,23 @@ Proofs: `tests/unit/marketplace/test_me7_publisher_version_provenance.py`.
 
 ---
 
+## ME-8 — Commercial & metering boundary (closed)
+
+| Concern | Contract / port | Marketplace role |
+| ------- | ----------------- | ------------------ |
+| Usage fact | `CapabilityUsageEvent` | None (no emission on discovery) |
+| Metering sink | `CapabilityUsageConsumer` / `CapabilityUsageRecorder` | Handoff only via external adapters |
+| Commercial display | `MarketplaceCommercialMetadata` | Presentation on listings |
+| Pricing / invoice / settlement | External billing domain | **Forbidden** in marketplace core |
+
+`CapabilityUsageEvent` carries source-qualified identity, frozen provenance (release facts), tenant, optional run/task correlation, and integer `quantity` — never monetary authority fields.
+
+Proofs: `tests/unit/marketplace/test_me8_commercial_metering_boundary.py`, `tests/unit/contracts/capability_metering/test_capability_metering_contract_import_gates.py`, Stage-13 metering tests.
+
+**Gap register (out of scope):** full billing consumer SPI and financial ledger integration remain outside Capability Marketplace Engine.
+
+---
+
 ## Architecture gates (ME-RB1)
 
 Enforced in tests:
@@ -470,6 +512,8 @@ Enforced in tests:
 - `tests/unit/marketplace/test_me_rb3_domain_vertical_alignment.py`
 - `tests/unit/marketplace/test_me_rb2_plugin_architecture.py`
 - `tests/unit/marketplace/test_me7_publisher_version_provenance.py`
+- `tests/unit/marketplace/test_me8_commercial_metering_boundary.py`
+- `tests/unit/contracts/capability_metering/test_capability_metering_contract_import_gates.py`
 - `tests/unit/architecture/test_capability_catalog_v1_program_boundaries.py`
 
 Program packages must not import `intergrax.runtime`, applications, or Nexus; marketplace must not import Agent Distribution implementation.

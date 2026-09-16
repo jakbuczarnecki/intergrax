@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""ME-RB2 — marketplace contracts must not import implementation packages."""
+"""ME-8 — capability metering contracts must stay billing-agnostic."""
 
 from __future__ import annotations
 
@@ -12,15 +12,17 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-_PACKAGE_MODULE = "intergrax.contracts.marketplace"
+_PACKAGE_MODULE = "intergrax.contracts.capability_metering"
 
-_FORBIDDEN_IMPLEMENTATION_PREFIXES = (
-    "intergrax.marketplace",
-    "intergrax.capability_catalog",
-    "intergrax.nexus",
-    "intergrax.runtime.nexus",
+_FORBIDDEN_BILLING_PREFIXES = (
     "intergrax.tools.providers.billing",
     "intergrax.skills.providers.billing",
+    "intergrax.marketplace",
+    "stripe",
+    "adyen",
+    "paddle",
+    "chargebee",
+    "zuora",
 )
 
 
@@ -44,26 +46,30 @@ def _collect_imports(tree: ast.AST) -> list[str]:
     return imported
 
 
-def test_marketplace_contracts_package_has_no_implementation_imports() -> None:
+def test_capability_metering_contracts_do_not_import_billing_or_marketplace() -> None:
     root = _package_root()
     for path in _iter_package_py_files():
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for imported in _collect_imports(tree):
-            for prefix in _FORBIDDEN_IMPLEMENTATION_PREFIXES:
+            for prefix in _FORBIDDEN_BILLING_PREFIXES:
                 if imported == prefix or imported.startswith(f"{prefix}."):
                     raise AssertionError(
                         f"{path.relative_to(root)} imports forbidden dependency: {imported}",
                     )
 
 
-def test_marketplace_contracts_do_not_expose_default_implementation_types() -> None:
-    init_path = _package_root() / "__init__.py"
-    tree = ast.parse(init_path.read_text(encoding="utf-8"))
-    forbidden_symbols = (
-        "DefaultMarketplaceListingProjection",
-        "MarketplaceCapabilityCatalogSource",
-        "InMemoryMarketplaceMetadataSource",
+def test_usage_event_contract_has_no_billing_authority_fields() -> None:
+    from intergrax.contracts.capability_metering import CapabilityUsageEvent
+
+    forbidden = (
+        "final_price",
+        "amount_due",
+        "invoice_id",
+        "tax",
+        "discount_applied",
+        "settlement_status",
+        "payment_status",
     )
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Name) and node.id in forbidden_symbols:
-            raise AssertionError(f"contracts __init__ must not export implementation: {node.id}")
+    field_names = frozenset(CapabilityUsageEvent.model_fields)
+    violations = [name for name in forbidden if name in field_names]
+    assert not violations, f"usage event exposes billing authority fields: {violations}"

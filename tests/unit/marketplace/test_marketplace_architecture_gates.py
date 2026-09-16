@@ -25,6 +25,27 @@ _FORBIDDEN_IMPORT_PREFIXES = (
     "applications",
 )
 
+_FORBIDDEN_BILLING_IMPORT_PREFIXES = (
+    "intergrax.tools.providers.billing",
+    "intergrax.skills.providers.billing",
+    "stripe",
+    "adyen",
+    "paddle",
+    "chargebee",
+    "zuora",
+)
+
+_FORBIDDEN_PRICING_AUTHORITY_CALL_NAMES = frozenset(
+    {
+        "calculate_price",
+        "compute_charge",
+        "apply_discount",
+        "calculate_invoice",
+        "capture_payment",
+        "settle",
+    },
+)
+
 _FORBIDDEN_RUNTIME_MUTATION_NAMES = frozenset(
     {
         "install",
@@ -172,6 +193,37 @@ def test_catalog_authority_modules_do_not_import_marketplace_contracts() -> None
                 raise AssertionError(f"{module_name} imports marketplace contracts: {imported}")
             if imported == _MARKETPLACE_MODULE or imported.startswith(f"{_MARKETPLACE_MODULE}."):
                 raise AssertionError(f"{module_name} imports marketplace package: {imported}")
+
+
+def test_marketplace_core_does_not_import_billing_implementations() -> None:
+    root = _package_root(_MARKETPLACE_MODULE)
+    for path in _iter_package_py_files(_MARKETPLACE_MODULE):
+        if _is_handoff_adapter_path(root, path):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for imported in _collect_imports(tree):
+            for prefix in _FORBIDDEN_BILLING_IMPORT_PREFIXES:
+                if imported == prefix or imported.startswith(f"{prefix}."):
+                    raise AssertionError(
+                        f"{path.relative_to(root)} imports forbidden billing dependency: {imported}",
+                    )
+
+
+def test_marketplace_package_has_no_pricing_or_billing_authority_api() -> None:
+    root = _package_root(_MARKETPLACE_MODULE)
+    for path in _iter_package_py_files(_MARKETPLACE_MODULE):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if node.name in _FORBIDDEN_PRICING_AUTHORITY_CALL_NAMES:
+                    raise AssertionError(
+                        f"{path.relative_to(root)} exposes forbidden billing API: {node.name}",
+                    )
+        for call_name in _collect_call_names(tree):
+            if call_name in _FORBIDDEN_PRICING_AUTHORITY_CALL_NAMES:
+                raise AssertionError(
+                    f"{path.relative_to(root)} invokes forbidden billing authority call: {call_name}",
+                )
 
 
 def test_marketplace_service_does_not_import_ranking_with_commercial_metadata() -> None:
