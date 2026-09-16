@@ -400,6 +400,43 @@ V1 code proves federated read, governance, marketplace join, and metering substr
 
 ---
 
+## ME-7 — Publisher / version / provenance (closed)
+
+Canonical identity layers (do not collapse):
+
+```text
+Logical capability identity     → CapabilityLogicalIdentity.logical_id (+ kind)
+Publisher identity (claim)      → CapabilityProvenance.publisher (not source_id)
+Version / release label         → CapabilityProvenance.version_label (opaque; no auto-normalize)
+Source identity                 → CapabilitySourceIdentity (catalog/discovery origin)
+Integrity reference             → CapabilityProvenance.content_digest (opaque; compare exact)
+Trust verdict                   → governance evidence (ME-6; not provenance)
+```
+
+Stage-3 discovery key (`CapabilityIdentityKey`) is **source-qualified logical identity** — it intentionally excludes version and publisher. Exact released artifact addressing uses `CapabilityReleaseIdentity` (parallel contract) built from `CapabilityCatalogEntry` provenance facts.
+
+```text
+Domain/source authority
+      ↓
+publisher + version + provenance (CapabilityProvenance on CapabilityCatalogEntry)
+      ↓
+FederatedCapabilityCatalog (merge fail-closed on discovery-key conflicts)
+      ↓
+Marketplace listing projection (preserve; never rewrite canonical facts)
+      ↓
+search / rank / governance / recommendation (validators preserve catalog_entry)
+      ↓
+selection / lifecycle handoff (MarketplaceCapabilitySelection.capability)
+
+facts preserved unchanged end-to-end
+```
+
+Federation: same discovery identity with differing catalog facts → `CapabilityCatalogIdentityConflict`. Same logical_id across publishers remains distinct when `source_id` differs (or via distinct logical rows within one source).
+
+Proofs: `tests/unit/marketplace/test_me7_publisher_version_provenance.py`.
+
+---
+
 ## Architecture gates (ME-RB1)
 
 Enforced in tests:
@@ -409,6 +446,7 @@ Enforced in tests:
 - `tests/unit/capability_catalog/test_architecture_gates.py`
 - `tests/unit/marketplace/test_me_rb3_domain_vertical_alignment.py`
 - `tests/unit/marketplace/test_me_rb2_plugin_architecture.py`
+- `tests/unit/marketplace/test_me7_publisher_version_provenance.py`
 - `tests/unit/architecture/test_capability_catalog_v1_program_boundaries.py`
 
 Program packages must not import `intergrax.runtime`, applications, or Nexus; marketplace must not import Agent Distribution implementation.
