@@ -31,8 +31,8 @@ from intergrax.contracts.capability_catalog import (
     CapabilitySourceKind,
 )
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
-from intergrax.contracts.marketplace import MarketplaceCapabilityListing
-from intergrax.marketplace import MarketplaceCatalogService
+from intergrax.contracts.marketplace import MarketplaceCapabilityListing, MarketplaceMetadataSource
+from intergrax.marketplace import MarketplaceCapabilityCatalogSource, MarketplaceCatalogService
 from intergrax.skills.registry.catalog import SkillBundleEntry, clear_skill_catalog, register_skill_bundle
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.core.contracts import ToolContract
@@ -153,6 +153,35 @@ class _CustomToolVerticalSource:
         )
 
 
+class _CustomToolMarketplaceMetadataSource:
+    """External marketplace metadata for partner tool catalog — no default subclass."""
+
+    def __init__(self, catalog: CapabilityCatalogSource) -> None:
+        self._catalog = catalog
+
+    @property
+    def source_id(self) -> str:
+        return self._catalog.source_id
+
+    @property
+    def source(self) -> CapabilitySourceIdentity:
+        entries = self._catalog.read_entries()
+        if not entries:
+            raise AssertionError("partner catalog must expose at least one entry")
+        return entries[0].identity.source
+
+    def read_listings(self) -> tuple[MarketplaceCapabilityListing, ...]:
+        return tuple(
+            MarketplaceCapabilityListing(
+                listing_id=f"partner-listing-{entry.identity.logical.logical_id}",
+                capability=entry,
+                publisher_metadata=None,
+                commercial_metadata=None,
+            )
+            for entry in self._catalog.read_entries()
+        )
+
+
 @pytest.fixture(autouse=True)
 def _isolated_domain_catalogs() -> None:
     clear_tool_catalog()
@@ -267,6 +296,52 @@ def test_federated_agent_tool_skill_with_custom_tool_provider() -> None:
     logical_ids = {entry.identity.logical.logical_id for entry in snapshot.entries}
     assert "tools.partner.custom" in logical_ids
     assert len({entry.identity.kind for entry in snapshot.entries}) == 3
+
+
+def test_custom_vertical_provider_appears_in_common_marketplace() -> None:
+    agent, tool, skill = _vertical_sources()
+    custom_catalog: CapabilityCatalogSource = _CustomToolVerticalSource()
+    custom_metadata: MarketplaceMetadataSource = _CustomToolMarketplaceMetadataSource(
+        custom_catalog,
+    )
+
+    assert not isinstance(custom_catalog, ToolBundleCatalogSource)
+    assert not isinstance(custom_metadata, MarketplaceCapabilityCatalogSource)
+
+    federated = FederatedCapabilityCatalog((agent, tool, skill, custom_catalog))
+    snapshot = federated.snapshot()
+    partner_entry = next(
+        entry
+        for entry in snapshot.entries
+        if entry.identity.logical.logical_id == "tools.partner.custom"
+    )
+    assert partner_entry.identity.kind is CapabilityKind.TOOL
+    assert partner_entry.identity.source.source_id == "partner.tools.catalog"
+    assert partner_entry.provenance.publisher == "partner"
+    assert partner_entry.provenance.version_label == "1.0.0"
+
+    service = MarketplaceCatalogService(
+        catalog=federated,
+        marketplace_sources=(agent, tool, skill, custom_metadata),
+    )
+
+    identity_key = CapabilityIdentityKey.from_discovery_identity(partner_entry.identity)
+    listing = service.get_listing(identity_key)
+    assert listing is not None
+    assert listing.listing_id == "partner-listing-tools.partner.custom"
+    assert listing.capability == partner_entry
+    assert listing.capability.identity.kind is CapabilityKind.TOOL
+    assert listing.capability.identity.source.source_id == custom_catalog.source_id
+    assert listing.capability.identity.logical.logical_id == "tools.partner.custom"
+
+    tool_views = service.list_listings(_discovery_query(kinds=(CapabilityKind.TOOL,)))
+    partner_views = [
+        view
+        for view in tool_views
+        if view.listing.capability.identity.logical.logical_id == "tools.partner.custom"
+    ]
+    assert len(partner_views) == 1
+    assert partner_views[0].listing.capability == partner_entry
 
 
 def test_vertical_adapters_do_not_import_marketplace_or_nexus() -> None:

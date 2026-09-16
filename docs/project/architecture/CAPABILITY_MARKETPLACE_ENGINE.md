@@ -169,6 +169,8 @@ Capability Marketplace Engine (discovery + MarketplaceCatalogService)
 
 Proof tests: `tests/unit/marketplace/test_me_rb3_domain_vertical_alignment.py`, adapter tests under `tests/unit/capability_catalog/adapters/`, ME-RB2 plugin proof for custom `CapabilityCatalogSource` without core changes.
 
+**External/custom vertical provider proof:** third-party `CapabilityCatalogSource` + matching `MarketplaceMetadataSource` (no default adapter subclasses) federate with Agent/Tool/Skill builtins and surface as `MarketplaceCapabilityListing` via `MarketplaceCatalogService` — **PASSED** (`test_custom_vertical_provider_appears_in_common_marketplace`).
+
 ---
 
 ## 7. Human consumers
