@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4R1 — READY_FOR_INDEPENDENT_AUDIT** · **MP-4R0** closed · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `FROZEN_PENDING_CONVERGENCE` · MP-4D `FROZEN_PENDING_AUTHORITY_REBASE` · **MP-4R2 NOT STARTED**
+**Status:** **MP-4R2 — READY_FOR_INDEPENDENT_AUDIT** · **MP-4R1** closed · **MP-4R0** closed · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2) · **MP-4R3 NOT STARTED**
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -59,12 +59,12 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R2 |
-| **Status** | **NOT STARTED** |
-| **Purpose** | Prove whether independent MP-4 Approval primitive is needed vs `decision_human_review` + Governance/HITL |
-| **Dependencies** | MP-4R1 |
-| **Acceptance** | Duplicate Approval semantics removed or justified with ADR |
-
----
+| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
+| **Purpose** | Retire duplicate MP-4C/D Approval authority; canonical human judgment = `decision_human_review` + Governance/HITL |
+| **Dependencies** | MP-4R1 closed |
+| **Acceptance** | Legacy `approval.py` / `intergrax/approval/**` removed; `test_mp4r2_human_review_approval_convergence_gates.py` green; stale proposal binding proven |
+| **Proof requirements** | Caller proof (zero production consumers); pytest MP-4R0/1/2 gates; `test_decision_human_review.py`; `test_decision_flow.py` governance/HITL cases |
+| **Next step** | Independent MP-4R2 audit → MP-4R3 (NOT STARTED) |
 
 ## MP-4R3 — Execution continuation integration
 
@@ -138,8 +138,8 @@ Use, modification, or distribution without written permission is prohibited.
 |-------|--------|
 | MP-4A | SUPERSEDED_BY_MP4R0 |
 | MP-4B | RETIRED (MP-4R1) |
-| MP-4C | FROZEN_PENDING_CONVERGENCE |
-| MP-4D | FROZEN_PENDING_AUTHORITY_REBASE |
+| MP-4C | RETIRED (MP-4R2) |
+| MP-4D | RETIRED (MP-4R2) |
 | MP-4E | CANCELLED_BEFORE_START |
 | MP-4F | CANCELLED_REPLACED_BY_EVIDENCE_ADOPTION |
 | MP-4G | CANCELLED_IN_OLD_FORM |

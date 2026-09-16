@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4 / MP-4R)
 
-**Status:** **MP-4R1 — READY_FOR_INDEPENDENT_AUDIT** (Decision contract convergence) · **MP-4R0** closed · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `RETIRED` (MP-4R1) · **MP-4C** `FROZEN_PENDING_CONVERGENCE` · **MP-4D** `FROZEN_PENDING_AUTHORITY_REBASE` · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8 · **MP-4R2 NOT STARTED**
+**Status:** **MP-4R2 — READY_FOR_INDEPENDENT_AUDIT** (Human review / Approval convergence) · **MP-4R1** closed · **MP-4R0** closed · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `RETIRED` (MP-4R1) · **MP-4C** `RETIRED` (MP-4R2) · **MP-4D** `RETIRED` (MP-4R2) · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8 · **MP-4R3 NOT STARTED**
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (1:1):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -17,7 +17,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Define how **Multiplayer** integrates with canonical platform authorities for Decision, human authorization (Governance/HITL), Execution continuation, Evidence, and Diagnostics — **without** creating parallel lifecycle or truth sources.
 
-MP-4R0 performed ownership rebase, legacy inventory, supersession, and architecture gates. **MP-4R1** retired legacy MP-4B `intergrax/contracts/decision.py` and the dynamic package bridge; `intergrax/contracts/decision/` is **Decision Integration Boundary** only. MP-4C/D remain quarantined pending MP-4R2+.
+MP-4R0 performed ownership rebase, legacy inventory, supersession, and architecture gates. **MP-4R1** retired legacy MP-4B `intergrax/contracts/decision.py` and the dynamic package bridge; `intergrax/contracts/decision/` is **Decision Integration Boundary** only. **MP-4R2** retired legacy MP-4C/D (`intergrax/contracts/approval.py`, `intergrax/approval/**`) after caller proof — canonical human judgment is `decision_human_review` + Governance/HITL only.
 
 ---
 
@@ -93,13 +93,13 @@ Multiplayer MUST NOT own diagnostic interpretation.
 | Decision Integration Boundary | `intergrax/contracts/decision/integration/**` | **KEEP** — adapter SPI; lifecycle mapping uses `decision_lifecycle` |
 | Integration composition root | `intergrax/runtime/decision_integration_composition.py` | `KEEP` — composition boundary for providers/adapters |
 | Decision plugin composition | `intergrax/runtime/decision_plugin_composition.py` | `KEEP` — wires canonical decision flow + integration engine |
-| MP-4C Approval contracts | `intergrax/contracts/approval.py` | `REPLACE_WITH_CANONICAL` → `decision_human_review` + Governance/HITL; `REMOVE_AFTER_CALLER_PROOF` |
-| MP-4D Approval service | `intergrax/approval/` | `MIGRATE` authority path to Governance/HITL + MP-1 `CollaborativeWorkEnforcementGate`; not a second HITL runtime |
-| Contract / service tests | `test_approval_*`, `tests/unit/approval/*` | `KEEP` until MP-4R6 caller proof |
-| Architecture gates | `test_mp4r1_decision_authority_convergence_gates.py`, MP-4R0/approval gates | `KEEP` |
+| MP-4C Approval contracts | `intergrax/contracts/approval.py` | **REMOVED** (MP-4R2) — use `decision_human_review` + Governance/HITL |
+| MP-4D Approval service | `intergrax/approval/` | **REMOVED** (MP-4R2) — no second human-review/HITL runtime |
+| Legacy approval tests | `test_approval_*`, `tests/unit/approval/*` | **REMOVED** (MP-4R2) |
+| Architecture gates | `test_mp4r0_*`, `test_mp4r1_*`, `test_mp4r2_human_review_approval_convergence_gates.py` | `KEEP` |
 | MP-4R0 collaborative gates | `tests/unit/runtime/architecture/test_mp4r0_multiplayer_rebase_architecture_gates.py` | `KEEP` — protect Multiplayer production roots |
 
-**MP-4R1 caller proof (production):** only `intergrax/contracts/approval.py` referenced legacy MP-4B `DecisionId`; migrated to `intergrax.contracts.decision_identity`. **No** `intergrax/collaborative_work/**` import of duplicate Decision authority.
+**MP-4R2 caller proof (production):** zero imports of `intergrax.contracts.approval` or `intergrax/approval/**` outside removed surfaces. Human judgment for Decisions uses `DecisionProposalRef` via `decision_human_review`; workflow states (`ASSIGNED`, `IN_REVIEW`, …) were legacy Approval metadata, not retained as platform authority.
 
 **Decision Integration Boundary — pluginability:** engine depends on `DecisionSystemIntegrationAdapter` / provider protocols; concrete adapters selected at `decision_integration_composition.py` / `decision_plugin_composition.py`; unknown provider fails closed via admission/composition policy; contracts carry no Nexus/vendor types.
 
@@ -148,8 +148,8 @@ configured platform implementation
 | Slice | Status |
 |-------|--------|
 | **MP-4R0** — Core rebase & supersession gate | **CLOSURE FIX / READY_FOR_REAUDIT** |
-| **MP-4R1** — Decision contract convergence | **READY_FOR_INDEPENDENT_AUDIT** |
-| MP-4R2 — Human review / Approval convergence | NOT STARTED |
+| **MP-4R1** — Decision contract convergence | **CLOSED** |
+| **MP-4R2** — Human review / Approval convergence | **READY_FOR_INDEPENDENT_AUDIT** |
 | MP-4R3 — Execution continuation integration | NOT STARTED |
 | MP-4R4 — Collaborative decision binding | NOT STARTED |
 | MP-4R5 — Evidence Plane adoption | NOT STARTED |
@@ -167,8 +167,8 @@ Detail: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_A
 |-------------|--------|
 | MP-4A | `SUPERSEDED_BY_MP4R0` |
 | MP-4B | `RETIRED` (MP-4R1) |
-| MP-4C | `FROZEN_PENDING_CONVERGENCE` |
-| MP-4D | `FROZEN_PENDING_AUTHORITY_REBASE` |
+| MP-4C | `RETIRED` (MP-4R2) |
+| MP-4D | `RETIRED` (MP-4R2) |
 | MP-4E | `CANCELLED_BEFORE_START` |
 | MP-4F | `CANCELLED_REPLACED_BY_EVIDENCE_ADOPTION` |
 | MP-4G | `CANCELLED_IN_OLD_FORM` |

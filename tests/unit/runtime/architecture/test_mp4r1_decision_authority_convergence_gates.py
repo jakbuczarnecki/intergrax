@@ -17,7 +17,6 @@ _CONTRACTS_ROOT = _REPO_ROOT / "intergrax" / "contracts"
 _DECISION_IDENTITY_PATH = _CONTRACTS_ROOT / "decision_identity.py"
 _LEGACY_DECISION_MODULE = _CONTRACTS_ROOT / "decision.py"
 _DECISION_PACKAGE_INIT = _CONTRACTS_ROOT / "decision" / "__init__.py"
-_APPROVAL_PATH = _CONTRACTS_ROOT / "approval.py"
 _LIFECYCLE_ADAPTER_PATH = (
     _CONTRACTS_ROOT
     / "decision"
@@ -116,19 +115,6 @@ def test_mp4r1_integration_lifecycle_adapter_uses_canonical_lifecycle() -> None:
     assert "DecisionLifecycleStage" in source
 
 
-def test_mp4r1_approval_uses_canonical_decision_id() -> None:
-    tree = ast.parse(_APPROVAL_PATH.read_text(encoding="utf-8"), filename=str(_APPROVAL_PATH))
-    decision_import_modules: list[str] = []
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module:
-            if node.module == "intergrax.contracts.decision":
-                decision_import_modules.append(node.module)
-            if node.module == "intergrax.contracts.decision_identity":
-                names = [alias.name for alias in node.names]
-                assert "DecisionId" in names or "validate_decision_id" in names
-    assert not decision_import_modules
-
-
 def test_mp4r1_no_legacy_decision_aggregate_public_export() -> None:
     from intergrax.contracts import decision as decision_namespace
 
@@ -144,22 +130,6 @@ def test_mp4r1_canonical_identity_mint_and_wire_format() -> None:
     assert decision_id.startswith("decision_")
     assert len(decision_id) == len("decision_") + 32
     assert validate_decision_id(decision_id) == decision_id
-
-
-def test_mp4r1_approval_accepts_canonical_decision_id() -> None:
-    from intergrax.contracts.approval import CreateApprovalRequest, mint_approval_id
-    from intergrax.contracts.decision_identity import mint_decision_id
-
-    decision_id = mint_decision_id()
-    payload = {
-        "tenant_id": "tenant-1",
-        "workspace_id": "workspace-1",
-        "decision_id": str(decision_id),
-        "approval_id": str(mint_approval_id()),
-        "acting_principal_id": "principal-1",
-    }
-    request = CreateApprovalRequest.model_validate(payload)
-    assert request.decision_id == str(decision_id)
 
 
 def test_mp4r1_integration_lifecycle_reference_not_authoritative_state() -> None:
