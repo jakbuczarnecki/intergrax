@@ -598,7 +598,7 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2D qualified provider:** ``subprocess_delegated_execution`` — ``SubprocessDelegatedExecutionProvider`` (``provider_version=1.0.0``).
 
-**P2.1-S2D qualification SHA:** ``e875d848d`` (P2.1-S2D-C2).
+**P2.1-S2D qualification SHA:** ``878f0ca88f6a6fbcec3c826f76b1d5c1724099f0`` (P2.1-S2D-C2).
 
 **P2.1-S2D qualified capabilities:** execute, status, cancel, reattachment. **Unsupported:** pause, resume, interrupt, streaming.
 
