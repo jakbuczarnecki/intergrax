@@ -1,0 +1,72 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Spine event type enum for canonical runtime evidence."""
+
+from __future__ import annotations
+
+from enum import Enum
+
+
+class RuntimeEventType(str, Enum):
+    TASK_CREATED = "task_created"
+    TASK_CLASSIFIED = "task_classified"
+    PLAN_CREATED = "plan_created"
+    PLAN_UPDATED = "plan_updated"
+    PLAN_FAILED = "plan_failed"
+    AGENT_SELECTED = "agent_selected"
+    CONTEXT_BUILT = "context_built"
+    CONTEXT_ASSEMBLED = "context_assembled"
+    CONTEXT_TRIMMED = "context_trimmed"
+    CONTEXT_CANDIDATE_COLLECTED = "context_candidate_collected"
+    CONTEXT_CANDIDATE_DROPPED = "context_candidate_dropped"
+    CONTEXT_VALIDATION_FAILED = "context_validation_failed"
+    INGESTION_FAILED = "ingestion_failed"
+    SKILL_RESOLVED = "skill_resolved"
+    SKILL_IMPORT_FAILED = "skill_import_failed"
+    STEP_STARTED = "step_started"
+    STEP_COMPLETED = "step_completed"
+    STEP_FAILED = "step_failed"
+    EXECUTION_FAILED = "execution_failed"
+    EXTERNAL_OPERATION_FAILED = "external_operation_failed"
+    TOOL_REQUESTED = "tool_requested"
+    TOOL_COMPLETED = "tool_completed"
+    TOOL_DENIED = "tool_denied"
+    TOOL_FAILED = "tool_failed"
+    VALIDATION_STARTED = "validation_started"
+    VALIDATION_PASSED = "validation_passed"
+    VALIDATION_FAILED = "validation_failed"
+    DECISION_EMITTED = "decision_emitted"
+    INTERRUPT_REQUESTED = "interrupt_requested"
+    INTERRUPT_HANDLED = "interrupt_handled"
+    INTERRUPT_ESCALATED = "interrupt_escalated"
+    HUMAN_APPROVAL_REQUESTED = "human_approval_requested"
+    HUMAN_APPROVAL_RECEIVED = "human_approval_received"
+    HUMAN_APPROVAL_TIMEOUT = "human_approval_timeout"
+    PAUSE_REQUESTED = "pause_requested"
+    PAUSED = "paused"
+    RESUMED = "resumed"
+    RETRY_SCHEDULED = "retry_scheduled"
+    RETRY_STARTED = "retry_started"
+    CANCELLATION_REQUESTED = "cancellation_requested"
+    CANCELLED = "cancelled"
+    MEMORY_READ = "memory_read"
+    MEMORY_WRITE = "memory_write"
+    HANDOFF_INITIATED = "handoff_initiated"
+    HANDOFF_COMPLETED = "handoff_completed"
+    DELEGATION_GRANTED = "delegation_granted"
+    TRACE_PERSISTED = "trace_persisted"
+    TASK_PROGRESS = "task_progress"
+    TASK_COMPLETED = "task_completed"
+    TASK_FAILED = "task_failed"
+    RUNTIME_HANDLER_FAILED = "runtime_handler_failed"
+    LLM_CALL = "llm_call"
+    POLICY_DECISION = "policy_decision"
+    GRAPH_BACKPRESSURE = "graph_backpressure"
+    GUARDRAIL_BLOCKED = "guardrail_blocked"
+    BUDGET_THRESHOLD = "budget_threshold"
+    BUDGET_EXCEEDED = "budget_exceeded"
+    DOMAIN_SIGNAL = "domain_signal"
+
+
+__all__ = ["RuntimeEventType"]

@@ -165,7 +165,8 @@ Do **not** label the frozen **`RuntimeEvent` five-ID contract** as `PARTIAL` bec
 
 | Layer | Status |
 | ----- | ------ |
-| **Frozen core contract** | `RuntimeEvent` requires `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, `EventId` — **canonical type:** `intergrax/contracts/runtime_event.py` (legacy import path `intergrax/runtime/events/runtime_event.py` re-exports the same class) |
+| **Frozen core contract** | `RuntimeEvent` requires `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, `EventId` — **canonical type:** `intergrax/contracts/runtime_event.py` (legacy import path `intergrax/runtime/events/runtime_event.py` is a **passive** re-export of the same class; it must not register callbacks or mutate contract behavior at import time) |
+| **RuntimeEvent metadata (R2)** | **Contract-owned deterministic defaults:** spine `event_kind`, `event_category`, and `ops_hint` are normalized in `model_post_init` from `intergrax.contracts.spine_event_metadata` + `category_for_event_kind` — **no** global enricher, **no** import-order side effects. **Runtime event catalog** (`intergrax/runtime/events/event_catalog.py`) remains **runtime policy** for retention, sampling, payload schema ids, and bus gates; it reads the same spine metadata tables from contracts (single source of truth). |
 | **Emit-path / writer coverage** | Qualified separately — **OBS-COVERAGE-1** (not every legacy producer may be certified on every path) |
 | **ADOPTION / PROJECTION GAP** | Unified Run Journal, DIAG read models, export envelopes, or carriers that omit `ExecutionId` / Execution Tree fields |
 
