@@ -432,6 +432,8 @@ Marketplace is a **product** built on top of federated catalog sources.
 
 **Stage 11 (implemented):** read-only product surface at `intergrax/marketplace/` with typed `MarketplaceCapabilityListing` wrapping canonical `CapabilityCatalogEntry`, `MarketplaceCapabilityCatalogSource` implementing `CapabilityCatalogSource`, and `MarketplaceCatalogService` joining Stage-3 discovery with product metadata. Commercial metadata is **display-only** and **must not** affect governance, ranking, or runtime selection.
 
+**ME-RB1 freeze:** One common **Capability Marketplace Engine** (catalog + marketplace + metering boundary) — see [`CAPABILITY_MARKETPLACE_ENGINE.md`](CAPABILITY_MARKETPLACE_ENGINE.md).
+
 **Marketplace ≠ execution trust:** A public or official marketplace listing does not grant permission to execute third-party code in-process. Host isolation/trust policy may refuse execution while the capability remains catalog-discoverable. See [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md) (Stage 12).
 
 Public Marketplace is **optional** for platform operation (see Enterprise deployment).

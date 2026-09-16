@@ -6,7 +6,8 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Intergrax Agent Marketplace - Concept and Reference Architecture
 
-> **Document type:** Public product and architecture concept  
+> **Document type:** Public product and architecture concept (**Agent vertical** over the common Capability Marketplace Engine — not a separate marketplace implementation)  
+> **Canonical engine architecture:** [`CAPABILITY_MARKETPLACE_ENGINE.md`](../architecture/CAPABILITY_MARKETPLACE_ENGINE.md) (ME-RB1 frozen)  
 > **Audience:** CTOs, principal/staff engineers, AI architects, agent developers, enterprise platform teams, technical evaluators, product decision makers  
 > **Status legend used throughout this document:**
 >
