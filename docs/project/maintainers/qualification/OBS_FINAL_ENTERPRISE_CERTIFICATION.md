@@ -10,8 +10,9 @@
 | --- | --- |
 | starting SHA | `e16ccafa4d61615dd1e74d261f711ceb4f8284b6` |
 | task commit SHA | `40491b9d3b0500cab69af52560725c6f846349cb` |
-| certified SHA | `cb936137863fa3f265189de862fef8e41a801df3` |
-| current development SHA | `cb936137863fa3f265189de862fef8e41a801df3` |
+| certified SHA | `edf86fd7f1b5d8eea3ca8a8b33cb01ce882b085e` |
+| code-under-test SHA (production) | `e16ccafa4d61615dd1e74d261f711ceb4f8284b6` (docs-only commits atop; no production delta in certification commits) |
+| current development SHA | `edf86fd7f1b5d8eea3ca8a8b33cb01ce882b085e` |
 
 **Date:** 2026-09-16
 **Branch:** `development`
