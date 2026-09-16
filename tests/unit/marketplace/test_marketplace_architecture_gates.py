@@ -58,6 +58,11 @@ def _iter_package_py_files(module_name: str) -> list[Path]:
     return sorted(path for path in _package_root(module_name).rglob("*.py") if path.is_file())
 
 
+def _is_handoff_adapter_path(root: Path, path: Path) -> bool:
+    adapter_root = root / "handoff" / "adapters"
+    return adapter_root in path.parents or path.parent == adapter_root
+
+
 def _collect_imports(tree: ast.AST) -> list[str]:
     imported: list[str] = []
     for node in ast.walk(tree):
@@ -82,6 +87,8 @@ def _collect_call_names(tree: ast.AST) -> list[str]:
 def test_marketplace_package_has_no_forbidden_runtime_imports() -> None:
     root = _package_root(_MARKETPLACE_MODULE)
     for path in _iter_package_py_files(_MARKETPLACE_MODULE):
+        if _is_handoff_adapter_path(root, path):
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for imported in _collect_imports(tree):
             for prefix in _FORBIDDEN_IMPORT_PREFIXES:
@@ -139,6 +146,8 @@ def test_forbidden_flow_1_no_pip_or_tool_registry_mutation_imports() -> None:
 def test_forbidden_flow_3_no_agent_registry_register_path() -> None:
     root = _package_root(_MARKETPLACE_MODULE)
     for path in _iter_package_py_files(_MARKETPLACE_MODULE):
+        if _is_handoff_adapter_path(root, path):
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for imported in _collect_imports(tree):
             if imported == "intergrax.agent_distribution" or imported.startswith(

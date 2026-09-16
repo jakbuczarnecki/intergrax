@@ -28,7 +28,7 @@ Provide one reusable plane for:
 - Federated capability catalog read and discovery (Agent + Tool + Skill).
 - Marketplace product surface (listings, publisher/commercial metadata, visibility).
 - Governed candidate narrowing (via Capability Catalog governance — not marketplace billing).
-- Typed handoff **intent** to domain lifecycle authorities (future ME-RB4 contract).
+- Typed handoff **intent** to domain lifecycle authorities (`intergrax.contracts.marketplace` lifecycle handoff contracts, ME-RB4).
 
 Support **human** consumers (browse, search, inspect) and **machine** consumers (capability need → discover → rank → govern → recommend → handoff) without duplicating engines per vertical.
 
@@ -65,7 +65,7 @@ Normative composition (implemented slices in parentheses):
 | Availability projection | Discovery evidence + listing views | Not install/enable authority |
 | Marketplace visibility | Listing + source identity | Stage 7 private sources |
 | Recommendation host | **Gap** — no dedicated recommendation SPI (ME-RB1-006) |
-| Lifecycle handoff contracts | **Gap** — domain ports only today (ME-RB1-005) |
+| Lifecycle handoff contracts | `intergrax.contracts.marketplace` + `intergrax.marketplace.handoff` (ME-RB4) |
 | Usage attribution handoff | `intergrax.contracts.capability_metering` | Events ≠ billing |
 
 **Join surface:** `MarketplaceCatalogService` joins Stage-3 discovery candidates with marketplace product metadata keyed by canonical identity.
@@ -227,7 +227,7 @@ Replaceable variation points (post ME-RB2):
 | Search / text filter | inline in `MarketplaceCatalogService` | PARTIAL (documented as product filter) |
 | Recommendation | none | MISSING |
 | Availability evidence | typed evidence contracts | PARTIAL |
-| Lifecycle handoff | domain-specific (AC-4, tool/skill ports) | MISSING common envelope |
+| Lifecycle handoff | `MarketplaceLifecycleHandoffRequest` + domain ports | ENTERPRISE_READY (ME-RB4) |
 
 Do **not** add empty Protocols without semantics (ME-RB2 scope).
 
@@ -235,25 +235,39 @@ Do **not** add empty Protocols without semantics (ME-RB2 scope).
 
 ---
 
-## 11. Lifecycle handoff
+## 11. Lifecycle handoff (ME-RB4)
 
-Marketplace/catalog discovery **ends** at governed, ranked **candidates** and optional **selection intent** — not lifecycle mutation.
+Marketplace/catalog discovery **ends** at governed, ranked **candidates** and **selection**; lifecycle mutation remains domain-owned.
 
-**Target flow (conceptual, ME-RB4):**
+**Canonical flow:**
 
 ```text
-MarketplaceCapabilitySelection (future)
-        ↓
-CapabilityLifecycleHandoffRequest (future)
-        ↓
-vertical adapter (Agent / Tool / Skill)
-        ↓
-domain authority (Agent Distribution, Tool domain, Skill domain)
+DISCOVERY
+  ↓
+RANKING
+  ↓
+GOVERNANCE NARROWING
+  ↓
+SELECTION (MarketplaceCapabilitySelection)
+  ↓
+LIFECYCLE HANDOFF (MarketplaceLifecycleHandoffRequest)
+  ↓
+MarketplaceLifecycleHandoffService → MarketplaceLifecycleHandoffHandler
+  ↓
+vertical handoff adapter (Agent / Tool / Skill)
+  ↓
+DOMAIN AUTHORITY (Agent Distribution, Tool domain, Skill domain)
 ```
 
-**ME-RB1 decision:** Prefer **Option B** — generic typed envelope + domain-specific payload ports — because install/activate/trust semantics differ per vertical. Do **not** implement until ME-RB4; no `Union[Any]` / `dict[str, Any]` handoff bags.
+**Invariant:** `HANDOFF_ACCEPTED` ≠ installed ≠ active ≠ routable ≠ executed. Handoff outcome describes delegation to domain authority only.
 
-Existing separate paths: AC-4 `dynamic_acquisition` (Agent Distribution), tool/skill enablement via domain registries, Execution Engine public contracts.
+**Contracts:** generic envelope + typed vertical payloads (`AgentLifecycleHandoffPayload`, `ToolLifecycleHandoffPayload`, `SkillLifecycleHandoffPayload`); plugin `MarketplaceLifecycleHandoffHandler`; explicit `LifecycleHandoffResolver` mapping — no global registry, no `dict[str, Any]` bags.
+
+**Agent path:** `AgentMarketplaceLifecycleHandoffHandler` → `AgentMarketplaceLifecycleDomainPort` (optional `AgentDistributionAcquisitionBridge` → `DynamicAgentAcquisitionPort`).
+
+**Tool / Skill:** `ToolMarketplaceLifecycleDomainPort` / `SkillMarketplaceLifecycleDomainPort` — minimal marketplace-facing ports until canonical domain lifecycle APIs mature (DESIGN GAP documented in RB4 inventory).
+
+Proof: `tests/unit/marketplace/test_me_rb4_lifecycle_handoff.py`, `tests/unit/marketplace/test_me_rb4_handoff_architecture_gates.py`.
 
 ---
 
