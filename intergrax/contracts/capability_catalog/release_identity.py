@@ -18,10 +18,15 @@ SCHEMA_CAPABILITY_RELEASE_IDENTITY_V1: Final = "capability_release_identity.v1"
 
 
 class CapabilityReleaseIdentity(BaseModel):
-    """Exact released artifact identity — discovery row plus immutable release facts.
+    """Exact immutable release descriptor for audit, reference, and integrity handoff.
 
-    ``CapabilityIdentityKey`` remains the Stage-3 discovery entity key (no version).
-    Release identity addresses publisher/version/digest facts for audit and E2E proofs.
+    This contract identifies an exact release for audit/reference. It does not
+    redefine federation or Stage-3 discovery identity.
+
+    ``CapabilityIdentityKey`` remains the source-qualified logical discovery key
+    (kind + source + logical_id) and intentionally excludes publisher, version,
+    digest, and package_reference. ``release_sort_key`` is deterministic ordering
+    only — not a federation merge key.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)

@@ -74,6 +74,7 @@ def _entry(
     publisher: str | None = None,
     version_label: str | None = None,
     content_digest: str | None = None,
+    package_reference: str | None = None,
 ) -> CapabilityCatalogEntry:
     return CapabilityCatalogEntry(
         identity=CapabilityDiscoveryIdentity(
@@ -86,6 +87,7 @@ def _entry(
             publisher=publisher,
             version_label=version_label,
             content_digest=content_digest,
+            package_reference=package_reference,
         ),
         display_label=logical_id,
     )
@@ -205,7 +207,7 @@ def test_provenance_is_preserved_end_to_end() -> None:
     assert final.identity.source == expected.identity.source
 
 
-def test_same_logical_id_different_publishers_remain_distinct_or_fail_by_canonical_policy() -> None:
+def test_different_sources_same_logical_remain_distinct() -> None:
     source_a = _source("official.publisher-a")
     source_b = _source("official.publisher-b")
     entry_a = _entry(
@@ -230,8 +232,9 @@ def test_same_logical_id_different_publishers_remain_distinct_or_fail_by_canonic
     assert len(releases) == 2
 
 
-def test_same_publisher_multiple_versions_remain_distinct() -> None:
-    source = _source("official.publisher-a.versions")
+def test_distinct_logical_rows_expose_distinct_discovery_entries() -> None:
+    """Distinct logical_id values are distinct discovery identities (not multi-version registry)."""
+    source = _source("official.distinct-logical-rows")
     v1 = _entry(
         source=source,
         logical_id="tools.search.v1",
@@ -249,8 +252,109 @@ def test_same_publisher_multiple_versions_remain_distinct() -> None:
     snapshot = FederatedCapabilityCatalog(
         (_StaticSource(source.source_id, (v1, v2)),),
     ).snapshot()
-    keys = {_release(entry).release_sort_key for entry in snapshot.entries}
-    assert len(keys) == 2
+    assert len(snapshot.entries) == 2
+
+
+def test_same_source_same_logical_different_version_conflicts() -> None:
+    source = _source("official.one-release-per-discovery")
+    v1 = _entry(
+        source=source,
+        publisher=_PUBLISHER_A,
+        version_label="1.0.0",
+        content_digest=_DIGEST_A,
+    )
+    v2 = _entry(
+        source=source,
+        publisher=_PUBLISHER_A,
+        version_label="2.0.0",
+        content_digest=_DIGEST_B,
+    )
+    with pytest.raises(CapabilityCatalogIdentityConflict):
+        FederatedCapabilityCatalog((_StaticSource(source.source_id, (v1, v2)),)).snapshot()
+
+
+def test_same_source_same_logical_different_publisher_conflicts() -> None:
+    source = _source("official.publisher-collision")
+    entry_a = _entry(
+        source=source,
+        publisher=_PUBLISHER_A,
+        version_label="1.0.0",
+        content_digest=_DIGEST_A,
+    )
+    entry_b = _entry(
+        source=source,
+        publisher=_PUBLISHER_B,
+        version_label="1.0.0",
+        content_digest=_DIGEST_A,
+    )
+    with pytest.raises(CapabilityCatalogIdentityConflict):
+        merge_capability_catalog_entries(
+            (
+                (source.source_id, entry_a),
+                (source.source_id, entry_b),
+            ),
+        )
+
+
+def test_same_source_same_logical_same_release_dedupes() -> None:
+    source = _source("official.dedupe")
+    entry = _entry(
+        source=source,
+        publisher=_PUBLISHER_A,
+        version_label="1.0.0",
+        content_digest=_DIGEST_A,
+    )
+    merged = merge_capability_catalog_entries(
+        (
+            (source.source_id, entry),
+            (source.source_id, entry),
+        ),
+    )
+    assert len(merged) == 1
+    assert _release(merged[0]) == _release(entry)
+
+
+def test_same_source_same_logical_different_package_reference_conflicts() -> None:
+    source = _source("official.package-ref-collision")
+    first = _entry(
+        source=source,
+        publisher=_PUBLISHER_A,
+        version_label="1.0.0",
+        content_digest=_DIGEST_A,
+        package_reference="pkg:search@1.0.0",
+    )
+    second = _entry(
+        source=source,
+        publisher=_PUBLISHER_A,
+        version_label="1.0.0",
+        content_digest=_DIGEST_A,
+        package_reference="pkg:search@1.0.0+build2",
+    )
+    with pytest.raises(CapabilityCatalogIdentityConflict):
+        merge_capability_catalog_entries(
+            (
+                (source.source_id, first),
+                (source.source_id, second),
+            ),
+        )
+
+
+def test_release_identity_is_parallel_to_discovery_identity() -> None:
+    source = _source("official.release-vs-discovery")
+    entry = _entry(
+        source=source,
+        publisher=_PUBLISHER_A,
+        version_label="3.0.0",
+        content_digest=_DIGEST_A,
+    )
+    release = _release(entry)
+    assert release.discovery.sort_key == entry.identity.sort_key
+    assert release.release_sort_key != entry.identity.sort_key
+    assert release.release_sort_key[:4] == entry.identity.sort_key
+
+
+def test_current_release_provenance_preserved_end_to_end() -> None:
+    test_provenance_is_preserved_end_to_end()
 
 
 def test_conflicting_same_release_integrity_fails_closed() -> None:

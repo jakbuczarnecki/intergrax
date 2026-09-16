@@ -431,9 +431,32 @@ selection / lifecycle handoff (MarketplaceCapabilitySelection.capability)
 facts preserved unchanged end-to-end
 ```
 
-Federation: same discovery identity with differing catalog facts → `CapabilityCatalogIdentityConflict`. Same logical_id across publishers remains distinct when `source_id` differs (or via distinct logical rows within one source).
+**Release multiplicity (Model A — one canonical release per snapshot row):**
+
+```text
+DISCOVERY IDENTITY (Stage-3 / federation merge key)
+  kind + source_id + source_kind + logical_id
+        ↓
+  exactly one canonical CapabilityCatalogEntry per federated snapshot row
+        ↓
+RELEASE FACTS (audit / handoff — not merge key)
+  publisher + version_label + content_digest + package_reference
+        ↓
+CapabilityReleaseIdentity (parallel exact-release contract)
+```
+
+Capability Catalog stores **one canonical discoverable release** per source-qualified logical identity in a snapshot. It is **not** a multi-version release history registry, artifact registry, or package repository.
+
+- Same discovery identity with differing catalog facts → `CapabilityCatalogIdentityConflict` (fail-closed; no silent last/first wins).
+- Publisher identity does not partition discovery identity. Conflicting publisher claims for the same discovery identity fail closed.
+- Version identity does not partition discovery identity. Conflicting release facts for the same discovery identity fail closed.
+- `CapabilityReleaseIdentity` provides exact release audit identity, not discovery multiplicity.
+- Multiple releases may appear as distinct catalog rows **only** when discovery identity differs (e.g. different `source_id`, or intentionally distinct `logical_id` rows — not semver coexistence under one logical id).
+- A newer snapshot/read cycle may replace the surfaced release (v1 → v2) without both coexisting in one snapshot.
 
 Proofs: `tests/unit/marketplace/test_me7_publisher_version_provenance.py`.
+
+**Gap (out of scope):** historical / simultaneous multi-version release registry under one source-qualified logical identity → future design if product requires Model B.
 
 ---
 

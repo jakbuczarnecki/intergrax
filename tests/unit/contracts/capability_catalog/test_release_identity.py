@@ -7,6 +7,7 @@ from __future__ import annotations
 from intergrax.contracts.capability_catalog import (
     CapabilityCatalogEntry,
     CapabilityDiscoveryIdentity,
+    CapabilityIdentityKey,
     CapabilityKind,
     CapabilityLogicalIdentity,
     CapabilityProvenance,
@@ -48,6 +49,24 @@ def test_release_identity_from_catalog_entry_is_deterministic() -> None:
     second = CapabilityReleaseIdentity.from_catalog_entry(entry)
     assert first == second
     assert first.release_sort_key == second.release_sort_key
+
+
+def test_capability_identity_key_excludes_release_provenance_fields() -> None:
+    key = CapabilityIdentityKey.from_discovery_identity(_entry().identity)
+    field_names = set(CapabilityIdentityKey.model_fields)
+    assert field_names == {
+        "schema_version",
+        "kind",
+        "source_id",
+        "source_kind",
+        "logical_id",
+    }
+    assert key.sort_key == (
+        key.kind.value,
+        key.source_id,
+        key.source_kind.value,
+        key.logical_id,
+    )
 
 
 def test_release_identity_separates_discovery_from_version_facts() -> None:

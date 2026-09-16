@@ -22,4 +22,9 @@ class CapabilityCatalogSource(Protocol):
         """Stable catalog source instance identifier."""
 
     def read_entries(self) -> tuple[CapabilityCatalogEntry, ...]:
-        """Return all entries currently visible from this source."""
+        """Return all entries currently visible from this source.
+
+        A source snapshot must not contain conflicting catalog entries for the
+        same discovery identity (same kind, source, and logical_id). Federation
+        enforces this fail-closed via ``CapabilityCatalogIdentityConflict``.
+        """
