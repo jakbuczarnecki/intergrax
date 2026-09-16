@@ -3,11 +3,13 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.escalation import EscalationTarget
 from intergrax.runtime.human.models import HumanResponseVerdict, build_human_decision_record
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.task_metadata_bridge import promote_legacy_human_verdict_from_metadata
 
 
 class HumanDecisionPersistenceError(ValueError):
@@ -15,9 +17,29 @@ class HumanDecisionPersistenceError(ValueError):
 
 
 def normalize_human_response(task: Task) -> None:
+    promote_legacy_human_verdict_from_metadata(task)
     response = task.options.human.response_text
     if response and task.options.human.verdict is None:
         HumanPauseCoordinator.record_human_response(task, str(response))
+
+
+def prepare_hitl_resume_after_checkpoint_restore(task: Task) -> None:
+    """Intake hook after durable checkpoint merge — correlation only, not continuation authority."""
+    if task.options.human.verdict is None:
+        return
+    record = task.runtime.governance.pause_record
+    if record is None:
+        return
+    human = task.options.human
+    if human.pause_id is None:
+        human.pause_id = record.pause_id
+    if human.human_request_id is None:
+        human.human_request_id = record.human_request_id
+    if human.approver is None:
+        human.approver = local_development_approver_evidence(
+            tenant_id=task.tenant_id,
+            actor_id=task.user_id,
+        )
 
 
 def clear_consumed_human_input(task: Task) -> None:
