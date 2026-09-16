@@ -117,7 +117,7 @@ Use, modification, or distribution without written permission is prohibited.
 |-------|-------|
 | **ID** | MP-4R6 |
 | **Status** | **READY_FOR_FINAL_INDEPENDENT_MP4R6_CLOSURE_AUDIT** |
-| **Purpose** | After caller proof: delete duplicate contracts/services/tests/docs; generic checkpoint restore deserializes persisted HITL approver evidence or fails closed (legacy flat verdict metadata may be read for compatibility — approver provenance is never synthesized on generic restore) |
+| **Purpose** | After caller proof: delete duplicate contracts/services/tests/docs; generic checkpoint restore deserializes persisted HITL approver evidence or fails closed; legacy human decision SQLite rows without canonical `approver_json` are never promoted into authenticated `HumanApproverEvidence` on read (missing provenance fails closed at persistence deserialization) |
 | **Dependencies** | MP-4R1…R5 |
 
 ---

@@ -153,7 +153,7 @@ configured platform implementation
 | MP-4R3 — Execution continuation integration | **CLOSED** |
 | MP-4R4 — Collaborative decision binding | **CLOSED** |
 | MP-4R5 — Evidence Plane adoption | **READY_FOR_FINAL_INDEPENDENT_MP4R5_CLOSURE_AUDIT** |
-| MP-4R6 — Legacy removal & migration | **READY_FOR_FINAL_INDEPENDENT_MP4R6_CLOSURE_AUDIT** — legacy verdict metadata read-only compatibility; missing approver provenance never synthesized on generic restore |
+| MP-4R6 — Legacy removal & migration | **READY_FOR_FINAL_INDEPENDENT_MP4R6_CLOSURE_AUDIT** — legacy verdict metadata read-only compatibility; missing approver provenance never synthesized on generic restore or SQLite human-decision read deserialization |
 | MP-4R7 — Enterprise integration qualification | NOT STARTED |
 | MP-4R8 — Final closure audit | NOT STARTED |
 

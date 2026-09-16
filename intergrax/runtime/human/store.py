@@ -15,9 +15,8 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     ENV_HUMAN_DECISIONS_DB,
     resolve_human_decisions_db_path,
 )
-from intergrax.contracts.human_approver import (
-    HumanApproverEvidence,
-    local_development_approver_evidence,
+from intergrax.runtime.human.persistence_errors import (
+    deserialize_persisted_human_approver_evidence,
 )
 from intergrax.runtime.human.models import (
     EscalationTarget,
@@ -179,13 +178,11 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
     def _row_to_record(row: sqlite3.Row) -> HumanDecisionRecord:
         target = row["escalation_target"]
         approver_raw = row["approver_json"] if "approver_json" in row.keys() else None
-        if approver_raw:
-            approver = HumanApproverEvidence.model_validate_json(approver_raw)
-        else:
-            approver = local_development_approver_evidence(
-                tenant_id=row["tenant_id"],
-                actor_id=row["user_id"] or "legacy_unknown_approver",
-            )
+        approver = deserialize_persisted_human_approver_evidence(
+            approver_raw,
+            decision_id=str(row["decision_id"]),
+            tenant_id=str(row["tenant_id"]),
+        )
         return HumanDecisionRecord(
             decision_id=row["decision_id"],
             task_id=row["task_id"],

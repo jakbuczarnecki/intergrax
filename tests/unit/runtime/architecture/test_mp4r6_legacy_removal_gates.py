@@ -234,9 +234,9 @@ _GENERIC_RESTORE_ALLOWLIST = frozenset(
         "intergrax/debug/hitl_service.py",
         "intergrax/tools/providers/hitl/service.py",
         "intergrax/applications/_shared/task_control.py",
-        "intergrax/runtime/human/store.py",
     }
 )
+_HUMAN_DECISION_STORE = _REPO_ROOT / "intergrax" / "runtime" / "human" / "store.py"
 
 
 def test_mp4r6_generic_checkpoint_restore_does_not_import_local_dev_approver() -> None:
@@ -264,3 +264,19 @@ def test_mp4r6_prepare_hitl_restore_fail_closed_marker_present() -> None:
     assert "HitlCheckpointRestoreError" in source
     assert "approver evidence missing during HITL checkpoint restore" in source
     assert "local_development_approver_evidence" not in source
+
+
+def test_mp4r6_sqlite_human_decision_store_read_path_does_not_synthesize_approver() -> None:
+    source = _HUMAN_DECISION_STORE.read_text(encoding="utf-8-sig")
+    assert "local_development_approver_evidence" not in source
+    assert "legacy_unknown_approver" not in source
+    assert "deserialize_persisted_human_approver_evidence" in source
+
+
+def test_mp4r6_persistence_deserialization_does_not_map_user_id_to_approver() -> None:
+    path = _REPO_ROOT / "intergrax" / "runtime" / "human" / "persistence_errors.py"
+    source = path.read_text(encoding="utf-8-sig")
+    assert 'row["user_id"]' not in source
+    assert "user_id" not in source or "tenant_id" in source
+    assert "local_development_approver_evidence" not in source
+    assert "legacy_unknown_approver" not in source
