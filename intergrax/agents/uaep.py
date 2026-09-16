@@ -35,8 +35,8 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.contracts.runtime_policy_context import AgentDecisionPolicyContext
 from intergrax.contracts.runtime_sandbox_isolation_authority import (
     RuntimeSandboxIsolationAuthority,
-    apply_runtime_sandbox_isolation_authority_extras,
-    extras_contain_sandbox_isolation_authority,
+    apply_runtime_sandbox_isolation_authority,
+    wiring_has_sandbox_isolation_authority,
 )
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -1095,13 +1095,9 @@ class UAEPExecutor:
             return runtime_context
         cfg = runtime_context.config
         base_ctx = cfg.tool_wiring_context or ToolWiringContext()
-        if extras_contain_sandbox_isolation_authority(base_ctx.extras):
+        if wiring_has_sandbox_isolation_authority(base_ctx):
             return runtime_context
-        new_extras = apply_runtime_sandbox_isolation_authority_extras(
-            base_ctx.extras,
-            authority,
-        )
-        new_wiring = replace(base_ctx, extras=new_extras)
+        new_wiring = apply_runtime_sandbox_isolation_authority(base_ctx, authority)
         new_cfg = replace(cfg, tool_wiring_context=new_wiring)
         return replace(runtime_context, config=new_cfg)
 

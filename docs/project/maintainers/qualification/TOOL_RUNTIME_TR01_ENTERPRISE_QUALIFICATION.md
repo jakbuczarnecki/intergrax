@@ -155,13 +155,26 @@ ToolInvocationContext + ToolRegistrationWiringView
 
 - **Invariant:** `configured != available != authorized != effective`; session availability must not mint sandbox isolation authority.
 - **Removed:** `runtime_host_sandbox_isolation_profile()` / session-derived `effective_environment_profile` synthesis in `invocation_wiring_adapter.py`.
-- **Authority contract:** `RuntimeSandboxIsolationAuthority` (`intergrax/contracts/runtime_sandbox_isolation_authority.py`) — explicit, immutable, provider-neutral; consumed via `RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY` or Tier-3 `ApplicationEnvironmentProfile` / pinned `effective_profile_revision`.
+- **Authority contract:** `RuntimeSandboxIsolationAuthority` (`intergrax/contracts/runtime_sandbox_isolation_authority.py`) — explicit, immutable, provider-neutral; Tier-3 `ApplicationEnvironmentProfile` / pinned `effective_profile_revision` (legacy extras) or typed `ToolWiringContext.sandbox_isolation_authority` (C1B).
 - **UAEP composition:** optional `UAEPExecutor.sandbox_isolation_authority` merges explicit authority into registration wiring when no profile authority is already present (never from `sandbox_session`).
 - **Availability:** `ToolInvocationWiring.sandbox_session` and `overlay_invocation_sandbox_availability` remain provider/session capability only.
 - **Separation:** tool registration / `ToolProfile` / agent `allowed_tools` declare scope or availability — not environment isolation authority; governance answers authorization to proceed — not isolation authority.
 - **Tests:** `tests/unit/runtime/sandbox/test_auth_c1a_sandbox_isolation_authority.py` (AUTH-C1A-1..13, static gates).
 
 **TOOL-ENG-RX:** CLOSED (RX + C1 + C2). **TR-01-RQ-C1A:** CLOSED (await audit). **TR-01-RQ:** NEXT.
+
+## TR-01-RQ-C1B — Typed authority transport & provider capability attestation
+
+**Status:** CLOSED on branch `development` (awaiting independent GitHub audit; TR-01 not closed).
+
+- **Authority transport:** `ToolWiringContext.sandbox_isolation_authority` (`ProfileSandboxIsolationSource`) — no `extras["runtime_sandbox_isolation_authority"]`; UAEP uses `apply_runtime_sandbox_isolation_authority`.
+- **Precedence:** pinned `effective_profile_revision` → legacy `effective_environment_profile` → explicit runtime host authority (typed field); runtime host cannot widen pinned profile.
+- **Availability vs capability vs authority vs governance:** `sandbox_session` / `SandboxExecCapable` = execution availability only; isolation authority remains composition-owned; governance unchanged; resolver = authority ∩ requirement ∩ attested provider capabilities.
+- **Provider trust:** `SandboxExecCapable` alone does not attest filesystem/process/network guarantees; `SandboxSecurityCapable.security_capabilities()` is the trusted evidence surface; plain exec-only providers fail closed for isolation-sensitive tools.
+- **Adapters:** `capabilities_from_attested_exec_session` / `capabilities_from_security_attestation` — no fabricated LOCAL kind or workspace/sandbox flags for unattested exec endpoints.
+- **Tests:** `test_auth_c1b_sandbox_authority_transport.py` (AUTH-C1B-1..6), `test_cap_c1b_provider_capability_trust.py` (CAP-C1B-1..8); C1A suite updated for typed transport.
+
+**TR-01-RQ-C1B:** CLOSED (await audit). **TR-01:** READY FOR REQUALIFICATION. **TR-01-RQ:** NEXT.
 
 ## Tests executed (audit session)
 

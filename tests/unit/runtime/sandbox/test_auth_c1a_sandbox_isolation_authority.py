@@ -20,7 +20,6 @@ from intergrax.applications.contracts.environment_profile.bundles import Isolati
 from intergrax.applications.contracts.environment_profile.sub_profiles import SandboxProfile
 from intergrax.applications.contracts.profile_resolution import EffectiveProfileRevisionScope
 from intergrax.contracts.runtime_sandbox_isolation_authority import (
-    RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY,
     RuntimeSandboxIsolationAuthority,
 )
 from intergrax.contracts.sandbox_profile import SandboxProfile as ContractSandboxProfile
@@ -90,7 +89,7 @@ def test_auth_c1a_1_session_only_does_not_grant_sandbox_authority(
     )
     assert merged.sandbox_session is sandbox_session
     assert "effective_environment_profile" not in merged.extras
-    assert RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY not in merged.extras
+    assert merged.sandbox_isolation_authority is None
     _, err = resolve_tool_execution_environment(merged, contract=sandbox_exec_contract())
     assert err is not None
     assert err.error == "execution_environment_authority_unavailable"
@@ -149,9 +148,7 @@ def test_auth_c1a_4_allowed_tools_scope_does_not_grant_authority(
 
 def test_auth_c1a_5_explicit_authority_without_session_fails_closed() -> None:
     ctx = ToolWiringContext(
-        extras={
-            RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY: _explicit_authority(),
-        },
+        sandbox_isolation_authority=_explicit_authority(),
     )
     _, err = resolve_tool_execution_environment(ctx, contract=sandbox_exec_contract())
     assert err is not None
@@ -163,9 +160,7 @@ def test_auth_c1a_6_explicit_authority_plus_session_allows_resolution(
 ) -> None:
     ctx = ToolWiringContext(
         sandbox_session=sandbox_session,
-        extras={
-            RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY: _explicit_authority(),
-        },
+        sandbox_isolation_authority=_explicit_authority(),
     )
     env, err = resolve_tool_execution_environment(ctx, contract=sandbox_exec_contract())
     assert err is None
@@ -209,13 +204,11 @@ def test_auth_c1a_9_pinned_effective_profile_revision_wins_over_compat() -> None
 def test_auth_c1a_10_custom_sandbox_exec_capable_with_explicit_authority() -> None:
     ctx = ToolWiringContext(
         sandbox_session=_CustomSandboxExecCapable(),
-        extras={
-            RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY: _explicit_authority(),
-        },
+        sandbox_isolation_authority=_explicit_authority(),
     )
-    env, err = resolve_tool_execution_environment(ctx, contract=sandbox_exec_contract())
-    assert err is None
-    assert env is not None
+    _, err = resolve_tool_execution_environment(ctx, contract=sandbox_exec_contract())
+    assert err is not None
+    assert err.error == "execution_environment_provider_unavailable"
 
 
 def test_auth_c1a_12_bound_tool_gateway_facade_only() -> None:

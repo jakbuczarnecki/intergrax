@@ -6,7 +6,11 @@
 from __future__ import annotations
 
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
-from intergrax.runtime.sandbox.contracts import SandboxExecCapable, SandboxSecurityCapable
+from intergrax.runtime.sandbox.contracts import (
+    SandboxExecCapable,
+    SandboxSecurityCapabilities,
+    SandboxSecurityCapable,
+)
 from intergrax.runtime.sandbox.execution_environment import (
     ExecutionEnvironmentProviderKind,
     ExecutionEnvironmentProviderRef,
@@ -107,21 +111,60 @@ def capabilities_from_hosted_session(session: HostedSandboxSession) -> SandboxPr
     )
 
 
-def capabilities_from_exec_capable_session(
-    session: SandboxExecCapable,
+def _provider_kind_for_isolation_tier(
+    isolation_tier: str,
+) -> ExecutionEnvironmentProviderKind:
+    if isolation_tier == "local":
+        return ExecutionEnvironmentProviderKind.LOCAL
+    return ExecutionEnvironmentProviderKind.HOSTED
+
+
+def capabilities_from_security_attestation(
+    security: SandboxSecurityCapabilities,
+    *,
+    supports_sandboxed_exec: bool,
+    supports_workspace_write: bool,
+    filesystem_access: FilesystemAccess,
+    process_execution: ProcessExecution,
 ) -> SandboxProviderCapabilities:
-    """Conservative capabilities for replaceable ``SandboxExecCapable`` implementations."""
+    """Translate trusted ``SandboxSecurityCapabilities`` — caller supplies capability facts."""
     return SandboxProviderCapabilities(
         provider_ref=ExecutionEnvironmentProviderRef(
-            provider_id=f"exec_capable:{session.session_id}",
-            provider_kind=ExecutionEnvironmentProviderKind.LOCAL,
+            provider_id=security.provider_id,
+            provider_kind=_provider_kind_for_isolation_tier(security.isolation_tier),
         ),
-        filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
-        network_access=NetworkAccess.NONE,
-        process_execution=ProcessExecution.SANDBOXED,
+        filesystem_access=filesystem_access,
+        network_access=_network_access_from_egress_proof(
+            network_egress_deny_enforced=security.network_egress_deny_enforced,
+            network_egress_allowlist_enforced=security.network_egress_allowlist_enforced,
+        ),
+        process_execution=process_execution,
+        supports_sandboxed_exec=supports_sandboxed_exec,
+        supports_workspace_write=supports_workspace_write,
+        supports_network_isolation=_supports_network_isolation_from_egress_proof(
+            network_egress_deny_enforced=security.network_egress_deny_enforced,
+            network_egress_allowlist_enforced=security.network_egress_allowlist_enforced,
+        ),
+    )
+
+
+def capabilities_from_attested_exec_session(
+    session: SandboxExecCapable,
+) -> SandboxProviderCapabilities | None:
+    """Capabilities only when ``SandboxSecurityCapable`` attests substrate evidence."""
+    if not isinstance(session, SandboxSecurityCapable):
+        return None
+    security = session.security_capabilities()
+    if isinstance(session, SandboxSession):
+        return capabilities_from_local_session(session)
+    if isinstance(session, HostedSandboxSession):
+        return capabilities_from_hosted_session(session)
+    return capabilities_from_security_attestation(
+        security,
         supports_sandboxed_exec=True,
         supports_workspace_write=True,
-        supports_network_isolation=None,
+        filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
+        process_execution=ProcessExecution.SANDBOXED,
     )
 
 
@@ -176,11 +219,12 @@ def probe_provider_capabilities_from_wiring(
         seen_ids.add(caps.provider_ref.provider_id)
         providers.append(caps)
     elif isinstance(session, SandboxExecCapable):
-        caps = capabilities_from_exec_capable_session(session)
-        if caps.provider_ref.provider_id in seen_ids:
-            raise ValueError(f"duplicate provider_id: {caps.provider_ref.provider_id}")
-        seen_ids.add(caps.provider_ref.provider_id)
-        providers.append(caps)
+        caps = capabilities_from_attested_exec_session(session)
+        if caps is not None:
+            if caps.provider_ref.provider_id in seen_ids:
+                raise ValueError(f"duplicate provider_id: {caps.provider_ref.provider_id}")
+            seen_ids.add(caps.provider_ref.provider_id)
+            providers.append(caps)
 
     if ctx.sandbox_host is not None and session is None:
         caps = capabilities_from_host_backend(ctx.sandbox_host)

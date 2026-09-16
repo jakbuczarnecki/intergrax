@@ -9,10 +9,6 @@ from intergrax.contracts.execution_environment_isolation import (
     EffectiveProfileRevisionIsolationView,
     ProfileSandboxIsolationSource,
 )
-from intergrax.contracts.runtime_sandbox_isolation_authority import (
-    RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY,
-    RuntimeSandboxIsolationAuthority,
-)
 from intergrax.runtime.sandbox.execution_environment import (
     ExecutionEnvironmentRequirement,
     ExecutionEnvironmentResolutionFailureReason,
@@ -40,16 +36,13 @@ def _profile_from_context(
 ) -> ProfileSandboxIsolationSource | None:
     """Pinned effective profile revision dominates legacy compatibility projection."""
     revision_raw = ctx.extras.get("effective_profile_revision")
-    if revision_raw is not None and hasattr(revision_raw, "effective_profile"):
-        profile = getattr(revision_raw, "effective_profile", None)
-        if profile is not None and hasattr(profile, "sandbox"):
-            return profile  # type: ignore[return-value]
+    if isinstance(revision_raw, EffectiveProfileRevisionIsolationView):
+        return revision_raw.effective_profile
     raw = ctx.extras.get("effective_environment_profile")
-    if raw is not None and hasattr(raw, "sandbox"):
-        return raw  # type: ignore[return-value]
-    authority_raw = ctx.extras.get(RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY)
-    if isinstance(authority_raw, RuntimeSandboxIsolationAuthority):
-        return authority_raw
+    if isinstance(raw, ProfileSandboxIsolationSource):
+        return raw
+    if ctx.sandbox_isolation_authority is not None:
+        return ctx.sandbox_isolation_authority
     return None
 
 

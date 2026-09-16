@@ -4,12 +4,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Mapping
+from dataclasses import dataclass, replace
 
+from intergrax.contracts.execution_environment_isolation import (
+    EffectiveProfileRevisionIsolationView,
+    ProfileSandboxIsolationSource,
+)
 from intergrax.contracts.sandbox_profile import SandboxProfile
-
-RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY = "runtime_sandbox_isolation_authority"
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,27 +31,22 @@ class RuntimeSandboxIsolationAuthority:
         return cls(sandbox=SandboxProfile(enable_exec_tool=True))
 
 
-def extras_contain_sandbox_isolation_authority(extras: Mapping[str, object]) -> bool:
-    """True when extras already carry pinned or legacy profile authority."""
-    revision_raw = extras.get("effective_profile_revision")
-    if revision_raw is not None and hasattr(revision_raw, "effective_profile"):
-        profile = getattr(revision_raw, "effective_profile", None)
-        if profile is not None and hasattr(profile, "sandbox"):
-            return True
-    legacy = extras.get("effective_environment_profile")
-    if legacy is not None and hasattr(legacy, "sandbox"):
+def wiring_has_sandbox_isolation_authority(ctx: ToolWiringContext) -> bool:
+    """True when wiring already carries pinned, legacy profile, or explicit runtime authority."""
+    if ctx.sandbox_isolation_authority is not None:
         return True
-    authority = extras.get(RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY)
-    return isinstance(authority, RuntimeSandboxIsolationAuthority)
+    revision_raw = ctx.extras.get("effective_profile_revision")
+    if isinstance(revision_raw, EffectiveProfileRevisionIsolationView):
+        return True
+    legacy = ctx.extras.get("effective_environment_profile")
+    return isinstance(legacy, ProfileSandboxIsolationSource)
 
 
-def apply_runtime_sandbox_isolation_authority_extras(
-    extras: Mapping[str, object],
+def apply_runtime_sandbox_isolation_authority(
+    ctx: ToolWiringContext,
     authority: RuntimeSandboxIsolationAuthority,
-) -> dict[str, object]:
-    """Return a copy of ``extras`` with explicit runtime sandbox authority (no override of existing)."""
-    merged = dict(extras)
-    if extras_contain_sandbox_isolation_authority(merged):
-        return merged
-    merged[RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY] = authority
-    return merged
+) -> ToolWiringContext:
+    """Return wiring with explicit runtime sandbox authority (no override of existing)."""
+    if wiring_has_sandbox_isolation_authority(ctx):
+        return ctx
+    return replace(ctx, sandbox_isolation_authority=authority)
