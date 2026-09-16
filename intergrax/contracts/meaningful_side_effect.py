@@ -73,7 +73,14 @@ class MeaningfulSideEffectRequest(BaseModel):
     execution_id: ExecutionId
     principal_id: str | None = None
     tenant_id: str | None = None
-    resource: str | None = None
+    resource: str | None = Field(
+        default=None,
+        description=(
+            "Canonical resource identity of the proposed consequential effect. "
+            "When decision_governance_material is attached, must equal "
+            "bound_action_subject."
+        ),
+    )
     external_target: str | None = None
     correlation: Mapping[str, Any] = Field(default_factory=dict)
     context: Mapping[str, Any] = Field(default_factory=dict)

@@ -44,6 +44,17 @@ def assert_decision_governance_material_bound(
         raise CanonicalInnerGovernanceViolation(
             reason="decision governance material action kind does not match side effect",
         )
+    if request.resource is None:
+        raise CanonicalInnerGovernanceViolation(
+            reason="decision governance material requires side effect resource identity",
+        )
+    if request.resource != material.bound_action_subject:
+        raise CanonicalInnerGovernanceViolation(
+            reason=(
+                "decision governance material bound_action_subject "
+                "does not match side effect resource"
+            ),
+        )
     _assert_material_internally_consistent(material)
 
 

@@ -149,7 +149,10 @@ def test_decision_material_bound_action_matches_side_effect_action() -> None:
         action=action,
     )
     bound = _side_effect(ACTION_ACCEPT_QUOTE).model_copy(
-        update={"decision_governance_material": material},
+        update={
+            "decision_governance_material": material,
+            "resource": "quote-1",
+        },
     )
     assert_decision_governance_material_bound(bound)
 
