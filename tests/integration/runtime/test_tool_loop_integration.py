@@ -168,15 +168,25 @@ def _planner_round_from_response(
 
 
 def _schema_is_atomic_round(tools_schema: object) -> bool:
-    if not isinstance(tools_schema, list) or len(tools_schema) != 1:
+    if not isinstance(tools_schema, (list, tuple)) or len(tools_schema) != 1:
         return False
     entry = tools_schema[0]
-    if not isinstance(entry, dict):
-        return False
-    function = entry.get("function")
-    if not isinstance(function, dict):
-        return False
-    return function.get("name") == PLANNER_ROUND_TOOL_ID
+    name: object | None = None
+    if isinstance(entry, dict):
+        function = entry.get("function")
+        if isinstance(function, dict):
+            name = function.get("name")
+    else:
+        wire_schema = getattr(entry, "wire_schema", None)
+        if isinstance(wire_schema, dict):
+            function = wire_schema.get("function")
+            if isinstance(function, dict):
+                name = function.get("name")
+        else:
+            function = getattr(entry, "function", None)
+            if function is not None:
+                name = getattr(function, "name", None)
+    return name == PLANNER_ROUND_TOOL_ID
 
 
 def _atomic_round_call(
@@ -205,6 +215,8 @@ def _adapt_tool_calls_for_atomic_schema(
     tool_calls: tuple[LLMToolCall, ...],
     messages: list[ChatMessage],
 ) -> tuple[LLMToolCall, ...]:
+    """TEST-ONLY LEGACY ADAPTER: maps pre-atomic LLM fakes to ``PLANNER_ROUND_TOOL_ID``."""
+    _ = messages
     if not tool_calls or not _schema_is_atomic_round(tools_schema):
         return tool_calls
     if any(call.name == PLANNER_ROUND_TOOL_ID for call in tool_calls):

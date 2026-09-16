@@ -184,6 +184,7 @@ class SubmitBoundaryProbeInvoker(RuntimeToolInvoker):
         request,
         *,
         effect_boundary=None,
+        physical_attempt_sequence: int = 1,
     ):
         if effect_boundary is not None:
             self.boundary_before_submit = effect_boundary.may_have_started
@@ -192,6 +193,7 @@ class SubmitBoundaryProbeInvoker(RuntimeToolInvoker):
             contract,
             request,
             effect_boundary=effect_boundary,
+            physical_attempt_sequence=physical_attempt_sequence,
         )
 
 

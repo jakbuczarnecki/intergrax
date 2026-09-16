@@ -12,12 +12,19 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    PolicyRulesProfile,
+)
 from testing_support.builder import (
     build_runtime_request_for_tests,
-    canonical_execution_identity_scope,
+    canonical_governed_execution_scope,
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
@@ -27,7 +34,10 @@ from intergrax.runtime.sandbox.sandbox_runtime import (
     SANDBOX_TOOL_NAME,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+)
 
 pytestmark = pytest.mark.gate
 
@@ -55,11 +65,24 @@ class _SandboxToolAgent(Agent):
         return CapabilityMatchResult(matched=False, rationale="unsupported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+        policy_env = ApplicationEnvironmentProfile.lab_defaults(
+            profile_id="sandbox.uaep.integration",
+        )
+        policy_env.policy_rules = PolicyRulesProfile(
+            inline_rules=[],
+            policy_enforcement_mode="enforce",
+        )
+        wiring_ctx = ToolWiringContext(
+            extras={"effective_environment_profile": policy_env},
+        )
         config = RuntimeConfig(
             llm_adapter=FakeLLMAdapter(fixed_text="ok"),
             enable_rag=False,
             production_mode=False,
             tenant_id=request.tenant_id,
+            tool_profile=ToolProfile(enabled=[SANDBOX_TOOL_NAME]),
+            tool_wiring_context=wiring_ctx,
+            policy_bundle=wire_policy_bundle(policy_env),
         )
         return RuntimeContext.build(
             config=config,
@@ -102,7 +125,7 @@ async def test_uaep_sandbox_tool_gateway(tmp_path):
     manager = SandboxSessionManager(root=tmp_path)
     uaep = UAEPExecutor(sandbox_manager=manager)
     agent = _SandboxToolAgent()
-    with canonical_execution_identity_scope("sandbox-uaep"):
+    with canonical_governed_execution_scope("sandbox-uaep"):
         request = build_runtime_request_for_tests(
             seed="sandbox-uaep",
             tenant_id="t1",
@@ -133,15 +156,28 @@ async def test_nexus_loop_exposes_sandbox_session_metadata(tmp_path):
     registry.register(_SandboxToolAgent())
     loop = NexusLoop(registry, sandbox_manager=manager)
 
-    result = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="via nexus sandbox",
-            context=TaskContext(capability="sandbox.basic"),
-            metadata={SANDBOX_FLAG: True},
-        )
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        message="via nexus sandbox",
+        context=TaskContext(capability="sandbox.basic"),
+        metadata={SANDBOX_FLAG: True},
     )
+    seed = "nexus-sandbox-metadata"
+    from intergrax.runtime.governance.active_execution_authority import (
+        ParentExecutionAuthority,
+        bind_active_execution_authority,
+        reset_active_execution_authority,
+    )
+
+    with canonical_governed_execution_scope(seed) as run_id:
+        authority_token = bind_active_execution_authority(
+            ParentExecutionAuthority.unrestricted_root(),
+        )
+        try:
+            result = await loop.handle_task(task, run_id=run_id)
+        finally:
+            reset_active_execution_authority(authority_token)
 
     assert result.state == TaskState.COMPLETED
     assert result.metadata.get("sandbox_session_id")

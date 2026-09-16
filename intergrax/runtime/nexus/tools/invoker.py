@@ -45,6 +45,7 @@ from intergrax.runtime.policy.declarative_tool_authorization_gate import (
 )
 from intergrax.runtime.sandbox.isolation_gate import (
     SandboxIsolationAvailability,
+    overlay_invocation_sandbox_availability,
     require_sandbox_isolation,
 )
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
@@ -400,6 +401,20 @@ class RuntimeToolInvoker:
                 )
             else:
                 availability = self._sandbox_availability()
+            invocation_context = request.invocation_context
+            if invocation_context is not None and invocation_context.wiring_resolver is not None:
+                registered = self._registry.get(request.tool_id)
+                registration_view = registration_wiring_view_for_handler(registered.handler)
+                raw_invocation = invocation_context.wiring_resolver.resolve(
+                    tool_id=request.tool_id,
+                    invocation_context=invocation_context,
+                    registration_wiring=registration_view,
+                )
+                invocation = ensure_tool_invocation_wiring(raw_invocation)
+                availability = overlay_invocation_sandbox_availability(
+                    availability,
+                    sandbox_session=invocation.sandbox_session,
+                )
             try:
                 require_sandbox_isolation(
                     contract=contract,

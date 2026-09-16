@@ -236,7 +236,8 @@ def _clean_catalog() -> None:
 def test_register_default_tools_expanded_catalog() -> None:
     register_default_tools()
     registered = frozenset(list_catalog_tool_ids())
-    assert len(registered) == 200
+    assert "rag.schedule_graph_maintenance_job" in registered
+    assert len(registered) == 201
     assert NEW_TOOL_IDS <= registered
     assert T4_NEW_TOOL_IDS <= registered
     assert T5_NEW_TOOL_IDS <= registered
@@ -283,7 +284,7 @@ def test_new_bundles_present_in_catalog() -> None:
         assert bundle.bundle_id == bundle_id
         assert bundle.tool_ids
 
-    assert len(get_bundle("rag").tool_ids) == 13
+    assert len(get_bundle("rag").tool_ids) == 14
     assert len(get_bundle("sandbox").tool_ids) == 5
     assert len(get_bundle("memory").tool_ids) == 6
     assert len(get_bundle("interaction").tool_ids) == 4

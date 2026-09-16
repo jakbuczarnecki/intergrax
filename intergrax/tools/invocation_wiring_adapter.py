@@ -60,6 +60,16 @@ def merge_invocation_into_handler_context(
         effective = replace(effective, cost_quotas=invocation.cost_quotas)
     if invocation.sandbox_session is not None:
         effective = replace(effective, sandbox_session=invocation.sandbox_session)
+        if "effective_environment_profile" not in effective.extras:
+            from intergrax.runtime.sandbox.runtime_host_wiring import (
+                runtime_host_sandbox_isolation_profile,
+            )
+
+            merged_extras = dict(effective.extras)
+            merged_extras["effective_environment_profile"] = (
+                runtime_host_sandbox_isolation_profile()
+            )
+            effective = replace(effective, extras=merged_extras)
     if invocation.task_metadata is not None:
         merged_extras = dict(registration.extras)
         merged_extras["task_metadata"] = dict(invocation.task_metadata)
