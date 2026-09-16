@@ -35,6 +35,7 @@ from governed_contractor_application.host.stores import (
     InMemoryGovernedExecutionStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryProofReceiptStore,
+    InMemoryProviderInvocationStore,
 )
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
 from intergrax.contracts.money import MoneyAmount
@@ -73,12 +74,14 @@ def _in_memory_stores() -> tuple[
     InMemoryProofReceiptStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryContinuationStateStore,
+    InMemoryProviderInvocationStore,
 ]:
     return (
         InMemoryGovernedExecutionStore(),
         InMemoryProofReceiptStore(),
         InMemoryPolicyBundleArtifactStore(),
         InMemoryContinuationStateStore(),
+        InMemoryProviderInvocationStore(),
     )
 
 
@@ -119,7 +122,9 @@ def _build_runtime(
     *,
     clock: object | None = None,
 ):
-    execution_store, receipt_store, bundle_store, continuation_store = _in_memory_stores()
+    execution_store, receipt_store, bundle_store, continuation_store, invocation_store = (
+        _in_memory_stores()
+    )
     cw_repositories = gr6_seeded_collaborative_work_repositories(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
@@ -138,6 +143,7 @@ def _build_runtime(
         receipt_store=receipt_store,
         bundle_store=bundle_store,
         continuation_store=continuation_store,
+        provider_invocation_store=invocation_store,
         clock=clock,  # type: ignore[arg-type]
     )
 

@@ -321,7 +321,7 @@ Remediate HARNESS-L3 path drift via SSOT; sync prompt golden fixture required fo
 
 ## Commit SHA
 
-_(filled after commit)_
+`8d718e19109f88cf0c5b91a13e76cbbdaf08959c`
 
 ## Final Verdict
 

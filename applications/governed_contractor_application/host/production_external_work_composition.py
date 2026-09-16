@@ -17,6 +17,9 @@ from governed_contractor_application.host.external_work_enterprise_reliability_b
     GovernedExternalWorkEnterpriseReliabilityBridge,
 )
 from governed_contractor_application.host.orchestrator import GovernedExternalWorkOrchestrator
+from governed_contractor_application.host.provider_invocation_lifecycle import (
+    GovernedProviderInvocationDispatchGate,
+)
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.host.stores import (
     ContinuationStateStore,
@@ -24,6 +27,7 @@ from governed_contractor_application.host.stores import (
     PolicyBundleArtifactStore,
     ProofReceiptStore,
 )
+from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkMaterializedRepositories,
     CollaborativeWorkRepositories,
@@ -109,6 +113,7 @@ def build_governed_external_work_production_runtime(
     receipt_store: ProofReceiptStore,
     bundle_store: PolicyBundleArtifactStore,
     continuation_store: ContinuationStateStore,
+    provider_invocation_store: ProviderInvocationStore,
     attestor: HostAttestor | None = None,
     clock: Callable[[], datetime] | None = None,
     reliability_bridge: GovernedExternalWorkEnterpriseReliabilityBridge | None = None,
@@ -131,9 +136,18 @@ def build_governed_external_work_production_runtime(
         decision_requirement_policy=resolved_policy,
         task_scope=task_scope,
     )
+    if provider_invocation_store is None:
+        raise ValueError(
+            "production external work requires provider_invocation_store "
+            "(ProviderInvocationStore); inject durable invocation lifecycle at composition time",
+        )
+    invocation_dispatch = GovernedProviderInvocationDispatchGate(
+        store=provider_invocation_store,
+    )
     adapter = ExternalWorkAdapter(
         integration,
         authorization_boundary=authorization_boundary,
+        invocation_dispatch=invocation_dispatch,
     )
     orchestrator = GovernedExternalWorkOrchestrator(
         adapter=adapter,
@@ -145,6 +159,7 @@ def build_governed_external_work_production_runtime(
         receipt_store=receipt_store,
         bundle_store=bundle_store,
         continuation_store=continuation_store,
+        provider_invocation_store=provider_invocation_store,
         clock=clock,
         reliability_bridge=(
             reliability_bridge

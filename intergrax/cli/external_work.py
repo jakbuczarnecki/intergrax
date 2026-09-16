@@ -323,9 +323,9 @@ def _retry_attestation(store: Path, execution_id: str, *, demo_key: bool) -> int
     GovernedExternalWorkOrchestrator = importlib.import_module(
         "governed_contractor_application.host.orchestrator"
     ).GovernedExternalWorkOrchestrator
-    FilesystemHostStore = importlib.import_module(
-        "governed_contractor_application.host.stores"
-    ).FilesystemHostStore
+    _stores_mod = importlib.import_module("governed_contractor_application.host.stores")
+    FilesystemHostStore = _stores_mod.FilesystemHostStore
+    InMemoryProviderInvocationStore = _stores_mod.InMemoryProviderInvocationStore
     from intergrax.contracts.external_work_provider_capabilities import (
         quote_first_partner_capability_fixture,
     )
@@ -369,6 +369,7 @@ def _retry_attestation(store: Path, execution_id: str, *, demo_key: bool) -> int
         receipt_store=fs,
         bundle_store=fs,
         continuation_store=fs,
+        provider_invocation_store=InMemoryProviderInvocationStore(),
     )
     try:
         step = orch.retry_attestation(execution_id)

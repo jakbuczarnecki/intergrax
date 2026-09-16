@@ -52,6 +52,7 @@ from governed_contractor_application.host.stores import (
     InMemoryGovernedExecutionStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryProofReceiptStore,
+    InMemoryProviderInvocationStore,
 )
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
@@ -257,6 +258,7 @@ def _in_memory_stores():
         InMemoryProofReceiptStore(),
         InMemoryPolicyBundleArtifactStore(),
         InMemoryContinuationStateStore(),
+        InMemoryProviderInvocationStore(),
     )
 
 
@@ -482,7 +484,9 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
     )
-    execution_store, receipt_store, bundle_store, continuation_store = _in_memory_stores()
+    execution_store, receipt_store, bundle_store, continuation_store, invocation_store = (
+        _in_memory_stores()
+    )
     runtime = build_governed_external_work_production_runtime(
         fake,
         tenant_id=_TENANT,
@@ -496,6 +500,7 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
         receipt_store=receipt_store,
         bundle_store=bundle_store,
         continuation_store=continuation_store,
+        provider_invocation_store=invocation_store,
         clock=lambda: _T0,
     )
     with bound_gr3_active_execution(

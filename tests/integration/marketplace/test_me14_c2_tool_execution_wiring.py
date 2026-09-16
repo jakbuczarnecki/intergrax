@@ -11,12 +11,10 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.runtime.task.task import TaskState
 from intergrax.tools.errors import DynamicToolAcquisitionResolutionError
 from intergrax.tools.identity import ToolDiscoveryCandidateIdentity, ToolPackageCandidate
 from testing_support.canonical_me14_echo_tool import (
     ME14_DIGEST_V1,
-    ME14_DIGEST_V2,
     ME14_OUTPUT_V1,
     ME14_OUTPUT_V2,
     ME14_PACKAGE_REFERENCE_V1,
@@ -77,7 +75,7 @@ def _repo_root() -> Path:
 
 def _read_primary_sources() -> str:
     root = _repo_root()
-    return "\n".join(path.read_text(encoding="utf-8") for path in _ME14_PRIMARY_PATHS)
+    return "\n".join((root / path).read_text(encoding="utf-8") for path in _ME14_PRIMARY_PATHS)
 
 
 def _ast_names_in_module(module_name: str) -> set[str]:

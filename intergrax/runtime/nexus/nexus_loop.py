@@ -160,6 +160,7 @@ from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
 )
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
+from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 
 if TYPE_CHECKING:
     from intergrax.contracts.execution_continuation_state_store import (

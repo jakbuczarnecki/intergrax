@@ -53,6 +53,7 @@ from governed_contractor_application.host.stores import (
     InMemoryGovernedExecutionStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryProofReceiptStore,
+    InMemoryProviderInvocationStore,
 )
 from governed_contractor_application.manifest import build_governed_contractor_manifest
 from intergrax.applications._shared.production_process_composition import (
@@ -178,12 +179,14 @@ def _in_memory_stores() -> tuple[
     InMemoryProofReceiptStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryContinuationStateStore,
+    InMemoryProviderInvocationStore,
 ]:
     return (
         InMemoryGovernedExecutionStore(),
         InMemoryProofReceiptStore(),
         InMemoryPolicyBundleArtifactStore(),
         InMemoryContinuationStateStore(),
+        InMemoryProviderInvocationStore(),
     )
 
 
@@ -285,7 +288,9 @@ def _production_runtime(
     decision_requirement_policy: object | None = None,
 ):
     policy = decision_requirement_policy
-    execution_store, receipt_store, bundle_store, continuation_store = _in_memory_stores()
+    execution_store, receipt_store, bundle_store, continuation_store, invocation_store = (
+        _in_memory_stores()
+    )
     cw_repositories = gr6_seeded_collaborative_work_repositories(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
@@ -305,6 +310,7 @@ def _production_runtime(
         receipt_store=receipt_store,
         bundle_store=bundle_store,
         continuation_store=continuation_store,
+        provider_invocation_store=invocation_store,
         attestor=build_deterministic_test_attestor(clock=lambda: _T0),
         clock=lambda: _T0,
     )
@@ -526,7 +532,9 @@ def test_production_wire_fails_closed_when_policy_bundle_missing() -> None:
 def test_production_runtime_uses_injected_execution_store() -> None:
     task_id, run_id, _, _ = default_gr3_identity_bundle()
     fake = DeterministicExternalWorkFake()
-    execution_store, receipt_store, bundle_store, continuation_store = _in_memory_stores()
+    execution_store, receipt_store, bundle_store, continuation_store, invocation_store = (
+        _in_memory_stores()
+    )
     cw_repositories = gr6_seeded_collaborative_work_repositories(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
@@ -545,6 +553,7 @@ def test_production_runtime_uses_injected_execution_store() -> None:
         receipt_store=receipt_store,
         bundle_store=bundle_store,
         continuation_store=continuation_store,
+        provider_invocation_store=invocation_store,
         clock=lambda: _T0,
     )
     _create_with_runtime(runtime, task_id, run_id)

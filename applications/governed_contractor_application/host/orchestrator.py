@@ -47,8 +47,11 @@ from intergrax.contracts.external_work_provider_capabilities import (
 from intergrax.contracts.governed_execution_result import GovernedExecutionResult
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
-    ProviderInvocationOutcome,
     ProviderInvocationStatus,
+)
+from intergrax.contracts.provider_invocation_store import (
+    ProviderInvocationPersistenceError,
+    ProviderInvocationStore,
 )
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
@@ -67,6 +70,11 @@ from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
 from governed_contractor_application.host.external_work_enterprise_reliability_bridge import (
     ExternalWorkReliabilityAdmissionOutcome,
     GovernedExternalWorkEnterpriseReliabilityBridge,
+)
+from governed_contractor_application.host.provider_invocation_lifecycle import (
+    build_provider_invocation_outcome,
+    classify_provider_invocation_status,
+    persist_provider_invocation_outcome,
 )
 from governed_contractor_application.host.lifecycle_states import (
     GovernedExternalWorkHostState,
@@ -98,6 +106,7 @@ def _adapter_result_is_governance_policy_denial(
     if adapter_result.reason in {
         "external_work_error",
         "side_effect_authorization_failed",
+        "provider_invocation_intent_persistence_failed",
     }:
         return False
     return True
@@ -141,6 +150,7 @@ class GovernedExternalWorkOrchestrator:
         receipt_store: ProofReceiptStore,
         bundle_store: PolicyBundleArtifactStore,
         continuation_store: ContinuationStateStore,
+        provider_invocation_store: ProviderInvocationStore,
         clock: Callable[[], datetime] | None = None,
         actor: str = "governed_contractor_host",
         reliability_bridge: GovernedExternalWorkEnterpriseReliabilityBridge | None = None,
@@ -154,6 +164,7 @@ class GovernedExternalWorkOrchestrator:
         self._receipt_store = receipt_store
         self._bundle_store = bundle_store
         self._continuation_store = continuation_store
+        self._provider_invocation_store = provider_invocation_store
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._actor = actor
         self._reliability_bridge = reliability_bridge
@@ -203,6 +214,7 @@ class GovernedExternalWorkOrchestrator:
             request,
             principal_id=principal_id,
             tenant_id=tenant_id,
+            provider_invocation=invocation,
         )
         adapter_result = adapter_result.model_copy(
             update={
@@ -337,6 +349,7 @@ class GovernedExternalWorkOrchestrator:
             tenant_id=tenant_id,
             workspace_id=_workspace_from_metadata(meta),
             decision_governance=decision_governance,
+            provider_invocation=invocation,
         )
         # Attach invocation id for GER / legacy compose paths.
         adapter_result = adapter_result.model_copy(
@@ -411,6 +424,7 @@ class GovernedExternalWorkOrchestrator:
             tenant_id=tenant_id,
             workspace_id=_workspace_from_metadata(meta),
             idempotency_key=idempotency_key,
+            provider_invocation=invocation,
         )
         adapter_result = adapter_result.model_copy(
             update={
@@ -566,6 +580,27 @@ class GovernedExternalWorkOrchestrator:
     ) -> OrchestratorStepResult:
         completed = self._clock()
         decision = adapter_result.policy_decision
+        if adapter_result.reason == "provider_invocation_intent_persistence_failed":
+            failed = GovernedExternalWorkHostState.EXECUTION_FAILED
+            self._execution_store.put_state(execution_id, failed)
+            return OrchestratorStepResult(
+                state=failed,
+                execution_id=execution_id,
+                adapter_result=adapter_result,
+                governed_result=None,
+                attestation=None,
+                receipt=None,
+                reason="provider_invocation_intent_persistence_failed",
+            )
+        outcome_persist_failure = self._persist_observed_provider_outcome(
+            invocation=invocation,
+            adapter_result=adapter_result,
+            execution_id=execution_id,
+            action=action,
+            completed_at=completed,
+        )
+        if outcome_persist_failure is not None:
+            return outcome_persist_failure
         if _adapter_result_is_governance_policy_denial(adapter_result):
             self._execution_store.put_state(execution_id, deny_state)
             return OrchestratorStepResult(
@@ -661,26 +696,13 @@ class GovernedExternalWorkOrchestrator:
             action=action,
             policy_denied=False,
         )
-        outcome = ProviderInvocationOutcome(
+        outcome = build_provider_invocation_outcome(
             invocation_id=inv.invocation_id,
             status=ProviderInvocationStatus.SUCCEEDED,
             completed_at=completed,
-            response_digest=stable_payload_hash(
-                {
-                    "execution_id": execution_id,
-                    "action": action,
-                    "status": (
-                        adapter_result.status.value
-                        if adapter_result.status is not None
-                        else "unknown"
-                    ),
-                }
-            ),
-            external_status=(
-                adapter_result.status.value
-                if adapter_result.status is not None
-                else None
-            ),
+            adapter_result=adapter_result,
+            execution_id=execution_id,
+            action=action,
         )
         ger = GovernedExecutionResult(
             execution_id=execution_id,
@@ -776,6 +798,52 @@ class GovernedExternalWorkOrchestrator:
             ),
             reliability_admission=reliability,
         )
+
+    def _persist_observed_provider_outcome(
+        self,
+        *,
+        invocation: ProviderInvocation,
+        adapter_result: ExternalWorkAdapterResult,
+        execution_id: str,
+        action: str,
+        completed_at: datetime,
+    ) -> OrchestratorStepResult | None:
+        attempted = external_work_provider_mutation_attempted(
+            adapter_result,
+            policy_denied=False,
+        )
+        status = classify_provider_invocation_status(
+            adapter_result=adapter_result,
+            provider_mutation_attempted=attempted,
+        )
+        if status is None:
+            return None
+        outcome = build_provider_invocation_outcome(
+            invocation_id=invocation.invocation_id,
+            status=status,
+            completed_at=completed_at,
+            adapter_result=adapter_result,
+            execution_id=execution_id,
+            action=action,
+        )
+        try:
+            persist_provider_invocation_outcome(
+                self._provider_invocation_store,
+                outcome,
+            )
+        except ProviderInvocationPersistenceError:
+            failed = GovernedExternalWorkHostState.EXECUTION_FAILED
+            self._execution_store.put_state(execution_id, failed)
+            return OrchestratorStepResult(
+                state=failed,
+                execution_id=execution_id,
+                adapter_result=adapter_result,
+                governed_result=None,
+                attestation=None,
+                receipt=None,
+                reason="provider_invocation_outcome_persistence_failed",
+            )
+        return None
 
     def _admit_reliability_if_configured(
         self,
