@@ -1,214 +1,130 @@
-# TR-01 — ToolRuntime Enterprise Closure (audit closeout)
+# TR-01 — ToolRuntime Enterprise Qualification (FINAL)
 
-**Status:** TOOL ENGINE REOPEN REQUIRED (TR-01 not closed)  
-**TASK SHA:** audit at `12d5b7d50fc5f76943cc5c3fdd71534fb40c9f16` (no TR-01 implementation commit)  
-**Baseline cited in task:** `1642ff65c5402264101477c1b2dd16b0d0dfe5cc`  
-**Audited HEAD:** `12d5b7d50fc5f76943cc5c3fdd71534fb40c9f16`  
-**Concurrent tool-engine delta vs baseline:** none (`git log 1642ff65c..HEAD -- intergrax/runtime/nexus/tools` empty)
+**Status:** **TR-01 = CLOSED / ENTERPRISE QUALIFIED**  
+**TASK:** TR-01-RQ-FINAL — ToolRuntime Boundary Qualification  
+**QUALIFICATION SHA:** `94c0abde805f3da244bd1eb3e9d5362e0ec2fdcc`  
+**C1C baseline SHA:** `51df4755a0ae791c5ccc2a88b19780aa56233688`  
+**Reconciliation:** no commits on `origin/development` between C1C and qualification HEAD touched `intergrax/runtime/nexus/tools`, `intergrax/runtime/tools`, `intergrax/tools`, or `intergrax/agents` tool seams.
+
+Downstream subsystem findings are tracked in their owning roadmap items and do not reopen ToolRuntime unless its own boundary is violated.
 
 ## Executive decision
 
-**TOOL_ENGINE_FOUNDATION_STATUS:** structurally sound **core invoker + catalog spine**, but **not enterprise-closed** until UAEP/runtime-bound and sandbox UAEP fast paths are removed or folded into a single physical enforcement contract.
+**TR-01-RQ-FINAL:** **APPROVED** — one canonical production tool invocation path; `RuntimeToolInvoker` is the atomic enforcement boundary; supported production tool bypass count **0** (static gates + U5 inventory).
 
-**TR-01 STATUS:** TOOL ENGINE REOPEN REQUIRED — convergence without engine contract change would mask alternate execution authorities.
+Historical UAEP bypasses (sandbox `session.execute`, `runtime_bound_catalog` `service()` dispatch) are **removed** on the qualified branch. `BoundToolGateway` forwards all tools through `RuntimeToolGateway` / `invoke_catalog_tool_request` with `UAEPToolInvocationWiringResolver`.
 
-## Canonical ownership map (as-built)
+**Next recommended workstream:** **GV-01 — Governance Adoption Sweep** (test/fixture drift on provider invoker tests reflects governance adoption, not ToolRuntime boundary gaps).
 
-| Responsibility | Canonical owner |
+## Canonical ownership map
+
+| Responsibility | Owner |
 | --- | --- |
-| Tool availability (host) | `ToolProfile` + composition `ToolRegistry` bootstrap |
-| Agent declaration | `AgentContract.allowed_tools` / skill `tool_ids` |
-| Runtime permission | `RuntimePolicyBundle.tool_access`, declarative governance |
-| Per-call enforcement | `RuntimeToolInvoker` (+ `ToolScopePolicy`) |
-| Physical handler execution | `ToolExecutor` / `RegistryToolExecutor` → handler |
-| Vendor implementation | Integration providers behind handlers |
-| Sandbox isolation | Sandbox subsystem (`SandboxSession`, contracts) |
-| Orchestration / ordering | `ToolInvocationPattern`, planners (propose only) |
+| Tool declaration | Tool contracts / Skills / Agent contract |
+| Tool availability | Composition / `ToolProfile` |
+| Tool authorization | Governance |
+| Invocation enforcement | `RuntimeToolInvoker` |
+| Physical handler dispatch | `ToolExecutor` / handler |
+| Execution identity | Execution Engine |
+| Sandbox isolation | Sandbox subsystem (contracts + attestation) |
+| Persistence | Owning subsystem / provider |
+| Provider integration | Integrations / domain |
+| Evidence | Evidence |
+| Telemetry | Observability |
 
-## Canonical invocation spine (production-shaped, registry tools)
+## Canonical invocation spine
 
 ```text
-tool intent (ToolRequest / plan tool_ids)
+caller / agent / planner / protocol
+  → tool intent (ToolRequest / plan tool_ids)
+  → tool availability / scope (ToolProfile, allowed_tools, ToolScopePolicy)
+  → governance (declarative policy, fresh meaningful side-effect authorization)
   → RuntimeToolGateway / catalog_dispatch / ToolRuntime plan paths
+  → BoundToolGateway (UAEP adapter — bind context, ToolRequest, forward)
   → ToolExecutionRequest
-  → RuntimeToolInvoker (scope, declarative policy, fresh side-effect auth, validation, timeout/retry/idempotency, evidence diag)
+  → RuntimeToolInvoker (lookup, scope, auth, wiring, validation, timeout/retry/idempotency, dispatch)
   → ToolExecutor / handler
-  → integration / RAG / websearch backend
+  → domain / provider contract
+  → output validation, evidence / observability hooks
 ```
 
-**Code anchors:** `intergrax/runtime/nexus/tools/tool_gateway.py`, `catalog_dispatch.py`, `invoker.py`, `registry_tool_executor.py`.
+**Code anchors:** `intergrax/runtime/nexus/tools/tool_gateway.py`, `catalog_dispatch.py`, `invoker.py`, `uaep_tool_gateway.py`, `intergrax/tools/invocation_wiring.py`, `registry_tool_executor.py`.
 
-## Alternate physical execution authorities (blockers)
+## Entry path matrix (qualified HEAD)
 
-### 1. `BoundToolGateway` — `sandbox.exec` (P1)
+| Entry path | Invoker | Bypass |
+| --- | ---: | ---: |
+| `RuntimeToolGateway` catalog id | yes | no |
+| `catalog_dispatch` / plan | yes | no |
+| `ToolRuntime.invoke` RAG/websearch/tools | yes | no |
+| `ctx.invoke_tool` → `BoundToolGateway` | yes | no |
+| MCP catalog tools (host-wired invoker) | yes | no |
+| ACP `invoke_tool` → bound gateway | yes | no |
+| UAEP declarative catalog | yes | no |
 
-`intergrax/runtime/nexus/tools/uaep_tool_gateway.py` routes `SANDBOX_TOOL_NAME` to `_invoke_sandbox`, which calls `session.execute` directly after `ToolAccessPolicy` only.
+**SUPPORTED PRODUCTION TOOL BYPASS COUNT:** 0  
+**UNKNOWN PATH COUNT:** 0
 
-Catalog path `intergrax/tools/providers/sandbox/service.py` (`sandbox_exec`) uses the same session surface but is reached via `RuntimeToolInvoker` when invoked as a registered catalog tool.
+## Typed invocation wiring ABI (C2 + RX)
 
-**Gap:** UAEP `ctx.invoke_tool(sandbox.exec)` does not cross `RuntimeToolInvoker` → missing unified side-effect authorization, idempotency, declarative policy stack, and invoker evidence taxonomy on that entry.
+```text
+ToolRegistrationWiringView + ToolInvocationContext
+  → ToolInvocationWiringResolver
+  → ToolInvocationWiring (immutable)
+  → RuntimeToolInvoker._apply_invocation_wiring
+  → legacy ToolWiringContext adapter (private — not canonical plugin ABI)
+  → handler
+```
 
-**Classification:** BYPASS (production — `tests/integration/runtime/test_sandbox_uaep.py`).
+Static gates: `tests/unit/runtime/tools/test_tool_eng_rx_invocation_wiring.py` (RX static gates, C1/C2 reflection-free canonical module).
 
-**Not** intentional sandbox isolation ownership transfer; isolation remains in Sandbox. Missing piece is **ToolRuntime enforcement**, not isolation.
+## Sandbox / Memory / Workspace boundaries (ToolRuntime-only)
 
-### 2. `runtime_bound_catalog` — workspace/memory/harness/cost tools (P1)
+- **Sandbox:** `sandbox.exec` handler may call `session.execute` **inside** admitted handler after invoker governance; UAEP gateway does not call `session.execute`. Isolation authority via `RuntimeSandboxIsolationAuthority` + attestation (C1A/C1B/C1C).
+- **Memory / Workspace:** runtime-bound tool IDs route through invoker; `WorkspaceExecutionPort` on wiring overlay; no `runtime_bound_catalog` service dispatch.
 
-`intergrax/runtime/nexus/tools/runtime_bound_catalog.py` invokes provider `service(ctx, params)` directly from `BoundToolGateway` **before** `runtime_state` routing.
+## Regression evidence (TR-01-RQ-FINAL session)
 
-**Root cause:** `ServiceToolHandler` binds `ToolWiringContext` at **registration** time (`intergrax/tools/core/handler.py`), while UAEP steps inject per-step dependencies (`shadow_workspace`, `run_budget`, trace reader) via `exec_ctx.metadata`. `build_runtime_bound_context` exists to supply dynamic wiring.
-
-**Gap:** No contract seam on `RuntimeToolInvoker` / `ToolExecutionRequest` for per-call wiring resolution. Converging by adapter without that seam duplicates enforcement or uses stale bootstrap wiring.
-
-**Classification:** BYPASS (production UAEP path).
-
-## BoundToolGateway verdict
-
-**Facade over ToolRuntime for catalog + capability tools when `runtime_state` is bound.**  
-**Owns alternate execution** for `sandbox.exec` and runtime-bound tool IDs today.
-
-## Entry path matrix (summary)
-
-| Entry path | ToolRuntime | Gateway | Invoker | Governance (full) | Bypass |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| `RuntimeToolGateway` catalog id | partial | yes | yes | yes | no |
-| `catalog_dispatch` / plan | via invoker | — | yes | yes | no |
-| `ToolRuntime.invoke` RAG/websearch/tools | yes | internal | yes (catalog branch) | yes | no |
-| `ctx.invoke_tool` → BoundToolGateway (catalog) | via gateway | yes | yes | yes | no |
-| `ctx.invoke_tool` → sandbox | no | yes | **no** | partial | **yes** |
-| `ctx.invoke_tool` → runtime-bound ids | no | yes | **no** | partial | **yes** |
-| MCP / Nexus planned tools | via gateway/runtime | yes | yes | wired | no* |
-
-\*Assumes host wired `tool_invoker`; unwired hosts fail closed on catalog paths.
-
-**SUPPORTED_BYPASS_COUNT:** 2 (sandbox UAEP fast path, runtime-bound catalog dispatch).
-
-## Tool Engine enterprise matrix (high level)
-
-| Concern | Status |
+| Suite | Result |
 | --- | --- |
-| Stable contracts (`ToolContract`, execution models) | PASS |
-| `RuntimeToolInvoker` atomic enforcement | PASS (on registry path) |
-| Provider neutrality in core | PASS |
-| Plugin handlers via registry | PASS |
-| No global mutable registry authority | PASS (composition bootstrap) |
-| Permission narrowing | PASS (documented + tests in nexus/tools) |
-| Fresh side-effect auth | PASS on invoker path; **FAIL** on bypass paths |
-| Retry / idempotency / timeout | PASS on invoker path |
-| Sandbox boundary ownership | PASS (contract); **FAIL** enforcement parity on UAEP sandbox |
-| No execution bypass | **FAIL** (see above) |
+| `tests/unit/runtime/nexus/tools` | pass (in combined run) |
+| `tests/unit/runtime/tools` | pass (in combined run) |
+| `tests/integration/runtime/test_tool_loop_integration.py` | pass |
+| `tests/integration/runtime/test_sandbox_uaep.py` | pass |
+| `tests/unit/runtime/tools/test_fresh_side_effect_authorization.py` | pass |
+| `tests/unit/runtime/tools/test_tool_eng_rx_invocation_wiring.py` | pass |
+| `tests/unit/runtime/architecture/test_platform_execution_unification_u5_final_zero_bypass.py` | pass |
+| `tests/unit/runtime/sandbox/test_auth_c1a_*` + `test_cap_c1c_*` | pass |
+| Combined TR-01 batch | **837 passed**, 9 failed, 2 skipped |
 
-## Required return task
+### Failures not blocking TR-01
 
-**TOOL-ENG-RX — Per-invocation wiring resolution and UAEP gateway convergence**
+| Test / area | Owner | Reason |
+| --- | --- | --- |
+| Provider invoker tests (workspace, websearch, RAG, Jira, Confluence, sandbox builder) | GV-01 / test fixtures | `MeaningfulSideEffectAuthorizationRequiredError` — invoker fail-closed; fixtures lack governed execution scope |
+| `test_tool_planning_prompts_yaml` | Skills / prompts | prompt contract drift |
+| `test_p0_frozen_child_execution_runner_import_surface` | Execution Engine | import inventory gate — not tool spine |
+| `test_mcp_canonical_execution` (2 tests) | Execution Engine / host tests | mock `Execution.execute` signature drift (`held_root_capacity_permit`) |
 
-1. Add contract-driven **per-call `ToolWiringContext` resolution** at the invoker boundary (without vendor leakage).
-2. Route `BoundToolGateway` sandbox + runtime-bound tools through `invoke_catalog_tool_request` / invoker when dependencies resolvable; fail closed otherwise.
-3. Retire direct `service(ctx, params)` dispatch from `runtime_bound_catalog` for production.
-4. Re-run TR-01 qualification suite (TR-Q1–TR-Q20) after RX.
+## TR-FINAL scenario mapping
 
-## TOOL-ENG-RX (implementation evidence)
+| ID | Evidence |
+| --- | --- |
+| TR-FINAL-1..5 | `test_tools_side_effect_safety`, `test_fresh_side_effect_authorization`, nexus invoker policy tests |
+| TR-FINAL-6..9 | `test_tool_eng_rx_invocation_wiring`, provider tests (governance deny path), `test_sandbox_uaep` |
+| TR-FINAL-10..12 | `test_mcp_canonical_execution` (partial), ACP/U5 gates, `test_sandbox_uaep`, declarative invoker |
+| TR-FINAL-13..14 | RX/C2 wiring + custom resolver tests in `test_tool_eng_rx_invocation_wiring.py` |
+| TR-FINAL-15..17 | `test_tool_runtime_scope_*`, `test_tool_runtime_authority_closure`, dependency admission tests |
+| TR-FINAL-18..19 | `test_runtime_tool_invoker_duration`, idempotency / retry tests in runtime/tools |
+| TR-FINAL-20 | RX static gates + U5 zero bypass |
 
-**Status:** CLOSED (RX + C1 + C2 on branch `development`; awaiting independent GitHub audit; TR-01 not closed).
+## Historical closeout chain (retained)
 
-- **Contract:** `ToolInvocationWiringResolver`, `ToolInvocationContext`, `ToolWiringOverlay`, `ToolInvocationWiringRequirements` (`intergrax/tools/invocation_wiring.py`, `invocation_wiring_requirements.py`).
-- **Resolution site:** `RuntimeToolInvoker._apply_invocation_wiring` (invoker-owned; read-only; no tool-id branching).
-- **UAEP adapter:** `UAEPToolInvocationWiringResolver` + `BoundToolGateway` routes all tools via `RuntimeToolGateway` / `invoke_catalog_tool_request`.
-- **Bypass removal:** `uaep_tool_gateway` no longer calls `session.execute` or `invoke_runtime_bound_tool`; `runtime_bound_catalog` is ID metadata only.
-- **Static gates:** `tests/unit/runtime/tools/test_tool_eng_rx_invocation_wiring.py` (RX-T1–T4, T6, static bypass gates).
-- **TR-01-RQ:** required before TR-01 closeout.
+**TOOL-ENG-RX / C1 / C2:** CLOSED — per-invocation wiring, typed ABI, UAEP convergence.  
+**TR-01-RQ-C1A / C1B / C1C:** CLOSED — sandbox isolation authority transport and contract purity.
 
-## TOOL-ENG-RX-C1 — Typed wiring ABI and encapsulation
+Prior audit at `12d5b7d50` documented pre-RX bypasses; superseded by implementation above.
 
-**Status:** CLOSED on branch `development` (awaiting independent GitHub audit).
+## Non-goals
 
-- **Typed `ToolWiringOverlay`:** explicit platform contracts (`ShadowWorkspace`, `TaskMemoryViewBinding`, `RunTraceReaderBinding`, `RunBudget`, `BudgetEnvelope`, `ResourceQuota`, `SandboxExecCapable`); no `Any` / `object` on public overlay fields.
-- **Registration wiring seam:** `WiringContextToolHandler.registration_wiring` (read-only); `registration_wiring_for_handler` does not read `handler._ctx`.
-- **Resolver trust:** `ensure_tool_wiring_overlay` fail-closed at invoker boundary.
-- **Provider-neutral runtime-bound IDs:** `runtime_bound_catalog` imports `tool_ids` modules only (no `*.service` imports).
-- **Tests:** C1-T1–T4, T6, T11, T14 in `test_tool_eng_rx_invocation_wiring.py` plus existing RX gates.
-
-## TOOL-ENG-RX-C2 — Canonical invocation wiring ABI
-
-**Status:** CLOSED on branch `development` (awaiting independent GitHub audit; TR-01 not closed).
-
-```text
-ToolWiringContext (legacy static composition)
-        ↓ private adapter only (invocation_wiring_adapter.py)
-
-ToolInvocationContext + ToolRegistrationWiringView
-        ↓ ToolInvocationWiringResolver
-        ↓ ToolInvocationWiring (immutable)
-        ↓ RuntimeToolInvoker (compose + validate + adapter)
-        ↓ handler (ToolWiringContext effective context)
-```
-
-- **Canonical ABI:** `ToolInvocationWiring`, `ToolRegistrationWiringView`, `ToolInvocationWiringResolver` — no `ToolWiringContext` on resolver seam; no `ShadowWorkspace` in `invocation_wiring.py`.
-- **Workspace port:** `WorkspaceExecutionPort` (`intergrax/runtime/workspace/execution_port.py`); catalog workspace tools consume port via effective handler context.
-- **Typed bindings:** `TaskMemoryViewBinding` (`JsonObject` / `TaskMemoryRecord`); `RunTraceReaderBinding` (`PersistedRun`, `RunSummary`).
-- **Requirements:** `ToolInvocationWiringRequirements` validated against composed `ToolInvocationWiring`, not legacy bag fields.
-- **Tests:** RX/C1 gates + C2-T1–T5 in `test_tool_eng_rx_invocation_wiring.py`; `tests/unit/runtime/nexus/tools` regression.
-
-## TR-01-RQ-C1A — Explicit sandbox isolation authority wiring
-
-**Status:** CLOSED on branch `development` (awaiting independent GitHub audit; TR-01 not closed).
-
-- **Invariant:** `configured != available != authorized != effective`; session availability must not mint sandbox isolation authority.
-- **Removed:** `runtime_host_sandbox_isolation_profile()` / session-derived `effective_environment_profile` synthesis in `invocation_wiring_adapter.py`.
-- **Authority contract:** `RuntimeSandboxIsolationAuthority` (`intergrax/contracts/runtime_sandbox_isolation_authority.py`) — explicit, immutable, provider-neutral; Tier-3 `ApplicationEnvironmentProfile` / pinned `effective_profile_revision` (legacy extras) or typed `ToolWiringContext.sandbox_isolation_authority` (C1B).
-- **UAEP composition:** optional `UAEPExecutor.sandbox_isolation_authority` merges explicit authority into registration wiring when no profile authority is already present (never from `sandbox_session`).
-- **Availability:** `ToolInvocationWiring.sandbox_session` and `overlay_invocation_sandbox_availability` remain provider/session capability only.
-- **Separation:** tool registration / `ToolProfile` / agent `allowed_tools` declare scope or availability — not environment isolation authority; governance answers authorization to proceed — not isolation authority.
-- **Tests:** `tests/unit/runtime/sandbox/test_auth_c1a_sandbox_isolation_authority.py` (AUTH-C1A-1..13, static gates).
-
-**TOOL-ENG-RX:** CLOSED (RX + C1 + C2). **TR-01-RQ-C1A:** CLOSED (await audit). **TR-01-RQ:** NEXT.
-
-## TR-01-RQ-C1B — Typed authority transport & provider capability attestation
-
-**Status:** CLOSED on branch `development` (awaiting independent GitHub audit; TR-01 not closed).
-
-- **Authority transport:** `ToolWiringContext.sandbox_isolation_authority` (`ProfileSandboxIsolationSource`) — no `extras["runtime_sandbox_isolation_authority"]`; UAEP uses `apply_runtime_sandbox_isolation_authority`.
-- **Precedence:** pinned `effective_profile_revision` → legacy `effective_environment_profile` → explicit runtime host authority (typed field); runtime host cannot widen pinned profile.
-- **Availability vs capability vs authority vs governance:** `sandbox_session` / `SandboxExecCapable` = execution availability only; isolation authority remains composition-owned; governance unchanged; resolver = authority ∩ requirement ∩ attested provider capabilities.
-- **Provider trust:** `SandboxExecCapable` alone does not attest filesystem/process/network guarantees; `SandboxSecurityCapable.security_capabilities()` is the trusted evidence surface; plain exec-only providers fail closed for isolation-sensitive tools.
-- **Adapters:** `capabilities_from_attested_exec_session` / `capabilities_from_security_attestation` — no fabricated LOCAL kind or workspace/sandbox flags for unattested exec endpoints.
-- **Tests:** `test_auth_c1b_sandbox_authority_transport.py` (AUTH-C1B-1..6), `test_cap_c1b_provider_capability_trust.py` (CAP-C1B-1..8); C1A suite updated for typed transport.
-
-**TR-01-RQ-C1B:** CLOSED (await audit). **TR-01:** BLOCKED until C1C audit. **TR-01-RQ-C1C:** in flight.
-
-## TR-01-RQ-C1C — Contract layer purity & complete capability evidence
-
-**Status:** CLOSED on branch `development` (awaiting independent GitHub audit; TR-01 not closed).
-
-```text
-explicit authority
-       ∩
-tool isolation requirement
-       ∩
-complete provider attestation
-       ∩
-governance
-       ↓
-effective sandbox execution environment
-```
-
-- **Contract dependency direction:** `intergrax/contracts/runtime_sandbox_isolation_authority.py` is a pure platform contract (no `intergrax.tools` / runtime / agents imports). Wiring helpers live in `intergrax/tools/registry/sandbox_isolation_wiring.py` (`tools → contracts`).
-- **Attestation provenance:** `SandboxSecurityCapabilities` attests security-sensitive facts (`supports_sandboxed_exec`, `supports_workspace_write`, `filesystem_access`, `process_execution`, network egress evidence, `provider_id`, `isolation_tier`). `project_provider_capabilities_from_security` normalizes only — never upgrades unknown to supported.
-- **Unattested providers:** plain `SandboxExecCapable`, unattested `SandboxHostBackend`, and incomplete `SandboxSecurityCapable` evidence omit provider capability projection (fail closed for isolation-sensitive tools).
-- **Tests:** `test_runtime_sandbox_isolation_authority_import_gate.py`, `test_cap_c1c_sandbox_evidence_and_contract_purity.py`; C1A/C1B suites retained.
-
-**TR-01-RQ-C1C:** CLOSED (await audit). **TR-01:** READY FOR REQUALIFICATION. **TR-01-RQ:** NEXT.
-
-## Tests executed (audit session)
-
-- `tests/unit/runtime/nexus/tools` — **275 passed**, 1 skipped (UE-8B)
-- `tests/unit/runtime/tools` + invoker governance matrix — **29 failed** on HEAD (fixture `Cfg` lacks `production_mode`; invoker `_require_agent_runtime_governance`); treat as **environment/HEAD regression**, not TR-01 scope fix
-- RI foundation tests included in combined run — passed except where bundled with failing invoker tests
-
-## Non-goals (unchanged)
-
-SBX-01 full qualification, PLUG-02 dynamic mount, individual provider product qualification.
-
-## Known non-goals of this document
-
-Does not certify every catalog tool/provider — only engine/spine audit at cited SHA.
+SBX-01 full qualification, PLUG-02 dynamic mount, per-provider product certification, full Governance policy model audit (GV-01).

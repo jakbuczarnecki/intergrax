@@ -384,7 +384,7 @@ TR and RI can start in parallel; TR benefits from invariant runner for regressio
 | Order | Task ID | Name | User-level goal | Gap type | Depends on | Exit criterion |
 | ---: | --- | --- | --- | --- | --- | --- |
 | 1 | RI-01 | Runtime Invariant Service foundation | One runner executes domain invariant rules with diagnostic correlation | BUILD | — | Shared runner + 3 domain rule packs gated in CI |
-| 2 | TR-01 | ToolRuntime enterprise closure | Every agent tool call uses one governed pipeline | CONVERGE | RI-01 (recommended) | Single entry; sandbox/catalog parity tests green |
+| 2 | TR-01 | ToolRuntime enterprise closure | Every agent tool call uses one governed pipeline | **CLOSED / ENTERPRISE QUALIFIED** | RI-01 (recommended) | TR-01-RQ-FINAL; bypass count 0 |
 | 3 | GV-01 | Governance adoption sweep | Side effects and tools always pass fresh auth + evidence | ADOPT | TR-01 | Matrix §6 gaps closed on canonical paths |
 | 4 | SESSION-01 | Session/checkpoint SSOT | Restart does not lose session truth | CONVERGE | — | One documented SoT; restart test suite |
 | 5 | INSPECT-01 | Runtime inspection expansion | Operators read execution/tool/policy/memory uniformly | BUILD | SESSION-01 partial | Baseline T read models for core domains |
@@ -408,9 +408,9 @@ TR and RI can start in parallel; TR benefits from invariant runner for regressio
 
 ## 21. Next recommended task
 
-**TR-01 — ToolRuntime enterprise closure** (single governed invocation spine, sandbox/catalog/runtime-bound parity, qualification suite).
+**TR-01 — ToolRuntime enterprise closure** — **CLOSED / ENTERPRISE QUALIFIED** (TR-01-RQ-FINAL, qualification SHA `94c0abde805f3da244bd1eb3e9d5362e0ec2fdcc`).
 
-Rationale: highest cross-cutting leverage while Execution and P2.1 remain frozen; unblocks governance adoption and host convergence; code evidence shows multiple dispatch paths today (`tool_gateway.py`, `catalog_dispatch.py`, `uaep_tool_gateway.py`).
+**Next:** **GV-01 — Governance adoption sweep** (provider test fixtures and adoption matrix; canonical tool spine is qualified).
 
 Run **RI-01** in parallel if staffing allows (feeds CI gates for TR-01).
 
