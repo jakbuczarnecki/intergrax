@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.long_horizon_memory import (
@@ -52,6 +52,12 @@ from intergrax.memory.contracts.memory_security_governance import (
     MemoryGovernanceTarget,
     validate_canonical_governance_source_snapshot,
 )
+from intergrax.memory.memory_diagnostic_emitter import (
+    MemoryDiagnosticEmitter,
+    MemoryOperationTimer,
+    default_memory_diagnostic_emitter,
+)
+from intergrax.memory.memory_observability_support import emit_compaction_terminal
 from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
 from intergrax.memory.memory_specialized_disclosure_governance import (
     evaluate_memory_disclosure,
@@ -126,8 +132,12 @@ class LongHorizonMemoryService:
     _governance_source_authority: CanonicalMemoryGovernanceSourceAuthority
     _security_governance: MemorySecurityGovernanceService
     _policy: LongHorizonPolicyConfig = LongHorizonPolicyConfig()
+    _diagnostic_emitter: MemoryDiagnosticEmitter = field(
+        default_factory=default_memory_diagnostic_emitter
+    )
 
     def compact(self, request: LongHorizonCompactionRequest) -> CompactionResult:
+        timer = MemoryOperationTimer()
         if request.target_level > self._policy.max_hierarchy_depth:
             raise LongHorizonMemoryViolation("target_level exceeds max_hierarchy_depth")
 
@@ -141,7 +151,9 @@ class LongHorizonMemoryService:
                 request.sources,
                 policy=self._policy,
             ):
-                return CompactionResult(skipped_batch_keys=("sources-not-ready",))
+                result = CompactionResult(skipped_batch_keys=("sources-not-ready",))
+                self._emit_compaction(request, result, timer)
+                return result
             batches = self._strategies.grouping.group_sources(
                 request.sources,
                 max_batch=self._policy.max_source_batch,
@@ -199,7 +211,9 @@ class LongHorizonMemoryService:
                 children,
                 policy=self._policy,
             ):
-                return CompactionResult(skipped_batch_keys=("children-not-ready",))
+                result = CompactionResult(skipped_batch_keys=("children-not-ready",))
+                self._emit_compaction(request, result, timer)
+                return result
             _validate_child_levels(request.target_level, children)
             batches = self._strategies.grouping.group_child_summaries(
                 children,
@@ -247,11 +261,27 @@ class LongHorizonMemoryService:
                     )
                     failures.append(CompactionPartialFailure(batch_identity=batch_key, message=str(exc)))
 
-        return CompactionResult(
+        result = CompactionResult(
             created=tuple(created),
             updated=tuple(updated),
             skipped_batch_keys=tuple(skipped),
             failures=tuple(failures),
+        )
+        self._emit_compaction(request, result, timer)
+        return result
+
+    def _emit_compaction(
+        self,
+        request: LongHorizonCompactionRequest,
+        result: CompactionResult,
+        timer: MemoryOperationTimer,
+    ) -> None:
+        emit_compaction_terminal(
+            self._diagnostic_emitter,
+            tenant_id=request.scope.tenant_id,
+            user_id=request.scope.user_id,
+            result=result,
+            duration_seconds=timer.elapsed_seconds(),
         )
 
     def _enforce_compaction_mutation(

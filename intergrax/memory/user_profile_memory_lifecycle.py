@@ -20,6 +20,14 @@ from intergrax.memory.contracts.memory_lifecycle import (
 )
 from intergrax.memory.memory_projection_failure import classify_memory_projection_failure
 from intergrax.memory.memory_temporal import filter_active_memory_entries
+from intergrax.memory.memory_diagnostic_emitter import (
+    MemoryDiagnosticEmitter,
+    default_memory_diagnostic_emitter,
+)
+from intergrax.memory.memory_observability_support import (
+    emit_lifecycle_terminal,
+    emit_reconciliation_terminal,
+)
 from intergrax.memory.user_profile_memory import UserProfile, UserProfileMemoryEntry
 
 __all__ = [
@@ -49,8 +57,12 @@ class UserProfileMemoryLifecycleCoordinator:
         self,
         *,
         projections: Sequence[UserProfileMemoryProjection],
+        diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
+        tenant_id: str | None = None,
     ) -> None:
         self._projections = tuple(projections)
+        self._diagnostic_emitter = diagnostic_emitter or default_memory_diagnostic_emitter()
+        self._tenant_id = tenant_id
 
     @property
     def projections(self) -> tuple[UserProfileMemoryProjection, ...]:
@@ -65,7 +77,7 @@ class UserProfileMemoryLifecycleCoordinator:
     ) -> MemoryLifecycleOutcome:
         evidence = await self._run_projection_upsert(user_id=user_id, entry=entry)
         disposition = self._disposition_from_evidence(evidence)
-        return MemoryLifecycleOutcome(
+        result = MemoryLifecycleOutcome(
             operation=operation,
             disposition=disposition,
             user_id=user_id,
@@ -73,6 +85,13 @@ class UserProfileMemoryLifecycleCoordinator:
             primary_applied=True,
             projection_evidence=evidence,
         )
+        emit_lifecycle_terminal(
+            self._diagnostic_emitter,
+            user_id=user_id,
+            tenant_id=self._tenant_id,
+            outcome=result,
+        )
+        return result
 
     async def apply_after_primary_deletes(
         self,
@@ -93,7 +112,7 @@ class UserProfileMemoryLifecycleCoordinator:
             )
         evidence = await self._run_projection_delete(entry_ids=ids)
         disposition = self._disposition_from_evidence(evidence)
-        return MemoryLifecycleOutcome(
+        result = MemoryLifecycleOutcome(
             operation=operation,
             disposition=disposition,
             user_id=user_id,
@@ -101,6 +120,13 @@ class UserProfileMemoryLifecycleCoordinator:
             primary_applied=True,
             projection_evidence=evidence,
         )
+        emit_lifecycle_terminal(
+            self._diagnostic_emitter,
+            user_id=user_id,
+            tenant_id=self._tenant_id,
+            outcome=result,
+        )
+        return result
 
     async def reconcile_user(
         self,
@@ -154,11 +180,18 @@ class UserProfileMemoryLifecycleCoordinator:
             disposition = MemoryReconciliationDisposition.REPAIRED
         else:
             disposition = MemoryReconciliationDisposition.CONSISTENT
-        return MemoryReconciliationOutcome(
+        result = MemoryReconciliationOutcome(
             user_id=user_id,
             disposition=disposition,
             projection_evidence=tuple(evidence),
         )
+        emit_reconciliation_terminal(
+            self._diagnostic_emitter,
+            tenant_id=self._tenant_id,
+            user_id=user_id,
+            outcome=result,
+        )
+        return result
 
     async def _run_projection_upsert(
         self,

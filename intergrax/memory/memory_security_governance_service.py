@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from intergrax.memory.contracts.memory_security_governance import (
     MemoryGovernanceDecision,
@@ -18,6 +18,11 @@ from intergrax.memory.contracts.memory_security_governance import (
 from intergrax.memory.strategies.defaults.memory_security_governance import (
     build_default_memory_security_strategy_set,
 )
+from intergrax.memory.memory_diagnostic_emitter import (
+    MemoryDiagnosticEmitter,
+    default_memory_diagnostic_emitter,
+)
+from intergrax.memory.memory_observability_support import emit_governance_diagnostic
 from intergrax.memory.strategies.recall_models import MemoryRecallCandidate
 
 __all__ = [
@@ -93,8 +98,18 @@ def _merge_decisions(
 @dataclass(slots=True)
 class MemorySecurityGovernanceService:
     strategies: MemorySecurityStrategySet
+    diagnostic_emitter: MemoryDiagnosticEmitter = field(
+        default_factory=default_memory_diagnostic_emitter
+    )
 
     def evaluate(self, request: MemoryGovernanceEvaluationRequest) -> MemoryGovernanceDecision:
+        decision = self._evaluate_decision(request)
+        emit_governance_diagnostic(self.diagnostic_emitter, request, decision)
+        return decision
+
+    def _evaluate_decision(
+        self, request: MemoryGovernanceEvaluationRequest
+    ) -> MemoryGovernanceDecision:
         if self.strategies is None:
             return _fail_closed_decision(request, reason_code=MemoryGovernanceReasonCode.POLICY_MISSING)
         try:
@@ -167,7 +182,7 @@ class MemorySecurityGovernanceService:
                 ),
                 existing_record=snapshot,
             )
-            decision = self.evaluate(per_record)
+            decision = self._evaluate_decision(per_record)
             if decision.permits_disclosure():
                 allowed.append(candidate)
         return tuple(allowed)
@@ -185,7 +200,10 @@ def _is_valid_decision(decision: MemoryGovernanceDecision) -> bool:
 def build_default_memory_security_governance_service(
     *,
     strategies: MemorySecurityStrategySet | None = None,
+    diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
 ) -> MemorySecurityGovernanceService:
+    emitter = diagnostic_emitter or default_memory_diagnostic_emitter()
     return MemorySecurityGovernanceService(
         strategies=strategies or build_default_memory_security_strategy_set(),
+        diagnostic_emitter=emitter,
     )

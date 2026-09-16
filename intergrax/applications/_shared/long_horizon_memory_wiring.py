@@ -21,6 +21,11 @@ from intergrax.memory.long_horizon_memory_service import (
     LongHorizonMemoryService,
     build_default_long_horizon_strategies,
 )
+from intergrax.applications._shared.memory_observability_wiring import (
+    resolve_memory_diagnostic_emitter,
+)
+from intergrax.memory.contracts.memory_observability import MemoryObservabilitySink
+from intergrax.memory.memory_diagnostic_emitter import MemoryDiagnosticEmitter
 from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
 from intergrax.memory.resolver.discovery import (
     MemoryStorePluginCatalog,
@@ -65,6 +70,8 @@ def resolve_long_horizon_memory_capability(
     source_authority: CanonicalMemorySourceAuthority | None = None,
     governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
     security_governance: MemorySecurityGovernanceService | None = None,
+    memory_observability_sink: MemoryObservabilitySink | None = None,
+    memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
 ) -> LongHorizonMemoryCapability | None:
     """Materialize long-horizon memory capability when enabled."""
     store = resolve_long_horizon_memory_store(env)
@@ -78,8 +85,13 @@ def resolve_long_horizon_memory_capability(
         raise LongHorizonMemoryViolation(
             "long-horizon memory capability requires CanonicalMemoryGovernanceSourceAuthority"
         )
+    emitter = resolve_memory_diagnostic_emitter(
+        sink=memory_observability_sink,
+        emitter=memory_diagnostic_emitter,
+    )
     governance = resolve_memory_security_governance_service(
         security_governance=security_governance,
+        memory_diagnostic_emitter=emitter,
     )
     return LongHorizonMemoryService(
         _store=store,
@@ -87,4 +99,5 @@ def resolve_long_horizon_memory_capability(
         _source_authority=source_authority,
         _governance_source_authority=governance_source_authority,
         _security_governance=governance,
+        _diagnostic_emitter=emitter,
     )

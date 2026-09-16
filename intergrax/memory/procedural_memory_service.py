@@ -4,9 +4,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.memory.contracts.memory_observability import (
+    MemoryDiagnosticFailureClass,
+    MemoryDiagnosticOperation,
+    MemoryDiagnosticOutcome,
+)
 from intergrax.memory.contracts.memory_security_governance import (
     CanonicalMemoryGovernanceSourceAuthority,
     MemoryGovernanceDenied,
@@ -31,6 +36,11 @@ from intergrax.memory.contracts.procedural_memory import (
     ProcedureSupersessionRequest,
     procedure_id_for_source_memory,
 )
+from intergrax.memory.memory_diagnostic_emitter import (
+    MemoryDiagnosticEmitter,
+    default_memory_diagnostic_emitter,
+)
+from intergrax.memory.memory_observability_support import emit_procedural_terminal
 from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
 from intergrax.memory.memory_specialized_disclosure_governance import (
     evaluate_memory_disclosure,
@@ -68,6 +78,9 @@ class ProceduralMemoryService:
     _strategies: ProceduralMemoryStrategySet
     _security_governance: MemorySecurityGovernanceService
     _governance_source_authority: CanonicalMemoryGovernanceSourceAuthority
+    _diagnostic_emitter: MemoryDiagnosticEmitter = field(
+        default_factory=default_memory_diagnostic_emitter
+    )
 
     def _canonical_source_records(
         self,
@@ -113,7 +126,18 @@ class ProceduralMemoryService:
                 source_records=self._canonical_source_records(scope, record, operation),
             ),
         )
-        return self._store.upsert_procedure(scope, record)
+        stored = self._store.upsert_procedure(scope, record)
+        emit_procedural_terminal(
+            self._diagnostic_emitter,
+            identity=identity,
+            tenant_id=scope.tenant_id,
+            user_id=scope.user_id,
+            workspace_id=scope.workspace_id,
+            operation=MemoryDiagnosticOperation.REMEMBER,
+            outcome=MemoryDiagnosticOutcome.SUCCESS,
+            memory_id=stored.source_memory_id,
+        )
+        return stored
 
     def recall_procedures(
         self,
@@ -146,6 +170,15 @@ class ProceduralMemoryService:
         )
         ranked = self._strategies.ranking.rank(applicable, context)
         bounded = ranked[: query.limit]
+        emit_procedural_terminal(
+            self._diagnostic_emitter,
+            identity=identity,
+            tenant_id=scope.tenant_id,
+            user_id=scope.user_id,
+            workspace_id=scope.workspace_id,
+            operation=MemoryDiagnosticOperation.RECALL,
+            outcome=MemoryDiagnosticOutcome.SUCCESS,
+        )
         return ProcedureRecallResult(procedures=bounded)
 
     def deprecate_procedure(

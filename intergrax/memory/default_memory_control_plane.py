@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from intergrax.contracts.agent_run import RequestIdentity
@@ -35,7 +35,10 @@ from intergrax.memory.contracts.memory_control import (
     UserMemoryRememberCapabilityResult,
     UserProfileMemoryCapability,
 )
-from intergrax.memory.contracts.memory_lifecycle import MemoryReconciliationOutcome
+from intergrax.memory.contracts.memory_lifecycle import (
+    MemoryReconciliationDisposition,
+    MemoryReconciliationOutcome,
+)
 from intergrax.memory.memory_temporal import is_memory_entry_active
 from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryProvenance,
@@ -71,6 +74,17 @@ from intergrax.memory.memory_security_governance_service import (
     MemorySecurityGovernanceService,
     build_default_memory_security_governance_service,
 )
+from intergrax.memory.contracts.memory_observability import (
+    MemoryDiagnosticFailureClass,
+    MemoryDiagnosticOperation,
+    MemoryDiagnosticOutcome,
+)
+from intergrax.memory.memory_diagnostic_emitter import (
+    MemoryDiagnosticEmitter,
+    MemoryOperationTimer,
+    default_memory_diagnostic_emitter,
+)
+from intergrax.memory.memory_observability_support import emit_control_plane_terminal
 from intergrax.utils.time_provider import SystemTimeProvider, TimeProvider
 
 __all__ = ["DefaultMemoryControlPlane", "UserProfileManagerMemoryCapability"]
@@ -98,6 +112,11 @@ def _security_context(
 def _enforce_governance(
     service: MemorySecurityGovernanceService | None,
     request: MemoryGovernanceEvaluationRequest,
+    *,
+    diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
+    control_plane_operation: MemoryDiagnosticOperation | None = None,
+    identity: RequestIdentity | None = None,
+    scope: MemoryControlScopeRef | None = None,
 ) -> None:
     decision = _governance_service_or_default(service).evaluate(request)
     if not (
@@ -105,6 +124,21 @@ def _enforce_governance(
         if request.context.operation in _GOVERNANCE_MUTATION_OPERATIONS
         else decision.permits_disclosure()
     ):
+        if (
+            diagnostic_emitter is not None
+            and control_plane_operation is not None
+            and identity is not None
+            and scope is not None
+        ):
+            emit_control_plane_terminal(
+                diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=control_plane_operation,
+                outcome=MemoryDiagnosticOutcome.DENIED,
+                memory_id=decision.subject_memory_id,
+                failure_class=MemoryDiagnosticFailureClass.POLICY,
+            )
         raise MemoryControlGovernanceDenied(
             f"memory governance denied: {decision.reason_code.value}",
             decision=decision,
@@ -338,6 +372,9 @@ class DefaultMemoryControlPlane:
     recall_retrieval_config: UserMemoryRecallRetrievalConfig | None = None
     time_provider: type[TimeProvider] = SystemTimeProvider
     security_governance: MemorySecurityGovernanceService | None = None
+    diagnostic_emitter: MemoryDiagnosticEmitter = field(
+        default_factory=default_memory_diagnostic_emitter
+    )
 
     async def remember(
         self,
@@ -437,12 +474,44 @@ class DefaultMemoryControlPlane:
         if self.user_profile is None:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
         user_id = scope.user_id or ""
+        timer = MemoryOperationTimer()
         try:
             outcome = await self.user_profile.reconcile_memory_projections(user_id)
         except MemoryControlPartialLifecycleError:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.RECONCILE,
+                outcome=MemoryDiagnosticOutcome.FAILED,
+                duration_seconds=timer.elapsed_seconds(),
+                failure_class=MemoryDiagnosticFailureClass.RECONCILIATION,
+            )
             raise
         except Exception as exc:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.RECONCILE,
+                outcome=MemoryDiagnosticOutcome.FAILED,
+                duration_seconds=timer.elapsed_seconds(),
+                failure_class=MemoryDiagnosticFailureClass.RECONCILIATION,
+            )
             raise MemoryControlBackendError(str(exc)) from exc
+        reconcile_outcome = (
+            MemoryDiagnosticOutcome.FAILED
+            if outcome.disposition is MemoryReconciliationDisposition.FAILED
+            else MemoryDiagnosticOutcome.SUCCESS
+        )
+        emit_control_plane_terminal(
+            self.diagnostic_emitter,
+            identity=identity,
+            scope=scope,
+            operation=MemoryDiagnosticOperation.RECONCILE,
+            outcome=reconcile_outcome,
+            duration_seconds=timer.elapsed_seconds(),
+        )
         return MemoryControlReconcileResult(
             scope=MemoryControlPlaneScope.USER,
             reconciliation=outcome,
@@ -454,6 +523,7 @@ class DefaultMemoryControlPlane:
         scope: MemoryControlScopeRef,
         request: MemoryControlRememberRequest,
     ) -> MemoryControlRememberResult:
+        timer = MemoryOperationTimer()
         if self.user_profile is None:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
         user_id = scope.user_id or ""
@@ -483,15 +553,55 @@ class DefaultMemoryControlPlane:
                 context=_security_context(identity, scope, MemoryGovernanceOperation.REMEMBER),
                 proposed_record=MemoryGovernanceRecordSnapshot.from_user_profile_entry(entry),
             ),
+            diagnostic_emitter=self.diagnostic_emitter,
+            control_plane_operation=MemoryDiagnosticOperation.REMEMBER,
+            identity=identity,
+            scope=scope,
         )
         try:
             capability_result = await self.user_profile.add_memory_entry(user_id, entry)
         except MemoryControlPartialLifecycleError:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.REMEMBER,
+                outcome=MemoryDiagnosticOutcome.PARTIAL,
+                duration_seconds=timer.elapsed_seconds(),
+            )
             raise
         except MemoryControlBackendError:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.REMEMBER,
+                outcome=MemoryDiagnosticOutcome.FAILED,
+                failure_class=MemoryDiagnosticFailureClass.STORE,
+                duration_seconds=timer.elapsed_seconds(),
+            )
             raise
         except Exception as exc:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.REMEMBER,
+                outcome=MemoryDiagnosticOutcome.FAILED,
+                failure_class=MemoryDiagnosticFailureClass.INTERNAL,
+                duration_seconds=timer.elapsed_seconds(),
+            )
             raise MemoryControlBackendError(str(exc)) from exc
+        emit_control_plane_terminal(
+            self.diagnostic_emitter,
+            identity=identity,
+            scope=scope,
+            operation=MemoryDiagnosticOperation.REMEMBER,
+            outcome=MemoryDiagnosticOutcome.SUCCESS,
+            memory_id=capability_result.entry.entry_id,
+            revision=capability_result.entry.revision,
+            duration_seconds=timer.elapsed_seconds(),
+        )
         return MemoryControlRememberResult(
             scope=MemoryControlPlaneScope.USER,
             entry_id=capability_result.entry.entry_id,
@@ -504,6 +614,7 @@ class DefaultMemoryControlPlane:
         scope: MemoryControlScopeRef,
         request: MemoryControlRecallRequest,
     ) -> MemoryControlRecallResult:
+        timer = MemoryOperationTimer()
         if self.user_profile is None:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
         user_id = scope.user_id or ""
@@ -538,12 +649,21 @@ class DefaultMemoryControlPlane:
                     conflict_resolution=strategies.conflict_resolution,
                     as_of_iso=as_of_iso,
                 )
-                return _pipeline_to_recall_result(
+                result = _pipeline_to_recall_result(
                     pipeline_result,
                     scope=MemoryControlPlaneScope.USER,
                     used_semantic=search_result.used_semantic,
                     reason=search_result.reason,
                 )
+                emit_control_plane_terminal(
+                    self.diagnostic_emitter,
+                    identity=identity,
+                    scope=scope,
+                    operation=MemoryDiagnosticOperation.RECALL,
+                    outcome=MemoryDiagnosticOutcome.SUCCESS,
+                    duration_seconds=timer.elapsed_seconds(),
+                )
+                return result
             entries = await self.user_profile.list_active_memory_entries(user_id)
             candidate_limit = max(
                 request.top_k,
@@ -568,17 +688,53 @@ class DefaultMemoryControlPlane:
                 as_of_iso=as_of_iso,
             )
             reason = "keyword" if query else "profile_scan"
-            return _pipeline_to_recall_result(
+            result = _pipeline_to_recall_result(
                 pipeline_result,
                 scope=MemoryControlPlaneScope.USER,
                 used_semantic=False,
                 reason=reason,
             )
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.RECALL,
+                outcome=MemoryDiagnosticOutcome.SUCCESS,
+                duration_seconds=timer.elapsed_seconds(),
+            )
+            return result
         except MemoryStrategyError as exc:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.RECALL,
+                outcome=MemoryDiagnosticOutcome.FAILED,
+                failure_class=MemoryDiagnosticFailureClass.INTERNAL,
+                duration_seconds=timer.elapsed_seconds(),
+            )
             raise MemoryControlBackendError(str(exc)) from exc
         except MemoryControlBackendError:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.RECALL,
+                outcome=MemoryDiagnosticOutcome.FAILED,
+                failure_class=MemoryDiagnosticFailureClass.STORE,
+                duration_seconds=timer.elapsed_seconds(),
+            )
             raise
         except Exception as exc:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.RECALL,
+                outcome=MemoryDiagnosticOutcome.FAILED,
+                failure_class=MemoryDiagnosticFailureClass.INTERNAL,
+                duration_seconds=timer.elapsed_seconds(),
+            )
             raise MemoryControlBackendError(str(exc)) from exc
 
     async def _forget_user(
@@ -587,6 +743,7 @@ class DefaultMemoryControlPlane:
         scope: MemoryControlScopeRef,
         request: MemoryControlForgetRequest,
     ) -> MemoryControlForgetResult:
+        timer = MemoryOperationTimer()
         if self.user_profile is None:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
         entry_id = request.entry_id.strip()
@@ -605,21 +762,72 @@ class DefaultMemoryControlPlane:
                 target=MemoryGovernanceTarget(memory_id=entry_id),
                 existing_record=MemoryGovernanceRecordSnapshot.from_user_profile_entry(entry),
             ),
+            diagnostic_emitter=self.diagnostic_emitter,
+            control_plane_operation=MemoryDiagnosticOperation.FORGET,
+            identity=identity,
+            scope=scope,
         )
         try:
             capability_result = await self.user_profile.remove_memory_entry(user_id, entry_id)
         except MemoryControlPartialLifecycleError:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.FORGET,
+                outcome=MemoryDiagnosticOutcome.PARTIAL,
+                memory_id=entry_id,
+                duration_seconds=timer.elapsed_seconds(),
+            )
             raise
         except MemoryControlNotFound:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.FORGET,
+                outcome=MemoryDiagnosticOutcome.NOT_FOUND,
+                memory_id=entry_id,
+                duration_seconds=timer.elapsed_seconds(),
+            )
             raise
         except MemoryControlBackendError:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.FORGET,
+                outcome=MemoryDiagnosticOutcome.FAILED,
+                memory_id=entry_id,
+                failure_class=MemoryDiagnosticFailureClass.STORE,
+                duration_seconds=timer.elapsed_seconds(),
+            )
             raise
         except Exception as exc:
+            emit_control_plane_terminal(
+                self.diagnostic_emitter,
+                identity=identity,
+                scope=scope,
+                operation=MemoryDiagnosticOperation.FORGET,
+                outcome=MemoryDiagnosticOutcome.FAILED,
+                memory_id=entry_id,
+                failure_class=MemoryDiagnosticFailureClass.INTERNAL,
+                duration_seconds=timer.elapsed_seconds(),
+            )
             raise MemoryControlBackendError(str(exc)) from exc
         entries_after = await self.user_profile.list_active_memory_entries(user_id)
         for entry in entries_after:
             if entry.entry_id == entry_id:
                 raise MemoryControlBackendError("forget left entry active in primary store")
+        emit_control_plane_terminal(
+            self.diagnostic_emitter,
+            identity=identity,
+            scope=scope,
+            operation=MemoryDiagnosticOperation.FORGET,
+            outcome=MemoryDiagnosticOutcome.SUCCESS,
+            memory_id=entry_id,
+            duration_seconds=timer.elapsed_seconds(),
+        )
         return MemoryControlForgetResult(
             scope=MemoryControlPlaneScope.USER,
             entry_id=entry_id,

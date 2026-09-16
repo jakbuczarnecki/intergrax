@@ -25,6 +25,7 @@ from intergrax.memory.contracts.memory_lifecycle import (
     UserProfileMemoryProjection,
     aggregate_memory_lifecycle_outcomes,
 )
+from intergrax.memory.memory_diagnostic_emitter import MemoryDiagnosticEmitter
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecycleCoordinator
 from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN, resolve_memory_index_collection
 from intergrax.memory.user_profile_ltm_vector_projection import UserProfileLtmVectorProjection
@@ -73,6 +74,7 @@ class UserProfileManager:
             vector_index_namespace: str | None = None,
             workspace_id: str | None = None,
             memory_projections: Sequence[UserProfileMemoryProjection] | None = None,
+            diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
     ) -> None:
         self._store = store
         self._tenant_id = tenant_id
@@ -95,6 +97,8 @@ class UserProfileManager:
         self._longterm_score_threshold = float(longterm_score_threshold)
         self._memory_lifecycle = UserProfileMemoryLifecycleCoordinator(
             projections=self._resolve_memory_projections(memory_projections),
+            diagnostic_emitter=diagnostic_emitter,
+            tenant_id=tenant_id,
         )
 
     def _resolve_memory_projections(
