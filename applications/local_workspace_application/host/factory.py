@@ -92,6 +92,14 @@ from local_workspace_application.serving.workspace_routes import (
 )
 
 
+def _resolve_lkw_host_tenant_id(settings: LocalWorkspaceBackendSettings) -> str:
+    for identity in settings.api_keys_map.values():
+        tenant_id = identity.tenant_id.strip()
+        if tenant_id:
+            return tenant_id
+    return "default"
+
+
 def create_local_workspace_backend_app(
     *,
     registry_projection: MaterializedRegistryProjection,
@@ -143,10 +151,12 @@ def create_local_workspace_backend_app(
         cursor_secret=resolve_problem_list_cursor_secret(),
         document_store=assert_conditional_document_store(lkw_document_store),
     )
+    host_tenant_id = _resolve_lkw_host_tenant_id(resolved_settings)
     runtime = build_harness_host_runtime(
         manifest,
         env,
         settings=resolved_settings,
+        tenant_id=host_tenant_id,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
         idempotency_db_path=Path(resolved_settings.idempotency_db_path),
@@ -188,7 +198,7 @@ def create_local_workspace_backend_app(
             env,
             manifest=manifest,
             agent_registry=runtime.registry,
-            tenant_id=resolved_settings.tenant_id,
+            tenant_id=host_tenant_id,
             idempotency_store=runtime.reliability.idempotency_store,
         ),
     )
@@ -233,8 +243,8 @@ def create_local_workspace_backend_app(
     scheduler_wiring = wire_harness_host_long_running_scheduler(
         runtime,
         checkpoint_store=checkpoint_store,
-        host_execution=host_execution,
-        task_enricher=task_enricher,
+        host_execution=lkw_host_execution,
+        task_enricher=lkw_task_enricher,
         notification_adapter=None,
         poll_interval_seconds=resolved_settings.scheduler_poll_seconds,
         enabled=resolved_settings.include_scheduler,
@@ -384,7 +394,7 @@ def create_local_workspace_backend_app(
         wire_harness_task_control(
             app,
             enabled=True,
-            host_execution=host_execution,
+            host_execution=lkw_host_execution,
             env=env,
             checkpoint_store=checkpoint_store,
             task_route_prefix=resolved_settings.task_control_route_prefix,

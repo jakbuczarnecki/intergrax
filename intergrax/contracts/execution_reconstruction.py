@@ -5,17 +5,29 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.execution_event_position import AsOfBoundary
 from intergrax.contracts.execution_identity import RunId, TaskId
+from intergrax.contracts.execution_reconstruction_models import ExecutionReconstruction
 
-if TYPE_CHECKING:
-    from intergrax.runtime.observability.reconstruction.execution_reconstruction import (
-        ExecutionReconstruction,
-    )
+__all__ = [
+    "ExecutionAttemptDiscoveryCompleteness",
+    "ExecutionAttemptDiscoveryReadStatus",
+    "ExecutionReconstruction",
+    "ExecutionReconstructionIntegrityError",
+    "ExecutionReconstructionReader",
+    "ReconstructedAttempt",
+    "RuntimeHistoryCompleteness",
+]
 
-__all__ = ["ExecutionReconstructionReader"]
+from intergrax.contracts.execution_reconstruction_models import (  # noqa: E402
+    ExecutionAttemptDiscoveryCompleteness,
+    ExecutionAttemptDiscoveryReadStatus,
+    ExecutionReconstructionIntegrityError,
+    ReconstructedAttempt,
+    RuntimeHistoryCompleteness,
+)
 
 
 @runtime_checkable

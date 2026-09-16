@@ -11,7 +11,7 @@ from intergrax.runtime.diagnostics.diagnostic_subject import (
     ApplicationDiagnosticSubjectRef,
     validate_application_diagnostic_subject_ref,
 )
-from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
+from intergrax.contracts.platform_problem_signal import PlatformProblemSignal
 
 
 class SignalDiagnosticAssessmentIntegrityError(Exception):

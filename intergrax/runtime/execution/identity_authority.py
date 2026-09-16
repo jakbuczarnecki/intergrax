@@ -97,7 +97,8 @@ def mint_root_execution_identity(
     """Mint canonical generic root identity for one root execution invocation."""
     return RootTaskIdentity(
         run_id=run_id or default_execution_identity_authority.mint_run_identity(),
-        attempt_id=attempt_id or default_execution_identity_authority.mint_attempt_identity(),
+        attempt_id=attempt_id
+        or default_execution_identity_authority.mint_attempt_identity(),
         execution_id=execution_id or mint_execution_id(),
     )
 

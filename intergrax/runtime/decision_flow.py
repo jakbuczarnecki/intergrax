@@ -17,6 +17,7 @@ from intergrax.contracts.decision_authorization import (
     DecisionAuthorizationEvaluator,
     DecisionExecutionAction,
     DecisionExecutionAuthorization,
+    DecisionGovernanceDecision,
     DecisionGovernanceDisposition,
     DecisionGovernanceEvaluationInput,
     DecisionGovernancePolicyContext,
@@ -32,6 +33,8 @@ from intergrax.contracts.decision_finalization import (
     initial_decision_finalize_guard,
 )
 from intergrax.contracts.decision_human_review import (
+    DecisionHumanReviewDecision,
+    DecisionHumanReviewOutcome,
     DecisionHumanReviewPending,
     DecisionHumanReviewPort,
     decision_human_review_request,
@@ -77,7 +80,12 @@ from intergrax.runtime.decision_authorization import mint_validated_execution_au
 from intergrax.runtime.decision_human_review import (
     request_decision_human_review,
     transition_lifecycle_for_human_review_request,
+    validate_consumed_human_review_decision,
 )
+from intergrax.runtime.execution.active_decision_lifecycle_host import (
+    require_active_decision_lifecycle_host,
+)
+from intergrax.runtime.execution.decision_lifecycle_host import DecisionLifecycleHost
 from intergrax.runtime.decision_revision import transition_lifecycle_for_revision
 from intergrax.runtime.decision_verification import VerificationPipeline
 from intergrax.runtime.execution.active_decision_lifecycle_host import (
@@ -514,3 +522,193 @@ class CanonicalDecisionFlowGate(Generic[T]):
             finalize_disposition=finalize_result.disposition,
             authority_reason="decision_governance_human_review_pending",
         )
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionFlowHumanReviewResumeResult(Generic[T]):
+    """Typed resume outcome after one consumed human review decision."""
+
+    result: DecisionFlowResult[T]
+    lifecycle_stages_observed: tuple[DecisionLifecycleStage, ...]
+
+
+def _append_lifecycle_stage(
+    observed: tuple[DecisionLifecycleStage, ...],
+    state: DecisionLifecycleState,
+) -> tuple[DecisionLifecycleStage, ...]:
+    if observed and observed[-1] is state.stage:
+        return observed
+    return observed + (state.stage,)
+
+
+def _transition_observed(
+    lifecycle_host: DecisionLifecycleHost,
+    lifecycle_state: DecisionLifecycleState,
+    to_stage: DecisionLifecycleStage,
+    observed: tuple[DecisionLifecycleStage, ...],
+) -> tuple[DecisionLifecycleState, tuple[DecisionLifecycleStage, ...]]:
+    next_state = lifecycle_host.transition(lifecycle_state, to_stage)
+    return next_state, _append_lifecycle_stage(observed, next_state)
+
+
+def resume_decision_flow_after_human_review(
+    *,
+    gate: CanonicalDecisionFlowGate[T],
+    pending_result: DecisionFlowResult[T],
+    decision: DecisionHumanReviewDecision,
+) -> DecisionFlowHumanReviewResumeResult[T]:
+    """Continue canonical decision flow after ``PENDING_HUMAN`` and one human decision."""
+    if type(gate) is not CanonicalDecisionFlowGate:
+        raise TypeError("gate must be CanonicalDecisionFlowGate")
+    if type(pending_result) is not DecisionFlowResult:
+        raise TypeError("pending_result must be DecisionFlowResult")
+    if type(decision) is not DecisionHumanReviewDecision:
+        raise TypeError("decision must be DecisionHumanReviewDecision")
+    if pending_result.host_action is not DecisionFlowHostAction.PENDING_HUMAN:
+        raise ValueError("pending_result must have host_action PENDING_HUMAN")
+    pending_review = pending_result.human_review_pending
+    if pending_review is None:
+        raise ValueError("pending_result must include human_review_pending")
+    validate_consumed_human_review_decision(
+        request=pending_review.request,
+        decision=decision,
+        target_proposal_ref=pending_review.request.proposal_ref,
+    )
+
+    lifecycle_host = require_active_decision_lifecycle_host()
+    lifecycle_state = pending_result.lifecycle_state
+    observed: tuple[DecisionLifecycleStage, ...] = (lifecycle_state.stage,)
+
+    if decision.outcome is DecisionHumanReviewOutcome.APPROVED:
+        accepted = pending_result.accepted_decision
+        if accepted is None:
+            accepted = AuthoritativeAcceptedDecision(
+                identity=pending_result.candidate.identity,
+                artifact=pending_result.candidate.artifact,
+                lineage=pending_result.candidate.lineage,
+            )
+            lifecycle_state, observed = _transition_observed(
+                lifecycle_host,
+                lifecycle_state,
+                DecisionLifecycleStage.RESOLUTION,
+                observed,
+            )
+            finalize_key = DecisionFinalizationKey(
+                decision_id=accepted.identity.decision_id,
+                scope=accepted.identity.scope,
+                tenant_id=accepted.identity.tenant_id,
+            )
+            guard_state = initial_decision_finalize_guard(finalize_key)
+            guard_decision_finalization(guard_state, accepted)
+            lifecycle_state, observed = _transition_observed(
+                lifecycle_host,
+                lifecycle_state,
+                DecisionLifecycleStage.FINALIZATION,
+                observed,
+            )
+        if lifecycle_state.stage is not DecisionLifecycleStage.FINALIZATION:
+            raise ValueError(
+                "approved human review resume requires FINALIZATION or adjudication path",
+            )
+        lifecycle_state, observed = _transition_observed(
+            lifecycle_host,
+            lifecycle_state,
+            DecisionLifecycleStage.TERMINAL,
+            observed,
+        )
+        governance_spec = gate.capabilities.governance_spec
+        authorization: DecisionExecutionAuthorization | None = None
+        authority_reason = "decision_human_review_approved"
+        host_action = DecisionFlowHostAction.CONTINUE
+        if governance_spec is not None:
+            evaluation_input = DecisionGovernanceEvaluationInput(
+                decision=accepted,
+                action=governance_spec.action,
+                policy_context=governance_spec.policy_context,
+                human_review_decision=decision,
+            )
+            governance_decision = evaluate_decision_governance_with(
+                evaluator=governance_spec.evaluator,
+                evaluation_input=evaluation_input,
+            )
+            if governance_decision.disposition is DecisionGovernanceDisposition.ALLOW:
+                authorization = mint_validated_execution_authorization(
+                    evaluation_input=evaluation_input,
+                    governance_decision=governance_decision,
+                )
+                _ = authoritative_decision_ref(accepted)
+            elif governance_decision.disposition is DecisionGovernanceDisposition.DENY:
+                host_action = DecisionFlowHostAction.BLOCK
+                authority_reason = "decision_governance_denied"
+            elif (
+                governance_decision.disposition
+                is DecisionGovernanceDisposition.REQUIRE_HUMAN
+            ):
+                host_action = DecisionFlowHostAction.BLOCK
+                authority_reason = "decision_governance_human_review_required_again"
+            else:
+                raise ValueError(
+                    "unsupported governance disposition after human review: "
+                    f"{governance_decision.disposition.value!r}",
+                )
+        return DecisionFlowHumanReviewResumeResult(
+            result=DecisionFlowResult(
+                host_action=host_action,
+                flow_scope=pending_result.flow_scope,
+                candidate=pending_result.candidate,
+                verification_result=pending_result.verification_result,
+                lifecycle_state=lifecycle_state,
+                accepted_decision=accepted,
+                authorization=authorization,
+                finalize_disposition=pending_result.finalize_disposition,
+                authority_reason=authority_reason,
+            ),
+            lifecycle_stages_observed=observed,
+        )
+
+    if decision.outcome is DecisionHumanReviewOutcome.REJECTED:
+        identity = decision.proposal_ref.identity
+        rejected = AuthoritativeResolutionRecord(
+            identity=identity,
+            resolution=DecisionResolution.REJECTED,
+        )
+        if lifecycle_state.stage is DecisionLifecycleStage.ADJUDICATION:
+            lifecycle_state, observed = _transition_observed(
+                lifecycle_host,
+                lifecycle_state,
+                DecisionLifecycleStage.RESOLUTION,
+                observed,
+            )
+            lifecycle_state, observed = _transition_observed(
+                lifecycle_host,
+                lifecycle_state,
+                DecisionLifecycleStage.FINALIZATION,
+                observed,
+            )
+        elif lifecycle_state.stage is not DecisionLifecycleStage.FINALIZATION:
+            raise ValueError(
+                "rejected human review resume requires ADJUDICATION or FINALIZATION",
+            )
+        lifecycle_state, observed = _transition_observed(
+            lifecycle_host,
+            lifecycle_state,
+            DecisionLifecycleStage.TERMINAL,
+            observed,
+        )
+        return DecisionFlowHumanReviewResumeResult(
+            result=DecisionFlowResult(
+                host_action=DecisionFlowHostAction.BLOCK,
+                flow_scope=pending_result.flow_scope,
+                candidate=pending_result.candidate,
+                verification_result=pending_result.verification_result,
+                lifecycle_state=lifecycle_state,
+                resolution_record=rejected,
+                accepted_decision=pending_result.accepted_decision,
+                authority_reason="decision_human_review_rejected",
+            ),
+            lifecycle_stages_observed=observed,
+        )
+
+    raise ValueError(
+        f"unsupported DecisionHumanReviewOutcome for resume: {decision.outcome.value!r}",
+    )

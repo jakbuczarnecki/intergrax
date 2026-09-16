@@ -14,23 +14,62 @@ from intergrax.contracts.tool_request import (
     ToolResponse,
     ToolResponseStatus,
 )
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
 from local_search.diagnostics import SearchSummaryReason
 from local_search.steps.search_job import run_search_job
+from testing_support.builder import (
+    build_runtime_execution_context_for_tests,
+    build_runtime_request_for_tests,
+    canonical_run_id_for_tests,
+)
+
+
+def _search_exec_ctx(
+    seed: str,
+    *,
+    metadata: dict[str, object] | None = None,
+    message: str = "",
+    tenant_id: str = "t1",
+    tool_gateway: object | None = None,
+) -> RuntimeExecutionContext:
+    request = build_runtime_request_for_tests(
+        seed=seed,
+        agent_id="local_search",
+        tenant_id=tenant_id,
+        user_id="u1",
+        session_id="s1",
+        message=message,
+        metadata=metadata or {},
+    )
+    return build_runtime_execution_context_for_tests(
+        seed=seed,
+        agent_id="local_search",
+        request=request,
+        tool_gateway=tool_gateway,
+        tenant_id=tenant_id,
+    )
 
 
 def _step_ctx(
     exec_ctx: RuntimeExecutionContext | None,
     *,
-    run_id: str = "run-test",
+    run_id: str | None = None,
     message: str = "",
 ) -> AgentStepContext:
     metadata: dict[str, object] = {}
     if exec_ctx is not None:
         metadata["uaep_exec_ctx"] = exec_ctx
+    resolved_run_id = (
+        run_id
+        if run_id is not None
+        else (
+            str(exec_ctx.run_id)
+            if exec_ctx is not None
+            else str(canonical_run_id_for_tests("local-search-step"))
+        )
+    )
     return AgentStepContext(
-        run_id=run_id,
+        run_id=resolved_run_id,
         agent_id="local_search",
         contract_id="local_search",
         message=message,
@@ -47,19 +86,7 @@ def _search_summary(output: dict[str, object]) -> dict[str, Any]:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_run_search_job_fails_safe_without_query() -> None:
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_search",
-        request=RuntimeRequest(
-            agent_id="local_search",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="",
-            metadata={},
-        ),
-    )
+    exec_ctx = _search_exec_ctx("search-no-query")
 
     summary = _search_summary(await run_search_job(_step_ctx(exec_ctx)))
 
@@ -112,18 +139,10 @@ async def test_run_search_job_retrieves_with_valid_query() -> None:
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_search",
-        request=RuntimeRequest(
-            agent_id="local_search",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="ignored when metadata query set",
-            metadata={"query": "project X", "collection_id": "ws-1", "top_k": 3},
-        ),
+    exec_ctx = _search_exec_ctx(
+        "search-valid-query",
+        message="ignored when metadata query set",
+        metadata={"query": "project X", "collection_id": "ws-1", "top_k": 3},
         tool_gateway=gateway,
     )
 
@@ -162,18 +181,10 @@ async def test_run_search_job_rejects_invalid_source_scope_without_retrieve() ->
     gateway = AsyncMock()
     gateway.invoke = AsyncMock()
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_search",
-        request=RuntimeRequest(
-            agent_id="local_search",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="find docs",
-            metadata={"query": "find docs", "collection_id": "ws-1", "allowed_source_ids": []},
-        ),
+    exec_ctx = _search_exec_ctx(
+        "search-invalid-scope",
+        message="find docs",
+        metadata={"query": "find docs", "collection_id": "ws-1", "allowed_source_ids": []},
         tool_gateway=gateway,
     )
 
@@ -201,22 +212,14 @@ async def test_run_search_job_does_not_expose_source_scope_in_tool_input() -> No
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_search",
-        request=RuntimeRequest(
-            agent_id="local_search",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="find docs",
-            metadata={
-                "query": "find docs",
-                "collection_id": "ws-1",
-                "allowed_source_ids": ["source-a"],
-            },
-        ),
+    exec_ctx = _search_exec_ctx(
+        "search-no-source-scope-in-input",
+        message="find docs",
+        metadata={
+            "query": "find docs",
+            "collection_id": "ws-1",
+            "allowed_source_ids": ["source-a"],
+        },
         tool_gateway=gateway,
     )
 
@@ -237,18 +240,9 @@ async def test_run_search_job_fails_safe_on_retrieve_error() -> None:
         )
     )
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_search",
-        request=RuntimeRequest(
-            agent_id="local_search",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="find something",
-            metadata={},
-        ),
+    exec_ctx = _search_exec_ctx(
+        "search-retrieve-error",
+        message="find something",
         tool_gateway=gateway,
     )
 
@@ -272,18 +266,11 @@ async def test_run_search_job_preserves_raw_tool_reason() -> None:
         )
     )
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_search",
-        request=RuntimeRequest(
-            agent_id="local_search",
-            tenant_id="lkw-smoke",
-            user_id="u1",
-            session_id="s1",
-            message="find marker",
-            metadata={"query": "marker", "collection_id": "ws-1"},
-        ),
+    exec_ctx = _search_exec_ctx(
+        "search-raw-tool-reason",
+        tenant_id="lkw-smoke",
+        message="find marker",
+        metadata={"query": "marker", "collection_id": "ws-1"},
         tool_gateway=gateway,
     )
 

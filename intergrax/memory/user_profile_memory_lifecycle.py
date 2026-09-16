@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.memory_lifecycle import (
     MemoryLifecycleDisposition,
     MemoryLifecycleOperation,
@@ -17,9 +18,18 @@ from intergrax.memory.contracts.memory_lifecycle import (
     MemoryReconciliationOutcome,
     UserProfileMemoryProjection,
     UserProfileMemoryReconciliationContext,
+    user_profile_memory_projection_context,
 )
 from intergrax.memory.memory_projection_failure import classify_memory_projection_failure
 from intergrax.memory.memory_temporal import filter_active_memory_entries
+from intergrax.memory.memory_diagnostic_emitter import (
+    MemoryDiagnosticEmitter,
+    default_memory_diagnostic_emitter,
+)
+from intergrax.memory.memory_observability_support import (
+    emit_lifecycle_terminal,
+    emit_reconciliation_terminal,
+)
 from intergrax.memory.user_profile_memory import UserProfile, UserProfileMemoryEntry
 
 __all__ = [
@@ -49,8 +59,12 @@ class UserProfileMemoryLifecycleCoordinator:
         self,
         *,
         projections: Sequence[UserProfileMemoryProjection],
+        diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
+        tenant_id: str | None = None,
     ) -> None:
         self._projections = tuple(projections)
+        self._diagnostic_emitter = diagnostic_emitter or default_memory_diagnostic_emitter()
+        self._tenant_id = tenant_id
 
     @property
     def projections(self) -> tuple[UserProfileMemoryProjection, ...]:
@@ -60,12 +74,13 @@ class UserProfileMemoryLifecycleCoordinator:
         self,
         *,
         operation: MemoryLifecycleOperation,
+        identity: RequestIdentity,
         user_id: str,
         entry: UserProfileMemoryEntry,
     ) -> MemoryLifecycleOutcome:
-        evidence = await self._run_projection_upsert(user_id=user_id, entry=entry)
+        evidence = await self._run_projection_upsert(identity=identity, entry=entry)
         disposition = self._disposition_from_evidence(evidence)
-        return MemoryLifecycleOutcome(
+        result = MemoryLifecycleOutcome(
             operation=operation,
             disposition=disposition,
             user_id=user_id,
@@ -73,11 +88,19 @@ class UserProfileMemoryLifecycleCoordinator:
             primary_applied=True,
             projection_evidence=evidence,
         )
+        emit_lifecycle_terminal(
+            self._diagnostic_emitter,
+            user_id=user_id,
+            tenant_id=self._tenant_id,
+            outcome=result,
+        )
+        return result
 
     async def apply_after_primary_deletes(
         self,
         *,
         operation: MemoryLifecycleOperation,
+        identity: RequestIdentity,
         user_id: str,
         entry_ids: Sequence[str],
     ) -> MemoryLifecycleOutcome:
@@ -91,9 +114,9 @@ class UserProfileMemoryLifecycleCoordinator:
                 primary_applied=True,
                 projection_evidence=(),
             )
-        evidence = await self._run_projection_delete(entry_ids=ids)
+        evidence = await self._run_projection_delete(identity=identity, entry_ids=ids)
         disposition = self._disposition_from_evidence(evidence)
-        return MemoryLifecycleOutcome(
+        result = MemoryLifecycleOutcome(
             operation=operation,
             disposition=disposition,
             user_id=user_id,
@@ -101,19 +124,27 @@ class UserProfileMemoryLifecycleCoordinator:
             primary_applied=True,
             projection_evidence=evidence,
         )
+        emit_lifecycle_terminal(
+            self._diagnostic_emitter,
+            user_id=user_id,
+            tenant_id=self._tenant_id,
+            outcome=result,
+        )
+        return result
 
     async def reconcile_user(
         self,
         *,
-        user_id: str,
+        identity: RequestIdentity,
         profile: UserProfile | None,
     ) -> MemoryReconciliationOutcome:
+        user_id = identity.user_id or ""
         if profile is None:
             active_ids: frozenset[str] = frozenset()
         else:
             active_ids = active_memory_entry_ids(profile)
         context = UserProfileMemoryReconciliationContext(
-            user_id=user_id,
+            identity=identity,
             profile=profile,
             authoritative_active_entry_ids=active_ids,
         )
@@ -154,24 +185,32 @@ class UserProfileMemoryLifecycleCoordinator:
             disposition = MemoryReconciliationDisposition.REPAIRED
         else:
             disposition = MemoryReconciliationDisposition.CONSISTENT
-        return MemoryReconciliationOutcome(
+        result = MemoryReconciliationOutcome(
             user_id=user_id,
             disposition=disposition,
             projection_evidence=tuple(evidence),
         )
+        emit_reconciliation_terminal(
+            self._diagnostic_emitter,
+            tenant_id=self._tenant_id,
+            user_id=user_id,
+            outcome=result,
+        )
+        return result
 
     async def _run_projection_upsert(
         self,
         *,
-        user_id: str,
+        identity: RequestIdentity,
         entry: UserProfileMemoryEntry,
     ) -> tuple[MemoryProjectionOperationEvidence, ...]:
         if not self._projections:
             return ()
+        context = user_profile_memory_projection_context(identity)
         results: list[MemoryProjectionOperationEvidence] = []
         for projection in self._projections:
             try:
-                await projection.upsert_memory_entry(user_id, entry)
+                await projection.upsert_memory_entry(context, entry)
                 results.append(
                     MemoryProjectionOperationEvidence(
                         projection_id=projection.projection_id,
@@ -198,14 +237,16 @@ class UserProfileMemoryLifecycleCoordinator:
     async def _run_projection_delete(
         self,
         *,
+        identity: RequestIdentity,
         entry_ids: Sequence[str],
     ) -> tuple[MemoryProjectionOperationEvidence, ...]:
         if not self._projections:
             return ()
+        context = user_profile_memory_projection_context(identity)
         results: list[MemoryProjectionOperationEvidence] = []
         for projection in self._projections:
             try:
-                await projection.delete_memory_entries(entry_ids)
+                await projection.delete_memory_entries(context, entry_ids)
                 results.append(
                     MemoryProjectionOperationEvidence(
                         projection_id=projection.projection_id,

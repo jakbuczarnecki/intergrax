@@ -30,5 +30,25 @@ class CapabilityRankingError(CapabilityCatalogError):
     """Ranker contract violation — output integrity or invalid ranking metadata."""
 
 
+class CapabilitySearchError(CapabilityCatalogError):
+    """Search strategy contract violation — output integrity or invalid search metadata."""
+
+
+class CapabilityRecommendationError(CapabilityCatalogError):
+    """Recommendation strategy contract violation — output integrity or invalid metadata."""
+
+
 class CapabilityGovernanceError(CapabilityCatalogError):
     """Governance evaluator contract violation — partition or elevation failure."""
+
+
+class CapabilityGovernanceEvaluatorUnavailableError(CapabilityCatalogError):
+    """Expected operational inability to produce a governance decision.
+
+    Plugins raise this when a dependency is down or evidence cannot be
+    obtained for a known, contractual reason — not for programming defects.
+    """
+
+
+# Stable alias for cross-evaluator governance plugin contracts (ME-6-C1).
+CapabilityGovernanceExpectedEvaluatorFailure = CapabilityGovernanceEvaluatorUnavailableError

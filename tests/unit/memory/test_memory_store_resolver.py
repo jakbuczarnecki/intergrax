@@ -13,6 +13,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     MemoryProfile,
 )
+from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStoreCreationContext
 from intergrax.core.memory_bootstrap import discover_session_turn_index_plugin_types
 from intergrax.core.plugins.admission import PluginAdmissionReasonCode
 from intergrax.core.plugins.discovery import EP_MEMORY_STORES, reset_entry_point_spec_cache_for_tests
@@ -437,7 +438,10 @@ def test_discover_session_turn_index_plugin_types_uses_classifier() -> None:
             return "test.turn_index"
 
         @classmethod
-        def create_session_turn_index(cls, **_kwargs):
+        def create_session_turn_index(
+            cls,
+            _context: SessionTurnIndexStoreCreationContext,
+        ):
             raise NotImplementedError
 
     plugins = discover_session_turn_index_plugin_types()

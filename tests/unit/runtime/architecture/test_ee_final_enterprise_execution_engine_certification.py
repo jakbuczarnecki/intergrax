@@ -18,6 +18,7 @@ from tests.unit.runtime.architecture._ee_final_enterprise_facts import (
     FINAL_QUALIFICATION_DOC,
     P0_INVENTORY,
     PLATFORM_REVALIDATION_QUALIFICATION,
+    REVALIDATION_COMMIT,
 )
 from tests.unit.runtime.architecture._ee_final_arch_facts import p0_bypass_count
 
@@ -112,7 +113,7 @@ def test_ee_final_enterprise_no_execution_core_drift_since_revalidation() -> Non
             "git",
             "diff",
             "--name-only",
-            "953a38a1c6f52ca4dec2c55b18942ba75c97854b..HEAD",
+            f"{REVALIDATION_COMMIT}..HEAD",
             "--",
             "intergrax/runtime/execution",
         ],

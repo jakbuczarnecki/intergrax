@@ -13,7 +13,7 @@ from intergrax.contracts.functional_diagnostic_bounds import MAX_FUNCTIONAL_DIAG
 from intergrax.runtime.diagnostics.functional_diagnostic_analysis import (
     FunctionalDiagnosticAnalysisIntegrityError,
 )
-from intergrax.runtime.observability.functional_validation_evidence import (
+from intergrax.contracts.functional_validation_evidence import (
     FunctionalValidationEvidence,
 )
 

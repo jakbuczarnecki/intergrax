@@ -20,8 +20,14 @@ from intergrax.applications.contracts.environment_profile import (
     ObservabilityProfile,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.events.emit_context import EmitContext
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from testing_support.builder import build_emit_context_for_tests
 from intergrax.runtime.events.event_catalog import EventCategory
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 from intergrax.runtime.events.runtime_event import RuntimeEventType
@@ -83,7 +89,7 @@ def test_wire_observability_event_subscriptions_by_kind_prefix() -> None:
         _LegalFlagV1,
         event_kind="agents.legal.clause_flagged",
     )
-    ctx = EmitContext(task_id="t1", run_id="r1", bus=bus)
+    ctx = build_emit_context_for_tests(seed="obs-sub-kind", bus=bus)
     emit_domain_signal(ctx, kind="agents.legal.clause_flagged", payload=_LegalFlagV1())
     assert seen == ["agents.legal.clause_flagged"]
     clear_event_kind_registry()
@@ -127,8 +133,10 @@ def test_wire_observability_event_subscriptions_uses_extra_handlers() -> None:
 
     bus.record(
         RuntimeEvent(
-            task_id="t1",
-            run_id="r1",
+            task_id=mint_task_id(),
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
             event_type=RuntimeEventType.TASK_CREATED,
             phase=ExecutionPhase.INTAKE,
         )

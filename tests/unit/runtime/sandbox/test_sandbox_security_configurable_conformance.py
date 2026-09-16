@@ -15,6 +15,7 @@ from intergrax.runtime.sandbox.contracts import (
     SandboxSecurityConfigurable,
     SandboxSecurityRequirements,
 )
+from intergrax.runtime.sandbox.execution_environment import FilesystemAccess, ProcessExecution
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
 from intergrax.runtime.sandbox.network_egress import canonicalize_network_egress_allowlist
 
@@ -66,6 +67,10 @@ class _QualifiedSandboxHostBackend:
             provider_id="qualified-hosted",
             network_egress_allowlist_enforced=True,
             enforced_network_hosts=_ALLOWLIST,
+            supports_sandboxed_exec=True,
+            supports_workspace_write=True,
+            filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
+            process_execution=ProcessExecution.SANDBOXED,
         )
 
 

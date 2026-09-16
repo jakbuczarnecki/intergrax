@@ -11,7 +11,7 @@ from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
     MembershipResolutionMode,
 )
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, mint_task_id
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
@@ -78,6 +78,8 @@ def build_enforcement_request(
     side_effect_resource: str | None = None,
 ) -> CollaborativeWorkEnforcementRequest:
     resolved_task_id = task_id or mint_task_id()
+    resolved_attempt_id = mint_attempt_id()
+    resolved_execution_id = mint_execution_id()
     return CollaborativeWorkEnforcementRequest(
         tenant_id=tenant_id,
         workspace_id=workspace_id,
@@ -93,6 +95,8 @@ def build_enforcement_request(
             side_effect_scope_digest=side_effect_scope_digest,
             task_id=resolved_task_id,
             run_id=run_id,
+            attempt_id=resolved_attempt_id,
+            execution_id=resolved_execution_id,
             principal_id=acting_principal_id,
             tenant_id=tenant_id,
             resource=side_effect_resource if side_effect_resource is not None else resource_scope,

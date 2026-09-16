@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 
 from intergrax.contracts.execution_identity import EventId, validate_event_id
-from intergrax.runtime.observability.functional_validation_evidence import (
+from intergrax.contracts.functional_validation_evidence import (
     DiagnosticExecutionCorrelation,
     ExpectedActualRelation,
     FunctionalValidationEvidence,
@@ -17,7 +17,7 @@ from intergrax.runtime.observability.functional_validation_evidence import (
     FunctionalValidatorRef,
     PLATFORM_FUNCTIONAL_VALIDATION_EVIDENCE_SCHEMA,
 )
-from intergrax.runtime.observability.problem_signal import (
+from intergrax.contracts.platform_problem_signal import (
     PROBLEM_KIND_PLATFORM_FUNCTIONAL_OUTCOME_INVALID,
     PROBLEM_SEVERITY_ERROR,
     PROBLEM_STATUS_DETECTED,

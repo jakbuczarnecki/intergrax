@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.applications._shared.routing_evaluating_adapter import (
+from intergrax.llm_adapters.routing.evaluating_adapter import (
     RoutingContextProvider,
     RoutingEvaluatingLLMAdapter,
     RoutingEvaluationObserver,

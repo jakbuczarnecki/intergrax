@@ -27,6 +27,7 @@ from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
 from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.invocation_wiring import ToolInvocationContext
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
@@ -233,6 +234,7 @@ def invoke_catalog_tool_request(
     state: "RuntimeState",
     request: ToolRequest,
     trace_step: str = "CatalogGateway",
+    invocation_context: ToolInvocationContext | None = None,
 ) -> ToolResponse:
     """§42.12 direct catalog ``ToolRequest`` → configured ``ToolInvokerProtocol``."""
     from intergrax.runtime.nexus.budget.budget_ticks import (
@@ -278,6 +280,7 @@ def invoke_catalog_tool_request(
         tool_id=tool_id,
         input=validated,
         idempotency_key=request.idempotency_key or f"{state.run_id}:{request.request_id}",
+        invocation_context=invocation_context,
     )
     assignment_state = (
         DeclarativeHitlScopeAssignmentState()

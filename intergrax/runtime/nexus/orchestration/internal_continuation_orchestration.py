@@ -155,6 +155,17 @@ def establish_canonical_hitl_pause(
     """Canonical pause lifecycle + Task projection — not Task-only authority."""
     port = capability.port
     driver = capability.lifecycle_driver
+    resolved_governed = governed_correlation
+    if resolved_governed is None:
+        resolved_governed = GovernedContinuationCorrelation(
+            continuation_request_id=continuation_id,
+            reason=reason,
+            task_id=identity.task_id,
+            run_id=identity.run_id,
+            attempt_id=identity.attempt_id,
+            execution_id=identity.execution_id,
+            operation_id=f"internal_hitl_{human_request_id}",
+        )
     pending = _load_pending_optional(port, continuation_id=continuation_id)
     if pending is None:
         pending = port.request_pause(
@@ -162,7 +173,7 @@ def establish_canonical_hitl_pause(
                 identity=identity,
                 continuation_id=continuation_id,
                 reason=reason,
-                governed_correlation=governed_correlation,
+                governed_correlation=resolved_governed,
                 pause_id=pause_id,
                 human_request_id=human_request_id,
                 requested_at=datetime.now(timezone.utc).isoformat(),

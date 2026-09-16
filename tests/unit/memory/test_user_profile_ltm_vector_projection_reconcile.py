@@ -13,7 +13,9 @@ from intergrax.memory.contracts.memory_lifecycle import (
     MemoryProjectionReconciliationDisposition,
     MemoryReconciliationDisposition,
     UserProfileMemoryReconciliationContext,
+    user_profile_memory_projection_context,
 )
+from tests.unit.memory._projection_identity import memory_test_identity
 from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN, resolve_memory_index_collection
 from intergrax.memory.user_profile_ltm_vector_projection import UserProfileLtmVectorProjection
 from intergrax.memory.user_profile_memory import (
@@ -37,6 +39,7 @@ pytestmark = pytest.mark.gate
 TENANT_A = "tenant-a"
 TENANT_B = "tenant-b"
 USER_ID = "user-1"
+_RECONCILE_IDENTITY = memory_test_identity(tenant_id=TENANT_A, user_id=USER_ID)
 
 
 class _FixedEmbeddingManager:
@@ -60,7 +63,7 @@ def _context(
     active_ids: frozenset[str],
 ) -> UserProfileMemoryReconciliationContext:
     return UserProfileMemoryReconciliationContext(
-        user_id=USER_ID,
+        identity=_RECONCILE_IDENTITY,
         profile=profile,
         authoritative_active_entry_ids=active_ids,
     )
@@ -97,7 +100,10 @@ async def _seed_vector(
     tenant_id: str = TENANT_A,
 ) -> None:
     entry = UserProfileMemoryEntry(entry_id=entry_id, content=f"content-{entry_id}")
-    await projection.upsert_memory_entry(USER_ID, entry)
+    await projection.upsert_memory_entry(
+        user_profile_memory_projection_context(_RECONCILE_IDENTITY),
+        entry,
+    )
 
 
 @pytest.mark.asyncio
@@ -214,7 +220,7 @@ async def test_ltm_reconcile_fails_when_metadata_listing_unsupported() -> None:
     coordinator = UserProfileMemoryLifecycleCoordinator(projections=(projection,))
     profile = _profile(["e1"])
 
-    outcome = await coordinator.reconcile_user(user_id=USER_ID, profile=profile)
+    outcome = await coordinator.reconcile_user(identity=_RECONCILE_IDENTITY, profile=profile)
 
     assert outcome.disposition is MemoryReconciliationDisposition.FAILED
     failure = outcome.projection_evidence[0].failure
@@ -239,7 +245,7 @@ async def test_ltm_reconcile_backend_timeout_surfaces_as_failed() -> None:
     coordinator = UserProfileMemoryLifecycleCoordinator(projections=(projection,))
     profile = _profile(["e1"])
 
-    outcome = await coordinator.reconcile_user(user_id=USER_ID, profile=profile)
+    outcome = await coordinator.reconcile_user(identity=_RECONCILE_IDENTITY, profile=profile)
 
     assert outcome.disposition is MemoryReconciliationDisposition.FAILED
     failure = outcome.projection_evidence[0].failure

@@ -12,14 +12,14 @@ from intergrax.runtime.diagnostics.diagnostic_precision import (
     DiagnosticPrecision,
     FailureBoundary,
 )
-from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
+from intergrax.contracts.execution_reconstruction import (
+    ExecutionReconstruction,
+    ReconstructedAttempt,
+)
+from intergrax.contracts.execution_reconstruction_lineage import (
     ExecutionLineageCompleteness,
     ExecutionLineageReadStatus,
     ReconstructedAttemptLineage,
-)
-from intergrax.runtime.observability.reconstruction import (
-    ExecutionReconstruction,
-    ReconstructedAttempt,
 )
 from intergrax.runtime.events.payload_registry import (
     RuntimeEventPayloadError,

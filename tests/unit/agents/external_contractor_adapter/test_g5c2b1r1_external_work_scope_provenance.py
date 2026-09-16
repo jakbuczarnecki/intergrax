@@ -30,6 +30,7 @@ from intergrax.contracts.external_work import (
     quote_acceptance_side_effect_scope_digest,
 )
 from intergrax.contracts.governed_continuation import ContinuationReason
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
@@ -292,5 +293,7 @@ def test_malformed_side_effect_scope_digest_rejected_by_generic_contract() -> No
             side_effect_scope_digest="sha256:" + ("AB" * 32),
             task_id=_TASK_ID,
             run_id=_RUN_ID,
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
             principal_id=_PRINCIPAL,
         )

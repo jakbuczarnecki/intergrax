@@ -14,6 +14,10 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import (
+    build_runtime_request_for_tests,
+    canonical_execution_identity_scope,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
@@ -86,19 +90,17 @@ async def test_uaep_attaches_shadow_workspace(tmp_path):
     manager = ShadowWorkspaceManager(root=tmp_path)
     uaep = UAEPExecutor(shadow_manager=manager)
     agent = _ShadowWriteAgent()
-    request = RuntimeRequest(
-        tenant_id="t1",
-        user_id="u1",
-        session_id="s1",
-        agent_id="shadow_writer",
-        message="experiment artifact",
-        metadata={
-            SHADOW_WORKSPACE_FLAG: True,
-            "task_id": "task_shadow_1",
-        },
-    )
-
-    answer, validation, _governance = await uaep.execute(agent, request)
+    with canonical_execution_identity_scope("shadow-workspace-uaep"):
+        request = build_runtime_request_for_tests(
+            seed="shadow-workspace-uaep",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            agent_id="shadow_writer",
+            message="experiment artifact",
+            metadata={SHADOW_WORKSPACE_FLAG: True},
+        )
+        answer, validation, _governance = await uaep.execute(agent, request)
 
     assert validation.valid is True
     assert answer.route is not None

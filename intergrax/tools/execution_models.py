@@ -6,9 +6,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Generic, Optional, TypeVar
+from typing import TYPE_CHECKING, Generic, Optional, TypeVar
 
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+    from intergrax.tools.invocation_wiring import ToolInvocationContext
+    from intergrax.tools.registry.wiring import ToolWiringContext
 
 
 class ToolEffectCertainty(str, Enum):
@@ -36,6 +40,8 @@ class ToolExecutionRequest(Generic[InModelT]):
     input: InModelT
     idempotency_key: Optional[str] = None
     declarative_hitl_invocation_scope_id: Optional[str] = None
+    invocation_context: Optional["ToolInvocationContext"] = None
+    effective_wiring: Optional["ToolWiringContext"] = None
 
 
 @dataclass(frozen=True, slots=True)

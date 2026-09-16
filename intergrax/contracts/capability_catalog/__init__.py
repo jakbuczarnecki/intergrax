@@ -13,6 +13,10 @@ from intergrax.contracts.capability_catalog.evidence import (
     SCHEMA_CAPABILITY_DISCOVERY_AVAILABILITY_EVIDENCE_V1,
     CapabilityDiscoveryAvailabilityEvidence,
 )
+from intergrax.contracts.capability_catalog.entry import (
+    SCHEMA_CAPABILITY_CATALOG_ENTRY_V1,
+    CapabilityCatalogEntry,
+)
 from intergrax.contracts.capability_catalog.identity import (
     SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1,
     SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1,
@@ -41,6 +45,10 @@ from intergrax.contracts.capability_catalog.provenance import (
     SCHEMA_CAPABILITY_PROVENANCE_V1,
     CapabilityProvenance,
 )
+from intergrax.contracts.capability_catalog.release_identity import (
+    SCHEMA_CAPABILITY_RELEASE_IDENTITY_V1,
+    CapabilityReleaseIdentity,
+)
 from intergrax.contracts.capability_catalog.ranking import (
     SCHEMA_CAPABILITY_RANKING_CONTEXT_V1,
     SCHEMA_CAPABILITY_RANKING_EVIDENCE_V1,
@@ -48,11 +56,48 @@ from intergrax.contracts.capability_catalog.ranking import (
     CapabilityRankingEvidence,
     CapabilityRankingSignal,
 )
+from intergrax.contracts.capability_catalog.recommendation import (
+    SCHEMA_CAPABILITY_RECOMMENDATION_CONTEXT_V1,
+    SCHEMA_CAPABILITY_RECOMMENDATION_EVIDENCE_V1,
+    CapabilityRecommendationContext,
+    CapabilityRecommendationEvidence,
+    CapabilityRecommendationReasonCode,
+)
+from intergrax.contracts.capability_catalog.search import (
+    SCHEMA_CAPABILITY_SEARCH_CONTEXT_V1,
+    SCHEMA_CAPABILITY_SEARCH_EVIDENCE_V1,
+    SCHEMA_CAPABILITY_SEARCH_QUERY_V1,
+    CapabilitySearchContext,
+    CapabilitySearchEvidence,
+    CapabilitySearchQuery,
+    CapabilitySearchSignal,
+)
+from intergrax.contracts.capability_catalog.need import (
+    SCHEMA_CAPABILITY_NEED_V1,
+    CapabilityNeed,
+)
 from intergrax.contracts.capability_catalog.scope import (
     SCHEMA_CAPABILITY_DISCOVERY_SCOPE_V1,
     CapabilityDiscoveryScope,
     CapabilityDiscoveryScopeMode,
 )
+from intergrax.contracts.capability_catalog.federation_policy import (
+    CapabilityCatalogFederationPolicy,
+)
+from intergrax.contracts.capability_catalog.snapshot_cache import (
+    NOOP_CAPABILITY_CATALOG_SNAPSHOT_CACHE_ID,
+    SCHEMA_CAPABILITY_CATALOG_SNAPSHOT_CACHE_KEY_V1,
+    CapabilityCatalogSnapshotCacheDisposition,
+    CapabilityCatalogSnapshotCacheFailurePolicy,
+    CapabilityCatalogSnapshotCacheGenerationPolicy,
+    CapabilityCatalogSnapshotCacheIntegrityError,
+    CapabilityCatalogSnapshotCacheKey,
+    CapabilityCatalogSnapshotCacheObserver,
+    CapabilityCatalogSnapshotCacheObserverEmitError,
+    CapabilityCatalogSnapshotCacheObserverFailurePolicy,
+    CapabilityCatalogSnapshotCacheUnavailableError,
+)
+from intergrax.contracts.capability_catalog.source import CapabilityCatalogSource
 from intergrax.contracts.capability_catalog.skill_version_binding import (
     SkillVersionBindingDisposition,
 )
@@ -100,9 +145,25 @@ from intergrax.contracts.capability_catalog.work_stage_loop import (
 __all__ = [
     "AvailabilityDisposition",
     "CapabilityCatalogContractError",
+    "CapabilityCatalogEntry",
+    "CapabilityCatalogFederationPolicy",
+    "CapabilityCatalogSnapshotCacheDisposition",
+    "CapabilityCatalogSnapshotCacheFailurePolicy",
+    "CapabilityCatalogSnapshotCacheGenerationPolicy",
+    "CapabilityCatalogSnapshotCacheIntegrityError",
+    "CapabilityCatalogSnapshotCacheKey",
+    "CapabilityCatalogSnapshotCacheObserver",
+    "CapabilityCatalogSnapshotCacheObserverEmitError",
+    "CapabilityCatalogSnapshotCacheObserverFailurePolicy",
+    "CapabilityCatalogSnapshotCacheUnavailableError",
+    "NOOP_CAPABILITY_CATALOG_SNAPSHOT_CACHE_ID",
+    "SCHEMA_CAPABILITY_CATALOG_SNAPSHOT_CACHE_KEY_V1",
+    "CapabilityCatalogSource",
     "CapabilityDiscoveryAvailabilityEvidence",
     "CapabilityDiscoveryIdentity",
     "CapabilityDiscoveryQuery",
+    "CapabilityNeed",
+    "SCHEMA_CAPABILITY_NEED_V1",
     "CapabilityDiscoveryScope",
     "CapabilityDiscoveryScopeMode",
     "CapabilityIdentityKey",
@@ -111,9 +172,17 @@ __all__ = [
     "LogicalIdentityFilter",
     "NORMATIVE_AVAILABILITY_DISPOSITIONS",
     "CapabilityProvenance",
+    "CapabilityReleaseIdentity",
     "CapabilityRankingContext",
     "CapabilityRankingEvidence",
     "CapabilityRankingSignal",
+    "CapabilityRecommendationContext",
+    "CapabilityRecommendationEvidence",
+    "CapabilityRecommendationReasonCode",
+    "CapabilitySearchContext",
+    "CapabilitySearchEvidence",
+    "CapabilitySearchQuery",
+    "CapabilitySearchSignal",
     "CapabilitySourceIdentity",
     "CapabilitySourceKind",
     "SkillVersionBindingDisposition",
@@ -129,6 +198,7 @@ __all__ = [
     "NORMATIVE_CAPABILITY_GOVERNANCE_REASON_CODES",
     "NORMATIVE_CAPABILITY_STAGE_VOCABULARY",
     "SCHEMA_CAPABILITY_DISCOVERY_AVAILABILITY_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_CATALOG_ENTRY_V1",
     "SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1",
     "SCHEMA_CAPABILITY_DISCOVERY_QUERY_V1",
     "SCHEMA_CAPABILITY_DISCOVERY_SCOPE_V1",
@@ -136,8 +206,14 @@ __all__ = [
     "SourceFilter",
     "SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1",
     "SCHEMA_CAPABILITY_PROVENANCE_V1",
+    "SCHEMA_CAPABILITY_RELEASE_IDENTITY_V1",
     "SCHEMA_CAPABILITY_RANKING_CONTEXT_V1",
     "SCHEMA_CAPABILITY_RANKING_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_RECOMMENDATION_CONTEXT_V1",
+    "SCHEMA_CAPABILITY_RECOMMENDATION_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_SEARCH_CONTEXT_V1",
+    "SCHEMA_CAPABILITY_SEARCH_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_SEARCH_QUERY_V1",
     "SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1",
     "SCHEMA_CAPABILITY_AGENT_GOVERNANCE_EVIDENCE_V1",
     "SCHEMA_CAPABILITY_SKILL_GOVERNANCE_EVIDENCE_V1",

@@ -8,7 +8,7 @@ import pytest
 
 from intergrax.contracts.delegation import DelegationSpec, ExploreDelegationProfile
 from intergrax.llm.messages import ChatMessage
-from intergrax.memory.entity_graph_memory import EntityGraphMemoryStore, EntityEdge, EntityNode
+from intergrax.memory.entity_graph_memory import EntityGraphLegacyBypassError, EntityGraphMemoryStore
 from intergrax.memory.stores.in_memory_entity_temporal_memory_store import (
     InMemoryEntityTemporalMemoryStore,
 )
@@ -50,12 +50,10 @@ def test_structured_session_summary_roundtrip() -> None:
     assert "ship" in text
 
 
-def test_entity_graph_neighbors() -> None:
+def test_entity_graph_legacy_facade_rejects_ungoverned_access() -> None:
     store = EntityGraphMemoryStore(backend=InMemoryEntityTemporalMemoryStore())
-    store.upsert_node(EntityNode(entity_id="u1", label="Artur"))
-    store.upsert_node(EntityNode(entity_id="proj1", label="Intergrax"))
-    store.add_edge(EntityEdge(source_id="u1", target_id="proj1", relation="works_on"))
-    assert len(store.neighbors("u1")) == 1
+    with pytest.raises(EntityGraphLegacyBypassError):
+        store.neighbors("u1")
 
 
 @pytest.mark.asyncio

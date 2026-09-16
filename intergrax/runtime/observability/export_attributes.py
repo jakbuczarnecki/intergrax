@@ -1,62 +1,33 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Typed application observability attributes contract (OBS-EXPORT-4A)."""
+"""Typed application observability attributes and export sanitization (OBS-EXPORT-4A)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Mapping, TypeAlias
+from typing import Literal, cast
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
+from intergrax.contracts.application_observability_attributes import (
+    APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA,
+    ApplicationObservabilityAttributes,
+    ObservabilityAttributeValue,
+    _coerce_safe_attribute_value,
+    observability_attribute_key,
+)
 from intergrax.contracts.observability_artifact_reference import (
     OBSERVABILITY_ARTIFACT_REFERENCE_SCHEMA,
     ObservabilityArtifactReference,
     looks_like_unsafe_observability_path,
 )
 
-APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA = "application_observability_attributes.v1"
 SANITIZED_APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA = (
     "sanitized_application_observability_attributes.v1"
 )
 
-ObservabilityAttributeValue: TypeAlias = str | int | float | bool | None | list[str]
-
-_RESERVED_ATTRIBUTE_FIELDS: frozenset[str] = frozenset({"schema_version", "namespace"})
-
-
-def observability_attribute_key(namespace: str, field_name: str) -> str:
-    """Return a stable namespaced export key for an application attribute field."""
-    return f"{namespace}.{field_name}"
-
-
-class ApplicationObservabilityAttributes(BaseModel):
-    """Base typed contract for safe application-specific observability metadata."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    schema_version: Literal["application_observability_attributes.v1"] = (
-        APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA
-    )
-    namespace: str
-    operation: str | None = None
-
-    def to_safe_attributes(self) -> Mapping[str, ObservabilityAttributeValue]:
-        """Export declared fields as namespaced safe scalar/list attributes."""
-        exported: dict[str, ObservabilityAttributeValue] = {}
-        for field_name, value in self.model_dump(exclude_none=True).items():
-            if field_name in _RESERVED_ATTRIBUTE_FIELDS:
-                continue
-            safe_value = _coerce_safe_attribute_value(value)
-            if safe_value is _UNSAFE:
-                continue
-            exported[observability_attribute_key(self.namespace, field_name)] = safe_value
-
-        exported[observability_attribute_key(self.namespace, "namespace")] = self.namespace
-        if self.operation is not None:
-            exported[observability_attribute_key(self.namespace, "operation")] = self.operation
-        return exported
+_UNSAFE = object()
 
 
 class SanitizedApplicationObservabilityAttributes(BaseModel):
@@ -78,33 +49,10 @@ class ApplicationObservabilityAttributePolicyResult:
     hashed_keys: tuple[str, ...] = ()
 
 
-_UNSAFE = object()
-
-
-def _coerce_safe_attribute_value(value: object) -> ObservabilityAttributeValue | object:
-    if value is None:
-        return None
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, int) and not isinstance(value, bool):
-        return value
-    if isinstance(value, float):
-        return value
-    if isinstance(value, str):
-        return value
-    if isinstance(value, tuple):
-        if all(isinstance(item, str) for item in value):
-            return list(value)
-        return _UNSAFE
-    if isinstance(value, list):
-        if all(isinstance(item, str) for item in value):
-            return value
-        return _UNSAFE
-    return _UNSAFE
-
-
 def _forbidden_attribute_field_names() -> frozenset[str]:
-    from intergrax.runtime.observability.export_boundary import FORBIDDEN_EXPORT_CONTENT_FIELDS
+    from intergrax.runtime.observability.export_boundary import (
+        FORBIDDEN_EXPORT_CONTENT_FIELDS,
+    )
 
     return FORBIDDEN_EXPORT_CONTENT_FIELDS
 
@@ -156,7 +104,7 @@ def sanitize_application_observability_attributes(
                 dropped.append(key)
             continue
 
-        sanitized[key] = safe_value
+        sanitized[key] = cast(ObservabilityAttributeValue, safe_value)
 
     if not sanitized:
         return ApplicationObservabilityAttributePolicyResult(
@@ -187,3 +135,18 @@ def sanitized_application_attributes_are_content_safe(
         if _field_name_from_attribute_key(key) in forbidden:
             return False
     return True
+
+
+__all__ = [
+    "APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
+    "ApplicationObservabilityAttributePolicyResult",
+    "ApplicationObservabilityAttributes",
+    "OBSERVABILITY_ARTIFACT_REFERENCE_SCHEMA",
+    "ObservabilityArtifactReference",
+    "ObservabilityAttributeValue",
+    "SANITIZED_APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
+    "SanitizedApplicationObservabilityAttributes",
+    "observability_attribute_key",
+    "sanitize_application_observability_attributes",
+    "sanitized_application_attributes_are_content_safe",
+]

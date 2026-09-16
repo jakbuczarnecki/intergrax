@@ -27,7 +27,7 @@ from intergrax.integrations.providers.relational_store.sqlite.bundle import (
     create_sqlite_integration,
 )
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import build_runtime_request_for_tests
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
 from intergrax.runtime.organization.stores.sqlite_organization_profile_store import (
     SQLiteOrganizationProfileStore,
@@ -73,7 +73,8 @@ def test_lab_profile_materializes_runtime_config_memory_toggles(tmp_path: Path) 
         **(env.integration_profile.options or {}),
         "sqlite": {"data_dir": str(tmp_path)},
     }
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="memory-full-stack-lab",
         tenant_id="lab",
         agent_id="echo",
         user_id="tester",

@@ -15,6 +15,7 @@ class AcpMetadataKey(StrEnum):
     CHECKPOINT_STORE = "acp.checkpoint_store.v1"
     RESUME_FROM_CHECKPOINT = "acp.resume_from_checkpoint.v1"
     DECLARATIVE_TOOL_INVOKER = "acp.declarative_tool_invoker.v1"
+    SKILL_HOST_WIRING = "acp.skill_host_wiring.v1"
     COMPENSATION_QUEUE_STORE = "acp.compensation_queue.v1"
     IDEMPOTENCY_STORE = "acp.idempotency_store.v1"
     APPLICATION_RUN_SUMMARY = "application_run_summary.v1"

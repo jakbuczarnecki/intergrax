@@ -18,6 +18,7 @@ from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryTrustClass,
     parse_memory_record_timestamp,
 )
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.entity_temporal_memory import EntityMemoryScope
 from intergrax.memory.contracts.temporal_chronology import (
     memory_chronological_ordinal,
@@ -64,6 +65,7 @@ __all__ = [
     "select_temporal_coverage",
     "sort_memory_source_refs",
     "sort_child_summary_refs",
+    "validate_canonical_source_snapshot",
     "validate_long_horizon_summary_record",
 ]
 
@@ -400,10 +402,25 @@ class LongHorizonCompactionSource:
             parse_memory_record_timestamp("observed_at", self.observed_at)
 
 
+def validate_canonical_source_snapshot(
+    requested: LongHorizonCompactionSource,
+    snapshot: CanonicalMemorySourceSnapshot,
+) -> None:
+    if snapshot.memory_id != requested.memory_id:
+        raise LongHorizonMemoryViolation(
+            "canonical source authority returned unexpected memory_id"
+        )
+    if snapshot.revision != requested.revision:
+        raise LongHorizonMemoryViolation(
+            "canonical source authority returned unexpected revision"
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class LongHorizonCompactionRequest:
     scope: LongHorizonMemoryScope
     target_level: int
+    identity: RequestIdentity
     sources: tuple[LongHorizonCompactionSource, ...] = ()
     child_summaries: tuple[LongHorizonSummaryRecord, ...] = ()
     reference_time: datetime | None = None
@@ -658,12 +675,14 @@ class LongHorizonMemoryCapability(Protocol):
 
     def recall(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         query: LongHorizonRecallQuery,
     ) -> LongHorizonRecallResult: ...
 
     def traverse_lineage(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         request: LineageTraversalRequest,
     ) -> LineageTraversalResult: ...
@@ -677,6 +696,7 @@ class LongHorizonMemoryCapability(Protocol):
 
     def invalidate_summaries_for_deleted_source(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         source_memory_id: str,
     ) -> tuple[str, ...]: ...

@@ -78,16 +78,21 @@ def test_graph_executor_does_not_mint_delegation_authority() -> None:
 
 
 def test_child_execution_runner_does_not_load_authority_entry_points() -> None:
-    violations = _collect_forbidden_names(_CHILD_RUNNER_PATH, _FORBIDDEN_ENTRY_POINT_SYMBOLS)
+    violations = _collect_forbidden_names(
+        _CHILD_RUNNER_PATH, _FORBIDDEN_ENTRY_POINT_SYMBOLS
+    )
     assert violations == []
 
 
 def test_graph_executor_does_not_load_authority_entry_points() -> None:
-    violations = _collect_forbidden_names(_GRAPH_EXECUTOR_PATH, _FORBIDDEN_ENTRY_POINT_SYMBOLS)
+    violations = _collect_forbidden_names(
+        _GRAPH_EXECUTOR_PATH, _FORBIDDEN_ENTRY_POINT_SYMBOLS
+    )
     assert violations == []
 
 
 def test_registry_module_owns_entry_point_loading() -> None:
     source = _REGISTRY_PATH.read_text(encoding="utf-8")
-    assert "entry_points" in source
     assert "load_execution_authority_policy" in source
+    assert "iter_entry_point_specs" in source
+    assert "EP_EXECUTION_AUTHORITY_POLICIES" in source

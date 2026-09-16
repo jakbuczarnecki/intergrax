@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock
+from typing import cast
+from unittest.mock import AsyncMock
 
 import pytest
+
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from testing_support.builder import build_stub_nexus_loop_for_unified_task_runner
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -42,7 +46,7 @@ def _task(*, message: str = "hello") -> Task:
     )
 
 
-def _runner_with_handle() -> tuple[UnifiedTaskRunner, MagicMock, AsyncMock]:
+def _runner_with_handle() -> tuple[UnifiedTaskRunner, object, AsyncMock]:
     handle_task = AsyncMock(
         return_value=TaskResult(
             task_id=mint_task_id(),
@@ -51,9 +55,9 @@ def _runner_with_handle() -> tuple[UnifiedTaskRunner, MagicMock, AsyncMock]:
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
     )
-    loop = MagicMock()
-    loop.handle_task = handle_task
-    return UnifiedTaskRunner(loop), loop, handle_task  # type: ignore[arg-type]
+    loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
+    loop.handle_task = handle_task  # type: ignore[attr-defined]
+    return UnifiedTaskRunner(loop), loop, handle_task
 
 
 def test_unified_task_runner_source_has_no_direct_nexus_handle_task_call() -> None:
@@ -215,9 +219,9 @@ async def test_run_task_task_enricher_runs_before_nexus() -> None:
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
     )
-    loop = MagicMock()
-    loop.handle_task = handle_task
-    runner = UnifiedTaskRunner(loop, task_enricher=enricher)  # type: ignore[arg-type]
+    loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
+    loop.handle_task = handle_task  # type: ignore[attr-defined]
+    runner = UnifiedTaskRunner(loop, task_enricher=enricher)
 
     await runner.run_task(task)
 
@@ -230,9 +234,9 @@ async def test_run_task_unregisters_on_nexus_exception() -> None:
     task = _task()
     run_id = mint_run_id()
     handle_task = AsyncMock(side_effect=RuntimeError("nexus-fail"))
-    loop = MagicMock()
-    loop.handle_task = handle_task
-    runner = UnifiedTaskRunner(loop)  # type: ignore[arg-type]
+    loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
+    loop.handle_task = handle_task  # type: ignore[attr-defined]
+    runner = UnifiedTaskRunner(loop)
 
     with pytest.raises(RuntimeError, match="nexus-fail"):
         await runner.run_task(task, run_id=run_id)
@@ -295,9 +299,9 @@ async def test_concurrent_run_task_calls_use_isolated_delegate_identity() -> Non
         return TaskResult(
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
-    loop = MagicMock()
-    loop.handle_task = _handle
-    runner = UnifiedTaskRunner(loop)  # type: ignore[arg-type]
+    loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
+    loop.handle_task = _handle  # type: ignore[attr-defined]
+    runner = UnifiedTaskRunner(loop)
 
     first = asyncio.create_task(runner.run_task(task_a, run_id=run_id_a))
     second = asyncio.create_task(
@@ -312,6 +316,6 @@ async def test_concurrent_run_task_calls_use_isolated_delegate_identity() -> Non
 
 
 def test_unified_task_runner_constructor_remains_compatible() -> None:
-    loop = MagicMock()
-    runner = UnifiedTaskRunner(loop, task_enricher=lambda task: task)  # type: ignore[arg-type]
+    loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
+    runner = UnifiedTaskRunner(loop, task_enricher=lambda task: task)
     assert runner.nexus_loop is loop

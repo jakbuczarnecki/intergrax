@@ -6,7 +6,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from intergrax.memory.contracts.memory_security_governance import MemoryGovernanceDecision
 
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.memory_lifecycle import (
@@ -29,6 +32,7 @@ from intergrax.memory.contracts.procedural_memory import ProcedureMemoryCapabili
 __all__ = [
     "EpisodicMemoryCapability",
     "MemoryControlAccessDenied",
+    "MemoryControlGovernanceDenied",
     "MemoryControlBackendError",
     "MemoryControlForgetRequest",
     "MemoryControlForgetResult",
@@ -66,6 +70,16 @@ class MemoryControlPlaneScope(str, Enum):
 
 class MemoryControlAccessDenied(PermissionError):
     """Canonical identity does not authorize the requested memory scope."""
+
+
+class MemoryControlGovernanceDenied(PermissionError):
+    """Security/governance boundary rejected the memory operation."""
+
+    decision: MemoryGovernanceDecision
+
+    def __init__(self, message: str, *, decision: MemoryGovernanceDecision) -> None:
+        super().__init__(message)
+        self.decision = decision
 
 
 class MemoryControlUnsupportedScope(LookupError):
@@ -227,13 +241,13 @@ class UserProfileMemoryCapability(Protocol):
 
     async def add_memory_entry(
         self,
-        user_id: str,
+        identity: RequestIdentity,
         entry: UserProfileMemoryEntry,
     ) -> UserMemoryRememberCapabilityResult: ...
 
     async def remove_memory_entry(
         self,
-        user_id: str,
+        identity: RequestIdentity,
         entry_id: str,
     ) -> UserMemoryForgetCapabilityResult: ...
 
@@ -255,12 +269,12 @@ class UserProfileMemoryCapability(Protocol):
 
     async def reconcile_memory_projections(
         self,
-        user_id: str,
+        identity: RequestIdentity,
     ) -> MemoryReconciliationOutcome: ...
 
     async def apply_memory_supersession(
         self,
-        user_id: str,
+        identity: RequestIdentity,
         intent: MemorySupersessionIntent,
     ) -> MemoryControlSupersessionApplyResult: ...
 

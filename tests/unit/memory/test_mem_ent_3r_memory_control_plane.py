@@ -25,6 +25,7 @@ from intergrax.memory.contracts.memory_lifecycle import (
     MemoryLifecycleDisposition,
     MemoryProjectionReconciliationDisposition,
     MemoryProjectionReconciliationResult,
+    UserProfileMemoryProjectionContext,
     UserProfileMemoryReconciliationContext,
 )
 from intergrax.memory.default_memory_control_plane import (
@@ -53,15 +54,19 @@ class RecordingMemoryProjection:
 
     async def upsert_memory_entry(
         self,
-        user_id: str,
+        context: UserProfileMemoryProjectionContext,
         entry: UserProfileMemoryEntry,
     ) -> None:
         if self.fail_upsert:
             raise TimeoutError("projection unavailable")
-        self.upsert_calls.append((user_id, entry.entry_id))
+        self.upsert_calls.append((context.user_id, entry.entry_id))
         self.indexed_entry_ids.add(entry.entry_id)
 
-    async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+    async def delete_memory_entries(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry_ids: Sequence[str],
+    ) -> None:
         if self.fail_delete:
             raise TimeoutError("projection unavailable")
         self.delete_calls.append(tuple(entry_ids))

@@ -224,6 +224,8 @@ It:
 
 ### Atomic invocation chain
 
+Per-call dependencies are resolved through the **invocation wiring ABI** (`ToolInvocationWiringResolver` → immutable `ToolInvocationWiring`), validated against `ToolInvocationWiringRequirements`, then merged into handler-visible `ToolWiringContext` via an internal adapter. **Registration wiring** (`ToolWiringContext` at catalog bootstrap) remains the static composition bag; it is not the resolver plugin contract.
+
 ```text
 ToolRuntime
   → RuntimeToolGateway / BoundToolGateway
@@ -678,12 +680,13 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `ToolExecutionRequest` / `ToolExecutionResult` | `intergrax/tools/execution_models.py` | **Done** |
 | `ToolProvider` protocol | `intergrax/tools/core/provider.py` | **Done** - accepts optional `ToolWiringContext` |
 | `ToolCatalog` / `ToolProfile` / `ToolWiringContext` | `intergrax/tools/registry` | **Done** - Phase O.2; typed integration slots + `TaskMemoryViewBinding` / `shadow_workspace` (T-EXPAND) |
-| `runtime_bound_catalog` | `intergrax/runtime/nexus/tools/runtime_bound_catalog.py` | **Done** - UAEP dispatch for `workspace.*` / `memory.*` / `harness.*` (incl. compare/export) · §42.12 |
+| `ToolInvocationWiringResolver` | `intergrax/tools/invocation_wiring.py` | **Done** (TOOL-ENG-RX) - per-call overlay merged at invoker; static registration wiring preserved |
+| `runtime_bound_catalog` | `intergrax/runtime/nexus/tools/runtime_bound_catalog.py` | **Done** - runtime-bound **tool id** classification only (physical dispatch via invoker) |
 | `register_default_tools()` / `build_registry_from_profile()` | `intergrax/tools/registry/bootstrap.py`, `factory.py` | **Done** |
 | `RuntimeToolInvoker` | `intergrax/runtime/nexus/tools/invoker.py` | **Done** - validation, trace, error mapping |
 | `RuntimeToolGateway` | `intergrax/runtime/nexus/tools/tool_gateway.py` | **Done** - capability aliases + registered catalog `tool_id` via `catalog_dispatch` (TOOL-ENG-2) |
 | `catalog_dispatch` | `intergrax/runtime/nexus/tools/catalog_dispatch.py` | **Done** - per-id plan dispatch + gateway invoke (TOOL-ENG-1/2) |
-| `BoundToolGateway` | `intergrax/runtime/nexus/tools/uaep_tool_gateway.py` | **Done** - UAEP §42.12 facade: `sandbox.exec` + 18 runtime-bound ids; catalog `tool_id`s delegate to `RuntimeToolGateway` (ADR-TOOL-001 · TOOL-ENG-2) |
+| `BoundToolGateway` | `intergrax/runtime/nexus/tools/uaep_tool_gateway.py` | **Done** (TOOL-ENG-RX) - UAEP §42.12 facade; all physical calls via `RuntimeToolGateway` + `UAEPToolInvocationWiringResolver` |
 | `CatalogToolPlanner` (LLM planner) | `intergrax/runtime/nexus/tools/catalog_tool_planner.py` | **Done** - OpenAI schema from registry via `ToolPlanningService` (see [`satellites/TOOLS_selection_and_plugins.md`](satellites/TOOLS_selection_and_plugins.md)) |
 | `ToolPlanningService` | `intergrax/runtime/nexus/tools/tool_planning_service.py` | **Done** - native `generate_with_tools` or JSON fallback; `allowed_tool_ids` filter (TOOL-ENG-4) |
 | `tool_planner_input` | `intergrax/runtime/nexus/tools/tool_planner_input.py` | **Done** - `tools_context_scope` assembly (TOOL-ENG-11) |

@@ -33,9 +33,7 @@ from intergrax.runtime.diagnostics.diagnostic_extension_read_models import (
 from intergrax.runtime.diagnostics.diagnostic_extension_registry import (
     DiagnosticExtensionRegistry,
 )
-from intergrax.runtime.observability.reconstruction import (
-    ExecutionReconstruction,
-)
+from intergrax.contracts.execution_reconstruction import ExecutionReconstruction
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
 
 DEFAULT_EXTENSION_TIME_BUDGET_MS = 250

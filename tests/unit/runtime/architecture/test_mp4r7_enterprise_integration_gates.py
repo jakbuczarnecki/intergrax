@@ -1,0 +1,224 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""MP-4R7 — enterprise integration architecture gates."""
+
+from __future__ import annotations
+
+import ast
+from pathlib import Path
+
+import pytest
+
+pytestmark = pytest.mark.unit
+
+_REPO_ROOT = Path(__file__).resolve().parents[4]
+_R7_ROOT = _REPO_ROOT / "testing_support" / "mp4r7_enterprise_integration"
+_FORBIDDEN_IMPORT_PREFIXES = (
+    "intergrax.integrations.providers",
+    "intergrax.runtime.nexus",
+    "intergrax.runtime.execution.continuation.service",
+    "intergrax.runtime.execution.continuation.lifecycle_driver",
+)
+_FORBIDDEN_REFLECTION = ("getattr(", "setattr(", "hasattr(", "vars(", ".__dict__")
+_FORBIDDEN_AUTHORITY_NAMES = (
+    "MultiplayerDecisionExecutionManager",
+    "UnifiedApprovalExecutor",
+    "R7Coordinator",
+)
+
+
+def _r7_modules() -> list[Path]:
+    return sorted(path for path in _R7_ROOT.rglob("*.py") if path.is_file())
+
+
+def _collect_imports(path: Path) -> list[tuple[int, str]]:
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    imports: list[tuple[int, str]] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                imports.append((node.lineno, alias.name))
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imports.append((node.lineno, node.module))
+    return imports
+
+
+def test_mp4r7_package_exists() -> None:
+    assert _R7_ROOT.is_dir()
+
+
+def test_mp4r7_no_vendor_internals_in_composition_layer() -> None:
+    violations: list[str] = []
+    for module in _r7_modules():
+        rel = module.relative_to(_REPO_ROOT)
+        for lineno, imported in _collect_imports(module):
+            if any(imported.startswith(prefix) for prefix in _FORBIDDEN_IMPORT_PREFIXES):
+                violations.append(f"{rel}:{lineno} imports {imported}")
+    assert not violations, "\n".join(violations)
+
+
+def test_mp4r7_no_reflection_in_qualification_code() -> None:
+    violations: list[str] = []
+    for module in _r7_modules():
+        text = module.read_text(encoding="utf-8-sig")
+        rel = module.relative_to(_REPO_ROOT)
+        for token in _FORBIDDEN_REFLECTION:
+            if token in text:
+                violations.append(f"{rel} uses forbidden reflection token {token!r}")
+    assert not violations, "\n".join(violations)
+
+
+def test_mp4r7_no_facade_authority_types() -> None:
+    violations: list[str] = []
+    for module in _r7_modules():
+        text = module.read_text(encoding="utf-8-sig")
+        rel = module.relative_to(_REPO_ROOT)
+        for name in _FORBIDDEN_AUTHORITY_NAMES:
+            if f"class {name}" in text:
+                violations.append(f"{rel} defines forbidden authority facade {name}")
+    assert not violations, "\n".join(violations)
+
+
+def test_mp4r7_scenario_uses_public_continuation_port() -> None:
+    scenario = _R7_ROOT / "scenario.py"
+    text = scenario.read_text(encoding="utf-8-sig")
+    assert "continuation_port" in text
+    assert "ExecutionContinuationPort" not in text or "composition.continuation_port" in text
+    assert "ExecutionContinuationService(" not in text
+
+
+def test_mp4r7_scenario_uses_canonical_human_review_continuation_bridge() -> None:
+    scenario = _R7_ROOT / "scenario.py"
+    text = scenario.read_text(encoding="utf-8-sig")
+    assert (
+        "intergrax.contracts.decision.integration.execution_continuation"
+        in text
+    )
+    assert (
+        "execution_continuation_resolution_command_from_decision_human_review_decision"
+        in text
+    )
+    assert "_HUMAN_REQUEST_ID" not in text
+    assert "ExecutionHumanVerdict.APPROVE" not in text
+
+
+def test_mp4r7_execution_continuation_contract_has_no_decision_human_review_import() -> None:
+    module = _REPO_ROOT / "intergrax" / "contracts" / "execution_continuation.py"
+    text = module.read_text(encoding="utf-8-sig")
+    assert "decision_human_review" not in text
+
+
+def test_mp4r7_decision_integration_bridge_imports_contracts_only() -> None:
+    module = (
+        _REPO_ROOT
+        / "intergrax"
+        / "contracts"
+        / "decision"
+        / "integration"
+        / "execution_continuation.py"
+    )
+    violations: list[str] = []
+    for lineno, imported in _collect_imports(module):
+        if imported == "__future__":
+            continue
+        if not imported.startswith("intergrax.contracts"):
+            violations.append(f"{module.relative_to(_REPO_ROOT)}:{lineno} imports {imported}")
+    assert not violations, "\n".join(violations)
+
+
+def test_mp4r7_scenario_does_not_fabricate_primary_error_in_evidence_handler() -> None:
+    scenario = _R7_ROOT / "scenario.py"
+    text = scenario.read_text(encoding="utf-8-sig")
+    assert "Mp4R7ProtectedOperationError" in text
+    assert 'primary_error = RuntimeError("protected operation failed")' not in text
+
+
+def test_mp4r7_decision_flow_resume_does_not_synthesize_governance_allow() -> None:
+    module = _REPO_ROOT / "intergrax" / "runtime" / "decision_flow.py"
+    text = module.read_text(encoding="utf-8-sig")
+    tree = ast.parse(text, filename=str(module))
+    resume_fn: ast.FunctionDef | None = None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == "resume_decision_flow_after_human_review":
+            resume_fn = node
+            break
+    assert resume_fn is not None
+    synthetic_allow: list[int] = []
+    for node in ast.walk(resume_fn):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        name = func.id if isinstance(func, ast.Name) else None
+        if name != "DecisionGovernanceDecision":
+            continue
+        for keyword in node.keywords:
+            if keyword.arg != "disposition":
+                continue
+            value = keyword.value
+            if isinstance(value, ast.Attribute) and value.attr == "ALLOW":
+                synthetic_allow.append(node.lineno)
+    assert not synthetic_allow, (
+        "resume_decision_flow_after_human_review must not mint DecisionGovernanceDecision(ALLOW): "
+        f"lines {synthetic_allow}"
+    )
+    segment = ast.get_source_segment(text, resume_fn) or ""
+    assert "evaluate_decision_governance_with" in segment
+
+
+def test_mp4r7_scenario_enforces_execution_authorization_before_resume() -> None:
+    scenario = _R7_ROOT / "scenario.py"
+    text = scenario.read_text(encoding="utf-8-sig")
+    assert ".authorization" in text
+    assert "validate_mp4r7_protected_execution_authorization" in text
+    assert "validate_execution_authorization_bundle" in (
+        _R7_ROOT / "authorization_enforcement.py"
+    ).read_text(encoding="utf-8-sig")
+    tree = ast.parse(text, filename=str(scenario))
+    complete_fn: ast.FunctionDef | None = None
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for child in node.body:
+            if isinstance(child, ast.FunctionDef) and child.name == "_complete_post_human_protected_execution":
+                complete_fn = child
+                break
+    assert complete_fn is not None
+    self_called: set[str] = set()
+    module_called: set[str] = set()
+    for node in ast.walk(complete_fn):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+            if func.value.id == "self":
+                self_called.add(func.attr)
+        elif isinstance(func, ast.Name):
+            module_called.add(func.id)
+    assert "validate_mp4r7_protected_execution_authorization" in module_called
+    assert "_resume_after_human_review" in self_called
+
+
+def test_mp4r7_authorization_enforcement_uses_caller_policy_context() -> None:
+    module = _R7_ROOT / "authorization_enforcement.py"
+    text = module.read_text(encoding="utf-8-sig")
+    assert "current_policy_context" in text
+    assert "authorization.policy_context" not in text
+
+
+def test_mp4r7_scenario_does_not_resume_on_terminal_alone() -> None:
+    scenario = _R7_ROOT / "scenario.py"
+    text = scenario.read_text(encoding="utf-8-sig")
+    assert "execution_authorization_present" in text
+    assert "if not attempt.execution_authorization_present:" in text
+
+
+def test_mp4r7_canonical_contracts_importable() -> None:
+    from intergrax.contracts.collaborative_decision_binding import CollaborativeDecisionBinding
+    from intergrax.contracts.decision_human_review import DecisionHumanReviewPort
+    from intergrax.contracts.execution_continuation import ExecutionContinuationPort
+    from intergrax.contracts.functional_evidence.persistence import FunctionalEvidencePersistence
+
+    assert CollaborativeDecisionBinding is not None
+    assert DecisionHumanReviewPort is not None
+    assert ExecutionContinuationPort is not None
+    assert FunctionalEvidencePersistence is not None

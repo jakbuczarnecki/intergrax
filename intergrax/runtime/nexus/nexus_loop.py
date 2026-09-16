@@ -160,8 +160,12 @@ from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
 )
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
+from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_continuation_state_store import (
+        ExecutionContinuationStateStore,
+    )
     from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.contracts.agent_execution_result import AgentExecutionResult
@@ -238,6 +242,7 @@ class NexusLoop:
         execution_lineage_persistence: "ExecutionLineagePersistence | None" = None,
         execution_continuation: ExecutionContinuationPort | None = None,
         continuation_lifecycle_driver: ExecutionContinuationLifecycleDriver | None = None,
+        execution_continuation_state_store: Optional["ExecutionContinuationStateStore"] = None,
         disable_execution_continuation: bool = False,
     ) -> None:
         self._registry = registry
@@ -395,7 +400,9 @@ class NexusLoop:
                 "execution_continuation and continuation_lifecycle_driver must be wired together",
             )
         else:
-            _continuation_deps = wire_execution_engine_continuation_dependencies()
+            _continuation_deps = wire_execution_engine_continuation_dependencies(
+                state_store=execution_continuation_state_store,
+            )
             self._hitl_continuation = InternalOrchestrationContinuation(
                 port=_continuation_deps.continuation,
                 lifecycle_driver=_continuation_deps.lifecycle_driver,
@@ -491,6 +498,11 @@ class NexusLoop:
     @property
     def agent_engine(self) -> AgentEngine:
         return self._engine
+
+    @property
+    def declarative_tool_invoker(self) -> DeclarativeToolInvoker | None:
+        """Host-wired catalog tool invoker shared by graph and agentic execution paths."""
+        return self._declarative_tool_invoker
 
     @property
     def graph_executor(self) -> GraphExecutor:

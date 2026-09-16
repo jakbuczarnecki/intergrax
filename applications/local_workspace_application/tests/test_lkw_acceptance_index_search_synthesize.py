@@ -12,8 +12,12 @@ import pytest
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
+from testing_support.builder import (
+    build_runtime_execution_context_for_tests,
+    build_runtime_request_for_tests,
+    canonical_run_id_for_tests,
+)
 from intergrax.tools.providers.rag.service import RAG_TOOL_ID
 from intergrax.tools.providers.workspace.service import WORKSPACE_WRITE_FILE_TOOL_ID
 from local_indexer.steps.index_job import run_index_job
@@ -74,25 +78,27 @@ def _step_ctx(
 def _exec_ctx(
     *,
     agent_id: str,
-    run_id: str,
+    seed: str,
     message: str,
     metadata: dict[str, object],
     gateway: AsyncMock,
     runtime_state: object,
 ) -> RuntimeExecutionContext:
-    exec_ctx = RuntimeExecutionContext(
-        task_id=f"task-{run_id}",
-        run_id=run_id,
+    request = build_runtime_request_for_tests(
+        seed=seed,
         agent_id=agent_id,
-        request=RuntimeRequest(
-            agent_id=agent_id,
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message=message,
-            metadata=metadata,
-        ),
+        tenant_id="t1",
+        user_id="u1",
+        session_id="s1",
+        message=message,
+        metadata=metadata,
+    )
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed=seed,
+        agent_id=agent_id,
+        request=request,
         tool_gateway=gateway,
+        tenant_id="t1",
     )
     exec_ctx.metadata["runtime_state"] = runtime_state
     return exec_ctx
@@ -178,30 +184,44 @@ async def test_lkw_acceptance_index_search_synthesize_contract_flow(tmp_path: Pa
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
     runtime_state = _runtime_state_stub(allowed_root)
 
+    index_seed = "lkw-acceptance-index"
     index_exec = _exec_ctx(
         agent_id="local_indexer",
-        run_id="run-index",
+        seed=index_seed,
         message="index fixture",
         metadata={"source_paths": [fixture_path], "collection_id": _COLLECTION_ID},
         gateway=gateway,
         runtime_state=runtime_state,
     )
-    index_output = await run_index_job(_step_ctx(index_exec, agent_id="local_indexer", run_id="run-index"))
+    index_output = await run_index_job(
+        _step_ctx(
+            index_exec,
+            agent_id="local_indexer",
+            run_id=str(canonical_run_id_for_tests(index_seed)),
+        )
+    )
 
     assert index_output["ingest_summary"]["used"] is True
     assert index_output["ingest_summary"]["reason"] == "ingest_complete"
     assert len(ingest_calls) == 1
     assert ingest_calls[0].tool_name == RAG_INGEST_TOOL_ID
 
+    search_seed = "lkw-acceptance-search"
     search_exec = _exec_ctx(
         agent_id="local_search",
-        run_id="run-search",
+        seed=search_seed,
         message=_QUERY,
         metadata={"query": _QUERY, "collection_id": _COLLECTION_ID, "top_k": 5},
         gateway=gateway,
         runtime_state=runtime_state,
     )
-    search_output = await run_search_job(_step_ctx(search_exec, agent_id="local_search", run_id="run-search"))
+    search_output = await run_search_job(
+        _step_ctx(
+            search_exec,
+            agent_id="local_search",
+            run_id=str(canonical_run_id_for_tests(search_seed)),
+        )
+    )
 
     search_summary = search_output["search_summary"]
     assert search_summary["used"] is True
@@ -215,9 +235,10 @@ async def test_lkw_acceptance_index_search_synthesize_contract_flow(tmp_path: Pa
     assert evidence[0]["source_path"] == fixture_path
     assert evidence[0]["chunk_id"] == "chunk-fixture-1"
 
+    synthesize_seed = "lkw-acceptance-synthesize"
     synthesize_exec = _exec_ctx(
         agent_id="local_synthesizer",
-        run_id="run-synthesize",
+        seed=synthesize_seed,
         message="synthesize draft",
         metadata={
             "shadow_workspace": True,
@@ -229,7 +250,11 @@ async def test_lkw_acceptance_index_search_synthesize_contract_flow(tmp_path: Pa
         runtime_state=runtime_state,
     )
     synthesize_output = await run_synthesize_job(
-        _step_ctx(synthesize_exec, agent_id="local_synthesizer", run_id="run-synthesize")
+        _step_ctx(
+            synthesize_exec,
+            agent_id="local_synthesizer",
+            run_id=str(canonical_run_id_for_tests(synthesize_seed)),
+        )
     )
 
     synth_summary = synthesize_output["synthesize_summary"]

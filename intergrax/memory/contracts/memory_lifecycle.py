@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol
 
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.memory_models import UserProfile, UserProfileMemoryEntry
 
 __all__ = [
@@ -26,7 +27,9 @@ __all__ = [
     "MemoryReconciliationDisposition",
     "MemoryReconciliationOutcome",
     "UserProfileMemoryProjection",
+    "UserProfileMemoryProjectionContext",
     "UserProfileMemoryReconciliationContext",
+    "user_profile_memory_projection_context",
 ]
 
 
@@ -132,10 +135,35 @@ class UserProfileMemoryMutationResult:
 
 
 @dataclass(frozen=True, slots=True)
+class UserProfileMemoryProjectionContext:
+    """Trusted request authority for projection mutations (MEM-ENT-15-R)."""
+
+    identity: RequestIdentity
+
+    @property
+    def user_id(self) -> str:
+        uid = self.identity.user_id
+        if uid is None or not uid.strip():
+            raise ValueError("UserProfileMemoryProjectionContext requires identity.user_id")
+        return uid
+
+
+def user_profile_memory_projection_context(identity: RequestIdentity) -> UserProfileMemoryProjectionContext:
+    return UserProfileMemoryProjectionContext(identity=identity)
+
+
+@dataclass(frozen=True, slots=True)
 class UserProfileMemoryReconciliationContext:
-    user_id: str
+    identity: RequestIdentity
     profile: UserProfile | None
     authoritative_active_entry_ids: frozenset[str]
+
+    @property
+    def user_id(self) -> str:
+        uid = self.identity.user_id
+        if uid is None or not uid.strip():
+            raise ValueError("UserProfileMemoryReconciliationContext requires identity.user_id")
+        return uid
 
 
 class MemoryProjectionReconciliationDisposition(str, Enum):
@@ -157,12 +185,13 @@ class UserProfileMemoryProjection(Protocol):
 
     async def upsert_memory_entry(
         self,
-        user_id: str,
+        context: UserProfileMemoryProjectionContext,
         entry: UserProfileMemoryEntry,
     ) -> None: ...
 
     async def delete_memory_entries(
         self,
+        context: UserProfileMemoryProjectionContext,
         entry_ids: Sequence[str],
     ) -> None: ...
 

@@ -4,7 +4,13 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.memory_models import MemoryKind
+from intergrax.memory.contracts.memory_security_governance import (
+    MemoryGovernanceEvaluationRequest,
+    MemoryGovernanceOperation,
+    MemoryGovernanceTarget,
+)
 from intergrax.memory.contracts.procedural_memory import (
     ProceduralMemoryScope,
     ProcedureMemoryStore,
@@ -13,17 +19,31 @@ from intergrax.memory.contracts.procedural_memory import (
     ProcedureTypeRef,
     procedure_id_for_source_memory,
 )
+from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
+from intergrax.memory.memory_specialized_mutation_governance import (
+    enforce_specialized_memory_mutation,
+    governance_snapshot_from_procedure_record,
+    governance_source_snapshot_from_user_entry,
+    memory_security_context_for_mutation,
+)
 from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 
 
 class DefaultProceduralMemoryIndexer:
     """Materializes minimal procedural projection rows from canonical LTM entries."""
 
-    def __init__(self, store: ProcedureMemoryStore) -> None:
+    def __init__(
+        self,
+        store: ProcedureMemoryStore,
+        *,
+        security_governance: MemorySecurityGovernanceService,
+    ) -> None:
         self._store = store
+        self._security_governance = security_governance
 
     def index_memory_entry(
         self,
+        identity: RequestIdentity,
         scope: ProceduralMemoryScope,
         entry: UserProfileMemoryEntry,
     ) -> ProcedureRecord | None:
@@ -47,7 +67,41 @@ class DefaultProceduralMemoryIndexer:
             created_at=entry.created_at or "",
             updated_at=entry.updated_at,
         )
+        operation = (
+            MemoryGovernanceOperation.DELETE
+            if entry.deleted
+            else MemoryGovernanceOperation.PROJECT
+        )
+        enforce_specialized_memory_mutation(
+            self._security_governance,
+            MemoryGovernanceEvaluationRequest(
+                context=memory_security_context_for_mutation(identity, scope, operation),
+                proposed_record=governance_snapshot_from_procedure_record(record),
+                source_records=(governance_source_snapshot_from_user_entry(entry),),
+                target=MemoryGovernanceTarget(memory_id=entry.entry_id) if entry.deleted else None,
+            ),
+        )
         return self._store.upsert_procedure(scope, record)
 
-    def remove_memory_entry(self, scope: ProceduralMemoryScope, memory_entry_id: str) -> int:
+    def remove_memory_entry(
+        self,
+        identity: RequestIdentity,
+        scope: ProceduralMemoryScope,
+        memory_entry_id: str,
+    ) -> int:
+        memory_id = (memory_entry_id or "").strip()
+        if memory_id:
+            procedure_id = procedure_id_for_source_memory(scope, memory_id)
+            existing = self._store.get_procedure(scope, procedure_id)
+            if existing is not None:
+                enforce_specialized_memory_mutation(
+                    self._security_governance,
+                    MemoryGovernanceEvaluationRequest(
+                        context=memory_security_context_for_mutation(
+                            identity, scope, MemoryGovernanceOperation.DELETE
+                        ),
+                        target=MemoryGovernanceTarget(memory_id=memory_id),
+                        existing_record=governance_snapshot_from_procedure_record(existing),
+                    ),
+                )
         return self._store.delete_by_source_memory(scope, memory_entry_id)

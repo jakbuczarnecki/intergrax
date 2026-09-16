@@ -10,13 +10,13 @@ from datetime import datetime
 
 from intergrax.contracts.execution_identity import RunId, TaskId, validate_run_id, validate_task_id
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
-from intergrax.runtime.observability.reconstruction import RuntimeHistoryCompleteness
+from intergrax.contracts.execution_reconstruction import RuntimeHistoryCompleteness
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingResult,
     ProblemGroupingStrategyId,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleResult
-from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
+from intergrax.contracts.platform_problem_signal import PlatformProblemSignal
 
 from intergrax.runtime.diagnostics.signal_diagnostic_assessment import SignalDiagnosticAssessment
 

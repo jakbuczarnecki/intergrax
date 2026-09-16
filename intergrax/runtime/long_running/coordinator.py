@@ -55,9 +55,15 @@ from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
 
 
 def _wants_human_resume(task: Task) -> bool:
-    if task.options.human.response_text:
+    if task.options.human.response_text or task.options.human.verdict:
         return True
-    return bool(task.metadata.get(TaskMetadataKey.HUMAN_RESPONSE))
+    if task.metadata.get(TaskMetadataKey.HUMAN_RESPONSE):
+        return True
+    if task.metadata.get(TaskMetadataKey.HUMAN_APPROVED):
+        return True
+    if task.metadata.get(TaskMetadataKey.HUMAN_REJECTED):
+        return True
+    return False
 
 
 class LongRunningCoordinator:

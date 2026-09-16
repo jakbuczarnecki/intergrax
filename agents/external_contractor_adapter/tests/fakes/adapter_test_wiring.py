@@ -19,6 +19,7 @@ from external_contractor_adapter.tests.fakes.external_work_authorization_boundar
 )
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
+from intergrax.contracts.provider_invocation_dispatch import ProviderInvocationDispatchPort
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )
@@ -60,6 +61,7 @@ def allow_adapter(
     workspace_id: str = _DEFAULT_WORKSPACE,
     authorization_boundary: MeaningfulSideEffectAuthorizationBoundary | None = None,
     active_task_id: str | None = None,
+    invocation_dispatch: ProviderInvocationDispatchPort | None = None,
 ) -> tuple[ExternalWorkAdapter, DeterministicMeaningfulSideEffectPolicy | None]:
     """Return adapter + optional runtime policy fake wired through canonical boundary."""
     runtime = policy
@@ -78,4 +80,5 @@ def allow_adapter(
     return ExternalWorkAdapter(
         integration,
         authorization_boundary=authorization_boundary,
+        invocation_dispatch=invocation_dispatch,
     ), runtime

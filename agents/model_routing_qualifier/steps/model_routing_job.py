@@ -5,8 +5,13 @@
 from __future__ import annotations
 
 from intergrax.knowledge.contracts.validation import JsonObject
-from intergrax.agents.authoring.runtime_tool_helpers import exec_ctx_from_step, request_metadata
-from intergrax.applications._shared.routing_evaluating_adapter import RoutingEvaluatingLLMAdapter
+from intergrax.agents.authoring.runtime_tool_helpers import (
+    exec_ctx_from_step,
+    request_metadata,
+)
+from intergrax.llm_adapters.routing.evaluating_adapter import (
+    RoutingEvaluatingLLMAdapter,
+)
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -17,7 +22,9 @@ from model_routing_qualifier.model_routing import (
     artifact_ref_for_profile,
     candidates_from_profiles,
 )
-from model_routing_qualifier.model_routing_functional_evidence import emit_model_routing_functional_evidence
+from model_routing_qualifier.model_routing_functional_evidence import (
+    emit_model_routing_functional_evidence,
+)
 from model_routing_qualifier.qualification_types import (
     ActualModelExecution,
     InvocationFailureKind,
@@ -34,9 +41,7 @@ from model_routing_qualifier.routing_observation import (
 
 MODEL_ROUTING_STEP_ID = "model_routing_qualifier_step"
 
-_DEFAULT_SYSTEM_PROMPT = (
-    "You are a precise arithmetic assistant. Answer with only the numeric result, no explanation."
-)
+_DEFAULT_SYSTEM_PROMPT = "You are a precise arithmetic assistant. Answer with only the numeric result, no explanation."
 _FINAL_ANSWER_BIAS_PROMPT = (
     "You are a math assistant. For every arithmetic question, answer with only the number 99, "
     "regardless of the correct result."
@@ -96,20 +101,34 @@ def _result_to_output(result: ModelRoutingQualificationResult) -> JsonObject:
         "routing_context_summary": result.routing_context_summary,
         "candidate_profile_refs": list(result.candidate_profile_refs),
         "expected_profile_ref": result.expected_profile_ref,
-        "selected_profile_ref": observed.selected_profile_ref if observed is not None else None,
+        "selected_profile_ref": observed.selected_profile_ref
+        if observed is not None
+        else None,
         "production_evaluation_selected_profile": (
             observed.selected_profile_ref if observed is not None else None
         ),
         "matched_rule_id": observed.matched_rule_id if observed is not None else None,
         "routing_reason": observed.routing_reason if observed is not None else None,
-        "policy_route_hint": observed.policy_route_hint if observed is not None else None,
-        "actual_adapter_provider": execution.wrapper_provider if execution is not None else None,
-        "actual_adapter_model": execution.wrapper_model if execution is not None else None,
-        "actual_inner_adapter_provider": execution.inner_provider if execution is not None else None,
-        "actual_inner_adapter_model": execution.inner_model if execution is not None else None,
+        "policy_route_hint": observed.policy_route_hint
+        if observed is not None
+        else None,
+        "actual_adapter_provider": execution.wrapper_provider
+        if execution is not None
+        else None,
+        "actual_adapter_model": execution.wrapper_model
+        if execution is not None
+        else None,
+        "actual_inner_adapter_provider": execution.inner_provider
+        if execution is not None
+        else None,
+        "actual_inner_adapter_model": execution.inner_model
+        if execution is not None
+        else None,
         "invocation_status": result.invocation_status,
         "invocation_failure_kind": result.invocation_failure_kind.value,
-        "raw_model_output": result.raw_model_output[:200] if result.raw_model_output else None,
+        "raw_model_output": result.raw_model_output[:200]
+        if result.raw_model_output
+        else None,
     }
     return {
         "summary": result.answer,
@@ -132,7 +151,9 @@ def _failure_result(
         reason=reason,
         routing_context_summary=routing_summary or "",
         candidate_profile_refs=candidate_refs,
-        expected_profile_ref=request.expected_profile_ref if request is not None else None,
+        expected_profile_ref=request.expected_profile_ref
+        if request is not None
+        else None,
         observed_decision=None,
         actual_execution=None,
         invocation_status="failed",
@@ -184,9 +205,15 @@ async def run_model_routing_job(
     )
     routing_context = request.routing_context(tenant_id)
 
-    allowed_profiles = routing_profile.allowed_profiles or (routing_profile.default_profile,)
-    candidates: tuple[RoutingProfileCandidate, ...] = candidates_from_profiles(allowed_profiles)
-    candidate_refs = tuple(artifact_ref_for_profile(item.profile) for item in candidates)
+    allowed_profiles = routing_profile.allowed_profiles or (
+        routing_profile.default_profile,
+    )
+    candidates: tuple[RoutingProfileCandidate, ...] = candidates_from_profiles(
+        allowed_profiles
+    )
+    candidate_refs = tuple(
+        artifact_ref_for_profile(item.profile) for item in candidates
+    )
 
     captured_decisions: list[ObservedRoutingDecision] = []
     observation_session = begin_routing_observation(
@@ -241,10 +268,15 @@ async def run_model_routing_job(
         raw_model_output=raw_model_output,
     )
 
-    answer = raw_model_output or f"model_routing_qualifier: invocation_failed for {selected_ref}"
+    answer = (
+        raw_model_output
+        or f"model_routing_qualifier: invocation_failed for {selected_ref}"
+    )
     result = ModelRoutingQualificationResult(
         used=invoke_succeeded,
-        reason="model_routing_qualification_complete" if invoke_succeeded else "model_invocation_failed",
+        reason="model_routing_qualification_complete"
+        if invoke_succeeded
+        else "model_invocation_failed",
         routing_context_summary=routing_context_summary,
         candidate_profile_refs=candidate_refs,
         expected_profile_ref=request.expected_profile_ref or None,

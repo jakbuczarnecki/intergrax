@@ -35,6 +35,7 @@ from typing import Protocol, Self, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.collaborative_decision_binding import CollaborativeDecisionBinding
 from intergrax.contracts.collaborative_work import (
     ArtifactContentRef,
     Assignment,
@@ -53,6 +54,7 @@ from intergrax.contracts.collaborative_work import (
     PrincipalAuthorityGrant,
     WorkArtifact,
     WorkArtifactVersion,
+    WorkArtifactVersionRef,
     WorkItem,
     WorkItemExecutionLink,
     WorkItemState,
@@ -60,6 +62,8 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembershipRole,
     validate_work_artifact_current_version,
 )
+from intergrax.contracts.decision_proposal_ref_wire import decision_proposal_ref_to_canonical_json
+from intergrax.contracts.decision_record import DecisionProposalRef
 from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
 from intergrax.contracts.runtime_policy import PolicyAction
 
@@ -1331,3 +1335,97 @@ class ArtifactPublicationRepository(Protocol):
         command: PublishWorkArtifactVersionCommand,
     ) -> PublishedWorkArtifactVersion:
         """Atomically append a version and advance the WorkArtifact CAS pointer."""
+
+
+class CreateCollaborativeDecisionBindingCommand(_RepositoryModelBase):
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    binding_id: str = _NON_EMPTY
+    work_item_id: str = _NON_EMPTY
+    work_artifact_version: WorkArtifactVersionRef | None = None
+    decision_proposal: DecisionProposalRef
+    created_by_principal_id: str = _NON_EMPTY
+    created_at: datetime
+    idempotency_key: str | None = None
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    @field_validator(
+        "tenant_id",
+        "workspace_id",
+        "binding_id",
+        "work_item_id",
+        "created_by_principal_id",
+        "idempotency_key",
+    )
+    @classmethod
+    def _strip_fields(cls, value: str | None) -> str | None:
+        return cls._strip_optional(value)
+
+    @field_validator("decision_proposal", mode="before")
+    @classmethod
+    def _validate_decision_proposal(cls, value: object) -> DecisionProposalRef:
+        if type(value) is not DecisionProposalRef:
+            raise TypeError("decision_proposal must be DecisionProposalRef")
+        return value
+
+    @field_validator("created_at")
+    @classmethod
+    def _timezone_aware(cls, value: datetime) -> datetime:
+        if value.tzinfo is None:
+            raise ValueError("created_at must be timezone-aware")
+        return value
+
+    def semantic_fingerprint(self) -> str:
+        artifact_payload: dict[str, object] | None = None
+        if self.work_artifact_version is not None:
+            artifact_payload = self.work_artifact_version.model_dump(mode="json")
+        payload = {
+            "tenant_id": self.tenant_id,
+            "workspace_id": self.workspace_id,
+            "work_item_id": self.work_item_id,
+            "work_artifact_version": artifact_payload,
+            "decision_proposal": decision_proposal_ref_to_canonical_json(self.decision_proposal),
+            "created_by_principal_id": self.created_by_principal_id,
+        }
+        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+@runtime_checkable
+class CollaborativeDecisionBindingRepository(Protocol):
+    """Append-only persistence port for Collaborative Work ↔ Decision proposal bindings."""
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        """Return declared repository backend capabilities."""
+
+    def create(self, command: CreateCollaborativeDecisionBindingCommand) -> CollaborativeDecisionBinding:
+        """Create an immutable binding record."""
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        binding_id: str,
+    ) -> CollaborativeDecisionBinding | None:
+        """Return binding for the scoped identity or ``None``."""
+
+    def list_for_work_item(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> tuple[CollaborativeDecisionBinding, ...]:
+        """Return bindings for one WorkItem ordered by ``(created_at, binding_id)``."""
+
+    def list_for_decision_proposal(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        decision_proposal: DecisionProposalRef,
+    ) -> tuple[CollaborativeDecisionBinding, ...]:
+        """Return bindings referencing one exact Decision proposal."""

@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.environment_profile.sub_profiles import SandboxProfile
-from intergrax.applications.contracts.profile_resolution.revision import EffectiveProfileRevision
+from intergrax.contracts.execution_environment_isolation import (
+    EffectiveProfileRevisionIsolationView,
+    ProfileSandboxIsolationSource,
+)
+from intergrax.contracts.sandbox_profile import SandboxProfile
 from intergrax.runtime.sandbox.execution_environment import (
     EffectiveExecutionEnvironment,
     ExecutionEnvironmentProvenance,
@@ -54,11 +56,15 @@ def _at_most_as_permissive[T](order: tuple[T, ...], ceiling: T, value: T) -> T:
     return order[min(_index(order, ceiling), _index(order, value))]
 
 
-def _meets_minimum(order: tuple[object, ...], effective: object, required: object) -> bool:
+def _meets_minimum(
+    order: tuple[object, ...], effective: object, required: object
+) -> bool:
     return _index(order, effective) >= _index(order, required)
 
 
-def profile_isolation_authority(profile: ApplicationEnvironmentProfile) -> ProfileIsolationAuthority:
+def profile_isolation_authority(
+    profile: ProfileSandboxIsolationSource,
+) -> ProfileIsolationAuthority:
     """Derive isolation ceiling from configured profile — narrowing-only authority."""
     sandbox: SandboxProfile | None = profile.sandbox
     if sandbox is None:
@@ -122,20 +128,32 @@ def _provider_satisfies(
     provider: SandboxProviderCapabilities,
     requirement: ExecutionEnvironmentRequirement,
 ) -> bool:
-    if requirement.sandbox_required and provider.provider_ref.provider_kind is ExecutionEnvironmentProviderKind.NONE:
+    if (
+        requirement.sandbox_required
+        and provider.provider_ref.provider_kind is ExecutionEnvironmentProviderKind.NONE
+    ):
         return False
-    if requirement.process_execution is ProcessExecution.SANDBOXED and not provider.supports_sandboxed_exec:
+    if (
+        requirement.process_execution is ProcessExecution.SANDBOXED
+        and not provider.supports_sandboxed_exec
+    ):
         return False
     if (
         requirement.filesystem_access is FilesystemAccess.WORKSPACE_WRITE
         and not provider.supports_workspace_write
     ):
         return False
-    if not _meets_minimum(_FILESYSTEM_ORDER, provider.filesystem_access, requirement.filesystem_access):
+    if not _meets_minimum(
+        _FILESYSTEM_ORDER, provider.filesystem_access, requirement.filesystem_access
+    ):
         return False
-    if not _meets_minimum(_NETWORK_ORDER, provider.network_access, requirement.network_access):
+    if not _meets_minimum(
+        _NETWORK_ORDER, provider.network_access, requirement.network_access
+    ):
         return False
-    if not _meets_minimum(_PROCESS_ORDER, provider.process_execution, requirement.process_execution):
+    if not _meets_minimum(
+        _PROCESS_ORDER, provider.process_execution, requirement.process_execution
+    ):
         return False
     return True
 
@@ -167,7 +185,9 @@ def resolve_effective_execution_environment(
         required = getattr(requirement, field)
         allowed = getattr(profile_authority, field)
         if _index(order, required) > _index(order, allowed):
-            return _authority_violation(field=field, profile=profile_authority, requirement=requirement)
+            return _authority_violation(
+                field=field, profile=profile_authority, requirement=requirement
+            )
 
     if requirement.sandbox_required and provider_capabilities is None:
         return ExecutionEnvironmentResolutionResult(
@@ -269,7 +289,7 @@ def resolve_effective_execution_environment(
 
 
 def resolve_effective_execution_environment_for_profile(
-    profile: ApplicationEnvironmentProfile,
+    profile: ProfileSandboxIsolationSource,
     requirement: ExecutionEnvironmentRequirement,
     provider_capabilities: SandboxProviderCapabilities | None,
 ) -> ExecutionEnvironmentResolutionResult:
@@ -281,7 +301,7 @@ def resolve_effective_execution_environment_for_profile(
 
 
 def resolve_effective_execution_environment_for_revision(
-    revision: EffectiveProfileRevision,
+    revision: EffectiveProfileRevisionIsolationView,
     requirement: ExecutionEnvironmentRequirement,
     provider_capabilities: SandboxProviderCapabilities | None,
 ) -> ExecutionEnvironmentResolutionResult:

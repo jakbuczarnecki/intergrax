@@ -6,7 +6,7 @@ from echo.echo_agent import EchoAgent
 from intergrax.eval.eval_case import EvalCase
 from intergrax.eval.nexus_eval_runner import NexusEvalRunner
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import build_runtime_request_for_tests
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskState
 
@@ -21,7 +21,8 @@ async def test_nexus_eval_runner_runs_echo_case():
 
     case = EvalCase(
         case_id="echo-1",
-        runtime_request=RuntimeRequest(
+        runtime_request=build_runtime_request_for_tests(
+            seed="eval-echo-1",
             agent_id="echo",
             user_id="eval-user",
             session_id="eval-session",
@@ -49,7 +50,8 @@ async def test_nexus_eval_runner_reports_output_mismatch():
 
     case = EvalCase(
         case_id="echo-mismatch",
-        runtime_request=RuntimeRequest(
+        runtime_request=build_runtime_request_for_tests(
+            seed="eval-echo-mismatch",
             agent_id="echo",
             user_id="eval-user",
             session_id="eval-session",

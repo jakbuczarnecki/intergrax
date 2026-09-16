@@ -66,7 +66,12 @@ def parse_register_status_line(register_text: str) -> tuple[int, int, int, int] 
     match = _STATUS_LINE.search(register_text)
     if match is None:
         return None
-    return int(match.group(1)), int(match.group(2)), int(match.group(3)), int(match.group(4))
+    return (
+        int(match.group(1)),
+        int(match.group(2)),
+        int(match.group(3)),
+        int(match.group(4)),
+    )
 
 
 def build_audit_ideal_scorecard_sync(
@@ -77,7 +82,11 @@ def build_audit_ideal_scorecard_sync(
 ) -> AuditIdealScorecardSync:
     done, deferred, planned, total_tasks = parse_audit_ideal_register(register_text)
     status_line = parse_register_status_line(register_text)
-    in_sync = status_line == (done, total_tasks, deferred, planned) if status_line is not None else True
+    in_sync = (
+        status_line == (done, total_tasks, deferred, planned)
+        if status_line is not None
+        else True
+    )
     return AuditIdealScorecardSync(
         done_count=done,
         deferred_count=deferred,
@@ -89,8 +98,12 @@ def build_audit_ideal_scorecard_sync(
     )
 
 
-def write_scorecard_sync_artifact(repo_root: Path, sync: AuditIdealScorecardSync) -> Path:
-    output = repo_root / "build" / "harness_baseline" / "audit_ideal_scorecard_sync.json"
+def write_scorecard_sync_artifact(
+    repo_root: Path, sync: AuditIdealScorecardSync
+) -> Path:
+    output = (
+        repo_root / "build" / "harness_baseline" / "audit_ideal_scorecard_sync.json"
+    )
     output.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "schema_version": "1.0.0",
@@ -107,5 +120,9 @@ def write_scorecard_sync_artifact(repo_root: Path, sync: AuditIdealScorecardSync
 
 
 def load_scorecard_sync(repo_root: Path) -> AuditIdealScorecardSync:
-    register = repo_root / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
-    return build_audit_ideal_scorecard_sync(register_text=register.read_text(encoding="utf-8"))
+    register = (
+        repo_root / "docs" / "project" / "maintainers" / "plans" / "AUDIT_IDEAL_2026.md"
+    )
+    return build_audit_ideal_scorecard_sync(
+        register_text=register.read_text(encoding="utf-8")
+    )

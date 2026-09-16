@@ -7,6 +7,7 @@ from __future__ import annotations
 from enum import StrEnum
 
 from intergrax.contracts.external_work import ExternalWorkStatus
+from intergrax.contracts.provider_invocation import ProviderInvocationStatus
 
 
 class GovernedExternalWorkHostState(StrEnum):
@@ -19,6 +20,7 @@ class GovernedExternalWorkHostState(StrEnum):
     ACCEPT_POLICY_DENIED = "ACCEPT_POLICY_DENIED"
     EXECUTION_IN_PROGRESS = "EXECUTION_IN_PROGRESS"
     EXECUTION_FAILED = "EXECUTION_FAILED"
+    EXECUTION_OUTCOME_UNKNOWN = "EXECUTION_OUTCOME_UNKNOWN"
     EXECUTION_SUCCEEDED_ATTESTATION_PENDING = "EXECUTION_SUCCEEDED_ATTESTATION_PENDING"
     EXECUTION_SUCCEEDED_ATTESTATION_FAILED = "EXECUTION_SUCCEEDED_ATTESTATION_FAILED"
     EXECUTION_SUCCEEDED_ATTESTED = "EXECUTION_SUCCEEDED_ATTESTED"
@@ -59,4 +61,17 @@ def map_provider_status_to_host_state(
         ExternalWorkStatus.INITIALIZING,
     }:
         return GovernedExternalWorkHostState.CREATE_IN_PROGRESS
+    return None
+
+
+def map_provider_invocation_outcome_status_to_host_state(
+    status: ProviderInvocationStatus,
+) -> GovernedExternalWorkHostState | None:
+    """Project durable ``ProviderInvocationOutcome.status`` → host execution state (GR-7-A4)."""
+    if status is ProviderInvocationStatus.SUCCEEDED:
+        return None
+    if status is ProviderInvocationStatus.FAILED:
+        return GovernedExternalWorkHostState.EXECUTION_FAILED
+    if status is ProviderInvocationStatus.UNKNOWN:
+        return GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN
     return None

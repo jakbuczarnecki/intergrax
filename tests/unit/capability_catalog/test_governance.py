@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
+
 import pytest
 
 from intergrax.capability_catalog import (
@@ -11,6 +14,7 @@ from intergrax.capability_catalog import (
     CapabilityCatalogEntry,
     CapabilityDiscoveryCandidate,
     CapabilityGovernanceError,
+    CapabilityGovernanceEvaluatorUnavailableError,
     GovernedCapabilityCandidate,
     GovernedDiscoveryResult,
     RankedCapabilityCandidate,
@@ -177,7 +181,7 @@ class _DropCandidateEvaluator:
         context: CapabilityGovernanceContext,
     ) -> CapabilityGovernanceDecision:
         if candidate.identity.logical.logical_id == "tools.beta":
-            raise RuntimeError("skip candidate")
+            raise CapabilityGovernanceEvaluatorUnavailableError("skip candidate")
         return CapabilityGovernanceDecision(
             disposition=GovernanceDisposition.ALLOWED,
             evidence=GovernanceDecisionEvidence(
@@ -387,20 +391,153 @@ class _RuntimeFailureEvaluator:
         raise RuntimeError("evaluator exploded")
 
 
-def test_strict_evaluator_runtime_failure_blocks_candidate() -> None:
+def test_strict_unexpected_evaluator_runtime_error_propagates() -> None:
+    ranked = (_ranked(_entry()),)
+    context = CapabilityGovernanceContext(posture=CapabilityGovernancePosture.STRICT)
+    with pytest.raises(RuntimeError, match="evaluator exploded"):
+        govern_capability_candidates(
+            ranked,
+            evaluators=(_RuntimeFailureEvaluator(),),
+            context=context,
+        )
+
+
+class _CustomUnavailableEvaluator:
+    @property
+    def evaluator_id(self) -> str:
+        return "plugin.external.unavailable"
+
+    def evaluate(
+        self,
+        candidate: RankedCapabilityCandidate,
+        context: CapabilityGovernanceContext,
+    ) -> CapabilityGovernanceDecision:
+        del candidate, context
+        raise CapabilityGovernanceEvaluatorUnavailableError("trust provider down")
+
+
+def test_strict_typed_evaluator_failure_blocks_candidate() -> None:
     ranked = (_ranked(_entry()),)
     context = CapabilityGovernanceContext(posture=CapabilityGovernancePosture.STRICT)
     result = govern_capability_candidates(
         ranked,
-        evaluators=(_RuntimeFailureEvaluator(),),
+        evaluators=(_CustomUnavailableEvaluator(),),
         context=context,
     )
     assert not result.allowed
     assert len(result.blocked) == 1
-    assert any(
-        item.reason_code is CapabilityGovernanceReasonCode.EVALUATOR_FAILURE
+    failure_items = [
+        item
         for item in result.blocked[0].evidence
+        if item.reason_code is CapabilityGovernanceReasonCode.EVALUATOR_FAILURE
+    ]
+    assert len(failure_items) == 1
+    assert failure_items[0].evaluator_id == "plugin.external.unavailable"
+    assert failure_items[0].detail == "trust provider down"
+
+
+def test_external_evaluator_can_raise_typed_expected_failure_without_subclassing_default() -> (
+    None
+):
+    ranked = (_ranked(_entry()),)
+    context = CapabilityGovernanceContext(posture=CapabilityGovernancePosture.STRICT)
+    result = govern_capability_candidates(
+        ranked,
+        evaluators=(_CustomUnavailableEvaluator(),),
+        context=context,
     )
+    assert result.blocked
+
+
+class _CustomBrokenEvaluator:
+    @property
+    def evaluator_id(self) -> str:
+        return "plugin.external.broken"
+
+    def evaluate(
+        self,
+        candidate: RankedCapabilityCandidate,
+        context: CapabilityGovernanceContext,
+    ) -> CapabilityGovernanceDecision:
+        del candidate, context
+        raise RuntimeError("programming defect")
+
+
+def test_non_strict_unexpected_evaluator_runtime_error_propagates() -> None:
+    ranked = (_ranked(_entry()),)
+    context = CapabilityGovernanceContext(posture=CapabilityGovernancePosture.NON_STRICT)
+    with pytest.raises(RuntimeError, match="programming defect"):
+        govern_capability_candidates(
+            ranked,
+            evaluators=(_CustomBrokenEvaluator(),),
+            context=context,
+        )
+
+
+class _NonStrictUnavailableEvaluator:
+    @property
+    def evaluator_id(self) -> str:
+        return "plugin.non_strict.unavailable"
+
+    def evaluate(
+        self,
+        candidate: RankedCapabilityCandidate,
+        context: CapabilityGovernanceContext,
+    ) -> CapabilityGovernanceDecision:
+        del candidate, context
+        raise CapabilityGovernanceEvaluatorUnavailableError("policy service unavailable")
+
+
+def test_non_strict_typed_evaluator_failure_uses_canonical_failure_semantics() -> None:
+    ranked = (_ranked(_entry()),)
+    context = CapabilityGovernanceContext(posture=CapabilityGovernancePosture.NON_STRICT)
+    with pytest.raises(
+        CapabilityGovernanceError,
+        match="plugin.non_strict.unavailable",
+    ):
+        govern_capability_candidates(
+            ranked,
+            evaluators=(_NonStrictUnavailableEvaluator(),),
+            context=context,
+        )
+
+
+def test_malformed_evaluator_output_remains_governance_error() -> None:
+    ranked = (_ranked(_entry()),)
+    with pytest.raises(CapabilityGovernanceError):
+        govern_capability_candidates(
+            ranked,
+            evaluators=(_InvalidReasonEvaluator(),),
+        )
+
+
+_GOVERNANCE_CORE = Path(
+    __file__,
+).resolve().parents[3] / "intergrax" / "capability_catalog" / "governance.py"
+
+
+def _handler_maps_generic_exception_to_business(node: ast.ExceptHandler) -> bool:
+    if not isinstance(node.type, ast.Name) or node.type.id != "Exception":
+        return False
+    for child in ast.walk(node):
+        if isinstance(child, ast.Call):
+            func = child.func
+            if isinstance(func, ast.Name) and func.id == "_evaluator_failure_decision":
+                return True
+            if isinstance(func, ast.Attribute) and func.attr == "_evaluator_failure_decision":
+                return True
+    return False
+
+
+def test_governance_core_does_not_catch_generic_exception_for_business_mapping() -> None:
+    tree = ast.parse(_GOVERNANCE_CORE.read_text(encoding="utf-8"))
+    offenders = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ExceptHandler)
+        and _handler_maps_generic_exception_to_business(node)
+    ]
+    assert not offenders
 
 
 def test_strict_evaluator_contract_violation_raises_operation_error() -> None:

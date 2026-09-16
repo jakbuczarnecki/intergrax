@@ -10,7 +10,7 @@ from intergrax.contracts.capability_catalog.identity import (
     CapabilitySourceKind,
 )
 from intergrax.marketplace.errors import MarketplaceCatalogConfigurationError
-from intergrax.marketplace.listing import MarketplaceCapabilityListing
+from intergrax.contracts.marketplace.listing import MarketplaceCapabilityListing
 
 _MARKETPLACE_SOURCE_KINDS: frozenset[CapabilitySourceKind] = frozenset(
     {

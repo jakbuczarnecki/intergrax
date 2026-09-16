@@ -73,13 +73,16 @@ def test_readiness_reports_capabilities_and_liveness_without_secret(
     tmp_path: Path,
 ) -> None:
     secret = "deployment-secret-that-is-not-in-health"
-    app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(LocalWorkspaceBackendSettings(
-            data_home=str(tmp_path / "data"), settings=LocalWorkspaceBackendSettings(
-            data_home=str(tmp_path / "data"),
-            include_mcp=False,
-            include_scheduler=False,
-            knowledge_admin_confirmation_secret=secret,
-        )
+    projection_settings = LocalWorkspaceBackendSettings(data_home=str(tmp_path / "data"))
+    app_settings = LocalWorkspaceBackendSettings(
+        data_home=str(tmp_path / "data"),
+        include_mcp=False,
+        include_scheduler=False,
+        knowledge_admin_confirmation_secret=secret,
+    )
+    app = create_local_workspace_backend_app(
+        registry_projection=build_lkw_test_registry_projection(projection_settings),
+        settings=app_settings,
     )
 
     with TestClient(app) as client:
@@ -109,12 +112,15 @@ def test_mandatory_store_failure_blocks_app_creation(
     )
 
     with pytest.raises(RuntimeError, match="lkw_durable_store_unavailable"):
-        create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(LocalWorkspaceBackendSettings(
-                data_home=str(tmp_path / "data"), settings=LocalWorkspaceBackendSettings(
-                data_home=str(tmp_path / "data"),
-                include_mcp=False,
-                include_scheduler=False,
-            )
+        projection_settings = LocalWorkspaceBackendSettings(data_home=str(tmp_path / "data"))
+        app_settings = LocalWorkspaceBackendSettings(
+            data_home=str(tmp_path / "data"),
+            include_mcp=False,
+            include_scheduler=False,
+        )
+        create_local_workspace_backend_app(
+            registry_projection=build_lkw_test_registry_projection(projection_settings),
+            settings=app_settings,
         )
 
 

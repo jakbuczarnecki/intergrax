@@ -57,7 +57,9 @@ from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
     reset_active_execution_budget,
 )
-from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
 from intergrax.runtime.execution.active_execution_continuation_store import (
     bind_active_execution_continuation_state_store,
     reset_active_execution_continuation_state_store,
@@ -81,12 +83,12 @@ from intergrax.runtime.execution.lineage.root_activation import (
     validate_root_lineage_inputs,
 )
 from intergrax.runtime.execution.identity_authority import (
-    BackgroundTransportIdentity,
     RootTaskIdentity,
-    mint_background_transport_identity,
-    mint_child_execution_id,
-    mint_retry_attempt_id,
     mint_root_execution_identity,
+)
+from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.resume_planner import (
+    execution_identity_from_checkpoint,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
@@ -122,16 +124,63 @@ class RootExecutionOptions:
     tenant_id: str | None = None
     task_id: TaskId | None = None
     segment_predecessor_root_execution_id: ExecutionId | None = None
+    resume_checkpoint: TaskCheckpoint | None = None
+
+
+def resolve_root_task_identity(
+    *,
+    run_id: RunId | None = None,
+    attempt_id: AttemptId | None = None,
+    execution_id: ExecutionId | None = None,
+    resume_checkpoint: TaskCheckpoint | None = None,
+) -> RootTaskIdentity:
+    """Resolve root identity for lifecycle admission (checkpoint interpretation lives here)."""
+    if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
+        checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
+            resume_checkpoint,
+        )
+        checkpoint_tree = resume_checkpoint.runtime.execution_tree
+        checkpoint_root_execution_id = next(
+            entry.execution_id
+            for entry in checkpoint_tree.entries
+            if entry.parent_execution_id is None
+        )
+        if run_id is not None and run_id != checkpoint_run_id:
+            raise ValueError(
+                "explicit run_id conflicts with resume checkpoint identity: "
+                f"{run_id!r} != {checkpoint_run_id!r}"
+            )
+        if attempt_id is not None and attempt_id != checkpoint_attempt_id:
+            raise ValueError(
+                "explicit attempt_id conflicts with resume checkpoint identity: "
+                f"{attempt_id!r} != {checkpoint_attempt_id!r}"
+            )
+        if execution_id is not None and execution_id != checkpoint_root_execution_id:
+            raise ValueError(
+                "explicit execution_id conflicts with resume checkpoint identity: "
+                f"{execution_id!r} != {checkpoint_root_execution_id!r}"
+            )
+        return mint_root_execution_identity(
+            run_id=checkpoint_run_id,
+            attempt_id=checkpoint_attempt_id,
+            execution_id=execution_id,
+        )
+    return mint_root_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
 
 
 def resolve_root_execution_context(
     options: RootExecutionOptions,
 ) -> RootExecutionContext:
     """Resolve typed root context; mints RunId and AttemptId when omitted."""
-    identity = mint_root_execution_identity(
+    identity = resolve_root_task_identity(
         run_id=options.run_id,
         attempt_id=options.attempt_id,
         execution_id=options.execution_id,
+        resume_checkpoint=options.resume_checkpoint,
     )
     return RootExecutionContext(
         run_id=identity.run_id,

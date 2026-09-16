@@ -8,6 +8,8 @@ It coordinates work across existing semantic domains. It does **not** replace do
 
 **As-built audit baseline:** `development @ a189282b35e7a4ac549489f0d06b7acd271e9a5b`, re-baselined on 2026-09-14 (task **HARNESS-REBASE-EE1**).
 
+**Top-tier harness gap audit (2026-09-16):** [`HARNESS_TOP_TIER_GAP_AUDIT.md`](../maintainers/qualification/HARNESS_TOP_TIER_GAP_AUDIT.md) — code-first A–Z scorecard, matrices, and ordered workstreams. Audited commit at publish time: `55db3f95f2af61166cedfdb4667fbac97cb075a5` (local `development` ahead of `origin/development`); revalidate HEAD before implementation.
+
 **Execution Engine position (evidence-backed):** the canonical Execution Engine is **enterprise-qualified, frozen, and the sole legal platform execution authority**. Harness evolution work must compose through that boundary or close illegal bypass/adoption gaps — not re-converge or reimplement the engine.
 
 The roadmap is deliberately based on repository reality, not only architecture intent. Before any implementation session, the relevant status labels must be revalidated against the then-current `development` HEAD.
@@ -171,7 +173,7 @@ Planning aid only — domain architecture documents remain authoritative.
 | authorization | Governance |
 | diagnostic interpretation | Diagnostics |
 | canonical execution evidence | Execution / Observability spine (`RuntimeEvent`, HOS) |
-| runtime invariant evaluation | **GAP** — no shared invariant runner catalog (Initiative N) |
+| runtime invariant evaluation | **CURRENT (RI-01)** — shared typed runner + domain rule packs (`intergrax/runtime/invariants/`) |
 | provider dispatch (delegation) | `DelegatedExecutionProvider` contract under frozen Execution boundary |
 
 ---
@@ -274,7 +276,7 @@ These invariants must be reflected in canonical documentation, code, conformance
 | F | Canonical ToolRuntime pipeline | CURRENT / PARTIAL | Tools / ToolRuntime | safety + convergence |
 | G | Runtime credentials and secret references | PARTIAL | security/secrets/integrations | provider seam + late resolution |
 | H | Execution sandbox and isolation | CURRENT / PARTIAL | runtime sandbox + security + execution | convergence |
-| I | Subagent and external-agent providers | PARTIAL | `DelegatedExecutionProvider` + UER | P2.1-S2A/S2B CLOSED; remaining P2.1-S2 adoption slices |
+| I | Subagent and external-agent providers | **CLOSED / ENTERPRISE QUALIFIED** (delegated provider plane P2.1) | `DelegatedExecutionProvider` + UER | **P2.1 CLOSED** on ``6fbccd65813bb8eb2e2056f0e636758ef00592d0``; subprocess provider qualified; optional follow-on adoption slices (remote/ACP) are new integration work, not plane gaps |
 | J | Background Execution control | CURRENT / PARTIAL | Background Tasks + UER | convergence + DX |
 | K | Verified external event intake | PARTIAL | interactions/integrations + UER | generalization + durability |
 | L | Artifacts, attachments, spill | PARTIAL | artifacts/storage + CE + tools | consolidation |
@@ -588,11 +590,37 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2C4 — durable delegated reattachment boundary = CLOSED** (``ExecutionId`` → durable ``DelegatedInvocationCorrelationLookup`` → ``DelegatedExecutionReattachmentProvider`` → typed ``DelegatedExecutionContinuationOutcome``; ``supports_reattachment`` capability; pure provider-plane reattachment without identity minting, correlation mutation, lifecycle transition, or automatic retry).
 
-**P2.1-S2C = CLOSED** (S2C1–S2C4 durable correlation, status/control lookup, query, reattachment).
+**P2.1-S2C = CLOSED / ENTERPRISE QUALIFIED** (P2.1-S2C-Q1 on development ``d1e18296bff0f3ad5e006f355dcfad256c1c2a6a``: full regression certification of durable correlation, status, control, query, legacy backfill, reattachment; 336 passed / 0 failed / 0 errors; collection PASS on required delegated suite + canonical execution continuation gates; architecture invariant audit PASS).
 
-**P2.1-S2 = OPEN** (S2C CLOSED; remaining S2 adoption slices beyond durable correlation plane).
+**P2.1-S2C qualification evidence:** ``.tmp/session/P2.1-S2C-Q1/regression.log`` (session-local; not committed).
 
-Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`, `tests/unit/runtime/execution/test_delegated_execution_continuation.py`
+**P2.1-S2 delegated provider plane = CLOSED / ENTERPRISE QUALIFIED** (S2A–S2D-C2 + P2.1 closeout; optional additional provider **integrations** remain product backlog, not open plane defects).
+
+**P2.1-S2D — real external delegated provider production qualification = CLOSED** (provider seam production-qualified against ``subprocess_delegated_execution``; P2.1-S2D-C2 trust-boundary hardening: provider explicit ERROR ≠ transport; observation correlation from worker evidence only; fail-closed mismatch/spoof; evidence: ``tests/unit/runtime/execution/test_delegated_execution_subprocess_provider_s2d.py`` + S2C regression suite).
+
+**P2.1-S2D qualified provider:** ``subprocess_delegated_execution`` — ``SubprocessDelegatedExecutionProvider`` (``provider_version=1.0.0``).
+
+**P2.1-S2D qualification SHA:** ``878f0ca88f6a6fbcec3c826f76b1d5c1724099f0`` (P2.1-S2D-C2).
+
+**P2.1-S2D qualified capabilities:** execute, status, cancel, reattachment. **Unsupported:** pause, resume, interrupt, streaming.
+
+**P2.1-S2D qualification evidence:** ``.tmp/session/P2.1-S2D-C2/regression.log`` (session-local; not committed).
+
+**P2.1-S2D-C1 — required durability, process-local state loss and restart recovery = CLOSED** (``DurabilityMode.REQUIRED`` + durable ``DelegatedInvocationCorrelationStore``; fresh platform services operate on ``ExecutionId`` + durable correlation only).
+
+**P2.1-S2D-C2 — subprocess provider observation trust boundary = CLOSED** (qualification SHA ``878f0ca88f6a6fbcec3c826f76b1d5c1724099f0``; provider explicit ERROR ≠ transport; correlation proof from worker evidence only; fail-closed spoof/mismatch).
+
+**P2.1 = CLOSED / ENTERPRISE QUALIFIED** (final delegated-provider plane closeout on development ``6fbccd65813bb8eb2e2056f0e636758ef00592d0``: execution-governed adoption via ``ChildExecutionRunner`` + ``ExecutionBoundary``; durable immutable ``ExecutionId`` ↔ ``ProviderInvocation`` correlation; provider-neutral status/control/query/reattachment; ``SubprocessDelegatedExecutionProvider`` production-qualified across process + TCP boundaries; no canonical identity/lifecycle authority for providers; no automatic retry on ambiguous outcomes; replaceable provider/resolver/store seams; architecture invariant audit PASS).
+
+**P2.1 enterprise qualification SHA:** ``6fbccd65813bb8eb2e2056f0e636758ef00592d0``.
+
+**P2.1 qualified provider:** ``subprocess_delegated_execution`` — ``SubprocessDelegatedExecutionProvider`` (``provider_version=1.0.0``).
+
+**P2.1 key invariants:** execution-owned canonical identity; child authority ⊆ parent; durable correlation source of truth (immutable on status/control/query/reattach); provider observations untrusted; reattachment ≠ retry; no global mutable registries; no Nexus/vendor leakage in stable delegated contracts.
+
+**P2.1 closeout regression evidence:** ``.tmp/session/P2.1-Closeout/regression.log`` (438 passed, 1 skipped, 0 failed, 0 errors; 439 collected; session-local; not committed).
+
+Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`, `tests/unit/runtime/execution/test_delegated_invocation_correlation_durability.py`, `tests/unit/runtime/execution/test_delegated_execution_status.py`, `tests/unit/runtime/execution/test_delegated_execution_query.py`, `tests/unit/runtime/execution/test_delegated_execution_continuation.py`, `tests/unit/runtime/architecture/test_mp4r3_execution_continuation_integration_gates.py`, `tests/unit/runtime/execution/continuation/test_gr5_r5_restart_exact_identity.py`, `tests/unit/runtime/execution/test_delegated_execution_subprocess_provider_s2d.py`
 
 ## Remaining work (P2.1-S2 — adoption slices after S2A, not new seam)
 
@@ -726,9 +754,11 @@ Compaction never deletes audit/evidence merely to reduce model tokens.
 
 Rules remain domain-owned; execution is shared.
 
-**As-built:** Diagnostics runs deterministic checks over canonical evidence, but there is **no** shared `Runtime Invariant Service` catalog/runner in production (`intergrax/` — **GAP**). Strong Diagnostics maturity does **not** close Initiative N.
+**As-built (RI-01 CLOSED):** Shared `RuntimeInvariantService` + typed contracts (`intergrax/contracts/runtime_invariants.py`) execute domain-owned rule packs with deterministic reports. Diagnostics remains a separate consumer plane — it may project RI reports but does not own invariant meaning.
 
-Build a central runner/catalog able to execute domain-provided invariant checks in runtime, diagnostics, and CI.
+Qualification: [`RUNTIME_INVARIANT_SERVICE_RI01_QUALIFICATION.md`](../maintainers/qualification/RUNTIME_INVARIANT_SERVICE_RI01_QUALIFICATION.md).
+
+Further work: broader invariant catalog adoption, diagnostics/CI consumers, and domain pack expansion — not a second runner.
 
 Each invariant has:
 
@@ -1830,8 +1860,8 @@ The program is complete only when all applicable statements are proven against t
 
 # 53. Immediate next action
 
-The next implementation activity is **P0A — As-built re-baseline**.
+**Harness top-tier gap audit (2026-09-16) is complete.** See [`HARNESS_TOP_TIER_GAP_AUDIT.md`](../maintainers/qualification/HARNESS_TOP_TIER_GAP_AUDIT.md).
 
-It is an audit/documentation synchronization phase, not a code-feature phase.
+**TR-01 — ToolRuntime** is **CLOSED / ENTERPRISE QUALIFIED** (TR-01-RQ-FINAL at `94c0abde805f3da244bd1eb3e9d5362e0ec2fdcc`; independent GitHub audit required). **TOOL-ENG-RX** and **TR-01-RQ-C1A/B/C** remain closed prerequisites. **GV-01 — Governance adoption sweep** is **CLOSED / ENTERPRISE QUALIFIED** (GV-01-C1R at `13db6b2e65c654a2736966aba3f7d61bfc06ee14`; independent GitHub audit required). **Next recommended workstream:** **SESSION-01 — Session/Checkpoint SSOT**. **RI-01 — Runtime Invariant Service foundation** is **CLOSED / ENTERPRISE QUALIFIED**.
 
-After P0A, work proceeds to P0B safety closure and only then P0C execution/durability convergence.
+P0A/P0B/P0C items remain valid for consumer adoption and durability convergence; do not reimplement frozen Execution Engine or P2.1 delegated provider plane.

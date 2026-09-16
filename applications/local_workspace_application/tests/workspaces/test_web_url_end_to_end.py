@@ -15,8 +15,10 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from intergrax.integrations._shared.in_memory_document_store import (
-from intergrax.runtime.background_execution.identity_persistence import wire_background_execution_identity_persistence
     InMemoryDocumentStore,
+)
+from intergrax.runtime.background_execution.identity_persistence import (
+    wire_background_execution_identity_persistence,
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import (

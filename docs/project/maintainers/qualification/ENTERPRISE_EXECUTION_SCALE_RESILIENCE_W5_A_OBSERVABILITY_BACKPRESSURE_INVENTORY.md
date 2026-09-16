@@ -1,8 +1,10 @@
 # Enterprise Scale & Resilience — W5-A Observability Backpressure Inventory
 
+> **Historical qualification snapshot.** This inventory documents pre-integration gaps at the W5-A baseline SHA. The **bounded delivery gap** documented in ETAP 5 was subsequently closed by **P1B-R3** / [**ADR-OBS-005**](../../../technical/adr/entries/2026-09-14/ADR-OBS-005.md) implementation. **Current architecture authority:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) and the accepted event-delivery ADR — not this inventory alone.
+
 **Task:** W5-A — Observability Backpressure Inventory & Event Pipeline Ownership  
-**Status:** INVENTORY COMPLETE · delivery contracts + bounded sink implemented (transport only)  
-**Production runtime changed:** YES (`intergrax/contracts/event_delivery.py`, `intergrax/runtime/observability/event_delivery/`)
+**Status:** HISTORICAL QUALIFICATION SNAPSHOT · superseded for SSOT by OBSERVABILITY.md + ADR-OBS-005  
+**Production runtime changed at W5-A baseline:** YES (contracts + bounded sink — see snapshot tables below)
 
 Companion: [`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md`](../architecture/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md) · ADR [`ADR_ENTERPRISE_OBSERVABILITY_EVENT_PIPELINE_SCALING.md`](../architecture/ADR_ENTERPRISE_OBSERVABILITY_EVENT_PIPELINE_SCALING.md).
 
@@ -64,7 +66,7 @@ Catalog helpers: `CriticalEventKind`, `classify_kind_string`, `priority_for_crit
 | Can a slow telemetry consumer stop ExecutionRuntime / Recovery / Checkpoint / Cancellation / ExternalOperation? | **NO** — when producers use `BoundedEventSink`, best-effort publish returns without waiting on downstream; critical saturation fails closed without silent loss; drain runs on a dedicated worker thread. |
 | Shared execution + telemetry queue? | **Forbidden** — W5-A buffer is observability-transport-only. |
 
-**Gap (pre-integration):** `RuntimeEventBus` still synchronously commits durable evidence and dispatches handlers on the caller thread — W5-A qualifies the **replacement transport boundary**; bus integration is a follow-on wiring task.
+**Gap (pre-integration — historical):** At W5-A inventory time, `RuntimeEventBus` still synchronously committed durable evidence on the caller thread. **Subsequent closure:** P1B-R3 wired `EventSinkPort` / `BoundedEventSink` / `RuntimeEventExportSink` per **ADR-OBS-005**; see qualification tests `test_bounded_delivery_p1b_r3_*` and W5-B2 composition gates. This ETAP 5 row is **not** current architecture status.
 
 ## ETAP 6 — Durable evidence boundary
 

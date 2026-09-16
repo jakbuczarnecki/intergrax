@@ -38,6 +38,7 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from testing_support.builder import FakeLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -79,6 +80,7 @@ def _build_runtime(
         use_in_memory_trace=True,
         revision_store=revision_store,
         pinning_store=pinning_store,
+        llm_adapter=FakeLLMAdapter(),
     )
 
 

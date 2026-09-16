@@ -20,10 +20,9 @@ from intergrax.tools.providers.records.contracts import RecordsPutInput, Records
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
 
 pytestmark = pytest.mark.unit
 
@@ -116,15 +115,17 @@ def test_execution_boundary_emitter_writes_failed_status_to_buffer() -> None:
         config=config,
         session_manager=SessionManager(storage=InMemorySessionStorage()),
     )
-    request = RuntimeRequest(
+    seed = "run_failed_emit"
+    request = build_runtime_request_for_tests(
+        seed=seed,
         tenant_id="lab",
         user_id="u1",
         session_id="s1",
         agent_id="boundary_demo_agent",
         message="hi",
-        metadata={"run_id": "run_failed_emit", "task_id": "task_failed_emit"},
     )
-    state = RuntimeState(context=runtime_context, request=request, run_id="run_failed_emit")
+    run_id = str(request.run_id)
+    state = RuntimeState(context=runtime_context, request=request, run_id=run_id)
     contract = ToolContract(
         tool_id="records.put",
         name="records.put",
@@ -136,7 +137,7 @@ def test_execution_boundary_emitter_writes_failed_status_to_buffer() -> None:
         risk_level=ToolRiskLevel.MEDIUM,
     )
     tool_request = ToolExecutionRequest(
-        run_id="run_failed_emit",
+        run_id=run_id,
         step_id="store_demo_record",
         tool_id="records.put",
         input=RecordsPutInput(partition_key="p", row_key="r", data={"title": "x"}),
@@ -151,7 +152,7 @@ def test_execution_boundary_emitter_writes_failed_status_to_buffer() -> None:
         request=tool_request,
         result=result,
     )
-    events = buffer.snapshot_for_run("run_failed_emit")
+    events = buffer.snapshot_for_run(run_id)
     assert len(events) == 1
     assert events[0]["event_sequence"] == 1
     assert events[0]["boundary_type"] == "tool_execution"
@@ -176,15 +177,17 @@ def test_execution_boundary_emitter_writes_to_buffer():
         config=config,
         session_manager=SessionManager(storage=InMemorySessionStorage()),
     )
-    request = RuntimeRequest(
+    seed = "run_emit_1"
+    request = build_runtime_request_for_tests(
+        seed=seed,
         tenant_id="lab",
         user_id="u1",
         session_id="s1",
         agent_id="boundary_demo_agent",
         message="hi",
-        metadata={"run_id": "run_emit_1", "task_id": "task_emit_1"},
     )
-    state = RuntimeState(context=runtime_context, request=request, run_id="run_emit_1")
+    run_id = str(request.run_id)
+    state = RuntimeState(context=runtime_context, request=request, run_id=run_id)
     contract = ToolContract(
         tool_id="records.put",
         name="records.put",
@@ -196,7 +199,7 @@ def test_execution_boundary_emitter_writes_to_buffer():
         risk_level=ToolRiskLevel.MEDIUM,
     )
     tool_request = ToolExecutionRequest(
-        run_id="run_emit_1",
+        run_id=run_id,
         step_id="store_demo_record",
         tool_id="records.put",
         input=RecordsPutInput(partition_key="p", row_key="r", data={"title": "x"}),
@@ -211,7 +214,7 @@ def test_execution_boundary_emitter_writes_to_buffer():
         request=tool_request,
         result=result,
     )
-    events = buffer.snapshot_for_run("run_emit_1")
+    events = buffer.snapshot_for_run(run_id)
     assert len(events) == 1
     assert events[0]["event_sequence"] == 1
     assert events[0]["boundary_type"] == "tool_execution"

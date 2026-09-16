@@ -43,6 +43,8 @@ class DeterministicExternalWorkFake:
         *,
         capabilities: tuple[ExternalWorkCapability, ...] | None = None,
         unsupported_ops: frozenset[str] | None = None,
+        fail_create_with_code: dict[str, ExternalWorkErrorCode] | None = None,
+        discover_error_code: ExternalWorkErrorCode | None = None,
     ) -> None:
         self._capabilities = capabilities or (
             ExternalWorkCapability.QUOTE_FIRST,
@@ -53,6 +55,8 @@ class DeterministicExternalWorkFake:
             ExternalWorkCapability.EVIDENCE_REFS,
         )
         self._unsupported_ops = unsupported_ops or frozenset()
+        self._fail_create_with_code = dict(fail_create_with_code or {})
+        self._discover_error_code = discover_error_code
         self._by_idempotency: dict[str, ExternalWorkSnapshot] = {}
         self._by_external_task: dict[str, ExternalWorkSnapshot] = {}
         self._quotes: dict[str, CommercialQuote] = {}
@@ -67,6 +71,11 @@ class DeterministicExternalWorkFake:
         self.cancel_calls = 0
 
     def discover(self) -> ExternalWorkProviderDescriptor:
+        if self._discover_error_code is not None:
+            raise ExternalWorkError(
+                "discover failed",
+                code=self._discover_error_code,
+            )
         return ExternalWorkProviderDescriptor(
             identity=ExternalContractorIdentity(
                 provider_id="gec3_deterministic_fake",
@@ -86,6 +95,13 @@ class DeterministicExternalWorkFake:
             raise ExternalWorkError(
                 "create not supported",
                 code=ExternalWorkErrorCode.OPERATION_NOT_SUPPORTED,
+                provider_id=request.provider_id,
+            )
+        fail_code = self._fail_create_with_code.get(request.idempotency_key)
+        if fail_code is not None:
+            raise ExternalWorkError(
+                f"deterministic create failure ({fail_code.value})",
+                code=fail_code,
                 provider_id=request.provider_id,
             )
         existing = self._by_idempotency.get(request.idempotency_key)

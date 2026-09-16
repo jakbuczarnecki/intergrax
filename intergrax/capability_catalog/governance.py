@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from typing import Final, Protocol
 
-from intergrax.capability_catalog.errors import CapabilityGovernanceError
+from intergrax.capability_catalog.errors import (
+    CapabilityGovernanceError,
+    CapabilityGovernanceEvaluatorUnavailableError,
+)
 from intergrax.capability_catalog.governed_candidate import (
     BlockedCapabilityCandidate,
     GovernedCapabilityCandidate,
@@ -45,7 +48,14 @@ class CapabilityGovernanceDecision:
 
 
 class CapabilityGovernanceEvaluator(Protocol):
-    """Structural governance plugin — narrowing only, never selection."""
+    """Structural governance plugin — narrowing only, never selection.
+
+    Contract:
+    - Return ``CapabilityGovernanceDecision`` for normal business evaluation.
+    - Raise ``CapabilityGovernanceEvaluatorUnavailableError`` for expected
+      operational inability to decide (dependency down, provider unavailable).
+    - Unexpected programming defects propagate unchanged (fail loud).
+    """
 
     @property
     def evaluator_id(self) -> str:
@@ -192,11 +202,12 @@ def _evaluate_candidate(
             )
         except CapabilityGovernanceError:
             raise
-        except Exception as exc:  # noqa: BLE001 - evaluator failure must fail closed
+        except CapabilityGovernanceEvaluatorUnavailableError as exc:
             if context.posture is CapabilityGovernancePosture.STRICT:
+                detail = str(exc) if str(exc) else "evaluator unavailable"
                 failure = _evaluator_failure_decision(
                     evaluator_id,
-                    detail=str(exc),
+                    detail=detail,
                 )
                 evidence_items.append(failure.evidence)
                 blocked = True

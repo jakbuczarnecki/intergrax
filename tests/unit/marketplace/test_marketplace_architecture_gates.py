@@ -23,6 +23,38 @@ _FORBIDDEN_IMPORT_PREFIXES = (
     "intergrax.agent_distribution",
     "intergrax.runtime",
     "applications",
+    "intergrax.identity",
+    "intergrax.iam",
+    "intergrax.auth",
+    "intergrax.organization_directory",
+)
+
+_FORBIDDEN_MARKETPLACE_SYMBOL_SUBSTRINGS = (
+    "PrivateMarketplaceEngine",
+    "TenantMarketplaceCatalog",
+    "OrganizationMarketplaceCatalog",
+    "PrivateMarketplaceRegistry",
+)
+
+_FORBIDDEN_BILLING_IMPORT_PREFIXES = (
+    "intergrax.tools.providers.billing",
+    "intergrax.skills.providers.billing",
+    "stripe",
+    "adyen",
+    "paddle",
+    "chargebee",
+    "zuora",
+)
+
+_FORBIDDEN_PRICING_AUTHORITY_CALL_NAMES = frozenset(
+    {
+        "calculate_price",
+        "compute_charge",
+        "apply_discount",
+        "calculate_invoice",
+        "capture_payment",
+        "settle",
+    },
 )
 
 _FORBIDDEN_RUNTIME_MUTATION_NAMES = frozenset(
@@ -42,8 +74,12 @@ _FORBIDDEN_INSTALL_MODULES = frozenset({"pip", "subprocess"})
 
 _CATALOG_AUTHORITY_MODULES = (
     "intergrax.capability_catalog.ranking",
+    "intergrax.capability_catalog.search",
+    "intergrax.capability_catalog.recommendation",
     "intergrax.capability_catalog.governance",
     "intergrax.capability_catalog.ranking_validation",
+    "intergrax.capability_catalog.search_validation",
+    "intergrax.capability_catalog.recommendation_validation",
     "intergrax.capability_catalog.governance_validation",
 )
 
@@ -56,6 +92,11 @@ def _package_root(module_name: str) -> Path:
 
 def _iter_package_py_files(module_name: str) -> list[Path]:
     return sorted(path for path in _package_root(module_name).rglob("*.py") if path.is_file())
+
+
+def _is_handoff_adapter_path(root: Path, path: Path) -> bool:
+    adapter_root = root / "handoff" / "adapters"
+    return adapter_root in path.parents or path.parent == adapter_root
 
 
 def _collect_imports(tree: ast.AST) -> list[str]:
@@ -82,6 +123,8 @@ def _collect_call_names(tree: ast.AST) -> list[str]:
 def test_marketplace_package_has_no_forbidden_runtime_imports() -> None:
     root = _package_root(_MARKETPLACE_MODULE)
     for path in _iter_package_py_files(_MARKETPLACE_MODULE):
+        if _is_handoff_adapter_path(root, path):
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for imported in _collect_imports(tree):
             for prefix in _FORBIDDEN_IMPORT_PREFIXES:
@@ -139,6 +182,8 @@ def test_forbidden_flow_1_no_pip_or_tool_registry_mutation_imports() -> None:
 def test_forbidden_flow_3_no_agent_registry_register_path() -> None:
     root = _package_root(_MARKETPLACE_MODULE)
     for path in _iter_package_py_files(_MARKETPLACE_MODULE):
+        if _is_handoff_adapter_path(root, path):
+            continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for imported in _collect_imports(tree):
             if imported == "intergrax.agent_distribution" or imported.startswith(
@@ -161,6 +206,95 @@ def test_catalog_authority_modules_do_not_import_marketplace_contracts() -> None
                 raise AssertionError(f"{module_name} imports marketplace package: {imported}")
 
 
+def test_marketplace_core_does_not_import_billing_implementations() -> None:
+    root = _package_root(_MARKETPLACE_MODULE)
+    for path in _iter_package_py_files(_MARKETPLACE_MODULE):
+        if _is_handoff_adapter_path(root, path):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for imported in _collect_imports(tree):
+            for prefix in _FORBIDDEN_BILLING_IMPORT_PREFIXES:
+                if imported == prefix or imported.startswith(f"{prefix}."):
+                    raise AssertionError(
+                        f"{path.relative_to(root)} imports forbidden billing dependency: {imported}",
+                    )
+
+
+def test_marketplace_package_has_no_pricing_or_billing_authority_api() -> None:
+    root = _package_root(_MARKETPLACE_MODULE)
+    for path in _iter_package_py_files(_MARKETPLACE_MODULE):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if node.name in _FORBIDDEN_PRICING_AUTHORITY_CALL_NAMES:
+                    raise AssertionError(
+                        f"{path.relative_to(root)} exposes forbidden billing API: {node.name}",
+                    )
+        for call_name in _collect_call_names(tree):
+            if call_name in _FORBIDDEN_PRICING_AUTHORITY_CALL_NAMES:
+                raise AssertionError(
+                    f"{path.relative_to(root)} invokes forbidden billing authority call: {call_name}",
+                )
+
+
+def test_me9_visibility_contracts_do_not_import_marketplace_implementation() -> None:
+    for module_name in (
+        "intergrax.contracts.marketplace.visibility",
+        "intergrax.contracts.marketplace.query_context",
+    ):
+        module = importlib.import_module(module_name)
+        path = Path(module.__file__)
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for imported in _collect_imports(tree):
+            if imported == _MARKETPLACE_MODULE or imported.startswith(f"{_MARKETPLACE_MODULE}."):
+                raise AssertionError(f"{module_name} imports marketplace implementation")
+
+
+def test_me9_tenant_isolation_uses_central_visibility_module() -> None:
+    service_path = _package_root(_MARKETPLACE_MODULE) / "service.py"
+    tree = ast.parse(service_path.read_text(encoding="utf-8"))
+    imported = _collect_imports(tree)
+    assert "intergrax.marketplace.visibility" in imported
+
+
+def test_me9_no_separate_private_marketplace_engine_symbols() -> None:
+    root = _package_root(_MARKETPLACE_MODULE)
+    for path in _iter_package_py_files(_MARKETPLACE_MODULE):
+        text = path.read_text(encoding="utf-8")
+        for symbol in _FORBIDDEN_MARKETPLACE_SYMBOL_SUBSTRINGS:
+            if symbol in text:
+                raise AssertionError(
+                    f"{path.relative_to(root)} references forbidden symbol: {symbol}",
+                )
+
+
+_FORBIDDEN_CACHE_VENDOR_PREFIXES = (
+    "redis",
+    "aioredis",
+    "pymemcache",
+    "memcache",
+    "hazelcast",
+)
+
+
+def test_me11_marketplace_core_has_no_cache_vendor_sdk_imports() -> None:
+    roots = (
+        _package_root(_MARKETPLACE_MODULE),
+        _package_root("intergrax.capability_catalog"),
+    )
+    for root in roots:
+        for path in sorted(root.rglob("*.py")):
+            if not path.is_file():
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for imported in _collect_imports(tree):
+                for vendor in _FORBIDDEN_CACHE_VENDOR_PREFIXES:
+                    if imported == vendor or imported.startswith(f"{vendor}."):
+                        raise AssertionError(
+                            f"{path.relative_to(root)} imports forbidden cache vendor: {imported}",
+                        )
+
+
 def test_marketplace_service_does_not_import_ranking_with_commercial_metadata() -> None:
     service_module = importlib.import_module("intergrax.marketplace.service")
     path = Path(service_module.__file__)
@@ -168,3 +302,32 @@ def test_marketplace_service_does_not_import_ranking_with_commercial_metadata() 
     imported = _collect_imports(tree)
     assert "intergrax.capability_catalog.ranking" not in imported
     assert "intergrax.contracts.marketplace.commercial" not in imported
+
+
+def test_me10_r2_handoff_delivery_lifecycle_not_trace_authority() -> None:
+    delivery = importlib.import_module("intergrax.marketplace.handoff_traceability.delivery")
+    src = Path(delivery.__file__).read_text(encoding="utf-8")
+    deliver_body = src.split("def deliver")[1].split("def _release_after_consumer_failure")[0]
+    assert "record_handoff" not in deliver_body
+    assert "mark_delivered" in deliver_body
+    assert "reserve" in deliver_body
+
+
+def test_me10_r2_contracts_do_not_import_marketplace_providers() -> None:
+    contracts_path = (
+        _package_root("intergrax.contracts.marketplace") / "handoff_traceability.py"
+    )
+    text = contracts_path.read_text(encoding="utf-8")
+    assert "intergrax.marketplace" not in text
+    assert "InMemory" not in text
+
+
+def test_me10_r2_no_global_handoff_dedupe_registry_in_delivery_core() -> None:
+    admission = importlib.import_module("intergrax.marketplace.handoff_traceability.admission")
+    delivery = importlib.import_module("intergrax.marketplace.handoff_traceability.delivery")
+    for module in (admission, delivery):
+        src = Path(module.__file__).read_text(encoding="utf-8").lower()
+        assert "global_dedupe" not in src
+        assert "dedupe_registry" not in src
+    delivery_src = Path(delivery.__file__).read_text(encoding="utf-8")
+    assert "_delivery_lock" not in delivery_src

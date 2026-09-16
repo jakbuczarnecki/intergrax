@@ -56,6 +56,21 @@ def sandbox_availability_from_wiring(
     )
 
 
+def overlay_invocation_sandbox_availability(
+    base: SandboxIsolationAvailability,
+    *,
+    sandbox_session: object | None,
+) -> SandboxIsolationAvailability:
+    """Merge per-invocation sandbox session into registration/runtime availability."""
+    if not _session_configured(sandbox_session):
+        return base
+    return SandboxIsolationAvailability(
+        session_configured=True,
+        host_configured=base.host_configured,
+        healthy=base.healthy,
+    )
+
+
 def sandbox_availability_provider(
     ctx: ToolWiringContext,
     *,

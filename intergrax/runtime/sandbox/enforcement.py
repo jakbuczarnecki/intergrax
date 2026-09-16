@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.profile_resolution.revision import EffectiveProfileRevision
+from intergrax.contracts.execution_environment_isolation import (
+    EffectiveProfileRevisionIsolationView,
+    ProfileSandboxIsolationSource,
+)
 from intergrax.runtime.sandbox.execution_environment import (
     ExecutionEnvironmentRequirement,
     ExecutionEnvironmentResolutionFailureReason,
@@ -15,24 +17,32 @@ from intergrax.runtime.sandbox.provider_adapters import (
     probe_provider_capabilities_from_wiring,
     select_provider_capabilities,
 )
-from intergrax.runtime.sandbox.resolver import resolve_effective_execution_environment_for_profile
+from intergrax.runtime.sandbox.resolver import (
+    resolve_effective_execution_environment_for_profile,
+)
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.providers.sandbox.contracts import SandboxExecOutput
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
-def _failure_error_code(failure_reason: ExecutionEnvironmentResolutionFailureReason) -> str:
+def _failure_error_code(
+    failure_reason: ExecutionEnvironmentResolutionFailureReason,
+) -> str:
     return f"execution_environment_{failure_reason.value}"
 
 
-def _profile_from_context(ctx: ToolWiringContext) -> ApplicationEnvironmentProfile | None:
+def _profile_from_context(
+    ctx: ToolWiringContext,
+) -> ProfileSandboxIsolationSource | None:
     """Pinned effective profile revision dominates legacy compatibility projection."""
     revision_raw = ctx.extras.get("effective_profile_revision")
-    if isinstance(revision_raw, EffectiveProfileRevision):
+    if isinstance(revision_raw, EffectiveProfileRevisionIsolationView):
         return revision_raw.effective_profile
     raw = ctx.extras.get("effective_environment_profile")
-    if isinstance(raw, ApplicationEnvironmentProfile):
+    if isinstance(raw, ProfileSandboxIsolationSource):
         return raw
+    if ctx.sandbox_isolation_authority is not None:
+        return ctx.sandbox_isolation_authority
     return None
 
 
@@ -83,23 +93,30 @@ def resolve_tool_execution_environment(
 
 def resolve_inspection_execution_environment(
     *,
-    revision: EffectiveProfileRevision,
+    revision: EffectiveProfileRevisionIsolationView,
     requirement: ExecutionEnvironmentRequirement | None = None,
     provider_capabilities: object | None = None,
 ):
     """Read-only projection helper for runtime inspection."""
-    from intergrax.runtime.sandbox.execution_environment import SandboxProviderCapabilities
+    from intergrax.runtime.sandbox.execution_environment import (
+        SandboxProviderCapabilities,
+    )
     from intergrax.tools.core.contracts import ToolIsolationRequirement
 
-    resolved_requirement = requirement or ExecutionEnvironmentRequirement.from_tool_isolation(
-        ToolIsolationRequirement.SANDBOX,
+    resolved_requirement = (
+        requirement
+        or ExecutionEnvironmentRequirement.from_tool_isolation(
+            ToolIsolationRequirement.SANDBOX,
+        )
     )
     provider = (
         provider_capabilities
         if isinstance(provider_capabilities, SandboxProviderCapabilities)
         else None
     )
-    from intergrax.runtime.sandbox.resolver import resolve_effective_execution_environment_for_revision
+    from intergrax.runtime.sandbox.resolver import (
+        resolve_effective_execution_environment_for_revision,
+    )
 
     return resolve_effective_execution_environment_for_revision(
         revision,

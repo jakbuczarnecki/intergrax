@@ -26,7 +26,7 @@ from intergrax.contracts.control_plane_mutation import (
     ControlPlaneMutationAuthorizationScope,
 )
 from intergrax.contracts.execution_identity import RunId, validate_run_id
-from intergrax.contracts.human_approver import HumanApproverEvidence, local_development_approver_evidence
+from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.cancellation.resume_admission import (
     TERMINALLY_CANCELLED_RESUME_MSG,
@@ -643,12 +643,11 @@ def _materialize_hitl_resume_input(
     task.options.human.pause_id = pause_record.pause_id
     task.options.human.human_request_id = pause_record.human_request_id
 
-    if approver is not None:
-        task.options.human.approver = approver
-    else:
-        task.options.human.approver = local_development_approver_evidence(
-            tenant_id=task.tenant_id,
+    if approver is None:
+        raise HitlResumeValidationError(
+            "approver evidence required for human approval resume"
         )
+    task.options.human.approver = approver
 
 
 async def _resume_task_with_token(

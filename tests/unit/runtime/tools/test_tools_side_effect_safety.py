@@ -106,6 +106,7 @@ class DummyState:
     ) -> None:
         self._tenant_id = tenant_id
         self.run_id = "run1"
+        self.request = type("Req", (), {"metadata": {}})()
         self.declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
         self._context = type(
             "Ctx",
@@ -183,6 +184,7 @@ class SubmitBoundaryProbeInvoker(RuntimeToolInvoker):
         request,
         *,
         effect_boundary=None,
+        physical_attempt_sequence: int = 1,
     ):
         if effect_boundary is not None:
             self.boundary_before_submit = effect_boundary.may_have_started
@@ -191,6 +193,7 @@ class SubmitBoundaryProbeInvoker(RuntimeToolInvoker):
             contract,
             request,
             effect_boundary=effect_boundary,
+            physical_attempt_sequence=physical_attempt_sequence,
         )
 
 

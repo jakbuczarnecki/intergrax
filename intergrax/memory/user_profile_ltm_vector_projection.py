@@ -11,6 +11,7 @@ from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.memory.contracts.memory_lifecycle import (
     MemoryProjectionReconciliationDisposition,
     MemoryProjectionReconciliationResult,
+    UserProfileMemoryProjectionContext,
     UserProfileMemoryReconciliationContext,
 )
 from intergrax.memory.memory_temporal import filter_active_memory_entries
@@ -59,9 +60,10 @@ class UserProfileLtmVectorProjection:
 
     async def upsert_memory_entry(
         self,
-        user_id: str,
+        context: UserProfileMemoryProjectionContext,
         entry: UserProfileMemoryEntry,
     ) -> None:
+        user_id = context.user_id
         if entry.deleted:
             return
         text = (entry.content or "").strip()
@@ -116,7 +118,12 @@ class UserProfileLtmVectorProjection:
             scope=scope,
         )
 
-    async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+    async def delete_memory_entries(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry_ids: Sequence[str],
+    ) -> None:
+        _ = context
         ids = [entry_id for entry_id in entry_ids if entry_id]
         if not ids:
             return
@@ -132,13 +139,19 @@ class UserProfileLtmVectorProjection:
         missing_ids = expected_ids - indexed_ids
         changed = False
         if orphan_ids:
-            await self.delete_memory_entries(sorted(orphan_ids))
+            await self.delete_memory_entries(
+                UserProfileMemoryProjectionContext(identity=context.identity),
+                sorted(orphan_ids),
+            )
             changed = True
         if context.profile is not None:
             active_entries = filter_active_memory_entries(context.profile.memory_entries)
             for entry in active_entries:
                 if entry.entry_id in missing_ids:
-                    await self.upsert_memory_entry(context.user_id, entry)
+                    await self.upsert_memory_entry(
+                        UserProfileMemoryProjectionContext(identity=context.identity),
+                        entry,
+                    )
                     changed = True
         disposition = (
             MemoryProjectionReconciliationDisposition.REPAIRED

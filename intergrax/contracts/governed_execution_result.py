@@ -14,6 +14,10 @@ from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.decision_authorization import (
+    DecisionExecutionActionKind,
+    validate_decision_execution_action_kind,
+)
 from intergrax.contracts.evaluated_policy_decision import EvaluatedPolicyDecision
 from intergrax.contracts.governed_proof import GovernedProofProfile
 from intergrax.contracts.provider_invocation import (
@@ -26,11 +30,21 @@ from intergrax.contracts.runtime_policy import PolicyAction
 SCHEMA_GOVERNED_EXECUTION_RESULT_V1: Final = "governed_execution_result.v1"
 _NON_EMPTY = Field(min_length=1)
 
-# Domain action → provider operation (External Work).
-_ACTION_TO_OPERATION: dict[str, str] = {
-    "CREATE_EXTERNAL_WORK": "create_work",
-    "ACCEPT_QUOTE": "submit_quote_acceptance",
-    "CANCEL_EXTERNAL_WORK": "cancel_work",
+_EXTERNAL_WORK_ACTION_CREATE: Final[DecisionExecutionActionKind] = (
+    validate_decision_execution_action_kind("external_work.create")
+)
+_EXTERNAL_WORK_ACTION_ACCEPT_QUOTE: Final[DecisionExecutionActionKind] = (
+    validate_decision_execution_action_kind("external_work.accept_quote")
+)
+_EXTERNAL_WORK_ACTION_CANCEL: Final[DecisionExecutionActionKind] = (
+    validate_decision_execution_action_kind("external_work.cancel")
+)
+
+# Canonical External Work DecisionExecutionActionKind → provider integration operation.
+_ACTION_TO_OPERATION: Final[dict[str, str]] = {
+    _EXTERNAL_WORK_ACTION_CREATE: "create_work",
+    _EXTERNAL_WORK_ACTION_ACCEPT_QUOTE: "submit_quote_acceptance",
+    _EXTERNAL_WORK_ACTION_CANCEL: "cancel_work",
 }
 
 

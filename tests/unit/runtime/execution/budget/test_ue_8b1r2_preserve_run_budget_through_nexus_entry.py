@@ -51,6 +51,9 @@ from intergrax.runtime.governance.active_execution_authority import (
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -148,7 +151,12 @@ async def test_upstream_execution_with_active_ledger_does_not_call_factory(
     )
 
     async def _noop(task: Task) -> TaskResult:
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _noop)
     try:
@@ -192,7 +200,12 @@ async def test_same_ledger_visible_upstream_nexus_and_nested_children(
                 )
 
         await child_runner.execute(request=Ping(value="nexus"), delegate=ChildDelegate())
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _nested_impl)
     identity_token, authority_token, budget_token = _bind_upstream_context(
@@ -230,7 +243,12 @@ async def test_upstream_partial_consumption_visible_inside_nexus(
         observed.append(
             require_active_execution_budget().ledger.snapshot_root_available().max_total_tokens
         )
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _observe)
     identity_token, authority_token, budget_token = _bind_upstream_context(
@@ -293,7 +311,12 @@ async def test_upstream_reserved_context_backed_by_same_ledger_in_nexus_children
                 return Pong(value=request.value)
 
         await child_runner.execute(request=Ping(value="reserved"), delegate=ChildDelegate())
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _reserved_impl)
     run_id = mint_run_id()
@@ -338,7 +361,12 @@ async def test_factory_call_count_root_nexus_one_upstream_zero(
         from intergrax.contracts.execution_identity import require_active_execution_identity
 
         active_run_id, _ = require_active_execution_identity()
-        return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=active_run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _noop)
     runner = UnifiedTaskRunner(
@@ -393,7 +421,12 @@ async def test_active_execution_without_budget_context_fails_closed(
     )
 
     async def _noop(task: Task) -> TaskResult:
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _noop)
     try:
@@ -464,7 +497,12 @@ async def test_nexus_return_restores_upstream_budget_state_unchanged(
     assert before is not None
 
     async def _noop(task: Task) -> TaskResult:
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _noop)
     try:
@@ -498,7 +536,12 @@ async def test_fresh_root_nexus_run_still_creates_one_ledger(
         from intergrax.contracts.execution_identity import require_active_execution_identity
 
         active_run_id, _ = require_active_execution_identity()
-        return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=active_run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _observe)
     runner = UnifiedTaskRunner(loop, run_budget=run_budget)

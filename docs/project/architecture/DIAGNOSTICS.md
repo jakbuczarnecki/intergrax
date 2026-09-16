@@ -1,6 +1,10 @@
 # Intergrax Central Diagnostics
 
-**Intergrax Central Diagnostics** is the **one** canonical deterministic diagnostic engine for the platform. It interprets persisted platform facts - primarily `RuntimeEvent` execution evidence - into tenant-scoped `Problem` state, bounded operator read models, and optional investigation inputs. It does **not** mint execution identity, own observability export, or treat vendor telemetry or AI conclusions as truth.
+**Intergrax Central Diagnostics** is the **one** canonical deterministic diagnostic engine for the platform. It interprets persisted platform facts - primarily `RuntimeEvent` execution evidence - into tenant-scoped `Problem` state, bounded operator read models, and optional investigation inputs. It does **not** mint execution identity, own observability export, own shared factual reconstruction, or treat vendor telemetry or AI conclusions as truth.
+
+**Last reconciled against `development` @ `a669e15e413a1ff9556ba33318560636286d823f`.** **SSOT:** diagnostic interpretation — this document; evidence / reconstruction — [`OBSERVABILITY.md`](OBSERVABILITY.md). Qualification records are evidence at historical SHAs, not architecture override.
+
+**Platform operational spine:** see [`OBSERVABILITY.md` — Platform Operational Spine](OBSERVABILITY.md#platform-operational-spine). Diagnostics is the **interpretation plane** after shared reconstruction — not a second evidence or execution authority.
 
 **Persisted platform facts are truth. AI is not truth.**
 
@@ -52,9 +56,9 @@ Central diagnostics answers:
 
 > **What did the platform deterministically detect and persist as a recurring operational Problem?**
 
-It is implemented under `intergrax/runtime/diagnostics/` as a **single spine** (interpretation only — factual reconstruction is **shared** under `intergrax.runtime.observability.reconstruction`, consumed not owned):
+It is implemented under `intergrax/runtime/diagnostics/` as a **single spine** (interpretation only — factual reconstruction read models are **contract-owned**, default implementation under Observability):
 
-- `ExecutionReconstructor` → `ExecutionReconstruction` — **Evidence Plane shared factual reconstruction** (**OBS-RECONSTRUCTION-1**); DIAG imports and consumes only
+- `ExecutionReconstructionReader` → `ExecutionReconstruction` — **neutral contract** (`intergrax.contracts.execution_reconstruction`); default `ExecutionReconstructor` is wired at composition roots only (**OBS-CONTRACT-BOUNDARY-1** / **OBS-RECONSTRUCTION-1**)
 - `LifecycleAnomalyAnalyzer` + `DiagnosticAssessmentBuilder` + `ExecutionFailureAnalyzer` - deterministic assessment (lifecycle anomalies plus durable `EXECUTION_FAILED` execution-boundary facts — R2)
 - `ProblemGroupingEngine` + `ProblemGroupingStrategyRegistry` - structural grouping hypotheses (strategy id → registered `ProblemGroupingStrategy`; **proven pluggable seam** — strategies propose; engine validates; `ProblemId` lifecycle remains in `ProblemLifecycleEngine`)
 - `ProblemLifecycleEngine` - stable `Problem` identity and lifecycle
@@ -122,7 +126,7 @@ Central Diagnostics remains the **only** owner of diagnostic interpretation: ano
 
 `ExecutionReconstructor` and `ExecutionReconstruction` are **shared factual reconstruction** (journal prefix, causal evidence, optional lineage, completeness, tenant/run scope validation). They **do not** classify root cause, mint Problems, or emit diagnostic certainty. DIAG **consumes** reconstruction; it does **not** own evidence recording or Execution Tree authority.
 
-**Physical ownership:** `intergrax.runtime.observability.reconstruction` (**OBS-RECONSTRUCTION-1** closed). **Semantic owner:** Evidence Plane / shared factual reconstruction. Diagnostics **consumes** shared factual reconstruction; it does **not** own reconstruction.
+**Contract ownership:** `ExecutionReconstructionReader` + `ExecutionReconstruction` read models — `intergrax.contracts.execution_reconstruction` (**OBS-CONTRACT-BOUNDARY-1** closed). **Implementation:** `ExecutionReconstructor` — `intergrax.runtime.observability.reconstruction` (**OBS-RECONSTRUCTION-1**). Diagnostics **consumes** the contract; it does **not** own reconstruction or import runtime reconstruction DTOs.
 
 | Component | Owner (semantic) | DIAG? |
 | --------- | ---------------- | ----- |
@@ -665,7 +669,7 @@ External/domain validator ──► PlatformProblemSignal
 
 ### Canonical trigger decision
 
-`PlatformProblemSignal` is the canonical functional-failure trigger. External/domain validators emit typed `FunctionalValidationEvidence`; observability may export the signal; central diagnostics consumes it. No parallel `FunctionalProblemSignal` bus.
+`PlatformProblemSignal` is the canonical functional-failure trigger. External/domain validators emit typed `FunctionalValidationEvidence`; observability may export the signal; central diagnostics consumes it. Cross-layer consumers import both from `intergrax/contracts/platform_problem_signal.py` and `intergrax/contracts/functional_validation_evidence.py` (runtime observability paths are compatibility re-exports only). No parallel `FunctionalProblemSignal` bus.
 
 New platform kind: `platform.functional_outcome_invalid` (`PROBLEM_KIND_PLATFORM_FUNCTIONAL_OUTCOME_INVALID`).
 
@@ -891,7 +895,7 @@ deterministic findings / limitations
 optional higher-level inference later (NOT in F1/F2)
 ```
 
-**Code references:** Contracts — `intergrax/contracts/functional_evidence/`. Persistence providers — `intergrax/runtime/observability/functional_evidence/` (DIAG consumes `FunctionalEvidencePersistence` only). DIAG reconstruction — `functional_evidence_reconstruction.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
+**Code references:** Contracts — `intergrax/contracts/functional_evidence/` · `intergrax/contracts/platform_problem_signal.py` · `intergrax/contracts/functional_validation_evidence.py`. Persistence providers — `intergrax/runtime/observability/functional_evidence/` (DIAG consumes `FunctionalEvidencePersistence` only). DIAG reconstruction — `functional_evidence_reconstruction.py` · `intergrax/contracts/functional_evidence_bounds.py`.
 
 ### Functional evidence persistence qualification (F1-R2 / D1)
 
@@ -964,8 +968,18 @@ Engine HARDEN: M1–M24 PROVEN=22 NOT_APPLICABLE=2
 
 ```text
 Platform adoption: NATIVE production surfaces = 4 PRODUCT hosts + 1 initialized scenario
-BYPASS = 0 · true P3 flows = 4 · true P4 platform E2E = 2 · P4 persistence = 1
+BYPASS = 0 · design-only scenarios = NOT_APPLICABLE until initialized
+true P3 flows = 4 · true P4 platform E2E = 2 (Mongo + OTLP application paths) · P4 persistence-only ≠ full spine
 ```
+
+**Explicit remaining limitations (documentation SSOT):**
+
+| Limitation | Status |
+| ---------- | ------ |
+| **DG-005** cross-topology `RuntimeEvent` persistence / reconstruction | **NOT PROVEN** |
+| Kafka → worker → execution → diagnostics (full external spine) | **P4 NOT PROVEN** (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`) |
+| HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — durable checkpoint round-trip + GR-5 continuation spine (`test_obs_universal_spine_hitl_restart_e2e.py`); long-running Nexus resume integration **PRE_EXISTING** at HEAD (`handle_task` / `run_id`) |
+| Operator HTTP/dashboard read | Central **write** path qualified; **read** exposure varies by PRODUCT host |
 
 Execution System owns root execution authority. Nexus = orchestration participant, not execution authority.
 

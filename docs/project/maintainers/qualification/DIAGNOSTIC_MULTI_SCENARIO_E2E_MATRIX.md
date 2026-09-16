@@ -1,5 +1,7 @@
 # Diagnostic Multi-Scenario E2E Matrix - DIAG-PLATFORM-C / R1
 
+> **Qualification record — not architecture SSOT.** **Initialized scenario surfaces = 4** (`discover_initialized_scenario_slugs`); design-only scenarios are out of scope until `IMPLEMENTATION_INITIALIZED`. **OBS-UNIVERSAL-SPINE-E2E:** `tests/integration/scenarios/test_obs_universal_spine_scenarios_e2e.py` (architecture gate + delegation + ERL lab execution). Authority: [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md).
+
 **Program:** DIAG-PLATFORM-QUALIFICATION  
 **Proof levels:** P1–P4 (aligned with [`DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md`](DIAGNOSTIC_E2E_MATRIX_HARDEN_4A.md))  
 **Adoption inventory:** [`DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md`](DIAGNOSTIC_PLATFORM_ADOPTION_MATRIX.md)

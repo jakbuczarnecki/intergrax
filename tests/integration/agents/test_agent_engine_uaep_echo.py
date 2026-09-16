@@ -13,7 +13,11 @@ from intergrax.llm.messages import (
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import (
+    build_runtime_request_for_tests,
+    canonical_execution_identity_scope,
+    canonical_task_id_for_tests,
+)
 
 
 @pytest.mark.asyncio
@@ -30,16 +34,19 @@ async def test_echo_agent_uses_uaep_protocol():
 async def test_agent_engine_runs_echo_via_uaep():
     bus = RuntimeEventBus()
     engine = AgentEngine({"echo": EchoAgent()}, event_bus=bus)
-    request = RuntimeRequest(
+    echo_seed = "echo-uaep"
+    request = build_runtime_request_for_tests(
+        seed=echo_seed,
         tenant_id="t1",
         user_id="u1",
         session_id="s1",
         agent_id="echo",
         message="uaep path",
-        metadata={"run_id": "run_echo_uaep", "task_id": "task_echo_uaep"},
     )
+    expected_task_id = str(canonical_task_id_for_tests(echo_seed))
 
-    result = await engine.run_with_result(request)
+    with canonical_execution_identity_scope(echo_seed):
+        result = await engine.run_with_result(request)
 
     assert result.agent_id == "echo"
     assert result.status == AgentExecutionStatus.COMPLETED
@@ -57,7 +64,7 @@ async def test_agent_engine_runs_echo_via_uaep():
         record = event.payload.get("decision_record")
         assert isinstance(record, dict)
         assert record.get("version") == "decision_record.v1"
-        assert record.get("task_id") == "task_echo_uaep"
+        assert record.get("task_id") == expected_task_id
         assert record.get("agent_id") == "echo"
         assert record.get("decision_type")
 
@@ -78,20 +85,18 @@ async def test_legacy_uaep_fails_closed_for_structured_model_input():
             ChatMessage(role="user", content="final objective", entry_id="h4"),
         ]
     )
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="echo-structured",
         tenant_id="t1",
         user_id="u1",
         session_id="s1",
         agent_id="echo",
         message="compat text",
-        metadata={
-            "run_id": "run_echo_structured",
-            "task_id": "task_echo_structured",
-            MODEL_INPUT_MESSAGES_METADATA_KEY: envelope,
-        },
+        metadata={MODEL_INPUT_MESSAGES_METADATA_KEY: envelope},
     )
 
-    result = await engine.run_with_result(request)
+    with canonical_execution_identity_scope("echo-structured"):
+        result = await engine.run_with_result(request)
 
     assert result.status == AgentExecutionStatus.FAILED
     assert result.errors == [STRUCTURED_MODEL_INPUT_REQUIRED_REASON]

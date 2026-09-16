@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.long_horizon_memory import (
     CanonicalMemorySourceAuthority,
     ChildSummaryRef,
@@ -40,6 +41,35 @@ from intergrax.memory.contracts.long_horizon_memory import (
     long_horizon_summary_id_for_batch,
     sort_child_summary_refs,
     sort_memory_source_refs,
+    validate_canonical_source_snapshot,
+)
+from intergrax.memory.contracts.memory_security_governance import (
+    CanonicalMemoryGovernanceSourceAuthority,
+    MemoryGovernanceDenied,
+    MemoryGovernanceEvaluationRequest,
+    MemoryGovernanceOperation,
+    MemoryGovernanceRecordSnapshot,
+    MemoryGovernanceTarget,
+    validate_canonical_governance_source_snapshot,
+)
+from intergrax.memory.memory_diagnostic_emitter import (
+    MemoryDiagnosticEmitter,
+    MemoryOperationTimer,
+    default_memory_diagnostic_emitter,
+)
+from intergrax.memory.memory_observability_support import emit_compaction_terminal
+from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
+from intergrax.memory.memory_specialized_disclosure_governance import (
+    evaluate_memory_disclosure,
+    filter_memory_disclosure_candidates,
+    memory_security_context_for_recall,
+)
+from intergrax.memory.memory_specialized_mutation_governance import (
+    enforce_specialized_memory_mutation,
+    governance_snapshot_from_long_horizon_summary,
+    memory_security_context_for_mutation,
+    resolve_governance_source_record_snapshot,
+    specialized_mutation_denied_for_canonical_source,
 )
 
 __all__ = [
@@ -99,9 +129,15 @@ class LongHorizonMemoryService:
     _store: LongHorizonMemoryStore
     _strategies: LongHorizonMemoryStrategySet
     _source_authority: CanonicalMemorySourceAuthority
+    _governance_source_authority: CanonicalMemoryGovernanceSourceAuthority
+    _security_governance: MemorySecurityGovernanceService
     _policy: LongHorizonPolicyConfig = LongHorizonPolicyConfig()
+    _diagnostic_emitter: MemoryDiagnosticEmitter = field(
+        default_factory=default_memory_diagnostic_emitter
+    )
 
     def compact(self, request: LongHorizonCompactionRequest) -> CompactionResult:
+        timer = MemoryOperationTimer()
         if request.target_level > self._policy.max_hierarchy_depth:
             raise LongHorizonMemoryViolation("target_level exceeds max_hierarchy_depth")
 
@@ -115,15 +151,24 @@ class LongHorizonMemoryService:
                 request.sources,
                 policy=self._policy,
             ):
-                return CompactionResult(skipped_batch_keys=("sources-not-ready",))
+                result = CompactionResult(skipped_batch_keys=("sources-not-ready",))
+                self._emit_compaction(request, result, timer)
+                return result
             batches = self._strategies.grouping.group_sources(
                 request.sources,
                 max_batch=self._policy.max_source_batch,
             )
             node_kind = SummaryNodeKind.LEAF
+            leaf_operation = MemoryGovernanceOperation.COMPACT
             for batch in batches:
                 try:
                     canonical_batch = self._resolve_canonical_source_batch(request.scope, batch)
+                    for source in canonical_batch:
+                        self._assert_governance_matches_content_authority(
+                            request.scope,
+                            source,
+                            leaf_operation,
+                        )
                     record, skipped_idempotent = self._materialize_summary(
                         scope=request.scope,
                         target_level=request.target_level,
@@ -135,12 +180,24 @@ class LongHorizonMemoryService:
                     if skipped_idempotent:
                         skipped.append(record.summary_id)
                         continue
+                    self._enforce_compaction_mutation(
+                        request.identity,
+                        request.scope,
+                        record,
+                        node_kind=node_kind,
+                        source_records=self._source_governance_snapshots(
+                            request.scope,
+                            canonical_batch,
+                            (),
+                            operation=leaf_operation,
+                        ),
+                    )
                     outcome = self._persist_summary(request.scope, record)
                     if outcome == "created":
                         created.append(record)
                     else:
                         updated.append(record)
-                except LongHorizonMemoryViolation as exc:
+                except (LongHorizonMemoryViolation, MemoryGovernanceDenied) as exc:
                     batch_key = long_horizon_batch_identity_key(
                         source_refs=tuple(
                             MemorySourceRef(memory_id=s.memory_id, revision=s.revision)
@@ -154,13 +211,16 @@ class LongHorizonMemoryService:
                 children,
                 policy=self._policy,
             ):
-                return CompactionResult(skipped_batch_keys=("children-not-ready",))
+                result = CompactionResult(skipped_batch_keys=("children-not-ready",))
+                self._emit_compaction(request, result, timer)
+                return result
             _validate_child_levels(request.target_level, children)
             batches = self._strategies.grouping.group_child_summaries(
                 children,
                 max_batch=self._policy.max_source_batch,
             )
             node_kind = SummaryNodeKind.AGGREGATE
+            promote_operation = MemoryGovernanceOperation.PROMOTE
             for batch in batches:
                 try:
                     _validate_children_scope(request.scope, self._store, batch)
@@ -175,12 +235,24 @@ class LongHorizonMemoryService:
                     if skipped_idempotent:
                         skipped.append(record.summary_id)
                         continue
+                    self._enforce_compaction_mutation(
+                        request.identity,
+                        request.scope,
+                        record,
+                        node_kind=node_kind,
+                        source_records=self._source_governance_snapshots(
+                            request.scope,
+                            (),
+                            batch,
+                            operation=promote_operation,
+                        ),
+                    )
                     outcome = self._persist_summary(request.scope, record)
                     if outcome == "created":
                         created.append(record)
                     else:
                         updated.append(record)
-                except LongHorizonMemoryViolation as exc:
+                except (LongHorizonMemoryViolation, MemoryGovernanceDenied) as exc:
                     batch_key = long_horizon_batch_identity_key(
                         child_refs=tuple(
                             ChildSummaryRef(summary_id=c.summary_id, revision=c.revision)
@@ -189,12 +261,110 @@ class LongHorizonMemoryService:
                     )
                     failures.append(CompactionPartialFailure(batch_identity=batch_key, message=str(exc)))
 
-        return CompactionResult(
+        result = CompactionResult(
             created=tuple(created),
             updated=tuple(updated),
             skipped_batch_keys=tuple(skipped),
             failures=tuple(failures),
         )
+        self._emit_compaction(request, result, timer)
+        return result
+
+    def _emit_compaction(
+        self,
+        request: LongHorizonCompactionRequest,
+        result: CompactionResult,
+        timer: MemoryOperationTimer,
+    ) -> None:
+        emit_compaction_terminal(
+            self._diagnostic_emitter,
+            tenant_id=request.scope.tenant_id,
+            user_id=request.scope.user_id,
+            result=result,
+            duration_seconds=timer.elapsed_seconds(),
+        )
+
+    def _enforce_compaction_mutation(
+        self,
+        identity: RequestIdentity,
+        scope: LongHorizonMemoryScope,
+        record: LongHorizonSummaryRecord,
+        *,
+        node_kind: SummaryNodeKind,
+        source_records: tuple[MemoryGovernanceRecordSnapshot, ...],
+    ) -> None:
+        operation = (
+            MemoryGovernanceOperation.PROMOTE
+            if node_kind is SummaryNodeKind.AGGREGATE
+            else MemoryGovernanceOperation.COMPACT
+        )
+        enforce_specialized_memory_mutation(
+            self._security_governance,
+            MemoryGovernanceEvaluationRequest(
+                context=memory_security_context_for_mutation(identity, scope, operation),
+                proposed_record=governance_snapshot_from_long_horizon_summary(record),
+                source_records=source_records,
+            ),
+        )
+
+    def _source_governance_snapshots(
+        self,
+        scope: LongHorizonMemoryScope,
+        sources: tuple[LongHorizonCompactionSource, ...],
+        children: tuple[LongHorizonSummaryRecord, ...],
+        *,
+        operation: MemoryGovernanceOperation,
+    ) -> tuple[MemoryGovernanceRecordSnapshot, ...]:
+        snapshots: list[MemoryGovernanceRecordSnapshot] = []
+        for child in children:
+            snapshots.append(governance_snapshot_from_long_horizon_summary(child))
+        if children:
+            return tuple(snapshots)
+        for source in sources:
+            preview = source.content[:256] if source.content else None
+            snapshots.append(
+                resolve_governance_source_record_snapshot(
+                    self._governance_source_authority,
+                    scope,
+                    source.memory_id,
+                    source.revision,
+                    operation=operation,
+                    content_preview=preview,
+                )
+            )
+        return tuple(snapshots)
+
+    def _assert_governance_matches_content_authority(
+        self,
+        scope: LongHorizonMemoryScope,
+        source: LongHorizonCompactionSource,
+        operation: MemoryGovernanceOperation,
+    ) -> None:
+        try:
+            governance = self._governance_source_authority.resolve_canonical_governance_source(
+                scope,
+                source.memory_id,
+                source.revision,
+            )
+        except Exception as exc:
+            raise specialized_mutation_denied_for_canonical_source(operation, str(exc)) from exc
+        validate_canonical_governance_source_snapshot(
+            scope,
+            source.memory_id,
+            source.revision,
+            governance,
+        )
+        content = self._source_authority.resolve_canonical_source(
+            scope,
+            source.memory_id,
+            source.revision,
+        )
+        validate_canonical_source_snapshot(source, content)
+        if content.memory_id != governance.memory_id or content.revision != governance.revision:
+            raise specialized_mutation_denied_for_canonical_source(
+                operation,
+                "canonical content and governance authorities disagree on memory identity",
+            )
 
     def _resolve_canonical_source_batch(
         self,
@@ -208,6 +378,7 @@ class LongHorizonMemoryService:
                 source.memory_id,
                 source.revision,
             )
+            validate_canonical_source_snapshot(source, snapshot)
             resolved.append(
                 LongHorizonCompactionSource(
                     memory_id=snapshot.memory_id,
@@ -298,8 +469,41 @@ class LongHorizonMemoryService:
             return "updated"
         raise LongHorizonMemoryViolation("summary revision regression during compaction")
 
+    def _summary_permits_disclosure(
+        self,
+        identity: RequestIdentity,
+        scope: LongHorizonMemoryScope,
+        record: LongHorizonSummaryRecord,
+    ) -> bool:
+        context = memory_security_context_for_recall(identity, scope)
+        return evaluate_memory_disclosure(
+            self._security_governance,
+            context,
+            governance_snapshot_from_long_horizon_summary(record),
+        )
+
+    def _source_ref_permits_disclosure(
+        self,
+        identity: RequestIdentity,
+        scope: LongHorizonMemoryScope,
+        ref: MemorySourceRef,
+    ) -> bool:
+        try:
+            snapshot = resolve_governance_source_record_snapshot(
+                self._governance_source_authority,
+                scope,
+                ref.memory_id,
+                ref.revision,
+                operation=MemoryGovernanceOperation.RECALL,
+            )
+        except MemoryGovernanceDenied:
+            return False
+        context = memory_security_context_for_recall(identity, scope)
+        return evaluate_memory_disclosure(self._security_governance, context, snapshot)
+
     def recall(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         query: LongHorizonRecallQuery,
     ) -> LongHorizonRecallResult:
@@ -312,17 +516,32 @@ class LongHorizonMemoryService:
             limit=query.limit,
         )
         candidates = self._store.query_summaries(scope, bounded_query)
-        ranked = self._strategies.recall.rank(candidates, bounded_query)
+        recall_context = memory_security_context_for_recall(identity, scope)
+        disclosed = filter_memory_disclosure_candidates(
+            self._security_governance,
+            recall_context,
+            candidates,
+            to_snapshot=governance_snapshot_from_long_horizon_summary,
+        )
+        ranked = self._strategies.recall.rank(disclosed, bounded_query)
         return LongHorizonRecallResult(summaries=ranked[: bounded_query.limit])
 
     def traverse_lineage(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         request: LineageTraversalRequest,
     ) -> LineageTraversalResult:
         root = self._store.get_summary(scope, request.summary_id)
         if root is None:
             raise LongHorizonMemoryViolation("summary not found for lineage traversal")
+        if not self._summary_permits_disclosure(identity, scope, root):
+            return LineageTraversalResult(
+                visited_summaries=(),
+                canonical_source_refs=(),
+                truncated=False,
+                cycle_detected=False,
+            )
 
         visited_summaries: list[LongHorizonSummaryRecord] = []
         canonical_refs: list[MemorySourceRef] = []
@@ -342,6 +561,8 @@ class LongHorizonMemoryService:
             if sid in visited_ids:
                 cycle_detected = True
                 return
+            if not self._summary_permits_disclosure(identity, scope, record):
+                return
             visited_ids.add(sid)
             visited_summaries.append(record)
 
@@ -350,7 +571,8 @@ class LongHorizonMemoryService:
                     if len(canonical_refs) >= request.max_nodes:
                         truncated = True
                         return
-                    canonical_refs.append(ref)
+                    if self._source_ref_permits_disclosure(identity, scope, ref):
+                        canonical_refs.append(ref)
                 return
 
             for child_ref in record.child_summary_refs:
@@ -405,6 +627,7 @@ class LongHorizonMemoryService:
 
     def invalidate_summaries_for_deleted_source(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         source_memory_id: str,
     ) -> tuple[str, ...]:
@@ -424,6 +647,16 @@ class LongHorizonMemoryService:
         for record in candidates:
             if record.node_kind is SummaryNodeKind.LEAF:
                 if any(ref.memory_id == memory_id for ref in record.source_memory_refs):
+                    enforce_specialized_memory_mutation(
+                        self._security_governance,
+                        MemoryGovernanceEvaluationRequest(
+                            context=memory_security_context_for_mutation(
+                                identity, scope, MemoryGovernanceOperation.DELETE
+                            ),
+                            target=MemoryGovernanceTarget(memory_id=record.summary_id),
+                            existing_record=governance_snapshot_from_long_horizon_summary(record),
+                        ),
+                    )
                     updated = self._store.invalidate_summary(scope, record.summary_id)
                     if updated is not None:
                         invalidated.append(record.summary_id)

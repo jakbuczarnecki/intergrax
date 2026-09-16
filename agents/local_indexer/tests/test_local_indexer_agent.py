@@ -10,8 +10,12 @@ from local_indexer.contract import build_agent_contract
 from local_indexer.steps.index_job import run_index_job
 from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_run_enums import AgentRunStatus
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import canonical_execution_identity_scope
+from testing_support.builder import (
+    build_runtime_execution_context_for_tests,
+    build_runtime_request_for_tests,
+    canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
+)
 
 
 @pytest.mark.asyncio
@@ -61,7 +65,9 @@ async def _run_index_job_with_gateway(
     source = tmp_path / "document.txt"
     source.write_text("indexed content", encoding="utf-8")
     monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(tmp_path))
-    request = RuntimeRequest(
+    seed = "local-indexer-index-job"
+    request = build_runtime_request_for_tests(
+        seed=seed,
         agent_id="local_indexer",
         tenant_id="tenant-a",
         user_id="user-a",
@@ -69,15 +75,15 @@ async def _run_index_job_with_gateway(
         message="index",
         metadata={"source_paths": [str(source)], "workspace_id": "workspace-a"},
     )
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-index",
-        run_id="run-index",
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed=seed,
         agent_id="local_indexer",
         request=request,
         tool_gateway=gateway,
+        tenant_id="tenant-a",
     )
     step_ctx = AgentStepContext(
-        run_id="run-index",
+        run_id=str(canonical_run_id_for_tests(seed)),
         agent_id="local_indexer",
         metadata={"uaep_exec_ctx": exec_ctx},
     )

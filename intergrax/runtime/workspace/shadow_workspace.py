@@ -102,6 +102,33 @@ class ShadowWorkspace:
         target = self.root / rel
         return target.read_text(encoding="utf-8")
 
+    def read_artifact_bytes(self, relative_path: str) -> bytes | None:
+        rel = _safe_relative_path(relative_path)
+        target = self.root / rel
+        if not target.is_file():
+            return None
+        return target.read_bytes()
+
+    def write_artifact_bytes(
+        self,
+        relative_path: str,
+        body: bytes,
+        *,
+        content_type: str = "application/octet-stream",
+    ) -> ShadowArtifact:
+        rel = _safe_relative_path(relative_path)
+        target = self.root / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(body)
+        digest = hashlib.sha256(body).hexdigest()
+        return ShadowArtifact(
+            artifact_id=f"art_{uuid4().hex[:12]}",
+            relative_path=rel.as_posix(),
+            size_bytes=len(body),
+            content_type=content_type,
+            sha256=digest,
+        )
+
     def delete_file(self, relative_path: str) -> bool:
         rel = _safe_relative_path(relative_path)
         target = self.root / rel

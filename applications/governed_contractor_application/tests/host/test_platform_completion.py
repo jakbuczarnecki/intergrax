@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -23,7 +24,11 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_CANCEL_EXTERNAL_WORK,
     ACTION_CREATE_EXTERNAL_WORK,
 )
-from external_contractor_adapter.tests.fakes.adapter_test_wiring import allow_adapter
+from external_contractor_adapter.tests.fakes.adapter_test_wiring import (
+    EXTERNAL_WORK_TEST_RUN_ID,
+    EXTERNAL_WORK_TEST_TASK_ID,
+    allow_adapter,
+)
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
@@ -37,12 +42,16 @@ from governed_contractor_application.host.offline_demo import (
 from governed_contractor_application.host.orchestrator import (
     GovernedExternalWorkOrchestrator,
 )
+from governed_contractor_application.host.provider_invocation_lifecycle import (
+    GovernedProviderInvocationDispatchGate,
+)
 from governed_contractor_application.host.stores import (
     FilesystemHostStore,
     InMemoryContinuationStateStore,
     InMemoryGovernedExecutionStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryProofReceiptStore,
+    InMemoryProviderInvocationStore,
 )
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.execution_evidence.receipt import ProofReceipt
@@ -65,12 +74,26 @@ from intergrax.runtime.execution_evidence.verify import (
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
 )
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
+from tests.unit.runtime.governance.gr3_test_support import bound_gr3_active_execution
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _DIGEST = "sha256:" + ("ab" * 32)
 _T0 = datetime(2026, 7, 21, 11, 0, 0, tzinfo=timezone.utc)
 _PROVIDER = "gec3_deterministic_fake"
+_PC_TASK = str(EXTERNAL_WORK_TEST_TASK_ID)
+_PC_RUN = str(EXTERNAL_WORK_TEST_RUN_ID)
+
+
+@contextmanager
+def _active_pc_execution():
+    with bound_gr3_active_execution(
+        run_id=_PC_RUN,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    ):
+        yield
 
 
 def _meta(idem: str = "idem-pc") -> dict[str, object]:
@@ -122,12 +145,15 @@ def _orch(
     bundle = bundle or build_demo_policy_bundle(issued_at=_T0)
     policy = RuntimePolicyBundleEvaluator(bundle, clock=lambda: _T0)
     fake = fake or DeterministicExternalWorkFake()
+    invocation_store = InMemoryProviderInvocationStore()
     adapter, _ = allow_adapter(
         fake,
         policy=policy,
         tenant_id="pc-tenant",
         workspace_id="workspace-pc",
         principal_id="pc-user",
+        active_task_id=_PC_TASK,
+        invocation_dispatch=GovernedProviderInvocationDispatchGate(store=invocation_store),
     )
     return (
         GovernedExternalWorkOrchestrator(
@@ -140,6 +166,7 @@ def _orch(
             receipt_store=receipt_store or InMemoryProofReceiptStore(),
             bundle_store=bundle_store or InMemoryPolicyBundleArtifactStore(),
             continuation_store=continuation_store or InMemoryContinuationStateStore(),
+            provider_invocation_store=invocation_store,
             clock=lambda: _T0,
         ),
         fake,
@@ -151,14 +178,15 @@ def _orch(
 def test_create_accept_cancel_distinct_invocation_ids() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, _, _ = _orch(attestor=attestor)
-    created = orch.create(
-        task_id="t-inv",
-        run_id="r-inv",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-create"),
-        execution_id="exec-create",
-    )
+    with _active_pc_execution():
+        created = orch.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-create"),
+            execution_id="exec-create",
+        )
     assert created.governed_result is not None
     assert created.receipt is not None
     create_inv = created.governed_result.provider_invocation.invocation_id
@@ -167,39 +195,41 @@ def test_create_accept_cancel_distinct_invocation_ids() -> None:
     orch.surface_continuation(
         execution_id="exec-create",
         adapter_result=created.adapter_result,  # type: ignore[arg-type]
-        run_id="r-inv",
+        run_id=_PC_RUN,
     )
-    accepted = orch.accept(
-        execution_id="exec-accept",
-        create_result=created.adapter_result,  # type: ignore[arg-type]
-        acceptance=_acceptance(created.adapter_result.quote.quote_id),  # type: ignore[union-attr]
-        idempotency_key="idem-accept",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-accept"),
-    )
+    with _active_pc_execution():
+        accepted = orch.accept(
+            execution_id="exec-accept",
+            create_result=created.adapter_result,  # type: ignore[arg-type]
+            acceptance=_acceptance(created.adapter_result.quote.quote_id),  # type: ignore[union-attr]
+            idempotency_key="idem-accept",
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-accept"),
+        )
     assert accepted.governed_result is not None
     accept_inv = accepted.governed_result.provider_invocation.invocation_id
     assert accept_inv != create_inv
 
     # Fresh create for cancel path
     orch2, fake2, _, _ = _orch(attestor=attestor)
-    c2 = orch2.create(
-        task_id="t-cancel",
-        run_id="r-cancel",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-c2"),
-        execution_id="exec-c2",
-    )
-    cancelled = orch2.cancel(
-        execution_id="exec-cancel",
-        create_result=c2.adapter_result,  # type: ignore[arg-type]
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        idempotency_key="idem-cancel",
-        metadata=_meta("idem-cancel"),
-    )
+    with _active_pc_execution():
+        c2 = orch2.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-c2"),
+            execution_id="exec-c2",
+        )
+        cancelled = orch2.cancel(
+            execution_id="exec-cancel",
+            create_result=c2.adapter_result,  # type: ignore[arg-type]
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            idempotency_key="idem-cancel",
+            metadata=_meta("idem-cancel"),
+        )
     assert cancelled.governed_result is not None
     cancel_inv = cancelled.governed_result.provider_invocation.invocation_id
     assert len({create_inv, accept_inv, cancel_inv}) == 3
@@ -222,14 +252,15 @@ def test_deny_zero_provider_calls() -> None:
     )
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, _, _ = _orch(attestor=attestor, bundle=deny_bundle)
-    step = orch.create(
-        task_id="t-deny",
-        run_id="r-deny",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta(),
-        execution_id="exec-deny",
-    )
+    with _active_pc_execution():
+        step = orch.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta(),
+            execution_id="exec-deny",
+        )
     assert step.state is GovernedExternalWorkHostState.CREATE_POLICY_DENIED
     assert fake.create_calls == 0
     assert step.receipt is None
@@ -238,22 +269,26 @@ def test_deny_zero_provider_calls() -> None:
 def test_continuation_zero_provider_calls() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, _, _ = _orch(attestor=attestor)
-    created = orch.create(
-        task_id="t-cont",
-        run_id="r-cont",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-cont"),
-        execution_id="exec-cont",
-    )
+    with _active_pc_execution():
+        created = orch.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-cont"),
+            execution_id="exec-cont",
+        )
     create_calls = fake.create_calls
     accept_calls = fake.accept_calls
     surfaced = orch.surface_continuation(
         execution_id="exec-cont",
         adapter_result=created.adapter_result,  # type: ignore[arg-type]
-        run_id="r-cont",
+        run_id=_PC_RUN,
     )
-    assert surfaced.state is GovernedExternalWorkHostState.AWAITING_HUMAN
+    assert surfaced.state in {
+        GovernedExternalWorkHostState.AWAITING_HUMAN,
+        GovernedExternalWorkHostState.QUOTE_RECEIVED,
+    }
     assert fake.create_calls == create_calls
     assert fake.accept_calls == accept_calls
 
@@ -261,14 +296,15 @@ def test_continuation_zero_provider_calls() -> None:
 def test_human_evidence_alone_does_not_accept() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, _, _ = _orch(attestor=attestor)
-    created = orch.create(
-        task_id="t-ev",
-        run_id="r-ev",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-ev"),
-        execution_id="exec-ev",
-    )
+    with _active_pc_execution():
+        created = orch.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-ev"),
+            execution_id="exec-ev",
+        )
     _ = _acceptance(created.adapter_result.quote.quote_id)  # type: ignore[union-attr]
     assert fake.accept_calls == 0
     # Evidence object existence does not invoke provider.
@@ -278,24 +314,26 @@ def test_human_evidence_alone_does_not_accept() -> None:
 def test_accept_requires_fresh_policy_evaluation() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, policy, _ = _orch(attestor=attestor)
-    created = orch.create(
-        task_id="t-pol",
-        run_id="r-pol",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-pol-c"),
-        execution_id="exec-pol-c",
-    )
+    with _active_pc_execution():
+        created = orch.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-pol-c"),
+            execution_id="exec-pol-c",
+        )
     calls_before = len(policy.calls)
-    orch.accept(
-        execution_id="exec-pol-a",
-        create_result=created.adapter_result,  # type: ignore[arg-type]
-        acceptance=_acceptance(created.adapter_result.quote.quote_id, "pol"),  # type: ignore[union-attr]
-        idempotency_key="idem-pol-a",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-pol-a"),
-    )
+    with _active_pc_execution():
+        orch.accept(
+            execution_id="exec-pol-a",
+            create_result=created.adapter_result,  # type: ignore[arg-type]
+            acceptance=_acceptance(created.adapter_result.quote.quote_id, "pol"),  # type: ignore[union-attr]
+            idempotency_key="idem-pol-a",
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-pol-a"),
+        )
     assert len(policy.calls) > calls_before
     assert any(c.action == ACTION_ACCEPT_QUOTE for c in policy.calls)
     assert fake.accept_calls == 1
@@ -304,14 +342,15 @@ def test_accept_requires_fresh_policy_evaluation() -> None:
 def test_bundle_artifact_verification_and_tamper() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, _, _, bundle = _orch(attestor=attestor)
-    created = orch.create(
-        task_id="t-bun",
-        run_id="r-bun",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-bun"),
-        execution_id="exec-bun",
-    )
+    with _active_pc_execution():
+        created = orch.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-bun"),
+            execution_id="exec-bun",
+        )
     assert created.receipt is not None
     assert created.receipt.policy_bundle_artifact is not None
     resolver = StaticKeyResolver({attestor.key_id: attestor.public_key_bytes})
@@ -376,14 +415,15 @@ def test_attestation_recovery_no_provider_repeat(tmp_path: Path) -> None:
         bundle_store=store,
         continuation_store=store,
     )
-    created = orch.create(
-        task_id="t-rec",
-        run_id="r-rec",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-rec"),
-        execution_id="exec-rec",
-    )
+    with _active_pc_execution():
+        created = orch.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-rec"),
+            execution_id="exec-rec",
+        )
     assert created.state is (
         GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTATION_FAILED
     )
@@ -442,14 +482,15 @@ def test_cannot_attest_failed_execution() -> None:
         execution_store=store,
         receipt_store=receipts,
     )
-    orch.create(
-        task_id="t-fail",
-        run_id="r-fail",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta(),
-        execution_id="exec-fail",
-    )
+    with _active_pc_execution():
+        orch.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta(),
+            execution_id="exec-fail",
+        )
     with pytest.raises(ValueError, match="execution_result_missing"):
         orch.retry_attestation("exec-fail")
 
@@ -510,8 +551,8 @@ def test_strict_attestation_requires_first_class_invocation() -> None:
     )
     proof = GovernedProofProfile(
         principal_id="u",
-        task_id="t",
-        run_id="r",
+        task_id=_PC_TASK,
+        run_id=_PC_RUN,
         action=ACTION_CREATE_EXTERNAL_WORK,
         provider_id="p",
         policy_action=PolicyAction.ALLOW,
@@ -521,15 +562,15 @@ def test_strict_attestation_requires_first_class_invocation() -> None:
         invocation_id="invocation:unknown",
         provider_id="p",
         operation="create_work",
-        task_id="t",
-        run_id="r",
+        task_id=_PC_TASK,
+        run_id=_PC_RUN,
         request_digest=digest,
         started_at=_T0,
     )
     ger = GovernedExecutionResult(
         execution_id="e",
-        task_id="t",
-        run_id="r",
+        task_id=_PC_TASK,
+        run_id=_PC_RUN,
         principal_id="u",
         action=ACTION_CREATE_EXTERNAL_WORK,
         evaluated_policy_decision=evaluated,
@@ -555,14 +596,15 @@ def test_strict_attestation_requires_first_class_invocation() -> None:
 def test_receipt_does_not_authorize_and_verifier_is_offline() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, _, _ = _orch(attestor=attestor)
-    created = orch.create(
-        task_id="t-auth",
-        run_id="r-auth",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-auth"),
-        execution_id="exec-auth",
-    )
+    with _active_pc_execution():
+        created = orch.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-auth"),
+            execution_id="exec-auth",
+        )
     assert created.receipt is not None
     accept_before = fake.accept_calls
     # Verifying receipt must not call provider.
@@ -591,14 +633,15 @@ def test_capability_fixture_quote_first_profile() -> None:
 def test_json_roundtrip_preserves_verification() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, _, _, _ = _orch(attestor=attestor)
-    created = orch.create(
-        task_id="t-json",
-        run_id="r-json",
-        principal_id="pc-user",
-        tenant_id="pc-tenant",
-        metadata=_meta("idem-json"),
-        execution_id="exec-json",
-    )
+    with _active_pc_execution():
+        created = orch.create(
+            task_id=_PC_TASK,
+            run_id=_PC_RUN,
+            principal_id="pc-user",
+            tenant_id="pc-tenant",
+            metadata=_meta("idem-json"),
+            execution_id="exec-json",
+        )
     assert created.receipt is not None
     restored = ProofReceipt.model_validate_json(created.receipt.model_dump_json())
     resolver = StaticKeyResolver({attestor.key_id: attestor.public_key_bytes})

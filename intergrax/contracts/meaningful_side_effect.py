@@ -30,6 +30,7 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.contracts.decision_governance_material import DecisionGovernanceMaterialRef
 from intergrax.contracts.validation import validate_content_digest
 
 SCHEMA_MEANINGFUL_SIDE_EFFECT_REQUEST_V1: Final = "meaningful_side_effect_request.v1"
@@ -49,7 +50,10 @@ class MeaningfulSideEffectKind(StrEnum):
 class MeaningfulSideEffectRequest(BaseModel):
     """Proposed external side effect for policy evaluation before execution.
 
-    ``action`` is a consumer-defined identifier (e.g. domain ``ACCEPT_QUOTE``).
+    ``action`` identifies the proposed side effect. When Decision governance
+    material is attached, ``action`` must equal ``bound_action_kind`` and
+    satisfy ``DecisionExecutionActionKind`` (see ``decision_authorization``).
+    Domain adapters define concrete kind strings (e.g. ``external_work.accept_quote``).
     Domain-specific payloads belong in ``context`` / ``correlation`` — not as
     quote- or provider-SDK-typed fields on this model.
     """
@@ -69,10 +73,18 @@ class MeaningfulSideEffectRequest(BaseModel):
     execution_id: ExecutionId
     principal_id: str | None = None
     tenant_id: str | None = None
-    resource: str | None = None
+    resource: str | None = Field(
+        default=None,
+        description=(
+            "Canonical resource identity of the proposed consequential effect. "
+            "When decision_governance_material is attached, must equal "
+            "bound_action_subject."
+        ),
+    )
     external_target: str | None = None
     correlation: Mapping[str, Any] = Field(default_factory=dict)
     context: Mapping[str, Any] = Field(default_factory=dict)
+    decision_governance_material: DecisionGovernanceMaterialRef | None = None
 
     @field_validator("action", "side_effect_scope_id")
     @classmethod

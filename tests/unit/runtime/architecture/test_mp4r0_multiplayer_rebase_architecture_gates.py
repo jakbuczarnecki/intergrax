@@ -179,10 +179,10 @@ def test_mp4r0_multiplayer_production_does_not_import_legacy_mp4_decision_contra
     assert not violations, "\n".join(violations)
 
 
-def test_mp4r0_legacy_mp4_surfaces_remain_quarantined_pending_convergence() -> None:
-    """MP-4R1 retired MP-4B module; Approval package remains quarantined until MP-4R2."""
+def test_mp4r0_legacy_mp4_surfaces_post_mp4r2_convergence() -> None:
+    """MP-4R1 retired MP-4B module; MP-4R2 retired legacy Approval surfaces."""
     legacy_decision_module = _REPO_ROOT / "intergrax" / "contracts" / "decision.py"
     assert not legacy_decision_module.is_file()
     assert _DECISION_INTEGRATION_PACKAGE.is_dir()
-    assert _LEGACY_APPROVAL_CONTRACT.is_file()
-    assert _LEGACY_APPROVAL_PACKAGE.is_dir()
+    assert not _LEGACY_APPROVAL_CONTRACT.is_file()
+    assert not _LEGACY_APPROVAL_PACKAGE.is_dir()

@@ -48,7 +48,25 @@ from intergrax.memory.resolver.discovery import (
 )
 from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
 from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
-from intergrax.applications._shared.entity_graph_wiring import resolve_entity_graph_memory_store
+from intergrax.applications._shared.entity_graph_wiring import (
+    resolve_entity_temporal_memory_capability,
+)
+from intergrax.memory.contracts.entity_temporal_memory import (
+    EntityMemoryIndexer,
+    EntityTemporalMemoryCapability,
+)
+from intergrax.memory.contracts.memory_observability import MemoryObservabilitySink
+from intergrax.memory.memory_diagnostic_emitter import MemoryDiagnosticEmitter
+from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
+from intergrax.applications._shared.entity_graph_wiring import (
+    resolve_entity_temporal_memory_store,
+)
+from intergrax.applications._shared.memory_observability_wiring import (
+    resolve_memory_diagnostic_emitter,
+)
+from intergrax.applications._shared.memory_security_governance_wiring import (
+    resolve_memory_security_governance_service,
+)
 
 
 @dataclass(frozen=True)
@@ -61,7 +79,8 @@ class MemoryPlatformWiring:
     user_profile_manager: UserProfileManager | None = None
     sqlite_bundle: SQLiteIntegrationBundle | None = None
     mongodb_bundle: MongoDBIntegrationBundle | None = None
-    entity_graph_store: object | None = None
+    entity_temporal_memory_capability: EntityTemporalMemoryCapability | None = None
+    entity_memory_indexer: EntityMemoryIndexer | None = None
     memory_store_plugin_load_report: DomainPluginLoadReport = DomainPluginLoadReport.empty(
         EP_MEMORY_STORES
     )
@@ -129,9 +148,36 @@ def _mongodb_integration_overrides(profile: IntegrationProfile) -> dict[str, obj
 def _resolve_baseline_memory_platform_wiring(
     env: ApplicationEnvironmentProfile,
     profile: IntegrationProfile,
+    *,
+    security_governance: MemorySecurityGovernanceService | None = None,
+    memory_observability_sink: MemoryObservabilitySink | None = None,
+    memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
 ) -> MemoryPlatformWiring:
     """Resolve integration-backed memory stores without external plugin overlay."""
-    entity_graph_store = resolve_entity_graph_memory_store(env)
+    emitter = resolve_memory_diagnostic_emitter(
+        sink=memory_observability_sink,
+        emitter=memory_diagnostic_emitter,
+    )
+    governance = resolve_memory_security_governance_service(
+        security_governance=security_governance,
+        memory_diagnostic_emitter=emitter,
+    )
+    entity_store = resolve_entity_temporal_memory_store(env)
+    entity_temporal_memory_capability = resolve_entity_temporal_memory_capability(
+        env,
+        security_governance=governance,
+        memory_diagnostic_emitter=emitter,
+        store=entity_store,
+    )
+    entity_memory_indexer = None
+    if entity_store is not None:
+        from intergrax.memory.entity_memory_indexing import DefaultEntityMemoryIndexer
+
+        entity_memory_indexer = DefaultEntityMemoryIndexer(
+            entity_store,
+            security_governance=governance,
+            diagnostic_emitter=emitter,
+        )
     if _sqlite_enabled(profile):
         bundle = create_sqlite_integration(**_sqlite_integration_overrides(profile))
         return MemoryPlatformWiring(
@@ -140,7 +186,8 @@ def _resolve_baseline_memory_platform_wiring(
             organization_profile_store=bundle.organization_profile_store,
             sqlite_bundle=bundle,
             mongodb_bundle=None,
-            entity_graph_store=entity_graph_store,
+            entity_temporal_memory_capability=entity_temporal_memory_capability,
+            entity_memory_indexer=entity_memory_indexer,
         )
 
     if _mongodb_enabled(profile):
@@ -159,7 +206,8 @@ def _resolve_baseline_memory_platform_wiring(
             organization_profile_store=org_store,
             sqlite_bundle=None,
             mongodb_bundle=mongo_bundle,
-            entity_graph_store=entity_graph_store,
+            entity_temporal_memory_capability=entity_temporal_memory_capability,
+            entity_memory_indexer=entity_memory_indexer,
         )
 
     return MemoryPlatformWiring(
@@ -168,7 +216,8 @@ def _resolve_baseline_memory_platform_wiring(
         organization_profile_store=None,
         sqlite_bundle=None,
         mongodb_bundle=None,
-        entity_graph_store=entity_graph_store,
+        entity_temporal_memory_capability=entity_temporal_memory_capability,
+        entity_memory_indexer=entity_memory_indexer,
     )
 
 
@@ -229,6 +278,9 @@ def resolve_memory_platform_wiring(
     tenant_id: str | None = None,
     discover_entry_points: bool | None = None,
     explicit_memory_plugins: Sequence[type] = (),
+    security_governance: MemorySecurityGovernanceService | None = None,
+    memory_observability_sink: MemoryObservabilitySink | None = None,
+    memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
 ) -> MemoryPlatformWiring:
     """
     Resolve durable memory backends from the integration profile.
@@ -240,7 +292,13 @@ def resolve_memory_platform_wiring(
     4. Explicit external Memory store plugin ids overlay their owned slots only.
     """
     profile = integration_profile or env.integration_profile
-    wiring = _resolve_baseline_memory_platform_wiring(env, profile)
+    wiring = _resolve_baseline_memory_platform_wiring(
+        env,
+        profile,
+        security_governance=security_governance,
+        memory_observability_sink=memory_observability_sink,
+        memory_diagnostic_emitter=memory_diagnostic_emitter,
+    )
     discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
     return _apply_external_memory_store_overlay(
         wiring,
@@ -277,6 +335,8 @@ def build_session_manager_from_environment(
             env,
             tenant_id=tenant_id,
             rag_stack=rag_stack,
+            entity_memory_indexer=wiring.entity_memory_indexer,
+            entity_temporal_memory_capability=wiring.entity_temporal_memory_capability,
         )
 
     org_manager: Optional[OrganizationProfileManager] = None

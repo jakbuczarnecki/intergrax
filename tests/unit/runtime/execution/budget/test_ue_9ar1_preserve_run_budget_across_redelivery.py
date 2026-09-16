@@ -39,6 +39,9 @@ from intergrax.runtime.execution.budget.policy import DefaultSharedPoolBudgetPol
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -287,7 +290,12 @@ async def test_normal_non_background_run_still_gets_fresh_budget(
         observed.append(
             require_active_execution_budget().ledger.snapshot_root_available().max_total_tokens
         )
-        return TaskResult(task_id=task.task_id, run_id=mint_run_id(), state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=mint_run_id(),
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _observe)
     runner = UnifiedTaskRunner(
@@ -315,7 +323,12 @@ async def test_local_retry_does_not_create_new_ledger(monkeypatch: pytest.Monkey
     )
 
     async def _noop(task: Task) -> TaskResult:
-        return TaskResult(task_id=task.task_id, run_id=mint_run_id(), state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=mint_run_id(),
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _noop)
     runner = UnifiedTaskRunner(

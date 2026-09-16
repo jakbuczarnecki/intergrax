@@ -5,13 +5,19 @@
 
 from __future__ import annotations
 
+from enum import StrEnum
 from typing import Final, Literal
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from intergrax.capability_catalog.entry import CapabilityCatalogEntry
 
 SCHEMA_CAPABILITY_CATALOG_SNAPSHOT_V1: Final = "capability_catalog_snapshot.v1"
+
+
+class CapabilityCatalogFederationCompleteness(StrEnum):
+    COMPLETE = "complete"
+    PARTIAL = "partial"
 
 
 class CapabilityCatalogSnapshot(BaseModel):
@@ -24,6 +30,10 @@ class CapabilityCatalogSnapshot(BaseModel):
     )
     source_ids: tuple[str, ...]
     entries: tuple[CapabilityCatalogEntry, ...]
+    federation_completeness: CapabilityCatalogFederationCompleteness = (
+        CapabilityCatalogFederationCompleteness.COMPLETE
+    )
+    unavailable_source_ids: tuple[str, ...] = Field(default_factory=tuple)
 
     @model_validator(mode="after")
     def _validate_deterministic_ordering(self) -> CapabilityCatalogSnapshot:
@@ -33,6 +43,21 @@ class CapabilityCatalogSnapshot(BaseModel):
         ordered_sources = tuple(sorted(self.source_ids))
         if ordered_sources != self.source_ids:
             raise ValueError("snapshot source_ids must be sorted")
+        ordered_unavailable = tuple(sorted(self.unavailable_source_ids))
+        if ordered_unavailable != self.unavailable_source_ids:
+            raise ValueError("unavailable_source_ids must be sorted")
+        if (
+            self.federation_completeness
+            == CapabilityCatalogFederationCompleteness.COMPLETE
+            and self.unavailable_source_ids
+        ):
+            raise ValueError("complete snapshot cannot list unavailable sources")
+        if (
+            self.federation_completeness
+            == CapabilityCatalogFederationCompleteness.PARTIAL
+            and not self.unavailable_source_ids
+        ):
+            raise ValueError("partial snapshot must list unavailable sources")
         return self
 
 

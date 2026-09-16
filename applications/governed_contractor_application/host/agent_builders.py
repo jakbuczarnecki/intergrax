@@ -13,39 +13,36 @@ from intergrax.runtime.policy.meaningful_side_effect_authorization import (
 from external_contractor_adapter.external_contractor_adapter_agent import (
     ExternalContractorAdapterAgent,
 )
+from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+
+
+def _backend_settings(ctx: ApplicationBuildContext) -> GovernedContractorBackendSettings | None:
+    settings = ctx.settings
+    if settings is None:
+        return None
+    if not isinstance(settings, GovernedContractorBackendSettings):
+        raise TypeError(
+            "governed_contractor host requires GovernedContractorBackendSettings on build context",
+        )
+    return settings
 
 
 def _external_work_from_context(ctx: ApplicationBuildContext) -> ExternalWorkIntegration | None:
     """Optional host injection via settings — Tier-2 never constructs providers."""
-    settings = ctx.settings
+    settings = _backend_settings(ctx)
     if settings is None:
         return None
-    raw = getattr(settings, "external_work_integration", None)
-    if raw is None:
-        return None
-    if not isinstance(raw, ExternalWorkIntegration):
-        raise TypeError(
-            "settings.external_work_integration must implement ExternalWorkIntegration"
-        )
-    return raw
+    return settings.external_work_integration
 
 
 def _authorization_boundary_from_context(
     ctx: ApplicationBuildContext,
 ) -> MeaningfulSideEffectAuthorizationBoundary | None:
     """Optional host injection of canonical meaningful side-effect authorization."""
-    settings = ctx.settings
+    settings = _backend_settings(ctx)
     if settings is None:
         return None
-    raw = getattr(settings, "meaningful_side_effect_authorization_boundary", None)
-    if raw is None:
-        return None
-    if not isinstance(raw, MeaningfulSideEffectAuthorizationBoundary):
-        raise TypeError(
-            "settings.meaningful_side_effect_authorization_boundary must be a "
-            "MeaningfulSideEffectAuthorizationBoundary"
-        )
-    return raw
+    return settings.meaningful_side_effect_authorization_boundary
 
 
 def _build_external_contractor_adapter(

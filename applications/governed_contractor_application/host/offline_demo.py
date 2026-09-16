@@ -24,11 +24,26 @@ from external_contractor_adapter.external_work_adapter import (
     META_WORKSPACE_REF,
     ExternalWorkAdapter,
 )
-from applications.governed_contractor_application.host.collaborative_work_boundary import (
-    build_external_work_authorization_boundary,
+from applications.governed_contractor_application.host.collaborative_work_local_fixture import (
+    build_seeded_in_memory_external_work_authorization_boundary,
+)
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    bind_active_execution_identity,
+    reset_active_execution_identity,
+    validate_run_id,
+    validate_task_id,
+)
+from intergrax.runtime.execution.identity_authority import mint_root_execution_identity
+from intergrax.runtime.governance.decision_requirement_policy import (
+    PermissiveDecisionRequirementPolicy,
 )
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
+    ACTION_CANCEL_EXTERNAL_WORK,
     ACTION_CREATE_EXTERNAL_WORK,
 )
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
@@ -179,7 +194,7 @@ def build_demo_policy_bundle(
                 rule_id="demo.CANCEL_EXTERNAL_WORK",
                 description="allow cancel",
                 effect="allow",
-                match_action="CANCEL_EXTERNAL_WORK",
+                match_action=ACTION_CANCEL_EXTERNAL_WORK,
             ),
         ),
         issued_at=issued_at or _T0,
@@ -233,11 +248,25 @@ def _acceptance(quote_id: str) -> QuoteAcceptanceEvidence:
     )
 
 
+@dataclass(frozen=True, slots=True)
+class _FixedActiveTaskScope:
+    task_id: str
+
+    def resolve_current_task_scope(
+        self,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        execution_id: ExecutionId,
+    ) -> TaskId:
+        return validate_task_id(self.task_id)
+
+
 def run_offline_governed_contractor_demo(
     *,
     store_root: Path,
-    task_id: str = "task-offline-demo",
-    run_id: str = "run-offline-demo",
+    task_id: str = "task_" + ("0" * 32),
+    run_id: str = "run_" + ("0" * 32),
     simulate_signing_failure: bool = False,
 ) -> OfflineDemoReport:
     """Full CREATE -> quote -> human fixture -> ACCEPT -> attested receipt -> verify.
@@ -247,17 +276,32 @@ def run_offline_governed_contractor_demo(
     """
     store_root = Path(store_root)
     store_root.mkdir(parents=True, exist_ok=True)
+    demo_run_id = validate_run_id(run_id)
     store = FilesystemHostStore(store_root)
     bundle = build_demo_policy_bundle()
     policy = RuntimePolicyBundleEvaluator(bundle, clock=lambda: _T0)
     fake = DeterministicExternalWorkFake()
-    authorization_boundary = build_external_work_authorization_boundary(
+    authorization_boundary = build_seeded_in_memory_external_work_authorization_boundary(
         policy,
         tenant_id="offline-demo-tenant",
         workspace_id="workspace-a",
         principal_id="offline-demo-user",
+        decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+        task_scope=_FixedActiveTaskScope(task_id=task_id),
     )
-    adapter = ExternalWorkAdapter(fake, authorization_boundary=authorization_boundary)
+    from governed_contractor_application.host.provider_invocation_lifecycle import (
+        GovernedProviderInvocationDispatchGate,
+    )
+    from governed_contractor_application.host.stores import InMemoryProviderInvocationStore
+
+    invocation_store = InMemoryProviderInvocationStore()
+    adapter = ExternalWorkAdapter(
+        fake,
+        authorization_boundary=authorization_boundary,
+        invocation_dispatch=GovernedProviderInvocationDispatchGate(
+            store=invocation_store,
+        ),
+    )
     recovery_attestor = build_deterministic_test_attestor(
         key_id=DEMO_OFFLINE_KEY_ID,
         clock=lambda: _T0,
@@ -289,19 +333,29 @@ def run_offline_governed_contractor_demo(
         receipt_store=store,
         bundle_store=store,
         continuation_store=store,
+        provider_invocation_store=invocation_store,
         clock=lambda: _T0,
     )
     meta = _meta()
-    created = orch_create.create(
-        task_id=task_id,
-        run_id=run_id,
-        principal_id="offline-demo-user",
-        tenant_id="offline-demo-tenant",
-        metadata=meta,
-        execution_id="exec-offline-create",
-        event_id="ebe-offline-create",
-        receipt_id="rcpt-offline-create",
+    create_identity = mint_root_execution_identity(run_id=demo_run_id)
+    create_token = bind_active_execution_identity(
+        run_id=create_identity.run_id,
+        attempt_id=create_identity.attempt_id,
+        execution_id=create_identity.execution_id,
     )
+    try:
+        created = orch_create.create(
+            task_id=task_id,
+            run_id=demo_run_id,
+            principal_id="offline-demo-user",
+            tenant_id="offline-demo-tenant",
+            metadata=meta,
+            execution_id="exec-offline-create",
+            event_id="ebe-offline-create",
+            receipt_id="rcpt-offline-create",
+        )
+    finally:
+        reset_active_execution_identity(create_token)
     if created.adapter_result is None or created.governed_result is None:
         raise RuntimeError(f"create_failed:{created.reason}")
     if created.state is not GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTED:
@@ -310,7 +364,7 @@ def run_offline_governed_contractor_demo(
     orch_create.surface_continuation(
         execution_id=created.execution_id or "exec-offline-create",
         adapter_result=created.adapter_result,
-        run_id=run_id,
+        run_id=demo_run_id,
     )
     acceptance = _acceptance(created.adapter_result.quote.quote_id)  # type: ignore[union-attr]
 
@@ -326,19 +380,29 @@ def run_offline_governed_contractor_demo(
         receipt_store=store,
         bundle_store=store,
         continuation_store=store,
+        provider_invocation_store=invocation_store,
         clock=lambda: _T0,
     )
-    accepted = orch_accept.accept(
-        execution_id="exec-offline-accept",
-        create_result=created.adapter_result,
-        acceptance=acceptance,
-        idempotency_key="idem-offline-accept",
-        principal_id="offline-demo-user",
-        tenant_id="offline-demo-tenant",
-        metadata=meta,
-        event_id="ebe-offline-accept",
-        receipt_id="rcpt-offline-accept",
+    accept_identity = mint_root_execution_identity(run_id=demo_run_id)
+    accept_token = bind_active_execution_identity(
+        run_id=accept_identity.run_id,
+        attempt_id=accept_identity.attempt_id,
+        execution_id=accept_identity.execution_id,
     )
+    try:
+        accepted = orch_accept.accept(
+            execution_id="exec-offline-accept",
+            create_result=created.adapter_result,
+            acceptance=acceptance,
+            idempotency_key="idem-offline-accept",
+            principal_id="offline-demo-user",
+            tenant_id="offline-demo-tenant",
+            metadata=meta,
+            event_id="ebe-offline-accept",
+            receipt_id="rcpt-offline-accept",
+        )
+    finally:
+        reset_active_execution_identity(accept_token)
     _write_provider_calls(store_root, fake)
 
     store_disp = display_relative_path(store_root)

@@ -13,10 +13,14 @@ from intergrax.llm_adapters.routing import BudgetBelowRule, LLMRoutingProfile, R
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from lab_application.host.settings import LabApplicationSettings
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_request_for_tests,
+    canonical_run_id_for_tests,
+)
 
 
 @pytest.mark.integration
@@ -48,13 +52,20 @@ def test_multi_step_routing_soak_budget_burn_and_trace(
     monkeypatch.setattr(LLMProfile, "create_adapter", _profile_create)
     monkeypatch.setattr(LLMProfile, "create_adapter_with_failover", _profile_create)
 
-    request = RuntimeRequest(
+    soak_seed = "routing-soak"
+    soak_run_id = str(canonical_run_id_for_tests(soak_seed))
+    request = build_runtime_request_for_tests(
+        seed=soak_seed,
         agent_id="lab-agent",
         user_id="user-1",
         session_id="sess-1",
         tenant_id="lab-tenant",
         message="hello",
-        metadata={"task_class": "lab_routing", "agent_id": "lab-agent", "run_id": "run-soak"},
+        metadata={
+            "task_class": "lab_routing",
+            "agent_id": "lab-agent",
+            "run_id": soak_run_id,
+        },
     )
     config = materialize_runtime_config(request, default_reference_harness(), env)
     evaluating = config.llm_adapter
@@ -64,7 +75,7 @@ def test_multi_step_routing_soak_budget_burn_and_trace(
         config=config,
         session_manager=build_in_memory_session_manager(),
     )
-    state = RuntimeState(context=runtime_context, request=request, run_id="run-soak")
+    state = RuntimeState(context=runtime_context, request=request, run_id=soak_run_id)
     state.configure_llm_tracker()
 
     ratios = iter([0.85, 0.18, 0.05])
@@ -80,7 +91,7 @@ def test_multi_step_routing_soak_budget_burn_and_trace(
     for idx in range(3):
         evaluating.generate_messages(
             [ChatMessage(role="user", content=f"step-{idx}")],
-            run_id="run-soak",
+            run_id=soak_run_id,
         )
         models.append(evaluating.model)
 

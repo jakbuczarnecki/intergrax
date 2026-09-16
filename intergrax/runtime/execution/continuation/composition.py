@@ -55,8 +55,17 @@ def wire_execution_engine_continuation_dependencies(
     )
 
 
+def reconnect_execution_engine_continuation_dependencies(
+    *,
+    state_store: ExecutionContinuationStateStore,
+) -> ExecutionEngineContinuationDependencies:
+    """Process B composition: new service/runtime objects over an existing durable store."""
+    return wire_execution_engine_continuation_dependencies(state_store=state_store)
+
+
 __all__ = [
     "ExecutionEngineContinuationDependencies",
+    "reconnect_execution_engine_continuation_dependencies",
     "wire_execution_continuation_port",
     "wire_execution_engine_continuation_dependencies",
     "wire_task_execution_continuation_projection_sink",

@@ -22,6 +22,7 @@ from intergrax.runtime.nexus.tools.tool_runtime import (
     ToolRuntime,
     tool_invocation_plan_from_capability_payload,
 )
+from intergrax.tools.invocation_wiring import ToolInvocationContext
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 if TYPE_CHECKING:
@@ -73,16 +74,26 @@ class RuntimeToolGateway:
             middleware=middleware,
         )
 
-    async def invoke(self, request: ToolRequest) -> ToolResponse:
+    async def invoke(
+        self,
+        request: ToolRequest,
+        *,
+        invocation_context: ToolInvocationContext | None = None,
+    ) -> ToolResponse:
         hook_ctx = tool_hook_context(self._state, request, step_id=self._trace_step)
         return await run_tool_call_hooks(
             self._middleware,
             hook_ctx,
             request,
-            invoke=lambda: self._invoke_inner(request),
+            invoke=lambda: self._invoke_inner(request, invocation_context=invocation_context),
         )
 
-    async def _invoke_inner(self, request: ToolRequest) -> ToolResponse:
+    async def _invoke_inner(
+        self,
+        request: ToolRequest,
+        *,
+        invocation_context: ToolInvocationContext | None = None,
+    ) -> ToolResponse:
         started = time.perf_counter()
         if request.tool_name not in _KNOWN_CAPABILITY_TOOLS:
             if not ToolAccessPolicy.is_tool_allowed(request.tool_name, self._allowed_tools):
@@ -98,6 +109,7 @@ class RuntimeToolGateway:
                     state=self._state,
                     request=request,
                     trace_step=self._trace_step,
+                    invocation_context=invocation_context,
                 )
             return ToolResponse(
                 request_id=request.request_id,

@@ -19,6 +19,7 @@ from intergrax.collaborative_work.postgresql_repository import (
     PostgreSQLPrincipalAuthorityRepository,
     PostgreSQLWorkArtifactRepository,
     PostgreSQLWorkArtifactVersionRepository,
+    PostgreSQLCollaborativeDecisionBindingRepository,
     PostgreSQLWorkItemExecutionLinkRepository,
     PostgreSQLWorkItemRepository,
     PostgreSQLWorkspaceMembershipRepository,
@@ -32,6 +33,7 @@ from intergrax.collaborative_work.repository import (
     PrincipalAuthorityRepository,
     WorkArtifactRepository,
     WorkArtifactVersionRepository,
+    CollaborativeDecisionBindingRepository,
     WorkItemExecutionLinkRepository,
     WorkItemRepository,
     WorkspaceMembershipRepository,
@@ -46,6 +48,7 @@ from intergrax.collaborative_work.sqlite_repository import (
     SQLitePrincipalAuthorityRepository,
     SQLiteWorkArtifactRepository,
     SQLiteWorkArtifactVersionRepository,
+    SQLiteCollaborativeDecisionBindingRepository,
     SQLiteWorkItemExecutionLinkRepository,
     SQLiteWorkItemRepository,
     SQLiteWorkspaceMembershipRepository,
@@ -86,6 +89,7 @@ class CollaborativeWorkSharedWorkRepositories:
     work_item: WorkItemRepository
     assignment: AssignmentRepository
     execution_link: WorkItemExecutionLinkRepository
+    decision_binding: CollaborativeDecisionBindingRepository
 
 
 @dataclass(frozen=True, slots=True)
@@ -140,6 +144,10 @@ class CollaborativeWorkRepositoriesWithSharedWork:
     def execution_link(self) -> WorkItemExecutionLinkRepository:
         return self.shared_work.execution_link
 
+    @property
+    def decision_binding(self) -> CollaborativeDecisionBindingRepository:
+        return self.shared_work.decision_binding
+
     def close(self) -> None:
         self.core.close()
 
@@ -187,6 +195,10 @@ class CollaborativeWorkRepositoriesWithArtifacts:
     @property
     def execution_link(self) -> WorkItemExecutionLinkRepository:
         return self.shared_work.execution_link
+
+    @property
+    def decision_binding(self) -> CollaborativeDecisionBindingRepository:
+        return self.shared_work.decision_binding
 
     @property
     def artifact(self) -> WorkArtifactRepository:
@@ -254,6 +266,7 @@ def open_sqlite_collaborative_work_repositories(
             work_item=SQLiteWorkItemRepository(store),
             assignment=SQLiteAssignmentRepository(store),
             execution_link=SQLiteWorkItemExecutionLinkRepository(store),
+            decision_binding=SQLiteCollaborativeDecisionBindingRepository(store),
         ),
         artifacts=CollaborativeWorkArtifactRepositories(
             artifact=SQLiteWorkArtifactRepository(store),
@@ -297,6 +310,7 @@ def open_postgresql_collaborative_work_repositories(
             work_item=PostgreSQLWorkItemRepository(store),
             assignment=PostgreSQLAssignmentRepository(store),
             execution_link=PostgreSQLWorkItemExecutionLinkRepository(store),
+            decision_binding=PostgreSQLCollaborativeDecisionBindingRepository(store),
         ),
         artifacts=CollaborativeWorkArtifactRepositories(
             artifact=PostgreSQLWorkArtifactRepository(store),

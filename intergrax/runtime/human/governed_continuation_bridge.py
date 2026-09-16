@@ -11,7 +11,10 @@ from __future__ import annotations
 from uuid import uuid4
 
 from intergrax.contracts.agent_decision import HumanRequest
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.agent_execution_result import (
+    AgentExecutionResult,
+    AgentExecutionStatus,
+)
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
 from intergrax.contracts.execution_continuation import ExecutionContinuationIdentity
 from intergrax.contracts.governed_continuation import (
@@ -23,6 +26,12 @@ from intergrax.contracts.governed_continuation import (
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.interrupts.handler import GovernanceResolution
+from intergrax.runtime.execution.active_execution_continuation_store import (
+    peek_active_execution_continuation_state_store,
+)
+from intergrax.runtime.execution.continuation.composition import (
+    wire_execution_engine_continuation_dependencies,
+)
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
     establish_canonical_hitl_pause,
@@ -141,6 +150,19 @@ def bridge_governed_continuation_to_execution_result(
     )
 
 
+def _resolve_hitl_continuation_for_bridge(
+    hitl_continuation: InternalOrchestrationContinuation | None,
+) -> InternalOrchestrationContinuation:
+    if hitl_continuation is not None:
+        return require_internal_hitl_continuation(hitl_continuation)
+    active_store = peek_active_execution_continuation_state_store()
+    deps = wire_execution_engine_continuation_dependencies(state_store=active_store)
+    return InternalOrchestrationContinuation(
+        port=deps.continuation,
+        lifecycle_driver=deps.lifecycle_driver,
+    )
+
+
 def apply_governed_continuation_pause(
     task: Task,
     request: GovernedContinuationRequest,
@@ -148,7 +170,7 @@ def apply_governed_continuation_pause(
     hitl_continuation: InternalOrchestrationContinuation | None = None,
 ) -> Task:
     """Establish canonical WAITING_FOR_HUMAN and project onto Task/Human view."""
-    capability = require_internal_hitl_continuation(hitl_continuation)
+    capability = _resolve_hitl_continuation_for_bridge(hitl_continuation)
     resolution = bridge_governed_continuation_to_governance(request)
     human_request = resolution.human_request
     assert human_request is not None

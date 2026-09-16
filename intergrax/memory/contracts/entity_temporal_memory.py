@@ -9,6 +9,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryProvenance,
     MemoryRecordGovernance,
@@ -35,6 +36,8 @@ def _require_matching_timestamp_awareness(
         )
 
 __all__ = [
+    "EntityGraphDisclosureResult",
+    "EntityTemporalMemoryCapability",
     "EntityMemoryIndexer",
     "EntityMemoryScope",
     "EntityRecord",
@@ -195,6 +198,14 @@ class EntityRelationResult:
     relations: tuple[EntityRelationRecord, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class EntityGraphDisclosureResult:
+    """Governed entity neighborhood disclosure (relations + related entities)."""
+
+    entities: tuple[EntityRecord, ...]
+    relations: tuple[EntityRelationRecord, ...]
+
+
 def _relation_bound_datetimes(
     relation: EntityRelationRecord,
 ) -> tuple[datetime | None, datetime | None]:
@@ -351,17 +362,55 @@ class EntityEnumerationCapability(Protocol):
 
 
 @runtime_checkable
+class EntityTemporalMemoryCapability(Protocol):
+    """Governed entity/temporal disclosure surface."""
+
+    def get_entity(
+        self,
+        identity: RequestIdentity,
+        scope: EntityMemoryScope,
+        entity_id: str,
+        *,
+        reference_time: datetime | None = None,
+    ) -> EntityRecord | None: ...
+
+    def query_relations(
+        self,
+        identity: RequestIdentity,
+        scope: EntityMemoryScope,
+        query: EntityRelationQuery,
+    ) -> EntityRelationResult: ...
+
+    def list_entities(
+        self,
+        identity: RequestIdentity,
+        scope: EntityMemoryScope,
+    ) -> tuple[EntityRecord, ...]: ...
+
+    def disclose_entity_neighbors(
+        self,
+        identity: RequestIdentity,
+        scope: EntityMemoryScope,
+        entity_id: str,
+        *,
+        query: EntityRelationQuery,
+    ) -> EntityGraphDisclosureResult: ...
+
+
+@runtime_checkable
 class EntityMemoryIndexer(Protocol):
     """Indexes canonical memory records into entity/temporal projection."""
 
     def index_memory_entry(
         self,
+        identity: RequestIdentity,
         scope: EntityMemoryScope,
         entry: UserProfileMemoryEntry,
     ) -> None: ...
 
     def remove_memory_entry(
         self,
+        identity: RequestIdentity,
         scope: EntityMemoryScope,
         memory_entry_id: str,
     ) -> None: ...

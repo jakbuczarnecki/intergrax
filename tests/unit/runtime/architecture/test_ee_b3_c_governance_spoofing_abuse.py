@@ -63,7 +63,7 @@ def test_ee_b3_c_spoofed_evaluated_policy_decision_rejected() -> None:
             PolicyBundleRule(
                 rule_id="r.deny",
                 effect="deny",
-                match_action="CREATE_EXTERNAL_WORK",
+                match_action="external_work.create",
             ),
         ),
         issued_at=_T0,
@@ -94,11 +94,20 @@ def test_ee_b3_c_allowing_runtime_admission_not_wired_in_intergrax_tree() -> Non
 
     repo = Path(__file__).resolve().parents[4]
     intergrax_root = repo / "intergrax"
+    # Reference adapter definition + explicit reference/harness composition only.
+    allowed_reference_paths = frozenset(
+        {
+            "intergrax/runtime/governance/runtime_execution_policy_admission.py",
+            "intergrax/runtime/governance/execution_admission_composition.py",
+            "intergrax/applications/_shared/harness_root_execution_launch_wiring.py",
+        }
+    )
     hits: list[str] = []
     for path in intergrax_root.rglob("*.py"):
-        if path.name == "runtime_execution_policy_admission.py":
+        rel = path.relative_to(repo).as_posix()
+        if rel in allowed_reference_paths:
             continue
         text = path.read_text(encoding="utf-8")
         if "AllowingRuntimeExecutionPolicyAdmission" in text:
-            hits.append(str(path.relative_to(repo)))
+            hits.append(rel)
     assert hits == []

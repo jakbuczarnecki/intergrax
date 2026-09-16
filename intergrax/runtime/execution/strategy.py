@@ -22,6 +22,20 @@ class ExecutionStrategy(str, Enum):
     ORCHESTRATION = "orchestration"
 
 
+def execution_strategy_from_capabilities(
+    capabilities: frozenset[ExecutionCapability],
+) -> ExecutionStrategy:
+    """Deterministic capability-to-strategy mapping shared by router and metadata surfaces."""
+    if ExecutionCapability.ORCHESTRATION in capabilities:
+        return ExecutionStrategy.ORCHESTRATION
+    if (
+        ExecutionCapability.AGENT in capabilities
+        or ExecutionCapability.TOOLS in capabilities
+    ):
+        return ExecutionStrategy.AGENTIC
+    return ExecutionStrategy.INFERENCE
+
+
 class StrategyResolver:
     """Stateless resolver mapping ExecutionRequest capabilities to ExecutionStrategy."""
 
@@ -31,15 +45,4 @@ class StrategyResolver:
         self,
         request: ExecutionRequest[InputT, OutputT],
     ) -> ExecutionStrategy:
-        capabilities = request.capabilities
-
-        if ExecutionCapability.ORCHESTRATION in capabilities:
-            return ExecutionStrategy.ORCHESTRATION
-
-        if (
-            ExecutionCapability.AGENT in capabilities
-            or ExecutionCapability.TOOLS in capabilities
-        ):
-            return ExecutionStrategy.AGENTIC
-
-        return ExecutionStrategy.INFERENCE
+        return execution_strategy_from_capabilities(request.capabilities)

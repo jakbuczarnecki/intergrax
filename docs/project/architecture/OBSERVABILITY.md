@@ -18,7 +18,56 @@ Without the Harness Observability Spine (HOS):
 Observability addresses this through canonical identity **recording** on `RuntimeEvent`, HOS, strict persistence, the Unified Run Journal, deterministic execution positions, as-of projection, canonical knowledge revision ordering, and policy-safe export. **Central diagnostics** ([`DIAGNOSTICS.md`](DIAGNOSTICS.md)) consumes persisted evidence for interpretation — Observability does not embed diagnostic semantics.
 
 > [!NOTE]
-> **Maturity boundary:** Core execution evidence (TRACE-1A–1C, ASOF-1/2, BITEMP-1/3) is **implemented and closed** on the harness path. **Five-ID canonical contract:** `RuntimeEvent` requires typed `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, and `EventId` (contract **implemented**). **Platform writer / emit-path coverage** for `ExecutionId` on every production evidence path is **separately qualified** — remaining gaps tracked under **OBS-COVERAGE-1**, not as “partial contract.” Canonical revision ordering provider (**TRACE-BITEMP-2**) is an **implemented slice - acceptance in review**. Full **E + K + Valid Time + System Time** query semantics, public as-of query API, OECP code phases, and **OBS-VENDOR** production hardening remain **planned**. External sinks visualize Intergrax evidence - they do **not** define Intergrax execution semantics. Observability records identity minted by Execution Runtime; it does **not** own Execution identity.
+> **Maturity boundary (reconciled 2026-09-16 @ `a669e15e`):** Core execution evidence (TRACE-1A–1C, ASOF-1/2, BITEMP-1/3), **OBS-ASOF-REBASE**, and **OBS-BITEMP-REBASE** are **implemented and closed** on the qualified harness path. **Five-ID canonical contract:** `RuntimeEvent` requires typed `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, and `EventId` (**implemented**). Emit-path coverage for every production writer remains separately tracked under **OBS-COVERAGE-1** — not “partial contract.” **Canonical revision ordering provider (TRACE-BITEMP-2)** is **implemented** (SQLite canonical provider; alternate providers remain **TRACE-BITEMP-5**). **E/K/V/S temporal composition** is **implemented** via `HistoricalReconstructionService` (**OBS-BITEMP-REBASE** closed). **Conditional read surfaces:** typed public **TRACE-ASOF-4** / **TRACE-BITEMP-4** query APIs (delegating to the same canonical path) remain optional productization layers — not missing core semantics. **Remaining limitations (explicit):** **DG-005** cross-topology `RuntimeEvent` persistence/reconstruction **NOT PROVEN**; Kafka → worker → execution → diagnostics full external spine **NOT YET PROVEN**; pause/restart/resume → terminal diagnostics dedicated E2E **NOT YET PROVEN**; **OECP** code phases and full **OBS-VENDOR** production hardening remain **open**. OTLP / vendor backends are **derived export only** — never execution truth. Observability records identity minted by Execution Runtime; it does **not** own Execution identity.
+
+**Documentation authority (SSOT hierarchy):**
+
+| Priority | Authority |
+| -------- | --------- |
+| 1 | This document — [`OBSERVABILITY.md`](OBSERVABILITY.md) |
+| 2 | [`DIAGNOSTICS.md`](DIAGNOSTICS.md) — diagnostic interpretation plane |
+| 3 | Accepted ADRs under `docs/project/technical/adr/entries/` |
+| 4 | Qualification records under `docs/project/maintainers/qualification/` |
+| 5 | Historical snapshots (explicit banner; do not override 1–3) |
+
+**Last reconciled against `development` @ `a669e15e413a1ff9556ba33318560636286d823f`.** Qualification records may cite earlier certified SHAs; architecture semantics here track current `development` unless a record is marked historical.
+
+## Platform Operational Spine
+
+One **platform operational spine** — not a single component — composed of Evidence Plane, shared factual reconstruction, and diagnostic interpretation:
+
+```text
+Applications · Scenarios · Workers · Hosted APIs · Background execution
+        ↓
+Shared Execution Runtime (HarnessHostRuntime / ScenarioRuntimeBaseline)
+        ↓
+UnifiedTaskRunner → Execution System
+        ↓
+RuntimeEvent (canonical execution evidence)
+        ↓
+Evidence persistence (Plane A)
+        ↓
+Shared factual reconstruction (ExecutionReconstructionReader / ExecutionReconstructor)
+        ↓
+Central Diagnostics (interpretation only)
+        ↓
+Problem persistence
+        ↓
+DiagnosticReadService (operator read models — adoption varies by host)
+```
+
+**Ownership boundaries:**
+
+```text
+Execution → produces facts
+Observability / Evidence Plane → records facts · persists · orders · exports (derived)
+Shared reconstruction → rebuilds facts from evidence (not diagnostic meaning)
+Diagnostics → interprets facts · Problem lifecycle
+Operators → read derived diagnostic state (HTTP/dashboard exposure is host-specific)
+OTLP / Datadog / external vendor → derived export only
+```
+
+**Adoption truth (qualified surfaces):** all currently qualified **production-capable** application surfaces use the shared spine (**PRODUCT BYPASS = 0**). **Initialized scenario surfaces = 4** (`ai_incident_investigation`, `enterprise_payment_uncertainty_recovery`, `indirect_prompt_injection`, `verified_product_identification`); design-only scenario packages are **NOT_APPLICABLE** until `IMPLEMENTATION_INITIALIZED`. **OBS-UNIVERSAL-SPINE-E2E:** async worker ingress → `execute_logical_task` → `UnifiedTaskRunner` → terminal diagnostics is **P3 PROVEN** (`tests/integration/runtime/test_obs_universal_spine_async_e2e.py`). **LAB / DEBUG** paths may use explicit non-production exceptions — not the canonical authoring path.
 
 **Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) - semantic authority for execution identity and lifecycle. [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) · [`ORCHESTRATION.md`](ORCHESTRATION.md) are synchronized domain authorities. **Central diagnostics** canonical entry point: [`DIAGNOSTICS.md`](DIAGNOSTICS.md). This document owns HOS, persistence, journal, and export; DIAG slice detail below links to that entry point.
 
@@ -116,7 +165,8 @@ Do **not** label the frozen **`RuntimeEvent` five-ID contract** as `PARTIAL` bec
 
 | Layer | Status |
 | ----- | ------ |
-| **Frozen core contract** | `RuntimeEvent` requires `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, `EventId` (`intergrax/runtime/events/runtime_event.py`) |
+| **Frozen core contract** | `RuntimeEvent` requires `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, `EventId` — **canonical type:** `intergrax/contracts/runtime_event.py` (legacy import path `intergrax/runtime/events/runtime_event.py` is a **passive** re-export of the same class; it must not register callbacks or mutate contract behavior at import time) |
+| **RuntimeEvent metadata (R2)** | **Contract-owned deterministic defaults:** spine `event_kind`, `event_category`, and `ops_hint` are normalized in `model_post_init` from `intergrax.contracts.spine_event_metadata` + `category_for_event_kind` — **no** global enricher, **no** import-order side effects. **Runtime event catalog** (`intergrax/runtime/events/event_catalog.py`) remains **runtime policy** for retention, sampling, payload schema ids, and bus gates; it reads the same spine metadata tables from contracts (single source of truth). |
 | **Emit-path / writer coverage** | Qualified separately — **OBS-COVERAGE-1** (not every legacy producer may be certified on every path) |
 | **ADOPTION / PROJECTION GAP** | Unified Run Journal, DIAG read models, export envelopes, or carriers that omit `ExecutionId` / Execution Tree fields |
 
@@ -197,7 +247,7 @@ DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · opera
 
 **Frozen:** Observability records facts; it does not decide operational meaning. Diagnostics interprets facts; it does not mint execution identity, own evidence persistence, or maintain a competing Execution Tree.
 
-**Import debt (OBS-RECONSTRUCTION-1):** `HistoricalReconstructionService` and shared `ExecutionReconstructor` live under Observability; Diagnostics **imports** `runtime.observability.reconstruction` — not the reverse. Functional evidence contracts and providers remain under `intergrax.contracts.functional_evidence` and `intergrax.runtime.observability.functional_evidence` (**OBS-FUNCTIONAL-CONTRACTS-1** / **R1** closed).
+**OBS-CONTRACT-BOUNDARY-1 (closed):** Neutral reconstruction port and read models live under **`intergrax.contracts.execution_reconstruction`** (+ `execution_reconstruction_models`, `execution_reconstruction_lineage`). Default **`ExecutionReconstructor`** remains under `intergrax.runtime.observability.reconstruction`. Diagnostics and other cross-layer consumers depend on the contract types only; they do **not** import the runtime reconstruction DTO module.
 
 **OBS-DIAG-CONFORMANCE-R1 (closed):** Evidence Plane exposes factual reconstruction through neutral read contract **`ExecutionReconstructionReader`** (`intergrax.contracts.execution_reconstruction`). Default implementation remains **`ExecutionReconstructor`**. Diagnostic consumers depend on the contract only; composition roots may still construct the default implementation.
 
@@ -349,7 +399,7 @@ Mandatory proof: OBS architecture gate bundle + `pytest -m obs_coverage_p1` + sc
 ```text
 Evidence Producer (execution path)
         ↓
-EvidencePersistencePort
+EvidencePersistencePort (platform contract; contract-owned read DTOs incl. TaskRuntimeEventRuns)
         ↓
 RuntimeEventPersistence adapter / backend
         ↓
@@ -363,7 +413,7 @@ Journal · Export · Reconstruction (read-only views)
 | **Durable evidence** | What actually happened during execution (accepted `RuntimeEvent`s) | Schedule, retry, resume, or mutate lifecycle |
 | **Journal** | Chronological history projection from persisted evidence | Execute actions; mint run/attempt authority |
 | **Reconstruction** | Deterministic views at explicit coordinates (`AsOfBoundary`, knowledge watermark) | Re-execute workflows; emit new canonical events |
-| **Persistence boundary** | Tenant-scoped read/write of evidence via `EvidencePersistencePort` | Business interpretation; orchestration |
+| **Persistence boundary** | Tenant-scoped read/write of evidence via `EvidencePersistencePort`; grouped task reads use contract-owned `TaskRuntimeEventRuns` | Business interpretation; orchestration |
 
 **Evidence Plane ≠ Execution Control Plane:** persisted history informs operators and diagnostics; it **never** drives execution control.
 
@@ -409,9 +459,10 @@ RuntimeEvent (canonical) → HOS → export boundary → provider adapter → OT
 | **Read model** | Unified Run Journal - derived chronological view, not a second source of truth |
 | **Historical coordinate (E)** | `ExecutionEventPosition` + inclusive `AsOfBoundary` - not timestamp-only ordering |
 | **As-of reconstruction** | `RunExecutionAsOfProjection` via pure reducer at boundary **E** - **Done** (TRACE-ASOF-2) |
-| **Knowledge ordering (K)** | `RevisionOrderingAuthority` + finalized watermark - contracts **Done**; durable provider **in review** |
-| **K-only reconstruction** | `HistoricalKnowledgeProjection` at watermark **K** - **Done**; not full bitemporal |
-| **Bitemporal scope** | E and K shipped slices; Valid/System Time + combined E+K query **planned** |
+| **Knowledge ordering (K)** | `RevisionOrderingAuthority` + finalized watermark - **Done** (TRACE-BITEMP-2 canonical provider) |
+| **K-only reconstruction** | `HistoricalKnowledgeProjection` at watermark **K** - **Done** (TRACE-BITEMP-3) |
+| **E/K/V/S composition** | `HistoricalReconstructionService` - **Done** (**OBS-BITEMP-REBASE** closed) |
+| **Public query APIs** | **TRACE-ASOF-4** / **TRACE-BITEMP-4** - conditional typed surfaces over canonical path |
 | **Problem plane** | `PlatformProblemSignal` - classified operator attention; not execution history |
 | **Causal evidence** | `PlatformCausalEvidence` - cross-boundary transport→execution relation; not execution history |
 | **Redaction** | `DiagnosticPayload.redact()` + export policy - strongest on canonical/export paths |
@@ -851,19 +902,113 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 
 ## Current maturity
 
+### Implemented / certified (harness + gates)
+
+| Capability | Status |
+| ---------- | ------ |
+| `RuntimeEvent` five-ID contract | **Implemented / closed** |
+| `ExecutionEventPosition` + journal prefix | **Implemented / closed** |
+| As-of **E** (`OBS-ASOF-REBASE`) | **Implemented / closed** |
+| E/K/V/S composition (`HistoricalReconstructionService`, **OBS-BITEMP-REBASE**) | **Implemented / closed** |
+| `ExecutionReconstructionReader` + default `ExecutionReconstructor` | **Implemented / closed** |
+| Causal + functional evidence facts | **Implemented / closed** (contracts + providers) |
+| Terminal diagnostics integration path | **Implemented** (central spine; see DIAG qualification) |
+| Event delivery contracts (**ADR-OBS-005** / P1B-R3) | **Implemented** (Plane B boundary; OTLP wire typing partial — see ADR follow-up) |
+| Vendor export boundary | **Implemented** (derived only) |
+| Central diagnostics conformance (**OBS-DIAG-CONFORMANCE**) | **Closed** |
+
+### Conditional
+
+| Slice | Meaning |
+| ----- | ------- |
+| **TRACE-ASOF-4** | Optional typed public execution-as-of query API delegating to canonical E path |
+| **TRACE-BITEMP-4** | Optional typed public temporal/audit query API delegating to canonical E/K/V/S composition |
+
+### Remaining limitations (not masked)
+
+| ID | Limitation |
+| -- | ---------- |
+| **DG-005** | Cross-topology `RuntimeEvent` persistence / reconstruction **NOT PROVEN** |
+| **Async spine** | Kafka → worker → execution → diagnostics full single P4 external spine **NOT YET PROVEN** |
+| **HITL / restart** | pause/restart/resume → terminal diagnostics dedicated E2E **NOT YET PROVEN** |
+| **Operator read** | Central diagnostic **write** path qualified; HTTP/dashboard read exposure **varies by PRODUCT host** |
+| **OECP / OBS-VENDOR** | Evaluation control-plane code phases and full vendor production hardening **open** |
+
 | Axis | Level | Rationale |
 | ---- | ----- | --------- |
-| **Architecture (A)** | **A4** | Validated canon: identity, HOS families, source-of-truth boundaries, E/K model coherent; full bitemporal query surface still planned |
-| **Implementation (I)** | **I4** | HOS, strict identity/journal, platform signals, as-of, K reconstruction integrated; BITEMP-2 provider slice in review; OECP code not shipped |
-| **Production (P)** | **P2** | SQLite defaults, export boundary partial, OBS-VENDOR hardening planned - not distributed production qualification |
-| **Evidence (E)** | **E3** | Unit/gate proofs on identity, journal, as-of, revision store, reconstruction, export; bounded LKW platform proof partial - not E4 full-harness E2E |
+| **Architecture (A)** | **A4** | Frozen spine, E/K/V/S model, ownership boundaries coherent |
+| **Implementation (I)** | **I4** | Core evidence, reconstruction, delivery boundary shipped; OECP code not shipped |
+| **Production (P)** | **P2** | SQLite defaults; distributed / cross-topology qualification gaps remain |
+| **Evidence (E)** | **E3** | Strong unit/gate proof; not universal E4 for every platform path |
 
 | Sub-area | Implementation | Evidence |
 | -------- | -------------- | -------- |
-| Core execution observability | **I4** - closed TRACE-1A–1C | Gate tests + journal proofs |
-| Historical reconstruction (E, K) | **I4** - ASOF-1/2, BITEMP-3 closed; BITEMP-2 in review | Reducer + provider qualification tests |
-| External export / vendors | **I3** - export boundary done; vendor adapters partial | Export policy tests; full vendor hardening open |
-| OECP | **I1** - architecture only | OBS-ECP-0 docs; code phases planned |
+| Core execution observability | **I4** - TRACE-1A–1C closed | Gate tests + journal proofs |
+| Historical reconstruction | **I4** - ASOF + BITEMP-REBASE closed | `test_obs_asof_rebase_*`, bitemporal qualification tests |
+| Event delivery (Plane B) | **I4** - P1B-R3 closed | `test_bounded_delivery_p1b_r3_*`, W5 composition gates |
+| External export / vendors | **I3** - export boundary done; OTLP transport contract partial | Export policy + P4 OTLP/Mongo application paths |
+| OECP | **I1** - architecture only | OBS-ECP-0 docs; code phases open |
+
+### Contract map (canonical)
+
+| Capability | Contract | Default implementation | Extension |
+| ---------- | -------- | ---------------------- | --------- |
+| Runtime evidence persistence | `RuntimeEventPersistence` / `EvidencePersistencePort` | SQLite / configured store | Custom persistence provider |
+| Causal evidence persistence | `CausalEvidencePersistence` | Document/memory adapters | Custom adapter |
+| Functional evidence persistence | `FunctionalEvidencePersistence` | In-memory / DocumentStore | `wire_functional_evidence_runtime` |
+| Execution reconstruction | `ExecutionReconstructionReader` | `ExecutionReconstructor` | Contract-conformant replacement |
+| Execution lineage | `ExecutionLineageReader` | Platform lineage stores | Custom reader |
+| Historical E/K/V/S composition | `HistoricalReconstructionService` | Default composition root | N/A (composition, not second reconstructor) |
+| Event delivery | `EventSinkPort` | `BoundedEventSink` stack | Custom `EventSinkPort` |
+| Event delivery reaction | `EventSinkDeliveryReactionPort` | `EnterpriseDefaultEventSinkDeliveryReaction` | Custom reaction (non-CRITICAL) |
+| Export transport | `EventExportSinkPort` | OTLP / recording sinks | Vendor adapter |
+| Problem grouping | `ProblemGroupingStrategy` | `DeterministicProblemGroupingStrategy` | Registered strategies |
+| Problem persistence | `ProblemPersistence` | Wired store per host | Custom persistence |
+| Terminal diagnostics | `TerminalExecutionDiagnosticPort` | Harness wiring | Profile-specific |
+| Reliability diagnostics | `ReliabilityDiagnosticOrchestrationPort` | Platform default | Extension via port |
+| Decision context | `DecisionContextProvider` | Host-provided | Custom provider |
+
+### Hard invariant vs replaceable mechanism
+
+| Mechanism | Hard invariant | Replaceable? |
+| --------- | -------------: | -----------: |
+| `ExecutionId` / five-ID `RuntimeEvent` | yes | no |
+| `ExecutionEventPosition` ordering at **E** | yes | no |
+| E/K/V/S axis separation | yes | no |
+| Execution owns execution truth | yes | no |
+| Vendor telemetry as non-authority | yes | no |
+| Persistence provider | no | yes (contract) |
+| Exporter / `EventExportSinkPort` | no | yes |
+| Grouping strategy | no | yes |
+| Delivery reaction (within PI-8 floor) | no | yes |
+| Reconstruction implementation | no | yes via `ExecutionReconstructionReader` |
+
+Custom implementations **must** honor platform contracts — pluginability is not arbitrary semantics.
+
+### Duplication matrix (forbidden)
+
+```text
+NO second RuntimeEvent
+NO second Execution Tree authority
+NO second factual reconstructor SSOT
+NO second diagnostic engine
+NO second Problem lifecycle
+NO scenario-local diagnostic authority
+NO vendor telemetry authority
+NO local execution identity minting in OBS/DIAG
+```
+
+### Proof matrix (selected platform claims)
+
+| Proof | Entry | Execution authority | RuntimeEvent | Diagnostics | Problem | Read | External infra | Level |
+| ----- | ----- | ------------------- | -----------: | ----------: | ------: | ---: | -------------: | ----- |
+| Governed contractor HTTP host | `test_harden_4c_clean_diagnostic_host_e2e` | Execution System | Yes | Central | Yes | HTTP (factory) | No | P3 |
+| Scenario baseline | `ai_incident_investigation` + architecture gate | Execution System | Yes | Central | Yes | Scenario reads | No | P3 |
+| Background child spine | `test_background_execution_inherits_terminal_diagnostic_trigger` | Execution System | Yes | Central | Yes | N/A | No | P3 |
+| Mongo Problem store FI | `test_harden_4f_mongo_problem_store_failure_e2e` | Execution System | Yes | Central | Yes | N/A | Docker Mongo | P4 |
+| OTLP export path | `test_diag_final_external_otel_e2e` | Execution System | Yes | Central | Optional | N/A | Docker OTLP | P4 |
+| Kafka transport-only | distributed transport tests | N/A | Partial | **Not** full spine proof | N/A | N/A | Kafka | **Not** diagnostic P4 |
+| Cross-process Problem persistence | DIAG durability proofs | N/A | N/A | Central | Yes | N/A | Process split | P4 persistence only |
 
 ## Verify / inspect implementation
 
@@ -881,7 +1026,7 @@ Bounded public proof routes: [`PROOFS.md`](../proofs/PROOFS.md) - LKW Core Platf
 
 ### Core implementation
 
-- [`RuntimeEvent`](../../../intergrax/runtime/events/runtime_event.py) · [`RuntimeEventBus`](../../../intergrax/runtime/events/event_bus.py)
+- [`RuntimeEvent`](../../../intergrax/contracts/runtime_event.py) (compatibility: [`runtime/events/runtime_event.py`](../../../intergrax/runtime/events/runtime_event.py)) · [`RuntimeEventBus`](../../../intergrax/runtime/events/event_bus.py)
 - [`RuntimeEventPersistence` contract](../../../intergrax/runtime/events/persistence_contract.py)
 - [`build_unified_run_journal`](../../../intergrax/runtime/events/unified_run_journal.py)
 - [Observability export boundary](../../../intergrax/runtime/observability/export_boundary.py)
@@ -1174,7 +1319,7 @@ Need a new signal?
 
 | Property | Requirement |
 |----------|-------------|
-| Semantic model | `PlatformProblemSignal` is the vendor-neutral problem/error signal model (`problem_signal.py`). |
+| Semantic model | `PlatformProblemSignal` is the vendor-neutral problem/error signal contract (`intergrax/contracts/platform_problem_signal.py`; legacy re-export under `runtime/observability/problem_signal.py`). |
 | Not a replacement for `RuntimeEvent` | Execution/audit history remains on the spine; problems are a separate explicit plane. |
 | Not a generic log record | Problems require classified taxonomy fields - not unstructured diagnostic text. |
 | Not vendor-specific | No Sentry/Elastic/OTLP semantics in the platform model; vendors project sanitized envelopes only. |
@@ -1301,7 +1446,7 @@ await reporter.report(
 - Do **not** turn every `RuntimeEvent` (or every `ObservabilityEmitter.emit_step`) into a `PlatformProblemSignal`.
 - Do **not** add `ObservabilityEmitter.emit_problem`, automatic global exception hooks, or `RuntimeEventBus` subscribers that auto-emit problems (deferred / out of scope for OBS-PROBLEM-3).
 
-**Code references:** `problem_signal.py` · `problem_export.py` · `problem_reporter.py` · `export_boundary.py` · `export_policy.py`. **Plan:** OBS-PROBLEM-3 in [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md).
+**Code references:** Canonical contracts — `intergrax/contracts/platform_problem_signal.py` · `intergrax/contracts/functional_validation_evidence.py`. Runtime export/safety — `problem_export.py` · `problem_reporter.py` · `export_boundary.py` · `export_policy.py`. **Plan:** OBS-PROBLEM-3 in [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md).
 
 ### DIAG subsystem (analytical over canonical evidence)
 
@@ -1368,7 +1513,7 @@ Transport redelivery alone must **not** create new runtime identity.
 | `RuntimeEventPersistence` | Canonical persisted evidence authority - accepted `RuntimeEvent` history with persistence-owned `ExecutionEventPosition` |
 | `CausalEvidencePersistence` | Canonical persisted relation evidence authority - immutable `PlatformCausalEvidence` linking transport to execution |
 
-**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)` (`intergrax.runtime.observability.reconstruction`; **semantic and physical owner:** Evidence Plane shared factual reconstruction — see [OBS-REBASE-1](#obs-rebase-1--platform-ssot-frozen-2026-09-13)). It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only. Diagnostics and `HistoricalReconstructionService` **consume** this layer; they do not own persisted evidence.
+**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is a **contract-owned** read model (`intergrax.contracts.execution_reconstruction`) computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)` (default implementation: `intergrax.runtime.observability.reconstruction`; **semantic owner:** Evidence Plane shared factual reconstruction — see [OBS-REBASE-1](#obs-rebase-1--platform-ssot-frozen-2026-09-13)). It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only. Diagnostics and `HistoricalReconstructionService` **consume** the contract read model; they do not own persisted evidence.
 
 **Ordering rules (do not mix):**
 
@@ -2750,13 +2895,13 @@ Goals: projection history is not overwritten; operators can audit which revision
 
 ### 7.7 Relationship to bitemporal state (§8)
 
-As-of projections and bitemporal historical state answer **different questions**. Execution as-of is accepted and planned (this section). Bitemporal valid-time / system-time semantics are also **accepted target capability** with **planned implementation** (§8, TRACE-BITEMP-1–TRACE-BITEMP-5). Neither replaces the other.
+As-of projections and bitemporal historical state answer **different questions**. Execution as-of at **E** is **implemented** (**OBS-ASOF-REBASE**). Full **E/K/V/S** composition is **implemented** (**OBS-BITEMP-REBASE**). **TRACE-ASOF-4** / **TRACE-BITEMP-4** are optional typed public query surfaces over the same canonical paths — not missing core semantics.
 
 ---
 
 ## 8. First-class bitemporal historical state (TRACE-BITEMP-ARCH-SYNC)
 
-**Status:** Target canon (**accepted** 2026-08-15; acceptance linearization + fenced-out/orphaned durable commit semantics **TRACE-BITEMP-ARCH-SYNC-R7** 2026-08-17; unresolved position resolution / lease / fencing / auditable terminalization **TRACE-BITEMP-ARCH-SYNC-R6** 2026-08-17; watermark finality / gap semantics **TRACE-BITEMP-ARCH-SYNC-R5** 2026-08-16; revision-ordering authority / provider contract **TRACE-BITEMP-ARCH-SYNC-R4** 2026-08-16) · **TRACE-BITEMP-1** typed contracts **Done / Closed** (`d68c72177403fb634fd4ede2d0252e9814d7adee`) · **TRACE-BITEMP-2** canonical provider **Planned / In Review** · **TRACE-BITEMP-3** K-only knowledge reconstruction at finalized watermark **Done / Closed** (`5c2eedca75fc32101ea7a35e332c2abb3af24985`) · **TRACE-BITEMP-4** temporal query/audit (Valid Time + System Time, T→K, optional E+K composition) **Planned** · TRACE-BITEMP-5 **Planned**
+**Status:** Target canon (**accepted**) · **TRACE-BITEMP-1** typed contracts **Done / Closed** · **TRACE-BITEMP-2** canonical SQLite provider **Done / Implemented** (alternate providers **TRACE-BITEMP-5**) · **TRACE-BITEMP-3** K-only reconstruction **Done / Closed** · **OBS-BITEMP-REBASE** E/K/V/S composition **Done / Closed** · **TRACE-BITEMP-4** public temporal/audit query API **Conditional** · **TRACE-ASOF-4** public execution-as-of query API **Conditional**
 
 ### 8.1 Capability definition
 
@@ -3752,7 +3897,7 @@ Module: `intergrax.contracts.bitemporal_knowledge`. Opt-in capability - **not** 
 | **I** Two distinct revisions concurrent | Distinct `K` values, deterministic tenant order | Advances only through finalized prefix | Independent keys | Auditable K1 → K2 order without timestamps |
 | **J** Terminal non-committed gap below later accepted revisions | Lower `K` stays `TERMINAL_NON_COMMITTED`; later `ACCEPTED` | Watermark **may** advance across the gap | n/a | Gap is classifiable, not invisible |
 
-**TRACE-BITEMP-2 boundary:** **Planned / In Review** - implemented slice: `CanonicalRevisionOrderingProvider` + `RevisionOrderingSQLiteStore` + `UnresolvedRevisionRecovery` + `open_revision_ordering_authority`. Atomic linearization via SQLite `BEGIN IMMEDIATE` transactions coordinating acceptance bindings, position lifecycle, and per-tenant `RevisionFencingGeneration`. Canonical acceptance requires `canonical_accepted=1` on `knowledge_position_states` - physical payload rows in `knowledge_physical_payloads` are quarantined and never promoted to `ACCEPTED` by presence alone. Known limitations: alternate providers not qualified (TRACE-BITEMP-5); K-only historical knowledge reconstruction **Done** (TRACE-BITEMP-3); temporal query/audit surface not implemented (TRACE-BITEMP-4); execution-as-of query surface not implemented (TRACE-ASOF-4).
+**TRACE-BITEMP-2 boundary:** **Implemented** (canonical SQLite provider) — `CanonicalRevisionOrderingProvider` + `RevisionOrderingSQLiteStore` + `UnresolvedRevisionRecovery` + `open_revision_ordering_authority`. Known limitations: alternate providers not production-qualified (**TRACE-BITEMP-5**); **TRACE-BITEMP-4** / **TRACE-ASOF-4** public query APIs remain **conditional** product layers over **`HistoricalReconstructionService`** (core E/K/V/S composition **closed** under **OBS-BITEMP-REBASE**).
 
 ### 8.12 TRACE-BITEMP-2 delivered implementation mapping
 
@@ -3798,13 +3943,13 @@ Closure does **not** yet deliver - downstream ownership; **not** unresolved TRAC
 | `SystemTimeBasis` filtering/selection | TRACE-BITEMP-4 |
 | wall-clock **T → finalized K** resolution | TRACE-BITEMP-4 |
 | combined **E + K** projection | TRACE-BITEMP-4 |
-| combined **E + K + Valid Time + System Time** query | TRACE-BITEMP-4 |
-| public temporal/audit API | TRACE-BITEMP-4 |
-| execution-as-of **query contract** at boundary **E** | TRACE-ASOF-4 |
+| combined **E + K + Valid Time + System Time** query | **OBS-BITEMP-REBASE** (core composition) · public API **TRACE-BITEMP-4** conditional |
+| public temporal/audit API | **TRACE-BITEMP-4** (conditional typed surface) |
+| execution-as-of **query contract** at boundary **E** | **OBS-ASOF-REBASE** (core) · public API **TRACE-ASOF-4** conditional |
 
-**TRACE-ASOF-4** (planned) owns the historical **execution-as-of query contract** at boundary **E** - **What was execution state at E?** plus provenance to execution events. It does **not** own full **E + K + Valid Time + System Time** semantics.
+**TRACE-ASOF-4** (**conditional**) — typed public historical **execution-as-of query** at boundary **E**, delegating to the canonical path (`load_positioned_run_journal_through`, `ExecutionReconstructor`, `reconstruct_run_execution_as_of`). Does **not** redefine **E** semantics.
 
-**TRACE-BITEMP-4** (planned) owns temporal knowledge query/audit:
+**TRACE-BITEMP-4** (**conditional**) — typed public temporal knowledge query/audit delegating to **`HistoricalReconstructionService`**:
 
 - **ValidTimeBasis** selection/filtering - when a fact was effective in the modeled domain
 - **SystemTimeBasis** selection/filtering - when Intergrax knew/recorded a version

@@ -11,8 +11,14 @@ from intergrax.capability_catalog.errors import (
     CapabilityCatalogIdentityConflict,
     CapabilityCatalogSourceFailure,
 )
-from intergrax.capability_catalog.snapshot import CapabilityCatalogSnapshot
-from intergrax.capability_catalog.source import CapabilityCatalogSource
+from intergrax.capability_catalog.snapshot import (
+    CapabilityCatalogFederationCompleteness,
+    CapabilityCatalogSnapshot,
+)
+from intergrax.contracts.capability_catalog.federation_policy import (
+    CapabilityCatalogFederationPolicy,
+)
+from intergrax.contracts.capability_catalog.source import CapabilityCatalogSource
 
 
 def _source_id_sort_key(source_id: str) -> str:
@@ -75,19 +81,29 @@ class FederatedCapabilityCatalog:
     def sources(self) -> tuple[CapabilityCatalogSource, ...]:
         return self._sources
 
-    def snapshot(self) -> CapabilityCatalogSnapshot:
+    def snapshot(
+        self,
+        *,
+        federation_policy: CapabilityCatalogFederationPolicy = (
+            CapabilityCatalogFederationPolicy.STRICT_COMPLETE
+        ),
+    ) -> CapabilityCatalogSnapshot:
         ordered_sources = tuple(
             sorted(self._sources, key=lambda source: _source_id_sort_key(source.source_id)),
         )
         observations: list[tuple[str, CapabilityCatalogEntry]] = []
+        unavailable_source_ids: list[str] = []
         for source in ordered_sources:
             source_id = source.source_id
             try:
                 entries = source.read_entries()
-            except Exception as exc:
-                raise CapabilityCatalogSourceFailure(
-                    f"catalog source {source_id!r} failed during read",
-                ) from exc
+            except CapabilityCatalogSourceFailure:
+                if federation_policy == CapabilityCatalogFederationPolicy.ALLOW_PARTIAL:
+                    unavailable_source_ids.append(source_id)
+                    continue
+                raise
+            except Exception:
+                raise
             for entry in entries:
                 entry_source_id = entry.identity.source.source_id
                 if entry_source_id != source_id:
@@ -100,9 +116,17 @@ class FederatedCapabilityCatalog:
 
         merged = merge_capability_catalog_entries(tuple(observations))
         ordered_entries = tuple(sorted(merged, key=lambda entry: entry.identity.sort_key))
+        unavailable = tuple(sorted(unavailable_source_ids))
+        completeness = (
+            CapabilityCatalogFederationCompleteness.PARTIAL
+            if unavailable
+            else CapabilityCatalogFederationCompleteness.COMPLETE
+        )
         return CapabilityCatalogSnapshot(
             source_ids=tuple(
                 _source_id_sort_key(source.source_id) for source in ordered_sources
             ),
             entries=ordered_entries,
+            federation_completeness=completeness,
+            unavailable_source_ids=unavailable,
         )

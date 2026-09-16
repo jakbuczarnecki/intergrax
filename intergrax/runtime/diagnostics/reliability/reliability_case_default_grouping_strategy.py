@@ -42,7 +42,7 @@ from intergrax.runtime.diagnostics.reliability.reliability_observation_grouping_
     ReliabilityObservationGroupingAdapterError,
     grouping_subject_index_token_for_erl_signal_scope,
 )
-from intergrax.runtime.observability.problem_signal import (
+from intergrax.contracts.platform_problem_signal import (
     PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY,
 )
 

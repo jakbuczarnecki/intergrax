@@ -174,6 +174,7 @@ def test_revision_loop_is_legal() -> None:
         (DecisionLifecycleStage.PROPOSAL, DecisionLifecycleStage.RESOLUTION),
         (DecisionLifecycleStage.DELIBERATION, DecisionLifecycleStage.REVISION),
         (DecisionLifecycleStage.REVISION, DecisionLifecycleStage.RESOLUTION),
+        (DecisionLifecycleStage.ADJUDICATION, DecisionLifecycleStage.TERMINAL),
         (DecisionLifecycleStage.RESOLUTION, DecisionLifecycleStage.VERIFICATION),
         (DecisionLifecycleStage.FINALIZATION, DecisionLifecycleStage.PROPOSAL),
         (DecisionLifecycleStage.TERMINAL, DecisionLifecycleStage.PROPOSAL),

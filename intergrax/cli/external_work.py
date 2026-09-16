@@ -323,17 +323,20 @@ def _retry_attestation(store: Path, execution_id: str, *, demo_key: bool) -> int
     GovernedExternalWorkOrchestrator = importlib.import_module(
         "governed_contractor_application.host.orchestrator"
     ).GovernedExternalWorkOrchestrator
-    FilesystemHostStore = importlib.import_module(
-        "governed_contractor_application.host.stores"
-    ).FilesystemHostStore
+    _stores_mod = importlib.import_module("governed_contractor_application.host.stores")
+    FilesystemHostStore = _stores_mod.FilesystemHostStore
+    InMemoryProviderInvocationStore = _stores_mod.InMemoryProviderInvocationStore
     from intergrax.contracts.external_work_provider_capabilities import (
         quote_first_partner_capability_fixture,
     )
     from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
         RuntimePolicyBundleEvaluator,
     )
-    from applications.governed_contractor_application.host.collaborative_work_boundary import (
-        build_external_work_authorization_boundary,
+    from applications.governed_contractor_application.host.collaborative_work_local_fixture import (
+        build_seeded_in_memory_external_work_authorization_boundary,
+    )
+    from intergrax.runtime.governance.decision_requirement_policy import (
+        PermissiveDecisionRequirementPolicy,
     )
 
     attestor = _resolve_retry_attestor(store=store, demo_key=demo_key)
@@ -346,11 +349,12 @@ def _retry_attestation(store: Path, execution_id: str, *, demo_key: bool) -> int
     if persisted is not None:
         bundle = persisted
     policy = RuntimePolicyBundleEvaluator(bundle)
-    authorization_boundary = build_external_work_authorization_boundary(
+    authorization_boundary = build_seeded_in_memory_external_work_authorization_boundary(
         policy,
         tenant_id="offline-demo-tenant",
         workspace_id="workspace-a",
         principal_id="offline-demo-user",
+        decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
     )
     # RefuseProvider ensures retry cannot execute side effects even if miswired.
     orch = GovernedExternalWorkOrchestrator(
@@ -365,6 +369,7 @@ def _retry_attestation(store: Path, execution_id: str, *, demo_key: bool) -> int
         receipt_store=fs,
         bundle_store=fs,
         continuation_store=fs,
+        provider_invocation_store=InMemoryProviderInvocationStore(),
     )
     try:
         step = orch.retry_attestation(execution_id)

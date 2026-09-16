@@ -17,7 +17,6 @@ _CONTRACTS_ROOT = _REPO_ROOT / "intergrax" / "contracts"
 # Documented deferred migrations — see LAYER_BOUNDARY_HARDENING.md
 _ALLOWLISTED_RUNTIME_IMPORTS: frozenset[str] = frozenset(
     {
-        "intergrax/contracts/execution_evidence/persistence_port.py",
         "intergrax/contracts/host_profile_slices.py",
         "intergrax/contracts/runtime_cost.py",
         "intergrax/contracts/runtime_execution_context.py",

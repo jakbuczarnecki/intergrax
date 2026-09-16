@@ -25,6 +25,7 @@ from intergrax.contracts.execution_continuation import (
     ExecutionContinuationResolutionCommand,
     ExecutionHumanVerdict,
     PendingExecutionContinuation,
+    execution_continuation_resolution_command_for_pending_human_verdict,
 )
 from intergrax.contracts.execution_continuation_projection import (
     ExecutionContinuationCanonicalProjectionApplyError,
@@ -443,6 +444,27 @@ class HumanPauseCoordinator:
         response_text: str | None = None,
     ) -> PendingExecutionContinuation:
         """Validate input, canonical ``apply_resolution``, then Task projection."""
+        gov = task.runtime.governance
+        human_request = gov.human_request
+        if human_request is None:
+            raise HumanApprovalResolutionError("human_request required for canonical resolution")
+        governed = human_request.governed_continuation
+        continuation_id = (
+            governed.continuation_request_id
+            if governed is not None
+            else f"gcr_hr_{human_request.request_id}"
+        )
+        pending = continuation.get_pending(
+            ExecutionContinuationLookup(continuation_id=continuation_id),
+        )
+        if pending.governed_correlation is not None:
+            gov.human_request = human_request.model_copy(
+                update={"governed_continuation": pending.governed_correlation},
+            )
+        elif human_request.governed_continuation is None:
+            raise HumanApprovalResolutionError(
+                "governed continuation correlation required for canonical resolution",
+            )
         active_pause_id, active_request_id, resolved_attempt, resolved_execution = (
             HumanPauseCoordinator._validate_human_response_inputs(
                 task,
@@ -455,17 +477,15 @@ class HumanPauseCoordinator:
                 require_unresolved_hitl=True,
             )
         )
-        gov = task.runtime.governance
         governed = (
             gov.human_request.governed_continuation if gov.human_request is not None else None
         )
         if governed is None:
+            governed = pending.governed_correlation
+        if governed is None:
             raise HumanApprovalResolutionError(
                 "governed continuation correlation required for canonical resolution",
             )
-        pending = continuation.get_pending(
-            ExecutionContinuationLookup(continuation_id=governed.continuation_request_id),
-        )
         HumanPauseCoordinator._validate_human_response_against_pending(
             pending,
             pause_id=active_pause_id,
@@ -484,17 +504,11 @@ class HumanPauseCoordinator:
             raise HumanApprovalResolutionError(
                 "canonical pending pause_id and human_request_id required",
             )
-        command = ExecutionContinuationResolutionCommand(
-            continuation_id=pending.continuation_id,
-            identity=pending.identity,
-            expected_revision=pending.revision,
+        command = execution_continuation_resolution_command_for_pending_human_verdict(
+            pending,
             verdict=execution_verdict,
             approver=approver,
             human_request_id=pending.human_request_id,
-            pause_id=pending.pause_id,
-            operation_id=correlation.operation_id,
-            side_effect_scope_id=correlation.side_effect_scope_id,
-            side_effect_scope_digest=correlation.side_effect_scope_digest,
             resolved_at=datetime.now(timezone.utc).isoformat(),
         )
         updated = continuation.apply_resolution(command)

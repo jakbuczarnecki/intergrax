@@ -19,7 +19,12 @@ SCHEMA_CAPABILITY_PROVENANCE_V1: Final = "capability_provenance.v1"
 
 
 class CapabilityProvenance(BaseModel):
-    """Optional provenance fields — absent domain data stays absent (no empty masking)."""
+    """Release and integrity facts bound to a catalog row (not discovery uniqueness).
+
+    ``publisher``, ``version_label``, ``content_digest``, and ``package_reference``
+    describe the exact release surfaced for a source-qualified logical identity.
+    They do not partition Stage-3 discovery or federation merge identity.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 

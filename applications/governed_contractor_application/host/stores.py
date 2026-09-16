@@ -11,6 +11,16 @@ from typing import Protocol, runtime_checkable
 from intergrax.contracts.execution_evidence.receipt import ProofReceipt
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.governed_execution_result import GovernedExecutionResult
+from intergrax.contracts.provider_invocation import (
+    ProviderInvocation,
+    ProviderInvocationOutcome,
+)
+from intergrax.contracts.provider_invocation_store import (
+    ProviderInvocationConflictError,
+    ProviderInvocationOutcomeConflictError,
+    provider_invocation_outcomes_equivalent,
+    provider_invocations_equivalent,
+)
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
 from governed_contractor_application.host.lifecycle_states import (
     GovernedExternalWorkHostState,
@@ -114,6 +124,44 @@ class InMemoryPolicyBundleArtifactStore:
         version: str,
     ) -> ImmutableRuntimePolicyBundle | None:
         return self._bundles.get((bundle_id, version))
+
+
+class InMemoryProviderInvocationStore:
+    """Test/demo fixture — not for production composition."""
+
+    def __init__(self) -> None:
+        self._invocations: dict[str, ProviderInvocation] = {}
+        self._outcomes: dict[str, ProviderInvocationOutcome] = {}
+
+    @property
+    def is_durable(self) -> bool:
+        return False
+
+    def put_invocation(self, invocation: ProviderInvocation) -> None:
+        existing = self._invocations.get(invocation.invocation_id)
+        if existing is not None:
+            if not provider_invocations_equivalent(existing, invocation):
+                raise ProviderInvocationConflictError(
+                    f"provider invocation conflict:{invocation.invocation_id}",
+                )
+            return
+        self._invocations[invocation.invocation_id] = invocation
+
+    def get_invocation(self, invocation_id: str) -> ProviderInvocation | None:
+        return self._invocations.get(invocation_id)
+
+    def put_outcome(self, outcome: ProviderInvocationOutcome) -> None:
+        existing = self._outcomes.get(outcome.invocation_id)
+        if existing is not None:
+            if not provider_invocation_outcomes_equivalent(existing, outcome):
+                raise ProviderInvocationOutcomeConflictError(
+                    f"provider invocation outcome conflict:{outcome.invocation_id}",
+                )
+            return
+        self._outcomes[outcome.invocation_id] = outcome
+
+    def get_outcome(self, invocation_id: str) -> ProviderInvocationOutcome | None:
+        return self._outcomes.get(invocation_id)
 
 
 class InMemoryContinuationStateStore:

@@ -97,6 +97,9 @@ class FakeLLMAdapter(LLMAdapter):
         self._fixed_text = fixed_text
         self._fake_structured_data = fake_structured_data
 
+    def supports_strict_tool_argument_conformance(self) -> bool:
+        return True
+
     def generate_messages(
         self,
         messages: Sequence[ChatMessage],

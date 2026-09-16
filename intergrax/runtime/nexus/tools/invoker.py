@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import time
+from dataclasses import replace
 from concurrent.futures import Future as ConcurrentFuture
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from typing import TYPE_CHECKING, Optional, Protocol, Type, cast, runtime_checkable
@@ -44,6 +45,7 @@ from intergrax.runtime.policy.declarative_tool_authorization_gate import (
 )
 from intergrax.runtime.sandbox.isolation_gate import (
     SandboxIsolationAvailability,
+    overlay_invocation_sandbox_availability,
     require_sandbox_isolation,
 )
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
@@ -85,6 +87,19 @@ from intergrax.tools.execution_models import (
     ToolEffectCertainty,
     ToolExecutionRequest,
     ToolExecutionResult,
+)
+from intergrax.tools.invocation_wiring import (
+    DelegatingToolInvocationWiringResolver,
+    ToolInvocationWiringResolver,
+    ToolWiringResolutionError,
+    compose_effective_invocation_wiring,
+    ensure_tool_invocation_wiring,
+    validate_invocation_wiring,
+)
+from intergrax.tools.invocation_wiring_adapter import (
+    merge_invocation_into_handler_context,
+    registration_wiring_for_handler,
+    registration_wiring_view_for_handler,
 )
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolExecutor
@@ -139,6 +154,7 @@ class RuntimeToolInvoker:
         external_operation_store: ExternalOperationStateStore | None = None,
         external_operation_owner: ProcessLocalExternalOperationOwner | None = None,
         external_operation_cancellation_port: ExternalOperationCancellationPort | None = None,
+        invocation_wiring_resolver: ToolInvocationWiringResolver | None = None,
     ) -> None:
         from intergrax.runtime.nexus.tools.tool_operation_termination import (
             ToolExecutorTerminationPort,
@@ -162,6 +178,9 @@ class RuntimeToolInvoker:
         # preserves concurrent independent invocations (not max_workers=1).
         self._execution_pool = ThreadPoolExecutor()
         self._execution_pool_closed = False
+        self._invocation_wiring_resolver = (
+            invocation_wiring_resolver or DelegatingToolInvocationWiringResolver()
+        )
 
     def close(self) -> None:
         """Shut down admission boundary (when configured) and the execution pool."""
@@ -382,6 +401,20 @@ class RuntimeToolInvoker:
                 )
             else:
                 availability = self._sandbox_availability()
+            invocation_context = request.invocation_context
+            if invocation_context is not None and invocation_context.wiring_resolver is not None:
+                registered = self._registry.get(request.tool_id)
+                registration_view = registration_wiring_view_for_handler(registered.handler)
+                raw_invocation = invocation_context.wiring_resolver.resolve(
+                    tool_id=request.tool_id,
+                    invocation_context=invocation_context,
+                    registration_wiring=registration_view,
+                )
+                invocation = ensure_tool_invocation_wiring(raw_invocation)
+                availability = overlay_invocation_sandbox_availability(
+                    availability,
+                    sandbox_session=invocation.sandbox_session,
+                )
             try:
                 require_sandbox_isolation(
                     contract=contract,
@@ -726,6 +759,30 @@ class RuntimeToolInvoker:
                     agent_id=agent_id,
                 )
 
+            except ToolWiringResolutionError as exc:
+                msg = exc.message
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="tool_invocation_error",
+                    message="Tool invocation wiring unavailable.",
+                    level=TraceLevel.ERROR,
+                    payload=ToolInvocationErrorDiagV1(
+                        tool_id=contract.tool_id,
+                        step_id=str(request.step_id),
+                        error_code=RuntimeErrorCode.VALIDATION_ERROR,
+                        error_message=msg,
+                    ),
+                )
+                result = ToolExecutionResult.fail(RuntimeErrorCode.VALIDATION_ERROR, msg)
+                self._emit_boundary_event(
+                    state=state,
+                    agent_id=agent_id,
+                    contract=contract,
+                    request=request,
+                    result=result,
+                )
+                return result
+
             except DependencyConcurrencyPolicyMissingError:
                 raise
 
@@ -958,6 +1015,45 @@ class RuntimeToolInvoker:
             capabilities=TOOL_EXTERNAL_OPERATION_CAPABILITIES,
         )
 
+    def _apply_invocation_wiring(
+        self,
+        *,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> ToolExecutionRequest[BaseModel]:
+        if request.effective_wiring is not None:
+            return request
+        invocation_context = request.invocation_context
+        if invocation_context is None or invocation_context.wiring_resolver is None:
+            return request
+        registered = self._registry.get(request.tool_id)
+        registration_wiring = registration_wiring_for_handler(registered.handler)
+        registration_view = registration_wiring_view_for_handler(registered.handler)
+        try:
+            raw_invocation = self._invocation_wiring_resolver.resolve(
+                tool_id=request.tool_id,
+                invocation_context=invocation_context,
+                registration_wiring=registration_view,
+            )
+            invocation = ensure_tool_invocation_wiring(raw_invocation)
+        except ToolWiringResolutionError:
+            raise
+        except Exception as exc:
+            raise ToolWiringResolutionError(
+                "wiring_resolution_failed",
+                "tool invocation wiring resolution failed",
+            ) from exc
+        effective_invocation = compose_effective_invocation_wiring(
+            registration_view,
+            invocation,
+        )
+        validate_invocation_wiring(
+            contract.invocation_wiring_requirements,
+            effective_invocation,
+        )
+        effective = merge_invocation_into_handler_context(registration_wiring, invocation)
+        return replace(request, effective_wiring=effective)
+
     def _execute_once(
         self,
         state: "RuntimeState",
@@ -967,6 +1063,7 @@ class RuntimeToolInvoker:
         effect_boundary: _ExternalEffectBoundary | None = None,
         physical_attempt_sequence: int = 1,
     ) -> BaseModel:
+        request = self._apply_invocation_wiring(contract=contract, request=request)
         timeout_s = contract.timeout_ms / 1000.0
         dep_boundary = self._dependency_attempt_boundary
         ext_op = self._build_tool_external_operation_attempt(

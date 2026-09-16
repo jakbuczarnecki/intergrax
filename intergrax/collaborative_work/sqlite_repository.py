@@ -35,6 +35,7 @@ from intergrax.collaborative_work.repository import (
     CreateCollaborativeOperationPolicyProfileCommand,
     CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
+    CreateCollaborativeDecisionBindingCommand,
     CreateWorkItemCommand,
     CreateWorkItemExecutionLinkCommand,
     CreateWorkspaceMembershipCommand,
@@ -90,11 +91,20 @@ from intergrax.collaborative_work.serialization import (
     work_artifact_version_to_json,
     work_item_from_json,
     work_item_to_json,
+    collaborative_decision_binding_from_json,
+    collaborative_decision_binding_to_json,
     work_item_execution_link_from_json,
     work_item_execution_link_to_json,
     workspace_membership_from_json,
     workspace_membership_to_json,
 )
+from intergrax.contracts.collaborative_decision_binding import (
+    CollaborativeDecisionBinding,
+    CollaborativeDecisionBindingAlreadyExists,
+    CollaborativeDecisionBindingIdempotencyConflict,
+)
+from intergrax.contracts.decision_proposal_ref_wire import decision_proposal_ref_to_canonical_json
+from intergrax.contracts.decision_record import DecisionProposalRef
 from intergrax.contracts.collaborative_work import (
     Assignment,
     AuthorityDelegation,
@@ -281,6 +291,36 @@ class SQLiteCollaborativeWorkStore:
 
                 CREATE INDEX IF NOT EXISTS idx_execution_links_work_item
                     ON work_item_execution_links (tenant_id, workspace_id, work_item_id);
+
+                CREATE TABLE IF NOT EXISTS collaborative_decision_bindings (
+                    tenant_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    binding_id TEXT NOT NULL,
+                    work_item_id TEXT NOT NULL,
+                    decision_id TEXT NOT NULL,
+                    decision_identity_version INTEGER NOT NULL,
+                    lineage_version INTEGER NOT NULL,
+                    branch_id TEXT NOT NULL,
+                    decision_proposal_canonical TEXT NOT NULL,
+                    semantic_fingerprint TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    PRIMARY KEY (tenant_id, workspace_id, binding_id),
+                    UNIQUE (tenant_id, workspace_id, semantic_fingerprint)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_decision_bindings_work_item
+                    ON collaborative_decision_bindings (tenant_id, workspace_id, work_item_id);
+
+                CREATE INDEX IF NOT EXISTS idx_decision_bindings_proposal
+                    ON collaborative_decision_bindings (
+                        tenant_id,
+                        workspace_id,
+                        decision_id,
+                        decision_identity_version,
+                        lineage_version,
+                        branch_id,
+                        decision_proposal_canonical
+                    );
 
                 CREATE TABLE IF NOT EXISTS work_artifacts (
                     tenant_id TEXT NOT NULL,
@@ -2732,3 +2772,264 @@ class SQLiteArtifactPublicationRepository(_ArtifactPublicationIdempotencyMixin):
         ) is not None:
             return WorkArtifactVersionAlreadyExists("work artifact version already exists")
         return WorkArtifactAlreadyExists("work artifact already exists")
+
+
+def _decision_binding_sort_key(record: CollaborativeDecisionBinding) -> tuple[object, str]:
+    return (record.created_at, record.binding_id)
+
+
+def _decision_binding_proposal_columns(
+    proposal: DecisionProposalRef,
+) -> tuple[str, int, int, str, str]:
+    return (
+        str(proposal.identity.decision_id),
+        proposal.identity.version.value,
+        proposal.lineage_ref.version.value,
+        str(proposal.lineage_ref.branch_id),
+        decision_proposal_ref_to_canonical_json(proposal),
+    )
+
+
+class SQLiteCollaborativeDecisionBindingRepository(_IdempotencyMixin):
+    _entity_kind = "collaborative_decision_binding"
+
+    def __init__(self, store: SQLiteCollaborativeWorkStore) -> None:
+        self._store = store
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return _CAPABILITIES
+
+    def create(self, command: CreateCollaborativeDecisionBindingCommand) -> CollaborativeDecisionBinding:
+        semantic_fingerprint = command.semantic_fingerprint()
+        with self._store._lock:
+            self._store._ensure_open()
+            self._store.transaction().execute("BEGIN IMMEDIATE")
+            try:
+                if command.idempotency_key is not None:
+                    replay = self._replay_create(command)
+                    if replay is not None:
+                        self._store.transaction().commit()
+                        return replay
+
+                existing_semantic = self._get_by_semantic_in_transaction(
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    semantic_fingerprint=semantic_fingerprint,
+                )
+                if existing_semantic is not None:
+                    self._store.transaction().commit()
+                    return existing_semantic
+
+                existing = self._get_in_transaction(
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    binding_id=command.binding_id,
+                )
+                if existing is not None:
+                    raise CollaborativeDecisionBindingAlreadyExists("decision binding already exists")
+
+                record = CollaborativeDecisionBinding(
+                    binding_id=command.binding_id,
+                    tenant_id=command.tenant_id,
+                    workspace_id=command.workspace_id,
+                    work_item_id=command.work_item_id,
+                    work_artifact_version=command.work_artifact_version,
+                    decision_proposal=command.decision_proposal,
+                    created_by_principal_id=command.created_by_principal_id,
+                    created_at=command.created_at,
+                )
+                result_json = collaborative_decision_binding_to_json(record)
+                decision_id, identity_version, lineage_version, branch_id, proposal_canonical = (
+                    _decision_binding_proposal_columns(command.decision_proposal)
+                )
+                self._store.transaction().execute(
+                    """
+                    INSERT INTO collaborative_decision_bindings (
+                        tenant_id, workspace_id, binding_id, work_item_id,
+                        decision_id, decision_identity_version, lineage_version, branch_id,
+                        decision_proposal_canonical, semantic_fingerprint, record_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        record.tenant_id.strip(),
+                        record.workspace_id.strip(),
+                        record.binding_id.strip(),
+                        record.work_item_id.strip(),
+                        decision_id,
+                        identity_version,
+                        lineage_version,
+                        branch_id,
+                        proposal_canonical,
+                        semantic_fingerprint,
+                        result_json,
+                    ),
+                )
+                if command.idempotency_key is not None:
+                    self._store_idempotency(
+                        tenant_id=command.tenant_id,
+                        workspace_id=command.workspace_id,
+                        idempotency_key=command.idempotency_key,
+                        fingerprint=semantic_fingerprint,
+                        result_json=result_json,
+                    )
+                self._store.transaction().commit()
+                return record
+            except sqlite3.IntegrityError as exc:
+                self._store.transaction().rollback()
+                with self._store._lock:
+                    self._store._ensure_open()
+                    self._store.transaction().execute("BEGIN IMMEDIATE")
+                    try:
+                        replay_semantic = self._get_by_semantic_in_transaction(
+                            tenant_id=command.tenant_id,
+                            workspace_id=command.workspace_id,
+                            semantic_fingerprint=semantic_fingerprint,
+                        )
+                        if replay_semantic is not None:
+                            self._store.transaction().commit()
+                            return replay_semantic
+                        if command.idempotency_key is not None:
+                            replay = self._replay_create(command)
+                            if replay is not None:
+                                self._store.transaction().commit()
+                                return replay
+                    finally:
+                        self._store.transaction().rollback()
+                raise CollaborativeDecisionBindingAlreadyExists("decision binding already exists") from exc
+            except Exception:
+                self._store.transaction().rollback()
+                raise
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        binding_id: str,
+    ) -> CollaborativeDecisionBinding | None:
+        with self._store._lock:
+            self._store._ensure_open()
+            return self._get_in_transaction(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                binding_id=binding_id,
+            )
+
+    def list_for_work_item(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> tuple[CollaborativeDecisionBinding, ...]:
+        with self._store._lock:
+            self._store._ensure_open()
+            rows = self._store.transaction().execute(
+                """
+                SELECT record_json FROM collaborative_decision_bindings
+                WHERE tenant_id = ? AND workspace_id = ? AND work_item_id = ?
+                """,
+                (tenant_id.strip(), workspace_id.strip(), work_item_id.strip()),
+            ).fetchall()
+        records = [collaborative_decision_binding_from_json(row["record_json"]) for row in rows]
+        return tuple(sorted(records, key=_decision_binding_sort_key))
+
+    def list_for_decision_proposal(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        decision_proposal: DecisionProposalRef,
+    ) -> tuple[CollaborativeDecisionBinding, ...]:
+        decision_id, identity_version, lineage_version, branch_id, proposal_canonical = (
+            _decision_binding_proposal_columns(decision_proposal)
+        )
+        with self._store._lock:
+            self._store._ensure_open()
+            rows = self._store.transaction().execute(
+                """
+                SELECT record_json FROM collaborative_decision_bindings
+                WHERE tenant_id = ? AND workspace_id = ? AND decision_id = ?
+                  AND decision_identity_version = ? AND lineage_version = ? AND branch_id = ?
+                  AND decision_proposal_canonical = ?
+                """,
+                (
+                    tenant_id.strip(),
+                    workspace_id.strip(),
+                    decision_id,
+                    identity_version,
+                    lineage_version,
+                    branch_id,
+                    proposal_canonical,
+                ),
+            ).fetchall()
+        records = [collaborative_decision_binding_from_json(row["record_json"]) for row in rows]
+        filtered = [record for record in records if record.decision_proposal == decision_proposal]
+        return tuple(sorted(filtered, key=_decision_binding_sort_key))
+
+    def _get_by_semantic_in_transaction(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        semantic_fingerprint: str,
+    ) -> CollaborativeDecisionBinding | None:
+        row = self._store.transaction().execute(
+            """
+            SELECT record_json FROM collaborative_decision_bindings
+            WHERE tenant_id = ? AND workspace_id = ? AND semantic_fingerprint = ?
+            """,
+            (tenant_id.strip(), workspace_id.strip(), semantic_fingerprint),
+        ).fetchone()
+        if row is None:
+            return None
+        return collaborative_decision_binding_from_json(row["record_json"])
+
+    def _get_in_transaction(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        binding_id: str,
+    ) -> CollaborativeDecisionBinding | None:
+        row = self._store.transaction().execute(
+            """
+            SELECT record_json FROM collaborative_decision_bindings
+            WHERE tenant_id = ? AND workspace_id = ? AND binding_id = ?
+            """,
+            (tenant_id.strip(), workspace_id.strip(), binding_id.strip()),
+        ).fetchone()
+        if row is None:
+            return None
+        record = collaborative_decision_binding_from_json(row["record_json"])
+        if not _scope_matches_tenant_workspace(
+            record.tenant_id,
+            record.workspace_id,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ):
+            return None
+        if record.binding_id.strip() != binding_id.strip():
+            return None
+        return record
+
+    def _replay_create(
+        self,
+        command: CreateCollaborativeDecisionBindingCommand,
+    ) -> CollaborativeDecisionBinding | None:
+        assert command.idempotency_key is not None
+        loaded = self._load_idempotency(
+            tenant_id=command.tenant_id,
+            workspace_id=command.workspace_id,
+            idempotency_key=command.idempotency_key,
+            decode=collaborative_decision_binding_from_json,
+        )
+        if loaded is None:
+            return None
+        fingerprint, record = loaded
+        if fingerprint != command.semantic_fingerprint():
+            raise CollaborativeDecisionBindingIdempotencyConflict(
+                "decision binding idempotency key conflict",
+            )
+        return record

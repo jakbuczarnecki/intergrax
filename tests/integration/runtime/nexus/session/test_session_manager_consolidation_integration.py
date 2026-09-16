@@ -9,6 +9,7 @@ import json
 import pytest
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.applications._shared.memory_control_wiring import build_default_memory_control_plane
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
@@ -49,6 +50,9 @@ def _build_manager(
     consolidation_interval: int,
 ) -> SessionManager:
     profile_manager = UserProfileManager(profile_store, tenant_id=tenant_id)
+    memory_control_plane = build_default_memory_control_plane(
+        user_profile_manager=profile_manager,
+    )
     instructions = UserProfileInstructionsService(
         llm=FakeLLMAdapter(fixed_text="instructions"),
         manager=profile_manager,
@@ -57,6 +61,7 @@ def _build_manager(
         llm=FakeLLMAdapter(fixed_text=_consolidation_payload()),
         profile_manager=profile_manager,
         instructions_service=instructions,
+        memory_control_plane=memory_control_plane,
         config=SessionMemoryConsolidationConfig(
             regenerate_system_instructions=False,
             include_session_summary=False,

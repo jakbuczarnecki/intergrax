@@ -81,12 +81,18 @@ class _HostedSecurityBackend:
         return SandboxArtifact(artifact_id="artifact-1")
 
     def security_capabilities(self) -> SandboxSecurityCapabilities:
+        from intergrax.runtime.sandbox.execution_environment import FilesystemAccess, ProcessExecution
+
         return SandboxSecurityCapabilities(
             isolation_tier="cloud",
             provider_id=self._provider_id,
             network_egress_deny_enforced=self._network_egress_deny_enforced,
             network_egress_allowlist_enforced=self._network_egress_allowlist_enforced,
             enforced_network_hosts=self._enforced_network_hosts,
+            supports_sandboxed_exec=True,
+            supports_workspace_write=True,
+            filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
+            process_execution=ProcessExecution.SANDBOXED,
         )
 
 

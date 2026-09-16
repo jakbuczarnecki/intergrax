@@ -27,10 +27,15 @@ from intergrax.agent_distribution.agent_project_metadata import AgentProjectMeta
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
+    CatalogPackageResolution,
     CatalogProviderKind,
     CatalogSourceIdentity,
     CatalogSourceProvider,
 )
+from intergrax.agent_distribution.dynamic_acquisition import (
+    DynamicAgentAcquisitionResolutionError,
+)
+from intergrax.agent_distribution.identity import AgentPackageCandidate
 from intergrax.agent_distribution.control_plane_governance import (
     StaticApplicationEnvironmentTenantResolver,
 )
@@ -121,6 +126,11 @@ from testing_support.canonical_lifecycle_ping_agent import (
     CANONICAL_PING_CAPABILITY,
     CANONICAL_PING_CONTRACT_ID,
 )
+from testing_support.canonical_me16_mixed_agent import (
+    ME16_MIXED_CAPABILITY,
+    ME16_MIXED_CONTRACT_ID,
+    ME16_MIXED_TASK_INPUT,
+)
 from testing_support.agent_platform_admin_harness import (
     admin_test_principal,
     allow_mutation_boundary,
@@ -170,6 +180,25 @@ class CanonicalLifecycleProofConfig:
     capability: str = CANONICAL_PING_CAPABILITY
 
 
+def catalog_package_resolution_for_config(
+    *,
+    config: CanonicalLifecycleProofConfig,
+    entry: AgentCatalogEntry,
+    package_version: str,
+    package_digest: str | None = None,
+) -> CatalogPackageResolution:
+    digest = package_digest if package_digest is not None else config.package_digest
+    return CatalogPackageResolution(
+        entry=entry,
+        package_candidate=AgentPackageCandidate(
+            distribution_package_id=config.distribution_package_id,
+            package_version=package_version,
+            package_digest=digest,
+        ),
+        artifact_locator=f"store://artifacts/{config.installation_id}",
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class CanonicalLifecycleProofResult:
     catalog_source_id: str
@@ -197,8 +226,14 @@ class _MetadataProvider:
 
 
 class _StaticCatalogProvider:
-    def __init__(self, entries: tuple[AgentCatalogEntry, ...]) -> None:
+    def __init__(
+        self,
+        entries: tuple[AgentCatalogEntry, ...],
+        *,
+        resolutions_by_version: dict[str, CatalogPackageResolution],
+    ) -> None:
         self._entries = entries
+        self._resolutions_by_version = dict(resolutions_by_version)
 
     @property
     def catalog_source_id(self) -> str:
@@ -210,9 +245,30 @@ class _StaticCatalogProvider:
 
     def resolve_package(
         self, entry: AgentCatalogEntry, *, version_selector: str
-    ) -> object:
-        del entry, version_selector
-        raise NotImplementedError
+    ) -> CatalogPackageResolution:
+        matched = next(
+            (item for item in self._entries if item.catalog_entry_id == entry.catalog_entry_id),
+            None,
+        )
+        if matched is None:
+            raise DynamicAgentAcquisitionResolutionError(
+                "catalog entry is not published by this provider",
+            )
+        resolution = self._resolutions_by_version.get(version_selector)
+        if resolution is None:
+            raise DynamicAgentAcquisitionResolutionError(
+                f"catalog provider has no resolution for version {version_selector!r}",
+            )
+        if resolution.entry.catalog_entry_id != entry.catalog_entry_id:
+            raise DynamicAgentAcquisitionResolutionError(
+                "resolved catalog entry id does not match requested entry",
+            )
+        return resolution
+
+    def register_resolution(self, resolution: CatalogPackageResolution) -> None:
+        """Test seam: add alternate exact release resolutions without replacing provider."""
+        version = resolution.package_candidate.package_version
+        self._resolutions_by_version[version] = resolution
 
     def health(self) -> None:
         return None
@@ -246,15 +302,22 @@ def _build_application_composition(
     catalog_provider: CatalogSourceProvider,
     metadata_provider: _MetadataProvider,
 ) -> AgentCapabilityApplicationComposition:
+    capability_rule = (
+        build_task_capability_rule(
+            rule_id="rule.me16.mixed.v1",
+            task_kind=ME16_MIXED_CAPABILITY,
+            required=(ME16_MIXED_CAPABILITY,),
+        )
+        if config.capability == ME16_MIXED_CAPABILITY
+        else build_task_capability_rule(
+            rule_id="rule.canonical.ping.v1",
+            task_kind="canonical.ping",
+            required=(CANONICAL_PING_CAPABILITY,),
+        )
+    )
     return AgentCapabilityApplicationComposition(
         capability_resolver=build_deterministic_task_capability_resolver(
-            rules=(
-                build_task_capability_rule(
-                    rule_id="rule.canonical.ping.v1",
-                    task_kind="canonical.ping",
-                    required=(CANONICAL_PING_CAPABILITY,),
-                ),
-            ),
+            rules=(capability_rule,),
         ),
         catalog_providers=(catalog_provider,),
         package_metadata_refs={config.distribution_package_id: config.metadata_ref},
@@ -317,6 +380,16 @@ class _LifecycleVenvBundleMaterializer:
                 continue
             module_name, function_name = factory_reference.factory_path.rsplit(".", 1)
             relative_module = module_name.removeprefix("example_agent.")
+            if entry.logical_agent_id == ME16_MIXED_CONTRACT_ID:
+                from testing_support.me16_materialized_agent_source import (
+                    render_me16_materialized_agent_module,
+                )
+
+                (package_dir / f"{relative_module}.py").write_text(
+                    render_me16_materialized_agent_module(function_name=function_name),
+                    encoding="utf-8",
+                )
+                continue
             (package_dir / f"{relative_module}.py").write_text(
                 textwrap.dedent(
                     f"""
@@ -469,6 +542,35 @@ class _LifecycleVenvBundleMaterializer:
         )
 
 
+def me16_mixed_lifecycle_proof_config(
+    *,
+    catalog_provider_kind: CatalogProviderKind = CatalogProviderKind.BUILTIN,
+    catalog_source_id: str = "builtin-me16",
+) -> CanonicalLifecycleProofConfig:
+    return CanonicalLifecycleProofConfig(
+        application_id="me16_mixed_app",
+        environment_id="env_me16_mixed",
+        logical_agent_id=ME16_MIXED_CONTRACT_ID,
+        catalog_source_id=catalog_source_id,
+        catalog_entry_id="cat-me16-mixed",
+        catalog_provider_kind=catalog_provider_kind,
+        distribution_package_id="intergrax-me16-mixed-worker",
+        package_version="1.0.0",
+        package_digest=_DEFAULT_DIGEST,
+        installation_slot_id="slot-me16-mixed",
+        application_binding_id="bind-me16-mixed",
+        installation_id="inst-me16-mixed",
+        metadata_ref="meta://me16-mixed",
+        factory_reference=AgentBindingFactoryReference(
+            factory_path="example_agent.factory.build_me16_mixed_agent",
+        ),
+        revision_id="rev-me16-mixed",
+        test_input=ME16_MIXED_TASK_INPUT,
+        expected_output="",
+        capability=ME16_MIXED_CAPABILITY,
+    )
+
+
 def default_stage15_proof_config(
     *,
     catalog_provider_kind: CatalogProviderKind = CatalogProviderKind.BUILTIN,
@@ -532,7 +634,16 @@ class CanonicalAgentLifecycleProofStack:
             display_name="Canonical Ping",
             package_id_line=resolved.distribution_package_id,
         )
-        catalog_provider = _StaticCatalogProvider((catalog_entry,))
+        catalog_provider = _StaticCatalogProvider(
+            (catalog_entry,),
+            resolutions_by_version={
+                resolved.package_version: catalog_package_resolution_for_config(
+                    config=resolved,
+                    entry=catalog_entry,
+                    package_version=resolved.package_version,
+                ),
+            },
+        )
         metadata_provider = _MetadataProvider(
             {
                 resolved.metadata_ref: AgentProjectMetadata(
@@ -560,11 +671,14 @@ class CanonicalAgentLifecycleProofStack:
             agent_platform_runtime=base_composition.agent_platform_runtime,
             agent_capability_runtime=capability_runtime,
         )
-        governance = build_reference_production_control_plane_governance(environment)
+        governance = build_reference_production_control_plane_governance(
+            environment,
+            tenant_id="tenant-test",
+        )
         launcher = ReferenceProductionLifecycleLauncher(
             composition,
             services=lifecycle_services,
-            mutation_authorization_boundary=governance.mutation_authorization_boundary,
+            mutation_authorization_boundary=allow_mutation_boundary(),
             environment_tenant_resolver=governance.environment_tenant_resolver,
         )
         state = composition.agent_platform_runtime.distribution_state
@@ -825,6 +939,7 @@ class CanonicalAgentLifecycleProofStack:
         host_runtime = build_harness_host_runtime(
             self.manifest,
             self.environment,
+            tenant_id="tenant-test",
             registry_projection=projection,
             trace_db_path=self.runtime_root / "trace.db",
             runtime_events_db_path=self.runtime_root / "runtime_events.db",
@@ -853,7 +968,6 @@ class CanonicalAgentLifecycleProofStack:
         roster = self.inspect_effective_roster()
         built = self.build_revision()
         traffic_revision_id = self.register_projection_and_activate(built)
-        projection = self.resolve_serving_projection()
         registry = self.resolve_registry_read()
         assert isinstance(registry, AgentRegistryRead)
         assert registry.has(self.config.logical_agent_id)
@@ -894,5 +1008,6 @@ __all__ = [
     "CanonicalAgentLifecycleProofStack",
     "CanonicalLifecycleProofConfig",
     "CanonicalLifecycleProofResult",
+    "catalog_package_resolution_for_config",
     "default_stage15_proof_config",
 ]

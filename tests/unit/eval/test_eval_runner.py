@@ -20,6 +20,8 @@ from intergrax.runtime.replay.models import (
 
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 
+from testing_support.builder import build_runtime_request_for_tests
+
 pytestmark = pytest.mark.unit
 
 
@@ -88,7 +90,8 @@ async def test_run_case_success_exact_match():
         metrics_engine=metrics,
     )
 
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="eval-case-success",
         tenant_id="test-tenant",
         agent_id="agent",
         user_id="user",
@@ -138,7 +141,8 @@ async def test_run_case_failure_exact_mismatch():
         metrics_engine=metrics,
     )
 
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="eval-case-mismatch",
         tenant_id="test-tenant",
         agent_id="agent",
         user_id="user",
@@ -191,7 +195,8 @@ async def test_run_case_missing_run_id():
         metrics_engine=metrics,
     )
 
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="eval-case-missing-run-id",
         tenant_id="test-tenant",
         agent_id="agent",
         user_id="user",

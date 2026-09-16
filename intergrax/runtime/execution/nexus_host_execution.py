@@ -52,6 +52,7 @@ def build_host_task_execution(
         ),
         _root_authority_admission=root_authority_admission,
         _continuation_state_store=wire_execution_continuation_state_store(),
+        _declarative_tool_invoker=nexus_loop.declarative_tool_invoker,
     )
 
 

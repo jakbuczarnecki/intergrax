@@ -450,11 +450,15 @@ class SessionManager:
         top_k: int | None = None,
         score_threshold: float | None = None,
         include_cross_session: bool | None = None,
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, str | float]]:
         """Semantic search over episodic session turn index (MEM-VEC-2.3)."""
         if not self._session_turn_index_enabled or self._session_turn_index_store is None:
             return []
-        return await self._session_turn_index_store.search_turns(
+        from intergrax.memory.session_turn_index_recall_metadata import (
+            session_turn_index_hits_as_recall_metadata,
+        )
+
+        hits = await self._session_turn_index_store.search_turns(
             query=query,
             tenant_id=tenant_id,
             session_id=session_id,
@@ -471,6 +475,7 @@ class SessionManager:
                 else include_cross_session
             ),
         )
+        return session_turn_index_hits_as_recall_metadata(hits)
 
     @property
     def user_profile_manager(self) -> UserProfileManager | None:

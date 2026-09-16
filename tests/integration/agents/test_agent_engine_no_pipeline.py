@@ -16,6 +16,7 @@ from testing_support.builder import (
     build_fake_embedding_manager,
     build_in_memory_session_manager,
     build_in_memory_vectorstore_manager,
+    build_runtime_request_for_tests,
 )
 
 
@@ -49,12 +50,13 @@ async def test_agent_engine_without_pipeline_rejects_legacy_path():
     agent = NoPipelineAgent()
     engine = AgentEngine({"test": agent})
 
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="no-pipeline-reject",
         tenant_id="t1",
         user_id="u1",
         session_id="s1",
         agent_id="test",
-        message="hello"
+        message="hello",
     )
 
     with pytest.raises(ValueError, match="ACP-CLOSE-LEG-5"):

@@ -42,6 +42,7 @@ from intergrax.tools.providers.workspace.service import (
     WORKSPACE_SNAPSHOT_TOOL_ID,
     WORKSPACE_WRITE_FILE_TOOL_ID,
 )
+from intergrax.tools.providers.invocation_requirements import REQUIRE_SHADOW_WORKSPACE
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -72,6 +73,7 @@ def register_workspace_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             category="workspace",
             risk_level=ToolRiskLevel.MEDIUM,
             tags=("workspace", "shadow", "filesystem"),
+            invocation_wiring_requirements=REQUIRE_SHADOW_WORKSPACE,
         ),
         WorkspaceWriteFileHandler(ctx),
     )
@@ -88,6 +90,7 @@ def register_workspace_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             category="workspace",
             risk_level=ToolRiskLevel.LOW,
             tags=("workspace", "shadow", "filesystem"),
+            invocation_wiring_requirements=REQUIRE_SHADOW_WORKSPACE,
         ),
         WorkspaceReadFileHandler(ctx),
     )
@@ -104,6 +107,7 @@ def register_workspace_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             category="workspace",
             risk_level=ToolRiskLevel.LOW,
             tags=("workspace", "shadow", "filesystem"),
+            invocation_wiring_requirements=REQUIRE_SHADOW_WORKSPACE,
         ),
         WorkspaceListFilesHandler(ctx),
     )
@@ -120,6 +124,7 @@ def register_workspace_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             category="workspace",
             risk_level=ToolRiskLevel.LOW,
             tags=("workspace", "shadow", "snapshot"),
+            invocation_wiring_requirements=REQUIRE_SHADOW_WORKSPACE,
         ),
         WorkspaceSnapshotHandler(ctx),
     )
@@ -136,6 +141,7 @@ def register_workspace_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> 
             category="workspace",
             risk_level=ToolRiskLevel.MEDIUM,
             tags=("workspace", "shadow", "filesystem"),
+            invocation_wiring_requirements=REQUIRE_SHADOW_WORKSPACE,
         ),
         WorkspaceDeleteFileHandler(ctx),
     )

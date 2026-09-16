@@ -11,6 +11,7 @@ from typing import Callable, ClassVar, Generic
 from pydantic import BaseModel
 
 from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.invocation_wiring_adapter import effective_wiring_for_request
 from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.tool_executor import InModelT, OutModelT
 
@@ -27,6 +28,11 @@ class WiringContextToolHandler(ABC, Generic[InModelT, OutModelT]):
 
     def __init__(self, ctx: ToolWiringContext) -> None:
         self._ctx = ctx
+
+    @property
+    def registration_wiring(self) -> ToolWiringContext:
+        """Immutable registration-time wiring (explicit cross-layer read seam)."""
+        return self._ctx
 
     @abstractmethod
     def execute(self, request: ToolExecutionRequest[InModelT]) -> OutModelT:
@@ -47,4 +53,5 @@ class ServiceToolHandler(WiringContextToolHandler[InModelT, OutModelT]):
 
     def execute(self, request: ToolExecutionRequest[InModelT]) -> OutModelT:
         service = type(self)._service
-        return service(self._ctx, request.input)
+        ctx = effective_wiring_for_request(request, self._ctx)
+        return service(ctx, request.input)

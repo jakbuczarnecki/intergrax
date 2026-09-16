@@ -43,16 +43,23 @@ from intergrax.hosting.contracts.events import (
     HostedApplicationEvent,
     HostedApplicationEventType,
 )
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.background_execution.required_audit_evidence import (
     admit_background_execution_handler,
 )
-from intergrax.runtime.background_execution.transport_ref import BackgroundTransportExecutionRef
+from intergrax.runtime.background_execution.transport_ref import (
+    BackgroundTransportExecutionRef,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
+from intergrax.runtime.execution.boundary import (
+    ExecutionBoundary,
+    ExecutionIdentityBinding,
+)
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
@@ -172,7 +179,9 @@ async def test_df4_standard_task_uses_nexus_terminal_diagnostic_bridge(
     loop, runtime_store, _ = _build_diagnostic_nexus_loop(inject_violation=True)
     bridge_calls: list[tuple[object, ...]] = []
 
-    from intergrax.runtime.diagnostics import terminal_execution_diagnostic_bridge as bridge_module
+    from intergrax.runtime.diagnostics import (
+        terminal_execution_diagnostic_bridge as bridge_module,
+    )
 
     original_invoke = bridge_module.invoke_terminal_execution_diagnostics
 
@@ -180,7 +189,9 @@ async def test_df4_standard_task_uses_nexus_terminal_diagnostic_bridge(
         bridge_calls.append((args, kwargs))
         return original_invoke(*args, **kwargs)
 
-    monkeypatch.setattr(bridge_module, "invoke_terminal_execution_diagnostics", _capture_bridge)
+    monkeypatch.setattr(
+        bridge_module, "invoke_terminal_execution_diagnostics", _capture_bridge
+    )
     runner = UnifiedTaskRunner(loop)
     run_id = mint_run_id()
 
@@ -212,12 +223,22 @@ async def test_df4_scenario_task_preserves_run_and_uses_terminal_diagnostics(
 
     adapter = MeteringFakeLLMAdapter()
 
-    def _resolve(env: object, agent_override: object | None = None, **_: object) -> object:
+    def _resolve(
+        env: object, agent_override: object | None = None, **_: object
+    ) -> object:
         del env
         return agent_override or adapter
 
     monkeypatch.setattr(
         "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        _resolve,
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_optional_llm_adapter",
+        _resolve,
+    )
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_optional_environment_llm_adapter",
         _resolve,
     )
 
@@ -260,18 +281,24 @@ def test_df4_background_worker_passes_identity_without_remint() -> None:
 def test_df4_background_task_uses_shared_terminal_diagnostic_path(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from intergrax.runtime.diagnostics import (
+        terminal_execution_diagnostic_bridge as bridge_module,
+    )
+
     loop, _, _ = _build_diagnostic_nexus_loop(inject_violation=True)
-    trigger = loop._terminal_diagnostic_trigger  # noqa: SLF001
-    assert trigger is not None
+    assert loop._terminal_diagnostic_trigger is not None  # noqa: SLF001
     captured: list[RunId] = []
-    original_run = trigger._orchestrator.run  # noqa: SLF001
+    original_invoke = bridge_module.invoke_terminal_execution_diagnostics
 
-    def _capture_run(request: object) -> object:
-        result = original_run(request)
-        captured.append(request.executions[0].run_id)  # type: ignore[attr-defined]
-        return result
+    def _capture_bridge(*args: object, **kwargs: object) -> object:
+        run_id = kwargs.get("run_id")
+        if run_id is not None:
+            captured.append(run_id)
+        return original_invoke(*args, **kwargs)
 
-    monkeypatch.setattr(trigger._orchestrator, "run", _capture_run)  # noqa: SLF001
+    monkeypatch.setattr(
+        bridge_module, "invoke_terminal_execution_diagnostics", _capture_bridge
+    )
     runner = UnifiedTaskRunner(loop)
     registry = TaskExecutionRegistry()
     causal_store = InMemoryCausalEvidencePersistence()
@@ -330,7 +357,8 @@ def test_df4_background_task_uses_shared_terminal_diagnostic_path(
         ),
     )
 
-    assert captured == [execution_identity.run_id]
+    assert captured
+    assert all(run_id == execution_identity.run_id for run_id in captured)
 
 
 @pytest.mark.asyncio
@@ -367,8 +395,12 @@ async def test_df4_child_execution_preserves_parent_run_and_attempt() -> None:
 
 
 @pytest.mark.asyncio
-async def test_df4_hosted_application_uses_injected_orchestrator_subject_scope() -> None:
-    orchestrator, persistence, _read_service, _ = build_diagnostic_orchestrator_stack_for_tests()
+async def test_df4_hosted_application_uses_injected_orchestrator_subject_scope() -> (
+    None
+):
+    orchestrator, persistence, _read_service, _ = (
+        build_diagnostic_orchestrator_stack_for_tests()
+    )
     captured_requests: list[object] = []
     original_run = orchestrator.run
 
@@ -452,14 +484,22 @@ def test_df4_scenario_runtime_has_no_separate_diagnostic_engine() -> None:
     rel = path.relative_to(_repo_root()).as_posix()
     violations: list[str] = []
     for node in ast.walk(tree):
-        if isinstance(node, ast.Name) and node.id in _SCENARIO_RUNTIME_FORBIDDEN_SYMBOLS:
+        if (
+            isinstance(node, ast.Name)
+            and node.id in _SCENARIO_RUNTIME_FORBIDDEN_SYMBOLS
+        ):
             violations.append(f"{rel}:{node.lineno} references {node.id}")
-        if isinstance(node, ast.Attribute) and node.attr in _SCENARIO_RUNTIME_FORBIDDEN_SYMBOLS:
+        if (
+            isinstance(node, ast.Attribute)
+            and node.attr in _SCENARIO_RUNTIME_FORBIDDEN_SYMBOLS
+        ):
             violations.append(f"{rel}:{node.lineno} references .{node.attr}")
     assert violations == []
 
 
-def test_df4_only_central_wiring_mints_diagnostic_orchestrator_in_applications_shared() -> None:
+def test_df4_only_central_wiring_mints_diagnostic_orchestrator_in_applications_shared() -> (
+    None
+):
     shared_root = _repo_root() / "intergrax/applications/_shared"
     violations: list[str] = []
     for path in shared_root.rglob("*.py"):

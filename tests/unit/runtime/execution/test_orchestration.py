@@ -209,13 +209,21 @@ async def test_nexus_does_not_rebind_when_boundary_execution_id_active(
     bind_calls: list[tuple[RunId, AttemptId]] = []
     original_bind = boundary_module.bind_active_execution_identity
 
-    def _spy_bind(*, run_id: RunId, attempt_id: AttemptId, execution_id=None, parent_execution_id=None):
+    def _spy_bind(
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        execution_id=None,
+        parent_execution_id=None,
+        task_id=None,
+    ):
         bind_calls.append((run_id, attempt_id))
         return original_bind(
             run_id=run_id,
             attempt_id=attempt_id,
             execution_id=execution_id,
             parent_execution_id=parent_execution_id,
+            task_id=task_id,
         )
 
     monkeypatch.setattr(boundary_module, "bind_active_execution_identity", _spy_bind)

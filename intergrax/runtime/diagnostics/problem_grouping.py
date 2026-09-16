@@ -37,7 +37,7 @@ from intergrax.runtime.diagnostics.signal_diagnostic_assessment import (
     SignalDiagnosticAssessment,
     SignalDiagnosticFinding,
 )
-from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
+from intergrax.contracts.platform_problem_signal import PlatformProblemSignal
 
 if TYPE_CHECKING:
     from intergrax.runtime.diagnostics.problem_grouping_features import (

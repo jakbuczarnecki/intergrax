@@ -14,9 +14,14 @@ from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.llm_adapters.routing import BudgetBelowRule, LLMRoutingProfile, RoutingContext
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from lab_application.host.settings import LabApplicationSettings
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_request_for_tests,
+    canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
+)
 
 
 @pytest.mark.integration
@@ -56,13 +61,20 @@ def test_production_metering_mid_run_budget_swap_with_tracker(
         lambda _env, _profile, hint=None: inner_primary,
     )
 
-    request = RuntimeRequest(
+    meter_seed = "routing-prod-meter"
+    meter_run_id = str(canonical_run_id_for_tests(meter_seed))
+    request = build_runtime_request_for_tests(
+        seed=meter_seed,
         agent_id="lab-agent",
         user_id="user-1",
         session_id="sess-1",
         tenant_id="lab-tenant",
         message="hello",
-        metadata={"task_class": "lab_routing", "agent_id": "lab-agent", "run_id": "run-prod-meter"},
+        metadata={
+            "task_class": "lab_routing",
+            "agent_id": "lab-agent",
+            "run_id": meter_run_id,
+        },
     )
     config = materialize_runtime_config(
         request,
@@ -77,20 +89,21 @@ def test_production_metering_mid_run_budget_swap_with_tracker(
         config=config,
         session_manager=build_in_memory_session_manager(),
     )
-    state = RuntimeState(context=runtime_context, request=request, run_id="run-prod-meter")
-    state.configure_llm_tracker()
+    state = RuntimeState(context=runtime_context, request=request, run_id=meter_run_id)
 
     ratio_holder = {"ratio": 0.9}
     evaluating = config.llm_adapter
     assert isinstance(evaluating, RoutingEvaluatingLLMAdapter)
     evaluating.set_context_provider(lambda: RoutingContext(budget_remaining_ratio=ratio_holder["ratio"]))
 
-    evaluating.generate_messages([ChatMessage(role="user", content="one")], run_id="run-prod-meter")
-    assert evaluating.model == "gpt-4o-mini"
+    with canonical_governed_execution_scope(meter_seed):
+        state.configure_llm_tracker()
+        evaluating.generate_messages([ChatMessage(role="user", content="one")], run_id=meter_run_id)
+        assert evaluating.model == "gpt-4o-mini"
 
-    ratio_holder["ratio"] = 0.1
-    evaluating.generate_messages([ChatMessage(role="user", content="two")], run_id="run-prod-meter")
-    assert evaluating.model == "meta-llama/Llama-3.1-8B"
+        ratio_holder["ratio"] = 0.1
+        evaluating.generate_messages([ChatMessage(role="user", content="two")], run_id=meter_run_id)
+        assert evaluating.model == "meta-llama/Llama-3.1-8B"
 
     report = state.llm_usage_tracker.build_report() if state.llm_usage_tracker else None
     assert report is not None

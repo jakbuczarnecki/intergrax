@@ -10,7 +10,7 @@ from intergrax.hosting.contracts.events import (
     HostedApplicationEventType,
 )
 from intergrax.hosting.eventing import HostingObservabilityAttributes
-from intergrax.runtime.observability.problem_signal import (
+from intergrax.contracts.platform_problem_signal import (
     PROBLEM_KIND_PLATFORM_APPLICATION_FAILURE,
     PROBLEM_SEVERITY_CRITICAL,
     PROBLEM_SEVERITY_ERROR,

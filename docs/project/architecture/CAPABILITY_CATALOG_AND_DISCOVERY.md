@@ -274,6 +274,7 @@ Private sources ─┤
 - **Provenance** — publisher, package identity, version or digest where the domain defines them.
 - **Read-only federation** — aggregation and query only; no write-through to registries.
 - **Deterministic conflict handling** — identity or evidence conflicts **fail closed**; no silent merge of incompatible candidates.
+- **One canonical release per discovery row** — within a federated snapshot, each source-qualified logical identity (`kind` + source + `logical_id`) maps to at most one `CapabilityCatalogEntry`; conflicting publisher/version/digest/package facts for the same discovery identity raise `CapabilityCatalogIdentityConflict`. The catalog is a discoverable snapshot, not a version history registry.
 
 Agent federation patterns (`FederatedAgentDiscoveryStrategy`, source-qualified `AgentDiscoveryCandidateIdentity`) are **reference implementations** for the Agent slice; Skill and Tool federation must follow the same principles without merging domain registries.
 

@@ -11,21 +11,36 @@ from pathlib import Path
 import pytest
 
 from intergrax.contracts.subtask_contract import SubtaskContract
-from intergrax.contracts.task_envelope_stream import TaskEnvelopeChunk, assemble_envelope_from_chunks
+from intergrax.contracts.task_envelope_stream import (
+    TaskEnvelopeChunk,
+    assemble_envelope_from_chunks,
+)
 from intergrax.contracts.partial_result_contract import PartialResultContract
-from intergrax.runtime.architecture.evaluation_scenario_loader import load_scenario_library
+from intergrax.runtime.architecture.evaluation_scenario_loader import (
+    load_scenario_library,
+)
 from intergrax.runtime.context.citation_chain import CitationChain
 from intergrax.runtime.context.context_golden_harness import load_context_golden_cases
-from intergrax.runtime.nexus.budget.quota_enforcement import QuotaAction, QuotaExceededError, TenantQuota, assert_quota_allows
+from intergrax.runtime.nexus.budget.quota_enforcement import (
+    QuotaAction,
+    QuotaExceededError,
+    TenantQuota,
+    assert_quota_allows,
+)
 from intergrax.runtime.nexus.subagents.delegation_contract_enforcer import (
     DelegationToolPolicyError,
     enforce_subtask_tool_allowlist,
 )
-from intergrax.runtime.nexus.subagents.delegation_decision import decision_record_for_delegation
+from intergrax.runtime.nexus.subagents.delegation_decision import (
+    decision_record_for_delegation,
+)
 from intergrax.runtime.registry.semver_compat import is_compatible_runtime
 from intergrax.runtime.reliability.step_retry_budget import StepRetryBudget
 from intergrax.runtime.security.pii_redaction import redact_pii
-from intergrax.runtime.security.tool_injection_guard import ToolInjectionError, assert_tool_input_safe
+from intergrax.runtime.security.tool_injection_guard import (
+    ToolInjectionError,
+    assert_tool_input_safe,
+)
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
@@ -34,6 +49,11 @@ from intergrax.runtime.task.task import TaskResult, TaskState
 pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
+
+_CI_SCRIPTS = REPO_ROOT / "scripts" / "ci"
+if str(_CI_SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(_CI_SCRIPTS))
+from script_paths import resolve_script  # noqa: E402
 
 
 def test_ideal_w2_streaming_intake_assembly() -> None:
@@ -55,7 +75,9 @@ def test_ideal_w2_semver_compat() -> None:
 
 def test_ideal_w2_delegation_decision_record() -> None:
     contract = SubtaskContract(child_agent_id="echo", objective="delegate search")
-    record = decision_record_for_delegation(contract.to_delegation_spec(), parent_agent_id="parent")
+    record = decision_record_for_delegation(
+        contract.to_delegation_spec(), parent_agent_id="parent"
+    )
     assert record.delegation_target == "echo"
     assert record.delegation_rationale == "delegate search"
 
@@ -71,7 +93,9 @@ def test_ideal_w2_partial_result_contract_on_task_result() -> None:
     result = TaskResult(
         task_id="t1",
         state=TaskState.PARTIALLY_COMPLETED,
-        partial=PartialResultContract(completed_steps=("s1",), partial_answer="partial"),
+        partial=PartialResultContract(
+            completed_steps=("s1",), partial_answer="partial"
+        ),
         authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
     assert result.partial is not None
@@ -81,7 +105,10 @@ def test_ideal_w2_partial_result_contract_on_task_result() -> None:
 def test_ideal_w2_quota_hard_stop() -> None:
     with pytest.raises(QuotaExceededError):
         assert_quota_allows(spent_usd=10.0, quota=TenantQuota(max_cost_usd=5.0))
-    assert assert_quota_allows(spent_usd=3.0, quota=TenantQuota(max_cost_usd=5.0)) is QuotaAction.ALLOW
+    assert (
+        assert_quota_allows(spent_usd=3.0, quota=TenantQuota(max_cost_usd=5.0))
+        is QuotaAction.ALLOW
+    )
 
 
 def test_ideal_w2_pii_redaction() -> None:
@@ -120,7 +147,7 @@ def test_ideal_w2_w2_script_gates() -> None:
     ]
     for script in scripts:
         completed = subprocess.run(
-            [sys.executable, str(REPO_ROOT / "scripts" / script)],
+            [sys.executable, str(resolve_script(script))],
             cwd=REPO_ROOT,
             check=False,
             capture_output=True,

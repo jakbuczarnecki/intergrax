@@ -14,6 +14,11 @@ from __future__ import annotations
 
 from typing import Any, Callable, Mapping, NamedTuple, TypeVar
 
+from intergrax.runtime.execution.decision_governed_side_effect import (
+    DecisionGovernedSideEffectInputs,
+    authorize_and_execute_decision_bound_side_effect,
+)
+
 from intergrax.contracts.external_work import (
     CommercialQuote,
     ExternalDeliverableRef,
@@ -49,6 +54,9 @@ from intergrax.contracts.collaborative_work import (
     MembershipResolutionMode,
 )
 from intergrax.contracts.money import MoneyAmount
+from intergrax.contracts.provider_invocation import ProviderInvocation
+from intergrax.contracts.provider_invocation_dispatch import ProviderInvocationDispatchPort
+from intergrax.contracts.provider_invocation_store import ProviderInvocationPersistenceError
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.integrations.contracts.external_work import (
     ExternalWorkError,
@@ -144,10 +152,12 @@ class ExternalWorkAdapter:
         integration: ExternalWorkIntegration,
         *,
         authorization_boundary: MeaningfulSideEffectAuthorizationBoundary | None = None,
+        invocation_dispatch: ProviderInvocationDispatchPort | None = None,
     ) -> None:
         self._integration = integration
         # Host/tests inject; missing boundary fails closed for meaningful actions.
         self._authorization_boundary = authorization_boundary
+        self._invocation_dispatch = invocation_dispatch
 
     @property
     def integration(self) -> ExternalWorkIntegration:
@@ -220,6 +230,7 @@ class ExternalWorkAdapter:
         tenant_id: str | None = None,
         task: Task | None = None,
         lifecycle: TaskLifecycle | None = None,
+        provider_invocation: ProviderInvocation | None = None,
     ) -> ExternalWorkAdapterResult:
         """Synchronous create/correlate + optional enrich; no poll/retry loops.
 
@@ -253,6 +264,7 @@ class ExternalWorkAdapter:
                 execute=lambda: self._integration.create_work(request),
                 task=task,
                 lifecycle=lifecycle,
+                provider_invocation=provider_invocation,
             )
             if isinstance(create_gate, ExternalWorkAdapterResult):
                 return create_gate.model_copy(update={"provider": provider})
@@ -316,6 +328,7 @@ class ExternalWorkAdapter:
                 idempotency_key=request.idempotency_key,
                 correlation_id=request.correlation_id
                 or snapshot.correlation.correlation_id,
+                provider_mutation_dispatched=True,
             )
         except ExternalWorkError as exc:
             return _error_result(exc, provider=None)
@@ -355,6 +368,8 @@ class ExternalWorkAdapter:
         enrich: bool = True,
         task: Task | None = None,
         lifecycle: TaskLifecycle | None = None,
+        decision_governance: DecisionGovernedSideEffectInputs[Any] | None = None,
+        provider_invocation: ProviderInvocation | None = None,
     ) -> ExternalWorkAdapterResult:
         """Forward acceptance evidence after meaningful side-effect policy ALLOW.
 
@@ -409,6 +424,8 @@ class ExternalWorkAdapter:
                 ),
                 task=task,
                 lifecycle=lifecycle,
+                decision_governance=decision_governance,
+                provider_invocation=provider_invocation,
             )
             if isinstance(gate, ExternalWorkAdapterResult):
                 return gate.model_copy(update={"provider": provider})
@@ -444,6 +461,7 @@ class ExternalWorkAdapter:
                     policy_decision_ref=acceptance.policy_decision_ref,
                 ),
                 continuation_reason=ContinuationReason.QUOTE,
+                provider_mutation_dispatched=True,
             )
         except ExternalWorkError as exc:
             return _error_result(exc, provider=None)
@@ -460,6 +478,7 @@ class ExternalWorkAdapter:
         enrich: bool = True,
         task: Task | None = None,
         lifecycle: TaskLifecycle | None = None,
+        provider_invocation: ProviderInvocation | None = None,
     ) -> ExternalWorkAdapterResult:
         """Cancel correlated work after meaningful side-effect policy ALLOW."""
         try:
@@ -493,6 +512,7 @@ class ExternalWorkAdapter:
                 ),
                 task=task,
                 lifecycle=lifecycle,
+                provider_invocation=provider_invocation,
             )
             if isinstance(gate, ExternalWorkAdapterResult):
                 return gate.model_copy(update={"provider": provider})
@@ -521,6 +541,7 @@ class ExternalWorkAdapter:
                 resource=correlation.external_task_id,
                 idempotency_key=idempotency_key,
                 correlation_id=correlation.correlation_id,
+                provider_mutation_dispatched=True,
             )
         except ExternalWorkError as exc:
             return _error_result(exc, provider=None)
@@ -698,6 +719,7 @@ class ExternalWorkAdapter:
         correlation_id: str | None,
         governance_evidence: GovernanceEvidenceRef | None = None,
         continuation_reason: ContinuationReason | None = None,
+        provider_mutation_dispatched: bool = False,
     ) -> ExternalWorkAdapterResult:
         """Attach a descriptive proof profile after a successful side effect.
 
@@ -711,7 +733,11 @@ class ExternalWorkAdapter:
             or not run_id.strip()
             or not task_id.strip()
         ):
-            return self._proof_invariant_failure(result, decision=decision)
+            return self._proof_invariant_failure(
+                result,
+                decision=decision,
+                provider_mutation_dispatched=provider_mutation_dispatched,
+            )
         try:
             proof: GovernedProofProfile = compose_governed_proof_profile(
                 principal_id=principal_id,
@@ -731,20 +757,27 @@ class ExternalWorkAdapter:
                 execution_ref=run_id,
             )
         except Exception:  # noqa: BLE001 — never suppress into success-without-proof
-            return self._proof_invariant_failure(result, decision=decision)
-        return result.model_copy(
-            update={"proof": proof, "policy_decision": decision}
-        )
+            return self._proof_invariant_failure(
+                result,
+                decision=decision,
+                provider_mutation_dispatched=provider_mutation_dispatched,
+            )
+        update: dict[str, object] = {"proof": proof, "policy_decision": decision}
+        if provider_mutation_dispatched:
+            update["provider_mutation_dispatched"] = True
+        return result.model_copy(update=update)
 
     @staticmethod
     def _proof_invariant_failure(
         result: ExternalWorkAdapterResult,
         *,
         decision: PolicyDecision,
+        provider_mutation_dispatched: bool = False,
     ) -> ExternalWorkAdapterResult:
         """Last-resort structured error when proof cannot be composed after success."""
         return ExternalWorkAdapterResult(
             used=False,
+            provider_mutation_dispatched=provider_mutation_dispatched,
             reason="proof_composition_invariant_failed",
             error_code=ExternalWorkErrorCode.INVALID_REQUEST,
             error_message=_PROOF_INVARIANT_MESSAGE,
@@ -783,6 +816,8 @@ class ExternalWorkAdapter:
         execute: Callable[[], T],
         task: Task | None = None,
         lifecycle: TaskLifecycle | None = None,
+        decision_governance: DecisionGovernedSideEffectInputs[Any] | None = None,
+        provider_invocation: ProviderInvocation | None = None,
     ) -> _ExecutedSideEffect | ExternalWorkAdapterResult:
         """Fresh authorize-and-execute at the last safe point before provider mutation."""
         if self._authorization_boundary is None:
@@ -883,6 +918,7 @@ class ExternalWorkAdapter:
                 metadata={"side_effect_action": action},
             )
 
+        provider_mutation_dispatched = False
         try:
             task_id, run_id, attempt_id, execution_id = (
                 resolve_meaningful_side_effect_execution_identity(
@@ -917,20 +953,70 @@ class ExternalWorkAdapter:
             )
             authorized_snapshot: MeaningfulSideEffectAuthorizationResult | None = None
 
+            def _dispatch_provider() -> T:
+                nonlocal provider_mutation_dispatched
+                provider_mutation_dispatched = True
+                return execute()
+
+            def _tracked_execute() -> T:
+                if self._invocation_dispatch is not None:
+                    if provider_invocation is None:
+                        raise ProviderInvocationPersistenceError(
+                            "provider_invocation_required_for_durable_dispatch",
+                        )
+                    return self._invocation_dispatch.dispatch_after_intent_persisted(
+                        provider_invocation,
+                        _dispatch_provider,
+                    )
+                return _dispatch_provider()
+
             def _capture_authorization(
                 authorization: MeaningfulSideEffectAuthorizationResult,
             ) -> None:
                 nonlocal authorized_snapshot
                 authorized_snapshot = authorization
 
-            boundary_result = self._authorization_boundary.authorize_and_execute(
-                enforcement_request,
-                execute,
-                task=task,
-                lifecycle=lifecycle,
-                source_agent_id="external_contractor_adapter",
-                on_authorization=_capture_authorization,
+            if decision_governance is not None:
+                boundary_result = authorize_and_execute_decision_bound_side_effect(
+                    self._authorization_boundary,
+                    enforcement_request=enforcement_request,
+                    decision=decision_governance.decision,
+                    authorization=decision_governance.authorization,
+                    action=decision_governance.action,
+                    policy_context=decision_governance.policy_context,
+                    execute=_tracked_execute,
+                    task=task,
+                    lifecycle=lifecycle,
+                    source_agent_id="external_contractor_adapter",
+                    on_authorization=_capture_authorization,
+                )
+            else:
+                boundary_result = self._authorization_boundary.authorize_and_execute(
+                    enforcement_request,
+                    _tracked_execute,
+                    task=task,
+                    lifecycle=lifecycle,
+                    source_agent_id="external_contractor_adapter",
+                    on_authorization=_capture_authorization,
+                )
+        except ProviderInvocationPersistenceError as exc:
+            return ExternalWorkAdapterResult(
+                used=False,
+                reason="provider_invocation_intent_persistence_failed",
+                error_code=ExternalWorkErrorCode.INVALID_REQUEST,
+                error_message=str(exc),
+                error_retryable=False,
+                policy_decision=None,
+                metadata={"side_effect_action": action},
             )
+        except ExternalWorkError as exc:
+            if provider_mutation_dispatched:
+                return _error_result(
+                    exc,
+                    provider=None,
+                    provider_mutation_dispatched=True,
+                )
+            raise
         except Exception as exc:  # noqa: BLE001 — fail closed on authorization faults
             return ExternalWorkAdapterResult(
                 used=False,
@@ -1193,9 +1279,11 @@ def _error_result(
     exc: ExternalWorkError,
     *,
     provider: ExternalWorkProviderDescriptor | None,
+    provider_mutation_dispatched: bool = False,
 ) -> ExternalWorkAdapterResult:
     return ExternalWorkAdapterResult(
         used=False,
+        provider_mutation_dispatched=provider_mutation_dispatched,
         reason="external_work_error",
         error_code=exc.code,
         error_message=str(exc),

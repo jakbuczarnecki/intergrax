@@ -220,6 +220,7 @@ Collaborative Work owns MP-2 Shared Work:
 - work-level `tenant_id` + `workspace_id` isolation,
 - work-level authority requirements (via MP-1 enforcement),
 - zero..N **execution links** to canonical Unified Execution identities (`ExecutionProvenanceRef`).
+- zero..N **collaborative decision bindings** (`CollaborativeDecisionBinding`) to exact canonical `DecisionProposalRef` (optional `WorkArtifactVersionRef`) — association only; Decision System owns Decision truth.
 
 Collaborative Work does **not** own: Task/Run/Attempt/Execution lifecycle, execution scheduling/retries, workflow graph execution, worker/process scheduling, background task runtime ownership, or Nexus orchestration control-plane internals.
 

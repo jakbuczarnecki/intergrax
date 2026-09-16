@@ -22,6 +22,7 @@ from intergrax.tools.providers.cost.service import (
     COST_FORECAST_SPEND_TOOL_ID,
     COST_GET_RUN_BUDGET_TOOL_ID,
 )
+from intergrax.tools.providers.invocation_requirements import REQUIRE_RUN_BUDGET
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -47,6 +48,7 @@ def register_cost_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> None:
             category="cost",
             risk_level=ToolRiskLevel.LOW,
             tags=("cost", "budget", "governance"),
+            invocation_wiring_requirements=REQUIRE_RUN_BUDGET,
         ),
         CostGetRunBudgetHandler(ctx),
     )

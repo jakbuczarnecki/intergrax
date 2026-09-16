@@ -10,19 +10,48 @@ import pytest
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.tools.providers.rag.ingest_service import RAG_INGEST_TOOL_ID
+from testing_support.builder import (
+    build_runtime_execution_context_for_tests,
+    build_runtime_request_for_tests,
+    canonical_run_id_for_tests,
+)
 from local_indexer.local_indexer_agent import LocalIndexerAgent
 from local_indexer.steps.index_job import run_index_job, validate_allowlisted_files
+
+
+def _index_exec_ctx(
+    seed: str,
+    *,
+    metadata: dict[str, object] | None = None,
+    message: str = "index docs",
+    tool_gateway: object | None = None,
+) -> RuntimeExecutionContext:
+    request = build_runtime_request_for_tests(
+        seed=seed,
+        agent_id="local_indexer",
+        tenant_id="t1",
+        user_id="u1",
+        session_id="s1",
+        message=message,
+        metadata=metadata or {},
+    )
+    return build_runtime_execution_context_for_tests(
+        seed=seed,
+        agent_id="local_indexer",
+        request=request,
+        tool_gateway=tool_gateway,
+        tenant_id="t1",
+    )
 
 
 def _step_ctx(
     exec_ctx: RuntimeExecutionContext,
     *,
-    run_id: str = "run-test",
+    run_id: str | None = None,
 ) -> AgentStepContext:
     return AgentStepContext(
-        run_id=run_id,
+        run_id=run_id or str(exec_ctx.run_id),
         agent_id="local_indexer",
         contract_id="local_indexer",
         metadata={"uaep_exec_ctx": exec_ctx},
@@ -85,18 +114,9 @@ async def test_run_index_job_ingests_valid_paths(tmp_path: Path) -> None:
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_indexer",
-        request=RuntimeRequest(
-            agent_id="local_indexer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="index docs",
-            metadata={"source_paths": [str(doc)]},
-        ),
+    exec_ctx = _index_exec_ctx(
+        "index-valid-paths",
+        metadata={"source_paths": [str(doc)]},
         tool_gateway=gateway,
     )
     exec_ctx.metadata["runtime_state"] = type(
@@ -130,19 +150,7 @@ async def test_run_index_job_ingests_valid_paths(tmp_path: Path) -> None:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_run_index_job_fails_safe_without_source_paths() -> None:
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_indexer",
-        request=RuntimeRequest(
-            agent_id="local_indexer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="index docs",
-            metadata={},
-        ),
-    )
+    exec_ctx = _index_exec_ctx("index-no-source-paths", metadata={})
 
     output = await run_index_job(_step_ctx(exec_ctx))
 
@@ -167,18 +175,10 @@ async def test_local_indexer_agent_act_returns_ingest_summary(tmp_path: Path) ->
         )
     )
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_indexer",
-        request=RuntimeRequest(
-            agent_id="local_indexer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="index",
-            metadata={"source_paths": [str(doc)]},
-        ),
+    exec_ctx = _index_exec_ctx(
+        "index-agent-act",
+        message="index",
+        metadata={"source_paths": [str(doc)]},
         tool_gateway=gateway,
     )
     exec_ctx.metadata["runtime_state"] = type(
@@ -227,18 +227,9 @@ async def test_run_index_job_preserves_denied_tool_reason(tmp_path: Path) -> Non
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_indexer",
-        request=RuntimeRequest(
-            agent_id="local_indexer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="index docs",
-            metadata={"source_paths": [str(doc)]},
-        ),
+    exec_ctx = _index_exec_ctx(
+        "index-denied-tool",
+        metadata={"source_paths": [str(doc)]},
         tool_gateway=gateway,
     )
     exec_ctx.metadata["runtime_state"] = type(
@@ -284,7 +275,7 @@ async def test_run_index_job_reads_source_paths_from_step_metadata_without_exec_
     monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(allowed_root.resolve()))
 
     step_ctx = AgentStepContext(
-        run_id="run-acp",
+        run_id=str(canonical_run_id_for_tests("index-acp-metadata")),
         agent_id="local_indexer",
         contract_id="local_indexer",
         metadata={
@@ -324,18 +315,9 @@ async def test_run_index_job_preserves_physical_provenance_without_overrides(
 
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_indexer",
-        request=RuntimeRequest(
-            agent_id="local_indexer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="index docs",
-            metadata={"source_paths": [str(doc)]},
-        ),
+    exec_ctx = _index_exec_ctx(
+        "index-physical-provenance",
+        metadata={"source_paths": [str(doc)]},
         tool_gateway=gateway,
     )
     exec_ctx.metadata["runtime_state"] = type(
@@ -391,22 +373,13 @@ async def test_run_index_job_managed_logical_provenance_override(tmp_path: Path)
 
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_indexer",
-        request=RuntimeRequest(
-            agent_id="local_indexer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="index docs",
-            metadata={
-                "source_paths": [str(doc)],
-                "logical_source_path": "managed/src-123/contract.pdf",
-                "display_file_name": "contract.pdf",
-            },
-        ),
+    exec_ctx = _index_exec_ctx(
+        "index-logical-provenance",
+        metadata={
+            "source_paths": [str(doc)],
+            "logical_source_path": "managed/src-123/contract.pdf",
+            "display_file_name": "contract.pdf",
+        },
         tool_gateway=gateway,
     )
     exec_ctx.metadata["runtime_state"] = type(

@@ -28,8 +28,10 @@ from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration i
 )
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.human_response import (
+    HitlCheckpointRestoreError,
     clear_consumed_human_input,
     normalize_human_response,
+    prepare_hitl_resume_after_checkpoint_restore,
 )
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -62,6 +64,7 @@ class NexusIntakeRunner:
     ) -> IntakePhaseOutcome:
         normalize_human_response(task)
         await self.restore_long_running(task)
+        prepare_hitl_resume_after_checkpoint_restore(task)
 
         continuation_identity = None
         if self.execution_identity is not None:
@@ -102,7 +105,9 @@ class NexusIntakeRunner:
             HumanResponseVerdict.APPROVE,
         }:
             if approver is None:
-                raise RuntimeError("approver evidence required for human approval resolution")
+                raise HitlCheckpointRestoreError(
+                    "approver evidence missing during HITL checkpoint restore"
+                )
         hitl_run_id: str | None = None
         hitl_attempt_id: str | None = None
         if verdict in {
@@ -174,6 +179,12 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             canonical_resume_after_authorization(task, authorized, capability=hitl)
+            if (
+                LongRunningCoordinator.is_long_running(task)
+                and HumanPauseCoordinator.is_resumed(task)
+                and task.state in LongRunningCoordinator.paused_states()
+            ):
+                task.state = TaskState.CREATED
             resolution = task.runtime.governance.hitl_resolution
             assert resolution is not None
             self.hitl.persist_human_decision(

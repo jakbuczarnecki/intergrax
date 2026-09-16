@@ -8,6 +8,7 @@ from intergrax.agents.authoring.diagnostic_serialization import merge_diagnostic
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContext
+from testing_support.builder import kernel_step_test_scope
 from local_indexer.diagnostics import (
     IndexSummaryDiagnostic,
     index_diagnostic_from_output,
@@ -94,12 +95,14 @@ async def test_kernel_propagates_typed_diagnostic_payloads() -> None:
         diagnostic_payloads=[index_diagnostic_from_output(output)],
     )
     step_ctx = AgentStepContext(step_index=0, metadata={"step_id": "local_indexer_step"})
-    kernel_ctx = StepKernelContext(
-        agent_id="local_indexer",
-        run_id="run-diag",
-        allow_permissive_missing_policy=True,
-    )
-    record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
+    with kernel_step_test_scope("local-indexer-diag") as (task_id, run_id):
+        kernel_ctx = StepKernelContext(
+            agent_id="local_indexer",
+            task_id=task_id,
+            run_id=run_id,
+            allow_permissive_missing_policy=True,
+        )
+        record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
     diagnostics = record.step_record.diagnostics
     assert diagnostics is not None
     assert "lkw.index_summary.v1" in diagnostics

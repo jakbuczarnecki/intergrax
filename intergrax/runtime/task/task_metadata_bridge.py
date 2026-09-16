@@ -112,6 +112,10 @@ def execution_options_from_metadata(metadata: Dict[str, Any]) -> TaskExecutionOp
     )
     response_text = metadata.get(TaskMetadataKey.HUMAN_RESPONSE)
     verdict = _verdict_from_legacy(metadata)
+    if verdict is None and _truthy(metadata.get(TaskMetadataKey.HUMAN_APPROVED)):
+        verdict = HumanResponseVerdict.APPROVE
+    if verdict is None and _truthy(metadata.get(TaskMetadataKey.HUMAN_REJECTED)):
+        verdict = HumanResponseVerdict.REJECT
     if response_text and verdict is None:
         verdict = parse_human_response(str(response_text))
 
@@ -157,6 +161,31 @@ def execution_options_from_metadata(metadata: Dict[str, Any]) -> TaskExecutionOp
         long_running=long_running,
         context=context,
     )
+
+
+def promote_legacy_human_verdict_from_metadata(task: Task) -> None:
+    """Merge legacy flat human_* metadata into typed ``TaskHumanInput`` (serialization read path only)."""
+    from intergrax.runtime.task.task_contract import VERDICT_APPROVE, VERDICT_REJECT
+
+    human = task.options.human
+    if human.verdict is not None:
+        return
+    meta = task.metadata
+    if _truthy(meta.get(TaskMetadataKey.HUMAN_APPROVED)):
+        human.verdict = VERDICT_APPROVE
+        if human.response_text is None:
+            human.response_text = HumanResponseVerdict.APPROVE.value
+        return
+    if _truthy(meta.get(TaskMetadataKey.HUMAN_REJECTED)):
+        human.verdict = VERDICT_REJECT
+        if human.response_text is None:
+            human.response_text = HumanResponseVerdict.REJECT.value
+        return
+    decision = meta.get(TaskMetadataKey.HUMAN_DECISION)
+    if decision in {VERDICT_APPROVE, VERDICT_REJECT, HumanResponseVerdict.APPROVE.value}:
+        human.verdict = str(decision)
+    elif decision == HumanResponseVerdict.REJECT.value:
+        human.verdict = VERDICT_REJECT
 
 
 def execution_options_for_request(request: RuntimeRequest) -> TaskExecutionOptions:

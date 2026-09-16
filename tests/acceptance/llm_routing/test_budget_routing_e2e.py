@@ -9,8 +9,8 @@ from intergrax.applications._shared.llm_resolver import evaluate_llm_routing
 from intergrax.applications._shared.runtime_config_bridge import materialize_runtime_config
 from intergrax.agents.reference_harness import default_reference_harness
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from lab_application.host.settings import LabApplicationSettings
+from testing_support.builder import build_runtime_request_for_tests
 
 
 @pytest.mark.integration
@@ -32,7 +32,8 @@ def test_lab_host_budget_below_rule_switches_profile() -> None:
 @pytest.mark.gate
 def test_materialize_runtime_config_auto_builds_routing_context() -> None:
     env = build_lab_environment_profile(LabApplicationSettings())
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="lab-routing-materialize",
         agent_id="lab-agent",
         user_id="user-1",
         session_id="sess-1",

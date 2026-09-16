@@ -45,6 +45,9 @@ pytestmark = [pytest.mark.integration, pytest.mark.gate]
 @pytest.fixture(autouse=True)
 def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     from testing_support.builder import MeteringFakeLLMAdapter
+    from testing_support.host_fixture_wiring import install_diagnostic_cursor_secret
+
+    install_diagnostic_cursor_secret(monkeypatch)
 
     adapter = MeteringFakeLLMAdapter()
 
@@ -236,6 +239,7 @@ def test_serving_runtime_cannot_execute_agent_outside_serving_projection(
     host_runtime = build_harness_host_runtime(
         stack.manifest,
         stack.environment,
+        tenant_id="tenant-test",
         registry_projection=projection,
         trace_db_path=tmp_path / "secondary-trace.db",
         runtime_events_db_path=tmp_path / "secondary-runtime_events.db",

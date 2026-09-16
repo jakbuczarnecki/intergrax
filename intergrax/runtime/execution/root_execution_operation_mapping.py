@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from intergrax.contracts.root_execution_operation import RootExecutionOperation
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
-from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
+from intergrax.runtime.execution.strategy import (
+    ExecutionStrategy,
+    execution_strategy_from_capabilities,
+)
 
 
 def root_execution_operation_from_capabilities(
@@ -21,7 +24,7 @@ def root_execution_operation_from_capabilities(
 def root_execution_operation_from_request(
     request: ExecutionRequest[object, object],
 ) -> RootExecutionOperation:
-    strategy = StrategyResolver().resolve(request)
+    strategy = execution_strategy_from_capabilities(request.capabilities)
     if strategy is ExecutionStrategy.INFERENCE:
         return RootExecutionOperation.ROOT_INFERENCE
     if strategy is ExecutionStrategy.ORCHESTRATION:

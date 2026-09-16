@@ -138,6 +138,8 @@ class ExecutionContinuationErrorCode(StrEnum):
     AMBIGUOUS_IDENTITY = "ambiguous_identity"
     STORE_QUERY_FAILED = "store_query_failed"
     INCOMPLETE_EXECUTION_IDENTITY = "incomplete_execution_identity"
+    NON_DURABLE_CONTINUATION_STORE = "non_durable_continuation_store"
+    CORRUPT_CONTINUATION_STATE = "corrupt_continuation_state"
 
 
 class ExecutionContinuationError(ValueError):
@@ -148,6 +150,31 @@ class ExecutionContinuationError(ValueError):
     def __init__(self, message: str, *, code: ExecutionContinuationErrorCode) -> None:
         self.code = code
         super().__init__(message)
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionContinuationRecoveryHandle:
+    """Opaque durable recovery reference to one canonical continuation episode snapshot.
+
+    Identifies persisted continuation state for process-boundary restore. The host
+    obtains this when persisting the current episode; recovery resolves exact four-ID
+    from the canonical snapshot after load (not from caller-supplied identity).
+    """
+
+    continuation_id: str
+
+    def __post_init__(self) -> None:
+        normalized = self.continuation_id.strip()
+        if not normalized:
+            raise ValueError("execution continuation recovery handle requires continuation_id")
+        object.__setattr__(self, "continuation_id", normalized)
+
+
+def execution_continuation_recovery_handle_for_continuation_id(
+    continuation_id: str,
+) -> ExecutionContinuationRecoveryHandle:
+    """Build a recovery handle for the given canonical ``continuation_id``."""
+    return ExecutionContinuationRecoveryHandle(continuation_id=continuation_id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -574,6 +601,57 @@ def assert_pending_matches_resolution_command(
             )
 
 
+def execution_continuation_resolution_command_for_pending_human_verdict(
+    pending: PendingExecutionContinuation,
+    *,
+    verdict: ExecutionHumanVerdict,
+    approver: HumanApproverEvidence,
+    human_request_id: str,
+    resolved_at: str,
+) -> ExecutionContinuationResolutionCommand:
+    """Build one resolution command from canonical pending snapshot and human evidence."""
+    if type(pending) is not PendingExecutionContinuation:
+        raise TypeError("pending must be PendingExecutionContinuation")
+    if type(verdict) is not ExecutionHumanVerdict:
+        raise TypeError("verdict must be ExecutionHumanVerdict")
+    if type(approver) is not HumanApproverEvidence:
+        raise TypeError("approver must be HumanApproverEvidence")
+    normalized_request_id = human_request_id.strip()
+    if not normalized_request_id:
+        raise ValueError("human_request_id must be non-empty")
+    if pending.pause_id is None:
+        raise ExecutionContinuationError(
+            "canonical pending pause_id required",
+            code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
+        )
+    if pending.human_request_id is not None and pending.human_request_id != normalized_request_id:
+        raise ExecutionContinuationError(
+            "human_request_id mismatch against pending continuation",
+            code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
+        )
+    correlation = pending.governed_correlation
+    operation_id = correlation.operation_id if correlation is not None else None
+    side_effect_scope_id = (
+        correlation.side_effect_scope_id if correlation is not None else None
+    )
+    side_effect_scope_digest = (
+        correlation.side_effect_scope_digest if correlation is not None else None
+    )
+    return ExecutionContinuationResolutionCommand(
+        continuation_id=pending.continuation_id,
+        identity=pending.identity,
+        expected_revision=pending.revision,
+        verdict=verdict,
+        approver=approver,
+        human_request_id=normalized_request_id,
+        pause_id=pending.pause_id,
+        operation_id=operation_id,
+        side_effect_scope_id=side_effect_scope_id,
+        side_effect_scope_digest=side_effect_scope_digest,
+        resolved_at=resolved_at,
+    )
+
+
 def assert_pending_matches_resume_command(
     pending: PendingExecutionContinuation,
     command: ExecutionContinuationResumeCommand,
@@ -665,6 +743,8 @@ __all__ = [
     "ExecutionContinuationError",
     "ExecutionContinuationErrorCode",
     "ExecutionContinuationIdentity",
+    "ExecutionContinuationRecoveryHandle",
+    "execution_continuation_recovery_handle_for_continuation_id",
     "ExecutionContinuationLifecycleState",
     "ExecutionContinuationLookup",
     "ExecutionContinuationPort",
@@ -682,6 +762,7 @@ __all__ = [
     "execution_continuation_lifecycle_permits_successor_episode",
     "apply_resolution_to_pending",
     "apply_resume_to_pending",
+    "execution_continuation_resolution_command_for_pending_human_verdict",
     "assert_execution_continuation_identity_match",
     "assert_governed_correlation_matches_continuation",
     "assert_pending_matches_resolution_command",

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from intergrax.contracts.execution_identity import EventId, validate_event_id
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
-from intergrax.runtime.observability.reconstruction import ExecutionReconstruction
+from intergrax.contracts.execution_reconstruction import ExecutionReconstruction
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubject
 from intergrax.runtime.diagnostics.problem_grouping_features import (
     CAUSAL_SOURCE_REF_KIND_MESSAGE_BUS_TASK,
@@ -35,7 +35,7 @@ from intergrax.runtime.diagnostics.problem_grouping_features import (
 from intergrax.runtime.events.execution_position import PositionedRuntimeEvent
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
-from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
+from intergrax.contracts.platform_problem_signal import PlatformProblemSignal
 
 _RETRY_RELATED_EVENT_TYPES: frozenset[RuntimeEventType] = frozenset(
     {

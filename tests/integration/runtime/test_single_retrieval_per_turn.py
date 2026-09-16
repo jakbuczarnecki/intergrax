@@ -9,8 +9,8 @@ import pytest
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_builder import ContextBuilder
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.chat_session import ChatSession
+from testing_support.builder import build_runtime_request_for_tests
 
 pytestmark = [pytest.mark.gate, pytest.mark.integration]
 
@@ -36,7 +36,8 @@ async def test_context_builder_retrieval_only_when_perform_retrieval_true() -> N
     cfg.vectorstore_manager.bound_scope = None
     builder = ContextBuilder(cfg, cfg.vectorstore_manager)
     session = ChatSession(id="s1", user_id="u1", tenant_id="t1")
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="single-retrieval-per-turn",
         agent_id="agent",
         user_id="u1",
         session_id="s1",

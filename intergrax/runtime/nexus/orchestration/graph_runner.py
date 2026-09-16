@@ -27,6 +27,7 @@ from intergrax.runtime.cancellation.coordinator import (
     CancellationCoordinator,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.request_contract import human_request_event_payload
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
@@ -154,6 +155,32 @@ class NexusGraphRunner:
         )
         return generation if generation is not None else 1
 
+    def _ensure_attempt_lifecycle_seeded(
+        self,
+        task: Task,
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+    ) -> None:
+        """Align in-process graph execution with background re-entry attempt authority."""
+        if self.attempt_lifecycle.get_active_attempt_id(
+            tenant_id=task.tenant_id,
+            run_id=run_id,
+        ) is not None:
+            return
+        try:
+            self.attempt_lifecycle.record_initial_attempt(
+                tenant_id=task.tenant_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+            )
+        except AttemptLifecycleError:
+            if self.attempt_lifecycle.get_active_attempt_id(
+                tenant_id=task.tenant_id,
+                run_id=run_id,
+            ) is None:
+                raise
+
     def _transition_attempt_for_retry(
         self,
         task: Task,
@@ -252,6 +279,13 @@ class NexusGraphRunner:
             self.graph_executor.set_retry_policy(
                 RetryPolicy(max_retries=plan.graph_retry_on_error),
             )
+
+        seed_run_id, seed_attempt_id = self.graph_executor.execution_identity.require()
+        self._ensure_attempt_lifecycle_seeded(
+            task,
+            run_id=seed_run_id,
+            attempt_id=seed_attempt_id,
+        )
 
         async def on_retry(record: RetryRecord) -> None:
             callbacks.on_retry(record)
@@ -356,15 +390,24 @@ class NexusGraphRunner:
             )
 
         if executions and executions[-1].status == AgentExecutionStatus.NEEDS_INPUT:
-            return await self._handle_needs_input(
-                task,
-                plan=plan,
-                graph=graph,
-                executions=executions,
-                retry_records=retry_records,
-                lifecycle=lifecycle,
-                trace_emitter=trace_emitter,
-            )
+            if HumanPauseCoordinator.is_resumed(task):
+                last = executions[-1]
+                executions[-1] = last.model_copy(
+                    update={
+                        "status": AgentExecutionStatus.COMPLETED,
+                        "summary": last.summary or "approved",
+                    },
+                )
+            else:
+                return await self._handle_needs_input(
+                    task,
+                    plan=plan,
+                    graph=graph,
+                    executions=executions,
+                    retry_records=retry_records,
+                    lifecycle=lifecycle,
+                    trace_emitter=trace_emitter,
+                )
 
         failed_nodes = [
             n.node_id for n in graph.nodes if n.status == ExecutionNodeStatus.FAILED
@@ -580,9 +623,17 @@ class NexusGraphRunner:
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
                 await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
             return GraphPhaseOutcome(early_result=hook_failure)
+        self.graph_executor.sync_execution_tree_into_task(task)
         hitl = require_internal_hitl_continuation(self.hitl_continuation)
         run_id, attempt_id = require_active_execution_identity()
         execution_id = require_active_execution_id()
+        runtime_checkpoint = task.runtime.orchestration.runtime_checkpoint
+        if runtime_checkpoint is not None:
+            execution_id = next(
+                entry.execution_id
+                for entry in runtime_checkpoint.execution_tree.entries
+                if entry.parent_execution_id is None
+            )
         identity = execution_continuation_identity_for_task(
             task,
             run_id=run_id,

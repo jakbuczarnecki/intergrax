@@ -14,15 +14,20 @@ from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
+from testing_support.builder import (
+    build_runtime_request_for_tests,
+    build_task_for_tests,
+    canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
+    canonical_task_id_for_tests,
+)
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
     ModelCatalogMissTraceDiagV1,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent, TraceLevel
-from intergrax.runtime.task.task import Task
-
 
 @pytest.mark.integration
 @pytest.mark.gate
@@ -37,24 +42,29 @@ def test_configure_llm_tracker_wires_catalog_miss_without_core_adapter() -> None
     )
     session_manager = SessionManager(storage=InMemorySessionStorage())
     ctx = RuntimeContext.build(config=config, session_manager=session_manager)
-    request = RuntimeRequest(
+    miss_seed = "catalog-miss-wire"
+    miss_run_id = str(canonical_run_id_for_tests(miss_seed))
+    miss_task_id = str(canonical_task_id_for_tests(miss_seed))
+    request = build_runtime_request_for_tests(
+        seed=miss_seed,
         tenant_id="tenant-1",
         agent_id="agent-1",
         session_id="sess-1",
         user_id="user-1",
         message="hello",
-        metadata={"task_id": "task-miss"},
+        metadata={"task_id": miss_task_id},
     )
-    state = RuntimeState(context=ctx, request=request, run_id="run-miss-wire")
+    state = RuntimeState(context=ctx, request=request, run_id=miss_run_id)
 
     resolve_context_window_tokens(
         "openrouter",
         "vendor/pending-model",
-        profile_options={"run_id": "run-miss-wire"},
+        profile_options={"run_id": miss_run_id},
     )
     assert len(state.trace_events) == 0
 
-    state.configure_llm_tracker()
+    with canonical_execution_identity_scope(miss_seed):
+        state.configure_llm_tracker()
     assert len(state.trace_events) == 1
     trace = state.trace_events[0]
     assert trace.step == "llm_catalog_miss"
@@ -65,8 +75,11 @@ def test_configure_llm_tracker_wires_catalog_miss_without_core_adapter() -> None
 @pytest.mark.integration
 @pytest.mark.gate
 def test_catalog_miss_trace_maps_to_runtime_bus_llm_call() -> None:
-    task = Task(
-        task_id="task-miss",
+    e2e_seed = "catalog-miss-e2e"
+    e2e_run_id = str(canonical_run_id_for_tests(e2e_seed))
+    e2e_task_id = str(canonical_task_id_for_tests(e2e_seed))
+    task = build_task_for_tests(
+        seed=e2e_seed,
         tenant_id="tenant-1",
         user_id="user-1",
         agent_id="agent-1",
@@ -74,26 +87,29 @@ def test_catalog_miss_trace_maps_to_runtime_bus_llm_call() -> None:
     )
     trace = TraceEvent(
         event_id="llm-miss-e2e",
-        run_id="run-e2e",
+        run_id=e2e_run_id,
         seq=9,
         ts_utc="2026-06-19T12:00:00Z",
         level=TraceLevel.WARNING,
         component=TraceComponent.ENGINE,
         step="llm_catalog_miss",
         message="Model catalog miss — context window resolved without exact catalog entry.",
-        tags={"task_id": "task-miss"},
+        tags={"task_id": e2e_task_id},
         payload=ModelCatalogMissTraceDiagV1(
             provider_slug="openrouter",
             model_id="vendor/unknown-e2e",
             resolved_tokens=128_000,
             resolution_tier=CatalogResolutionTier.PROVIDER_DEFAULT.value,
-            run_id="run-e2e",
+            run_id=e2e_run_id,
         ),
     )
     payload_dict = trace.payload.to_dict() if trace.payload is not None else {}
     event = trace_event_to_runtime_event(
         trace,
         task,
+        run_id=e2e_run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
         payload_schema_id=ModelCatalogMissTraceDiagV1.schema_id(),
         payload_dict=payload_dict,
     )

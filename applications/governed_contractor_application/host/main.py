@@ -17,6 +17,10 @@ from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
 )
 from governed_contractor_application.host.factory import create_governed_contractor_backend_app
+from governed_contractor_application.host.production_external_work_composition import (
+    wire_governed_contractor_production_external_work_settings,
+)
+from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.manifest import build_governed_contractor_manifest
 
 load_dotenv()
@@ -31,16 +35,24 @@ _STRICT_RUN_MESSAGE = (
 def create_governed_contractor_process_app(
     *,
     process_composition: ProductionProcessComposition,
+    settings: GovernedContractorBackendSettings | None = None,
 ) -> FastAPI:
     """Build the Governed Contractor STRICT host from an activated process composition."""
     manifest = build_governed_contractor_manifest()
-    env = manifest.environment or build_governed_contractor_environment_profile()
+    resolved_settings = wire_governed_contractor_production_external_work_settings(
+        settings or GovernedContractorBackendSettings.from_env(),
+    )
+    env = manifest.environment or build_governed_contractor_environment_profile(
+        resolved_settings,
+    )
     return create_governed_contractor_backend_app(
         registry_projection=bootstrap_production_registry_projection(
             application_id=manifest.app_id,
             application_environment_id=env.profile_id,
             stores=process_composition.agent_platform_runtime.stores,
         ),
+        process_composition=process_composition,
+        settings=resolved_settings,
     )
 
 

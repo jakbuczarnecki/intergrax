@@ -35,7 +35,7 @@ def test_compose_profile_preserves_identity_and_policy_refs() -> None:
         tenant_id="tenant-a",
         task_id="task-1",
         run_id="run-1",
-        action="ACCEPT_QUOTE",
+        action="external_work.accept_quote",
         resource="sha256:" + ("ab" * 32),
         provider_id="provider-x",
         policy_action=PolicyAction.ALLOW,
@@ -52,7 +52,7 @@ def test_compose_profile_preserves_identity_and_policy_refs() -> None:
     assert profile.task_id == "task-1"
     assert profile.run_id == "run-1"
     assert profile.execution_ref == "run-1"
-    assert profile.action == "ACCEPT_QUOTE"
+    assert profile.action == "external_work.accept_quote"
     assert profile.provider_id == "provider-x"
     assert profile.policy_action is PolicyAction.ALLOW
     assert profile.policy_rule_id == "rule.allow"
@@ -72,7 +72,7 @@ def test_profile_forbids_transport_and_provider_payload_fields() -> None:
         principal_id="u1",
         task_id="t",
         run_id="r",
-        action="CREATE_EXTERNAL_WORK",
+        action="external_work.create",
         provider_id="p",
         policy_action=PolicyAction.ALLOW,
     ).model_dump()
@@ -95,7 +95,7 @@ def test_profile_forbids_transport_and_provider_payload_fields() -> None:
                 "principal_id": "u1",
                 "task_id": "t",
                 "run_id": "r",
-                "action": "CREATE_EXTERNAL_WORK",
+                "action": "external_work.create",
                 "provider_id": "p",
                 "policy_action": PolicyAction.ALLOW,
                 "http_headers": {"Authorization": "Bearer x"},

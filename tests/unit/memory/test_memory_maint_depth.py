@@ -42,7 +42,10 @@ async def test_procedural_memory_write_and_read_path() -> None:
     store.save_profile = AsyncMock()
 
     mgr = UserProfileManager(store)
+    from tests.unit.memory._projection_identity import memory_test_identity
+
     entry = await mgr.add_memory_entry(
+        memory_test_identity(user_id="u1"),
         "u1",
         UserProfileMemoryEntry(
             content="Always run pytest -m gate before merge",

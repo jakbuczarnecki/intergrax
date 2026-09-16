@@ -32,7 +32,9 @@ def apply_host_tool_invoker_to_runtime_context(
     request_metadata: dict[str, Any],
 ) -> None:
     """Overlay Tier-3 host catalog wiring onto agent stub ``RuntimeContext``."""
-    from intergrax.agents.persistence.catalog_declarative_invoker import CatalogDeclarativeToolInvoker
+    from intergrax.agents.persistence.catalog_declarative_invoker import (
+        CatalogDeclarativeToolInvoker,
+    )
     from intergrax.agents.persistence.tool_invoker_wiring import (
         resolve_declarative_tool_invoker_from_metadata,
     )
@@ -49,7 +51,9 @@ def apply_host_tool_invoker_to_runtime_context(
     runtime_context.config.tool_invoker = tool_invoker
     runtime_context.tool_invoker_close_on_context_close = False
 
-    from intergrax.applications._shared.rag_runtime_bridge import apply_rag_from_tool_wiring_context
+    from intergrax.rag.profiles.tool_wiring_runtime_sync import (
+        apply_rag_from_tool_wiring_context,
+    )
     from intergrax.tools.core.handler import WiringContextToolHandler
 
     wiring_ctx = None
@@ -144,7 +148,9 @@ def attach_acp_catalog_exec_ctx(
     )
     allowed_tools_raw = step_ctx.metadata.get("allowed_tools")
     if isinstance(allowed_tools_raw, list) and allowed_tools_raw:
-        allowed_tools = [str(tool_id) for tool_id in allowed_tools_raw if str(tool_id).strip()]
+        allowed_tools = [
+            str(tool_id) for tool_id in allowed_tools_raw if str(tool_id).strip()
+        ]
     else:
         allowed_tools = list(contract.allowed_tools)
     if kernel_ctx.declarative_tool_invoker is not None:
@@ -152,7 +158,9 @@ def attach_acp_catalog_exec_ctx(
             exec_ctx,
             allowed_tools=allowed_tools,
         )
-    from intergrax.runtime.workspace.exec_ctx_isolation import attach_isolation_to_exec_ctx
+    from intergrax.runtime.workspace.exec_ctx_isolation import (
+        attach_isolation_to_exec_ctx,
+    )
 
     attach_isolation_to_exec_ctx(exec_ctx, runtime_request, task_id=resolved_task_id)
     _attach_functional_evidence_recorder_from_tool_wiring(exec_ctx, runtime_context)
@@ -214,7 +222,9 @@ def build_step_context_from_uaep(
 
 def step_output_from_outcome(step: AgentStep, outcome: Any) -> StepOutput:
     if isinstance(outcome.output, dict):
-        summary = str(outcome.output.get("summary") or outcome.output.get("answer") or "")
+        summary = str(
+            outcome.output.get("summary") or outcome.output.get("answer") or ""
+        )
         data = {key: value for key, value in outcome.output.items() if key != "summary"}
     else:
         summary = str(outcome.output or "")
@@ -233,18 +243,24 @@ def agent_decision_from_outcome(outcome: Any) -> AgentDecision:
     if outcome.next_action == StepNextAction.FAIL:
         return AgentDecision(
             type=AgentDecisionType.FAIL,
-            reason=outcome.terminal_reason.value if outcome.terminal_reason else "failed",
+            reason=outcome.terminal_reason.value
+            if outcome.terminal_reason
+            else "failed",
         )
     if outcome.next_action == StepNextAction.REPLAN:
         return AgentDecision(
             type=AgentDecisionType.MODIFY_PLAN,
-            reason=outcome.terminal_reason.value if outcome.terminal_reason else "replan",
+            reason=outcome.terminal_reason.value
+            if outcome.terminal_reason
+            else "replan",
         )
     if outcome.is_terminal or outcome.next_action == StepNextAction.CONTINUE:
         if outcome.is_terminal:
             return AgentDecision(
                 type=AgentDecisionType.COMPLETE,
-                reason=outcome.terminal_reason.value if outcome.terminal_reason else TerminalReason.GOAL_MET.value,
+                reason=outcome.terminal_reason.value
+                if outcome.terminal_reason
+                else TerminalReason.GOAL_MET.value,
             )
     return AgentDecision(type=AgentDecisionType.CONTINUE, reason="continue")
 

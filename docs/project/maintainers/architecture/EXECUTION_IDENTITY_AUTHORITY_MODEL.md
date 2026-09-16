@@ -144,7 +144,7 @@ RunId
 
 ## Resume semantics
 
-Checkpoint resume **rehydrates** `run_id`, `attempt_id`, and root execution identity from durable checkpoint payload via `resolve_root_task_identity`. Resume does **not** call attempt lifecycle transition and does **not** mint new Run or Execution identifiers.
+Checkpoint resume **rehydrates** `run_id` and `attempt_id` from durable checkpoint payload in `ExecutionRuntime.resolve_root_task_identity`, then admits root identity through `mint_root_execution_identity` (authority). Resume does **not** call attempt lifecycle transition and does **not** mint new Run identifiers; each resume segment receives a fresh canonical root `ExecutionId` unless explicitly supplied.
 
 ---
 

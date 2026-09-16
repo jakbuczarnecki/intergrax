@@ -10,7 +10,10 @@ import pytest
 from pydantic import ValidationError
 
 from intergrax.contracts.agent_decision import HumanRequest
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.agent_execution_result import (
+    AgentExecutionResult,
+    AgentExecutionStatus,
+)
 from intergrax.contracts.declarative_hitl import DeclarativeHitlPendingApproval
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
@@ -25,6 +28,13 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
 )
 from intergrax.utils import attribute_access
+from intergrax.runtime.execution.active_execution_continuation_store import (
+    bind_active_execution_continuation_state_store,
+    reset_active_execution_continuation_state_store,
+)
+from intergrax.runtime.execution.continuation.persistence import (
+    default_execution_continuation_state_store,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.human.declarative_hitl_grant import (
@@ -35,15 +45,24 @@ from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
 from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict
-from intergrax.runtime.human.pause import HumanApprovalResolutionError, HumanPauseCoordinator
-from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence, InMemoryHumanDecisionPersistence
+from intergrax.runtime.human.pause import (
+    HumanApprovalResolutionError,
+    HumanPauseCoordinator,
+)
+from intergrax.runtime.human.persistence_contract import (
+    HumanDecisionPersistence,
+    InMemoryHumanDecisionPersistence,
+)
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookCoordinator
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
 from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
-from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
+from intergrax.runtime.task.task_contract import (
+    HumanApprovalResolution,
+    TaskPauseRecord,
+)
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
 
@@ -83,9 +102,14 @@ def bound_hitl_test_execution_identity(
         attempt_id=attempt_id,
         execution_id=execution_id,
     )
+    continuation_store = default_execution_continuation_state_store()
+    continuation_token = bind_active_execution_continuation_state_store(
+        continuation_store,
+    )
     try:
         yield
     finally:
+        reset_active_execution_continuation_state_store(continuation_token)
         reset_active_execution_identity(token)
 
 
@@ -381,14 +405,21 @@ def test_reject_wrong_pause_request_fails_closed() -> None:
 def test_stale_response_against_new_pause_fails_closed() -> None:
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
     _active_pause(task, pause_id="pause-A", human_request_id="hr-A")
-    _resolve(task, HumanResponseVerdict.APPROVE, pause_id="pause-A", human_request_id="hr-A")
+    _resolve(
+        task, HumanResponseVerdict.APPROVE, pause_id="pause-A", human_request_id="hr-A"
+    )
 
     pause_b = _apply_pause(task, human_request_id="hr-B")
     assert pause_b.pause_id != "pause-A"
     assert task.runtime.governance.hitl_resolution is None
 
     with pytest.raises(HumanApprovalResolutionError, match="pause_id mismatch"):
-        _resolve(task, HumanResponseVerdict.APPROVE, pause_id="pause-A", human_request_id="hr-A")
+        _resolve(
+            task,
+            HumanResponseVerdict.APPROVE,
+            pause_id="pause-A",
+            human_request_id="hr-A",
+        )
 
     assert task.runtime.governance.pause_record == pause_b
     assert task.runtime.governance.paused is True
@@ -488,7 +519,9 @@ async def test_intake_runner_passes_explicit_pause_identity() -> None:
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
     with bound_hitl_test_execution_identity():
-        outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+        outcome = await runner.run(
+            task, lifecycle=lifecycle, trace_emitter=trace_emitter
+        )
 
     assert outcome.early_result is None
     resolution = task.runtime.governance.hitl_resolution
@@ -523,7 +556,9 @@ def test_declarative_pending_valid_approve_creates_grant() -> None:
 def test_declarative_pending_pause_id_mismatch_no_grant() -> None:
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
     _active_pause(task, pause_id="pause-1")
-    task.runtime.governance.declarative_hitl_pending = _pending(task, pause_id="pause-other")
+    task.runtime.governance.declarative_hitl_pending = _pending(
+        task, pause_id="pause-other"
+    )
     _resolve(task, HumanResponseVerdict.APPROVE)
     with pytest.raises(DeclarativeHitlGrantError, match="pause_id mismatch"):
         DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
@@ -546,7 +581,9 @@ def test_declarative_pending_human_request_id_mismatch_no_grant() -> None:
 def test_declarative_stale_response_cannot_create_grant_for_new_pending() -> None:
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
     _active_pause(task, pause_id="pause-A", human_request_id="hr-A")
-    _resolve(task, HumanResponseVerdict.APPROVE, pause_id="pause-A", human_request_id="hr-A")
+    _resolve(
+        task, HumanResponseVerdict.APPROVE, pause_id="pause-A", human_request_id="hr-A"
+    )
 
     pause_b = _apply_pause(task, human_request_id="hr-B")
     task.runtime.governance.declarative_hitl_pending = _pending(
@@ -556,9 +593,16 @@ def test_declarative_stale_response_cannot_create_grant_for_new_pending() -> Non
     )
 
     with pytest.raises(HumanApprovalResolutionError, match="pause_id mismatch"):
-        _resolve(task, HumanResponseVerdict.APPROVE, pause_id="pause-A", human_request_id="hr-A")
+        _resolve(
+            task,
+            HumanResponseVerdict.APPROVE,
+            pause_id="pause-A",
+            human_request_id="hr-A",
+        )
 
-    with pytest.raises(DeclarativeHitlGrantError, match="canonical approval resolution required"):
+    with pytest.raises(
+        DeclarativeHitlGrantError, match="canonical approval resolution required"
+    ):
         DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
     assert task.runtime.governance.declarative_hitl_grant is None
 
@@ -606,7 +650,9 @@ async def test_intake_runner_reject_preserves_evidence_before_cleanup(
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
 
     with bound_hitl_test_execution_identity():
-        outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+        outcome = await runner.run(
+            task, lifecycle=lifecycle, trace_emitter=trace_emitter
+        )
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None
@@ -616,7 +662,8 @@ async def test_intake_runner_reject_preserves_evidence_before_cleanup(
     rejection_events = [
         event
         for event in published
-        if attribute_access.optional(event, "event_type", None) == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
+        if attribute_access.optional(event, "event_type", None)
+        == RuntimeEventType.HUMAN_APPROVAL_RECEIVED
     ]
     assert len(rejection_events) == 1
     assert rejection_events[0].payload["response"] == reject_text
@@ -661,7 +708,9 @@ async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
 
     with bound_hitl_test_execution_identity():
-        outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+        outcome = await runner.run(
+            task, lifecycle=lifecycle, trace_emitter=trace_emitter
+        )
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None
@@ -676,7 +725,8 @@ async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
     escalation_events = [
         event
         for event in published
-        if attribute_access.optional(event, "event_type", None) == RuntimeEventType.INTERRUPT_ESCALATED
+        if attribute_access.optional(event, "event_type", None)
+        == RuntimeEventType.INTERRUPT_ESCALATED
     ]
     assert len(escalation_events) == 1
 

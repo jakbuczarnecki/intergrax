@@ -12,7 +12,10 @@ from typing import Any, Dict, Optional, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
-from intergrax.contracts.execution_identity import AttemptId
+from intergrax.contracts.execution_identity import AttemptId, TaskId
+from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.background_execution.identity_admission import (
     assert_handler_run_id_matches_identity,
@@ -21,6 +24,7 @@ from intergrax.runtime.background_execution.identity_admission import (
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.governance.execution_admission_composition import build_reference_allowing_root_execution_authority_admission
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
@@ -78,10 +82,12 @@ class NexusWorkerRuntime:
         self,
         host_execution: HostTaskExecutionPort,
         *,
+        checkpoint_store: Optional[TaskCheckpointPersistence] = None,
         lifecycle: Optional[WorkerRunLifecycle] = None,
         task_enricher: TaskEnricher | None = None,
     ) -> None:
         self._host_execution = host_execution
+        self._checkpoint_store = checkpoint_store
         self._lifecycle = lifecycle
         self._task_enricher = task_enricher
 
@@ -99,6 +105,7 @@ class NexusWorkerRuntime:
         orchestration_triggers: frozenset[str] = frozenset(),
         pipeline_capability_suffix: str = ".pipeline",
         task_enricher: TaskEnricher | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     ) -> NexusWorkerRuntime:
         resolved_factory = execution_budget_ledger_factory
         if resolved_factory is None and run_budget_persistence is not None:
@@ -112,6 +119,7 @@ class NexusWorkerRuntime:
             run_budget=run_budget,
             execution_budget_ledger_factory=resolved_factory,
             execution_terminal=execution_terminal,
+            execution_continuation_state_store=execution_continuation_state_store,
         )
         from intergrax.runtime.governance.execution_admission_composition import (
             build_reference_allowing_root_execution_authority_admission,
@@ -125,9 +133,38 @@ class NexusWorkerRuntime:
         )
         return cls(
             host_execution,
+            checkpoint_store=checkpoint_store,
             lifecycle=lifecycle,
             task_enricher=task_enricher,
         )
+
+    def _reconcile_resume_identity(
+        self,
+        task: Task,
+        execution_identity: BackgroundExecutionIdentity,
+    ) -> tuple[BackgroundExecutionIdentity, TaskCheckpoint | None]:
+        if self._checkpoint_store is None:
+            return execution_identity, None
+        restored = LongRunningCoordinator.restore_if_resuming(
+            task,
+            self._checkpoint_store,
+        )
+        if restored is None or restored.runtime is None:
+            return execution_identity, None
+        run_id, attempt_id = execution_identity_from_checkpoint(restored)
+        root_execution_id = next(
+            entry.execution_id
+            for entry in restored.runtime.execution_tree.entries
+            if entry.parent_execution_id is None
+        )
+        reconciled = BackgroundExecutionIdentity(
+            tenant_id=execution_identity.tenant_id,
+            task_id=TaskId(restored.task_id),
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=root_execution_id,
+        )
+        return reconciled, restored
 
     @property
     def host_execution(self) -> HostTaskExecutionPort:
@@ -173,11 +210,18 @@ class NexusWorkerRuntime:
             )
             if self._task_enricher is not None:
                 task = self._task_enricher(task)
+            reconciled_identity, resume_checkpoint = self._reconcile_resume_identity(
+                task,
+                execution_identity,
+            )
+            resolved_run_id = reconciled_identity.run_id
+            resolved_attempt_id = reconciled_identity.attempt_id
             result = _run_coro_sync(
                 self._host_execution.execute(
                     task,
                     run_id=resolved_run_id,
                     attempt_id=resolved_attempt_id,
+                    resume_checkpoint=resume_checkpoint,
                 )
             )
             result_payload = task_result_to_payload(result)

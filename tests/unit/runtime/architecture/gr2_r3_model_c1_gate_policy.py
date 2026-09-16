@@ -52,10 +52,6 @@ LEGACY_UNIFIED_TASK_RUNNER_IMPORT_ALLOWLIST: frozenset[str] = frozenset(
     {
         "intergrax/runtime/task/unified_task_runner.py",
         "intergrax/runtime/task/__init__.py",
-        "intergrax/runtime/long_running/wiring.py",
-        "intergrax/runtime/long_running/scheduler.py",
-        "intergrax/applications/_shared/harness_task_routes.py",
-        "intergrax/applications/_shared/task_control_wiring.py",
         "intergrax/applications/_shared/task_control.py",
         "intergrax/applications/_shared/async_task_dispatch.py",
         "intergrax/applications/_shared/async_task_index_protocol.py",

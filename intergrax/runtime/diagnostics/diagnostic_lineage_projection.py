@@ -11,12 +11,10 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticExecutionNodeView,
     DiagnosticExecutionSegmentView,
 )
-from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
+from intergrax.contracts.execution_reconstruction import ExecutionReconstruction
+from intergrax.contracts.execution_reconstruction_lineage import (
     ExecutionLineageReadStatus,
     ReconstructedAttemptLineage,
-)
-from intergrax.runtime.observability.reconstruction import (
-    ExecutionReconstruction,
 )
 
 

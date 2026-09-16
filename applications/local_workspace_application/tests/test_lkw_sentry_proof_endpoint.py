@@ -147,7 +147,13 @@ async def test_proof_endpoint_emits_controlled_problem_via_platform_path() -> No
         assert sample not in serialized.lower()
 
 
-def test_proof_http_route_reaches_fake_sentry_transport() -> None:
+def test_proof_http_route_reaches_fake_sentry_transport(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET",
+        "unit-test-lkw-sentry-proof-cursor-secret-32b",
+    )
     transport = FakeSentryTransport()
     config = _enabled_sentry_config()
 
@@ -164,9 +170,13 @@ def test_proof_http_route_reaches_fake_sentry_transport() -> None:
             ),
         ),
     ):
-        app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(LocalWorkspaceBackendSettings(
-                environment=ApiEnvironment.DEV), settings=LocalWorkspaceBackendSettings(
-                environment=ApiEnvironment.DEV, default_agent_id="local_search",),
+        settings = LocalWorkspaceBackendSettings(
+            environment=ApiEnvironment.DEV,
+            default_agent_id="local_search",
+        )
+        app = create_local_workspace_backend_app(
+            registry_projection=build_lkw_test_registry_projection(settings),
+            settings=settings,
             observability_export=config,
         )
         client = TestClient(app)
@@ -185,18 +195,31 @@ def test_proof_http_route_reaches_fake_sentry_transport() -> None:
     assert len(transport.payloads) == 1
 
 
-def test_proof_route_disabled_in_prod_environment() -> None:
+def test_proof_route_disabled_in_prod_environment(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setenv(
+        "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET",
+        "unit-test-lkw-sentry-proof-cursor-secret-32b",
+    )
+    monkeypatch.setenv("INTERGRAX_MONGODB_URI", "mongodb://127.0.0.1:27017")
+    monkeypatch.setenv("INTERGRAX_QDRANT_URL", "http://127.0.0.1:6333")
     with patch(
         "local_workspace_application.host.factory.build_local_workspace_observability_plugins",
         return_value=(),
     ):
-        app = create_local_workspace_backend_app(registry_projection=build_lkw_test_registry_projection(LocalWorkspaceBackendSettings(
-                environment=ApiEnvironment.PROD), settings=LocalWorkspaceBackendSettings(
-                environment=ApiEnvironment.PROD, default_agent_id="local_search",
-                api_keys_map={
-                    "proof-key": ApiKeyIdentity(tenant_id="t", user_id="u", scopes=("*",))
-                },
-            ),
+        settings = LocalWorkspaceBackendSettings(
+            environment=ApiEnvironment.PROD,
+            default_agent_id="local_search",
+            data_home=str(tmp_path / "data"),
+            api_keys_map={
+                "proof-key": ApiKeyIdentity(tenant_id="t", user_id="u", scopes=("*",))
+            },
+        )
+        app = create_local_workspace_backend_app(
+            registry_projection=build_lkw_test_registry_projection(settings),
+            settings=settings,
             observability_export=None,
         )
     client = TestClient(app)

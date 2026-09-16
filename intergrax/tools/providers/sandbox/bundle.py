@@ -28,6 +28,7 @@ from intergrax.tools.providers.sandbox.extended_service import (
 )
 from intergrax.tools.providers.sandbox.handlers import SandboxExecHandler
 from intergrax.tools.providers.sandbox.service import SANDBOX_EXEC_TOOL_ID
+from intergrax.tools.providers.invocation_requirements import REQUIRE_SANDBOX_SESSION
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -60,6 +61,7 @@ def sandbox_exec_contract() -> ToolContract:
         risk_level=ToolRiskLevel.HIGH,
         tags=("sandbox", "execution"),
         isolation_requirement=_SANDBOX_ISOLATION,
+        invocation_wiring_requirements=REQUIRE_SANDBOX_SESSION,
     )
 
 

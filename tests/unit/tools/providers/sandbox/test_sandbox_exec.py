@@ -3,11 +3,16 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+    PolicyRulesProfile,
+)
 from intergrax.applications.contracts.environment_profile.bundles import IsolationBundle
 from intergrax.applications.contracts.environment_profile.sub_profiles import SandboxProfile
 from intergrax.runtime.sandbox.session import SandboxSession
@@ -24,7 +29,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests, canonical_governed_execution_scope
 
 pytestmark = pytest.mark.unit
 
@@ -108,6 +113,20 @@ def test_sandbox_exec_via_runtime_invoker(sandbox_session: SandboxSession) -> No
         sandbox_availability=sandbox_availability_provider(ctx),
     )
     state = build_runtime_state_for_tests(run_id="sbox_run")
+    policy_env = _sandbox_env_profile()
+    policy_env = policy_env.model_copy(
+        update={
+            "policy_rules": PolicyRulesProfile(
+                inline_rules=[],
+                policy_enforcement_mode="enforce",
+            ),
+        },
+    )
+    cfg = replace(
+        state.context.config,
+        policy_bundle=wire_policy_bundle(policy_env),
+    )
+    state = replace(state, context=replace(state.context, config=cfg))
     request = ToolExecutionRequest(
         run_id="sbox_run",
         step_id="step/1",
@@ -115,7 +134,8 @@ def test_sandbox_exec_via_runtime_invoker(sandbox_session: SandboxSession) -> No
         input=SandboxExecInput(operation="echo", payload={"message": "via invoker"}),
     )
 
-    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    with canonical_governed_execution_scope("sbox_run"):
+        result = invoker.invoke(state=state, agent_id="agent", request=request)
 
     assert result.success is True
     assert result.output is not None

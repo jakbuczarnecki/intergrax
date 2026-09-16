@@ -27,6 +27,7 @@ from intergrax.runtime.sandbox.contracts import (
     SandboxSecurityRequirements,
     SandboxSessionSecurityEvidenceProvider,
 )
+from intergrax.runtime.sandbox.execution_environment import FilesystemAccess, ProcessExecution
 
 
 class E2bSandboxHostBackend:
@@ -88,6 +89,10 @@ class E2bSandboxHostBackend:
             network_egress_deny_enforced=False,
             network_egress_allowlist_enforced=True,
             enforced_network_hosts=enforced,
+            supports_sandboxed_exec=True,
+            supports_workspace_write=True,
+            filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
+            process_execution=ProcessExecution.SANDBOXED,
         )
         return SandboxSession(session_id=created.sandbox_id, status="running")
 

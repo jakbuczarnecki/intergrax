@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """Typed Tier-3 environment sub-profiles (Phase H-APP.1.1 · APP-EVOL-8)."""
 
@@ -13,13 +13,20 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from intergrax.core.plugins.selection_ref import PlatformPluginSelectionRef
 
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
-from intergrax.applications.contracts.application_recovery_contract import ApplicationRecoveryContract
-from intergrax.applications.contracts.business_outcome_webhook import BusinessOutcomeWebhookConfig
-from intergrax.applications.contracts.capability_alias import CapabilityGovernanceProfile
+from intergrax.applications.contracts.application_recovery_contract import (
+    ApplicationRecoveryContract,
+)
+from intergrax.applications.contracts.business_outcome_webhook import (
+    BusinessOutcomeWebhookConfig,
+)
+from intergrax.applications.contracts.capability_alias import (
+    CapabilityGovernanceProfile,
+)
 from intergrax.applications.contracts.intent_route import IntentRoute
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.autonomy_level import AutonomyLevel
+from intergrax.contracts.sandbox_profile import SandboxProfile
 from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistenceProvider
 from intergrax.contracts.delegated_invocation_correlation import (
@@ -28,7 +35,10 @@ from intergrax.contracts.delegated_invocation_correlation import (
 from intergrax.contracts.execution_terminal import ExecutionTerminalPersistenceProvider
 from intergrax.contracts.observability_export import ExporterKind, OtlpProtocol
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
-from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
+from intergrax.contracts.resilience_policy import (
+    ResiliencePolicy,
+    default_resilience_policy,
+)
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.runtime.adaptive.contracts import UtilityWeights
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
@@ -142,7 +152,9 @@ class ContextProfile(BaseModel):
     drift_alert_threshold: float = Field(default=0.35, ge=0.0, le=2.0)
     optimization_policy: ContextOptimizationPolicy | None = None
     semantic_compression_enabled: bool = False
-    default_history_compression: Literal["truncate_oldest", "summarize_oldest", "hybrid"] = "truncate_oldest"
+    default_history_compression: Literal[
+        "truncate_oldest", "summarize_oldest", "hybrid"
+    ] = "truncate_oldest"
 
     @field_validator("context_plugin_ids")
     @classmethod
@@ -209,19 +221,25 @@ class ReliabilityProfile(BaseModel):
     circuit_breaker_failure_threshold: int = Field(default=5, ge=1)
     checkpoint_interval_steps: int = Field(default=1, ge=1)
     long_running_scheduler_enabled: bool = False
-    resilience_policy: ResiliencePolicy = Field(default_factory=default_resilience_policy)
+    resilience_policy: ResiliencePolicy = Field(
+        default_factory=default_resilience_policy
+    )
     default_autonomy_level: AutonomyLevel = AutonomyLevel.ASK
     tenant_autonomy_ceiling: AutonomyLevel | None = None
     compensation_enabled: bool = False
     partial_results_enabled: bool = False
     middleware_hook_timeout_seconds: float = Field(default=2.0, ge=0.01, le=60.0)
     recovery_contract: ApplicationRecoveryContract | None = None
-    execution_terminal_persistence_provider: ExecutionTerminalPersistenceProvider | None = None
-    attempt_lifecycle_persistence_provider: AttemptLifecyclePersistenceProvider | None = None
-    execution_lineage_persistence_provider: ExecutionLineagePersistenceProvider | None = None
-    delegated_invocation_correlation_durability: DelegatedInvocationCorrelationDurabilityMode = (
-        DelegatedInvocationCorrelationDurabilityMode.DISABLED
-    )
+    execution_terminal_persistence_provider: (
+        ExecutionTerminalPersistenceProvider | None
+    ) = None
+    attempt_lifecycle_persistence_provider: (
+        AttemptLifecyclePersistenceProvider | None
+    ) = None
+    execution_lineage_persistence_provider: (
+        ExecutionLineagePersistenceProvider | None
+    ) = None
+    delegated_invocation_correlation_durability: DelegatedInvocationCorrelationDurabilityMode = DelegatedInvocationCorrelationDurabilityMode.DISABLED
 
 
 class EventSubscriptionSpec(BaseModel):
@@ -256,10 +274,7 @@ class EventSubscriptionSpec(BaseModel):
 
     def has_filter(self) -> bool:
         return bool(
-            self.kind_prefix
-            or self.categories
-            or self.ops_hints
-            or self.event_types
+            self.kind_prefix or self.categories or self.ops_hints or self.event_types
         )
 
 
@@ -391,7 +406,9 @@ class DecisionPluginProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     discover_entry_points: bool = False
-    verification_stage_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
+    verification_stage_plugins: list[PlatformPluginSelectionRef] = Field(
+        default_factory=list
+    )
     strategy_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
     artifact_plugins: list[PlatformPluginSelectionRef] = Field(default_factory=list)
     exposure_selection_strategy_plugin: PlatformPluginSelectionRef | None = None
@@ -564,15 +581,6 @@ class ExecutionBoundaryExportProfile(BaseModel):
     )
 
 
-class SandboxProfile(BaseModel):
-    """Sandbox session manager configuration (Phase H-APP.3.5)."""
-
-    model_config = ConfigDict(extra="forbid")
-
-    root: Path | None = None
-    enable_exec_tool: bool = False
-
-
 class ToolSelectionConfig(BaseModel):
     """Tool catalog selection posture (APP-EVOL-8 Â· CapabilityBundle)."""
 
@@ -589,4 +597,3 @@ class ToolInvocationConfig(BaseModel):
 
     mode: str = "single_pass"
     max_parallel: int = Field(default=8, ge=1, le=32)
-

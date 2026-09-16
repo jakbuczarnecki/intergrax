@@ -36,11 +36,11 @@ from intergrax.runtime.diagnostics.reliability.reliability_diagnostic_handoff im
 from intergrax.runtime.diagnostics.reliability.reliability_observability_attributes import (
     ExternalEffectReliabilityObservabilityAttributes,
 )
-from intergrax.runtime.observability.problem_signal import (
+from intergrax.contracts.platform_problem_signal import (
     PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY,
     PlatformProblemSignal,
 )
-from intergrax.runtime.observability.problem_signal import PlatformProblemSignal as _Signal
+from intergrax.contracts.platform_problem_signal import PlatformProblemSignal as _Signal
 
 
 class ReliabilityObservationGroupingAdapterError(ValueError):

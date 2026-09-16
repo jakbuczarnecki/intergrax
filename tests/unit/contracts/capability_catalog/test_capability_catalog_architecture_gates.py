@@ -19,6 +19,7 @@ _FORBIDDEN_IMPORT_PREFIXES = (
     "intergrax.applications",
     "intergrax.agent_distribution",
     "intergrax.autonomous_work",
+    "intergrax.capability_catalog",
     "intergrax.nexus",
     "intergrax.runtime.nexus",
     "intergrax.runtime",

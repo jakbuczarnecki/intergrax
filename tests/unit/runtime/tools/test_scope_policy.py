@@ -24,8 +24,28 @@ class DummyOutput(BaseModel):
     result: int
 
 
+class _ScopeTestHandler(ToolHandler[DummyInput, DummyOutput]):
+    def execute(self, request: ToolExecutionRequest[DummyInput]) -> DummyOutput:
+        return DummyOutput(result=0)
+
+
 class DummyState:
     run_id = "run_test"
+    request = type("Req", (), {"metadata": {}})()
+
+    @property
+    def context(self):
+        return type(
+            "Ctx",
+            (),
+            {
+                "config": type(
+                    "Cfg",
+                    (),
+                    {"policy_bundle": None, "production_mode": False},
+                )()
+            },
+        )()
 
     def trace_event(
         self,
@@ -42,6 +62,17 @@ class DummyState:
 
 def test_scope_policy_denies_tool_execution():
     registry = ToolRegistry()
+
+    contract = ToolContract(
+        tool_id="forbidden_tool",
+        name="forbidden_tool",
+        description="Test tool",
+        input_schema=DummyInput,
+        output_schema=DummyOutput,
+        error_mapping={},
+        side_effects=False,
+    )
+    registry.register(contract, _ScopeTestHandler())
 
     class DummyExecutor(ToolExecutor):
         def execute(self, request: ToolExecutionRequest[BaseModel]) -> BaseModel:

@@ -26,7 +26,10 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_governed_execution_scope,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -177,15 +180,17 @@ def test_rag_retrieve_via_runtime_invoker() -> None:
     register_rag_tools(registry, ctx)
 
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
-    state = build_runtime_state_for_tests(run_id="rag_run")
+    run_seed = "rag-runtime-invoker"
+    state = build_runtime_state_for_tests(run_id=run_seed)
     request = ToolExecutionRequest(
-        run_id="rag_run",
+        run_id=str(state.run_id),
         step_id="step/1",
         tool_id="rag.retrieve",
         input=RagRetrieveInput(query="policy", top_k=5, tenant_id="t1"),
     )
 
-    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    with canonical_governed_execution_scope(run_seed):
+        result = invoker.invoke(state=state, agent_id="agent", request=request)
 
     assert result.success is True
     assert result.output is not None
