@@ -23,6 +23,7 @@ from intergrax.memory.contracts.memory_control import MemoryControlScopeRef
 from intergrax.memory.contracts.memory_models import MemoryKind, UserProfileMemoryEntry
 
 __all__ = [
+    "CanonicalMemoryGovernanceEntry",
     "CanonicalMemoryGovernanceEntryReader",
     "CanonicalMemoryGovernanceSourceAuthority",
     "CanonicalMemoryGovernanceSourceMismatch",
@@ -65,7 +66,16 @@ class CanonicalMemoryGovernanceSourceMismatch(CanonicalMemoryGovernanceSourceVio
 
 
 @dataclass(frozen=True, slots=True)
+class CanonicalMemoryGovernanceEntry:
+    """Scoped canonical memory entry at reader boundary (scope is provider truth)."""
+
+    scope: EntityMemoryScope
+    entry: UserProfileMemoryEntry
+
+
+@dataclass(frozen=True, slots=True)
 class CanonicalMemoryGovernanceSourceSnapshot:
+    scope: EntityMemoryScope
     memory_id: str
     revision: int
     provenance: MemoryProvenance
@@ -75,10 +85,15 @@ class CanonicalMemoryGovernanceSourceSnapshot:
 
 
 def validate_canonical_governance_source_snapshot(
+    requested_scope: EntityMemoryScope,
     memory_id: str,
     revision: int,
     snapshot: CanonicalMemoryGovernanceSourceSnapshot,
 ) -> None:
+    if snapshot.scope != requested_scope:
+        raise CanonicalMemoryGovernanceSourceMismatch(
+            "canonical governance authority returned unexpected scope"
+        )
     if snapshot.memory_id != memory_id:
         raise CanonicalMemoryGovernanceSourceMismatch(
             "canonical governance authority returned unexpected memory_id"
@@ -110,7 +125,7 @@ class CanonicalMemoryGovernanceEntryReader(Protocol):
         scope: EntityMemoryScope,
         memory_id: str,
         revision: int,
-    ) -> UserProfileMemoryEntry | None: ...
+    ) -> CanonicalMemoryGovernanceEntry | None: ...
 
 
 class MemoryGovernanceOperation(str, Enum):

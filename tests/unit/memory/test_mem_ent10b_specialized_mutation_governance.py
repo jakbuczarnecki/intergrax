@@ -88,7 +88,11 @@ from intergrax.memory.stores.in_memory_procedural_memory_store import (
 from intergrax.memory.strategies.defaults.memory_security_governance import (
     build_default_memory_security_strategy_set,
 )
+from intergrax.memory.canonical_memory_governance_source_authority import (
+    ReaderBackedCanonicalMemoryGovernanceSourceAuthority,
+)
 from intergrax.memory.contracts.memory_security_governance import (
+    CanonicalMemoryGovernanceEntry,
     CanonicalMemoryGovernanceSourceMismatch,
     CanonicalMemoryGovernanceSourceSnapshot,
     validate_canonical_governance_source_snapshot,
@@ -97,6 +101,7 @@ from tests.unit.memory.governance_source_fixtures import (
     PermissiveCanonicalGovernanceSourceAuthority,
     ScopedCanonicalGovernanceSourceAuthority,
     model_inference_governance_snapshot,
+    permissive_governance_snapshot,
     restricted_governance_snapshot,
 )
 
@@ -252,7 +257,7 @@ def test_procedural_trust_escalation_denied() -> None:
     authority = ScopedCanonicalGovernanceSourceAuthority(
         scope=scope,
         snapshots={
-            ("mem-src", 1): model_inference_governance_snapshot("mem-src", 1),
+            ("mem-src", 1): model_inference_governance_snapshot(scope, "mem-src", 1),
         },
     )
     service = _procedural_service(store=store, governance_source=authority)
@@ -443,7 +448,7 @@ def test_long_horizon_restricted_raw_source_denied() -> None:
     scope = LongHorizonMemoryScope(tenant_id=_TENANT, user_id=_USER)
     authority = ScopedCanonicalGovernanceSourceAuthority(
         scope=scope,
-        snapshots={("m1", 1): restricted_governance_snapshot("m1", 1)},
+        snapshots={("m1", 1): restricted_governance_snapshot(scope, "m1", 1)},
     )
     service = LongHorizonMemoryService(
         _store=InMemoryLongHorizonMemoryStore(),
@@ -480,7 +485,9 @@ def test_procedural_missing_canonical_source_zero_mutation() -> None:
 
 
 def test_canonical_governance_postcondition_validation() -> None:
+    scope = _entity_scope()
     snapshot = CanonicalMemoryGovernanceSourceSnapshot(
+        scope=scope,
         memory_id="M2",
         revision=4,
         provenance=MemoryProvenance(source_type=MemoryRecordSourceType.USER_EXPLICIT),
@@ -488,7 +495,124 @@ def test_canonical_governance_postcondition_validation() -> None:
         governance=MemoryRecordGovernance(),
     )
     with pytest.raises(CanonicalMemoryGovernanceSourceMismatch):
-        validate_canonical_governance_source_snapshot("M1", 4, snapshot)
+        validate_canonical_governance_source_snapshot(scope, "M1", 4, snapshot)
+
+
+def test_canonical_governance_scope_postcondition_tenant_mismatch() -> None:
+    requested = EntityMemoryScope(tenant_id="tenant-a", user_id="u1", workspace_id="w1")
+    returned_scope = EntityMemoryScope(tenant_id="tenant-b", user_id="u1", workspace_id="w1")
+    snapshot = permissive_governance_snapshot(returned_scope, "M1", 4)
+    with pytest.raises(CanonicalMemoryGovernanceSourceMismatch, match="scope"):
+        validate_canonical_governance_source_snapshot(requested, "M1", 4, snapshot)
+
+
+def test_canonical_governance_scope_postcondition_user_mismatch() -> None:
+    requested = EntityMemoryScope(tenant_id="tenant-a", user_id="u1")
+    returned_scope = EntityMemoryScope(tenant_id="tenant-a", user_id="u2")
+    snapshot = permissive_governance_snapshot(returned_scope, "M1", 4)
+    with pytest.raises(CanonicalMemoryGovernanceSourceMismatch, match="scope"):
+        validate_canonical_governance_source_snapshot(requested, "M1", 4, snapshot)
+
+
+def test_canonical_governance_scope_postcondition_workspace_mismatch() -> None:
+    requested = EntityMemoryScope(tenant_id="tenant-a", user_id="u1", workspace_id="w1")
+    returned_scope = EntityMemoryScope(tenant_id="tenant-a", user_id="u1", workspace_id="w2")
+    snapshot = permissive_governance_snapshot(returned_scope, "M1", 4)
+    with pytest.raises(CanonicalMemoryGovernanceSourceMismatch, match="scope"):
+        validate_canonical_governance_source_snapshot(requested, "M1", 4, snapshot)
+
+
+def test_canonical_governance_scope_postcondition_none_vs_workspace() -> None:
+    requested = EntityMemoryScope(tenant_id="tenant-a", user_id="u1", workspace_id=None)
+    returned_scope = EntityMemoryScope(tenant_id="tenant-a", user_id="u1", workspace_id="w1")
+    snapshot = permissive_governance_snapshot(returned_scope, "M1", 4)
+    with pytest.raises(CanonicalMemoryGovernanceSourceMismatch, match="scope"):
+        validate_canonical_governance_source_snapshot(requested, "M1", 4, snapshot)
+
+
+def test_canonical_governance_scope_postcondition_exact_pass() -> None:
+    scope = EntityMemoryScope(tenant_id="tenant-a", user_id="u1", workspace_id="w1")
+    snapshot = permissive_governance_snapshot(scope, "M1", 4)
+    validate_canonical_governance_source_snapshot(scope, "M1", 4, snapshot)
+
+
+def test_canonical_governance_revision_postcondition_mismatch() -> None:
+    scope = _entity_scope()
+    snapshot = permissive_governance_snapshot(scope, "M1", 5)
+    with pytest.raises(CanonicalMemoryGovernanceSourceMismatch, match="revision"):
+        validate_canonical_governance_source_snapshot(scope, "M1", 4, snapshot)
+
+
+def test_reader_backed_authority_rejects_wrong_scope_from_reader() -> None:
+    requested = EntityMemoryScope(tenant_id=_TENANT, user_id=_USER)
+    wrong_scope = EntityMemoryScope(tenant_id="other-tenant", user_id=_USER)
+    entry = UserProfileMemoryEntry(
+        content="x",
+        kind=MemoryKind.USER_FACT,
+        entry_id="M1",
+        revision=4,
+    )
+
+    class _WrongScopeReader:
+        def read_governance_entry(
+            self,
+            scope: EntityMemoryScope,
+            memory_id: str,
+            revision: int,
+        ) -> CanonicalMemoryGovernanceEntry | None:
+            return CanonicalMemoryGovernanceEntry(scope=wrong_scope, entry=entry)
+
+    authority = ReaderBackedCanonicalMemoryGovernanceSourceAuthority(_reader=_WrongScopeReader())
+    with pytest.raises(CanonicalMemoryGovernanceSourceMismatch, match="scope"):
+        authority.resolve_canonical_governance_source(requested, "M1", 4)
+
+
+def test_procedural_cross_scope_governance_source_denied_zero_mutation() -> None:
+    scope = _procedural_scope()
+    wrong_scope = EntityMemoryScope(tenant_id="other-tenant", user_id=_USER)
+    authority = PermissiveCanonicalGovernanceSourceAuthority(
+        snapshots={
+            ("mem-src", 1): permissive_governance_snapshot(wrong_scope, "mem-src", 1),
+        },
+    )
+    store = InMemoryProceduralMemoryStore()
+    service = _procedural_service(store=store, governance_source=authority)
+    with pytest.raises(MemoryGovernanceDenied):
+        service.remember_procedure(_identity(), scope, _procedure())
+    assert store.get_procedure(scope, "proc-1") is None
+
+
+def test_long_horizon_cross_scope_governance_source_denied() -> None:
+    scope = LongHorizonMemoryScope(tenant_id=_TENANT, user_id=_USER)
+    wrong_scope = EntityMemoryScope(tenant_id="other-tenant", user_id=_USER)
+    gov_authority = PermissiveCanonicalGovernanceSourceAuthority(
+        snapshots={
+            ("m1", 1): permissive_governance_snapshot(wrong_scope, "m1", 1),
+        },
+    )
+    service = LongHorizonMemoryService(
+        _store=InMemoryLongHorizonMemoryStore(),
+        _strategies=build_default_long_horizon_strategies(),
+        _source_authority=_ScopedAuthority(scope),
+        _governance_source_authority=gov_authority,
+        _security_governance=build_default_memory_security_governance_service(),
+    )
+    request = LongHorizonCompactionRequest(
+        identity=_identity(),
+        scope=scope,
+        target_level=1,
+        sources=(
+            LongHorizonCompactionSource(
+                memory_id="m1",
+                revision=1,
+                content="alpha content",
+                observed_at="2025-01-01T00:00:00+00:00",
+            ),
+        ),
+    )
+    result = service.compact(request)
+    assert not result.created
+    assert result.failures
 
 
 def test_specialized_services_do_not_fabricate_system_governance() -> None:

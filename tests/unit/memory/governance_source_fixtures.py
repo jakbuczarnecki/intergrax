@@ -19,14 +19,17 @@ from intergrax.memory.contracts.memory_security_governance import (
     CanonicalMemoryGovernanceSourceMismatch,
     CanonicalMemoryGovernanceSourceNotFound,
     CanonicalMemoryGovernanceSourceSnapshot,
+    validate_canonical_governance_source_snapshot,
 )
 
 
 def permissive_governance_snapshot(
+    scope: EntityMemoryScope,
     memory_id: str,
     revision: int,
 ) -> CanonicalMemoryGovernanceSourceSnapshot:
     return CanonicalMemoryGovernanceSourceSnapshot(
+        scope=scope,
         memory_id=memory_id,
         revision=revision,
         provenance=MemoryProvenance(source_type=MemoryRecordSourceType.USER_EXPLICIT),
@@ -61,18 +64,22 @@ class ScopedCanonicalGovernanceSourceAuthority:
         if key in self.snapshots:
             snapshot = self.snapshots[key]
         elif self.default_factory:
-            snapshot = permissive_governance_snapshot(memory_id, revision)
+            snapshot = permissive_governance_snapshot(self.scope, memory_id, revision)
         else:
             raise CanonicalMemoryGovernanceSourceNotFound(
                 f"canonical governance not found: {memory_id}@{revision}"
             )
-        if snapshot.memory_id != memory_id or snapshot.revision != revision:
-            raise CanonicalMemoryGovernanceSourceMismatch("governance snapshot identity mismatch")
+        validate_canonical_governance_source_snapshot(scope, memory_id, revision, snapshot)
         return snapshot
 
 
-def restricted_governance_snapshot(memory_id: str, revision: int) -> CanonicalMemoryGovernanceSourceSnapshot:
+def restricted_governance_snapshot(
+    scope: EntityMemoryScope,
+    memory_id: str,
+    revision: int,
+) -> CanonicalMemoryGovernanceSourceSnapshot:
     return CanonicalMemoryGovernanceSourceSnapshot(
+        scope=scope,
         memory_id=memory_id,
         revision=revision,
         provenance=MemoryProvenance(source_type=MemoryRecordSourceType.USER_EXPLICIT),
@@ -99,17 +106,18 @@ class PermissiveCanonicalGovernanceSourceAuthority:
         if key in self.snapshots:
             snapshot = self.snapshots[key]
         else:
-            snapshot = permissive_governance_snapshot(memory_id, revision)
-        if snapshot.memory_id != memory_id or snapshot.revision != revision:
-            raise CanonicalMemoryGovernanceSourceMismatch("governance snapshot identity mismatch")
+            snapshot = permissive_governance_snapshot(scope, memory_id, revision)
+        validate_canonical_governance_source_snapshot(scope, memory_id, revision, snapshot)
         return snapshot
 
 
 def model_inference_governance_snapshot(
+    scope: EntityMemoryScope,
     memory_id: str,
     revision: int,
 ) -> CanonicalMemoryGovernanceSourceSnapshot:
     return CanonicalMemoryGovernanceSourceSnapshot(
+        scope=scope,
         memory_id=memory_id,
         revision=revision,
         provenance=MemoryProvenance(source_type=MemoryRecordSourceType.SESSION_EXTRACTION),

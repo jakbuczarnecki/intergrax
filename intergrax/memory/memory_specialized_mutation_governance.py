@@ -156,7 +156,7 @@ def resolve_governance_source_record_snapshot(
             operation,
             f"canonical governance source resolution failed: {exc}",
         ) from exc
-    validate_canonical_governance_source_snapshot(memory_id, revision, canonical)
+    validate_canonical_governance_source_snapshot(scope, memory_id, revision, canonical)
     return governance_snapshot_from_canonical_source(canonical, content_preview=content_preview)
 
 

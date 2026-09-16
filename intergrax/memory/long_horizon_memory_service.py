@@ -314,6 +314,7 @@ class LongHorizonMemoryService:
         except Exception as exc:
             raise specialized_mutation_denied_for_canonical_source(operation, str(exc)) from exc
         validate_canonical_governance_source_snapshot(
+            scope,
             source.memory_id,
             source.revision,
             governance,

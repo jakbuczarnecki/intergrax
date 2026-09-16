@@ -41,12 +41,14 @@ class ReaderBackedCanonicalMemoryGovernanceSourceAuthority:
     ) -> CanonicalMemoryGovernanceSourceSnapshot:
         if self._bound_scope is not None and not _scope_matches(scope, self._bound_scope):
             raise CanonicalMemoryGovernanceSourceNotFound("canonical governance scope mismatch")
-        entry = self._reader.read_governance_entry(scope, memory_id, revision)
-        if entry is None:
+        wrapped = self._reader.read_governance_entry(scope, memory_id, revision)
+        if wrapped is None:
             raise CanonicalMemoryGovernanceSourceNotFound(
                 f"canonical governance entry not found: {memory_id}@{revision}"
             )
+        entry = wrapped.entry
         snapshot = CanonicalMemoryGovernanceSourceSnapshot(
+            scope=wrapped.scope,
             memory_id=entry.entry_id,
             revision=max(1, int(entry.revision or 1)),
             provenance=entry.provenance,
@@ -54,5 +56,5 @@ class ReaderBackedCanonicalMemoryGovernanceSourceAuthority:
             governance=entry.governance,
             kind=entry.kind,
         )
-        validate_canonical_governance_source_snapshot(memory_id, revision, snapshot)
+        validate_canonical_governance_source_snapshot(scope, memory_id, revision, snapshot)
         return snapshot
