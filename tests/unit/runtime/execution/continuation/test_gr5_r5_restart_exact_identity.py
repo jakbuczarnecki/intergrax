@@ -26,6 +26,7 @@ from intergrax.contracts.execution_continuation import (
     ExecutionPauseRequest,
     PendingExecutionContinuation,
     advance_continuation_lifecycle,
+    execution_continuation_recovery_handle_for_continuation_id,
 )
 from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
 from intergrax.contracts.governed_continuation_correlation import ContinuationReason
@@ -46,12 +47,16 @@ from intergrax.runtime.execution.continuation.persistence import (
     ExecutionContinuationDurableBacking,
     InMemoryExecutionContinuationStateStore,
     backing_execution_continuation_state_store,
+    execution_continuation_state_store_from_durable_export,
+    export_durable_continuation_state,
+    restore_durable_continuation_backing,
 )
 from intergrax.runtime.execution.continuation.progress_gate import (
     assert_canonical_execution_may_progress,
 )
 from intergrax.runtime.execution.continuation.restart_qualification import (
     qualify_execution_continuation_process_restart,
+    recover_execution_continuation_process_restart,
 )
 from intergrax.runtime.execution.continuation.service import ExecutionContinuationService
 from intergrax.runtime.execution.runtime import ExecutionRuntime
@@ -144,6 +149,14 @@ class _ProcessA:
     driver: ExecutionContinuationLifecycleDriver
 
 
+@dataclass
+class _ProcessB:
+    backing: ExecutionContinuationDurableBacking
+    store: ExecutionContinuationStateStore
+    service: ExecutionContinuationService
+    driver: ExecutionContinuationLifecycleDriver
+
+
 def _spawn_process_a() -> _ProcessA:
     backing = ExecutionContinuationDurableBacking()
     store = backing_execution_continuation_state_store(backing)
@@ -156,16 +169,38 @@ def _spawn_process_a() -> _ProcessA:
     )
 
 
-def _spawn_process_b(
-    backing: ExecutionContinuationDurableBacking,
-    *,
-    store_a: ExecutionContinuationStateStore,
-) -> tuple[ExecutionContinuationStateStore, ExecutionContinuationService, ExecutionContinuationLifecycleDriver]:
-    store_b = backing_execution_continuation_state_store(backing)
+def _true_restart_process_b(proc_a: _ProcessA) -> _ProcessB:
+    payload = export_durable_continuation_state(proc_a.backing)
+    backing_a = proc_a.backing
+    store_a = proc_a.store
+    service_a = proc_a.service
+    lock_a = backing_a._lock
+    del proc_a, service_a
+    backing_b = restore_durable_continuation_backing(payload)
+    assert backing_b is not backing_a
+    assert backing_b._lock is not lock_a
+    store_b = execution_continuation_state_store_from_durable_export(payload)
     assert store_b is not store_a
     assert store_b.is_durable is True
     deps_b = reconnect_execution_engine_continuation_dependencies(state_store=store_b)
-    return store_b, deps_b.continuation_service, deps_b.lifecycle_driver
+    return _ProcessB(
+        backing=backing_b,
+        store=store_b,
+        service=deps_b.continuation_service,
+        driver=deps_b.lifecycle_driver,
+    )
+
+
+def _recover(store: ExecutionContinuationStateStore, continuation_id: str):
+    return recover_execution_continuation_process_restart(
+        store=store,
+        recovery_handle=execution_continuation_recovery_handle_for_continuation_id(
+            continuation_id,
+        ),
+        authority=_AUTHORITY,
+        tenant_id=_TENANT,
+        task_id_consistency=_TASK,
+    )
 
 
 def _drive_to_waiting(
@@ -193,44 +228,33 @@ def _drive_to_resumed(
     return service.resume(_resume(continuation_id, expected_revision=approved.revision))
 
 
-def _qualify(store: ExecutionContinuationStateStore):
-    return qualify_execution_continuation_process_restart(
-        store=store,
-        identity=_identity(),
-        authority=_AUTHORITY,
-        tenant_id=_TENANT,
-        task_id_consistency=_TASK,
-    )
-
-
 def test_waiting_restart_current_c2_blocked() -> None:
     proc_a = _spawn_process_a()
     _drive_to_resumed(proc_a.service, proc_a.driver, _C1)
     waiting = _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
     assert waiting.revision >= 3
-    store_b, service_b, _driver_b = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    del proc_a
-    qual = _qualify(store_b)
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C2)
     assert qual.current_episode.continuation_id == _C2
     assert qual.current_episode.lifecycle_state is ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN
     assert qual.current_episode.revision == waiting.revision
     assert qual.identity == _identity()
     with pytest.raises(ExecutionContinuationError) as exc:
-        assert_canonical_execution_may_progress(store=store_b, identity=_identity())
+        assert_canonical_execution_may_progress(store=proc_b.store, identity=qual.identity)
     assert exc.value.code is ExecutionContinuationErrorCode.EXECUTION_PROGRESS_BLOCKED
-    assert service_b is not None
+    assert proc_b.service is not None
 
 
 def test_approve_after_restart_same_ids() -> None:
     proc_a = _spawn_process_a()
     _drive_to_resumed(proc_a.service, proc_a.driver, _C1)
     waiting = _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    store_b, service_b, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    qual = _qualify(store_b)
-    approved = service_b.apply_resolution(
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C2)
+    approved = proc_b.service.apply_resolution(
         _resolution(_C2, expected_revision=qual.current_episode.revision),
     )
-    resumed = service_b.resume(_resume(_C2, expected_revision=approved.revision))
+    resumed = proc_b.service.resume(_resume(_C2, expected_revision=approved.revision))
     assert resumed.lifecycle_state is ExecutionContinuationLifecycleState.RESUMED
     assert resumed.identity == _identity()
     assert resumed.pause_id == f"pause_{_C2}"
@@ -298,36 +322,36 @@ def test_lifecycle_preserved_after_restart(setup: str) -> None:
             expected=waiting,
             updated=pending,
         )
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    qual = _qualify(store_b)
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C2)
     assert qual.current_episode.continuation_id == _C2
     assert qual.current_episode.lifecycle_state is pending.lifecycle_state
     assert qual.current_episode.revision == pending.revision
     blocks = setup not in {"resumed", "pause_requested"}
     if blocks:
         with pytest.raises(ExecutionContinuationError):
-            assert_canonical_execution_may_progress(store=store_b, identity=_identity())
+            assert_canonical_execution_may_progress(store=proc_b.store, identity=qual.identity)
     else:
-        assert_canonical_execution_may_progress(store=store_b, identity=_identity())
+        assert_canonical_execution_may_progress(store=proc_b.store, identity=qual.identity)
 
 
 def test_history_c1_c2_after_restart() -> None:
     proc_a = _spawn_process_a()
     _drive_to_resumed(proc_a.service, proc_a.driver, _C1)
     _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    assert store_b.load(_C1) is not None
-    assert store_b.load(_C2) is not None
+    proc_b = _true_restart_process_b(proc_a)
+    assert proc_b.store.load(_C1) is not None
+    assert proc_b.store.load(_C2) is not None
 
 
 def test_c3_after_restart_becomes_current() -> None:
     proc_a = _spawn_process_a()
     _drive_to_resumed(proc_a.service, proc_a.driver, _C1)
     _drive_to_resumed(proc_a.service, proc_a.driver, _C2)
-    store_b, service_b, driver_b = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    _qualify(store_b)
-    _drive_to_waiting(service_b, driver_b, _C3)
-    current = store_b.resolve_current_episode_for_identity(_identity())
+    proc_b = _true_restart_process_b(proc_a)
+    _recover(proc_b.store, _C2)
+    _drive_to_waiting(proc_b.service, proc_b.driver, _C3)
+    current = proc_b.store.resolve_current_episode_for_identity(_identity())
     assert current is not None and current.continuation_id == _C3
 
 
@@ -335,10 +359,10 @@ def test_stale_c1_human_input_after_restart() -> None:
     proc_a = _spawn_process_a()
     _drive_to_resumed(proc_a.service, proc_a.driver, _C1)
     waiting_c2 = _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    store_b, service_b, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    _qualify(store_b)
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C2)
     with pytest.raises(ExecutionContinuationError) as exc:
-        service_b.apply_resolution(
+        proc_b.service.apply_resolution(
             _resolution(_C1, expected_revision=1),
         )
     assert exc.value.code in {
@@ -346,37 +370,39 @@ def test_stale_c1_human_input_after_restart() -> None:
         ExecutionContinuationErrorCode.INVALID_TRANSITION,
         ExecutionContinuationErrorCode.ALREADY_RESOLVED,
     }
-    approved = service_b.apply_resolution(
+    approved = proc_b.service.apply_resolution(
         _resolution(_C2, expected_revision=waiting_c2.revision),
     )
     assert approved.lifecycle_state is ExecutionContinuationLifecycleState.RESUME_AUTHORIZED
+    assert qual.identity == _identity()
 
 
 def test_task_projection_absent_canonical_blocks() -> None:
     proc_a = _spawn_process_a()
     _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    _qualify(store_b)
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C2)
     with pytest.raises(ExecutionContinuationError):
-        assert_canonical_execution_may_progress(store=store_b, identity=_identity())
+        assert_canonical_execution_may_progress(store=proc_b.store, identity=qual.identity)
 
 
 def test_task_projection_corrupted_canonical_blocks() -> None:
     proc_a = _spawn_process_a()
     _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C2)
     task = _task()
     task.runtime.governance.projected_continuation_lifecycle_state = "RESUMED"
     with pytest.raises(ExecutionContinuationError):
-        assert_canonical_execution_may_progress(store=store_b, identity=_identity())
+        assert_canonical_execution_may_progress(store=proc_b.store, identity=qual.identity)
 
 
 def test_reprojection_and_digest_deterministic() -> None:
     proc_a = _spawn_process_a()
     waiting = _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
     digest_a = execution_continuation_projection_payload_digest(waiting)
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    qual = _qualify(store_b)
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C2)
     task = _task()
     sink = wire_task_execution_continuation_projection_sink(task)
     HumanPauseCoordinator.project_continuation(task, qual.current_episode, projection_sink=sink)
@@ -389,8 +415,8 @@ def test_reprojection_and_digest_deterministic() -> None:
 async def test_runtime_recreation_boundary_blocks() -> None:
     proc_a = _spawn_process_a()
     _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    qual = _qualify(store_b)
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C2)
 
     class _Delegate:
         async def execute(self, request: object) -> str:
@@ -398,14 +424,14 @@ async def test_runtime_recreation_boundary_blocks() -> None:
 
     runtime_b = ExecutionRuntime(
         _Delegate(),
-        continuation_state_store=store_b,
+        continuation_state_store=proc_b.store,
     )
     assert runtime_b is not None
     boundary = ExecutionBoundary(
         _Delegate(),
         identity=qual.execution_identity_binding,
         authority=_AUTHORITY,
-        continuation_state_store=store_b,
+        continuation_state_store=proc_b.store,
     )
     with pytest.raises(ExecutionContinuationError):
         await boundary.execute("probe")
@@ -414,8 +440,8 @@ async def test_runtime_recreation_boundary_blocks() -> None:
 def test_no_new_attempt_or_execution_id_on_qualify() -> None:
     proc_a = _spawn_process_a()
     _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    qual = _qualify(store_b)
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C2)
     assert qual.identity.attempt_id == _ATTEMPT
     assert qual.identity.execution_id == _EXECUTION
     assert qual.identity.run_id == _RUN
@@ -427,9 +453,9 @@ def test_non_durable_restore_rejected() -> None:
     service = ExecutionContinuationService(store)
     _drive_to_waiting(service, ExecutionContinuationLifecycleDriver(service), _C2)
     with pytest.raises(ExecutionContinuationError) as exc:
-        qualify_execution_continuation_process_restart(
+        recover_execution_continuation_process_restart(
             store=store,
-            identity=_identity(),
+            recovery_handle=execution_continuation_recovery_handle_for_continuation_id(_C2),
             authority=_AUTHORITY,
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
@@ -453,43 +479,29 @@ def test_non_durable_normal_execution_still_works() -> None:
 def test_pointer_to_missing_record_fail_closed() -> None:
     proc_a = _spawn_process_a()
     _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    key = (str(_TASK), str(_RUN), str(_ATTEMPT), str(_EXECUTION))
-    proc_a.backing._current_by_identity[key] = "missing-episode"
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
+    payload = export_durable_continuation_state(proc_a.backing)
+    payload["current_by_identity"][0]["continuation_id"] = "missing-episode"
     with pytest.raises(ExecutionContinuationError) as exc:
-        store_b.resolve_current_episode_for_identity(_identity())
-    assert exc.value.code is ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY
+        restore_durable_continuation_backing(payload)
+    assert exc.value.code is ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE
 
 
 def test_pointer_identity_mismatch_fail_closed() -> None:
     proc_a = _spawn_process_a()
     _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    other = ExecutionContinuationIdentity(
-        task_id=_TASK,
-        run_id=_RUN,
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
-    )
-    corrupted = PendingExecutionContinuation(
-        continuation_id=_C2,
-        identity=other,
-        lifecycle_state=ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN,
-        revision=3,
-        reason=ContinuationReason.SECURITY,
-    )
-    proc_a.backing._by_id[_C2] = corrupted
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
+    payload = export_durable_continuation_state(proc_a.backing)
+    payload["records"][_C2]["identity"]["attempt_id"] = str(mint_attempt_id())
     with pytest.raises(ExecutionContinuationError) as exc:
-        store_b.resolve_current_episode_for_identity(_identity())
-    assert exc.value.code is ExecutionContinuationErrorCode.AMBIGUOUS_IDENTITY
+        restore_durable_continuation_backing(payload)
+    assert exc.value.code is ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE
 
 
 def test_stale_cas_after_restart() -> None:
     proc_a = _spawn_process_a()
     waiting = _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    store_b, service_b, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
+    proc_b = _true_restart_process_b(proc_a)
     with pytest.raises(ExecutionContinuationError) as exc:
-        service_b.apply_resolution(
+        proc_b.service.apply_resolution(
             _resolution(_C2, expected_revision=waiting.revision - 1),
         )
     assert exc.value.code is ExecutionContinuationErrorCode.STALE_REVISION
@@ -501,12 +513,12 @@ def test_double_resume_after_restart_one_wins() -> None:
     approved = proc_a.service.apply_resolution(
         _resolution(_C2, expected_revision=waiting.revision),
     )
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
+    proc_b = _true_restart_process_b(proc_a)
     barrier = threading.Barrier(2)
     results: list[ExecutionContinuationErrorCode | PendingExecutionContinuation] = []
 
     def _attempt() -> None:
-        local_store = backing_execution_continuation_state_store(proc_a.backing)
+        local_store = backing_execution_continuation_state_store(proc_b.backing)
         local = ExecutionContinuationService(local_store)
         barrier.wait()
         try:
@@ -614,12 +626,13 @@ def test_custom_durable_provider_qualification() -> None:
     store = _CustomDurableContinuationStore(records, current)
     deps = wire_execution_engine_continuation_dependencies(state_store=store)
     _drive_to_waiting(deps.continuation_service, deps.lifecycle_driver, _C2)
-    qual = qualify_execution_continuation_process_restart(
+    qual = recover_execution_continuation_process_restart(
         store=store,
-        identity=_identity(),
+        recovery_handle=execution_continuation_recovery_handle_for_continuation_id(_C2),
         authority=_AUTHORITY,
     )
     assert qual.current_episode.continuation_id == _C2
+    assert qual.identity == _identity()
 
 
 class _FalseyDurableStore(_CustomDurableContinuationStore):
@@ -632,11 +645,13 @@ def test_falsey_durable_provider_preserved() -> None:
     records: dict[str, PendingExecutionContinuation] = {}
     current: dict[tuple[str, str, str, str], str] = {}
     store = _FalseyDurableStore(records, current)
+    deps = wire_execution_engine_continuation_dependencies(state_store=store)
+    _drive_to_waiting(deps.continuation_service, deps.lifecycle_driver, _C2)
     assert not store.is_durable
     with pytest.raises(ExecutionContinuationError) as exc:
-        qualify_execution_continuation_process_restart(
+        recover_execution_continuation_process_restart(
             store=store,
-            identity=_identity(),
+            recovery_handle=execution_continuation_recovery_handle_for_continuation_id(_C2),
             authority=_AUTHORITY,
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
@@ -664,7 +679,7 @@ def test_unknown_schema_fail_closed() -> None:
 def test_checkpoint_identity_mismatch_fail_closed() -> None:
     proc_a = _spawn_process_a()
     _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    store_b, _, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
+    proc_b = _true_restart_process_b(proc_a)
     bad = ExecutionContinuationIdentity(
         task_id=_TASK,
         run_id=_RUN,
@@ -672,9 +687,9 @@ def test_checkpoint_identity_mismatch_fail_closed() -> None:
         execution_id=_EXECUTION,
     )
     with pytest.raises(ExecutionContinuationError) as exc:
-        qualify_execution_continuation_process_restart(
-            store=store_b,
-            identity=_identity(),
+        recover_execution_continuation_process_restart(
+            store=proc_b.store,
+            recovery_handle=execution_continuation_recovery_handle_for_continuation_id(_C2),
             authority=_AUTHORITY,
             checkpoint_identity=bad,
         )
@@ -684,12 +699,12 @@ def test_checkpoint_identity_mismatch_fail_closed() -> None:
 def test_restart_qualify_no_root_admission_on_resume() -> None:
     proc_a = _spawn_process_a()
     waiting = _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
-    store_b, service_b, _ = _spawn_process_b(proc_a.backing, store_a=proc_a.store)
-    qual = _qualify(store_b)
-    approved = service_b.apply_resolution(
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C2)
+    approved = proc_b.service.apply_resolution(
         _resolution(_C2, expected_revision=waiting.revision),
     )
-    service_b.resume(_resume(_C2, expected_revision=approved.revision))
+    proc_b.service.resume(_resume(_C2, expected_revision=approved.revision))
     assert qual.identity.execution_id == _EXECUTION
 
 
@@ -709,3 +724,105 @@ def test_restart_module_no_nexus_imports() -> None:
         if isinstance(node, ast.ImportFrom) and node.module:
             modules.append(node.module)
     assert not any("nexus" in m for m in modules)
+
+
+def test_reconnect_shared_backing_is_not_restart_durable() -> None:
+    proc_a = _spawn_process_a()
+    _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
+    reconnect_store = backing_execution_continuation_state_store(proc_a.backing)
+    assert reconnect_store.is_durable is False
+    assert reconnect_store.load(_C2) is not None
+    with pytest.raises(ExecutionContinuationError) as exc:
+        recover_execution_continuation_process_restart(
+            store=reconnect_store,
+            recovery_handle=execution_continuation_recovery_handle_for_continuation_id(_C2),
+            authority=_AUTHORITY,
+        )
+    assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
+
+
+def test_historical_recovery_handle_rejected_when_not_current() -> None:
+    proc_a = _spawn_process_a()
+    _drive_to_resumed(proc_a.service, proc_a.driver, _C1)
+    _drive_to_resumed(proc_a.service, proc_a.driver, _C2)
+    _drive_to_waiting(proc_a.service, proc_a.driver, _C3)
+    proc_b = _true_restart_process_b(proc_a)
+    with pytest.raises(ExecutionContinuationError) as exc:
+        _recover(proc_b.store, _C1)
+    assert exc.value.code is ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE
+
+
+def test_three_episode_history_roundtrip_after_true_restart() -> None:
+    proc_a = _spawn_process_a()
+    _drive_to_resumed(proc_a.service, proc_a.driver, _C1)
+    _drive_to_resumed(proc_a.service, proc_a.driver, _C2)
+    waiting_c3 = _drive_to_waiting(proc_a.service, proc_a.driver, _C3)
+    proc_b = _true_restart_process_b(proc_a)
+    qual = _recover(proc_b.store, _C3)
+    assert qual.current_episode.continuation_id == _C3
+    assert qual.current_episode.lifecycle_state is ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN
+    assert qual.current_episode.revision == waiting_c3.revision
+    assert proc_b.store.load(_C1) is not None
+    assert proc_b.store.load(_C2) is not None
+
+
+def test_durable_export_unknown_schema_fail_closed() -> None:
+    with pytest.raises(ExecutionContinuationError) as exc:
+        restore_durable_continuation_backing({"schema_version": "execution_continuation_durable_state.v999"})
+    assert exc.value.code is ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE
+
+
+def test_durable_export_missing_identity_field_fail_closed() -> None:
+    proc_a = _spawn_process_a()
+    _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
+    payload = export_durable_continuation_state(proc_a.backing)
+    record = payload["records"][_C2]
+    del record["identity"]["execution_id"]
+    with pytest.raises(ExecutionContinuationError) as exc:
+        restore_durable_continuation_backing(payload)
+    assert exc.value.code is ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE
+
+
+def test_durable_export_invalid_lifecycle_fail_closed() -> None:
+    proc_a = _spawn_process_a()
+    _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
+    payload = export_durable_continuation_state(proc_a.backing)
+    payload["records"][_C2]["lifecycle_state"] = "not_a_real_state"
+    with pytest.raises(ExecutionContinuationError) as exc:
+        restore_durable_continuation_backing(payload)
+    assert exc.value.code is ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE
+
+
+def test_durable_export_invalid_revision_fail_closed() -> None:
+    proc_a = _spawn_process_a()
+    _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
+    payload = export_durable_continuation_state(proc_a.backing)
+    payload["records"][_C2]["revision"] = 0
+    with pytest.raises(ExecutionContinuationError) as exc:
+        restore_durable_continuation_backing(payload)
+    assert exc.value.code is ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE
+
+
+def test_export_snapshot_is_not_mutable_alias_of_backing() -> None:
+    proc_a = _spawn_process_a()
+    _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
+    payload = export_durable_continuation_state(proc_a.backing)
+    payload["records"][_C2]["revision"] = 999
+    assert proc_a.store.load(_C2) is not None
+    assert proc_a.store.load(_C2).revision != 999
+
+
+def test_recovery_handle_not_found_fail_closed() -> None:
+    proc_a = _spawn_process_a()
+    _drive_to_waiting(proc_a.service, proc_a.driver, _C2)
+    proc_b = _true_restart_process_b(proc_a)
+    with pytest.raises(ExecutionContinuationError) as exc:
+        _recover(proc_b.store, "missing-handle")
+    assert exc.value.code is ExecutionContinuationErrorCode.NOT_FOUND
+
+
+def test_restart_module_no_reference_backing_imports() -> None:
+    path = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "continuation" / "restart_qualification.py"
+    source = path.read_text(encoding="utf-8")
+    assert "persistence" not in source
+    assert "BackingExecutionContinuationStateStore" not in source

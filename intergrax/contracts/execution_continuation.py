@@ -153,6 +153,31 @@ class ExecutionContinuationError(ValueError):
 
 
 @dataclass(frozen=True, slots=True)
+class ExecutionContinuationRecoveryHandle:
+    """Opaque durable recovery reference to one canonical continuation episode snapshot.
+
+    Identifies persisted continuation state for process-boundary restore. The host
+    obtains this when persisting the current episode; recovery resolves exact four-ID
+    from the canonical snapshot after load (not from caller-supplied identity).
+    """
+
+    continuation_id: str
+
+    def __post_init__(self) -> None:
+        normalized = self.continuation_id.strip()
+        if not normalized:
+            raise ValueError("execution continuation recovery handle requires continuation_id")
+        object.__setattr__(self, "continuation_id", normalized)
+
+
+def execution_continuation_recovery_handle_for_continuation_id(
+    continuation_id: str,
+) -> ExecutionContinuationRecoveryHandle:
+    """Build a recovery handle for the given canonical ``continuation_id``."""
+    return ExecutionContinuationRecoveryHandle(continuation_id=continuation_id)
+
+
+@dataclass(frozen=True, slots=True)
 class ExecutionContinuationIdentity:
     """Mandatory four-ID binding for every canonical continuation operation."""
 
@@ -667,6 +692,8 @@ __all__ = [
     "ExecutionContinuationError",
     "ExecutionContinuationErrorCode",
     "ExecutionContinuationIdentity",
+    "ExecutionContinuationRecoveryHandle",
+    "execution_continuation_recovery_handle_for_continuation_id",
     "ExecutionContinuationLifecycleState",
     "ExecutionContinuationLookup",
     "ExecutionContinuationPort",

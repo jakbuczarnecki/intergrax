@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+import copy
 import threading
+from typing import Any
 
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationError,
@@ -15,6 +17,14 @@ from intergrax.contracts.execution_continuation import (
     execution_continuation_lifecycle_permits_successor_episode,
 )
 from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+)
+
+DURABLE_CONTINUATION_STATE_SCHEMA_V1 = "execution_continuation_durable_state.v1"
 
 
 def _identity_key(identity: ExecutionContinuationIdentity) -> tuple[str, str, str, str]:
@@ -207,7 +217,7 @@ class ExecutionContinuationDurableBacking:
 
 
 class BackingExecutionContinuationStateStore(InMemoryExecutionContinuationStateStore):
-    """New store client over shared backing — survives process-local store destruction."""
+    """New store client over shared live backing (reconnect only, not restart-qualified)."""
 
     def __init__(self, backing: ExecutionContinuationDurableBacking) -> None:
         self._lock = backing._lock
@@ -216,7 +226,160 @@ class BackingExecutionContinuationStateStore(InMemoryExecutionContinuationStateS
 
     @property
     def is_durable(self) -> bool:
+        return False
+
+
+class ReconstructedDurableExecutionContinuationStateStore(BackingExecutionContinuationStateStore):
+    """Store over backing reconstructed from serialized durable export (restart-qualified)."""
+
+    @property
+    def is_durable(self) -> bool:
         return True
+
+
+def export_durable_continuation_state(
+    backing: ExecutionContinuationDurableBacking,
+) -> dict[str, Any]:
+    """Export a deep, JSON-compatible durable snapshot (no mutable aliases to backing)."""
+    with backing._lock:
+        records = {
+            continuation_id: pending.model_dump(mode="json")
+            for continuation_id, pending in backing._by_id.items()
+        }
+        current_entries = [
+            {
+                "task_id": key[0],
+                "run_id": key[1],
+                "attempt_id": key[2],
+                "execution_id": key[3],
+                "continuation_id": continuation_id,
+            }
+            for key, continuation_id in backing._current_by_identity.items()
+        ]
+    return copy.deepcopy(
+        {
+            "schema_version": DURABLE_CONTINUATION_STATE_SCHEMA_V1,
+            "records": records,
+            "current_by_identity": current_entries,
+        },
+    )
+
+
+def _identity_from_durable_key_fields(raw: dict[str, Any]) -> ExecutionContinuationIdentity:
+    try:
+        return ExecutionContinuationIdentity(
+            task_id=TaskId(raw["task_id"]),
+            run_id=RunId(raw["run_id"]),
+            attempt_id=AttemptId(raw["attempt_id"]),
+            execution_id=ExecutionId(raw["execution_id"]),
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ExecutionContinuationError(
+            "durable continuation export missing or invalid four-ID identity fields",
+            code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+        ) from exc
+
+
+def _validate_restored_store_invariants(
+    by_id: dict[str, PendingExecutionContinuation],
+    current_by_identity: dict[tuple[str, str, str, str], str],
+) -> None:
+    seen_identity_keys: set[tuple[str, str, str, str]] = set()
+    for key, continuation_id in current_by_identity.items():
+        if key in seen_identity_keys:
+            raise ExecutionContinuationError(
+                "duplicate current continuation pointer for identity in durable export",
+                code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+            )
+        seen_identity_keys.add(key)
+        current = by_id.get(continuation_id)
+        if current is None:
+            raise ExecutionContinuationError(
+                "current continuation pointer references missing snapshot",
+                code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+            )
+        if _identity_key(current.identity) != key:
+            raise ExecutionContinuationError(
+                "current continuation pointer identity mismatch",
+                code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+            )
+
+
+def restore_durable_continuation_backing(payload: dict[str, Any]) -> ExecutionContinuationDurableBacking:
+    """Construct a new backing from serialized durable state (new lock, new dicts)."""
+    if payload.get("schema_version") != DURABLE_CONTINUATION_STATE_SCHEMA_V1:
+        raise ExecutionContinuationError(
+            "unknown durable continuation persistence schema",
+            code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+        )
+    raw_records = payload.get("records")
+    raw_current = payload.get("current_by_identity")
+    if not isinstance(raw_records, dict) or not isinstance(raw_current, list):
+        raise ExecutionContinuationError(
+            "malformed durable continuation persistence envelope",
+            code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+        )
+    by_id: dict[str, PendingExecutionContinuation] = {}
+    for continuation_id, raw_pending in raw_records.items():
+        if not isinstance(raw_pending, dict):
+            raise ExecutionContinuationError(
+                "continuation snapshot record is not an object",
+                code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+            )
+        try:
+            pending = PendingExecutionContinuation.model_validate(raw_pending)
+        except Exception as exc:
+            raise ExecutionContinuationError(
+                "continuation snapshot failed validation during durable restore",
+                code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+            ) from exc
+        if pending.continuation_id != continuation_id:
+            raise ExecutionContinuationError(
+                "continuation snapshot id disagrees with durable record key",
+                code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+            )
+        by_id[continuation_id] = pending
+    current_by_identity: dict[tuple[str, str, str, str], str] = {}
+    for entry in raw_current:
+        if not isinstance(entry, dict):
+            raise ExecutionContinuationError(
+                "current pointer entry is not an object",
+                code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+            )
+        identity = _identity_from_durable_key_fields(entry)
+        continuation_id = entry.get("continuation_id")
+        if not isinstance(continuation_id, str) or not continuation_id.strip():
+            raise ExecutionContinuationError(
+                "current pointer entry missing continuation_id",
+                code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+            )
+        key = _identity_key(identity)
+        if key in current_by_identity:
+            raise ExecutionContinuationError(
+                "duplicate current continuation pointer for identity in durable export",
+                code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+            )
+        current_by_identity[key] = continuation_id.strip()
+    _validate_restored_store_invariants(by_id, current_by_identity)
+    backing = ExecutionContinuationDurableBacking()
+    backing._by_id = by_id
+    backing._current_by_identity = current_by_identity
+    return backing
+
+
+def reconstructed_durable_execution_continuation_state_store(
+    backing: ExecutionContinuationDurableBacking,
+) -> ReconstructedDurableExecutionContinuationStateStore:
+    """Restart-qualified store view over backing produced by :func:`restore_durable_continuation_backing`."""
+    return ReconstructedDurableExecutionContinuationStateStore(backing)
+
+
+def execution_continuation_state_store_from_durable_export(
+    payload: dict[str, Any],
+) -> ReconstructedDurableExecutionContinuationStateStore:
+    """Deserialize durable export into a restart-qualified continuation store."""
+    backing = restore_durable_continuation_backing(payload)
+    return reconstructed_durable_execution_continuation_state_store(backing)
 
 
 def backing_execution_continuation_state_store(
@@ -243,9 +406,15 @@ def wire_execution_continuation_state_store(
 
 __all__ = [
     "BackingExecutionContinuationStateStore",
+    "DURABLE_CONTINUATION_STATE_SCHEMA_V1",
     "ExecutionContinuationDurableBacking",
     "InMemoryExecutionContinuationStateStore",
+    "ReconstructedDurableExecutionContinuationStateStore",
     "backing_execution_continuation_state_store",
     "default_execution_continuation_state_store",
+    "execution_continuation_state_store_from_durable_export",
+    "export_durable_continuation_state",
+    "reconstructed_durable_execution_continuation_state_store",
+    "restore_durable_continuation_backing",
     "wire_execution_continuation_state_store",
 ]

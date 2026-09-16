@@ -12,6 +12,7 @@ from intergrax.contracts.execution_continuation import (
     ExecutionContinuationError,
     ExecutionContinuationErrorCode,
     ExecutionContinuationIdentity,
+    ExecutionContinuationRecoveryHandle,
     PendingExecutionContinuation,
     assert_execution_continuation_identity_match,
 )
@@ -34,6 +35,72 @@ class ExecutionContinuationRestartQualification:
     current_episode: PendingExecutionContinuation
     execution_identity_binding: ExecutionIdentityBinding
     root_execution_context: RootExecutionContext
+
+
+def recover_execution_continuation_process_restart(
+    *,
+    store: ExecutionContinuationStateStore,
+    recovery_handle: ExecutionContinuationRecoveryHandle,
+    authority: ParentExecutionAuthority,
+    tenant_id: str | None = None,
+    checkpoint_identity: ExecutionContinuationIdentity | None = None,
+    task_id_consistency: TaskId | None = None,
+    expected_identity: ExecutionContinuationIdentity | None = None,
+) -> ExecutionContinuationRestartQualification:
+    """
+    Durable process-boundary recovery: resolve exact four-ID from persisted handle.
+
+    Does not require caller-supplied ``ExecutionContinuationIdentity`` for discovery.
+    """
+    if not store.is_durable:
+        raise ExecutionContinuationError(
+            "continuation restart requires durable ExecutionContinuationStateStore",
+            code=ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE,
+        )
+    continuation_id = recovery_handle.continuation_id
+    if not continuation_id:
+        raise ExecutionContinuationError(
+            "malformed execution continuation recovery handle",
+            code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+        )
+    try:
+        located = store.load(continuation_id)
+    except ExecutionContinuationError:
+        raise
+    except Exception as exc:
+        raise ExecutionContinuationError(
+            "continuation store query failed during recovery handle resolution",
+            code=ExecutionContinuationErrorCode.STORE_QUERY_FAILED,
+        ) from exc
+    if located is None:
+        raise ExecutionContinuationError(
+            "recovery handle does not resolve to a continuation snapshot",
+            code=ExecutionContinuationErrorCode.NOT_FOUND,
+        )
+    try:
+        current = store.resolve_current_episode_for_identity(located.identity)
+    except ExecutionContinuationError:
+        raise
+    except Exception as exc:
+        raise ExecutionContinuationError(
+            "continuation store query failed during current episode validation",
+            code=ExecutionContinuationErrorCode.STORE_QUERY_FAILED,
+        ) from exc
+    if current is None or current.continuation_id != located.continuation_id:
+        raise ExecutionContinuationError(
+            "recovery handle targets a non-current continuation episode",
+            code=ExecutionContinuationErrorCode.CORRUPT_CONTINUATION_STATE,
+        )
+    if expected_identity is not None:
+        assert_execution_continuation_identity_match(expected_identity, located.identity)
+    return qualify_execution_continuation_process_restart(
+        store=store,
+        identity=located.identity,
+        authority=authority,
+        tenant_id=tenant_id,
+        checkpoint_identity=checkpoint_identity,
+        task_id_consistency=task_id_consistency,
+    )
 
 
 def qualify_execution_continuation_process_restart(
@@ -98,4 +165,5 @@ def qualify_execution_continuation_process_restart(
 __all__ = [
     "ExecutionContinuationRestartQualification",
     "qualify_execution_continuation_process_restart",
+    "recover_execution_continuation_process_restart",
 ]
