@@ -4,9 +4,12 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from typing import cast
 
 import pytest
+
+from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from testing_support.builder import build_stub_nexus_loop_for_unified_task_runner
 
 from intergrax.applications._shared.task_control import (
     governed_cancel_active_task,
@@ -239,9 +242,9 @@ async def test_taskreg_10_unified_task_runner_registers_canonical_run_identity()
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
-    loop = MagicMock()
-    loop.handle_task = _handle
-    runner = UnifiedTaskRunner(loop)  # type: ignore[arg-type]
+    loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
+    loop.handle_task = _handle  # type: ignore[attr-defined]
+    runner = UnifiedTaskRunner(loop)
 
     await runner.run_task(task, run_id=run_id)
 
@@ -269,9 +272,9 @@ async def test_taskreg_11_unified_task_runner_cleanup_unregisters_same_run_ident
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
-    loop = MagicMock()
-    loop.handle_task = _handle
-    runner = UnifiedTaskRunner(loop)  # type: ignore[arg-type]
+    loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
+    loop.handle_task = _handle  # type: ignore[attr-defined]
+    runner = UnifiedTaskRunner(loop)
 
     await runner.run_task(task, run_id=run_id)
 
