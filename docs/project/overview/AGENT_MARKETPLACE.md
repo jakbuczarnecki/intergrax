@@ -39,21 +39,24 @@ The **enterprise difference** is immediate: installing an AI agent can grant acc
 ### Central product mental model
 
 ```text
-Apps install capabilities.
-Nexus routes work.
-Intergrax governs execution.
+Applications acquire and configure governed capabilities.
+Execution Engine owns execution and routing boundaries.
+Nexus remains private orchestration inside Execution Engine.
 ```
 
-Applications compose **governed agent capabilities**. **Nexus** routes tasks by **capability**, not by marketplace origin. **Intergrax** owns verification, materialization, activation, and runtime enforcement - the marketplace is a **catalog and discovery layer**, not a second execution engine.
+Applications compose **governed agent capabilities** through **Agent Distribution** and domain contracts — not by calling marketplace or orchestration implementations directly. Work enters the **Execution Engine public execution boundary**; capability-based routing is **Execution-owned**, independent of marketplace origin. **Agent Distribution** owns verification, materialization, activation, and roster projection; the marketplace is a **catalog and discovery layer**, not a second execution engine.
 
 ```mermaid
 flowchart LR
-    subgraph mental["Product mental model"]
-        APP["Application\ninstalls capabilities"]
-        NEX["Nexus\nroutes work"]
-        IX["Intergrax\n governs execution"]
+    subgraph mental["Product mental model (public contracts)"]
+        APP["Application\nacquires · configures\ncapabilities"]
+        EE["Execution Engine\npublic execution boundary"]
     end
-    APP --> NEX --> IX
+    subgraph internal["Private implementation (not a public contract)"]
+        NX["Nexus\norchestration only"]
+    end
+    APP --> EE
+    EE -.->|orchestration strategy| NX
 ```
 
 ---
@@ -87,7 +90,7 @@ flowchart TB
     RA --> FUT["Future applications"]
 ```
 
-The marketplace is the **discovery and distribution network** for that reuse - not a replacement for Agent Distribution, AgentRegistry, or Nexus.
+The marketplace is the **discovery and distribution network** for that reuse - not a replacement for Agent Distribution, AgentRegistry, or the Execution Engine execution boundary.
 
 ---
 
@@ -98,7 +101,7 @@ Intergrax organizes work across four tiers:
 ```mermaid
 flowchart TB
     T0["Tier-0 - Platform / Distribution\ncontracts · trust · catalog ports · installation stores"]
-    T1["Tier-1 - Runtime / Nexus\nAgentRegistry · capability routing · governed execution"]
+    T1["Tier-1 - Execution Engine public boundary\nAgentRegistry projection · governed execution · private orchestration incl. Nexus"]
     T2["Tier-2 - Reusable agents\nAgentContract · agent packages · cognitive patterns"]
     T3["Tier-3 - Applications\nmanifests · UX · product workflows · host admin surface"]
 
@@ -112,11 +115,13 @@ flowchart TB
 | Tier | Marketplace relationship |
 |------|---------------------------|
 | **Tier-0** | Owns `CatalogSourceProvider`, installation, binding, trust, dependency lock, activation |
-| **Tier-1** | **Unchanged** - AgentRegistry and Nexus do not become marketplace-aware |
+| **Tier-1** | **Unchanged** - AgentRegistry projection and Execution Engine admission do not become marketplace-aware |
 | **Tier-2** | What publishers build and distribute |
 | **Tier-3** | What binds, configures, and enables agents for a product |
 
-> **ARCHITECTURE FROZEN:** The marketplace is explicitly **one future `CatalogSourceProvider` implementation** plus product/discovery/commercial layers. It is **not** a second Nexus, a second AgentRegistry, a special marketplace runtime, hot arbitrary Python installation, an LKW-specific subsystem, or a replacement for [Agent Distribution](../architecture/AGENT_DISTRIBUTION.md).
+> **ARCHITECTURE FROZEN:** The marketplace is explicitly **one future `CatalogSourceProvider` implementation** plus product/discovery/commercial layers. It is **not** a second Execution Engine public surface, a second AgentRegistry, a special marketplace runtime, hot arbitrary Python installation, an LKW-specific subsystem, or a replacement for [Agent Distribution](../architecture/AGENT_DISTRIBUTION.md).
+
+**Vertical ownership (ME-RB1):** **Capability Marketplace Engine** owns listing, discovery, publisher presentation, commercial metadata, availability projection, and generic governed discovery. **Agent Distribution** owns package resolution, trust, install, bind, activation, and dynamic agent acquisition. **Execution Engine** owns execution lifecycle, public execution admission, and routing boundary. **Nexus** is private orchestration inside Execution Engine only — never a marketplace contract.
 
 ### Mandatory execution chain
 
@@ -145,9 +150,11 @@ immutable runtime materialization
         ↓
 RuntimeRevision activation
         ↓
-AgentRegistry
+AgentRegistry / serving projection
         ↓
-Nexus capability routing
+Execution Engine public execution boundary
+        ↓
+private orchestration (Nexus when orchestration strategy applies)
 ```
 
 ```mermaid
@@ -163,10 +170,12 @@ flowchart TB
     MRL["MaterializedRuntimeLock"]
     MAT["Runtime materialization"]
     RR["RuntimeRevision activation"]
-    REG["AgentRegistry"]
-    NEX["Nexus capability routing"]
+    REG["AgentRegistry / serving projection"]
+    EE["Execution Engine\npublic boundary"]
+    NX["Private orchestration\n(Nexus when applicable)"]
 
-    SRC --> CSP --> AD --> TR --> INS --> BIND --> ER --> RES --> MRL --> MAT --> RR --> REG --> NEX
+    SRC --> CSP --> AD --> TR --> INS --> BIND --> ER --> RES --> MRL --> MAT --> RR --> REG --> EE
+    EE -.-> NX
 ```
 
 ---
@@ -213,9 +222,9 @@ Marketplace           helps discover and distribute agent
 Enterprise governance decides whether agent may be installed/enabled
 Application           binds/configures agent
 Agent Distribution    materializes deterministic runtime
-AgentRegistry         exposes materialized agent
-Nexus                 routes tasks by capability
-Agent itself          executes through Intergrax governed runtime
+AgentRegistry         exposes materialized agent (serving projection)
+Execution Engine      owns execution admission and capability routing boundary
+Agent itself          executes through Intergrax governed runtime (Nexus orchestrates privately when strategy requires)
 ```
 
 ---
@@ -317,7 +326,7 @@ The following card is a **conceptual UI sketch only** - not a screenshot of impl
 |-------|---------|
 | Name, description | Discovery |
 | Publisher | Trust and support provenance |
-| Capabilities | Nexus routing expectations |
+| Capabilities | Execution Engine routing expectations (`capabilities[]` on AgentContract) |
 | Supported Intergrax versions | Compatibility gate |
 | Required integrations / tools | Pre-install transparency |
 | Permission profile | Security review input |
@@ -638,7 +647,7 @@ flowchart TB
 
 ## Publisher and developer journey
 
-**AVAILABLE TODAY:** Developers can author Tier-2 agents with `AgentContract`, package metadata, and Nexus-compatible capabilities in the monorepo.
+**AVAILABLE TODAY:** Developers can author Tier-2 agents with `AgentContract`, package metadata, and `capabilities[]` declarations compatible with Execution Engine admission in the monorepo.
 
 **FUTURE PRODUCT:** Publisher portal, automated qualification, and public listing submission are not shipped.
 
@@ -777,14 +786,20 @@ flowchart TB
         REV["Runtime revisions"]
     end
 
-    subgraph EP["Execution plane - unchanged Tier-1 spine"]
-        REG["AgentRegistry"]
-        NEX["Nexus"]
+    subgraph EP["Execution plane - Tier-1 (public Execution Engine boundary)"]
+        EE["Execution Engine\npublic contracts"]
+        REG["AgentRegistry projection"]
         AC["AgentContract / harness"]
         TL["Tools · skills · integrations"]
     end
 
+    subgraph EPINT["Private orchestration (not public contract)"]
+        NX["Nexus"]
+    end
+
     CP -->|activation projects roster| EP
+    EE -.-> NX
+    REG --> EE
 ```
 
 | Plane | Examples | Mutates during user chat? |
@@ -794,37 +809,39 @@ flowchart TB
 
 ---
 
-## Marketplace and Nexus
+## Marketplace provenance and execution routing
 
-**Does Nexus know the agent came from the marketplace?**
+**Does the Execution Engine branch on marketplace origin?**
 
 **Architectural answer: No routing branch is required.**
 
 Once safely materialized and activated:
 
 ```text
-AgentRegistry
-  → capability match
-  → Nexus routing
+AgentRegistry / serving projection
+  → capability match at Execution Engine public boundary
+  → governed execution (private Nexus orchestration only when orchestration strategy applies)
 ```
 
-Marketplace source remains **provenance and audit metadata** - not execution routing logic. Nexus continues to resolve **`required_capability`** → registry entries by **`capabilities[]`**, as defined in [Agent Contracts and Assembly](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md).
+Marketplace source remains **provenance and audit metadata** - not execution routing logic. The Execution Engine resolves **`required_capability`** → registry entries by **`capabilities[]`**, as defined in [Agent Contracts and Assembly](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md). **Nexus** participates only as **private orchestration** behind Execution-owned contracts — not as a marketplace or Agent Distribution public API.
 
 ```mermaid
 sequenceDiagram
-    participant T as Task
-    participant N as Nexus
+    participant T as Task / work request
+    participant EE as Execution Engine (public boundary)
     participant R as AgentRegistry
     participant A as Agent
+    participant NX as Nexus (private)
 
-    T->>N: required_capability = research.deep
-    N->>R: find_by_capability
-    R-->>N: Research Agent (materialized)
-    N->>A: governed execution
-    Note over N,A: Origin catalog irrelevant at routing time
+    T->>EE: required_capability = research.deep
+    EE->>R: find_by_capability
+    R-->>EE: Research Agent (materialized)
+    EE->>A: governed execution
+    EE-.->NX: orchestration strategy only (internal)
+    Note over EE,A: Origin catalog irrelevant at admission time
 ```
 
-**AVAILABLE TODAY:** Nexus capability routing and AgentRegistry are implemented.
+**AVAILABLE TODAY:** Execution Engine admission, AgentRegistry projection, and capability-based routing are implemented (Nexus is internal orchestration when orchestration strategy applies).
 
 ---
 
@@ -832,21 +849,21 @@ sequenceDiagram
 
 LKW illustrates the **target platform proof** without claiming marketplace UI exists today.
 
-**FUTURE PRODUCT / TARGET:** User opens Agents in LKW → browses available agents → selects Research Agent → Install → grants allowed integrations → configures workspace scope → Enable → asks a research question → Nexus sees `research.*` capability → Research Agent participates.
+**FUTURE PRODUCT / TARGET:** User opens Agents in LKW → browses available agents → selects Research Agent → Install → grants allowed integrations → configures workspace scope → Enable → asks a research question → Execution Engine matches `research.*` capability → Research Agent participates.
 
 ```mermaid
 sequenceDiagram
     actor U as LKW user
     participant LKW as LKW UX
     participant AD as Agent Distribution
-    participant N as Nexus
+    participant EE as Execution Engine
     participant RA as Research Agent
 
     U->>LKW: Install Research Agent (FUTURE UX)
     LKW->>AD: bind + enable
     U->>LKW: Ask research question
-    LKW->>N: task with capability
-    N->>RA: route if ROUTABLE
+    LKW->>EE: work at public execution boundary (capability)
+    EE->>RA: route if ROUTABLE
     RA-->>LKW: governed answer + evidence
 ```
 
@@ -860,11 +877,11 @@ Short scenarios illustrating the model. Agents named are **examples**, not confi
 
 ### A - Legal team installs Legal Research Agent into LKW
 
-Legal ops discovers a qualified agent, requests install through org policy, binds matter-scoped integrations, enables for the workspace. Nexus routes legal research tasks without embedding legal logic in LKW application code.
+Legal ops discovers a qualified agent, requests install through org policy, binds matter-scoped integrations, enables for the workspace. The Execution Engine routes legal research tasks by capability without embedding legal logic in LKW application code.
 
 ### B - Product team composes UX Research + Project Manager agents
 
-A strategy workspace installs two agents from different publishers (future public + private catalogs). EffectiveRoster merges both into one runtime revision; Nexus routes UX vs planning capabilities independently.
+A strategy workspace installs two agents from different publishers (future public + private catalogs). EffectiveRoster merges both into one runtime revision; the Execution Engine routes UX vs planning capabilities independently at the public execution boundary.
 
 ### C - Enterprise publishes private SAP Support Agent
 
@@ -1000,7 +1017,7 @@ flowchart LR
 | Runtime materialization | Often in-process load | Digest-pinned lock + revision |
 | Trust / certification | Signing optional | Qualification + revocation semantics |
 | Rollback | Version downgrade | Exact prior RuntimeRevision + digest |
-| Capability routing | N/A | Nexus `capabilities[]` routing |
+| Capability routing | N/A | Execution Engine `capabilities[]` admission |
 | Organization governance | Store allowlist | Catalog + publisher + risk policy |
 
 The UX may feel familiar - the **architecture is intentionally stronger** because agents are not passive UI extensions.
@@ -1015,7 +1032,7 @@ Conservative maturity assessment verified against repository evidence (2026-08-1
 |------------|--------|
 | Reusable Tier-2 agent packages (`agents/`) | **AVAILABLE TODAY** |
 | `AgentContract` + ACP authoring model | **AVAILABLE TODAY** |
-| `AgentRegistry` + Nexus capability routing | **AVAILABLE TODAY** |
+| `AgentRegistry` + Execution Engine capability admission | **AVAILABLE TODAY** |
 | Agent lifecycle / governance metadata | **AVAILABLE TODAY** |
 | Canonical Agent Distribution architecture (AGENT-PLATFORM-2) | **ARCHITECTURE FROZEN** |
 | [ADR-AGENT-004](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) decisions | **ARCHITECTURE FROZEN** (accepted) |
@@ -1050,19 +1067,19 @@ flowchart TB
     DEV["Developers build agents"]
     GOV["Organizations govern them"]
     APP["Applications compose them"]
-    NEX["Nexus orchestrates them"]
+    EE["Execution Engine\n(public boundary)"]
     USR["Users consume outcomes"]
 
-    DEV --> GOV --> APP --> NEX --> USR
+    DEV --> GOV --> APP --> EE --> USR
 ```
 
 The marketplace is a **distribution network for the Agent layer** - not a new execution system. Long term, it extends the same Tier model that already separates:
 
 - **what** agents are (Tier-2),  
-- **how** they run (Tier-1), and  
+- **how** they run (Tier-1 Execution Engine contracts; Nexus orchestrates privately when required), and
 - **who** may install them (Tier-0 + enterprise policy).
 
-That separation is what allows the model to scale from **local private agents** to a **global marketplace** without rewriting Nexus or AgentRegistry for each catalog source.
+That separation is what allows the model to scale from **local private agents** to a **global marketplace** without rewriting AgentRegistry or Execution Engine admission for each catalog source.
 
 ---
 
@@ -1072,9 +1089,10 @@ That separation is what allows the model to scale from **local private agents** 
 |----------|-------------|
 | [Agent Distribution](../architecture/AGENT_DISTRIBUTION.md) | Canonical distribution, trust, roster, lock, activation |
 | [ADR-AGENT-004](../technical/adr/entries/2026-08-12/ADR-AGENT-004.md) | Accepted architecture decisions (AGENT-PLATFORM-1) |
-| [Agent Contracts and Assembly](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) | AgentContract, AgentRegistry, Nexus routing |
+| [Agent Contracts and Assembly](../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md) | AgentContract, AgentRegistry, Execution Engine capability admission |
 | [Application Runtime Graph Model](../architecture/APPLICATION_RUNTIME_GRAPH_MODEL.md) | Minimal transitive runtime graph |
-| [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Public responsibility boundaries |
+| [Architecture Overview](../architecture/ARCHITECTURE_OVERVIEW.md) | Public responsibility boundaries (Execution Engine authority) |
+| [Capability Marketplace Engine](../architecture/CAPABILITY_MARKETPLACE_ENGINE.md) | Common marketplace engine; Agent vertical ownership (ME-RB1) |
 | [Agent Distribution plan](../maintainers/plans/AGENT_DISTRIBUTION.md) | Implementation waves AP-3+ (maintainers) |
 | [Public roadmap](../overview/ROADMAP.md) | Outcome-gated product sequencing |
 
@@ -1086,5 +1104,5 @@ That separation is what allows the model to scale from **local private agents** 
 |------|-------|
 | Path | `docs/project/overview/AGENT_MARKETPLACE.md` |
 | Intended future link target | Repository README / public product index (separate session) |
-| Canonical architecture conflicts | **None identified** - concept aligns with frozen Agent Distribution model |
+| Canonical architecture conflicts | **None identified** - Agent vertical aligns with frozen Capability Marketplace Engine and Execution Engine boundaries |
 | README modified | **No** |
