@@ -663,6 +663,131 @@ def test_compaction_uses_authority_content_not_caller_spoof() -> None:
     assert "caller spoofed" not in result.created[0].content
 
 
+def test_authority_postcondition_rejects_wrong_memory_id() -> None:
+    scope = _scope("T")
+
+    class _WrongMemoryIdAuthority(_ScopedSourceAuthority):
+        def resolve_canonical_source(
+            self,
+            scope: LongHorizonMemoryScope,
+            memory_id: str,
+            revision: int,
+        ) -> CanonicalMemorySourceSnapshot:
+            snapshot = super().resolve_canonical_source(scope, memory_id, revision)
+            return CanonicalMemorySourceSnapshot(
+                memory_id="M2",
+                revision=snapshot.revision,
+                content=snapshot.content,
+                observed_at=snapshot.observed_at,
+            )
+
+    store = InMemoryLongHorizonMemoryStore()
+    service = _service(store=store, scope=scope, authority=_WrongMemoryIdAuthority(scope))
+    result = service.compact(
+        LongHorizonCompactionRequest(
+            scope=scope,
+            target_level=1,
+            sources=_sources(("M1", 4)),
+        )
+    )
+    assert result.failures
+    assert not result.created
+    assert not result.updated
+    assert "unexpected memory_id" in result.failures[0].message
+    assert not store.query_summaries(scope, LongHorizonRecallQuery(limit=10))
+
+
+def test_authority_postcondition_rejects_wrong_revision() -> None:
+    scope = _scope("T")
+
+    class _WrongRevisionAuthority(_ScopedSourceAuthority):
+        def resolve_canonical_source(
+            self,
+            scope: LongHorizonMemoryScope,
+            memory_id: str,
+            revision: int,
+        ) -> CanonicalMemorySourceSnapshot:
+            snapshot = super().resolve_canonical_source(scope, memory_id, revision)
+            return CanonicalMemorySourceSnapshot(
+                memory_id=snapshot.memory_id,
+                revision=revision + 1,
+                content=snapshot.content,
+                observed_at=snapshot.observed_at,
+            )
+
+    store = InMemoryLongHorizonMemoryStore()
+    service = _service(store=store, scope=scope, authority=_WrongRevisionAuthority(scope))
+    result = service.compact(
+        LongHorizonCompactionRequest(
+            scope=scope,
+            target_level=1,
+            sources=_sources(("M1", 4)),
+        )
+    )
+    assert result.failures
+    assert not result.created
+    assert not result.updated
+    assert "unexpected revision" in result.failures[0].message
+    assert not store.query_summaries(scope, LongHorizonRecallQuery(limit=10))
+
+
+def test_authority_postcondition_rejects_wrong_memory_id_and_revision() -> None:
+    scope = _scope("T")
+
+    class _WrongIdAndRevisionAuthority(_ScopedSourceAuthority):
+        def resolve_canonical_source(
+            self,
+            scope: LongHorizonMemoryScope,
+            memory_id: str,
+            revision: int,
+        ) -> CanonicalMemorySourceSnapshot:
+            snapshot = super().resolve_canonical_source(scope, memory_id, revision)
+            return CanonicalMemorySourceSnapshot(
+                memory_id="M2",
+                revision=revision + 1,
+                content=snapshot.content,
+                observed_at=snapshot.observed_at,
+            )
+
+    service = _service(scope=scope, authority=_WrongIdAndRevisionAuthority(scope))
+    result = service.compact(
+        LongHorizonCompactionRequest(
+            scope=scope,
+            target_level=1,
+            sources=_sources(("M1", 4)),
+        )
+    )
+    assert result.failures
+    assert not result.created
+    assert not result.updated
+
+
+def test_authority_postcondition_matching_snapshot_compacts_with_exact_lineage() -> None:
+    scope = _scope("T")
+    authority = _ScopedSourceAuthority(
+        scope,
+        snapshots={
+            ("M1", 4): CanonicalMemorySourceSnapshot(
+                memory_id="M1",
+                revision=4,
+                content="canonical M1 body",
+                observed_at="2025-03-01T12:00:00+00:00",
+            )
+        },
+    )
+    service = _service(scope=scope, authority=authority)
+    result = service.compact(
+        LongHorizonCompactionRequest(
+            scope=scope,
+            target_level=1,
+            sources=_sources(("M1", 4)),
+        )
+    )
+    assert result.created
+    assert not result.failures
+    assert result.created[0].source_memory_refs == (MemorySourceRef(memory_id="M1", revision=4),)
+
+
 def test_batch_identity_collision_safe_source_refs() -> None:
     a = long_horizon_batch_identity_key(
         source_refs=(MemorySourceRef(memory_id="a@1|b", revision=2),)

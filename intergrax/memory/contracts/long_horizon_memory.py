@@ -400,6 +400,20 @@ class LongHorizonCompactionSource:
             parse_memory_record_timestamp("observed_at", self.observed_at)
 
 
+def _validate_canonical_source_snapshot(
+    requested: LongHorizonCompactionSource,
+    snapshot: CanonicalMemorySourceSnapshot,
+) -> None:
+    if snapshot.memory_id != requested.memory_id:
+        raise LongHorizonMemoryViolation(
+            "canonical source authority returned unexpected memory_id"
+        )
+    if snapshot.revision != requested.revision:
+        raise LongHorizonMemoryViolation(
+            "canonical source authority returned unexpected revision"
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class LongHorizonCompactionRequest:
     scope: LongHorizonMemoryScope
