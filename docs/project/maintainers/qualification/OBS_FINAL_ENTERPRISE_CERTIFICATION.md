@@ -10,7 +10,7 @@
 | --- | --- |
 | **starting development SHA** | `52e1e53094a597ff225d727d261e5939b97a027f` (pre-R1 `origin/development` pin referenced in task brief) |
 | **clean tested SHA (`certified code SHA`)** | `e1dd699d013f9472d7c701a78a0d7f64b44c2cd4` |
-| **qualification record commit SHA** | *(this commit — docs-only after tests)* |
+| **qualification record commit SHA** | `be24138ad9298d7e6afbd5e9bf092e9bedc109df` (docs-only; certified code remains `e1dd699d`) |
 | **current development SHA** | `e1dd699d013f9472d7c701a78a0d7f64b44c2cd4` |
 | **origin/development SHA** | `e1dd699d013f9472d7c701a78a0d7f64b44c2cd4` |
 | **branch** | `development` |
