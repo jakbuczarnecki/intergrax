@@ -71,13 +71,13 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R3 |
-| **Status** | **READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** |
+| **Status** | **CLOSED** |
 | **Purpose** | All execution HITL lifecycle effects via `ExecutionContinuationPort` — zero direct Nexus dependency from Multiplayer |
 | **Dependencies** | MP-4R2 closed |
 | **Acceptance** | No Multiplayer continuation lifecycle/store; no Nexus imports in `collaborative_work`; `test_mp4r3_execution_continuation_integration_gates.py` green; canonical two-phase resume + CAS + identity qualification proven |
 | **Proof requirements** | MP-4R0/1/2/3 architecture gates; `test_gr5_r2_canonical_pause_resume.py`; `test_execution_continuation.py`; governed continuation bridge/HITL suites as in validation matrix |
-| **Scope note** | **MP-4R3 establishes/adopts boundary and qualification; no artificial Multiplayer continuation runtime was required** — production `collaborative_work` has zero direct `ExecutionContinuationPort` callers today; future integration must use platform contracts only; independent technical audit **PASS** (formal slice closure pending final re-audit) |
-| **Next step** | Final independent MP-4R3 closure audit → MP-4R4 **NOT STARTED** |
+| **Scope note** | **MP-4R3 establishes/adopts boundary and qualification; no artificial Multiplayer continuation runtime was required** — production `collaborative_work` has zero direct `ExecutionContinuationPort` callers today; future integration must use platform contracts only; independent technical audit **PASS**; independent closure audit **passed** |
+| **Next step** | **CLOSED** — independent closure audit passed |
 
 ---
 

@@ -173,7 +173,7 @@ MP-0 → MP-1 → MP-2 → MP-3 → MP-4R → MP-5 → MP-6 → MP-7 → MP-8 �
 | **MP-1** | Principal, WorkspaceMembership, Delegation / effective authority |
 | **MP-2** | Shared Work: WorkItem, Assignment, lifecycle and concurrency |
 | **MP-3** | WorkArtifact and WorkArtifactVersion: durable collaborative outputs, versioning and provenance |
-| **MP-4R** | **Active:** canonical Decision / Governance / Execution integration via public contracts (**MP-4R3 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT**; MP-4R0…R2 **CLOSED**). **Historical MP-4** (pre-rebase Decision/Approval/HITL bridge) **superseded** by ADR-MP-009. |
+| **MP-4R** | **Active:** canonical Decision / Governance / Execution integration via public contracts (**MP-4R4 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT**; MP-4R0…R3 **CLOSED**). **Historical MP-4** (pre-rebase Decision/Approval/HITL bridge) **superseded** by ADR-MP-009. |
 | **MP-5** | Principal-scoped ContextView using existing UCL, Context Engineering, Memory and Knowledge |
 | **MP-6** | Collaborative Activity + provenance / evidence linkage |
 | **MP-7** | LKW reference-product adoption of platform Multiplayer primitives |
@@ -590,7 +590,7 @@ Each decision is required before the relevant implementation:
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 | **ADR-MP-008** | Workspace platformization / LKW migration |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 ownership **FROZEN**; MP-3 runtime **IN PROGRESS**. **ADR-MP-009 Accepted** — **MP-4R0…MP-4R2 CLOSED**; **MP-4R3 READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT**. ADR-MP-006…008 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 ownership **FROZEN**; MP-3 runtime **IN PROGRESS**. **ADR-MP-009 Accepted** — **MP-4R0…MP-4R3 CLOSED**; **MP-4R4 READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT**. ADR-MP-006…008 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 
