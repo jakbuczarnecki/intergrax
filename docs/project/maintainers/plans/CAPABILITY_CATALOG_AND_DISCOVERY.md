@@ -241,6 +241,8 @@ Stages 11–13 may proceed in parallel after Stage 5 where dependencies allow; S
 | **Depends on** | Stages 2, 5. |
 | **Maturity** | **Implemented / independently verified** — typed product contracts at `intergrax/contracts/marketplace/` and read-only product layer at `intergrax/marketplace/` (`MarketplaceCapabilityListing`, `MarketplaceCapabilityCatalogSource`, `MarketplaceCatalogService`); official (`OFFICIAL`) and enterprise-private (`ENTERPRISE_PRIVATE`) marketplace sources; federation through existing `FederatedCapabilityCatalog`; commercial metadata display-only; architecture gates for Forbidden flows 1 and 3; no billing, checkout, install, or registry mutation. |
 
+**ME-10 (discovery / handoff traceability):** `CapabilityHandoffEnvelope` + `MarketplaceDiscoveryHandoffOrchestrator` at `intergrax/marketplace/handoff_traceability/`; contracts at `intergrax/contracts/marketplace/handoff_traceability.py`; explicit selection with `CapabilityReleaseIdentity`; tests `tests/unit/marketplace/test_me10_discovery_handoff_traceability.py`.
+
 ---
 
 ## Stage 12 — Isolation and external execution maturity

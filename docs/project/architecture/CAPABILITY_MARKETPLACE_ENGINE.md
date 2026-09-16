@@ -66,6 +66,7 @@ Normative composition (implemented slices in parentheses):
 | Marketplace visibility | Listing + source identity | Stage 7 private sources |
 | Recommendation host | **Gap** — no dedicated recommendation SPI (ME-RB1-006) |
 | Lifecycle handoff contracts | `intergrax.contracts.marketplace` + `intergrax.marketplace.handoff` (ME-RB4) |
+| Discovery → selection → handoff traceability | `intergrax.contracts.marketplace.handoff_traceability` + `intergrax.marketplace.handoff_traceability` (ME-10) |
 | Usage attribution handoff | `intergrax.contracts.capability_metering` | Events ≠ billing |
 
 **Join surface:** `MarketplaceCatalogService` joins Stage-3 discovery candidates with marketplace product metadata keyed by canonical identity.
@@ -325,7 +326,7 @@ Marketplace **must not** embed a mini Decision System or a governance engine.
 
 ```text
 Marketplace / Catalog
-    ↓ handoff intent (future typed)
+    ↓ CapabilityHandoffEnvelope (ME-10) + lifecycle handoff request (ME-RB4)
 Execution public contracts
     ↓
 Execution Engine
@@ -345,9 +346,30 @@ Product docs that name Nexus as public runtime must defer to Execution Engine pu
 
 ---
 
-## 16. Observability boundary
+## 16. Observability and traceability boundary
 
-Discovery/handoff traceability is a **future** ME-10 concern. V1 emits usage events via metering contracts at execution/domain boundaries — not inside marketplace listing code.
+**ME-10 (implemented):** Discovery → governance → ranking → **explicit selection** → **`CapabilityHandoffEnvelope`** is observational traceability only. It binds:
+
+- `discovery_correlation_id` (marketplace-scoped; not `run_id` / execution IDs)
+- governed visible candidate counts (no foreign-private candidate leakage)
+- `CapabilityMarketplaceExplicitSelection` with **`CapabilityReleaseIdentity`**
+- neutral `CapabilityHandoffConsumerTarget` (agent / tool / skill domain)
+
+Trace evidence uses optional `CapabilityHandoffTraceEvidenceConsumer` (in-memory reference provider). **Not** `RuntimeEvent`, **not** execution lineage, **not** `CapabilityUsageEvent`.
+
+Hard separations:
+
+```text
+discovery facts ≠ selection ≠ handoff ≠ execution ≠ usage
+handoff ≠ installation ≠ entitlement ≠ billing
+```
+
+V1 usage events remain at execution/domain boundaries via Capability Metering — not inside marketplace listing or handoff delivery code.
+
+```text
+Catalog → Visibility → Governance → Ranking → Explicit Selection
+    → CapabilityHandoffEnvelope → Domain Adapter / Consumer → Execution (downstream)
+```
 
 ---
 

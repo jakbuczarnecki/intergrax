@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from intergrax.contracts.capability_catalog.entry import CapabilityCatalogEntry
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
+from intergrax.contracts.capability_catalog.release_identity import CapabilityReleaseIdentity
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
 from intergrax.contracts.marketplace.lifecycle_handoff_intent import (
     MarketplaceLifecycleHandoffIntent,
@@ -35,8 +36,18 @@ class MarketplaceCapabilitySelection(BaseModel):
     schema_version: str = SCHEMA_MARKETPLACE_CAPABILITY_SELECTION_V1
     listing_id: str = Field(min_length=1)
     capability: CapabilityCatalogEntry
+    selected_release: CapabilityReleaseIdentity
     governance_evidence_ref: str | None = None
     provenance_ref: str | None = None
+
+    @model_validator(mode="after")
+    def _selected_release_matches_capability(self) -> MarketplaceCapabilitySelection:
+        expected = CapabilityReleaseIdentity.from_catalog_entry(self.capability)
+        if self.selected_release != expected:
+            raise ValueError(
+                "selected_release must equal CapabilityReleaseIdentity.from_catalog_entry(capability)",
+            )
+        return self
 
 
 class MarketplaceLifecycleDomainPayload(BaseModel):
@@ -103,11 +114,29 @@ def selection_identity_key(selection: MarketplaceCapabilitySelection) -> Capabil
     return CapabilityIdentityKey.from_discovery_identity(selection.capability.identity)
 
 
+def marketplace_capability_selection(
+    *,
+    listing_id: str,
+    capability: CapabilityCatalogEntry,
+    governance_evidence_ref: str | None = None,
+    provenance_ref: str | None = None,
+) -> MarketplaceCapabilitySelection:
+    """Build governed selection with canonical exact release identity."""
+    return MarketplaceCapabilitySelection(
+        listing_id=listing_id,
+        capability=capability,
+        selected_release=CapabilityReleaseIdentity.from_catalog_entry(capability),
+        governance_evidence_ref=governance_evidence_ref,
+        provenance_ref=provenance_ref,
+    )
+
+
 __all__ = [
     "MarketplaceCapabilitySelection",
     "MarketplaceLifecycleDomainPayload",
     "MarketplaceLifecycleHandoffRequest",
     "SCHEMA_MARKETPLACE_CAPABILITY_SELECTION_V1",
     "SCHEMA_MARKETPLACE_LIFECYCLE_HANDOFF_REQUEST_V1",
+    "marketplace_capability_selection",
     "selection_identity_key",
 ]

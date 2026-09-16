@@ -12,6 +12,7 @@ from intergrax.contracts.capability_catalog import (
     CapabilityKind,
     CapabilityLogicalIdentity,
     CapabilityProvenance,
+    CapabilityReleaseIdentity,
     CapabilitySourceIdentity,
     CapabilitySourceKind,
 )
@@ -30,6 +31,7 @@ from intergrax.contracts.marketplace import (
     MarketplaceLifecycleHandoffStatus,
     SkillLifecycleHandoffPayload,
     ToolLifecycleHandoffPayload,
+    marketplace_capability_selection,
     selection_identity_key,
 )
 from intergrax.contracts.tools.marketplace_lifecycle_handoff import (
@@ -117,7 +119,7 @@ def _handoff_request(
     )
     return MarketplaceLifecycleHandoffRequest(
         request_id=request_id,
-        selection=MarketplaceCapabilitySelection(
+        selection=marketplace_capability_selection(
             listing_id=f"listing-{logical_id}",
             capability=entry,
         ),
@@ -312,7 +314,7 @@ def test_wrong_kind_rejected_at_request_construction() -> None:
     with pytest.raises(ValueError, match="must match domain payload kind"):
         MarketplaceLifecycleHandoffRequest(
             request_id="req-bad",
-            selection=MarketplaceCapabilitySelection(
+            selection=marketplace_capability_selection(
                 listing_id="listing-1",
                 capability=entry,
             ),
@@ -322,7 +324,7 @@ def test_wrong_kind_rejected_at_request_construction() -> None:
                     operation_id="op-1",
                     host_profile_id="host-1",
                     capability_identity_key=selection_identity_key(
-                        MarketplaceCapabilitySelection(
+                        marketplace_capability_selection(
                             listing_id="listing-1",
                             capability=entry,
                         ),

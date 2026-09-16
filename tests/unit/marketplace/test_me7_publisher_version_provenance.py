@@ -33,8 +33,8 @@ from intergrax.contracts.capability_catalog import (
     CapabilitySourceKind,
 )
 from intergrax.contracts.marketplace import (
-    MarketplaceCapabilitySelection,
     MarketplaceListingRecord,
+    marketplace_capability_selection,
 )
 from intergrax.marketplace import (
     MarketplaceCapabilityCatalogSource,
@@ -443,7 +443,7 @@ def test_lifecycle_selection_carries_canonical_provenance() -> None:
         catalog=catalog,
         marketplace_sources=(marketplace_source,),
     ).list_listings(_discovery_query())[0].listing
-    selection = MarketplaceCapabilitySelection(
+    selection = marketplace_capability_selection(
         listing_id=listing.listing_id or "listing-1",
         capability=listing.capability,
     )

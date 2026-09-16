@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Final, Literal
 from pydantic import BaseModel, ConfigDict
 
 from intergrax.contracts.capability_catalog.identity import CapabilityDiscoveryIdentity
+from intergrax.contracts.capability_catalog.provenance import CapabilityProvenance
 
 if TYPE_CHECKING:
     from intergrax.contracts.capability_catalog.entry import CapabilityCatalogEntry
@@ -59,4 +60,14 @@ class CapabilityReleaseIdentity(BaseModel):
             self.version_label or "",
             self.content_digest or "",
             self.package_reference or "",
+        )
+
+    def to_provenance(self) -> CapabilityProvenance:
+        """Project canonical release facts into ``CapabilityProvenance`` without metadata escape hatches."""
+        return CapabilityProvenance(
+            source=self.discovery.source,
+            publisher=self.publisher,
+            version_label=self.version_label,
+            content_digest=self.content_digest,
+            package_reference=self.package_reference,
         )
