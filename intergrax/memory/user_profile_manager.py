@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import Optional, Dict, Any, List, Union
 
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.enterprise_memory_record import MemoryRecordLineage
 
 from intergrax.memory.user_profile_memory import (
@@ -33,6 +34,15 @@ from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
+
+
+def _projection_identity_for_user(identity: RequestIdentity, user_id: str) -> RequestIdentity:
+    canonical = (identity.user_id or "").strip()
+    if canonical and canonical != user_id:
+        raise ValueError("identity.user_id conflicts with user_id")
+    if canonical:
+        return identity
+    return identity.model_copy(update={"user_id": user_id})
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
@@ -369,7 +379,7 @@ class UserProfileManager:
         """
         await self._save_store_profile(profile)
 
-    async def delete_profile(self, user_id: str) -> None:
+    async def delete_profile(self, identity: RequestIdentity, user_id: str) -> None:
         """
         Remove any stored profile data for the given user_id.
 
@@ -378,17 +388,25 @@ class UserProfileManager:
         profile = await self._get_store_profile(user_id)
         entry_ids = [entry.entry_id for entry in profile.memory_entries]
         await self._delete_store_profile(user_id)
+        projection_identity = _projection_identity_for_user(identity, user_id)
         outcome = await self._memory_lifecycle.apply_after_primary_deletes(
             operation=MemoryLifecycleOperation.DELETE_PROFILE,
+            identity=projection_identity,
             user_id=user_id,
             entry_ids=entry_ids,
         )
         self._memory_lifecycle.raise_if_partial(outcome)
 
-    async def reconcile_memory_projections(self, user_id: str) -> MemoryReconciliationOutcome:
+    async def reconcile_memory_projections(
+        self,
+        identity: RequestIdentity,
+    ) -> MemoryReconciliationOutcome:
         """Rebuild derived projections from authoritative profile state."""
+        user_id = (identity.user_id or "").strip()
+        if not user_id:
+            raise ValueError("reconcile_memory_projections requires identity.user_id")
         profile = await self._get_store_profile(user_id)
-        return await self._memory_lifecycle.reconcile_user(user_id=user_id, profile=profile)
+        return await self._memory_lifecycle.reconcile_user(identity=identity, profile=profile)
 
     # ---------------------------------------------------------------------
     # System instructions management
@@ -444,6 +462,7 @@ class UserProfileManager:
 
     async def add_memory_entry_with_lifecycle(
         self,
+        identity: RequestIdentity,
         user_id: str,
         entry_or_content: Union[UserProfileMemoryEntry, str],
         metadata: Optional[Dict[str, Any]] = None,
@@ -468,8 +487,10 @@ class UserProfileManager:
 
         await self._save_store_profile(profile)
 
+        projection_identity = _projection_identity_for_user(identity, user_id)
         outcome = await self._memory_lifecycle.apply_after_primary_upsert(
             operation=MemoryLifecycleOperation.WRITE,
+            identity=projection_identity,
             user_id=user_id,
             entry=entry,
         )
@@ -477,6 +498,7 @@ class UserProfileManager:
 
     async def add_memory_entry(
         self,
+        identity: RequestIdentity,
         user_id: str,
         entry_or_content: Union[UserProfileMemoryEntry, str],
         metadata: Optional[Dict[str, Any]] = None,
@@ -491,6 +513,7 @@ class UserProfileManager:
         Returns the updated UserProfile for convenience.
         """
         mutation = await self.add_memory_entry_with_lifecycle(
+            identity,
             user_id,
             entry_or_content,
             metadata=metadata,
@@ -501,6 +524,7 @@ class UserProfileManager:
 
     async def update_memory_entry(
         self,
+        identity: RequestIdentity,
         user_id: str,
         entry_id: str,
         *,
@@ -534,8 +558,10 @@ class UserProfileManager:
         await self._save_store_profile(profile)
 
         if semantic_change:
+            projection_identity = _projection_identity_for_user(identity, user_id)
             outcome = await self._memory_lifecycle.apply_after_primary_upsert(
                 operation=MemoryLifecycleOperation.UPDATE,
+                identity=projection_identity,
                 user_id=user_id,
                 entry=matched,
             )
@@ -547,6 +573,7 @@ class UserProfileManager:
 
     async def apply_memory_supersession_with_lifecycle(
         self,
+        identity: RequestIdentity,
         user_id: str,
         *,
         superseded_memory_id: str,
@@ -584,13 +611,16 @@ class UserProfileManager:
 
         await self._save_store_profile(profile)
 
+        projection_identity = _projection_identity_for_user(identity, user_id)
         outcome_a = await self._memory_lifecycle.apply_after_primary_upsert(
             operation=MemoryLifecycleOperation.UPDATE,
+            identity=projection_identity,
             user_id=user_id,
             entry=superseded,
         )
         outcome_b = await self._memory_lifecycle.apply_after_primary_upsert(
             operation=MemoryLifecycleOperation.UPDATE,
+            identity=projection_identity,
             user_id=user_id,
             entry=superseding,
         )
@@ -608,6 +638,7 @@ class UserProfileManager:
 
     async def remove_memory_entry_with_lifecycle(
         self,
+        identity: RequestIdentity,
         user_id: str,
         entry_id: str,
     ) -> UserProfileMemoryMutationResult:
@@ -636,8 +667,10 @@ class UserProfileManager:
 
         await self._save_store_profile(profile)
 
+        projection_identity = _projection_identity_for_user(identity, user_id)
         outcome = await self._memory_lifecycle.apply_after_primary_deletes(
             operation=MemoryLifecycleOperation.DELETE_ENTRY,
+            identity=projection_identity,
             user_id=user_id,
             entry_ids=(entry_id,),
         )
@@ -645,18 +678,19 @@ class UserProfileManager:
 
     async def remove_memory_entry(
         self,
+        identity: RequestIdentity,
         user_id: str,
         entry_id: str,
     ) -> UserProfile:
         """
         Remove a single long-term memory entry identified by `entry_id`.
         """
-        mutation = await self.remove_memory_entry_with_lifecycle(user_id, entry_id)
+        mutation = await self.remove_memory_entry_with_lifecycle(identity, user_id, entry_id)
         self._memory_lifecycle.raise_if_partial(mutation.lifecycle)
         return await self._get_store_profile(user_id)
 
 
-    async def clear_memory(self, user_id: str) -> UserProfile:
+    async def clear_memory(self, identity: RequestIdentity, user_id: str) -> UserProfile:
         """
         Remove all long-term memory entries for the given user.
 
@@ -674,8 +708,10 @@ class UserProfileManager:
 
         if changed:
             await self._save_store_profile(profile)
+            projection_identity = _projection_identity_for_user(identity, user_id)
             outcome = await self._memory_lifecycle.apply_after_primary_deletes(
                 operation=MemoryLifecycleOperation.CLEAR,
+                identity=projection_identity,
                 user_id=user_id,
                 entry_ids=entry_ids,
             )

@@ -50,8 +50,13 @@ async def test_partial_projection_failure_then_reconcile_repairs_recall() -> Non
     assert profile.memory_entries
     assert recovery.entries == {}
 
-    outcome = await harness.manager.reconcile_memory_projections(harness.user_id)
-    assert outcome.disposition is MemoryReconciliationDisposition.REPAIRED
+    outcome = await harness.plane.reconcile(
+        harness.identity(),
+        harness.user_scope(),
+        MemoryControlReconcileRequest(),
+    )
+    assert outcome.reconciliation is not None
+    assert outcome.reconciliation.disposition is MemoryReconciliationDisposition.REPAIRED
     assert recovery.entries
 
     recall = await harness.plane.recall(

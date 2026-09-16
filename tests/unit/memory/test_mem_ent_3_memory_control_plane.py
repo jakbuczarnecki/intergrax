@@ -27,7 +27,9 @@ from intergrax.memory.contracts.memory_lifecycle import (
     MemoryProjectionReconciliationDisposition,
     MemoryProjectionReconciliationResult,
     MemoryReconciliationDisposition,
+    UserProfileMemoryProjectionContext,
     UserProfileMemoryReconciliationContext,
+    user_profile_memory_projection_context,
 )
 from intergrax.memory.default_memory_control_plane import (
     DefaultMemoryControlPlane,
@@ -59,13 +61,17 @@ class RecordingMemoryProjection:
 
     async def upsert_memory_entry(
         self,
-        user_id: str,
+        context: UserProfileMemoryProjectionContext,
         entry: UserProfileMemoryEntry,
     ) -> None:
-        self.upsert_calls.append((user_id, entry.entry_id))
+        self.upsert_calls.append((context.user_id, entry.entry_id))
         self.indexed_entry_ids.add(entry.entry_id)
 
-    async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+    async def delete_memory_entries(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry_ids: Sequence[str],
+    ) -> None:
         self.delete_calls.append(tuple(entry_ids))
         for entry_id in entry_ids:
             self.indexed_entry_ids.discard(entry_id)
@@ -78,7 +84,10 @@ class RecordingMemoryProjection:
         orphans = self.indexed_entry_ids - expected
         changed = bool(orphans)
         if orphans:
-            await self.delete_memory_entries(tuple(sorted(orphans)))
+            await self.delete_memory_entries(
+                user_profile_memory_projection_context(context.identity),
+                tuple(sorted(orphans)),
+            )
         disposition = (
             MemoryProjectionReconciliationDisposition.REPAIRED
             if changed

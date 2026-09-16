@@ -227,11 +227,14 @@ class UserProfileManagerMemoryCapability:
 
     async def add_memory_entry(
         self,
-        user_id: str,
+        identity: RequestIdentity,
         entry: UserProfileMemoryEntry,
     ) -> UserMemoryRememberCapabilityResult:
+        user_id = identity.user_id or ""
         try:
-            mutation = await self._manager.add_memory_entry_with_lifecycle(user_id, entry)
+            mutation = await self._manager.add_memory_entry_with_lifecycle(
+                identity, user_id, entry
+            )
         except Exception as exc:
             raise _map_capability_mutation_error(exc) from exc
         if mutation.entry is None:
@@ -245,11 +248,14 @@ class UserProfileManagerMemoryCapability:
 
     async def remove_memory_entry(
         self,
-        user_id: str,
+        identity: RequestIdentity,
         entry_id: str,
     ) -> UserMemoryForgetCapabilityResult:
+        user_id = identity.user_id or ""
         try:
-            mutation = await self._manager.remove_memory_entry_with_lifecycle(user_id, entry_id)
+            mutation = await self._manager.remove_memory_entry_with_lifecycle(
+                identity, user_id, entry_id
+            )
         except Exception as exc:
             raise _map_capability_mutation_error(exc) from exc
         if not mutation.lifecycle.primary_applied:
@@ -294,16 +300,21 @@ class UserProfileManagerMemoryCapability:
             raise MemoryControlBackendError("unexpected search result shape")
         return adapt_manager_search_result(raw)
 
-    async def reconcile_memory_projections(self, user_id: str) -> MemoryReconciliationOutcome:
-        return await self._manager.reconcile_memory_projections(user_id)
+    async def reconcile_memory_projections(
+        self,
+        identity: RequestIdentity,
+    ) -> MemoryReconciliationOutcome:
+        return await self._manager.reconcile_memory_projections(identity)
 
     async def apply_memory_supersession(
         self,
-        user_id: str,
+        identity: RequestIdentity,
         intent: MemorySupersessionIntent,
     ) -> MemoryControlSupersessionApplyResult:
+        user_id = identity.user_id or ""
         try:
             mutation = await self._manager.apply_memory_supersession_with_lifecycle(
+                identity,
                 user_id,
                 superseded_memory_id=intent.superseded_memory_id,
                 superseding_memory_id=intent.superseding_memory_id,
@@ -439,7 +450,7 @@ class DefaultMemoryControlPlane:
                 ),
             )
         try:
-            return await self.user_profile.apply_memory_supersession(user_id, intent)
+            return await self.user_profile.apply_memory_supersession(identity, intent)
         except MemoryControlPartialLifecycleError:
             raise
         except MemoryControlBackendError:
@@ -476,7 +487,7 @@ class DefaultMemoryControlPlane:
         user_id = scope.user_id or ""
         timer = MemoryOperationTimer()
         try:
-            outcome = await self.user_profile.reconcile_memory_projections(user_id)
+            outcome = await self.user_profile.reconcile_memory_projections(identity)
         except MemoryControlPartialLifecycleError:
             emit_control_plane_terminal(
                 self.diagnostic_emitter,
@@ -559,7 +570,7 @@ class DefaultMemoryControlPlane:
             scope=scope,
         )
         try:
-            capability_result = await self.user_profile.add_memory_entry(user_id, entry)
+            capability_result = await self.user_profile.add_memory_entry(identity, entry)
         except MemoryControlPartialLifecycleError:
             emit_control_plane_terminal(
                 self.diagnostic_emitter,
@@ -768,7 +779,7 @@ class DefaultMemoryControlPlane:
             scope=scope,
         )
         try:
-            capability_result = await self.user_profile.remove_memory_entry(user_id, entry_id)
+            capability_result = await self.user_profile.remove_memory_entry(identity, entry_id)
         except MemoryControlPartialLifecycleError:
             emit_control_plane_terminal(
                 self.diagnostic_emitter,

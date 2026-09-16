@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from intergrax.memory.contracts.memory_lifecycle import (
     MemoryProjectionReconciliationDisposition,
     MemoryProjectionReconciliationResult,
+    UserProfileMemoryProjectionContext,
     UserProfileMemoryReconciliationContext,
 )
 from intergrax.memory.memory_temporal import filter_active_memory_entries
@@ -27,15 +28,24 @@ class FailOnceRepairableProjection:
     upsert_attempts: int = 0
     reconcile_calls: int = 0
 
-    async def upsert_memory_entry(self, user_id: str, entry: UserProfileMemoryEntry) -> None:
-        _ = user_id
+    async def upsert_memory_entry(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry: UserProfileMemoryEntry,
+    ) -> None:
+        _ = context
         self.upsert_attempts += 1
         if self.fail_next_upsert:
             self.fail_next_upsert = False
             raise TimeoutError("projection upsert failed once")
         self.entries[entry.entry_id] = entry
 
-    async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+    async def delete_memory_entries(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry_ids: Sequence[str],
+    ) -> None:
+        _ = context
         for entry_id in entry_ids:
             self.entries.pop(entry_id, None)
 

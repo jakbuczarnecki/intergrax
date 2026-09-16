@@ -24,6 +24,7 @@ from intergrax.memory.contracts.memory_control import (
 from intergrax.memory.contracts.memory_lifecycle import (
     MemoryProjectionReconciliationDisposition,
     MemoryProjectionReconciliationResult,
+    UserProfileMemoryProjectionContext,
     UserProfileMemoryReconciliationContext,
 )
 from intergrax.memory.contracts.memory_observability import RecordingMemoryObservabilitySink
@@ -47,6 +48,23 @@ from intergrax.utils.time_provider import TimeProvider
 from tests.unit.memory.resilience.recovery_projection import FailOnceRepairableProjection
 
 _RUN_ID = "mem-ent15-e2e"
+
+
+@dataclass(slots=True)
+class RecordingEntityMemoryIndexer:
+    """Records trusted ``RequestIdentity`` values passed into entity indexing."""
+
+    inner: DefaultEntityMemoryIndexer
+    observed_indexing: list[RequestIdentity] = field(default_factory=list)
+
+    def index_memory_entry(
+        self,
+        identity: RequestIdentity,
+        scope: EntityMemoryScope,
+        entry: UserProfileMemoryEntry,
+    ) -> object:
+        self.observed_indexing.append(identity)
+        return self.inner.index_memory_entry(identity, scope, entry)
 
 
 class FixedUtcTimeProvider(TimeProvider):
@@ -82,16 +100,24 @@ class EntityIndexerUserProfileProjection:
             workspace_id=self.workspace_id,
         )
 
-    async def upsert_memory_entry(self, user_id: str, entry: UserProfileMemoryEntry) -> None:
-        identity = RequestIdentity(
-            tenant_id=self.tenant_id,
-            user_id=user_id,
-            principal_type=PrincipalType.USER,
-            auth_subject=user_id,
+    async def upsert_memory_entry(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry: UserProfileMemoryEntry,
+    ) -> None:
+        self.indexer.index_memory_entry(
+            context.identity,
+            self._scope(context.user_id),
+            entry,
         )
-        self.indexer.index_memory_entry(identity, self._scope(user_id), entry)
 
-    async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+    async def delete_memory_entries(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry_ids: Sequence[str],
+    ) -> None:
+        _ = context
+        _ = entry_ids
         return None
 
     async def reconcile(
@@ -103,14 +129,8 @@ class EntityIndexerUserProfileProjection:
                 projection_id=self.projection_id,
                 disposition=MemoryProjectionReconciliationDisposition.CONSISTENT,
             )
-        user_id = context.user_id
-        identity = RequestIdentity(
-            tenant_id=self.tenant_id,
-            user_id=user_id,
-            principal_type=PrincipalType.USER,
-            auth_subject=user_id,
-        )
-        scope = self._scope(user_id)
+        identity = context.identity
+        scope = self._scope(context.user_id)
         changed = False
         for entry in filter_active_memory_entries(context.profile.memory_entries):
             if entry.entry_id not in context.authoritative_active_entry_ids:
@@ -141,6 +161,7 @@ class MemoryE2EHarness:
     observability: RecordingMemoryObservabilitySink
     entity_store: EntityTemporalMemoryStore | None = None
     entity_projection: EntityIndexerUserProfileProjection | None = None
+    entity_indexer: RecordingEntityMemoryIndexer | None = None
     sqlite_path: Path | None = None
     run_id: str = _RUN_ID
 
@@ -197,17 +218,19 @@ def _build_core(
     )
     entity_store: EntityTemporalMemoryStore | None = None
     entity_projection: EntityIndexerUserProfileProjection | None = None
+    recording_indexer: RecordingEntityMemoryIndexer | None = None
     resolved_projections: list[object] = list(projections or ())
     if include_entity_projection:
         entity_store = InMemoryEntityTemporalMemoryStore()
-        indexer = DefaultEntityMemoryIndexer(
+        inner_indexer = DefaultEntityMemoryIndexer(
             entity_store,
             security_governance=governance_service,
             diagnostic_emitter=emitter,
         )
+        recording_indexer = RecordingEntityMemoryIndexer(inner=inner_indexer)
         entity_projection = EntityIndexerUserProfileProjection(
             tenant_id=tenant_id,
-            indexer=indexer,
+            indexer=recording_indexer,
             entity_store=entity_store,
         )
         resolved_projections.append(entity_projection)
@@ -234,6 +257,7 @@ def _build_core(
         observability=recording,
         entity_store=entity_store,
         entity_projection=entity_projection,
+        entity_indexer=recording_indexer,
     )
 
 

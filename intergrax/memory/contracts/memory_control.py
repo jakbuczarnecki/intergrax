@@ -241,13 +241,13 @@ class UserProfileMemoryCapability(Protocol):
 
     async def add_memory_entry(
         self,
-        user_id: str,
+        identity: RequestIdentity,
         entry: UserProfileMemoryEntry,
     ) -> UserMemoryRememberCapabilityResult: ...
 
     async def remove_memory_entry(
         self,
-        user_id: str,
+        identity: RequestIdentity,
         entry_id: str,
     ) -> UserMemoryForgetCapabilityResult: ...
 
@@ -269,12 +269,12 @@ class UserProfileMemoryCapability(Protocol):
 
     async def reconcile_memory_projections(
         self,
-        user_id: str,
+        identity: RequestIdentity,
     ) -> MemoryReconciliationOutcome: ...
 
     async def apply_memory_supersession(
         self,
-        user_id: str,
+        identity: RequestIdentity,
         intent: MemorySupersessionIntent,
     ) -> MemoryControlSupersessionApplyResult: ...
 

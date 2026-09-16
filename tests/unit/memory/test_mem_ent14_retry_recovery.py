@@ -21,6 +21,7 @@ from intergrax.memory.contracts.memory_lifecycle import (
     MemoryProjectionReconciliationDisposition,
     MemoryProjectionReconciliationResult,
     MemoryReconciliationDisposition,
+    UserProfileMemoryProjectionContext,
     UserProfileMemoryReconciliationContext,
 )
 from intergrax.memory.default_memory_control_plane import (
@@ -151,10 +152,18 @@ class _RecordingProjection:
     upserts: list[str] = field(default_factory=list)
     reconcile_calls: int = 0
 
-    async def upsert_memory_entry(self, user_id: str, entry: UserProfileMemoryEntry) -> None:
+    async def upsert_memory_entry(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry: UserProfileMemoryEntry,
+    ) -> None:
         self.upserts.append(entry.entry_id)
 
-    async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+    async def delete_memory_entries(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry_ids: Sequence[str],
+    ) -> None:
         return None
 
     async def reconcile(
@@ -192,8 +201,8 @@ async def test_reconciliation_repeated_execution_is_idempotent() -> None:
         tenant_id=_TENANT,
         memory_projections=(projection,),
     )
-    first = await mgr.reconcile_memory_projections(_USER)
-    second = await mgr.reconcile_memory_projections(_USER)
+    first = await mgr.reconcile_memory_projections(_identity())
+    second = await mgr.reconcile_memory_projections(_identity())
     assert first.disposition is MemoryReconciliationDisposition.CONSISTENT
     assert second.disposition is MemoryReconciliationDisposition.CONSISTENT
     assert projection.reconcile_calls == 2
@@ -205,10 +214,18 @@ async def test_projection_failure_after_canonical_remember_reports_partial_failu
     class _FailingProjection:
         projection_id: str = "fail-upsert"
 
-        async def upsert_memory_entry(self, user_id: str, entry: UserProfileMemoryEntry) -> None:
+        async def upsert_memory_entry(
+            self,
+            context: UserProfileMemoryProjectionContext,
+            entry: UserProfileMemoryEntry,
+        ) -> None:
             raise TimeoutError("projection failed")
 
-        async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+        async def delete_memory_entries(
+            self,
+            context: UserProfileMemoryProjectionContext,
+            entry_ids: Sequence[str],
+        ) -> None:
             return None
 
         async def reconcile(
@@ -277,13 +294,13 @@ async def test_projection_failure_then_reconcile_repairs_missing_entry() -> None
     assert projection.entries == {}
     assert projection.upsert_attempts == 1
 
-    first = await mgr.reconcile_memory_projections(_USER)
+    first = await mgr.reconcile_memory_projections(identity)
     assert first.disposition is MemoryReconciliationDisposition.REPAIRED
     assert projection.repair_count == 1
     assert len(projection.entries) == 1
 
     repair_before = projection.repair_count
-    second = await mgr.reconcile_memory_projections(_USER)
+    second = await mgr.reconcile_memory_projections(identity)
     assert second.disposition is MemoryReconciliationDisposition.CONSISTENT
     assert projection.repair_count == repair_before
 

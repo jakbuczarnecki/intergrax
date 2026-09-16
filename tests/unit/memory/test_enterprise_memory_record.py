@@ -242,7 +242,15 @@ async def test_ltm_vector_projection_metadata_includes_memory_id_and_revision() 
         vector_index_namespace=None,
         workspace_id=None,
     )
-    await projection.upsert_memory_entry("user-1", entry)
+    from intergrax.memory.contracts.memory_lifecycle import user_profile_memory_projection_context
+    from tests.unit.memory._projection_identity import memory_test_identity
+
+    await projection.upsert_memory_entry(
+        user_profile_memory_projection_context(
+            memory_test_identity(tenant_id="tenant-1", user_id="user-1")
+        ),
+        entry,
+    )
     meta = captured[0].document.metadata
     assert meta["memory_id"] == entry.memory_id
     assert meta["revision"] == 3
@@ -267,7 +275,14 @@ async def test_update_increments_revision_preserves_memory_id() -> None:
     store.save_profile = AsyncMock()
     mgr = UserProfileManager(store)
 
-    await mgr.update_memory_entry("u1", memory_id, content="v2")
+    from tests.unit.memory._projection_identity import memory_test_identity
+
+    await mgr.update_memory_entry(
+        memory_test_identity(user_id="u1"),
+        "u1",
+        memory_id,
+        content="v2",
+    )
 
     assert profile.memory_entries[0].entry_id == memory_id
     assert profile.memory_entries[0].revision == 2

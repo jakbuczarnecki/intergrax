@@ -178,5 +178,14 @@ def ltm_write_fact(ctx: ToolWiringContext, params: LtmWriteFactInput) -> LtmWrit
         kind=kind,
         title=params.title.strip() or None,
     )
-    saved = run_async(manager.add_memory_entry(params.user_id.strip(), entry))
+    identity_raw = ctx.extras.get("request_identity")
+    if isinstance(identity_raw, RequestIdentity):
+        identity = identity_raw
+    else:
+        tenant = str(ctx.extras.get("tenant_id") or "default").strip() or "default"
+        identity = RequestIdentity(
+            tenant_id=tenant,
+            user_id=params.user_id.strip(),
+        )
+    saved = run_async(manager.add_memory_entry(identity, params.user_id.strip(), entry))
     return LtmWriteFactOutput(written=True, entry_id=str(attribute_access.optional(saved, "entry_id", "")))

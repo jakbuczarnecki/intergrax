@@ -28,6 +28,7 @@ from intergrax.memory.contracts.memory_control import (
 )
 from intergrax.memory.contracts.memory_lifecycle import (
     MemoryLifecycleDisposition,
+    UserProfileMemoryProjectionContext,
     UserProfileMemoryReconciliationContext,
 )
 from intergrax.memory.contracts.memory_models import MemoryKind, UserProfileMemoryEntry
@@ -702,14 +703,18 @@ class SelectiveFailProjection:
 
     async def upsert_memory_entry(
         self,
-        user_id: str,
+        context: UserProfileMemoryProjectionContext,
         entry: UserProfileMemoryEntry,
     ) -> None:
         self.upsert_calls.append(entry.entry_id)
         if self.always_fail or entry.entry_id in self.fail_entry_ids:
             raise TimeoutError("projection failed")
 
-    async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+    async def delete_memory_entries(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry_ids: Sequence[str],
+    ) -> None:
         return None
 
     async def reconcile(

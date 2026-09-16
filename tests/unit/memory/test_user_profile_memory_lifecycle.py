@@ -14,8 +14,11 @@ from intergrax.memory.contracts.memory_lifecycle import (
     MemoryProjectionReconciliationDisposition,
     MemoryProjectionReconciliationResult,
     MemoryReconciliationDisposition,
+    UserProfileMemoryProjectionContext,
     UserProfileMemoryReconciliationContext,
+    user_profile_memory_projection_context,
 )
+from tests.unit.memory._projection_identity import memory_test_identity
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecycleCoordinator
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.user_profile_manager import UserProfileManager
@@ -30,6 +33,7 @@ from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLife
 pytestmark = pytest.mark.gate
 
 FAKE_PROJECTION_ID = "test_memory_projection"
+_U1 = memory_test_identity(tenant_id="tenant-a", user_id="u1")
 
 
 @dataclass
@@ -44,15 +48,19 @@ class RecordingMemoryProjection:
 
     async def upsert_memory_entry(
         self,
-        user_id: str,
+        context: UserProfileMemoryProjectionContext,
         entry: UserProfileMemoryEntry,
     ) -> None:
         if self.fail_upsert:
             raise TimeoutError("projection unavailable")
-        self.upsert_calls.append((user_id, entry.entry_id))
+        self.upsert_calls.append((context.user_id, entry.entry_id))
         self.indexed_entry_ids.add(entry.entry_id)
 
-    async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+    async def delete_memory_entries(
+        self,
+        context: UserProfileMemoryProjectionContext,
+        entry_ids: Sequence[str],
+    ) -> None:
         if self.fail_delete:
             raise TimeoutError("projection unavailable")
         self.delete_calls.append(tuple(entry_ids))
@@ -68,18 +76,27 @@ class RecordingMemoryProjection:
         orphans = self.indexed_entry_ids - expected
         changed = bool(orphans)
         if orphans:
-            await self.delete_memory_entries(tuple(sorted(orphans)))
+            await self.delete_memory_entries(
+                user_profile_memory_projection_context(context.identity),
+                tuple(sorted(orphans)),
+            )
         if context.profile is None:
             if self.indexed_entry_ids:
                 changed = True
-                await self.delete_memory_entries(tuple(sorted(self.indexed_entry_ids)))
+                await self.delete_memory_entries(
+                    user_profile_memory_projection_context(context.identity),
+                    tuple(sorted(self.indexed_entry_ids)),
+                )
         else:
             for entry in context.profile.memory_entries:
                 if entry.deleted:
                     continue
                 if entry.entry_id not in self.indexed_entry_ids:
                     changed = True
-                    await self.upsert_memory_entry(context.user_id, entry)
+                    await self.upsert_memory_entry(
+                        user_profile_memory_projection_context(context.identity),
+                        entry,
+                    )
         disposition = (
             MemoryProjectionReconciliationDisposition.REPAIRED
             if changed
@@ -119,7 +136,7 @@ async def test_write_success_primary_and_projection() -> None:
     projection = RecordingMemoryProjection()
     mgr = _manager(store, projection)
 
-    entry = await mgr.add_memory_entry("u1", "remember this")
+    entry = await mgr.add_memory_entry(_U1, "u1", "remember this")
 
     assert entry.content == "remember this"
     assert projection.upsert_calls == [("u1", entry.entry_id)]
@@ -137,7 +154,7 @@ async def test_write_primary_failure_skips_projection() -> None:
     store.save_profile = fail_save  # type: ignore[method-assign]
 
     with pytest.raises(OSError):
-        await mgr.add_memory_entry("u1", "x")
+        await mgr.add_memory_entry(_U1, "u1", "x")
 
     assert projection.upsert_calls == []
 
@@ -149,7 +166,7 @@ async def test_write_projection_failure_leaves_primary_and_raises_partial() -> N
     mgr = _manager(store, projection)
 
     with pytest.raises(UserProfileMemoryLifecyclePartialError) as exc_info:
-        await mgr.add_memory_entry("u1", "x")
+        await mgr.add_memory_entry(_U1, "u1", "x")
 
     outcome = exc_info.value.outcome
     assert outcome.operation is MemoryLifecycleOperation.WRITE
@@ -167,7 +184,7 @@ async def test_update_projection_failure_is_partial() -> None:
     mgr = _manager(store, projection)
 
     with pytest.raises(UserProfileMemoryLifecyclePartialError):
-        await mgr.update_memory_entry("u1", "e1", content="v2")
+        await mgr.update_memory_entry(_U1, "u1", "e1", content="v2")
 
     profile = await mgr.get_profile("u1")
     assert profile.memory_entries[0].content == "v2"
@@ -180,7 +197,7 @@ async def test_clear_memory_deletes_projections() -> None:
     projection = RecordingMemoryProjection(indexed_entry_ids={"e1"})
     mgr = _manager(store, projection)
 
-    await mgr.clear_memory("u1")
+    await mgr.clear_memory(_U1, "u1")
 
     assert ("e1",) in projection.delete_calls or ("e1",) == projection.delete_calls[-1]
     assert "e1" not in projection.indexed_entry_ids
@@ -193,7 +210,7 @@ async def test_delete_profile_deletes_projections() -> None:
     projection = RecordingMemoryProjection(indexed_entry_ids={"e1"})
     mgr = _manager(store, projection)
 
-    await mgr.delete_profile("u1")
+    await mgr.delete_profile(_U1, "u1")
 
     assert "e1" in projection.delete_calls[0]
     assert "e1" not in projection.indexed_entry_ids
@@ -207,7 +224,7 @@ async def test_delete_projection_failure_is_partial() -> None:
     mgr = _manager(store, projection)
 
     with pytest.raises(UserProfileMemoryLifecyclePartialError):
-        await mgr.clear_memory("u1")
+        await mgr.clear_memory(_U1, "u1")
 
 
 @pytest.mark.asyncio
@@ -217,7 +234,7 @@ async def test_reconcile_recreates_missing_projection() -> None:
     projection = RecordingMemoryProjection()
     mgr = _manager(store, projection)
 
-    outcome = await mgr.reconcile_memory_projections("u1")
+    outcome = await mgr.reconcile_memory_projections(_U1)
 
     assert outcome.disposition is MemoryReconciliationDisposition.REPAIRED
     assert ("u1", "e1") in projection.upsert_calls
@@ -230,7 +247,7 @@ async def test_reconcile_removes_orphan_projection() -> None:
     projection = RecordingMemoryProjection(indexed_entry_ids={"e1", "orphan"})
     mgr = _manager(store, projection)
 
-    outcome = await mgr.reconcile_memory_projections("u1")
+    outcome = await mgr.reconcile_memory_projections(_U1)
 
     assert outcome.disposition is MemoryReconciliationDisposition.REPAIRED
     assert "orphan" not in projection.indexed_entry_ids
@@ -244,10 +261,10 @@ async def test_reconcile_after_clear_removes_orphans() -> None:
     mgr = _manager(store, projection)
     projection.fail_delete = True
     with pytest.raises(UserProfileMemoryLifecyclePartialError):
-        await mgr.clear_memory("u1")
+        await mgr.clear_memory(_U1, "u1")
     projection.fail_delete = False
 
-    outcome = await mgr.reconcile_memory_projections("u1")
+    outcome = await mgr.reconcile_memory_projections(_U1)
 
     assert outcome.disposition is MemoryReconciliationDisposition.REPAIRED
     assert projection.indexed_entry_ids == set()
@@ -260,7 +277,7 @@ async def test_reconcile_consistent_when_projection_already_consistent() -> None
     projection = RecordingMemoryProjection(indexed_entry_ids={"e1"})
     mgr = _manager(store, projection)
 
-    outcome = await mgr.reconcile_memory_projections("u1")
+    outcome = await mgr.reconcile_memory_projections(_U1)
 
     assert outcome.disposition is MemoryReconciliationDisposition.CONSISTENT
     assert projection.upsert_calls == []
@@ -278,10 +295,18 @@ async def test_reconcile_coordinator_failed_when_one_projection_raises() -> None
     class FailingProjection:
         projection_id = "failing"
 
-        async def upsert_memory_entry(self, user_id: str, entry: UserProfileMemoryEntry) -> None:
+        async def upsert_memory_entry(
+            self,
+            context: UserProfileMemoryProjectionContext,
+            entry: UserProfileMemoryEntry,
+        ) -> None:
             raise AssertionError("not used")
 
-        async def delete_memory_entries(self, entry_ids: Sequence[str]) -> None:
+        async def delete_memory_entries(
+            self,
+            context: UserProfileMemoryProjectionContext,
+            entry_ids: Sequence[str],
+        ) -> None:
             raise AssertionError("not used")
 
         async def reconcile(
@@ -294,7 +319,7 @@ async def test_reconcile_coordinator_failed_when_one_projection_raises() -> None
         projections=(ok_projection, FailingProjection()),
     )
     profile = await store.get_profile(tenant_id="tenant-a", user_id="u1")
-    outcome = await coordinator.reconcile_user(user_id="u1", profile=profile)
+    outcome = await coordinator.reconcile_user(identity=_U1, profile=profile)
 
     assert outcome.disposition is MemoryReconciliationDisposition.FAILED
     failed = [item for item in outcome.projection_evidence if not item.succeeded]
@@ -310,8 +335,8 @@ async def test_reconcile_idempotent_second_pass_consistent() -> None:
     projection = RecordingMemoryProjection()
     mgr = _manager(store, projection)
 
-    first = await mgr.reconcile_memory_projections("u1")
-    second = await mgr.reconcile_memory_projections("u1")
+    first = await mgr.reconcile_memory_projections(_U1)
+    second = await mgr.reconcile_memory_projections(_U1)
 
     assert first.disposition is MemoryReconciliationDisposition.REPAIRED
     assert second.disposition is MemoryReconciliationDisposition.CONSISTENT
@@ -324,7 +349,7 @@ async def test_projection_delete_is_idempotent() -> None:
     projection = RecordingMemoryProjection(indexed_entry_ids={"e1"})
     mgr = _manager(store, projection)
 
-    await mgr.remove_memory_entry("u1", "e1")
-    await mgr.remove_memory_entry("u1", "e1")
+    await mgr.remove_memory_entry(_U1, "u1", "e1")
+    await mgr.remove_memory_entry(_U1, "u1", "e1")
 
     assert projection.delete_calls.count(("e1",)) >= 1

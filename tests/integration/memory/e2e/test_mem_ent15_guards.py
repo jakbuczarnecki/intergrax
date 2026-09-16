@@ -34,6 +34,15 @@ def test_mem_ent15_core_tests_reference_default_memory_control_plane() -> None:
     assert "DefaultMemoryControlPlane" in names or "build_in_memory_memory_harness" in names
 
 
+def test_entity_projection_adapter_does_not_synthesize_request_identity() -> None:
+    harness_path = _E2E_ROOT / "harness.py"
+    source = harness_path.read_text(encoding="utf-8")
+    adapter_start = source.find("class EntityIndexerUserProfileProjection")
+    assert adapter_start >= 0
+    adapter_block = source[adapter_start : source.find("@dataclass", adapter_start + 1)]
+    assert "RequestIdentity(" not in adapter_block
+
+
 def test_mem_ent15_e2e_avoids_reflection_and_private_access() -> None:
     forbidden_names = {"getattr", "hasattr", "setattr"}
     for path in _e2e_test_files():

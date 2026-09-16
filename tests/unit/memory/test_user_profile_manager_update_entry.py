@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from intergrax.memory.user_profile_manager import UserProfileManager
+from tests.unit.memory._projection_identity import memory_test_identity
 from intergrax.memory.user_profile_memory import (
     UserIdentity,
     UserPreferences,
@@ -31,6 +32,11 @@ async def test_update_memory_entry_not_found_raises_and_skips_side_effects() -> 
     mgr = UserProfileManager(store)
 
     with pytest.raises(UserProfileMemoryEntryNotFoundError):
-        await mgr.update_memory_entry("u1", "missing-entry", content="x")
+        await mgr.update_memory_entry(
+            memory_test_identity(user_id="u1"),
+            "u1",
+            "missing-entry",
+            content="x",
+        )
 
     store.save_profile.assert_not_awaited()

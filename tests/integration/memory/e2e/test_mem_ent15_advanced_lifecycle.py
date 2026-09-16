@@ -33,6 +33,7 @@ from intergrax.memory.stores.in_memory_long_horizon_memory_store import (
 from intergrax.memory.stores.in_memory_procedural_memory_store import (
     InMemoryProceduralMemoryStore,
 )
+from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 from tests.integration.memory.e2e.harness import build_in_memory_memory_harness
 from tests.unit.memory.governance_source_fixtures import PermissiveCanonicalGovernanceSourceAuthority
 
@@ -40,9 +41,13 @@ pytestmark = [pytest.mark.asyncio, pytest.mark.integration, pytest.mark.gate]
 
 
 class _ProfileBackedSourceAuthority:
-    def __init__(self, harness_scope: LongHorizonMemoryScope, harness) -> None:
+    def __init__(
+        self,
+        harness_scope: LongHorizonMemoryScope,
+        entry: UserProfileMemoryEntry,
+    ) -> None:
         self._scope = harness_scope
-        self._harness = harness
+        self._entry = entry
 
     def resolve_canonical_source(
         self,
@@ -55,10 +60,12 @@ class _ProfileBackedSourceAuthority:
             or scope.user_id != self._scope.user_id
         ):
             raise ValueError("scope mismatch")
+        if memory_id != self._entry.entry_id or revision != self._entry.revision:
+            raise ValueError("canonical source entry mismatch")
         return CanonicalMemorySourceSnapshot(
             memory_id=memory_id,
             revision=revision,
-            content=f"lh-content:{memory_id}",
+            content=self._entry.content or "",
             observed_at="2026-03-01T12:00:00+00:00",
         )
 
@@ -123,7 +130,7 @@ async def test_long_horizon_compaction_preserves_source_authority() -> None:
     service = LongHorizonMemoryService(
         _store=lh_store,
         _strategies=build_default_long_horizon_strategies(),
-        _source_authority=_ProfileBackedSourceAuthority(lh_scope, harness),
+        _source_authority=_ProfileBackedSourceAuthority(lh_scope, entry),
         _governance_source_authority=PermissiveCanonicalGovernanceSourceAuthority(),
         _security_governance=build_default_memory_security_governance_service(),
     )
@@ -150,3 +157,4 @@ async def test_long_horizon_compaction_preserves_source_authority() -> None:
     assert summary.source_memory_refs
     assert summary.source_memory_refs[0].memory_id == entry.entry_id
     assert summary.source_memory_refs[0].revision == entry.revision
+    assert entry.content in (summary.content or "")
