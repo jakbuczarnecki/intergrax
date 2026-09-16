@@ -68,7 +68,6 @@ def test_linear_bridge_get_steps_and_decide() -> None:
         seed="linear-bridge",
         agent_id="linear-test",
         request=request,
-        domain_context=ctx,
     )
     decision = linear_agent_decide_after_step(
         agent,
