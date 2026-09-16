@@ -57,9 +57,16 @@ from testing_support.npsc5f_r2_protected_drift import (
 )
 from testing_support.npsc5f_r3_h1_upstream_event_drift import (
     EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA,
-    NPSC5F_R3_H1_QUALIFIED_INTEGRATED_SHA,
+    NPSC5F_R3_H1_QUALIFICATION_RECORD_SHA,
+    NPSC5F_R3_H1_QUALIFIED_BASELINE_SHA,
+    assert_h1_integrated_qualification_contract,
+    classify_h1_post_baseline_event_surface_drift,
     classify_post_r3_event_surface_change,
+    collect_post_h1_baseline_event_surface_paths,
     collect_post_r3_event_surface_paths,
+)
+from testing_support.frozen_baseline_provenance import (
+    assert_frozen_baseline_is_ancestor_of_remote,
 )
 from testing_support.npsc5f_r3_protected_drift import (
     R3_IMPLEMENTATION_SHA,
@@ -286,11 +293,28 @@ def test_npsc5f_r3_h1_r1_sentinel_clean_since_qualified_enum_baseline() -> None:
 
 
 def test_npsc5f_r3_h1_integrated_head_pin_recorded() -> None:
-    head = subprocess.run(
-        ["git", "rev-parse", "origin/development"],
-        cwd=_REPO_ROOT,
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
-    assert head == NPSC5F_R3_H1_QUALIFIED_INTEGRATED_SHA
+    """Qualified baseline is immutable provenance; remote HEAD may advance after qualification record."""
+    assert NPSC5F_R3_H1_QUALIFIED_BASELINE_SHA == (
+        "ad1a1e57fc70529aedcbfa27808fffdbfe5fdd14"
+    )
+    assert_frozen_baseline_is_ancestor_of_remote(
+        repo_root=_REPO_ROOT,
+        baseline_sha=NPSC5F_R3_H1_QUALIFIED_BASELINE_SHA,
+        remote_ref="origin/development",
+    )
+    assert_frozen_baseline_is_ancestor_of_remote(
+        repo_root=_REPO_ROOT,
+        baseline_sha=NPSC5F_R3_H1_QUALIFICATION_RECORD_SHA,
+        remote_ref="origin/development",
+    )
+    assert_frozen_baseline_is_ancestor_of_remote(
+        repo_root=_REPO_ROOT,
+        baseline_sha=NPSC5F_R3_H1_QUALIFIED_BASELINE_SHA,
+        remote_ref=NPSC5F_R3_H1_QUALIFICATION_RECORD_SHA,
+    )
+    post_baseline_buckets = classify_h1_post_baseline_event_surface_drift(_REPO_ROOT)
+    assert all(
+        bucket in frozenset("ABCDEFGHIJK") for bucket in post_baseline_buckets.values()
+    )
+    assert collect_post_h1_baseline_event_surface_paths(_REPO_ROOT) == []
+    assert_h1_integrated_qualification_contract(_REPO_ROOT)
