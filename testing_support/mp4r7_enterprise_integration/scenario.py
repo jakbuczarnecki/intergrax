@@ -34,17 +34,21 @@ from intergrax.contracts.decision_record import (
     validate_decision_artifact_kind,
 )
 from intergrax.contracts.decision_revision import decision_revision_policy
+from intergrax.contracts.decision_lifecycle import transition_decision_lifecycle
+from intergrax.contracts.decision_resolution import (
+    AuthoritativeResolutionRecord,
+    DecisionResolution,
+)
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationError,
     ExecutionContinuationIdentity,
     ExecutionContinuationLifecycleState,
     ExecutionContinuationLookup,
-    ExecutionContinuationResolutionCommand,
     ExecutionContinuationResumeCommand,
-    ExecutionHumanVerdict,
     ExecutionPauseRequest,
     PendingExecutionContinuation,
     execution_continuation_recovery_handle_for_continuation_id,
+    execution_continuation_resolution_command_from_decision_human_review_decision,
 )
 from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
@@ -100,6 +104,8 @@ from testing_support.mp4r7_enterprise_integration.contracts import (
     Mp4R7EnterpriseIntegrationQualificationResult,
     Mp4R7EvidenceSnapshot,
     Mp4R7ExecutionIdentitySnapshot,
+    Mp4R7HumanAuthorityContinuitySnapshot,
+    Mp4R7ProtectedOperationError,
     Mp4R7QualificationDisposition,
     Mp4R7ScenarioId,
     Mp4R7WorkBindingSnapshot,
@@ -124,9 +130,9 @@ class _Payload:
 
 _CONTINUATION_ID = "gcr_mp4r7_enterprise_qualification"
 _PAUSE_ID = "pause_mp4r7"
-_HUMAN_REQUEST_ID = "hr_mp4r7"
 _OPERATION_ID = "op_mp4r7"
 _SIDE_EFFECT_SCOPE = "scope_mp4r7"
+_RESOLVED_AT = "2026-09-16T12:30:00Z"
 
 
 class Mp4R7EnterpriseIntegrationScenarioExecutor:
@@ -166,37 +172,67 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             side_effect_scope_id=_SIDE_EFFECT_SCOPE,
         )
 
-    def _pause_request(self) -> ExecutionPauseRequest:
+    def _pause_request(self, human_request_id: str) -> ExecutionPauseRequest:
         return ExecutionPauseRequest(
             identity=self._continuation_identity(),
             continuation_id=_CONTINUATION_ID,
             reason=ContinuationReason.COMPLIANCE,
             governed_correlation=self._governed_correlation(),
             pause_id=_PAUSE_ID,
-            human_request_id=_HUMAN_REQUEST_ID,
+            human_request_id=human_request_id,
         )
 
-    def _resolution_command(
+    def _human_authority_snapshot(
         self,
         *,
-        expected_revision: int,
-        verdict: ExecutionHumanVerdict,
-    ) -> ExecutionContinuationResolutionCommand:
-        composition = self._composition
-        return ExecutionContinuationResolutionCommand(
-            continuation_id=_CONTINUATION_ID,
-            identity=self._continuation_identity(),
-            expected_revision=expected_revision,
-            verdict=verdict,
-            approver=qualification_identity_provider_approver_evidence(
-                tenant_id=composition.tenant_id,
-            ),
-            human_request_id=_HUMAN_REQUEST_ID,
-            pause_id=_PAUSE_ID,
-            operation_id=_OPERATION_ID,
-            side_effect_scope_id=_SIDE_EFFECT_SCOPE,
-            resolved_at="2026-09-16T12:30:00Z",
+        phase: str,
+        human_request_id: str,
+        decision,
+    ) -> Mp4R7HumanAuthorityContinuitySnapshot:
+        proposal = decision.proposal_ref
+        return Mp4R7HumanAuthorityContinuitySnapshot(
+            phase=phase,
+            human_request_id=human_request_id,
+            approver_user_id=decision.approver.user_id,
+            approver_tenant_id=decision.approver.tenant_id,
+            proposal_decision_id=str(proposal.identity.decision_id),
+            proposal_version=str(proposal.identity.version),
         )
+
+    def _apply_human_review_to_continuation(
+        self,
+        waiting: PendingExecutionContinuation,
+        decision,
+    ) -> PendingExecutionContinuation:
+        command = execution_continuation_resolution_command_from_decision_human_review_decision(
+            waiting,
+            decision,
+            resolved_at=_RESOLVED_AT,
+        )
+        return self._composition.continuation_port.apply_resolution(command)
+
+    def _finalize_decision_lifecycle_after_human_review(
+        self,
+        flow,
+        decision,
+    ) -> tuple[DecisionLifecycleStage, ...]:
+        lifecycle = flow.lifecycle_state
+        if decision.outcome is DecisionHumanReviewOutcome.APPROVED:
+            transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
+            return (
+                lifecycle.stage,
+                DecisionLifecycleStage.FINALIZATION,
+                DecisionLifecycleStage.TERMINAL,
+            )
+        if decision.outcome is DecisionHumanReviewOutcome.REJECTED:
+            identity = decision.proposal_ref.identity
+            AuthoritativeResolutionRecord(
+                identity=identity,
+                resolution=DecisionResolution.REJECTED,
+            )
+            transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
+            return (lifecycle.stage, DecisionLifecycleStage.TERMINAL)
+        raise AssertionError("unsupported human review outcome for decision finalization")
 
     def _resume_command(self, *, expected_revision: int) -> ExecutionContinuationResumeCommand:
         return ExecutionContinuationResumeCommand(
@@ -285,11 +321,11 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             ),
         )
 
-    def _drive_execution_to_waiting(self) -> PendingExecutionContinuation:
+    def _drive_execution_to_waiting(self, human_request_id: str) -> PendingExecutionContinuation:
         composition = self._composition
         port = composition.continuation_port
         driver = composition.continuation_dependencies.lifecycle_driver
-        port.request_pause(self._pause_request())
+        port.request_pause(self._pause_request(human_request_id))
         driver.record_execution_reached_safe_pause(
             _CONTINUATION_ID,
             execution_pause_established=True,
@@ -299,14 +335,13 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             raise AssertionError("execution must reach WAITING_FOR_HUMAN via canonical owner")
         return waiting
 
-    def _resume_after_approval(self, waiting: PendingExecutionContinuation) -> PendingExecutionContinuation:
+    def _resume_after_human_review(
+        self,
+        waiting: PendingExecutionContinuation,
+        decision,
+    ) -> PendingExecutionContinuation:
         port = self._composition.continuation_port
-        authorized = port.apply_resolution(
-            self._resolution_command(
-                expected_revision=waiting.revision,
-                verdict=ExecutionHumanVerdict.APPROVE,
-            ),
-        )
+        authorized = self._apply_human_review_to_continuation(waiting, decision)
         if authorized.lifecycle_state is not ExecutionContinuationLifecycleState.RESUME_AUTHORIZED:
             raise AssertionError("two-phase resume requires RESUME_AUTHORIZED")
         return port.resume(self._resume_command(expected_revision=authorized.revision))
@@ -332,40 +367,37 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
         )
         primary_error: Exception | None = None
         if fail_append:
-
-            class _FailingPersistence(FunctionalEvidencePersistence):
-                def __init__(self, inner: FunctionalEvidencePersistence) -> None:
-                    self._inner = inner
-
-                def append(self, evidence):  # type: ignore[no-untyped-def]
-                    raise FunctionalEvidencePersistenceError("mp4r7 simulated evidence sink failure")
-
-                def query_evidence(self, request):  # type: ignore[no-untyped-def]
-                    return self._inner.query_evidence(request)
-
-            store = _FailingPersistence(composition.evidence_persistence)
-            recorder = FunctionalEvidenceRecorder(
-                persistence=store,
-                producer_component="testing_support.mp4r7",
-            )
+            primary_error = Mp4R7ProtectedOperationError("protected operation failed")
             try:
-                recorder.record_operation_outcome(
-                    scope=scope,
-                    operation_id=MP4R7_PROTECTED_OPERATION_ID,
-                    operation_name="mp4r7 protected side effect",
-                    status=PipelineOperationStatus.FAILED,
+                raise primary_error
+            except Mp4R7ProtectedOperationError as primary:
+                class _FailingPersistence(FunctionalEvidencePersistence):
+                    def __init__(self, inner: FunctionalEvidencePersistence) -> None:
+                        self._inner = inner
+
+                    def append(self, evidence):  # type: ignore[no-untyped-def]
+                        raise FunctionalEvidencePersistenceError(
+                            "mp4r7 simulated evidence sink failure",
+                        )
+
+                    def query_evidence(self, request):  # type: ignore[no-untyped-def]
+                        return self._inner.query_evidence(request)
+
+                store = _FailingPersistence(composition.evidence_persistence)
+                recorder = FunctionalEvidenceRecorder(
+                    persistence=store,
+                    producer_component="testing_support.mp4r7",
                 )
-            except FunctionalEvidencePersistenceError as exc:
-                primary_error = RuntimeError("protected operation failed")
-                return (
-                    Mp4R7EvidenceSnapshot(
-                        evidence_id="none",
-                        kind=PipelineEvidenceKind.OPERATION_OUTCOME.value,
+                try:
+                    recorder.record_operation_outcome(
+                        scope=scope,
                         operation_id=MP4R7_PROTECTED_OPERATION_ID,
+                        operation_name="mp4r7 protected side effect",
                         status=PipelineOperationStatus.FAILED,
-                    ),
-                    primary_error,
-                )
+                    )
+                except FunctionalEvidencePersistenceError:
+                    pass
+                raise primary
         evidence = recorder.record_operation_outcome(
             scope=scope,
             operation_id=MP4R7_PROTECTED_OPERATION_ID,
@@ -417,9 +449,10 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
         if pending is None:
             raise AssertionError("human review pending required")
         proposal_ref = pending.request.proposal_ref
+        human_request_id = str(pending.request.request_id)
         binding = self._create_binding(proposal_ref)
         assert binding.binding_id
-        waiting = self._drive_execution_to_waiting()
+        waiting = self._drive_execution_to_waiting(human_request_id)
         decision = decision_human_review_decision(
             request=pending.request,
             outcome=DecisionHumanReviewOutcome.APPROVED,
@@ -428,7 +461,7 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             ),
             provenance=DecisionHumanReviewProvenance(
                 human_record_id="hdec_mp4r7_success",
-                human_request_id=str(pending.request.request_id),
+                human_request_id=human_request_id,
             ),
         )
         validate_consumed_human_review_decision(
@@ -436,12 +469,24 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             decision=decision,
             target_proposal_ref=proposal_ref,
         )
-        resumed = self._resume_after_approval(waiting)
+        decision_stages = self._finalize_decision_lifecycle_after_human_review(flow, decision)
+        resumed = self._resume_after_human_review(waiting, decision)
         if resumed.lifecycle_state is not ExecutionContinuationLifecycleState.RESUMED:
             raise AssertionError("execution must reach RESUMED")
         evidence_snapshot, _ = self._record_protected_operation()
         diagnostics = self._diagnostics_snapshot()
-        stages = (flow.lifecycle_state.stage, DecisionLifecycleStage.FINALIZATION)
+        authority_snapshots = (
+            self._human_authority_snapshot(
+                phase="decision_human_review",
+                human_request_id=human_request_id,
+                decision=decision,
+            ),
+            self._human_authority_snapshot(
+                phase="continuation_resolution",
+                human_request_id=human_request_id,
+                decision=decision,
+            ),
+        )
         return Mp4R7EnterpriseIntegrationQualificationResult(
             scenario_id=Mp4R7ScenarioId.SUCCESS,
             disposition=Mp4R7QualificationDisposition.QUALIFIED,
@@ -475,10 +520,12 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             ),
             evidence_records=(evidence_snapshot,),
             diagnostics=diagnostics,
-            decision_lifecycle_stages_observed=stages,
-            pause_id=_PAUSE_ID,
-            human_request_id=_HUMAN_REQUEST_ID,
+            decision_lifecycle_stages_observed=decision_stages,
+            pause_id=waiting.pause_id,
+            human_request_id=human_request_id,
             continuation_id=_CONTINUATION_ID,
+            human_authority_continuity=authority_snapshots,
+            decision_final_stage=DecisionLifecycleStage.TERMINAL,
         )
 
     async def run_human_reject(self) -> Mp4R7EnterpriseIntegrationQualificationResult:
@@ -488,8 +535,9 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
         pending = flow.human_review_pending
         assert pending is not None
         proposal_ref = pending.request.proposal_ref
+        human_request_id = str(pending.request.request_id)
         self._create_binding(proposal_ref)
-        waiting = self._drive_execution_to_waiting()
+        waiting = self._drive_execution_to_waiting(human_request_id)
         decision = decision_human_review_decision(
             request=pending.request,
             outcome=DecisionHumanReviewOutcome.REJECTED,
@@ -498,7 +546,7 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             ),
             provenance=DecisionHumanReviewProvenance(
                 human_record_id="hdec_mp4r7_reject",
-                human_request_id=str(pending.request.request_id),
+                human_request_id=human_request_id,
             ),
         )
         validate_consumed_human_review_decision(
@@ -506,12 +554,8 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             decision=decision,
             target_proposal_ref=proposal_ref,
         )
-        resolved = self._composition.continuation_port.apply_resolution(
-            self._resolution_command(
-                expected_revision=waiting.revision,
-                verdict=ExecutionHumanVerdict.REJECT,
-            ),
-        )
+        self._finalize_decision_lifecycle_after_human_review(flow, decision)
+        resolved = self._apply_human_review_to_continuation(waiting, decision)
         if resolved.lifecycle_state is not ExecutionContinuationLifecycleState.REJECTED:
             raise AssertionError("human reject must terminal REJECTED continuation state")
         try:
@@ -558,9 +602,10 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             evidence_records=(),
             diagnostics=None,
             decision_lifecycle_stages_observed=(flow.lifecycle_state.stage,),
-            pause_id=_PAUSE_ID,
-            human_request_id=_HUMAN_REQUEST_ID,
+            pause_id=waiting.pause_id,
+            human_request_id=human_request_id,
             continuation_id=_CONTINUATION_ID,
+            decision_final_stage=DecisionLifecycleStage.TERMINAL,
         )
 
     async def run_stale_proposal(self) -> Mp4R7EnterpriseIntegrationQualificationResult:
@@ -686,18 +731,15 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
 
     async def run_evidence_failure(self) -> Mp4R7EnterpriseIntegrationQualificationResult:
         composition = self._composition
-        primary = RuntimeError("protected operation failed")
-        preserved_primary: Exception | None = None
+        secondary_error_code: str | None = None
+        primary_error_code: str
         try:
-            raise primary
-        except RuntimeError as caught:
-            preserved_primary = caught
-            try:
-                self._record_protected_operation(fail_append=True)
-            except Exception:
-                pass
-        if preserved_primary is not primary:
-            raise AssertionError("primary domain failure must be preserved")
+            self._record_protected_operation(fail_append=True)
+        except Mp4R7ProtectedOperationError as primary:
+            secondary_error_code = "FunctionalEvidencePersistenceError"
+            primary_error_code = type(primary).__name__
+        else:
+            raise AssertionError("protected operation must fail before evidence emission")
         return Mp4R7EnterpriseIntegrationQualificationResult(
             scenario_id=Mp4R7ScenarioId.EVIDENCE_FAILURE,
             disposition=Mp4R7QualificationDisposition.QUALIFIED,
@@ -722,7 +764,8 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             pause_id=None,
             human_request_id=None,
             continuation_id=None,
-            primary_error_code=type(primary).__name__,
+            primary_error_code=primary_error_code,
+            secondary_evidence_error_code=secondary_error_code,
         )
 
     async def run_binding_idempotency(self) -> Mp4R7EnterpriseIntegrationQualificationResult:
@@ -805,12 +848,38 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
                 evidence_records=(),
                 diagnostics=None,
                 decision_lifecycle_stages_observed=(),
-                pause_id=_PAUSE_ID,
-                human_request_id=_HUMAN_REQUEST_ID,
+                pause_id=None,
+                human_request_id=None,
                 continuation_id=_CONTINUATION_ID,
                 primary_error_code="NON_DURABLE_CONTINUATION_STORE",
             )
-        waiting = self._drive_execution_to_waiting()
+        self._seed_work_item()
+        flow = await self._run_decision_flow_require_human()
+        pending = flow.human_review_pending
+        assert pending is not None
+        human_request_id = str(pending.request.request_id)
+        proposal_ref = pending.request.proposal_ref
+        self._create_binding(proposal_ref)
+        waiting = self._drive_execution_to_waiting(human_request_id)
+        decision = decision_human_review_decision(
+            request=pending.request,
+            outcome=DecisionHumanReviewOutcome.APPROVED,
+            approver=qualification_identity_provider_approver_evidence(
+                tenant_id=composition.tenant_id,
+            ),
+            provenance=DecisionHumanReviewProvenance(
+                human_record_id="hdec_mp4r7_restart",
+                human_request_id=human_request_id,
+            ),
+        )
+        validate_consumed_human_review_decision(
+            request=pending.request,
+            decision=decision,
+            target_proposal_ref=proposal_ref,
+        )
+        authorized = self._apply_human_review_to_continuation(waiting, decision)
+        if authorized.lifecycle_state is not ExecutionContinuationLifecycleState.RESUME_AUTHORIZED:
+            raise AssertionError("restart qualification requires RESUME_AUTHORIZED before export")
         export = export_durable_continuation_state(composition.continuation_backing)
         restored_store = execution_continuation_state_store_from_durable_export(export)
         reconnected = reconnect_execution_engine_continuation_dependencies(
@@ -826,14 +895,10 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             expected_identity=self._continuation_identity(),
         )
         port = reconnected.continuation
-        authorized = port.apply_resolution(
-            self._resolution_command(
-                expected_revision=qual.current_episode.revision,
-                verdict=ExecutionHumanVerdict.APPROVE,
-            ),
-        )
+        if qual.current_episode.lifecycle_state is not ExecutionContinuationLifecycleState.RESUME_AUTHORIZED:
+            raise AssertionError("restored continuation must remain RESUME_AUTHORIZED")
         resumed = port.resume(
-            self._resume_command(expected_revision=authorized.revision),
+            self._resume_command(expected_revision=qual.current_episode.revision),
         )
         return Mp4R7EnterpriseIntegrationQualificationResult(
             scenario_id=Mp4R7ScenarioId.PROCESS_RESTART,
@@ -842,11 +907,8 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             workspace_id=composition.workspace_id,
             task_id=composition.task_id,
             work_item_id=composition.work_item_id,
-            decision_proposal_ref=DecisionProposalRef(
-                identity=mint_decision_placeholder_identity(composition),
-                lineage_ref=decision_lineage_ref(initial_decision_version()),
-            ),
-            governance_required_human=False,
+            decision_proposal_ref=proposal_ref,
+            governance_required_human=True,
             human_outcome=DecisionHumanReviewOutcome.APPROVED,
             continuation_result_state=resumed.lifecycle_state,
             protected_operation_completed=False,
@@ -861,8 +923,16 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             diagnostics=None,
             decision_lifecycle_stages_observed=(),
             pause_id=qual.current_episode.pause_id,
-            human_request_id=qual.current_episode.human_request_id,
+            human_request_id=human_request_id,
             continuation_id=_CONTINUATION_ID,
+            human_authority_continuity=(
+                self._human_authority_snapshot(
+                    phase="decision_human_review",
+                    human_request_id=human_request_id,
+                    decision=decision,
+                ),
+            ),
+            decision_final_stage=DecisionLifecycleStage.TERMINAL,
         )
 
 

@@ -87,6 +87,24 @@ def test_mp4r7_scenario_uses_public_continuation_port() -> None:
     assert "ExecutionContinuationService(" not in text
 
 
+def test_mp4r7_scenario_uses_canonical_human_review_continuation_bridge() -> None:
+    scenario = _R7_ROOT / "scenario.py"
+    text = scenario.read_text(encoding="utf-8-sig")
+    assert (
+        "execution_continuation_resolution_command_from_decision_human_review_decision"
+        in text
+    )
+    assert "_HUMAN_REQUEST_ID" not in text
+    assert "ExecutionHumanVerdict.APPROVE" not in text
+
+
+def test_mp4r7_scenario_does_not_fabricate_primary_error_in_evidence_handler() -> None:
+    scenario = _R7_ROOT / "scenario.py"
+    text = scenario.read_text(encoding="utf-8-sig")
+    assert "Mp4R7ProtectedOperationError" in text
+    assert 'primary_error = RuntimeError("protected operation failed")' not in text
+
+
 def test_mp4r7_canonical_contracts_importable() -> None:
     from intergrax.contracts.collaborative_decision_binding import CollaborativeDecisionBinding
     from intergrax.contracts.decision_human_review import DecisionHumanReviewPort

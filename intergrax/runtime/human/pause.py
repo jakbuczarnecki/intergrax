@@ -25,6 +25,7 @@ from intergrax.contracts.execution_continuation import (
     ExecutionContinuationResolutionCommand,
     ExecutionHumanVerdict,
     PendingExecutionContinuation,
+    execution_continuation_resolution_command_for_pending_human_verdict,
 )
 from intergrax.contracts.execution_continuation_projection import (
     ExecutionContinuationCanonicalProjectionApplyError,
@@ -503,17 +504,11 @@ class HumanPauseCoordinator:
             raise HumanApprovalResolutionError(
                 "canonical pending pause_id and human_request_id required",
             )
-        command = ExecutionContinuationResolutionCommand(
-            continuation_id=pending.continuation_id,
-            identity=pending.identity,
-            expected_revision=pending.revision,
+        command = execution_continuation_resolution_command_for_pending_human_verdict(
+            pending,
             verdict=execution_verdict,
             approver=approver,
             human_request_id=pending.human_request_id,
-            pause_id=pending.pause_id,
-            operation_id=correlation.operation_id,
-            side_effect_scope_id=correlation.side_effect_scope_id,
-            side_effect_scope_digest=correlation.side_effect_scope_digest,
             resolved_at=datetime.now(timezone.utc).isoformat(),
         )
         updated = continuation.apply_resolution(command)

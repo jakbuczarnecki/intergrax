@@ -65,6 +65,20 @@ class Mp4R7EvidenceSnapshot:
 
 
 @dataclass(frozen=True, slots=True)
+class Mp4R7HumanAuthorityContinuitySnapshot:
+    phase: str
+    human_request_id: str
+    approver_user_id: str
+    approver_tenant_id: str
+    proposal_decision_id: str
+    proposal_version: str
+
+
+class Mp4R7ProtectedOperationError(RuntimeError):
+    """Qualification-only protected side-effect failure (primary domain error)."""
+
+
+@dataclass(frozen=True, slots=True)
 class Mp4R7DiagnosticsSnapshot:
     specification_id: str
     first_failure_check_id: str | None
@@ -94,6 +108,9 @@ class Mp4R7EnterpriseIntegrationQualificationResult:
     human_request_id: str | None
     continuation_id: str | None
     primary_error_code: str | None = None
+    human_authority_continuity: tuple[Mp4R7HumanAuthorityContinuitySnapshot, ...] = ()
+    decision_final_stage: DecisionLifecycleStage | None = None
+    secondary_evidence_error_code: str | None = None
 
 
 MP4R7_PROTECTED_OPERATION_ID = "mp4r7.enterprise.protected_side_effect"
@@ -107,6 +124,8 @@ __all__ = [
     "Mp4R7DiagnosticsSnapshot",
     "Mp4R7EnterpriseIntegrationQualificationResult",
     "Mp4R7EvidenceSnapshot",
+    "Mp4R7HumanAuthorityContinuitySnapshot",
+    "Mp4R7ProtectedOperationError",
     "Mp4R7ExecutionIdentitySnapshot",
     "Mp4R7QualificationDisposition",
     "Mp4R7ScenarioId",

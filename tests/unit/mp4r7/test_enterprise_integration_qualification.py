@@ -6,10 +6,17 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.contracts.decision_lifecycle import DecisionLifecycleStage
+
+from testing_support.mp4r7_enterprise_integration.approver import (
+    qualification_approver_factory_call_count,
+    reset_qualification_approver_factory_call_count,
+)
 from testing_support.mp4r7_enterprise_integration.composition import (
     open_mp4r7_enterprise_integration_composition,
 )
 from testing_support.mp4r7_enterprise_integration.contracts import (
+    Mp4R7ProtectedOperationError,
     Mp4R7QualificationDisposition,
     Mp4R7ScenarioId,
 )
@@ -28,6 +35,25 @@ def _assert_identity_continuity(result) -> None:
         assert snapshot.run_id == first.run_id
         assert snapshot.attempt_id == first.attempt_id
         assert snapshot.execution_id == first.execution_id
+
+
+@pytest.mark.asyncio
+async def test_mp4r7_same_human_review_authorizes_continuation() -> None:
+    reset_qualification_approver_factory_call_count()
+    executor = Mp4R7EnterpriseIntegrationScenarioExecutor(
+        open_mp4r7_enterprise_integration_composition(),
+    )
+    result = await executor.run_success()
+    assert result.disposition is Mp4R7QualificationDisposition.QUALIFIED
+    assert len(result.human_authority_continuity) == 2
+    decision_phase, continuation_phase = result.human_authority_continuity
+    assert decision_phase.human_request_id == continuation_phase.human_request_id
+    assert decision_phase.approver_user_id == continuation_phase.approver_user_id
+    assert decision_phase.approver_tenant_id == continuation_phase.approver_tenant_id
+    assert result.human_request_id == decision_phase.human_request_id
+    assert result.decision_final_stage is DecisionLifecycleStage.TERMINAL
+    assert qualification_approver_factory_call_count() == 1
+    assert "hr_mp4r7" not in (result.human_request_id or "")
 
 
 @pytest.mark.asyncio
@@ -77,7 +103,8 @@ async def test_mp4r7_evidence_failure_preserves_primary() -> None:
     composition = open_mp4r7_enterprise_integration_composition()
     executor = Mp4R7EnterpriseIntegrationScenarioExecutor(composition)
     result = await executor.run_evidence_failure()
-    assert result.primary_error_code == "RuntimeError"
+    assert result.primary_error_code == Mp4R7ProtectedOperationError.__name__
+    assert result.secondary_evidence_error_code == "FunctionalEvidencePersistenceError"
 
 
 @pytest.mark.asyncio
