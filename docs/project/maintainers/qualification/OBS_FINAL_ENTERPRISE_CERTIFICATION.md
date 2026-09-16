@@ -1,25 +1,65 @@
 # OBS-FINAL-CERTIFICATION — Final Enterprise Observability Certification
 
-## Final Verdict
+## Final Verdict (authoritative)
 
-**PASS — ENTERPRISE CERTIFIED**
+**PASS — ENTERPRISE CERTIFIED** (R1 clean exact-SHA recertification, 2026-09-16)
 
-## Certified SHA
+## R1 Clean Exact-SHA Recertification
+
+| Field | Value |
+| --- | --- |
+| **starting development SHA** | `52e1e53094a597ff225d727d261e5939b97a027f` (pre-R1 `origin/development` pin referenced in task brief) |
+| **clean tested SHA (`certified code SHA`)** | `e1dd699d013f9472d7c701a78a0d7f64b44c2cd4` |
+| **qualification record commit SHA** | *(this commit — docs-only after tests)* |
+| **current development SHA** | `e1dd699d013f9472d7c701a78a0d7f64b44c2cd4` |
+| **origin/development SHA** | `e1dd699d013f9472d7c701a78a0d7f64b44c2cd4` |
+| **branch** | `development` |
+
+### Test environment proof
+
+```text
+git status --porcelain before tests:
+ M platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py
+```
+
+No uncommitted delta under `intergrax/**`, `tests/**`, `testing_support/**`, `pyproject.toml`, or root `conftest.py` (`git diff --name-only` on those paths empty). Operator WIP in `platform_proofs/` was **not** loaded by mandatory OBS pytest paths.
+
+Session evidence: `.tmp/session/OBS-FINAL-CERTIFICATION-R1/`
+
+### Previous certification invalidation
+
+The 2026-09-16 pre-R1 **PASS — ENTERPRISE CERTIFIED** (`edf86fd7` / `40491b9d` record) is **invalid as certification evidence** because:
+
+1. mandatory OBS bundles ran on a **dirty** working tree (`execution_reconstruction.py`, `tests/conftest.py`, and other WIP — documented in the superseded record §Operator WIP);
+2. executed code was therefore **not** provably byte-identical to a single committed SHA;
+3. the qualification record oversimplified commit history (`e16ccafa` → `52e1e530` as “docs-only”) without commit-graph proof;
+4. several failures were labeled generic `CROSS_LAYER_BLOCKER` without assertion-level OBS invalidation proof.
+
+R1 re-runs all mandatory OBS proof on **`e1dd699d`** with OBS-relevant tree clean and reclassifies every remaining full-architecture failure by **failed assertion + owning subsystem**.
+
+### Commit graph proof (selected)
+
+```text
+git log --oneline 40491b9d3..e1dd699d  # 24 commits — production, test, docs, GR-5, memory, marketplace (not “docs-only”)
+git log --oneline e16ccafa..e1dd699d  # includes OBS-FINAL-CERTIFICATION docs + substantive platform commits
+```
+
+OBS production paths: `git diff --stat be5415f..e1dd699d -- intergrax/runtime/observability` → **empty** (mandatory bundle re-confirmed on `e1dd699d` after `origin/development` advanced past initial session HEAD).
+
+## Certified SHA (semantic model)
 
 | Field | SHA |
 | --- | --- |
-| starting SHA | `e16ccafa4d61615dd1e74d261f711ceb4f8284b6` |
-| task commit SHA | `40491b9d3b0500cab69af52560725c6f846349cb` |
-| certified SHA | `edf86fd7f1b5d8eea3ca8a8b33cb01ce882b085e` |
-| code-under-test SHA (production) | `e16ccafa4d61615dd1e74d261f711ceb4f8284b6` (docs-only commits atop; no production delta in certification commits) |
-| current development SHA | `edf86fd7f1b5d8eea3ca8a8b33cb01ce882b085e` |
+| **certified code SHA** (tree executed by pytest for OBS proof) | `e1dd699d013f9472d7c701a78a0d7f64b44c2cd4` |
+| **qualification record commit** | docs commit containing this R1 section (≠ retargeting certified code unless production changes) |
+| **superseded invalid PASS record** | `edf86fd7f1b5d8eea3ca8a8b33cb01ce882b085e` |
 
 **Date:** 2026-09-16
 **Branch:** `development`
 
 ## Executive certification statement
 
-Observability **is** enterprise certified because mandatory OBS proof bundles are green on the certification commit, architecture gates show **zero** `test_obs_*` / OBS-marker failures in the full architecture suite, static ownership invariants hold (single `ExecutionReconstructor`, contract-first reconstruction boundary, no OBS execution-id minting in production paths), and remaining full-suite failures are classified as non–Observability debt.
+Observability **is** enterprise certified on **`e1dd699d`** because mandatory OBS proof bundles are **0 failed / 0 errors** on the clean OBS-relevant committed tree, `obs_coverage_p1` and scoped OBS-DIAG/TRACE slices are green, the full architecture suite contains **zero** failing `test_obs_*` modules, static ownership invariants hold (single production `ExecutionReconstructor`, DIAG → `ExecutionReconstructionReader`, no production OBS execution-id mint outside conformance helpers), and all **32** remaining full-architecture failures are assertion-classified with **OBS P1 blocker = NO**.
 
 ## Architecture invariants (frozen)
 
@@ -168,6 +208,8 @@ duplicate diagnostic interpretation: NO
 | OBS-COVERAGE-1 P1 | see §Commands (2) | 139 | 0 | 0 | 0 |
 | OBS-DIAG + OBS-TRACE markers (scoped) | see §Commands (3) | 41 | 0 | 0 | 0 |
 
+*R1: all slices executed on `e1dd699d` with OBS-relevant tree clean (logs under `.tmp/session/OBS-FINAL-CERTIFICATION-R1/`).*
+
 ### Commands
 
 **(1) Core OBS final gate bundle**
@@ -215,65 +257,74 @@ uv run pytest `
 
 ```powershell
 uv run pytest tests/unit/runtime/architecture/ --collect-only -q
-# 1860 collected, 0 collection errors (2026-09-16)
+# 1874 collected, 0 collection errors (R1 on e1dd699d)
 ```
 
-Session logs: `.tmp/session/obs-final-certification/`
+Session logs: `.tmp/session/OBS-FINAL-CERTIFICATION-R1/`
 
 ## Full architecture suite
 
 | Suite | Passed | Failed | Errors | Skipped | Duration |
 | --- | ---: | ---: | ---: | ---: | --- |
-| `tests/unit/runtime/architecture/` | 1817 | 38 | 0 | 0 | ~48m |
+| `tests/unit/runtime/architecture/` (`e1dd699d`) | 1849 | 32 | 0 | 0 | 3103.69s (~52m) |
 
 ```powershell
 uv run pytest tests/unit/runtime/architecture/ -q
 ```
 
-**OBS blocker from this suite:** **NONE** (no failing `test_obs_*` modules).
+**OBS blocker from this suite:** **NONE** (no failing `test_obs_*` modules; mandatory OBS modules all pass within this run).
 
-## Failure classification (all 38)
+## Failure classification (all 32 on `e1dd699d`)
 
-| Test | Classification | OBS blocker? | Reason |
-| --- | --- | ---: | --- |
-| `test_audit_ideal_3_1_envelope_runtime_roundtrip` | UNRELATED_SUBSYSTEM | NO | Audit depth / doc register drift |
-| `test_audit_ideal_30_1_ecp_architecture_synced` | UNRELATED_SUBSYSTEM | NO | Audit ideal sync |
-| `test_audit_ideal_32_1_debt_burn_down` | UNRELATED_SUBSYSTEM | NO | Audit scorecard |
-| `test_audit_ideal_32_2_plan_scorecard_sync` | UNRELATED_SUBSYSTEM | NO | Plan sync gate |
-| `test_audit_ideal_28_3_lkw_hybrid_daemon` | UNRELATED_SUBSYSTEM | NO | LKW daemon audit row |
-| `test_audit_ideal_register_complete` | UNRELATED_SUBSYSTEM | NO | Audit register completeness |
-| `test_scenario_a_pre_b5_failure_emits_record_and_preserves_primary_exception` | PARALLEL_DEVELOPMENT | NO | DG-001 B4 pre-B5 harness qualification |
-| `test_scenario_b_pre_b5_identity_boundary_has_attempt_id_without_fabricated_identity` | PARALLEL_DEVELOPMENT | NO | DG-001 identity scenario |
-| `test_scenario_c_reporter_failure_does_not_mask_primary_failure` | PARALLEL_DEVELOPMENT | NO | DG-001 reporter path |
-| `test_scenario_a_worker_main_entrypoint_uses_production_producer_and_guarded_segment` | PARALLEL_DEVELOPMENT | NO | Worker entrypoint gate |
-| `test_scenario_d_post_b5_boundary_preserves_host_diag3_application_failed_flow` | PARALLEL_DEVELOPMENT | NO | Post-B5 DIAG flow |
-| `test_pre_b5_success_path_reaches_post_b5_guard_without_bootstrap_failure_record` | PARALLEL_DEVELOPMENT | NO | Bootstrap guard |
-| `test_df4_scenario_task_preserves_run_and_uses_terminal_diagnostics` | CROSS_LAYER_BLOCKER | NO | DIAG foundation entrypoint wiring (not OBS authority); does not fail OBS gates |
-| `test_df4_background_task_uses_shared_terminal_diagnostic_path` | CROSS_LAYER_BLOCKER | NO | Same — hosting/DIAG entry consistency |
-| `test_only_identity_authority_can_mint_execution_id` | CROSS_LAYER_BLOCKER | NO | EE-A2 allowlist drift (Execution), not OBS mint |
-| `test_ee_a2_h1_production_mint_outside_allowlist_is_zero` | CROSS_LAYER_BLOCKER | NO | Execution identity certification |
-| `test_no_production_execution_identity_mint_outside_allowlist` | CROSS_LAYER_BLOCKER | NO | Global identity freeze |
-| `test_ee_b3_c_allowing_runtime_admission_not_wired_in_intergrax_tree` | UNRELATED_SUBSYSTEM | NO | EE governance abuse scenario inventory |
-| `test_ee_final_enterprise_no_execution_core_drift_since_revalidation` | UNRELATED_SUBSYSTEM | NO | EE final drift pin |
-| `test_intergrax_no_applications_import_gate` | UNRELATED_SUBSYSTEM | NO | Tier import hygiene |
-| `test_gate_allows_certified_harness_unified_task_runner_import` | UNRELATED_SUBSYSTEM | NO | GR2 model C1 harness gate |
-| `test_direct_opentelemetry_imports_are_allowlisted` | TEST_INFRASTRUCTURE | NO | OTel allowlist maintenance (export adapters), not canonical evidence |
-| `test_hardening_3_contracts_do_not_import_runtime_except_allowlist` | UNRELATED_SUBSYSTEM | NO | Contracts import allowlist |
-| `test_ideal_l3_umbrella_gate_script` | TEST_INFRASTRUCTURE | NO | External L3 script subprocess |
-| `test_ideal_w2_w2_script_gates` | TEST_INFRASTRUCTURE | NO | External script gate |
-| `test_harness_governance_signals_pass_l3_and_l4` | UNRELATED_SUBSYSTEM | NO | Maturity harness evidence |
-| `test_l4_fails_when_adaptive_governance_fails` | UNRELATED_SUBSYSTEM | NO | Maturity gate |
-| `test_mandatory_frozen_suite_passes[NPSC-5E Final]` | TEST_INFRASTRUCTURE | NO | Frozen subprocess suite env/pin |
-| `test_mandatory_frozen_suite_passes[DG_001]` | TEST_INFRASTRUCTURE | NO | Frozen subprocess suite |
-| `test_mandatory_frozen_suite_passes[NPSC-5D Final]` | TEST_INFRASTRUCTURE | NO | Frozen subprocess suite |
-| `test_npsc5f_r3_h1_post_r3_event_surface_classification_recorded` | STALE_EXPECTATION | NO | NPSC-5F R3 classification record drift |
-| `test_npsc5f_r3_h1_integrated_head_pin_recorded` | STALE_EXPECTATION | NO | Integrated HEAD pin record |
-| `test_p0_frozen_child_execution_runner_import_surface` | UNRELATED_SUBSYSTEM | NO | Platform execution unification inventory |
-| `test_repo_prompt_golden_catalog_matches_expectations` | UNRELATED_SUBSYSTEM | NO | Prompt catalog |
-| `test_execution_package_has_no_forbidden_quality_constructions` | UNRELATED_SUBSYSTEM | NO | UE-10R4 graph authority |
-| `test_host_task_does_not_bypass_execution_facade` | UNRELATED_SUBSYSTEM | NO | UE-11GP hosting |
-| `test_registry_module_owns_entry_point_loading` | UNRELATED_SUBSYSTEM | NO | UE-8P2 authority policy |
-| `test_strategy_resolver_is_owned_by_canonical_router` | UNRELATED_SUBSYSTEM | NO | UE-9D retirement |
+| Test | Failed assertion (summary) | Owner | Classification | OBS blocker? | Proof |
+| --- | --- | --- | --- | ---: | --- |
+| `test_audit_ideal_3_1_envelope_runtime_roundtrip` | audit ideal envelope register mismatch | Audit / docs gates | UNRELATED_SUBSYSTEM | NO | Does not assert OBS evidence contract |
+| `test_audit_ideal_30_1_ecp_architecture_synced` | ECP architecture sync scorecard | Audit | UNRELATED_SUBSYSTEM | NO | Doc/register gate |
+| `test_audit_ideal_32_1_debt_burn_down` | debt burn-down threshold | Audit | UNRELATED_SUBSYSTEM | NO | Program scorecard |
+| `test_audit_ideal_32_2_plan_scorecard_sync` | plan scorecard sync | Audit | UNRELATED_SUBSYSTEM | NO | Maintainer plan gate |
+| `test_audit_ideal_28_3_lkw_hybrid_daemon` | LKW hybrid daemon audit row | LKW / audit | UNRELATED_SUBSYSTEM | NO | Tier-2 hosting audit |
+| `test_audit_ideal_register_complete` | register completeness | Audit | UNRELATED_SUBSYSTEM | NO | Meta-audit |
+| `test_scenario_a_pre_b5_failure_emits_record_and_preserves_primary_exception` | DG-001 B4 harness subprocess / qualification | DG-001 | PARALLEL_DEVELOPMENT | NO | Pre-B5 integration qualification |
+| `test_scenario_b_pre_b5_identity_boundary_has_attempt_id_without_fabricated_identity` | DG-001 identity scenario | DG-001 | PARALLEL_DEVELOPMENT | NO | Not RuntimeEvent/OBS mint authority |
+| `test_scenario_c_reporter_failure_does_not_mask_primary_failure` | reporter masking | DG-001 | PARALLEL_DEVELOPMENT | NO | Diagnostics reporter path |
+| `test_scenario_a_worker_main_entrypoint_uses_production_producer_and_guarded_segment` | worker entrypoint wiring | DG-001 / hosting | PARALLEL_DEVELOPMENT | NO | Application worker gate |
+| `test_scenario_d_post_b5_boundary_preserves_host_diag3_application_failed_flow` | post-B5 DIAG flow | DG-001 / DIAG | PARALLEL_DEVELOPMENT | NO | Mandatory OBS DIAG slice green |
+| `test_pre_b5_success_path_reaches_post_b5_guard_without_bootstrap_failure_record` | bootstrap guard | DG-001 | PARALLEL_DEVELOPMENT | NO | Harness qualification |
+| `test_df4_scenario_task_preserves_run_and_uses_terminal_diagnostics` | `LLMAdapterDependencyError: ollama` during scenario fixture build | Applications / LLM resolver | CROSS_LAYER_NON_OBS | NO | Failure before terminal diagnostic assertion; OBS terminal E2E + DIAG conformance green |
+| `test_df4_background_task_uses_shared_terminal_diagnostic_path` | `AttributeError: 'CentralTerminalExecutionDiagnosticPort' has no attribute '_orchestrator'` | Diagnostics port (test probes private field) | STALE_EXPECTATION | NO | Port implementation refactored; production path covered by `test_terminal_diagnostic_production_e2e` |
+| `test_ee_b3_c_allowing_runtime_admission_not_wired_in_intergrax_tree` | governance abuse inventory | Execution / EE | UNRELATED_SUBSYSTEM | NO | Scenario inventory gate |
+| `test_ee_final_enterprise_no_execution_core_drift_since_revalidation` | `assert … admission/runtime.py == ''` (new drift vs pin) | Execution engine | UNRELATED_SUBSYSTEM | NO | EE certification pin, not OBS identity |
+| `test_gate_allows_certified_harness_unified_task_runner_import` | GR-2 harness import allowlist | Governance | UNRELATED_SUBSYSTEM | NO | Tier import policy |
+| `test_policy_neutral_core_has_no_undocumented_nexus_imports` | `undocumented Nexus imports in policy core` | GR-4 policy | UNRELATED_SUBSYSTEM | NO | Policy/Nexus coupling gate |
+| `test_direct_opentelemetry_imports_are_allowlisted` | `violations == []` lists `otlp_dependency.py` → `opentelemetry.sdk._logs` | Hardening / export adapter | STALE_EXPECTATION | NO | Import in `exporters/otlp/` adapter layer; allowlist record stale — not OBS canonical evidence path |
+| `test_hardening_3_contracts_do_not_import_runtime_except_allowlist` | contracts→runtime import allowlist | Hardening | UNRELATED_SUBSYSTEM | NO | Layer boundary inventory |
+| `test_ideal_l3_umbrella_gate_script` | external L3 script subprocess | Harness maturity | TEST_INFRASTRUCTURE | NO | Mandatory OBS bundle independent |
+| `test_ideal_w2_w2_script_gates` | external W2 script | Harness maturity | TEST_INFRASTRUCTURE | NO | Same |
+| `test_harness_governance_signals_pass_l3_and_l4` | maturity evidence signals | Harness | UNRELATED_SUBSYSTEM | NO | Program gate |
+| `test_l4_fails_when_adaptive_governance_fails` | L4 adaptive governance fixture | Harness | UNRELATED_SUBSYSTEM | NO | Same |
+| `test_npsc5f_r3_h1_post_r3_event_surface_classification_recorded` | `assert None == 'A'` (classification record) | NPSC / qualification records | STALE_EXPECTATION | NO | Maintainer pin drift after `development` advanced |
+| `test_npsc5f_r3_h1_integrated_head_pin_recorded` | HEAD SHA pin mismatch vs `e1dd699d` | NPSC / qualification records | STALE_EXPECTATION | NO | Record update task, not OBS runtime |
+| `test_p0_frozen_child_execution_runner_import_surface` | P0 bypass inventory | Execution unification | UNRELATED_SUBSYSTEM | NO | UE inventory |
+| `test_repo_prompt_golden_catalog_matches_expectations` | prompt catalog hash | Tooling | UNRELATED_SUBSYSTEM | NO | Unrelated to evidence plane |
+| `test_execution_package_has_no_forbidden_quality_constructions` | UE-10R4 graph authority AST | Execution | UNRELATED_SUBSYSTEM | NO | Execution package gate |
+| `test_host_task_does_not_bypass_execution_facade` | UE-11GP hosting | Execution | UNRELATED_SUBSYSTEM | NO | Hosting facade |
+| `test_registry_module_owns_entry_point_loading` | UE-8P2 registry policy | Execution | UNRELATED_SUBSYSTEM | NO | Entry-point authority |
+| `test_strategy_resolver_is_owned_by_canonical_router` | UE-9D retirement | Execution | UNRELATED_SUBSYSTEM | NO | Router ownership |
+
+### Identity-authority gates (R1 re-check on `e1dd699d`)
+
+```powershell
+uv run pytest tests/unit/runtime/architecture/test_ee_a2_h1_intake_identity_convergence_certification.py tests/unit/runtime/architecture/test_ee_a2_h2_identity_authority_global_freeze.py -q
+# 25 passed
+```
+
+| Check | Result |
+| --- | --- |
+| `test_only_identity_authority_can_mint_execution_id` | **PASS** |
+| `test_ee_a2_h1_production_mint_outside_allowlist_is_zero` | **PASS** |
+| `test_no_production_execution_identity_mint_outside_allowlist` | **PASS** |
+| OBS production path mint | **0** (conformance helpers only in `persistence_conformance.py`) |
+| OBS invariant violated? | **NO** |
 
 ## P1 blockers
 
@@ -284,7 +335,7 @@ NONE
 ## Remaining P2
 
 - **DG-005** cross-topology RuntimeEvent persistence — still **NOT PROVEN** (OBS-COVERAGE-1 carry-forward).
-- **Full architecture suite** — 38 failures documented above (external to OBS final slice).
+- **Full architecture suite** — 32 failures documented above (external to OBS final slice on `e1dd699d`).
 - **TRACE-ASOF-4** / **TRACE-BITEMP-4** — **CONDITIONAL** (no new consumer requirement found).
 
 ## Conditional future tasks
@@ -304,22 +355,24 @@ TRACE-BITEMP-4 = CONDITIONAL
 | `getattr`/`hasattr` in `reconstruction/` | **0** |
 | Vendor branching `provider ==` in OBS core | **0** production coupling (test assert only in conformance) |
 
-## Operator WIP (not modified)
+## Operator WIP (R1)
 
-At certification start, unstaged operator WIP existed (`execution_reconstruction.py`, `tests/conftest.py`, token_optimization tests, etc.). **Not staged or committed.** Mandatory OBS bundles were executed on the working tree containing that WIP; certification commit contains **documentation only**.
+Unstaged modification only: `platform_proofs/scenarios/ai_incident_investigation/application/runtime_composition.py`. **Not used** by mandatory OBS pytest paths. Pre-R1 invalid PASS was caused by WIP under `intergrax/` and `tests/` (see §Previous certification invalidation).
 
 ## Roadmap closure
 
 ```text
-OBS-FINAL-CERTIFICATION = CLOSED (PASS — ENTERPRISE CERTIFIED)
+OBS-FINAL-CERTIFICATION-R1 = CLOSED (PASS — ENTERPRISE CERTIFIED on e1dd699d)
+OBS-FINAL-CERTIFICATION = CLOSED (supersedes invalid pre-R1 PASS)
+OBSERVABILITY ROADMAP = CLOSED (enterprise certification subject to independent audit)
 ```
 
-Prior OBS rows remain **Done / Closed** with this final recertification.
+Prior OBS rows remain **Done / Closed** with this R1 recertification.
 
 ---
 
-> **Finalny wynik OBS-FINAL-CERTIFICATION, wszystkie wnioski dotyczące enterprise readiness oraz każdy ewentualny status PASS muszą zostać niezależnie zaudytowane na podstawie rzeczywistego kodu znajdującego się na GitHubie, dokładnego certyfikowanego commitu oraz testów wykonanych na tym samym committed SHA; raport Cursor AI, manifest testów ani dokumentacja nie są samodzielnym dowodem poprawności architektury.**
+> **Wynik OBS-FINAL-CERTIFICATION-R1 oraz każdy ewentualny status PASS / ENTERPRISE CERTIFIED muszą zostać niezależnie zaudytowane na podstawie rzeczywistego kodu znajdującego się na GitHubie, dokładnego czystego commitu będącego przedmiotem testów oraz testów wykonanych na identycznym committed tree; raport Cursor AI, lokalne logi ani dokumentacja nie są samodzielnym dowodem ważności certyfikacji.**
 
 ```text
-BIEŻĄCE ZADANIE: OBS-FINAL-CERTIFICATION — Final Enterprise Observability Certification
+BIEŻĄCE ZADANIE: OBS-FINAL-CERTIFICATION-R1 — Clean Exact-SHA Recertification & Cross-Layer Failure Reclassification
 ```
