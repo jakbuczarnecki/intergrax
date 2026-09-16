@@ -68,7 +68,9 @@ def _messages(violations: list[ArchitectureViolation]) -> list[str]:
     return [v.as_message() for v in violations]
 
 
-def _scan_production(collector, allowlist: frozenset[str]) -> list[ArchitectureViolation]:
+def _scan_production(
+    collector, allowlist: frozenset[str]
+) -> list[ArchitectureViolation]:
     found: list[ArchitectureViolation] = []
     for path in _iter_production_python_files():
         rel = _rel(path)
@@ -155,7 +157,9 @@ def test_gate_detects_direct_executionruntime_instance_execute() -> None:
     _, tree, rel = _parse_fixture(source)
     violations = collect_forbidden_root_engine_execute_calls(tree, rel_path=rel)
     assert violations == [
-        ArchitectureViolation(rel, 4, "ROOT_RUNTIME_EXECUTE", "ExecutionRuntime.execute()")
+        ArchitectureViolation(
+            rel, 4, "ROOT_RUNTIME_EXECUTE", "ExecutionRuntime.execute()"
+        )
     ]
 
 
@@ -168,7 +172,9 @@ def test_gate_detects_inline_executionruntime_execute() -> None:
     _, tree, rel = _parse_fixture(source)
     violations = collect_forbidden_root_engine_execute_calls(tree, rel_path=rel)
     assert violations == [
-        ArchitectureViolation(rel, 3, "ROOT_RUNTIME_EXECUTE", "ExecutionRuntime.execute()")
+        ArchitectureViolation(
+            rel, 3, "ROOT_RUNTIME_EXECUTE", "ExecutionRuntime.execute()"
+        )
     ]
 
 
@@ -209,7 +215,9 @@ def test_gate_detects_executionruntime_alias_instance_execute() -> None:
     _, tree, rel = _parse_fixture(source)
     violations = collect_forbidden_root_engine_execute_calls(tree, rel_path=rel)
     assert violations == [
-        ArchitectureViolation(rel, 4, "ROOT_RUNTIME_EXECUTE", "ExecutionRuntime.execute()")
+        ArchitectureViolation(
+            rel, 4, "ROOT_RUNTIME_EXECUTE", "ExecutionRuntime.execute()"
+        )
     ]
 
 
@@ -218,7 +226,9 @@ def test_gate_detects_root_execution_options_construction() -> None:
     _, tree, rel = _parse_fixture(source)
     violations = collect_forbidden_root_construction_calls(tree, rel_path=rel)
     assert violations == [
-        ArchitectureViolation(rel, 2, "FORBIDDEN_ROOT_CONSTRUCTION", "RootExecutionOptions()")
+        ArchitectureViolation(
+            rel, 2, "FORBIDDEN_ROOT_CONSTRUCTION", "RootExecutionOptions()"
+        )
     ]
 
 
@@ -276,8 +286,12 @@ def test_gate_detects_forbidden_legacy_production_caller() -> None:
         "from intergrax.runtime.execution.orchestration import execute_root_task\n"
     )
     _, tree, rel = _parse_fixture(source, "synthetic_production_legacy_caller.py")
-    runner_violations = collect_forbidden_unified_task_runner_imports(tree, rel_path=rel)
-    root_violations = collect_forbidden_legacy_execute_root_task_imports(tree, rel_path=rel)
+    runner_violations = collect_forbidden_unified_task_runner_imports(
+        tree, rel_path=rel
+    )
+    root_violations = collect_forbidden_legacy_execute_root_task_imports(
+        tree, rel_path=rel
+    )
     assert runner_violations == [
         ArchitectureViolation(
             rel,
@@ -297,7 +311,8 @@ def test_gate_detects_forbidden_legacy_production_caller() -> None:
 
 
 def test_gate_allows_certified_harness_unified_task_runner_import() -> None:
-    rel = "intergrax/runtime/long_running/wiring.py"
+    # Long-running wiring migrated to HostTaskExecutionPort; pin certified shared harness.
+    rel = "intergrax/applications/_shared/task_control.py"
     path = REPO_ROOT / rel
     tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
     assert rel in LEGACY_UNIFIED_TASK_RUNNER_IMPORT_ALLOWLIST
@@ -305,7 +320,7 @@ def test_gate_allows_certified_harness_unified_task_runner_import() -> None:
     assert raw == [
         ArchitectureViolation(
             rel,
-            24,
+            51,
             "FORBIDDEN_LEGACY_UNIFIED_TASK_RUNNER_IMPORT",
             "UnifiedTaskRunner",
         )
