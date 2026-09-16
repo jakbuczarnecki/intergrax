@@ -977,8 +977,8 @@ true P3 flows = 4 · true P4 platform E2E = 2 (Mongo + OTLP application paths) �
 | Limitation | Status |
 | ---------- | ------ |
 | **DG-005** cross-topology `RuntimeEvent` persistence / reconstruction | **NOT PROVEN** |
-| Kafka → worker → execution → diagnostics (full external spine) | **NOT YET PROVEN** (transport-only proofs ≠ diagnostic P4) |
-| HITL pause/restart/resume → terminal diagnostics | **NOT YET PROVEN** (dedicated E2E) |
+| Kafka → worker → execution → diagnostics (full external spine) | **P4 NOT PROVEN** (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`) |
+| HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — durable checkpoint round-trip + GR-5 continuation spine (`test_obs_universal_spine_hitl_restart_e2e.py`); long-running Nexus resume integration **PRE_EXISTING** at HEAD (`handle_task` / `run_id`) |
 | Operator HTTP/dashboard read | Central **write** path qualified; **read** exposure varies by PRODUCT host |
 
 Execution System owns root execution authority. Nexus = orchestration participant, not execution authority.

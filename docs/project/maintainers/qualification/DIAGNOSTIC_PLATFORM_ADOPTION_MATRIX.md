@@ -165,8 +165,8 @@ Initialized scenario surfaces: NATIVE = 1, LEGACY = 0
 | `check_application_production_gates` scans `*_application` only | `attestation_demo`, `poc_template`, `intergrax_assistant` outside APP-PROD factory scan (lab scaffolds) |
 | Factory gate vs execution-path gate | `check_no_ad_hoc_nexus_in_factories` validates composition (no direct `NexusLoop()` in factories); execution-path adoption is evidenced by P3 E2E proofs, not static per-request analysis |
 | Only **1** initialized scenario | Design-only scenario packages are **NOT_APPLICABLE** until initialized; do not count as E2E-qualified surfaces |
-| HITL pause/restart/resume → terminal diagnostics | Dedicated E2E **NOT YET PROVEN** |
-| Kafka queue → worker → Nexus → diagnostics | Queue transport qualified separately; full P4 async diagnostic spine **NOT YET PROVEN** in one external proof |
+| HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — `test_obs_universal_spine_hitl_restart_e2e.py` (checkpoint durability + GR-5 continuation); Nexus long-running resume E2E **PRE_EXISTING** |
+| Kafka queue → worker → Nexus → diagnostics | **P3 PROVEN** in-process (`test_obs_universal_spine_async_e2e.py`); **P4 external broker NOT PROVEN** |
 
 ---
 
