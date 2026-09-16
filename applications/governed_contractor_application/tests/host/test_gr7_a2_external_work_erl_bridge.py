@@ -45,6 +45,9 @@ from intergrax.contracts.enterprise_reliability.admission_boundary import (
     ExternalEffectAdmissionRequest,
     ExternalEffectAdmissionResult,
 )
+from intergrax.contracts.enterprise_reliability.effect_contract import (
+    ExternalEffectCapabilitySupport,
+)
 from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
 from intergrax.contracts.enterprise_reliability.reliability_boundary import (
     ExternalEffectReliabilityInteraction,
@@ -52,6 +55,7 @@ from intergrax.contracts.enterprise_reliability.reliability_boundary import (
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
 from intergrax.contracts.external_work import ExternalWorkErrorCode
 from intergrax.contracts.external_work_provider_capabilities import (
+    ExternalWorkProviderCapabilities,
     quote_first_partner_capability_fixture,
 )
 from intergrax.contracts.money import MoneyAmount
@@ -156,6 +160,7 @@ def _build_runtime(
     *,
     deny_create: bool = False,
     admission_port: RecordingAdmissionPort | None = None,
+    capabilities: ExternalWorkProviderCapabilities | None = None,
 ):
     execution_store, receipt_store, bundle_store, continuation_store = _stores()
     cw = gr6_seeded_collaborative_work_repositories(
@@ -171,7 +176,8 @@ def _build_runtime(
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
         task_scope=StaticActiveTaskScope(task_id),  # type: ignore[arg-type]
-        capabilities=quote_first_partner_capability_fixture(provider_id=_PROVIDER),
+        capabilities=capabilities
+        or quote_first_partner_capability_fixture(provider_id=_PROVIDER),
         policy_bundle=_policy_bundle(deny_create=deny_create),  # type: ignore[arg-type]
         collaborative_work_repositories=cw,
         execution_store=execution_store,
@@ -281,6 +287,35 @@ def test_unknown_admits_uncertainty_case() -> None:
     assert admission.admission.phase is ExternalEffectAdmissionPhase.HANDED_OFF
     assert admission.admission.case_record is not None
     assert port.requests[0].effect_outcome is ExternalEffectOutcome.UNKNOWN
+
+
+def test_discover_failure_zero_provider_calls_no_admission() -> None:
+    fake = DeterministicExternalWorkFake(
+        discover_error_code=ExternalWorkErrorCode.TRANSIENT_REMOTE_FAILURE,
+    )
+    task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
+    runtime, port = _build_runtime(fake, task_id)
+    step, fake = _create_step(
+        runtime, fake, task_id, run_id, attempt_id, execution_id,
+    )
+    assert fake.create_calls == 0
+    assert step.external_effect_outcome is None
+    assert port.requests == []
+    assert step.adapter_result is not None
+    assert not step.adapter_result.provider_mutation_dispatched
+
+
+def test_admission_contract_reflects_provider_capabilities() -> None:
+    fake = DeterministicExternalWorkFake()
+    task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
+    caps = quote_first_partner_capability_fixture(provider_id=_PROVIDER).model_copy(
+        update={"supports_idempotency": False, "supports_status_polling": False},
+    )
+    runtime, port = _build_runtime(fake, task_id, capabilities=caps)
+    _create_step(runtime, fake, task_id, run_id, attempt_id, execution_id)
+    contract = port.requests[0].contract
+    assert contract.safety.idempotency is ExternalEffectCapabilitySupport.NOT_SUPPORTED
+    assert contract.safety.reconciliation is ExternalEffectCapabilitySupport.NOT_SUPPORTED
 
 
 def test_governance_deny_zero_provider_calls_no_admission() -> None:

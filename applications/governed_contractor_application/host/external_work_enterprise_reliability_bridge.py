@@ -22,6 +22,9 @@ from intergrax.contracts.enterprise_reliability.admission_boundary import (
     ExternalEffectAdmissionSourceContext,
 )
 from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
+from intergrax.contracts.external_work_provider_capabilities import (
+    ExternalWorkProviderCapabilities,
+)
 from intergrax.contracts.provider_invocation import ProviderInvocation
 from intergrax.runtime.enterprise_reliability.admission_boundary import (
     admit_external_effect_into_enterprise_reliability,
@@ -71,11 +74,12 @@ class GovernedExternalWorkEnterpriseReliabilityBridge:
         invocation: ProviderInvocation,
         execution_id: str,
         action: str,
+        capabilities: ExternalWorkProviderCapabilities,
     ) -> ExternalWorkReliabilityAdmissionOutcome | None:
         effect_outcome = project_external_work_side_effect_to_effect_outcome(observation)
         if effect_outcome is None:
             return None
-        contract = external_work_effect_contract_for_action(action)
+        contract = external_work_effect_contract_for_action(action, capabilities)
         correlation_id = (
             invocation.correlation_id
             or invocation.idempotency_key

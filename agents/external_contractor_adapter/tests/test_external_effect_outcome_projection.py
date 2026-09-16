@@ -133,3 +133,23 @@ def test_provider_mutation_attempted_respects_policy_deny() -> None:
     )
     assert not external_work_provider_mutation_attempted(result, policy_denied=True)
     assert not external_work_provider_mutation_attempted(result, policy_denied=False)
+
+
+def test_provider_mutation_attempted_ignores_error_code_without_dispatch_fact() -> None:
+    result = ExternalWorkAdapterResult(
+        used=False,
+        reason="external_work_error",
+        error_code=ExternalWorkErrorCode.PERMANENT_PROVIDER_FAILURE,
+        provider_mutation_dispatched=False,
+    )
+    assert not external_work_provider_mutation_attempted(result, policy_denied=False)
+
+
+def test_provider_mutation_attempted_reads_authoritative_dispatch_fact() -> None:
+    result = ExternalWorkAdapterResult(
+        used=False,
+        reason="external_work_error",
+        error_code=ExternalWorkErrorCode.PERMANENT_PROVIDER_FAILURE,
+        provider_mutation_dispatched=True,
+    )
+    assert external_work_provider_mutation_attempted(result, policy_denied=False)

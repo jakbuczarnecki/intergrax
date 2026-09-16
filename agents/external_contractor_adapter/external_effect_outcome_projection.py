@@ -29,15 +29,10 @@ def external_work_provider_mutation_attempted(
     *,
     policy_denied: bool,
 ) -> bool:
-    """Return whether a mutating provider call occurred (Governance DENY → False)."""
+    """Return whether a mutating provider execute callback ran (authoritative adapter fact)."""
     if policy_denied:
         return False
-    decision = adapter_result.policy_decision
-    if decision is not None and decision.action is not PolicyAction.ALLOW:
-        return False
-    if adapter_result.used and adapter_result.proof is not None:
-        return True
-    return adapter_result.error_code is not None
+    return adapter_result.provider_mutation_dispatched
 
 
 def project_external_work_side_effect_to_effect_outcome(

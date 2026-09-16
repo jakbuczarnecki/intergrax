@@ -802,6 +802,7 @@ class GovernedExternalWorkOrchestrator:
             invocation=invocation,
             execution_id=execution_id,
             action=action,
+            capabilities=self._capabilities,
         )
 
     def _new_invocation(

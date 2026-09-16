@@ -33,6 +33,12 @@ class ExternalWorkAdapterResult(BaseModel):
         "external_work_adapter_result.v1"
     )
     used: bool
+    provider_mutation_dispatched: bool = Field(
+        default=False,
+        description=(
+            "Authoritative: mutating provider execute callback ran after governance ALLOW."
+        ),
+    )
     reason: str = Field(min_length=1)
     capability: str = "external_contractor.adapt"
     status: ExternalWorkStatus | None = None
