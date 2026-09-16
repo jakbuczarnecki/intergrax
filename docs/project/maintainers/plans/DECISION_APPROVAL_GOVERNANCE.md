@@ -116,8 +116,8 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R6 |
-| **Status** | **NOT STARTED** |
-| **Purpose** | After caller proof: delete duplicate contracts/services/tests/docs |
+| **Status** | **READY_FOR_FINAL_INDEPENDENT_MP4R6_CLOSURE_AUDIT** |
+| **Purpose** | After caller proof: delete duplicate contracts/services/tests/docs; generic checkpoint restore deserializes persisted HITL approver evidence or fails closed (legacy flat verdict metadata may be read for compatibility — approver provenance is never synthesized on generic restore) |
 | **Dependencies** | MP-4R1…R5 |
 
 ---

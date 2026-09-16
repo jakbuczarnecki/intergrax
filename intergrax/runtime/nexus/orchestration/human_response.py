@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.escalation import EscalationTarget
 from intergrax.runtime.human.models import HumanResponseVerdict, build_human_decision_record
 from intergrax.runtime.human.pause import HumanPauseCoordinator
@@ -14,6 +13,10 @@ from intergrax.runtime.task.task_metadata_bridge import promote_legacy_human_ver
 
 class HumanDecisionPersistenceError(ValueError):
     """Raised when human decision evidence is incomplete for persistence."""
+
+
+class HitlCheckpointRestoreError(ValueError):
+    """Raised when checkpoint-restored HITL state lacks required approver provenance."""
 
 
 def normalize_human_response(task: Task) -> None:
@@ -36,9 +39,12 @@ def prepare_hitl_resume_after_checkpoint_restore(task: Task) -> None:
     if human.human_request_id is None:
         human.human_request_id = record.human_request_id
     if human.approver is None:
-        human.approver = local_development_approver_evidence(
-            tenant_id=task.tenant_id,
-            actor_id=task.user_id,
+        resolution = task.runtime.governance.hitl_resolution
+        if resolution is not None:
+            human.approver = resolution.approver
+    if human.approver is None:
+        raise HitlCheckpointRestoreError(
+            "approver evidence missing during HITL checkpoint restore"
         )
 
 

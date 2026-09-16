@@ -28,6 +28,7 @@ from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration i
 )
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.human_response import (
+    HitlCheckpointRestoreError,
     clear_consumed_human_input,
     normalize_human_response,
     prepare_hitl_resume_after_checkpoint_restore,
@@ -104,7 +105,9 @@ class NexusIntakeRunner:
             HumanResponseVerdict.APPROVE,
         }:
             if approver is None:
-                raise RuntimeError("approver evidence required for human approval resolution")
+                raise HitlCheckpointRestoreError(
+                    "approver evidence missing during HITL checkpoint restore"
+                )
         hitl_run_id: str | None = None
         hitl_attempt_id: str | None = None
         if verdict in {

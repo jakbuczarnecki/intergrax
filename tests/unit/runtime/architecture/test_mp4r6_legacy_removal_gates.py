@@ -224,3 +224,43 @@ def test_mp4r6_human_review_uses_metadata_bridge_not_compat_module() -> None:
     source = path.read_text(encoding="utf-8-sig")
     assert "legacy_human_input_compatibility" not in source
     assert "promote_legacy_human_verdict_from_metadata" in source
+
+
+_HUMAN_RESPONSE_RESTORE = (
+    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "orchestration" / "human_response.py"
+)
+_GENERIC_RESTORE_ALLOWLIST = frozenset(
+    {
+        "intergrax/debug/hitl_service.py",
+        "intergrax/tools/providers/hitl/service.py",
+        "intergrax/applications/_shared/task_control.py",
+        "intergrax/runtime/human/store.py",
+    }
+)
+
+
+def test_mp4r6_generic_checkpoint_restore_does_not_import_local_dev_approver() -> None:
+    source = _HUMAN_RESPONSE_RESTORE.read_text(encoding="utf-8-sig")
+    assert "local_development_approver_evidence" not in source
+
+
+def test_mp4r6_generic_restore_paths_do_not_synthesize_approver_from_task_user() -> None:
+    violations: list[str] = []
+    needle_call = "local_development_approver_evidence("
+    user_fallback = "actor_id=task.user_id"
+    for path in _production_python_files():
+        rel = path.relative_to(_REPO_ROOT).as_posix()
+        if rel in _GENERIC_RESTORE_ALLOWLIST:
+            continue
+        if "prepare_hitl_resume_after_checkpoint_restore" in path.read_text(encoding="utf-8-sig"):
+            source = path.read_text(encoding="utf-8-sig")
+            if needle_call in source or user_fallback in source:
+                violations.append(rel)
+    assert not violations, "\n".join(violations)
+
+
+def test_mp4r6_prepare_hitl_restore_fail_closed_marker_present() -> None:
+    source = _HUMAN_RESPONSE_RESTORE.read_text(encoding="utf-8-sig")
+    assert "HitlCheckpointRestoreError" in source
+    assert "approver evidence missing during HITL checkpoint restore" in source
+    assert "local_development_approver_evidence" not in source
