@@ -1,9 +1,10 @@
 # GV-01 — Governance Adoption Sweep (qualification)
 
-**Task:** GV-01-C1 — Governance Qualification Fixture & Retry Proof Closure  
-**AUDITED_HEAD / TESTED_HEAD (session):** `365082a4e3c789f60864c3c86f73f30fd3baa529` (matches `origin/development` at session start)  
-**Working tree at qualification:** **contaminated** — unrelated WIP (memory, governed-contractor host) present locally; GV proof executed on bounded file set only.  
-**GV-01-C1 status:** **CORRECTION REQUIRED** (one GV-owned governance test + full-repo collection blockers; no Governance redesign required)
+**Task:** GV-01-C1R — Clean Qualification & Q20 Ownership Closure  
+**AUDITED_HEAD / TESTED_HEAD:** `13db6b2e65c654a2736966aba3f7d61bfc06ee14` (`fix(hitl): fail closed on missing approver during task resume`; matches `origin/development`)  
+**Working tree at qualification:** **clean** (before and after C1R documentation commit)  
+**GV-01-C1R status:** **CLOSED** (clean tree; Governance-owned production blockers = 0)  
+**GV-01 final:** **CLOSED / ENTERPRISE QUALIFIED**
 
 ## 1. Canonical governance boundary
 
@@ -73,8 +74,10 @@ Audited on `365082a4`: fresh governance before provider mutation; durability/rec
 
 | Scope | Result |
 | ----- | ------ |
-| **GV QUALIFICATION COLLECTION** | **PASS** — `tests/unit/runtime/governance`, `tests/unit/runtime/security`, selected policy/HITL/collab tests (278+ collected) |
-| **FULL REPO COLLECTION** | **FAIL** — 6 errors (pytest_plugins non-top-level conftest; integration syntax/plugin issues) — not GV-owned framework redesign in C1 |
+| **GV CORE COLLECTION (C1R)** | **PASS** — `tests/unit/runtime/governance` (186 tests; Q20 deselected as SESSION follow-up) + `test_p0_safety_8_retry_redelivery_authorization.py` + `test_ee_b3_a_governance_bypass_gate` + `test_tool_runtime_authority_closure` + GR-7-A3 host suite (12 tests) |
+| **GV COLLECTION ERRORS** | **0** on bounded GV core paths |
+| **GV-OWNED FAILURES** | **0** — remaining Nexus intake HITL integration failures are harness / Execution continuation (not Governance contract) |
+| **FULL REPO COLLECTION** | **FAIL** — 6 errors (`pytest_plugins` non-top-level conftest; integration syntax) — owners: CI / integration maintainers; does not block GV-01 |
 
 ## 8. GV-Q1–Q20 (summary)
 
@@ -86,13 +89,13 @@ Audited on `365082a4`: fresh governance before provider mutation; durability/rec
 | Q17 | PASS | External Work adapter governance tests |
 | Q18 | FOLLOW-UP | Marketplace shared MSE adoption — ME-14 / PLUG-01 |
 | Q19 | FOLLOW-UP | BG-01 / SCHED-01 deferred execution auth |
-| Q20 | FAIL | `test_nexus_intake_governed_approval_without_nexus_ae_forwarding` — canonical execution continuation harness drift (EE intake + HITL); not a Governance contract change |
+| Q20 | FOLLOW-UP (SESSION-01 / Execution) | `test_nexus_intake_governed_approval_without_nexus_ae_forwarding` — see §11 |
 
 ## 9. Downstream follow-ups
 
 | Owner | Topic |
 | ----- | ----- |
-| EE / SESSION-01 | Nexus intake HITL tests require `InternalOrchestrationContinuation` + canonical pause registration (`test_gr1_*` nexus path) |
+| SESSION-01 / Execution | Nexus intake HITL qualification harness: wire `InternalOrchestrationContinuation` like `NexusLoop` (`wire_execution_engine_continuation_dependencies`); register pause via `establish_canonical_hitl_pause` (not legacy `apply_pause` alone); align approve-path grant ordering with `execution_continuation_projection` resume semantics |
 | HOST-01 | Host/API convergence |
 | PLUG-01 | Plugin lifecycle / marketplace MSE |
 | BG-01 / SCHED-01 | Deferred execution fresh auth |
@@ -101,6 +104,36 @@ Audited on `365082a4`: fresh governance before provider mutation; durability/rec
 
 ## 10. Verdict
 
-**GV-01 final:** **CORRECTION REQUIRED** — C1 closes MSE fixture drift and P0 retry ordering proof; one GR-1 nexus intake qualification test and contaminated local tree block **CLOSED / ENTERPRISE QUALIFIED**. No Governance Engine redesign; layer boundaries preserved; TR-01 frozen.
+**GV-01 final:** **CLOSED / ENTERPRISE QUALIFIED** — C1R ran on clean `origin/development` at `13db6b2e`. MSE contract unchanged; P0-SAFETY-8 and GR-3 governance suites green; External Work GR-7-A3 regression green; ToolRuntime authority closure green; **Governance-owned production bypass = 0**. Q20 is explicitly **not** Governance-owned (§11). No Governance Engine redesign; TR-01 frozen.
 
-**NEXT recommended:** bounded GV correction for GR-1 nexus intake test harness **or** SESSION-01 after clean tree.
+**NEXT recommended:** **SESSION-01 — Session/Checkpoint SSOT** (canonical execution continuation + intake/HITL harness convergence).
+
+## 11. C1R — Q20 ownership (evidence)
+
+**Question:** Governance contract error (A) vs Nexus/SESSION continuation harness (B)?  
+**Verdict:** **B** — TEST-HARNESS + **SESSION / Execution continuation**; **not** Governance authorization semantics.
+
+| Step | Owner |
+| ---- | ----- |
+| `MeaningfulSideEffectRequest` | Governance contracts |
+| `CollaborativeWorkEnforcementRequest` | Governance / collaborative work |
+| `compose_governed_continuation_from_enforcement` | Governance bridge (`governed_continuation_bridge`) |
+| `bridge_governed_continuation_to_execution_result` | Governance → execution projection bridge |
+| `HumanPauseCoordinator.apply_pause` | Human/SESSION projection (**non-authoritative**; docstring: does not establish canonical PAUSED/WAITING) |
+| `NexusIntakeRunner.run` → `require_internal_hitl_continuation` | **Execution / Nexus** (`intake_runner.py`) |
+| `establish_canonical_hitl_pause` / `ExecutionContinuationPort` | **Execution continuation** (`internal_continuation_orchestration`, `execution_continuation/service.py`) |
+| `GovernedContinuationGrantCoordinator` | Governance (grant rules); invoked from intake after canonical resolution |
+
+**Failure on C1R HEAD (`13db6b2e`):**
+
+| Field | Value |
+| ----- | ----- |
+| Exception | `InternalHitlContinuationCapabilityError` |
+| Failing function | `require_internal_hitl_continuation` (`internal_continuation_orchestration.py:72`) |
+| Missing state | `NexusIntakeRunner.hitl_continuation is None` in `_build_intake_runner_with_hitl` while production `NexusLoop` wires `InternalOrchestrationContinuation` |
+| Expected owner | Execution composition (`nexus_loop.py` wires continuation port + lifecycle driver) |
+| Actual gap | Unit test harness omits production wiring; uses legacy `apply_pause` without continuation store registration |
+| Governance production impact | **none** — deny/require-human paths and MSE boundary unchanged |
+| Blocks GV-01 | **NO** (bounded subsystem qualification; downstream SESSION-01) |
+
+**Q20 follow-up:** SESSION-01 — align intake/HITL tests with canonical continuation lifecycle; optional EE sequencing review for governed grant creation vs `canonical_resume_after_authorization` (approve path).

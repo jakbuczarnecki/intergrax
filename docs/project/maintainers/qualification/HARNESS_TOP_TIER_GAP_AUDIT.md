@@ -410,7 +410,7 @@ TR and RI can start in parallel; TR benefits from invariant runner for regressio
 
 **TR-01 — ToolRuntime enterprise closure** — **CLOSED / ENTERPRISE QUALIFIED** (TR-01-RQ-FINAL, qualification SHA `94c0abde805f3da244bd1eb3e9d5362e0ec2fdcc`).
 
-**Next:** **GV-01 — Governance adoption sweep** (provider test fixtures and adoption matrix; canonical tool spine is qualified).
+**Next:** **SESSION-01 — Session/checkpoint SSOT** (canonical execution continuation + intake/HITL harness; GV-01 closed at `13db6b2e`).
 
 Run **RI-01** in parallel if staffing allows (feeds CI gates for TR-01).
 

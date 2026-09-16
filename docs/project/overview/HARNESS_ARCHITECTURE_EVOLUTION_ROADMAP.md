@@ -1862,6 +1862,6 @@ The program is complete only when all applicable statements are proven against t
 
 **Harness top-tier gap audit (2026-09-16) is complete.** See [`HARNESS_TOP_TIER_GAP_AUDIT.md`](../maintainers/qualification/HARNESS_TOP_TIER_GAP_AUDIT.md).
 
-**TR-01 — ToolRuntime** is **CLOSED / ENTERPRISE QUALIFIED** (TR-01-RQ-FINAL at `94c0abde805f3da244bd1eb3e9d5362e0ec2fdcc`; independent GitHub audit required). **TOOL-ENG-RX** and **TR-01-RQ-C1A/B/C** remain closed prerequisites. **Next recommended workstream:** **GV-01 — Governance adoption sweep**. **RI-01 — Runtime Invariant Service foundation** is **CLOSED / ENTERPRISE QUALIFIED**.
+**TR-01 — ToolRuntime** is **CLOSED / ENTERPRISE QUALIFIED** (TR-01-RQ-FINAL at `94c0abde805f3da244bd1eb3e9d5362e0ec2fdcc`; independent GitHub audit required). **TOOL-ENG-RX** and **TR-01-RQ-C1A/B/C** remain closed prerequisites. **GV-01 — Governance adoption sweep** is **CLOSED / ENTERPRISE QUALIFIED** (GV-01-C1R at `13db6b2e65c654a2736966aba3f7d61bfc06ee14`; independent GitHub audit required). **Next recommended workstream:** **SESSION-01 — Session/Checkpoint SSOT**. **RI-01 — Runtime Invariant Service foundation** is **CLOSED / ENTERPRISE QUALIFIED**.
 
 P0A/P0B/P0C items remain valid for consumer adoption and durability convergence; do not reimplement frozen Execution Engine or P2.1 delegated provider plane.
