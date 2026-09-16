@@ -14,6 +14,11 @@ from __future__ import annotations
 
 from typing import Any, Callable, Mapping, NamedTuple, TypeVar
 
+from intergrax.runtime.execution.decision_governed_side_effect import (
+    DecisionGovernedSideEffectInputs,
+    authorize_and_execute_decision_bound_side_effect,
+)
+
 from intergrax.contracts.external_work import (
     CommercialQuote,
     ExternalDeliverableRef,
@@ -355,6 +360,7 @@ class ExternalWorkAdapter:
         enrich: bool = True,
         task: Task | None = None,
         lifecycle: TaskLifecycle | None = None,
+        decision_governance: DecisionGovernedSideEffectInputs[Any] | None = None,
     ) -> ExternalWorkAdapterResult:
         """Forward acceptance evidence after meaningful side-effect policy ALLOW.
 
@@ -409,6 +415,7 @@ class ExternalWorkAdapter:
                 ),
                 task=task,
                 lifecycle=lifecycle,
+                decision_governance=decision_governance,
             )
             if isinstance(gate, ExternalWorkAdapterResult):
                 return gate.model_copy(update={"provider": provider})
@@ -783,6 +790,7 @@ class ExternalWorkAdapter:
         execute: Callable[[], T],
         task: Task | None = None,
         lifecycle: TaskLifecycle | None = None,
+        decision_governance: DecisionGovernedSideEffectInputs[Any] | None = None,
     ) -> _ExecutedSideEffect | ExternalWorkAdapterResult:
         """Fresh authorize-and-execute at the last safe point before provider mutation."""
         if self._authorization_boundary is None:
@@ -923,14 +931,29 @@ class ExternalWorkAdapter:
                 nonlocal authorized_snapshot
                 authorized_snapshot = authorization
 
-            boundary_result = self._authorization_boundary.authorize_and_execute(
-                enforcement_request,
-                execute,
-                task=task,
-                lifecycle=lifecycle,
-                source_agent_id="external_contractor_adapter",
-                on_authorization=_capture_authorization,
-            )
+            if decision_governance is not None:
+                boundary_result = authorize_and_execute_decision_bound_side_effect(
+                    self._authorization_boundary,
+                    enforcement_request=enforcement_request,
+                    decision=decision_governance.decision,
+                    authorization=decision_governance.authorization,
+                    action=decision_governance.action,
+                    policy_context=decision_governance.policy_context,
+                    execute=execute,
+                    task=task,
+                    lifecycle=lifecycle,
+                    source_agent_id="external_contractor_adapter",
+                    on_authorization=_capture_authorization,
+                )
+            else:
+                boundary_result = self._authorization_boundary.authorize_and_execute(
+                    enforcement_request,
+                    execute,
+                    task=task,
+                    lifecycle=lifecycle,
+                    source_agent_id="external_contractor_adapter",
+                    on_authorization=_capture_authorization,
+                )
         except Exception as exc:  # noqa: BLE001 — fail closed on authorization faults
             return ExternalWorkAdapterResult(
                 used=False,

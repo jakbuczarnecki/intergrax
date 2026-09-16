@@ -6,7 +6,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TypeVar
+from dataclasses import dataclass
+from typing import Generic, TypeVar
 
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
 from intergrax.contracts.decision_authorization import (
@@ -37,6 +38,16 @@ TResult = TypeVar("TResult")
 
 class DecisionGovernedSideEffectError(RuntimeError):
     """Decision-bound side effect cannot proceed under canonical governance."""
+
+
+@dataclass(frozen=True, slots=True)
+class DecisionGovernedSideEffectInputs(Generic[T]):
+    """Authoritative Decision provenance required before governance-bound effects."""
+
+    decision: AuthoritativeAcceptedDecision[T]
+    authorization: DecisionExecutionAuthorization
+    action: DecisionExecutionAction
+    policy_context: DecisionGovernancePolicyContext
 
 
 def attach_decision_governance_material(
@@ -121,6 +132,7 @@ def authorize_and_execute_decision_bound_side_effect(
 
 __all__ = [
     "DecisionGovernedSideEffectError",
+    "DecisionGovernedSideEffectInputs",
     "attach_decision_governance_material",
     "authorize_and_execute_decision_bound_side_effect",
 ]

@@ -53,6 +53,9 @@ from intergrax.runtime.execution_evidence.compose import (
     attest_governed_execution_result,
     compose_execution_boundary_event_from_result,
 )
+from intergrax.runtime.execution.decision_governed_side_effect import (
+    DecisionGovernedSideEffectInputs,
+)
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
 )
@@ -252,6 +255,7 @@ class GovernedExternalWorkOrchestrator:
         metadata: Mapping[str, Any] | None = None,
         event_id: str | None = None,
         receipt_id: str | None = None,
+        decision_governance: DecisionGovernedSideEffectInputs[Any] | None = None,
     ) -> OrchestratorStepResult:
         if not self._capabilities.supports_accept:
             raise ValueError("provider_capability_missing:supports_accept")
@@ -304,6 +308,7 @@ class GovernedExternalWorkOrchestrator:
             principal_id=principal_id,
             tenant_id=tenant_id,
             workspace_id=_workspace_from_metadata(meta),
+            decision_governance=decision_governance,
         )
         # Attach invocation id for GER / legacy compose paths.
         adapter_result = adapter_result.model_copy(

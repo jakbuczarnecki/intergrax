@@ -9,6 +9,7 @@ from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
 from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.fastapi_core.config import ApiEnvironment
 
 GovernedContractorIdentitySource = Literal["body_or_context", "context_only"]
@@ -64,6 +65,7 @@ class GovernedContractorBackendSettings(IntergraxApplicationSettingsBase):
     # Set on a settings instance or build-context settings object before mount.
     external_work_integration: object | None = None
     meaningful_side_effect_authorization_boundary: object | None = None
+    decision_requirement_policy: DecisionRequirementPolicy | None = None
     runtime_policy_bundle: object | None = None
     host_attestor: object | None = None
     attestation_required: bool = False
