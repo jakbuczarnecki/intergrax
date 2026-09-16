@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4R0 — CLOSURE FIX / READY_FOR_REAUDIT** (core rebase; ADR-MP-009)
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4R0…MP-4R2 CLOSED** — **MP-4R3 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** (ADR-MP-009)
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4R0** — closure fix after independent audit gaps
-**Next task:** Independent MP-4R0 closure audit → **MP-4R1 NOT STARTED**
+**Current active task:** **MP-4R3** — execution continuation integration (final closure audit pending)
+**Next task:** Final independent MP-4R3 closure audit → **MP-4R4 NOT STARTED**
 
 ---
 
@@ -206,7 +206,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **MP-4R3 READY_FOR_INDEPENDENT_AUDIT** — MP-4B/MP-4C/MP-4D **RETIRED**; MP-4R4…R8 **NOT STARTED** |
+| **Status** | **MP-4R3 READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** — MP-4R0…MP-4R2 **CLOSED**; MP-4B/MP-4C/MP-4D **RETIRED**; MP-4R4…R8 **NOT STARTED** |
 | **Purpose** | Multiplayer **bindings/projections** over canonical Decision, Governance/HITL, Execution continuation, Evidence, and Diagnostics — no duplicate authorities |
 | **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) + Collaborative Work for work primitives |
 | **Dependencies** | MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3 ownership **FROZEN**; canonical Decision + GR-5 continuation |
@@ -220,10 +220,10 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 
 | Slice | Scope | Status |
 |-------|-------|--------|
-| **MP-4R0** | Core rebase & supersession gate | **CLOSURE FIX / READY_FOR_REAUDIT** |
-| MP-4R1 | Decision contract convergence | **READY_FOR_INDEPENDENT_AUDIT** |
-| MP-4R2 | Human review / Approval convergence | **READY_FOR_INDEPENDENT_AUDIT** |
-| MP-4R3 | Execution continuation integration | **READY_FOR_INDEPENDENT_AUDIT** |
+| **MP-4R0** | Core rebase & supersession gate | **CLOSED** |
+| MP-4R1 | Decision contract convergence | **CLOSED** |
+| MP-4R2 | Human review / Approval convergence | **CLOSED** |
+| MP-4R3 | Execution continuation integration | **READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** |
 | MP-4R4 | Collaborative decision binding | NOT STARTED |
 | MP-4R5 | Evidence Plane adoption | NOT STARTED |
 | MP-4R6 | Legacy removal & migration | NOT STARTED |

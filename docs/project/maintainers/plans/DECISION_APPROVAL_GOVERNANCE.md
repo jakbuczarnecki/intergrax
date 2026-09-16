@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4R2 — READY_FOR_INDEPENDENT_AUDIT** · **MP-4R1** closed · **MP-4R0** closed · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2) · **MP-4R3 NOT STARTED**
+**Status:** **MP-4R3 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2) · **MP-4R4 NOT STARTED**
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -27,7 +27,7 @@ Use, modification, or distribution without written permission is prohibited.
 |-------|-------|
 | **ID** | MP-4R0 |
 | **Priority** | P0 |
-| **Status** | **CLOSURE FIX / READY_FOR_REAUDIT** |
+| **Status** | **CLOSED** |
 | **Purpose** | Rebase Multiplayer MP-4 on canonical Decision / Execution / Governance / Evidence / Diagnostics; inventory legacy MP-4B–D; supersede ADR-MP-005 ownership table; freeze MP-4R roadmap and architecture gates |
 | **Dependencies** | Canonical Decision System; Execution Engine; ADR-GR-5-001; Evidence/Diagnostics single authority docs |
 | **Exact scope** | ADR-MP-009; architecture/plan/MULTIPLAYER_AI sync; caller inventory; `test_mp4r0_multiplayer_rebase_architecture_gates.py`; **no** production deletion |
@@ -36,7 +36,7 @@ Use, modification, or distribution without written permission is prohibited.
 | **Explicit out of scope** | MP-4R1+ implementation; repositories; HITL bridge runtime; legacy module deletion |
 | **Acceptance** | Ownership table frozen; legacy classification documented; ADR index updated; docs pair check green; MP-4R0 gates pass |
 | **Proof requirements** | `git diff --check`; `python scripts/docs/check_docs_domain_pairs.py`; `pytest tests/unit/runtime/architecture/test_mp4r0_multiplayer_rebase_architecture_gates.py` |
-| **Next step** | Independent MP-4R0 **closure** audit → MP-4R1 (NOT STARTED) |
+| **Next step** | **CLOSED** — independent closure audit passed |
 
 ---
 
@@ -45,12 +45,12 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R1 |
-| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
+| **Status** | **CLOSED** |
 | **Purpose** | Converge `intergrax/contracts/decision.py` onto canonical Decision System (`decision_identity`, lifecycle, resolution, finalization); resolve **MP-4R1 convergence debt** (`decision/` package shadowing sibling `decision.py`, `importlib` dynamic MP-4B export bridge) |
 | **Dependencies** | MP-4R0 closed |
 | **Acceptance** | No duplicate `DecisionId` in production paths; Decision Integration SPI preserved; `test_mp4r1_decision_authority_convergence_gates.py` green |
 | **Proof requirements** | `pytest tests/unit/runtime/architecture/test_mp4r1_decision_authority_convergence_gates.py`; decision integration + canonical decision suites |
-| **Next step** | Independent MP-4R1 audit → MP-4R2 (NOT STARTED) |
+| **Next step** | **CLOSED** — independent audit passed |
 
 ---
 
@@ -59,25 +59,25 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R2 |
-| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
+| **Status** | **CLOSED** |
 | **Purpose** | Retire duplicate MP-4C/D Approval authority; canonical human judgment = `decision_human_review` + Governance/HITL |
 | **Dependencies** | MP-4R1 closed |
 | **Acceptance** | Legacy `approval.py` / `intergrax/approval/**` removed; `test_mp4r2_human_review_approval_convergence_gates.py` green; stale proposal binding proven |
 | **Proof requirements** | Caller proof (zero production consumers); pytest MP-4R0/1/2 gates; `test_decision_human_review.py`; `test_decision_flow.py` governance/HITL cases |
-| **Next step** | Independent MP-4R2 audit → MP-4R3 (NOT STARTED) |
+| **Next step** | **CLOSED** — independent audit passed |
 
 ## MP-4R3 — Execution continuation integration
 
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R3 |
-| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
+| **Status** | **READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** |
 | **Purpose** | All execution HITL lifecycle effects via `ExecutionContinuationPort` — zero direct Nexus dependency from Multiplayer |
-| **Dependencies** | MP-4R2 |
+| **Dependencies** | MP-4R2 closed |
 | **Acceptance** | No Multiplayer continuation lifecycle/store; no Nexus imports in `collaborative_work`; `test_mp4r3_execution_continuation_integration_gates.py` green; canonical two-phase resume + CAS + identity qualification proven |
 | **Proof requirements** | MP-4R0/1/2/3 architecture gates; `test_gr5_r2_canonical_pause_resume.py`; `test_execution_continuation.py`; governed continuation bridge/HITL suites as in validation matrix |
-| **Scope note** | **MP-4R3 establishes/adopts boundary and qualification; no artificial Multiplayer continuation runtime was required** — production `collaborative_work` has zero direct `ExecutionContinuationPort` callers today; future integration must use platform contracts only |
-| **Next step** | Independent MP-4R3 audit → MP-4R4 **NOT STARTED** |
+| **Scope note** | **MP-4R3 establishes/adopts boundary and qualification; no artificial Multiplayer continuation runtime was required** — production `collaborative_work` has zero direct `ExecutionContinuationPort` callers today; future integration must use platform contracts only; independent technical audit **PASS** (formal slice closure pending final re-audit) |
+| **Next step** | Final independent MP-4R3 closure audit → MP-4R4 **NOT STARTED** |
 
 ---
 
@@ -159,3 +159,10 @@ Historical implementation notes for MP-4B–D remain in git history and contract
 - MP-4R1+ runtime work
 - Collaborative Work schema changes
 - Execution / Decision core changes
+
+---
+
+## Next step
+
+Final independent MP-4R3 closure audit.
+MP-4R4 NOT STARTED.
