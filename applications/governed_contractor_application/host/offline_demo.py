@@ -33,11 +33,11 @@ from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
     bind_active_execution_identity,
-    mint_attempt_id,
-    mint_execution_id,
     reset_active_execution_identity,
+    validate_run_id,
     validate_task_id,
 )
+from intergrax.runtime.execution.identity_authority import mint_root_execution_identity
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
@@ -276,6 +276,7 @@ def run_offline_governed_contractor_demo(
     """
     store_root = Path(store_root)
     store_root.mkdir(parents=True, exist_ok=True)
+    demo_run_id = validate_run_id(run_id)
     store = FilesystemHostStore(store_root)
     bundle = build_demo_policy_bundle()
     policy = RuntimePolicyBundleEvaluator(bundle, clock=lambda: _T0)
@@ -336,15 +337,16 @@ def run_offline_governed_contractor_demo(
         clock=lambda: _T0,
     )
     meta = _meta()
+    create_identity = mint_root_execution_identity(run_id=demo_run_id)
     create_token = bind_active_execution_identity(
-        run_id=run_id,
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
+        run_id=create_identity.run_id,
+        attempt_id=create_identity.attempt_id,
+        execution_id=create_identity.execution_id,
     )
     try:
         created = orch_create.create(
             task_id=task_id,
-            run_id=run_id,
+            run_id=demo_run_id,
             principal_id="offline-demo-user",
             tenant_id="offline-demo-tenant",
             metadata=meta,
@@ -362,7 +364,7 @@ def run_offline_governed_contractor_demo(
     orch_create.surface_continuation(
         execution_id=created.execution_id or "exec-offline-create",
         adapter_result=created.adapter_result,
-        run_id=run_id,
+        run_id=demo_run_id,
     )
     acceptance = _acceptance(created.adapter_result.quote.quote_id)  # type: ignore[union-attr]
 
@@ -381,10 +383,11 @@ def run_offline_governed_contractor_demo(
         provider_invocation_store=invocation_store,
         clock=lambda: _T0,
     )
+    accept_identity = mint_root_execution_identity(run_id=demo_run_id)
     accept_token = bind_active_execution_identity(
-        run_id=run_id,
-        attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
+        run_id=accept_identity.run_id,
+        attempt_id=accept_identity.attempt_id,
+        execution_id=accept_identity.execution_id,
     )
     try:
         accepted = orch_accept.accept(
