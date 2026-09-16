@@ -107,6 +107,17 @@ Catalog path `intergrax/tools/providers/sandbox/service.py` (`sandbox_exec`) use
 3. Retire direct `service(ctx, params)` dispatch from `runtime_bound_catalog` for production.
 4. Re-run TR-01 qualification suite (TR-Q1–TR-Q20) after RX.
 
+## TOOL-ENG-RX (implementation evidence)
+
+**Status:** CLOSED on branch `development` (awaiting independent GitHub audit; TR-01 not closed).
+
+- **Contract:** `ToolInvocationWiringResolver`, `ToolInvocationContext`, `ToolWiringOverlay`, `ToolInvocationWiringRequirements` (`intergrax/tools/invocation_wiring.py`, `invocation_wiring_requirements.py`).
+- **Resolution site:** `RuntimeToolInvoker._apply_invocation_wiring` (invoker-owned; read-only; no tool-id branching).
+- **UAEP adapter:** `UAEPToolInvocationWiringResolver` + `BoundToolGateway` routes all tools via `RuntimeToolGateway` / `invoke_catalog_tool_request`.
+- **Bypass removal:** `uaep_tool_gateway` no longer calls `session.execute` or `invoke_runtime_bound_tool`; `runtime_bound_catalog` is ID metadata only.
+- **Static gates:** `tests/unit/runtime/tools/test_tool_eng_rx_invocation_wiring.py` (RX-T1–T4, T6, static bypass gates).
+- **TR-01-RQ:** required before TR-01 closeout.
+
 ## Tests executed (audit session)
 
 - `tests/unit/runtime/nexus/tools` — **275 passed**, 1 skipped (UE-8B)

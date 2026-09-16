@@ -4,11 +4,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Mapping, Optional, Type
 
 from pydantic import BaseModel
+
+from intergrax.tools.invocation_wiring_requirements import ToolInvocationWiringRequirements
 
 
 class ToolRiskLevel(str, Enum):
@@ -92,6 +94,9 @@ class ToolContract:
     tags: tuple[str, ...] = ()
     isolation_requirement: ToolIsolationRequirement = ToolIsolationRequirement.NONE
     semantic_evidence_reference: str | None = None
+    invocation_wiring_requirements: ToolInvocationWiringRequirements = field(
+        default_factory=ToolInvocationWiringRequirements,
+    )
 
     def __post_init__(self) -> None:
         if self.timeout_ms < 1:

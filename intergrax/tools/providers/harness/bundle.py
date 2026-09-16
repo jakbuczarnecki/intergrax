@@ -34,6 +34,7 @@ from intergrax.tools.providers.harness.service import (
     HARNESS_GET_RUN_TOOL_ID,
     HARNESS_LIST_RUNS_TOOL_ID,
 )
+from intergrax.tools.providers.invocation_requirements import REQUIRE_TRACE_READER
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -62,6 +63,7 @@ def register_harness_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             category="harness",
             risk_level=ToolRiskLevel.LOW,
             tags=("harness", "trace", "observability"),
+            invocation_wiring_requirements=REQUIRE_TRACE_READER,
         ),
         HarnessGetRunHandler(ctx),
     )
@@ -78,6 +80,7 @@ def register_harness_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             category="harness",
             risk_level=ToolRiskLevel.LOW,
             tags=("harness", "trace", "observability"),
+            invocation_wiring_requirements=REQUIRE_TRACE_READER,
         ),
         HarnessListRunsHandler(ctx),
     )
@@ -94,6 +97,7 @@ def register_harness_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             category="harness",
             risk_level=ToolRiskLevel.LOW,
             tags=("harness", "cost", "trace"),
+            invocation_wiring_requirements=REQUIRE_TRACE_READER,
         ),
         HarnessGetRunCostHandler(ctx),
     )
@@ -110,6 +114,7 @@ def register_harness_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             category="harness",
             risk_level=ToolRiskLevel.LOW,
             tags=("harness", "trace", "events"),
+            invocation_wiring_requirements=REQUIRE_TRACE_READER,
         ),
         HarnessGetRunEventsHandler(ctx),
     )
@@ -126,6 +131,7 @@ def register_harness_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             category="harness",
             risk_level=ToolRiskLevel.LOW,
             tags=("harness", "trace", "compare"),
+            invocation_wiring_requirements=REQUIRE_TRACE_READER,
         ),
         HarnessCompareRunsHandler(ctx),
     )
@@ -142,6 +148,7 @@ def register_harness_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> No
             category="harness",
             risk_level=ToolRiskLevel.LOW,
             tags=("harness", "trace", "export"),
+            invocation_wiring_requirements=REQUIRE_TRACE_READER,
         ),
         HarnessExportRunBundleHandler(ctx),
     )

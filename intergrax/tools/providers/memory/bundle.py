@@ -34,6 +34,7 @@ from intergrax.tools.providers.memory.service import (
     MEMORY_SEMANTIC_SEARCH_TOOL_ID,
     MEMORY_WRITE_TOOL_ID,
 )
+from intergrax.tools.providers.invocation_requirements import REQUIRE_MEMORY_VIEW
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -62,6 +63,7 @@ def register_memory_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> Non
             category="memory",
             risk_level=ToolRiskLevel.LOW,
             tags=("memory", "task"),
+            invocation_wiring_requirements=REQUIRE_MEMORY_VIEW,
         ),
         MemoryReadHandler(ctx),
     )
@@ -78,6 +80,7 @@ def register_memory_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> Non
             category="memory",
             risk_level=ToolRiskLevel.MEDIUM,
             tags=("memory", "task"),
+            invocation_wiring_requirements=REQUIRE_MEMORY_VIEW,
         ),
         MemoryWriteHandler(ctx),
     )
@@ -94,6 +97,7 @@ def register_memory_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> Non
             category="memory",
             risk_level=ToolRiskLevel.LOW,
             tags=("memory", "task"),
+            invocation_wiring_requirements=REQUIRE_MEMORY_VIEW,
         ),
         MemoryListKeysHandler(ctx),
     )
@@ -110,6 +114,7 @@ def register_memory_tools(registry: ToolRegistry, ctx: ToolWiringContext) -> Non
             category="memory",
             risk_level=ToolRiskLevel.MEDIUM,
             tags=("memory", "task"),
+            invocation_wiring_requirements=REQUIRE_MEMORY_VIEW,
         ),
         MemoryDeleteKeyHandler(ctx),
     )

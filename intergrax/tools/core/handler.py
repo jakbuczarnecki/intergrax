@@ -11,6 +11,7 @@ from typing import Callable, ClassVar, Generic
 from pydantic import BaseModel
 
 from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.invocation_wiring import effective_wiring_for_request
 from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.tool_executor import InModelT, OutModelT
 
@@ -47,4 +48,5 @@ class ServiceToolHandler(WiringContextToolHandler[InModelT, OutModelT]):
 
     def execute(self, request: ToolExecutionRequest[InModelT]) -> OutModelT:
         service = type(self)._service
-        return service(self._ctx, request.input)
+        ctx = effective_wiring_for_request(request, self._ctx)
+        return service(ctx, request.input)
