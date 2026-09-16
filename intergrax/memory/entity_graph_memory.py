@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Dict, List, Optional
 
 from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryStore
@@ -79,7 +80,7 @@ class EntityGraphMemoryStore:
         self,
         entity_id: str,
         *,
-        as_of: object | None = None,
+        as_of: datetime | None = None,
     ) -> List[EntityNode]:
         _reject_legacy_graph_access("neighbors")
 

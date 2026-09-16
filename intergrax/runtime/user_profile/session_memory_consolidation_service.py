@@ -194,7 +194,11 @@ class SessionMemoryConsolidationService:
             stored_entries.append(stored)
             if self._entity_memory_indexer is not None:
                 entity_scope = EntityMemoryScope(tenant_id=effective_tenant, user_id=user_id)
-                self._entity_memory_indexer.index_memory_entry(entity_scope, stored)
+                self._entity_memory_indexer.index_memory_entry(
+                    identity,
+                    entity_scope,
+                    stored,
+                )
 
         if stored_entries and self._config.regenerate_system_instructions:
             await self._instructions_service.build_and_save_system_instructions(
