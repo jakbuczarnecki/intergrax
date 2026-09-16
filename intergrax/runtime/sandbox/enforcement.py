@@ -9,6 +9,10 @@ from intergrax.contracts.execution_environment_isolation import (
     EffectiveProfileRevisionIsolationView,
     ProfileSandboxIsolationSource,
 )
+from intergrax.contracts.runtime_sandbox_isolation_authority import (
+    RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY,
+    RuntimeSandboxIsolationAuthority,
+)
 from intergrax.runtime.sandbox.execution_environment import (
     ExecutionEnvironmentRequirement,
     ExecutionEnvironmentResolutionFailureReason,
@@ -43,6 +47,9 @@ def _profile_from_context(
     raw = ctx.extras.get("effective_environment_profile")
     if raw is not None and hasattr(raw, "sandbox"):
         return raw  # type: ignore[return-value]
+    authority_raw = ctx.extras.get(RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY)
+    if isinstance(authority_raw, RuntimeSandboxIsolationAuthority):
+        return authority_raw
     return None
 
 

@@ -149,7 +149,19 @@ ToolInvocationContext + ToolRegistrationWiringView
 - **Requirements:** `ToolInvocationWiringRequirements` validated against composed `ToolInvocationWiring`, not legacy bag fields.
 - **Tests:** RX/C1 gates + C2-T1–T5 in `test_tool_eng_rx_invocation_wiring.py`; `tests/unit/runtime/nexus/tools` regression.
 
-**TOOL-ENG-RX:** CLOSED (RX + C1 + C2). **TR-01-RQ:** NEXT.
+## TR-01-RQ-C1A — Explicit sandbox isolation authority wiring
+
+**Status:** CLOSED on branch `development` (awaiting independent GitHub audit; TR-01 not closed).
+
+- **Invariant:** `configured != available != authorized != effective`; session availability must not mint sandbox isolation authority.
+- **Removed:** `runtime_host_sandbox_isolation_profile()` / session-derived `effective_environment_profile` synthesis in `invocation_wiring_adapter.py`.
+- **Authority contract:** `RuntimeSandboxIsolationAuthority` (`intergrax/contracts/runtime_sandbox_isolation_authority.py`) — explicit, immutable, provider-neutral; consumed via `RUNTIME_SANDBOX_ISOLATION_AUTHORITY_EXTRA_KEY` or Tier-3 `ApplicationEnvironmentProfile` / pinned `effective_profile_revision`.
+- **UAEP composition:** optional `UAEPExecutor.sandbox_isolation_authority` merges explicit authority into registration wiring when no profile authority is already present (never from `sandbox_session`).
+- **Availability:** `ToolInvocationWiring.sandbox_session` and `overlay_invocation_sandbox_availability` remain provider/session capability only.
+- **Separation:** tool registration / `ToolProfile` / agent `allowed_tools` declare scope or availability — not environment isolation authority; governance answers authorization to proceed — not isolation authority.
+- **Tests:** `tests/unit/runtime/sandbox/test_auth_c1a_sandbox_isolation_authority.py` (AUTH-C1A-1..13, static gates).
+
+**TOOL-ENG-RX:** CLOSED (RX + C1 + C2). **TR-01-RQ-C1A:** CLOSED (await audit). **TR-01-RQ:** NEXT.
 
 ## Tests executed (audit session)
 

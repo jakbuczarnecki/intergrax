@@ -33,6 +33,11 @@ from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.request_identity_spine import assert_untrusted_metadata_identity_compatible
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.runtime_policy_context import AgentDecisionPolicyContext
+from intergrax.contracts.runtime_sandbox_isolation_authority import (
+    RuntimeSandboxIsolationAuthority,
+    apply_runtime_sandbox_isolation_authority_extras,
+    extras_contain_sandbox_isolation_authority,
+)
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
@@ -55,6 +60,7 @@ from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RouteInfo, RuntimeRequest
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
 from intergrax.runtime.task.task_metadata_bridge import execution_options_for_request
@@ -143,6 +149,7 @@ class UAEPExecutor:
         governance_service: Any = None,
         shadow_manager: Optional[ShadowWorkspaceManager] = None,
         sandbox_manager: Optional[SandboxSessionManager] = None,
+        sandbox_isolation_authority: RuntimeSandboxIsolationAuthority | None = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
         memory_limits: Optional[TaskMemoryLimits] = None,
         decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None,
@@ -159,6 +166,7 @@ class UAEPExecutor:
         self._governance_service = governance_service
         self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
+        self._sandbox_isolation_authority = sandbox_isolation_authority
         self._task_memory_store = task_memory_store
         self._memory_limits = memory_limits or TaskMemoryLimits()
         self._decision_flow_gate = decision_flow_gate
@@ -270,6 +278,10 @@ class UAEPExecutor:
         )
 
         runtime_context = agent.build_context(request)
+        runtime_context = self._apply_explicit_sandbox_isolation_authority(
+            runtime_context,
+            authority=self._sandbox_isolation_authority,
+        )
         try:
             from intergrax.agents.authoring.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
     
@@ -1072,6 +1084,26 @@ class UAEPExecutor:
         workspace = exec_ctx.metadata.get("shadow_workspace")
         if workspace is not None:
             answer.route.extra["shadow_artifact_count"] = len(workspace.list_artifacts())
+
+    @staticmethod
+    def _apply_explicit_sandbox_isolation_authority(
+        runtime_context: RuntimeContext,
+        *,
+        authority: RuntimeSandboxIsolationAuthority | None,
+    ) -> RuntimeContext:
+        if authority is None:
+            return runtime_context
+        cfg = runtime_context.config
+        base_ctx = cfg.tool_wiring_context or ToolWiringContext()
+        if extras_contain_sandbox_isolation_authority(base_ctx.extras):
+            return runtime_context
+        new_extras = apply_runtime_sandbox_isolation_authority_extras(
+            base_ctx.extras,
+            authority,
+        )
+        new_wiring = replace(base_ctx, extras=new_extras)
+        new_cfg = replace(cfg, tool_wiring_context=new_wiring)
+        return replace(runtime_context, config=new_cfg)
 
     def _attach_sandbox_session(
         self,

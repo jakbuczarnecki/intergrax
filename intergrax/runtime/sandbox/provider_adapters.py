@@ -107,6 +107,24 @@ def capabilities_from_hosted_session(session: HostedSandboxSession) -> SandboxPr
     )
 
 
+def capabilities_from_exec_capable_session(
+    session: SandboxExecCapable,
+) -> SandboxProviderCapabilities:
+    """Conservative capabilities for replaceable ``SandboxExecCapable`` implementations."""
+    return SandboxProviderCapabilities(
+        provider_ref=ExecutionEnvironmentProviderRef(
+            provider_id=f"exec_capable:{session.session_id}",
+            provider_kind=ExecutionEnvironmentProviderKind.LOCAL,
+        ),
+        filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
+        network_access=NetworkAccess.NONE,
+        process_execution=ProcessExecution.SANDBOXED,
+        supports_sandboxed_exec=True,
+        supports_workspace_write=True,
+        supports_network_isolation=None,
+    )
+
+
 def capabilities_from_host_backend(backend: SandboxHostBackend) -> SandboxProviderCapabilities:
     if isinstance(backend, SandboxSecurityCapable):
         security = backend.security_capabilities()
@@ -153,6 +171,12 @@ def probe_provider_capabilities_from_wiring(
         providers.append(caps)
     elif isinstance(session, HostedSandboxSession):
         caps = capabilities_from_hosted_session(session)
+        if caps.provider_ref.provider_id in seen_ids:
+            raise ValueError(f"duplicate provider_id: {caps.provider_ref.provider_id}")
+        seen_ids.add(caps.provider_ref.provider_id)
+        providers.append(caps)
+    elif isinstance(session, SandboxExecCapable):
+        caps = capabilities_from_exec_capable_session(session)
         if caps.provider_ref.provider_id in seen_ids:
             raise ValueError(f"duplicate provider_id: {caps.provider_ref.provider_id}")
         seen_ids.add(caps.provider_ref.provider_id)
