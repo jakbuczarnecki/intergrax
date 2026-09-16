@@ -274,7 +274,7 @@ These invariants must be reflected in canonical documentation, code, conformance
 | F | Canonical ToolRuntime pipeline | CURRENT / PARTIAL | Tools / ToolRuntime | safety + convergence |
 | G | Runtime credentials and secret references | PARTIAL | security/secrets/integrations | provider seam + late resolution |
 | H | Execution sandbox and isolation | CURRENT / PARTIAL | runtime sandbox + security + execution | convergence |
-| I | Subagent and external-agent providers | PARTIAL | `DelegatedExecutionProvider` + UER | P2.1-S2A/S2B CLOSED; remaining P2.1-S2 adoption slices |
+| I | Subagent and external-agent providers | PARTIAL | `DelegatedExecutionProvider` + UER | P2.1-S2A/S2B/S2C CLOSED; **P2.1-S2D CLOSED** (subprocess external provider qualified); remaining P2.1-S2 adoption slices |
 | J | Background Execution control | CURRENT / PARTIAL | Background Tasks + UER | convergence + DX |
 | K | Verified external event intake | PARTIAL | interactions/integrations + UER | generalization + durability |
 | L | Artifacts, attachments, spill | PARTIAL | artifacts/storage + CE + tools | consolidation |
@@ -594,7 +594,13 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2 = OPEN** (S2C CLOSED; remaining S2 adoption slices beyond durable correlation plane).
 
-Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`, `tests/unit/runtime/execution/test_delegated_invocation_correlation_durability.py`, `tests/unit/runtime/execution/test_delegated_execution_status.py`, `tests/unit/runtime/execution/test_delegated_execution_query.py`, `tests/unit/runtime/execution/test_delegated_execution_continuation.py`, `tests/unit/runtime/architecture/test_mp4r3_execution_continuation_integration_gates.py`, `tests/unit/runtime/execution/continuation/test_gr5_r5_restart_exact_identity.py`
+**P2.1-S2D — real external delegated provider production qualification = CLOSED** (provider seam production-qualified against ``subprocess_delegated_execution`` on development; real subprocess + TCP transport boundary; qualified capabilities: execute, status, cancel, reattachment; unsupported: pause, resume, interrupt, streaming; evidence: ``tests/unit/runtime/execution/test_delegated_execution_subprocess_provider_s2d.py`` + S2C regression suite).
+
+**P2.1-S2D qualified provider:** ``intergrax.integrations.providers.delegated_execution.subprocess`` — ``SubprocessDelegatedExecutionProvider`` (``provider_id=subprocess_delegated_execution``, ``provider_version=1.0.0``).
+
+**P2.1-S2D qualification evidence:** ``.tmp/session/P2.1-S2D/regression.log`` (session-local; not committed).
+
+Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`, `tests/unit/runtime/execution/test_delegated_invocation_correlation_durability.py`, `tests/unit/runtime/execution/test_delegated_execution_status.py`, `tests/unit/runtime/execution/test_delegated_execution_query.py`, `tests/unit/runtime/execution/test_delegated_execution_continuation.py`, `tests/unit/runtime/architecture/test_mp4r3_execution_continuation_integration_gates.py`, `tests/unit/runtime/execution/continuation/test_gr5_r5_restart_exact_identity.py`, `tests/unit/runtime/execution/test_delegated_execution_subprocess_provider_s2d.py`
 
 ## Remaining work (P2.1-S2 — adoption slices after S2A, not new seam)
 
