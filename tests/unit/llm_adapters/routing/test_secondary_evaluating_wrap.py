@@ -14,11 +14,10 @@ from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.llm_adapters.routing import BudgetBelowRule, LLMRoutingProfile
 from intergrax.llm_adapters.routing.context_bridge import LLMRoutingRuntimeSnapshot
 from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.websearch.service.websearch_config import WebSearchConfig, WebSearchLLMConfig
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
 
 
 @pytest.mark.integration
@@ -68,13 +67,14 @@ def test_materialize_runtime_wraps_tool_planner_when_secondary_flag_set(
         lambda _env, _profile, hint=None: FakeLLMAdapter(fixed_text="core"),
     )
 
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="lab-routing-secondary-wrap",
         agent_id="lab-agent",
         user_id="user-1",
         session_id="sess-1",
         tenant_id="lab-tenant",
         message="hello",
-        metadata={"task_class": "lab_routing", "agent_id": "lab-agent", "run_id": "run-sec"},
+        metadata={"task_class": "lab_routing", "agent_id": "lab-agent"},
     )
     config = materialize_runtime_config(request, default_reference_harness(), env)
     config.tool_planner = CatalogToolPlanner.from_registry(

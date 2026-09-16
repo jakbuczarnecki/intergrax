@@ -14,7 +14,12 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_request_for_tests,
+    canonical_governed_execution_scope,
+)
 
 
 class _UaepStubAgent(Agent):
@@ -83,16 +88,18 @@ async def test_uaep_executor_runs_runtime_controlled_steps():
     bus = RuntimeEventBus()
     executor = UAEPExecutor(event_bus=bus)
     agent = _UaepStubAgent()
-    request = RuntimeRequest(
+    seed = "uaep-controlled-steps"
+    request = build_runtime_request_for_tests(
+        seed=seed,
         tenant_id="t1",
         user_id="u1",
         session_id="s1",
         agent_id="uaep-stub",
         message="hi",
-        metadata={"run_id": "run_uaep_1", "task_id": "task_uaep_1"},
     )
 
-    answer, validation, _governance = await executor.execute(agent, request)
+    with canonical_governed_execution_scope(seed):
+        answer, validation, _governance = await executor.execute(agent, request)
 
     assert validation.valid
     assert answer.answer == "out:second"
@@ -123,19 +130,27 @@ async def test_uaep_executor_typed_task_id_ignores_metadata_task_id():
     """Metadata task_id must not override typed security identity (REVIEW-FIX-2)."""
     executor = UAEPExecutor()
     agent = _TaskIdCaptureAgent()
-    request = RuntimeRequest(
+    seed = "uaep-metadata-spoof-task-id"
+    spoofed_metadata_task_id = "attacker-controlled"
+    request = build_runtime_request_for_tests(
+        seed=seed,
         tenant_id="t1",
         user_id="u1",
         session_id="s1",
         agent_id="uaep-stub",
         message="hi",
-        task_id=None,
-        metadata={"run_id": "run-safe", "task_id": "attacker-controlled"},
+        metadata={
+            "run_id": "attacker-run",
+            "task_id": spoofed_metadata_task_id,
+        },
     )
+    typed_task_id = str(request.task_id)
 
-    await executor.execute(agent, request)
+    with canonical_governed_execution_scope(seed):
+        await executor.execute(agent, request)
 
-    assert agent.captured_task_id == "run-safe"
+    assert agent.captured_task_id == typed_task_id
+    assert agent.captured_task_id != spoofed_metadata_task_id
 
 
 @pytest.mark.asyncio
@@ -144,16 +159,21 @@ async def test_uaep_executor_typed_task_id_ignores_metadata_task_id():
 async def test_uaep_executor_typed_task_id_prefers_request_field():
     executor = UAEPExecutor()
     agent = _TaskIdCaptureAgent()
-    request = RuntimeRequest(
+    seed = "uaep-prefers-request-field"
+    spoofed_metadata_task_id = "other"
+    request = build_runtime_request_for_tests(
+        seed=seed,
         tenant_id="t1",
         user_id="u1",
         session_id="s1",
         agent_id="uaep-stub",
         message="hi",
-        task_id="task-canonical",
-        metadata={"run_id": "run-1", "task_id": "other"},
+        metadata={"task_id": spoofed_metadata_task_id},
     )
+    typed_task_id = str(request.task_id)
 
-    await executor.execute(agent, request)
+    with canonical_governed_execution_scope(seed):
+        await executor.execute(agent, request)
 
-    assert agent.captured_task_id == "task-canonical"
+    assert agent.captured_task_id == typed_task_id
+    assert agent.captured_task_id != spoofed_metadata_task_id

@@ -25,8 +25,10 @@ from intergrax.tools.providers.rag.scope import (
     vectorstore_tenant_id,
 )
 from intergrax.tools.providers.rag.service import perform_rag_retrieve
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import (
+    build_runtime_execution_context_for_tests,
+    build_runtime_request_for_tests,
+)
 from intergrax.tools.providers.rag.contracts import RagRetrieveInput
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
 from intergrax.rag.profiles.rag_profile import RagProfile
@@ -38,18 +40,21 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 def test_lkw_resolve_request_scope_uses_runtime_request_tenant_id() -> None:
     from intergrax.agents.authoring.runtime_tool_helpers import resolve_request_scope
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
+    seed = "lkw-resolve-request-scope"
+    request = build_runtime_request_for_tests(
+        seed=seed,
         agent_id="local_indexer",
-        request=RuntimeRequest(
-            agent_id="local_indexer",
-            tenant_id="lkw-smoke",
-            user_id="local-user",
-            session_id="s1",
-            message="index",
-            metadata={"tenant_id": "default", "collection_id": "ws-1"},
-        ),
+        tenant_id="lkw-smoke",
+        user_id="local-user",
+        session_id="s1",
+        message="index",
+        metadata={"tenant_id": "default", "collection_id": "ws-1"},
+    )
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed=seed,
+        agent_id="local_indexer",
+        tenant_id="lkw-smoke",
+        request=request,
     )
 
     scope = resolve_request_scope(exec_ctx)
