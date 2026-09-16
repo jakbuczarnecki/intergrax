@@ -174,7 +174,30 @@ ToolInvocationContext + ToolRegistrationWiringView
 - **Adapters:** `capabilities_from_attested_exec_session` / `capabilities_from_security_attestation` — no fabricated LOCAL kind or workspace/sandbox flags for unattested exec endpoints.
 - **Tests:** `test_auth_c1b_sandbox_authority_transport.py` (AUTH-C1B-1..6), `test_cap_c1b_provider_capability_trust.py` (CAP-C1B-1..8); C1A suite updated for typed transport.
 
-**TR-01-RQ-C1B:** CLOSED (await audit). **TR-01:** READY FOR REQUALIFICATION. **TR-01-RQ:** NEXT.
+**TR-01-RQ-C1B:** CLOSED (await audit). **TR-01:** BLOCKED until C1C audit. **TR-01-RQ-C1C:** in flight.
+
+## TR-01-RQ-C1C — Contract layer purity & complete capability evidence
+
+**Status:** CLOSED on branch `development` (awaiting independent GitHub audit; TR-01 not closed).
+
+```text
+explicit authority
+       ∩
+tool isolation requirement
+       ∩
+complete provider attestation
+       ∩
+governance
+       ↓
+effective sandbox execution environment
+```
+
+- **Contract dependency direction:** `intergrax/contracts/runtime_sandbox_isolation_authority.py` is a pure platform contract (no `intergrax.tools` / runtime / agents imports). Wiring helpers live in `intergrax/tools/registry/sandbox_isolation_wiring.py` (`tools → contracts`).
+- **Attestation provenance:** `SandboxSecurityCapabilities` attests security-sensitive facts (`supports_sandboxed_exec`, `supports_workspace_write`, `filesystem_access`, `process_execution`, network egress evidence, `provider_id`, `isolation_tier`). `project_provider_capabilities_from_security` normalizes only — never upgrades unknown to supported.
+- **Unattested providers:** plain `SandboxExecCapable`, unattested `SandboxHostBackend`, and incomplete `SandboxSecurityCapable` evidence omit provider capability projection (fail closed for isolation-sensitive tools).
+- **Tests:** `test_runtime_sandbox_isolation_authority_import_gate.py`, `test_cap_c1c_sandbox_evidence_and_contract_purity.py`; C1A/C1B suites retained.
+
+**TR-01-RQ-C1C:** CLOSED (await audit). **TR-01:** READY FOR REQUALIFICATION. **TR-01-RQ:** NEXT.
 
 ## Tests executed (audit session)
 

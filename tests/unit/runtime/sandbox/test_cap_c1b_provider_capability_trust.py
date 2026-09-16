@@ -66,6 +66,10 @@ class _AttestedExternalProvider:
             provider_id="external:plugin-1",
             network_egress_deny_enforced=True,
             network_egress_allowlist_enforced=None,
+            supports_sandboxed_exec=True,
+            supports_workspace_write=True,
+            filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
+            process_execution=ProcessExecution.SANDBOXED,
         )
 
 
@@ -122,14 +126,13 @@ def test_cap_c1b_6_insufficient_security_evidence_fails_closed() -> None:
     security = SandboxSecurityCapabilities(
         isolation_tier="local",
         provider_id="external:weak",
-    )
-    caps = capabilities_from_security_attestation(
-        security,
         supports_sandboxed_exec=False,
         supports_workspace_write=False,
         filesystem_access=FilesystemAccess.NONE,
         process_execution=ProcessExecution.DENIED,
     )
+    caps = capabilities_from_security_attestation(security)
+    assert caps is not None
     result = resolve_effective_execution_environment_for_profile(
         _explicit_authority(),
         ExecutionEnvironmentRequirement.from_tool_isolation(ToolIsolationRequirement.SANDBOX),

@@ -17,6 +17,7 @@ from intergrax.runtime.sandbox.contracts import (
     SandboxSecurityRequirements,
     SandboxSessionSecurityEvidenceProvider,
 )
+from intergrax.runtime.sandbox.execution_environment import FilesystemAccess, ProcessExecution
 from intergrax.runtime.sandbox.models import SandboxAuditEntry, SandboxExecutionResult
 from intergrax.runtime.sandbox.sandbox_runtime import DEFAULT_SANDBOX_OPERATIONS
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -88,12 +89,25 @@ class HostedSandboxSession:
         backend = self._backend
         if isinstance(backend, SandboxSecurityCapable):
             return backend.security_capabilities()
+        ops = frozenset(self._allowed_operations)
+        exec_supported = "run_python" in ops or "run_script" in ops or "echo" in ops
+        workspace_write = "write_file" in ops
         return SandboxSecurityCapabilities(
             isolation_tier="cloud",
             provider_id=f"hosted:{self.session_id}",
             network_egress_deny_enforced=None,
             network_egress_allowlist_enforced=None,
             enforced_network_hosts=None,
+            supports_sandboxed_exec=exec_supported,
+            supports_workspace_write=workspace_write,
+            filesystem_access=(
+                FilesystemAccess.WORKSPACE_WRITE
+                if workspace_write
+                else FilesystemAccess.READ_ONLY
+            ),
+            process_execution=(
+                ProcessExecution.SANDBOXED if exec_supported else ProcessExecution.DENIED
+            ),
         )
 
     def cancel(self) -> None:

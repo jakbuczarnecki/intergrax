@@ -16,6 +16,7 @@ from typing import FrozenSet
 from uuid import uuid4
 
 from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities
+from intergrax.runtime.sandbox.execution_environment import FilesystemAccess, ProcessExecution
 from intergrax.runtime.sandbox.models import (
     SandboxAuditEntry,
     SandboxExecutionResult,
@@ -91,12 +92,27 @@ class SandboxSession:
 
     def security_capabilities(self) -> SandboxSecurityCapabilities:
         """Honest local substrate evidence — workspace isolation, not OS-network proof."""
+        ops = frozenset(self._allowed_operations)
+        exec_supported = (
+            "run_python" in ops or "run_script" in ops or "echo" in ops
+        )
+        workspace_write = "write_file" in ops
         return SandboxSecurityCapabilities(
             isolation_tier="local",
             provider_id=f"local:{self.session_id}",
-            network_egress_deny_enforced="browser_fetch" not in self._allowed_operations,
+            network_egress_deny_enforced="browser_fetch" not in ops,
             network_egress_allowlist_enforced=None,
             enforced_network_hosts=None,
+            supports_sandboxed_exec=exec_supported,
+            supports_workspace_write=workspace_write,
+            filesystem_access=(
+                FilesystemAccess.WORKSPACE_WRITE
+                if workspace_write
+                else FilesystemAccess.READ_ONLY
+            ),
+            process_execution=(
+                ProcessExecution.SANDBOXED if exec_supported else ProcessExecution.DENIED
+            ),
         )
 
     @property

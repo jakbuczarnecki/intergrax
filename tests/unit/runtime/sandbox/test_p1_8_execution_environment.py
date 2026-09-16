@@ -343,16 +343,43 @@ def test_local_provider_adapter_conformance(sandbox_session: SandboxSession) -> 
 
 
 def test_remote_provider_adapter_conformance() -> None:
-    backend = MagicMock()
-    backend.security_capabilities.return_value = MagicMock(
-        provider_id="hosted:fake",
-        network_egress_deny_enforced=None,
-    )
+    from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities, SandboxSecurityCapable
+    from intergrax.runtime.sandbox.execution_environment import FilesystemAccess, ProcessExecution
+
+    class _AttestedHostBackend:
+        def security_capabilities(self) -> SandboxSecurityCapabilities:
+            return SandboxSecurityCapabilities(
+                isolation_tier="cloud",
+                provider_id="hosted:fake",
+                network_egress_deny_enforced=None,
+                supports_sandboxed_exec=True,
+                supports_workspace_write=True,
+                filesystem_access=FilesystemAccess.WORKSPACE_WRITE,
+                process_execution=ProcessExecution.SANDBOXED,
+            )
+
+        def create_session(self) -> HostSession:
+            return HostSession(session_id="s-1")
+
+        def exec(self, session_id: str, command: str) -> SandboxExecResult:
+            return SandboxExecResult(exit_code=0, stdout="", stderr="")
+
+        def upload_artifact(self, session_id: str, *, local_path: str, remote_name: str) -> object:
+            return MagicMock()
+
+    backend = _AttestedHostBackend()
+    assert isinstance(backend, SandboxSecurityCapable)
     caps = capabilities_from_host_backend(backend)
+    assert caps is not None
     assert caps.provider_ref.provider_kind is ExecutionEnvironmentProviderKind.HOSTED
     assert caps.supports_sandboxed_exec is True
     assert caps.network_access is NetworkAccess.NONE
     assert caps.supports_network_isolation is None
+
+
+def test_unattested_host_backend_does_not_project_capabilities() -> None:
+    backend = MagicMock()
+    assert capabilities_from_host_backend(backend) is None
 
 
 def test_remote_hosted_session_exec_without_host_fallback() -> None:

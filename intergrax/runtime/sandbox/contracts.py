@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal, Protocol, runtime_checkable
 
+from intergrax.runtime.sandbox.execution_environment import FilesystemAccess, ProcessExecution
 from intergrax.runtime.sandbox.models import SandboxExecutionResult
 from intergrax.runtime.sandbox.network_egress import NetworkEgressAllowlist
 
@@ -48,6 +49,14 @@ class SandboxSecurityCapabilities:
     """``True`` when exact host allowlist is proven; ``False`` when proven absent; ``None`` when unknown."""
     enforced_network_hosts: NetworkEgressAllowlist | None = None
     """Hosts actually enforced by substrate — not requested profile scope."""
+    supports_sandboxed_exec: bool | None = None
+    """``True``/``False`` when proven; ``None`` when unattested."""
+    supports_workspace_write: bool | None = None
+    """``True``/``False`` when proven; ``None`` when unattested."""
+    filesystem_access: FilesystemAccess | None = None
+    """Proven filesystem scope; ``None`` when unattested."""
+    process_execution: ProcessExecution | None = None
+    """Proven process execution mode; ``None`` when unattested."""
 
     @property
     def network_egress_evidence(self) -> SandboxNetworkEgressEvidence:

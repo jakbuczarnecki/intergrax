@@ -18,10 +18,8 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.environment_profile.bundles import IsolationBundle
 from intergrax.applications.contracts.environment_profile.sub_profiles import SandboxProfile
 from intergrax.applications.contracts.profile_resolution import EffectiveProfileRevisionScope
-from intergrax.contracts.runtime_sandbox_isolation_authority import (
-    RuntimeSandboxIsolationAuthority,
-    apply_runtime_sandbox_isolation_authority,
-)
+from intergrax.contracts.runtime_sandbox_isolation_authority import RuntimeSandboxIsolationAuthority
+from intergrax.tools.registry.sandbox_isolation_wiring import apply_runtime_sandbox_isolation_authority
 from intergrax.contracts.sandbox_profile import SandboxProfile as ContractSandboxProfile
 from intergrax.runtime.sandbox.enforcement import _profile_from_context, resolve_tool_execution_environment
 from intergrax.runtime.sandbox.resolver import profile_isolation_authority

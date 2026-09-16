@@ -33,8 +33,8 @@ from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.request_identity_spine import assert_untrusted_metadata_identity_compatible
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.runtime_policy_context import AgentDecisionPolicyContext
-from intergrax.contracts.runtime_sandbox_isolation_authority import (
-    RuntimeSandboxIsolationAuthority,
+from intergrax.contracts.runtime_sandbox_isolation_authority import RuntimeSandboxIsolationAuthority
+from intergrax.tools.registry.sandbox_isolation_wiring import (
     apply_runtime_sandbox_isolation_authority,
     wiring_has_sandbox_isolation_authority,
 )
