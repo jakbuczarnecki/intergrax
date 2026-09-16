@@ -353,8 +353,6 @@ class MarketplaceToolExecutionProofStack:
         tmp_path: Path,
     ) -> tuple[str, str, str | None]:
         registry = self.lifecycle.registry_read()
-        if not registry.has(ME14_TOOL_LOGICAL_ID):
-            raise RuntimeError("tool not active in domain registry")
         return await execute_me14_tool_via_host_execution_engine(
             registry=registry,
             tool_logical_id=ME14_TOOL_LOGICAL_ID,

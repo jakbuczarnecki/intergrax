@@ -499,6 +499,11 @@ class NexusLoop:
         return self._engine
 
     @property
+    def declarative_tool_invoker(self) -> DeclarativeToolInvoker | None:
+        """Host-wired catalog tool invoker shared by graph and agentic execution paths."""
+        return self._declarative_tool_invoker
+
+    @property
     def graph_executor(self) -> GraphExecutor:
         """Canonical graph scheduler owned by this Nexus host."""
         return self._graph_executor

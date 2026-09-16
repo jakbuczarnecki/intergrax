@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Protocol
 
 from intergrax.contracts.agent_execution_result import (
@@ -114,6 +114,8 @@ from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
+from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.agents.persistence.tool_invoker_wiring import inject_acp_tool_invoker_metadata
 
 
 def resolve_task_execution_capabilities(
@@ -157,7 +159,7 @@ def task_result_from_agent_execution(
 class TaskBoundAgenticDelegate:
     """Routes canonical agentic task requests through the governed agent engine."""
 
-    __slots__ = ("_task", "_agent_engine", "_agent_router")
+    __slots__ = ("_task", "_agent_engine", "_agent_router", "_declarative_tool_invoker")
 
     def __init__(
         self,
@@ -165,10 +167,12 @@ class TaskBoundAgenticDelegate:
         *,
         agent_engine: AgentEnginePort,
         agent_router: AgentRouter,
+        declarative_tool_invoker: DeclarativeToolInvoker | None = None,
     ) -> None:
         self._task = task
         self._agent_engine = agent_engine
         self._agent_router = agent_router
+        self._declarative_tool_invoker = declarative_tool_invoker
 
     async def execute(
         self,
@@ -181,6 +185,16 @@ class TaskBoundAgenticDelegate:
             agent = self._agent_router.route(task, run_id=run_id)
             task = task.model_copy(update={"agent_id": agent.get_contract().id})
         runtime_request = task.to_runtime_request(run_id=run_id)
+        metadata = dict(runtime_request.metadata or {})
+        inject_acp_tool_invoker_metadata(
+            metadata,
+            self._declarative_tool_invoker,
+            task_id=task.task_id,
+            run_id=run_id,
+            agent_id=task.agent_id or "",
+            tenant_id=task.tenant_id,
+        )
+        runtime_request = replace(runtime_request, metadata=metadata)
         execution_result = await self._agent_engine.run_with_result(runtime_request)
         return task_result_from_agent_execution(
             task,
@@ -195,6 +209,7 @@ def build_host_task_strategy_router(
     agent_engine: AgentEnginePort,
     agent_router: AgentRouter,
     orchestration_executor: OrchestrationExecutor,
+    declarative_tool_invoker: DeclarativeToolInvoker | None = None,
 ) -> StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult]:
     return StrategyExecutionRouter[
         TaskExecutionInput,
@@ -205,6 +220,7 @@ def build_host_task_strategy_router(
             task,
             agent_engine=agent_engine,
             agent_router=agent_router,
+            declarative_tool_invoker=declarative_tool_invoker,
         ),
         orchestration_executor=TaskBoundOrchestrationDelegate(
             task,
@@ -303,6 +319,7 @@ class HostTaskExecution:
     _recovery_admission: RecoveryAdmissionPort | None = None
     _execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None
     _continuation_state_store: ExecutionContinuationStateStore | None = None
+    _declarative_tool_invoker: DeclarativeToolInvoker | None = None
 
     def _launcher_for_task(
         self,
@@ -340,6 +357,7 @@ class HostTaskExecution:
             agent_engine=self._agent_engine,
             agent_router=self._agent_router,
             orchestration_executor=self._orchestration_executor,
+            declarative_tool_invoker=self._declarative_tool_invoker,
         )
         delegate = _HostTaskTerminalPublishingDelegate(
             router,

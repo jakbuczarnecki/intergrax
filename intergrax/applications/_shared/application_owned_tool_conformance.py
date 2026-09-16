@@ -57,7 +57,11 @@ def merge_application_owned_tool_registry(
             raise ApplicationManifestConformanceError(
                 f"application-owned tool registry identity mismatch for {tool_id!r}",
             )
-        catalog_registry.register(registered.contract, registered.handler)
+        catalog_registry.register(
+            registered.contract,
+            registered.handler,
+            activation=registered.activation,
+        )
     return catalog_registry
 
 

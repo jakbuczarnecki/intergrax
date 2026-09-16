@@ -5,16 +5,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import ClassVar
 
 from intergrax.agents.reference_harness import (
-    LabHarnessContext,
-    build_lab_agent_runtime_config,
+    build_lab_agent_runtime_context,
     default_reference_harness,
 )
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
-from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.authoring.runtime_tool_helpers import invoke_catalog_tool
 from intergrax.applications._shared.application_owned_tool_conformance import (
@@ -47,7 +42,6 @@ class Me14ToolProofAgent(HarnessReferenceAgent):
     agent_name = "ME-14 Tool Proof Agent"
     agent_description = "Invokes activated marketplace tool via UAEP"
     capabilities = ("me14.tool.invoke",)
-    _execution_registry: ClassVar[ToolRegistry | None] = None
 
     def __init__(self, *, tool_id: str | None = None) -> None:
         from testing_support.canonical_me14_echo_tool import ME14_TOOL_LOGICAL_ID
@@ -91,32 +85,10 @@ class Me14ToolProofAgent(HarnessReferenceAgent):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-        from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
-        from testing_support.builder import FakeLLMAdapter
-
-        harness = default_reference_harness()
-        if Me14ToolProofAgent._execution_registry is not None:
-            registry = Me14ToolProofAgent._execution_registry
-            tool_wiring = ToolWiringContext(extras={"me14_proof_registry": registry})
-            harness = LabHarnessContext(
-                policy_bundle=harness.policy_bundle,
-                tool_wiring_context=tool_wiring,
-            )
-        config = build_lab_agent_runtime_config(
+        return build_lab_agent_runtime_context(
             request=request,
             llm_adapter=FakeLLMAdapter(),
-            harness=harness,
-        )
-        if Me14ToolProofAgent._execution_registry is not None:
-            registry = Me14ToolProofAgent._execution_registry
-            config.tool_invoker = RuntimeToolInvoker(
-                registry=registry,
-                executor=RegistryToolExecutor(registry),
-            )
-        return RuntimeContext.build(
-            config=config,
-            session_manager=SessionManager(storage=InMemorySessionStorage()),
+            harness=default_reference_harness(),
         )
 
     def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
@@ -185,6 +157,34 @@ def build_me14_proof_agent(**_: object) -> Me14ToolProofAgent:
     return Me14ToolProofAgent(tool_id=ME14_TOOL_LOGICAL_ID)
 
 
+async def run_me14_tool_host_execution(
+    *,
+    registry: ToolRegistry,
+    tool_logical_id: str,
+    tmp_path: Path,
+) -> TaskResult:
+    """Execute ME-14 proof task via public ``HarnessHostRuntime.execution`` only."""
+    manifest = me14_tool_proof_manifest(tool_logical_id)
+    environment = me14_tool_proof_environment(tool_logical_id)
+    host_runtime = build_harness_host_runtime(
+        manifest,
+        environment,
+        tenant_id=ME14_PROOF_TENANT,
+        trace_db_path=tmp_path / "trace.db",
+        runtime_events_db_path=tmp_path / "runtime_events.db",
+        application_tool_registry=registry,
+        llm_adapter=FakeLLMAdapter(),
+    )
+    task = Task(
+        tenant_id=ME14_PROOF_TENANT,
+        user_id="me14-proof-user",
+        message="invoke-me14-tool",
+        agent_id=ME14_PROOF_AGENT_ID,
+        context=TaskContext(capability="me14.tool.invoke"),
+    )
+    return await host_runtime.execution.execute(task)
+
+
 async def execute_me14_tool_via_host_execution_engine(
     *,
     registry: ToolRegistry,
@@ -192,46 +192,14 @@ async def execute_me14_tool_via_host_execution_engine(
     tmp_path: Path,
 ) -> tuple[str, str, str | None]:
     """Returns ``(tool_id, execution_output, task_id)`` via ``HostTaskExecution.execute``."""
-    manifest = me14_tool_proof_manifest(tool_logical_id)
-    environment = me14_tool_proof_environment(tool_logical_id)
-    Me14ToolProofAgent._execution_registry = registry
-    try:
-        host_runtime = build_harness_host_runtime(
-            manifest,
-            environment,
-            tenant_id=ME14_PROOF_TENANT,
-            trace_db_path=tmp_path / "trace.db",
-            runtime_events_db_path=tmp_path / "runtime_events.db",
-            application_tool_registry=registry,
-            llm_adapter=FakeLLMAdapter(),
-        )
-        from intergrax.agents.persistence.tool_invoker_wiring import inject_acp_tool_invoker_metadata
-        from intergrax.contracts.execution_identity import mint_run_id
-
-        task = Task(
-            tenant_id=ME14_PROOF_TENANT,
-            user_id="me14-proof-user",
-            message="invoke-me14-tool",
-            agent_id=ME14_PROOF_AGENT_ID,
-            context=TaskContext(capability="me14.tool.invoke"),
-        )
-        run_id = mint_run_id()
-        metadata: dict[str, object] = {}
-        inject_acp_tool_invoker_metadata(
-            metadata,
-            host_runtime._internal_composition._orchestration_backend._declarative_tool_invoker,
-            task_id=task.task_id,
-            run_id=run_id,
-            agent_id=ME14_PROOF_AGENT_ID,
-            tenant_id=ME14_PROOF_TENANT,
-        )
-        task = task.model_copy(update={"metadata": metadata})
-        result: TaskResult = await host_runtime.execution.execute(task)
-        assert result.state is TaskState.COMPLETED
-        assert result.answer is not None
-        return tool_logical_id, result.answer, str(result.task_id) if result.task_id else None
-    finally:
-        Me14ToolProofAgent._execution_registry = None
+    result = await run_me14_tool_host_execution(
+        registry=registry,
+        tool_logical_id=tool_logical_id,
+        tmp_path=tmp_path,
+    )
+    assert result.state is TaskState.COMPLETED
+    assert result.answer is not None
+    return tool_logical_id, result.answer, str(result.task_id) if result.task_id else None
 
 
 __all__ = [
@@ -241,4 +209,5 @@ __all__ = [
     "execute_me14_tool_via_host_execution_engine",
     "me14_tool_proof_environment",
     "me14_tool_proof_manifest",
+    "run_me14_tool_host_execution",
 ]

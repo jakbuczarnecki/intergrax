@@ -88,10 +88,21 @@ def test_me14_c1_selected_v2_is_activated_and_executed(tmp_path: Path) -> None:
 
 def test_me14_c1_tool_is_not_executable_before_lifecycle(tmp_path: Path) -> None:
     stack = MarketplaceToolExecutionProofStack.build()
-    with pytest.raises(RuntimeError, match="tool not active"):
+    from intergrax.applications.contracts.application_package import (
+        ApplicationPackageClosureError,
+    )
+    from testing_support.me14_tool_harness_execution import run_me14_tool_host_execution
+
+    with pytest.raises(ApplicationPackageClosureError, match="missing from wired tool registry"):
         import asyncio
 
-        asyncio.run(stack.execute_tool_via_host_execution_engine(tmp_path))
+        asyncio.run(
+            run_me14_tool_host_execution(
+                registry=stack.lifecycle.registry_read(),
+                tool_logical_id=ME14_TOOL_LOGICAL_ID,
+                tmp_path=tmp_path,
+            ),
+        )
 
 
 def test_me14_c1_tool_is_executable_after_lifecycle(tmp_path: Path) -> None:

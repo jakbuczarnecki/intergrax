@@ -533,7 +533,7 @@ deterministic agent output
 
 Reference proof **≠** distributed production HA. Marketplace core still does not install, activate, or execute.
 
-**ME-14 canonical flow (ME-14-C1 production composition):**
+**ME-14 canonical flow (ME-14-C2 execution wiring):**
 
 ```text
 Marketplace listing / discovery / governance / explicit selection (TOOL vertical)
@@ -541,12 +541,16 @@ Marketplace listing / discovery / governance / explicit selection (TOOL vertical
     ↓ MarketplaceLifecycleHandoffRequest + ToolLifecycleHandoffPayload (ME-RB4)
 ToolMarketplaceAcquisitionBridge → DynamicToolAcquisitionService (exact release)
     ↓ ToolCatalogProvider SPI + ToolHostLifecycleService activation
-ToolRegistry read (release-aware activation metadata)
-    ↓ public Execution Engine boundary (HarnessHostRuntime.execution)
+ToolRegistry (activation registry + release-aware activation metadata)
+    ↓ public application composition (`application_tool_registry` → host environment wiring)
+HarnessHostRuntime.execution.execute(Task)
+    ↓ canonical Execution Engine orchestration (declarative tool invoker injection owned by runtime)
 deterministic tool output
 ```
 
 **ME-14 invariants:** Tool acquisition is domain-owned; Marketplace never mutates `ToolRegistry`; selected release is exact and fail-closed; registry read retains release identity for audit; execution resolves activated tools through the public host execution boundary — reference fixtures are not lifecycle authority.
+
+**ME-14-C2 hard invariants:** Execution fixtures must not access private Execution Engine internals; tool invoker wiring is owned by canonical runtime composition; activated tool registry enters execution only via public application composition (`application_tool_registry`); proof agents do not own or replace runtime tool invokers.
 
 Remaining V1 gaps: canonical Tool trust authority (ME-14-C1 uses generic qualification only where applicable), ME-15+ cross-domain E2E, distributed Tool lifecycle productization, remote marketplace productization.
 
