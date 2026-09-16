@@ -9,6 +9,7 @@ from intergrax.memory.contracts.memory_security_governance import (
     CanonicalMemoryGovernanceSourceAuthority,
 )
 from intergrax.memory.contracts.procedural_memory import (
+    ProcedureMemoryCapability,
     ProcedureMemoryStore,
     ProcedureMemoryViolation,
 )
@@ -62,7 +63,7 @@ def resolve_procedural_memory_capability(
     *,
     governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
     security_governance: MemorySecurityGovernanceService | None = None,
-) -> ProceduralMemoryService | None:
+) -> ProcedureMemoryCapability | None:
     """Materialize procedural memory capability when enabled."""
     store = resolve_procedural_memory_store(env)
     if store is None:

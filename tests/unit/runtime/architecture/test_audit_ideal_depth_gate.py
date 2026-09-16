@@ -248,10 +248,12 @@ def test_audit_ideal_9_2_swarm_templates() -> None:
 
 
 def test_audit_ideal_15_3_entity_graph_memory() -> None:
-    from intergrax.applications._shared.entity_graph_wiring import resolve_entity_graph_memory_store
+    from intergrax.applications._shared.entity_graph_wiring import (
+        resolve_entity_temporal_memory_capability,
+    )
 
     env = ApplicationEnvironmentProfile.product_defaults()
-    assert resolve_entity_graph_memory_store(env) is not None
+    assert resolve_entity_temporal_memory_capability(env) is not None
 
 
 def test_audit_ideal_16_2_semantic_compression() -> None:

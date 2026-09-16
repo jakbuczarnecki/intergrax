@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""AUDIT-IDEAL-15.3 — entity graph memory wiring gate."""
+"""AUDIT-IDEAL-15.3 — governed entity/temporal memory wiring gate."""
 
 from __future__ import annotations
 
 import sys
 
-from intergrax.applications._shared.entity_graph_wiring import resolve_entity_graph_memory_store
+from intergrax.applications._shared.entity_graph_wiring import (
+    resolve_entity_temporal_memory_capability,
+)
 from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryStore
-from intergrax.memory.entity_graph_memory import EntityGraphMemoryStore, EntityNode
+from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryCapability
 
 
 def main() -> int:
@@ -19,24 +20,20 @@ def main() -> int:
     if not env.memory_profile.enable_entity_graph_memory:
         print("product_defaults must enable entity graph memory", file=sys.stderr)
         return 1
-    store = resolve_entity_graph_memory_store(env)
-    if store is None:
-        print("entity graph store must resolve for product profile", file=sys.stderr)
+    capability = resolve_entity_temporal_memory_capability(env)
+    if capability is None:
+        print("entity temporal capability must resolve for product profile", file=sys.stderr)
         return 1
     wiring = resolve_memory_platform_wiring(env)
-    if wiring.entity_graph_store is None:
-        print("memory platform wiring must include entity graph store", file=sys.stderr)
+    if wiring.entity_temporal_memory_capability is None:
+        print("memory platform wiring must include entity temporal capability", file=sys.stderr)
         return 1
 
-    store.upsert_node(EntityNode(entity_id="e1", label="Acme", entity_type="org"))
-    if not isinstance(store, EntityGraphMemoryStore):
-        print("unexpected entity graph store type", file=sys.stderr)
-        return 1
-    if not isinstance(store.entity_temporal_store, EntityTemporalMemoryStore):
-        print("entity graph store must expose EntityTemporalMemoryStore", file=sys.stderr)
+    if not isinstance(capability, EntityTemporalMemoryCapability):
+        print("unexpected entity temporal capability type", file=sys.stderr)
         return 1
 
-    print("OK: entity graph memory wiring")
+    print("OK: governed entity temporal memory wiring")
     return 0
 
 

@@ -30,6 +30,16 @@ from intergrax.memory.strategies.defaults.sequence_deduplication import (
     SequenceMatcherMemoryDeduplicationStrategy,
 )
 from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
+from intergrax.memory.contracts.memory_control import MemoryControlPlaneScope, MemoryControlRememberResult
+from intergrax.memory.default_memory_control_plane import (
+    DefaultMemoryControlPlane,
+    UserProfileManagerMemoryCapability,
+)
+from intergrax.memory.memory_security_governance_service import (
+    build_default_memory_security_governance_service,
+)
+from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
+from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.runtime.user_profile.session_memory_consolidation_service import (
     SessionMemoryConsolidationConfig,
     SessionMemoryConsolidationService,
@@ -37,6 +47,8 @@ from intergrax.runtime.user_profile.session_memory_consolidation_service import 
 from intergrax.runtime.user_profile.user_profile_instructions_service import UserProfileInstructionsService
 from testing_support.builder import FakeLLMAdapter
 from unittest.mock import AsyncMock, MagicMock
+
+_TENANT = "tenant-consolidation"
 
 pytestmark = pytest.mark.gate
 
@@ -60,6 +72,26 @@ def _deterministic_consolidation_json() -> str:
                 "tags": ["session_summary"],
             },
         }
+    )
+
+
+def _memory_control_plane_for_manager(
+    profile_manager: UserProfileManager | MagicMock,
+) -> DefaultMemoryControlPlane | MagicMock:
+    if isinstance(profile_manager, MagicMock):
+        plane = MagicMock(spec=DefaultMemoryControlPlane)
+
+        async def _remember(_identity, _scope, request):
+            return MemoryControlRememberResult(
+                scope=MemoryControlPlaneScope.USER,
+                entry_id=request.entry.entry_id if request.entry is not None else None,
+            )
+
+        plane.remember = AsyncMock(side_effect=_remember)
+        return plane
+    return DefaultMemoryControlPlane(
+        user_profile=UserProfileManagerMemoryCapability(_manager=profile_manager),
+        security_governance=build_default_memory_security_governance_service(),
     )
 
 
@@ -143,15 +175,18 @@ async def test_custom_extraction_strategy_is_used_by_consolidation_service() -> 
         deduplication=_KeepAllDeduplication(),
         promotion=AcceptAllMemoryPromotionStrategy(),
     )
+    profile_manager = _profile_manager_mock()
     service = SessionMemoryConsolidationService(
-        profile_manager=_profile_manager_mock(),
+        profile_manager=profile_manager,
         instructions_service=MagicMock(spec=UserProfileInstructionsService),
+        memory_control_plane=_memory_control_plane_for_manager(profile_manager),
         strategies=strategies,
     )
     entries = await service.consolidate_session(
         user_id="user-1",
         session_id="sess-1",
         messages=[ChatMessage(role="user", content="hello")],
+        tenant_id=_TENANT,
     )
     assert extraction.calls == 1
     assert len(entries) == 1
@@ -160,13 +195,16 @@ async def test_custom_extraction_strategy_is_used_by_consolidation_service() -> 
 
 @pytest.mark.asyncio
 async def test_default_extraction_matches_prior_consolidation_flow() -> None:
-    profile_manager = _profile_manager_mock()
+    store = InMemoryUserProfileStore()
+    profile_manager = UserProfileManager(store, tenant_id=_TENANT)
+    plane = _memory_control_plane_for_manager(profile_manager)
     instructions_service = MagicMock(spec=UserProfileInstructionsService)
     instructions_service.build_and_save_system_instructions = AsyncMock(return_value="ok")
 
     service = SessionMemoryConsolidationService(
         profile_manager=profile_manager,
         instructions_service=instructions_service,
+        memory_control_plane=plane,
         llm=FakeLLMAdapter(fixed_text=_deterministic_consolidation_json()),
         config=SessionMemoryConsolidationConfig(include_session_summary=True),
     )
@@ -177,13 +215,16 @@ async def test_default_extraction_matches_prior_consolidation_flow() -> None:
             ChatMessage(role="user", content="I am a senior Python engineer."),
             ChatMessage(role="assistant", content="Noted."),
         ],
+        tenant_id=_TENANT,
     )
     kinds = {entry.kind for entry in entries}
     assert MemoryKind.USER_FACT in kinds
     assert MemoryKind.PREFERENCE in kinds
     assert MemoryKind.SESSION_SUMMARY in kinds
     assert MemoryKind.EPISODIC_EVENT in kinds
-    assert profile_manager.add_memory_entry.await_count == 4
+    assert isinstance(plane, DefaultMemoryControlPlane)
+    profile = await profile_manager.get_profile("user-1")
+    assert len(profile.memory_entries) == 4
 
 
 @pytest.mark.asyncio
@@ -195,28 +236,36 @@ async def test_custom_dedup_keep_all_vs_reject_all() -> None:
     )
     extraction = _RecordingExtraction(candidates=(candidate,))
 
+    keep_profile = _profile_manager_mock()
     keep_service = SessionMemoryConsolidationService(
-        profile_manager=_profile_manager_mock(),
+        profile_manager=keep_profile,
         instructions_service=MagicMock(spec=UserProfileInstructionsService),
+        memory_control_plane=_memory_control_plane_for_manager(keep_profile),
         strategies=MemoryStrategySet(
             extraction=extraction,
             deduplication=_KeepAllDeduplication(),
             promotion=AcceptAllMemoryPromotionStrategy(),
         ),
     )
-    kept = await keep_service.consolidate_session("u", "s1", [ChatMessage(role="user", content="x")])
+    kept = await keep_service.consolidate_session(
+        "u", "s1", [ChatMessage(role="user", content="x")], tenant_id=_TENANT
+    )
     assert len(kept) == 1
 
+    reject_profile = _profile_manager_mock()
     reject_service = SessionMemoryConsolidationService(
-        profile_manager=_profile_manager_mock(),
+        profile_manager=reject_profile,
         instructions_service=MagicMock(spec=UserProfileInstructionsService),
+        memory_control_plane=_memory_control_plane_for_manager(reject_profile),
         strategies=MemoryStrategySet(
             extraction=extraction,
             deduplication=_RejectAllDeduplication(),
             promotion=AcceptAllMemoryPromotionStrategy(),
         ),
     )
-    rejected = await reject_service.consolidate_session("u", "s1", [ChatMessage(role="user", content="x")])
+    rejected = await reject_service.consolidate_session(
+        "u", "s1", [ChatMessage(role="user", content="x")], tenant_id=_TENANT
+    )
     assert rejected == []
 
 
@@ -251,6 +300,7 @@ async def test_default_dedup_threshold_is_configurable_not_in_service() -> None:
     low_service = SessionMemoryConsolidationService(
         profile_manager=profile_manager,
         instructions_service=MagicMock(spec=UserProfileInstructionsService),
+        memory_control_plane=_memory_control_plane_for_manager(profile_manager),
         strategies=MemoryStrategySet(
             extraction=extraction,
             deduplication=low_threshold,
@@ -260,14 +310,19 @@ async def test_default_dedup_threshold_is_configurable_not_in_service() -> None:
     high_service = SessionMemoryConsolidationService(
         profile_manager=profile_manager,
         instructions_service=MagicMock(spec=UserProfileInstructionsService),
+        memory_control_plane=_memory_control_plane_for_manager(profile_manager),
         strategies=MemoryStrategySet(
             extraction=extraction,
             deduplication=high_threshold,
             promotion=AcceptAllMemoryPromotionStrategy(),
         ),
     )
-    low_result = await low_service.consolidate_session("u", "s1", [ChatMessage(role="user", content="x")])
-    high_result = await high_service.consolidate_session("u", "s1", [ChatMessage(role="user", content="x")])
+    low_result = await low_service.consolidate_session(
+        "u", "s1", [ChatMessage(role="user", content="x")], tenant_id=_TENANT
+    )
+    high_result = await high_service.consolidate_session(
+        "u", "s1", [ChatMessage(role="user", content="x")], tenant_id=_TENANT
+    )
     assert low_result == []
     assert len(high_result) == 1
 
@@ -276,18 +331,22 @@ async def test_default_dedup_threshold_is_configurable_not_in_service() -> None:
 async def test_promotion_skip_prevents_storage_writes() -> None:
     candidate = MemoryCandidate(content="fact", kind=MemoryKind.USER_FACT, session_id="s1")
     profile_manager = _profile_manager_mock()
+    plane = _memory_control_plane_for_manager(profile_manager)
     service = SessionMemoryConsolidationService(
         profile_manager=profile_manager,
         instructions_service=MagicMock(spec=UserProfileInstructionsService),
+        memory_control_plane=plane,
         strategies=MemoryStrategySet(
             extraction=_RecordingExtraction(candidates=(candidate,)),
             deduplication=_KeepAllDeduplication(),
             promotion=_SkipAllPromotion(),
         ),
     )
-    entries = await service.consolidate_session("u", "s1", [ChatMessage(role="user", content="x")])
+    entries = await service.consolidate_session(
+        "u", "s1", [ChatMessage(role="user", content="x")], tenant_id=_TENANT
+    )
     assert entries == []
-    profile_manager.add_memory_entry.assert_not_awaited()
+    plane.remember.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -298,16 +357,20 @@ async def test_external_protocol_strategy_without_core_changes() -> None:
         def deduplicate(self, request: MemoryDeduplicationRequest) -> MemoryDeduplicationResult:
             return MemoryDeduplicationResult(accepted=request.incoming, rejected_as_duplicate=())
 
+    profile_manager = _profile_manager_mock()
     service = SessionMemoryConsolidationService(
-        profile_manager=_profile_manager_mock(),
+        profile_manager=profile_manager,
         instructions_service=MagicMock(spec=UserProfileInstructionsService),
+        memory_control_plane=_memory_control_plane_for_manager(profile_manager),
         strategies=MemoryStrategySet(
             extraction=_RecordingExtraction(),
             deduplication=CustomDeduplication(),
             promotion=AcceptAllMemoryPromotionStrategy(),
         ),
     )
-    entries = await service.consolidate_session("u", "s1", [ChatMessage(role="user", content="hello")])
+    entries = await service.consolidate_session(
+        "u", "s1", [ChatMessage(role="user", content="hello")], tenant_id=_TENANT
+    )
     assert len(entries) == 1
 
 
@@ -320,9 +383,11 @@ async def test_strategy_failure_propagates_without_partial_writes() -> None:
             raise RuntimeError("extraction failed")
 
     profile_manager = _profile_manager_mock()
+    plane = _memory_control_plane_for_manager(profile_manager)
     service = SessionMemoryConsolidationService(
         profile_manager=profile_manager,
         instructions_service=MagicMock(spec=UserProfileInstructionsService),
+        memory_control_plane=plane,
         strategies=MemoryStrategySet(
             extraction=FailingExtraction(),
             deduplication=_KeepAllDeduplication(),
@@ -330,24 +395,31 @@ async def test_strategy_failure_propagates_without_partial_writes() -> None:
         ),
     )
     with pytest.raises(RuntimeError, match="extraction failed"):
-        await service.consolidate_session("u", "s1", [ChatMessage(role="user", content="x")])
-    profile_manager.add_memory_entry.assert_not_awaited()
+        await service.consolidate_session(
+            "u", "s1", [ChatMessage(role="user", content="x")], tenant_id=_TENANT
+        )
+    plane.remember.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_consolidation_still_writes_via_profile_manager() -> None:
+async def test_consolidation_writes_via_memory_control_plane() -> None:
     profile_manager = _profile_manager_mock()
+    plane = _memory_control_plane_for_manager(profile_manager)
     service = SessionMemoryConsolidationService(
         profile_manager=profile_manager,
         instructions_service=MagicMock(spec=UserProfileInstructionsService),
+        memory_control_plane=plane,
         strategies=MemoryStrategySet(
             extraction=_RecordingExtraction(),
             deduplication=_KeepAllDeduplication(),
             promotion=AcceptAllMemoryPromotionStrategy(),
         ),
     )
-    await service.consolidate_session("u", "s1", [ChatMessage(role="user", content="hello")])
-    profile_manager.add_memory_entry.assert_awaited_once()
+    await service.consolidate_session(
+        "u", "s1", [ChatMessage(role="user", content="hello")], tenant_id=_TENANT
+    )
+    plane.remember.assert_awaited_once()
+    profile_manager.add_memory_entry.assert_not_awaited()
 
 
 def test_build_default_strategies_respects_deduplication_configuration() -> None:

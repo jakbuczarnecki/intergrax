@@ -4,12 +4,19 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any, Dict, List, Optional, Sequence
 
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.entity_temporal_memory import (
     EntityMemoryIndexer,
     EntityMemoryScope,
+)
+from intergrax.memory.contracts.memory_control import (
+    MemoryControlGovernanceDenied,
+    MemoryControlPlane,
+    MemoryControlRememberRequest,
+    user_memory_scope,
 )
 
 from intergrax.globals.settings import GLOBAL_SETTINGS
@@ -76,6 +83,7 @@ class SessionMemoryConsolidationService:
         profile_manager: UserProfileManager,
         instructions_service: UserProfileInstructionsService,
         *,
+        memory_control_plane: MemoryControlPlane,
         strategies: MemoryStrategySet | None = None,
         llm: LLMAdapter | None = None,
         config: Optional[SessionMemoryConsolidationConfig] = None,
@@ -83,6 +91,7 @@ class SessionMemoryConsolidationService:
     ) -> None:
         self._profile_manager = profile_manager
         self._instructions_service = instructions_service
+        self._memory_control_plane = memory_control_plane
         self._config = config or SessionMemoryConsolidationConfig()
         self._entity_memory_indexer = entity_memory_indexer
 
@@ -160,15 +169,32 @@ class SessionMemoryConsolidationService:
             )
         )
 
+        effective_tenant = (tenant_id or "").strip()
+        if not effective_tenant:
+            raise ValueError(
+                "consolidate_session requires tenant_id for governed memory persistence"
+            )
+        identity = RequestIdentity(tenant_id=effective_tenant, user_id=user_id)
+        memory_scope = user_memory_scope(identity)
+
         stored_entries: List[UserProfileMemoryEntry] = []
         for decision in promotion_result.decisions:
             if decision.action is not MemoryPromotionAction.PROMOTE:
                 continue
-            stored = await self._profile_manager.add_memory_entry(user_id, decision.entry)
+            try:
+                remember_result = await self._memory_control_plane.remember(
+                    identity,
+                    memory_scope,
+                    MemoryControlRememberRequest(entry=decision.entry),
+                )
+            except MemoryControlGovernanceDenied:
+                continue
+            entry_id = remember_result.entry_id or decision.entry.entry_id
+            stored = replace(decision.entry, entry_id=entry_id)
             stored_entries.append(stored)
-            if self._entity_memory_indexer is not None and tenant_id:
-                scope = EntityMemoryScope(tenant_id=tenant_id, user_id=user_id)
-                self._entity_memory_indexer.index_memory_entry(scope, stored)
+            if self._entity_memory_indexer is not None:
+                entity_scope = EntityMemoryScope(tenant_id=effective_tenant, user_id=user_id)
+                self._entity_memory_indexer.index_memory_entry(entity_scope, stored)
 
         if stored_entries and self._config.regenerate_system_instructions:
             await self._instructions_service.build_and_save_system_instructions(

@@ -11,6 +11,9 @@ import pytest
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
+from intergrax.applications._shared.memory_control_wiring import build_default_memory_control_plane
+from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
+from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.runtime.user_profile.session_memory_consolidation_service import (
     SessionMemoryConsolidationConfig,
     SessionMemoryConsolidationService,
@@ -54,23 +57,11 @@ def _deterministic_consolidation_json() -> str:
 
 @pytest.mark.asyncio
 async def test_ltm_consolidation_e2e_with_deterministic_fake_llm() -> None:
-    stored: list[UserProfileMemoryEntry] = []
-
-    async def _capture_entry(user_id: str, entry: UserProfileMemoryEntry) -> UserProfileMemoryEntry:
-        _ = user_id
-        stored.append(entry)
-        return entry
-
-    from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
-
-    profile_manager = MagicMock()
-    profile_manager.get_profile = AsyncMock(
-        return_value=UserProfile(
-            identity=UserIdentity(user_id="user-ltm"),
-            preferences=UserPreferences(),
-        )
+    tenant_id = "tenant-ltm"
+    profile_manager = UserProfileManager(InMemoryUserProfileStore(), tenant_id=tenant_id)
+    memory_control_plane = build_default_memory_control_plane(
+        user_profile_manager=profile_manager,
     )
-    profile_manager.add_memory_entry = AsyncMock(side_effect=_capture_entry)
 
     instructions_service = MagicMock(spec=UserProfileInstructionsService)
     instructions_service.build_and_save_system_instructions = AsyncMock(return_value="Be concise.")
@@ -80,6 +71,7 @@ async def test_ltm_consolidation_e2e_with_deterministic_fake_llm() -> None:
         llm=llm,
         profile_manager=profile_manager,
         instructions_service=instructions_service,
+        memory_control_plane=memory_control_plane,
         config=SessionMemoryConsolidationConfig(
             regenerate_system_instructions=True,
             include_session_summary=True,
@@ -97,6 +89,7 @@ async def test_ltm_consolidation_e2e_with_deterministic_fake_llm() -> None:
         session_id="sess-ltm-1",
         messages=messages,
         run_id="run-ltm-1",
+        tenant_id=tenant_id,
     )
 
     assert len(entries) == 4
@@ -106,14 +99,24 @@ async def test_ltm_consolidation_e2e_with_deterministic_fake_llm() -> None:
     assert MemoryKind.SESSION_SUMMARY in kinds
     assert MemoryKind.EPISODIC_EVENT in kinds
     assert all(entry.session_id == "sess-ltm-1" for entry in entries)
-    assert profile_manager.add_memory_entry.await_count == 4
+    profile = await profile_manager.get_profile("user-ltm")
+    assert len(profile.memory_entries) == 4
     instructions_service.build_and_save_system_instructions.assert_awaited_once()
 
 
 @pytest.mark.asyncio
 async def test_ltm_consolidation_returns_empty_when_llm_output_unparseable() -> None:
+    from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
+
     profile_manager = MagicMock()
-    profile_manager.add_memory_entry = AsyncMock()
+    profile_manager.get_profile = AsyncMock(
+        return_value=UserProfile(
+            identity=UserIdentity(user_id="user-ltm"),
+            preferences=UserPreferences(),
+        )
+    )
+    plane = MagicMock()
+    plane.remember = AsyncMock()
 
     instructions_service = MagicMock(spec=UserProfileInstructionsService)
     instructions_service.build_and_save_system_instructions = AsyncMock()
@@ -122,14 +125,16 @@ async def test_ltm_consolidation_returns_empty_when_llm_output_unparseable() -> 
         llm=FakeLLMAdapter(fixed_text="not-json"),
         profile_manager=profile_manager,
         instructions_service=instructions_service,
+        memory_control_plane=plane,
     )
 
     entries = await service.consolidate_session(
         user_id="user-ltm",
         session_id="sess-ltm-2",
         messages=[ChatMessage(role="user", content="hello")],
+        tenant_id="tenant-ltm",
     )
 
     assert entries == []
-    profile_manager.add_memory_entry.assert_not_awaited()
+    plane.remember.assert_not_awaited()
     instructions_service.build_and_save_system_instructions.assert_not_awaited()

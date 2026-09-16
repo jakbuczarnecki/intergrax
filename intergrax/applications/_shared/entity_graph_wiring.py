@@ -73,7 +73,14 @@ def resolve_entity_temporal_memory_capability(
 def resolve_entity_graph_memory_store(
     env: ApplicationEnvironmentProfile,
 ) -> EntityGraphMemoryStore | None:
-    """Legacy facade for composition roots that still expect ``EntityGraphMemoryStore``."""
+    """Migration-only legacy facade; production wiring must use ``resolve_entity_temporal_memory_capability``."""
+    import warnings
+
+    warnings.warn(
+        "resolve_entity_graph_memory_store is migration-only (MEM-ENT-11)",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     backend = resolve_entity_temporal_memory_store(env)
     if backend is None:
         return None
