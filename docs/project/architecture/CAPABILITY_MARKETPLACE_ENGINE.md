@@ -285,6 +285,8 @@ Proof: `tests/unit/marketplace/test_me_rb4_lifecycle_handoff.py`, `tests/unit/ma
 
 **Invariant:** `ranked != admissible`; `trusted != available != policy allowed`. Trust and availability are evidence dimensions — not automatic allow shortcuts.
 
+**Evaluator failure semantics (ME-6-C1):** Fail-closed applies to known contractual evaluator unavailability (`CapabilityGovernanceEvaluatorUnavailableError` → `BLOCKED` + `EVALUATOR_FAILURE` in `STRICT`). Unexpected programming defects remain visible and propagate. Malformed evaluator output remains `CapabilityGovernanceError` (integrity), not `EVALUATOR_FAILURE`.
+
 ---
 
 ## 13. Decision boundary

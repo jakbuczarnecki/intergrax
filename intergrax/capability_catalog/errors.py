@@ -40,3 +40,15 @@ class CapabilityRecommendationError(CapabilityCatalogError):
 
 class CapabilityGovernanceError(CapabilityCatalogError):
     """Governance evaluator contract violation — partition or elevation failure."""
+
+
+class CapabilityGovernanceEvaluatorUnavailableError(CapabilityCatalogError):
+    """Expected operational inability to produce a governance decision.
+
+    Plugins raise this when a dependency is down or evidence cannot be
+    obtained for a known, contractual reason — not for programming defects.
+    """
+
+
+# Stable alias for cross-evaluator governance plugin contracts (ME-6-C1).
+CapabilityGovernanceExpectedEvaluatorFailure = CapabilityGovernanceEvaluatorUnavailableError

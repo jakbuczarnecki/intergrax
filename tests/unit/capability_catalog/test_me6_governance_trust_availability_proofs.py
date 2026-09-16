@@ -11,6 +11,7 @@ from intergrax.capability_catalog import (
     CapabilityCatalogEntry,
     CapabilityDiscoveryCandidate,
     CapabilityGovernanceError,
+    CapabilityGovernanceEvaluatorUnavailableError,
     DefaultTopRankedCapabilityRecommendationStrategy,
     GovernedCapabilityCandidate,
     RankedCapabilityCandidate,
@@ -468,12 +469,40 @@ class _UnexpectedFailureEvaluator:
 def test_unexpected_evaluator_failure_propagates_in_non_strict_posture() -> None:
     ranked = (_ranked(CapabilityKind.TOOL, "tools.one"),)
     context = CapabilityGovernanceContext(posture=CapabilityGovernancePosture.NON_STRICT)
-    with pytest.raises(CapabilityGovernanceError, match="programming defect"):
+    with pytest.raises(RuntimeError, match="programming defect"):
         govern_capability_candidates(
             ranked,
             evaluators=(_UnexpectedFailureEvaluator(),),
             context=context,
         )
+
+
+class _CustomUnavailableEvaluator:
+    @property
+    def evaluator_id(self) -> str:
+        return "custom.unavailable"
+
+    def evaluate(
+        self,
+        candidate: RankedCapabilityCandidate,
+        context: CapabilityGovernanceContext,
+    ) -> CapabilityGovernanceDecision:
+        del candidate, context
+        raise CapabilityGovernanceEvaluatorUnavailableError("provider unavailable")
+
+
+def test_strict_typed_unavailable_evaluator_blocks_with_evaluator_failure() -> None:
+    ranked = (_ranked(CapabilityKind.TOOL, "tools.one"),)
+    result = govern_capability_candidates(
+        ranked,
+        evaluators=(_CustomUnavailableEvaluator(),),
+        context=_strict_context(),
+    )
+    assert not result.allowed
+    assert any(
+        item.reason_code is CapabilityGovernanceReasonCode.EVALUATOR_FAILURE
+        for item in result.blocked[0].evidence
+    )
 
 
 def test_ranked_governed_recommendation_integration_chain() -> None:
