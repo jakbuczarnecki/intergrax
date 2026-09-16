@@ -15,10 +15,13 @@ SCHEMA_MARKETPLACE_QUERY_CONTEXT_V1: Final = "marketplace_query_context.v1"
 
 
 class MarketplaceQueryContext(BaseModel):
-    """Caller-authorized tenant scope for marketplace read surfaces.
+    """Caller-authorized scope for marketplace read surfaces.
 
-    When ``tenant_id`` is absent, only PUBLIC listings are visible (fail-closed
-    for TENANT_PRIVATE). This is not IAM — it carries no grant authority.
+    ``tenant_id`` and ``organization_id`` are independent dimensions supplied by
+    the caller boundary — marketplace does not resolve membership or IAM.
+
+    When a scope id is absent, listings requiring that scope are excluded
+    (fail-closed). This is not IAM — it carries no grant authority.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -27,6 +30,7 @@ class MarketplaceQueryContext(BaseModel):
         SCHEMA_MARKETPLACE_QUERY_CONTEXT_V1
     )
     tenant_id: str | None = None
+    organization_id: str | None = None
 
     @field_validator("tenant_id")
     @classmethod
@@ -34,3 +38,10 @@ class MarketplaceQueryContext(BaseModel):
         if value is None:
             return None
         return require_non_empty_text(value, label="tenant_id")
+
+    @field_validator("organization_id")
+    @classmethod
+    def _validate_organization_id(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return require_non_empty_text(value, label="organization_id")

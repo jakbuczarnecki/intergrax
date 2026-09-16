@@ -32,6 +32,7 @@ from intergrax.marketplace.service import MarketplaceCatalogService, snapshot_wi
 from intergrax.marketplace.visibility import (
     MarketplaceVisibilityEvaluator,
     MarketplaceVisibilityPolicyExtension,
+    hard_marketplace_scope_isolation,
     hard_marketplace_tenant_isolation,
     resolve_marketplace_visibility,
 )
@@ -58,6 +59,7 @@ __all__ = [
     "MarketplaceDiscoveryService",
     "MarketplaceVisibilityEvaluator",
     "MarketplaceVisibilityPolicyExtension",
+    "hard_marketplace_scope_isolation",
     "hard_marketplace_tenant_isolation",
     "resolve_marketplace_visibility",
     "MarketplaceRecommendationService",

@@ -502,34 +502,45 @@ Proofs: `tests/unit/marketplace/test_me8_commercial_metering_boundary.py`, `test
 
 ---
 
-## ME-9 — Multi-Tenant / Private Marketplace (closed)
+## ME-9 — Multi-Tenant / Private Marketplace (ME-9-C1 correction)
 
-Marketplace visibility is **explicit**, **typed**, and **fail-closed**. It is not IAM, not execution entitlement, not governance, and not commercial classification.
+Marketplace visibility is **explicit**, **typed**, and **fail-closed**. It is not IAM, not organization directory, not execution entitlement, not governance, and not commercial classification.
+
+**Invariants:**
+
+- **Tenant scope ≠ organization scope** — no inference between them.
+- **Visible ≠ authorized** to install, activate, or execute.
+- **Visibility narrowing ≠ governance admissibility** — independent layers.
+- **Private Marketplace** = same Marketplace Engine + authorized `MarketplaceQueryContext` + visibility narrowing (not a second engine).
 
 ```text
-Catalog candidates (single federated truth)
+Federated catalog (single federated truth)
       ↓
-Marketplace query + MarketplaceQueryContext (explicit tenant_id when needed)
+Marketplace query + MarketplaceQueryContext (caller-authorized tenant_id / organization_id)
       ↓
-Hard tenant isolation (non-disableable)
+Marketplace visibility narrowing
+      ↓ hard scope isolation (non-disableable)
+      ↓ optional MarketplaceVisibilityPolicyExtension (restrict only; never widen)
+Search (CapabilitySearchStrategy / listing text search)
       ↓
-Optional MarketplaceVisibilityPolicyExtension (may only further restrict)
+Ranking (CapabilityRanker — only visible candidates)
       ↓
-Governance (unchanged)
+Governance narrowing (CapabilityGovernanceEvaluator)
       ↓
-Ranking (only visible candidates)
+Recommendation (CapabilityRecommendationStrategy)
       ↓
-Marketplace results
+Selection / lifecycle handoff
 ```
 
 | Scope | Semantics |
 | ----- | --------- |
 | `PUBLIC` | Discoverable by any marketplace caller (still subject to governance) |
 | `TENANT_PRIVATE` | Discoverable only when `MarketplaceQueryContext.tenant_id` matches listing `tenant_id` |
+| `ORGANIZATION_PRIVATE` | Discoverable only when `MarketplaceQueryContext.organization_id` matches listing `organization_id` |
 
-Listings without `visibility` metadata default to **PUBLIC** (backward compatible). Missing tenant context returns **PUBLIC only** — private listings are excluded.
+Listings without `visibility` metadata default to **PUBLIC** (backward compatible). Missing tenant context excludes `TENANT_PRIVATE`; missing organization context excludes `ORGANIZATION_PRIVATE` — **PUBLIC only** when both scope ids are absent.
 
-Platform tenant identity for discovery scope reuse: `CapabilityDiscoveryScope.tenant_id` (catalog) remains separate from `MarketplaceQueryContext.tenant_id` (marketplace product visibility).
+Platform tenant identity for discovery scope reuse: `CapabilityDiscoveryScope.tenant_id` (catalog) remains separate from `MarketplaceQueryContext` (marketplace product visibility).
 
 Proofs: `tests/unit/marketplace/test_me9_multi_tenant_private_marketplace.py`, `tests/unit/contracts/marketplace/test_marketplace_visibility_contracts.py`.
 

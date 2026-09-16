@@ -28,22 +28,38 @@ def resolve_marketplace_visibility(
     return visibility
 
 
+def hard_marketplace_scope_isolation(
+    listing_visibility: MarketplaceVisibility,
+    query_context: MarketplaceQueryContext,
+) -> bool:
+    """Non-disableable scope isolation floor — foreign private listings are denied."""
+    resolved = resolve_marketplace_visibility(listing_visibility)
+    scope = resolved.scope
+    if scope is MarketplaceVisibilityScope.PUBLIC:
+        return True
+    if scope is MarketplaceVisibilityScope.TENANT_PRIVATE:
+        caller_tenant = query_context.tenant_id
+        if caller_tenant is None:
+            return False
+        return caller_tenant == resolved.tenant_id
+    if scope is MarketplaceVisibilityScope.ORGANIZATION_PRIVATE:
+        caller_org = query_context.organization_id
+        if caller_org is None:
+            return False
+        return caller_org == resolved.organization_id
+    return False
+
+
 def hard_marketplace_tenant_isolation(
     listing_visibility: MarketplaceVisibility,
     query_context: MarketplaceQueryContext,
 ) -> bool:
-    """Non-disableable tenant isolation floor — foreign private listings are denied."""
-    resolved = resolve_marketplace_visibility(listing_visibility)
-    if resolved.scope is MarketplaceVisibilityScope.PUBLIC:
-        return True
-    caller_tenant = query_context.tenant_id
-    if caller_tenant is None:
-        return False
-    return caller_tenant == resolved.tenant_id
+    """Compatibility facade — delegates to ``hard_marketplace_scope_isolation``."""
+    return hard_marketplace_scope_isolation(listing_visibility, query_context)
 
 
 class MarketplaceVisibilityPolicyExtension(Protocol):
-    """Optional additional restriction within the hard tenant isolation floor."""
+    """Optional additional restriction within the hard scope isolation floor."""
 
     @property
     def policy_id(self) -> str:
@@ -69,7 +85,7 @@ class MarketplaceVisibilityEvaluator:
         query_context: MarketplaceQueryContext,
     ) -> bool:
         resolved = resolve_marketplace_visibility(listing_visibility)
-        if not hard_marketplace_tenant_isolation(resolved, query_context):
+        if not hard_marketplace_scope_isolation(resolved, query_context):
             return False
         if self.extension is None:
             return True

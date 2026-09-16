@@ -23,6 +23,17 @@ _FORBIDDEN_IMPORT_PREFIXES = (
     "intergrax.agent_distribution",
     "intergrax.runtime",
     "applications",
+    "intergrax.identity",
+    "intergrax.iam",
+    "intergrax.auth",
+    "intergrax.organization_directory",
+)
+
+_FORBIDDEN_MARKETPLACE_SYMBOL_SUBSTRINGS = (
+    "PrivateMarketplaceEngine",
+    "TenantMarketplaceCatalog",
+    "OrganizationMarketplaceCatalog",
+    "PrivateMarketplaceRegistry",
 )
 
 _FORBIDDEN_BILLING_IMPORT_PREFIXES = (
@@ -244,6 +255,17 @@ def test_me9_tenant_isolation_uses_central_visibility_module() -> None:
     tree = ast.parse(service_path.read_text(encoding="utf-8"))
     imported = _collect_imports(tree)
     assert "intergrax.marketplace.visibility" in imported
+
+
+def test_me9_no_separate_private_marketplace_engine_symbols() -> None:
+    root = _package_root(_MARKETPLACE_MODULE)
+    for path in _iter_package_py_files(_MARKETPLACE_MODULE):
+        text = path.read_text(encoding="utf-8")
+        for symbol in _FORBIDDEN_MARKETPLACE_SYMBOL_SUBSTRINGS:
+            if symbol in text:
+                raise AssertionError(
+                    f"{path.relative_to(root)} references forbidden symbol: {symbol}",
+                )
 
 
 def test_marketplace_service_does_not_import_ranking_with_commercial_metadata() -> None:
