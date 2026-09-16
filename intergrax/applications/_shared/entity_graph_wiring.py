@@ -8,7 +8,10 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications._shared.memory_security_governance_wiring import (
     resolve_memory_security_governance_service,
 )
-from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryStore
+from intergrax.memory.contracts.entity_temporal_memory import (
+    EntityTemporalMemoryCapability,
+    EntityTemporalMemoryStore,
+)
 from intergrax.memory.entity_graph_memory import EntityGraphMemoryStore
 from intergrax.memory.entity_temporal_memory_service import EntityTemporalMemoryService
 from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
@@ -53,7 +56,7 @@ def resolve_entity_temporal_memory_capability(
     env: ApplicationEnvironmentProfile,
     *,
     security_governance: MemorySecurityGovernanceService | None = None,
-) -> EntityTemporalMemoryService | None:
+) -> EntityTemporalMemoryCapability | None:
     """Materialize governed entity/temporal read capability when enabled."""
     store = resolve_entity_temporal_memory_store(env)
     if store is None:

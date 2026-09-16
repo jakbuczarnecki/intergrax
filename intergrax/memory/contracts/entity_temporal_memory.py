@@ -36,6 +36,7 @@ def _require_matching_timestamp_awareness(
         )
 
 __all__ = [
+    "EntityGraphDisclosureResult",
     "EntityTemporalMemoryCapability",
     "EntityMemoryIndexer",
     "EntityMemoryScope",
@@ -194,6 +195,14 @@ class EntityRelationQuery:
 
 @dataclass(frozen=True, slots=True)
 class EntityRelationResult:
+    relations: tuple[EntityRelationRecord, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class EntityGraphDisclosureResult:
+    """Governed entity neighborhood disclosure (relations + related entities)."""
+
+    entities: tuple[EntityRecord, ...]
     relations: tuple[EntityRelationRecord, ...]
 
 
@@ -361,6 +370,8 @@ class EntityTemporalMemoryCapability(Protocol):
         identity: RequestIdentity,
         scope: EntityMemoryScope,
         entity_id: str,
+        *,
+        reference_time: datetime | None = None,
     ) -> EntityRecord | None: ...
 
     def query_relations(
@@ -369,6 +380,21 @@ class EntityTemporalMemoryCapability(Protocol):
         scope: EntityMemoryScope,
         query: EntityRelationQuery,
     ) -> EntityRelationResult: ...
+
+    def list_entities(
+        self,
+        identity: RequestIdentity,
+        scope: EntityMemoryScope,
+    ) -> tuple[EntityRecord, ...]: ...
+
+    def disclose_entity_neighbors(
+        self,
+        identity: RequestIdentity,
+        scope: EntityMemoryScope,
+        entity_id: str,
+        *,
+        query: EntityRelationQuery,
+    ) -> EntityGraphDisclosureResult: ...
 
 
 @runtime_checkable
