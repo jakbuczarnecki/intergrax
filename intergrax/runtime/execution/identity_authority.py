@@ -143,7 +143,7 @@ def resolve_root_task_identity(
         return mint_root_execution_identity(
             run_id=checkpoint_run_id,
             attempt_id=checkpoint_attempt_id,
-            execution_id=execution_id or checkpoint_root_execution_id,
+            execution_id=execution_id,
         )
     return mint_root_execution_identity(
         run_id=run_id,
