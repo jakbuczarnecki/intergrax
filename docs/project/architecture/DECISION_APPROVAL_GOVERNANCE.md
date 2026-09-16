@@ -154,7 +154,7 @@ configured platform implementation
 | MP-4R4 — Collaborative decision binding | **CLOSED** |
 | MP-4R5 — Evidence Plane adoption | **READY_FOR_FINAL_INDEPENDENT_MP4R5_CLOSURE_AUDIT** |
 | MP-4R6 — Legacy removal & migration | **READY_FOR_FINAL_INDEPENDENT_MP4R6_CLOSURE_AUDIT** — legacy verdict metadata read-only compatibility; missing approver provenance never synthesized on generic restore or SQLite human-decision read deserialization; offline legacy disposition contract + admin CLI (dry-run default; CLI strategies: history-only quarantine report and controlled delete only; non-authoritative archive JSON via `--export-archive-json`; programmatic provenance recovery via configured `HumanDecisionApproverRecoverySource` only) |
-| MP-4R7 — Enterprise integration qualification | NOT STARTED |
+| MP-4R7 — Enterprise integration qualification | **READY_FOR_INDEPENDENT_MP4R7_AUDIT** — contract-first E2E qualification harness (`testing_support/mp4r7_enterprise_integration/`); association binding evidence gap unchanged (no Evidence Plane v2 workaround) |
 | MP-4R8 — Final closure audit | NOT STARTED |
 
 Detail: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md).

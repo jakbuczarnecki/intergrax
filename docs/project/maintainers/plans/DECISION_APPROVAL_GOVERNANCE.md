@@ -127,9 +127,10 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R7 |
-| **Status** | **NOT STARTED** |
+| **Status** | **READY_FOR_INDEPENDENT_MP4R7_AUDIT** |
 | **Purpose** | E2E proof: Collaborative Work → canonical Decision → Governance/HITL → `ExecutionContinuationPort` → Execution → Evidence → Diagnostics |
 | **Dependencies** | MP-4R6 |
+| **Qualification** | `testing_support/mp4r7_enterprise_integration/` composition + `tests/unit/mp4r7/test_enterprise_integration_qualification.py` + `test_mp4r7_enterprise_integration_gates.py` |
 
 ---
 
