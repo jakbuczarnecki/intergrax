@@ -16,6 +16,7 @@ _DIRECT_OTEL_ALLOWED_FILES = frozenset(
         "intergrax/rag/tracking/rag_spans.py",
         "intergrax/context/tracking/context_spans.py",
         "intergrax/runtime/observability/exporters/otlp/otlp_transport.py",
+        "intergrax/runtime/observability/exporters/otlp/otlp_dependency.py",
     }
 )
 
@@ -92,4 +93,7 @@ def test_allowlisted_otel_files_exist() -> None:
 
 def test_new_tracking_module_not_auto_allowlisted() -> None:
     assert "intergrax/rag/tracking/new_otel_module.py" not in _DIRECT_OTEL_ALLOWED_FILES
-    assert "intergrax/context/tracking/new_otel_module.py" not in _DIRECT_OTEL_ALLOWED_FILES
+    assert (
+        "intergrax/context/tracking/new_otel_module.py"
+        not in _DIRECT_OTEL_ALLOWED_FILES
+    )
