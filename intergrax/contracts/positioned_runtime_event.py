@@ -12,7 +12,7 @@ from intergrax.contracts.execution_event_position import (
     ExecutionEventPosition,
 )
 from intergrax.contracts.execution_identity import EventId, RunId
-from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.contracts.runtime_event import RuntimeEvent
 
 
 @dataclass(frozen=True, slots=True)

@@ -165,7 +165,7 @@ Do **not** label the frozen **`RuntimeEvent` five-ID contract** as `PARTIAL` bec
 
 | Layer | Status |
 | ----- | ------ |
-| **Frozen core contract** | `RuntimeEvent` requires `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, `EventId` (`intergrax/runtime/events/runtime_event.py`) |
+| **Frozen core contract** | `RuntimeEvent` requires `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, `EventId` — **canonical type:** `intergrax/contracts/runtime_event.py` (legacy import path `intergrax/runtime/events/runtime_event.py` re-exports the same class) |
 | **Emit-path / writer coverage** | Qualified separately — **OBS-COVERAGE-1** (not every legacy producer may be certified on every path) |
 | **ADOPTION / PROJECTION GAP** | Unified Run Journal, DIAG read models, export envelopes, or carriers that omit `ExecutionId` / Execution Tree fields |
 
@@ -1025,7 +1025,7 @@ Bounded public proof routes: [`PROOFS.md`](../proofs/PROOFS.md) - LKW Core Platf
 
 ### Core implementation
 
-- [`RuntimeEvent`](../../../intergrax/runtime/events/runtime_event.py) · [`RuntimeEventBus`](../../../intergrax/runtime/events/event_bus.py)
+- [`RuntimeEvent`](../../../intergrax/contracts/runtime_event.py) (compatibility: [`runtime/events/runtime_event.py`](../../../intergrax/runtime/events/runtime_event.py)) · [`RuntimeEventBus`](../../../intergrax/runtime/events/event_bus.py)
 - [`RuntimeEventPersistence` contract](../../../intergrax/runtime/events/persistence_contract.py)
 - [`build_unified_run_journal`](../../../intergrax/runtime/events/unified_run_journal.py)
 - [Observability export boundary](../../../intergrax/runtime/observability/export_boundary.py)

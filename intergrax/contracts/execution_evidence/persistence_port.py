@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     )
     from intergrax.contracts.positioned_runtime_event import PositionedRuntimeEvent
     from intergrax.runtime.events.persistence_contract import TaskRuntimeEventRuns
-    from intergrax.runtime.events.runtime_event import RuntimeEvent
+    from intergrax.contracts.runtime_event import RuntimeEvent
 
 __all__ = ["EvidencePersistencePort"]
 

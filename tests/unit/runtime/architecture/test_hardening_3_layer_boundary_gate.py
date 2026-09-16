@@ -22,7 +22,6 @@ _ALLOWLISTED_RUNTIME_IMPORTS: frozenset[str] = frozenset(
         "intergrax/contracts/runtime_cost.py",
         "intergrax/contracts/runtime_execution_context.py",
         "intergrax/contracts/runtime_mapping.py",
-        "intergrax/contracts/positioned_runtime_event.py",
     }
 )
 

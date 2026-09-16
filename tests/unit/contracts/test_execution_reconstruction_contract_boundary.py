@@ -37,17 +37,53 @@ def _collect_runtime_imports(path: Path) -> list[str]:
     return hits
 
 
+_RECONSTRUCTION_CLUSTER_ROOTS = (
+    "execution_reconstruction.py",
+    "execution_reconstruction_models.py",
+    "execution_reconstruction_lineage.py",
+    "positioned_runtime_event.py",
+    "platform_causal_evidence.py",
+)
+
+
+def _contracts_module_path(module: str) -> Path | None:
+    if not module.startswith("intergrax.contracts"):
+        return None
+    rel = module.removeprefix("intergrax.").replace(".", "/") + ".py"
+    path = _REPO_ROOT / "intergrax" / rel
+    if path.is_file():
+        return path
+    init_path = path.parent / "__init__.py"
+    if init_path.is_file():
+        return init_path
+    return None
+
+
+def _transitive_contract_modules(roots: tuple[str, ...]) -> set[Path]:
+    seen: set[Path] = set()
+    queue: list[Path] = []
+    for name in roots:
+        queue.append(_CONTRACTS_RECONSTRUCTION / name)
+    while queue:
+        path = queue.pop()
+        if path in seen or not path.is_file():
+            continue
+        seen.add(path)
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                dep = _contracts_module_path(node.module)
+                if dep is not None and dep not in seen:
+                    queue.append(dep)
+    return seen
+
+
 def test_execution_reconstruction_contract_modules_do_not_import_runtime() -> None:
     violations: list[str] = []
-    patterns = (
-        "execution_reconstruction.py",
-        "execution_reconstruction_models.py",
-        "execution_reconstruction_lineage.py",
-    )
-    for name in patterns:
-        path = _CONTRACTS_RECONSTRUCTION / name
+    for path in sorted(_transitive_contract_modules(_RECONSTRUCTION_CLUSTER_ROOTS)):
+        rel = path.relative_to(_REPO_ROOT).as_posix()
         for module in _collect_runtime_imports(path):
-            violations.append(f"{name}: {module}")
+            violations.append(f"{rel}: {module}")
     assert violations == []
 
 
