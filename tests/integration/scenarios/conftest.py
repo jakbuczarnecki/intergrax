@@ -8,6 +8,14 @@ import pytest
 
 from testing_support.builder import FakeLLMAdapter
 
+_CURSOR_SECRET_ENV = "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET"
+_CURSOR_SECRET_VALUE = "integration-test-diagnostic-problem-list-cursor-secret"
+
+
+@pytest.fixture(autouse=True)
+def _diagnostic_problem_list_cursor_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(_CURSOR_SECRET_ENV, _CURSOR_SECRET_VALUE)
+
 
 @pytest.fixture(autouse=True)
 def _patch_scenario_llm_resolver(monkeypatch: pytest.MonkeyPatch) -> None:

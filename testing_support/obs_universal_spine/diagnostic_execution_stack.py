@@ -73,6 +73,8 @@ def build_diagnostic_nexus_loop(
     runtime_event_store: InMemoryRuntimeEventStore | None = None,
     checkpoint_store: TaskCheckpointPersistence | None = None,
     primary_agent: Agent | None = None,
+    disable_execution_continuation: bool = False,
+    execution_continuation_state_store: object | None = None,
 ) -> tuple[NexusLoop, InMemoryRuntimeEventStore, HostDiagnosticReadDependencies]:
     document_store = InMemoryDocumentStore()
     runtime_store = runtime_event_store or InMemoryRuntimeEventStore()
@@ -96,6 +98,8 @@ def build_diagnostic_nexus_loop(
         trace_store=stores.trace_store,
         runtime_event_store=runtime_store,
         checkpoint_store=checkpoint_store,
+        disable_execution_continuation=disable_execution_continuation,
+        execution_continuation_state_store=execution_continuation_state_store,
     )
     loop.attach_terminal_diagnostic_trigger(
         wrap_terminal_execution_diagnostic_trigger(trigger, event_bus=loop.event_bus),

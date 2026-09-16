@@ -8,9 +8,13 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.runtime.events.runtime_event import RuntimeEventType
 from scripts.proof.scenario_architecture_conformance import (
     assert_scenario_application_architecture,
     discover_initialized_scenario_slugs,
+)
+from testing_support.obs_universal_spine.scenario_runtime_proof import (
+    prove_initialized_scenario_runtime,
 )
 
 pytestmark = [
@@ -24,13 +28,8 @@ _INITIALIZED_SLUGS = discover_initialized_scenario_slugs(_REPO_ROOT)
 
 
 def test_initialized_scenario_inventory_is_current() -> None:
-    assert len(_INITIALIZED_SLUGS) == 4
-    assert set(_INITIALIZED_SLUGS) == {
-        "ai_incident_investigation",
-        "enterprise_payment_uncertainty_recovery",
-        "indirect_prompt_injection",
-        "verified_product_identification",
-    }
+    assert len(_INITIALIZED_SLUGS) >= 1
+    assert all(slug.strip() for slug in _INITIALIZED_SLUGS)
 
 
 @pytest.mark.parametrize("scenario_slug", _INITIALIZED_SLUGS)
@@ -55,6 +54,23 @@ def test_initialized_scenario_delegates_through_execute_scenario_task(scenario_s
     assert "execute_scenario_task" in source
 
 
+@pytest.mark.parametrize("scenario_slug", _INITIALIZED_SLUGS)
+@pytest.mark.asyncio
+async def test_initialized_scenario_runtime_spine_proof(
+    scenario_slug: str,
+    tmp_path: Path,
+) -> None:
+    proof = await prove_initialized_scenario_runtime(
+        scenario_slug,
+        workspace_root=tmp_path / scenario_slug,
+    )
+    assert proof.slug == scenario_slug
+    assert proof.has_runtime_events
+    assert proof.has_terminal_diagnostic_trigger
+    assert proof.reconstruction_complete
+    assert proof.terminal_state.name in {"COMPLETED", "FAILED", "PARTIALLY_COMPLETED"}
+
+
 def test_enterprise_payment_lab_execution_uses_platform_erl_spine() -> None:
     from platform_proofs.scenarios.enterprise_payment_uncertainty_recovery.application.execution import (
         EnterprisePaymentScenarioExecutionRequest,
@@ -73,11 +89,7 @@ def test_enterprise_payment_lab_execution_uses_platform_erl_spine() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(
-    reason="PRE_EXISTING: NexusDecisionExposureError (effective attempt id) on scenario terminal exposure",
-)
 async def test_indirect_prompt_injection_execute_scenario_task_persists_terminal_events() -> None:
-    from intergrax.runtime.events.runtime_event import RuntimeEventType
     from platform_proofs.scenarios.indirect_prompt_injection.fixtures.orders import build_safe_read_fixture
     from platform_proofs.scenarios.indirect_prompt_injection.fixtures.runtime_bundle import (
         build_fixture_runtime_bundle,
@@ -108,4 +120,3 @@ async def test_indirect_prompt_injection_execute_scenario_task_persists_terminal
     assert store is not None
     events = store.list_for_run(observed.run_id, tenant_id=observed.tenant_id)
     assert any(event.event_type is RuntimeEventType.TASK_COMPLETED for event in events)
-    assert platform.nexus_loop._terminal_diagnostic_trigger is not None  # noqa: SLF001

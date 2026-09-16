@@ -443,6 +443,27 @@ class HumanPauseCoordinator:
         response_text: str | None = None,
     ) -> PendingExecutionContinuation:
         """Validate input, canonical ``apply_resolution``, then Task projection."""
+        gov = task.runtime.governance
+        human_request = gov.human_request
+        if human_request is None:
+            raise HumanApprovalResolutionError("human_request required for canonical resolution")
+        governed = human_request.governed_continuation
+        continuation_id = (
+            governed.continuation_request_id
+            if governed is not None
+            else f"gcr_hr_{human_request.request_id}"
+        )
+        pending = continuation.get_pending(
+            ExecutionContinuationLookup(continuation_id=continuation_id),
+        )
+        if pending.governed_correlation is not None:
+            gov.human_request = human_request.model_copy(
+                update={"governed_continuation": pending.governed_correlation},
+            )
+        elif human_request.governed_continuation is None:
+            raise HumanApprovalResolutionError(
+                "governed continuation correlation required for canonical resolution",
+            )
         active_pause_id, active_request_id, resolved_attempt, resolved_execution = (
             HumanPauseCoordinator._validate_human_response_inputs(
                 task,
@@ -455,17 +476,15 @@ class HumanPauseCoordinator:
                 require_unresolved_hitl=True,
             )
         )
-        gov = task.runtime.governance
         governed = (
             gov.human_request.governed_continuation if gov.human_request is not None else None
         )
         if governed is None:
+            governed = pending.governed_correlation
+        if governed is None:
             raise HumanApprovalResolutionError(
                 "governed continuation correlation required for canonical resolution",
             )
-        pending = continuation.get_pending(
-            ExecutionContinuationLookup(continuation_id=governed.continuation_request_id),
-        )
         HumanPauseCoordinator._validate_human_response_against_pending(
             pending,
             pause_id=active_pause_id,

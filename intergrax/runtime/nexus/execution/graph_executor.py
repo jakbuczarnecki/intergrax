@@ -277,6 +277,10 @@ class GraphExecutor:
         bound = peek_active_execution_identity()
         return bound[1] if bound is not None else None
 
+    def sync_execution_tree_into_task(self, task: Task) -> None:
+        if self._execution_tree_recorder is not None:
+            sync_execution_tree_to_task(task, self._execution_tree_recorder)
+
     def _require_run_id(self) -> RunId:
         run_id, _ = require_active_execution_identity()
         return run_id
@@ -1045,6 +1049,14 @@ class GraphExecutor:
             if execution.status == AgentExecutionStatus.NEEDS_INPUT:
                 node.status = ExecutionNodeStatus.PENDING
                 node.metadata["governance_pause"] = True
+                if self._execution_tree_recorder is not None:
+                    record_graph_node_completion(
+                        self._execution_tree_recorder,
+                        execution_id=child_execution_id,
+                        node=node,
+                        execution=execution,
+                    )
+                    sync_execution_tree_to_task(task, self._execution_tree_recorder)
                 if on_node_complete is not None:
                     on_node_complete(node)
                 return _GraphNodeChildResult(

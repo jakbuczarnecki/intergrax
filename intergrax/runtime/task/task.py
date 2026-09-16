@@ -146,6 +146,17 @@ class Task(BaseModel):
         metadata = task_to_request_metadata(self)
         metadata.setdefault("task_id", self.task_id)
         metadata.setdefault("run_id", run_id)
+        from intergrax.runtime.task.task_contract import VERDICT_APPROVE, VERDICT_REJECT
+        from intergrax.runtime.human.pause import HumanPauseCoordinator
+
+        if self.options.human.verdict == VERDICT_APPROVE or HumanPauseCoordinator.is_resumed(
+            self
+        ):
+            metadata["human_approved"] = True
+        elif self.options.human.verdict == VERDICT_REJECT or HumanPauseCoordinator.is_rejected(
+            self
+        ):
+            metadata["human_rejected"] = True
 
         governance = self.runtime.governance
         return RuntimeRequest(

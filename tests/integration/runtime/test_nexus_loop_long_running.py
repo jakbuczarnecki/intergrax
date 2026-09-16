@@ -13,7 +13,9 @@ from intergrax.runtime.long_running.notification import LoggingNotificationAdapt
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -21,6 +23,14 @@ from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+
+
+def _hitl_human_approved(ctx: RuntimeExecutionContext) -> bool:
+    if ctx.request and ctx.request.metadata.get("human_approved"):
+        return True
+    if ctx.request and ctx.request.metadata.get("human_decision") == "approve":
+        return True
+    return bool(ctx.metadata.get("human_approved"))
 
 
 class _HitlAgent(Agent):
@@ -72,8 +82,10 @@ class _HitlAgent(Agent):
         output: StepOutput | None,
         ctx: RuntimeExecutionContext,
     ) -> AgentDecision:
-        _ = step, output
-        if ctx.request and ctx.request.metadata.get("human_approved"):
+        _ = step
+        if output is not None and _hitl_human_approved(ctx):
+            return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
+        if _hitl_human_approved(ctx):
             return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
         return AgentDecision(
             type=AgentDecisionType.REQUEST_HUMAN,
@@ -99,6 +111,8 @@ async def test_long_running_task_saves_checkpoint_on_pause(tmp_path):
         checkpoint_store=store,
         notification_adapter=LoggingNotificationAdapter(),
     )
+    runner = UnifiedTaskRunner(loop)
+    run_id = mint_run_id()
 
     task = Task(
         tenant_id="t1",
@@ -110,7 +124,7 @@ async def test_long_running_task_saves_checkpoint_on_pause(tmp_path):
         ),
     )
 
-    paused = await loop.handle_task(task)
+    paused = await runner.run_task(task, run_id=run_id)
 
     assert paused.state == TaskState.WAITING_FOR_HUMAN
     assert paused.summary.resume_token
@@ -140,8 +154,10 @@ async def test_long_running_task_resumes_with_token(tmp_path):
         checkpoint_store=store,
         notification_adapter=LoggingNotificationAdapter(),
     )
+    runner = UnifiedTaskRunner(loop)
+    run_id = mint_run_id()
 
-    paused = await loop.handle_task(
+    paused = await runner.run_task(
         Task(
             tenant_id="t1",
             user_id="u1",
@@ -150,12 +166,14 @@ async def test_long_running_task_resumes_with_token(tmp_path):
             options=TaskExecutionOptions(
                 long_running=TaskLongRunningOptions(enabled=True),
             ),
-        )
+        ),
+        run_id=run_id,
     )
     token = paused.summary.resume_token
     assert token
-
-    completed = await loop.handle_task(
+    checkpoint = store.get_latest(paused.task_id, "t1")
+    assert checkpoint is not None and checkpoint.runtime is not None
+    completed = await runner.run_task(
         Task(
             tenant_id="t1",
             user_id="u1",
@@ -169,7 +187,10 @@ async def test_long_running_task_resumes_with_token(tmp_path):
                 ),
             ),
             metadata={"human_approved": True, "resume_token": token},
-        )
+        ),
+        run_id=run_id,
+        attempt_id=checkpoint.runtime.attempt_id,
+        resume_checkpoint=checkpoint,
     )
 
     assert completed.state == TaskState.COMPLETED

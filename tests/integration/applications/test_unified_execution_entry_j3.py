@@ -117,11 +117,17 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
     from intergrax.contracts.agent_step import AgentStep, StepOutput
     from intergrax.contracts.capability import CapabilityMatchResult
     from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+    from intergrax.contracts.execution_identity import mint_run_id
     from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+    from intergrax.runtime.execution.continuation.persistence import (
+        ExecutionContinuationDurableBacking,
+        backing_execution_continuation_state_store,
+    )
     from intergrax.runtime.nexus.config import RuntimeConfig
     from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
     from intergrax.runtime.task.task_contract import (
         TaskExecutionOptions,
         TaskHumanInput,
@@ -195,10 +201,18 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
     registry = AgentRegistry()
     registry.register(_HitlAgent())
     checkpoint_store = SQLiteTaskCheckpointStore(db_path=tmp_path / "worker_ckpt.db")
+    continuation_backing = ExecutionContinuationDurableBacking()
+    continuation_store = backing_execution_continuation_state_store(continuation_backing)
 
-    setup_loop = NexusLoop(registry, checkpoint_store=checkpoint_store)
+    setup_loop = NexusLoop(
+        registry,
+        checkpoint_store=checkpoint_store,
+        execution_continuation_state_store=continuation_store,
+    )
+    runner = UnifiedTaskRunner(setup_loop)
+    run_id = mint_run_id()
     paused = asyncio.run(
-        setup_loop.handle_task(
+        runner.run_task(
             Task(
                 tenant_id="t1",
                 user_id="u1",
@@ -207,7 +221,8 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
                 options=TaskExecutionOptions(
                     long_running=TaskLongRunningOptions(enabled=True),
                 ),
-            )
+            ),
+            run_id=run_id,
         )
     )
     token = paused.summary.resume_token
@@ -220,6 +235,7 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
         backend_url="cache+memory://",
         agent_registry=registry,
         checkpoint_store=checkpoint_store,
+        execution_continuation_state_store=continuation_store,
         task_always_eager=True,
         kv_store=DispatcherTestKVStore(),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),

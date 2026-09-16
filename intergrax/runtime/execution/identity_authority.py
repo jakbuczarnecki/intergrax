@@ -119,6 +119,12 @@ def resolve_root_task_identity(
         checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
             resume_checkpoint,
         )
+        checkpoint_tree = resume_checkpoint.runtime.execution_tree
+        checkpoint_root_execution_id = next(
+            entry.execution_id
+            for entry in checkpoint_tree.entries
+            if entry.parent_execution_id is None
+        )
         if run_id is not None and run_id != checkpoint_run_id:
             raise ValueError(
                 "explicit run_id conflicts with resume checkpoint identity: "
@@ -129,10 +135,15 @@ def resolve_root_task_identity(
                 "explicit attempt_id conflicts with resume checkpoint identity: "
                 f"{attempt_id!r} != {checkpoint_attempt_id!r}"
             )
+        if execution_id is not None and execution_id != checkpoint_root_execution_id:
+            raise ValueError(
+                "explicit execution_id conflicts with resume checkpoint identity: "
+                f"{execution_id!r} != {checkpoint_root_execution_id!r}"
+            )
         return mint_root_execution_identity(
             run_id=checkpoint_run_id,
             attempt_id=checkpoint_attempt_id,
-            execution_id=execution_id,
+            execution_id=execution_id or checkpoint_root_execution_id,
         )
     return mint_root_execution_identity(
         run_id=run_id,

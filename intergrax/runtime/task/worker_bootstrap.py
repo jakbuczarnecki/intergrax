@@ -17,6 +17,7 @@ from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
 from intergrax.queueing.worker.retry_policy import RetryPolicy
+from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -39,6 +40,7 @@ def build_nexus_task_execution_registry(
     registry: AgentRegistry,
     *,
     checkpoint_store: Optional[TaskCheckpointPersistence] = None,
+    execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     lifecycle=None,
     kv_store: Optional[DistributedKVStore] = None,
     run_budget: RunBudget | None = None,
@@ -55,6 +57,7 @@ def build_nexus_task_execution_registry(
     runtime = NexusWorkerRuntime.from_registry(
         registry,
         checkpoint_store=checkpoint_store,
+        execution_continuation_state_store=execution_continuation_state_store,
         lifecycle=lifecycle,
         run_budget=run_budget,
         run_budget_persistence=run_budget_persistence,
@@ -78,6 +81,7 @@ def create_nexus_celery_worker_app(
     lock_ttl_seconds: Optional[int] = None,
     completed_ttl_seconds: Optional[int] = None,
     checkpoint_store: Optional[TaskCheckpointPersistence] = None,
+    execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     rate_limiter: Optional[DistributedRateLimiter] = None,
     rate_limit_config: Optional[Callable[[str], Tuple[int, float]]] = None,
     on_rate_limited: Optional[Callable[[RateLimitEvent], None]] = None,
@@ -105,6 +109,7 @@ def create_nexus_celery_worker_app(
     worker_registry = build_nexus_task_execution_registry(
         agent_registry,
         checkpoint_store=checkpoint_store,
+        execution_continuation_state_store=execution_continuation_state_store,
         lifecycle=lifecycle,
         kv_store=kv_store,
         execution_terminal=admission.execution_terminal,
