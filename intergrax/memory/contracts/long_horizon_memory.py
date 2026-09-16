@@ -27,6 +27,8 @@ from intergrax.memory.contracts.temporal_chronology import (
 LongHorizonMemoryScope = EntityMemoryScope
 
 __all__ = [
+    "CanonicalMemorySourceAuthority",
+    "CanonicalMemorySourceSnapshot",
     "ChildSummaryRef",
     "CompactionPartialFailure",
     "CompactionResult",
@@ -59,6 +61,7 @@ __all__ = [
     "SummaryStatus",
     "long_horizon_summary_id_for_batch",
     "order_long_horizon_summaries_deterministic",
+    "select_temporal_coverage",
     "sort_memory_source_refs",
     "sort_child_summary_refs",
     "validate_long_horizon_summary_record",
@@ -158,6 +161,13 @@ class LongHorizonSummaryRecord:
         validate_long_horizon_summary_record(self)
 
 
+def _parse_long_horizon_timestamp(field_name: str, value: str) -> datetime:
+    try:
+        return parse_memory_record_timestamp(field_name, value)
+    except ValueError as exc:
+        raise LongHorizonMemoryViolation(str(exc)) from exc
+
+
 def _validate_no_duplicate_memory_refs(refs: tuple[MemorySourceRef, ...]) -> None:
     seen: set[tuple[str, int]] = set()
     for ref in refs:
@@ -177,10 +187,14 @@ def _validate_no_duplicate_child_refs(refs: tuple[ChildSummaryRef, ...]) -> None
 
 
 def _validate_temporal_coverage(covered_from: str | None, covered_until: str | None) -> None:
+    if covered_from is not None:
+        _parse_long_horizon_timestamp("covered_from", covered_from)
+    if covered_until is not None:
+        _parse_long_horizon_timestamp("covered_until", covered_until)
     if covered_from is None or covered_until is None:
         return
-    from_dt = parse_memory_record_timestamp("covered_from", covered_from)
-    until_dt = parse_memory_record_timestamp("covered_until", covered_until)
+    from_dt = _parse_long_horizon_timestamp("covered_from", covered_from)
+    until_dt = _parse_long_horizon_timestamp("covered_until", covered_until)
     if not memory_timestamps_same_awareness(from_dt, until_dt):
         raise LongHorizonMemoryViolation(
             "covered_from/covered_until: timezone-aware and naive timestamps are not comparable"
@@ -227,6 +241,79 @@ def validate_long_horizon_summary_record(record: LongHorizonSummaryRecord) -> No
         parse_memory_record_timestamp("updated_at", record.updated_at)
 
 
+def _long_horizon_length_prefixed_segment(value: str) -> str:
+    return f"{len(value)}:{value}"
+
+
+def _encode_identity_segment(value: str) -> str:
+    return _long_horizon_length_prefixed_segment(value)
+
+
+def _long_horizon_encoded_workspace_qualifier(workspace_id: str | None) -> str:
+    if workspace_id is None:
+        return "0:"
+    stripped = workspace_id.strip()
+    if not stripped:
+        raise LongHorizonMemoryViolation(
+            "workspace_id when set must be non-empty for long-horizon identity"
+        )
+    return _long_horizon_length_prefixed_segment(stripped)
+
+
+def _long_horizon_scope_identity(scope: LongHorizonMemoryScope) -> str:
+    tenant = (scope.tenant_id or "").strip()
+    user = (scope.user_id or "").strip()
+    if not tenant or not user:
+        raise LongHorizonMemoryViolation("tenant_id and user_id required for summary identity")
+    workspace = _long_horizon_encoded_workspace_qualifier(scope.workspace_id)
+    return "|".join(
+        (
+            _encode_identity_segment(tenant),
+            _encode_identity_segment(user),
+            workspace,
+        )
+    )
+
+
+def _encode_memory_source_ref_identity(ref: MemorySourceRef) -> str:
+    return "|".join(
+        (
+            _encode_identity_segment(ref.memory_id),
+            _encode_identity_segment(str(ref.revision)),
+        )
+    )
+
+
+def _encode_child_summary_ref_identity(ref: ChildSummaryRef) -> str:
+    return "|".join(
+        (
+            _encode_identity_segment(ref.summary_id),
+            _encode_identity_segment(str(ref.revision)),
+        )
+    )
+
+
+def select_temporal_coverage(
+    stamps: tuple[str, ...],
+) -> tuple[str | None, str | None]:
+    """Earliest and latest stamp strings using canonical memory chronology."""
+    if not stamps:
+        return None, None
+    parsed: list[tuple[str, datetime]] = []
+    for stamp in stamps:
+        dt = _parse_long_horizon_timestamp("temporal_coverage", stamp)
+        parsed.append((stamp, dt))
+    anchor = parsed[0][1]
+    for _, dt in parsed[1:]:
+        if not memory_timestamps_same_awareness(anchor, dt):
+            raise LongHorizonMemoryViolation(
+                "temporal coverage: mixed timezone awareness"
+            )
+    earliest = min(parsed, key=lambda item: memory_chronological_ordinal(item[1]))
+    latest = max(parsed, key=lambda item: memory_chronological_ordinal(item[1]))
+    return earliest[0], latest[0]
+
+
 def long_horizon_batch_identity_key(
     *,
     source_refs: tuple[MemorySourceRef, ...] = (),
@@ -236,10 +323,10 @@ def long_horizon_batch_identity_key(
         raise LongHorizonMemoryViolation("batch identity requires either sources or children, not both")
     if source_refs:
         ordered = sort_memory_source_refs(source_refs)
-        return "|".join(f"{item.memory_id}@{item.revision}" for item in ordered)
+        return "|".join(_encode_memory_source_ref_identity(item) for item in ordered)
     if child_refs:
         ordered = sort_child_summary_refs(child_refs)
-        return "|".join(f"{item.summary_id}@{item.revision}" for item in ordered)
+        return "|".join(_encode_child_summary_ref_identity(item) for item in ordered)
     raise LongHorizonMemoryViolation("batch identity requires non-empty lineage")
 
 
@@ -254,14 +341,30 @@ def long_horizon_summary_id_for_batch(
     identity = (batch_identity or "").strip()
     if not identity:
         raise LongHorizonMemoryViolation("batch_identity must be non-empty")
-    tenant = (scope.tenant_id or "").strip()
-    user = (scope.user_id or "").strip()
-    if not tenant or not user:
-        raise LongHorizonMemoryViolation("tenant_id and user_id required for summary identity")
-    workspace = (scope.workspace_id or "").strip()
+    scope_identity = _long_horizon_scope_identity(scope)
     digest = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:24]
-    workspace_seg = workspace if workspace else "_"
-    return f"lhs:{summary_level}:{tenant}:{user}:{workspace_seg}:{digest}"
+    level_segment = _encode_identity_segment(str(summary_level))
+    return f"lhs:{level_segment}:{scope_identity}:{digest}"
+
+
+@dataclass(frozen=True, slots=True)
+class CanonicalMemorySourceSnapshot:
+    """Verified canonical memory source for compaction (scope authority must validate)."""
+
+    memory_id: str
+    revision: int
+    content: str
+    observed_at: str | None = None
+
+    def __post_init__(self) -> None:
+        if not (self.memory_id or "").strip():
+            raise LongHorizonMemoryViolation("memory_id must be non-empty")
+        if self.revision < 1:
+            raise LongHorizonMemoryViolation("revision must be >= 1")
+        if not (self.content or "").strip():
+            raise LongHorizonMemoryViolation("canonical source content must be non-empty")
+        if self.observed_at:
+            parse_memory_record_timestamp("observed_at", self.observed_at)
 
 
 @dataclass(frozen=True, slots=True)
@@ -380,12 +483,24 @@ class LongHorizonRecallQuery:
     def __post_init__(self) -> None:
         if self.limit < 1:
             raise LongHorizonMemoryViolation("limit must be >= 1")
-        if self.covered_from and self.covered_until:
-            from_dt = parse_memory_record_timestamp("covered_from", self.covered_from)
-            until_dt = parse_memory_record_timestamp("covered_until", self.covered_until)
+        from_dt = (
+            _parse_long_horizon_timestamp("covered_from", self.covered_from)
+            if self.covered_from is not None
+            else None
+        )
+        until_dt = (
+            _parse_long_horizon_timestamp("covered_until", self.covered_until)
+            if self.covered_until is not None
+            else None
+        )
+        if from_dt is not None and until_dt is not None:
             if not memory_timestamps_same_awareness(from_dt, until_dt):
                 raise LongHorizonMemoryViolation(
                     "recall covered_from/covered_until: mixed timezone awareness"
+                )
+            if from_dt > until_dt:
+                raise LongHorizonMemoryViolation(
+                    "recall covered_from must not be after covered_until"
                 )
 
 
@@ -526,6 +641,18 @@ class SourceRevisionResolver(Protocol):
 
 
 @runtime_checkable
+class CanonicalMemorySourceAuthority(Protocol):
+    """Resolve and verify canonical memory sources for compaction (scope-bound)."""
+
+    def resolve_canonical_source(
+        self,
+        scope: LongHorizonMemoryScope,
+        memory_id: str,
+        revision: int,
+    ) -> CanonicalMemorySourceSnapshot: ...
+
+
+@runtime_checkable
 class LongHorizonMemoryCapability(Protocol):
     def compact(self, request: LongHorizonCompactionRequest) -> CompactionResult: ...
 
@@ -624,15 +751,7 @@ class DefaultLongHorizonSummaryStrategy:
             content = "\n".join(parts)
             if len(content) > request.size_budget_chars:
                 content = content[: request.size_budget_chars]
-            covered_from = min(stamps) if stamps else None
-            covered_until = max(stamps) if stamps else None
-            if covered_from and covered_until:
-                from_dt = parse_memory_record_timestamp("covered_from", covered_from)
-                until_dt = parse_memory_record_timestamp("covered_until", covered_until)
-                if not memory_timestamps_same_awareness(from_dt, until_dt):
-                    raise LongHorizonMemoryViolation(
-                        "source observed_at values have mixed timezone awareness"
-                    )
+            covered_from, covered_until = select_temporal_coverage(tuple(stamps))
             return SummaryGenerationResult(
                 content=content,
                 source_memory_refs=sort_memory_source_refs(tuple(refs)),
@@ -655,11 +774,15 @@ class DefaultLongHorizonSummaryStrategy:
                 stamps_from.append(item.covered_from)
             if item.covered_until:
                 stamps_until.append(item.covered_until)
-        covered_from = min(stamps_from) if stamps_from else None
-        covered_until = max(stamps_until) if stamps_until else None
-        if covered_from and covered_until:
-            from_dt = parse_memory_record_timestamp("covered_from", covered_from)
-            until_dt = parse_memory_record_timestamp("covered_until", covered_until)
+        covered_from, _ = (
+            select_temporal_coverage(tuple(stamps_from)) if stamps_from else (None, None)
+        )
+        _, covered_until = (
+            select_temporal_coverage(tuple(stamps_until)) if stamps_until else (None, None)
+        )
+        if covered_from is not None and covered_until is not None:
+            from_dt = _parse_long_horizon_timestamp("covered_from", covered_from)
+            until_dt = _parse_long_horizon_timestamp("covered_until", covered_until)
             if not memory_timestamps_same_awareness(from_dt, until_dt):
                 raise LongHorizonMemoryViolation(
                     "child coverage timestamps have mixed timezone awareness"

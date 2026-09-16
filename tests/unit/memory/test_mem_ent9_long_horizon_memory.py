@@ -19,6 +19,7 @@ from intergrax.applications.contracts.environment_profile import (
     MemoryProfile,
 )
 from intergrax.memory.contracts.long_horizon_memory import (
+    CanonicalMemorySourceSnapshot,
     ChildSummaryRef,
     DefaultLongHorizonSummaryStrategy,
     LineageTraversalRequest,
@@ -32,7 +33,10 @@ from intergrax.memory.contracts.long_horizon_memory import (
     SummaryGenerationRequest,
     SummaryNodeKind,
     SummaryStatus,
+    long_horizon_batch_identity_key,
+    long_horizon_summary_id_for_batch,
     order_long_horizon_summaries_deterministic,
+    select_temporal_coverage,
     validate_long_horizon_summary_record,
 )
 from intergrax.memory.long_horizon_memory_service import (
@@ -109,10 +113,53 @@ def _parent(
     )
 
 
-def _service(store: InMemoryLongHorizonMemoryStore | None = None) -> LongHorizonMemoryService:
+class _ScopedSourceAuthority:
+    """Fake canonical source authority bound to one scope."""
+
+    def __init__(
+        self,
+        scope: LongHorizonMemoryScope,
+        *,
+        snapshots: dict[tuple[str, int], CanonicalMemorySourceSnapshot] | None = None,
+        default_observed_at: str = "2025-03-01T12:00:00+00:00",
+    ) -> None:
+        self._scope = scope
+        self._snapshots = snapshots or {}
+        self._default_observed_at = default_observed_at
+
+    def resolve_canonical_source(
+        self,
+        scope: LongHorizonMemoryScope,
+        memory_id: str,
+        revision: int,
+    ) -> CanonicalMemorySourceSnapshot:
+        if (
+            scope.tenant_id != self._scope.tenant_id
+            or scope.user_id != self._scope.user_id
+            or scope.workspace_id != self._scope.workspace_id
+        ):
+            raise LongHorizonMemoryViolation("canonical source scope mismatch")
+        key = (memory_id, revision)
+        if key in self._snapshots:
+            return self._snapshots[key]
+        return CanonicalMemorySourceSnapshot(
+            memory_id=memory_id,
+            revision=revision,
+            content=f"content for {memory_id}",
+            observed_at=self._default_observed_at,
+        )
+
+
+def _service(
+    store: InMemoryLongHorizonMemoryStore | None = None,
+    scope: LongHorizonMemoryScope | None = None,
+    authority: _ScopedSourceAuthority | None = None,
+) -> LongHorizonMemoryService:
+    resolved_scope = scope or _scope("T")
     return LongHorizonMemoryService(
         _store=store or InMemoryLongHorizonMemoryStore(),
         _strategies=build_default_long_horizon_strategies(),
+        _source_authority=authority or _ScopedSourceAuthority(resolved_scope),
     )
 
 
@@ -501,3 +548,233 @@ def test_default_summary_strategy_generates_non_empty() -> None:
         )
     )
     assert result.content.strip()
+
+
+def test_source_authority_rejects_cross_tenant() -> None:
+    scope = _scope("tenant-a")
+    service = _service(scope=scope)
+    other_scope = _scope("tenant-b")
+    request = LongHorizonCompactionRequest(
+        scope=other_scope,
+        target_level=1,
+        sources=_sources(("mem-1", 1)),
+    )
+    result = service.compact(request)
+    assert result.failures
+    assert "scope mismatch" in result.failures[0].message
+
+
+def test_source_authority_rejects_cross_user() -> None:
+    scope = _scope("T", user="user-a")
+    service = _service(scope=scope)
+    request = LongHorizonCompactionRequest(
+        scope=_scope("T", user="user-b"),
+        target_level=1,
+        sources=_sources(("mem-1", 1)),
+    )
+    result = service.compact(request)
+    assert result.failures
+
+
+def test_source_authority_rejects_cross_workspace() -> None:
+    scope = _scope("T", workspace="ws-a")
+    service = _service(scope=scope)
+    request = LongHorizonCompactionRequest(
+        scope=_scope("T", workspace="ws-b"),
+        target_level=1,
+        sources=_sources(("mem-1", 1)),
+    )
+    result = service.compact(request)
+    assert result.failures
+
+
+def test_source_authority_revision_mismatch_rejects() -> None:
+    scope = _scope("T")
+
+    class _ExactRevisionAuthority(_ScopedSourceAuthority):
+        def resolve_canonical_source(
+            self,
+            scope: LongHorizonMemoryScope,
+            memory_id: str,
+            revision: int,
+        ) -> CanonicalMemorySourceSnapshot:
+            if revision != 2:
+                raise LongHorizonMemoryViolation("canonical source revision mismatch")
+            return super().resolve_canonical_source(scope, memory_id, revision)
+
+    service = _service(scope=scope, authority=_ExactRevisionAuthority(scope))
+    request = LongHorizonCompactionRequest(
+        scope=scope,
+        target_level=1,
+        sources=_sources(("mem-1", 1)),
+    )
+    result = service.compact(request)
+    assert result.failures
+
+
+def test_source_authority_missing_source_rejects() -> None:
+    scope = _scope("T")
+
+    class _MissingAuthority(_ScopedSourceAuthority):
+        def resolve_canonical_source(
+            self,
+            scope: LongHorizonMemoryScope,
+            memory_id: str,
+            revision: int,
+        ) -> CanonicalMemorySourceSnapshot:
+            raise LongHorizonMemoryViolation("canonical source not found")
+
+    service = _service(scope=scope, authority=_MissingAuthority(scope))
+    result = service.compact(
+        LongHorizonCompactionRequest(
+            scope=scope,
+            target_level=1,
+            sources=_sources(("mem-1", 1)),
+        )
+    )
+    assert result.failures
+
+
+def test_compaction_uses_authority_content_not_caller_spoof() -> None:
+    scope = _scope("T")
+    authority = _ScopedSourceAuthority(
+        scope,
+        snapshots={
+            ("mem-1", 1): CanonicalMemorySourceSnapshot(
+                memory_id="mem-1",
+                revision=1,
+                content="verified canonical body",
+                observed_at="2025-03-01T12:00:00+00:00",
+            )
+        },
+    )
+    service = _service(scope=scope, authority=authority)
+    spoofed = LongHorizonCompactionSource(
+        memory_id="mem-1",
+        revision=1,
+        content="caller spoofed content",
+        observed_at="2025-03-01T12:00:00+00:00",
+    )
+    result = service.compact(
+        LongHorizonCompactionRequest(scope=scope, target_level=1, sources=(spoofed,))
+    )
+    assert result.created
+    assert "verified canonical body" in result.created[0].content
+    assert "caller spoofed" not in result.created[0].content
+
+
+def test_batch_identity_collision_safe_source_refs() -> None:
+    a = long_horizon_batch_identity_key(
+        source_refs=(MemorySourceRef(memory_id="a@1|b", revision=2),)
+    )
+    b = long_horizon_batch_identity_key(
+        source_refs=(
+            MemorySourceRef(memory_id="a", revision=1),
+            MemorySourceRef(memory_id="b", revision=2),
+        )
+    )
+    assert a != b
+
+
+def test_batch_identity_collision_safe_child_refs() -> None:
+    a = long_horizon_batch_identity_key(
+        child_refs=(ChildSummaryRef(summary_id="x@1|y", revision=3),)
+    )
+    b = long_horizon_batch_identity_key(
+        child_refs=(
+            ChildSummaryRef(summary_id="x", revision=1),
+            ChildSummaryRef(summary_id="y", revision=3),
+        )
+    )
+    assert a != b
+
+
+def test_summary_id_collision_safe_scope_segments() -> None:
+    scope_a = _scope("T", user="a:b", workspace="c")
+    scope_b = _scope("T", user="a", workspace="b:c")
+    batch = long_horizon_batch_identity_key(source_refs=(MemorySourceRef("m", 1),))
+    assert long_horizon_summary_id_for_batch(scope_a, 1, batch) != long_horizon_summary_id_for_batch(
+        scope_b, 1, batch
+    )
+
+
+def test_summary_id_none_workspace_vs_placeholder() -> None:
+    batch = long_horizon_batch_identity_key(source_refs=(MemorySourceRef("m", 1),))
+    none_ws = long_horizon_summary_id_for_batch(_scope("T", workspace=None), 1, batch)
+    underscore_ws = long_horizon_summary_id_for_batch(_scope("T", workspace="_"), 1, batch)
+    assert none_ws != underscore_ws
+
+
+def test_temporal_coverage_aware_offsets() -> None:
+    stamps = (
+        "2025-06-01T10:00:00+02:00",
+        "2025-06-01T09:30:00+00:00",
+    )
+    covered_from, covered_until = select_temporal_coverage(stamps)
+    assert covered_from == "2025-06-01T10:00:00+02:00"
+    assert covered_until == "2025-06-01T09:30:00+00:00"
+
+
+def test_temporal_coverage_naive_year_boundary() -> None:
+    covered_from, covered_until = select_temporal_coverage(
+        ("2026-01-01T00:00:00", "2025-12-31T23:59:59")
+    )
+    assert covered_from == "2025-12-31T23:59:59"
+    assert covered_until == "2026-01-01T00:00:00"
+
+
+def test_temporal_coverage_naive_month_boundary() -> None:
+    covered_from, covered_until = select_temporal_coverage(
+        ("2025-02-01T00:00:00", "2025-01-31T23:59:59")
+    )
+    assert covered_from == "2025-01-31T23:59:59"
+    assert covered_until == "2025-02-01T00:00:00"
+
+
+def test_temporal_coverage_mixed_awareness_rejects() -> None:
+    with pytest.raises(LongHorizonMemoryViolation):
+        select_temporal_coverage(
+            ("2025-01-01T00:00:00", "2025-01-02T00:00:00+00:00")
+        )
+
+
+def test_aggregate_child_coverage_uses_canonical_chronology() -> None:
+    strategy = DefaultLongHorizonSummaryStrategy()
+    child_a = _leaf(
+        "c1",
+        covered_from="2025-06-01T10:00:00+02:00",
+        covered_until="2025-06-01T11:00:00+02:00",
+    )
+    child_b = _leaf(
+        "c2",
+        covered_from="2025-06-01T09:00:00+00:00",
+        covered_until="2025-06-01T09:30:00+00:00",
+    )
+    result = strategy.generate(
+        SummaryGenerationRequest(
+            scope=_scope("T"),
+            target_level=2,
+            node_kind=SummaryNodeKind.AGGREGATE,
+            child_summaries=(child_a, child_b),
+        )
+    )
+    assert result.covered_from == "2025-06-01T10:00:00+02:00"
+    assert result.covered_until == "2025-06-01T09:30:00+00:00"
+
+
+def test_record_rejects_malformed_single_bound_covered_from() -> None:
+    with pytest.raises(LongHorizonMemoryViolation):
+        _leaf("s1", covered_from="bad", covered_until=None)
+
+
+def test_recall_query_rejects_malformed_single_bound() -> None:
+    with pytest.raises(LongHorizonMemoryViolation):
+        LongHorizonRecallQuery(covered_from="not-a-timestamp")
+
+
+def test_recall_query_rejects_reversed_range() -> None:
+    with pytest.raises(LongHorizonMemoryViolation):
+        LongHorizonRecallQuery(
+            covered_from="2025-02-01T00:00:00+00:00",
+            covered_until="2025-01-01T00:00:00+00:00",
+        )

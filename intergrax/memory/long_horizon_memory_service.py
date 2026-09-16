@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.memory.contracts.long_horizon_memory import (
+    CanonicalMemorySourceAuthority,
     ChildSummaryRef,
     CompactionPartialFailure,
     CompactionResult,
@@ -18,6 +19,7 @@ from intergrax.memory.contracts.long_horizon_memory import (
     LineageTraversalResult,
     LongHorizonCompactionPolicy,
     LongHorizonCompactionRequest,
+    LongHorizonCompactionSource,
     LongHorizonMemoryCapability,
     LongHorizonMemoryScope,
     LongHorizonMemoryStore,
@@ -96,6 +98,7 @@ class LongHorizonMemoryService:
 
     _store: LongHorizonMemoryStore
     _strategies: LongHorizonMemoryStrategySet
+    _source_authority: CanonicalMemorySourceAuthority
     _policy: LongHorizonPolicyConfig = LongHorizonPolicyConfig()
 
     def compact(self, request: LongHorizonCompactionRequest) -> CompactionResult:
@@ -120,11 +123,12 @@ class LongHorizonMemoryService:
             node_kind = SummaryNodeKind.LEAF
             for batch in batches:
                 try:
+                    canonical_batch = self._resolve_canonical_source_batch(request.scope, batch)
                     record, skipped_idempotent = self._materialize_summary(
                         scope=request.scope,
                         target_level=request.target_level,
                         node_kind=node_kind,
-                        sources=batch,
+                        sources=canonical_batch,
                         children=(),
                         reference_time=request.reference_time,
                     )
@@ -192,13 +196,35 @@ class LongHorizonMemoryService:
             failures=tuple(failures),
         )
 
+    def _resolve_canonical_source_batch(
+        self,
+        scope: LongHorizonMemoryScope,
+        batch: tuple[LongHorizonCompactionSource, ...],
+    ) -> tuple[LongHorizonCompactionSource, ...]:
+        resolved: list[LongHorizonCompactionSource] = []
+        for source in batch:
+            snapshot = self._source_authority.resolve_canonical_source(
+                scope,
+                source.memory_id,
+                source.revision,
+            )
+            resolved.append(
+                LongHorizonCompactionSource(
+                    memory_id=snapshot.memory_id,
+                    revision=snapshot.revision,
+                    content=snapshot.content,
+                    observed_at=snapshot.observed_at,
+                )
+            )
+        return tuple(resolved)
+
     def _materialize_summary(
         self,
         *,
         scope: LongHorizonMemoryScope,
         target_level: int,
         node_kind: SummaryNodeKind,
-        sources: tuple,
+        sources: tuple[LongHorizonCompactionSource, ...],
         children: tuple[LongHorizonSummaryRecord, ...],
         reference_time,
     ) -> tuple[LongHorizonSummaryRecord, bool]:

@@ -5,7 +5,11 @@
 from __future__ import annotations
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.memory.contracts.long_horizon_memory import LongHorizonMemoryStore
+from intergrax.memory.contracts.long_horizon_memory import (
+    CanonicalMemorySourceAuthority,
+    LongHorizonMemoryStore,
+    LongHorizonMemoryViolation,
+)
 from intergrax.memory.long_horizon_memory_service import (
     LongHorizonMemoryService,
     build_default_long_horizon_strategies,
@@ -49,12 +53,19 @@ def resolve_long_horizon_memory_store(
 
 def resolve_long_horizon_memory_capability(
     env: ApplicationEnvironmentProfile,
+    *,
+    source_authority: CanonicalMemorySourceAuthority | None = None,
 ) -> LongHorizonMemoryService | None:
     """Materialize long-horizon memory capability when enabled."""
     store = resolve_long_horizon_memory_store(env)
     if store is None:
         return None
+    if source_authority is None:
+        raise LongHorizonMemoryViolation(
+            "long-horizon memory capability requires CanonicalMemorySourceAuthority"
+        )
     return LongHorizonMemoryService(
         _store=store,
         _strategies=build_default_long_horizon_strategies(),
+        _source_authority=source_authority,
     )
