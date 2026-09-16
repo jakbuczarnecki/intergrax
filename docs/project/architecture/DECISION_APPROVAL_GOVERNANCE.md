@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4 / MP-4R)
 
-**Status:** **MP-4R3 CLOSED** · **MP-4R4 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** (Collaborative `DecisionProposalRef` binding; Multiplayer-owned association only; **live PostgreSQL qualification PASSED**) · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `RETIRED` (MP-4R1) · **MP-4C** `RETIRED` (MP-4R2) · **MP-4D** `RETIRED` (MP-4R2) · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8 · **MP-4R5 NOT STARTED**
+**Status:** **MP-4R3 CLOSED** · **MP-4R4 CLOSED** (Collaborative `DecisionProposalRef` binding; Multiplayer-owned association only) · **MP-4R5 — READY_FOR_INDEPENDENT_AUDIT** (canonical Evidence Plane adoption — operation outcome only; binding association pending Evidence Plane contract) · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `RETIRED` (MP-4R1) · **MP-4C** `RETIRED` (MP-4R2) · **MP-4D** `RETIRED` (MP-4R2) · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (1:1):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -151,8 +151,8 @@ configured platform implementation
 | **MP-4R1** — Decision contract convergence | **CLOSED** |
 | **MP-4R2** — Human review / Approval convergence | **CLOSED** |
 | MP-4R3 — Execution continuation integration | **CLOSED** |
-| MP-4R4 — Collaborative decision binding | **READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** |
-| MP-4R5 — Evidence Plane adoption | NOT STARTED |
+| MP-4R4 — Collaborative decision binding | **CLOSED** |
+| MP-4R5 — Evidence Plane adoption | **READY_FOR_INDEPENDENT_AUDIT** |
 | MP-4R6 — Legacy removal & migration | NOT STARTED |
 | MP-4R7 — Enterprise integration qualification | NOT STARTED |
 | MP-4R8 — Final closure audit | NOT STARTED |

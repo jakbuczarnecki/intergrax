@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4R3 CLOSED** · **MP-4R4 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** (live PostgreSQL qualification **PASSED**) · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2) · **MP-4R5 NOT STARTED**
+**Status:** **MP-4R3 CLOSED** · **MP-4R4 CLOSED** · **MP-4R5 — READY_FOR_INDEPENDENT_AUDIT** (operation-outcome adoption only; binding association blocked on Evidence Plane contract) · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -86,13 +86,13 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R4 |
-| **Status** | **READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** |
+| **Status** | **CLOSED** |
 | **Purpose** | `CollaborativeDecisionBinding` — immutable Multiplayer-owned association to exact `DecisionProposalRef` (+ optional `WorkArtifactVersionRef`); **no** Decision lifecycle, Governance authorization, Execution state, or Evidence ownership |
 | **Dependencies** | MP-4R3 closed |
 | **Acceptance** | `CollaborativeDecisionBindingService` → `CollaborativeDecisionBindingRepository` protocol only; PostgreSQL = configured provider; `test_mp4r4_collaborative_decision_binding_gates.py` green; live PostgreSQL qualification **8 passed, 0 skipped** |
 | **Proof requirements** | `pytest tests/integration/collaborative_work/test_postgresql_decision_binding_qualification.py -m "integration and network"` (real PostgreSQL via `infra/docker/postgresql/docker-compose.yml`; DSN `INTERGRAX_COLLABORATIVE_WORK_POSTGRESQL_DSN` — not committed); `test_decision_binding_service.py`; `test_decision_proposal_ref_wire.py` |
 | **Live PostgreSQL qualification (PASSED)** | Backend: real PostgreSQL 16.x via repo Docker compose (`postgresql` service, host port **5434**, database `intergrax`). Coverage: create/read round-trip; exact `DecisionProposalRef`; tenant/workspace isolation; idempotent replay; idempotency conflict; semantic dedup; concurrent semantic duplicate (2 bundles / 2 connections, `COUNT(*)=1`); concurrent idempotency conflict (1 success, 1 `CollaborativeDecisionBindingIdempotencyConflict`, 1 row). No SQLite, in-memory, mock, or fake backend for this suite. |
-| **Next step** | Final independent MP-4R4 closure audit on GitHub — **MP-4R5 NOT STARTED** |
+| **Next step** | — (closed) |
 
 ---
 
@@ -101,9 +101,12 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R5 |
-| **Status** | **NOT STARTED** |
-| **Purpose** | Multiplayer emits/links canonical Evidence Plane facts — no Multiplayer evidence store |
-| **Dependencies** | MP-4R4 (or parallel per gate) |
+| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
+| **Purpose** | Multiplayer adopts canonical Evidence Plane via contract-only projection; **no** Multiplayer evidence store |
+| **Dependencies** | MP-4R4 closed |
+| **Implemented** | `CollaborativeFunctionalEvidenceProjectionStrategy` + `DefaultCollaborativeFunctionalEvidenceProjection`; composition helper `append_decision_binding_create_outcome_evidence` → `FunctionalEvidencePersistence`; architecture gates `test_mp4r5_evidence_plane_adoption_gates.py` |
+| **Blocked (architecture)** | `CollaborativeDecisionBinding` association (`WorkItem` ↔ exact `DecisionProposalRef`) — **no** frozen `PipelineEvidenceKind` semantic fit; requires platform Evidence Plane contract decision before full association evidence |
+| **Proof requirements** | `pytest tests/unit/runtime/architecture/test_mp4r5_evidence_plane_adoption_gates.py tests/unit/collaborative_work/test_functional_evidence_projection.py`; MP-4R0…R4 gates remain green |
 
 ---
 
@@ -168,5 +171,4 @@ Historical implementation notes for MP-4B–D remain in git history and contract
 
 ## Next step
 
-Final independent MP-4R4 closure audit.
-MP-4R5 NOT STARTED.
+Independent MP-4R5 audit on GitHub. MP-4R6 NOT STARTED.
