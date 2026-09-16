@@ -20,6 +20,23 @@ class ExecutionContinuationProjectionError(RuntimeError):
     """Observable projection failure — canonical continuation truth is unchanged."""
 
 
+class ExecutionContinuationCanonicalProjectionApplyError(
+    ExecutionContinuationProjectionError,
+):
+    """Canonical transition succeeded; Task projection did not commit."""
+
+    __slots__ = ("canonical_snapshot",)
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        canonical_snapshot: PendingExecutionContinuation,
+    ) -> None:
+        super().__init__(message)
+        self.canonical_snapshot = canonical_snapshot
+
+
 class ExecutionContinuationProjectionStatus(StrEnum):
     APPLIED = "applied"
     STALE_IGNORED = "stale_ignored"
@@ -45,6 +62,7 @@ class ExecutionContinuationProjectionSink(Protocol):
 
 
 __all__ = [
+    "ExecutionContinuationCanonicalProjectionApplyError",
     "ExecutionContinuationProjectionError",
     "ExecutionContinuationProjectionResult",
     "ExecutionContinuationProjectionSink",

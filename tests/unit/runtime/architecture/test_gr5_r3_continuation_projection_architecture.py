@@ -62,3 +62,14 @@ def test_projection_sink_protocol_replaceable() -> None:
             return None
 
     assert isinstance(_Sink(), ExecutionContinuationProjectionSink)
+
+
+def test_canonical_resolution_does_not_call_task_hitl_before_apply() -> None:
+    source = _PAUSE_MODULE.read_text(encoding="utf-8")
+    canonical_start = source.index("def resolve_human_response_and_apply_canonical")
+    canonical_block = source[canonical_start : canonical_start + 4500]
+    apply_idx = canonical_block.index("continuation.apply_resolution")
+    hitl_assign = "gov.hitl_resolution ="
+    assert hitl_assign not in canonical_block[:apply_idx]
+    resolve_call = "resolve_human_response("
+    assert resolve_call not in canonical_block
