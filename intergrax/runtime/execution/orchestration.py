@@ -26,11 +26,9 @@ from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRe
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionContext,
-)
-from intergrax.runtime.execution.identity_authority import (
-    RootTaskIdentity,
     resolve_root_task_identity,
 )
+from intergrax.runtime.execution.identity_authority import RootTaskIdentity
 from intergrax.runtime.execution.decision_lifecycle_host import (
     CanonicalDecisionLifecycleHost,
     DecisionLifecycleHost,
