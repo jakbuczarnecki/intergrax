@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4R0 — CURRENT** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B/C `FROZEN_PENDING_CONVERGENCE` · MP-4D `FROZEN_PENDING_AUTHORITY_REBASE`
+**Status:** **MP-4R0 — CLOSURE FIX / READY_FOR_REAUDIT** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B/C `FROZEN_PENDING_CONVERGENCE` · MP-4D `FROZEN_PENDING_AUTHORITY_REBASE` · **MP-4R1 NOT STARTED**
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -27,7 +27,7 @@ Use, modification, or distribution without written permission is prohibited.
 |-------|-------|
 | **ID** | MP-4R0 |
 | **Priority** | P0 |
-| **Status** | **CURRENT** |
+| **Status** | **CLOSURE FIX / READY_FOR_REAUDIT** |
 | **Purpose** | Rebase Multiplayer MP-4 on canonical Decision / Execution / Governance / Evidence / Diagnostics; inventory legacy MP-4B–D; supersede ADR-MP-005 ownership table; freeze MP-4R roadmap and architecture gates |
 | **Dependencies** | Canonical Decision System; Execution Engine; ADR-GR-5-001; Evidence/Diagnostics single authority docs |
 | **Exact scope** | ADR-MP-009; architecture/plan/MULTIPLAYER_AI sync; caller inventory; `test_mp4r0_multiplayer_rebase_architecture_gates.py`; **no** production deletion |
@@ -36,7 +36,7 @@ Use, modification, or distribution without written permission is prohibited.
 | **Explicit out of scope** | MP-4R1+ implementation; repositories; HITL bridge runtime; legacy module deletion |
 | **Acceptance** | Ownership table frozen; legacy classification documented; ADR index updated; docs pair check green; MP-4R0 gates pass |
 | **Proof requirements** | `git diff --check`; `python scripts/docs/check_docs_domain_pairs.py`; `pytest tests/unit/runtime/architecture/test_mp4r0_multiplayer_rebase_architecture_gates.py` |
-| **Next step** | Independent MP-4R0 audit → MP-4R1 (NOT STARTED) |
+| **Next step** | Independent MP-4R0 **closure** audit → MP-4R1 (NOT STARTED) |
 
 ---
 
@@ -46,7 +46,7 @@ Use, modification, or distribution without written permission is prohibited.
 |-------|-------|
 | **ID** | MP-4R1 |
 | **Status** | **NOT STARTED** |
-| **Purpose** | Converge `intergrax/contracts/decision.py` onto canonical Decision System (`decision_identity`, lifecycle, resolution, finalization) |
+| **Purpose** | Converge `intergrax/contracts/decision.py` onto canonical Decision System (`decision_identity`, lifecycle, resolution, finalization); resolve **MP-4R1 convergence debt** (`decision/` package shadowing sibling `decision.py`, `importlib` dynamic MP-4B export bridge) |
 | **Dependencies** | MP-4R0 closed |
 | **Acceptance** | No duplicate `DecisionId` in production paths; only genuine collaborative reference types remain |
 

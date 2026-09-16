@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4R0 — CURRENT** (core rebase; ADR-MP-009)
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4R0 — CLOSURE FIX / READY_FOR_REAUDIT** (core rebase; ADR-MP-009)
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4R0** — Core rebase & supersession gate
-**Next task:** Independent MP-4R0 audit → **MP-4R1 NOT STARTED**
+**Current active task:** **MP-4R0** — closure fix after independent audit gaps
+**Next task:** Independent MP-4R0 closure audit → **MP-4R1 NOT STARTED**
 
 ---
 
@@ -84,11 +84,13 @@ architecture hub:
 
 ```text
 MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
-→ MP-3 (work artifacts) → MP-4 (decisions + HITL bridge)
+→ MP-3 (work artifacts) → MP-4R (canonical Decision / Governance / Execution integration)
 → MP-5 (context view) → MP-6 (activity & evidence)
 → MP-7 (LKW adoption) → MP-8 (agent directory & external agents)
 → MP-9 (advanced UX / notifications / optional realtime)
 ```
+
+**Historical (superseded):** pre-rebase **MP-4** (decisions + public Nexus HITL bridge) — replaced by **MP-4R** and ADR-MP-009.
 
 ---
 
@@ -200,10 +202,13 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **MP-4R0 CURRENT** — legacy MP-4B/C/D **FROZEN** pending convergence; MP-4R1…R8 **NOT STARTED** |
+| **Status** | **MP-4R0 CLOSURE FIX / READY_FOR_REAUDIT** — legacy MP-4B/C/D **FROZEN** pending convergence; MP-4R1…R8 **NOT STARTED** |
 | **Purpose** | Multiplayer **bindings/projections** over canonical Decision, Governance/HITL, Execution continuation, Evidence, and Diagnostics — no duplicate authorities |
 | **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) + Collaborative Work for work primitives |
 | **Dependencies** | MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3 ownership **FROZEN**; canonical Decision + GR-5 continuation |
+| **REUSED EXISTING CAPABILITY** | Decision System; Decision human review; Governance/HITL; `ExecutionContinuationPort`; Evidence Plane; Diagnostics |
+| **NEW CAPABILITY REQUIRED (future)** | Collaborative Decision binding / projection (**MP-4R4+**, design gate only) |
+| **Explicit out of scope (SUPERSEDED / HISTORICAL)** | Legacy MP-4 program rows treating Decision, Approval, `DecisionResponse`, or public Nexus HITL bridge as **NEW Multiplayer primitives** |
 | **Architecture/ADR gate** | ADR-MP-009 **Accepted** at MP-4R0 |
 | **User-visible outcome** | Collaborative work associated with canonical decisions and governed execution without parallel decision/approval stores |
 
@@ -211,7 +216,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 
 | Slice | Scope | Status |
 |-------|-------|--------|
-| **MP-4R0** | Core rebase & supersession gate | **CURRENT** |
+| **MP-4R0** | Core rebase & supersession gate | **CLOSURE FIX / READY_FOR_REAUDIT** |
 | MP-4R1 | Decision contract convergence | NOT STARTED |
 | MP-4R2 | Human review / Approval convergence | NOT STARTED |
 | MP-4R3 | Execution continuation integration | NOT STARTED |

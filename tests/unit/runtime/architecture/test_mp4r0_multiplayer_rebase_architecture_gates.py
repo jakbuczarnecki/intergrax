@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import ast
+from collections.abc import Iterable
 from pathlib import Path
 
 import pytest
@@ -12,7 +13,9 @@ import pytest
 pytestmark = pytest.mark.unit
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_COLLABORATIVE_WORK = _REPO_ROOT / "intergrax" / "collaborative_work"
+_MULTIPLAYER_PRODUCTION_ROOTS: tuple[Path, ...] = (
+    _REPO_ROOT / "intergrax" / "collaborative_work",
+)
 _FORBIDDEN_NEXUS_PREFIXES = ("intergrax.runtime.nexus",)
 _FORBIDDEN_NEXUS_SYMBOLS = frozenset(
     {
@@ -37,12 +40,37 @@ _FORBIDDEN_AUTHORITY_CLASS_NAMES = frozenset(
     },
 )
 _LEGACY_DECISION_CONTRACT = _REPO_ROOT / "intergrax" / "contracts" / "decision.py"
+_LEGACY_DECISION_PACKAGE = _REPO_ROOT / "intergrax" / "contracts" / "decision"
 _LEGACY_APPROVAL_CONTRACT = _REPO_ROOT / "intergrax" / "contracts" / "approval.py"
 _LEGACY_APPROVAL_PACKAGE = _REPO_ROOT / "intergrax" / "approval"
+_CANONICAL_DECISION_MODULE_PREFIXES = (
+    "intergrax.contracts.decision_identity",
+    "intergrax.contracts.decision_lifecycle",
+    "intergrax.contracts.decision_human_review",
+    "intergrax.contracts.decision_record",
+    "intergrax.contracts.decision_finalization",
+    "intergrax.contracts.decision_checkpoint",
+    "intergrax.contracts.decision_revision",
+    "intergrax.contracts.decision_resolution",
+    "intergrax.contracts.decision_verification",
+    "intergrax.contracts.decision_verification_stage",
+    "intergrax.contracts.decision_authorization",
+    "intergrax.contracts.decision_authoritative_exposure",
+    "intergrax.contracts.decision_artifact_registry",
+    "intergrax.contracts.decision_strategy",
+    "intergrax.contracts.decision_exposure_selection",
+    "intergrax.contracts.decision_coordination",
+    "intergrax.contracts.decision_disagreement",
+)
 
 
-def _production_modules(root: Path) -> list[Path]:
-    return sorted(path for path in root.rglob("*.py") if path.is_file())
+def _production_modules(roots: Iterable[Path]) -> list[Path]:
+    modules: list[Path] = []
+    for root in roots:
+        modules.extend(
+            sorted(path for path in root.rglob("*.py") if path.is_file()),
+        )
+    return modules
 
 
 def _collect_imports(path: Path) -> list[tuple[int, str]]:
@@ -66,6 +94,17 @@ def _collect_class_definitions(path: Path) -> list[tuple[int, str]]:
     return classes
 
 
+def _is_legacy_mp4b_decision_import(module: str) -> bool:
+    if module == "intergrax.contracts.decision":
+        return True
+    if not module.startswith("intergrax.contracts.decision."):
+        return False
+    return not any(
+        module == prefix or module.startswith(f"{prefix}.")
+        for prefix in _CANONICAL_DECISION_MODULE_PREFIXES
+    )
+
+
 def _nexus_import_violations(modules: list[Path]) -> list[str]:
     violations: list[str] = []
     for module_path in modules:
@@ -82,35 +121,61 @@ def _nexus_import_violations(modules: list[Path]) -> list[str]:
     return violations
 
 
-def test_mp4r0_collaborative_work_has_no_public_nexus_dependency() -> None:
-    violations = _nexus_import_violations(_production_modules(_COLLABORATIVE_WORK))
-    assert not violations, "\n".join(violations)
-
-
-def test_mp4r0_collaborative_work_defines_no_duplicate_platform_authority_classes() -> None:
+def _duplicate_authority_class_violations(modules: list[Path]) -> list[str]:
     violations: list[str] = []
-    for module_path in _production_modules(_COLLABORATIVE_WORK):
+    for module_path in modules:
         rel = module_path.relative_to(_REPO_ROOT)
         for lineno, name in _collect_class_definitions(module_path):
             if name in _FORBIDDEN_AUTHORITY_CLASS_NAMES:
                 violations.append(f"{rel}:{lineno} defines forbidden class {name}")
+    return violations
+
+
+def _legacy_decision_import_violations(modules: list[Path]) -> list[str]:
+    violations: list[str] = []
+    for module_path in modules:
+        rel = module_path.relative_to(_REPO_ROOT)
+        for lineno, module in _collect_imports(module_path):
+            if _is_legacy_mp4b_decision_import(module):
+                violations.append(f"{rel}:{lineno} imports legacy MP-4B decision contract")
+    return violations
+
+
+@pytest.fixture(name="multiplayer_production_modules")
+def fixture_multiplayer_production_modules() -> list[Path]:
+    return _production_modules(_MULTIPLAYER_PRODUCTION_ROOTS)
+
+
+def test_mp4r0_protected_multiplayer_roots_are_declared() -> None:
+    assert _MULTIPLAYER_PRODUCTION_ROOTS
+    for root in _MULTIPLAYER_PRODUCTION_ROOTS:
+        assert root.is_dir(), f"missing Multiplayer production root: {root}"
+
+
+def test_mp4r0_multiplayer_production_has_no_public_nexus_dependency(
+    multiplayer_production_modules: list[Path],
+) -> None:
+    violations = _nexus_import_violations(multiplayer_production_modules)
     assert not violations, "\n".join(violations)
 
 
-def test_mp4r0_collaborative_work_does_not_import_legacy_mp4_decision_contract() -> None:
-    violations: list[str] = []
-    for module_path in _production_modules(_COLLABORATIVE_WORK):
-        rel = module_path.relative_to(_REPO_ROOT)
-        for lineno, module in _collect_imports(module_path):
-            if module == "intergrax.contracts.decision" or module.startswith(
-                "intergrax.contracts.decision."
-            ):
-                violations.append(f"{rel}:{lineno} imports legacy MP-4B decision contract")
+def test_mp4r0_multiplayer_production_defines_no_duplicate_platform_authority_classes(
+    multiplayer_production_modules: list[Path],
+) -> None:
+    violations = _duplicate_authority_class_violations(multiplayer_production_modules)
+    assert not violations, "\n".join(violations)
+
+
+def test_mp4r0_multiplayer_production_does_not_import_legacy_mp4_decision_contract(
+    multiplayer_production_modules: list[Path],
+) -> None:
+    violations = _legacy_decision_import_violations(multiplayer_production_modules)
     assert not violations, "\n".join(violations)
 
 
 def test_mp4r0_legacy_mp4_surfaces_remain_quarantined_pending_convergence() -> None:
     """Caller-proof retirement path — legacy modules exist but are not MP-4R0 expansion targets."""
     assert _LEGACY_DECISION_CONTRACT.is_file()
+    assert _LEGACY_DECISION_PACKAGE.is_dir()
     assert _LEGACY_APPROVAL_CONTRACT.is_file()
     assert _LEGACY_APPROVAL_PACKAGE.is_dir()

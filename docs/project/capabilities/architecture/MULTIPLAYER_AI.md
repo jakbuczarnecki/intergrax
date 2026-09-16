@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Multiplayer AI - Multi-layer Feature Architecture
 
-**Multiplayer AI** is Intergrax's cross-layer platform capability for governed, multi-principal collaboration: shared work, durable collaborative outputs, explicit decisions and approvals, principal-scoped context views, activity and provenance, and interoperability with external agents - without collapsing those primitives into a single product channel, conversation transport, or application-local feature.
+**Multiplayer AI** is Intergrax's cross-layer platform capability for governed, multi-principal collaboration: shared work, durable collaborative outputs, collaborative association with canonical decisions and approvals, principal-scoped context views, activity and provenance, and interoperability with external agents - without collapsing those primitives into a single product channel, conversation transport, or application-local feature.
 
 ## Why it matters
 
@@ -20,7 +20,7 @@ Ordinary multi-agent orchestration is not multiplayer. Multiplayer AI addresses:
 - **collaborative activity / provenance** for audit and governance,
 - humans + agents + external agents acting under explicit membership and delegation.
 
-Multiplayer AI is **not** Slack chat, group conversation, shared memory, Nexus HITL, or multi-agent orchestration relabeled. Channels are **adapters**; LKW is a **reference consumer**, not owner of platform primitives; Nexus HITL remains execution pause/resume - Multiplayer Decision semantics are collaborative semantics.
+Multiplayer AI is **not** Slack chat, group conversation, shared memory, execution pause/resume machinery, or multi-agent orchestration relabeled. Channels are **adapters**; LKW is a **reference consumer**, not owner of platform primitives; **Governance/HITL** and **`ExecutionContinuationPort`** own execution pause/resume — Multiplayer exposes collaborative binding/projection over those canonical capabilities, not parallel Decision/HITL authority.
 
 ## Current reality / maturity boundary
 
@@ -30,7 +30,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 **B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented and closed in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence, production PostgreSQL qualification). Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
 
-**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4R0 — CURRENT** (core rebase on canonical Decision / Execution / Governance / Evidence / Diagnostics; ADR-MP-009); legacy MP-4B/C/D **FROZEN** pending MP-4R1…R6 — see [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap.
+**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4R0 — CLOSURE FIX / READY_FOR_REAUDIT** (core rebase on canonical Decision / Execution / Governance / Evidence / Diagnostics; ADR-MP-009); legacy MP-4B/C/D **FROZEN** pending MP-4R1…R6 — see [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap. **MP-4R1 NOT STARTED.**
 
 **D. Proof boundary.** Runtime / public **E2E proof for Multiplayer AI as a product capability is not established**. Architecture and partial MP-1 implementation do not imply end-to-end collaborative product readiness.
 
@@ -49,11 +49,11 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 | **Membership / delegation** | MP-1 - Collaborative Work; **CLOSED** |
 | **Shared work** | MP-2 - Collaborative Work; **CLOSED** |
 | **Work artifacts** | MP-3 - ownership frozen (ADR-MP-004); decomposition APPROVED / CLOSED; MP-3A closed; runtime IN PROGRESS |
-| **Decision / approval** | MP-4 - collaborative primitive; HITL bridge only for execution pause |
+| **Decision / approval** | **REUSED** canonical Decision System + Governance/HITL + Multiplayer binding/projection (MP-4R); not Multiplayer-owned authority |
 | **Context view** | MP-5 - principal-scoped; composes UCL/CE/Memory/Knowledge |
 | **Activity / provenance** | MP-6 - planned |
 | **LKW relation** | MP-7 reference consumer - not owner |
-| **HITL relation** | Execution pause/resume primitive - not Decision owner |
+| **HITL relation** | **REUSED** Governance/HITL + `ExecutionContinuationPort` — not Decision owner; Nexus internal orchestration only |
 | **External agent interoperability** | MP-8 - future; AgentDirectory ≠ AgentRegistry |
 | **Current maturity** | Architecture / roadmap stage; MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3A **CLOSED**; MP-3 runtime **IN PROGRESS**; capability-wide proof not established |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [§Purpose](#purpose) · [§Strategic position](#strategic-position) · [§Roadmap summary](#roadmap-summary) |
@@ -69,7 +69,9 @@ Shared Work
   ↓
 Work Artifacts
   ↓
-Decision / Approval
+typed binding / projection (MP-4R4+)
+  ↓
+Canonical Decision / Governance (platform-owned)
   ↓
 Principal-scoped Context View
   ↓
@@ -84,7 +86,7 @@ application UX / channels
 | -------- | ---- |
 | **Channels** (Slack, conversation) | Adapters - surface primitives; do not own Shared Work or Decision |
 | **LKW** | First reference consumer (MP-7) - not owner of Principal, WorkItem, WorkArtifact, Decision |
-| **Nexus HITL** | Execution pause/resume - MP-4 may bridge; Decision ≠ HITL |
+| **Governance/HITL + ExecutionContinuationPort** | Public continuation boundary → Execution Engine; Decision ≠ HITL; Nexus **internal orchestration implementation only** |
 | **UCL / Memory / RAG** | Reused subsystems for ContextView (MP-5) - not Multiplayer primitive owners |
 | **AgentRegistry** | Execution/routability - AgentDirectory (MP-8) is collaborative identity |
 
@@ -101,8 +103,8 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-3C** — READY_FOR_INDEPENDENT_AUDIT (implementation complete; pending independent audit)
-**Next task:** Independent MP-3C audit — **MP-3D NOT STARTED**
+**Current active task:** **MP-4R0 — CLOSURE FIX / READY_FOR_REAUDIT** (ADR-MP-009 supersession gate)
+**Next task:** Independent MP-4R0 closure audit — **MP-4R1 NOT STARTED**
 
 ## Cursor read scope (token budget)
 
@@ -117,7 +119,7 @@ Tier-0/Tier-1 platform Multiplayer primitives
 
 ## Purpose
 
-Multiplayer AI is a **cross-layer Intergrax platform capability** for governed, multi-principal collaboration: shared work, durable collaborative outputs, explicit decisions and approvals, principal-scoped context views, activity and provenance, and interoperability with external agents - without collapsing those primitives into a single product channel, conversation transport, or application-local feature.
+Multiplayer AI is a **cross-layer Intergrax platform capability** for governed, multi-principal collaboration: shared work, durable collaborative outputs, **collaborative association/projection over canonical Decision and Governance capabilities**, principal-scoped context views, activity and provenance, and interoperability with external agents - without collapsing those primitives into a single product channel, conversation transport, or application-local feature.
 
 Multiplayer AI is **not**:
 
@@ -125,7 +127,7 @@ Multiplayer AI is **not**:
 - LKW conversation-context ownership,
 - Token Optimization or UCL relabeled as multiplayer,
 - Hybrid Ask or any single application workflow,
-- Nexus HITL itself (HITL remains the execution pause/resume mechanism that MP-4 may bridge to).
+- Nexus orchestration internals (Nexus is **internal** orchestration strategy only; public continuation is **`ExecutionContinuationPort`**),
 
 **LKW** (Local Knowledge Workspace) is the **first reference consumer** of platform Multiplayer primitives. LKW does **not** own Principal, WorkItem, WorkArtifact, Decision, ContextView, Activity, or AgentDirectory contracts.
 
@@ -151,7 +153,7 @@ intergrax/runtime/* → applications/local_workspace_application  (for multiplay
 |------|---------|
 | **Platform primitive rule** | Each MP phase introduces or adopts a reusable collaborative primitive owned at the platform boundary unless explicitly classified as product-only UX. |
 | **Reuse rule** | Adjacent existing capabilities may be **reused** where proven; they must not be **substituted** for a missing Multiplayer primitive. |
-| **HITL rule** | Collaborative Decision / Approval semantics are distinct from Nexus HITL. MP-4 bridges to HITL only where execution must pause and resume. |
+| **HITL rule** | Collaborative Decision / Approval semantics are distinct from execution pause/resume. Multiplayer **consumes** canonical Governance/HITL and **`ExecutionContinuationPort`**; it does not expose a public Nexus bridge. |
 | **Channel adapter rule** | Slack, conversation channels, and notification surfaces are **adapters** that may surface Multiplayer primitives; they do not own Shared Work, WorkArtifact, or Decision. |
 | **Context rule** | Principal-scoped `ContextView` composes existing UCL, Context Engineering, Memory, Knowledge, and Token Optimization mechanisms; it does not replace them or inherit their plan IDs. |
 | **LKW rule** | LKW adopts platform primitives in MP-7; prior LKW rows remain application capabilities until explicitly integrated. |
@@ -162,7 +164,7 @@ intergrax/runtime/* → applications/local_workspace_application  (for multiplay
 ## Roadmap summary
 
 ```text
-MP-0 → MP-1 → MP-2 → MP-3 → MP-4 → MP-5 → MP-6 → MP-7 → MP-8 → MP-9
+MP-0 → MP-1 → MP-2 → MP-3 → MP-4R → MP-5 → MP-6 → MP-7 → MP-8 → MP-9
 ```
 
 | Phase | Summary |
@@ -171,7 +173,7 @@ MP-0 → MP-1 → MP-2 → MP-3 → MP-4 → MP-5 → MP-6 → MP-7 → MP-8 →
 | **MP-1** | Principal, WorkspaceMembership, Delegation / effective authority |
 | **MP-2** | Shared Work: WorkItem, Assignment, lifecycle and concurrency |
 | **MP-3** | WorkArtifact and WorkArtifactVersion: durable collaborative outputs, versioning and provenance |
-| **MP-4** | Decision / DecisionResponse or Approval semantics + bridge to existing Nexus HITL where execution must pause |
+| **MP-4R** | **Active:** canonical Decision / Governance / Execution integration via public contracts (**MP-4R0 closure**). **Historical MP-4** (pre-rebase Decision/Approval/HITL bridge) **superseded** by ADR-MP-009. |
 | **MP-5** | Principal-scoped ContextView using existing UCL, Context Engineering, Memory and Knowledge |
 | **MP-6** | Collaborative Activity + provenance / evidence linkage |
 | **MP-7** | LKW reference-product adoption of platform Multiplayer primitives |
@@ -192,8 +194,10 @@ Classification applies per phase. Until MP-1+ ownership is confirmed, rows below
 | `CONVERSATION-CHANNEL-1` (`ConversationChannelIntegrationContract`) | External near-real-time human ↔ application channel adapter | MP-1 foundation |
 | Slack shared-conversation / Slack vertical integration rows | Product/channel adapter; may surface multiplayer UX | MP-2 Shared Work ownership |
 | `LKW-HYBRID-ASK-*` | Application workflow; may later create or consume WorkArtifacts | MP-3 WorkArtifact primitive |
-| Slack approval/decision surfacing rows | Channel presentation of decisions | MP-4 Decision primitive |
-| Nexus HITL (`RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`) | Execution pause/resume when policy or human gate requires it | MP-4 Decision semantics alone |
+| Slack approval/decision surfacing rows | Channel presentation of decisions | Canonical Decision System (Multiplayer binding only) |
+| Governance/HITL + `ExecutionContinuationPort` | Execution pause/resume when policy or human gate requires it | Decision semantics alone (Decision System owns Decision) |
+| Decision System (`DECISION_APPROVAL_GOVERNANCE`, `decision_*` contracts) | Decision identity, lifecycle, resolution, finalization | Multiplayer-owned Decision primitive |
+| Evidence Plane / Diagnostics | Factual evidence and interpretation authority | Multiplayer-owned evidence or diagnostic stores |
 | UCL (`UNIFIED_CONTEXT_LIFECYCLE`) | Durable/ephemeral context lifecycle, artifact coordination | MP-5 ContextView primitive |
 | Context Engineering (`CONTEXT_ENGINEERING`) | Budget authority, assembly, provenance of model-facing context | MP-5 principal scope model |
 | Memory (`MEMORY`) | Durable conversation/session ledger | MP-5 view composition store |
@@ -214,7 +218,7 @@ Classification applies per phase. Until MP-1+ ownership is confirmed, rows below
 | Shared Work lifecycle and concurrency rules | MP-2 | Platform-owned, not channel-owned |
 | WorkArtifact | MP-3 | Durable collaborative output identity |
 | WorkArtifactVersion | MP-3 | Versioning, lineage, provenance |
-| Decision / DecisionResponse / Approval semantics | MP-4 | Collaborative decision primitive; bridge to HITL for execution pause |
+| Collaborative Decision binding / projection | MP-4R4+ (future, design gate) | Associates Shared Work with canonical Decision/Governance — **not** a second Decision authority |
 | ContextView (principal-scoped) | MP-5 | Composes UCL/CE/Memory/Knowledge; does not relabel TOKEN/UCL rows |
 | Activity (collaborative) | MP-6 | Observable collaborative events with evidence linkage |
 | AgentDirectory | MP-8 | Registry/discovery for internal and external agents |
@@ -231,7 +235,7 @@ The following mappings are **explicitly forbidden** in roadmap, architecture, an
 2. `CONVERSATION-CHANNEL-1` is **not** the foundation of Principal / Membership / Delegation.
 3. Slack shared-conversation rows are **not** MP-2; Slack is a channel adapter, not Shared Work owner.
 4. `LKW-HYBRID-ASK-*` is **not** MP-3; Hybrid Ask may use WorkArtifacts later, but WorkArtifact is a platform primitive.
-5. Slack vertical rows are **not** MP-4; Slack may surface Decisions; Decision is platform-owned; HITL remains execution pause/resume.
+5. Slack vertical rows are **not** MP-4R; Slack may surface Decisions; **Decision System** owns Decision; **Governance/HITL** owns approval/HITL; Multiplayer may bind/project only.
 6. `TOKEN-10E-*` is **not** Multiplayer MP-5 implementation; Multiplayer may reuse UCL/Token Optimization work.
 7. Do **not** force-map existing adjacent rows to MP phases merely because concepts are related.
 8. Existing capabilities → `REUSED EXISTING CAPABILITY`. Missing primitives → `NEW CAPABILITY REQUIRED`. Never substitute adjacent rows for missing primitives.
@@ -310,14 +314,18 @@ scope) — provenance only, no lifecycle substitution.
 ### Artifacts and decisions
 
 ```text
-WorkArtifact != UCL OptimizationArtifact
+WorkArtifactVersion != UCL OptimizationArtifact
+Decision != WorkArtifact
 Decision != HITL
+Approval outcome != WorkArtifactVersion.status
+Evidence != execution authorization
 ```
 
 `WorkArtifactVersion` is the authoritative versioned collaborative output.
-WorkArtifacts may outlive Nexus executions. A Decision may exist without an
-active Nexus task. When execution must pause for that decision, it may bridge
-to existing HITL; MP-0 creates no second approval or pause runtime.
+WorkArtifacts may outlive executions. A canonical Decision may exist without an
+active execution. When execution must pause for human/policy gates, continuation flows
+**Governance/HITL → `ExecutionContinuationPort` → Execution Engine**; Multiplayer creates
+no second approval, pause, or Decision authority (see ADR-MP-009).
 
 ### Memory and principal-scoped context
 
@@ -450,7 +458,7 @@ not replace existing Evidence.
 
 ### MP-4R — Canonical core integration (replaces pre-rebase MP-4 program)
 
-**Status:** **MP-4R0 — CURRENT** — ADR-MP-009 **Accepted**; MP-4R1…MP-4R8 **NOT STARTED**; legacy MP-4B/C/D **FROZEN** (no deletion in MP-4R0).
+**Status:** **MP-4R0 — CLOSURE FIX / READY_FOR_REAUDIT** — ADR-MP-009 **Accepted**; MP-4R1…MP-4R8 **NOT STARTED**; legacy MP-4B/C/D **FROZEN** (no deletion in MP-4R0).
 
 **Intent:** Associate collaborative work (WorkItem, WorkArtifact) with **canonical** Decision, Governance/HITL, Execution continuation (`ExecutionContinuationPort`), Evidence, and Diagnostics — without owning Decision lifecycle, Approval/HITL authority, execution state, evidence facts, or diagnostic interpretation.
 
@@ -462,7 +470,7 @@ not replace existing Evidence.
 
 **Legacy (quarantined):** `intergrax/contracts/decision.py`, `intergrax/contracts/approval.py`, `intergrax/approval/` — convergence via MP-4R1…R6.
 
-**Next active task:** **Independent MP-4R0 audit** → MP-4R1 **NOT STARTED**.
+**Next active task:** **Independent MP-4R0 closure audit** → MP-4R1 **NOT STARTED**.
 
 ---
 
@@ -580,7 +588,7 @@ Each decision is required before the relevant implementation:
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 | **ADR-MP-008** | Workspace platformization / LKW migration |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 ownership **FROZEN**; MP-3 runtime **IN PROGRESS**. **ADR-MP-009 Accepted** — **MP-4R0 CURRENT**. ADR-MP-006…008 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 ownership **FROZEN**; MP-3 runtime **IN PROGRESS**. **ADR-MP-009 Accepted** — **MP-4R0 CLOSURE FIX / READY_FOR_REAUDIT**. ADR-MP-006…008 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 

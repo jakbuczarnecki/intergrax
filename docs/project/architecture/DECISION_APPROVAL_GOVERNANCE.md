@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4 / MP-4R)
 
-**Status:** **MP-4R0 — CURRENT** (core rebase & supersession gate) · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `FROZEN_PENDING_CONVERGENCE` · **MP-4C** `FROZEN_PENDING_CONVERGENCE` · **MP-4D** `FROZEN_PENDING_AUTHORITY_REBASE` · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8
+**Status:** **MP-4R0 — CLOSURE FIX / READY_FOR_REAUDIT** (core rebase & supersession gate) · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `FROZEN_PENDING_CONVERGENCE` · **MP-4C** `FROZEN_PENDING_CONVERGENCE` · **MP-4D** `FROZEN_PENDING_AUTHORITY_REBASE` · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8 · **MP-4R1 NOT STARTED**
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (1:1):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -88,14 +88,26 @@ Multiplayer MUST NOT own diagnostic interpretation.
 
 | Component | Location | Classification (MP-4R0) |
 |-----------|----------|-------------------------|
-| MP-4B Decision contracts | `intergrax/contracts/decision.py` | `REPLACE_WITH_CANONICAL` → `decision_identity` / DS-CORE; `REMOVE_AFTER_CALLER_PROOF` |
+| MP-4B Decision contracts (module) | `intergrax/contracts/decision.py` | `REPLACE_WITH_CANONICAL` → DS-CORE; `REMOVE_AFTER_CALLER_PROOF` |
+| MP-4B package shadow + export bridge | `intergrax/contracts/decision/__init__.py` | **MP-4R1 convergence debt** — dynamic load of sibling `decision.py`; not removed in MP-4R0 |
+| Decision Integration Boundary | `intergrax/contracts/decision/integration/**` | `KEEP` — contract-first adapter SPI; `REBASE_ON_CANONICAL` lifecycle mapping in MP-4R1+ |
+| Integration composition root | `intergrax/runtime/decision_integration_composition.py` | `KEEP` — composition boundary for providers/adapters |
+| Decision plugin composition | `intergrax/runtime/decision_plugin_composition.py` | `KEEP` — wires canonical decision flow + integration engine |
 | MP-4C Approval contracts | `intergrax/contracts/approval.py` | `REPLACE_WITH_CANONICAL` → `decision_human_review` + Governance/HITL; `REMOVE_AFTER_CALLER_PROOF` |
 | MP-4D Approval service | `intergrax/approval/` | `MIGRATE` authority path to Governance/HITL + MP-1 `CollaborativeWorkEnforcementGate`; not a second HITL runtime |
 | Contract / service tests | `tests/unit/contracts/test_decision_contracts.py`, `test_approval_*`, `tests/unit/approval/*` | `KEEP` until MP-4R6 caller proof |
 | Architecture gates MP-4B–D | `tests/unit/contracts/test_*_architecture_gates.py`, `tests/unit/approval/test_approval_authority_architecture_gates.py` | `KEEP` — quarantine legacy surface |
-| MP-4R0 collaborative gates | `tests/unit/runtime/architecture/test_mp4r0_multiplayer_rebase_architecture_gates.py` | `KEEP` — protect new boundaries |
+| MP-4R0 collaborative gates | `tests/unit/runtime/architecture/test_mp4r0_multiplayer_rebase_architecture_gates.py` | `KEEP` — protect Multiplayer production roots |
 
-**Caller audit (production):** `intergrax/contracts/decision.py` consumers are **only** legacy MP-4C (`approval.py`) and unit tests — **no** runtime Decision System consumer. Canonical Decision uses `intergrax/contracts/decision_identity.py` and related DS-CORE modules.
+**Namespace collision (documented):** `intergrax/contracts/decision.py` and `intergrax/contracts/decision/` coexist. Importing `intergrax.contracts.decision` initializes the package and **indirectly loads MP-4B** via `decision/__init__.py` — caller proof must not rely on grep of `decision.py` alone.
+
+**Caller audit — DIRECT SEMANTIC (production):** `intergrax/contracts/approval.py` imports MP-4B `DecisionId` / `validate_decision_id` from `intergrax.contracts.decision`.
+
+**Caller audit — PACKAGE / IMPORT-TIME (production):** same as semantic for `approval.py` (package init loads MP-4B bridge). **No** `intergrax/collaborative_work/**` import of legacy `intergrax.contracts.decision*`.
+
+**Caller audit — TEST-ONLY:** `tests/unit/contracts/test_decision_contracts.py`, `test_approval_contracts.py`, `test_approval_authority_integration.py`, `test_repository_quality_gate.py` (namespace import smoke).
+
+**Decision Integration Boundary — pluginability (MP-4R0 proof):** engine depends on `DecisionSystemIntegrationAdapter` / provider protocols; concrete adapters selected at `decision_integration_composition.py` / `decision_plugin_composition.py`; unknown provider fails closed via admission/composition policy; contracts carry no Nexus/vendor types.
 
 **Unique collaborative capability audit:** workspace-scoped `Decision` aggregate in MP-4B does **not** justify a second Decision authority — collaborative association is a **binding** concern (MP-4R4), not lifecycle ownership.
 
@@ -141,7 +153,7 @@ configured platform implementation
 
 | Slice | Status |
 |-------|--------|
-| **MP-4R0** — Core rebase & supersession gate | **CURRENT** |
+| **MP-4R0** — Core rebase & supersession gate | **CLOSURE FIX / READY_FOR_REAUDIT** |
 | MP-4R1 — Decision contract convergence | NOT STARTED |
 | MP-4R2 — Human review / Approval convergence | NOT STARTED |
 | MP-4R3 — Execution continuation integration | NOT STARTED |
