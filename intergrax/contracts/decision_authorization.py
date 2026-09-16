@@ -21,6 +21,11 @@ from intergrax.contracts.decision_identity import (
     DecisionIdentity,
     validate_decision_tenant_id,
 )
+from intergrax.contracts.decision_human_review import (
+    DecisionHumanReviewDecision,
+    DecisionHumanReviewOutcome,
+    validate_human_review_decision_for_proposal,
+)
 from intergrax.contracts.decision_record import (
     AuthoritativeAcceptedDecision,
     DecisionLineageRef,
@@ -298,6 +303,7 @@ class DecisionGovernanceEvaluationInput(Generic[T]):
     decision: AuthoritativeAcceptedDecision[T]
     action: DecisionExecutionAction
     policy_context: DecisionGovernancePolicyContext
+    human_review_decision: DecisionHumanReviewDecision | None = None
 
     def __post_init__(self) -> None:
         if type(self.decision) is not AuthoritativeAcceptedDecision:
@@ -312,6 +318,37 @@ class DecisionGovernanceEvaluationInput(Generic[T]):
             raise TypeError(
                 "DecisionGovernanceEvaluationInput.policy_context must be DecisionGovernancePolicyContext",
             )
+        if self.human_review_decision is not None and type(
+            self.human_review_decision,
+        ) is not DecisionHumanReviewDecision:
+            raise TypeError(
+                "DecisionGovernanceEvaluationInput.human_review_decision "
+                "must be DecisionHumanReviewDecision or None",
+            )
+
+
+def validate_governance_evaluation_human_review_evidence(
+    *,
+    evaluation_input: DecisionGovernanceEvaluationInput[T],
+) -> None:
+    """Bind optional post-human review evidence to the evaluated decision proposal."""
+    if type(evaluation_input) is not DecisionGovernanceEvaluationInput:
+        raise TypeError("evaluation_input must be DecisionGovernanceEvaluationInput")
+    human_decision = evaluation_input.human_review_decision
+    if human_decision is None:
+        return
+    if human_decision.outcome is not DecisionHumanReviewOutcome.APPROVED:
+        raise ValueError(
+            "governance evaluation human_review_decision requires APPROVED outcome",
+        )
+    proposal_ref = DecisionProposalRef(
+        identity=evaluation_input.decision.identity,
+        lineage_ref=evaluation_input.decision.lineage.current,
+    )
+    validate_human_review_decision_for_proposal(
+        decision=human_decision,
+        proposal_ref=proposal_ref,
+    )
 
 
 def validate_governance_decision_against_input(
@@ -449,6 +486,9 @@ def evaluate_decision_governance_with(
     """Evaluate via a custom evaluator and reject semantically invalid output."""
     if type(evaluation_input) is not DecisionGovernanceEvaluationInput:
         raise TypeError("evaluation_input must be DecisionGovernanceEvaluationInput")
+    validate_governance_evaluation_human_review_evidence(
+        evaluation_input=evaluation_input,
+    )
     decision = evaluator.evaluate(evaluation_input=evaluation_input)
     validate_governance_decision_against_input(
         evaluation_input=evaluation_input,

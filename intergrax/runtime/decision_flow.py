@@ -625,19 +625,32 @@ def resume_decision_flow_after_human_review(
                 decision=accepted,
                 action=governance_spec.action,
                 policy_context=governance_spec.policy_context,
+                human_review_decision=decision,
             )
-            allow_decision = DecisionGovernanceDecision(
-                disposition=DecisionGovernanceDisposition.ALLOW,
-                decision_ref=authoritative_decision_ref(accepted),
-                action=governance_spec.action,
-                policy_context=governance_spec.policy_context,
-                tenant_id=accepted.identity.tenant_id,
-            )
-            authorization = mint_validated_execution_authorization(
+            governance_decision = evaluate_decision_governance_with(
+                evaluator=governance_spec.evaluator,
                 evaluation_input=evaluation_input,
-                governance_decision=allow_decision,
             )
-            _ = authoritative_decision_ref(accepted)
+            if governance_decision.disposition is DecisionGovernanceDisposition.ALLOW:
+                authorization = mint_validated_execution_authorization(
+                    evaluation_input=evaluation_input,
+                    governance_decision=governance_decision,
+                )
+                _ = authoritative_decision_ref(accepted)
+            elif governance_decision.disposition is DecisionGovernanceDisposition.DENY:
+                host_action = DecisionFlowHostAction.BLOCK
+                authority_reason = "decision_governance_denied"
+            elif (
+                governance_decision.disposition
+                is DecisionGovernanceDisposition.REQUIRE_HUMAN
+            ):
+                host_action = DecisionFlowHostAction.BLOCK
+                authority_reason = "decision_governance_human_review_required_again"
+            else:
+                raise ValueError(
+                    "unsupported governance disposition after human review: "
+                    f"{governance_decision.disposition.value!r}",
+                )
         return DecisionFlowHumanReviewResumeResult(
             result=DecisionFlowResult(
                 host_action=host_action,

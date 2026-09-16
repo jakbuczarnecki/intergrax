@@ -196,6 +196,41 @@ class RequireHumanGovernanceEvaluator:
     policy_context: object
 
     def evaluate(self, *, evaluation_input):
+        human = evaluation_input.human_review_decision
+        if human is not None and human.outcome is DecisionHumanReviewOutcome.APPROVED:
+            return DecisionGovernanceDecision(
+                disposition=DecisionGovernanceDisposition.ALLOW,
+                decision_ref=authoritative_decision_ref(evaluation_input.decision),
+                action=self.action,
+                policy_context=self.policy_context,
+                tenant_id=evaluation_input.decision.identity.tenant_id,
+            )
+        return DecisionGovernanceDecision(
+            disposition=DecisionGovernanceDisposition.REQUIRE_HUMAN,
+            decision_ref=authoritative_decision_ref(evaluation_input.decision),
+            action=self.action,
+            policy_context=self.policy_context,
+            tenant_id=evaluation_input.decision.identity.tenant_id,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class PostHumanDenyGovernanceEvaluator:
+    """Test evaluator: REQUIRE_HUMAN until approved human evidence, then DENY."""
+
+    action: object
+    policy_context: object
+
+    def evaluate(self, *, evaluation_input):
+        human = evaluation_input.human_review_decision
+        if human is not None and human.outcome is DecisionHumanReviewOutcome.APPROVED:
+            return DecisionGovernanceDecision(
+                disposition=DecisionGovernanceDisposition.DENY,
+                decision_ref=authoritative_decision_ref(evaluation_input.decision),
+                action=self.action,
+                policy_context=self.policy_context,
+                tenant_id=evaluation_input.decision.identity.tenant_id,
+            )
         return DecisionGovernanceDecision(
             disposition=DecisionGovernanceDisposition.REQUIRE_HUMAN,
             decision_ref=authoritative_decision_ref(evaluation_input.decision),
@@ -673,3 +708,52 @@ async def test_resume_after_governance_human_reject_records_resolution(lifecycle
         DecisionLifecycleStage.FINALIZATION,
         DecisionLifecycleStage.TERMINAL,
     )
+
+
+@pytest.mark.asyncio
+async def test_resume_after_human_approve_uses_governance_evaluator_not_synthetic_allow(
+    lifecycle_binding,
+) -> None:
+    port = RecordingHumanReviewPort()
+    evaluator_spec = _governance_spec(
+        PostHumanDenyGovernanceEvaluator(
+            action=evaluator_spec_action(),
+            policy_context=evaluator_spec_policy(),
+        ),
+    )
+    gate = CanonicalDecisionFlowGate(
+        capabilities=DecisionFlowGateCapabilities(
+            verification_pipeline=_pipeline(PassedStage(kind="test.stage")),
+            revision_policy=decision_revision_policy(max_revisions=0),
+            scopes=frozenset({DecisionFlowScope.UAEP_STEP}),
+            governance_spec=evaluator_spec,
+            human_review_port=port,
+        ),
+    )
+    pending = await gate.evaluate(
+        DecisionFlowRequest(
+            identity_seed=_identity_seed(),
+            artifact_kind=validate_decision_artifact_kind("test.payload"),
+            payload=Payload(text="ok"),
+            flow_scope=DecisionFlowScope.UAEP_STEP,
+        ),
+    )
+    review_request = pending.human_review_pending.request
+    decision = decision_human_review_decision(
+        request=review_request,
+        outcome=DecisionHumanReviewOutcome.APPROVED,
+        approver=_test_approver(),
+        provenance=DecisionHumanReviewProvenance(
+            human_record_id="hdec-test-gov-deny",
+            human_request_id=str(review_request.request_id),
+        ),
+    )
+    resumed = resume_decision_flow_after_human_review(
+        gate=gate,
+        pending_result=pending,
+        decision=decision,
+    )
+    assert resumed.result.host_action is DecisionFlowHostAction.BLOCK
+    assert resumed.result.authority_reason == "decision_governance_denied"
+    assert resumed.result.authorization is None
+    assert resumed.result.lifecycle_state.stage is DecisionLifecycleStage.TERMINAL

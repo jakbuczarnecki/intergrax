@@ -14,7 +14,10 @@ from intergrax.contracts.decision_authorization import (
     decision_governance_policy_context,
     validate_decision_execution_action_kind,
 )
-from intergrax.contracts.decision_human_review import DecisionHumanReviewPending
+from intergrax.contracts.decision_human_review import (
+    DecisionHumanReviewOutcome,
+    DecisionHumanReviewPending,
+)
 from intergrax.contracts.decision_verification import (
     VerificationStageOutcome,
     validate_verification_stage_kind,
@@ -61,6 +64,15 @@ class Mp4R7RequireHumanGovernanceEvaluator:
     policy_context: object
 
     def evaluate(self, *, evaluation_input):
+        human = evaluation_input.human_review_decision
+        if human is not None and human.outcome is DecisionHumanReviewOutcome.APPROVED:
+            return DecisionGovernanceDecision(
+                disposition=DecisionGovernanceDisposition.ALLOW,
+                decision_ref=authoritative_decision_ref(evaluation_input.decision),
+                action=self.action,
+                policy_context=self.policy_context,
+                tenant_id=evaluation_input.decision.identity.tenant_id,
+            )
         return DecisionGovernanceDecision(
             disposition=DecisionGovernanceDisposition.REQUIRE_HUMAN,
             decision_ref=authoritative_decision_ref(evaluation_input.decision),
@@ -70,7 +82,35 @@ class Mp4R7RequireHumanGovernanceEvaluator:
         )
 
 
-def mp4r7_governance_spec(evaluator: Mp4R7RequireHumanGovernanceEvaluator) -> DecisionFlowGovernanceSpec[object]:
+@dataclass(frozen=True, slots=True)
+class Mp4R7PostHumanDenyGovernanceEvaluator:
+    """Qualification evaluator: REQUIRE_HUMAN pre-HITL, DENY after approved human review."""
+
+    action: object
+    policy_context: object
+
+    def evaluate(self, *, evaluation_input):
+        human = evaluation_input.human_review_decision
+        if human is not None and human.outcome is DecisionHumanReviewOutcome.APPROVED:
+            return DecisionGovernanceDecision(
+                disposition=DecisionGovernanceDisposition.DENY,
+                decision_ref=authoritative_decision_ref(evaluation_input.decision),
+                action=self.action,
+                policy_context=self.policy_context,
+                tenant_id=evaluation_input.decision.identity.tenant_id,
+            )
+        return DecisionGovernanceDecision(
+            disposition=DecisionGovernanceDisposition.REQUIRE_HUMAN,
+            decision_ref=authoritative_decision_ref(evaluation_input.decision),
+            action=self.action,
+            policy_context=self.policy_context,
+            tenant_id=evaluation_input.decision.identity.tenant_id,
+        )
+
+
+def mp4r7_governance_spec(
+    evaluator: Mp4R7RequireHumanGovernanceEvaluator | Mp4R7PostHumanDenyGovernanceEvaluator,
+) -> DecisionFlowGovernanceSpec[object]:
     return DecisionFlowGovernanceSpec(
         action=evaluator.action,
         policy_context=evaluator.policy_context,
@@ -110,6 +150,7 @@ def mp4r7_governance_policy_context():
 __all__ = [
     "Mp4R7PassedVerificationStage",
     "Mp4R7RecordingHumanReviewPort",
+    "Mp4R7PostHumanDenyGovernanceEvaluator",
     "Mp4R7RequireHumanGovernanceEvaluator",
     "mp4r7_governance_action",
     "mp4r7_governance_policy_context",

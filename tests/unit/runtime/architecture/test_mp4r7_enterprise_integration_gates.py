@@ -133,6 +133,38 @@ def test_mp4r7_scenario_does_not_fabricate_primary_error_in_evidence_handler() -
     assert 'primary_error = RuntimeError("protected operation failed")' not in text
 
 
+def test_mp4r7_decision_flow_resume_does_not_synthesize_governance_allow() -> None:
+    module = _REPO_ROOT / "intergrax" / "runtime" / "decision_flow.py"
+    text = module.read_text(encoding="utf-8-sig")
+    tree = ast.parse(text, filename=str(module))
+    resume_fn: ast.FunctionDef | None = None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == "resume_decision_flow_after_human_review":
+            resume_fn = node
+            break
+    assert resume_fn is not None
+    synthetic_allow: list[int] = []
+    for node in ast.walk(resume_fn):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        name = func.id if isinstance(func, ast.Name) else None
+        if name != "DecisionGovernanceDecision":
+            continue
+        for keyword in node.keywords:
+            if keyword.arg != "disposition":
+                continue
+            value = keyword.value
+            if isinstance(value, ast.Attribute) and value.attr == "ALLOW":
+                synthetic_allow.append(node.lineno)
+    assert not synthetic_allow, (
+        "resume_decision_flow_after_human_review must not mint DecisionGovernanceDecision(ALLOW): "
+        f"lines {synthetic_allow}"
+    )
+    segment = ast.get_source_segment(text, resume_fn) or ""
+    assert "evaluate_decision_governance_with" in segment
+
+
 def test_mp4r7_canonical_contracts_importable() -> None:
     from intergrax.contracts.collaborative_decision_binding import CollaborativeDecisionBinding
     from intergrax.contracts.decision_human_review import DecisionHumanReviewPort
