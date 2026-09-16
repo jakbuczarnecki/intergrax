@@ -12,6 +12,7 @@ from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.memory_control import (
     EpisodicMemoryCapability,
     MemoryControlAccessDenied,
+    MemoryControlGovernanceDenied,
     MemoryControlBackendError,
     MemoryControlForgetRequest,
     MemoryControlForgetResult,
@@ -59,9 +60,68 @@ from intergrax.memory.strategies.errors import MemoryStrategyError
 from intergrax.memory.contracts.memory_recall import MemoryRecallReasonCode, MemorySupersessionIntent
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecyclePartialError
+from intergrax.memory.contracts.memory_security_governance import (
+    MemoryGovernanceEvaluationRequest,
+    MemoryGovernanceOperation,
+    MemoryGovernanceRecordSnapshot,
+    MemoryGovernanceTarget,
+    MemorySecurityContext,
+)
+from intergrax.memory.memory_security_governance_service import (
+    MemorySecurityGovernanceService,
+    build_default_memory_security_governance_service,
+)
 from intergrax.utils.time_provider import SystemTimeProvider, TimeProvider
 
 __all__ = ["DefaultMemoryControlPlane", "UserProfileManagerMemoryCapability"]
+
+
+def _governance_service_or_default(
+    service: MemorySecurityGovernanceService | None,
+) -> MemorySecurityGovernanceService:
+    return service if service is not None else build_default_memory_security_governance_service()
+
+
+def _security_context(
+    identity: RequestIdentity,
+    scope: MemoryControlScopeRef,
+    operation: MemoryGovernanceOperation,
+) -> MemorySecurityContext:
+    return MemorySecurityContext(
+        identity=identity,
+        scope=scope,
+        operation=operation,
+        reference_time=None,
+    )
+
+
+def _enforce_governance(
+    service: MemorySecurityGovernanceService | None,
+    request: MemoryGovernanceEvaluationRequest,
+) -> None:
+    decision = _governance_service_or_default(service).evaluate(request)
+    if not (
+        decision.permits_mutation()
+        if request.context.operation in _GOVERNANCE_MUTATION_OPERATIONS
+        else decision.permits_disclosure()
+    ):
+        raise MemoryControlGovernanceDenied(
+            f"memory governance denied: {decision.reason_code.value}",
+            decision=decision,
+        )
+
+
+_GOVERNANCE_MUTATION_OPERATIONS = frozenset(
+    {
+        MemoryGovernanceOperation.REMEMBER,
+        MemoryGovernanceOperation.PROMOTE,
+        MemoryGovernanceOperation.SUPERSEDE,
+        MemoryGovernanceOperation.DELETE,
+        MemoryGovernanceOperation.COMPACT,
+        MemoryGovernanceOperation.PROJECT,
+        MemoryGovernanceOperation.UPDATE,
+    }
+)
 
 
 def _assert_scope_authorized(
@@ -277,6 +337,7 @@ class DefaultMemoryControlPlane:
     recall_strategies: MemoryRecallStrategySet | None = None
     recall_retrieval_config: UserMemoryRecallRetrievalConfig | None = None
     time_provider: type[TimeProvider] = SystemTimeProvider
+    security_governance: MemorySecurityGovernanceService | None = None
 
     async def remember(
         self,
@@ -286,7 +347,7 @@ class DefaultMemoryControlPlane:
     ) -> MemoryControlRememberResult:
         _assert_scope_authorized(identity, scope)
         if scope.kind is MemoryControlPlaneScope.USER:
-            return await self._remember_user(scope, request)
+            return await self._remember_user(identity, scope, request)
         if scope.kind is MemoryControlPlaneScope.TASK:
             return await self._remember_task(scope, request)
         raise MemoryControlUnsupportedScope(f"unsupported scope for remember: {scope.kind.value}")
@@ -299,7 +360,7 @@ class DefaultMemoryControlPlane:
     ) -> MemoryControlRecallResult:
         _assert_scope_authorized(identity, scope)
         if scope.kind is MemoryControlPlaneScope.USER:
-            return await self._recall_user(scope, request)
+            return await self._recall_user(identity, scope, request)
         if scope.kind is MemoryControlPlaneScope.SESSION:
             return await self._recall_session(scope, request)
         raise MemoryControlUnsupportedScope(f"unsupported scope for recall: {scope.kind.value}")
@@ -318,6 +379,28 @@ class DefaultMemoryControlPlane:
         if self.user_profile is None:
             raise MemoryControlUnsupportedScope("user profile memory capability not configured")
         user_id = scope.user_id or ""
+        active_entries = await self.user_profile.list_active_memory_entries(user_id)
+        by_id = {entry.entry_id: entry for entry in active_entries}
+        superseded = by_id.get(intent.superseded_memory_id)
+        superseding = by_id.get(intent.superseding_memory_id)
+        if superseded is not None:
+            _enforce_governance(
+                self.security_governance,
+                MemoryGovernanceEvaluationRequest(
+                    context=_security_context(
+                        identity, scope, MemoryGovernanceOperation.SUPERSEDE
+                    ),
+                    target=MemoryGovernanceTarget(memory_id=intent.superseded_memory_id),
+                    existing_record=MemoryGovernanceRecordSnapshot.from_user_profile_entry(
+                        superseded
+                    ),
+                    proposed_record=(
+                        MemoryGovernanceRecordSnapshot.from_user_profile_entry(superseding)
+                        if superseding is not None
+                        else None
+                    ),
+                ),
+            )
         try:
             return await self.user_profile.apply_memory_supersession(user_id, intent)
         except MemoryControlPartialLifecycleError:
@@ -335,7 +418,7 @@ class DefaultMemoryControlPlane:
     ) -> MemoryControlForgetResult:
         _assert_scope_authorized(identity, scope)
         if scope.kind is MemoryControlPlaneScope.USER:
-            return await self._forget_user(scope, request)
+            return await self._forget_user(identity, scope, request)
         if scope.kind is MemoryControlPlaneScope.TASK:
             return await self._forget_task(scope, request)
         raise MemoryControlUnsupportedScope(f"unsupported scope for forget: {scope.kind.value}")
@@ -367,6 +450,7 @@ class DefaultMemoryControlPlane:
 
     async def _remember_user(
         self,
+        identity: RequestIdentity,
         scope: MemoryControlScopeRef,
         request: MemoryControlRememberRequest,
     ) -> MemoryControlRememberResult:
@@ -393,6 +477,13 @@ class DefaultMemoryControlPlane:
                 trust=trust,
                 governance=request.governance or MemoryRecordGovernance(),
             )
+        _enforce_governance(
+            self.security_governance,
+            MemoryGovernanceEvaluationRequest(
+                context=_security_context(identity, scope, MemoryGovernanceOperation.REMEMBER),
+                proposed_record=MemoryGovernanceRecordSnapshot.from_user_profile_entry(entry),
+            ),
+        )
         try:
             capability_result = await self.user_profile.add_memory_entry(user_id, entry)
         except MemoryControlPartialLifecycleError:
@@ -409,6 +500,7 @@ class DefaultMemoryControlPlane:
 
     async def _recall_user(
         self,
+        identity: RequestIdentity,
         scope: MemoryControlScopeRef,
         request: MemoryControlRecallRequest,
     ) -> MemoryControlRecallResult:
@@ -419,6 +511,10 @@ class DefaultMemoryControlPlane:
         strategies = _recall_strategies_or_default(self.recall_strategies)
         retrieval_config = self.recall_retrieval_config or UserMemoryRecallRetrievalConfig()
         as_of_iso = self.time_provider.utc_now().isoformat()
+        governance_service = _governance_service_or_default(self.security_governance)
+        recall_governance_request = MemoryGovernanceEvaluationRequest(
+            context=_security_context(identity, scope, MemoryGovernanceOperation.RECALL),
+        )
         try:
             if query and self.user_profile.is_longterm_rag_enabled():
                 retrieval_k = semantic_retrieval_top_k(request.top_k, retrieval_config)
@@ -429,6 +525,10 @@ class DefaultMemoryControlPlane:
                     score_threshold=request.score_threshold,
                 )
                 candidates = candidates_from_semantic_search(search_result)
+                candidates = governance_service.filter_recall_candidates(
+                    recall_governance_request,
+                    candidates,
+                )
                 pipeline_result = run_recall_decision_pipeline(
                     candidates=candidates,
                     query=query,
@@ -453,6 +553,10 @@ class DefaultMemoryControlPlane:
                 entries,
                 query=query,
                 candidate_limit=candidate_limit,
+            )
+            candidates = governance_service.filter_recall_candidates(
+                recall_governance_request,
+                candidates,
             )
             pipeline_result = run_recall_decision_pipeline(
                 candidates=candidates,
@@ -479,6 +583,7 @@ class DefaultMemoryControlPlane:
 
     async def _forget_user(
         self,
+        identity: RequestIdentity,
         scope: MemoryControlScopeRef,
         request: MemoryControlForgetRequest,
     ) -> MemoryControlForgetResult:
@@ -492,6 +597,15 @@ class DefaultMemoryControlPlane:
         active_ids = {entry.entry_id for entry in active_entries}
         if entry_id not in active_ids:
             raise MemoryControlNotFound(f"memory entry not active: {entry_id}")
+        entry = next(e for e in active_entries if e.entry_id == entry_id)
+        _enforce_governance(
+            self.security_governance,
+            MemoryGovernanceEvaluationRequest(
+                context=_security_context(identity, scope, MemoryGovernanceOperation.DELETE),
+                target=MemoryGovernanceTarget(memory_id=entry_id),
+                existing_record=MemoryGovernanceRecordSnapshot.from_user_profile_entry(entry),
+            ),
+        )
         try:
             capability_result = await self.user_profile.remove_memory_entry(user_id, entry_id)
         except MemoryControlPartialLifecycleError:

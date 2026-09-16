@@ -14,6 +14,10 @@ from intergrax.memory.default_memory_control_plane import (
     UserProfileManagerMemoryCapability,
 )
 from intergrax.memory.user_profile_manager import UserProfileManager
+from intergrax.memory.memory_security_governance_service import (
+    MemorySecurityGovernanceService,
+    build_default_memory_security_governance_service,
+)
 
 __all__ = ["build_default_memory_control_plane"]
 
@@ -23,6 +27,7 @@ def build_default_memory_control_plane(
     user_profile_manager: UserProfileManager | None = None,
     task_memory: TaskMemoryCapability | None = None,
     episodic: EpisodicMemoryCapability | None = None,
+    security_governance: MemorySecurityGovernanceService | None = None,
 ) -> MemoryControlPlane:
     user_capability = (
         UserProfileManagerMemoryCapability(_manager=user_profile_manager)
@@ -33,4 +38,6 @@ def build_default_memory_control_plane(
         user_profile=user_capability,
         task_memory=task_memory,
         episodic=episodic,
+        security_governance=security_governance
+        or build_default_memory_security_governance_service(),
     )

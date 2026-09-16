@@ -29,6 +29,7 @@ from intergrax.memory.contracts.procedural_memory import ProcedureMemoryCapabili
 __all__ = [
     "EpisodicMemoryCapability",
     "MemoryControlAccessDenied",
+    "MemoryControlGovernanceDenied",
     "MemoryControlBackendError",
     "MemoryControlForgetRequest",
     "MemoryControlForgetResult",
@@ -66,6 +67,14 @@ class MemoryControlPlaneScope(str, Enum):
 
 class MemoryControlAccessDenied(PermissionError):
     """Canonical identity does not authorize the requested memory scope."""
+
+
+class MemoryControlGovernanceDenied(PermissionError):
+    """Security/governance boundary rejected the memory operation."""
+
+    def __init__(self, message: str, *, decision: object) -> None:
+        super().__init__(message)
+        self.decision = decision
 
 
 class MemoryControlUnsupportedScope(LookupError):
