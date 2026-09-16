@@ -6,11 +6,13 @@ from dataclasses import dataclass
 from typing import Dict, List
 
 from intergrax.skills.core.contracts import SkillManifest
+from intergrax.skills.registry.provenance import SkillRuntimeBindingMetadata
 
 
 @dataclass(frozen=True, slots=True)
 class RegisteredSkill:
     manifest: SkillManifest
+    binding: SkillRuntimeBindingMetadata | None = None
 
 
 class SkillRegistry:
@@ -19,7 +21,12 @@ class SkillRegistry:
     def __init__(self) -> None:
         self._skills: Dict[str, RegisteredSkill] = {}
 
-    def register(self, manifest: SkillManifest) -> None:
+    def register(
+        self,
+        manifest: SkillManifest,
+        *,
+        binding: SkillRuntimeBindingMetadata | None = None,
+    ) -> None:
         skill_id = manifest.skill_id
         if skill_id in self._skills:
             existing = self._skills[skill_id].manifest
@@ -29,10 +36,18 @@ class SkillRegistry:
                     f"use override flow to replace"
                 )
             raise ValueError(f"Skill already registered: {skill_id}")
-        self._skills[skill_id] = RegisteredSkill(manifest=manifest)
+        self._skills[skill_id] = RegisteredSkill(manifest=manifest, binding=binding)
 
-    def register_or_replace(self, manifest: SkillManifest) -> None:
-        self._skills[manifest.skill_id] = RegisteredSkill(manifest=manifest)
+    def register_or_replace(
+        self,
+        manifest: SkillManifest,
+        *,
+        binding: SkillRuntimeBindingMetadata | None = None,
+    ) -> None:
+        self._skills[manifest.skill_id] = RegisteredSkill(
+            manifest=manifest,
+            binding=binding,
+        )
 
     def get(self, skill_id: str) -> RegisteredSkill:
         try:
@@ -42,6 +57,12 @@ class SkillRegistry:
 
     def has(self, skill_id: str) -> bool:
         return skill_id in self._skills
+
+    def binding_metadata(self, skill_id: str) -> SkillRuntimeBindingMetadata | None:
+        registered = self._skills.get(skill_id)
+        if registered is None:
+            return None
+        return registered.binding
 
     def list(self) -> List[RegisteredSkill]:
         return list(self._skills.values())

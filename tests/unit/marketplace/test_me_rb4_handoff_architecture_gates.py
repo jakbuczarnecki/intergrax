@@ -106,7 +106,11 @@ def test_handoff_adapters_may_import_domain_lifecycle_contracts() -> None:
         "intergrax.contracts.lifecycle_handoff",
     )
     for path in _iter_py_files(root):
-        if path.name == "agent_distribution_bridge.py":
+        if path.name in (
+            "agent_distribution_bridge.py",
+            "tool_acquisition_bridge.py",
+            "skill_acquisition_bridge.py",
+        ):
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for imported in _collect_imports(tree):
@@ -153,6 +157,34 @@ def test_marketplace_contracts_do_not_own_tool_skill_lifecycle_ports() -> None:
             raise AssertionError(f"marketplace contracts export domain port: {node.value}")
         if isinstance(node, ast.Name) and node.id in forbidden_exports:
             raise AssertionError(f"marketplace contracts export domain port: {node.id}")
+
+
+def test_skill_bridge_imports_skill_acquisition_contract_only() -> None:
+    bridge = (
+        _package_root("intergrax.marketplace.handoff.adapters")
+        / "skill_acquisition_bridge.py"
+    )
+    tree = ast.parse(bridge.read_text(encoding="utf-8"))
+    skill_imports = [
+        imported
+        for imported in _collect_imports(tree)
+        if imported == "intergrax.skills" or imported.startswith("intergrax.skills.")
+    ]
+    assert skill_imports == ["intergrax.skills.dynamic_acquisition"]
+
+
+def test_tool_bridge_imports_tool_acquisition_contract_only() -> None:
+    bridge = (
+        _package_root("intergrax.marketplace.handoff.adapters")
+        / "tool_acquisition_bridge.py"
+    )
+    tree = ast.parse(bridge.read_text(encoding="utf-8"))
+    tool_imports = [
+        imported
+        for imported in _collect_imports(tree)
+        if imported == "intergrax.tools" or imported.startswith("intergrax.tools.")
+    ]
+    assert tool_imports == ["intergrax.tools.dynamic_acquisition"]
 
 
 def test_agent_bridge_imports_agent_distribution_acquisition_contract_only() -> None:

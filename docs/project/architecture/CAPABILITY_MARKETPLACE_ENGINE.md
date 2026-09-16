@@ -513,7 +513,7 @@ The engine must remain reusable for typed **capability need** requests (required
 | -- | -------- | ------ |
 | **ME-13** | **Marketplace → Agent Distribution → Execution** | **reference production E2E proven** (`testing_support/marketplace_agent_distribution_execution_composition.py`, `tests/integration/marketplace/test_me13_marketplace_agent_distribution_execution_e2e.py`) |
 | **ME-14** | **Marketplace → Tool domain → Execution** | **ME-14-C1:** production `DynamicToolAcquisitionService` + `HarnessHostRuntime.execution` E2E (`tests/integration/marketplace/test_me14_c1_tool_acquisition_execution.py`) |
-| ME-15 | Marketplace → Skill domain → Composition | planned |
+| **ME-15** | **Marketplace → Skill domain → Composition** | **production E2E proven** (`DynamicSkillAcquisitionService`, `tests/integration/marketplace/test_me15_marketplace_skill_composition_e2e.py`) |
 | ME-16 | Mixed Agent + Tool + Skill acquisition | planned |
 | ME-17 | Virtual Worker machine consumer | planned |
 | ME-18 | Dynamic Organization resource composition | planned |
@@ -552,7 +552,22 @@ deterministic tool output
 
 **ME-14-C2 hard invariants:** Execution fixtures must not access private Execution Engine internals; tool invoker wiring is owned by canonical runtime composition; activated tool registry enters execution only via public application composition (`application_tool_registry`); proof agents do not own or replace runtime tool invokers.
 
-Remaining V1 gaps: canonical Tool trust authority (ME-14-C1 uses generic qualification only where applicable), ME-15+ cross-domain E2E, distributed Tool lifecycle productization, remote marketplace productization.
+**ME-15 canonical flow (Skill vertical composition):**
+
+```text
+Marketplace listing / discovery / governance / explicit selection (SKILL vertical)
+    ↓ CapabilityHandoffEnvelope (ME-10)
+    ↓ MarketplaceLifecycleHandoffRequest + SkillLifecycleHandoffPayload (ME-RB4)
+SkillMarketplaceAcquisitionBridge → DynamicSkillAcquisitionService (exact release)
+    ↓ SkillCatalogProvider SPI + SkillHostLifecycleService binding
+SkillRegistry + SkillProfile (binding metadata + enabled skill ids)
+    ↓ SkillResolver / resolve_skill_composition_from_profile / SkillExecutionBinding pin
+immutable resolved skill pack (snapshot_digest + contribution provenance)
+```
+
+**ME-15 hard invariants:** Skill ≠ executable unit; Marketplace never executes Skills; Marketplace never mutates Skill registry authority directly; Skill exact release is preserved through binding; Skill lifecycle/composition is domain-owned; execution may consume Skill-bound context (`SkillExecutionBinding`) but does not execute the Skill itself.
+
+Remaining V1 gaps: canonical Tool trust authority (ME-14-C1 uses generic qualification only where applicable), ME-16+ cross-domain E2E, distributed Skill/Tool lifecycle productization, remote marketplace productization.
 
 ---
 
