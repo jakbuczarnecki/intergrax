@@ -588,7 +588,7 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2C4 — durable delegated reattachment boundary = CLOSED** (``ExecutionId`` → durable ``DelegatedInvocationCorrelationLookup`` → ``DelegatedExecutionReattachmentProvider`` → typed ``DelegatedExecutionContinuationOutcome``; ``supports_reattachment`` capability; pure provider-plane reattachment without identity minting, correlation mutation, lifecycle transition, or automatic retry).
 
-**P2.1-S2C = CLOSED / ENTERPRISE QUALIFIED** (P2.1-S2C-Q1 on development ``3f9270edd9885d6d3e6a65eeace18ebdd3e2d8d5``: full regression certification of durable correlation, status, control, query, legacy backfill, reattachment; 336 passed / 0 failed / 0 errors; collection PASS on required delegated suite + canonical execution continuation gates; architecture invariant audit PASS).
+**P2.1-S2C = CLOSED / ENTERPRISE QUALIFIED** (P2.1-S2C-Q1 on development ``d1e18296bff0f3ad5e006f355dcfad256c1c2a6a``: full regression certification of durable correlation, status, control, query, legacy backfill, reattachment; 336 passed / 0 failed / 0 errors; collection PASS on required delegated suite + canonical execution continuation gates; architecture invariant audit PASS).
 
 **P2.1-S2C qualification evidence:** ``.tmp/session/P2.1-S2C-Q1/regression.log`` (session-local; not committed).
 
