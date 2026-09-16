@@ -588,11 +588,13 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2C4 — durable delegated reattachment boundary = CLOSED** (``ExecutionId`` → durable ``DelegatedInvocationCorrelationLookup`` → ``DelegatedExecutionReattachmentProvider`` → typed ``DelegatedExecutionContinuationOutcome``; ``supports_reattachment`` capability; pure provider-plane reattachment without identity minting, correlation mutation, lifecycle transition, or automatic retry).
 
-**P2.1-S2C = CLOSED** (S2C1–S2C4 durable correlation, status/control lookup, query, reattachment).
+**P2.1-S2C = CLOSED / ENTERPRISE QUALIFIED** (P2.1-S2C-Q1 on development ``3f9270edd9885d6d3e6a65eeace18ebdd3e2d8d5``: full regression certification of durable correlation, status, control, query, legacy backfill, reattachment; 336 passed / 0 failed / 0 errors; collection PASS on required delegated suite + canonical execution continuation gates; architecture invariant audit PASS).
+
+**P2.1-S2C qualification evidence:** ``.tmp/session/P2.1-S2C-Q1/regression.log`` (session-local; not committed).
 
 **P2.1-S2 = OPEN** (S2C CLOSED; remaining S2 adoption slices beyond durable correlation plane).
 
-Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`, `tests/unit/runtime/execution/test_delegated_execution_continuation.py`
+Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`, `tests/unit/runtime/execution/test_delegated_invocation_correlation_durability.py`, `tests/unit/runtime/execution/test_delegated_execution_status.py`, `tests/unit/runtime/execution/test_delegated_execution_query.py`, `tests/unit/runtime/execution/test_delegated_execution_continuation.py`, `tests/unit/runtime/architecture/test_mp4r3_execution_continuation_integration_gates.py`, `tests/unit/runtime/execution/continuation/test_gr5_r5_restart_exact_identity.py`
 
 ## Remaining work (P2.1-S2 — adoption slices after S2A, not new seam)
 
