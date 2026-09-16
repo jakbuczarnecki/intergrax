@@ -8,6 +8,8 @@ It coordinates work across existing semantic domains. It does **not** replace do
 
 **As-built audit baseline:** `development @ a189282b35e7a4ac549489f0d06b7acd271e9a5b`, re-baselined on 2026-09-14 (task **HARNESS-REBASE-EE1**).
 
+**Top-tier harness gap audit (2026-09-16):** [`HARNESS_TOP_TIER_GAP_AUDIT.md`](../maintainers/qualification/HARNESS_TOP_TIER_GAP_AUDIT.md) — code-first A–Z scorecard, matrices, and ordered workstreams. Audited commit at publish time: `55db3f95f2af61166cedfdb4667fbac97cb075a5` (local `development` ahead of `origin/development`); revalidate HEAD before implementation.
+
 **Execution Engine position (evidence-backed):** the canonical Execution Engine is **enterprise-qualified, frozen, and the sole legal platform execution authority**. Harness evolution work must compose through that boundary or close illegal bypass/adoption gaps — not re-converge or reimplement the engine.
 
 The roadmap is deliberately based on repository reality, not only architecture intent. Before any implementation session, the relevant status labels must be revalidated against the then-current `development` HEAD.
@@ -1856,8 +1858,8 @@ The program is complete only when all applicable statements are proven against t
 
 # 53. Immediate next action
 
-The next implementation activity is **P0A — As-built re-baseline**.
+**Harness top-tier gap audit (2026-09-16) is complete.** See [`HARNESS_TOP_TIER_GAP_AUDIT.md`](../maintainers/qualification/HARNESS_TOP_TIER_GAP_AUDIT.md).
 
-It is an audit/documentation synchronization phase, not a code-feature phase.
+**Next recommended implementation workstream:** **TR-01 — ToolRuntime enterprise closure** (single governed tool invocation spine; sandbox/catalog/runtime-bound parity; qualification suite). Run **RI-01 — Runtime Invariant Service foundation** in parallel when capacity allows.
 
-After P0A, work proceeds to P0B safety closure and only then P0C execution/durability convergence.
+P0A/P0B/P0C items remain valid for consumer adoption and durability convergence; do not reimplement frozen Execution Engine or P2.1 delegated provider plane.
