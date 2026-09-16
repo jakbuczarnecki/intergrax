@@ -22,8 +22,13 @@ from intergrax.applications._shared.context_wiring import (
 from intergrax.applications._shared.integration_wiring import (
     bootstrap_application_integration_catalog,
 )
-from intergrax.applications._shared.llm_resolver import resolve_optional_environment_llm_adapter
-from intergrax.applications._shared.rag_runtime_bridge import resolve_rag_profile_for_environment
+from intergrax.applications._shared.llm_resolver import (
+    resolve_optional_environment_llm_adapter,
+)
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.applications._shared.rag_runtime_bridge import (
+    resolve_rag_profile_for_environment,
+)
 from intergrax.applications._shared.modality_wiring import wire_modality_extras
 from intergrax.applications._shared.policy_wiring import (
     assert_strict_policy_bootstrap_acceptable,
@@ -101,7 +106,9 @@ from intergrax.applications._shared.tool_wiring import (
 )
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
+from intergrax.applications._shared.security_assembly_resolver import (
+    SecurityAssemblyError,
+)
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.platform_plugin_evidence import (
     ApplicationPlatformPluginEvidence,
@@ -110,7 +117,10 @@ from intergrax.applications.contracts.platform_plugin_evidence import (
 from intergrax.core.catalog_bootstrap import bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.core.plugins.admission import DomainPluginLoadReport
-from intergrax.core.security_bootstrap import SecurityBootstrapResult, bootstrap_security_providers
+from intergrax.core.security_bootstrap import (
+    SecurityBootstrapResult,
+    bootstrap_security_providers,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -152,7 +162,9 @@ class ApplicationEnvironmentWiring:
     )
 
 
-def _security_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, ...]:
+def _security_plugin_bootstrap_errors(
+    report: DomainPluginLoadReport,
+) -> tuple[str, ...]:
     errors: list[str] = []
     for item in report.failed:
         errors.append(f"security plugin load failed: {item.spec.name}: {item.error}")
@@ -168,7 +180,9 @@ def _security_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[s
 
 
 def _bootstrap_application_security_providers() -> SecurityBootstrapResult:
-    return bootstrap_security_providers(discover_entry_points=discover_plugins_enabled())
+    return bootstrap_security_providers(
+        discover_entry_points=discover_plugins_enabled()
+    )
 
 
 def _assert_strict_security_bootstrap_acceptable(
@@ -179,7 +193,9 @@ def _assert_strict_security_bootstrap_acceptable(
         return
     if security_result.critical_bootstrap_acceptable:
         return
-    raise SecurityAssemblyError(_security_plugin_bootstrap_errors(security_result.load_report))
+    raise SecurityAssemblyError(
+        _security_plugin_bootstrap_errors(security_result.load_report)
+    )
 
 
 def _merge_integration_read_allowlist_roots(
@@ -223,7 +239,7 @@ def wire_application_environment(
     platform_plugin_package_qualifications: (
         PlatformPluginPackageQualificationBundle | None
     ) = None,
-    llm_adapter: object | None = None,
+    llm_adapter: LLMAdapter | None = None,
 ) -> ApplicationEnvironmentWiring:
     """
     Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
@@ -284,8 +300,12 @@ def wire_application_environment(
         skill_bundle_ids=skill_bundle_ids,
         discover_entry_points=discover_plugins_enabled(),
     )
-    assert_strict_tool_bootstrap_acceptable(env, catalog_bootstrap.tool_plugin_load_report)
-    assert_strict_skill_bootstrap_acceptable(env, catalog_bootstrap.skill_plugin_load_report)
+    assert_strict_tool_bootstrap_acceptable(
+        env, catalog_bootstrap.tool_plugin_load_report
+    )
+    assert_strict_skill_bootstrap_acceptable(
+        env, catalog_bootstrap.skill_plugin_load_report
+    )
 
     skill_wiring = build_application_skill_wiring(
         env.skill_profile,

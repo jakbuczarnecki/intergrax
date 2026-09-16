@@ -42,6 +42,7 @@ from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
     wire_application_environment,
 )
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.applications._shared.evaluation_assembly_resolver import (
     assert_evaluation_assembly_valid,
 )
@@ -225,12 +226,13 @@ def build_harness_host_runtime(
     document_store: Any | None = None,
     key_value_cache: Any | None = None,
     boundary_event_buffer: Any | None = None,
-    mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+    mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
+    | None = None,
     profile_layers: tuple[ProfileLayerInput, ...] = (),
     revision_store: EffectiveProfileRevisionStore | None = None,
     pinning_store: EffectiveProfileExecutionPinningStore | None = None,
     active_store: ActiveEffectiveProfileRevisionStore | None = None,
-    llm_adapter: Any | None = None,
+    llm_adapter: LLMAdapter | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -245,7 +247,9 @@ def build_harness_host_runtime(
     profile_resolution = resolve_profile(environment, layers=profile_layers)
     effective_environment = profile_resolution.effective_profile
     production_mode = effective_environment.execution_mode.value == "strict"
-    kv_store = key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+    kv_store = (
+        key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
+    )
     doc_store = document_store if isinstance(document_store, DocumentStore) else None
     profile_persistence = resolve_effective_profile_persistence_wiring(
         production_mode=production_mode,
@@ -330,10 +334,14 @@ def build_harness_host_runtime(
     assert_cost_assembly_valid(cost_wiring, effective_environment)
     evaluation_wiring = wire_application_evaluation(effective_environment)
     assert_evaluation_assembly_valid(evaluation_wiring, effective_environment)
-    decision_spec = application_decision_wiring_spec_from_environment(effective_environment)
+    decision_spec = application_decision_wiring_spec_from_environment(
+        effective_environment
+    )
     decision_wiring = wire_application_decision(
         registry=resolved_registry,
-        agent_id=resolve_application_decision_agent_id(resolved_registry, effective_environment),
+        agent_id=resolve_application_decision_agent_id(
+            resolved_registry, effective_environment
+        ),
         spec=decision_spec,
         environment=effective_environment,
     )
@@ -378,8 +386,12 @@ def build_harness_host_runtime(
         key_value_cache=key_value_cache,
         document_store=document_store,
     )
-    assert_security_assembly_valid(security_wiring, effective_environment, nexus=nexus_loop)
-    assert_guardrail_assembly_valid(guardrail_wiring, effective_environment, nexus=nexus_loop)
+    assert_security_assembly_valid(
+        security_wiring, effective_environment, nexus=nexus_loop
+    )
+    assert_guardrail_assembly_valid(
+        guardrail_wiring, effective_environment, nexus=nexus_loop
+    )
     from intergrax.applications._shared.capability_alias_intake_wiring import (
         apply_capability_alias_wiring,
     )
