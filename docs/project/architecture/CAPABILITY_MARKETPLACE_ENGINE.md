@@ -74,7 +74,15 @@ Normative composition (implemented slices in parentheses):
 
 ## 4. Agent vertical
 
-**Target model:** Agent Marketplace = **Agent vertical over Capability Marketplace**, not a separate marketplace engine.
+**Target model (ME-RB3 aligned):** Agent Marketplace = **Agent vertical over Capability Marketplace**, not a separate marketplace engine.
+
+```text
+Agent Distribution catalog (CatalogSourceProvider)
+        ↓
+AgentCatalogCapabilitySource (read-only adapter)
+        ↓
+CapabilityCatalogSource → FederatedCapabilityCatalog → MarketplaceCatalogService
+```
 
 | Semantics | Classification |
 | --------- | -------------- |
@@ -93,7 +101,15 @@ Public product concept: [`AGENT_MARKETPLACE.md`](../overview/AGENT_MARKETPLACE.m
 
 ## 5. Tool vertical
 
-**Target model:** Tool Marketplace = **Tool vertical over Capability Marketplace**.
+**Target model (ME-RB3 aligned):** Tool Marketplace = **Tool vertical over Capability Marketplace**.
+
+```text
+Tool registry/catalog read (iter_bundles)
+        ↓
+ToolBundleCatalogSource
+        ↓
+CapabilityCatalogSource → common engine
+```
 
 | Semantics | Classification |
 | --------- | -------------- |
@@ -108,7 +124,15 @@ Adapter: `intergrax.capability_catalog.adapters.tool` (+ private enterprise sour
 
 ## 6. Skill vertical
 
-**Target model:** Skill Marketplace = **Skill vertical over Capability Marketplace**.
+**Target model (ME-RB3 aligned):** Skill Marketplace = **Skill vertical over Capability Marketplace**.
+
+```text
+Skill registry/catalog read (iter_bundles + catalog manifests)
+        ↓
+SkillBundleCatalogSource
+        ↓
+CapabilityCatalogSource → common engine
+```
 
 | Semantics | Classification |
 | --------- | -------------- |
@@ -118,6 +142,32 @@ Adapter: `intergrax.capability_catalog.adapters.tool` (+ private enterprise sour
 | Listing must not imply direct execution | **Normative** — discovery only |
 
 Adapter: `intergrax.capability_catalog.adapters.skill` (+ private skill source).
+
+---
+
+## 6.1 ME-RB3 — Domain vertical alignment (closed)
+
+| Vertical | Domain read surface | Adapter | Common contract | Status |
+| -------- | ------------------- | ------- | --------------- | ------ |
+| Agent | `CatalogSourceProvider` / `AgentCatalogEntry` | `AgentCatalogCapabilitySource` | `CapabilityCatalogSource` | **aligned** |
+| Tool | `tools.registry.catalog` (`iter_bundles`) | `ToolBundleCatalogSource` | `CapabilityCatalogSource` | **aligned** |
+| Skill | `skills.registry.catalog` + catalog manifests | `SkillBundleCatalogSource` | `CapabilityCatalogSource` | **aligned** |
+
+Normative stack (all verticals):
+
+```text
+domain read surface
+        ↓
+vertical adapter (capability_catalog.adapters.*)
+        ↓
+CapabilityCatalogSource
+        ↓
+FederatedCapabilityCatalog
+        ↓
+Capability Marketplace Engine (discovery + MarketplaceCatalogService)
+```
+
+Proof tests: `tests/unit/marketplace/test_me_rb3_domain_vertical_alignment.py`, adapter tests under `tests/unit/capability_catalog/adapters/`, ME-RB2 plugin proof for custom `CapabilityCatalogSource` without core changes.
 
 ---
 
@@ -313,6 +363,8 @@ Enforced in tests:
 - `tests/unit/marketplace/test_marketplace_architecture_gates.py`
 - `tests/unit/marketplace/test_common_marketplace_engine_rb1_gates.py`
 - `tests/unit/capability_catalog/test_architecture_gates.py`
+- `tests/unit/marketplace/test_me_rb3_domain_vertical_alignment.py`
+- `tests/unit/marketplace/test_me_rb2_plugin_architecture.py`
 - `tests/unit/architecture/test_capability_catalog_v1_program_boundaries.py`
 
 Program packages must not import `intergrax.runtime`, applications, or Nexus; marketplace must not import Agent Distribution implementation.
