@@ -281,6 +281,10 @@ Proof: `tests/unit/marketplace/test_me_rb4_lifecycle_handoff.py`, `tests/unit/ma
 - **Governance engine of record:** platform Governance contracts — marketplace does not adjudicate enterprise policy alone.
 - Marketplace commercial metadata **must not** influence governance or ranking (enforced by separation of imports in architecture gates).
 
+**Ownership (ME-6):** Marketplace **consumes** governed results (`GovernedCapabilityCandidate`). Capability Catalog governance **composes** decision evidence from independent inputs. Trust and availability **authorities remain domain-owned** — catalog governance consumes read-only projections (`CapabilityAgentGovernanceEvidence`, `CapabilityToolGovernanceEvidence`, `CapabilitySkillGovernanceEvidence`, Stage-3 `AvailabilityDisposition`), never Agent Distribution verification, tool runtime state, or skill runtime activation.
+
+**Invariant:** `ranked != admissible`; `trusted != available != policy allowed`. Trust and availability are evidence dimensions — not automatic allow shortcuts.
+
 ---
 
 ## 13. Decision boundary
@@ -293,6 +297,11 @@ Search (CapabilitySearchStrategy)
 Ranking (CapabilityRanker)
     ↓
 Governance narrowing
+    ├── policy evidence (tool projection evaluator)
+    ├── trust evidence (agent projection evaluator)
+    └── availability evidence (baseline availability-preserving evaluator)
+    ↓
+Allowed / Blocked partition (GovernedCapabilityCandidate | BlockedCapabilityCandidate)
     ↓
 Recommendation (CapabilityRecommendationStrategy)
     ↓
