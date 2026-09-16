@@ -223,6 +223,7 @@ def wire_application_environment(
     platform_plugin_package_qualifications: (
         PlatformPluginPackageQualificationBundle | None
     ) = None,
+    llm_adapter: object | None = None,
 ) -> ApplicationEnvironmentWiring:
     """
     Single Tier-3 entry: catalogs, modality, policy, tool/skill registries.
@@ -254,11 +255,14 @@ def wire_application_environment(
         if tenant_id is None:
             host_embedding_manager = create_default_embedding_manager()
     if tenant_id is not None:
+        rag_llm_adapter = llm_adapter
+        if rag_llm_adapter is None:
+            rag_llm_adapter = resolve_optional_environment_llm_adapter(env)
         rag_stack = resolve_rag_stack_for_memory_wiring(
             env,
             tenant_id=tenant_id,
             integration_profile=resolved_integration,
-            llm_adapter=resolve_optional_environment_llm_adapter(env),
+            llm_adapter=rag_llm_adapter,
         )
         assert_memory_vector_backend_available(env, rag_stack)
 

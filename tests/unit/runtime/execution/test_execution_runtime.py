@@ -19,7 +19,6 @@ from intergrax.contracts.execution_identity import (
     mint_execution_id,
     mint_run_id,
     mint_task_id,
-    mint_task_id,
     peek_active_execution_id,
     peek_active_execution_identity,
     peek_active_parent_execution_id,
@@ -40,11 +39,11 @@ from intergrax.runtime.execution.orchestration import (
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.result import ExecutionResult, ExecutionStatus
+from intergrax.runtime.execution.identity_authority import RootTaskIdentity
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionContext,
     RootExecutionOptions,
-    RootTaskIdentity,
     resolve_root_execution_context,
 )
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter

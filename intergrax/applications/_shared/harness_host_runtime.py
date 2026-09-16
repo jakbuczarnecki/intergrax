@@ -230,6 +230,7 @@ def build_harness_host_runtime(
     revision_store: EffectiveProfileRevisionStore | None = None,
     pinning_store: EffectiveProfileExecutionPinningStore | None = None,
     active_store: ActiveEffectiveProfileRevisionStore | None = None,
+    llm_adapter: Any | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -281,6 +282,7 @@ def build_harness_host_runtime(
         document_store=document_store,
         key_value_cache=key_value_cache,
         boundary_event_buffer=boundary_event_buffer,
+        llm_adapter=llm_adapter,
     )
     assembly_mode = resolve_registry_assembly_mode(
         effective_environment,
@@ -367,7 +369,7 @@ def build_harness_host_runtime(
         task_memory_db_path=task_memory.db_path,
         shadow_manager=env_wiring.shadow_manager,
         sandbox_manager=env_wiring.sandbox_manager,
-        llm_adapter=None,
+        llm_adapter=llm_adapter,
         runtime_event_bus=env_wiring.build_context.runtime_event_bus,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,

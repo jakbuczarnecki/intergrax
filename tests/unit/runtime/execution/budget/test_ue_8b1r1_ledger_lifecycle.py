@@ -30,6 +30,9 @@ from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -94,7 +97,12 @@ async def test_per_run_isolation_on_long_lived_nexus_loop(
             run_b_available.append(ledger.snapshot_root_available().max_total_tokens)
 
         active_run_id, _ = require_active_execution_identity()
-        return TaskResult(task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=active_run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="budget")
@@ -208,7 +216,12 @@ async def test_handle_task_binds_root_execution_budget() -> None:
         from intergrax.contracts.execution_identity import require_active_execution_identity
 
         run_id, _ = require_active_execution_identity()
-        return TaskResult(task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
     loop._handle_task_impl = _fake_impl  # type: ignore[method-assign]
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="bind")
