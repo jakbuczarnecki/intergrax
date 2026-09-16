@@ -73,9 +73,8 @@ class MarketplaceCatalogService:
         self._visibility_evaluator = (
             visibility_evaluator or MarketplaceVisibilityEvaluator()
         )
-        snapshot = catalog.snapshot()
+        self._marketplace_sources = marketplace_sources
         _validate_marketplace_sources_in_catalog(catalog, marketplace_sources)
-        self._listing_index = _build_listing_index(snapshot, marketplace_sources)
 
     def list_listings(
         self,
@@ -89,6 +88,7 @@ class MarketplaceCatalogService:
         """List marketplace listings matching a Stage-3 discovery query."""
         query_context = marketplace_query_context or MarketplaceQueryContext()
         snapshot = self._catalog.snapshot()
+        listing_index = _build_listing_index(snapshot, self._marketplace_sources)
         candidates = discover_capability_candidates(
             snapshot,
             query,
@@ -98,7 +98,7 @@ class MarketplaceCatalogService:
         visibility_filtered = 0
         listing_candidates: list[CapabilityDiscoveryCandidate] = []
         for candidate in candidates:
-            metadata = self._listing_index.get(candidate.identity.sort_key)
+            metadata = listing_index.get(candidate.identity.sort_key)
             if metadata is None:
                 continue
             joined_count += 1
@@ -150,7 +150,7 @@ class MarketplaceCatalogService:
             )
         views: list[MarketplaceCapabilityListingView] = []
         for item in searched:
-            metadata = self._listing_index[item.candidate.identity.sort_key]
+            metadata = listing_index[item.candidate.identity.sort_key]
             if metadata is None:
                 continue
             listing = _build_listing(item.candidate.catalog_entry, metadata)
@@ -170,12 +170,13 @@ class MarketplaceCatalogService:
     ) -> MarketplaceCapabilityListing | None:
         """Return one marketplace listing by canonical identity key, if present."""
         query_context = marketplace_query_context or MarketplaceQueryContext()
-        metadata = self._listing_index.get(identity_key.sort_key)
+        snapshot = self._catalog.snapshot()
+        listing_index = _build_listing_index(snapshot, self._marketplace_sources)
+        metadata = listing_index.get(identity_key.sort_key)
         if metadata is None:
             return None
         if not self._visibility_evaluator.is_visible(metadata.visibility, query_context):
             return None
-        snapshot = self._catalog.snapshot()
         canonical = _index_canonical_entries(snapshot).get(identity_key.sort_key)
         if canonical is None:
             return None

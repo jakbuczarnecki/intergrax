@@ -28,6 +28,13 @@ class CapabilityCatalogSnapshotCacheFailurePolicy(StrEnum):
     PROPAGATE = "propagate"
 
 
+class CapabilityCatalogSnapshotCacheObserverFailurePolicy(StrEnum):
+    """When a cache lifecycle observer raises — observational only (ME-10)."""
+
+    BEST_EFFORT = "best_effort"
+    STRICT = "strict"
+
+
 class CapabilityCatalogSnapshotCacheDisposition(StrEnum):
     HIT = "hit"
     MISS = "miss"
@@ -78,6 +85,14 @@ class CapabilityCatalogSnapshotCacheGenerationPolicy(Protocol):
 
 class CapabilityCatalogSnapshotCacheUnavailableError(OSError):
     """Expected operational cache backend failure — not a programming defect."""
+
+
+class CapabilityCatalogSnapshotCacheIntegrityError(OSError):
+    """Cached snapshot failed integrity validation — untrusted cache materialization."""
+
+
+class CapabilityCatalogSnapshotCacheObserverEmitError(OSError):
+    """Cache observer failed under STRICT observer failure policy."""
 
 
 @runtime_checkable

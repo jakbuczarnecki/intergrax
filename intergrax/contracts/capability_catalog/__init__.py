@@ -86,8 +86,11 @@ from intergrax.contracts.capability_catalog.snapshot_cache import (
     CapabilityCatalogSnapshotCacheDisposition,
     CapabilityCatalogSnapshotCacheFailurePolicy,
     CapabilityCatalogSnapshotCacheGenerationPolicy,
+    CapabilityCatalogSnapshotCacheIntegrityError,
     CapabilityCatalogSnapshotCacheKey,
     CapabilityCatalogSnapshotCacheObserver,
+    CapabilityCatalogSnapshotCacheObserverEmitError,
+    CapabilityCatalogSnapshotCacheObserverFailurePolicy,
     CapabilityCatalogSnapshotCacheUnavailableError,
 )
 from intergrax.contracts.capability_catalog.source import CapabilityCatalogSource
@@ -143,8 +146,11 @@ __all__ = [
     "CapabilityCatalogSnapshotCacheDisposition",
     "CapabilityCatalogSnapshotCacheFailurePolicy",
     "CapabilityCatalogSnapshotCacheGenerationPolicy",
+    "CapabilityCatalogSnapshotCacheIntegrityError",
     "CapabilityCatalogSnapshotCacheKey",
     "CapabilityCatalogSnapshotCacheObserver",
+    "CapabilityCatalogSnapshotCacheObserverEmitError",
+    "CapabilityCatalogSnapshotCacheObserverFailurePolicy",
     "CapabilityCatalogSnapshotCacheUnavailableError",
     "NOOP_CAPABILITY_CATALOG_SNAPSHOT_CACHE_ID",
     "SCHEMA_CAPABILITY_CATALOG_SNAPSHOT_CACHE_KEY_V1",

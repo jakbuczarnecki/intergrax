@@ -23,8 +23,11 @@ from intergrax.contracts.capability_catalog.snapshot_cache import (
     CapabilityCatalogSnapshotCacheDisposition,
     CapabilityCatalogSnapshotCacheFailurePolicy,
     CapabilityCatalogSnapshotCacheGenerationPolicy,
+    CapabilityCatalogSnapshotCacheIntegrityError,
     CapabilityCatalogSnapshotCacheKey,
     CapabilityCatalogSnapshotCacheObserver,
+    CapabilityCatalogSnapshotCacheObserverEmitError,
+    CapabilityCatalogSnapshotCacheObserverFailurePolicy,
     CapabilityCatalogSnapshotCacheUnavailableError,
 )
 from intergrax.contracts.capability_catalog.source import CapabilityCatalogSource
@@ -106,6 +109,38 @@ class BoundedInMemoryCapabilityCatalogSnapshotCache:
             self._entries.pop(key, None)
 
 
+def _cached_snapshot_is_valid_hit(
+    key: CapabilityCatalogSnapshotCacheKey,
+    snapshot: CapabilityCatalogSnapshot,
+) -> bool:
+    if snapshot.federation_completeness != CapabilityCatalogFederationCompleteness.COMPLETE:
+        return False
+    return tuple(snapshot.source_ids) == tuple(key.federation_source_ids)
+
+
+def _emit_cache_observation(
+    observer: CapabilityCatalogSnapshotCacheObserver | None,
+    *,
+    failure_policy: CapabilityCatalogSnapshotCacheObserverFailurePolicy,
+    disposition: CapabilityCatalogSnapshotCacheDisposition,
+    cache_id: str,
+    entry_count: int | None = None,
+) -> None:
+    if observer is None:
+        return
+    try:
+        observer.observe(
+            disposition=disposition,
+            cache_id=cache_id,
+            entry_count=entry_count,
+        )
+    except Exception as exc:
+        if failure_policy is CapabilityCatalogSnapshotCacheObserverFailurePolicy.STRICT:
+            raise CapabilityCatalogSnapshotCacheObserverEmitError(
+                f"capability catalog snapshot cache observer failed for {cache_id!r}",
+            ) from exc
+
+
 def build_snapshot_cache_key(
     sources: tuple[CapabilityCatalogSource, ...],
     *,
@@ -132,6 +167,9 @@ class SnapshotCachingCapabilityCatalog:
         ),
         generation_policy: CapabilityCatalogSnapshotCacheGenerationPolicy | None = None,
         observer: CapabilityCatalogSnapshotCacheObserver | None = None,
+        observer_failure_policy: CapabilityCatalogSnapshotCacheObserverFailurePolicy = (
+            CapabilityCatalogSnapshotCacheObserverFailurePolicy.BEST_EFFORT
+        ),
         federation_policy: CapabilityCatalogFederationPolicy = (
             CapabilityCatalogFederationPolicy.STRICT_COMPLETE
         ),
@@ -141,6 +179,7 @@ class SnapshotCachingCapabilityCatalog:
         self._cache_failure_policy = cache_failure_policy
         self._generation_policy = generation_policy
         self._observer = observer
+        self._observer_failure_policy = observer_failure_policy
         self._federation_policy = federation_policy
 
     @property
@@ -172,12 +211,24 @@ class SnapshotCachingCapabilityCatalog:
             raise
 
         if cached is not None:
+            if _cached_snapshot_is_valid_hit(key, cached):
+                self._observe(
+                    CapabilityCatalogSnapshotCacheDisposition.HIT,
+                    cache_id=cache_id,
+                    entry_count=len(cached.entries),
+                )
+                return cached
             self._observe(
-                CapabilityCatalogSnapshotCacheDisposition.HIT,
+                CapabilityCatalogSnapshotCacheDisposition.STALE,
                 cache_id=cache_id,
-                entry_count=len(cached.entries),
             )
-            return cached
+            if (
+                self._cache_failure_policy
+                == CapabilityCatalogSnapshotCacheFailurePolicy.PROPAGATE
+            ):
+                raise CapabilityCatalogSnapshotCacheIntegrityError(
+                    "cached federated snapshot failed integrity validation",
+                )
 
         self._observe(CapabilityCatalogSnapshotCacheDisposition.MISS, cache_id=cache_id)
         snapshot = self._inner.snapshot(federation_policy=policy)
@@ -232,9 +283,9 @@ class SnapshotCachingCapabilityCatalog:
         cache_id: str,
         entry_count: int | None = None,
     ) -> None:
-        if self._observer is None:
-            return
-        self._observer.observe(
+        _emit_cache_observation(
+            self._observer,
+            failure_policy=self._observer_failure_policy,
             disposition=disposition,
             cache_id=cache_id,
             entry_count=entry_count,
