@@ -102,6 +102,28 @@ def test_mp4r8_execution_authorization_minted_only_via_decision_flow_in_runtime(
     assert not violations, "\n".join(violations)
 
 
+def test_mp4r8_task_control_hitl_resume_does_not_synthesize_local_dev_approver() -> None:
+    path = _INTERGRAX_ROOT / "applications" / "_shared" / "task_control.py"
+    tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    target: ast.FunctionDef | None = None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == "_materialize_hitl_resume_input":
+            target = node
+            break
+    assert target is not None, "_materialize_hitl_resume_input missing from task_control.py"
+    for child in ast.walk(target):
+        if isinstance(child, ast.Call):
+            func = child.func
+            if isinstance(func, ast.Name) and func.id == "local_development_approver_evidence":
+                pytest.fail(
+                    "_materialize_hitl_resume_input must not call local_development_approver_evidence"
+                )
+            if isinstance(func, ast.Attribute) and func.attr == "local_development_approver_evidence":
+                pytest.fail(
+                    "_materialize_hitl_resume_input must not call local_development_approver_evidence"
+                )
+
+
 def test_mp4r8_collaborative_work_does_not_mint_governance_or_execution_authorization() -> None:
     cw_root = _INTERGRAX_ROOT / "collaborative_work"
     forbidden_tokens = (

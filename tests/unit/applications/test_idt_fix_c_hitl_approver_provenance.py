@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import FastAPI
@@ -22,17 +22,28 @@ from tests.unit.applications.harness_canonical_task_routes_test_support import (
 from intergrax.applications._shared.task_control import (
     HitlResumeValidationError,
     _materialize_hitl_resume_input,
+    governed_resume_checkpoint_task,
+    governed_resume_checkpoint_task_with_host_execution,
 )
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
     bind_active_execution_identity,
     mint_attempt_id,
+    mint_execution_id,
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
 )
+from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+from intergrax.runtime.governance.control_plane_mutation_authorization import (
+    ControlPlaneMutationAuthorizationBoundary,
+)
+from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.integrations.contracts.identity_provider import IdentityUser
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.human.escalation import EscalationRouter
@@ -71,6 +82,8 @@ TASK_OWNER = "task-owner"
 APPROVER_ID = "approver-123"
 PAUSE_ID = "P1"
 HUMAN_REQUEST_ID = "H1"
+_ROOT_EXECUTION_ID = mint_execution_id()
+_MUTATION_ID = "mut-resume-idt-c"
 
 
 def _identity_user_approver(*, tenant_id: str = TENANT_A, user_id: str = APPROVER_ID) -> HumanApproverEvidence:
@@ -121,7 +134,50 @@ def _checkpoint_with_pause(*, tenant_id: str = TENANT_A, user_id: str = TASK_OWN
         task_state=TaskState.WAITING_FOR_HUMAN,
         progress_message="paused",
         notify_channel="debug",
+        runtime=minimal_runtime_checkpoint(
+            task_id=TASK_ID,
+            run_id=RUN_ID,
+            attempt_id=ATTEMPT_ID,
+            root_execution_id=_ROOT_EXECUTION_ID,
+        ),
     )
+
+
+def _resume_principal() -> RequestIdentity:
+    return RequestIdentity(
+        tenant_id=TENANT_A,
+        user_id=APPROVER_ID,
+        principal_type=PrincipalType.USER,
+        auth_subject=APPROVER_ID,
+    )
+
+
+def _allow_mutation_boundary() -> ControlPlaneMutationAuthorizationBoundary:
+    class _AllowEvaluator:
+        def evaluate(self, request: object) -> PolicyDecision:
+            return PolicyDecision(
+                action=PolicyAction.ALLOW,
+                reason="test_allow",
+                enforcement_level=EnforcementLevel.MANDATORY,
+                policy_rule_id="task_control.test_allow",
+                decision_id="dec-allow",
+            )
+
+    return ControlPlaneMutationAuthorizationBoundary(evaluator=_AllowEvaluator())
+
+
+class _FakeCheckpointStore:
+    def __init__(self, checkpoint: TaskCheckpoint) -> None:
+        self._checkpoint = checkpoint
+
+    def get_by_token(self, task_id: str, tenant_id: str, resume_token: str) -> TaskCheckpoint | None:
+        if (
+            task_id == self._checkpoint.task_id
+            and tenant_id == self._checkpoint.tenant_id
+            and resume_token == self._checkpoint.resume_token
+        ):
+            return self._checkpoint
+        return None
 
 
 def _resolve_with_approver(
@@ -216,6 +272,102 @@ def test_c5_forged_pause_request_fails_closed() -> None:
             },
             approver=_identity_user_approver(),
         )
+
+
+def test_hitl_resume_missing_approver_fails_closed() -> None:
+    checkpoint = _checkpoint_with_pause()
+    task = Task(tenant_id=TENANT_A, user_id=TASK_OWNER, message="x", task_id=TASK_ID)
+    with pytest.raises(HitlResumeValidationError, match="approver evidence required"):
+        _materialize_hitl_resume_input(
+            task,
+            checkpoint=checkpoint,
+            operator_input={"verdict": "approve"},
+            approver=None,
+        )
+
+
+def test_hitl_resume_missing_approver_reject_fails_closed() -> None:
+    checkpoint = _checkpoint_with_pause()
+    task = Task(tenant_id=TENANT_A, user_id=TASK_OWNER, message="x", task_id=TASK_ID)
+    with pytest.raises(HitlResumeValidationError, match="approver evidence required"):
+        _materialize_hitl_resume_input(
+            task,
+            checkpoint=checkpoint,
+            operator_input={"verdict": "reject"},
+            approver=None,
+        )
+
+
+def test_hitl_resume_no_verdict_does_not_require_approver() -> None:
+    checkpoint = _checkpoint_with_pause()
+    task = Task(tenant_id=TENANT_A, user_id=TASK_OWNER, message="x", task_id=TASK_ID)
+    _materialize_hitl_resume_input(
+        task,
+        checkpoint=checkpoint,
+        operator_input={"response_text": "note only"},
+        approver=None,
+    )
+    assert task.options.human.approver is None
+
+
+def test_hitl_resume_explicit_local_dev_approver_is_allowed() -> None:
+    checkpoint = _checkpoint_with_pause()
+    task = Task(tenant_id=TENANT_A, user_id=TASK_OWNER, message="x", task_id=TASK_ID)
+    approver = local_development_approver_evidence(tenant_id=TENANT_A, actor_id="dev-operator")
+    _materialize_hitl_resume_input(
+        task,
+        checkpoint=checkpoint,
+        operator_input={"verdict": "approve"},
+        approver=approver,
+    )
+    assert task.options.human.approver == approver
+    assert task.options.human.approver.auth_mode is HumanApproverAuthMode.LOCAL_DEVELOPMENT
+
+
+@pytest.mark.asyncio
+async def test_governed_resume_missing_approver_fails_before_runner() -> None:
+    checkpoint = _checkpoint_with_pause()
+    runner = AsyncMock(spec=UnifiedTaskRunner)
+    boundary = _allow_mutation_boundary()
+    with patch(
+        "intergrax.applications._shared.task_control._resume_task_with_token",
+        new_callable=AsyncMock,
+    ) as resume_call:
+        with pytest.raises(HitlResumeValidationError, match="approver evidence required"):
+            await governed_resume_checkpoint_task(
+                runner,
+                task_id=TASK_ID,
+                tenant_id=TENANT_A,
+                resume_token="resume-token-1",
+                mutation_id=_MUTATION_ID,
+                principal=_resume_principal(),
+                mutation_boundary=boundary,
+                checkpoint_store=_FakeCheckpointStore(checkpoint),
+                operator_input={"verdict": "approve"},
+                approver=None,
+            )
+    assert resume_call.await_count == 0
+
+
+@pytest.mark.asyncio
+async def test_governed_resume_host_missing_approver_fails_before_execute() -> None:
+    checkpoint = _checkpoint_with_pause()
+    host_execution = AsyncMock(spec=HostTaskExecutionPort)
+    boundary = _allow_mutation_boundary()
+    with pytest.raises(HitlResumeValidationError, match="approver evidence required"):
+        await governed_resume_checkpoint_task_with_host_execution(
+            host_execution,
+            task_id=TASK_ID,
+            tenant_id=TENANT_A,
+            resume_token="resume-token-1",
+            mutation_id=_MUTATION_ID,
+            principal=_resume_principal(),
+            mutation_boundary=boundary,
+            checkpoint_store=_FakeCheckpointStore(checkpoint),
+            operator_input={"verdict": "approve"},
+            approver=None,
+        )
+    host_execution.execute.assert_not_called()
 
 
 def test_c6_missing_pause_record_fails_closed() -> None:
@@ -365,20 +517,6 @@ async def test_c13_event_evidence_contains_safe_approver() -> None:
     assert payload["principal_type"] == PrincipalType.USER.value
     assert payload["auth_mode"] == HumanApproverAuthMode.IDENTITY_PROVIDER.value
     assert SECRET_CREDENTIAL_MUST_NOT_PERSIST not in json.dumps(payload)
-
-
-class _FakeCheckpointStore:
-    def __init__(self, checkpoint: TaskCheckpoint) -> None:
-        self._checkpoint = checkpoint
-
-    def get_by_token(self, task_id: str, tenant_id: str, resume_token: str) -> TaskCheckpoint | None:
-        if (
-            task_id == self._checkpoint.task_id
-            and tenant_id == self._checkpoint.tenant_id
-            and resume_token == self._checkpoint.resume_token
-        ):
-            return self._checkpoint
-        return None
 
 
 class _FakeIdentityProvider:

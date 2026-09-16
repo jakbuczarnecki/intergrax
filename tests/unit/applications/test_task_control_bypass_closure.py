@@ -57,6 +57,7 @@ from intergrax.applications._shared.harness_host_composition import (
 )
 from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
@@ -418,6 +419,7 @@ async def test_taskcpm_b6_supported_operator_resume_reaches_runner_through_gover
             mutation_boundary=boundary,
             checkpoint_store=_StaticCheckpointStore(checkpoint),
             operator_input={"verdict": "approve"},
+            approver=local_development_approver_evidence(tenant_id=_TENANT),
         )
     assert outcome.accepted is True
     assert len(evaluator.calls) == 1

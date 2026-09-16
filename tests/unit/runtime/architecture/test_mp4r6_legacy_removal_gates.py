@@ -233,7 +233,6 @@ _GENERIC_RESTORE_ALLOWLIST = frozenset(
     {
         "intergrax/debug/hitl_service.py",
         "intergrax/tools/providers/hitl/service.py",
-        "intergrax/applications/_shared/task_control.py",
     }
 )
 _HUMAN_DECISION_STORE = _REPO_ROOT / "intergrax" / "runtime" / "human" / "store.py"
