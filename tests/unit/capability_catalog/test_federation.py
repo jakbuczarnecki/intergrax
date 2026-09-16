@@ -85,7 +85,7 @@ class _FailingSource:
 
     def read_entries(self) -> tuple[CapabilityCatalogEntry, ...]:
         self.read_calls += 1
-        raise RuntimeError("catalog backend unavailable")
+        raise CapabilityCatalogSourceFailure("catalog backend unavailable")
 
 
 def test_entry_identity_provenance_source_mismatch_rejected() -> None:
@@ -257,11 +257,24 @@ def test_empty_catalog_is_legal_deterministic_snapshot() -> None:
     assert snapshot.source_ids == ("empty.source",)
 
 
+def test_unexpected_provider_programming_error_propagates() -> None:
+    class _BuggySource:
+        @property
+        def source_id(self) -> str:
+            return "buggy.source"
+
+        def read_entries(self) -> tuple[CapabilityCatalogEntry, ...]:
+            raise RuntimeError("programming defect")
+
+    with pytest.raises(RuntimeError, match="programming defect"):
+        FederatedCapabilityCatalog((_BuggySource(),)).snapshot()
+
+
 def test_provider_failure_fails_closed_without_partial_snapshot() -> None:
     healthy = _StaticSource("aaa.healthy", (_entry(source_id="aaa.healthy"),))
     failing = _FailingSource()
     federated = FederatedCapabilityCatalog((healthy, failing))
-    with pytest.raises(CapabilityCatalogSourceFailure, match="zzz.failing"):
+    with pytest.raises(CapabilityCatalogSourceFailure, match="catalog backend unavailable"):
         federated.snapshot()
     assert healthy.read_calls == 1
     assert failing.read_calls == 1

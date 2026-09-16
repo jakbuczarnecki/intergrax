@@ -268,6 +268,33 @@ def test_me9_no_separate_private_marketplace_engine_symbols() -> None:
                 )
 
 
+_FORBIDDEN_CACHE_VENDOR_PREFIXES = (
+    "redis",
+    "aioredis",
+    "pymemcache",
+    "memcache",
+    "hazelcast",
+)
+
+
+def test_me11_marketplace_core_has_no_cache_vendor_sdk_imports() -> None:
+    roots = (
+        _package_root(_MARKETPLACE_MODULE),
+        _package_root("intergrax.capability_catalog"),
+    )
+    for root in roots:
+        for path in sorted(root.rglob("*.py")):
+            if not path.is_file():
+                continue
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for imported in _collect_imports(tree):
+                for vendor in _FORBIDDEN_CACHE_VENDOR_PREFIXES:
+                    if imported == vendor or imported.startswith(f"{vendor}."):
+                        raise AssertionError(
+                            f"{path.relative_to(root)} imports forbidden cache vendor: {imported}",
+                        )
+
+
 def test_marketplace_service_does_not_import_ranking_with_commercial_metadata() -> None:
     service_module = importlib.import_module("intergrax.marketplace.service")
     path = Path(service_module.__file__)

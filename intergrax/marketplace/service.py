@@ -11,7 +11,7 @@ from intergrax.capability_catalog.candidate import CapabilityDiscoveryCandidate
 from intergrax.capability_catalog.discovery import discover_capability_candidates
 from intergrax.capability_catalog.entry import CapabilityCatalogEntry
 from intergrax.capability_catalog.search import search_capability_candidates
-from intergrax.capability_catalog.federation import FederatedCapabilityCatalog
+from intergrax.capability_catalog.snapshot_provider import CapabilityCatalogSnapshotProvider
 from intergrax.capability_catalog.snapshot import CapabilityCatalogSnapshot
 from intergrax.contracts.capability_catalog.evidence import (
     CapabilityDiscoveryAvailabilityEvidence,
@@ -61,7 +61,7 @@ class MarketplaceCatalogService:
     def __init__(
         self,
         *,
-        catalog: FederatedCapabilityCatalog,
+        catalog: CapabilityCatalogSnapshotProvider,
         marketplace_sources: tuple[MarketplaceMetadataSource, ...],
         listing_text_search: CapabilitySearchStrategy | None = None,
         visibility_evaluator: MarketplaceVisibilityEvaluator | None = None,
@@ -189,7 +189,7 @@ def _index_canonical_entries(
 
 
 def _validate_marketplace_sources_in_catalog(
-    catalog: FederatedCapabilityCatalog,
+    catalog: CapabilityCatalogSnapshotProvider,
     marketplace_sources: tuple[MarketplaceMetadataSource, ...],
 ) -> None:
     catalog_source_ids = {source.source_id for source in catalog.sources}
@@ -248,7 +248,7 @@ def _build_listing(
 
 
 def snapshot_without_marketplace(
-    catalog: FederatedCapabilityCatalog,
+    catalog: CapabilityCatalogSnapshotProvider,
 ) -> CapabilityCatalogSnapshot:
     """Expose federated snapshot for air-gapped callers — no marketplace dependency."""
     return catalog.snapshot()

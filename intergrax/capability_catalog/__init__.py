@@ -82,8 +82,18 @@ from intergrax.capability_catalog.searched_candidate import (
 )
 from intergrax.capability_catalog.snapshot import (
     SCHEMA_CAPABILITY_CATALOG_SNAPSHOT_V1,
+    CapabilityCatalogFederationCompleteness,
     CapabilityCatalogSnapshot,
 )
+from intergrax.capability_catalog.snapshot_cache import (
+    IN_MEMORY_CAPABILITY_CATALOG_SNAPSHOT_CACHE_ID,
+    BoundedInMemoryCapabilityCatalogSnapshotCache,
+    NoOpCapabilityCatalogSnapshotCache,
+    SnapshotCachingCapabilityCatalog,
+    build_snapshot_cache_key,
+)
+from intergrax.capability_catalog.snapshot_cache_port import CapabilityCatalogSnapshotCache
+from intergrax.capability_catalog.snapshot_provider import CapabilityCatalogSnapshotProvider
 from intergrax.capability_catalog.source import CapabilityCatalogSource
 from intergrax.capability_catalog.work_stage_discovery import (
     WorkStageCapabilityDiscoveryService,
@@ -108,7 +118,15 @@ __all__ = [
     "CapabilityCatalogEntry",
     "CapabilityCatalogError",
     "CapabilityCatalogIdentityConflict",
+    "BoundedInMemoryCapabilityCatalogSnapshotCache",
+    "CapabilityCatalogFederationCompleteness",
     "CapabilityCatalogSnapshot",
+    "CapabilityCatalogSnapshotCache",
+    "CapabilityCatalogSnapshotProvider",
+    "IN_MEMORY_CAPABILITY_CATALOG_SNAPSHOT_CACHE_ID",
+    "NoOpCapabilityCatalogSnapshotCache",
+    "SnapshotCachingCapabilityCatalog",
+    "build_snapshot_cache_key",
     "CapabilityCatalogSource",
     "CapabilityCatalogSourceFailure",
     "CapabilityDiscoveryCandidate",

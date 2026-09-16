@@ -77,6 +77,19 @@ from intergrax.contracts.capability_catalog.scope import (
     CapabilityDiscoveryScope,
     CapabilityDiscoveryScopeMode,
 )
+from intergrax.contracts.capability_catalog.federation_policy import (
+    CapabilityCatalogFederationPolicy,
+)
+from intergrax.contracts.capability_catalog.snapshot_cache import (
+    NOOP_CAPABILITY_CATALOG_SNAPSHOT_CACHE_ID,
+    SCHEMA_CAPABILITY_CATALOG_SNAPSHOT_CACHE_KEY_V1,
+    CapabilityCatalogSnapshotCacheDisposition,
+    CapabilityCatalogSnapshotCacheFailurePolicy,
+    CapabilityCatalogSnapshotCacheGenerationPolicy,
+    CapabilityCatalogSnapshotCacheKey,
+    CapabilityCatalogSnapshotCacheObserver,
+    CapabilityCatalogSnapshotCacheUnavailableError,
+)
 from intergrax.contracts.capability_catalog.source import CapabilityCatalogSource
 from intergrax.contracts.capability_catalog.skill_version_binding import (
     SkillVersionBindingDisposition,
@@ -126,6 +139,15 @@ __all__ = [
     "AvailabilityDisposition",
     "CapabilityCatalogContractError",
     "CapabilityCatalogEntry",
+    "CapabilityCatalogFederationPolicy",
+    "CapabilityCatalogSnapshotCacheDisposition",
+    "CapabilityCatalogSnapshotCacheFailurePolicy",
+    "CapabilityCatalogSnapshotCacheGenerationPolicy",
+    "CapabilityCatalogSnapshotCacheKey",
+    "CapabilityCatalogSnapshotCacheObserver",
+    "CapabilityCatalogSnapshotCacheUnavailableError",
+    "NOOP_CAPABILITY_CATALOG_SNAPSHOT_CACHE_ID",
+    "SCHEMA_CAPABILITY_CATALOG_SNAPSHOT_CACHE_KEY_V1",
     "CapabilityCatalogSource",
     "CapabilityDiscoveryAvailabilityEvidence",
     "CapabilityDiscoveryIdentity",

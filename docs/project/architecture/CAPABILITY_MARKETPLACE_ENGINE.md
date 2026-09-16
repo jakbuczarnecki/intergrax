@@ -599,6 +599,44 @@ Proofs: `tests/unit/marketplace/test_me9_multi_tenant_private_marketplace.py`, `
 
 ---
 
+## ME-11 — Scale / resilience / caching (closed)
+
+Canonical read path with optional materialized snapshot cache **before** visibility narrowing:
+
+```text
+CapabilityCatalogSource contracts
+      ↓
+optional source-resilience policy (STRICT_COMPLETE default; ALLOW_PARTIAL explicit)
+      ↓
+FederatedCapabilityCatalog → validated immutable CapabilityCatalogSnapshot
+      ↓
+optional pluginable CapabilityCatalogSnapshotCache (NoOp default)
+      ↓
+MarketplaceCatalogService
+      ↓
+visibility → search → ranking → governance → recommendation
+```
+
+**Hard invariants:**
+
+```text
+Cache != Authority
+Cache != Governance
+Cache != Visibility policy
+Partial availability != implicit success
+Resilience != error swallowing
+Stale data must not widen access
+Cache failure must not redefine business result
+```
+
+Snapshot cache keys are federation-scoped (`source_ids` + optional generation tokens) — never tenant/org post-visibility results. Cache write occurs only after a **complete** validated snapshot is produced. Partial snapshots are not cached. Programming defects from sources or cache plugins propagate; expected source outages use `CapabilityCatalogSourceFailure` and federation policy.
+
+Proofs: `tests/unit/marketplace/test_me11_scale_resilience_caching.py`, federation updates in `tests/unit/capability_catalog/test_federation.py`.
+
+**Gap register (future):** distributed cache adapter, distributed invalidation, single-flight refresh, circuit breaker, adaptive retry, large-scale benchmark, multi-region consistency.
+
+---
+
 ## Architecture gates (ME-RB1)
 
 Enforced in tests:
@@ -611,6 +649,7 @@ Enforced in tests:
 - `tests/unit/marketplace/test_me7_publisher_version_provenance.py`
 - `tests/unit/marketplace/test_me8_commercial_metering_boundary.py`
 - `tests/unit/marketplace/test_me9_multi_tenant_private_marketplace.py`
+- `tests/unit/marketplace/test_me11_scale_resilience_caching.py`
 - `tests/unit/contracts/capability_metering/test_capability_metering_contract_import_gates.py`
 - `tests/unit/architecture/test_capability_catalog_v1_program_boundaries.py`
 
