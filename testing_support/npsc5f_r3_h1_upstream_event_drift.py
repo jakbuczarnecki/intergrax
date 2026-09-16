@@ -8,7 +8,7 @@ from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 from testing_support.npsc5f_r3_protected_drift import R3_IMPLEMENTATION_SHA
 
 # Integrated ``development`` HEAD qualified by H1 behavioral gates (immutable provenance pin).
-NPSC5F_R3_H1_QUALIFIED_INTEGRATED_SHA = "a1bbde52de57f59baf1a4827598cf16447c968c9"
+NPSC5F_R3_H1_QUALIFIED_INTEGRATED_SHA = "ad1a1e57fc70529aedcbfa27808fffdbfe5fdd14"
 
 # Commit that introduced qualified ``RuntimeEventType.EXECUTION_FAILED`` on the R1-owned enum surface.
 EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA = (
