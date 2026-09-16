@@ -30,5 +30,13 @@ class CapabilityRankingError(CapabilityCatalogError):
     """Ranker contract violation — output integrity or invalid ranking metadata."""
 
 
+class CapabilitySearchError(CapabilityCatalogError):
+    """Search strategy contract violation — output integrity or invalid search metadata."""
+
+
+class CapabilityRecommendationError(CapabilityCatalogError):
+    """Recommendation strategy contract violation — output integrity or invalid metadata."""
+
+
 class CapabilityGovernanceError(CapabilityCatalogError):
     """Governance evaluator contract violation — partition or elevation failure."""

@@ -22,6 +22,11 @@ from intergrax.marketplace.projection import (
     project_marketplace_record,
 )
 from intergrax.marketplace.record import MarketplaceListingRecord
+from intergrax.marketplace.discovery import MarketplaceDiscoveryService
+from intergrax.marketplace.search import (
+    MARKETPLACE_LISTING_TEXT_SEARCH_STRATEGY_ID,
+    DefaultMarketplaceListingTextSearchStrategy,
+)
 from intergrax.marketplace.service import MarketplaceCatalogService, snapshot_without_marketplace
 from intergrax.marketplace.snapshot import (
     SCHEMA_MARKETPLACE_CATALOG_SNAPSHOT_V1,
@@ -40,7 +45,10 @@ __all__ = [
     "MarketplaceCapabilityListingView",
     "MarketplaceCatalogConfigurationError",
     "MarketplaceCatalogError",
+    "DefaultMarketplaceListingTextSearchStrategy",
+    "MARKETPLACE_LISTING_TEXT_SEARCH_STRATEGY_ID",
     "MarketplaceCatalogService",
+    "MarketplaceDiscoveryService",
     "MarketplaceCatalogSnapshot",
     "MarketplaceListingRecord",
     "SCHEMA_MARKETPLACE_CAPABILITY_LISTING_V1",

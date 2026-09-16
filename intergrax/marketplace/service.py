@@ -7,8 +7,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.capability_catalog.candidate import CapabilityDiscoveryCandidate
 from intergrax.capability_catalog.discovery import discover_capability_candidates
 from intergrax.capability_catalog.entry import CapabilityCatalogEntry
+from intergrax.capability_catalog.search import search_capability_candidates
 from intergrax.capability_catalog.federation import FederatedCapabilityCatalog
 from intergrax.capability_catalog.snapshot import CapabilityCatalogSnapshot
 from intergrax.contracts.capability_catalog.evidence import (
@@ -16,16 +18,22 @@ from intergrax.contracts.capability_catalog.evidence import (
 )
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.capability_catalog.query import CapabilityDiscoveryQuery
+from intergrax.contracts.capability_catalog.search import (
+    CapabilitySearchContext,
+    CapabilitySearchQuery,
+)
 from intergrax.contracts.marketplace import (
     MarketplaceCommercialMetadata,
     MarketplacePublisherMetadata,
 )
 from intergrax.marketplace.errors import MarketplaceCatalogConfigurationError
 from intergrax.contracts.marketplace.metadata_source import MarketplaceMetadataSource
+from intergrax.capability_catalog.search import CapabilitySearchStrategy
 from intergrax.marketplace.listing import (
     MarketplaceCapabilityListing,
     MarketplaceCapabilityListingView,
 )
+from intergrax.marketplace.search import DefaultMarketplaceListingTextSearchStrategy
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,8 +51,12 @@ class MarketplaceCatalogService:
         *,
         catalog: FederatedCapabilityCatalog,
         marketplace_sources: tuple[MarketplaceMetadataSource, ...],
+        listing_text_search: CapabilitySearchStrategy | None = None,
     ) -> None:
         self._catalog = catalog
+        self._listing_text_search = (
+            listing_text_search or DefaultMarketplaceListingTextSearchStrategy()
+        )
         snapshot = catalog.snapshot()
         _validate_marketplace_sources_in_catalog(catalog, marketplace_sources)
         self._listing_index = _build_listing_index(snapshot, marketplace_sources)
@@ -63,22 +75,28 @@ class MarketplaceCatalogService:
             query,
             availability_evidence=availability_evidence,
         )
-        normalized_query = _normalize_query_text(query_text)
-        views: list[MarketplaceCapabilityListingView] = []
+        listing_candidates: list[CapabilityDiscoveryCandidate] = []
         for candidate in candidates:
-            metadata = self._listing_index.get(candidate.identity.sort_key)
+            if self._listing_index.get(candidate.identity.sort_key) is None:
+                continue
+            listing_candidates.append(candidate)
+
+        searched = search_capability_candidates(
+            tuple(listing_candidates),
+            self._listing_text_search,
+            query=CapabilitySearchQuery(text=query_text),
+            context=CapabilitySearchContext(),
+        )
+        views: list[MarketplaceCapabilityListingView] = []
+        for item in searched:
+            metadata = self._listing_index[item.candidate.identity.sort_key]
             if metadata is None:
                 continue
-            listing = _build_listing(candidate.catalog_entry, metadata)
-            if normalized_query is not None and not _matches_query_text(
-                listing,
-                normalized_query,
-            ):
-                continue
+            listing = _build_listing(item.candidate.catalog_entry, metadata)
             views.append(
                 MarketplaceCapabilityListingView(
                     listing=listing,
-                    availability=candidate.availability,
+                    availability=item.candidate.availability,
                 ),
             )
         return tuple(views)
@@ -159,27 +177,6 @@ def _build_listing(
         publisher_metadata=metadata.publisher_metadata,
         commercial_metadata=metadata.commercial_metadata,
     )
-
-
-def _normalize_query_text(query_text: str | None) -> str | None:
-    if query_text is None:
-        return None
-    normalized = query_text.strip().casefold()
-    if not normalized:
-        return None
-    return normalized
-
-
-def _matches_query_text(
-    listing: MarketplaceCapabilityListing,
-    query_text: str,
-) -> bool:
-    capability = listing.capability
-    haystacks = (
-        capability.identity.logical.logical_id.casefold(),
-        (capability.display_label or "").casefold(),
-    )
-    return any(query_text in haystack for haystack in haystacks)
 
 
 def snapshot_without_marketplace(

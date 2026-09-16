@@ -52,6 +52,22 @@ from intergrax.contracts.capability_catalog.ranking import (
     CapabilityRankingEvidence,
     CapabilityRankingSignal,
 )
+from intergrax.contracts.capability_catalog.recommendation import (
+    SCHEMA_CAPABILITY_RECOMMENDATION_CONTEXT_V1,
+    SCHEMA_CAPABILITY_RECOMMENDATION_EVIDENCE_V1,
+    CapabilityRecommendationContext,
+    CapabilityRecommendationEvidence,
+    CapabilityRecommendationReasonCode,
+)
+from intergrax.contracts.capability_catalog.search import (
+    SCHEMA_CAPABILITY_SEARCH_CONTEXT_V1,
+    SCHEMA_CAPABILITY_SEARCH_EVIDENCE_V1,
+    SCHEMA_CAPABILITY_SEARCH_QUERY_V1,
+    CapabilitySearchContext,
+    CapabilitySearchEvidence,
+    CapabilitySearchQuery,
+    CapabilitySearchSignal,
+)
 from intergrax.contracts.capability_catalog.scope import (
     SCHEMA_CAPABILITY_DISCOVERY_SCOPE_V1,
     CapabilityDiscoveryScope,
@@ -121,6 +137,13 @@ __all__ = [
     "CapabilityRankingContext",
     "CapabilityRankingEvidence",
     "CapabilityRankingSignal",
+    "CapabilityRecommendationContext",
+    "CapabilityRecommendationEvidence",
+    "CapabilityRecommendationReasonCode",
+    "CapabilitySearchContext",
+    "CapabilitySearchEvidence",
+    "CapabilitySearchQuery",
+    "CapabilitySearchSignal",
     "CapabilitySourceIdentity",
     "CapabilitySourceKind",
     "SkillVersionBindingDisposition",
@@ -146,6 +169,11 @@ __all__ = [
     "SCHEMA_CAPABILITY_PROVENANCE_V1",
     "SCHEMA_CAPABILITY_RANKING_CONTEXT_V1",
     "SCHEMA_CAPABILITY_RANKING_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_RECOMMENDATION_CONTEXT_V1",
+    "SCHEMA_CAPABILITY_RECOMMENDATION_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_SEARCH_CONTEXT_V1",
+    "SCHEMA_CAPABILITY_SEARCH_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_SEARCH_QUERY_V1",
     "SCHEMA_CAPABILITY_SOURCE_IDENTITY_V1",
     "SCHEMA_CAPABILITY_AGENT_GOVERNANCE_EVIDENCE_V1",
     "SCHEMA_CAPABILITY_SKILL_GOVERNANCE_EVIDENCE_V1",

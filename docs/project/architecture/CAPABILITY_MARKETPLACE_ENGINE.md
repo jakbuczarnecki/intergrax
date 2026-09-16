@@ -224,8 +224,8 @@ Replaceable variation points (post ME-RB2):
 | Governance evaluator | contracts + adapter evaluators | ENTERPRISE_READY |
 | Listing projection | `MarketplaceListingProjection` + `DefaultMarketplaceListingProjection` | ENTERPRISE_READY |
 | Marketplace metadata backend | `MarketplaceMetadataSource` + `InMemoryMarketplaceMetadataSource` | ENTERPRISE_READY |
-| Search / text filter | inline in `MarketplaceCatalogService` | PARTIAL (documented as product filter) |
-| Recommendation | none | MISSING |
+| Search | `CapabilitySearchStrategy` + `DefaultMarketplaceListingTextSearchStrategy` | ENTERPRISE_READY (ME-5) |
+| Recommendation | `CapabilityRecommendationStrategy` + `DefaultTopRankedCapabilityRecommendationStrategy` | ENTERPRISE_READY (ME-5) |
 | Availability evidence | typed evidence contracts | PARTIAL |
 | Lifecycle handoff | `MarketplaceLifecycleHandoffRequest` + domain-owned handoff ports | ENTERPRISE_READY (ME-RB4-C1) |
 
@@ -286,12 +286,21 @@ Proof: `tests/unit/marketplace/test_me_rb4_lifecycle_handoff.py`, `tests/unit/ma
 ## 13. Decision boundary
 
 ```text
-Search   → find candidates (discovery query + optional listing text filter)
-Ranking  → order candidates (CapabilityRanker)
+Discovery facts
+    ↓
+Search (CapabilitySearchStrategy)
+    ↓
+Ranking (CapabilityRanker)
+    ↓
+Governance narrowing
+    ↓
+Recommendation (CapabilityRecommendationStrategy)
+    ↓
 Selection → consumer choice / orchestration policy (not marketplace core)
 Decision System → semantic decision when required (separate subsystem)
-Governance → permit/deny candidate visibility/eligibility
 ```
+
+`MarketplaceDiscoveryService` orchestrates search → rank → recommend via contracts only (no embedded algorithms). `MarketplaceCatalogService.list_listings` delegates optional `query_text` to an injected search strategy (default preserves legacy substring semantics).
 
 Marketplace **must not** embed a mini Decision System.
 

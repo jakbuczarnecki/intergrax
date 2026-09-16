@@ -42,8 +42,12 @@ _FORBIDDEN_INSTALL_MODULES = frozenset({"pip", "subprocess"})
 
 _CATALOG_AUTHORITY_MODULES = (
     "intergrax.capability_catalog.ranking",
+    "intergrax.capability_catalog.search",
+    "intergrax.capability_catalog.recommendation",
     "intergrax.capability_catalog.governance",
     "intergrax.capability_catalog.ranking_validation",
+    "intergrax.capability_catalog.search_validation",
+    "intergrax.capability_catalog.recommendation_validation",
     "intergrax.capability_catalog.governance_validation",
 )
 
