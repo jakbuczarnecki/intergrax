@@ -167,6 +167,14 @@ def ltm_write_fact(ctx: ToolWiringContext, params: LtmWriteFactInput) -> LtmWrit
             entry_id=remembered.entry_id or "",
         )
 
+    identity_raw = ctx.extras.get("request_identity")
+    if not isinstance(identity_raw, RequestIdentity):
+        raise MemoryControlAccessDenied("trusted request identity required")
+    identity = identity_raw
+    if not (identity.user_id or "").strip():
+        raise MemoryControlAccessDenied("trusted request identity required")
+    _assert_tool_user_matches_identity(params.user_id, identity)
+
     manager = _require_user_profile_manager(ctx)
     kind_name = params.kind.strip().lower() or "user_fact"
     try:
@@ -178,14 +186,5 @@ def ltm_write_fact(ctx: ToolWiringContext, params: LtmWriteFactInput) -> LtmWrit
         kind=kind,
         title=params.title.strip() or None,
     )
-    identity_raw = ctx.extras.get("request_identity")
-    if isinstance(identity_raw, RequestIdentity):
-        identity = identity_raw
-    else:
-        tenant = str(ctx.extras.get("tenant_id") or "default").strip() or "default"
-        identity = RequestIdentity(
-            tenant_id=tenant,
-            user_id=params.user_id.strip(),
-        )
     saved = run_async(manager.add_memory_entry(identity, params.user_id.strip(), entry))
     return LtmWriteFactOutput(written=True, entry_id=str(attribute_access.optional(saved, "entry_id", "")))

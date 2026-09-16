@@ -335,6 +335,8 @@ def build_session_manager_from_environment(
             env,
             tenant_id=tenant_id,
             rag_stack=rag_stack,
+            entity_memory_indexer=wiring.entity_memory_indexer,
+            entity_temporal_memory_capability=wiring.entity_temporal_memory_capability,
         )
 
     org_manager: Optional[OrganizationProfileManager] = None

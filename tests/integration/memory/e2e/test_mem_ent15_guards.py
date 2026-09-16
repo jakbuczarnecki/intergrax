@@ -34,13 +34,24 @@ def test_mem_ent15_core_tests_reference_default_memory_control_plane() -> None:
     assert "DefaultMemoryControlPlane" in names or "build_in_memory_memory_harness" in names
 
 
-def test_entity_projection_adapter_does_not_synthesize_request_identity() -> None:
+def test_e2e_harness_does_not_define_entity_projection_adapter() -> None:
     harness_path = _E2E_ROOT / "harness.py"
     source = harness_path.read_text(encoding="utf-8")
-    adapter_start = source.find("class EntityIndexerUserProfileProjection")
-    assert adapter_start >= 0
-    adapter_block = source[adapter_start : source.find("@dataclass", adapter_start + 1)]
-    assert "RequestIdentity(" not in adapter_block
+    assert "class EntityIndexerUserProfileProjection" not in source
+    assert "EntityIndexerUserProfileMemoryProjection" in source
+
+
+def test_production_entity_projection_adapter_does_not_synthesize_request_identity() -> None:
+    adapter_path = (
+        _REPO
+        / "intergrax"
+        / "applications"
+        / "_shared"
+        / "entity_user_profile_memory_projection.py"
+    )
+    source = adapter_path.read_text(encoding="utf-8")
+    assert "RequestIdentity(" not in source
+    assert 'model_copy(update={"user_id"' not in source
 
 
 def test_mem_ent15_e2e_avoids_reflection_and_private_access() -> None:

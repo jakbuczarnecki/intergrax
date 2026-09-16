@@ -17,9 +17,15 @@ from intergrax.applications._shared.session_turn_index_rag_adapters import (
 from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
 from intergrax.memory.user_profile_manager import UserProfileManager
+from intergrax.memory.user_profile_ltm_vector_projection import UserProfileLtmVectorProjection
 from intergrax.memory.user_profile_store import UserProfileStore
 
 if TYPE_CHECKING:
+    from intergrax.memory.contracts.entity_temporal_memory import (
+        EntityMemoryIndexer,
+        EntityTemporalMemoryCapability,
+    )
+    from intergrax.memory.contracts.memory_lifecycle import UserProfileMemoryProjection
     from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
     from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack
 
@@ -85,6 +91,8 @@ def build_user_profile_manager(
     *,
     tenant_id: str | None = None,
     rag_stack: RagStack | None = None,
+    entity_memory_indexer: EntityMemoryIndexer | None = None,
+    entity_temporal_memory_capability: EntityTemporalMemoryCapability | None = None,
 ) -> UserProfileManager | None:
     """Construct ``UserProfileManager`` with optional LTM vector dependencies."""
     profile = env.memory_profile
@@ -101,6 +109,34 @@ def build_user_profile_manager(
         kwargs["vectorstore_manager"] = rag_stack.vectorstore_manager
         kwargs["retrieval_service"] = rag_stack.retrieval_service
         kwargs["rag_profile"] = rag_stack.profile
+
+    projections: list[UserProfileMemoryProjection] = []
+    if (
+        profile.enable_entity_graph_memory
+        and entity_memory_indexer is not None
+        and entity_temporal_memory_capability is not None
+    ):
+        from intergrax.applications._shared.entity_user_profile_memory_projection import (
+            EntityIndexerUserProfileMemoryProjection,
+        )
+
+        projections.append(
+            EntityIndexerUserProfileMemoryProjection(
+                indexer=entity_memory_indexer,
+                entity_capability=entity_temporal_memory_capability,
+            )
+        )
+    if profile.enable_long_term_memory and rag_stack is not None:
+        projections.append(
+            UserProfileLtmVectorProjection(
+                embedding_manager=rag_stack.embedding_manager,
+                vectorstore_manager=rag_stack.vectorstore_manager,
+                tenant_id=resolved_tenant_id,
+                vector_index_namespace=profile.vector_index_namespace,
+            )
+        )
+    if projections:
+        kwargs["memory_projections"] = tuple(projections)
 
     return UserProfileManager(store, **kwargs)
 

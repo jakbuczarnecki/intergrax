@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.integrations.contracts.issue_tracker import IssueComment, IssueRecord, IssueSearchResult
 from intergrax.integrations.providers.http_client.allowlist.client import AllowlistHttpClient
 from intergrax.memory.user_profile_memory import (
@@ -87,8 +88,8 @@ class _FakeUserProfileManager:
         _ = (user_id, query, top_k, score_threshold)
         return {"used_longterm": False, "hits": [], "scores": [], "debug": {"used": False, "reason": "disabled"}}
 
-    async def add_memory_entry(self, user_id: str, entry_or_content, metadata=None):
-        _ = (user_id, metadata)
+    async def add_memory_entry(self, identity, user_id: str, entry_or_content, metadata=None):
+        _ = (identity, user_id, metadata)
         if isinstance(entry_or_content, UserProfileMemoryEntry):
             return entry_or_content
         return UserProfileMemoryEntry(content=str(entry_or_content))
@@ -223,6 +224,9 @@ def test_ltm_memory_context_and_http_tools() -> None:
         user_profile_manager=_FakeUserProfileManager(),
         memory_view=_FakeMemoryView(),
         http_client=AllowlistHttpClient(allowed_hosts=frozenset({"example.com"})),
+        extras={
+            "request_identity": RequestIdentity(tenant_id="default", user_id="u1"),
+        },
     )
     ltm_hits = ltm_search(ctx, LtmSearchInput(user_id="u1", query="intergrax"))
     assert ltm_hits.used is True
