@@ -29,9 +29,23 @@ from intergrax.runtime.migration.human_decision_legacy_disposition import (  # n
     run_sqlite_human_decision_legacy_disposition,
 )
 
+CLI_DISPOSITION_STRATEGIES: tuple[HumanDecisionLegacyDispositionStrategy, ...] = (
+    HumanDecisionLegacyDispositionStrategy.HISTORY_ONLY_QUARANTINE,
+    HumanDecisionLegacyDispositionStrategy.CONTROLLED_DELETE,
+)
+
+_RECOVERY_PROGRAMMATIC_HELP = (
+    "Provenance recovery is not available via this CLI; configure a "
+    "HumanDecisionApproverRecoverySource in programmatic/admin composition."
+)
+
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        epilog=_RECOVERY_PROGRAMMATIC_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     parser.add_argument(
         "--db-path",
         type=Path,
@@ -40,9 +54,13 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--strategy",
-        choices=[item.value for item in HumanDecisionLegacyDispositionStrategy],
+        choices=[item.value for item in CLI_DISPOSITION_STRATEGIES],
         default=HumanDecisionLegacyDispositionStrategy.HISTORY_ONLY_QUARANTINE.value,
-        help="Offline disposition strategy (default: history-only quarantine report).",
+        help=(
+            "Offline disposition strategy wired by this CLI "
+            "(default: history-only quarantine report). "
+            "Use --export-archive-json for non-authoritative archive export."
+        ),
     )
     parser.add_argument(
         "--apply",

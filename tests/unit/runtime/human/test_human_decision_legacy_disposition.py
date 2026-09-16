@@ -234,3 +234,119 @@ def test_archive_export_json(tmp_path) -> None:
     payload = json.loads(export_sqlite_legacy_human_decision_archive_json(db))
     assert len(payload) == 1
     assert payload[0]["provenance_status"] == LegacyHumanDecisionProvenanceStatus.MISSING.value
+
+
+_EXPECTED_ARCHIVE_KEYS = frozenset(
+    {
+        "decision_id",
+        "tenant_id",
+        "task_id",
+        "user_id",
+        "human_request_id",
+        "verdict",
+        "response_text",
+        "escalation_level",
+        "escalation_target",
+        "agent_id",
+        "run_id",
+        "notes",
+        "created_at_utc",
+        "provenance_status",
+    }
+)
+
+_FORBIDDEN_ARCHIVE_AUTHORITY_KEYS = frozenset(
+    {"approver", "approver_json", "auth_subject", "auth_mode", "principal_type"}
+)
+
+
+def test_archive_export_exact_payload_keys(tmp_path) -> None:
+    db = tmp_path / "human.db"
+    _insert_row(db, approver_json=None)
+    payload = json.loads(export_sqlite_legacy_human_decision_archive_json(db))[0]
+    assert frozenset(payload.keys()) == _EXPECTED_ARCHIVE_KEYS
+
+
+def test_archive_export_excludes_authority_fields(tmp_path) -> None:
+    db = tmp_path / "human.db"
+    _insert_row(db, approver_json=None)
+    raw = export_sqlite_legacy_human_decision_archive_json(db)
+    for forbidden in _FORBIDDEN_ARCHIVE_AUTHORITY_KEYS:
+        assert forbidden not in raw
+
+
+def test_archive_export_deterministic(tmp_path) -> None:
+    db = tmp_path / "human.db"
+    _insert_row(db, approver_json=None)
+    first = export_sqlite_legacy_human_decision_archive_json(db)
+    second = export_sqlite_legacy_human_decision_archive_json(db)
+    assert first == second
+
+
+def test_recovery_dry_run_counts_without_mutation(tmp_path) -> None:
+    db = tmp_path / "human.db"
+    approver = _identity_approver()
+    _insert_row(db, approver_json=None)
+    source = _StaticRecovery({(_DECISION, _TENANT): approver})
+    report = run_sqlite_human_decision_legacy_disposition(
+        db,
+        strategy=HumanDecisionLegacyDispositionStrategy.PROVENANCE_RECOVERY,
+        dry_run=True,
+        recovery_source=source,
+    )
+    assert report.dry_run is True
+    assert report.rows_recovered == 1
+    store = SQLiteHumanDecisionStore(db_path=db)
+    with pytest.raises(HumanDecisionApproverProvenanceError):
+        store.get_decision(_DECISION, _TENANT)
+
+
+class _FailOnSecondRecovery:
+    def __init__(self, mapping: dict[tuple[str, str], HumanApproverEvidence]) -> None:
+        self._mapping = mapping
+        self._calls = 0
+
+    def recover_approver(self, *, decision_id: str, tenant_id: str) -> HumanApproverEvidence | None:
+        self._calls += 1
+        if self._calls >= 2:
+            raise RuntimeError("recovery provider failed")
+        return self._mapping.get((decision_id, tenant_id))
+
+
+def test_recovery_provider_failure_rolls_back_transaction(tmp_path) -> None:
+    db = tmp_path / "human.db"
+    approver = _identity_approver()
+    _insert_row(db, approver_json=None, decision_id="legacy-a")
+    _insert_row(db, approver_json=None, decision_id="legacy-b")
+    source = _FailOnSecondRecovery(
+        {
+            ("legacy-a", _TENANT): approver,
+            ("legacy-b", _TENANT): approver,
+        }
+    )
+    with pytest.raises(RuntimeError, match="recovery provider failed"):
+        run_sqlite_human_decision_legacy_disposition(
+            db,
+            strategy=HumanDecisionLegacyDispositionStrategy.PROVENANCE_RECOVERY,
+            dry_run=False,
+            recovery_source=source,
+        )
+    store = SQLiteHumanDecisionStore(db_path=db)
+    with pytest.raises(HumanDecisionApproverProvenanceError):
+        store.get_decision("legacy-a", _TENANT)
+
+
+def test_controlled_delete_apply_removes_legacy_rows(tmp_path) -> None:
+    db = tmp_path / "human.db"
+    _insert_row(db, approver_json=None)
+    _insert_row(db, approver_json=_identity_approver().model_dump_json(), decision_id="keep")
+    report = run_sqlite_human_decision_legacy_disposition(
+        db,
+        strategy=HumanDecisionLegacyDispositionStrategy.CONTROLLED_DELETE,
+        dry_run=False,
+        allow_delete=True,
+    )
+    assert report.rows_deleted == 1
+    assessment = assess_sqlite_human_decision_legacy_rows(db)
+    assert assessment.rows_total == 1
+    assert assessment.rows_with_approver_json == 1
