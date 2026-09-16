@@ -35,6 +35,9 @@ SCHEMA_MACHINE_CAPABILITY_ACQUISITION_SELECTION_V1: Final = (
     "machine_capability_acquisition_selection.v1"
 )
 SCHEMA_MACHINE_CAPABILITY_RECOMMENDATION_V1: Final = "machine_capability_recommendation.v1"
+SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_REQUEST_V1: Final = (
+    "machine_capability_acquisition_handoff_request.v1"
+)
 SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_RESPONSE_V1: Final = (
     "machine_capability_acquisition_handoff_response.v1"
 )
@@ -147,8 +150,8 @@ class MachineCapabilityAcquisitionHandoffRequest(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["machine_capability_acquisition_request.v1"] = (
-        SCHEMA_MACHINE_CAPABILITY_ACQUISITION_REQUEST_V1
+    schema_version: Literal["machine_capability_acquisition_handoff_request.v1"] = (
+        SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_REQUEST_V1
     )
     acquisition_request: MachineCapabilityAcquisitionRequest
     selection: MachineCapabilityAcquisitionSelection
@@ -211,6 +214,7 @@ __all__ = [
     "MachineCapabilityAcquisitionRequest",
     "MachineCapabilityAcquisitionResponse",
     "MachineCapabilityAcquisitionSelection",
+    "SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_REQUEST_V1",
     "SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_RESPONSE_V1",
     "SCHEMA_MACHINE_CAPABILITY_ACQUISITION_REQUEST_V1",
     "SCHEMA_MACHINE_CAPABILITY_ACQUISITION_RESPONSE_V1",

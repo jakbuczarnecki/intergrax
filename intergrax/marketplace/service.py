@@ -45,6 +45,15 @@ from intergrax.contracts.marketplace.diagnostics import (
 )
 from intergrax.marketplace.diagnostics import emit_marketplace_diagnostic
 from intergrax.marketplace.diagnostics.session import MarketplacePipelineObservationSession
+from intergrax.capability_catalog.snapshot import CapabilityCatalogFederationCompleteness
+
+
+@dataclass(frozen=True, slots=True)
+class MarketplaceCatalogListingQueryResult:
+    """Public listing query view — listings and federation facts from one catalog read."""
+
+    listing_views: tuple[MarketplaceCapabilityListingView, ...]
+    catalog_federation_completeness: CapabilityCatalogFederationCompleteness
 
 
 @dataclass(frozen=True, slots=True)
@@ -86,8 +95,27 @@ class MarketplaceCatalogService:
         observation: MarketplacePipelineObservationSession | None = None,
     ) -> tuple[MarketplaceCapabilityListingView, ...]:
         """List marketplace listings matching a Stage-3 discovery query."""
+        return self.query_listings(
+            query,
+            marketplace_query_context=marketplace_query_context,
+            availability_evidence=availability_evidence,
+            query_text=query_text,
+            observation=observation,
+        ).listing_views
+
+    def query_listings(
+        self,
+        query: CapabilityDiscoveryQuery,
+        *,
+        marketplace_query_context: MarketplaceQueryContext | None = None,
+        availability_evidence: CapabilityDiscoveryAvailabilityEvidence | None = None,
+        query_text: str | None = None,
+        observation: MarketplacePipelineObservationSession | None = None,
+    ) -> MarketplaceCatalogListingQueryResult:
+        """List marketplace listings from a single federated catalog snapshot read."""
         query_context = marketplace_query_context or MarketplaceQueryContext()
         snapshot = self._catalog.snapshot()
+        catalog_federation_completeness = snapshot.federation_completeness
         listing_index = _build_listing_index(snapshot, self._marketplace_sources)
         candidates = discover_capability_candidates(
             snapshot,
@@ -160,7 +188,10 @@ class MarketplaceCatalogService:
                     availability=item.candidate.availability,
                 ),
             )
-        return tuple(views)
+        return MarketplaceCatalogListingQueryResult(
+            listing_views=tuple(views),
+            catalog_federation_completeness=catalog_federation_completeness,
+        )
 
     def get_listing(
         self,

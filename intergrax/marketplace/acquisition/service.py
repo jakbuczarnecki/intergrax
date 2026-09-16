@@ -6,8 +6,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from uuid import uuid4
-
 from intergrax.capability_catalog.governance import CapabilityGovernanceEvaluator
 from intergrax.capability_catalog.recommended_capability import CapabilityRecommendation
 from intergrax.capability_catalog.snapshot import CapabilityCatalogFederationCompleteness
@@ -32,6 +30,9 @@ from intergrax.contracts.marketplace.handoff_traceability import consumer_target
 from intergrax.marketplace.acquisition.errors import (
     MachineCapabilityAcquisitionPolicyError,
     MachineCapabilityAcquisitionSelectionError,
+)
+from intergrax.marketplace.acquisition.observation_resolution import (
+    resolve_acquisition_discovery_correlation,
 )
 from intergrax.marketplace.acquisition.query_normalization import (
     discovery_query_for_machine_acquisition,
@@ -123,17 +124,23 @@ class MachineCapabilityAcquisitionService:
         self,
         request: MachineCapabilityAcquisitionRequest,
     ) -> MachineCapabilityAcquisitionResponse:
+        return self._acquire(request, operation_discovery_correlation_id=None)
+
+    def _acquire(
+        self,
+        request: MachineCapabilityAcquisitionRequest,
+        *,
+        operation_discovery_correlation_id: str | None,
+    ) -> MachineCapabilityAcquisitionResponse:
         discovery_query = discovery_query_for_machine_acquisition(
             request.need,
             request.discovery_query,
         )
         query_text = effective_query_text(request.need, request.query_text)
-        if request.observation is not None:
-            discovery_correlation_id = request.observation.discovery_correlation_id
-            query_correlation_id = request.observation.query_correlation_id
-        else:
-            discovery_correlation_id = f"machine-acquire-{uuid4()}"
-            query_correlation_id = None
+        discovery_correlation_id, query_correlation_id = resolve_acquisition_discovery_correlation(
+            request,
+            operation_discovery_correlation_id=operation_discovery_correlation_id,
+        )
         observation = MarketplacePipelineObservationSession.for_discovery(
             discovery_correlation_id,
             query_correlation_id=query_correlation_id,
@@ -162,8 +169,7 @@ class MachineCapabilityAcquisitionService:
             governed_count=len(pipeline.governed.allowed),
             recommendation_count=len(recommendations),
         )
-        snapshot = self.catalog_service._catalog.snapshot()
-        completeness = _federation_completeness(snapshot.federation_completeness)
+        completeness = _federation_completeness(pipeline.catalog_federation_completeness)
         return MachineCapabilityAcquisitionResponse(
             request_id=request.request_id,
             discovery_correlation_id=discovery_correlation_id,
@@ -179,7 +185,10 @@ class MachineCapabilityAcquisitionService:
     ) -> MachineCapabilityAcquisitionHandoffResponse:
         acquisition = handoff_request.acquisition_request
         selection = handoff_request.selection
-        acquire_response = self.acquire(acquisition)
+        acquire_response = self._acquire(
+            acquisition,
+            operation_discovery_correlation_id=selection.discovery_correlation_id,
+        )
         if selection.discovery_correlation_id != acquire_response.discovery_correlation_id:
             raise MachineCapabilityAcquisitionSelectionError(
                 "selection discovery_correlation_id must match acquisition response",

@@ -13,6 +13,8 @@ import pytest
 from intergrax.capability_catalog import (
     AvailabilityPreservingGovernanceEvaluator,
     CapabilityCatalogEntry,
+    CapabilityCatalogSnapshot,
+    CapabilityCatalogFederationCompleteness,
     CapabilityGovernanceDecision,
     FederatedCapabilityCatalog,
     RankedCapabilityCandidate,
@@ -45,6 +47,7 @@ from intergrax.contracts.capability_catalog import (
 from intergrax.contracts.marketplace import (
     CapabilityHandoffConsumerTarget,
     CapabilityHandoffDeliveryDisposition,
+    CapabilityHandoffDeliveryResult,
     MarketplaceListingRecord,
     MarketplaceObservationContext,
     MarketplaceQueryContext,
@@ -52,7 +55,14 @@ from intergrax.contracts.marketplace import (
     MarketplaceVisibilityScope,
 )
 from intergrax.contracts.marketplace.acquisition import (
+    SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_REQUEST_V1,
+    SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_RESPONSE_V1,
+    SCHEMA_MACHINE_CAPABILITY_ACQUISITION_REQUEST_V1,
+    SCHEMA_MACHINE_CAPABILITY_ACQUISITION_RESPONSE_V1,
+    SCHEMA_MACHINE_CAPABILITY_ACQUISITION_SELECTION_V1,
+    SCHEMA_MACHINE_CAPABILITY_RECOMMENDATION_V1,
     MachineCapabilityAcquisitionHandoffRequest,
+    MachineCapabilityAcquisitionHandoffResponse,
     MachineCapabilityAcquisitionOutcome,
     MachineCapabilityAcquisitionPolicy,
     MachineCapabilityAcquisitionRequest,
@@ -549,6 +559,47 @@ def test_machine_selection_rejects_governance_blocked_capability() -> None:
         )
 
 
+def test_stale_selection_is_revalidated_against_current_marketplace_state() -> None:
+    catalog = _catalog_service(
+        _public_record(CapabilityKind.TOOL, "tool-release-v1"),
+        _public_record(CapabilityKind.TOOL, "tool-release-v2"),
+    )
+    service = _machine_service(
+        catalog,
+        _RecordingHandoffConsumer(),
+        governance_evaluators=(AvailabilityPreservingGovernanceEvaluator(),),
+    )
+    narrow_request = MachineCapabilityAcquisitionRequest(
+        request_id="req-stale",
+        need=_need(kinds=(CapabilityKind.TOOL,)),
+        discovery_query=_discovery_query(),
+        observation=MarketplaceObservationContext(discovery_correlation_id="corr-stale"),
+        recommendation_context=CapabilityRecommendationContext(top_n=1),
+    )
+    acquire = service.acquire(narrow_request)
+    selected = acquire.recommendations[0]
+    snapshot = catalog._catalog.snapshot()
+    other_entry = next(
+        entry
+        for entry in snapshot.entries
+        if entry.identity.logical.logical_id != selected.release.discovery.logical.logical_id
+    )
+    release_other = CapabilityReleaseIdentity.from_catalog_entry(other_entry)
+    with pytest.raises(MachineCapabilityAcquisitionSelectionError, match="recommendation"):
+        service.select_and_handoff(
+            MachineCapabilityAcquisitionHandoffRequest(
+                acquisition_request=narrow_request,
+                selection=MachineCapabilityAcquisitionSelection(
+                    selection_id="sel-stale",
+                    discovery_correlation_id="corr-stale",
+                    selected_release=release_other,
+                    selector_id="machine.client",
+                ),
+                handoff_id="handoff-stale",
+            ),
+        )
+
+
 def test_machine_selection_preserves_exact_release_identity() -> None:
     catalog = _catalog_service(
         _public_record(CapabilityKind.TOOL, "tool-release-v1"),
@@ -792,6 +843,233 @@ def test_evil_widen_policy_proof() -> None:
     service = _machine_service(catalog, consumer, acquisition_policy=_EvilWidenPolicy())
     with pytest.raises(MachineCapabilityAcquisitionPolicyError, match="widen"):
         service.acquire(_acquire_request())
+
+
+def test_machine_acquisition_service_does_not_access_catalog_service_private_state() -> None:
+    root = Path(importlib.import_module("intergrax.marketplace.acquisition").__path__[0])
+    for path in root.rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Attribute):
+                continue
+            if not isinstance(node.attr, str) or not node.attr.startswith("_"):
+                continue
+            if isinstance(node.value, ast.Attribute) and node.value.attr == "catalog_service":
+                raise AssertionError(
+                    f"{path.name} accesses catalog_service private attribute {node.attr!r}",
+                )
+
+
+def test_acquisition_response_completeness_comes_from_same_pipeline_snapshot() -> None:
+    ok_source = MarketplaceCapabilityCatalogSource(
+        source=_OFFICIAL,
+        records=(_public_record(CapabilityKind.AGENT, "public-agent"),),
+    )
+    inner_catalog = FederatedCapabilityCatalog((ok_source,))
+    federated = inner_catalog.snapshot()
+    partial_snapshot = federated.model_copy(
+        update={
+            "federation_completeness": CapabilityCatalogFederationCompleteness.PARTIAL,
+        },
+    )
+    complete_empty = CapabilityCatalogSnapshot(
+        source_ids=federated.source_ids,
+        entries=(),
+        federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
+    )
+
+    class _FlippingSnapshotCatalog:
+        def __init__(self) -> None:
+            self.snapshot_calls = 0
+            self.sources = inner_catalog.sources
+
+        def snapshot(self, **_kwargs: object) -> CapabilityCatalogSnapshot:
+            self.snapshot_calls += 1
+            if self.snapshot_calls == 1:
+                return partial_snapshot
+            return complete_empty
+
+    flipping = _FlippingSnapshotCatalog()
+    catalog = MarketplaceCatalogService(catalog=flipping, marketplace_sources=(ok_source,))
+    consumer = _RecordingHandoffConsumer()
+    service = _machine_service(
+        catalog,
+        consumer,
+        governance_evaluators=(AvailabilityPreservingGovernanceEvaluator(),),
+    )
+    response = service.acquire(_acquire_request())
+    assert response.outcome is MachineCapabilityAcquisitionOutcome.RECOMMENDATIONS_AVAILABLE
+    assert response.catalog_federation_completeness is MachineCatalogFederationCompleteness.PARTIAL
+    assert flipping.snapshot_calls == 1
+
+
+def test_acquire_does_not_read_second_snapshot_for_completeness() -> None:
+    ok_source = MarketplaceCapabilityCatalogSource(
+        source=_OFFICIAL,
+        records=(_public_record(CapabilityKind.AGENT, "public-agent"),),
+    )
+    inner = FederatedCapabilityCatalog((ok_source,))
+
+    class _CountingCatalog:
+        def __init__(self, wrapped: FederatedCapabilityCatalog) -> None:
+            self._wrapped = wrapped
+            self.snapshot_calls = 0
+
+        @property
+        def sources(self):
+            return self._wrapped.sources
+
+        def snapshot(self, **_kwargs: object) -> CapabilityCatalogSnapshot:
+            self.snapshot_calls += 1
+            return self._wrapped.snapshot(**_kwargs)
+
+    counting = _CountingCatalog(inner)
+    catalog = MarketplaceCatalogService(catalog=counting, marketplace_sources=(ok_source,))
+    consumer = _RecordingHandoffConsumer()
+    service = _machine_service(
+        catalog,
+        consumer,
+        governance_evaluators=(AvailabilityPreservingGovernanceEvaluator(),),
+    )
+    service.acquire(_acquire_request())
+    assert counting.snapshot_calls == 1
+
+
+def _acquire_request_without_observation(
+    **kwargs: object,
+) -> MachineCapabilityAcquisitionRequest:
+    return MachineCapabilityAcquisitionRequest(
+        request_id="req-no-obs",
+        need=_need(),
+        discovery_query=_discovery_query(),
+        marketplace_query_context=kwargs.pop("context", None) or MarketplaceQueryContext(),
+        recommendation_context=CapabilityRecommendationContext(top_n=10),
+        **kwargs,
+    )
+
+
+def test_acquire_without_observation_can_select_and_handoff() -> None:
+    _catalog, service, consumer = _mixed_fixture_service()
+    request = _acquire_request_without_observation()
+    response = service.acquire(request)
+    assert response.outcome is MachineCapabilityAcquisitionOutcome.RECOMMENDATIONS_AVAILABLE
+    release = response.recommendations[0].release
+    handoff = service.select_and_handoff(
+        MachineCapabilityAcquisitionHandoffRequest(
+            acquisition_request=request,
+            selection=MachineCapabilityAcquisitionSelection(
+                selection_id="sel-no-obs",
+                discovery_correlation_id=response.discovery_correlation_id,
+                selected_release=release,
+                selector_id="machine.client",
+            ),
+            handoff_id="handoff-no-obs",
+        ),
+    )
+    assert handoff.delivery.disposition is CapabilityHandoffDeliveryDisposition.DELIVERED
+
+
+def test_generated_acquisition_correlation_reaches_handoff() -> None:
+    _catalog, service, consumer = _mixed_fixture_service()
+    request = _acquire_request_without_observation()
+    response = service.acquire(request)
+    release = response.recommendations[0].release
+    service.select_and_handoff(
+        MachineCapabilityAcquisitionHandoffRequest(
+            acquisition_request=request,
+            selection=MachineCapabilityAcquisitionSelection(
+                selection_id="sel-generated-corr",
+                discovery_correlation_id=response.discovery_correlation_id,
+                selected_release=release,
+                selector_id="machine.client",
+            ),
+            handoff_id="handoff-generated-corr",
+        ),
+    )
+    assert consumer.envelopes[0].discovery_correlation_id == response.discovery_correlation_id
+
+
+def test_revalidation_preserves_original_discovery_correlation() -> None:
+    _catalog, service, consumer = _mixed_fixture_service()
+    request = _acquire_request_without_observation()
+    response = service.acquire(request)
+    release = response.recommendations[0].release
+    revalidated = service._acquire(
+        request,
+        operation_discovery_correlation_id=response.discovery_correlation_id,
+    )
+    assert revalidated.discovery_correlation_id == response.discovery_correlation_id
+
+
+def test_explicit_observation_correlation_mismatch_is_rejected() -> None:
+    _, service, _consumer = _mixed_fixture_service()
+    with pytest.raises(MachineCapabilityAcquisitionSelectionError, match="observation"):
+        service._acquire(
+            _acquire_request(correlation_id="corr-A"),
+            operation_discovery_correlation_id="corr-B",
+        )
+
+
+def test_machine_acquisition_handoff_request_has_unique_schema_version() -> None:
+    _, service, _consumer = _mixed_fixture_service()
+    acquire_req = _acquire_request(correlation_id="corr-schema")
+    release = service.acquire(acquire_req).recommendations[0].release
+    request = MachineCapabilityAcquisitionHandoffRequest(
+        acquisition_request=acquire_req,
+        selection=MachineCapabilityAcquisitionSelection(
+            selection_id="sel-schema",
+            discovery_correlation_id="corr-schema",
+            selected_release=release,
+            selector_id="machine.client",
+        ),
+        handoff_id="handoff-schema",
+    )
+    assert request.schema_version == SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_REQUEST_V1
+    assert request.schema_version != SCHEMA_MACHINE_CAPABILITY_ACQUISITION_REQUEST_V1
+
+
+def test_me12_public_contract_schema_versions_are_unique() -> None:
+    schema_ids = (
+        SCHEMA_MACHINE_CAPABILITY_ACQUISITION_REQUEST_V1,
+        SCHEMA_MACHINE_CAPABILITY_ACQUISITION_RESPONSE_V1,
+        SCHEMA_MACHINE_CAPABILITY_ACQUISITION_SELECTION_V1,
+        SCHEMA_MACHINE_CAPABILITY_RECOMMENDATION_V1,
+        SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_REQUEST_V1,
+        SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_RESPONSE_V1,
+    )
+    assert len(schema_ids) == len(set(schema_ids))
+
+
+def test_me12_acquisition_contract_serialization_roundtrip() -> None:
+    acquire_req = _acquire_request(correlation_id="corr-rt")
+    _, service, _consumer = _mixed_fixture_service()
+    acquire_resp = service.acquire(acquire_req)
+    release = acquire_resp.recommendations[0].release
+    handoff_req = MachineCapabilityAcquisitionHandoffRequest(
+        acquisition_request=acquire_req,
+        selection=MachineCapabilityAcquisitionSelection(
+            selection_id="sel-rt",
+            discovery_correlation_id="corr-rt",
+            selected_release=release,
+            selector_id="machine.client",
+        ),
+        handoff_id="handoff-rt",
+    )
+    handoff_resp = MachineCapabilityAcquisitionHandoffResponse(
+        request_id=acquire_req.request_id,
+        discovery_correlation_id="corr-rt",
+        selection_id="sel-rt",
+        handoff_id="handoff-rt",
+        delivery=CapabilityHandoffDeliveryResult(
+            disposition=CapabilityHandoffDeliveryDisposition.DELIVERED,
+            handoff_id="handoff-rt",
+            downstream_consumer_id="machine.consumer.me12",
+        ),
+    )
+    for model in (acquire_req, acquire_resp, handoff_req, handoff_resp):
+        payload = model.model_dump_json()
+        restored = type(model).model_validate_json(payload)
+        assert restored.schema_version == model.schema_version
 
 
 def test_machine_partial_catalog_reports_completeness() -> None:

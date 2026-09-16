@@ -15,6 +15,7 @@ from intergrax.capability_catalog.governance import (
 from intergrax.capability_catalog.governed_result import GovernedDiscoveryResult
 from intergrax.capability_catalog.ranked_candidate import RankedCapabilityCandidate
 from intergrax.capability_catalog.recommended_capability import CapabilityRecommendation
+from intergrax.capability_catalog.snapshot import CapabilityCatalogFederationCompleteness
 from intergrax.contracts.capability_catalog.governance import CapabilityGovernanceContext
 from intergrax.contracts.capability_catalog.query import CapabilityDiscoveryQuery
 from intergrax.contracts.capability_catalog.recommendation import (
@@ -41,6 +42,7 @@ class MarketplaceIntelligencePipelineResult:
     ranked: tuple[RankedCapabilityCandidate, ...]
     governed: GovernedDiscoveryResult
     recommendations: tuple[CapabilityRecommendation, ...]
+    catalog_federation_completeness: CapabilityCatalogFederationCompleteness
 
 
 def run_marketplace_intelligence_pipeline(
@@ -67,12 +69,13 @@ def run_marketplace_intelligence_pipeline(
             ),
         )
 
-    listing_views = catalog_service.list_listings(
+    listing_query = catalog_service.query_listings(
         discovery_query,
         marketplace_query_context=marketplace_query_context,
         query_text=query_text,
         observation=observation,
     )
+    listing_views = listing_query.listing_views
 
     if observation is not None:
         emit_marketplace_diagnostic(
@@ -145,6 +148,7 @@ def run_marketplace_intelligence_pipeline(
         ranked=ranked,
         governed=governed,
         recommendations=recommendations,
+        catalog_federation_completeness=listing_query.catalog_federation_completeness,
     )
 
 
