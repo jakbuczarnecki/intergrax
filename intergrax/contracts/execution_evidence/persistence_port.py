@@ -5,18 +5,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, List, Protocol, runtime_checkable
+from typing import List, Protocol, runtime_checkable
 
+from intergrax.contracts.execution_event_position import (
+    AsOfBoundary,
+    ExecutionEventPosition,
+)
 from intergrax.contracts.execution_identity import EventId
-
-if TYPE_CHECKING:
-    from intergrax.contracts.execution_event_position import (
-        AsOfBoundary,
-        ExecutionEventPosition,
-    )
-    from intergrax.contracts.positioned_runtime_event import PositionedRuntimeEvent
-    from intergrax.runtime.events.persistence_contract import TaskRuntimeEventRuns
-    from intergrax.contracts.runtime_event import RuntimeEvent
+from intergrax.contracts.positioned_runtime_event import PositionedRuntimeEvent
+from intergrax.contracts.runtime_event import RuntimeEvent
+from intergrax.contracts.task_runtime_event_runs import TaskRuntimeEventRuns
 
 __all__ = ["EvidencePersistencePort"]
 

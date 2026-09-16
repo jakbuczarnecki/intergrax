@@ -399,7 +399,7 @@ Mandatory proof: OBS architecture gate bundle + `pytest -m obs_coverage_p1` + sc
 ```text
 Evidence Producer (execution path)
         ↓
-EvidencePersistencePort
+EvidencePersistencePort (platform contract; contract-owned read DTOs incl. TaskRuntimeEventRuns)
         ↓
 RuntimeEventPersistence adapter / backend
         ↓
@@ -413,7 +413,7 @@ Journal · Export · Reconstruction (read-only views)
 | **Durable evidence** | What actually happened during execution (accepted `RuntimeEvent`s) | Schedule, retry, resume, or mutate lifecycle |
 | **Journal** | Chronological history projection from persisted evidence | Execute actions; mint run/attempt authority |
 | **Reconstruction** | Deterministic views at explicit coordinates (`AsOfBoundary`, knowledge watermark) | Re-execute workflows; emit new canonical events |
-| **Persistence boundary** | Tenant-scoped read/write of evidence via `EvidencePersistencePort` | Business interpretation; orchestration |
+| **Persistence boundary** | Tenant-scoped read/write of evidence via `EvidencePersistencePort`; grouped task reads use contract-owned `TaskRuntimeEventRuns` | Business interpretation; orchestration |
 
 **Evidence Plane ≠ Execution Control Plane:** persisted history informs operators and diagnostics; it **never** drives execution control.
 

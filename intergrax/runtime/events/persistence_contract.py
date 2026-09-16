@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from dataclasses import dataclass
 from threading import Lock
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence
 
 from intergrax.contracts.execution_identity import (
     EventId,
@@ -28,8 +28,9 @@ from intergrax.runtime.events.execution_position import (
     validate_execution_event_position,
 )
 from intergrax.contracts.execution_evidence.persistence_boundary_errors import (
-    MandatoryEvidencePersistenceError,
+    MandatoryEvidencePersistenceError as MandatoryEvidencePersistenceError,
 )
+from intergrax.contracts.task_runtime_event_runs import TaskRuntimeEventRuns
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 
@@ -39,18 +40,6 @@ class RuntimeEventPersistenceIntegrityError(Exception):
 
 class EvidenceTenantRoutingMismatchError(RuntimeEventPersistenceIntegrityError):
     """Raised when explicit persistence routing tenant disagrees with ``event.tenant_id``."""
-
-
-@dataclass(frozen=True, slots=True)
-class TaskRuntimeEventRuns:
-    """
-    Task-scoped events grouped by run.
-
-    Each run group is ordered by ``ExecutionEventPosition`` (run-local only).
-    Run groups are ordered by canonical ``run_id`` — not task-global chronology.
-    """
-
-    runs: Tuple[Tuple[RunId, Tuple[PositionedRuntimeEvent, ...]], ...]
 
 
 EVENT_ID_OWNERSHIP_SCHEMA_V1 = "runtime_event.event_id_ownership.v1"
@@ -134,7 +123,9 @@ def decode_event_identity_claim(data: object) -> EventIdOwnershipRecord:
             tenant_id=raw_tenant_id,
             run_id=raw_run_id,
         )
-    raise RuntimeEventPersistenceIntegrityError("unsupported runtime event ownership schema")
+    raise RuntimeEventPersistenceIntegrityError(
+        "unsupported runtime event ownership schema"
+    )
 
 
 def verify_runtime_event_identity_claim(
@@ -159,7 +150,9 @@ def verify_runtime_event_identity_claim(
         )
 
 
-def _decode_v1_event_identity_claim(data: dict[str, object]) -> RuntimeEventIdentityClaim:
+def _decode_v1_event_identity_claim(
+    data: dict[str, object],
+) -> RuntimeEventIdentityClaim:
     raw_tenant_id = data.get("tenant_id")
     raw_run_id = data.get("run_id")
     raw_task_id = data.get("task_id")
