@@ -73,6 +73,7 @@ class MemoryProviderQualificationFailureReason(str, Enum):
     MATERIALIZATION_FAILURE = "materialization_failure"
     QUALIFICATION_COVERAGE_MISSING = "qualification_coverage_missing"
     SOURCE_FIDELITY_FAILURE = "source_fidelity_failure"
+    DURABILITY_FAILURE = "durability_failure"
 
 
 class MemoryProviderCheckSeverity(str, Enum):
