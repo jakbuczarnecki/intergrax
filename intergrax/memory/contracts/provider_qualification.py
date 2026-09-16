@@ -6,7 +6,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryStore
+from intergrax.memory.contracts.long_horizon_memory import LongHorizonMemoryStore
+from intergrax.memory.contracts.procedural_memory import ProcedureMemoryStore
+
+if TYPE_CHECKING:
+    from intergrax.memory.user_profile_store import UserProfileStore
 
 __all__ = [
     "MemoryProviderCapabilityKind",
@@ -14,12 +21,18 @@ __all__ = [
     "MemoryProviderCheckSeverity",
     "MemoryProviderCapabilityQualification",
     "MemoryProviderDescriptor",
-    "MemoryProviderQualificationCheck",
+    "MemoryProviderQualificationCheckMetadata",
     "MemoryProviderQualificationContext",
     "MemoryProviderQualificationFailureReason",
     "MemoryProviderQualificationRequest",
     "MemoryProviderQualificationResult",
     "MemoryProviderQualificationStatus",
+    "UserProfileStoreQualificationCheck",
+    "EntityTemporalMemoryStoreQualificationCheck",
+    "ProcedureMemoryStoreQualificationCheck",
+    "LongHorizonMemoryStoreQualificationCheck",
+    "validate_memory_provider_descriptor",
+    "validate_memory_provider_qualification_request",
 ]
 
 
@@ -120,8 +133,8 @@ class MemoryProviderQualificationResult:
     reason_codes: tuple[MemoryProviderQualificationFailureReason, ...] = ()
 
 
-class MemoryProviderQualificationCheck(Protocol):
-    """Typed behavioral check executed against a materialized provider instance."""
+class MemoryProviderQualificationCheckMetadata(Protocol):
+    """Shared check identity fields (per-capability execution protocols are typed)."""
 
     @property
     def check_id(self) -> str: ...
@@ -132,8 +145,59 @@ class MemoryProviderQualificationCheck(Protocol):
     @property
     def severity(self) -> MemoryProviderCheckSeverity: ...
 
+
+class UserProfileStoreQualificationCheck(MemoryProviderQualificationCheckMetadata, Protocol):
     async def run(
         self,
-        instance: object,
+        instance: UserProfileStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult: ...
+
+
+class EntityTemporalMemoryStoreQualificationCheck(
+    MemoryProviderQualificationCheckMetadata, Protocol
+):
+    async def run(
+        self,
+        instance: EntityTemporalMemoryStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult: ...
+
+
+class ProcedureMemoryStoreQualificationCheck(MemoryProviderQualificationCheckMetadata, Protocol):
+    async def run(
+        self,
+        instance: ProcedureMemoryStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult: ...
+
+
+class LongHorizonMemoryStoreQualificationCheck(MemoryProviderQualificationCheckMetadata, Protocol):
+    async def run(
+        self,
+        instance: LongHorizonMemoryStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult: ...
+
+
+def validate_memory_provider_descriptor(descriptor: MemoryProviderDescriptor) -> None:
+    if not descriptor.provider_id.strip():
+        raise ValueError("MemoryProviderDescriptor.provider_id must be non-empty")
+    if len(descriptor.capabilities) != len(set(descriptor.capabilities)):
+        raise ValueError("MemoryProviderDescriptor.capabilities must not contain duplicates")
+
+
+def validate_memory_provider_qualification_request(
+    request: MemoryProviderQualificationRequest,
+) -> None:
+    required = request.required_capabilities
+    optional = request.optional_capabilities
+    if len(required) != len(set(required)):
+        raise ValueError("required_capabilities must not contain duplicates")
+    if len(optional) != len(set(optional)):
+        raise ValueError("optional_capabilities must not contain duplicates")
+    overlap = set(required) & set(optional)
+    if overlap:
+        raise ValueError(
+            "capabilities cannot appear in both required_capabilities and optional_capabilities"
+        )

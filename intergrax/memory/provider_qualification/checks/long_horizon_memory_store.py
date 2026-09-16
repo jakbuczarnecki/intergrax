@@ -15,7 +15,7 @@ from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderCapabilityKind,
     MemoryProviderCheckResult,
     MemoryProviderCheckSeverity,
-    MemoryProviderQualificationCheck,
+    LongHorizonMemoryStoreQualificationCheck,
     MemoryProviderQualificationContext,
     MemoryProviderQualificationFailureReason,
 )
@@ -62,17 +62,10 @@ class LongHorizonTenantIsolationCheck:
 
     async def run(
         self,
-        instance: object,
+        instance: LongHorizonMemoryStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult:
         store = instance
-        if not isinstance(store, LongHorizonMemoryStore):
-            return failed(
-                check_id=self.check_id,
-                capability=_CAPABILITY,
-                severity=_REQUIRED,
-                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
-            )
         summary_id = f"lh-{context.qualification_run_id}"
         scope_a = LongHorizonMemoryScope(tenant_id=_tenant_a(context), user_id=context.user_qualification_id)
         scope_b = LongHorizonMemoryScope(tenant_id=_tenant_b(context), user_id=context.user_qualification_id)
@@ -88,6 +81,10 @@ class LongHorizonTenantIsolationCheck:
         return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
 
 
-LONG_HORIZON_MEMORY_STORE_CHECKS: tuple[MemoryProviderQualificationCheck, ...] = (
+LONG_HORIZON_MEMORY_STORE_CHECKS: tuple[LongHorizonMemoryStoreQualificationCheck, ...] = (
     LongHorizonTenantIsolationCheck(),
 )
+
+
+def default_long_horizon_checks() -> tuple[LongHorizonMemoryStoreQualificationCheck, ...]:
+    return LONG_HORIZON_MEMORY_STORE_CHECKS

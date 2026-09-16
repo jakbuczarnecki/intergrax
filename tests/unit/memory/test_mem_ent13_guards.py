@@ -78,3 +78,17 @@ def test_qualification_result_has_no_score_authority_field() -> None:
     for node in ast.walk(tree):
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
             assert node.target.id != "score"
+
+
+def _imports_intergrax_runtime(path: Path) -> bool:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            if node.module.startswith("intergrax.runtime"):
+                return True
+    return False
+
+
+def test_qualification_package_has_no_runtime_imports() -> None:
+    for path in _iter_py_files(_QUAL_ROOT):
+        assert not _imports_intergrax_runtime(path), f"{path} imports intergrax.runtime"

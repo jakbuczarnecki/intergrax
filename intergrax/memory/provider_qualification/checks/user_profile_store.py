@@ -8,7 +8,7 @@ from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderCapabilityKind,
     MemoryProviderCheckResult,
     MemoryProviderCheckSeverity,
-    MemoryProviderQualificationCheck,
+    UserProfileStoreQualificationCheck,
     MemoryProviderQualificationContext,
     MemoryProviderQualificationFailureReason,
 )
@@ -46,18 +46,10 @@ class UserProfileTenantIsolationCheck:
 
     async def run(
         self,
-        instance: object,
+        instance: UserProfileStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult:
         store = instance
-        if not isinstance(store, UserProfileStore):
-            return failed(
-                check_id=self.check_id,
-                capability=_CAPABILITY,
-                severity=_REQUIRED,
-                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
-                detail="instance is not UserProfileStore",
-            )
         user_id = _qual_user_id(context)
         marker = f"qual-marker-{context.qualification_run_id}"
         profile_a = UserProfile(
@@ -91,17 +83,10 @@ class UserProfileUserIsolationCheck:
 
     async def run(
         self,
-        instance: object,
+        instance: UserProfileStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult:
         store = instance
-        if not isinstance(store, UserProfileStore):
-            return failed(
-                check_id=self.check_id,
-                capability=_CAPABILITY,
-                severity=_REQUIRED,
-                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
-            )
         tenant = _tenant_a(context)
         user_a = f"{context.user_qualification_id}-a"
         user_b = f"{context.user_qualification_id}-b"
@@ -139,17 +124,10 @@ class UserProfileDeleteScopeCheck:
 
     async def run(
         self,
-        instance: object,
+        instance: UserProfileStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult:
         store = instance
-        if not isinstance(store, UserProfileStore):
-            return failed(
-                check_id=self.check_id,
-                capability=_CAPABILITY,
-                severity=_REQUIRED,
-                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
-            )
         user_id = _qual_user_id(context)
         marker = f"delete-scope-{context.qualification_run_id}"
         tenant_a = _tenant_a(context)
@@ -196,17 +174,10 @@ class UserProfileIdempotentDeleteCheck:
 
     async def run(
         self,
-        instance: object,
+        instance: UserProfileStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult:
         store = instance
-        if not isinstance(store, UserProfileStore):
-            return failed(
-                check_id=self.check_id,
-                capability=_CAPABILITY,
-                severity=_REQUIRED,
-                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
-            )
         tenant = _tenant_a(context)
         user_id = _qual_user_id(context)
         await store.save_profile(
@@ -244,17 +215,10 @@ class UserProfileSaveIdempotencyCheck:
 
     async def run(
         self,
-        instance: object,
+        instance: UserProfileStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult:
         store = instance
-        if not isinstance(store, UserProfileStore):
-            return failed(
-                check_id=self.check_id,
-                capability=_CAPABILITY,
-                severity=_REQUIRED,
-                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
-            )
         tenant = _tenant_a(context)
         user_id = _qual_user_id(context)
         profile = UserProfile(
@@ -275,10 +239,14 @@ class UserProfileSaveIdempotencyCheck:
         return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
 
 
-USER_PROFILE_STORE_CHECKS: tuple[MemoryProviderQualificationCheck, ...] = (
+USER_PROFILE_STORE_CHECKS: tuple[UserProfileStoreQualificationCheck, ...] = (
     UserProfileTenantIsolationCheck(),
     UserProfileUserIsolationCheck(),
     UserProfileDeleteScopeCheck(),
     UserProfileIdempotentDeleteCheck(),
     UserProfileSaveIdempotencyCheck(),
 )
+
+
+def default_user_profile_checks() -> tuple[UserProfileStoreQualificationCheck, ...]:
+    return USER_PROFILE_STORE_CHECKS

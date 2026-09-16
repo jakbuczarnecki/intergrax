@@ -29,7 +29,6 @@ from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderCheckResult,
     MemoryProviderCheckSeverity,
     MemoryProviderDescriptor,
-    MemoryProviderQualificationCheck,
     MemoryProviderQualificationContext,
     MemoryProviderQualificationFailureReason,
     MemoryProviderQualificationRequest,
@@ -157,7 +156,11 @@ class _CustomMarkerCheck:
     def severity(self) -> MemoryProviderCheckSeverity:
         return MemoryProviderCheckSeverity.OPTIONAL
 
-    async def run(self, instance: object, context: MemoryProviderQualificationContext) -> MemoryProviderCheckResult:
+    async def run(
+        self,
+        instance: UserProfileStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult:
         return MemoryProviderCheckResult(
             check_id=self.check_id,
             capability=self.capability,
@@ -427,7 +430,7 @@ async def test_deterministic_check_ordering() -> None:
 
 @pytest.mark.asyncio
 async def test_custom_check_plugin() -> None:
-    runner = MemoryProviderQualificationRunner(extra_checks=(_CustomMarkerCheck(),))
+    runner = MemoryProviderQualificationRunner(extra_user_profile_checks=(_CustomMarkerCheck(),))
     result = await runner.qualify(
         descriptor=MemoryProviderDescriptor(
             provider_id="in_memory.user_profile",

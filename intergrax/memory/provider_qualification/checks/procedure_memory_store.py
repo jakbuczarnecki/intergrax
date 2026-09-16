@@ -27,7 +27,7 @@ from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderCapabilityKind,
     MemoryProviderCheckResult,
     MemoryProviderCheckSeverity,
-    MemoryProviderQualificationCheck,
+    ProcedureMemoryStoreQualificationCheck,
     MemoryProviderQualificationContext,
     MemoryProviderQualificationFailureReason,
 )
@@ -86,17 +86,10 @@ class ProcedureMemoryTenantIsolationCheck:
 
     async def run(
         self,
-        instance: object,
+        instance: ProcedureMemoryStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult:
         store = instance
-        if not isinstance(store, ProcedureMemoryStore):
-            return failed(
-                check_id=self.check_id,
-                capability=_CAPABILITY,
-                severity=_REQUIRED,
-                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
-            )
         memory_id = f"proc-{context.qualification_run_id}"
         scope_a = ProceduralMemoryScope(tenant_id=_tenant_a(context), user_id=context.user_qualification_id)
         scope_b = ProceduralMemoryScope(tenant_id=_tenant_b(context), user_id=context.user_qualification_id)
@@ -113,6 +106,10 @@ class ProcedureMemoryTenantIsolationCheck:
         return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
 
 
-PROCEDURE_MEMORY_STORE_CHECKS: tuple[MemoryProviderQualificationCheck, ...] = (
+PROCEDURE_MEMORY_STORE_CHECKS: tuple[ProcedureMemoryStoreQualificationCheck, ...] = (
     ProcedureMemoryTenantIsolationCheck(),
 )
+
+
+def default_procedure_checks() -> tuple[ProcedureMemoryStoreQualificationCheck, ...]:
+    return PROCEDURE_MEMORY_STORE_CHECKS

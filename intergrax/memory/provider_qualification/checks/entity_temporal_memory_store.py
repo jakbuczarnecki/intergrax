@@ -15,7 +15,7 @@ from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderCapabilityKind,
     MemoryProviderCheckResult,
     MemoryProviderCheckSeverity,
-    MemoryProviderQualificationCheck,
+    EntityTemporalMemoryStoreQualificationCheck,
     MemoryProviderQualificationContext,
     MemoryProviderQualificationFailureReason,
 )
@@ -47,17 +47,10 @@ class EntityTemporalTenantIsolationCheck:
 
     async def run(
         self,
-        instance: object,
+        instance: EntityTemporalMemoryStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult:
         store = instance
-        if not isinstance(store, EntityTemporalMemoryStore):
-            return failed(
-                check_id=self.check_id,
-                capability=_CAPABILITY,
-                severity=_REQUIRED,
-                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
-            )
         memory_id = f"mem-{context.qualification_run_id}"
         scope_a = EntityMemoryScope(
             tenant_id=_tenant_a(context),
@@ -103,17 +96,10 @@ class EntityTemporalStaleRevisionCheck:
 
     async def run(
         self,
-        instance: object,
+        instance: EntityTemporalMemoryStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult:
         store = instance
-        if not isinstance(store, EntityTemporalMemoryStore):
-            return failed(
-                check_id=self.check_id,
-                capability=_CAPABILITY,
-                severity=_REQUIRED,
-                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
-            )
         memory_id = f"rev-{context.qualification_run_id}"
         scope = EntityMemoryScope(
             tenant_id=_tenant_a(context),
@@ -160,17 +146,10 @@ class EntityTemporalDeleteScopeCheck:
 
     async def run(
         self,
-        instance: object,
+        instance: EntityTemporalMemoryStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult:
         store = instance
-        if not isinstance(store, EntityTemporalMemoryStore):
-            return failed(
-                check_id=self.check_id,
-                capability=_CAPABILITY,
-                severity=_REQUIRED,
-                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
-            )
         memory_a = f"del-a-{context.qualification_run_id}"
         memory_b = f"del-b-{context.qualification_run_id}"
         scope_a = EntityMemoryScope(
@@ -214,8 +193,14 @@ class EntityTemporalDeleteScopeCheck:
         return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
 
 
-ENTITY_TEMPORAL_MEMORY_STORE_CHECKS: tuple[MemoryProviderQualificationCheck, ...] = (
+ENTITY_TEMPORAL_MEMORY_STORE_CHECKS: tuple[
+    EntityTemporalMemoryStoreQualificationCheck, ...
+] = (
     EntityTemporalTenantIsolationCheck(),
     EntityTemporalStaleRevisionCheck(),
     EntityTemporalDeleteScopeCheck(),
 )
+
+
+def default_entity_temporal_checks() -> tuple[EntityTemporalMemoryStoreQualificationCheck, ...]:
+    return ENTITY_TEMPORAL_MEMORY_STORE_CHECKS
