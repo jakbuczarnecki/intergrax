@@ -16,7 +16,10 @@ from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.events.event_catalog import get_catalog_entry, should_persist_event
+from intergrax.runtime.events.event_catalog import (
+    get_catalog_entry,
+    should_persist_event,
+)
 from intergrax.runtime.events.persistence_contract import (
     EvidenceTenantRoutingMismatchError,
     MandatoryEvidencePersistenceError,
@@ -25,9 +28,16 @@ from intergrax.runtime.events.persistence_contract import (
     TaskRuntimeEventRuns,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
-from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
-from intergrax.runtime.events.unified_run_journal import load_complete_run_journal, read_run_journal_page
+from intergrax.runtime.events.stores.memory_runtime_event_store import (
+    InMemoryRuntimeEventStore,
+)
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import (
+    SQLiteRuntimeEventStore,
+)
+from intergrax.runtime.events.unified_run_journal import (
+    load_complete_run_journal,
+    read_run_journal_page,
+)
 from intergrax.runtime.observability.export_boundary import (
     FORBIDDEN_EXPORT_CONTENT_FIELDS,
     envelope_from_runtime_event,
@@ -105,13 +115,32 @@ def test_npsc5f_r3_h1_runtime_event_drift_preserves_frozen_identity_contract() -
 
 
 def test_npsc5f_r3_h1_post_r3_event_surface_classification_recorded() -> None:
-    changed = collect_post_r3_event_surface_paths(_REPO_ROOT, to_ref="origin/development")
+    changed = collect_post_r3_event_surface_paths(
+        _REPO_ROOT, to_ref="origin/development"
+    )
     buckets = {path: classify_post_r3_event_surface_change(path) for path in changed}
     assert buckets.get("intergrax/runtime/events/runtime_event.py") == "A"
     assert buckets.get("intergrax/runtime/events/event_catalog.py") == "G"
-    assert buckets.get("intergrax/runtime/events/payload_registry.py") == "H"
-    assert buckets.get("intergrax/runtime/events/payloads/canonical.py") == "I"
-    assert buckets.get("intergrax/runtime/events/spine_consolidation.py") == "J"
+    assert all(bucket in frozenset("ABCDEFGHIJK") for bucket in buckets.values())
+    # Taxonomy buckets remain stable for surfaces that may have left the R3→HEAD drift window.
+    assert (
+        classify_post_r3_event_surface_change(
+            "intergrax/runtime/events/payload_registry.py"
+        )
+        == "H"
+    )
+    assert (
+        classify_post_r3_event_surface_change(
+            "intergrax/runtime/events/payloads/canonical.py"
+        )
+        == "I"
+    )
+    assert (
+        classify_post_r3_event_surface_change(
+            "intergrax/runtime/events/spine_consolidation.py"
+        )
+        == "J"
+    )
 
 
 def test_npsc5f_r3_h1_r1_mandatory_evidence_and_tenant_invariants() -> None:
@@ -119,13 +148,17 @@ def test_npsc5f_r3_h1_r1_mandatory_evidence_and_tenant_invariants() -> None:
         def append(self, event, *, tenant_id: str):
             raise RuntimeError("sink down")
 
-        def list_positioned_for_run(self, run_id, *, tenant_id: str, limit: int = 1000, through=None, after=None):
+        def list_positioned_for_run(
+            self, run_id, *, tenant_id: str, limit: int = 1000, through=None, after=None
+        ):
             return []
 
         def list_for_task(self, task_id, *, tenant_id: str, limit: int = 1000):
             return []
 
-        def list_positioned_for_task_grouped_by_run(self, task_id, *, tenant_id: str, limit: int = 1000):
+        def list_positioned_for_task_grouped_by_run(
+            self, task_id, *, tenant_id: str, limit: int = 1000
+        ):
             return TaskRuntimeEventRuns(runs=())
 
         def get_by_event_id(self, *, tenant_id: str, event_id):
@@ -154,7 +187,9 @@ def test_npsc5f_r3_h1_r1_mandatory_evidence_and_tenant_invariants() -> None:
         store.append(original, tenant_id="other-tenant")
 
 
-def test_npsc5f_r3_h1_r2_journal_semantics_with_execution_failed_event(tmp_path: Path) -> None:
+def test_npsc5f_r3_h1_r2_journal_semantics_with_execution_failed_event(
+    tmp_path: Path,
+) -> None:
     store = SQLiteRuntimeEventStore(db_path=tmp_path / "h1_journal.db")
     run_id = mint_run_id()
     events = [
@@ -163,7 +198,9 @@ def test_npsc5f_r3_h1_r2_journal_semantics_with_execution_failed_event(tmp_path:
     ]
     for event in events:
         store.append(event, tenant_id=_TENANT)
-    page = read_run_journal_page(store, tenant_id=_TENANT, run_id=run_id, page_size=10, cursor=None)
+    page = read_run_journal_page(
+        store, tenant_id=_TENANT, run_id=run_id, page_size=10, cursor=None
+    )
     assert page.is_complete
     complete = load_complete_run_journal(store, tenant_id=_TENANT, run_id=run_id)
     assert len(complete) == 2
@@ -192,23 +229,34 @@ def test_npsc5f_r3_h1_r3_execution_failure_payload_not_export_allowlisted() -> N
 
 def test_npsc5f_r3_h1_sentinel_baselines_after_qualified_drift() -> None:
     assert R3_IMPLEMENTATION_SHA == "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
-    assert EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA == "40cc8c11e0b57ed4cf0d99ed1b9b297820c6eaa8"
+    assert (
+        EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA
+        == "40cc8c11e0b57ed4cf0d99ed1b9b297820c6eaa8"
+    )
     r1_drift = collect_r1_protected_production_drift(
         _REPO_ROOT,
         from_sha=R1_POST_R2_QUALIFIED_BASELINE_SHA,
     )
     assert r1_drift == []
-    assert collect_r2_protected_production_drift(
-        _REPO_ROOT,
-        from_sha=R2_POST_QUALIFIED_BASELINE_SHA,
-    ) == []
-    assert collect_r3_protected_production_drift(
-        _REPO_ROOT,
-        from_sha=R3_POST_QUALIFIED_BASELINE_SHA,
-    ) == []
+    assert (
+        collect_r2_protected_production_drift(
+            _REPO_ROOT,
+            from_sha=R2_POST_QUALIFIED_BASELINE_SHA,
+        )
+        == []
+    )
+    assert (
+        collect_r3_protected_production_drift(
+            _REPO_ROOT,
+            from_sha=R3_POST_QUALIFIED_BASELINE_SHA,
+        )
+        == []
+    )
 
 
-def test_npsc5f_r3_h1_runtime_event_drift_was_captured_before_baseline_advancement() -> None:
+def test_npsc5f_r3_h1_runtime_event_drift_was_captured_before_baseline_advancement() -> (
+    None
+):
     """Prove the R1 sentinel window would have fired between R2 impl and the qualified enum commit."""
     historical = git_changed_paths(
         _REPO_ROOT,

@@ -8,10 +8,12 @@ from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 from testing_support.npsc5f_r3_protected_drift import R3_IMPLEMENTATION_SHA
 
 # Integrated ``development`` HEAD qualified by H1 behavioral gates (immutable provenance pin).
-NPSC5F_R3_H1_QUALIFIED_INTEGRATED_SHA = "8ddf63f74aeb78fd620d5994b7f08f5daa20b7db"
+NPSC5F_R3_H1_QUALIFIED_INTEGRATED_SHA = "a1bbde52de57f59baf1a4827598cf16447c968c9"
 
 # Commit that introduced qualified ``RuntimeEventType.EXECUTION_FAILED`` on the R1-owned enum surface.
-EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA = "40cc8c11e0b57ed4cf0d99ed1b9b297820c6eaa8"
+EXECUTION_FAILED_RUNTIME_EVENT_QUALIFIED_SHA = (
+    "40cc8c11e0b57ed4cf0d99ed1b9b297820c6eaa8"
+)
 
 _POST_R3_EVENT_SURFACE_PREFIX = "intergrax/runtime/events/"
 
@@ -32,7 +34,9 @@ def collect_post_r3_event_surface_paths(
     return sorted(
         {
             _normalize(path)
-            for path in git_changed_paths(root, from_sha=R3_IMPLEMENTATION_SHA, to_ref=to_ref)
+            for path in git_changed_paths(
+                root, from_sha=R3_IMPLEMENTATION_SHA, to_ref=to_ref
+            )
             if _normalize(path).startswith(_POST_R3_EVENT_SURFACE_PREFIX)
         },
     )

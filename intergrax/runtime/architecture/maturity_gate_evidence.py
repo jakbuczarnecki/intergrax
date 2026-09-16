@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum
+from pathlib import Path
 
 from pydantic import BaseModel, Field
 
@@ -21,7 +22,9 @@ from intergrax.runtime.architecture.architecture_metrics_pipeline import (
     ArchitectureMetricsSnapshot,
     build_metrics_pipeline_report,
 )
-from intergrax.runtime.architecture.capability_graph import build_catalog_capability_graph
+from intergrax.runtime.architecture.capability_graph import (
+    build_catalog_capability_graph,
+)
 from intergrax.runtime.architecture.capability_graph_compatibility import (
     evaluate_capability_graph_compatibility,
 )
@@ -55,7 +58,10 @@ from intergrax.runtime.architecture.evaluation_automation import (
     EvaluationSignal,
     evaluate_automated_results,
 )
-from intergrax.runtime.architecture.evaluation_modes import EvaluationMode, EvaluationModeResult
+from intergrax.runtime.architecture.evaluation_modes import (
+    EvaluationMode,
+    EvaluationModeResult,
+)
 from intergrax.runtime.architecture.evaluation_registry_trends import (
     EvaluationReleaseSnapshot,
     build_evaluation_registry_trend_report,
@@ -141,7 +147,9 @@ class MaturityGateEvidenceReport(BaseModel):
     l4: MaturityGateEvidence
 
 
-def evaluate_maturity_gate_evidence(inputs: MaturityGateInputs) -> MaturityGateEvidenceReport:
+def evaluate_maturity_gate_evidence(
+    inputs: MaturityGateInputs,
+) -> MaturityGateEvidenceReport:
     l3_checks = [
         MaturityGateCheck(
             check_id="capability_graph_compatible",
@@ -239,10 +247,37 @@ def evaluate_maturity_gate_evidence(inputs: MaturityGateInputs) -> MaturityGateE
     )
 
 
+def _harness_catalog_capability_graph():
+    """Catalog graph with declared agent inventory for maturity observability coverage."""
+    from intergrax.agent_distribution.builtin_capability_metadata import (
+        PackageAgentCapabilityMetadataProvider,
+    )
+
+    repo_root = Path(__file__).resolve().parents[3]
+    agents_dir = repo_root / "agents"
+    package_roots = tuple(
+        sorted(
+            child
+            for child in agents_dir.iterdir()
+            if child.is_dir() and (child / "pyproject.toml").is_file()
+        )
+    )
+    agent_metadata_provider = (
+        PackageAgentCapabilityMetadataProvider(package_roots=package_roots)
+        if package_roots
+        else None
+    )
+    return build_catalog_capability_graph(
+        agent_metadata_provider=agent_metadata_provider
+    )
+
+
 def collect_harness_governance_signals() -> MaturityGateInputs:
     """Collect typed gate signals from harness baseline scenarios."""
-    graph = build_catalog_capability_graph()
-    compatibility = evaluate_capability_graph_compatibility(previous=graph, current=graph)
+    graph = _harness_catalog_capability_graph()
+    compatibility = evaluate_capability_graph_compatibility(
+        previous=graph, current=graph
+    )
 
     metrics_report = compute_architecture_metrics(graph)
     metrics_report.thresholds = ArchitectureMetricThresholds(
@@ -253,7 +288,9 @@ def collect_harness_governance_signals() -> MaturityGateInputs:
         architecture_debt_index_max=0.95,
     )
     metrics_pipeline = build_metrics_pipeline_report(
-        snapshots=[ArchitectureMetricsSnapshot(snapshot_id="catalog", report=metrics_report)]
+        snapshots=[
+            ArchitectureMetricsSnapshot(snapshot_id="catalog", report=metrics_report)
+        ]
     )
 
     debt_report = evaluate_architecture_debt_governance(
@@ -281,7 +318,9 @@ def collect_harness_governance_signals() -> MaturityGateInputs:
             )
         ]
     ).passed
-    adaptive_passed = evaluate_adaptive_governance(build_default_adaptive_proposals()).passed
+    adaptive_passed = evaluate_adaptive_governance(
+        build_default_adaptive_proposals()
+    ).passed
     graph_rag_valid = _graph_rag_contract_valid()
     forecast_available = _cost_forecast_available()
     optimization_compliant = _cost_optimization_compliant()
@@ -308,7 +347,9 @@ def evaluate_security_adversarial_baseline() -> bool:
 
 
 def _runtime_l4_closed_loop_passed() -> bool:
-    from intergrax.runtime.adaptive.l4_runtime_evidence import build_harness_baseline_l4_evidence
+    from intergrax.runtime.adaptive.l4_runtime_evidence import (
+        build_harness_baseline_l4_evidence,
+    )
 
     return build_harness_baseline_l4_evidence().runtime_l4_closed_loop_passed
 
@@ -416,9 +457,12 @@ def _evaluate_cost_harness_baseline() -> bool:
             )
         ],
     )
-    budget_deny = any(not decision.within_budget for decision in budget_report.decisions)
+    budget_deny = any(
+        not decision.within_budget for decision in budget_report.decisions
+    )
     quota_deny = any(
-        decision.action == QuotaEnforcementAction.DENY for decision in quota_report.decisions
+        decision.action == QuotaEnforcementAction.DENY
+        for decision in quota_report.decisions
     )
     return budget_deny and quota_deny
 
@@ -436,7 +480,9 @@ def _evaluation_registry_available() -> bool:
             )
         ],
         rule_signals_by_run_id={
-            "eval-smoke": [EvaluationSignal(signal_id="format.ok", value=1.0, threshold=1.0)]
+            "eval-smoke": [
+                EvaluationSignal(signal_id="format.ok", value=1.0, threshold=1.0)
+            ]
         },
         llm_judge_scores_by_run_id={"eval-smoke": 0.90},
     )
@@ -453,8 +499,12 @@ def _graph_rag_contract_valid() -> bool:
     contract = GraphRagArchitectureContract(
         graph_id="maturity.graph",
         nodes=[
-            GraphRagNode(node_id="doc-1", node_type=GraphRagNodeType.DOCUMENT, label="Doc"),
-            GraphRagNode(node_id="ent-1", node_type=GraphRagNodeType.ENTITY, label="Entity"),
+            GraphRagNode(
+                node_id="doc-1", node_type=GraphRagNodeType.DOCUMENT, label="Doc"
+            ),
+            GraphRagNode(
+                node_id="ent-1", node_type=GraphRagNodeType.ENTITY, label="Entity"
+            ),
         ],
         edges=[
             GraphRagEdge(
@@ -469,8 +519,16 @@ def _graph_rag_contract_valid() -> bool:
 
 def _cost_forecast_available() -> bool:
     forecast = build_cost_forecast_report(
-        baseline=[CostUsageSnapshot(scope_id="tenant-a", spend_amount=100.0, token_count=10_000)],
-        current=[CostUsageSnapshot(scope_id="tenant-a", spend_amount=200.0, token_count=20_000)],
+        baseline=[
+            CostUsageSnapshot(
+                scope_id="tenant-a", spend_amount=100.0, token_count=10_000
+            )
+        ],
+        current=[
+            CostUsageSnapshot(
+                scope_id="tenant-a", spend_amount=200.0, token_count=20_000
+            )
+        ],
         critical_ratio=0.40,
     )
     return bool(forecast.forecasts) and any(
@@ -480,8 +538,16 @@ def _cost_forecast_available() -> bool:
 
 def _cost_optimization_compliant() -> bool:
     forecast = build_cost_forecast_report(
-        baseline=[CostUsageSnapshot(scope_id="tenant-a", spend_amount=100.0, token_count=10_000)],
-        current=[CostUsageSnapshot(scope_id="tenant-a", spend_amount=250.0, token_count=25_000)],
+        baseline=[
+            CostUsageSnapshot(
+                scope_id="tenant-a", spend_amount=100.0, token_count=10_000
+            )
+        ],
+        current=[
+            CostUsageSnapshot(
+                scope_id="tenant-a", spend_amount=250.0, token_count=25_000
+            )
+        ],
         critical_ratio=0.30,
     )
     optimization = build_cost_optimization_report(
@@ -496,4 +562,7 @@ def _cost_optimization_compliant() -> bool:
     )
     if not optimization.recommendations:
         return True
-    return all(recommendation.policy_compliant for recommendation in optimization.recommendations)
+    return all(
+        recommendation.policy_compliant
+        for recommendation in optimization.recommendations
+    )
