@@ -508,8 +508,8 @@ async def test_sqlite_user_profile_qualifies() -> None:
             holder["store"] = store
             return store
 
-        async def _dispose(store: SQLiteUserProfileStore) -> None:
-            store._connection.close()
+    async def _dispose(store: SQLiteUserProfileStore) -> None:
+        store.close()
 
         runner = MemoryProviderQualificationRunner()
         result = await runner.qualify(

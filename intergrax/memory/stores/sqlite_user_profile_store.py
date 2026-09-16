@@ -18,8 +18,15 @@ class SQLiteUserProfileStore(UserProfileStore):
 
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path
+        self._closed = False
         self._connection = self._create_connection(db_path)
         self._initialize_schema()
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._connection.close()
+        self._closed = True
 
     def _create_connection(self, db_path: str) -> sqlite3.Connection:
         path = Path(db_path)

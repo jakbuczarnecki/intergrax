@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from enum import StrEnum
 
 from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderCapabilityKind,
@@ -27,6 +28,12 @@ CreateStore = Callable[[], UserProfileStore]
 DisposeStore = Callable[[UserProfileStore], Awaitable[None]]
 
 
+class DurabilityQualificationMode(StrEnum):
+    DURABLE_PERSISTENCE = "durable_persistence"
+    ADAPTER_RECREATION_ONLY = "adapter_recreation_only"
+    NOT_TESTED = "not_tested"
+
+
 def qualification_tenant_a(context: MemoryProviderQualificationContext) -> str:
     return f"{context.tenant_qualification_id}-a"
 
@@ -38,8 +45,10 @@ def qualification_user_id(context: MemoryProviderQualificationContext) -> str:
 @dataclass(frozen=True, slots=True)
 class DurableUserProfileQualificationEvidence:
     canonical: MemoryProviderQualificationResult
-    durability_reopen_passed: bool
-    durability_delete_passed: bool | None
+    durability_mode: DurabilityQualificationMode
+    reopen_passed: bool | None
+    delete_reopen_passed: bool | None
+    adapter_recreation_passed: bool | None = None
     durability_reason: MemoryProviderQualificationFailureReason | None = None
     durability_detail: str | None = None
 
@@ -47,22 +56,27 @@ class DurableUserProfileQualificationEvidence:
     def production_durable_qualified(self) -> bool:
         if self.canonical.status is not MemoryProviderQualificationStatus.QUALIFIED:
             return False
-        if not self.durability_reopen_passed:
+        if self.durability_mode is not DurabilityQualificationMode.DURABLE_PERSISTENCE:
             return False
-        if self.durability_delete_passed is False:
+        if self.reopen_passed is not True:
+            return False
+        if self.delete_reopen_passed is False:
             return False
         return True
 
 
-async def prove_user_profile_reopen_durability(
+async def _prove_user_profile_cross_instance_read_fidelity(
     *,
     context: MemoryProviderQualificationContext,
     create_store: CreateStore,
     dispose_store: DisposeStore,
+    tenant_suffix: str,
+    user_suffix: str,
+    marker_prefix: str,
 ) -> tuple[bool, str | None]:
-    tenant = qualification_tenant_a(context)
-    user_id = qualification_user_id(context)
-    marker = f"durability-reopen-{context.qualification_run_id}"
+    tenant = f"{context.tenant_qualification_id}{tenant_suffix}"
+    user_id = f"{context.user_qualification_id}{user_suffix}"
+    marker = f"{marker_prefix}-{context.qualification_run_id}"
 
     store = create_store()
     try:
@@ -88,6 +102,38 @@ async def prove_user_profile_reopen_durability(
     if loaded.preferences.preferred_language != "pl":
         return False, "reopen_preferences_mismatch"
     return True, None
+
+
+async def prove_user_profile_reopen_durability(
+    *,
+    context: MemoryProviderQualificationContext,
+    create_store: CreateStore,
+    dispose_store: DisposeStore,
+) -> tuple[bool, str | None]:
+    return await _prove_user_profile_cross_instance_read_fidelity(
+        context=context,
+        create_store=create_store,
+        dispose_store=dispose_store,
+        tenant_suffix="-a",
+        user_suffix="",
+        marker_prefix="durability-reopen",
+    )
+
+
+async def prove_user_profile_adapter_recreation(
+    *,
+    context: MemoryProviderQualificationContext,
+    create_store: CreateStore,
+    dispose_store: DisposeStore,
+) -> tuple[bool, str | None]:
+    return await _prove_user_profile_cross_instance_read_fidelity(
+        context=context,
+        create_store=create_store,
+        dispose_store=dispose_store,
+        tenant_suffix="-adapter",
+        user_suffix="-adapter",
+        marker_prefix="adapter-recreation",
+    )
 
 
 async def prove_user_profile_delete_durability(
@@ -133,6 +179,7 @@ async def run_durable_user_profile_production_qualification(
     factories: MemoryProviderCapabilityFactories,
     create_store: CreateStore,
     dispose_store: DisposeStore,
+    durability_mode: DurabilityQualificationMode = DurabilityQualificationMode.DURABLE_PERSISTENCE,
     run_delete_durability: bool = True,
     runner: MemoryProviderQualificationRunner | None = None,
 ) -> DurableUserProfileQualificationEvidence:
@@ -144,33 +191,43 @@ async def run_durable_user_profile_production_qualification(
         factories=factories,
     )
 
-    reopen_ok, reopen_detail = await prove_user_profile_reopen_durability(
-        context=context,
-        create_store=create_store,
-        dispose_store=dispose_store,
-    )
-    delete_ok: bool | None = None
-    delete_detail: str | None = None
-    if run_delete_durability:
-        delete_ok, delete_detail = await prove_user_profile_delete_durability(
+    reopen_passed: bool | None = None
+    delete_reopen_passed: bool | None = None
+    adapter_recreation_passed: bool | None = None
+    durability_reason: MemoryProviderQualificationFailureReason | None = None
+    durability_detail: str | None = None
+
+    if durability_mode is DurabilityQualificationMode.DURABLE_PERSISTENCE:
+        reopen_passed, reopen_detail = await prove_user_profile_reopen_durability(
+            context=context,
+            create_store=create_store,
+            dispose_store=dispose_store,
+        )
+        if run_delete_durability:
+            delete_reopen_passed, delete_detail = await prove_user_profile_delete_durability(
+                context=context,
+                create_store=create_store,
+                dispose_store=dispose_store,
+            )
+        if reopen_passed is False:
+            durability_reason = MemoryProviderQualificationFailureReason.DURABILITY_FAILURE
+            durability_detail = reopen_detail
+        elif delete_reopen_passed is False:
+            durability_reason = MemoryProviderQualificationFailureReason.DURABILITY_FAILURE
+            durability_detail = delete_detail
+    elif durability_mode is DurabilityQualificationMode.ADAPTER_RECREATION_ONLY:
+        adapter_recreation_passed, _adapter_detail = await prove_user_profile_adapter_recreation(
             context=context,
             create_store=create_store,
             dispose_store=dispose_store,
         )
 
-    durability_reason: MemoryProviderQualificationFailureReason | None = None
-    durability_detail: str | None = None
-    if not reopen_ok:
-        durability_reason = MemoryProviderQualificationFailureReason.DURABILITY_FAILURE
-        durability_detail = reopen_detail
-    elif delete_ok is False:
-        durability_reason = MemoryProviderQualificationFailureReason.DURABILITY_FAILURE
-        durability_detail = delete_detail
-
     return DurableUserProfileQualificationEvidence(
         canonical=canonical,
-        durability_reopen_passed=reopen_ok,
-        durability_delete_passed=delete_ok,
+        durability_mode=durability_mode,
+        reopen_passed=reopen_passed,
+        delete_reopen_passed=delete_reopen_passed,
+        adapter_recreation_passed=adapter_recreation_passed,
         durability_reason=durability_reason,
         durability_detail=durability_detail,
     )

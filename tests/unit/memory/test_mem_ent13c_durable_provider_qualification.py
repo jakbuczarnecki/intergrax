@@ -9,8 +9,9 @@ import inspect
 import tempfile
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import TypeVar
 
 import pytest
 
@@ -37,13 +38,14 @@ from intergrax.memory.resolver import (
     discover_classified_memory_store_plugins,
 )
 from intergrax.memory.stores.document_store_user_profile_store import DocumentStoreUserProfileStore
-from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.memory.user_profile_store import UserProfileStore
 from tests.fixtures.plugin_packages.memory_store_plugin.memory_store_plugin.plugin import (
     ExternalInMemoryUserProfileStorePlugin,
 )
 from tests.unit.memory.durable_provider_qualification_harness import (
+    DurabilityQualificationMode,
+    DurableUserProfileQualificationEvidence,
     run_durable_user_profile_production_qualification,
     user_profile_qualification_request,
 )
@@ -57,15 +59,28 @@ pytestmark = pytest.mark.unit
 
 T = TypeVar("T")
 
+_QUALIFICATION_SECRET = "mongodb://user:secret@host:27017/db"
 
-def _sqlite_create_dispose(db_path: str) -> tuple[Callable[[], SQLiteUserProfileStore], Callable[[SQLiteUserProfileStore], Awaitable[None]]]:
+
+class RealExternalProviderQualification(StrEnum):
+    NOT_EXECUTED = "not_executed"
+    EXECUTED = "executed"
+
+
+def _sqlite_create_dispose(
+    db_path: str,
+) -> tuple[Callable[[], SQLiteUserProfileStore], Callable[[SQLiteUserProfileStore], Awaitable[None]]]:
     def _create() -> SQLiteUserProfileStore:
         return SQLiteUserProfileStore(db_path)
 
     async def _dispose(store: SQLiteUserProfileStore) -> None:
-        store._connection.close()
+        store.close()
 
     return _create, _dispose
+
+
+def _real_mongodb_user_profile_qualification_status() -> RealExternalProviderQualification:
+    return RealExternalProviderQualification.NOT_EXECUTED
 
 
 @pytest.mark.asyncio
@@ -86,7 +101,7 @@ async def test_sqlite_user_profile_canonical_via_runner_only() -> None:
             ),
         )
         assert result.status is MemoryProviderQualificationStatus.QUALIFIED
-        assert not Path(db_path).exists() or Path(db_path).stat().st_size >= 0
+        assert Path(db_path).exists()
 
 
 @pytest.mark.asyncio
@@ -106,12 +121,15 @@ async def test_sqlite_durable_production_qualification_reopen_and_delete() -> No
             ),
             create_store=create,
             dispose_store=dispose,
+            durability_mode=DurabilityQualificationMode.DURABLE_PERSISTENCE,
         )
         assert evidence.canonical.status is MemoryProviderQualificationStatus.QUALIFIED
+        assert evidence.durability_mode is DurabilityQualificationMode.DURABLE_PERSISTENCE
         assert evidence.production_durable_qualified
-        assert evidence.durability_reopen_passed
-        assert evidence.durability_delete_passed is True
+        assert evidence.reopen_passed is True
+        assert evidence.delete_reopen_passed is True
         assert evidence.durability_reason is None
+        assert Path(db_path).exists()
 
 
 @pytest.mark.asyncio
@@ -123,7 +141,7 @@ async def test_sqlite_durable_reopen_failure_is_not_production_qualified() -> No
             return SQLiteUserProfileStore(db_path)
 
         async def _dispose(store: SQLiteUserProfileStore) -> None:
-            store._connection.close()
+            store.close()
             Path(db_path).unlink(missing_ok=True)
 
         evidence = await run_durable_user_profile_production_qualification(
@@ -138,14 +156,16 @@ async def test_sqlite_durable_reopen_failure_is_not_production_qualified() -> No
             ),
             create_store=_create,
             dispose_store=_dispose,
+            durability_mode=DurabilityQualificationMode.DURABLE_PERSISTENCE,
         )
         assert evidence.canonical.status is MemoryProviderQualificationStatus.QUALIFIED
         assert not evidence.production_durable_qualified
+        assert evidence.reopen_passed is False
         assert evidence.durability_reason is MemoryProviderQualificationFailureReason.DURABILITY_FAILURE
 
 
 @pytest.mark.asyncio
-async def test_document_store_user_profile_contract_adapter_qualification() -> None:
+async def test_document_store_in_memory_backend_is_not_production_durable() -> None:
     backend = InMemoryDocumentStore()
 
     def _create() -> DocumentStoreUserProfileStore:
@@ -166,9 +186,13 @@ async def test_document_store_user_profile_contract_adapter_qualification() -> N
         ),
         create_store=_create,
         dispose_store=_dispose,
+        durability_mode=DurabilityQualificationMode.ADAPTER_RECREATION_ONLY,
     )
     assert evidence.canonical.status is MemoryProviderQualificationStatus.QUALIFIED
-    assert evidence.production_durable_qualified
+    assert not evidence.production_durable_qualified
+    assert evidence.durability_mode is DurabilityQualificationMode.ADAPTER_RECREATION_ONLY
+    assert evidence.adapter_recreation_passed is True
+    assert evidence.reopen_passed is None
 
 
 def _external_user_profile_catalog() -> MemoryStorePluginCatalog:
@@ -197,9 +221,7 @@ async def test_external_plugin_materialization_canonical_qualification() -> None
             return materialize_user_profile_store(plugin_id, ctx, catalog=catalog)
 
         async def dispose(self, instance: UserProfileStore) -> None:
-            close = getattr(instance, "close", None)
-            if callable(close):
-                close()
+            return None
 
     runner = MemoryProviderQualificationRunner()
     result = await runner.qualify(
@@ -257,10 +279,10 @@ async def test_external_plugin_partial_capability_matrix() -> None:
 
 
 @pytest.mark.asyncio
-async def test_mongodb_user_profile_infra_unavailable_is_blocked_not_qualified() -> None:
+async def test_simulated_unavailable_provider_materialization_is_blocked() -> None:
     class _MongoUnavailableFactory(MemoryProviderInstanceFactory[UserProfileStore]):
         async def create(self) -> UserProfileStore:
-            raise ConnectionError("mongodb qualification infrastructure unavailable")
+            raise ConnectionError("simulated qualification infrastructure unavailable")
 
         async def dispose(self, instance: UserProfileStore) -> None:
             return None
@@ -268,10 +290,10 @@ async def test_mongodb_user_profile_infra_unavailable_is_blocked_not_qualified()
     runner = MemoryProviderQualificationRunner()
     result = await runner.qualify(
         descriptor=MemoryProviderDescriptor(
-            provider_id="mongodb.user_profile",
+            provider_id="mongodb.user_profile.simulated_blocked",
             capabilities=(MemoryProviderCapabilityKind.USER_PROFILE_STORE,),
         ),
-        context=_context("mongo-blocked-13c"),
+        context=_context("mongo-simulated-blocked-13c"),
         request=user_profile_qualification_request(),
         factories=MemoryProviderCapabilityFactories(
             user_profile_store=_MongoUnavailableFactory(),
@@ -279,6 +301,10 @@ async def test_mongodb_user_profile_infra_unavailable_is_blocked_not_qualified()
     )
     assert result.status is MemoryProviderQualificationStatus.BLOCKED
     assert MemoryProviderQualificationFailureReason.MATERIALIZATION_FAILURE in result.reason_codes
+
+
+def test_real_mongodb_user_profile_qualification_not_certified_without_infra() -> None:
+    assert _real_mongodb_user_profile_qualification_status() is RealExternalProviderQualification.NOT_EXECUTED
 
 
 @pytest.mark.asyncio
@@ -330,17 +356,68 @@ def test_durable_qualification_uses_memory_provider_qualification_runner() -> No
     assert runner_calls
 
 
-def test_qualification_evidence_has_no_connection_secrets() -> None:
-    sample = (
-        "mongodb://user:secret@host:27017/db",
+@pytest.mark.asyncio
+async def test_qualification_result_and_durable_evidence_exclude_materialization_secrets() -> None:
+    class _SecretMaterializationFactory(MemoryProviderInstanceFactory[UserProfileStore]):
+        async def create(self) -> UserProfileStore:
+            raise ConnectionError(_QUALIFICATION_SECRET)
+
+        async def dispose(self, instance: UserProfileStore) -> None:
+            return None
+
+    runner = MemoryProviderQualificationRunner()
+    result = await runner.qualify(
+        descriptor=MemoryProviderDescriptor(
+            provider_id="secret.leak.materialization",
+            capabilities=(MemoryProviderCapabilityKind.USER_PROFILE_STORE,),
+        ),
+        context=_context("secret-materialization-13c"),
+        request=user_profile_qualification_request(),
+        factories=MemoryProviderCapabilityFactories(
+            user_profile_store=_SecretMaterializationFactory(),
+        ),
+    )
+    assert result.status is MemoryProviderQualificationStatus.BLOCKED
+    for secret in (
+        _QUALIFICATION_SECRET,
         "password=supersecret",
         "api_key=abc123",
+    ):
+        assert secret not in repr(result)
+        assert secret not in str(result)
+
+    evidence = DurableUserProfileQualificationEvidence(
+        canonical=result,
+        durability_mode=DurabilityQualificationMode.NOT_TESTED,
+        reopen_passed=None,
+        delete_reopen_passed=None,
+        durability_detail="reopen_read_fidelity_mismatch",
     )
-    for secret in sample:
-        assert secret not in str(MemoryProviderQualificationFailureReason.DURABILITY_FAILURE.value)
+    assert _QUALIFICATION_SECRET not in repr(evidence)
+    assert _QUALIFICATION_SECRET not in str(evidence)
 
 
-def test_sqlite_qualification_artifact_removed_with_tempdir() -> None:
+@pytest.mark.asyncio
+async def test_sqlite_qualification_artifact_removed_with_tempdir() -> None:
+    tmp_path_holder: list[Path] = []
     with tempfile.TemporaryDirectory() as tmp:
-        db_path = Path(tmp) / "cleanup-qual.db"
-        assert not db_path.exists()
+        tmp_root = Path(tmp)
+        tmp_path_holder.append(tmp_root)
+        db_path = tmp_root / "cleanup-qual.db"
+        create, dispose = _sqlite_create_dispose(str(db_path))
+        await run_durable_user_profile_production_qualification(
+            descriptor=MemoryProviderDescriptor(
+                provider_id="sqlite.user_profile.cleanup",
+                capabilities=(MemoryProviderCapabilityKind.USER_PROFILE_STORE,),
+            ),
+            context=_context("sqlite-cleanup-13c"),
+            request=user_profile_qualification_request(),
+            factories=MemoryProviderCapabilityFactories(
+                user_profile_store=_StaticFactory(create, dispose),
+            ),
+            create_store=create,
+            dispose_store=dispose,
+            durability_mode=DurabilityQualificationMode.DURABLE_PERSISTENCE,
+        )
+        assert db_path.exists()
+    assert not tmp_path_holder[0].exists()
