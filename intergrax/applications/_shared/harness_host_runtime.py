@@ -153,6 +153,7 @@ from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStore
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
+from intergrax.tools.registry.runtime import ToolRegistry
 
 
 __all__ = [
@@ -233,6 +234,7 @@ def build_harness_host_runtime(
     pinning_store: EffectiveProfileExecutionPinningStore | None = None,
     active_store: ActiveEffectiveProfileRevisionStore | None = None,
     llm_adapter: LLMAdapter | None = None,
+    application_tool_registry: ToolRegistry | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -287,6 +289,7 @@ def build_harness_host_runtime(
         key_value_cache=key_value_cache,
         boundary_event_buffer=boundary_event_buffer,
         llm_adapter=llm_adapter,
+        application_tool_registry=application_tool_registry,
     )
     assembly_mode = resolve_registry_assembly_mode(
         effective_environment,

@@ -512,7 +512,7 @@ The engine must remain reusable for typed **capability need** requests (required
 | ID | Scenario | Status |
 | -- | -------- | ------ |
 | **ME-13** | **Marketplace → Agent Distribution → Execution** | **reference production E2E proven** (`testing_support/marketplace_agent_distribution_execution_composition.py`, `tests/integration/marketplace/test_me13_marketplace_agent_distribution_execution_e2e.py`) |
-| **ME-14** | **Marketplace → Tool domain → Execution** | **reference production E2E proven** (`testing_support/marketplace_tool_execution_composition.py`, `tests/integration/marketplace/test_me14_marketplace_tool_execution_e2e.py`) |
+| **ME-14** | **Marketplace → Tool domain → Execution** | **ME-14-C1:** production `DynamicToolAcquisitionService` + `HarnessHostRuntime.execution` E2E (`tests/integration/marketplace/test_me14_c1_tool_acquisition_execution.py`) |
 | ME-15 | Marketplace → Skill domain → Composition | planned |
 | ME-16 | Mixed Agent + Tool + Skill acquisition | planned |
 | ME-17 | Virtual Worker machine consumer | planned |
@@ -533,22 +533,22 @@ deterministic agent output
 
 Reference proof **≠** distributed production HA. Marketplace core still does not install, activate, or execute.
 
-**ME-14 canonical flow (reference single-process composition):**
+**ME-14 canonical flow (ME-14-C1 production composition):**
 
 ```text
 Marketplace listing / discovery / governance / explicit selection (TOOL vertical)
     ↓ CapabilityHandoffEnvelope (ME-10)
     ↓ MarketplaceLifecycleHandoffRequest + ToolLifecycleHandoffPayload (ME-RB4)
-ToolMarketplaceAcquisitionBridge → ReferenceToolHostLifecycleService (exact release)
-    ↓ host-profile activation into ToolRegistry (Tool domain authority)
-ToolRegistry read (domain registry)
-    ↓ ExecutionBoundDeclarativeToolInvoker / catalog declarative boundary
+ToolMarketplaceAcquisitionBridge → DynamicToolAcquisitionService (exact release)
+    ↓ ToolCatalogProvider SPI + ToolHostLifecycleService activation
+ToolRegistry read (release-aware activation metadata)
+    ↓ public Execution Engine boundary (HarnessHostRuntime.execution)
 deterministic tool output
 ```
 
-**ME-14 invariants:** Marketplace ≠ Tool Runtime; Marketplace ≠ Tool Registry Authority; tool handoff ≠ tool execution; selected release must remain exact; execution resolves tools through the Tool domain registry and public declarative invocation contract — never direct marketplace execution.
+**ME-14 invariants:** Tool acquisition is domain-owned; Marketplace never mutates `ToolRegistry`; selected release is exact and fail-closed; registry read retains release identity for audit; execution resolves activated tools through the public host execution boundary — reference fixtures are not lifecycle authority.
 
-Remaining V1 gaps: ME-15+ cross-domain E2E, distributed Tool lifecycle productization, remote marketplace productization.
+Remaining V1 gaps: canonical Tool trust authority (ME-14-C1 uses generic qualification only where applicable), ME-15+ cross-domain E2E, distributed Tool lifecycle productization, remote marketplace productization.
 
 ---
 

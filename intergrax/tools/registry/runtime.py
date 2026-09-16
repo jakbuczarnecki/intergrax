@@ -10,6 +10,7 @@ from typing import Dict, List
 from pydantic import BaseModel
 
 from intergrax.tools.core.contracts import ToolContract
+from intergrax.tools.registry.provenance import ToolRuntimeActivationMetadata
 from intergrax.tools.tool_executor import ToolHandler
 
 
@@ -21,6 +22,7 @@ class RegisteredTool:
 
     contract: ToolContract
     handler: ToolHandler[BaseModel, BaseModel]
+    activation: ToolRuntimeActivationMetadata | None = None
 
 
 class ToolRegistry:
@@ -35,10 +37,20 @@ class ToolRegistry:
     def __init__(self) -> None:
         self._tools: Dict[str, RegisteredTool] = {}
 
-    def register(self, contract: ToolContract, handler: ToolHandler[BaseModel, BaseModel]) -> None:
+    def register(
+        self,
+        contract: ToolContract,
+        handler: ToolHandler[BaseModel, BaseModel],
+        *,
+        activation: ToolRuntimeActivationMetadata | None = None,
+    ) -> None:
         if contract.tool_id in self._tools:
             raise ValueError(f"Tool already registered: {contract.tool_id}")
-        self._tools[contract.tool_id] = RegisteredTool(contract=contract, handler=handler)
+        self._tools[contract.tool_id] = RegisteredTool(
+            contract=contract,
+            handler=handler,
+            activation=activation,
+        )
 
     def get(self, tool_id: str) -> RegisteredTool:
         try:
@@ -48,6 +60,12 @@ class ToolRegistry:
 
     def has(self, tool_id: str) -> bool:
         return tool_id in self._tools
+
+    def activation_metadata(self, tool_id: str) -> ToolRuntimeActivationMetadata | None:
+        registered = self._tools.get(tool_id)
+        if registered is None:
+            return None
+        return registered.activation
 
     def list(self) -> List[RegisteredTool]:
         return list(self._tools.values())
