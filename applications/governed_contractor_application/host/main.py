@@ -51,6 +51,7 @@ def create_governed_contractor_process_app(
             application_environment_id=env.profile_id,
             stores=process_composition.agent_platform_runtime.stores,
         ),
+        process_composition=process_composition,
         settings=resolved_settings,
     )
 

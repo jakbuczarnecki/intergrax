@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+import ast
+from dataclasses import dataclass, replace
+from datetime import UTC, datetime, timedelta, timezone
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
@@ -22,6 +24,9 @@ from external_contractor_adapter.external_work_adapter import (
     META_SCOPE_DIGEST,
     META_WORKSPACE_REF,
 )
+from external_contractor_adapter.external_contractor_adapter_agent import (
+    ExternalContractorAdapterAgent,
+)
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
     ACTION_CREATE_EXTERNAL_WORK,
@@ -29,8 +34,26 @@ from external_contractor_adapter.side_effect_actions import (
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
+from governed_contractor_application.host.agent_builders import GOVERNED_CONTRACTOR_AGENT_BUILDERS
+from governed_contractor_application.host.agent_factories import (
+    build_governed_contractor_external_contractor_adapter_from_context,
+)
+from governed_contractor_application.host.environment_profile import (
+    build_governed_contractor_environment_profile,
+)
 from governed_contractor_application.host.lifecycle_states import GovernedExternalWorkHostState
+from governed_contractor_application.host.main import create_governed_contractor_process_app
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from governed_contractor_application.host.stores import (
+    InMemoryContinuationStateStore,
+    InMemoryGovernedExecutionStore,
+    InMemoryPolicyBundleArtifactStore,
+    InMemoryProofReceiptStore,
+)
+from governed_contractor_application.manifest import build_governed_contractor_manifest
+from intergrax.applications._shared.production_process_composition import (
+    create_reference_production_process_composition,
+)
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
 from intergrax.contracts.decision_authorization import (
     DecisionGovernanceDecision,
@@ -70,6 +93,10 @@ from intergrax.contracts.external_work_provider_capabilities import (
 )
 from intergrax.contracts.money import MoneyAmount
 from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.contracts.runtime_policy_bundle import (
+    PolicyBundleRule,
+    build_immutable_runtime_policy_bundle,
+)
 from intergrax.runtime.execution.decision_governed_side_effect import (
     DecisionGovernedSideEffectInputs,
 )
@@ -77,6 +104,7 @@ from intergrax.runtime.execution_evidence.attestor import build_deterministic_te
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
+from tests.unit.applications.ac3_projection_helpers import build_test_registry_projection
 from tests.unit.runtime.governance.gr3_test_support import (
     StaticActiveTaskScope,
     bound_gr3_active_execution,
@@ -93,6 +121,66 @@ _PRINCIPAL = "gr6wire-user"
 _PROVIDER = "gec3_deterministic_fake"
 _CREATE_IDEMP = "idem-gr6wire-create"
 _ACCEPT_IDEMP = "idem-gr6wire-accept"
+
+_PRODUCTION_COMPOSITION_PATH = (
+    Path(__file__).resolve().parents[2] / "host" / "production_external_work_composition.py"
+)
+
+
+def _test_policy_bundle() -> object:
+    return build_immutable_runtime_policy_bundle(
+        bundle_id="gr6wire-production-policy",
+        version="1.0.0",
+        rules=(
+            PolicyBundleRule(
+                rule_id="gr6wire.CREATE_EXTERNAL_WORK",
+                description="allow create",
+                effect="allow",
+                match_action=ACTION_CREATE_EXTERNAL_WORK,
+            ),
+            PolicyBundleRule(
+                rule_id="gr6wire.ACCEPT_QUOTE",
+                description="allow accept",
+                effect="allow",
+                match_action=ACTION_ACCEPT_QUOTE,
+            ),
+        ),
+        issued_at=_T0,
+    )
+
+
+def _seed_active_registry_projection(
+    composition,
+    *,
+    application_id: str,
+    application_environment_id: str,
+    projection,
+) -> None:
+    stores = composition.agent_platform_runtime.stores
+    stores.registry_projection_store.put(projection)
+    stores.serving_store.atomic_swap_serving_revision(
+        application_id=application_id,
+        application_environment_id=application_environment_id,
+        expected_current_revision_id=None,
+        expected_pointer_revision=0,
+        new_revision_id=projection.evidence.runtime_revision_id,
+        prior_revision_id=None,
+        committed_at=datetime.now(UTC),
+    )
+
+
+def _in_memory_stores() -> tuple[
+    InMemoryGovernedExecutionStore,
+    InMemoryProofReceiptStore,
+    InMemoryPolicyBundleArtifactStore,
+    InMemoryContinuationStateStore,
+]:
+    return (
+        InMemoryGovernedExecutionStore(),
+        InMemoryProofReceiptStore(),
+        InMemoryPolicyBundleArtifactStore(),
+        InMemoryContinuationStateStore(),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -193,6 +281,7 @@ def _production_runtime(
     decision_requirement_policy: object | None = None,
 ):
     policy = decision_requirement_policy
+    execution_store, receipt_store, bundle_store, continuation_store = _in_memory_stores()
     return build_governed_external_work_production_runtime(
         fake,
         tenant_id=_TENANT,
@@ -201,6 +290,11 @@ def _production_runtime(
         task_scope=StaticActiveTaskScope(task_id),
         capabilities=quote_first_partner_capability_fixture(provider_id=_PROVIDER),
         decision_requirement_policy=policy,  # type: ignore[arg-type]
+        policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+        execution_store=execution_store,
+        receipt_store=receipt_store,
+        bundle_store=bundle_store,
+        continuation_store=continuation_store,
         attestor=build_deterministic_test_attestor(clock=lambda: _T0),
         clock=lambda: _T0,
     )
@@ -398,9 +492,129 @@ def test_production_composition_accepts_injected_decision_requirement_policy() -
     assert fake.accept_calls == 1
 
 
-def test_production_settings_wire_authorization_boundary_idempotent() -> None:
+def test_production_composition_module_has_no_offline_demo_import() -> None:
+    tree = ast.parse(_PRODUCTION_COMPOSITION_PATH.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            assert "offline_demo" not in node.module
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                assert "offline_demo" not in alias.name
+
+
+def test_production_wire_fails_closed_when_policy_bundle_missing() -> None:
     fake = DeterministicExternalWorkFake()
     base = GovernedContractorBackendSettings.from_env()
+    with pytest.raises(ValueError, match="runtime_policy_bundle"):
+        wire_governed_contractor_production_external_work_settings(
+            base,
+            integration=fake,
+            task_scope=StaticActiveTaskScope(mint_task_id()),
+        )
+
+
+def test_production_runtime_uses_injected_execution_store() -> None:
+    task_id, run_id, _, _ = default_gr3_identity_bundle()
+    fake = DeterministicExternalWorkFake()
+    execution_store, receipt_store, bundle_store, continuation_store = _in_memory_stores()
+    runtime = build_governed_external_work_production_runtime(
+        fake,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        principal_id=_PRINCIPAL,
+        task_scope=StaticActiveTaskScope(task_id),
+        capabilities=quote_first_partner_capability_fixture(provider_id=_PROVIDER),
+        policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+        execution_store=execution_store,
+        receipt_store=receipt_store,
+        bundle_store=bundle_store,
+        continuation_store=continuation_store,
+        clock=lambda: _T0,
+    )
+    _create_with_runtime(runtime, task_id, run_id)
+    assert execution_store.get_state("exec-gr6wire-create") is not None
+
+
+def test_strict_host_composition_wires_agent_boundary_and_integration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from testing_support.host_fixture_wiring import (
+        install_diagnostic_cursor_secret,
+        install_host_llm_stub,
+    )
+
+    install_host_llm_stub(monkeypatch)
+    install_diagnostic_cursor_secret(monkeypatch)
+
+    fake = DeterministicExternalWorkFake()
+    bundle = _test_policy_bundle()
+    task_scope = StaticActiveTaskScope(mint_task_id())
+    settings = wire_governed_contractor_production_external_work_settings(
+        replace(
+            GovernedContractorBackendSettings.from_env(),
+            external_work_integration=fake,
+            runtime_policy_bundle=bundle,  # type: ignore[arg-type]
+        ),
+        task_scope=task_scope,
+    )
+    composition = create_reference_production_process_composition()
+    manifest = build_governed_contractor_manifest()
+    env = manifest.environment or build_governed_contractor_environment_profile(settings)
+    projection = build_test_registry_projection(
+        manifest,
+        env,
+        builders=GOVERNED_CONTRACTOR_AGENT_BUILDERS,
+        revision_id="rev-gr6wire-strict-host",
+        settings=settings,
+    )
+    _seed_active_registry_projection(
+        composition,
+        application_id=manifest.app_id,
+        application_environment_id=env.profile_id,
+        projection=projection,
+    )
+    app = create_governed_contractor_process_app(
+        process_composition=composition,
+        settings=settings,
+    )
+    harness = app.state.harness_runtime
+    host_settings = harness.env_wiring.build_context.settings
+    assert isinstance(host_settings, GovernedContractorBackendSettings)
+    assert host_settings.external_work_integration is fake
+    assert host_settings.meaningful_side_effect_authorization_boundary is not None
+    assert host_settings.runtime_policy_bundle is bundle
+    assert host_settings.decision_requirement_policy is not None
+
+    binding = manifest.agents[0]
+    agent = build_governed_contractor_external_contractor_adapter_from_context(
+        harness.env_wiring.build_context,
+        binding,
+    )
+    assert isinstance(agent, ExternalContractorAdapterAgent)
+
+    import asyncio
+
+    from intergrax.contracts.agent_step_context import AgentStepContext
+
+    observation = asyncio.run(
+        agent.perceive(
+            AgentStepContext(
+                task_id="gr6wire-host-task",
+                run_id="gr6wire-host-run",
+                message="probe",
+            ),
+        ),
+    )
+    assert observation.data.get("has_external_work_integration") is True
+    assert host_settings.meaningful_side_effect_authorization_boundary is not None
+
+
+def test_production_settings_wire_authorization_boundary_idempotent() -> None:
+    fake = DeterministicExternalWorkFake()
+    base = replace(
+        GovernedContractorBackendSettings.from_env(),
+        runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+    )
     wired = wire_governed_contractor_production_external_work_settings(
         base,
         integration=fake,

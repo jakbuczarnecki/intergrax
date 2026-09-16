@@ -13,14 +13,13 @@ from governed_contractor_application.host.collaborative_work_boundary import (
     build_external_work_authorization_boundary,
     default_external_work_decision_requirement_policy,
 )
-from governed_contractor_application.host.offline_demo import build_demo_policy_bundle
 from governed_contractor_application.host.orchestrator import GovernedExternalWorkOrchestrator
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.host.stores import (
-    InMemoryContinuationStateStore,
-    InMemoryGovernedExecutionStore,
-    InMemoryPolicyBundleArtifactStore,
-    InMemoryProofReceiptStore,
+    ContinuationStateStore,
+    GovernedExecutionStore,
+    PolicyBundleArtifactStore,
+    ProofReceiptStore,
 )
 from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
@@ -57,7 +56,10 @@ def resolve_production_runtime_policy_bundle(
 ) -> ImmutableRuntimePolicyBundle:
     bundle = settings.runtime_policy_bundle
     if bundle is None:
-        return build_demo_policy_bundle(issued_at=_PRODUCTION_POLICY_ISSUED_AT)
+        raise ValueError(
+            "production external work requires settings.runtime_policy_bundle "
+            "(ImmutableRuntimePolicyBundle); configure an explicit bundle at composition time",
+        )
     if not isinstance(bundle, ImmutableRuntimePolicyBundle):
         raise TypeError(
             "settings.runtime_policy_bundle must be ImmutableRuntimePolicyBundle",
@@ -83,12 +85,16 @@ def build_governed_external_work_production_runtime(
     task_scope: ActiveExecutionTaskScopePort,
     capabilities: ExternalWorkProviderCapabilities,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
-    policy_bundle: ImmutableRuntimePolicyBundle | None = None,
+    policy_bundle: ImmutableRuntimePolicyBundle,
+    execution_store: GovernedExecutionStore,
+    receipt_store: ProofReceiptStore,
+    bundle_store: PolicyBundleArtifactStore,
+    continuation_store: ContinuationStateStore,
     attestor: HostAttestor | None = None,
     clock: Callable[[], datetime] | None = None,
 ) -> GovernedExternalWorkProductionRuntime:
     """Construct orchestrator + adapter wired through canonical governance boundary."""
-    bundle = policy_bundle or build_demo_policy_bundle(issued_at=_PRODUCTION_POLICY_ISSUED_AT)
+    bundle = policy_bundle
     resolved_policy = (
         decision_requirement_policy
         if decision_requirement_policy is not None
@@ -116,10 +122,10 @@ def build_governed_external_work_production_runtime(
         bundle=bundle,
         attestor=attestor,
         capabilities=capabilities,
-        execution_store=InMemoryGovernedExecutionStore(),
-        receipt_store=InMemoryProofReceiptStore(),
-        bundle_store=InMemoryPolicyBundleArtifactStore(),
-        continuation_store=InMemoryContinuationStateStore(),
+        execution_store=execution_store,
+        receipt_store=receipt_store,
+        bundle_store=bundle_store,
+        continuation_store=continuation_store,
         clock=clock or (lambda: _PRODUCTION_POLICY_ISSUED_AT),
     )
     return GovernedExternalWorkProductionRuntime(
@@ -144,9 +150,7 @@ def wire_governed_contractor_production_external_work_settings(
     """Apply production meaningful-side-effect boundary slots on host settings."""
     resolved_integration = integration
     if resolved_integration is None:
-        raw = settings.external_work_integration
-        if raw is not None and isinstance(raw, ExternalWorkIntegration):
-            resolved_integration = raw
+        resolved_integration = settings.external_work_integration
     if resolved_integration is None:
         return settings
     if (

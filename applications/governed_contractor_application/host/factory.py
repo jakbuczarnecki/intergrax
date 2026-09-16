@@ -20,6 +20,13 @@ from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.production_platform_persistence import (
+    resolve_harness_host_profile_persistence_kwargs_from_composition,
+    resolve_reference_production_strict_host_environment,
+)
+from intergrax.applications._shared.production_process_composition import (
+    ProductionProcessComposition,
+)
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.plugin_bootstrap import (
     attach_plugin_shutdown,
@@ -58,6 +65,7 @@ from governed_contractor_application.serving.fastapi_router import mount_governe
 def create_governed_contractor_backend_app(
     *,
     registry_projection: MaterializedRegistryProjection,
+    process_composition: ProductionProcessComposition | None = None,
     settings: Optional[GovernedContractorBackendSettings] = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
@@ -70,15 +78,30 @@ def create_governed_contractor_backend_app(
 
     manifest = build_governed_contractor_manifest()
     env = manifest.environment or build_governed_contractor_environment_profile(settings)
+    production_mode = env.execution_mode.value == "strict"
+    manifest_for_runtime = manifest
+    profile_persistence_kwargs: dict[str, object] = {}
+    resolved_tenant_id = manifest.app_id
+    if process_composition is not None:
+        if production_mode:
+            env = resolve_reference_production_strict_host_environment(env)
+        manifest_for_runtime = manifest.model_copy(update={"environment": env})
+        profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+            production_mode=production_mode,
+            composition=process_composition,
+        )
+    elif document_store is not None:
+        profile_persistence_kwargs = {"document_store": document_store}
     runtime = build_harness_host_runtime(
-        manifest,
+        manifest_for_runtime,
         env,
         settings=settings,
+        tenant_id=resolved_tenant_id,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         registry_projection=registry_projection,
-        document_store=document_store,
+        **profile_persistence_kwargs,
     )
     host_execution = runtime.execution
     registry = runtime.registry
