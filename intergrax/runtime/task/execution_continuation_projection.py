@@ -6,8 +6,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any
 
 from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.contracts.canonical_payload_hash import stable_payload_hash
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationLifecycleState,
     ExecutionHumanVerdict,
@@ -28,6 +30,63 @@ from intergrax.runtime.task.task_contract import (
     VERDICT_ESCALATE,
     VERDICT_REJECT,
 )
+
+_PROJECTION_REPLACEMENT_ELIGIBLE: frozenset[ExecutionContinuationLifecycleState] = frozenset(
+    {
+        ExecutionContinuationLifecycleState.RESUMED,
+        ExecutionContinuationLifecycleState.REJECTED,
+        ExecutionContinuationLifecycleState.ESCALATED,
+        ExecutionContinuationLifecycleState.CANCELLED,
+    }
+)
+
+
+def continuation_projection_allows_replacement(
+    projected_lifecycle_state: str | None,
+) -> bool:
+    """Whether Task materialized view may switch to a new ``continuation_id``.
+
+    Uses projection metadata only — not canonical lifecycle authority.
+    """
+    if projected_lifecycle_state is None:
+        return True
+    try:
+        state = ExecutionContinuationLifecycleState(projected_lifecycle_state)
+    except ValueError as exc:
+        raise ExecutionContinuationProjectionError(
+            f"unknown projected continuation lifecycle state: {projected_lifecycle_state!r}",
+        ) from exc
+    return state in _PROJECTION_REPLACEMENT_ELIGIBLE
+
+
+def execution_continuation_projection_payload_digest(
+    pending: PendingExecutionContinuation,
+) -> str:
+    """Deterministic fingerprint of canonical fields that drive Task/Human projection."""
+    identity = pending.identity
+    governed: dict[str, Any] | None = None
+    if pending.governed_correlation is not None:
+        governed = pending.governed_correlation.model_dump(mode="json")
+    payload: dict[str, Any] = {
+        "continuation_id": pending.continuation_id,
+        "identity": {
+            "task_id": str(identity.task_id),
+            "run_id": str(identity.run_id),
+            "attempt_id": str(identity.attempt_id),
+            "execution_id": str(identity.execution_id),
+        },
+        "lifecycle_state": pending.lifecycle_state.value,
+        "revision": pending.revision,
+        "reason": pending.reason.value,
+        "human_verdict": (
+            pending.human_verdict.value if pending.human_verdict is not None else None
+        ),
+        "pause_id": pending.pause_id,
+        "human_request_id": pending.human_request_id,
+        "requested_at": pending.requested_at,
+        "governed_correlation": governed,
+    }
+    return stable_payload_hash(payload)
 
 
 def governance_paused_for_lifecycle(
@@ -88,11 +147,49 @@ def _validate_pending_snapshot_for_projection(
             )
 
 
+def _same_revision_payload_conflict(
+    task: Task,
+    pending: PendingExecutionContinuation,
+    incoming_digest: str,
+) -> None:
+    gov = task.runtime.governance
+    stored_digest = gov.projected_continuation_payload_digest
+    if stored_digest is not None:
+        if stored_digest != incoming_digest:
+            raise ExecutionContinuationProjectionError(
+                "revision payload conflict for same continuation revision",
+            )
+        return
+    projected_state = gov.projected_continuation_lifecycle_state
+    if projected_state is not None and projected_state != pending.lifecycle_state.value:
+        raise ExecutionContinuationProjectionError(
+            "revision payload conflict for same continuation revision",
+        )
+    record = gov.pause_record
+    if (
+        record is not None
+        and pending.pause_id is not None
+        and record.pause_id != pending.pause_id
+    ):
+        raise ExecutionContinuationProjectionError(
+            "revision payload conflict for same continuation revision",
+        )
+    if (
+        record is not None
+        and pending.human_request_id is not None
+        and record.human_request_id != pending.human_request_id
+    ):
+        raise ExecutionContinuationProjectionError(
+            "revision payload conflict for same continuation revision",
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class _PreparedTaskContinuationProjection:
     continuation_id: str
     revision: int
     lifecycle_state_value: str
+    payload_digest: str
     paused: bool
     pause_record: TaskPauseRecord | None
     human_request: HumanRequest | None
@@ -104,6 +201,8 @@ class _PreparedTaskContinuationProjection:
     clear_pause_on_resume: bool
     clear_pause_on_cancel: bool
     clear_declarative_hitl_on_resume: bool
+    replace_completed_continuation: bool
+    idempotent_no_op: bool
 
 
 def prepare_task_continuation_projection(
@@ -116,39 +215,65 @@ def prepare_task_continuation_projection(
     if str(pending.identity.task_id) != task.task_id:
         raise ExecutionContinuationProjectionError("task identity mismatch for projection")
 
+    incoming_digest = execution_continuation_projection_payload_digest(pending)
     gov = task.runtime.governance
     last_revision = gov.projected_continuation_revision
     last_id = gov.projected_continuation_id
+    projected_state = gov.projected_continuation_lifecycle_state
+    replace_completed = False
+
     if last_id is not None and last_id != pending.continuation_id:
-        raise ExecutionContinuationProjectionError(
-            "task already projects a different continuation_id",
-        )
-    if (
+        if not continuation_projection_allows_replacement(projected_state):
+            raise ExecutionContinuationProjectionError(
+                "task already projects a different continuation_id",
+            )
+        replace_completed = True
+    elif (
         last_revision is not None
         and last_id == pending.continuation_id
         and pending.revision == last_revision
     ):
-        projected_state = gov.projected_continuation_lifecycle_state
-        if projected_state is not None and projected_state != pending.lifecycle_state.value:
-            raise ExecutionContinuationProjectionError(
-                "revision payload conflict for same continuation revision",
+        _same_revision_payload_conflict(task, pending, incoming_digest)
+        stored_digest = gov.projected_continuation_payload_digest
+        if stored_digest is not None and stored_digest == incoming_digest:
+            return _PreparedTaskContinuationProjection(
+                continuation_id=pending.continuation_id,
+                revision=pending.revision,
+                lifecycle_state_value=pending.lifecycle_state.value,
+                payload_digest=incoming_digest,
+                paused=governance_paused_for_lifecycle(pending.lifecycle_state),
+                pause_record=None,
+                human_request=None,
+                clear_hitl_and_grants=False,
+                hitl_resolution=None,
+                human_verdict_option=None,
+                human_pause_id=None,
+                human_request_id_option=None,
+                clear_pause_on_resume=False,
+                clear_pause_on_cancel=False,
+                clear_declarative_hitl_on_resume=False,
+                replace_completed_continuation=False,
+                idempotent_no_op=True,
             )
-        record = gov.pause_record
-        if (
-            record is not None
-            and pending.pause_id is not None
-            and record.pause_id != pending.pause_id
-        ):
-            raise ExecutionContinuationProjectionError(
-                "revision payload conflict for same continuation revision",
-            )
-        if (
-            record is not None
-            and pending.human_request_id is not None
-            and record.human_request_id != pending.human_request_id
-        ):
-            raise ExecutionContinuationProjectionError(
-                "revision payload conflict for same continuation revision",
+        if stored_digest is None:
+            return _PreparedTaskContinuationProjection(
+                continuation_id=pending.continuation_id,
+                revision=pending.revision,
+                lifecycle_state_value=pending.lifecycle_state.value,
+                payload_digest=incoming_digest,
+                paused=governance_paused_for_lifecycle(pending.lifecycle_state),
+                pause_record=None,
+                human_request=None,
+                clear_hitl_and_grants=False,
+                hitl_resolution=None,
+                human_verdict_option=None,
+                human_pause_id=None,
+                human_request_id_option=None,
+                clear_pause_on_resume=False,
+                clear_pause_on_cancel=False,
+                clear_declarative_hitl_on_resume=False,
+                replace_completed_continuation=False,
+                idempotent_no_op=True,
             )
 
     _validate_pending_snapshot_for_projection(pending)
@@ -230,6 +355,7 @@ def prepare_task_continuation_projection(
         continuation_id=pending.continuation_id,
         revision=pending.revision,
         lifecycle_state_value=state.value,
+        payload_digest=incoming_digest,
         paused=paused,
         pause_record=pause_record,
         human_request=human_request,
@@ -241,7 +367,23 @@ def prepare_task_continuation_projection(
         clear_pause_on_resume=clear_pause_on_resume,
         clear_pause_on_cancel=clear_pause_on_cancel,
         clear_declarative_hitl_on_resume=clear_declarative_hitl_on_resume,
+        replace_completed_continuation=replace_completed,
+        idempotent_no_op=False,
     )
+
+
+def _clear_episode_projection_residue(task: Task) -> None:
+    gov = task.runtime.governance
+    gov.human_request = None
+    gov.pause_record = None
+    gov.hitl_resolution = None
+    gov.governed_continuation_grant = None
+    gov.physical_delegation_continuation_grant = None
+    human = task.options.human
+    human.verdict = None
+    human.pause_id = None
+    human.human_request_id = None
+    human.response_text = None
 
 
 def commit_task_continuation_projection(
@@ -249,10 +391,17 @@ def commit_task_continuation_projection(
     prepared: _PreparedTaskContinuationProjection,
 ) -> None:
     """Apply a validated prepared projection in one logical commit."""
+    if prepared.idempotent_no_op:
+        return
+
     gov = task.runtime.governance
+    if prepared.replace_completed_continuation:
+        _clear_episode_projection_residue(task)
+
     gov.projected_continuation_id = prepared.continuation_id
     gov.projected_continuation_revision = prepared.revision
     gov.projected_continuation_lifecycle_state = prepared.lifecycle_state_value
+    gov.projected_continuation_payload_digest = prepared.payload_digest
     gov.paused = prepared.paused
 
     if prepared.clear_pause_on_resume or prepared.clear_pause_on_cancel:
@@ -351,6 +500,8 @@ __all__ = [
     "TaskExecutionContinuationProjectionSink",
     "apply_canonical_projection_fields",
     "commit_task_continuation_projection",
+    "continuation_projection_allows_replacement",
+    "execution_continuation_projection_payload_digest",
     "governance_paused_for_lifecycle",
     "prepare_task_continuation_projection",
     "wire_task_execution_continuation_projection_sink",

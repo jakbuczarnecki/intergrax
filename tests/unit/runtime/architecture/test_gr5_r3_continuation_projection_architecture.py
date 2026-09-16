@@ -64,6 +64,42 @@ def test_projection_sink_protocol_replaceable() -> None:
     assert isinstance(_Sink(), ExecutionContinuationProjectionSink)
 
 
+def test_revision_domain_scoped_to_continuation_id() -> None:
+    source = (
+        _REPO_ROOT
+        / "intergrax"
+        / "runtime"
+        / "task"
+        / "execution_continuation_projection.py"
+    ).read_text(encoding="utf-8")
+    assert "last_id == pending.continuation_id" in source
+    assert "continuation_projection_allows_replacement" in source
+
+
+def test_active_continuation_replacement_blocked_in_prepare() -> None:
+    source = (
+        _REPO_ROOT
+        / "intergrax"
+        / "runtime"
+        / "task"
+        / "execution_continuation_projection.py"
+    ).read_text(encoding="utf-8")
+    assert "task already projects a different continuation_id" in source
+    assert "continuation_projection_allows_replacement" in source
+
+
+def test_completed_continuation_replacement_allowed_in_prepare() -> None:
+    source = (
+        _REPO_ROOT
+        / "intergrax"
+        / "runtime"
+        / "task"
+        / "execution_continuation_projection.py"
+    ).read_text(encoding="utf-8")
+    assert "replace_completed_continuation" in source
+    assert "ExecutionContinuationLifecycleState.RESUMED" in source
+
+
 def test_canonical_resolution_does_not_call_task_hitl_before_apply() -> None:
     source = _PAUSE_MODULE.read_text(encoding="utf-8")
     canonical_start = source.index("def resolve_human_response_and_apply_canonical")
