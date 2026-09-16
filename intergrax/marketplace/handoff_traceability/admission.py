@@ -9,10 +9,10 @@ import threading
 from dataclasses import dataclass, field
 
 from intergrax.contracts.marketplace.handoff_traceability import (
-    CapabilityHandoffDeliveryAdmissionError,
     CapabilityHandoffDeliveryAdmissionResult,
     CapabilityHandoffDeliveryAdmissionVerdict,
     CapabilityHandoffDeliveryLifecycleState,
+    CapabilityHandoffDeliveryLifecycleTransitionError,
     CapabilityHandoffEnvelope,
     CapabilityHandoffIdentityConflictError,
 )
@@ -22,6 +22,23 @@ from intergrax.contracts.marketplace.handoff_traceability import (
 class _InMemoryLifecycleEntry:
     envelope: CapabilityHandoffEnvelope
     state: CapabilityHandoffDeliveryLifecycleState
+
+
+def _require_in_progress_for_transition(
+    handoff_id: str,
+    entry: _InMemoryLifecycleEntry | None,
+    *,
+    operation: str,
+) -> _InMemoryLifecycleEntry:
+    if entry is None:
+        raise CapabilityHandoffDeliveryLifecycleTransitionError(
+            f"handoff_id={handoff_id!r} current_state=absent attempted={operation}",
+        )
+    if entry.state is not CapabilityHandoffDeliveryLifecycleState.IN_PROGRESS:
+        raise CapabilityHandoffDeliveryLifecycleTransitionError(
+            f"handoff_id={handoff_id!r} current_state={entry.state.value} attempted={operation}",
+        )
+    return entry
 
 
 @dataclass
@@ -68,15 +85,11 @@ class InMemoryCapabilityHandoffDeliveryAdmission:
 
     def mark_delivered(self, handoff_id: str) -> None:
         with self._lock:
-            entry = self._by_handoff_id.get(handoff_id)
-            if entry is None:
-                raise CapabilityHandoffDeliveryAdmissionError(
-                    "cannot mark delivered: no in-progress reservation for handoff_id",
-                )
-            if entry.state is CapabilityHandoffDeliveryLifecycleState.DELIVERED:
-                raise CapabilityHandoffDeliveryAdmissionError(
-                    "cannot mark delivered: handoff already delivered",
-                )
+            entry = _require_in_progress_for_transition(
+                handoff_id,
+                self._by_handoff_id.get(handoff_id),
+                operation="mark_delivered",
+            )
             self._by_handoff_id[handoff_id] = _InMemoryLifecycleEntry(
                 envelope=entry.envelope,
                 state=CapabilityHandoffDeliveryLifecycleState.DELIVERED,
@@ -84,15 +97,11 @@ class InMemoryCapabilityHandoffDeliveryAdmission:
 
     def mark_delivery_failed(self, handoff_id: str) -> None:
         with self._lock:
-            entry = self._by_handoff_id.get(handoff_id)
-            if entry is None:
-                raise CapabilityHandoffDeliveryAdmissionError(
-                    "cannot release reservation: no in-progress reservation for handoff_id",
-                )
-            if entry.state is CapabilityHandoffDeliveryLifecycleState.DELIVERED:
-                raise CapabilityHandoffDeliveryAdmissionError(
-                    "cannot release reservation: handoff already delivered",
-                )
+            entry = _require_in_progress_for_transition(
+                handoff_id,
+                self._by_handoff_id.get(handoff_id),
+                operation="mark_delivery_failed",
+            )
             self._by_handoff_id[handoff_id] = _InMemoryLifecycleEntry(
                 envelope=entry.envelope,
                 state=CapabilityHandoffDeliveryLifecycleState.FAILED_RETRYABLE,

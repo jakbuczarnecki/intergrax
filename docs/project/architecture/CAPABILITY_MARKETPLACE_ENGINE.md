@@ -398,6 +398,8 @@ consumer success + mark_delivered failure → CapabilityHandoffDeliveryOutcomeUn
 
 `CapabilityHandoffDeliveryAdmission` owns `reserve` / `mark_delivered` / `mark_delivery_failed`. `CapabilityHandoffTraceEvidenceConsumer` remains observational only and does not control whether the business consumer runs.
 
+**ME-10-R2-Q1 (reference provider):** Illegal lifecycle transitions raise `CapabilityHandoffDeliveryLifecycleTransitionError` without mutating state. `mark_delivered` is legal only from `IN_PROGRESS` → `DELIVERED`; `mark_delivery_failed` is legal only from `IN_PROGRESS` → `FAILED_RETRYABLE`.
+
 Hard invariants:
 
 ```text
