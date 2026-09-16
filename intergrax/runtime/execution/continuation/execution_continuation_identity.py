@@ -9,7 +9,7 @@ from intergrax.contracts.execution_continuation import (
     ExecutionContinuationErrorCode,
     ExecutionContinuationIdentity,
 )
-from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
+from intergrax.runtime.execution.identity_binding import ExecutionIdentityBinding
 
 
 def require_execution_continuation_identity(

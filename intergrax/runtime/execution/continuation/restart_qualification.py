@@ -23,7 +23,7 @@ from intergrax.runtime.execution.continuation.execution_continuation_identity im
 from intergrax.runtime.execution.runtime import RootExecutionContext
 
 if TYPE_CHECKING:
-    from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
+    from intergrax.runtime.execution.identity_binding import ExecutionIdentityBinding
 
 
 @dataclass(frozen=True, slots=True)

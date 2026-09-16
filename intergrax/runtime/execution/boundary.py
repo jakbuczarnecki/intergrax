@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar
 
 from intergrax.contracts.delegation_authority import (
@@ -16,29 +15,16 @@ from intergrax.contracts.execution_continuation import (
     ExecutionContinuationIdentity,
     ExecutionContinuationLifecycleState,
 )
-from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
 from intergrax.contracts.execution_identity import (
-    AttemptId,
-    ExecutionId,
-    RunId,
-    TaskId,
     bind_active_execution_identity,
     reset_active_execution_identity,
 )
 from intergrax.runtime.execution.active_execution_continuation_store import (
     peek_active_execution_continuation_state_store,
 )
-
-
-@dataclass(frozen=True, slots=True)
-class ExecutionIdentityBinding:
-    run_id: RunId
-    attempt_id: AttemptId
-    execution_id: ExecutionId
-    parent_execution_id: ExecutionId | None = None
-    task_id: TaskId | None = None
-
-
 from intergrax.runtime.execution.continuation.lifecycle_driver import (
     ExecutionContinuationLifecycleDriver,
 )
@@ -49,7 +35,10 @@ from intergrax.runtime.execution.continuation.progress_gate import (
     assert_canonical_execution_may_progress,
     load_pending_for_execution_progress,
 )
-from intergrax.runtime.execution.continuation.service import ExecutionContinuationService
+from intergrax.runtime.execution.continuation.service import (
+    ExecutionContinuationService,
+)
+from intergrax.runtime.execution.identity_binding import ExecutionIdentityBinding
 from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
     reset_active_execution_authority,
@@ -62,15 +51,13 @@ ResultT = TypeVar("ResultT")
 class ExecutionDelegate(Protocol[RequestT, ResultT]):
     """Typed executor invoked exactly once by :class:`ExecutionBoundary`."""
 
-    async def execute(self, request: RequestT) -> ResultT:
-        ...
+    async def execute(self, request: RequestT) -> ResultT: ...
 
 
 class ExecutionAdmissionHook(Protocol[RequestT]):
     """Admission gate evaluated before delegate execution."""
 
-    async def admit(self, request: RequestT) -> None:
-        ...
+    async def admit(self, request: RequestT) -> None: ...
 
 
 class ExecutionBoundary(Generic[RequestT, ResultT]):
@@ -139,7 +126,9 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
     async def _execute_without_context(self, request: RequestT) -> ResultT:
         return await self._run_admission_and_delegate(request)
 
-    def _resolve_continuation_state_store(self) -> ExecutionContinuationStateStore | None:
+    def _resolve_continuation_state_store(
+        self,
+    ) -> ExecutionContinuationStateStore | None:
         if self._continuation_state_store is not None:
             return self._continuation_state_store
         return peek_active_execution_continuation_state_store()
@@ -156,7 +145,10 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
         )
         if pending is None:
             return
-        if pending.lifecycle_state is not ExecutionContinuationLifecycleState.PAUSE_REQUESTED:
+        if (
+            pending.lifecycle_state
+            is not ExecutionContinuationLifecycleState.PAUSE_REQUESTED
+        ):
             return
         driver = ExecutionContinuationLifecycleDriver(
             ExecutionContinuationService(store),
@@ -170,7 +162,9 @@ class ExecutionBoundary(Generic[RequestT, ResultT]):
         store = self._resolve_continuation_state_store()
         continuation_identity: ExecutionContinuationIdentity | None = None
         if store is not None:
-            continuation_identity = require_execution_continuation_identity(self._identity)
+            continuation_identity = require_execution_continuation_identity(
+                self._identity
+            )
             assert_canonical_execution_may_progress(
                 store=store,
                 identity=continuation_identity,
