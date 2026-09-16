@@ -91,6 +91,7 @@ from intergrax.tools.invocation_wiring import (
     DelegatingToolInvocationWiringResolver,
     ToolInvocationWiringResolver,
     ToolWiringResolutionError,
+    ensure_tool_wiring_overlay,
     merge_invocation_wiring,
     registration_wiring_for_handler,
     validate_invocation_wiring,
@@ -1009,11 +1010,12 @@ class RuntimeToolInvoker:
         registered = self._registry.get(request.tool_id)
         registration_wiring = registration_wiring_for_handler(registered.handler)
         try:
-            overlay = self._invocation_wiring_resolver.resolve(
+            raw_overlay = self._invocation_wiring_resolver.resolve(
                 tool_id=request.tool_id,
                 invocation_context=invocation_context,
                 registration_wiring=registration_wiring,
             )
+            overlay = ensure_tool_wiring_overlay(raw_overlay)
         except ToolWiringResolutionError:
             raise
         except Exception as exc:

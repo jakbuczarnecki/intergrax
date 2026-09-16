@@ -25,14 +25,15 @@ from intergrax.tools.providers.harness.contracts import (
     HarnessRunSummaryOutput,
 )
 from intergrax.tools.registry.runtime_bindings import RunTraceReaderBinding
+from intergrax.tools.providers.harness.tool_ids import (
+    HARNESS_COMPARE_RUNS_TOOL_ID,
+    HARNESS_EXPORT_RUN_BUNDLE_TOOL_ID,
+    HARNESS_GET_RUN_COST_TOOL_ID,
+    HARNESS_GET_RUN_EVENTS_TOOL_ID,
+    HARNESS_GET_RUN_TOOL_ID,
+    HARNESS_LIST_RUNS_TOOL_ID,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
-
-HARNESS_GET_RUN_TOOL_ID = "harness.get_run"
-HARNESS_LIST_RUNS_TOOL_ID = "harness.list_runs"
-HARNESS_GET_RUN_COST_TOOL_ID = "harness.get_run_cost"
-HARNESS_GET_RUN_EVENTS_TOOL_ID = "harness.get_run_events"
-HARNESS_COMPARE_RUNS_TOOL_ID = "harness.compare_runs"
-HARNESS_EXPORT_RUN_BUNDLE_TOOL_ID = "harness.export_run_bundle"
 
 
 def _require_trace_reader(ctx: ToolWiringContext) -> RunTraceReaderBinding:

@@ -21,10 +21,15 @@ from intergrax.runtime.nexus.tools.runtime_bound_catalog import RUNTIME_BOUND_TO
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.core.handler import ServiceToolHandler
 from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.tools.core.handler import WiringContextToolHandler
 from intergrax.tools.invocation_wiring import (
     ToolInvocationContext,
     ToolWiringOverlay,
+    ToolWiringResolutionError,
+    ensure_tool_wiring_overlay,
     merge_invocation_wiring,
+    registration_wiring_for_handler,
 )
 from intergrax.tools.providers.invocation_requirements import REQUIRE_SHADOW_WORKSPACE
 from intergrax.tools.registry import ToolRegistry
@@ -276,7 +281,7 @@ def test_rx_t6_custom_resolver_injection_without_core_patch() -> None:
             invocation_context: ToolInvocationContext,
             registration_wiring: ToolWiringContext,
         ) -> ToolWiringOverlay:
-            return ToolWiringOverlay(run_budget={"limit": 42})
+            return ToolWiringOverlay(run_budget=RunBudget(max_tool_calls=42))
 
     merged = merge_invocation_wiring(
         ToolWiringContext(),
@@ -286,7 +291,63 @@ def test_rx_t6_custom_resolver_injection_without_core_patch() -> None:
             registration_wiring=ToolWiringContext(),
         ),
     )
-    assert merged.run_budget == {"limit": 42}
+    assert merged.run_budget is not None
+    assert merged.run_budget.max_tool_calls == 42
+
+
+def test_c1_t1_overlay_public_abi_has_no_any() -> None:
+    source = (_REPO_ROOT / "intergrax/tools/invocation_wiring.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and node.name == "ToolWiringOverlay":
+            for item in node.body:
+                if isinstance(item, ast.AnnAssign) and item.annotation is not None:
+                    ann = ast.unparse(item.annotation)
+                    assert "Any" not in ann, f"ToolWiringOverlay field uses Any: {ann}"
+
+
+def test_c1_t2_overlay_public_abi_has_no_object() -> None:
+    source = (_REPO_ROOT / "intergrax/tools/invocation_wiring.py").read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and node.name == "ToolWiringOverlay":
+            for item in node.body:
+                if isinstance(item, ast.AnnAssign) and item.annotation is not None:
+                    ann = ast.unparse(item.annotation)
+                    assert ann != "object" and "object |" not in ann
+
+
+def test_c1_t3_registration_wiring_explicit_property() -> None:
+    handler = _WorkspaceHandler(ToolWiringContext(extras={"x": "1"}))
+    assert registration_wiring_for_handler(handler).extras["x"] == "1"
+    assert isinstance(handler, WiringContextToolHandler)
+    assert handler.registration_wiring.extras["x"] == "1"
+
+
+def test_c1_t4_no_external_ctx_access_in_registration_helper() -> None:
+    source = (_REPO_ROOT / "intergrax/tools/invocation_wiring.py").read_text(encoding="utf-8")
+    assert "handler._ctx" not in source
+    assert "_ctx" not in source.split("def registration_wiring_for_handler")[1].split("def ")[0]
+
+
+def test_c1_t6_invalid_resolver_overlay_fail_closed() -> None:
+    with pytest.raises(ToolWiringResolutionError) as exc_info:
+        ensure_tool_wiring_overlay({"not": "overlay"})  # type: ignore[arg-type]
+    assert exc_info.value.code == "wiring_overlay_invalid_type"
+
+
+def test_c1_t11_runtime_bound_catalog_no_service_imports() -> None:
+    source = (_REPO_ROOT / "intergrax/runtime/nexus/tools/runtime_bound_catalog.py").read_text(
+        encoding="utf-8",
+    )
+    assert ".service" not in source
+
+
+def test_c1_t14_no_reflection_in_invocation_wiring_module() -> None:
+    source = (_REPO_ROOT / "intergrax/tools/invocation_wiring.py").read_text(encoding="utf-8")
+    forbidden = ("getattr(", "hasattr(", "setattr(", "inspect.signature")
+    for token in forbidden:
+        assert token not in source
 
 
 def test_rx_static_gate_uaep_gateway_no_sandbox_execute() -> None:

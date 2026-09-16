@@ -29,6 +29,11 @@ class WiringContextToolHandler(ABC, Generic[InModelT, OutModelT]):
     def __init__(self, ctx: ToolWiringContext) -> None:
         self._ctx = ctx
 
+    @property
+    def registration_wiring(self) -> ToolWiringContext:
+        """Immutable registration-time wiring (explicit cross-layer read seam)."""
+        return self._ctx
+
     @abstractmethod
     def execute(self, request: ToolExecutionRequest[InModelT]) -> OutModelT:
         """Run the tool; runtime owns validation, trace, and error mapping."""

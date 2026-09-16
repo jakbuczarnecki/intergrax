@@ -24,14 +24,15 @@ from intergrax.tools.providers.memory.contracts import (
     MemoryWriteOutput,
 )
 from intergrax.tools.providers.ltm.service import _require_user_profile_manager
+from intergrax.tools.providers.memory.tool_ids import (
+    MEMORY_DELETE_KEY_TOOL_ID,
+    MEMORY_LIST_KEYS_TOOL_ID,
+    MEMORY_READ_TOOL_ID,
+    MEMORY_SEARCH_TOOL_ID,
+    MEMORY_SEMANTIC_SEARCH_TOOL_ID,
+    MEMORY_WRITE_TOOL_ID,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
-
-MEMORY_READ_TOOL_ID = "memory.read"
-MEMORY_WRITE_TOOL_ID = "memory.write"
-MEMORY_LIST_KEYS_TOOL_ID = "memory.list_keys"
-MEMORY_DELETE_KEY_TOOL_ID = "memory.delete_key"
-MEMORY_SEARCH_TOOL_ID = "memory.search"
-MEMORY_SEMANTIC_SEARCH_TOOL_ID = "memory.semantic_search"
 
 
 def _require_memory_view(ctx: ToolWiringContext) -> TaskMemoryViewBinding:

@@ -21,11 +21,12 @@ from intergrax.tools.providers.cost.contracts import (
     CostGetRunBudgetInput,
     CostGetRunBudgetOutput,
 )
+from intergrax.tools.providers.cost.tool_ids import (
+    COST_CHECK_QUOTA_TOOL_ID,
+    COST_FORECAST_SPEND_TOOL_ID,
+    COST_GET_RUN_BUDGET_TOOL_ID,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
-
-COST_GET_RUN_BUDGET_TOOL_ID = "cost.get_run_budget"
-COST_CHECK_QUOTA_TOOL_ID = "cost.check_quota"
-COST_FORECAST_SPEND_TOOL_ID = "cost.forecast_spend"
 
 
 def cost_get_run_budget(ctx: ToolWiringContext, params: CostGetRunBudgetInput) -> CostGetRunBudgetOutput:

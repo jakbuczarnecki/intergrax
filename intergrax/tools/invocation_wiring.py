@@ -1,16 +1,33 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Per-invocation tool wiring contracts (TOOL-ENG-RX)."""
+"""Per-invocation tool wiring contracts (TOOL-ENG-RX / TOOL-ENG-RX-C1)."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
-from typing import Any, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
+from intergrax.runtime.architecture.cost_budget import BudgetEnvelope
+from intergrax.runtime.architecture.cost_quota import ResourceQuota
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.sandbox.contracts import SandboxExecCapable
+from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
 from intergrax.tools.invocation_wiring_requirements import ToolInvocationWiringRequirements
+from intergrax.tools.registry.runtime_bindings import RunTraceReaderBinding, TaskMemoryViewBinding
 from intergrax.tools.registry.wiring import ToolWiringContext
+
+# Wiring merge ownership (registration vs invocation overlay):
+# | Field            | Owner              | Registration | Invocation override | Required by |
+# | shadow_workspace | runtime workspace  | yes          | yes                 | contract    |
+# | memory_view      | task memory port   | yes          | yes                 | contract    |
+# | trace_reader     | trace read port    | yes          | yes                 | contract    |
+# | run_budget       | execution budget   | yes          | yes                 | contract    |
+# | cost_envelopes   | cost governance    | yes          | yes                 | cost tools  |
+# | cost_quotas      | cost governance    | yes          | yes                 | cost tools  |
+# | sandbox_session  | sandbox exec port  | yes          | yes                 | contract    |
+# | task_metadata    | invocation identity| no (extras)  | yes → extras        | legacy seam |
 
 
 class ToolWiringResolutionError(Exception):
@@ -26,13 +43,13 @@ class ToolWiringResolutionError(Exception):
 class ToolWiringOverlay:
     """Invocation-scoped wiring values; unset fields do not override registration wiring."""
 
-    shadow_workspace: Any | None = None
-    memory_view: object | None = None
-    trace_reader: object | None = None
-    run_budget: Any | None = None
-    cost_envelopes: tuple[Any, ...] | None = None
-    cost_quotas: tuple[Any, ...] | None = None
-    sandbox_session: Any | None = None
+    shadow_workspace: ShadowWorkspace | None = None
+    memory_view: TaskMemoryViewBinding | None = None
+    trace_reader: RunTraceReaderBinding | None = None
+    run_budget: RunBudget | None = None
+    cost_envelopes: tuple[BudgetEnvelope, ...] | None = None
+    cost_quotas: tuple[ResourceQuota, ...] | None = None
+    sandbox_session: SandboxExecCapable | None = None
     task_metadata: Mapping[str, str] | None = None
 
     @classmethod
@@ -80,18 +97,29 @@ class DelegatingToolInvocationWiringResolver:
         delegate = invocation_context.wiring_resolver
         if delegate is None:
             return ToolWiringOverlay.empty()
-        return delegate.resolve(
+        overlay = delegate.resolve(
             tool_id=tool_id,
             invocation_context=invocation_context,
             registration_wiring=registration_wiring,
         )
+        return ensure_tool_wiring_overlay(overlay)
+
+
+def ensure_tool_wiring_overlay(overlay: ToolWiringOverlay) -> ToolWiringOverlay:
+    """Fail closed when an external resolver returns an invalid overlay type."""
+    if not isinstance(overlay, ToolWiringOverlay):
+        raise ToolWiringResolutionError(
+            "wiring_overlay_invalid_type",
+            "tool invocation wiring resolver must return ToolWiringOverlay",
+        )
+    return overlay
 
 
 def registration_wiring_for_handler(handler: object) -> ToolWiringContext:
     from intergrax.tools.core.handler import WiringContextToolHandler
 
     if isinstance(handler, WiringContextToolHandler):
-        return handler._ctx
+        return handler.registration_wiring
     return ToolWiringContext()
 
 
@@ -100,28 +128,26 @@ def merge_invocation_wiring(
     overlay: ToolWiringOverlay,
 ) -> ToolWiringContext:
     """Deterministic merge: invocation-scoped overlay fields override registration when set."""
-    updates: dict[str, Any] = {}
+    effective = registration
     if overlay.shadow_workspace is not None:
-        updates["shadow_workspace"] = overlay.shadow_workspace
+        effective = replace(effective, shadow_workspace=overlay.shadow_workspace)
     if overlay.memory_view is not None:
-        updates["memory_view"] = overlay.memory_view
+        effective = replace(effective, memory_view=overlay.memory_view)
     if overlay.trace_reader is not None:
-        updates["trace_reader"] = overlay.trace_reader
+        effective = replace(effective, trace_reader=overlay.trace_reader)
     if overlay.run_budget is not None:
-        updates["run_budget"] = overlay.run_budget
+        effective = replace(effective, run_budget=overlay.run_budget)
     if overlay.cost_envelopes is not None:
-        updates["cost_envelopes"] = overlay.cost_envelopes
+        effective = replace(effective, cost_envelopes=overlay.cost_envelopes)
     if overlay.cost_quotas is not None:
-        updates["cost_quotas"] = overlay.cost_quotas
+        effective = replace(effective, cost_quotas=overlay.cost_quotas)
     if overlay.sandbox_session is not None:
-        updates["sandbox_session"] = overlay.sandbox_session
+        effective = replace(effective, sandbox_session=overlay.sandbox_session)
     if overlay.task_metadata is not None:
         merged_extras = dict(registration.extras)
         merged_extras["task_metadata"] = dict(overlay.task_metadata)
-        updates["extras"] = merged_extras
-    if not updates:
-        return registration
-    return replace(registration, **updates)
+        effective = replace(effective, extras=merged_extras)
+    return effective
 
 
 def validate_invocation_wiring(

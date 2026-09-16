@@ -26,16 +26,17 @@ from intergrax.tools.providers.workspace.contracts import (
     WorkspaceSnapshotOutput,
     WorkspaceWriteFileInput,
 )
+from intergrax.tools.providers.workspace.tool_ids import (
+    WORKSPACE_DELETE_FILE_TOOL_ID,
+    WORKSPACE_EXPORT_ARTIFACT_TOOL_ID,
+    WORKSPACE_IMPORT_ARTIFACT_TOOL_ID,
+    WORKSPACE_LIST_FILES_TOOL_ID,
+    WORKSPACE_READ_FILE_TOOL_ID,
+    WORKSPACE_SEARCH_TOOL_ID,
+    WORKSPACE_SNAPSHOT_TOOL_ID,
+    WORKSPACE_WRITE_FILE_TOOL_ID,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
-
-WORKSPACE_WRITE_FILE_TOOL_ID = "workspace.write_file"
-WORKSPACE_READ_FILE_TOOL_ID = "workspace.read_file"
-WORKSPACE_LIST_FILES_TOOL_ID = "workspace.list_files"
-WORKSPACE_SNAPSHOT_TOOL_ID = "workspace.snapshot"
-WORKSPACE_DELETE_FILE_TOOL_ID = "workspace.delete_file"
-WORKSPACE_SEARCH_TOOL_ID = "workspace.search"
-WORKSPACE_EXPORT_ARTIFACT_TOOL_ID = "workspace.export_artifact"
-WORKSPACE_IMPORT_ARTIFACT_TOOL_ID = "workspace.import_artifact"
 
 
 def _require_workspace(ctx: ToolWiringContext) -> ShadowWorkspace:

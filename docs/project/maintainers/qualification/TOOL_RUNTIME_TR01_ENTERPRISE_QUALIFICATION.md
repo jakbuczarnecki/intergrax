@@ -109,7 +109,7 @@ Catalog path `intergrax/tools/providers/sandbox/service.py` (`sandbox_exec`) use
 
 ## TOOL-ENG-RX (implementation evidence)
 
-**Status:** CLOSED on branch `development` (awaiting independent GitHub audit; TR-01 not closed).
+**Status:** CLOSED on branch `development` after TOOL-ENG-RX-C1 (awaiting independent GitHub audit; TR-01 not closed).
 
 - **Contract:** `ToolInvocationWiringResolver`, `ToolInvocationContext`, `ToolWiringOverlay`, `ToolInvocationWiringRequirements` (`intergrax/tools/invocation_wiring.py`, `invocation_wiring_requirements.py`).
 - **Resolution site:** `RuntimeToolInvoker._apply_invocation_wiring` (invoker-owned; read-only; no tool-id branching).
@@ -117,6 +117,16 @@ Catalog path `intergrax/tools/providers/sandbox/service.py` (`sandbox_exec`) use
 - **Bypass removal:** `uaep_tool_gateway` no longer calls `session.execute` or `invoke_runtime_bound_tool`; `runtime_bound_catalog` is ID metadata only.
 - **Static gates:** `tests/unit/runtime/tools/test_tool_eng_rx_invocation_wiring.py` (RX-T1–T4, T6, static bypass gates).
 - **TR-01-RQ:** required before TR-01 closeout.
+
+## TOOL-ENG-RX-C1 — Typed wiring ABI and encapsulation
+
+**Status:** CLOSED on branch `development` (awaiting independent GitHub audit).
+
+- **Typed `ToolWiringOverlay`:** explicit platform contracts (`ShadowWorkspace`, `TaskMemoryViewBinding`, `RunTraceReaderBinding`, `RunBudget`, `BudgetEnvelope`, `ResourceQuota`, `SandboxExecCapable`); no `Any` / `object` on public overlay fields.
+- **Registration wiring seam:** `WiringContextToolHandler.registration_wiring` (read-only); `registration_wiring_for_handler` does not read `handler._ctx`.
+- **Resolver trust:** `ensure_tool_wiring_overlay` fail-closed at invoker boundary.
+- **Provider-neutral runtime-bound IDs:** `runtime_bound_catalog` imports `tool_ids` modules only (no `*.service` imports).
+- **Tests:** C1-T1–T4, T6, T11, T14 in `test_tool_eng_rx_invocation_wiring.py` plus existing RX gates.
 
 ## Tests executed (audit session)
 
