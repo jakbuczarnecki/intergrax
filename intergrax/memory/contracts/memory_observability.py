@@ -61,6 +61,7 @@ class MemoryDiagnosticOperation(str, Enum):
     RECONCILE = "reconcile"
     LINEAGE_TRAVERSE = "lineage_traverse"
     SOURCE_RESOLVE = "source_resolve"
+    PROVIDER_QUALIFICATION = "provider_qualification"
 
 
 class MemoryDiagnosticOutcome(str, Enum):
