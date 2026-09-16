@@ -17,8 +17,12 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.hooks.hook_point import HookPoint
-from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
+from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+    InternalOrchestrationContinuation,
+    canonical_allows_planning_progress_after_human_gate,
+    execution_continuation_identity_for_task,
+)
 from intergrax.runtime.nexus.orchestration.planning_coordination_advisory import (
     build_coordination_advisory_event,
 )
@@ -66,6 +70,7 @@ class NexusPlanningRunner:
     denied_planner_model_ids: tuple[str, ...] = ()
     planner_model_id: str | None = None
     execution_identity: ActiveExecutionIdentity | None = None
+    hitl_continuation: InternalOrchestrationContinuation | None = None
 
     async def run(
         self,
@@ -313,7 +318,19 @@ class NexusPlanningRunner:
             return PlanningPhaseOutcome(early_result=hook_failure)
 
         if classification == TaskClassification.HUMAN_APPROVAL_REQUIRED.value:
-            if not HumanPauseCoordinator.is_resumed(task):
+            run_id_gate, attempt_id_gate = self.execution_identity.require()
+            execution_id_gate = self.execution_identity.require_execution_id()
+            continuation_identity = execution_continuation_identity_for_task(
+                task,
+                run_id=run_id_gate,
+                attempt_id=attempt_id_gate,
+                execution_id=execution_id_gate,
+            )
+            if not canonical_allows_planning_progress_after_human_gate(
+                self.hitl_continuation,
+                identity=continuation_identity,
+                human_approval_required=True,
+            ):
                 hook_failure = await self.hitl.run_before_human_pause(
                     task, trace_emitter, lifecycle
                 )

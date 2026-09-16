@@ -144,6 +144,16 @@ from intergrax.runtime.execution.execution_terminal.persistence import (
     terminal_reason_for_task_state,
     validate_terminal_run_id_consistency,
 )
+from intergrax.contracts.execution_continuation import ExecutionContinuationPort
+from intergrax.runtime.execution.continuation.composition import (
+    wire_execution_engine_continuation_dependencies,
+)
+from intergrax.runtime.execution.continuation.lifecycle_driver import (
+    ExecutionContinuationLifecycleDriver,
+)
+from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+    InternalOrchestrationContinuation,
+)
 from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
     TerminalExecutionDiagnosticPort,
     TerminalExecutionDiagnosticRequest,
@@ -226,6 +236,9 @@ class NexusLoop:
         attempt_lifecycle: AttemptLifecycleService | None = None,
         execution_terminal: ExecutionTerminalService | None = None,
         execution_lineage_persistence: "ExecutionLineagePersistence | None" = None,
+        execution_continuation: ExecutionContinuationPort | None = None,
+        continuation_lifecycle_driver: ExecutionContinuationLifecycleDriver | None = None,
+        disable_execution_continuation: bool = False,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -370,6 +383,23 @@ class NexusLoop:
             trace_reader=trace_reader,
             runtime_event_store=self._runtime_event_store,
         )
+        if disable_execution_continuation:
+            self._hitl_continuation: InternalOrchestrationContinuation | None = None
+        elif execution_continuation is not None and continuation_lifecycle_driver is not None:
+            self._hitl_continuation = InternalOrchestrationContinuation(
+                port=execution_continuation,
+                lifecycle_driver=continuation_lifecycle_driver,
+            )
+        elif execution_continuation is not None or continuation_lifecycle_driver is not None:
+            raise ValueError(
+                "execution_continuation and continuation_lifecycle_driver must be wired together",
+            )
+        else:
+            _continuation_deps = wire_execution_engine_continuation_dependencies()
+            self._hitl_continuation = InternalOrchestrationContinuation(
+                port=_continuation_deps.continuation,
+                lifecycle_driver=_continuation_deps.lifecycle_driver,
+            )
         self._hitl = NexusHitlRunner(
             publish=self._publish_runtime_event,
             human_hooks=self._human_hooks,
@@ -398,6 +428,7 @@ class NexusLoop:
             max_run_retries=max_run_retries,
             production_mode=production_mode,
             decision_flow_gate=decision_flow_gate,
+            hitl_continuation=self._hitl_continuation,
         )
         self._intake_runner = NexusIntakeRunner(
             hitl=self._hitl,
@@ -405,6 +436,7 @@ class NexusLoop:
             publish=self._publish_runtime_event,
             restore_long_running=self._maybe_restore_long_running,
             execution_identity=self._execution_identity,
+            hitl_continuation=self._hitl_continuation,
         )
         self._planning_runner = NexusPlanningRunner(
             classifier=self._classifier,
@@ -419,6 +451,7 @@ class NexusLoop:
             denied_planner_model_ids=denied_planner_model_ids,
             planner_model_id=planner_model_id,
             execution_identity=self._execution_identity,
+            hitl_continuation=self._hitl_continuation,
         )
         self._hold_persisted_trace_finalize = False
         self._pending_deferred_persisted_trace_finalize = None

@@ -10,9 +10,10 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from intergrax.contracts.agent_decision import AgentDecision, HumanRequest
+from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
+from intergrax.contracts.execution_continuation import ExecutionContinuationIdentity
 from intergrax.contracts.governed_continuation import (
     ContinuationReason,
     GovernedContinuationRequest,
@@ -21,8 +22,12 @@ from intergrax.contracts.governed_continuation import (
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.human.models import HumanResponseVerdict
-from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.interrupts.handler import GovernanceResolution
+from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+    InternalOrchestrationContinuation,
+    establish_canonical_hitl_pause,
+    require_internal_hitl_continuation,
+)
 from intergrax.runtime.task.task import Task
 
 __all__ = [
@@ -139,7 +144,32 @@ def bridge_governed_continuation_to_execution_result(
 def apply_governed_continuation_pause(
     task: Task,
     request: GovernedContinuationRequest,
+    *,
+    hitl_continuation: InternalOrchestrationContinuation | None = None,
 ) -> Task:
-    """Legacy Task pause projection — canonical WAITING requires ExecutionContinuationPort."""
-    execution = bridge_governed_continuation_to_execution_result(request)
-    return HumanPauseCoordinator.apply_pause(task, execution)
+    """Establish canonical WAITING_FOR_HUMAN and project onto Task/Human view."""
+    capability = require_internal_hitl_continuation(hitl_continuation)
+    resolution = bridge_governed_continuation_to_governance(request)
+    human_request = resolution.human_request
+    assert human_request is not None
+    identity = ExecutionContinuationIdentity(
+        task_id=request.task_id,
+        run_id=request.run_id,
+        attempt_id=request.attempt_id,
+        execution_id=request.execution_id,
+    )
+    pause_id = f"pause_{human_request.request_id}"
+    establish_canonical_hitl_pause(
+        task,
+        identity=identity,
+        continuation_id=request.continuation_request_id,
+        reason=request.reason,
+        pause_id=pause_id,
+        human_request_id=human_request.request_id,
+        capability=capability,
+        governed_correlation=request.to_correlation(),
+        human_prompt=human_request.prompt,
+        execution_interrupt=resolution.interrupt,
+    )
+    task.sync_metadata()
+    return task
