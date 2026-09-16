@@ -426,3 +426,18 @@ REJECTED: Monolithic implementation plan files under plan/phases/
 4. **One** domain pair for your task ([`AGENTS.md`](../../../../AGENTS.md) task routing)
 5. Author guides when building: [`AGENT_AUTHOR_MINIMAL_PATH.md`](AGENT_AUTHOR_MINIMAL_PATH.md) · [`TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md`](TIER3_PRODUCT_HYPOTHESIS_CONTRACT.md) · [`AGENT_CREATION_GUIDE.md`](AGENT_CREATION_GUIDE.md) · [`APPLICATION_CREATION_GUIDE.md`](APPLICATION_CREATION_GUIDE.md)
 6. Deep layer closeout (full domain): [`LAYER_COMPLETION_MODE.md`](LAYER_COMPLETION_MODE.md)
+
+## 7.1 Runtime Invariant Service (RI-01) mapping
+
+Documented `SYS-INV-*` rows remain the semantic authority. RI-01 adds a **typed evaluation runner** (intergrax/contracts/runtime_invariants.py, `intergrax/runtime/invariants/`) that executes **domain-owned rule packs** without redefining catalog IDs.
+
+| RI domain pack | Example rule IDs | `SYS-INV-*` relationship |
+| --- | --- | --- |
+| Execution | `EE-INV-001` … `EE-INV-003` | Representative runtime probes aligned with execution identity / lifecycle canon (see execution architecture + UE gates) |
+| Delegated provider | `DELEGATION-INV-001` … `DELEGATION-INV-004` | P2.1 read-only probes; does not replace delegated qualification suites |
+| Governance | `GOV-INV-001` | Inner four-ID binding semantics consistent with GR-3 contracts |
+
+New runtime rules MUST use globally unambiguous IDs (domain prefix). Do not duplicate a `SYS-INV-*` identifier for a different meaning.
+
+Qualification: `docs/project/maintainers/qualification/RUNTIME_INVARIANT_SERVICE_RI01_QUALIFICATION.md`.
+

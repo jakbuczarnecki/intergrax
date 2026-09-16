@@ -173,7 +173,7 @@ Planning aid only — domain architecture documents remain authoritative.
 | authorization | Governance |
 | diagnostic interpretation | Diagnostics |
 | canonical execution evidence | Execution / Observability spine (`RuntimeEvent`, HOS) |
-| runtime invariant evaluation | **GAP** — no shared invariant runner catalog (Initiative N) |
+| runtime invariant evaluation | **CURRENT (RI-01)** — shared typed runner + domain rule packs (`intergrax/runtime/invariants/`) |
 | provider dispatch (delegation) | `DelegatedExecutionProvider` contract under frozen Execution boundary |
 
 ---
@@ -754,9 +754,11 @@ Compaction never deletes audit/evidence merely to reduce model tokens.
 
 Rules remain domain-owned; execution is shared.
 
-**As-built:** Diagnostics runs deterministic checks over canonical evidence, but there is **no** shared `Runtime Invariant Service` catalog/runner in production (`intergrax/` — **GAP**). Strong Diagnostics maturity does **not** close Initiative N.
+**As-built (RI-01 CLOSED):** Shared `RuntimeInvariantService` + typed contracts (`intergrax/contracts/runtime_invariants.py`) execute domain-owned rule packs with deterministic reports. Diagnostics remains a separate consumer plane — it may project RI reports but does not own invariant meaning.
 
-Build a central runner/catalog able to execute domain-provided invariant checks in runtime, diagnostics, and CI.
+Qualification: [`RUNTIME_INVARIANT_SERVICE_RI01_QUALIFICATION.md`](../maintainers/qualification/RUNTIME_INVARIANT_SERVICE_RI01_QUALIFICATION.md).
+
+Further work: broader invariant catalog adoption, diagnostics/CI consumers, and domain pack expansion — not a second runner.
 
 Each invariant has:
 
@@ -1860,6 +1862,6 @@ The program is complete only when all applicable statements are proven against t
 
 **Harness top-tier gap audit (2026-09-16) is complete.** See [`HARNESS_TOP_TIER_GAP_AUDIT.md`](../maintainers/qualification/HARNESS_TOP_TIER_GAP_AUDIT.md).
 
-**Next recommended implementation workstream:** **TR-01 — ToolRuntime enterprise closure** (single governed tool invocation spine; sandbox/catalog/runtime-bound parity; qualification suite). Run **RI-01 — Runtime Invariant Service foundation** in parallel when capacity allows.
+**Next recommended implementation workstream:** **TR-01 — ToolRuntime enterprise closure** (single governed tool invocation spine; sandbox/catalog/runtime-bound parity; qualification suite). **RI-01 — Runtime Invariant Service foundation** is **CLOSED** (foundation + three domain packs + qualification tests).
 
 P0A/P0B/P0C items remain valid for consumer adoption and durability convergence; do not reimplement frozen Execution Engine or P2.1 delegated provider plane.
