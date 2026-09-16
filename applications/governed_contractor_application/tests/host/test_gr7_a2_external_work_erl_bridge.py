@@ -289,6 +289,9 @@ def test_unknown_admits_uncertainty_case() -> None:
         idempotency_key=_UNCERTAIN_IDEMP,
     )
     assert fake.create_calls == 1
+    assert step.state is GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN
+    assert step.state is not GovernedExternalWorkHostState.EXECUTION_FAILED
+    assert step.governed_result is None
     assert step.external_effect_outcome is ExternalEffectOutcome.UNKNOWN
     admission = step.reliability_admission
     assert admission is not None

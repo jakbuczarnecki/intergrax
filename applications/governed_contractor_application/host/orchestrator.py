@@ -78,6 +78,7 @@ from governed_contractor_application.host.provider_invocation_lifecycle import (
 )
 from governed_contractor_application.host.lifecycle_states import (
     GovernedExternalWorkHostState,
+    map_provider_invocation_outcome_status_to_host_state,
     map_provider_status_to_host_state,
 )
 from governed_contractor_application.host.stores import (
@@ -499,7 +500,10 @@ class GovernedExternalWorkOrchestrator:
         if result is None:
             raise ValueError(f"execution_result_missing:{execution_id}")
         state = self._execution_store.get_state(execution_id)
-        if state is GovernedExternalWorkHostState.EXECUTION_FAILED:
+        if state in {
+            GovernedExternalWorkHostState.EXECUTION_FAILED,
+            GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN,
+        }:
             raise ValueError("cannot_attest_failed_execution")
         # Prefer persisted event bytes for deterministic retry.
         event: ExecutionBoundaryEvent | None = None
@@ -600,6 +604,29 @@ class GovernedExternalWorkOrchestrator:
         )
         if outcome_persist_failure is not None:
             return outcome_persist_failure
+        unresolved = self._unresolved_provider_outcome_host_state(adapter_result)
+        if unresolved is GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN:
+            reliability = self._admit_reliability_if_configured(
+                adapter_result=adapter_result,
+                invocation=invocation,
+                execution_id=execution_id,
+                action=action,
+                policy_denied=False,
+            )
+            self._execution_store.put_state(execution_id, unresolved)
+            return OrchestratorStepResult(
+                state=unresolved,
+                execution_id=execution_id,
+                adapter_result=adapter_result,
+                governed_result=None,
+                attestation=None,
+                receipt=None,
+                reason=adapter_result.reason or "execution_outcome_unknown",
+                external_effect_outcome=(
+                    reliability.effect_outcome if reliability is not None else None
+                ),
+                reliability_admission=reliability,
+            )
         if _adapter_result_is_governance_policy_denial(adapter_result):
             self._execution_store.put_state(execution_id, deny_state)
             return OrchestratorStepResult(
@@ -797,6 +824,22 @@ class GovernedExternalWorkOrchestrator:
             ),
             reliability_admission=reliability,
         )
+
+    def _unresolved_provider_outcome_host_state(
+        self,
+        adapter_result: ExternalWorkAdapterResult,
+    ) -> GovernedExternalWorkHostState | None:
+        attempted = external_work_provider_mutation_attempted(
+            adapter_result,
+            policy_denied=False,
+        )
+        status = classify_provider_invocation_status(
+            adapter_result=adapter_result,
+            provider_mutation_attempted=attempted,
+        )
+        if status is None:
+            return None
+        return map_provider_invocation_outcome_status_to_host_state(status)
 
     def _persist_observed_provider_outcome(
         self,

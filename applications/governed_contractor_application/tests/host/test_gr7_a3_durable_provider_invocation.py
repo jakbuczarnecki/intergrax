@@ -193,6 +193,7 @@ def test_outcome_persistence_failure_single_provider_call() -> None:
     )
     assert fake.create_calls == 1
     assert step.reason == "provider_invocation_outcome_persistence_failed"
+    assert step.state is GovernedExternalWorkHostState.EXECUTION_FAILED
     assert step.governed_result is None
     assert len(store.invocations) == 1
     assert store.outcomes == {}
@@ -215,6 +216,7 @@ def test_failure_outcome_persisted_no_ger() -> None:
         idempotency_key=_FAIL_IDEMP,
     )
     assert step.governed_result is None
+    assert step.state is GovernedExternalWorkHostState.EXECUTION_FAILED
     assert step.external_effect_outcome is ExternalEffectOutcome.FAILURE
     inv_id = next(iter(store._invocations))  # noqa: SLF001
     assert store.get_outcome(inv_id).status is ProviderInvocationStatus.FAILED
@@ -240,6 +242,8 @@ def test_unknown_outcome_persisted() -> None:
     )
     inv_id = next(iter(store._invocations))  # noqa: SLF001
     assert store.get_outcome(inv_id).status is ProviderInvocationStatus.UNKNOWN
+    assert step.state is GovernedExternalWorkHostState.EXECUTION_OUTCOME_UNKNOWN
+    assert step.governed_result is None
     assert step.external_effect_outcome is ExternalEffectOutcome.UNKNOWN
 
 
