@@ -5,27 +5,25 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Sequence
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from typing import Any
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.contracts.session_turn_index import (
+    SessionTurnIndexEmbeddingPort,
     SessionTurnIndexHit,
+    SessionTurnIndexMetadataFilter,
     SessionTurnIndexStore,
+    SessionTurnIndexVectorScope,
+    SessionTurnIndexVectorUpsertRecord,
+    SessionTurnIndexVectorstorePort,
 )
 from intergrax.memory.memory_vector_namespace import (
     EPISODIC_INDEX_DOMAIN,
-    LTM_INDEX_DOMAIN,
     resolve_memory_index_collection,
 )
-from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
-from intergrax.knowledge.contracts import KnowledgeDocument
-from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.memory.memory_vector_errors import MemoryTenantScopeViolationError
-from intergrax.rag.vectorstore.contracts.native_vectorstore import (
-    MetadataFilter,
-    VectorStoreRecord,
-    VectorStoreScope,
-)
 
 
 def _sanitize_metadata(meta: dict[str, Any]) -> dict[str, Any]:
@@ -42,21 +40,53 @@ def _sanitize_metadata(meta: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
+def _metadata_for_port(meta: dict[str, Any]) -> dict[str, str | int | float]:
+    out: dict[str, str | int | float] = {}
+    for key, value in meta.items():
+        if isinstance(value, bool):
+            out[key] = int(value)
+        elif isinstance(value, (str, int, float)):
+            out[key] = value
+        else:
+            out[key] = str(value)
+    return out
+
+
+@dataclass(frozen=True, slots=True)
+class _BoundVectorScope:
+    tenant_id: str
+    namespace: str | None
+    workspace_id: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class _TurnMetadataFilter:
+    conditions: Mapping[str, str | int | float]
+
+
+@dataclass(frozen=True, slots=True)
+class _TurnUpsertRecord:
+    vector_id: str
+    document_content: str
+    document_metadata: Mapping[str, str | int | float]
+    embedding: Sequence[float]
+
+
 class VectorSessionTurnIndexStore(SessionTurnIndexStore):
     """Vectorstore-backed episodic index with ``index_domain=episodic`` metadata."""
 
     def __init__(
         self,
         *,
-        embedding_manager: BaseEmbeddingManager,
-        vectorstore_manager: BaseVectorstoreManager,
+        embedding_port: SessionTurnIndexEmbeddingPort,
+        vectorstore_port: SessionTurnIndexVectorstorePort,
         index_roles: Sequence[str] = ("user", "assistant"),
         tenant_id: str = "default",
         vector_index_namespace: str | None = None,
         workspace_id: str | None = None,
     ) -> None:
-        self._embedding_manager = embedding_manager
-        self._vectorstore_manager = vectorstore_manager
+        self._embedding_port = embedding_port
+        self._vectorstore_port = vectorstore_port
         self._index_roles = tuple(index_roles)
         self._tenant_id = tenant_id
         self._vector_index_namespace = vector_index_namespace
@@ -85,45 +115,28 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         if not text:
             return
         scope = self._bound_scope(tenant_id=tenant_id)
-        meta = _sanitize_metadata(
-            {
-                "session_id": session_id,
-                "user_id": user_id or "",
-                "entry_id": message.entry_id,
-                "role": message.role,
-                "deleted": 0,
-                "index_domain": EPISODIC_INDEX_DOMAIN,
-                "collection_name": self._collection_name,
-            }
+        meta = _metadata_for_port(
+            _sanitize_metadata(
+                {
+                    "session_id": session_id,
+                    "user_id": user_id or "",
+                    "entry_id": message.entry_id,
+                    "role": message.role,
+                    "deleted": 0,
+                    "index_domain": EPISODIC_INDEX_DOMAIN,
+                    "collection_name": self._collection_name,
+                }
+            )
         )
-        doc = KnowledgeDocument.model_validate(
-            {
-                "schema_version": 1,
-                "identity": {
-                    "document_id": message.entry_id,
-                    "root_document_id": message.entry_id,
-                },
-                "scope": {
-                    "tenant_id": scope.tenant_id,
-                    "namespace": scope.namespace,
-                    "workspace_id": scope.workspace_id,
-                },
-                "content": text,
-                "metadata": meta,
-                "provenance": {
-                    "source_kind": "conversation_turn",
-                    "source_id": message.entry_id,
-                    "source_parent_id": session_id,
-                },
-            }
-        )
-        embeddings = self._embedding_manager.embed_texts([text])
-        self._vectorstore_manager.add_records(
+        embeddings = self._embedding_port.embed_texts([text])
+        embedding = tuple(float(x) for x in embeddings[0])
+        self._vectorstore_port.add_records(
             [
-                VectorStoreRecord(
-                    document=doc,
-                    embedding=embeddings[0],
+                _TurnUpsertRecord(
                     vector_id=message.entry_id,
+                    document_content=text,
+                    document_metadata=meta,
+                    embedding=embedding,
                 )
             ],
             scope=scope,
@@ -138,9 +151,9 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
             )
         return self._tenant_id
 
-    def _bound_scope(self, *, tenant_id: str) -> VectorStoreScope:
+    def _bound_scope(self, *, tenant_id: str) -> SessionTurnIndexVectorScope:
         bound_tenant = self._resolve_bound_tenant(tenant_id)
-        return VectorStoreScope(
+        return _BoundVectorScope(
             tenant_id=bound_tenant,
             namespace=self._vector_index_namespace,
             workspace_id=self._workspace_id,
@@ -149,7 +162,7 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
     async def tombstone_turn(self, entry_id: str) -> None:
         if not entry_id:
             return
-        self._vectorstore_manager.delete(
+        self._vectorstore_port.delete(
             [entry_id],
             scope=self._bound_scope(tenant_id=self._tenant_id),
         )
@@ -169,7 +182,7 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         if not q:
             return []
         scope = self._bound_scope(tenant_id=tenant_id)
-        where: dict[str, Any] = {
+        where: dict[str, str | int | float] = {
             "deleted": 0,
             "index_domain": EPISODIC_INDEX_DOMAIN,
             "collection_name": self._collection_name,
@@ -179,13 +192,13 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         elif include_cross_session and user_id:
             where["user_id"] = user_id
 
-        q_emb = self._embedding_manager.embed_texts([q])
-        embedding = q_emb[0].tolist() if hasattr(q_emb[0], "tolist") else list(q_emb[0])
-        raw_hits = self._vectorstore_manager.query(
+        q_emb = self._embedding_port.embed_texts([q])
+        embedding = tuple(float(x) for x in q_emb[0])
+        raw_hits = self._vectorstore_port.query(
             embedding,
             scope=scope,
             top_k=top_k,
-            metadata_filter=MetadataFilter(conditions=where),
+            metadata_filter=_TurnMetadataFilter(conditions=where),
         )
 
         hits: list[SessionTurnIndexHit] = []
@@ -193,9 +206,8 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
             score = float(hit.similarity_score)
             if score_threshold is not None and score < score_threshold:
                 continue
-            document = hit.document
-            meta = dict(document.metadata)
-            entry_id = document.identity.document_id
+            meta = dict(hit.document_metadata)
+            entry_id = hit.document_id
             session_id_value = str(meta.get("session_id") or "")
             user_id_value = str(meta.get("user_id") or "") or None
             role = str(meta.get("role") or "user")
@@ -207,7 +219,7 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
                     user_id=user_id_value,
                     message=ChatMessage(
                         role=role,
-                        content=document.content,
+                        content=hit.document_content,
                         entry_id=entry_id,
                     ),
                     score=score,

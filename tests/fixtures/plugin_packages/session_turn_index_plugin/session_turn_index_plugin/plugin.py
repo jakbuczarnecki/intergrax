@@ -19,8 +19,8 @@ class ExternalSessionTurnIndexStorePlugin:
         if context.embedding_manager is None or context.vectorstore_manager is None:
             raise ValueError("embedding_manager and vectorstore_manager are required")
         return VectorSessionTurnIndexStore(
-            embedding_manager=context.embedding_manager,
-            vectorstore_manager=context.vectorstore_manager,
+            embedding_port=context.embedding_manager,
+            vectorstore_port=context.vectorstore_manager,
             index_roles=context.index_roles,
             tenant_id=context.tenant_id,
             vector_index_namespace=context.vector_index_namespace,

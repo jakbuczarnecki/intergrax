@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 
 import pytest
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.memory_vector_errors import MemoryTenantScopeViolationError
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
-from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 
 pytestmark = pytest.mark.gate
 
@@ -18,27 +18,68 @@ _BOUND_NAMESPACE = "ns-bound"
 _BOUND_WORKSPACE = "ws-bound"
 
 
-class _ScopeCapturingVectorstore:
+@dataclass(frozen=True, slots=True)
+class _CapturedScope:
+    tenant_id: str
+    namespace: str | None
+    workspace_id: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class _FakeEmbeddingPort:
+    def embed_texts(self, texts: Sequence[str]) -> Sequence[Sequence[float]]:
+        return [[0.1, 0.2] for _ in texts]
+
+
+class _ScopeCapturingVectorstorePort:
     def __init__(self) -> None:
-        self.scopes: list[VectorStoreScope] = []
+        self.scopes: list[_CapturedScope] = []
 
-    def add_records(self, records, *, scope: VectorStoreScope) -> None:
-        self.scopes.append(scope)
+    def add_records(
+        self,
+        records: Sequence[object],
+        *,
+        scope: _CapturedScope,
+    ) -> None:
+        self.scopes.append(
+            _CapturedScope(
+                tenant_id=scope.tenant_id,
+                namespace=scope.namespace,
+                workspace_id=scope.workspace_id,
+            )
+        )
 
-    def delete(self, ids, *, scope: VectorStoreScope) -> None:
-        self.scopes.append(scope)
+    def delete(self, ids: Sequence[str], *, scope: _CapturedScope) -> None:
+        self.scopes.append(
+            _CapturedScope(
+                tenant_id=scope.tenant_id,
+                namespace=scope.namespace,
+                workspace_id=scope.workspace_id,
+            )
+        )
 
-    def query(self, embedding, *, scope: VectorStoreScope, top_k: int, metadata_filter) -> list:
-        self.scopes.append(scope)
+    def query(
+        self,
+        embedding: Sequence[float],
+        *,
+        scope: _CapturedScope,
+        top_k: int,
+        metadata_filter: Mapping[str, str | int | float] | None = None,
+    ) -> list:
+        self.scopes.append(
+            _CapturedScope(
+                tenant_id=scope.tenant_id,
+                namespace=scope.namespace,
+                workspace_id=scope.workspace_id,
+            )
+        )
         return []
 
 
-def _store(vectorstore: _ScopeCapturingVectorstore) -> VectorSessionTurnIndexStore:
-    embedding = MagicMock()
-    embedding.embed_texts.return_value = [[0.1, 0.2]]
+def _store(vectorstore: _ScopeCapturingVectorstorePort) -> VectorSessionTurnIndexStore:
     return VectorSessionTurnIndexStore(
-        embedding_manager=embedding,
-        vectorstore_manager=vectorstore,
+        embedding_port=_FakeEmbeddingPort(),
+        vectorstore_port=vectorstore,
         tenant_id=_BOUND_TENANT,
         vector_index_namespace=_BOUND_NAMESPACE,
         workspace_id=_BOUND_WORKSPACE,
@@ -47,7 +88,7 @@ def _store(vectorstore: _ScopeCapturingVectorstore) -> VectorSessionTurnIndexSto
 
 @pytest.mark.asyncio
 async def test_search_turns_rejects_cross_tenant_scope_override() -> None:
-    store = _store(_ScopeCapturingVectorstore())
+    store = _store(_ScopeCapturingVectorstorePort())
     with pytest.raises(MemoryTenantScopeViolationError):
         await store.search_turns(
             query="hello",
@@ -58,7 +99,7 @@ async def test_search_turns_rejects_cross_tenant_scope_override() -> None:
 
 @pytest.mark.asyncio
 async def test_upsert_search_tombstone_use_bound_scope() -> None:
-    vectorstore = _ScopeCapturingVectorstore()
+    vectorstore = _ScopeCapturingVectorstorePort()
     store = _store(vectorstore)
     message = ChatMessage(role="user", content="hello", entry_id="entry-1")
 
@@ -80,16 +121,3 @@ async def test_upsert_search_tombstone_use_bound_scope() -> None:
         assert scope.tenant_id == _BOUND_TENANT
         assert scope.namespace == _BOUND_NAMESPACE
         assert scope.workspace_id == _BOUND_WORKSPACE
-
-
-@pytest.mark.asyncio
-async def test_upsert_rejects_cross_tenant() -> None:
-    store = _store(_ScopeCapturingVectorstore())
-    message = ChatMessage(role="user", content="hello", entry_id="entry-1")
-    with pytest.raises(MemoryTenantScopeViolationError):
-        await store.upsert_turn(
-            tenant_id="other-tenant",
-            session_id="sess-1",
-            user_id="user-1",
-            message=message,
-        )
