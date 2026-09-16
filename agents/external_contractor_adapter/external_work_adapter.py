@@ -954,6 +954,8 @@ class ExternalWorkAdapter:
                     source_agent_id="external_contractor_adapter",
                     on_authorization=_capture_authorization,
                 )
+        except ExternalWorkError:
+            raise
         except Exception as exc:  # noqa: BLE001 — fail closed on authorization faults
             return ExternalWorkAdapterResult(
                 used=False,

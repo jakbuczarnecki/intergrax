@@ -13,6 +13,9 @@ from governed_contractor_application.host.collaborative_work_boundary import (
     build_external_work_authorization_boundary,
     default_external_work_decision_requirement_policy,
 )
+from governed_contractor_application.host.external_work_enterprise_reliability_bridge import (
+    GovernedExternalWorkEnterpriseReliabilityBridge,
+)
 from governed_contractor_application.host.orchestrator import GovernedExternalWorkOrchestrator
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.host.stores import (
@@ -108,6 +111,7 @@ def build_governed_external_work_production_runtime(
     continuation_store: ContinuationStateStore,
     attestor: HostAttestor | None = None,
     clock: Callable[[], datetime] | None = None,
+    reliability_bridge: GovernedExternalWorkEnterpriseReliabilityBridge | None = None,
 ) -> GovernedExternalWorkProductionRuntime:
     """Construct orchestrator + adapter wired through canonical governance boundary."""
     bundle = policy_bundle
@@ -142,6 +146,10 @@ def build_governed_external_work_production_runtime(
         bundle_store=bundle_store,
         continuation_store=continuation_store,
         clock=clock,
+        reliability_bridge=(
+            reliability_bridge
+            or GovernedExternalWorkEnterpriseReliabilityBridge.production()
+        ),
     )
     return GovernedExternalWorkProductionRuntime(
         adapter=adapter,

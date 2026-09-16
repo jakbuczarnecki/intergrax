@@ -26,12 +26,17 @@ from external_contractor_adapter.external_work_adapter import (
     META_WORKSPACE_REF,
     ExternalWorkAdapter,
 )
+from external_contractor_adapter.external_effect_outcome_projection import (
+    ExternalWorkSideEffectObservation,
+    external_work_provider_mutation_attempted,
+)
 from external_contractor_adapter.schemas.adapt_result import ExternalWorkAdapterResult
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
     ACTION_CANCEL_EXTERNAL_WORK,
     ACTION_CREATE_EXTERNAL_WORK,
 )
+from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
 from intergrax.contracts.execution_evidence.boundary_event import ExecutionBoundaryEvent
 from intergrax.contracts.execution_evidence.receipt import ProofReceipt
@@ -59,6 +64,10 @@ from intergrax.runtime.execution.decision_governed_side_effect import (
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
 )
+from governed_contractor_application.host.external_work_enterprise_reliability_bridge import (
+    ExternalWorkReliabilityAdmissionOutcome,
+    GovernedExternalWorkEnterpriseReliabilityBridge,
+)
 from governed_contractor_application.host.lifecycle_states import (
     GovernedExternalWorkHostState,
     map_provider_status_to_host_state,
@@ -77,6 +86,21 @@ _ACTION_TO_OPERATION: Mapping[str, str] = {
 }
 
 META_PROVIDER_INVOCATION_ID = "provider_invocation_id"
+
+
+def _adapter_result_is_governance_policy_denial(
+    adapter_result: ExternalWorkAdapterResult,
+) -> bool:
+    """Distinguish Governance DENY from provider errors surfaced through the adapter."""
+    decision = adapter_result.policy_decision
+    if decision is None or decision.action is PolicyAction.ALLOW:
+        return False
+    if adapter_result.reason in {
+        "external_work_error",
+        "side_effect_authorization_failed",
+    }:
+        return False
+    return True
 
 
 def _workspace_from_metadata(metadata: Mapping[str, Any]) -> str | None:
@@ -98,6 +122,8 @@ class OrchestratorStepResult:
     attestation: AttestationOutcome | None
     receipt: ProofReceipt | None
     reason: str
+    external_effect_outcome: ExternalEffectOutcome | None = None
+    reliability_admission: ExternalWorkReliabilityAdmissionOutcome | None = None
 
 
 class GovernedExternalWorkOrchestrator:
@@ -117,6 +143,7 @@ class GovernedExternalWorkOrchestrator:
         continuation_store: ContinuationStateStore,
         clock: Callable[[], datetime] | None = None,
         actor: str = "governed_contractor_host",
+        reliability_bridge: GovernedExternalWorkEnterpriseReliabilityBridge | None = None,
     ) -> None:
         self._adapter = adapter
         self._policy = policy
@@ -129,6 +156,7 @@ class GovernedExternalWorkOrchestrator:
         self._continuation_store = continuation_store
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._actor = actor
+        self._reliability_bridge = reliability_bridge
         self._bundle_store.put_bundle(bundle)
 
     @property
@@ -538,7 +566,7 @@ class GovernedExternalWorkOrchestrator:
     ) -> OrchestratorStepResult:
         completed = self._clock()
         decision = adapter_result.policy_decision
-        if decision is not None and decision.action is not PolicyAction.ALLOW:
+        if _adapter_result_is_governance_policy_denial(adapter_result):
             self._execution_store.put_state(execution_id, deny_state)
             return OrchestratorStepResult(
                 state=deny_state,
@@ -555,6 +583,13 @@ class GovernedExternalWorkOrchestrator:
             or decision is None
             or decision.action is not PolicyAction.ALLOW
         ):
+            reliability = self._admit_reliability_if_configured(
+                adapter_result=adapter_result,
+                invocation=invocation,
+                execution_id=execution_id,
+                action=action,
+                policy_denied=False,
+            )
             failed = GovernedExternalWorkHostState.EXECUTION_FAILED
             self._execution_store.put_state(execution_id, failed)
             return OrchestratorStepResult(
@@ -565,6 +600,10 @@ class GovernedExternalWorkOrchestrator:
                 attestation=None,
                 receipt=None,
                 reason=adapter_result.reason or "execution_failed",
+                external_effect_outcome=(
+                    reliability.effect_outcome if reliability is not None else None
+                ),
+                reliability_admission=reliability,
             )
 
         evaluated = self._policy.last_evaluation
@@ -614,6 +653,13 @@ class GovernedExternalWorkOrchestrator:
                 "correlation_id": corr or invocation.correlation_id,
                 "idempotency_key": idem or invocation.idempotency_key,
             }
+        )
+        reliability = self._admit_reliability_if_configured(
+            adapter_result=adapter_result,
+            invocation=inv,
+            execution_id=execution_id,
+            action=action,
+            policy_denied=False,
         )
         outcome = ProviderInvocationOutcome(
             invocation_id=inv.invocation_id,
@@ -708,6 +754,10 @@ class GovernedExternalWorkOrchestrator:
                 attestation=attestation,
                 receipt=attestation.receipt,
                 reason="attested",
+                external_effect_outcome=(
+                    reliability.effect_outcome if reliability is not None else None
+                ),
+                reliability_admission=reliability,
             )
         self._execution_store.put_state(
             execution_id,
@@ -721,6 +771,37 @@ class GovernedExternalWorkOrchestrator:
             attestation=attestation,
             receipt=None,
             reason=attestation.reason,
+            external_effect_outcome=(
+                reliability.effect_outcome if reliability is not None else None
+            ),
+            reliability_admission=reliability,
+        )
+
+    def _admit_reliability_if_configured(
+        self,
+        *,
+        adapter_result: ExternalWorkAdapterResult,
+        invocation: ProviderInvocation,
+        execution_id: str,
+        action: str,
+        policy_denied: bool,
+    ) -> ExternalWorkReliabilityAdmissionOutcome | None:
+        if self._reliability_bridge is None:
+            return None
+        attempted = external_work_provider_mutation_attempted(
+            adapter_result,
+            policy_denied=policy_denied,
+        )
+        observation = ExternalWorkSideEffectObservation(
+            provider_mutation_attempted=attempted,
+            adapter_result=adapter_result,
+            reason=adapter_result.reason,
+        )
+        return self._reliability_bridge.admit_side_effect_observation(
+            observation=observation,
+            invocation=invocation,
+            execution_id=execution_id,
+            action=action,
         )
 
     def _new_invocation(

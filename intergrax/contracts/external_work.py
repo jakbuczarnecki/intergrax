@@ -467,6 +467,7 @@ class ExternalWorkErrorCode(StrEnum):
     TRANSIENT_REMOTE_FAILURE = "transient_remote_failure"
     PERMANENT_PROVIDER_FAILURE = "permanent_provider_failure"
     MALFORMED_PROVIDER_RESPONSE = "malformed_provider_response"
+    PROVIDER_OUTCOME_UNCERTAIN = "provider_outcome_uncertain"
 
 
 # Codes that callers may retry without inventing new middleware.
@@ -481,6 +482,18 @@ RETRYABLE_EXTERNAL_WORK_ERROR_CODES: frozenset[ExternalWorkErrorCode] = frozense
 def is_retryable_external_work_error(code: ExternalWorkErrorCode) -> bool:
     """Return True when the error is classified as transient/retryable."""
     return code in RETRYABLE_EXTERNAL_WORK_ERROR_CODES
+
+
+UNCERTAIN_EXTERNAL_WORK_ERROR_CODES: frozenset[ExternalWorkErrorCode] = frozenset(
+    {
+        ExternalWorkErrorCode.PROVIDER_OUTCOME_UNCERTAIN,
+    }
+)
+
+
+def is_uncertain_external_work_outcome(code: ExternalWorkErrorCode) -> bool:
+    """Return True when provider mutation outcome is indeterminate after dispatch."""
+    return code in UNCERTAIN_EXTERNAL_WORK_ERROR_CODES
 
 
 class ExternalProviderEvidenceKind(StrEnum):
