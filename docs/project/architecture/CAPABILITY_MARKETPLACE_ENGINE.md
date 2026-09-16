@@ -509,16 +509,31 @@ The engine must remain reusable for typed **capability need** requests (required
 
 ## 21. E2E target scenarios (roadmap)
 
-| ID | Scenario |
-| -- | -------- |
-| ME-13 | Marketplace → Agent Distribution → Execution |
-| ME-14 | Marketplace → Tool domain → Execution |
-| ME-15 | Marketplace → Skill domain → Composition |
-| ME-16 | Mixed Agent + Tool + Skill acquisition |
-| ME-17 | Virtual Worker machine consumer |
-| ME-18 | Dynamic Organization resource composition |
+| ID | Scenario | Status |
+| -- | -------- | ------ |
+| **ME-13** | **Marketplace → Agent Distribution → Execution** | **reference production E2E proven** (`testing_support/marketplace_agent_distribution_execution_composition.py`, `tests/integration/marketplace/test_me13_marketplace_agent_distribution_execution_e2e.py`) |
+| ME-14 | Marketplace → Tool domain → Execution | planned |
+| ME-15 | Marketplace → Skill domain → Composition | planned |
+| ME-16 | Mixed Agent + Tool + Skill acquisition | planned |
+| ME-17 | Virtual Worker machine consumer | planned |
+| ME-18 | Dynamic Organization resource composition | planned |
 
-V1 code proves federated read, governance, marketplace join, and metering substrate — not full E2E product flows.
+**ME-13 canonical flow (reference single-process composition):**
+
+```text
+Marketplace listing / discovery / governance / explicit selection
+    ↓ CapabilityHandoffEnvelope (ME-10)
+    ↓ MarketplaceLifecycleHandoffRequest + AgentLifecycleHandoffPayload (ME-RB4)
+AgentDistributionAcquisitionBridge → DynamicAgentAcquisitionService (exact release)
+    ↓ install → bind → effective roster → materialization → activation (+ registry projection)
+AgentRegistryRead (derived projection)
+    ↓ public Execution Engine boundary (harness host runtime)
+deterministic agent output
+```
+
+Reference proof **≠** distributed production HA. Marketplace core still does not install, activate, or execute.
+
+Remaining V1 gaps: ME-14+ cross-domain E2E, distributed Agent Distribution, remote marketplace productization.
 
 ---
 

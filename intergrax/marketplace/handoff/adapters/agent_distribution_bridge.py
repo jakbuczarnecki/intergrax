@@ -11,10 +11,8 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from intergrax.agent_distribution.dynamic_acquisition import (
-    DynamicAgentAcquisitionPort,
-    DynamicAgentAcquisitionRequest,
-)
+from intergrax.agent_distribution.dynamic_acquisition import DynamicAgentAcquisitionRequest
+from intergrax.agent_distribution.task_scoped_agents import DynamicAgentAcquisitionPort
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_distribution.marketplace_lifecycle_handoff import (
     AgentLifecycleHandoffPayload,

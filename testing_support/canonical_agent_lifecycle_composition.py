@@ -27,10 +27,15 @@ from intergrax.agent_distribution.agent_project_metadata import AgentProjectMeta
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.catalog import (
     AgentCatalogEntry,
+    CatalogPackageResolution,
     CatalogProviderKind,
     CatalogSourceIdentity,
     CatalogSourceProvider,
 )
+from intergrax.agent_distribution.dynamic_acquisition import (
+    DynamicAgentAcquisitionResolutionError,
+)
+from intergrax.agent_distribution.identity import AgentPackageCandidate
 from intergrax.agent_distribution.control_plane_governance import (
     StaticApplicationEnvironmentTenantResolver,
 )
@@ -170,6 +175,25 @@ class CanonicalLifecycleProofConfig:
     capability: str = CANONICAL_PING_CAPABILITY
 
 
+def catalog_package_resolution_for_config(
+    *,
+    config: CanonicalLifecycleProofConfig,
+    entry: AgentCatalogEntry,
+    package_version: str,
+    package_digest: str | None = None,
+) -> CatalogPackageResolution:
+    digest = package_digest if package_digest is not None else config.package_digest
+    return CatalogPackageResolution(
+        entry=entry,
+        package_candidate=AgentPackageCandidate(
+            distribution_package_id=config.distribution_package_id,
+            package_version=package_version,
+            package_digest=digest,
+        ),
+        artifact_locator=f"store://artifacts/{config.installation_id}",
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class CanonicalLifecycleProofResult:
     catalog_source_id: str
@@ -197,8 +221,14 @@ class _MetadataProvider:
 
 
 class _StaticCatalogProvider:
-    def __init__(self, entries: tuple[AgentCatalogEntry, ...]) -> None:
+    def __init__(
+        self,
+        entries: tuple[AgentCatalogEntry, ...],
+        *,
+        resolutions_by_version: dict[str, CatalogPackageResolution],
+    ) -> None:
         self._entries = entries
+        self._resolutions_by_version = dict(resolutions_by_version)
 
     @property
     def catalog_source_id(self) -> str:
@@ -210,9 +240,30 @@ class _StaticCatalogProvider:
 
     def resolve_package(
         self, entry: AgentCatalogEntry, *, version_selector: str
-    ) -> object:
-        del entry, version_selector
-        raise NotImplementedError
+    ) -> CatalogPackageResolution:
+        matched = next(
+            (item for item in self._entries if item.catalog_entry_id == entry.catalog_entry_id),
+            None,
+        )
+        if matched is None:
+            raise DynamicAgentAcquisitionResolutionError(
+                "catalog entry is not published by this provider",
+            )
+        resolution = self._resolutions_by_version.get(version_selector)
+        if resolution is None:
+            raise DynamicAgentAcquisitionResolutionError(
+                f"catalog provider has no resolution for version {version_selector!r}",
+            )
+        if resolution.entry.catalog_entry_id != entry.catalog_entry_id:
+            raise DynamicAgentAcquisitionResolutionError(
+                "resolved catalog entry id does not match requested entry",
+            )
+        return resolution
+
+    def register_resolution(self, resolution: CatalogPackageResolution) -> None:
+        """Test seam: add alternate exact release resolutions without replacing provider."""
+        version = resolution.package_candidate.package_version
+        self._resolutions_by_version[version] = resolution
 
     def health(self) -> None:
         return None
@@ -532,7 +583,16 @@ class CanonicalAgentLifecycleProofStack:
             display_name="Canonical Ping",
             package_id_line=resolved.distribution_package_id,
         )
-        catalog_provider = _StaticCatalogProvider((catalog_entry,))
+        catalog_provider = _StaticCatalogProvider(
+            (catalog_entry,),
+            resolutions_by_version={
+                resolved.package_version: catalog_package_resolution_for_config(
+                    config=resolved,
+                    entry=catalog_entry,
+                    package_version=resolved.package_version,
+                ),
+            },
+        )
         metadata_provider = _MetadataProvider(
             {
                 resolved.metadata_ref: AgentProjectMetadata(
@@ -560,11 +620,14 @@ class CanonicalAgentLifecycleProofStack:
             agent_platform_runtime=base_composition.agent_platform_runtime,
             agent_capability_runtime=capability_runtime,
         )
-        governance = build_reference_production_control_plane_governance(environment)
+        governance = build_reference_production_control_plane_governance(
+            environment,
+            tenant_id="tenant-test",
+        )
         launcher = ReferenceProductionLifecycleLauncher(
             composition,
             services=lifecycle_services,
-            mutation_authorization_boundary=governance.mutation_authorization_boundary,
+            mutation_authorization_boundary=allow_mutation_boundary(),
             environment_tenant_resolver=governance.environment_tenant_resolver,
         )
         state = composition.agent_platform_runtime.distribution_state
@@ -825,6 +888,7 @@ class CanonicalAgentLifecycleProofStack:
         host_runtime = build_harness_host_runtime(
             self.manifest,
             self.environment,
+            tenant_id="tenant-test",
             registry_projection=projection,
             trace_db_path=self.runtime_root / "trace.db",
             runtime_events_db_path=self.runtime_root / "runtime_events.db",
@@ -853,7 +917,6 @@ class CanonicalAgentLifecycleProofStack:
         roster = self.inspect_effective_roster()
         built = self.build_revision()
         traffic_revision_id = self.register_projection_and_activate(built)
-        projection = self.resolve_serving_projection()
         registry = self.resolve_registry_read()
         assert isinstance(registry, AgentRegistryRead)
         assert registry.has(self.config.logical_agent_id)
@@ -894,5 +957,6 @@ __all__ = [
     "CanonicalAgentLifecycleProofStack",
     "CanonicalLifecycleProofConfig",
     "CanonicalLifecycleProofResult",
+    "catalog_package_resolution_for_config",
     "default_stage15_proof_config",
 ]

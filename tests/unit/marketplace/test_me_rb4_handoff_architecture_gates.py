@@ -164,4 +164,7 @@ def test_agent_bridge_imports_agent_distribution_acquisition_contract_only() -> 
         if imported == "intergrax.agent_distribution"
         or imported.startswith("intergrax.agent_distribution.")
     ]
-    assert agent_distribution_imports == ["intergrax.agent_distribution.dynamic_acquisition"]
+    assert agent_distribution_imports == [
+        "intergrax.agent_distribution.dynamic_acquisition",
+        "intergrax.agent_distribution.task_scoped_agents",
+    ]
