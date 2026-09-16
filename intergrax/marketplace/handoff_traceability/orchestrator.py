@@ -8,15 +8,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
-from intergrax.capability_catalog.candidate import CapabilityDiscoveryCandidate
-from intergrax.capability_catalog.governance import (
-    CapabilityGovernanceEvaluator,
-    govern_capability_candidates,
-)
-from intergrax.contracts.capability_catalog.governance import CapabilityGovernanceContext
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.capability_catalog.query import CapabilityDiscoveryQuery
 from intergrax.contracts.capability_catalog.release_identity import CapabilityReleaseIdentity
+from intergrax.contracts.marketplace.diagnostics import (
+    MarketplaceDiagnosticEvent,
+    MarketplaceDiagnosticEventKind,
+    MarketplaceDiagnosticObserver,
+    MarketplaceDiagnosticOutcome,
+    MarketplaceObserverFailurePolicy,
+    MarketplacePipelineStage,
+)
 from intergrax.contracts.marketplace.handoff_traceability import (
     CapabilityDiscoveryTraceFacts,
     CapabilityHandoffConsumerTarget,
@@ -25,10 +27,15 @@ from intergrax.contracts.marketplace.handoff_traceability import (
     consumer_target_for_kind,
 )
 from intergrax.contracts.marketplace.query_context import MarketplaceQueryContext
+from intergrax.marketplace.diagnostics import emit_marketplace_diagnostic
+from intergrax.marketplace.diagnostics.session import MarketplacePipelineObservationSession
 from intergrax.marketplace.discovery import MarketplaceDiscoveryService
 from intergrax.marketplace.handoff_traceability.delivery import CapabilityHandoffDeliveryService
 from intergrax.marketplace.handoff_traceability.errors import MarketplaceHandoffSelectionError
+from intergrax.marketplace.observed_pipeline import run_marketplace_intelligence_pipeline
 from intergrax.marketplace.service import MarketplaceCatalogService
+from intergrax.capability_catalog.governance import CapabilityGovernanceEvaluator
+from intergrax.contracts.capability_catalog.governance import CapabilityGovernanceContext
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,6 +47,10 @@ class MarketplaceDiscoveryHandoffOrchestrator:
     governance_evaluators: tuple[CapabilityGovernanceEvaluator, ...]
     governance_context: CapabilityGovernanceContext
     delivery_service: CapabilityHandoffDeliveryService
+    diagnostic_observer: MarketplaceDiagnosticObserver | None = None
+    observer_failure_policy: MarketplaceObserverFailurePolicy = (
+        MarketplaceObserverFailurePolicy.BEST_EFFORT
+    )
 
     def execute_explicit_selection_handoff(
         self,
@@ -58,25 +69,24 @@ class MarketplaceDiscoveryHandoffOrchestrator:
         recorded_at: datetime | None = None,
     ):
         query_context = marketplace_query_context
-        listing_views = self.catalog_service.list_listings(
-            discovery_query,
+        observation = MarketplacePipelineObservationSession.for_discovery(
+            discovery_correlation_id,
+            query_correlation_id=query_correlation_id,
+            observer=self.diagnostic_observer,
+            failure_policy=self.observer_failure_policy,
+        )
+        pipeline = run_marketplace_intelligence_pipeline(
+            catalog_service=self.catalog_service,
+            discovery_service=self.discovery_service,
+            governance_evaluators=self.governance_evaluators,
+            governance_context=self.governance_context,
+            discovery_query=discovery_query,
             marketplace_query_context=query_context,
             query_text=query_text,
+            observation=observation,
         )
-        candidates = tuple(
-            CapabilityDiscoveryCandidate(
-                catalog_entry=view.listing.capability,
-                availability=view.availability,
-            )
-            for view in listing_views
-        )
-        ranked = self.discovery_service.search_and_rank(candidates)
-        governed_result = govern_capability_candidates(
-            ranked,
-            evaluators=self.governance_evaluators,
-            context=self.governance_context,
-        )
-        governed = governed_result.allowed
+        listing_views = pipeline.listing_views
+        governed = pipeline.governed.allowed
         selected_governed = None
         listing_id: str | None = None
         for item in governed:
@@ -85,6 +95,17 @@ class MarketplaceDiscoveryHandoffOrchestrator:
                 selected_governed = item
                 break
         if selected_governed is None:
+            if observation.observer is not None:
+                emit_marketplace_diagnostic(
+                    observation,
+                    MarketplaceDiagnosticEvent(
+                        stage=MarketplacePipelineStage.SELECTION,
+                        event_kind=MarketplaceDiagnosticEventKind.REJECTED,
+                        correlation=observation.correlation,
+                        outcome=MarketplaceDiagnosticOutcome.REJECTED,
+                        detail="selected capability not in governed visible set",
+                    ),
+                )
             raise MarketplaceHandoffSelectionError(
                 "selected capability is not in the governed visible candidate set",
             )
@@ -110,7 +131,7 @@ class MarketplaceDiscoveryHandoffOrchestrator:
             discovery_correlation_id=discovery_correlation_id,
             query_correlation_id=query_correlation_id,
             marketplace_query_context=query_context,
-            visible_candidate_count=len(candidates),
+            visible_candidate_count=len(pipeline.listing_views),
             governed_admissible_count=len(governed),
             ranking_strategy_id=ranking_evidence.ranker_id,
             governance_evaluator_ids=tuple(
@@ -128,6 +149,16 @@ class MarketplaceDiscoveryHandoffOrchestrator:
             ),
             ranking_evidence_ref=ranking_evidence.ranker_id,
         )
+        emit_marketplace_diagnostic(
+            observation,
+            MarketplaceDiagnosticEvent(
+                stage=MarketplacePipelineStage.SELECTION,
+                event_kind=MarketplaceDiagnosticEventKind.COMPLETED,
+                correlation=observation.correlation,
+                selected_release=selected_release,
+                outcome=MarketplaceDiagnosticOutcome.SUCCESS,
+            ),
+        )
         timestamp = recorded_at or datetime.now(timezone.utc)
         envelope = CapabilityHandoffEnvelope(
             handoff_id=handoff_id,
@@ -141,7 +172,28 @@ class MarketplaceDiscoveryHandoffOrchestrator:
             explicit_selection=explicit_selection,
             recorded_at=timestamp,
         )
-        return self.delivery_service.deliver(envelope)
+        emit_marketplace_diagnostic(
+            observation,
+            MarketplaceDiagnosticEvent(
+                stage=MarketplacePipelineStage.HANDOFF,
+                event_kind=MarketplaceDiagnosticEventKind.STARTED,
+                correlation=observation.correlation,
+                selected_release=selected_release,
+            ),
+        )
+        result = self.delivery_service.deliver(envelope)
+        emit_marketplace_diagnostic(
+            observation,
+            MarketplaceDiagnosticEvent(
+                stage=MarketplacePipelineStage.HANDOFF,
+                event_kind=MarketplaceDiagnosticEventKind.COMPLETED,
+                correlation=observation.correlation,
+                selected_release=selected_release,
+                handoff_status=result.disposition.value,
+                outcome=MarketplaceDiagnosticOutcome.SUCCESS,
+            ),
+        )
+        return result
 
 
 __all__ = ["MarketplaceDiscoveryHandoffOrchestrator"]

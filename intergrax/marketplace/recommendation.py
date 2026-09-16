@@ -17,6 +17,14 @@ from intergrax.capability_catalog.recommended_capability import CapabilityRecomm
 from intergrax.contracts.capability_catalog.recommendation import (
     CapabilityRecommendationContext,
 )
+from intergrax.contracts.marketplace.diagnostics import (
+    MarketplaceDiagnosticEvent,
+    MarketplaceDiagnosticEventKind,
+    MarketplaceDiagnosticOutcome,
+    MarketplacePipelineStage,
+)
+from intergrax.marketplace.diagnostics import emit_marketplace_diagnostic
+from intergrax.marketplace.diagnostics.session import MarketplacePipelineObservationSession
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,9 +44,31 @@ class MarketplaceRecommendationService:
         governed_candidates: tuple[GovernedCapabilityCandidate, ...],
         *,
         recommendation_context: CapabilityRecommendationContext | None = None,
+        observation: MarketplacePipelineObservationSession | None = None,
     ) -> tuple[CapabilityRecommendation, ...]:
-        return recommend_capability_candidates(
+        input_count = len(governed_candidates)
+        recommendations = recommend_capability_candidates(
             governed_candidates,
             self.recommendation_strategy,
             context=recommendation_context,
         )
+        if observation is not None:
+            emit_marketplace_diagnostic(
+                observation,
+                MarketplaceDiagnosticEvent(
+                    stage=MarketplacePipelineStage.RECOMMENDATION,
+                    event_kind=MarketplaceDiagnosticEventKind.COMPLETED,
+                    correlation=observation.correlation,
+                    recommendation_strategy_id=(
+                        self.recommendation_strategy.recommendation_strategy_id
+                    ),
+                    input_count=input_count,
+                    output_count=len(recommendations),
+                    outcome=(
+                        MarketplaceDiagnosticOutcome.EMPTY
+                        if not recommendations
+                        else MarketplaceDiagnosticOutcome.SUCCESS
+                    ),
+                ),
+            )
+        return recommendations

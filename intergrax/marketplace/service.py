@@ -37,6 +37,14 @@ from intergrax.contracts.marketplace.query_context import MarketplaceQueryContex
 from intergrax.contracts.marketplace.visibility import MarketplaceVisibility
 from intergrax.marketplace.search import DefaultMarketplaceListingTextSearchStrategy
 from intergrax.marketplace.visibility import MarketplaceVisibilityEvaluator
+from intergrax.contracts.marketplace.diagnostics import (
+    MarketplaceDiagnosticEvent,
+    MarketplaceDiagnosticEventKind,
+    MarketplaceDiagnosticOutcome,
+    MarketplacePipelineStage,
+)
+from intergrax.marketplace.diagnostics import emit_marketplace_diagnostic
+from intergrax.marketplace.diagnostics.session import MarketplacePipelineObservationSession
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +84,7 @@ class MarketplaceCatalogService:
         marketplace_query_context: MarketplaceQueryContext | None = None,
         availability_evidence: CapabilityDiscoveryAvailabilityEvidence | None = None,
         query_text: str | None = None,
+        observation: MarketplacePipelineObservationSession | None = None,
     ) -> tuple[MarketplaceCapabilityListingView, ...]:
         """List marketplace listings matching a Stage-3 discovery query."""
         query_context = marketplace_query_context or MarketplaceQueryContext()
@@ -85,24 +94,60 @@ class MarketplaceCatalogService:
             query,
             availability_evidence=availability_evidence,
         )
+        joined_count = 0
+        visibility_filtered = 0
         listing_candidates: list[CapabilityDiscoveryCandidate] = []
         for candidate in candidates:
             metadata = self._listing_index.get(candidate.identity.sort_key)
             if metadata is None:
                 continue
+            joined_count += 1
             if not self._visibility_evaluator.is_visible(
                 metadata.visibility,
                 query_context,
             ):
+                visibility_filtered += 1
                 continue
             listing_candidates.append(candidate)
 
+        if observation is not None:
+            emit_marketplace_diagnostic(
+                observation,
+                MarketplaceDiagnosticEvent(
+                    stage=MarketplacePipelineStage.VISIBILITY,
+                    event_kind=MarketplaceDiagnosticEventKind.COMPLETED,
+                    correlation=observation.correlation,
+                    input_count=joined_count,
+                    output_count=len(listing_candidates),
+                    filtered_count=visibility_filtered,
+                    detail="aggregate visibility narrowing only",
+                ),
+            )
+
+        pre_search_count = len(listing_candidates)
         searched = search_capability_candidates(
             tuple(listing_candidates),
             self._listing_text_search,
             query=CapabilitySearchQuery(text=query_text),
             context=CapabilitySearchContext(),
         )
+        if observation is not None:
+            emit_marketplace_diagnostic(
+                observation,
+                MarketplaceDiagnosticEvent(
+                    stage=MarketplacePipelineStage.SEARCH,
+                    event_kind=MarketplaceDiagnosticEventKind.COMPLETED,
+                    correlation=observation.correlation,
+                    strategy_id=self._listing_text_search.search_strategy_id,
+                    input_count=pre_search_count,
+                    output_count=len(searched),
+                    outcome=(
+                        MarketplaceDiagnosticOutcome.EMPTY
+                        if not searched
+                        else MarketplaceDiagnosticOutcome.SUCCESS
+                    ),
+                ),
+            )
         views: list[MarketplaceCapabilityListingView] = []
         for item in searched:
             metadata = self._listing_index[item.candidate.identity.sort_key]

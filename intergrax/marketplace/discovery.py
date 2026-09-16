@@ -23,6 +23,14 @@ from intergrax.capability_catalog.search import (
 )
 from intergrax.contracts.capability_catalog.ranking import CapabilityRankingContext
 from intergrax.contracts.capability_catalog.search import CapabilitySearchQuery
+from intergrax.contracts.marketplace.diagnostics import (
+    MarketplaceDiagnosticEvent,
+    MarketplaceDiagnosticEventKind,
+    MarketplaceDiagnosticOutcome,
+    MarketplacePipelineStage,
+)
+from intergrax.marketplace.diagnostics import emit_marketplace_diagnostic
+from intergrax.marketplace.diagnostics.session import MarketplacePipelineObservationSession
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,15 +53,56 @@ class MarketplaceDiscoveryService:
         *,
         search_query: CapabilitySearchQuery | None = None,
         ranking_context: CapabilityRankingContext | None = None,
+        observation: MarketplacePipelineObservationSession | None = None,
     ) -> tuple[RankedCapabilityCandidate, ...]:
+        input_count = len(candidates)
         searched = search_capability_candidates(
             candidates,
             self.search_strategy,
             query=search_query,
         )
+        if observation is not None:
+            emit_marketplace_diagnostic(
+                observation,
+                MarketplaceDiagnosticEvent(
+                    stage=MarketplacePipelineStage.SEARCH,
+                    event_kind=MarketplaceDiagnosticEventKind.COMPLETED,
+                    correlation=observation.correlation,
+                    strategy_id=self.search_strategy.search_strategy_id,
+                    input_count=input_count,
+                    output_count=len(searched),
+                    outcome=(
+                        MarketplaceDiagnosticOutcome.EMPTY
+                        if not searched
+                        else MarketplaceDiagnosticOutcome.SUCCESS
+                    ),
+                ),
+            )
         searched_candidates = tuple(item.candidate for item in searched)
-        return rank_capability_candidates(
+        ranked = rank_capability_candidates(
             searched_candidates,
             self.ranker,
             context=ranking_context,
         )
+        if observation is not None:
+            ranker_id = self.ranker.ranker_id
+            ranker_id_from_evidence = (
+                ranked[0].evidence.ranker_id if ranked else ranker_id
+            )
+            emit_marketplace_diagnostic(
+                observation,
+                MarketplaceDiagnosticEvent(
+                    stage=MarketplacePipelineStage.RANKING,
+                    event_kind=MarketplaceDiagnosticEventKind.COMPLETED,
+                    correlation=observation.correlation,
+                    ranker_id=ranker_id_from_evidence,
+                    input_count=len(searched_candidates),
+                    output_count=len(ranked),
+                    outcome=(
+                        MarketplaceDiagnosticOutcome.EMPTY
+                        if not ranked
+                        else MarketplaceDiagnosticOutcome.SUCCESS
+                    ),
+                ),
+            )
+        return ranked

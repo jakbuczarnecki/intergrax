@@ -348,28 +348,46 @@ Product docs that name Nexus as public runtime must defer to Execution Engine pu
 
 ## 16. Observability and traceability boundary
 
-**ME-10 (implemented):** Discovery → governance → ranking → **explicit selection** → **`CapabilityHandoffEnvelope`** is observational traceability only. It binds:
-
-- `discovery_correlation_id` (marketplace-scoped; not `run_id` / execution IDs)
-- governed visible candidate counts (no foreign-private candidate leakage)
-- `CapabilityMarketplaceExplicitSelection` with **`CapabilityReleaseIdentity`**
-- neutral `CapabilityHandoffConsumerTarget` (agent / tool / skill domain)
-
-Trace evidence uses optional `CapabilityHandoffTraceEvidenceConsumer` (in-memory reference provider). **Not** `RuntimeEvent`, **not** execution lineage, **not** `CapabilityUsageEvent`.
-
-Hard separations:
+**ME-10 (implemented):** Marketplace pipeline observability is **contractual, pluginable, and non-authoritative**. Business flow:
 
 ```text
+Marketplace operation
+    ↓ Visibility
+    ↓ Search
+    ↓ Ranking
+    ↓ Governance
+    ↓ Recommendation
+    ↓ Selection
+    ↓ Handoff
+    │
+    └──→ MarketplaceDiagnosticEvent (typed, immutable)
+             ↓
+        MarketplaceDiagnosticObserver / sink (pluggable)
+             ↓
+        external telemetry adapters (out of core scope)
+```
+
+Correlation reuses marketplace-scoped `discovery_correlation_id` (and optional `query_correlation_id`) via `MarketplaceObservationContext` — **not** execution `run_id` / Nexus IDs.
+
+Stage diagnostics emit counts, strategy/ranker/evaluator IDs, and evidence **references** only. Handoff traceability additionally binds `CapabilityHandoffEnvelope`, `CapabilityMarketplaceExplicitSelection`, and optional `CapabilityHandoffTraceEvidenceConsumer`.
+
+Hard invariants:
+
+```text
+Observability != Decision Authority
+Diagnostics != Governance
+Diagnostics != Metering
+Diagnostic sink != Persistence authority
+Observer cannot widen visibility
+Observer cannot alter recommendation
 discovery facts ≠ selection ≠ handoff ≠ execution ≠ usage
 handoff ≠ installation ≠ entitlement ≠ billing
+HANDOFF_ACCEPTED != INSTALLED != ACTIVE != EXECUTED
 ```
+
+Default composition uses `NoOpMarketplaceDiagnosticObserver`. Observer failure policy is explicit (`BEST_EFFORT` default; `STRICT` optional). **Not** `RuntimeEvent`, **not** execution lineage, **not** `CapabilityUsageEvent`.
 
 V1 usage events remain at execution/domain boundaries via Capability Metering — not inside marketplace listing or handoff delivery code.
-
-```text
-Catalog → Visibility → Governance → Ranking → Explicit Selection
-    → CapabilityHandoffEnvelope → Domain Adapter / Consumer → Execution (downstream)
-```
 
 ---
 
