@@ -187,12 +187,38 @@ Supported today via:
 
 ## 8. Machine consumers
 
-Supported today via:
+**ME-12 (closed):** `MachineCapabilityAcquisitionService` exposes a contract-driven, pluginable acquisition boundary for any machine consumer (Worker, Agent, automation). It orchestrates the **same** marketplace engine as human surfaces — never a parallel machine marketplace.
 
-- `CapabilityDiscoveryQuery`, ranking, governance pipelines on catalog snapshots.
-- `WorkStageCapabilityNeed` + `work_stage_discovery` for staged need → governed candidates (Autonomous Work consumes; catalog core does not import AW).
+```text
+Machine Consumer
+      ↓
+MachineCapabilityAcquisitionRequest (CapabilityNeed + CapabilityDiscoveryQuery + MarketplaceQueryContext)
+      ↓
+MachineCapabilityAcquisitionService
+      ↓
+Marketplace Engine (visibility → search → ranking → governance → recommendation)
+      ↓
+MachineCapabilityAcquisitionResponse (governed CapabilityRecommendation only)
+      ↓
+MachineCapabilityAcquisitionSelection (explicit)
+      ↓
+MarketplaceDiscoveryHandoffOrchestrator → MarketplaceLifecycleHandoff (RB4)
+      ↓
+Domain lifecycle ports (Agent / Tool / Skill)
+```
 
-**Gap:** No stable `CapabilityNeed` envelope for Virtual Workers at marketplace boundary (ME-RB1-008). AW types are consumer-specific, not marketplace public API.
+**Hard invariants:**
+
+```text
+Machine API != Marketplace Engine implementation surface
+Machine API != Execution Engine / Nexus / Worker orchestration
+Recommendation != authorization != installation != activation != execution
+Handoff accepted != installed != active != executed
+```
+
+Contracts: `intergrax.contracts.capability_catalog.CapabilityNeed`, `intergrax.contracts.marketplace.acquisition.*`. Implementation: `intergrax.marketplace.acquisition`.
+
+**Legacy / specialized:** `WorkStageCapabilityNeed` + `work_stage_discovery` remain for Autonomous Work staged loops; AW types are not the canonical machine marketplace API.
 
 ---
 

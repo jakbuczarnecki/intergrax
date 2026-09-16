@@ -72,6 +72,10 @@ from intergrax.contracts.capability_catalog.search import (
     CapabilitySearchQuery,
     CapabilitySearchSignal,
 )
+from intergrax.contracts.capability_catalog.need import (
+    SCHEMA_CAPABILITY_NEED_V1,
+    CapabilityNeed,
+)
 from intergrax.contracts.capability_catalog.scope import (
     SCHEMA_CAPABILITY_DISCOVERY_SCOPE_V1,
     CapabilityDiscoveryScope,
@@ -158,6 +162,8 @@ __all__ = [
     "CapabilityDiscoveryAvailabilityEvidence",
     "CapabilityDiscoveryIdentity",
     "CapabilityDiscoveryQuery",
+    "CapabilityNeed",
+    "SCHEMA_CAPABILITY_NEED_V1",
     "CapabilityDiscoveryScope",
     "CapabilityDiscoveryScopeMode",
     "CapabilityIdentityKey",
