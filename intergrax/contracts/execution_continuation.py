@@ -138,6 +138,8 @@ class ExecutionContinuationErrorCode(StrEnum):
     AMBIGUOUS_IDENTITY = "ambiguous_identity"
     STORE_QUERY_FAILED = "store_query_failed"
     INCOMPLETE_EXECUTION_IDENTITY = "incomplete_execution_identity"
+    NON_DURABLE_CONTINUATION_STORE = "non_durable_continuation_store"
+    CORRUPT_CONTINUATION_STATE = "corrupt_continuation_state"
 
 
 class ExecutionContinuationError(ValueError):

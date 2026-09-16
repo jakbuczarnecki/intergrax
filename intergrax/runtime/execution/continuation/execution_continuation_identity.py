@@ -4,16 +4,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationError,
     ExecutionContinuationErrorCode,
     ExecutionContinuationIdentity,
 )
-
-if TYPE_CHECKING:
-    from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
+from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 
 
 def require_execution_continuation_identity(
@@ -38,4 +34,19 @@ def require_execution_continuation_identity(
     )
 
 
-__all__ = ["require_execution_continuation_identity"]
+def execution_identity_binding_from_continuation_identity(
+    identity: ExecutionContinuationIdentity,
+) -> ExecutionIdentityBinding:
+    """Authoritative four-ID binding for restart restore (no minting)."""
+    return ExecutionIdentityBinding(
+        task_id=identity.task_id,
+        run_id=identity.run_id,
+        attempt_id=identity.attempt_id,
+        execution_id=identity.execution_id,
+    )
+
+
+__all__ = [
+    "execution_identity_binding_from_continuation_identity",
+    "require_execution_continuation_identity",
+]

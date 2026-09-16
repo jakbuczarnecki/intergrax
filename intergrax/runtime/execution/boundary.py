@@ -28,6 +28,17 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.execution.active_execution_continuation_store import (
     peek_active_execution_continuation_state_store,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionIdentityBinding:
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
+    parent_execution_id: ExecutionId | None = None
+    task_id: TaskId | None = None
+
+
 from intergrax.runtime.execution.continuation.lifecycle_driver import (
     ExecutionContinuationLifecycleDriver,
 )
@@ -60,15 +71,6 @@ class ExecutionAdmissionHook(Protocol[RequestT]):
 
     async def admit(self, request: RequestT) -> None:
         ...
-
-
-@dataclass(frozen=True, slots=True)
-class ExecutionIdentityBinding:
-    run_id: RunId
-    attempt_id: AttemptId
-    execution_id: ExecutionId
-    parent_execution_id: ExecutionId | None = None
-    task_id: TaskId | None = None
 
 
 class ExecutionBoundary(Generic[RequestT, ResultT]):

@@ -195,6 +195,37 @@ class InMemoryExecutionContinuationStateStore(ExecutionContinuationStateStore):
         )
 
 
+class ExecutionContinuationDurableBacking:
+    """External mutable state simulating durable persistence (reference qualification only)."""
+
+    __slots__ = ("_lock", "_by_id", "_current_by_identity")
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._by_id: dict[str, PendingExecutionContinuation] = {}
+        self._current_by_identity: dict[tuple[str, str, str, str], str] = {}
+
+
+class BackingExecutionContinuationStateStore(InMemoryExecutionContinuationStateStore):
+    """New store client over shared backing — survives process-local store destruction."""
+
+    def __init__(self, backing: ExecutionContinuationDurableBacking) -> None:
+        self._lock = backing._lock
+        self._by_id = backing._by_id
+        self._current_by_identity = backing._current_by_identity
+
+    @property
+    def is_durable(self) -> bool:
+        return True
+
+
+def backing_execution_continuation_state_store(
+    backing: ExecutionContinuationDurableBacking,
+) -> BackingExecutionContinuationStateStore:
+    """Construct a new durable-capable store view over ``backing``."""
+    return BackingExecutionContinuationStateStore(backing)
+
+
 def default_execution_continuation_state_store() -> InMemoryExecutionContinuationStateStore:
     """Process-local default for explicit continuation composition (not restart-safe)."""
     return InMemoryExecutionContinuationStateStore()
@@ -211,7 +242,10 @@ def wire_execution_continuation_state_store(
 
 
 __all__ = [
+    "BackingExecutionContinuationStateStore",
+    "ExecutionContinuationDurableBacking",
     "InMemoryExecutionContinuationStateStore",
+    "backing_execution_continuation_state_store",
     "default_execution_continuation_state_store",
     "wire_execution_continuation_state_store",
 ]
