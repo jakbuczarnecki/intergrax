@@ -48,6 +48,7 @@ from intergrax.marketplace.diagnostics import (
 )
 from intergrax.marketplace.handoff_traceability import (
     CapabilityHandoffDeliveryService,
+    InMemoryCapabilityHandoffDeliveryAdmission,
     MarketplaceDiscoveryHandoffOrchestrator,
 )
 from intergrax.marketplace.observed_pipeline import run_marketplace_intelligence_pipeline
@@ -280,7 +281,10 @@ def test_lifecycle_handoff_diagnostics_preserve_capability_identity_and_disposit
         def consume(self, envelope) -> None:
             return None
 
-    delivery = CapabilityHandoffDeliveryService(consumer=_Consumer())
+    delivery = CapabilityHandoffDeliveryService(
+        consumer=_Consumer(),
+        delivery_admission=InMemoryCapabilityHandoffDeliveryAdmission(),
+    )
     orchestrator = MarketplaceDiscoveryHandoffOrchestrator(
         catalog_service=service,
         discovery_service=MarketplaceDiscoveryService.with_defaults(),
@@ -302,7 +306,6 @@ def test_lifecycle_handoff_diagnostics_preserve_capability_identity_and_disposit
         discovery_correlation_id="corr-handoff",
         selection_id="sel-1",
         handoff_id="ho-1",
-        downstream_consumer_id="consumer.me10",
     )
     handoff_events = [e for e in observer.events if e.stage is MarketplacePipelineStage.HANDOFF]
     assert handoff_events

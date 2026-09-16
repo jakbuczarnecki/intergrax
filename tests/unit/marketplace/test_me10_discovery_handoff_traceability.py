@@ -63,6 +63,7 @@ from intergrax.marketplace import (
 )
 from intergrax.marketplace.handoff_traceability import (
     CapabilityHandoffDeliveryService,
+    InMemoryCapabilityHandoffDeliveryAdmission,
     InMemoryCapabilityHandoffTraceEvidenceConsumer,
     MarketplaceDiscoveryHandoffOrchestrator,
     MarketplaceHandoffSelectionError,
@@ -181,6 +182,7 @@ def _orchestrator(
     trace = trace or InMemoryCapabilityHandoffTraceEvidenceConsumer()
     delivery = CapabilityHandoffDeliveryService(
         consumer=consumer,
+        delivery_admission=InMemoryCapabilityHandoffDeliveryAdmission(),
         trace_evidence_consumer=trace,
     )
     return MarketplaceDiscoveryHandoffOrchestrator(
@@ -222,7 +224,6 @@ def _run_handoff(
         discovery_correlation_id="discovery-corr-1",
         selection_id="selection-1",
         handoff_id=handoff_id,
-        downstream_consumer_id="custom.consumer.me10",
         recorded_at=datetime(2026, 3, 16, 12, 0, tzinfo=timezone.utc),
     )
     return result, key, entry
@@ -327,7 +328,7 @@ def test_custom_structural_consumer_without_subclass() -> None:
     consumer = _RecordingHandoffConsumer(consumer_id="external.port")
     orchestrator = _orchestrator(service, consumer)
     _run_handoff(orchestrator, service=service, logical_id="tools.me10.custom", kind=CapabilityKind.TOOL)
-    assert consumer.envelopes[0].downstream_consumer_id == "custom.consumer.me10"
+    assert consumer.envelopes[0].downstream_consumer_id == "external.port"
 
 
 def test_consumer_failure_is_explicit() -> None:
@@ -367,7 +368,6 @@ def test_duplicate_handoff_delivery_skips_second_consumer_invocation() -> None:
         discovery_correlation_id="discovery-corr-1",
         selection_id="selection-1",
         handoff_id="handoff-dup",
-        downstream_consumer_id="custom.consumer.me10",
         recorded_at=datetime(2026, 3, 16, 12, 0, tzinfo=timezone.utc),
     )
     assert second.disposition is CapabilityHandoffDeliveryDisposition.DUPLICATE_SKIPPED

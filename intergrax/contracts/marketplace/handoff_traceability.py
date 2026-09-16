@@ -136,8 +136,8 @@ class CapabilityHandoffEnvelope(BaseModel):
             raise ValueError("selected_release must match explicit_selection")
         tenant = self.tenant_id
         ctx_tenant = self.discovery_trace.marketplace_query_context.tenant_id
-        if tenant is not None and ctx_tenant is not None and tenant != ctx_tenant:
-            raise ValueError("tenant_id must match marketplace_query_context.tenant_id when both set")
+        if tenant != ctx_tenant:
+            raise ValueError("tenant_id must match marketplace_query_context.tenant_id")
         if self.recorded_at.tzinfo is None:
             raise ValueError("recorded_at must be timezone-aware")
         return self
@@ -146,6 +146,28 @@ class CapabilityHandoffEnvelope(BaseModel):
 class CapabilityHandoffDeliveryDisposition(StrEnum):
     DELIVERED = "delivered"
     DUPLICATE_SKIPPED = "duplicate_skipped"
+
+
+class CapabilityHandoffDeliveryAdmissionVerdict(StrEnum):
+    """Result of atomic handoff admission — delivery control, not observational trace."""
+
+    ADMITTED_NEW = "admitted_new"
+    DUPLICATE_IDENTICAL_PAYLOAD = "duplicate_identical_payload"
+
+
+class CapabilityHandoffDeliveryAdmissionResult(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    verdict: CapabilityHandoffDeliveryAdmissionVerdict
+    handoff_id: str = Field(min_length=1)
+
+
+class CapabilityHandoffIdentityConflictError(Exception):
+    """Same handoff_id was already admitted with a different envelope payload."""
+
+
+class CapabilityHandoffDeliveryAdmissionError(Exception):
+    """Delivery idempotency authority failed — delivery must not proceed."""
 
 
 class CapabilityHandoffDeliveryResult(BaseModel):
@@ -169,6 +191,14 @@ class CapabilityHandoffConsumer(Protocol):
 
 
 @runtime_checkable
+class CapabilityHandoffDeliveryAdmission(Protocol):
+    """Mandatory delivery idempotency authority — independent of trace persistence."""
+
+    def admit(self, envelope: CapabilityHandoffEnvelope) -> CapabilityHandoffDeliveryAdmissionResult:
+        """Atomically admit a handoff; raise ``CapabilityHandoffIdentityConflictError`` on payload clash."""
+
+
+@runtime_checkable
 class CapabilityHandoffTraceEvidenceConsumer(Protocol):
     """Optional observational persistence for handoff facts — not execution lineage."""
 
@@ -185,9 +215,14 @@ __all__ = [
     "CapabilityHandoffConsumer",
     "CapabilityHandoffConsumerError",
     "CapabilityHandoffConsumerTarget",
+    "CapabilityHandoffDeliveryAdmission",
+    "CapabilityHandoffDeliveryAdmissionError",
+    "CapabilityHandoffDeliveryAdmissionResult",
+    "CapabilityHandoffDeliveryAdmissionVerdict",
     "CapabilityHandoffDeliveryDisposition",
     "CapabilityHandoffDeliveryResult",
     "CapabilityHandoffEnvelope",
+    "CapabilityHandoffIdentityConflictError",
     "CapabilityHandoffTraceEvidenceConsumer",
     "CapabilityMarketplaceExplicitSelection",
     "SCHEMA_CAPABILITY_DISCOVERY_TRACE_FACTS_V1",

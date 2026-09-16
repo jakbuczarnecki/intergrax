@@ -369,7 +369,20 @@ Marketplace operation
 
 Correlation reuses marketplace-scoped `discovery_correlation_id` (and optional `query_correlation_id`) via `MarketplaceObservationContext` — **not** execution `run_id` / Nexus IDs.
 
-Stage diagnostics emit counts, strategy/ranker/evaluator IDs, and evidence **references** only. Handoff traceability additionally binds `CapabilityHandoffEnvelope`, `CapabilityMarketplaceExplicitSelection`, and optional `CapabilityHandoffTraceEvidenceConsumer`.
+Stage diagnostics emit counts, strategy/ranker/evaluator IDs, and evidence **references** only. Handoff traceability additionally binds `CapabilityHandoffEnvelope`, `CapabilityMarketplaceExplicitSelection`, optional `CapabilityHandoffTraceEvidenceConsumer` (observational only), and mandatory `CapabilityHandoffDeliveryAdmission` (delivery idempotency authority).
+
+**ME-10-R1 (implemented):** Canonical handoff integrity hardening:
+
+```text
+validate envelope
+    → consumer identity (actual delivery consumer is authoritative for downstream_consumer_id)
+    → tenant correlation (envelope.tenant_id exactly equals discovery query tenant, including None)
+    → delivery admission (provider-neutral; duplicate identical handoff_id suppressed without trace storage)
+    → downstream consumer delivery
+    → observational trace evidence (best-effort; does not gate business delivery)
+```
+
+Delivery idempotency is **idempotent duplicate admission** within the configured admission provider scope (reference in-memory provider is process-local only — not a distributed exactly-once guarantee). `CapabilityHandoffTraceEvidenceConsumer` does not control whether the business consumer runs.
 
 Hard invariants:
 

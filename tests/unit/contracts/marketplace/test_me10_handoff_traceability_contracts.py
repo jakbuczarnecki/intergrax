@@ -116,6 +116,23 @@ def test_handoff_envelope_rejects_mismatched_selected_release() -> None:
         )
 
 
+def test_handoff_envelope_rejects_tenant_mismatch_with_discovery_context() -> None:
+    release = _release()
+    with pytest.raises(ValueError, match="tenant_id must match marketplace_query_context.tenant_id"):
+        CapabilityHandoffEnvelope(
+            handoff_id="handoff-1",
+            tenant_id=None,
+            selected_release=release,
+            discovery_correlation_id="discovery-1",
+            selection_id="selection-1",
+            consumer_target=CapabilityHandoffConsumerTarget.TOOL_DOMAIN,
+            downstream_consumer_id="consumer-1",
+            discovery_trace=_trace(),
+            explicit_selection=_selection(release),
+            recorded_at=datetime(2026, 3, 16, 12, 0, tzinfo=timezone.utc),
+        )
+
+
 def test_handoff_envelope_requires_timezone_aware_recorded_at() -> None:
     release = _release()
     with pytest.raises(ValueError, match="recorded_at must be timezone-aware"):

@@ -16,7 +16,12 @@ class MarketplaceHandoffTenantConsistencyError(MarketplaceHandoffTraceabilityErr
     """Tenant scope on handoff facts is inconsistent with caller context."""
 
 
+class MarketplaceHandoffConsumerIdentityMismatchError(MarketplaceHandoffTraceabilityError):
+    """Envelope downstream_consumer_id does not match the configured delivery consumer."""
+
+
 __all__ = [
+    "MarketplaceHandoffConsumerIdentityMismatchError",
     "MarketplaceHandoffSelectionError",
     "MarketplaceHandoffTenantConsistencyError",
     "MarketplaceHandoffTraceabilityError",
