@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryStore
+    from intergrax.memory.contracts.procedural_memory import ProcedureMemoryStore
     from intergrax.memory.user_profile_store import UserProfileStore
     from intergrax.runtime.nexus.session.session_storage import SessionStorage
 
@@ -46,3 +47,17 @@ class EntityTemporalMemoryStorePlugin(Protocol):
         cls,
         **kwargs: Any,
     ) -> EntityTemporalMemoryStore: ...
+
+
+@runtime_checkable
+class ProceduralMemoryStorePlugin(Protocol):
+    """Plugin that materializes a ``ProcedureMemoryStore`` backend."""
+
+    @classmethod
+    def plugin_id(cls) -> str: ...
+
+    @classmethod
+    def create_procedural_memory_store(
+        cls,
+        **kwargs: Any,
+    ) -> ProcedureMemoryStore: ...
