@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from datetime import datetime, timezone
+from datetime import datetime
 
 from external_contractor_adapter.external_work_adapter import ExternalWorkAdapter
 from governed_contractor_application.host.collaborative_work_boundary import (
@@ -40,9 +40,6 @@ from intergrax.runtime.policy.meaningful_side_effect_authorization import (
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
 )
-
-_PRODUCTION_POLICY_ISSUED_AT = datetime(2026, 9, 16, 12, 0, tzinfo=timezone.utc)
-
 
 @dataclass(frozen=True, slots=True)
 class GovernedExternalWorkProductionRuntime:
@@ -121,7 +118,7 @@ def build_governed_external_work_production_runtime(
     )
     policy_evaluator = RuntimePolicyBundleEvaluator(
         bundle,
-        clock=clock or (lambda: _PRODUCTION_POLICY_ISSUED_AT),
+        clock=clock,
     )
     cw_repositories = collaborative_work_core_repositories(collaborative_work_repositories)
     authorization_boundary = build_external_work_authorization_boundary(
@@ -144,7 +141,7 @@ def build_governed_external_work_production_runtime(
         receipt_store=receipt_store,
         bundle_store=bundle_store,
         continuation_store=continuation_store,
-        clock=clock or (lambda: _PRODUCTION_POLICY_ISSUED_AT),
+        clock=clock,
     )
     return GovernedExternalWorkProductionRuntime(
         adapter=adapter,
