@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4 / MP-4R)
 
-**Status:** **MP-4R3 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** (Execution continuation boundary; technical pass) · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `RETIRED` (MP-4R1) · **MP-4C** `RETIRED` (MP-4R2) · **MP-4D** `RETIRED` (MP-4R2) · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8 · **MP-4R4 NOT STARTED**
+**Status:** **MP-4R3 CLOSED** · **MP-4R4 — READY_FOR_INDEPENDENT_AUDIT** (Collaborative `DecisionProposalRef` binding; Multiplayer-owned association only) · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `RETIRED` (MP-4R1) · **MP-4C** `RETIRED` (MP-4R2) · **MP-4D** `RETIRED` (MP-4R2) · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8 · **MP-4R5 NOT STARTED**
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (1:1):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)

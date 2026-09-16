@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4R3 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2) · **MP-4R4 NOT STARTED**
+**Status:** **MP-4R3 CLOSED** · **MP-4R4 — READY_FOR_INDEPENDENT_AUDIT** · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2) · **MP-4R5 NOT STARTED**
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -86,8 +86,8 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R4 |
-| **Status** | **NOT STARTED** |
-| **Purpose** | Optional `WorkItemDecisionBinding` (or equivalent) — immutable typed binding to canonical `DecisionId` / `DecisionVersion`; **no** Decision lifecycle |
+| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
+| **Purpose** | `CollaborativeDecisionBinding` — immutable Multiplayer-owned association to exact `DecisionProposalRef` (+ optional `WorkArtifactVersionRef`); **no** Decision lifecycle, Governance authorization, Execution state, or Evidence ownership |
 | **Dependencies** | MP-4R3 |
 
 ---

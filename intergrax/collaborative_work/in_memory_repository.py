@@ -34,6 +34,7 @@ from intergrax.collaborative_work.repository import (
     CreateCollaborativeOperationPolicyProfileCommand,
     CreateCollaborativePolicyRuleCommand,
     CreatePrincipalAuthorityGrantCommand,
+    CreateCollaborativeDecisionBindingCommand,
     CreateWorkItemCommand,
     CreateWorkItemExecutionLinkCommand,
     CreateWorkspaceMembershipCommand,
@@ -70,6 +71,11 @@ from intergrax.collaborative_work.repository import (
     _ARTIFACT_CREATE_IDEMPOTENCY_NAMESPACE,
     _ARTIFACT_PUBLISH_IDEMPOTENCY_NAMESPACE,
 )
+from intergrax.contracts.collaborative_decision_binding import (
+    CollaborativeDecisionBinding,
+    CollaborativeDecisionBindingAlreadyExists,
+    CollaborativeDecisionBindingIdempotencyConflict,
+)
 from intergrax.contracts.collaborative_work import (
     Assignment,
     AuthorityDelegation,
@@ -95,6 +101,8 @@ OperationProfileKey: TypeAlias = tuple[str, str, str]
 WorkItemKey: TypeAlias = tuple[str, str, str]
 AssignmentKey: TypeAlias = tuple[str, str, str]
 ExecutionLinkKey: TypeAlias = tuple[str, str, str]
+DecisionBindingKey: TypeAlias = tuple[str, str, str]
+DecisionBindingSemanticKey: TypeAlias = tuple[str, str, str]
 WorkArtifactKey: TypeAlias = tuple[str, str, str]
 WorkArtifactVersionKey: TypeAlias = tuple[str, str, str]
 ArtifactPublicationIdempotencyKey: TypeAlias = tuple[str, str, str, str]
@@ -141,6 +149,12 @@ class _WorkItemIdempotencyEntry:
 class _AssignmentIdempotencyEntry:
     fingerprint: str
     original_result: Assignment
+
+
+@dataclass(frozen=True, slots=True)
+class _DecisionBindingIdempotencyEntry:
+    fingerprint: str
+    original_result: CollaborativeDecisionBinding
 
 
 @dataclass(frozen=True, slots=True)
@@ -1407,6 +1421,167 @@ class InMemoryWorkItemExecutionLinkRepository:
     @staticmethod
     def _scope_matches(
         record: WorkItemExecutionLink,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> bool:
+        return record.tenant_id == tenant_id.strip() and record.workspace_id == workspace_id.strip()
+
+
+def _decision_binding_sort_key(record: CollaborativeDecisionBinding) -> tuple[datetime, str]:
+    return (record.created_at, record.binding_id)
+
+
+class InMemoryCollaborativeDecisionBindingRepository:
+    """Process-local reference repository for collaborative decision bindings."""
+
+    def __init__(self) -> None:
+        self._lock = threading.RLock()
+        self._records: dict[DecisionBindingKey, CollaborativeDecisionBinding] = {}
+        self._semantic: dict[DecisionBindingSemanticKey, CollaborativeDecisionBinding] = {}
+        self._idempotency: dict[IdempotencyKey, _DecisionBindingIdempotencyEntry] = {}
+
+    @property
+    def capabilities(self) -> CollaborativeWorkRepositoryCapabilities:
+        return CollaborativeWorkRepositoryCapabilities(
+            backend_id="collaborative_work.decision_binding.in_memory",
+            durable=False,
+            reference_only=True,
+        )
+
+    def create(self, command: CreateCollaborativeDecisionBindingCommand) -> CollaborativeDecisionBinding:
+        key = self._binding_key(command.tenant_id, command.workspace_id, command.binding_id)
+        semantic_key = self._semantic_key(command.tenant_id, command.workspace_id, command.semantic_fingerprint())
+        with self._lock:
+            if command.idempotency_key is not None:
+                replay = self._replay_create(command)
+                if replay is not None:
+                    return replay
+
+            existing_semantic = self._semantic.get(semantic_key)
+            if existing_semantic is not None:
+                return existing_semantic
+
+            if key in self._records:
+                raise CollaborativeDecisionBindingAlreadyExists("decision binding already exists")
+
+            record = CollaborativeDecisionBinding(
+                binding_id=command.binding_id,
+                tenant_id=command.tenant_id,
+                workspace_id=command.workspace_id,
+                work_item_id=command.work_item_id,
+                work_artifact_version=command.work_artifact_version,
+                decision_proposal=command.decision_proposal,
+                created_by_principal_id=command.created_by_principal_id,
+                created_at=command.created_at,
+            )
+            self._records[key] = record
+            self._semantic[semantic_key] = record
+            self._store_idempotency(command, record)
+            return record
+
+    def get(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        binding_id: str,
+    ) -> CollaborativeDecisionBinding | None:
+        key = self._binding_key(tenant_id, workspace_id, binding_id)
+        with self._lock:
+            record = self._records.get(key)
+            if record is None:
+                return None
+            if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
+                return None
+            return record
+
+    def list_for_work_item(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> tuple[CollaborativeDecisionBinding, ...]:
+        normalized_tenant = tenant_id.strip()
+        normalized_workspace = workspace_id.strip()
+        normalized_work_item = work_item_id.strip()
+        with self._lock:
+            matches = [
+                record
+                for record in self._records.values()
+                if record.tenant_id == normalized_tenant
+                and record.workspace_id == normalized_workspace
+                and record.work_item_id == normalized_work_item
+            ]
+        return tuple(sorted(matches, key=_decision_binding_sort_key))
+
+    def list_for_decision_proposal(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        decision_proposal: object,
+    ) -> tuple[CollaborativeDecisionBinding, ...]:
+        from intergrax.contracts.decision_record import DecisionProposalRef
+
+        if type(decision_proposal) is not DecisionProposalRef:
+            raise TypeError("decision_proposal must be DecisionProposalRef")
+        normalized_tenant = tenant_id.strip()
+        normalized_workspace = workspace_id.strip()
+        with self._lock:
+            matches = [
+                record
+                for record in self._records.values()
+                if record.tenant_id == normalized_tenant
+                and record.workspace_id == normalized_workspace
+                and record.decision_proposal == decision_proposal
+            ]
+        return tuple(sorted(matches, key=_decision_binding_sort_key))
+
+    def _replay_create(
+        self,
+        command: CreateCollaborativeDecisionBindingCommand,
+    ) -> CollaborativeDecisionBinding | None:
+        assert command.idempotency_key is not None
+        entry = self._idempotency.get(
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key),
+        )
+        if entry is None:
+            return None
+        if entry.fingerprint != command.semantic_fingerprint():
+            raise CollaborativeDecisionBindingIdempotencyConflict("decision binding idempotency key conflict")
+        return entry.original_result
+
+    def _store_idempotency(
+        self,
+        command: CreateCollaborativeDecisionBindingCommand,
+        record: CollaborativeDecisionBinding,
+    ) -> None:
+        if command.idempotency_key is None:
+            return
+        self._idempotency[
+            self._idempotency_key(command.tenant_id, command.workspace_id, command.idempotency_key)
+        ] = _DecisionBindingIdempotencyEntry(
+            fingerprint=command.semantic_fingerprint(),
+            original_result=record,
+        )
+
+    @staticmethod
+    def _binding_key(tenant_id: str, workspace_id: str, binding_id: str) -> DecisionBindingKey:
+        return (tenant_id.strip(), workspace_id.strip(), binding_id.strip())
+
+    @staticmethod
+    def _semantic_key(tenant_id: str, workspace_id: str, fingerprint: str) -> DecisionBindingSemanticKey:
+        return (tenant_id.strip(), workspace_id.strip(), fingerprint.strip())
+
+    @staticmethod
+    def _idempotency_key(tenant_id: str, workspace_id: str, idempotency_key: str) -> IdempotencyKey:
+        return (tenant_id.strip(), workspace_id.strip(), idempotency_key.strip())
+
+    @staticmethod
+    def _scope_matches(
+        record: CollaborativeDecisionBinding,
         *,
         tenant_id: str,
         workspace_id: str,

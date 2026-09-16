@@ -179,6 +179,7 @@ def test_postgresql_profile_materializes_full_artifact_bundle() -> None:
                 work_item=object(),  # type: ignore[arg-type]
                 assignment=object(),  # type: ignore[arg-type]
                 execution_link=object(),  # type: ignore[arg-type]
+                decision_binding=object(),  # type: ignore[arg-type]
             ),
             artifacts=CollaborativeWorkArtifactRepositories(
                 artifact=object(),  # type: ignore[arg-type]

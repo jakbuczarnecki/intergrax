@@ -224,7 +224,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-4R1 | Decision contract convergence | **CLOSED** |
 | MP-4R2 | Human review / Approval convergence | **CLOSED** |
 | MP-4R3 | Execution continuation integration | **READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** |
-| MP-4R4 | Collaborative decision binding | NOT STARTED |
+| MP-4R4 | Collaborative decision binding | READY_FOR_INDEPENDENT_AUDIT |
 | MP-4R5 | Evidence Plane adoption | NOT STARTED |
 | MP-4R6 | Legacy removal & migration | NOT STARTED |
 | MP-4R7 | Enterprise integration qualification | NOT STARTED |

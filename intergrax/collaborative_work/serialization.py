@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any
 
 from intergrax.collaborative_work.repository import PublishedWorkArtifactVersion
+from intergrax.contracts.collaborative_decision_binding import CollaborativeDecisionBinding
 from intergrax.contracts.collaborative_work import (
     Assignment,
     AuthorityDelegation,
@@ -17,6 +18,7 @@ from intergrax.contracts.collaborative_work import (
     PrincipalAuthorityGrant,
     WorkArtifact,
     WorkArtifactVersion,
+    WorkArtifactVersionRef,
     WorkItem,
     WorkItemExecutionLink,
     WorkspaceMembership,
@@ -27,6 +29,11 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.contracts.decision_proposal_ref_wire import (
+    decision_proposal_ref_from_canonical_json,
+    decision_proposal_ref_to_canonical_json,
+)
+from intergrax.contracts.decision_record import DecisionProposalRef
 from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
 
 
@@ -169,3 +176,37 @@ def published_work_artifact_version_to_json(record: PublishedWorkArtifactVersion
 
 def published_work_artifact_version_from_json(payload: str) -> PublishedWorkArtifactVersion:
     return PublishedWorkArtifactVersion.model_validate_json(payload)
+
+
+def collaborative_decision_binding_to_json(record: CollaborativeDecisionBinding) -> str:
+    payload = record.model_dump(mode="json", exclude={"decision_proposal", "work_artifact_version"})
+    payload["decision_proposal"] = json.loads(
+        decision_proposal_ref_to_canonical_json(record.decision_proposal),
+    )
+    if record.work_artifact_version is None:
+        payload["work_artifact_version"] = None
+    else:
+        payload["work_artifact_version"] = record.work_artifact_version.model_dump(mode="json")
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
+def collaborative_decision_binding_from_json(payload: str) -> CollaborativeDecisionBinding:
+    raw = json.loads(payload)
+    proposal_wire = raw["decision_proposal"]
+    artifact_raw = raw.get("work_artifact_version")
+    work_artifact_version = None
+    if artifact_raw is not None:
+        work_artifact_version = WorkArtifactVersionRef.model_validate(artifact_raw)
+    return CollaborativeDecisionBinding(
+        schema_version=raw["schema_version"],
+        binding_id=raw["binding_id"],
+        tenant_id=raw["tenant_id"],
+        workspace_id=raw["workspace_id"],
+        work_item_id=raw["work_item_id"],
+        work_artifact_version=work_artifact_version,
+        decision_proposal=decision_proposal_ref_from_canonical_json(
+            json.dumps(proposal_wire, sort_keys=True, separators=(",", ":")),
+        ),
+        created_by_principal_id=raw["created_by_principal_id"],
+        created_at=datetime.fromisoformat(raw["created_at"]),
+    )
