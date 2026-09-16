@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
 from intergrax.runtime.workspace.models import ShadowArtifact
-from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
 from intergrax.tools.providers.workspace.contracts import (
     WorkspaceArtifactOutput,
     WorkspaceDeleteFileInput,
@@ -39,11 +39,11 @@ from intergrax.tools.providers.workspace.tool_ids import (
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
-def _require_workspace(ctx: ToolWiringContext) -> ShadowWorkspace:
+def _require_workspace(ctx: ToolWiringContext) -> WorkspaceExecutionPort:
     workspace = ctx.shadow_workspace
     if workspace is None:
         raise RuntimeError("shadow_workspace_not_configured")
-    if not isinstance(workspace, ShadowWorkspace):
+    if not isinstance(workspace, WorkspaceExecutionPort):
         raise RuntimeError("shadow_workspace_invalid_type")
     return workspace
 
@@ -131,8 +131,8 @@ def workspace_export_artifact(
     workspace = _require_workspace(ctx)
     object_storage = _require_object_storage(ctx)
     rel = _safe_relative_path(params.path.strip())
-    target = workspace.root / rel
-    if not target.is_file():
+    body = workspace.read_artifact_bytes(rel.as_posix())
+    if body is None:
         return WorkspaceExportArtifactOutput(
             exported=False,
             path=params.path.strip(),
@@ -140,7 +140,6 @@ def workspace_export_artifact(
             workspace_id=workspace.workspace_id,
             reason="artifact_not_found",
         )
-    body = target.read_bytes()
     content_type = params.content_type.strip() or "application/octet-stream"
     for artifact in workspace.list_artifacts():
         if artifact.relative_path == rel.as_posix() and artifact.content_type:
@@ -179,10 +178,11 @@ def workspace_import_artifact(
     if content_type.startswith("text/") or content_type in {"application/json", "application/xml"}:
         workspace.write_text(params.path.strip(), stored.body.decode("utf-8"), content_type=content_type)
     else:
-        rel = _safe_relative_path(params.path.strip())
-        target = workspace.root / rel
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_bytes(stored.body)
+        workspace.write_artifact_bytes(
+            params.path.strip(),
+            stored.body,
+            content_type=content_type,
+        )
     return WorkspaceImportArtifactOutput(
         imported=True,
         path=params.path.strip(),

@@ -29,7 +29,7 @@ def exec_ctx(tmp_path: Path) -> RuntimeExecutionContext:
 
 def test_uaep_overlay_projects_shadow_workspace(exec_ctx: RuntimeExecutionContext) -> None:
     overlay = build_uaep_wiring_overlay(exec_ctx)
-    assert overlay.shadow_workspace is exec_ctx.metadata["shadow_workspace"]
+    assert overlay.workspace is exec_ctx.metadata["shadow_workspace"]
 
 
 def test_uaep_overlay_projects_cost_envelopes(exec_ctx: RuntimeExecutionContext) -> None:

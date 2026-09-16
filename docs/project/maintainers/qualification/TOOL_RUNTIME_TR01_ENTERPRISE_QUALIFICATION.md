@@ -109,7 +109,7 @@ Catalog path `intergrax/tools/providers/sandbox/service.py` (`sandbox_exec`) use
 
 ## TOOL-ENG-RX (implementation evidence)
 
-**Status:** CLOSED on branch `development` after TOOL-ENG-RX-C1 (awaiting independent GitHub audit; TR-01 not closed).
+**Status:** CLOSED (RX + C1 + C2 on branch `development`; awaiting independent GitHub audit; TR-01 not closed).
 
 - **Contract:** `ToolInvocationWiringResolver`, `ToolInvocationContext`, `ToolWiringOverlay`, `ToolInvocationWiringRequirements` (`intergrax/tools/invocation_wiring.py`, `invocation_wiring_requirements.py`).
 - **Resolution site:** `RuntimeToolInvoker._apply_invocation_wiring` (invoker-owned; read-only; no tool-id branching).
@@ -127,6 +127,29 @@ Catalog path `intergrax/tools/providers/sandbox/service.py` (`sandbox_exec`) use
 - **Resolver trust:** `ensure_tool_wiring_overlay` fail-closed at invoker boundary.
 - **Provider-neutral runtime-bound IDs:** `runtime_bound_catalog` imports `tool_ids` modules only (no `*.service` imports).
 - **Tests:** C1-T1–T4, T6, T11, T14 in `test_tool_eng_rx_invocation_wiring.py` plus existing RX gates.
+
+## TOOL-ENG-RX-C2 — Canonical invocation wiring ABI
+
+**Status:** CLOSED on branch `development` (awaiting independent GitHub audit; TR-01 not closed).
+
+```text
+ToolWiringContext (legacy static composition)
+        ↓ private adapter only (invocation_wiring_adapter.py)
+
+ToolInvocationContext + ToolRegistrationWiringView
+        ↓ ToolInvocationWiringResolver
+        ↓ ToolInvocationWiring (immutable)
+        ↓ RuntimeToolInvoker (compose + validate + adapter)
+        ↓ handler (ToolWiringContext effective context)
+```
+
+- **Canonical ABI:** `ToolInvocationWiring`, `ToolRegistrationWiringView`, `ToolInvocationWiringResolver` — no `ToolWiringContext` on resolver seam; no `ShadowWorkspace` in `invocation_wiring.py`.
+- **Workspace port:** `WorkspaceExecutionPort` (`intergrax/runtime/workspace/execution_port.py`); catalog workspace tools consume port via effective handler context.
+- **Typed bindings:** `TaskMemoryViewBinding` (`JsonObject` / `TaskMemoryRecord`); `RunTraceReaderBinding` (`PersistedRun`, `RunSummary`).
+- **Requirements:** `ToolInvocationWiringRequirements` validated against composed `ToolInvocationWiring`, not legacy bag fields.
+- **Tests:** RX/C1 gates + C2-T1–T5 in `test_tool_eng_rx_invocation_wiring.py`; `tests/unit/runtime/nexus/tools` regression.
+
+**TOOL-ENG-RX:** CLOSED (RX + C1 + C2). **TR-01-RQ:** NEXT.
 
 ## Tests executed (audit session)
 

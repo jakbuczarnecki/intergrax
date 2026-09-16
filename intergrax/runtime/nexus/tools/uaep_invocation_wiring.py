@@ -10,14 +10,14 @@ from intergrax.runtime.architecture.cost_budget import BudgetEnvelope
 from intergrax.runtime.architecture.cost_quota import ResourceQuota
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.sandbox.contracts import SandboxExecCapable
-from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
+from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
 from intergrax.tools.invocation_wiring import (
     ToolInvocationContext,
+    ToolInvocationWiring,
     ToolInvocationWiringResolver,
-    ToolWiringOverlay,
+    ToolRegistrationWiringView,
 )
 from intergrax.tools.registry.runtime_bindings import RunTraceReaderBinding, TaskMemoryViewBinding
-from intergrax.tools.registry.wiring import ToolWiringContext
 
 
 def _budget_envelope_tuple(raw: object) -> tuple[BudgetEnvelope, ...]:
@@ -40,9 +40,11 @@ def _resource_quota_tuple(raw: object) -> tuple[ResourceQuota, ...]:
     return tuple(quotas)
 
 
-def build_uaep_wiring_overlay(exec_ctx: RuntimeExecutionContext) -> ToolWiringOverlay:
-    workspace = exec_ctx.metadata.get("shadow_workspace")
-    shadow: ShadowWorkspace | None = workspace if isinstance(workspace, ShadowWorkspace) else None
+def build_uaep_invocation_wiring(exec_ctx: RuntimeExecutionContext) -> ToolInvocationWiring:
+    workspace_raw = exec_ctx.metadata.get("shadow_workspace")
+    workspace: WorkspaceExecutionPort | None = (
+        workspace_raw if isinstance(workspace_raw, WorkspaceExecutionPort) else None
+    )
     trace_reader: RunTraceReaderBinding | None = None
     for key in ("trace_reader", "trace_store"):
         candidate = exec_ctx.metadata.get(key)
@@ -63,8 +65,8 @@ def build_uaep_wiring_overlay(exec_ctx: RuntimeExecutionContext) -> ToolWiringOv
     request = exec_ctx.request
     if request is not None and request.metadata:
         task_metadata = {str(k): str(v) for k, v in request.metadata.items()}
-    return ToolWiringOverlay(
-        shadow_workspace=shadow,
+    return ToolInvocationWiring(
+        workspace=workspace,
         memory_view=memory,
         trace_reader=trace_reader,
         run_budget=budget,
@@ -73,6 +75,9 @@ def build_uaep_wiring_overlay(exec_ctx: RuntimeExecutionContext) -> ToolWiringOv
         sandbox_session=sandbox,
         task_metadata=task_metadata,
     )
+
+
+build_uaep_wiring_overlay = build_uaep_invocation_wiring
 
 
 class UAEPToolInvocationWiringResolver:
@@ -88,6 +93,6 @@ class UAEPToolInvocationWiringResolver:
         *,
         tool_id: str,
         invocation_context: ToolInvocationContext,
-        registration_wiring: ToolWiringContext,
-    ) -> ToolWiringOverlay:
-        return build_uaep_wiring_overlay(self._exec_ctx)
+        registration_wiring: ToolRegistrationWiringView,
+    ) -> ToolInvocationWiring:
+        return build_uaep_invocation_wiring(self._exec_ctx)

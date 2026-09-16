@@ -8,16 +8,19 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 from intergrax.contracts.memory_write_policy import MemoryWritePolicy
+from intergrax.knowledge.contracts.validation import JsonObject
 from intergrax.runtime.human.models import HumanDecisionRecord
+from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunSummary
+from intergrax.runtime.task_memory.models import TaskMemoryRecord
 
 
 @runtime_checkable
 class RunTraceReaderBinding(Protocol):
     """Structural binding for persisted run trace reads (``RunTraceReader``)."""
 
-    def read_run(self, run_id: str, tenant_id: str) -> Any: ...
+    def read_run(self, run_id: str, tenant_id: str) -> PersistedRun: ...
 
-    def list_runs(self, tenant_id: str, *, limit: int = 50) -> List[Any]: ...
+    def list_runs(self, tenant_id: str, *, limit: int = 50) -> List[RunSummary]: ...
 
 
 @runtime_checkable
@@ -178,17 +181,17 @@ class UserProfileManagerBinding(Protocol):
 class TaskMemoryViewBinding(Protocol):
     """Structural binding for policy-scoped task memory (``PolicyScopedMemoryView``)."""
 
-    async def read(self, namespace: str, key: str) -> Optional[Dict[str, Any]]: ...
+    async def read(self, namespace: str, key: str) -> JsonObject | None: ...
 
     async def write(
         self,
         namespace: str,
         key: str,
-        value: Dict[str, Any],
+        value: JsonObject,
         *,
         policy: MemoryWritePolicy = MemoryWritePolicy.REPLACE,
     ) -> None: ...
 
-    async def list(self, namespace: str, prefix: str = "") -> List[Any]: ...
+    async def list(self, namespace: str, prefix: str = "") -> List[TaskMemoryRecord]: ...
 
     async def delete(self, namespace: str, key: str) -> bool: ...

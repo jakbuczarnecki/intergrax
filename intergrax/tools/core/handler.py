@@ -11,7 +11,7 @@ from typing import Callable, ClassVar, Generic
 from pydantic import BaseModel
 
 from intergrax.tools.execution_models import ToolExecutionRequest
-from intergrax.tools.invocation_wiring import effective_wiring_for_request
+from intergrax.tools.invocation_wiring_adapter import effective_wiring_for_request
 from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.tool_executor import InModelT, OutModelT
 

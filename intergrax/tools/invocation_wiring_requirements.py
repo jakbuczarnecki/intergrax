@@ -12,7 +12,7 @@ from dataclasses import dataclass
 class ToolInvocationWiringRequirements:
     """Provider-declared invocation-scoped dependencies (default-empty ABI)."""
 
-    shadow_workspace: bool = False
+    workspace: bool = False
     memory_view: bool = False
     trace_reader: bool = False
     run_budget: bool = False

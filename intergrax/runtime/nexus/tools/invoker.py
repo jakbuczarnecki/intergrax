@@ -91,10 +91,14 @@ from intergrax.tools.invocation_wiring import (
     DelegatingToolInvocationWiringResolver,
     ToolInvocationWiringResolver,
     ToolWiringResolutionError,
-    ensure_tool_wiring_overlay,
-    merge_invocation_wiring,
-    registration_wiring_for_handler,
+    compose_effective_invocation_wiring,
+    ensure_tool_invocation_wiring,
     validate_invocation_wiring,
+)
+from intergrax.tools.invocation_wiring_adapter import (
+    merge_invocation_into_handler_context,
+    registration_wiring_for_handler,
+    registration_wiring_view_for_handler,
 )
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolExecutor
@@ -1009,13 +1013,14 @@ class RuntimeToolInvoker:
             return request
         registered = self._registry.get(request.tool_id)
         registration_wiring = registration_wiring_for_handler(registered.handler)
+        registration_view = registration_wiring_view_for_handler(registered.handler)
         try:
-            raw_overlay = self._invocation_wiring_resolver.resolve(
+            raw_invocation = self._invocation_wiring_resolver.resolve(
                 tool_id=request.tool_id,
                 invocation_context=invocation_context,
-                registration_wiring=registration_wiring,
+                registration_wiring=registration_view,
             )
-            overlay = ensure_tool_wiring_overlay(raw_overlay)
+            invocation = ensure_tool_invocation_wiring(raw_invocation)
         except ToolWiringResolutionError:
             raise
         except Exception as exc:
@@ -1023,8 +1028,15 @@ class RuntimeToolInvoker:
                 "wiring_resolution_failed",
                 "tool invocation wiring resolution failed",
             ) from exc
-        effective = merge_invocation_wiring(registration_wiring, overlay)
-        validate_invocation_wiring(contract.invocation_wiring_requirements, effective)
+        effective_invocation = compose_effective_invocation_wiring(
+            registration_view,
+            invocation,
+        )
+        validate_invocation_wiring(
+            contract.invocation_wiring_requirements,
+            effective_invocation,
+        )
+        effective = merge_invocation_into_handler_context(registration_wiring, invocation)
         return replace(request, effective_wiring=effective)
 
     def _execute_once(

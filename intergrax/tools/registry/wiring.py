@@ -36,6 +36,7 @@ from intergrax.integrations.contracts.speech_provider import SpeechProviderBacke
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
 from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
 from intergrax.model_inference.media_boundary import RemoteMediaEgressPolicy
+from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
 from intergrax.tools.registry.runtime_bindings import (
     AgentRegistryBinding,
     HumanDecisionStoreBinding,
@@ -50,7 +51,6 @@ from intergrax.tools.registry.runtime_bindings import (
 
 if TYPE_CHECKING:
     from intergrax.distributed.source_operation import SourceOperationCoordinator
-    from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
 
 
 @dataclass
@@ -83,7 +83,7 @@ class ToolWiringContext:
     graph_store: GraphStore | None = None
     collaboration_suite: CollaborationSuite | None = None
     key_value_cache: KeyValueCache | None = None
-    shadow_workspace: ShadowWorkspace | None = None
+    shadow_workspace: WorkspaceExecutionPort | None = None
     human_decision_store: HumanDecisionStoreBinding | None = None
     session_storage: SessionStorageBinding | None = None
     scheduled_notification_store: ScheduledNotificationBinding | None = None

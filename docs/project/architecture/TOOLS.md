@@ -224,6 +224,8 @@ It:
 
 ### Atomic invocation chain
 
+Per-call dependencies are resolved through the **invocation wiring ABI** (`ToolInvocationWiringResolver` → immutable `ToolInvocationWiring`), validated against `ToolInvocationWiringRequirements`, then merged into handler-visible `ToolWiringContext` via an internal adapter. **Registration wiring** (`ToolWiringContext` at catalog bootstrap) remains the static composition bag; it is not the resolver plugin contract.
+
 ```text
 ToolRuntime
   → RuntimeToolGateway / BoundToolGateway

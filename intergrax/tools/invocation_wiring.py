@@ -1,33 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Per-invocation tool wiring contracts (TOOL-ENG-RX / TOOL-ENG-RX-C1)."""
+"""Canonical per-invocation tool wiring contracts (TOOL-ENG-RX-C2)."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
 from intergrax.runtime.architecture.cost_budget import BudgetEnvelope
 from intergrax.runtime.architecture.cost_quota import ResourceQuota
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.sandbox.contracts import SandboxExecCapable
-from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
+from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
 from intergrax.tools.invocation_wiring_requirements import ToolInvocationWiringRequirements
 from intergrax.tools.registry.runtime_bindings import RunTraceReaderBinding, TaskMemoryViewBinding
-from intergrax.tools.registry.wiring import ToolWiringContext
-
-# Wiring merge ownership (registration vs invocation overlay):
-# | Field            | Owner              | Registration | Invocation override | Required by |
-# | shadow_workspace | runtime workspace  | yes          | yes                 | contract    |
-# | memory_view      | task memory port   | yes          | yes                 | contract    |
-# | trace_reader     | trace read port    | yes          | yes                 | contract    |
-# | run_budget       | execution budget   | yes          | yes                 | contract    |
-# | cost_envelopes   | cost governance    | yes          | yes                 | cost tools  |
-# | cost_quotas      | cost governance    | yes          | yes                 | cost tools  |
-# | sandbox_session  | sandbox exec port  | yes          | yes                 | contract    |
-# | task_metadata    | invocation identity| no (extras)  | yes → extras        | legacy seam |
 
 
 class ToolWiringResolutionError(Exception):
@@ -40,10 +28,23 @@ class ToolWiringResolutionError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
-class ToolWiringOverlay:
-    """Invocation-scoped wiring values; unset fields do not override registration wiring."""
+class ToolRegistrationWiringView:
+    """Minimal registration-time wiring visible to invocation resolvers."""
 
-    shadow_workspace: ShadowWorkspace | None = None
+    workspace: WorkspaceExecutionPort | None = None
+    memory_view: TaskMemoryViewBinding | None = None
+    trace_reader: RunTraceReaderBinding | None = None
+    run_budget: RunBudget | None = None
+    cost_envelopes: tuple[BudgetEnvelope, ...] = ()
+    cost_quotas: tuple[ResourceQuota, ...] = ()
+    sandbox_session: SandboxExecCapable | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ToolInvocationWiring:
+    """Immutable invocation-scoped wiring; unset fields do not override registration."""
+
+    workspace: WorkspaceExecutionPort | None = None
     memory_view: TaskMemoryViewBinding | None = None
     trace_reader: RunTraceReaderBinding | None = None
     run_budget: RunBudget | None = None
@@ -53,7 +54,7 @@ class ToolWiringOverlay:
     task_metadata: Mapping[str, str] | None = None
 
     @classmethod
-    def empty(cls) -> ToolWiringOverlay:
+    def empty(cls) -> ToolInvocationWiring:
         return cls()
 
 
@@ -65,9 +66,9 @@ class ToolInvocationWiringResolver(Protocol):
         self,
         *,
         tool_id: str,
-        invocation_context: "ToolInvocationContext",
-        registration_wiring: ToolWiringContext,
-    ) -> ToolWiringOverlay:
+        invocation_context: ToolInvocationContext,
+        registration_wiring: ToolRegistrationWiringView,
+    ) -> ToolInvocationWiring:
         ...
 
 
@@ -85,110 +86,112 @@ class ToolInvocationContext:
 
 
 class DelegatingToolInvocationWiringResolver:
-    """Default invoker resolver: optional per-request delegate, else empty overlay."""
+    """Default invoker resolver: optional per-request delegate, else empty wiring."""
 
     def resolve(
         self,
         *,
         tool_id: str,
         invocation_context: ToolInvocationContext,
-        registration_wiring: ToolWiringContext,
-    ) -> ToolWiringOverlay:
+        registration_wiring: ToolRegistrationWiringView,
+    ) -> ToolInvocationWiring:
         delegate = invocation_context.wiring_resolver
         if delegate is None:
-            return ToolWiringOverlay.empty()
-        overlay = delegate.resolve(
+            return ToolInvocationWiring.empty()
+        wiring = delegate.resolve(
             tool_id=tool_id,
             invocation_context=invocation_context,
             registration_wiring=registration_wiring,
         )
-        return ensure_tool_wiring_overlay(overlay)
+        return ensure_tool_invocation_wiring(wiring)
 
 
-def ensure_tool_wiring_overlay(overlay: ToolWiringOverlay) -> ToolWiringOverlay:
-    """Fail closed when an external resolver returns an invalid overlay type."""
-    if not isinstance(overlay, ToolWiringOverlay):
+def ensure_tool_invocation_wiring(wiring: ToolInvocationWiring) -> ToolInvocationWiring:
+    """Fail closed when an external resolver returns an invalid wiring type."""
+    if not isinstance(wiring, ToolInvocationWiring):
         raise ToolWiringResolutionError(
-            "wiring_overlay_invalid_type",
-            "tool invocation wiring resolver must return ToolWiringOverlay",
+            "wiring_invocation_invalid_type",
+            "tool invocation wiring resolver must return ToolInvocationWiring",
         )
-    return overlay
+    return wiring
 
 
-def registration_wiring_for_handler(handler: object) -> ToolWiringContext:
-    from intergrax.tools.core.handler import WiringContextToolHandler
-
-    if isinstance(handler, WiringContextToolHandler):
-        return handler.registration_wiring
-    return ToolWiringContext()
-
-
-def merge_invocation_wiring(
-    registration: ToolWiringContext,
-    overlay: ToolWiringOverlay,
-) -> ToolWiringContext:
-    """Deterministic merge: invocation-scoped overlay fields override registration when set."""
-    effective = registration
-    if overlay.shadow_workspace is not None:
-        effective = replace(effective, shadow_workspace=overlay.shadow_workspace)
-    if overlay.memory_view is not None:
-        effective = replace(effective, memory_view=overlay.memory_view)
-    if overlay.trace_reader is not None:
-        effective = replace(effective, trace_reader=overlay.trace_reader)
-    if overlay.run_budget is not None:
-        effective = replace(effective, run_budget=overlay.run_budget)
-    if overlay.cost_envelopes is not None:
-        effective = replace(effective, cost_envelopes=overlay.cost_envelopes)
-    if overlay.cost_quotas is not None:
-        effective = replace(effective, cost_quotas=overlay.cost_quotas)
-    if overlay.sandbox_session is not None:
-        effective = replace(effective, sandbox_session=overlay.sandbox_session)
-    if overlay.task_metadata is not None:
-        merged_extras = dict(registration.extras)
-        merged_extras["task_metadata"] = dict(overlay.task_metadata)
-        effective = replace(effective, extras=merged_extras)
-    return effective
+def compose_effective_invocation_wiring(
+    registration: ToolRegistrationWiringView,
+    invocation: ToolInvocationWiring,
+) -> ToolInvocationWiring:
+    """Overlay invocation fields onto registration defaults."""
+    return ToolInvocationWiring(
+        workspace=(
+            invocation.workspace
+            if invocation.workspace is not None
+            else registration.workspace
+        ),
+        memory_view=(
+            invocation.memory_view
+            if invocation.memory_view is not None
+            else registration.memory_view
+        ),
+        trace_reader=(
+            invocation.trace_reader
+            if invocation.trace_reader is not None
+            else registration.trace_reader
+        ),
+        run_budget=(
+            invocation.run_budget
+            if invocation.run_budget is not None
+            else registration.run_budget
+        ),
+        cost_envelopes=(
+            invocation.cost_envelopes
+            if invocation.cost_envelopes is not None
+            else registration.cost_envelopes
+        ),
+        cost_quotas=(
+            invocation.cost_quotas
+            if invocation.cost_quotas is not None
+            else registration.cost_quotas
+        ),
+        sandbox_session=(
+            invocation.sandbox_session
+            if invocation.sandbox_session is not None
+            else registration.sandbox_session
+        ),
+        task_metadata=invocation.task_metadata,
+    )
 
 
 def validate_invocation_wiring(
     requirements: ToolInvocationWiringRequirements,
-    effective: ToolWiringContext,
+    wiring: ToolInvocationWiring,
 ) -> None:
-    if requirements.shadow_workspace and effective.shadow_workspace is None:
+    if requirements.workspace and wiring.workspace is None:
         raise ToolWiringResolutionError(
             "wiring_requirement_missing",
-            "shadow_workspace required for this tool invocation",
+            "workspace required for this tool invocation",
         )
-    if requirements.memory_view and effective.memory_view is None:
+    if requirements.memory_view and wiring.memory_view is None:
         raise ToolWiringResolutionError(
             "wiring_requirement_missing",
             "memory_view required for this tool invocation",
         )
-    if requirements.trace_reader and effective.trace_reader is None:
+    if requirements.trace_reader and wiring.trace_reader is None:
         raise ToolWiringResolutionError(
             "wiring_requirement_missing",
             "trace_reader required for this tool invocation",
         )
-    if requirements.run_budget and effective.run_budget is None:
+    if requirements.run_budget and wiring.run_budget is None:
         raise ToolWiringResolutionError(
             "wiring_requirement_missing",
             "run_budget required for this tool invocation",
         )
-    if requirements.sandbox_session and effective.sandbox_session is None:
+    if requirements.sandbox_session and wiring.sandbox_session is None:
         raise ToolWiringResolutionError(
             "wiring_requirement_missing",
             "sandbox_session required for this tool invocation",
         )
 
 
-def effective_wiring_for_request(
-    request: object,
-    registration: ToolWiringContext,
-) -> ToolWiringContext:
-    from intergrax.tools.execution_models import ToolExecutionRequest
-
-    if not isinstance(request, ToolExecutionRequest):
-        return registration
-    if request.effective_wiring is not None:
-        return request.effective_wiring
-    return registration
+# TOOL-ENG-RX-C1 compatibility aliases (internal/tests); not canonical ABI names.
+ToolWiringOverlay = ToolInvocationWiring
+ensure_tool_wiring_overlay = ensure_tool_invocation_wiring
