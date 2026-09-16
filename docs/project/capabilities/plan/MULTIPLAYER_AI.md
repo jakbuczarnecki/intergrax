@@ -206,7 +206,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **MP-4R2 READY_FOR_INDEPENDENT_AUDIT** — MP-4B/MP-4C/MP-4D **RETIRED**; MP-4R3…R8 **NOT STARTED** |
+| **Status** | **MP-4R3 READY_FOR_INDEPENDENT_AUDIT** — MP-4B/MP-4C/MP-4D **RETIRED**; MP-4R4…R8 **NOT STARTED** |
 | **Purpose** | Multiplayer **bindings/projections** over canonical Decision, Governance/HITL, Execution continuation, Evidence, and Diagnostics — no duplicate authorities |
 | **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) + Collaborative Work for work primitives |
 | **Dependencies** | MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3 ownership **FROZEN**; canonical Decision + GR-5 continuation |
@@ -223,7 +223,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | **MP-4R0** | Core rebase & supersession gate | **CLOSURE FIX / READY_FOR_REAUDIT** |
 | MP-4R1 | Decision contract convergence | **READY_FOR_INDEPENDENT_AUDIT** |
 | MP-4R2 | Human review / Approval convergence | **READY_FOR_INDEPENDENT_AUDIT** |
-| MP-4R3 | Execution continuation integration | NOT STARTED |
+| MP-4R3 | Execution continuation integration | **READY_FOR_INDEPENDENT_AUDIT** |
 | MP-4R4 | Collaborative decision binding | NOT STARTED |
 | MP-4R5 | Evidence Plane adoption | NOT STARTED |
 | MP-4R6 | Legacy removal & migration | NOT STARTED |

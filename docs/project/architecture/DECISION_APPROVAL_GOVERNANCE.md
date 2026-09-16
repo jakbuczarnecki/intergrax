@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4 / MP-4R)
 
-**Status:** **MP-4R2 — READY_FOR_INDEPENDENT_AUDIT** (Human review / Approval convergence) · **MP-4R1** closed · **MP-4R0** closed · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `RETIRED` (MP-4R1) · **MP-4C** `RETIRED` (MP-4R2) · **MP-4D** `RETIRED` (MP-4R2) · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8 · **MP-4R3 NOT STARTED**
+**Status:** **MP-4R3 — READY_FOR_INDEPENDENT_AUDIT** (Execution continuation boundary) · **MP-4R2** ready for audit · **MP-4R1** closed · **MP-4R0** closed · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `RETIRED` (MP-4R1) · **MP-4C** `RETIRED` (MP-4R2) · **MP-4D** `RETIRED` (MP-4R2) · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8 · **MP-4R4 NOT STARTED**
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (1:1):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -17,7 +17,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 Define how **Multiplayer** integrates with canonical platform authorities for Decision, human authorization (Governance/HITL), Execution continuation, Evidence, and Diagnostics — **without** creating parallel lifecycle or truth sources.
 
-MP-4R0 performed ownership rebase, legacy inventory, supersession, and architecture gates. **MP-4R1** retired legacy MP-4B `intergrax/contracts/decision.py` and the dynamic package bridge; `intergrax/contracts/decision/` is **Decision Integration Boundary** only. **MP-4R2** retired legacy MP-4C/D (`intergrax/contracts/approval.py`, `intergrax/approval/**`) after caller proof — canonical human judgment is `decision_human_review` + Governance/HITL only.
+MP-4R0 performed ownership rebase, legacy inventory, supersession, and architecture gates. **MP-4R1** retired legacy MP-4B `intergrax/contracts/decision.py` and the dynamic package bridge; `intergrax/contracts/decision/` is **Decision Integration Boundary** only. **MP-4R2** retired legacy MP-4C/D (`intergrax/contracts/approval.py`, `intergrax/approval/**`) after caller proof — canonical human judgment is `decision_human_review` + Governance/HITL only. **MP-4R3** adopts the execution continuation boundary: Multiplayer does **not** own pause/wait/resume lifecycle; public integration is **`ExecutionContinuationPort`** only; Governance/HITL owns authorization; Execution Engine owns lifecycle; Nexus remains **internal** orchestration only. No Multiplayer continuation store was added — `collaborative_work` currently holds provenance references only (no production continuation port caller).
 
 ---
 
@@ -31,7 +31,7 @@ MP-4R0 performed ownership rebase, legacy inventory, supersession, and architect
 | Authorization / `REQUIRE_HUMAN` | Governance / HITL | Consume — do not re-own |
 | Human authorization evidence | Governance / HITL + Evidence contracts | Link — do not own facts |
 | Pause / wait / resume | Execution Engine | None |
-| Public continuation boundary | `ExecutionContinuationPort` | Integrate via port (MP-4R3) |
+| Public continuation boundary | `ExecutionContinuationPort` | Reference/display only until integration caller; **no** side-channel resume (MP-4R3) |
 | Execution identity / lifecycle | Execution Engine | `ExecutionProvenanceRef` references only |
 | Orchestration | Nexus **internal** to Execution Engine | **No public Nexus dependency** |
 | Principal / membership / delegation | MP-1 (Collaborative Work) | Reuse |
@@ -150,7 +150,7 @@ configured platform implementation
 | **MP-4R0** — Core rebase & supersession gate | **CLOSURE FIX / READY_FOR_REAUDIT** |
 | **MP-4R1** — Decision contract convergence | **CLOSED** |
 | **MP-4R2** — Human review / Approval convergence | **READY_FOR_INDEPENDENT_AUDIT** |
-| MP-4R3 — Execution continuation integration | NOT STARTED |
+| MP-4R3 — Execution continuation integration | **READY_FOR_INDEPENDENT_AUDIT** |
 | MP-4R4 — Collaborative decision binding | NOT STARTED |
 | MP-4R5 — Evidence Plane adoption | NOT STARTED |
 | MP-4R6 — Legacy removal & migration | NOT STARTED |
