@@ -165,6 +165,53 @@ def test_mp4r7_decision_flow_resume_does_not_synthesize_governance_allow() -> No
     assert "evaluate_decision_governance_with" in segment
 
 
+def test_mp4r7_scenario_enforces_execution_authorization_before_resume() -> None:
+    scenario = _R7_ROOT / "scenario.py"
+    text = scenario.read_text(encoding="utf-8-sig")
+    assert ".authorization" in text
+    assert "validate_mp4r7_protected_execution_authorization" in text
+    assert "validate_execution_authorization_bundle" in (
+        _R7_ROOT / "authorization_enforcement.py"
+    ).read_text(encoding="utf-8-sig")
+    tree = ast.parse(text, filename=str(scenario))
+    complete_fn: ast.FunctionDef | None = None
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for child in node.body:
+            if isinstance(child, ast.FunctionDef) and child.name == "_complete_post_human_protected_execution":
+                complete_fn = child
+                break
+    assert complete_fn is not None
+    self_called: set[str] = set()
+    module_called: set[str] = set()
+    for node in ast.walk(complete_fn):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+            if func.value.id == "self":
+                self_called.add(func.attr)
+        elif isinstance(func, ast.Name):
+            module_called.add(func.id)
+    assert "validate_mp4r7_protected_execution_authorization" in module_called
+    assert "_resume_after_human_review" in self_called
+
+
+def test_mp4r7_authorization_enforcement_uses_caller_policy_context() -> None:
+    module = _R7_ROOT / "authorization_enforcement.py"
+    text = module.read_text(encoding="utf-8-sig")
+    assert "current_policy_context" in text
+    assert "authorization.policy_context" not in text
+
+
+def test_mp4r7_scenario_does_not_resume_on_terminal_alone() -> None:
+    scenario = _R7_ROOT / "scenario.py"
+    text = scenario.read_text(encoding="utf-8-sig")
+    assert "execution_authorization_present" in text
+    assert "if not attempt.execution_authorization_present:" in text
+
+
 def test_mp4r7_canonical_contracts_importable() -> None:
     from intergrax.contracts.collaborative_decision_binding import CollaborativeDecisionBinding
     from intergrax.contracts.decision_human_review import DecisionHumanReviewPort

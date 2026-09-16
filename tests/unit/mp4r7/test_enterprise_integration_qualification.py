@@ -6,7 +6,10 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.contracts.decision_authorization import DecisionGovernanceDisposition
+from intergrax.contracts.decision_human_review import DecisionHumanReviewOutcome
 from intergrax.contracts.decision_lifecycle import DecisionLifecycleStage
+from intergrax.contracts.execution_continuation import ExecutionContinuationLifecycleState
 
 from testing_support.mp4r7_enterprise_integration.approver import (
     qualification_approver_factory_call_count,
@@ -14,6 +17,9 @@ from testing_support.mp4r7_enterprise_integration.approver import (
 )
 from testing_support.mp4r7_enterprise_integration.composition import (
     open_mp4r7_enterprise_integration_composition,
+)
+from testing_support.mp4r7_enterprise_integration.decision_helpers import (
+    mp4r7_stale_execution_policy_context,
 )
 from testing_support.mp4r7_enterprise_integration.contracts import (
     Mp4R7ProtectedOperationError,
@@ -70,9 +76,47 @@ async def test_mp4r7_success_e2e() -> None:
     assert result.governance_required_human is True
     assert result.continuation_result_state.value == "resumed"
     assert result.protected_operation_completed is True
+    assert result.human_outcome is DecisionHumanReviewOutcome.APPROVED
+    assert result.post_human_governance_disposition is DecisionGovernanceDisposition.ALLOW
+    assert result.execution_authorization_present is True
+    assert result.execution_authorization_validated is True
     assert result.diagnostics is not None
     assert result.diagnostics.operation_outcome_check_status == "proven_pass"
     _assert_identity_continuity(result)
+
+
+@pytest.mark.asyncio
+async def test_mp4r7_human_approve_governance_deny_prevents_continuation_and_operation() -> None:
+    composition = open_mp4r7_enterprise_integration_composition()
+    executor = Mp4R7EnterpriseIntegrationScenarioExecutor(composition)
+    result = await executor.run_governance_deny_after_human_approve()
+    assert result.scenario_id is Mp4R7ScenarioId.GOVERNANCE_DENY
+    assert result.disposition is Mp4R7QualificationDisposition.QUALIFIED
+    assert result.human_outcome is DecisionHumanReviewOutcome.APPROVED
+    assert result.post_human_governance_disposition is DecisionGovernanceDisposition.DENY
+    assert result.execution_authorization_present is False
+    assert result.execution_authorization_validated is False
+    assert result.continuation_result_state is not ExecutionContinuationLifecycleState.RESUMED
+    assert result.protected_operation_completed is False
+    assert not result.evidence_records
+
+
+@pytest.mark.asyncio
+async def test_mp4r7_stale_current_policy_blocks_execution_after_human_approval() -> None:
+    composition = open_mp4r7_enterprise_integration_composition(
+        current_execution_policy_context=mp4r7_stale_execution_policy_context(),
+    )
+    executor = Mp4R7EnterpriseIntegrationScenarioExecutor(composition)
+    result = await executor.run_stale_execution_policy_after_human_approve()
+    assert result.scenario_id is Mp4R7ScenarioId.STALE_EXECUTION_POLICY
+    assert result.disposition is Mp4R7QualificationDisposition.QUALIFIED
+    assert result.human_outcome is DecisionHumanReviewOutcome.APPROVED
+    assert result.post_human_governance_disposition is DecisionGovernanceDisposition.ALLOW
+    assert result.execution_authorization_present is True
+    assert result.execution_authorization_validated is False
+    assert result.continuation_result_state is not ExecutionContinuationLifecycleState.RESUMED
+    assert result.protected_operation_completed is False
+    assert not result.evidence_records
 
 
 @pytest.mark.asyncio

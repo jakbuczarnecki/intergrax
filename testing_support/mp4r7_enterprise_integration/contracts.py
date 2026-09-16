@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from intergrax.contracts.decision_authorization import DecisionGovernanceDisposition
 from intergrax.contracts.decision_human_review import DecisionHumanReviewOutcome
 from intergrax.contracts.decision_lifecycle import DecisionLifecycleStage
 from intergrax.contracts.decision_record import DecisionProposalRef
@@ -25,6 +26,8 @@ class Mp4R7ScenarioId(StrEnum):
     BINDING_IDEMPOTENCY = "mp4r7.binding_idempotency"
     HUMAN_REPLAY = "mp4r7.human_replay"
     PROCESS_RESTART = "mp4r7.process_restart"
+    GOVERNANCE_DENY = "mp4r7.governance_deny"
+    STALE_EXECUTION_POLICY = "mp4r7.stale_execution_policy"
 
 
 class Mp4R7QualificationDisposition(StrEnum):
@@ -111,6 +114,9 @@ class Mp4R7EnterpriseIntegrationQualificationResult:
     human_authority_continuity: tuple[Mp4R7HumanAuthorityContinuitySnapshot, ...] = ()
     decision_final_stage: DecisionLifecycleStage | None = None
     secondary_evidence_error_code: str | None = None
+    post_human_governance_disposition: DecisionGovernanceDisposition | None = None
+    execution_authorization_present: bool = False
+    execution_authorization_validated: bool = False
 
 
 MP4R7_PROTECTED_OPERATION_ID = "mp4r7.enterprise.protected_side_effect"

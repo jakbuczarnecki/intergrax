@@ -147,6 +147,14 @@ def mp4r7_governance_policy_context():
     )
 
 
+def mp4r7_stale_execution_policy_context():
+    """Distinct policy context for execution-time freshness qualification (not mint-time P1)."""
+    return decision_governance_policy_context(
+        policy_provenance_digest="sha256:" + ("cd" * 32),
+        matched_rule_ids=("mp4r7.stale_execution",),
+    )
+
+
 __all__ = [
     "Mp4R7PassedVerificationStage",
     "Mp4R7RecordingHumanReviewPort",
@@ -154,6 +162,7 @@ __all__ = [
     "Mp4R7RequireHumanGovernanceEvaluator",
     "mp4r7_governance_action",
     "mp4r7_governance_policy_context",
+    "mp4r7_stale_execution_policy_context",
     "mp4r7_governance_spec",
     "mp4r7_verification_pipeline",
 ]

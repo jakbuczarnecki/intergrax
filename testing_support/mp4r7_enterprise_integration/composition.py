@@ -50,6 +50,7 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembershipRole,
     work_item_resource_scope,
 )
+from intergrax.contracts.decision_authorization import DecisionGovernancePolicyContext
 from intergrax.contracts.execution_continuation import ExecutionContinuationPort
 from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
 from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId, TaskId, mint_attempt_id
@@ -68,7 +69,10 @@ from intergrax.runtime.observability.functional_evidence.in_memory_functional_ev
 )
 from testing_support.builder import canonical_run_id_for_tests, canonical_task_id_for_tests
 from testing_support.mp4r7_enterprise_integration.contracts import MP4R7_SCENARIO_SEED
-from testing_support.mp4r7_enterprise_integration.decision_helpers import Mp4R7RecordingHumanReviewPort
+from testing_support.mp4r7_enterprise_integration.decision_helpers import (
+    Mp4R7RecordingHumanReviewPort,
+    mp4r7_governance_policy_context,
+)
 
 _TENANT = "tenant-mp4r7"
 _WORKSPACE = "workspace-mp4r7"
@@ -104,6 +108,7 @@ class Mp4R7EnterpriseIntegrationComposition:
     continuation_backing: ExecutionContinuationDurableBacking | None
     evidence_persistence: FunctionalEvidencePersistence
     human_review_port: Mp4R7RecordingHumanReviewPort
+    current_execution_policy_context: DecisionGovernancePolicyContext
     clock: Callable[[], datetime]
 
 
@@ -112,6 +117,7 @@ def open_mp4r7_enterprise_integration_composition(
     evidence_persistence: FunctionalEvidencePersistence | None = None,
     binding_repository: CollaborativeDecisionBindingRepository | None = None,
     durable_continuation: bool = False,
+    current_execution_policy_context: DecisionGovernancePolicyContext | None = None,
 ) -> Mp4R7EnterpriseIntegrationComposition:
     """Assemble replaceable in-memory/SQLite-capable providers for enterprise integration proof."""
     task_id = canonical_task_id_for_tests(MP4R7_SCENARIO_SEED)
@@ -217,6 +223,9 @@ def open_mp4r7_enterprise_integration_composition(
         continuation_backing=continuation_backing,
         evidence_persistence=evidence,
         human_review_port=Mp4R7RecordingHumanReviewPort(),
+        current_execution_policy_context=(
+            current_execution_policy_context or mp4r7_governance_policy_context()
+        ),
         clock=lambda: _NOW,
     )
 
