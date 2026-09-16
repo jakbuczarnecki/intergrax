@@ -8,33 +8,21 @@ from dataclasses import dataclass
 
 from intergrax.contracts.runtime_invariants import (
     RuntimeInvariantDomain,
+    RuntimeInvariantDomains,
     RuntimeInvariantEvaluationContext,
-    RuntimeInvariantResult,
+    RuntimeInvariantRuleEvaluation,
     RuntimeInvariantSeverity,
     RuntimeInvariantStatus,
 )
 from intergrax.runtime.governance.invariants.probe import GovernanceInvariantProbe
 
 
-def _result(
+def _decision(
     *,
-    rule_id: str,
-    rule_version: str,
-    severity: RuntimeInvariantSeverity,
     status: RuntimeInvariantStatus,
     summary: str,
-    context: RuntimeInvariantEvaluationContext,
-) -> RuntimeInvariantResult:
-    return RuntimeInvariantResult(
-        rule_id=rule_id,
-        domain=RuntimeInvariantDomain.GOVERNANCE,
-        rule_version=rule_version,
-        severity=severity,
-        status=status,
-        summary=summary,
-        evaluation_id=context.evaluation_id,
-        correlation_id=context.correlation_id,
-    )
+) -> RuntimeInvariantRuleEvaluation:
+    return RuntimeInvariantRuleEvaluation(status=status, summary=summary)
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,22 +33,18 @@ class GovernanceInnerExecutionBindingRule:
     rule_id: str = "GOV-INV-001"
     rule_version: str = "1.0.0"
     severity: RuntimeInvariantSeverity = RuntimeInvariantSeverity.CRITICAL
-    domain: RuntimeInvariantDomain = RuntimeInvariantDomain.GOVERNANCE
+    domain: RuntimeInvariantDomain = RuntimeInvariantDomains.GOVERNANCE
 
     def evaluate(
         self,
         context: RuntimeInvariantEvaluationContext,
-    ) -> RuntimeInvariantResult:
+    ) -> RuntimeInvariantRuleEvaluation:
         facts = self.probe.read_facts()
         binding = facts.meaningful_side_effect_binding
         if binding is None:
-            return _result(
-                rule_id=self.rule_id,
-                rule_version=self.rule_version,
-                severity=self.severity,
+            return _decision(
                 status=RuntimeInvariantStatus.NOT_APPLICABLE,
                 summary="meaningful side effect binding not in scope",
-                context=context,
             )
         if (
             binding.request_task_id == binding.active_task_id
@@ -68,23 +52,13 @@ class GovernanceInnerExecutionBindingRule:
             and binding.request_attempt_id == binding.active_attempt_id
             and binding.request_execution_id == binding.active_execution_id
         ):
-            pass
-        else:
-            return _result(
-                rule_id=self.rule_id,
-                rule_version=self.rule_version,
-                severity=self.severity,
-                status=RuntimeInvariantStatus.VIOLATION,
-                summary="meaningful side effect not bound to active canonical execution",
-                context=context,
+            return _decision(
+                status=RuntimeInvariantStatus.PASS,
+                summary="meaningful side effect matches active canonical execution",
             )
-        return _result(
-            rule_id=self.rule_id,
-            rule_version=self.rule_version,
-            severity=self.severity,
-            status=RuntimeInvariantStatus.PASS,
-            summary="meaningful side effect matches active canonical execution",
-            context=context,
+        return _decision(
+            status=RuntimeInvariantStatus.VIOLATION,
+            summary="meaningful side effect not bound to active canonical execution",
         )
 
 

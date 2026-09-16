@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.contracts.runtime_invariants import RuntimeInvariantDomain, RuntimeInvariantRule
+from intergrax.contracts.runtime_invariants import RuntimeInvariantDomain, RuntimeInvariantDomains, RuntimeInvariantRule
 from intergrax.runtime.execution.delegated_execution.invariants.probe import (
     DelegatedProviderInvariantProbe,
 )
@@ -26,7 +26,7 @@ class DelegatedProviderRuntimeInvariantRulePack:
     probe: DelegatedProviderInvariantProbe
     pack_id: str = _PACK_ID
     pack_version: str = _PACK_VERSION
-    domain: RuntimeInvariantDomain = RuntimeInvariantDomain.DELEGATED_PROVIDER
+    domain: RuntimeInvariantDomain = RuntimeInvariantDomains.DELEGATED_PROVIDER
 
     @property
     def rules(self) -> tuple[RuntimeInvariantRule, ...]:

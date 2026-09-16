@@ -2,7 +2,7 @@
 
 **Task:** RI-01 — Runtime Invariant Service foundation  
 **Branch:** `development`  
-**Status:** CLOSED (pending independent GitHub audit of commit SHA)
+**Status:** CLOSED / ENTERPRISE QUALIFIED (RI-01-C1 hardening; pending independent GitHub audit of commit SHA)
 
 ## Ownership model
 
@@ -46,6 +46,18 @@ Probes are contract-first; rules are read-only.
 ## Pluginability
 
 External `RuntimeInvariantRulePack` / `RuntimeInvariantRule` implementations work without runner changes. No global registry.
+
+## RI-01-C1 hardening (enterprise correction)
+
+| Concern | Model |
+| --- | --- |
+| Runner replaceability | `RuntimeInvariantService` depends on `RuntimeInvariantRunner` protocol only; `compose_default_runtime_invariant_runner` wires `DefaultRuntimeInvariantRunner` at composition |
+| Domain extensibility | `RuntimeInvariantDomain` value object (`[a-z0-9][a-z0-9_.-]*`); canonical IDs via `RuntimeInvariantDomains` — no `StrEnum`, no global registry |
+| Result trust | Rules return `RuntimeInvariantRuleEvaluation` (decision only); runner applies authoritative `rule_id`, `domain`, `rule_version`, `severity`, `evaluation_id`, `correlation_id` |
+| Pack metadata | `RuntimeInvariantReport.packs: tuple[RuntimeInvariantPackRef, ...]` sorted by `(domain, pack_id, pack_version)` |
+| Composition | `rule.domain` must match `pack.domain` (one pack = one domain) |
+
+C1 tests: `tests/unit/runtime/invariants/test_runtime_invariant_c1_hardening.py` (RI-C1-T1 … T15).
 
 ## Tests
 

@@ -31,6 +31,7 @@ from intergrax.runtime.invariants.foundation_composition import (
     compose_foundation_runtime_invariant_service,
     foundation_runtime_invariant_rule_packs,
 )
+from intergrax.runtime.invariants.composition import compose_default_runtime_invariant_runner
 from intergrax.runtime.invariants.service import RuntimeInvariantService
 from intergrax.runtime.invariants.clock import SystemRuntimeInvariantEvaluationClock
 
@@ -62,10 +63,12 @@ class _FakeGovernanceProbe:
 
 
 def _service_from_packs(*packs) -> RuntimeInvariantService:
+    rule_packs = packs
     return RuntimeInvariantService(
-        rule_packs=packs,
+        rule_packs=rule_packs,
         clock=SystemRuntimeInvariantEvaluationClock(),
         evaluation_id_factory=MonotonicRuntimeInvariantEvaluationIdFactory(),
+        runner=compose_default_runtime_invariant_runner(rule_packs),
     )
 
 

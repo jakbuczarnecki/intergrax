@@ -67,3 +67,16 @@ def test_public_contract_no_any_stable_abi() -> None:
     source = _CONTRACT_PATH.read_text(encoding="utf-8")
     assert "dict[str, Any]" not in source
     assert re.search(r"\bAny\b", source) is None
+
+
+def test_public_contract_no_runtime_imports() -> None:
+    for module in _imports(_CONTRACT_PATH):
+        assert not module.startswith("intergrax.runtime")
+        assert not module.startswith("intergrax.integrations")
+        assert "nexus" not in module.lower()
+
+
+def test_service_does_not_import_default_runner() -> None:
+    service_path = _FOUNDATION_ROOT / "service.py"
+    for module in _imports(service_path):
+        assert "default_runner" not in module

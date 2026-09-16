@@ -1862,6 +1862,6 @@ The program is complete only when all applicable statements are proven against t
 
 **Harness top-tier gap audit (2026-09-16) is complete.** See [`HARNESS_TOP_TIER_GAP_AUDIT.md`](../maintainers/qualification/HARNESS_TOP_TIER_GAP_AUDIT.md).
 
-**Next recommended implementation workstream:** **TR-01 — ToolRuntime enterprise closure** (single governed tool invocation spine; sandbox/catalog/runtime-bound parity; qualification suite). **RI-01 — Runtime Invariant Service foundation** is **CLOSED** (foundation + three domain packs + qualification tests).
+**Next recommended implementation workstream:** **TR-01 — ToolRuntime enterprise closure** (single governed tool invocation spine; sandbox/catalog/runtime-bound parity; qualification suite). **RI-01 — Runtime Invariant Service foundation** is **CLOSED / ENTERPRISE QUALIFIED** (foundation + C1 runner/domain/trust hardening + three domain packs + qualification tests).
 
 P0A/P0B/P0C items remain valid for consumer adoption and durability convergence; do not reimplement frozen Execution Engine or P2.1 delegated provider plane.

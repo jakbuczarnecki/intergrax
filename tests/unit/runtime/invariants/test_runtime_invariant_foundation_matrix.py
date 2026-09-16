@@ -12,19 +12,24 @@ import pytest
 from intergrax.contracts.runtime_invariants import (
     RuntimeInvariantCompositionError,
     RuntimeInvariantDomain,
+    RuntimeInvariantDomains,
     RuntimeInvariantEvaluationContext,
     RuntimeInvariantEvaluationMode,
     RuntimeInvariantEvaluationRequest,
     RuntimeInvariantOverallStatus,
-    RuntimeInvariantResult,
+    RuntimeInvariantPackRef,
     RuntimeInvariantRule,
+    RuntimeInvariantRuleEvaluation,
     RuntimeInvariantRulePack,
     RuntimeInvariantSelection,
     RuntimeInvariantSeverity,
     RuntimeInvariantStatus,
 )
 from intergrax.runtime.invariants.clock import SystemRuntimeInvariantEvaluationClock
-from intergrax.runtime.invariants.composition import validate_runtime_invariant_rule_packs
+from intergrax.runtime.invariants.composition import (
+    compose_default_runtime_invariant_runner,
+    validate_runtime_invariant_rule_packs,
+)
 from intergrax.runtime.invariants.evaluation_id import MonotonicRuntimeInvariantEvaluationIdFactory
 from intergrax.runtime.invariants.service import RuntimeInvariantService
 
@@ -40,14 +45,14 @@ class _FixedClock:
 
 class _BoomRule:
     rule_id = "TEST-RULE-BOOM"
-    domain = RuntimeInvariantDomain.EXECUTION
+    domain = RuntimeInvariantDomains.EXECUTION
     rule_version = "1.0.0"
     severity = RuntimeInvariantSeverity.LOW
 
     def evaluate(
         self,
         context: RuntimeInvariantEvaluationContext,
-    ) -> RuntimeInvariantResult:
+    ) -> RuntimeInvariantRuleEvaluation:
         raise RuntimeError("secret-token-xyz")
 
 
@@ -60,7 +65,7 @@ class _StaticRule:
         rule_id: str,
         status: RuntimeInvariantStatus,
         summary: str,
-        domain: RuntimeInvariantDomain = RuntimeInvariantDomain.EXECUTION,
+        domain: RuntimeInvariantDomain = RuntimeInvariantDomains.EXECUTION,
     ) -> None:
         self._rule_id = rule_id
         self._status = status
@@ -86,17 +91,8 @@ class _StaticRule:
     def evaluate(
         self,
         context: RuntimeInvariantEvaluationContext,
-    ) -> RuntimeInvariantResult:
-        return RuntimeInvariantResult(
-            rule_id=self._rule_id,
-            domain=self._domain,
-            rule_version=self.rule_version,
-            severity=self.severity,
-            status=self._status,
-            summary=self._summary,
-            evaluation_id=context.evaluation_id,
-            correlation_id=context.correlation_id,
-        )
+    ) -> RuntimeInvariantRuleEvaluation:
+        return RuntimeInvariantRuleEvaluation(status=self._status, summary=self._summary)
 
 
 class _SingleRulePack:
@@ -107,7 +103,7 @@ class _SingleRulePack:
         *,
         pack_id: str,
         rules: tuple[RuntimeInvariantRule, ...],
-        domain: RuntimeInvariantDomain = RuntimeInvariantDomain.EXECUTION,
+        domain: RuntimeInvariantDomain = RuntimeInvariantDomains.EXECUTION,
     ) -> None:
         self._pack_id = pack_id
         self._domain = domain
@@ -131,10 +127,12 @@ class _SingleRulePack:
 
 
 def _service(*packs: RuntimeInvariantRulePack) -> RuntimeInvariantService:
+    rule_packs = packs
     return RuntimeInvariantService(
-        rule_packs=packs,
+        rule_packs=rule_packs,
         clock=_FixedClock(),
         evaluation_id_factory=MonotonicRuntimeInvariantEvaluationIdFactory(),
+        runner=compose_default_runtime_invariant_runner(rule_packs),
     )
 
 
@@ -204,13 +202,13 @@ def test_ri_t6_deterministic_order_independent_of_pack_order() -> None:
         rule_id="B-RULE",
         status=RuntimeInvariantStatus.PASS,
         summary="b",
-        domain=RuntimeInvariantDomain.GOVERNANCE,
+        domain=RuntimeInvariantDomains.GOVERNANCE,
     )
     pack_one = _SingleRulePack(pack_id="pack-one", rules=(rule_a,))
     pack_two = _SingleRulePack(
         pack_id="pack-two",
         rules=(rule_b,),
-        domain=RuntimeInvariantDomain.GOVERNANCE,
+        domain=RuntimeInvariantDomains.GOVERNANCE,
     )
     forward = _service(pack_one, pack_two).evaluate()
     reverse = _service(pack_two, pack_one).evaluate()
@@ -237,10 +235,12 @@ def test_ri_t8_duplicate_pack_id_fail_fast() -> None:
 
 
 def test_ri_t9_custom_external_pack_without_runner_changes() -> None:
+    external_domain = RuntimeInvariantDomain("external.vendor.example")
+
     class ExternalPack:
         pack_id = "external-qual-pack"
         pack_version = "9.9.9"
-        domain = RuntimeInvariantDomain.DELEGATED_PROVIDER
+        domain = external_domain
 
         @property
         def rules(self) -> tuple[RuntimeInvariantRule, ...]:
@@ -249,13 +249,20 @@ def test_ri_t9_custom_external_pack_without_runner_changes() -> None:
                     rule_id="EXT-INV-001",
                     status=RuntimeInvariantStatus.PASS,
                     summary="external",
-                    domain=RuntimeInvariantDomain.DELEGATED_PROVIDER,
+                    domain=external_domain,
                 ),
             )
 
     report = _service(ExternalPack()).evaluate()
-    assert report.pack_versions == ("9.9.9",)
+    assert report.packs == (
+        RuntimeInvariantPackRef(
+            pack_id="external-qual-pack",
+            pack_version="9.9.9",
+            domain=external_domain,
+        ),
+    )
     assert report.results[0].rule_id == "EXT-INV-001"
+    assert report.results[0].domain == external_domain
 
 
 def test_ri_t10_domain_selection() -> None:
@@ -263,24 +270,24 @@ def test_ri_t10_domain_selection() -> None:
         rule_id="EXEC-ONLY",
         status=RuntimeInvariantStatus.PASS,
         summary="e",
-        domain=RuntimeInvariantDomain.EXECUTION,
+        domain=RuntimeInvariantDomains.EXECUTION,
     )
     gov_rule = _StaticRule(
         rule_id="GOV-ONLY",
         status=RuntimeInvariantStatus.PASS,
         summary="g",
-        domain=RuntimeInvariantDomain.GOVERNANCE,
+        domain=RuntimeInvariantDomains.GOVERNANCE,
     )
     packs = (
         _SingleRulePack(pack_id="p1", rules=(exec_rule,)),
         _SingleRulePack(
             pack_id="p2",
             rules=(gov_rule,),
-            domain=RuntimeInvariantDomain.GOVERNANCE,
+            domain=RuntimeInvariantDomains.GOVERNANCE,
         ),
     )
     request = RuntimeInvariantEvaluationRequest(
-        selection=RuntimeInvariantSelection(domains=frozenset({RuntimeInvariantDomain.GOVERNANCE})),
+        selection=RuntimeInvariantSelection(domains=frozenset({RuntimeInvariantDomains.GOVERNANCE})),
     )
     report = _service(*packs).evaluate(request)
     assert [r.rule_id for r in report.results] == ["GOV-ONLY"]
@@ -332,7 +339,7 @@ def test_ri_t15_version_propagation() -> None:
     class VersionedPack:
         pack_id = "versioned"
         pack_version = "2.3.4"
-        domain = RuntimeInvariantDomain.EXECUTION
+        domain = RuntimeInvariantDomains.EXECUTION
 
         @property
         def rules(self) -> tuple[RuntimeInvariantRule, ...]:
@@ -341,6 +348,6 @@ def test_ri_t15_version_propagation() -> None:
             )
 
     report = _service(VersionedPack()).evaluate()
-    assert report.pack_versions == ("2.3.4",)
+    assert report.packs[0].pack_version == "2.3.4"
     assert report.results[0].rule_version == "1.0.0"
     assert report.mode is RuntimeInvariantEvaluationMode.AD_HOC

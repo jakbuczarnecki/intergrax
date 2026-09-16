@@ -11,9 +11,9 @@ from intergrax.contracts.runtime_invariants import (
     RuntimeInvariantEvaluationRequest,
     RuntimeInvariantReport,
     RuntimeInvariantRulePack,
+    RuntimeInvariantRunner,
 )
 from intergrax.runtime.invariants.composition import validate_runtime_invariant_rule_packs
-from intergrax.runtime.invariants.default_runner import DefaultRuntimeInvariantRunner
 
 
 class RuntimeInvariantService:
@@ -27,12 +27,13 @@ class RuntimeInvariantService:
         rule_packs: tuple[RuntimeInvariantRulePack, ...],
         clock: RuntimeInvariantEvaluationClock,
         evaluation_id_factory: RuntimeInvariantEvaluationIdFactory,
+        runner: RuntimeInvariantRunner,
     ) -> None:
-        rules = validate_runtime_invariant_rule_packs(rule_packs)
+        validate_runtime_invariant_rule_packs(rule_packs)
         self._packs = rule_packs
         self._clock = clock
         self._id_factory = evaluation_id_factory
-        self._runner = DefaultRuntimeInvariantRunner(rule_packs=rule_packs, rules=rules)
+        self._runner = runner
 
     @property
     def rule_packs(self) -> tuple[RuntimeInvariantRulePack, ...]:

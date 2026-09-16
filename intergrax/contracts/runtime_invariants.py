@@ -8,24 +8,51 @@ Platform-owned evaluation mechanics only — invariant meaning stays domain-owne
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.execution_identity import ExecutionId
+
+_DOMAIN_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_.-]*$")
+
+
+class RuntimeInvariantDomainError(ValueError):
+    """Invalid extensible runtime invariant domain identifier."""
 
 
 class RuntimeInvariantCompositionError(ValueError):
     """Fail-closed composition: duplicate pack or rule identities."""
 
 
-class RuntimeInvariantDomain(StrEnum):
-    """Stable domain partition for rule packs."""
+@dataclass(frozen=True, slots=True)
+class RuntimeInvariantDomain:
+    """Immutable, extensible domain partition identifier (no core enum registry)."""
 
-    EXECUTION = "execution"
-    DELEGATED_PROVIDER = "delegated_provider"
-    GOVERNANCE = "governance"
+    value: str
+
+    def __post_init__(self) -> None:
+        if not self.value or self.value != self.value.strip():
+            raise RuntimeInvariantDomainError(
+                "runtime invariant domain must be non-empty and contain no surrounding whitespace",
+            )
+        if not _DOMAIN_ID_PATTERN.match(self.value):
+            raise RuntimeInvariantDomainError(
+                "runtime invariant domain must match [a-z0-9][a-z0-9_.-]*",
+            )
+
+    def __str__(self) -> str:
+        return self.value
+
+
+class RuntimeInvariantDomains:
+    """Reserved platform domain identifiers."""
+
+    EXECUTION = RuntimeInvariantDomain("execution")
+    DELEGATED_PROVIDER = RuntimeInvariantDomain("delegated_provider")
+    GOVERNANCE = RuntimeInvariantDomain("governance")
 
 
 class RuntimeInvariantSeverity(StrEnum):
@@ -113,6 +140,16 @@ class RuntimeInvariantEvaluationRequest:
 
 
 @dataclass(frozen=True, slots=True)
+class RuntimeInvariantRuleEvaluation:
+    """Untrusted rule decision — platform metadata is applied by the runner."""
+
+    status: RuntimeInvariantStatus
+    summary: str
+    diagnostic_code: str | None = None
+    evidence_refs: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class RuntimeInvariantResult:
     """Immutable per-rule outcome."""
 
@@ -126,6 +163,15 @@ class RuntimeInvariantResult:
     correlation_id: str
     diagnostic_code: str | None = None
     evidence_refs: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeInvariantPackRef:
+    """Paired pack identity — avoids parallel tuple drift."""
+
+    pack_id: RuntimeInvariantPackId
+    pack_version: str
+    domain: RuntimeInvariantDomain
 
 
 @dataclass(frozen=True, slots=True)
@@ -146,8 +192,7 @@ class RuntimeInvariantReport:
     correlation_id: str
     evaluated_at: datetime
     mode: RuntimeInvariantEvaluationMode
-    pack_ids: tuple[RuntimeInvariantPackId, ...]
-    pack_versions: tuple[str, ...]
+    packs: tuple[RuntimeInvariantPackRef, ...]
     results: tuple[RuntimeInvariantResult, ...]
     summary: RuntimeInvariantReportSummary
     overall_status: RuntimeInvariantOverallStatus
@@ -172,7 +217,7 @@ class RuntimeInvariantRule(Protocol):
     def evaluate(
         self,
         context: RuntimeInvariantEvaluationContext,
-    ) -> RuntimeInvariantResult:
+    ) -> RuntimeInvariantRuleEvaluation:
         """Read-only evaluation against domain-injected facts."""
         ...
 
@@ -208,12 +253,16 @@ class RuntimeInvariantEvaluationIdFactory(Protocol):
         ...
 
 
+@runtime_checkable
 class RuntimeInvariantRunner(Protocol):
     """Executes selected rules from composed packs."""
 
     def evaluate(
         self,
         request: RuntimeInvariantEvaluationRequest,
+        *,
+        context: RuntimeInvariantEvaluationContext,
+        evaluated_at: datetime,
     ) -> RuntimeInvariantReport:
         ...
 
@@ -221,6 +270,13 @@ class RuntimeInvariantRunner(Protocol):
 def runtime_invariant_rule_sort_key(rule: RuntimeInvariantRule) -> tuple[str, str, str]:
     """Documented deterministic ordering: domain, rule_id, rule_version."""
     return (rule.domain.value, rule.rule_id, rule.rule_version)
+
+
+def runtime_invariant_pack_sort_key(
+    pack: RuntimeInvariantRulePack,
+) -> tuple[str, str, str]:
+    """Deterministic pack ordering: domain, pack_id, pack_version."""
+    return (pack.domain.value, pack.pack_id, pack.pack_version)
 
 
 def aggregate_runtime_invariant_overall_status(
@@ -261,6 +317,8 @@ def summarize_runtime_invariant_results(
 __all__ = [
     "RuntimeInvariantCompositionError",
     "RuntimeInvariantDomain",
+    "RuntimeInvariantDomainError",
+    "RuntimeInvariantDomains",
     "RuntimeInvariantEvaluationClock",
     "RuntimeInvariantEvaluationContext",
     "RuntimeInvariantEvaluationId",
@@ -270,16 +328,19 @@ __all__ = [
     "RuntimeInvariantId",
     "RuntimeInvariantOverallStatus",
     "RuntimeInvariantPackId",
+    "RuntimeInvariantPackRef",
     "RuntimeInvariantReport",
     "RuntimeInvariantReportSummary",
     "RuntimeInvariantResult",
     "RuntimeInvariantRule",
+    "RuntimeInvariantRuleEvaluation",
     "RuntimeInvariantRulePack",
     "RuntimeInvariantRunner",
     "RuntimeInvariantSelection",
     "RuntimeInvariantSeverity",
     "RuntimeInvariantStatus",
     "aggregate_runtime_invariant_overall_status",
+    "runtime_invariant_pack_sort_key",
     "runtime_invariant_rule_sort_key",
     "summarize_runtime_invariant_results",
 ]

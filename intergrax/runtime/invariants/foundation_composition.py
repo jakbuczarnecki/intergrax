@@ -19,6 +19,7 @@ from intergrax.runtime.governance.invariants import (
 )
 from intergrax.runtime.invariants.clock import SystemRuntimeInvariantEvaluationClock
 from intergrax.runtime.invariants.evaluation_id import DefaultRuntimeInvariantEvaluationIdFactory
+from intergrax.runtime.invariants.composition import compose_default_runtime_invariant_runner
 from intergrax.runtime.invariants.service import RuntimeInvariantService
 
 
@@ -32,10 +33,12 @@ def foundation_runtime_invariant_rule_packs() -> tuple[RuntimeInvariantRulePack,
 
 
 def compose_foundation_runtime_invariant_service() -> RuntimeInvariantService:
+    packs = foundation_runtime_invariant_rule_packs()
     return RuntimeInvariantService(
-        rule_packs=foundation_runtime_invariant_rule_packs(),
+        rule_packs=packs,
         clock=SystemRuntimeInvariantEvaluationClock(),
         evaluation_id_factory=DefaultRuntimeInvariantEvaluationIdFactory(),
+        runner=compose_default_runtime_invariant_runner(packs),
     )
 
 

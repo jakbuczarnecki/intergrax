@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.contracts.runtime_invariants import RuntimeInvariantDomain, RuntimeInvariantRule
+from intergrax.contracts.runtime_invariants import RuntimeInvariantDomain, RuntimeInvariantDomains, RuntimeInvariantRule
 from intergrax.runtime.governance.invariants.probe import GovernanceInvariantProbe
 from intergrax.runtime.governance.invariants.rules import GovernanceInnerExecutionBindingRule
 
@@ -17,7 +17,7 @@ class GovernanceRuntimeInvariantRulePack:
     probe: GovernanceInvariantProbe
     pack_id: str = _PACK_ID
     pack_version: str = _PACK_VERSION
-    domain: RuntimeInvariantDomain = RuntimeInvariantDomain.GOVERNANCE
+    domain: RuntimeInvariantDomain = RuntimeInvariantDomains.GOVERNANCE
 
     @property
     def rules(self) -> tuple[RuntimeInvariantRule, ...]:

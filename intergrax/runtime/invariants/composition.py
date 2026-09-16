@@ -8,8 +8,10 @@ from intergrax.contracts.runtime_invariants import (
     RuntimeInvariantCompositionError,
     RuntimeInvariantRule,
     RuntimeInvariantRulePack,
+    RuntimeInvariantRunner,
     runtime_invariant_rule_sort_key,
 )
+from intergrax.runtime.invariants.default_runner import DefaultRuntimeInvariantRunner
 
 
 def validate_runtime_invariant_rule_packs(
@@ -28,6 +30,11 @@ def validate_runtime_invariant_rule_packs(
             )
         pack_ids[pack.pack_id] = pack.pack_version
         for rule in pack.rules:
+            if rule.domain != pack.domain:
+                raise RuntimeInvariantCompositionError(
+                    f"rule {rule.rule_id!r} domain {rule.domain!s} "
+                    f"does not match pack {pack.pack_id!r} domain {pack.domain!s}",
+                )
             prior = rule_ids.get(rule.rule_id)
             if prior is not None:
                 raise RuntimeInvariantCompositionError(
@@ -39,4 +46,15 @@ def validate_runtime_invariant_rule_packs(
     return tuple(sorted(rules, key=runtime_invariant_rule_sort_key))
 
 
-__all__ = ["validate_runtime_invariant_rule_packs"]
+def compose_default_runtime_invariant_runner(
+    rule_packs: tuple[RuntimeInvariantRulePack, ...],
+) -> RuntimeInvariantRunner:
+    """Default runner factory — composition layer owns concrete implementation."""
+    rules = validate_runtime_invariant_rule_packs(rule_packs)
+    return DefaultRuntimeInvariantRunner(rule_packs=rule_packs, rules=rules)
+
+
+__all__ = [
+    "compose_default_runtime_invariant_runner",
+    "validate_runtime_invariant_rule_packs",
+]

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.contracts.runtime_invariants import RuntimeInvariantDomain, RuntimeInvariantRule
+from intergrax.contracts.runtime_invariants import RuntimeInvariantDomain, RuntimeInvariantDomains, RuntimeInvariantRule
 from intergrax.runtime.execution.invariants.probe import ExecutionInvariantProbe
 from intergrax.runtime.execution.invariants.rules import (
     ExecutionCanonicalIdentityAuthorityRule,
@@ -25,7 +25,7 @@ class ExecutionRuntimeInvariantRulePack:
     probe: ExecutionInvariantProbe
     pack_id: str = _PACK_ID
     pack_version: str = _PACK_VERSION
-    domain: RuntimeInvariantDomain = RuntimeInvariantDomain.EXECUTION
+    domain: RuntimeInvariantDomain = RuntimeInvariantDomains.EXECUTION
 
     @property
     def rules(self) -> tuple[RuntimeInvariantRule, ...]:
