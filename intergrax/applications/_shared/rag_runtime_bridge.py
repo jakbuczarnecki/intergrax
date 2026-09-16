@@ -6,12 +6,20 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.applications.contracts.application_host import ApplicationProfile
-from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack, create_default_rag_stack
+from intergrax.rag.profiles.tool_wiring_runtime_sync import (
+    apply_rag_from_tool_wiring_context,
+)
+from intergrax.rag.bootstrap.rag_stack_bootstrap import (
+    RagStack,
+    create_default_rag_stack,
+)
 from intergrax.rag.profiles.rag_profile import (
     RagProfile,
     production_graph_rag_profile,
@@ -35,28 +43,6 @@ def apply_rag_stack_to_runtime_config(
     config.retrieval_service = stack.retrieval_service
     config.rag_profile = stack.profile
     sync_rag_profile_from_runtime_config(config, base=stack.profile)
-    return config
-
-
-def apply_rag_from_tool_wiring_context(
-    config: RuntimeConfig,
-    wiring_context: ToolWiringContext,
-) -> RuntimeConfig:
-    """Copy RAG managers from ``ToolWiringContext`` when present."""
-    if wiring_context.vectorstore_manager is not None:
-        config.vectorstore_manager = wiring_context.vectorstore_manager
-    if wiring_context.embedding_manager is not None:
-        config.embedding_manager = wiring_context.embedding_manager
-    if wiring_context.retriever_manager is not None:
-        config.retriever_manager = wiring_context.retriever_manager
-    if wiring_context.reranker_manager is not None:
-        config.reranker_manager = wiring_context.reranker_manager
-    if wiring_context.retrieval_service is not None:
-        config.retrieval_service = wiring_context.retrieval_service
-    if wiring_context.rag_profile is not None:
-        config.rag_profile = wiring_context.rag_profile
-    if config.rag_profile is not None:
-        sync_rag_profile_from_runtime_config(config, base=config.rag_profile)
     return config
 
 
@@ -129,7 +115,10 @@ def apply_rag_for_environment(
     """
     if not config.enable_rag:
         return config
-    if tool_wiring_context is not None and tool_wiring_context.vectorstore_manager is not None:
+    if (
+        tool_wiring_context is not None
+        and tool_wiring_context.vectorstore_manager is not None
+    ):
         return apply_rag_from_tool_wiring_context(config, tool_wiring_context)
     stack = resolve_rag_stack_for_environment(
         env,
