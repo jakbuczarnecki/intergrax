@@ -196,7 +196,7 @@ Classification applies per phase. Until MP-1+ ownership is confirmed, rows below
 | `LKW-HYBRID-ASK-*` | Application workflow; may later create or consume WorkArtifacts | MP-3 WorkArtifact primitive |
 | Slack approval/decision surfacing rows | Channel presentation of decisions | Canonical Decision System (Multiplayer binding only) |
 | Governance/HITL + `ExecutionContinuationPort` | Execution pause/resume when policy or human gate requires it | Decision semantics alone (Decision System owns Decision) |
-| Decision System (`DECISION_APPROVAL_GOVERNANCE`, `decision_*` contracts) | Decision identity, lifecycle, resolution, finalization | Multiplayer-owned Decision primitive |
+| Decision System (`DECISION_APPROVAL_GOVERNANCE`, `decision_*` contracts) | Canonical Decision authority (identity, version, lifecycle, resolution, finalization); Multiplayer reuses it | Must not be duplicated or re-owned as Multiplayer Decision authority |
 | Evidence Plane / Diagnostics | Factual evidence and interpretation authority | Multiplayer-owned evidence or diagnostic stores |
 | UCL (`UNIFIED_CONTEXT_LIFECYCLE`) | Durable/ephemeral context lifecycle, artifact coordination | MP-5 ContextView primitive |
 | Context Engineering (`CONTEXT_ENGINEERING`) | Budget authority, assembly, provenance of model-facing context | MP-5 principal scope model |

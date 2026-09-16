@@ -66,8 +66,12 @@ architecture hub:
    not Shared Work owner.
 4. `LKW-HYBRID-ASK-*` is not MP-3; Hybrid Ask may use WorkArtifacts later,
    but WorkArtifact is a platform primitive.
-5. Slack vertical rows are not MP-4; Slack may surface Decisions; Decision is
-   platform-owned; HITL remains execution pause/resume.
+5. Slack vertical rows are not **MP-4R**; Slack may surface canonical Decisions
+   but never owns them. **Decision System** owns Decision. **Governance/HITL**
+   owns authorization / human approval semantics. **`ExecutionContinuationPort`**
+   is the canonical public execution continuation boundary. Nexus remains
+   **internal** to the Execution Engine orchestration strategy only; Multiplayer
+   may bind/project only.
 6. `TOKEN-10E-*` is not Multiplayer MP-5 implementation; Multiplayer may
    reuse UCL/Token Optimization work.
 7. Do not force-map existing adjacent rows to MP phases merely because
