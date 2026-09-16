@@ -32,6 +32,9 @@ from intergrax.contracts.marketplace import (
     ToolLifecycleHandoffPayload,
     selection_identity_key,
 )
+from intergrax.contracts.tools.marketplace_lifecycle_handoff import (
+    ToolLifecycleHandoffUnavailableError,
+)
 from intergrax.marketplace.handoff import (
     AgentMarketplaceLifecycleHandoffHandler,
     LifecycleHandoffResolver,
@@ -39,6 +42,7 @@ from intergrax.marketplace.handoff import (
     SkillMarketplaceLifecycleHandoffHandler,
     ToolMarketplaceLifecycleHandoffHandler,
 )
+from intergrax.marketplace.handoff.errors import MarketplaceLifecycleHandlerError
 
 pytestmark = pytest.mark.unit
 
@@ -263,24 +267,44 @@ def test_identity_mismatch_rejected() -> None:
     assert outcome.reason_code is MarketplaceLifecycleHandoffReasonCode.IDENTITY_MISMATCH
 
 
-def test_handler_failure_typed_propagation() -> None:
-    class _FailingAgentPort:
+def test_known_domain_unavailable_maps_to_domain_unavailable() -> None:
+    class _UnavailableToolPort:
         def submit_marketplace_lifecycle_handoff(
             self,
-            payload: AgentLifecycleHandoffPayload,
+            payload: ToolLifecycleHandoffPayload,
             *,
             request_id: str,
             correlation_id: str | None,
         ) -> DomainLifecycleHandoffAck:
             del payload, request_id, correlation_id
-            raise RuntimeError("domain down")
+            raise ToolLifecycleHandoffUnavailableError("tool authority down")
 
     resolver = LifecycleHandoffResolver(
-        {CapabilityKind.AGENT: AgentMarketplaceLifecycleHandoffHandler(_FailingAgentPort())},
+        {CapabilityKind.TOOL: ToolMarketplaceLifecycleHandoffHandler(_UnavailableToolPort())},
     )
     service = MarketplaceLifecycleHandoffService(resolver)
-    outcome = service.handoff(_handoff_request(CapabilityKind.AGENT, "agents.fail"))
+    outcome = service.handoff(_handoff_request(CapabilityKind.TOOL, "tools.fail"))
     assert outcome.reason_code is MarketplaceLifecycleHandoffReasonCode.DOMAIN_UNAVAILABLE
+
+
+def test_unexpected_domain_port_error_propagates() -> None:
+    class _BrokenToolPort:
+        def submit_marketplace_lifecycle_handoff(
+            self,
+            payload: ToolLifecycleHandoffPayload,
+            *,
+            request_id: str,
+            correlation_id: str | None,
+        ) -> DomainLifecycleHandoffAck:
+            del payload, request_id, correlation_id
+            raise RuntimeError("programming defect")
+
+    resolver = LifecycleHandoffResolver(
+        {CapabilityKind.TOOL: ToolMarketplaceLifecycleHandoffHandler(_BrokenToolPort())},
+    )
+    service = MarketplaceLifecycleHandoffService(resolver)
+    with pytest.raises(RuntimeError, match="programming defect"):
+        service.handoff(_handoff_request(CapabilityKind.TOOL, "tools.boom"))
 
 
 def test_wrong_kind_rejected_at_request_construction() -> None:
@@ -308,6 +332,30 @@ def test_wrong_kind_rejected_at_request_construction() -> None:
         )
 
 
+class _TypedFailingHandler:
+    @property
+    def capability_kind(self) -> CapabilityKind:
+        return CapabilityKind.AGENT
+
+    @property
+    def domain_authority_id(self) -> str:
+        return "agent_distribution"
+
+    def handoff(
+        self,
+        request: MarketplaceLifecycleHandoffRequest,
+    ) -> MarketplaceLifecycleHandoffOutcome:
+        raise MarketplaceLifecycleHandlerError("handler internal error")
+
+
+def test_known_handler_error_maps_to_handler_failed() -> None:
+    service = MarketplaceLifecycleHandoffService(
+        LifecycleHandoffResolver({CapabilityKind.AGENT: _TypedFailingHandler()}),
+    )
+    outcome = service.handoff(_handoff_request(CapabilityKind.AGENT, "agents.boom"))
+    assert outcome.reason_code is MarketplaceLifecycleHandoffReasonCode.HANDLER_FAILED
+
+
 class _ExplodingHandler:
     @property
     def capability_kind(self) -> CapabilityKind:
@@ -321,12 +369,12 @@ class _ExplodingHandler:
         self,
         request: MarketplaceLifecycleHandoffRequest,
     ) -> MarketplaceLifecycleHandoffOutcome:
-        raise ValueError("handler internal error")
+        raise TypeError("unexpected handler defect")
 
 
-def test_handler_exception_wrapped() -> None:
+def test_unexpected_handler_error_propagates() -> None:
     service = MarketplaceLifecycleHandoffService(
         LifecycleHandoffResolver({CapabilityKind.AGENT: _ExplodingHandler()}),
     )
-    outcome = service.handoff(_handoff_request(CapabilityKind.AGENT, "agents.boom"))
-    assert outcome.reason_code is MarketplaceLifecycleHandoffReasonCode.HANDLER_FAILED
+    with pytest.raises(TypeError, match="unexpected handler defect"):
+        service.handoff(_handoff_request(CapabilityKind.AGENT, "agents.boom"))

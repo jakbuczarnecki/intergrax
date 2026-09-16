@@ -5,12 +5,12 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.capability_catalog.kind import CapabilityKind
-from intergrax.contracts.marketplace.domain_lifecycle_ports import (
+from intergrax.agent_distribution.dynamic_acquisition import DynamicAgentAcquisitionError
+from intergrax.contracts.agent_distribution.marketplace_lifecycle_handoff import (
     AGENT_DISTRIBUTION_DOMAIN_AUTHORITY_ID,
-    AgentMarketplaceLifecycleDomainPort,
-    DomainLifecycleHandoffDisposition,
+    AgentMarketplaceLifecycleHandoffPort,
 )
+from intergrax.contracts.capability_catalog.kind import CapabilityKind
 from intergrax.contracts.marketplace.lifecycle_handoff_outcome import (
     MarketplaceLifecycleHandoffOutcome,
     MarketplaceLifecycleHandoffReasonCode,
@@ -19,12 +19,13 @@ from intergrax.contracts.marketplace.lifecycle_handoff_outcome import (
 from intergrax.contracts.marketplace.lifecycle_handoff_request import (
     MarketplaceLifecycleHandoffRequest,
 )
+from intergrax.marketplace.handoff.adapters._ack_outcome import marketplace_outcome_from_ack
 
 
 class AgentMarketplaceLifecycleHandoffHandler:
     """Delegates marketplace selection to Agent Distribution lifecycle authority."""
 
-    def __init__(self, domain_port: AgentMarketplaceLifecycleDomainPort) -> None:
+    def __init__(self, domain_port: AgentMarketplaceLifecycleHandoffPort) -> None:
         self._domain_port = domain_port
 
     @property
@@ -55,7 +56,7 @@ class AgentMarketplaceLifecycleHandoffHandler:
                 request_id=request.request_id,
                 correlation_id=request.correlation_id,
             )
-        except Exception as exc:
+        except DynamicAgentAcquisitionError as exc:
             return MarketplaceLifecycleHandoffOutcome(
                 request_id=request.request_id,
                 status=MarketplaceLifecycleHandoffStatus.REJECTED,
@@ -64,29 +65,10 @@ class AgentMarketplaceLifecycleHandoffHandler:
                 reason_detail=str(exc),
             )
 
-        if ack.disposition is DomainLifecycleHandoffDisposition.ACCEPTED:
-            return MarketplaceLifecycleHandoffOutcome(
-                request_id=request.request_id,
-                status=MarketplaceLifecycleHandoffStatus.ACCEPTED,
-                domain_authority_id=self.domain_authority_id,
-                domain_reference=ack.domain_reference,
-                reason_detail=ack.reason_detail,
-            )
-        if ack.disposition is DomainLifecycleHandoffDisposition.DEFERRED:
-            return MarketplaceLifecycleHandoffOutcome(
-                request_id=request.request_id,
-                status=MarketplaceLifecycleHandoffStatus.DEFERRED,
-                domain_authority_id=self.domain_authority_id,
-                domain_reference=ack.domain_reference,
-                reason_detail=ack.reason_detail,
-            )
-        return MarketplaceLifecycleHandoffOutcome(
+        return marketplace_outcome_from_ack(
             request_id=request.request_id,
-            status=MarketplaceLifecycleHandoffStatus.REJECTED,
             domain_authority_id=self.domain_authority_id,
-            reason_code=MarketplaceLifecycleHandoffReasonCode.DOMAIN_REJECTED,
-            domain_reference=ack.domain_reference,
-            reason_detail=ack.reason_detail,
+            ack=ack,
         )
 
 

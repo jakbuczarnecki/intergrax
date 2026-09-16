@@ -14,7 +14,10 @@ from intergrax.contracts.marketplace.lifecycle_handoff_request import (
     MarketplaceLifecycleHandoffRequest,
     selection_identity_key,
 )
-from intergrax.marketplace.handoff.errors import MarketplaceLifecycleHandoffValidationError
+from intergrax.marketplace.handoff.errors import (
+    MarketplaceLifecycleHandlerError,
+    MarketplaceLifecycleHandoffValidationError,
+)
 from intergrax.marketplace.handoff.resolver import LifecycleHandoffResolver
 
 
@@ -52,7 +55,7 @@ class MarketplaceLifecycleHandoffService:
 
         try:
             return handler.handoff(request)
-        except Exception as exc:
+        except MarketplaceLifecycleHandlerError as exc:
             return MarketplaceLifecycleHandoffOutcome(
                 request_id=request.request_id,
                 status=MarketplaceLifecycleHandoffStatus.REJECTED,

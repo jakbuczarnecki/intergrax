@@ -5,6 +5,10 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.lifecycle_handoff.ack import (
+    DomainLifecycleHandoffAck,
+    DomainLifecycleHandoffDisposition,
+)
 from intergrax.contracts.marketplace.commercial import (
     SCHEMA_MARKETPLACE_COMMERCIAL_METADATA_V1,
     CommercialModel,
@@ -22,16 +26,6 @@ from intergrax.contracts.marketplace.metadata_source import MarketplaceMetadataS
 from intergrax.contracts.marketplace.publisher import (
     SCHEMA_MARKETPLACE_PUBLISHER_METADATA_V1,
     MarketplacePublisherMetadata,
-)
-from intergrax.contracts.marketplace.domain_lifecycle_ports import (
-    AGENT_DISTRIBUTION_DOMAIN_AUTHORITY_ID,
-    SKILL_DOMAIN_AUTHORITY_ID,
-    TOOL_DOMAIN_AUTHORITY_ID,
-    AgentMarketplaceLifecycleDomainPort,
-    DomainLifecycleHandoffAck,
-    DomainLifecycleHandoffDisposition,
-    SkillMarketplaceLifecycleDomainPort,
-    ToolMarketplaceLifecycleDomainPort,
 )
 from intergrax.contracts.marketplace.lifecycle_handoff_handler import (
     MarketplaceLifecycleHandoffHandler,
@@ -75,9 +69,7 @@ __all__ = [
     "SCHEMA_MARKETPLACE_CAPABILITY_LISTING_VIEW_V1",
     "SCHEMA_MARKETPLACE_COMMERCIAL_METADATA_V1",
     "SCHEMA_MARKETPLACE_PUBLISHER_METADATA_V1",
-    "AGENT_DISTRIBUTION_DOMAIN_AUTHORITY_ID",
     "AgentLifecycleHandoffPayload",
-    "AgentMarketplaceLifecycleDomainPort",
     "DomainLifecycleHandoffAck",
     "DomainLifecycleHandoffDisposition",
     "MarketplaceCapabilitySelection",
@@ -94,11 +86,7 @@ __all__ = [
     "SCHEMA_MARKETPLACE_LIFECYCLE_HANDOFF_REQUEST_V1",
     "SCHEMA_SKILL_LIFECYCLE_HANDOFF_PAYLOAD_V1",
     "SCHEMA_TOOL_LIFECYCLE_HANDOFF_PAYLOAD_V1",
-    "SKILL_DOMAIN_AUTHORITY_ID",
     "SkillLifecycleHandoffPayload",
-    "SkillMarketplaceLifecycleDomainPort",
-    "TOOL_DOMAIN_AUTHORITY_ID",
     "ToolLifecycleHandoffPayload",
-    "ToolMarketplaceLifecycleDomainPort",
     "selection_identity_key",
 ]

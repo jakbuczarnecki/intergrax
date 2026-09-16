@@ -227,7 +227,7 @@ Replaceable variation points (post ME-RB2):
 | Search / text filter | inline in `MarketplaceCatalogService` | PARTIAL (documented as product filter) |
 | Recommendation | none | MISSING |
 | Availability evidence | typed evidence contracts | PARTIAL |
-| Lifecycle handoff | `MarketplaceLifecycleHandoffRequest` + domain ports | ENTERPRISE_READY (ME-RB4) |
+| Lifecycle handoff | `MarketplaceLifecycleHandoffRequest` + domain-owned handoff ports | ENTERPRISE_READY (ME-RB4-C1) |
 
 Do **not** add empty Protocols without semantics (ME-RB2 scope).
 
@@ -263,9 +263,13 @@ DOMAIN AUTHORITY (Agent Distribution, Tool domain, Skill domain)
 
 **Contracts:** generic envelope + typed vertical payloads (`AgentLifecycleHandoffPayload`, `ToolLifecycleHandoffPayload`, `SkillLifecycleHandoffPayload`); plugin `MarketplaceLifecycleHandoffHandler`; explicit `LifecycleHandoffResolver` mapping — no global registry, no `dict[str, Any]` bags.
 
-**Agent path:** `AgentMarketplaceLifecycleHandoffHandler` → `AgentMarketplaceLifecycleDomainPort` (optional `AgentDistributionAcquisitionBridge` → `DynamicAgentAcquisitionPort`).
+**Agent path:** `AgentMarketplaceLifecycleHandoffHandler` → `AgentMarketplaceLifecycleHandoffPort` (`intergrax.contracts.agent_distribution`) with optional `AgentDistributionAcquisitionBridge` → `DynamicAgentAcquisitionPort`. Typed `DynamicAgentAcquisitionError` maps to `DOMAIN_UNAVAILABLE`; unexpected errors propagate.
 
-**Tool / Skill:** `ToolMarketplaceLifecycleDomainPort` / `SkillMarketplaceLifecycleDomainPort` — minimal marketplace-facing ports until canonical domain lifecycle APIs mature (DESIGN GAP documented in RB4 inventory).
+**Tool path:** `ToolMarketplaceLifecycleHandoffHandler` → `ToolMarketplaceLifecycleHandoffPort` (`intergrax.contracts.tools`). `ToolLifecycleHandoffUnavailableError` → `DOMAIN_UNAVAILABLE`.
+
+**Skill path:** `SkillMarketplaceLifecycleHandoffHandler` → `SkillMarketplaceLifecycleHandoffPort` (`intergrax.contracts.skills`). `SkillLifecycleHandoffUnavailableError` → `DOMAIN_UNAVAILABLE`.
+
+**Neutral ack:** `DomainLifecycleHandoffAck` / `DomainLifecycleHandoffDisposition` live in `intergrax.contracts.lifecycle_handoff` (handoff ack ≠ lifecycle state). Marketplace service maps only `MarketplaceLifecycleHandlerError` to `HANDLER_FAILED`; programming defects propagate.
 
 Proof: `tests/unit/marketplace/test_me_rb4_lifecycle_handoff.py`, `tests/unit/marketplace/test_me_rb4_handoff_architecture_gates.py`.
 

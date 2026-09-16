@@ -12,7 +12,12 @@ class MarketplaceLifecycleHandoffValidationError(MarketplaceLifecycleHandoffErro
     """Invalid handoff request before domain delegation."""
 
 
+class MarketplaceLifecycleHandlerError(MarketplaceLifecycleHandoffError):
+    """Expected handler failure surfaced as HANDLER_FAILED outcome."""
+
+
 __all__ = [
     "MarketplaceLifecycleHandoffError",
     "MarketplaceLifecycleHandoffValidationError",
+    "MarketplaceLifecycleHandlerError",
 ]

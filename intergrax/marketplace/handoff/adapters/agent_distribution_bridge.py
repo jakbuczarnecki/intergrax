@@ -16,12 +16,12 @@ from intergrax.agent_distribution.dynamic_acquisition import (
     DynamicAgentAcquisitionRequest,
 )
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.marketplace.domain_lifecycle_ports import (
+from intergrax.contracts.agent_distribution.marketplace_lifecycle_handoff import (
+    AgentLifecycleHandoffPayload,
+)
+from intergrax.contracts.lifecycle_handoff.ack import (
     DomainLifecycleHandoffAck,
     DomainLifecycleHandoffDisposition,
-)
-from intergrax.contracts.marketplace.lifecycle_handoff_payloads import (
-    AgentLifecycleHandoffPayload,
 )
 
 
