@@ -192,7 +192,7 @@ Remediate defects + reconcile stale UE-8P2 guard; no architecture reopen.
 
 ## Commit SHA
 
-(To be recorded after commit.)
+`e3b6bf78443a5d256d4968e5dc14b96c431fe412`
 
 ## Final Verdict
 
