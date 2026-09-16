@@ -7,11 +7,13 @@ from __future__ import annotations
 import pytest
 
 from intergrax.capability_catalog import (
+    AvailabilityPreservingGovernanceEvaluator,
     CapabilityDiscoveryCandidate,
     FederatedCapabilityCatalog,
     RankedCapabilityCandidate,
     SearchedCapabilityCandidate,
     StableIdentityRanker,
+    govern_capability_candidates,
     rank_capability_candidates,
 )
 from intergrax.contracts.capability_catalog import (
@@ -19,6 +21,8 @@ from intergrax.contracts.capability_catalog import (
     CapabilityDiscoveryQuery,
     CapabilityDiscoveryScope,
     CapabilityDiscoveryScopeMode,
+    CapabilityGovernanceContext,
+    CapabilityGovernancePosture,
     CapabilityKind,
     CapabilityRankingEvidence,
     CapabilityRankingSignal,
@@ -36,6 +40,7 @@ from intergrax.marketplace import (
     MarketplaceCapabilityCatalogSource,
     MarketplaceCatalogService,
     MarketplaceDiscoveryService,
+    MarketplaceRecommendationService,
 )
 from intergrax.capability_catalog.recommended_capability import CapabilityRecommendation
 
@@ -85,6 +90,17 @@ def _mixed_catalog_service() -> MarketplaceCatalogService:
     return MarketplaceCatalogService(catalog=catalog, marketplace_sources=(source,))
 
 
+def _govern_ranked(
+    ranked: tuple[RankedCapabilityCandidate, ...],
+) -> tuple:
+    result = govern_capability_candidates(
+        ranked,
+        evaluators=(AvailabilityPreservingGovernanceEvaluator(),),
+        context=CapabilityGovernanceContext(posture=CapabilityGovernancePosture.STRICT),
+    )
+    return result.allowed
+
+
 class _AgentOnlySearch:
     @property
     def search_strategy_id(self) -> str:
@@ -131,17 +147,17 @@ class _SingleRecommendation:
     def recommendation_strategy_id(self) -> str:
         return "custom.single_pick"
 
-    def recommend(self, ranked, context):
+    def recommend(self, governed, context):
         del context
-        pick = ranked[-1]
+        pick = governed[-1]
         return (
             CapabilityRecommendation(
-                ranked=pick,
+                governed=pick,
                 evidence=CapabilityRecommendationEvidence(
                     recommendation_strategy_id=self.recommendation_strategy_id,
                     reason_codes=(CapabilityRecommendationReasonCode.TOP_RANKED,),
                     reason_text="custom last-ranked pick",
-                    rank_position=pick.evidence.rank_position,
+                    rank_position=pick.ranking_evidence.rank_position,
                 ),
             ),
         )
@@ -176,7 +192,7 @@ def test_custom_ranker_orders_deterministically() -> None:
     assert ranked[0].candidate.identity.logical.logical_id == "tools.me5.beta"
 
 
-def test_custom_recommendation_strategy_via_discovery_service() -> None:
+def test_custom_recommendation_strategy_via_marketplace_services() -> None:
     service = _mixed_catalog_service()
     snapshot = service._catalog.snapshot()
     candidates = tuple(
@@ -186,13 +202,17 @@ def test_custom_recommendation_strategy_via_discovery_service() -> None:
         )
         for entry in snapshot.entries
     )
-    pipeline = MarketplaceDiscoveryService(
+    discovery = MarketplaceDiscoveryService(
         search_strategy=_AgentOnlySearch(),
         ranker=StableIdentityRanker(),
+    )
+    recommendation = MarketplaceRecommendationService(
         recommendation_strategy=_SingleRecommendation(),
     )
-    recommendations = pipeline.discover_recommendations(
-        candidates,
+    ranked = discovery.search_and_rank(candidates)
+    governed = _govern_ranked(ranked)
+    recommendations = recommendation.recommend(
+        governed,
         recommendation_context=CapabilityRecommendationContext(top_n=5),
     )
     assert len(recommendations) == 1
@@ -207,7 +227,7 @@ def test_mixed_agent_tool_skill_search_and_listings() -> None:
     assert views[0].listing.capability.identity.kind is CapabilityKind.SKILL
 
 
-def test_marketplace_discovery_defaults_are_deterministic() -> None:
+def test_marketplace_discovery_and_recommendation_defaults_are_deterministic() -> None:
     service = _mixed_catalog_service()
     snapshot = service._catalog.snapshot()
     candidates = tuple(
@@ -217,13 +237,13 @@ def test_marketplace_discovery_defaults_are_deterministic() -> None:
         )
         for entry in snapshot.entries
     )
-    pipeline = MarketplaceDiscoveryService.with_defaults()
-    first = pipeline.discover_recommendations(
+    discovery = MarketplaceDiscoveryService.with_defaults()
+    recommendation = MarketplaceRecommendationService.with_defaults()
+    ranked = discovery.search_and_rank(
         candidates,
         search_query=CapabilitySearchQuery(text="me5"),
     )
-    second = pipeline.discover_recommendations(
-        candidates,
-        search_query=CapabilitySearchQuery(text="me5"),
-    )
+    governed = _govern_ranked(ranked)
+    first = recommendation.recommend(governed)
+    second = recommendation.recommend(governed)
     assert first == second

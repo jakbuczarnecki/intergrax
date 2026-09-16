@@ -23,6 +23,7 @@ from intergrax.marketplace.projection import (
 )
 from intergrax.marketplace.record import MarketplaceListingRecord
 from intergrax.marketplace.discovery import MarketplaceDiscoveryService
+from intergrax.marketplace.recommendation import MarketplaceRecommendationService
 from intergrax.marketplace.search import (
     MARKETPLACE_LISTING_TEXT_SEARCH_STRATEGY_ID,
     DefaultMarketplaceListingTextSearchStrategy,
@@ -49,6 +50,7 @@ __all__ = [
     "MARKETPLACE_LISTING_TEXT_SEARCH_STRATEGY_ID",
     "MarketplaceCatalogService",
     "MarketplaceDiscoveryService",
+    "MarketplaceRecommendationService",
     "MarketplaceCatalogSnapshot",
     "MarketplaceListingRecord",
     "SCHEMA_MARKETPLACE_CAPABILITY_LISTING_V1",

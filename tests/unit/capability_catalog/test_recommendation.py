@@ -12,6 +12,7 @@ from intergrax.capability_catalog import (
     CapabilityRecommendationError,
     CapabilityRecommendation,
     DefaultTopRankedCapabilityRecommendationStrategy,
+    GovernedCapabilityCandidate,
     RankedCapabilityCandidate,
     StableIdentityRanker,
     rank_capability_candidates,
@@ -20,6 +21,7 @@ from intergrax.capability_catalog import (
 from intergrax.contracts.capability_catalog import (
     AvailabilityDisposition,
     CapabilityDiscoveryIdentity,
+    CapabilityGovernanceReasonCode,
     CapabilityKind,
     CapabilityLogicalIdentity,
     CapabilityProvenance,
@@ -30,6 +32,8 @@ from intergrax.contracts.capability_catalog import (
     CapabilityRecommendationReasonCode,
     CapabilitySourceIdentity,
     CapabilitySourceKind,
+    GovernanceDecisionEvidence,
+    GovernanceDisposition,
 )
 
 pytestmark = pytest.mark.unit
@@ -65,45 +69,76 @@ def _ranked(logical_id: str, position: int) -> RankedCapabilityCandidate:
     )
 
 
+def _governed(ranked: RankedCapabilityCandidate) -> GovernedCapabilityCandidate:
+    return GovernedCapabilityCandidate(
+        ranked=ranked,
+        evidence=(
+            GovernanceDecisionEvidence(
+                evaluator_id="test.fixture",
+                disposition=GovernanceDisposition.ALLOWED,
+                reason_code=CapabilityGovernanceReasonCode.GOVERNANCE_ALLOWED,
+            ),
+        ),
+    )
+
+
 def test_default_top_ranked_recommendation_is_deterministic() -> None:
-    ranked = (_ranked("tools.b", 2), _ranked("tools.a", 1))
+    governed = (
+        _governed(_ranked("tools.b", 2)),
+        _governed(_ranked("tools.a", 1)),
+    )
     strategy = DefaultTopRankedCapabilityRecommendationStrategy()
     first = recommend_capability_candidates(
-        ranked,
+        governed,
         strategy,
         context=CapabilityRecommendationContext(top_n=1),
     )
     second = recommend_capability_candidates(
-        ranked,
+        governed,
         strategy,
         context=CapabilityRecommendationContext(top_n=1),
     )
     assert first == second
     assert first[0].ranked.candidate.identity.logical.logical_id == "tools.b"
     assert first[0].evidence.reason_codes == (CapabilityRecommendationReasonCode.TOP_RANKED,)
+    assert first[0].governance_evidence[0].disposition is GovernanceDisposition.ALLOWED
 
 
-def test_recommendation_rejects_mutated_ranked_candidate() -> None:
+def test_recommendation_requires_governed_candidates() -> None:
     ranked = (_ranked("tools.a", 1),)
+    with pytest.raises(CapabilityRecommendationError, match="GovernedCapabilityCandidate"):
+        recommend_capability_candidates(
+            ranked,  # type: ignore[arg-type]
+            DefaultTopRankedCapabilityRecommendationStrategy(),
+        )
+
+
+def test_recommendation_rejects_mutated_governed_candidate() -> None:
+    governed = (_governed(_ranked("tools.a", 1)),)
 
     class _BrokenRecommendation:
         @property
         def recommendation_strategy_id(self) -> str:
             return "broken.recommend"
 
-        def recommend(self, ranked_input, context):
+        def recommend(self, governed_input, context):
             del context
-            altered = RankedCapabilityCandidate(
-                candidate=ranked_input[0].candidate,
+            original = governed_input[0]
+            altered_ranked = RankedCapabilityCandidate(
+                candidate=original.ranked.candidate,
                 evidence=CapabilityRankingEvidence(
                     ranker_id="stable.identity",
                     rank_position=99,
                     signal=CapabilityRankingSignal.STABLE_IDENTITY_ORDER,
                 ),
             )
+            altered = GovernedCapabilityCandidate(
+                ranked=altered_ranked,
+                evidence=original.evidence,
+            )
             return (
                 CapabilityRecommendation(
-                    ranked=altered,
+                    governed=altered,
                     evidence=CapabilityRecommendationEvidence(
                         recommendation_strategy_id="broken.recommend",
                         reason_codes=(CapabilityRecommendationReasonCode.TOP_RANKED,),
@@ -112,7 +147,7 @@ def test_recommendation_rejects_mutated_ranked_candidate() -> None:
             )
 
     with pytest.raises(CapabilityRecommendationError, match="must not mutate"):
-        recommend_capability_candidates(ranked, _BrokenRecommendation())
+        recommend_capability_candidates(governed, _BrokenRecommendation())
 
 
 def test_mixed_kinds_pipeline_preserves_identity() -> None:
@@ -147,8 +182,9 @@ def test_mixed_kinds_pipeline_preserves_identity() -> None:
         ),
     )
     ranked = rank_capability_candidates(candidates, StableIdentityRanker())
+    governed = tuple(_governed(item) for item in ranked)
     recommendations = recommend_capability_candidates(
-        ranked,
+        governed,
         DefaultTopRankedCapabilityRecommendationStrategy(),
         context=CapabilityRecommendationContext(top_n=3),
     )

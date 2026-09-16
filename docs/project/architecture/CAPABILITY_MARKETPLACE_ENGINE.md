@@ -300,9 +300,13 @@ Selection → consumer choice / orchestration policy (not marketplace core)
 Decision System → semantic decision when required (separate subsystem)
 ```
 
-`MarketplaceDiscoveryService` orchestrates search → rank → recommend via contracts only (no embedded algorithms). `MarketplaceCatalogService.list_listings` delegates optional `query_text` to an injected search strategy (default preserves legacy substring semantics).
+`MarketplaceDiscoveryService` orchestrates search → rank via contracts only (no embedded algorithms). Governance narrowing remains a separate Capability Catalog boundary; recommendation consumes only governance-admissible `GovernedCapabilityCandidate` input via `MarketplaceRecommendationService` (never raw ranked candidates).
 
-Marketplace **must not** embed a mini Decision System.
+**Invariant:** Recommendation cannot consume raw discovery or raw ranked candidates.
+
+`MarketplaceCatalogService.list_listings` delegates optional `query_text` to an injected search strategy (default preserves legacy substring semantics).
+
+Marketplace **must not** embed a mini Decision System or a governance engine.
 
 ---
 
