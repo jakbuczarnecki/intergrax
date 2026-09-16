@@ -233,6 +233,7 @@ def wire_application_environment(
     websearch_executor: Any | None = None,
     conformance_check: bool = True,
     application_tool_registry: ToolRegistry | None = None,
+    application_skill_registry: Any | None = None,
     document_store: Any | None = None,
     key_value_cache: Any | None = None,
     boundary_event_buffer: Any | None = None,
@@ -311,6 +312,16 @@ def wire_application_environment(
         env.skill_profile,
         catalog_bootstrap=catalog_bootstrap,
     )
+    if application_skill_registry is not None:
+        from intergrax.applications._shared.skill_wiring import ApplicationSkillWiring
+        from intergrax.skills.registry.runtime import SkillRegistry
+
+        if not isinstance(application_skill_registry, SkillRegistry):
+            raise TypeError("application_skill_registry must be a SkillRegistry")
+        skill_wiring = ApplicationSkillWiring(
+            profile=skill_wiring.profile,
+            registry=application_skill_registry,
+        )
 
     validate_capability_dependencies_for_environment(
         env.model_copy(update={"tool_profile": tool_profile}),

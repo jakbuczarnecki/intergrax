@@ -126,6 +126,11 @@ from testing_support.canonical_lifecycle_ping_agent import (
     CANONICAL_PING_CAPABILITY,
     CANONICAL_PING_CONTRACT_ID,
 )
+from testing_support.canonical_me16_mixed_agent import (
+    ME16_MIXED_CAPABILITY,
+    ME16_MIXED_CONTRACT_ID,
+    ME16_MIXED_TASK_INPUT,
+)
 from testing_support.agent_platform_admin_harness import (
     admin_test_principal,
     allow_mutation_boundary,
@@ -297,15 +302,22 @@ def _build_application_composition(
     catalog_provider: CatalogSourceProvider,
     metadata_provider: _MetadataProvider,
 ) -> AgentCapabilityApplicationComposition:
+    capability_rule = (
+        build_task_capability_rule(
+            rule_id="rule.me16.mixed.v1",
+            task_kind=ME16_MIXED_CAPABILITY,
+            required=(ME16_MIXED_CAPABILITY,),
+        )
+        if config.capability == ME16_MIXED_CAPABILITY
+        else build_task_capability_rule(
+            rule_id="rule.canonical.ping.v1",
+            task_kind="canonical.ping",
+            required=(CANONICAL_PING_CAPABILITY,),
+        )
+    )
     return AgentCapabilityApplicationComposition(
         capability_resolver=build_deterministic_task_capability_resolver(
-            rules=(
-                build_task_capability_rule(
-                    rule_id="rule.canonical.ping.v1",
-                    task_kind="canonical.ping",
-                    required=(CANONICAL_PING_CAPABILITY,),
-                ),
-            ),
+            rules=(capability_rule,),
         ),
         catalog_providers=(catalog_provider,),
         package_metadata_refs={config.distribution_package_id: config.metadata_ref},
@@ -368,6 +380,16 @@ class _LifecycleVenvBundleMaterializer:
                 continue
             module_name, function_name = factory_reference.factory_path.rsplit(".", 1)
             relative_module = module_name.removeprefix("example_agent.")
+            if entry.logical_agent_id == ME16_MIXED_CONTRACT_ID:
+                from testing_support.me16_materialized_agent_source import (
+                    render_me16_materialized_agent_module,
+                )
+
+                (package_dir / f"{relative_module}.py").write_text(
+                    render_me16_materialized_agent_module(function_name=function_name),
+                    encoding="utf-8",
+                )
+                continue
             (package_dir / f"{relative_module}.py").write_text(
                 textwrap.dedent(
                     f"""
@@ -518,6 +540,35 @@ class _LifecycleVenvBundleMaterializer:
             runtime_graph_manifest_path=".intergrax-runtime-graph.json",
             topology=self.topology,
         )
+
+
+def me16_mixed_lifecycle_proof_config(
+    *,
+    catalog_provider_kind: CatalogProviderKind = CatalogProviderKind.BUILTIN,
+    catalog_source_id: str = "builtin-me16",
+) -> CanonicalLifecycleProofConfig:
+    return CanonicalLifecycleProofConfig(
+        application_id="me16_mixed_app",
+        environment_id="env_me16_mixed",
+        logical_agent_id=ME16_MIXED_CONTRACT_ID,
+        catalog_source_id=catalog_source_id,
+        catalog_entry_id="cat-me16-mixed",
+        catalog_provider_kind=catalog_provider_kind,
+        distribution_package_id="intergrax-me16-mixed-worker",
+        package_version="1.0.0",
+        package_digest=_DEFAULT_DIGEST,
+        installation_slot_id="slot-me16-mixed",
+        application_binding_id="bind-me16-mixed",
+        installation_id="inst-me16-mixed",
+        metadata_ref="meta://me16-mixed",
+        factory_reference=AgentBindingFactoryReference(
+            factory_path="example_agent.factory.build_me16_mixed_agent",
+        ),
+        revision_id="rev-me16-mixed",
+        test_input=ME16_MIXED_TASK_INPUT,
+        expected_output="",
+        capability=ME16_MIXED_CAPABILITY,
+    )
 
 
 def default_stage15_proof_config(

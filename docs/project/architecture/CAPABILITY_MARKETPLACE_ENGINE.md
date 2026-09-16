@@ -514,7 +514,7 @@ The engine must remain reusable for typed **capability need** requests (required
 | **ME-13** | **Marketplace → Agent Distribution → Execution** | **reference production E2E proven** (`testing_support/marketplace_agent_distribution_execution_composition.py`, `tests/integration/marketplace/test_me13_marketplace_agent_distribution_execution_e2e.py`) |
 | **ME-14** | **Marketplace → Tool domain → Execution** | **ME-14-C1:** production `DynamicToolAcquisitionService` + `HarnessHostRuntime.execution` E2E (`tests/integration/marketplace/test_me14_c1_tool_acquisition_execution.py`) |
 | **ME-15** | **Marketplace → Skill domain → Composition** | **production E2E proven** (`DynamicSkillAcquisitionService`, `tests/integration/marketplace/test_me15_marketplace_skill_composition_e2e.py`) |
-| ME-16 | Mixed Agent + Tool + Skill acquisition | planned |
+| **ME-16** | **Mixed Agent + Tool + Skill acquisition** | **reference production E2E proven** (`testing_support/marketplace_mixed_capability_execution_composition.py`, `tests/integration/marketplace/test_me16_mixed_capability_e2e.py`) |
 | ME-17 | Virtual Worker machine consumer | planned |
 | ME-18 | Dynamic Organization resource composition | planned |
 
@@ -567,7 +567,22 @@ immutable resolved skill pack (snapshot_digest + contribution provenance)
 
 **ME-15 hard invariants:** Skill ≠ executable unit; Marketplace never executes Skills; Marketplace never mutates Skill registry authority directly; Skill exact release is preserved through binding; Skill lifecycle/composition is domain-owned; execution may consume Skill-bound context (`SkillExecutionBinding`) but does not execute the Skill itself.
 
-Remaining V1 gaps: canonical Tool trust authority (ME-14-C1 uses generic qualification only where applicable), ME-16+ cross-domain E2E, distributed Skill/Tool lifecycle productization, remote marketplace productization.
+**ME-16 canonical flow (mixed capability composition):**
+
+```text
+Common Marketplace (federated catalog: Agent + Tool + Skill listings)
+    ↓ explicit governed selections (three CapabilityHandoffEnvelopes)
+Agent Distribution  │  Tool acquisition  │  Skill acquisition
+    (independent lifecycle authorities — no universal mixed engine)
+    ↓ MixedCapabilityCompositionReadiness (read-only gate)
+runtime composition (registry projection + application_tool_registry + skill host wiring)
+    ↓ HarnessHostRuntime.execution.execute(Task)
+Agent principal consumes bound Skill context + invokes Tool → deterministic mixed output
+```
+
+**ME-16 hard invariants:** Mixed composition does not collapse lifecycle authorities; Agent, Tool and Skill preserve independent identities; execution begins only after all required capabilities are ready; Skill remains non-executable; Marketplace remains discovery/handoff plane only.
+
+Remaining V1 gaps: canonical Tool trust authority (ME-14-C1 uses generic qualification only where applicable), distributed Skill/Tool lifecycle productization, remote marketplace productization.
 
 ---
 
