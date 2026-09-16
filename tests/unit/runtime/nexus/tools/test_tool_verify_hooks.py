@@ -12,7 +12,7 @@ from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.tool_verify_hooks import emit_high_risk_tool_verify_signal
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests, canonical_execution_identity_scope
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
 pytestmark = pytest.mark.unit
@@ -37,7 +37,8 @@ def test_emit_high_risk_verify_signal() -> None:
         error_mapping={},
         risk_level=ToolRiskLevel.HIGH,
     )
-    state = build_runtime_state_for_tests(run_id="run-verify")
+    run_seed = "run-verify"
+    state = build_runtime_state_for_tests(run_id=run_seed)
     invoker = RuntimeToolInvoker(registry=FakeRegistry(contract), executor=object())  # type: ignore[arg-type]
     trace = ToolCallTrace(
         tool_name="danger.tool",
@@ -47,6 +48,7 @@ def test_emit_high_risk_verify_signal() -> None:
         error_message=None,
         raw_trace={},
     )
-    assert emit_high_risk_tool_verify_signal(state=state, invoker=invoker, trace=trace)
+    with canonical_execution_identity_scope(run_seed):
+        assert emit_high_risk_tool_verify_signal(state=state, invoker=invoker, trace=trace)
     event = next(e for e in state.trace_events if e.step == "tool_verify_required")
     assert event.component == TraceComponent.TOOLS

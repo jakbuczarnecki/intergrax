@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from unittest.mock import MagicMock
 
 import pytest
@@ -9,6 +10,7 @@ import pytest
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_builder import ContextBuilder
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import build_runtime_request_for_tests
 from intergrax.runtime.nexus.session.chat_session import ChatSession
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
@@ -19,7 +21,8 @@ def test_context_builder_enables_rag_via_allowed_tools() -> None:
     config = RuntimeConfig(llm_adapter=MagicMock(), enable_rag=True)
     builder = ContextBuilder(config, MagicMock())
     session = ChatSession(id="s1", tenant_id="t1")
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="unified-rag-allowed",
         agent_id="a",
         user_id="u1",
         session_id="s1",
@@ -37,7 +40,8 @@ def test_context_builder_disables_rag_when_tool_list_excludes_retrieve() -> None
     config = RuntimeConfig(llm_adapter=MagicMock(), enable_rag=True)
     builder = ContextBuilder(config, MagicMock())
     session = ChatSession(id="s1", tenant_id="t1")
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="unified-rag-excluded",
         agent_id="a",
         user_id="u1",
         session_id="s1",
@@ -77,14 +81,15 @@ def _retrieval_builder(
 
 
 def _request(*, tenant_id: str | None = "tenant-a", workspace_id: str | None = "workspace-a") -> RuntimeRequest:
-    return RuntimeRequest(
+    base = build_runtime_request_for_tests(
+        seed="unified-rag-session-a",
         agent_id="agent",
         user_id="user-a",
         session_id="session-a",
         message="hello",
-        tenant_id=tenant_id,
-        workspace_id=workspace_id,
+        tenant_id=tenant_id if isinstance(tenant_id, str) and tenant_id.strip() else "tenant-a",
     )
+    return replace(base, tenant_id=tenant_id, workspace_id=workspace_id)
 
 
 @pytest.mark.gate

@@ -280,6 +280,7 @@ class SessionManager:
             )
             if messages:
                 diag = await self._consolidation.consolidate(
+                    tenant_id=tenant_id,
                     user_id=session.user_id,
                     session_id=session_id,
                     messages=messages,
@@ -360,6 +361,7 @@ class SessionManager:
                 )
                 if messages:
                     consolidation_diag = await self._consolidation.consolidate(
+                        tenant_id=tenant_id,
                         user_id=session.user_id,
                         session_id=session_id,
                         messages=messages,

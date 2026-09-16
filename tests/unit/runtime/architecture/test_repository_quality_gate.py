@@ -31,10 +31,16 @@ def test_unit_tests_collect_without_errors() -> None:
     assert completed.returncode in (0, 5), combined[-8000:]
 
 
-def test_mp4b_decision_contracts_importable_from_decision_namespace() -> None:
-    from intergrax.contracts.decision import DecisionId, mint_decision_id, validate_decision_id
+def test_mp4r1_decision_integration_namespace_importable_without_legacy_mp4b() -> None:
+    from intergrax.contracts.decision import DecisionSystemIntegrationEngine
+    from intergrax.contracts.decision_identity import (
+        DecisionId,
+        mint_decision_id,
+        validate_decision_id,
+    )
 
     decision_id = mint_decision_id()
     assert decision_id.startswith("decision_")
     assert validate_decision_id(decision_id) == decision_id
     assert DecisionId is not None
+    assert DecisionSystemIntegrationEngine is not None

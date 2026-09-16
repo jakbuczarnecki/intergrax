@@ -1,0 +1,60 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Procedural memory wiring (MEM-ENT-8)."""
+
+from __future__ import annotations
+
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.memory.contracts.procedural_memory import ProcedureMemoryStore
+from intergrax.memory.procedural_memory_service import (
+    ProceduralMemoryService,
+    build_default_procedural_memory_strategies,
+)
+from intergrax.memory.resolver.discovery import (
+    MemoryStorePluginCatalog,
+    discover_classified_memory_store_plugins,
+)
+from intergrax.memory.resolver.materialization import MemoryStoreMaterializationContext
+from intergrax.memory.resolver.resolver import materialize_procedural_memory_store
+from intergrax.memory.stores.in_memory_procedural_memory_plugin import (
+    DEFAULT_IN_MEMORY_PROCEDURAL_PLUGIN_ID,
+    InMemoryProceduralMemoryStorePlugin,
+)
+
+
+def resolve_procedural_memory_store(
+    env: ApplicationEnvironmentProfile,
+) -> ProcedureMemoryStore | None:
+    """Return procedural store when memory profile enables procedural memory."""
+    if not env.memory_profile.enable_procedural_memory:
+        return None
+
+    plugin_id = (
+        env.memory_profile.procedural_memory_store_plugin_id
+        or DEFAULT_IN_MEMORY_PROCEDURAL_PLUGIN_ID
+    )
+    discovery = discover_classified_memory_store_plugins(
+        discover_entry_points=True,
+        explicit_plugins=(InMemoryProceduralMemoryStorePlugin,),
+    )
+    catalog = MemoryStorePluginCatalog.from_discovery(discovery)
+    ctx = MemoryStoreMaterializationContext(
+        env=env,
+        tenant_id=None,
+        integration_profile=env.integration_profile,
+        rag_stack=None,
+    )
+    return materialize_procedural_memory_store(plugin_id, ctx, catalog=catalog)
+
+
+def resolve_procedural_memory_capability(
+    env: ApplicationEnvironmentProfile,
+) -> ProceduralMemoryService | None:
+    """Materialize procedural memory capability when enabled."""
+    store = resolve_procedural_memory_store(env)
+    if store is None:
+        return None
+    return ProceduralMemoryService(
+        _store=store,
+        _strategies=build_default_procedural_memory_strategies(),
+    )

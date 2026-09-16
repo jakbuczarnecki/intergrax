@@ -21,6 +21,7 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticReadUnavailableReason,
 )
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
+from intergrax.contracts.execution_reconstruction import ExecutionReconstructionReader
 from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import (
     InMemoryProblemPersistence,
@@ -311,7 +312,7 @@ def test_list_limit_truncation_explicit() -> None:
 def test_list_does_not_call_execution_reconstructor() -> None:
     persistence = InMemoryProblemPersistence()
     _persist_problem(persistence=persistence)
-    reconstructor = MagicMock(spec=ExecutionReconstructor)
+    reconstructor = MagicMock(spec=ExecutionReconstructionReader)
     service = read_service_for_tests(
         persistence,
         reconstructor,
@@ -529,7 +530,7 @@ def test_read_service_is_read_only() -> None:
     service = DiagnosticReadService(
         problem_persistence=persistence,
         occurrence_persistence=MagicMock(spec=ProblemOccurrencePersistence),
-        execution_reconstructor=MagicMock(spec=ExecutionReconstructor),
+        execution_reconstructor=MagicMock(spec=ExecutionReconstructionReader),
     )
 
     service.list_problems(tenant_id=_TENANT_A)
@@ -562,7 +563,7 @@ def _read_service_with_list_records(
     return DiagnosticReadService(
         problem_persistence=persistence,
         occurrence_persistence=MagicMock(spec=ProblemOccurrencePersistence),
-        execution_reconstructor=MagicMock(spec=ExecutionReconstructor),
+        execution_reconstructor=MagicMock(spec=ExecutionReconstructionReader),
     )
 
 

@@ -37,7 +37,7 @@ def test_r4_quality_drift_classifier_allows_qualification_gate() -> None:
 
 
 def test_r4_quality_implementation_sha_recorded() -> None:
-    assert R4_QUALITY_IMPLEMENTATION_SHA == "743a3865198e8fcec53029f935fbedc4cae6f9df"
+    assert R4_QUALITY_IMPLEMENTATION_SHA == "52b9dc41ed7dd83e5516d852f1ef7295cc0b10af"
 
 
 def test_r4_quality_no_unqualified_protected_drift_since_implementation() -> None:

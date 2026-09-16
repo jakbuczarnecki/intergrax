@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from testing_support.builder import build_emit_context_for_tests
 from intergrax.memory.summary_compressor import optimize_memory_summary
 from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -111,9 +112,8 @@ def _enabled_policy() -> TokenOptimizationPolicy:
 
 def _emit_context() -> tuple[EmitContext, RuntimeEventBus]:
     bus = RuntimeEventBus(record_history=True)
-    ctx = EmitContext(
-        task_id="task-1",
-        run_id="run-1",
+    ctx = build_emit_context_for_tests(
+        seed="token-opt-emission",
         tenant_id="tenant-a",
         bus=bus,
     )

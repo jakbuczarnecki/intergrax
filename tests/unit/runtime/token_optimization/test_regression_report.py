@@ -10,6 +10,7 @@ from typing import Any
 
 import pytest
 
+from testing_support.builder import build_emit_context_for_tests
 from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.event_kind_registry import clear_event_kind_registry
@@ -86,9 +87,8 @@ def _register_token_optimization_domain_kind() -> None:
 
 
 def _emit_context() -> EmitContext:
-    return EmitContext(
-        task_id="task-1",
-        run_id="run-1",
+    return build_emit_context_for_tests(
+        seed="token-opt-regression-report",
         tenant_id="tenant-a",
         bus=RuntimeEventBus(record_history=True),
     )

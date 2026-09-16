@@ -65,6 +65,7 @@ class MemoryConsolidationJob:
             session_id=session_id,
             messages=list(messages),
             run_id=run_id,
+            tenant_id=tenant_id,
         )
         return MemoryConsolidationJobResult(
             session_id=session_id,

@@ -64,7 +64,7 @@ Read this hub in four layers — do not merge them into a single “shipped” h
 | **Catalog role** | Federated read model over domain sources — **pure federating consumer** |
 | **Discovery role** | Query, filter, rank, recommend candidates — **read-only** |
 | **V1 capability types** | Agent, Skill, Tool only |
-| **Agent lifecycle** | Agent Distribution → RuntimeRevision → AgentRegistry → Nexus — **unchanged** |
+| **Agent lifecycle** | Agent Distribution → RuntimeRevision → AgentRegistry → **Execution Engine public contracts** (Nexus is **internal** orchestration only — **not** a Catalog/Marketplace dependency) |
 | **Skill lifecycle** | SkillProfile → SkillRegistry → SkillResolver — **domain-owned** |
 | **Tool lifecycle** | ToolProfile → ToolRegistry → governed Tool execution — **domain-owned** |
 | **Tier-3 composition** | `wire_application_environment()` remains canonical entry |
@@ -197,7 +197,7 @@ Each V1 capability type retains **its own** runtime path. Do not generalize thes
 
 | Capability | Lifecycle / runtime authority |
 | ---------- | ----------------------------- |
-| **Agent** | Agent Distribution → dependency closure → materialization → `RuntimeRevision` → `AgentRegistry` → Nexus |
+| **Agent** | Agent Distribution → dependency closure → materialization → `RuntimeRevision` → `AgentRegistry` → **Execution Engine** (public execution authority; Nexus is private implementation) |
 | **Skill** | `SkillProfile` → `SkillRegistry` → `SkillResolver` (composition into agent contract; not direct execution) |
 | **Tool** | `ToolProfile` → `ToolRegistry` → governed `ToolRuntime` execution |
 
@@ -218,10 +218,12 @@ RuntimeRevision
   ↓
 AgentRegistry
   ↓
-Nexus
+Execution Engine (public contracts)
+  ↓
+private orchestration (Nexus — not importable from Catalog/Marketplace)
 ```
 
-Capability Catalog **must not** short-circuit this chain. See [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md).
+Capability Catalog **must not** short-circuit this chain or import Nexus. See [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) and [`maintainers/architecture/EXECUTION_ENGINE.md`](../maintainers/architecture/EXECUTION_ENGINE.md).
 
 ---
 
@@ -249,7 +251,7 @@ AVAILABLE
 | **ENABLED** | Host or binding enablement | Domain profile / Agent Distribution |
 | **MATERIALIZED** | Immutable runtime artifact produced | Domain materialization (agents) |
 | **ACTIVE** | Serving revision / routable runtime subset | `RuntimeRevision`, registry projection |
-| **EXECUTABLE / ROUTABLE / RESOLVABLE** | May be invoked or resolved for work | ToolRuntime, Nexus, SkillResolver |
+| **EXECUTABLE / ROUTABLE / RESOLVABLE** | May be invoked or resolved for work | ToolRuntime, Execution Engine (agent path), SkillResolver |
 
 ---
 
@@ -430,6 +432,8 @@ Marketplace is a **product** built on top of federated catalog sources.
 
 **Stage 11 (implemented):** read-only product surface at `intergrax/marketplace/` with typed `MarketplaceCapabilityListing` wrapping canonical `CapabilityCatalogEntry`, `MarketplaceCapabilityCatalogSource` implementing `CapabilityCatalogSource`, and `MarketplaceCatalogService` joining Stage-3 discovery with product metadata. Commercial metadata is **display-only** and **must not** affect governance, ranking, or runtime selection.
 
+**ME-RB1 freeze:** One common **Capability Marketplace Engine** (catalog + marketplace + metering boundary) — see [`CAPABILITY_MARKETPLACE_ENGINE.md`](CAPABILITY_MARKETPLACE_ENGINE.md).
+
 **Marketplace ≠ execution trust:** A public or official marketplace listing does not grant permission to execute third-party code in-process. Host isolation/trust policy may refuse execution while the capability remains catalog-discoverable. See [ADR-SEC-002](../technical/adr/entries/2026-09-07/ADR-SEC-002.md) (Stage 12).
 
 Public Marketplace is **optional** for platform operation (see Enterprise deployment).
@@ -595,7 +599,7 @@ WorkStageCapabilityNeed (typed)
 WorkStageCapabilityDiscoveryService (Stage 8)
         ↓ discover → rank → govern → effective narrow
 selected source-qualified GovernedCapabilityCandidate
-        ↓ domain authority only (Tool → WorkStageToolExecutionPort; Agent → AC-4 / Nexus)
+        ↓ domain authority only (Tool → WorkStageToolExecutionPort; Agent → AC-4 / Execution Engine — never Catalog/Marketplace → Nexus)
 WorkStageToolExecutionPort / Agent path (never catalog.execute)
         ↓ integration qualification routes Tool port → RuntimeToolInvoker (not AW core)
         ↓

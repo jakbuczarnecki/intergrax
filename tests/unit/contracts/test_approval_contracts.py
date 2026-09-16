@@ -32,7 +32,7 @@ from intergrax.contracts.approval import (
     validate_approval_transition,
 )
 from intergrax.contracts.collaborative_work import WorkArtifactVersionRef
-from intergrax.contracts.decision import mint_decision_id
+from intergrax.contracts.decision_identity import mint_decision_id
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_execution_id,

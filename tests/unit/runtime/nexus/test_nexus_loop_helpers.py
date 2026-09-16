@@ -10,18 +10,20 @@ from intergrax.runtime.nexus.orchestration.human_response import normalize_human
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskHumanInput
+from testing_support.builder import build_task_for_tests
 
 pytestmark = pytest.mark.gate
 
 
 def _task_with_human_response(text: str) -> Task:
-    return Task(
-        task_id="t1",
+    return build_task_for_tests(
+        seed="nexus-loop-human",
         tenant_id="tenant",
         user_id="user",
         agent_id="agent",
         message="q",
-        options=TaskExecutionOptions(human=TaskHumanInput(response_text=text)),
+    ).model_copy(
+        update={"options": TaskExecutionOptions(human=TaskHumanInput(response_text=text))}
     )
 
 

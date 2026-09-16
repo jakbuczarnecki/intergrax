@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from threading import Barrier
 from typing import Generic, TypeVar
@@ -79,7 +80,9 @@ class IncidentDecisionPayloadCodec:
         return IncidentDecisionPayload(recommendation=recommendation)
 
 
-def conformance_artifact_payload_codec_registry() -> DecisionArtifactPayloadCodecRegistry:
+def conformance_artifact_payload_codec_registry() -> (
+    DecisionArtifactPayloadCodecRegistry
+):
     """Registry for Decision durable conformance and SQLite proof scenarios."""
     kind = validate_decision_artifact_kind("incident_resolution")
     codec: DecisionArtifactPayloadCodec[object] = IncidentDecisionPayloadCodec()
@@ -112,7 +115,9 @@ def _identity(
     )
 
 
-def _artifact(recommendation: str = "escalate") -> DecisionArtifact[IncidentDecisionPayload]:
+def _artifact(
+    recommendation: str = "escalate",
+) -> DecisionArtifact[IncidentDecisionPayload]:
     return DecisionArtifact(
         kind=validate_decision_artifact_kind("incident_resolution"),
         content=IncidentDecisionPayload(recommendation=recommendation),
@@ -154,12 +159,18 @@ def assert_decision_finalization_persistence_conformance(
     key = decision_finalization_key(identity)
     accepted = _accepted(identity=identity)
 
-    first = persistence.commit_authoritative_outcome(key=key, requested_outcome=accepted)
+    first = persistence.commit_authoritative_outcome(
+        key=key, requested_outcome=accepted
+    )
     assert first.disposition is DecisionDurableFinalizationDisposition.COMMITTED
     assert first.guard_state.authoritative_outcome == accepted
 
-    replay = persistence.commit_authoritative_outcome(key=key, requested_outcome=accepted)
-    assert replay.disposition is DecisionDurableFinalizationDisposition.IDEMPOTENT_REPLAY
+    replay = persistence.commit_authoritative_outcome(
+        key=key, requested_outcome=accepted
+    )
+    assert (
+        replay.disposition is DecisionDurableFinalizationDisposition.IDEMPOTENT_REPLAY
+    )
     assert replay.guard_state.authoritative_outcome == accepted
 
     fixed_id = mint_decision_id()
@@ -179,7 +190,9 @@ def assert_decision_finalization_persistence_conformance(
     conflict_key = decision_finalization_key(identity_v1)
     accepted_v1 = _accepted(
         identity=identity_v1,
-        lineage=DecisionVersionLineage(current=decision_lineage_ref(identity_v1.version)),
+        lineage=DecisionVersionLineage(
+            current=decision_lineage_ref(identity_v1.version)
+        ),
     )
     accepted_v2 = _accepted(
         identity=identity_v2,
@@ -213,7 +226,9 @@ def assert_decision_finalization_persistence_conformance(
             resolution=DecisionResolution.REJECTED,
         ),
     )
-    assert rejected_conflict.disposition is DecisionDurableFinalizationDisposition.CONFLICT
+    assert (
+        rejected_conflict.disposition is DecisionDurableFinalizationDisposition.CONFLICT
+    )
 
     rejected_vs_unresolved = factory()
     unresolved_identity = _identity()
@@ -232,7 +247,10 @@ def assert_decision_finalization_persistence_conformance(
             resolution=DecisionResolution.UNRESOLVED,
         ),
     )
-    assert unresolved_conflict.disposition is DecisionDurableFinalizationDisposition.CONFLICT
+    assert (
+        unresolved_conflict.disposition
+        is DecisionDurableFinalizationDisposition.CONFLICT
+    )
 
     tenant_a = factory()
     tenant_b = factory()
@@ -260,7 +278,9 @@ def assert_decision_finalization_persistence_conformance(
         key=tenant_b_key,
         requested_outcome=_accepted(identity=tenant_b_identity, recommendation="b"),
     )
-    assert tenant_b_result.disposition is DecisionDurableFinalizationDisposition.COMMITTED
+    assert (
+        tenant_b_result.disposition is DecisionDurableFinalizationDisposition.COMMITTED
+    )
 
     scope_store = factory()
     shared_tenant = "tenant-scope"
@@ -285,7 +305,9 @@ def assert_decision_finalization_persistence_conformance(
         key=decision_finalization_key(scope_y_identity),
         requested_outcome=_accepted(identity=scope_y_identity, recommendation="y"),
     )
-    assert scope_y_result.disposition is DecisionDurableFinalizationDisposition.COMMITTED
+    assert (
+        scope_y_result.disposition is DecisionDurableFinalizationDisposition.COMMITTED
+    )
 
     decision_isolation = factory()
     shared_tenant_scope = DecisionScope(namespace="incident", subject="shared")
@@ -311,7 +333,10 @@ def assert_decision_finalization_persistence_conformance(
         key=decision_finalization_key(identity_two),
         requested_outcome=_accepted(identity=identity_two, recommendation="two"),
     )
-    assert decision_two_result.disposition is DecisionDurableFinalizationDisposition.COMMITTED
+    assert (
+        decision_two_result.disposition
+        is DecisionDurableFinalizationDisposition.COMMITTED
+    )
 
 
 def assert_concurrent_finalization_race(
@@ -335,13 +360,14 @@ def assert_concurrent_finalization_race(
     barrier = Barrier(2)
     results: list[DecisionDurableFinalizationDisposition] = []
 
-    def _worker(outcome: AuthoritativeAcceptedDecision[IncidentDecisionPayload] | AuthoritativeResolutionRecord) -> None:
+    def _worker(
+        outcome: AuthoritativeAcceptedDecision[IncidentDecisionPayload]
+        | AuthoritativeResolutionRecord,
+    ) -> None:
         store = factory()
         barrier.wait()
         result = store.commit_authoritative_outcome(key=key, requested_outcome=outcome)
         results.append(result.disposition)
-
-    from concurrent.futures import ThreadPoolExecutor
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         future_a = executor.submit(_worker, outcome_a)
@@ -380,8 +406,6 @@ def assert_concurrent_idempotent_replay(
         barrier.wait()
         result = store.commit_authoritative_outcome(key=key, requested_outcome=accepted)
         results.append(result.disposition)
-
-    from concurrent.futures import ThreadPoolExecutor
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         future_a = executor.submit(_worker)

@@ -78,6 +78,7 @@ class SessionMemoryConsolidationCoordinator:
     async def consolidate(
         self,
         *,
+        tenant_id: str | None = None,
         user_id: str,
         session_id: str,
         messages: Sequence[ChatMessage],
@@ -90,6 +91,7 @@ class SessionMemoryConsolidationCoordinator:
             session_id=session_id,
             messages=list(messages),
             run_id=run_id,
+            tenant_id=tenant_id,
         )
         return build_consolidation_diag(stored)
 

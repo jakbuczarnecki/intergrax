@@ -199,9 +199,11 @@ DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · opera
 
 **Import debt (OBS-RECONSTRUCTION-1):** `HistoricalReconstructionService` and shared `ExecutionReconstructor` live under Observability; Diagnostics **imports** `runtime.observability.reconstruction` — not the reverse. Functional evidence contracts and providers remain under `intergrax.contracts.functional_evidence` and `intergrax.runtime.observability.functional_evidence` (**OBS-FUNCTIONAL-CONTRACTS-1** / **R1** closed).
 
+**OBS-DIAG-CONFORMANCE-R1 (closed):** Evidence Plane exposes factual reconstruction through neutral read contract **`ExecutionReconstructionReader`** (`intergrax.contracts.execution_reconstruction`). Default implementation remains **`ExecutionReconstructor`**. Diagnostic consumers depend on the contract only; composition roots may still construct the default implementation.
+
 **Architecture gate:** `runtime.observability.reconstruction` MUST NOT import `runtime.diagnostics.*` (see `test_obs_reconstruction_1_architecture.py`). **Unrelated existing debt:** `qualification_runtime_trace.py` may still import DIAG for completion alignment — not reconstruction.
 
-**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** Shared reconstruction **package** placement closed (**OBS-RECONSTRUCTION-1**). **OBS-ASOF-REBASE** closes the canonical **E-axis** historical execution query path (journal prefix + shared `ExecutionReconstructor` + optional `ExecutionLineageReader`). **OBS-BITEMP-REBASE** remains for full E/K/V/S composition without axis mixing. **TRACE-ASOF-3** → **NOT REQUIRED** (conditional materialization; logical rebuild at E is sufficient). **TRACE-ASOF-4** unblocked for typed public query surfaces that delegate to the same canonical path.
+**TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** Shared reconstruction **package** placement closed (**OBS-RECONSTRUCTION-1**). **OBS-ASOF-REBASE** closes the canonical **E-axis** historical execution query path (journal prefix + shared `ExecutionReconstructor` + optional `ExecutionLineageReader`). **OBS-BITEMP-REBASE** closes full **E/K/V/S** temporal composition without axis mixing (2026-09-15). **TRACE-ASOF-3** → **NOT REQUIRED** (conditional materialization; logical rebuild at E is sufficient). **TRACE-ASOF-4** unblocked for typed public query surfaces that delegate to the same canonical path.
 
 ## OBS-ASOF-REBASE — Historical execution query rebase (closed 2026-09-15)
 
@@ -228,13 +230,69 @@ HistoricalReconstructionService.reconstruct (E + K + bitemporal query compositio
 | `ExecutionReconstructor` | Factual execution + attempts + causal join at **E** | `runtime.observability.reconstruction` |
 | `HistoricalReconstructionService` | Composition only — not a second reconstructor | Observability |
 
-**Frozen semantics:** READ ONLY · DERIVED · DETERMINISTIC · NON-AUTHORITATIVE. Same `AsOfBoundary` remains stable after later appends (append immunity). Fail-closed on scope mismatch, missing boundary, truncated prefix. **E** authority is `ExecutionEventPosition` only — not `timestamp` / `recorded_at` / `created_at`. **K** / valid time / system time remain separate axes (see **OBS-BITEMP-REBASE**).
+**Frozen semantics:** READ ONLY · DERIVED · DETERMINISTIC · NON-AUTHORITATIVE. Same `AsOfBoundary` remains stable after later appends (append immunity). Fail-closed on scope mismatch, missing boundary, truncated prefix. **E** authority is `ExecutionEventPosition` only — not `timestamp` / `recorded_at` / `created_at`. **K** / valid time / system time are separate axes — certified under **OBS-BITEMP-REBASE** (below).
+
+## OBS-BITEMP-REBASE — E/K/V/S Temporal Coordinate (closed 2026-09-15)
+
+**Goal:** Execution history (**E**), knowledge revision order (**K**), domain valid time (**V**), and platform system time (**S**) are four independent, explicitly typed axes. Ordering on one axis does not establish ordering on another. Canonical historical queries never infer E/K/V/S from timestamps, `recorded_at`, or implicit “now”.
+
+**Historical coordinate (typed contracts):**
+
+```text
+Execution scope (tenant_id + RunId)
+  + E  → AsOfBoundary (RunId + inclusive ExecutionEventPosition)
+  + K  → KnowledgeRevisionWatermark (RevisionOrderingAuthority finalized prefix)
+  + V/S → BitemporalKnowledgeBasis (ValidTimeBasis + SystemTimeBasis query)
+        ↓
+HistoricalReconstructionService.reconstruct
+        ↓
+ExecutionHistoricalReconstruction (basis + execution + knowledge_view + limitations)
+```
+
+| Axis | Means | Authority | Must not be confused with |
+| ---- | ----- | --------- | ------------------------- |
+| **E** | execution acceptance order | `ExecutionEventPosition` + positioned `RuntimeEvent` journal | K, V, S |
+| **K** | which knowledge revisions are durably ordered / knowable | `RevisionOrderingAuthority` + `KnowledgeRevisionWatermark` | E, V, S |
+| **V** | when a fact is valid in the modeled domain | `ValidTimeBasis` | S, K, E |
+| **S** | when the platform stored / knew the revision | `SystemTimeBasis` | V, K, E |
+
+**Reconstruction flow (frozen order):**
+
+```text
+E prefix (journal + ExecutionReconstructor at AsOfBoundary)
+        \
+         HistoricalReconstructionService
+        /
+K prefix (records_through watermark) → V/S admissibility (revision_admissible_at_bitemporal_query) → reducer
+```
+
+**Frozen semantics:** `requested K <= finalized K` or `KnowledgeBoundaryNotFinalizedError`. No fallback to latest K. K prefix is applied before V/S filtering (no V-before-K leakage). `HistoricalReconstructionBasis` / `request.to_basis()` carry the full coordinate. `knowledge_bitemporal_filtered` is informational only. Same scope + E + K + V/S → same derived result after later execution/knowledge appends (append immunity).
+
+**Architecture gates:** `tests/unit/runtime/architecture/test_obs_bitemp_rebase_architecture.py`, `test_obs_bitemp_rebase_qualification.py`, plus NPSC-5F/R4 and OBS-ASOF-REBASE suites. Lineage at **E** remains **OBS-ASOF-REBASE-R1** (`test_obs_asof_rebase_r1_lineage_integrity.py`).
+
+**TRACE-BITEMP-4 decision:** **CONDITIONAL** — thin public typed surface only if a caller cannot use `ExecutionHistoricalReconstructionRequest` + `HistoricalReconstructionService` directly; no second composition core.
 
 **Architecture gates:** `tests/unit/runtime/architecture/test_obs_asof_rebase_architecture.py`, `test_obs_asof_rebase_qualification.py`, existing TRACE-ASOF-1/2 and NPSC-5F/R4 suites.
 
 **TRACE-ASOF-3 decision:** **NOT REQUIRED** — no measurable need for materialized projection revisions when logical rebuild from positioned evidence is canonical and certified.
 
-**Limitation (explicit):** `ExecutionLineageReader` does not yet expose an **E-scoped** lineage boundary; attempt discovery during as-of reconstruction may reflect run-level lineage while runtime events are prefix-filtered at **E**. Full Execution Tree at historical **E** without heuristics may require contract extension (**OBS-BITEMP-REBASE** / ADR), not timestamp filtering.
+### E-Scoped Lineage Semantics (OBS-ASOF-REBASE-R1)
+
+**Authority:** Execution owns durable lineage writes (`ExecutionLineagePersistence`); Evidence Plane reads via neutral ports only — Observability does not mint `ExecutionId` / `AttemptId` / `ExecutionEventPosition`.
+
+**At explicit `execution_as_of` (inclusive `AsOfBoundary`):**
+
+| Capability | Behavior |
+| ---------- | -------- |
+| `ExecutionLineageReader` only (current run snapshot) | Lineage enrichment is **disabled** — discovery metadata `NOT_APPLICABLE`; attempts come from RuntimeEvent prefix ± causal evidence only. Current lineage is **never** merged silently. |
+| `ExecutionLineageAsOfReader` injected alongside | Provider returns `reader_at_execution_boundary(boundary)` — facts must be bound to **E** at write time (no `discovery_position` / `admission_position` treated as `ExecutionEventPosition` without formal mapping). |
+| No lineage configured | Unchanged — no discovery metadata. |
+
+**Current reconstruction (`execution_as_of is None`):** full run-level `ExecutionLineageReader` + discovery snapshot semantics unchanged.
+
+**Knowledge vs execution:** lineage facts *visible at E* are not the same axis as later durable knowledge about prior execution; E+K composition is certified under **OBS-BITEMP-REBASE** (K does not filter execution; E does not order knowledge).
+
+**Gates:** `tests/unit/runtime/observability/reconstruction/test_obs_asof_rebase_r1_lineage_integrity.py` (append immunity, future attempt/child, current view, no timestamp filtering).
 
 ### Signal families (no universal payload bag)
 
@@ -271,10 +329,18 @@ Reference: VPI `platform_proofs/scenarios/verified_product_identification/applic
 | -- | -------- | ----- | ------ | --------- |
 | Causal `RuntimeExecutionRef` without `ExecutionId` | — | — | **Closed (OBS-CAUSAL-2)** — `platform_causal_evidence.v2` | — |
 | Functional evidence contracts live under `runtime.diagnostics` while OBS records | — | — | **Closed (OBS-FUNCTIONAL-CONTRACTS-1 / R1)** — `intergrax.contracts.functional_evidence` | — |
-| `ExecutionReconstructor` package placement under `diagnostics` | P1 | Evidence + DIAG | Shared factual layer semantically OBS; single implementation today | **OBS-RECONSTRUCTION-1** |
 | Emit-path `ExecutionId` coverage not fully certified on all paths | — | — | **Closed (OBS-COVERAGE-1 / R1)** — mandatory `pytest -m obs_coverage_p1` qualification | — |
 | `TraceEvent` correlates primarily via `run_id` | — | — | **Closed (OBS-TRACE-1)** — run-scoped Plane B; execution correlation via `RuntimeEvent` / lineage | — |
-| OBS → DIAG imports for reconstruction (functional evidence moved) | P1 | Architecture | Dependency direction vs frozen flow (boundary decided in OBS-BOUNDARY-1) | **OBS-RECONSTRUCTION-1** |
+| OBS → DIAG imports for reconstruction (functional evidence moved) | — | — | **Closed (OBS-RECONSTRUCTION-1 / OBS-DIAG-CONFORMANCE-R1)** | — |
+| `ExecutionReconstructor` package placement under `diagnostics` | — | — | **Closed (OBS-RECONSTRUCTION-1)** — `runtime.observability.reconstruction` | — |
+
+## OBS-FINAL-CERTIFICATION — Enterprise closure (2026-09-16)
+
+**Verdict:** **PASS — ENTERPRISE CERTIFIED** on exact committed SHA recorded in [`docs/project/maintainers/qualification/OBS_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/OBS_FINAL_ENTERPRISE_CERTIFICATION.md).
+
+Mandatory proof: OBS architecture gate bundle + `pytest -m obs_coverage_p1` + scoped `obs_diag_conformance` / `obs_trace_1` paths (**0** failed). Full `tests/unit/runtime/architecture/` failures (**38**) contain **no** `test_obs_*` regressions; classified as non–Observability debt in the certification record.
+
+**Conditional (unchanged):** TRACE-ASOF-3 **NOT REQUIRED**; TRACE-ASOF-4 / TRACE-BITEMP-4 **CONDITIONAL**.
 
 ### Evidence Plane freeze (NPSC-5F enterprise certification)
 
@@ -2412,7 +2478,7 @@ Manifest `PROVEN` labels in `COVERAGE_PATH_PROOFS` are **metadata only**; execut
 | DG-005 cross-topology RuntimeEvent persistence | P2 qualification | Separate qualification; not OBS-COVERAGE-1 blocker |
 | TraceEvent run-only Plane B | — closed | **OBS-TRACE-1** — **NOT REQUIRED** (no production Trace consumer needs attempt/execution on `TraceEvent`) |
 | Reconstruction package placement | P1 architecture | **OBS-RECONSTRUCTION-1** |
-| DIAG cross-layer E2E conformance | P1 | **OBS-DIAG-CONFORMANCE** |
+| DIAG cross-layer E2E conformance | P1 | **PASS / CLOSED (OBS-DIAG-CONFORMANCE + R1 contract boundary)** — `pytest -m obs_diag_conformance` |
 
 ### Architecture gates (OBS-COVERAGE-1)
 

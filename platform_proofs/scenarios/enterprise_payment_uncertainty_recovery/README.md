@@ -128,7 +128,7 @@ Full limitations: [Scenario Specification § B](SCENARIO_SPEC.md#limitations).
 
 **[ERL-QUAL-004 Full Execution Integration](docs/ERL_QUAL_004_FULL_EXECUTION_INTEGRATION.md)** — lab end-to-end composition (`application/execution/`), variant A/B/C proof runs, and architecture boundaries.
 
-**[ERL-QUAL-004 Tracing Integration](../../../../docs/ERL_QUAL_004_TRACING_INTEGRATION.md)** — platform `TraceEvent` spine, lifecycle steps, correlation, and proof consumption boundaries.
+**[ERL-QUAL-004 Tracing Integration](docs/ERL_QUAL_004_TRACING_INTEGRATION.md)** — platform `TraceEvent` spine, lifecycle steps, correlation, and proof consumption boundaries.
 
 ## Data provisioning boundary (foundation)
 

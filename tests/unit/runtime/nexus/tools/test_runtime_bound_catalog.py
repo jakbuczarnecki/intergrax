@@ -14,19 +14,20 @@ from intergrax.runtime.nexus.tools.runtime_bound_catalog import (
     invoke_runtime_bound_tool,
 )
 from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspace
+from testing_support.builder import build_runtime_execution_context_for_tests, canonical_task_id_for_tests
 
 pytestmark = pytest.mark.unit
+
+_BOUND_SEED = "runtime-bound-catalog"
 
 
 @pytest.fixture
 def exec_ctx(tmp_path: Path) -> RuntimeExecutionContext:
-    workspace = ShadowWorkspace.create(tmp_path, tenant_id="t1", task_id="task-1")
-    return RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="agent-1",
-        metadata={"shadow_workspace": workspace},
-    )
+    task_id = str(canonical_task_id_for_tests(_BOUND_SEED))
+    workspace = ShadowWorkspace.create(tmp_path, tenant_id="t1", task_id=task_id)
+    ctx = build_runtime_execution_context_for_tests(seed=_BOUND_SEED, agent_id="agent-1")
+    ctx.metadata["shadow_workspace"] = workspace
+    return ctx
 
 
 def test_runtime_bound_workspace_write_read(exec_ctx: RuntimeExecutionContext) -> None:

@@ -17,6 +17,8 @@ _CATALOG_MODULE = "intergrax.capability_catalog"
 
 _FORBIDDEN_METERING_IMPORT_PREFIXES = (
     "intergrax.marketplace",
+    "intergrax.nexus",
+    "intergrax.runtime.nexus",
     "intergrax.runtime.nexus.tools.invoker",
     "intergrax.tools.registry",
     "intergrax.skills.registry",

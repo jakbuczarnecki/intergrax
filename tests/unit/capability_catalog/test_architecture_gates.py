@@ -20,6 +20,8 @@ _FORBIDDEN_CORE_IMPORT_PREFIXES = (
     "intergrax.applications",
     "intergrax.agent_distribution",
     "intergrax.autonomous_work",
+    "intergrax.nexus",
+    "intergrax.runtime.nexus",
     "intergrax.runtime",
     "intergrax.skills",
     "intergrax.tools",

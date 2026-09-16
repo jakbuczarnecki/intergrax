@@ -1,11 +1,13 @@
-﻿# ADR-MP-005: Decision / Approval / Governance collaborative ownership and contract freeze
+# ADR-MP-005: Decision / Approval / Governance collaborative ownership and contract freeze
+
+> **Supersession notice (MP-4R0):** This ADR records the **historical MP-4A** ownership freeze. The **Decision / Approval / Governance lifecycle ownership table below is partially superseded** by [ADR-MP-009](../2026-09-15/ADR-MP-009.md), which defines canonical enterprise authority after the MP-4 core rebase. **Retained anti-substitution invariants** in this document remain in force **as interpreted by ADR-MP-009** (canonical owners: Decision System, Governance/HITL, Execution continuation, Evidence, Diagnostics). Do not treat the MP-4A ownership table as current canonical authority.
 
 | Field | Value |
 |-------|-------|
-| **Status** | Accepted — architecture and ownership gate only; MP-4 runtime implementation **NOT STARTED** |
+| **Status** | Partially Superseded by ADR-MP-009 — historical MP-4A architecture gate; MP-4A runtime **NOT STARTED** (superseded by MP-4R program) |
 | **Date** | 2026-09-08 |
 | **Deciders** | Intergrax platform architecture (MP-4A ownership freeze) |
-| **Related** | [`architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../../../architecture/DECISION_APPROVAL_GOVERNANCE.md) · [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../../../../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md) · [`capabilities/architecture/MULTIPLAYER_AI.md`](../../../../capabilities/architecture/MULTIPLAYER_AI.md) · [`architecture/COLLABORATIVE_WORK.md`](../../../../architecture/COLLABORATIVE_WORK.md) · [ADR-MP-001](../2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../2026-09-07/ADR-MP-004.md) |
+| **Related** | [ADR-MP-009](../2026-09-15/ADR-MP-009.md) · [`architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../../../architecture/DECISION_APPROVAL_GOVERNANCE.md) · [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../../../../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md) · [`capabilities/architecture/MULTIPLAYER_AI.md`](../../../../capabilities/architecture/MULTIPLAYER_AI.md) · [`architecture/COLLABORATIVE_WORK.md`](../../../../architecture/COLLABORATIVE_WORK.md) · [ADR-MP-001](../2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../2026-09-07/ADR-MP-004.md) |
 
 ## Context
 

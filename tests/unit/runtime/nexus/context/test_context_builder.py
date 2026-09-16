@@ -10,8 +10,8 @@ from intergrax.llm.messages import ChatMessage
 from testing_support.builder import FakeLLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_builder import ContextBuilder
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.chat_session import ChatSession
+from testing_support.builder import build_runtime_request_for_tests
 
 pytestmark = pytest.mark.unit
 
@@ -23,7 +23,8 @@ async def test_build_context_skips_retrieval_when_disabled() -> None:
     builder._retrieve_for_session = AsyncMock(return_value=([], None))  # type: ignore[method-assign]
 
     session = ChatSession(id="s1", tenant_id="t1", user_id="u1")
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="context-builder-skip-rag",
         agent_id="a",
         user_id="u1",
         session_id="s1",
@@ -48,7 +49,13 @@ async def test_history_path_skips_retrieval_with_perform_retrieval_false() -> No
     builder._retrieve_for_session = AsyncMock(return_value=([], None))  # type: ignore[method-assign]
 
     session = ChatSession(id="s1", tenant_id="t1", user_id="u1")
-    request = RuntimeRequest(agent_id="a", user_id="u1", session_id="s1", message="hi")
+    request = build_runtime_request_for_tests(
+        seed="context-builder-no-retrieval",
+        agent_id="a",
+        user_id="u1",
+        session_id="s1",
+        message="hi",
+    )
     await builder.build_context(
         session,
         request,

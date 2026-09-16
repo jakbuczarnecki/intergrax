@@ -16,7 +16,6 @@ from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import 
     TerminalExecutionDiagnosticTrigger,
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 
 
 class CentralTerminalExecutionDiagnosticPort:
@@ -39,13 +38,13 @@ class CentralTerminalExecutionDiagnosticPort:
         self,
         request: TerminalExecutionDiagnosticRequest,
     ) -> TerminalDiagnosticDispatchResult | None:
-        execution_identity: ExecutionIdentityBinding | None = None
-        if request.attempt_id is not None:
-            execution_identity = ExecutionIdentityBinding(
+        execution_identity = (
+            _terminal_diagnostic_bridge.execution_identity_binding_from_terminal_correlation(
                 run_id=request.run_id,
                 attempt_id=request.attempt_id,
                 execution_id=request.execution_id,
             )
+        )
         orchestration_result = _terminal_diagnostic_bridge.invoke_terminal_execution_diagnostics(
             self._trigger,
             tenant_id=request.tenant_id,

@@ -171,6 +171,8 @@ class MemoryProfile(BaseModel):
     scope_boundary: str = "tenant"
     consolidation_mode: Literal["manual", "scheduled", "auto"] = "manual"
     enable_entity_graph_memory: bool = False
+    enable_procedural_memory: bool = False
+    enable_long_horizon_memory: bool = False
     enable_session_vector_index: bool = False
     include_cross_session_episodic: bool = False
     session_index_top_k: int = Field(default=8, ge=1)
@@ -179,8 +181,17 @@ class MemoryProfile(BaseModel):
     session_index_roles: tuple[str, ...] = ("user", "assistant")
     user_profile_store_plugin_id: str | None = None
     session_storage_plugin_id: str | None = None
+    entity_temporal_memory_store_plugin_id: str | None = None
+    procedural_memory_store_plugin_id: str | None = None
+    long_horizon_memory_store_plugin_id: str | None = None
 
-    @field_validator("user_profile_store_plugin_id", "session_storage_plugin_id")
+    @field_validator(
+        "user_profile_store_plugin_id",
+        "session_storage_plugin_id",
+        "entity_temporal_memory_store_plugin_id",
+        "procedural_memory_store_plugin_id",
+        "long_horizon_memory_store_plugin_id",
+    )
     @classmethod
     def _strip_memory_store_plugin_id(cls, value: str | None) -> str | None:
         if value is None:

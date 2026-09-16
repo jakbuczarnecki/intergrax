@@ -11,6 +11,7 @@ from intergrax.contracts.resilience_policy import default_resilience_policy
 from intergrax.runtime.kernel.session_reliability import AgentSessionReliability
 from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContext
 from intergrax.runtime.policy.policy_engine import PolicyEngine
+from testing_support.builder import kernel_step_test_scope
 
 
 def _reliability(*, threshold: int = 2, interval: int = 2) -> AgentSessionReliability:
@@ -39,24 +40,26 @@ def test_reliability_checkpoint_interval() -> None:
 @pytest.mark.unit
 @pytest.mark.gate
 async def test_kernel_opens_circuit_after_retriable_failures() -> None:
-    reliability = _reliability(threshold=2)
-    step_ctx = AgentStepContext(step_index=0)
-    kernel_ctx = StepKernelContext(
-        agent_id="demo",
-        run_id="run-rel",
-        policy_engine=PolicyEngine(),
-        reliability=reliability,
-    )
-    fail_outcome = StepOutcome.fail(
-        [AgentRunError(code=AgentRunErrorCode.TOOL_FAILED, message="transient")],
-        is_terminal=False,
-    )
-    await HarnessKernel.execute_step(fail_outcome, step_ctx, kernel_ctx)
-    await HarnessKernel.execute_step(fail_outcome, step_ctx, kernel_ctx)
-    assert reliability.circuit_open is True
+    with kernel_step_test_scope("kernel-circuit-retriable") as (task_id, run_id):
+        reliability = _reliability(threshold=2)
+        step_ctx = AgentStepContext(step_index=0)
+        kernel_ctx = StepKernelContext(
+            agent_id="demo",
+            task_id=task_id,
+            run_id=run_id,
+            policy_engine=PolicyEngine(),
+            reliability=reliability,
+        )
+        fail_outcome = StepOutcome.fail(
+            [AgentRunError(code=AgentRunErrorCode.TOOL_FAILED, message="transient")],
+            is_terminal=False,
+        )
+        await HarnessKernel.execute_step(fail_outcome, step_ctx, kernel_ctx)
+        await HarnessKernel.execute_step(fail_outcome, step_ctx, kernel_ctx)
+        assert reliability.circuit_open is True
 
-    ok_outcome = StepOutcome.continue_with({"phase": "retry"})
-    blocked = await HarnessKernel.execute_step(ok_outcome, step_ctx, kernel_ctx)
-    assert blocked.error_code == AgentRunErrorCode.INTERNAL_ERROR
-    assert blocked.step_record is not None
-    assert blocked.step_record.diagnostics.get("circuit_breaker") == "open"
+        ok_outcome = StepOutcome.continue_with({"phase": "retry"})
+        blocked = await HarnessKernel.execute_step(ok_outcome, step_ctx, kernel_ctx)
+        assert blocked.error_code == AgentRunErrorCode.INTERNAL_ERROR
+        assert blocked.step_record is not None
+        assert blocked.step_record.diagnostics.get("circuit_breaker") == "open"

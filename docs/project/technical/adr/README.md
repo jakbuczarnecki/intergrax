@@ -1,4 +1,4 @@
-# Intergrax Harness - Architecture Decision Records
+﻿# Intergrax Harness - Architecture Decision Records
 
 **Domain:** Tier-0 platform + Tier-1 Nexus (`intergrax`, `intergrax/runtime`)
 
@@ -26,8 +26,8 @@ If no ADR is needed, record **"no ADR needed"** with rationale in the PR or plan
 
 ```text
 docs/project/technical/adr/
-  README.md          ← index (this file)
-  TEMPLATE.md        ← copy source
+  README.md          â† index (this file)
+  TEMPLATE.md        â† copy source
   entries/
     YYYY-MM-DD/
       ADR-{AREA}-{NNN}.md
@@ -63,7 +63,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-LLM-001](entries/2026-06-06/ADR-LLM-001.md) | Typed LLM adapter response envelope | Accepted |
 | [ADR-LLM-002](entries/2026-06-14/ADR-LLM-002.md) | Central ModelCatalog and context window resolution | Accepted |
 | [ADR-LLM-003](entries/2026-06-19/ADR-LLM-003.md) | LLM routing rules - Protocol contract and custom rule classes | Accepted |
-| [ADR-FLOW-001](entries/2026-06-07/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) expansion | Accepted · implemented |
+| [ADR-FLOW-001](entries/2026-06-07/ADR-FLOW-001.md) | Declarative delegation (`DELEGATES_TO`) expansion | Accepted Â· implemented |
 | [ADR-FLOW-002](entries/2026-06-07/ADR-FLOW-002.md) | Reserved lifecycle states | Accepted |
 | [ADR-FLOW-003](entries/2026-06-07/ADR-FLOW-003.md) | `MODIFY_PLAN` decision semantics | Accepted |
 | [ADR-CRITIC-001](entries/2026-06-07/ADR-CRITIC-001.md) | Critic & Verification Layer - tier-separated PEV verify stack | Accepted |
@@ -103,25 +103,26 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-HOST-ATTESTATION-001](entries/2026-07-20/ADR-HOST-ATTESTATION-001.md) | Host attestor and portable ProofReceipt | Accepted |
 | [ADR-MP-001](entries/2026-08-11/ADR-MP-001.md) | Collaborative Work Plane ownership | Accepted (architecture only) |
 | [ADR-MP-002](entries/2026-08-11/ADR-MP-002.md) | Principal / Membership / Delegation semantics | Accepted (architecture only) |
-| [ADR-MP-003](entries/2026-09-06/ADR-MP-003.md) | WorkItem vs Nexus Task — Shared Work ownership | Accepted (architecture only) |
+| [ADR-MP-003](entries/2026-09-06/ADR-MP-003.md) | WorkItem vs Nexus Task â€” Shared Work ownership | Accepted (architecture only) |
 | [ADR-MP-004](entries/2026-09-07/ADR-MP-004.md) | WorkArtifact collaborative ownership and version authority | Accepted (architecture only) |
-| [ADR-MP-005](entries/2026-09-08/ADR-MP-005.md) | Decision / Approval / Governance collaborative ownership (MP-4) | Accepted (architecture only) |
+| [ADR-MP-005](entries/2026-09-08/ADR-MP-005.md) | Decision / Approval / Governance collaborative ownership (MP-4A era) | **Partially Superseded by ADR-MP-009** (historical MP-4A gate) |
+| [ADR-MP-009](entries/2026-09-15/ADR-MP-009.md) | MP-4 core rebase on canonical Decision / Execution / Governance / Evidence / Diagnostics | Accepted (MP-4R0 supersession gate) |
 | [ADR-AGENT-004](entries/2026-08-12/ADR-AGENT-004.md) | Agent distribution, installation and enablement architecture (AGENT-PLATFORM-1) | Accepted (architecture only) |
 | [ADR-AGENT-005](entries/2026-08-17/ADR-AGENT-005.md) | Reference production process composition and AP-9/AP-10 store ownership (AGENT-CONSOLIDATION-3-ARCH) | Accepted (architecture only) |
 | [ADR-AGENT-006](entries/2026-09-01/ADR-AGENT-006.md) | Canonical runtime materialization authority - `RuntimeMaterializationRecord` (AC-3) | Accepted (architecture only) |
 | [ADR-AGENT-007](entries/2026-09-02/ADR-AGENT-007.md) | Immutable historical EffectiveRoster snapshot authority (AC-3 Phase 4) | Accepted (architecture only) |
 | [ADR-AGENT-008](entries/2026-09-06/ADR-AGENT-008.md) | Durable runtime projection rehydration (EA-03) | Accepted / Implemented |
-| [ADR-PLATFORM-PLUGIN-001](entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) | Declarative policy REQUIRE_HITL → canonical Nexus HITL bridge (ENTERPRISE-4-ADR-1) | Accepted / Implemented |
+| [ADR-PLATFORM-PLUGIN-001](entries/2026-08-14/ADR-PLATFORM-PLUGIN-001.md) | Declarative policy REQUIRE_HITL â†’ canonical Nexus HITL bridge (ENTERPRISE-4-ADR-1) | Accepted / Implemented |
 | [ADR-GOVERNED-EXECUTION-001](entries/2026-08-16/ADR-GOVERNED-EXECUTION-001.md) | Governance Evaluation Points and Enforcement Ownership (Governed Execution G1A) | Accepted |
 | [ADR-GOVERNED-EXECUTION-002](entries/2026-08-17/ADR-GOVERNED-EXECUTION-002.md) | Policy Catalog Identity, Versioning, and Runtime Ownership (Governed Execution G2A) | Accepted |
 | [ADR-SEC-002](entries/2026-09-07/ADR-SEC-002.md) | Third-Party Isolation and External Execution Boundary (Capability Catalog Stage 12) | Accepted (architecture only) |
 | [ADR-RAG-001](entries/2026-09-13/ADR-RAG-001.md) | Generic multi-channel retrieval coordination | Accepted |
 | [ADR-RAG-002](entries/2026-09-15/ADR-RAG-002.md) | Canonical rank fusion semantics (P1C-D1) | Accepted (design) |
-| [ADR-OBS-005](entries/2026-09-14/ADR-OBS-005.md) | Runtime event delivery failure contract (`EventSinkPort`) — P1B-D1-R2 + P1B-R3-D1 bounded completion semantics | Proposed |
+| [ADR-OBS-005](entries/2026-09-14/ADR-OBS-005.md) | Runtime event delivery failure contract (`EventSinkPort`) â€” P1B-D1-R2 + P1B-R3-D1 bounded completion semantics | Proposed |
 | [ADR-DECISION-001](entries/2026-09-14/ADR-DECISION-001.md) | Public authoritative decision exposure at execution boundary (SCENARIO-1-P0-B-D1) | Proposed |
 | [ADR-GR-5-001](entries/2026-09-15/ADR-GR-5-001.md) | Canonical Execution HITL continuation ownership (`ExecutionContinuationPort`; Nexus internal) | Accepted (architecture) |
 
-**Consolidation:** platform ownership, lifecycle, and invariants for GEC-0…GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
+**Consolidation:** platform ownership, lifecycle, and invariants for GEC-0â€¦GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 
 ---
 

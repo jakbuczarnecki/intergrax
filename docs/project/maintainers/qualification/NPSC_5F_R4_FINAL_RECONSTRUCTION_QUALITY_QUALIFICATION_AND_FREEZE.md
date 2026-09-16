@@ -34,6 +34,7 @@ Invariant:
 | ----- | --- |
 | **R4 reconstruction quality implementation** | `84e704eec611e7b24eb82b0be4fe98172c512739` |
 | **OBS-RECONSTRUCTION-1 qualified relocation baseline** | `743a3865198e8fcec53029f935fbedc4cae6f9df` |
+| **OBS-ASOF-REBASE-R1 qualified quality baseline** | `52b9dc41ed7dd83e5516d852f1ef7295cc0b10af` |
 | **R4 Final qualification sign-off** | Recorded on merge commit containing this document |
 
 **Production code changed in R4 Final task:** NO (qualification, drift helper, regression matrix, final gate, docs only).

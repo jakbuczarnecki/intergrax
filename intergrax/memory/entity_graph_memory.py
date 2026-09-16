@@ -1,11 +1,27 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Entity graph user memory — separate from document Graph RAG (Phase MEM-DEPTH-5.1)."""
+"""Legacy entity graph DTOs and facade over canonical entity/temporal store (MEM-ENT-7)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set
+from datetime import datetime
+from typing import Dict, List, Optional
+
+from intergrax.memory.contracts.entity_temporal_memory import (
+    EntityEnumerationCapability,
+    EntityMemoryScope,
+    EntityRecord,
+    EntityRelationDirection,
+    EntityRelationQuery,
+    EntityRelationRecord,
+    EntityTemporalMemoryStore,
+    EntityTypeRef,
+    RelationTypeRef,
+)
+from intergrax.utils.time_provider import SystemTimeProvider, TimeProvider
+
+_LEGACY_TENANT_ID = "legacy-default"
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,31 +43,102 @@ class EntityEdge:
 
 class EntityGraphMemoryStore:
     """
-    In-process entity graph for user-scoped memory (not document Graph RAG).
+    Backward-compatible facade for user-scoped entity graph memory.
 
-    Production backends may replace this via ``intergrax.memory_stores`` EP.
+    New code should depend on ``EntityTemporalMemoryStore`` directly.
     """
 
-    def __init__(self) -> None:
-        self._nodes: Dict[str, EntityNode] = {}
-        self._edges: List[EntityEdge] = []
+    def __init__(
+        self,
+        backend: EntityTemporalMemoryStore,
+        *,
+        tenant_id: str = _LEGACY_TENANT_ID,
+        time_provider: TimeProvider | None = None,
+    ) -> None:
+        self._backend = backend
+        self._tenant_id = tenant_id
+        self._time_provider = time_provider or SystemTimeProvider()
+
+    @property
+    def entity_temporal_store(self) -> EntityTemporalMemoryStore:
+        return self._backend
 
     def upsert_node(self, node: EntityNode) -> None:
-        self._nodes[node.entity_id] = node
+        scope = EntityMemoryScope(tenant_id=self._tenant_id)
+        self._backend.upsert_entity(
+            scope,
+            EntityRecord(
+                entity_id=node.entity_id,
+                entity_type=EntityTypeRef(node.entity_type),
+                canonical_name=node.label,
+                revision=1,
+            ),
+        )
 
     def add_edge(self, edge: EntityEdge) -> None:
-        self._edges.append(edge)
+        scope = EntityMemoryScope(tenant_id=self._tenant_id)
+        relation_id = f"rel:legacy:{edge.source_id}:{edge.target_id}:{edge.relation}"
+        self._backend.upsert_relation(
+            scope,
+            EntityRelationRecord(
+                relation_id=relation_id,
+                source_entity_id=edge.source_id,
+                target_entity_id=edge.target_id,
+                relation_type=RelationTypeRef(edge.relation),
+                revision=1,
+                valid_from=edge.valid_from,
+                valid_until=edge.valid_until,
+            ),
+        )
 
-    def neighbors(self, entity_id: str) -> List[EntityNode]:
-        related: Set[str] = set()
-        for edge in self._edges:
-            if edge.valid_until:
+    def neighbors(
+        self,
+        entity_id: str,
+        *,
+        as_of: datetime | None = None,
+    ) -> List[EntityNode]:
+        scope = EntityMemoryScope(tenant_id=self._tenant_id)
+        reference = as_of if as_of is not None else self._time_provider.utc_now()
+        result = self._backend.query_relations(
+            scope,
+            EntityRelationQuery(
+                entity_id=entity_id,
+                direction=EntityRelationDirection.BOTH,
+                as_of=reference,
+                limit=500,
+            ),
+        )
+        related_ids: set[str] = set()
+        for relation in result.relations:
+            if relation.source_entity_id == entity_id:
+                related_ids.add(relation.target_entity_id)
+            if relation.target_entity_id == entity_id:
+                related_ids.add(relation.source_entity_id)
+        nodes: List[EntityNode] = []
+        for related_id in sorted(related_ids):
+            record = self._backend.get_entity(scope, related_id)
+            if record is None:
                 continue
-            if edge.source_id == entity_id:
-                related.add(edge.target_id)
-            if edge.target_id == entity_id:
-                related.add(edge.source_id)
-        return [self._nodes[node_id] for node_id in related if node_id in self._nodes]
+            nodes.append(
+                EntityNode(
+                    entity_id=record.entity_id,
+                    label=record.canonical_name,
+                    entity_type=record.entity_type.value,
+                )
+            )
+        return nodes
 
     def list_nodes(self) -> List[EntityNode]:
-        return list(self._nodes.values())
+        if not isinstance(self._backend, EntityEnumerationCapability):
+            return []
+        scope = EntityMemoryScope(tenant_id=self._tenant_id)
+        nodes: List[EntityNode] = []
+        for record in self._backend.list_entities(scope):
+            nodes.append(
+                EntityNode(
+                    entity_id=record.entity_id,
+                    label=record.canonical_name,
+                    entity_type=record.entity_type.value,
+                )
+            )
+        return nodes

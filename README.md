@@ -419,6 +419,29 @@ lack established runtime proof:
 | **Platform Extensibility** | Governed extension/package model across domain-owned contracts | **Canonical architecture frozen** - multiple extension-platform slices implemented; core program closed. Residual Protocol v2 work remains planned; complete third-party install-to-runtime E2E proof **not yet established** | [Platform Plugins](docs/project/architecture/PLATFORM_PLUGINS.md) |
 | **Agent Marketplace** | Future ecosystem layer - discovery and distribution over governed Agent Distribution / Platform Extensibility | **FUTURE PRODUCT - NOT SHIPPED TODAY** | [Agent Marketplace concept](docs/project/overview/AGENT_MARKETPLACE.md) |
 | **Capability Catalog & Discovery** | Governed federated discovery of Agent, Skill, and Tool candidates for dynamic capability selection and autonomous work | **Architecture frozen — implementation planned** | [Capability Catalog & Discovery architecture](docs/project/architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) |
+| **Autonomous Organization** | North Star program — mission-driven emergence of capabilities, responsibilities, and structure under governance | **Strategic Initiative — not an implemented organizational runtime** | [Autonomous Organization](docs/project/overview/AUTONOMOUS_ORGANIZATION.md) |
+
+### North Star: Autonomous Organization
+
+What if an AI platform could organize capabilities, responsibilities, and resources around a mission — instead of requiring the organization to be designed upfront?
+
+**Today**, Intergrax provides governed execution foundations. **Next**, real enterprise scenarios expose missing organizational capabilities. **Then**, those capabilities become reusable platform mechanisms. **North Star**: a governed self-organizing virtual organization — explored honestly as a long-term direction, not a shipped product.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/project/assets/public/autonomous-organization/autonomous-organization-hero-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/project/assets/public/autonomous-organization/autonomous-organization-hero-light.png">
+  <img src="docs/project/assets/public/autonomous-organization/autonomous-organization-hero-light.png" alt="Mission, goals, constraints, resources, and constitution flow into a self-organizing virtual organization that discovers capabilities, assigns responsibilities, executes under governance, learns, and can reorganize while preserving commitments and auditability.">
+</picture>
+
+```text
+Mission → Capabilities → Responsibilities → Organization → Execution → Learning → Reorganization
+```
+
+> **Strategic Initiative / North Star — not an implemented autonomous organization runtime.**
+
+The program advances through a frozen portfolio of 10 enterprise-grade organizational scenarios.
+
+**[Explore the Autonomous Organization Initiative →](docs/project/overview/AUTONOMOUS_ORGANIZATION.md)**
 
 ## License and collaboration
 

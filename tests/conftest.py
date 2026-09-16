@@ -11,6 +11,17 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def pytest_sessionstart(session: pytest.Session) -> None:
+    """Resolve forward refs on Task before unit tests construct runtime Task models."""
+    from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
+    from intergrax.runtime.task.task import Task
+
+    _ = RuntimeCheckpoint
+    Task.model_rebuild()
+
+
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 

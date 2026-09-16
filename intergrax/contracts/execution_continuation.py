@@ -135,6 +135,9 @@ class ExecutionContinuationErrorCode(StrEnum):
     SCOPE_MISMATCH = "scope_mismatch"
     DUPLICATE_CONTINUATION = "duplicate_continuation"
     EXECUTION_PROGRESS_BLOCKED = "execution_progress_blocked"
+    AMBIGUOUS_IDENTITY = "ambiguous_identity"
+    STORE_QUERY_FAILED = "store_query_failed"
+    INCOMPLETE_EXECUTION_IDENTITY = "incomplete_execution_identity"
 
 
 class ExecutionContinuationError(ValueError):
@@ -253,6 +256,20 @@ _PROGRESS_BLOCKING_LIFECYCLE_STATES: frozenset[ExecutionContinuationLifecycleSta
         ExecutionContinuationLifecycleState.CANCELLED,
     },
 )
+
+
+def execution_continuation_lifecycle_is_terminal(
+    state: ExecutionContinuationLifecycleState,
+) -> bool:
+    """Whether the lifecycle state closes the continuation episode."""
+    return state in _TERMINAL_LIFECYCLE_STATES
+
+
+def execution_continuation_lifecycle_permits_successor_episode(
+    state: ExecutionContinuationLifecycleState,
+) -> bool:
+    """Whether a new continuation episode may replace ``state`` as the current episode."""
+    return execution_continuation_lifecycle_is_terminal(state)
 
 
 def execution_continuation_lifecycle_blocks_execution_progress(
@@ -661,6 +678,8 @@ __all__ = [
     "SCHEMA_PENDING_EXECUTION_CONTINUATION_V1",
     "advance_continuation_lifecycle",
     "execution_continuation_lifecycle_blocks_execution_progress",
+    "execution_continuation_lifecycle_is_terminal",
+    "execution_continuation_lifecycle_permits_successor_episode",
     "apply_resolution_to_pending",
     "apply_resume_to_pending",
     "assert_execution_continuation_identity_match",

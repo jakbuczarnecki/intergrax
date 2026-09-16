@@ -97,8 +97,14 @@ class _InstrumentedStore(InMemoryExecutionContinuationStateStore):
         self.cas_calls = 0
         self.insert_calls = 0
 
-    def insert_if_absent(self, pending: PendingExecutionContinuation) -> bool:
+    def begin_current_episode_if_predecessor_allows(
+        self,
+        pending: PendingExecutionContinuation,
+    ) -> bool:
         self.insert_calls += 1
+        return super().begin_current_episode_if_predecessor_allows(pending)
+
+    def insert_if_absent(self, pending: PendingExecutionContinuation) -> bool:
         return super().insert_if_absent(pending)
 
     def compare_and_swap(

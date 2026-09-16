@@ -14,7 +14,7 @@ from intergrax.runtime.nexus.errors.tool_verification_required_error import (
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.tool_verify_hooks import run_post_tool_verify
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests, canonical_execution_identity_scope
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
 
 pytestmark = pytest.mark.unit
@@ -42,7 +42,8 @@ def _high_risk_contract() -> ToolContract:
 
 
 def test_high_risk_tool_blocked_when_enforced() -> None:
-    state = build_runtime_state_for_tests(run_id="run-block")
+    run_seed = "run-block"
+    state = build_runtime_state_for_tests(run_id=run_seed)
     state.context.config.enforce_high_risk_tool_verify = True
     invoker = RuntimeToolInvoker(registry=FakeRegistry(_high_risk_contract()), executor=object())  # type: ignore[arg-type]
     trace = ToolCallTrace(
@@ -53,12 +54,13 @@ def test_high_risk_tool_blocked_when_enforced() -> None:
         error_message=None,
         raw_trace={},
     )
-    with pytest.raises(ToolVerificationRequiredError):
+    with canonical_execution_identity_scope(run_seed), pytest.raises(ToolVerificationRequiredError):
         run_post_tool_verify(state=state, invoker=invoker, trace=trace)
 
 
 def test_high_risk_tool_allowed_with_explicit_approval() -> None:
-    state = build_runtime_state_for_tests(run_id="run-approve")
+    run_seed = "run-approve"
+    state = build_runtime_state_for_tests(run_id=run_seed)
     state.context.config.enforce_high_risk_tool_verify = True
     state.high_risk_tool_approvals = frozenset({"danger.tool"})
     invoker = RuntimeToolInvoker(registry=FakeRegistry(_high_risk_contract()), executor=object())  # type: ignore[arg-type]
@@ -70,4 +72,5 @@ def test_high_risk_tool_allowed_with_explicit_approval() -> None:
         error_message=None,
         raw_trace={},
     )
-    run_post_tool_verify(state=state, invoker=invoker, trace=trace)
+    with canonical_execution_identity_scope(run_seed):
+        run_post_tool_verify(state=state, invoker=invoker, trace=trace)

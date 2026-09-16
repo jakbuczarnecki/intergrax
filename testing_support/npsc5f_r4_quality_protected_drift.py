@@ -8,7 +8,8 @@ import subprocess
 from collections.abc import Iterable
 from pathlib import Path
 
-R4_QUALITY_IMPLEMENTATION_SHA = "743a3865198e8fcec53029f935fbedc4cae6f9df"
+# OBS-ASOF-REBASE-R1: lineage enrichment resolver + NOT_APPLICABLE discovery metadata at E.
+R4_QUALITY_IMPLEMENTATION_SHA = "52b9dc41ed7dd83e5516d852f1ef7295cc0b10af"
 
 _R4_QUALITY_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {

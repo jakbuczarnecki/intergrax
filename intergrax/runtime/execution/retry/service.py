@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.contracts.attempt_lifecycle import AttemptLifecycleError, AttemptTransitionReason
+from intergrax.contracts.attempt_lifecycle import (
+    AttemptLifecycleError,
+    AttemptTransitionReason,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
@@ -15,7 +18,11 @@ from intergrax.contracts.execution_identity import (
     peek_active_execution_identity,
     rebind_active_attempt_for_retry,
 )
-from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
+from intergrax.contracts.execution_lineage import (
+    ExecutionLineageAttemptClosureKind,
+    ExecutionLineagePersistence,
+)
+from intergrax.runtime.execution.lineage.seal import seal_lineage_attempt
 from intergrax.contracts.execution_retry import (
     BackoffPolicyConfig,
     ExecutionRetryAction,
@@ -26,12 +33,16 @@ from intergrax.contracts.resilience_policy import ResiliencePolicy
 from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
     DURABLE_ATTEMPT_LIFECYCLE_REQUIRED_MSG,
 )
-from intergrax.runtime.execution.attempt_lifecycle.service import AttemptLifecycleService
+from intergrax.runtime.execution.attempt_lifecycle.service import (
+    AttemptLifecycleService,
+)
 from intergrax.runtime.execution.retry.backoff import (
     backoff_config_from_resilience_policy,
     compute_backoff_delay,
 )
-from intergrax.runtime.execution.retry.policy import evaluate_execution_retry_eligibility
+from intergrax.runtime.execution.retry.policy import (
+    evaluate_execution_retry_eligibility,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,9 +132,6 @@ class ExecutionAttemptRetryService:
             return None
 
         if self._lineage_persistence is not None:
-            from intergrax.contracts.execution_lineage import ExecutionLineageAttemptClosureKind
-            from intergrax.runtime.execution.lineage.seal import seal_lineage_attempt
-
             seal_lineage_attempt(
                 self._lineage_persistence,
                 tenant_id=tenant_id,

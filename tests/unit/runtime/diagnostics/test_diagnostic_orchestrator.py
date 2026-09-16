@@ -29,6 +29,7 @@ from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrch
 from intergrax.runtime.diagnostics.diagnostic_problem_grouping_feature_projector import (
     DiagnosticProblemGroupingFeatureProjector,
 )
+from intergrax.contracts.execution_reconstruction import ExecutionReconstructionReader
 from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstructionIntegrityError,
     ExecutionReconstructor,
@@ -130,7 +131,7 @@ def _build_orchestrator(
     runtime_store: InMemoryRuntimeEventStore | None = None,
     causal_store: InMemoryCausalEvidencePersistence | None = None,
     persistence: InMemoryProblemPersistence | None = None,
-    execution_reconstructor: ExecutionReconstructor | None = None,
+    execution_reconstructor: ExecutionReconstructionReader | None = None,
     grouping_engine: ProblemGroupingEngine | None = None,
     problem_lifecycle_engine: ProblemLifecycleEngine | None = None,
 ) -> tuple[
@@ -591,7 +592,7 @@ def test_production_grouping_strategy_count_remains_one() -> None:
 
 def test_reconstruction_structural_failure_fails_orchestration() -> None:
     runtime_store = InMemoryRuntimeEventStore()
-    reconstructor = MagicMock(spec=ExecutionReconstructor)
+    reconstructor = MagicMock(spec=ExecutionReconstructionReader)
     reconstructor.reconstruct_execution.side_effect = ExecutionReconstructionIntegrityError(
         "forced reconstruction failure",
     )

@@ -64,4 +64,7 @@ def test_historical_reconstruction_service_uses_neutral_reconstruction() -> None
 
 def test_diagnostic_orchestrator_consumes_neutral_reconstruction() -> None:
     imports = _module_imports(_DIAG_ORCHESTRATOR)
-    assert "intergrax.runtime.observability.reconstruction" in imports
+    assert "intergrax.contracts.execution_reconstruction" in imports
+    text = _DIAG_ORCHESTRATOR.read_text(encoding="utf-8")
+    assert "ExecutionReconstructionReader" in text
+    assert "ExecutionReconstructor" not in text

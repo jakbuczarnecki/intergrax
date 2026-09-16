@@ -351,6 +351,25 @@ Every implementation slice must be: enterprise-grade, plugin-extensible, modular
 
 ---
 
+## Tool Marketplace requalification (enterprise core)
+
+| Etap | Status | Cel |
+| --- | --- | --- |
+| Capability Catalog V1 Stages 1–10 | Historical CLOSED | Fundament katalogu, discovery, ranking, governance, distribution |
+| Marketplace Product Surface V1 | Historical CLOSED | Public/private marketplace jako product/read surface |
+| Metering V1 | Historical CLOSED | Usage attribution bez billing authority |
+| Closed-loop consumer proof | Historical CLOSED | Integracja z downstream consumerem (Stage 14) |
+| **TOOL-MARKETPLACE-RB0** | **CURRENT** | Requalification względem zamrożonego Execution Engine / enterprise core — see [TOOL-MARKETPLACE-RB0 audit](../audits/TOOL-MARKETPLACE-RB0.md) |
+| TOOL-MARKETPLACE-RB1 | NEXT | Naprawa potwierdzonych P0/P1 boundary/pluginability gaps |
+| TOOL-MARKETPLACE-V2-ARCH | Planned | Docelowa architektura Marketplace V2 |
+| TOOL-MARKETPLACE-V2 | Planned | Enterprise feature implementation |
+| TOOL-MARKETPLACE-PROD-QUAL | Planned | Production/security/provider qualification |
+| TOOL-MARKETPLACE-FINAL | Planned | Niezależny audit i enterprise acceptance |
+
+Historical V1 **CLOSED** status nie zastępuje RB0/RB1 requalification po refactorze core.
+
+---
+
 ## Future work (post–V1 closure)
 
 **Capability Catalog V1 closure** is complete. The items below are **separate programs** — not Stages 15+ of this roadmap:

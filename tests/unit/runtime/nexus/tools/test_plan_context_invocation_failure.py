@@ -20,7 +20,7 @@ from intergrax.runtime.nexus.tools.plan_context_invocation import run_tools_cont
 from intergrax.runtime.nexus.tracing.tools.tools_summary import ToolsSummaryDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import TraceLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests, canonical_governed_execution_scope
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -31,7 +31,8 @@ class _ToolLoopExplodedError(RuntimeError):
 
 @pytest.mark.asyncio
 async def test_run_tools_context_emits_tools_summary_then_propagates_failure() -> None:
-    state = build_runtime_state_for_tests(run_id="run_tools_ctx_fail")
+    run_seed = "run_tools_ctx_fail"
+    state = build_runtime_state_for_tests(run_id=run_seed)
     state.context.config.tools_mode = "auto"
     state.context.config.tool_invoker = object()
     state.context.config.tool_planner = object()
@@ -52,6 +53,7 @@ async def test_run_tools_context_emits_tools_summary_then_propagates_failure() -
             side_effect=_ToolLoopExplodedError("tool loop exploded deterministically"),
         ),
         pytest.raises(_ToolLoopExplodedError, match="tool loop exploded deterministically"),
+        canonical_governed_execution_scope(run_seed),
     ):
         await run_tools_context(state)
 
@@ -71,7 +73,8 @@ class _MetadataMergeExplodedError(RuntimeError):
 
 @pytest.mark.asyncio
 async def test_run_tools_context_failure_reraises_before_metadata_merge() -> None:
-    state = build_runtime_state_for_tests(run_id="run_tools_ctx_metadata_order")
+    run_seed = "run_tools_ctx_metadata_order"
+    state = build_runtime_state_for_tests(run_id=run_seed)
     state.context.config.tools_mode = "auto"
     state.context.config.tool_invoker = object()
     state.context.config.tool_planner = object()
@@ -96,6 +99,7 @@ async def test_run_tools_context_failure_reraises_before_metadata_merge() -> Non
             side_effect=_MetadataMergeExplodedError("metadata merge must not run on failure"),
         ) as merge_mock,
         pytest.raises(_ToolLoopExplodedError, match="tool loop exploded deterministically"),
+        canonical_governed_execution_scope(run_seed),
     ):
         await run_tools_context(state)
 
@@ -119,7 +123,8 @@ def _hitl_error(*, run_id: str) -> DeclarativePolicyHitlRequiredError:
 
 @pytest.mark.asyncio
 async def test_run_tools_context_hitl_pause_propagates_without_tools_summary() -> None:
-    state = build_runtime_state_for_tests(run_id="run_tools_ctx_hitl")
+    run_seed = "run_tools_ctx_hitl"
+    state = build_runtime_state_for_tests(run_id=run_seed)
     state.context.config.tools_mode = "auto"
     state.context.config.tool_invoker = object()
     state.context.config.tool_planner = object()
@@ -152,8 +157,9 @@ async def test_run_tools_context_hitl_pause_propagates_without_tools_summary() -
             "intergrax.runtime.nexus.tools.plan_context_invocation.run_bounded_tool_loop_async",
             side_effect=_raise_hitl_pause,
         ),
-        pytest.raises(DeclarativePolicyHitlPauseRequired),
+        canonical_governed_execution_scope(run_seed),
     ):
-        await run_tools_context(state)
+        with pytest.raises(DeclarativePolicyHitlPauseRequired):
+            await run_tools_context(state)
 
     assert not any(event.step == "tools" for event in state.trace_events)

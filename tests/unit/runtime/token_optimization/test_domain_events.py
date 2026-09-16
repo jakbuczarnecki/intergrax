@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from testing_support.builder import build_emit_context_for_tests
 from intergrax.memory.summary_compressor import optimize_memory_summary
 from intergrax.runtime.events.emit_context import EmitContext
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -246,9 +247,8 @@ def test_register_token_optimization_domain_signal_is_idempotent() -> None:
 
 def test_emit_token_optimization_domain_signal_records_domain_signal_on_bus() -> None:
     bus = RuntimeEventBus(record_history=True)
-    ctx = EmitContext(
-        task_id="task-1",
-        run_id="run-1",
+    ctx = build_emit_context_for_tests(
+        seed="token-opt-domain-bus",
         tenant_id="tenant-a",
         bus=bus,
     )
@@ -274,9 +274,8 @@ def test_emit_token_optimization_domain_signal_production_mode_stays_safe() -> N
             "run_id": "run-prod-safe",
         },
     )
-    ctx = EmitContext(
-        task_id="task-prod",
-        run_id="run-prod",
+    ctx = build_emit_context_for_tests(
+        seed="token-opt-domain-prod",
         tenant_id="tenant-prod",
         production_mode=True,
     )
@@ -292,7 +291,7 @@ def test_emit_token_optimization_domain_signal_regression_result() -> None:
     summary = run_token_regression_benchmarks(token_counter=default_token_counter)
     signal = build_token_regression_signal(summary.results[0])
     bus = RuntimeEventBus(record_history=True)
-    ctx = EmitContext(task_id="task-reg", run_id="run-reg", bus=bus)
+    ctx = build_emit_context_for_tests(seed="token-opt-domain-reg", bus=bus)
 
     event = emit_token_optimization_domain_signal(ctx, signal)
 
@@ -303,7 +302,7 @@ def test_emit_token_optimization_domain_signal_regression_result() -> None:
 
 def test_invalid_metadata_does_not_leak_through_emission() -> None:
     bus = RuntimeEventBus(record_history=True)
-    ctx = EmitContext(task_id="task-mal", run_id="run-mal", bus=bus)
+    ctx = build_emit_context_for_tests(seed="token-opt-domain-mal", bus=bus)
     signal = TokenOptimizationSignal(
         signal_id="signal-mal-1",
         signal_type=TokenOptimizationSignalType.OPTIMIZATION_OUTCOME,

@@ -17,17 +17,24 @@ from intergrax.runtime.nexus.context.metadata_keys import (
 )
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import TaskExecutionOptions
+from testing_support.builder import build_task_for_tests, canonical_run_id_for_tests
+
+_CTX_V2_SEED = "ctx-v2"
 
 
 def _task(*, context: TaskContextAssemblyOptions | None = None) -> Task:
-    return Task(
+    task = build_task_for_tests(
+        seed=_CTX_V2_SEED,
         tenant_id="t1",
         user_id="u1",
         message="analyze vendors",
-        task_id="task_ctx_v2",
-        options=TaskExecutionOptions(
-            context=context or TaskContextAssemblyOptions(),
-        ),
+    )
+    return task.model_copy(
+        update={
+            "options": TaskExecutionOptions(
+                context=context or TaskContextAssemblyOptions(),
+            ),
+        }
     )
 
 
@@ -42,7 +49,7 @@ def test_context_manager_v2_records_provenance_on_bundle():
     prior = {
         "n1": AgentExecutionResult(
             agent_id="agent_a",
-            run_id="task_ctx_v2",
+            run_id=str(canonical_run_id_for_tests(_CTX_V2_SEED)),
             status=AgentExecutionStatus.COMPLETED,
             summary="prior evidence",
         )
@@ -71,7 +78,7 @@ def test_context_summary_tier_structured_only_omits_prior_narrative():
     prior = {
         "n1": AgentExecutionResult(
             agent_id="agent_a",
-            run_id="task_ctx_v2",
+            run_id=str(canonical_run_id_for_tests(_CTX_V2_SEED)),
             status=AgentExecutionStatus.COMPLETED,
             summary="should not appear in message",
         )
@@ -96,7 +103,7 @@ def test_context_summary_tier_minimal_shows_dependency_refs_only():
     prior = {
         "n1": AgentExecutionResult(
             agent_id="agent_a",
-            run_id="task_ctx_v2",
+            run_id=str(canonical_run_id_for_tests(_CTX_V2_SEED)),
             status=AgentExecutionStatus.COMPLETED,
             summary="hidden narrative",
         )
@@ -119,7 +126,7 @@ def test_context_manager_truncates_prior_text_by_policy():
     prior = {
         "n1": AgentExecutionResult(
             agent_id="agent_a",
-            run_id="task_ctx_v2",
+            run_id=str(canonical_run_id_for_tests(_CTX_V2_SEED)),
             status=AgentExecutionStatus.COMPLETED,
             summary="x" * 200,
         )
@@ -142,7 +149,7 @@ def test_apply_to_task_injects_context_v2_metadata():
         ExecutionNode(node_id="n1", agent_id="agent_a"),
         AgentExecutionResult(
             agent_id="agent_a",
-            run_id="task_ctx_v2",
+            run_id=str(canonical_run_id_for_tests(_CTX_V2_SEED)),
             status=AgentExecutionStatus.COMPLETED,
             summary="evidence",
         ),
@@ -151,7 +158,7 @@ def test_apply_to_task_injects_context_v2_metadata():
     prior = {
         "n1": AgentExecutionResult(
             agent_id="agent_a",
-            run_id="task_ctx_v2",
+            run_id=str(canonical_run_id_for_tests(_CTX_V2_SEED)),
             status=AgentExecutionStatus.COMPLETED,
             summary="evidence",
         )

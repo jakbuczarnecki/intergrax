@@ -33,6 +33,9 @@ from intergrax.runtime.human.governed_continuation_grant import (
     GovernedContinuationGrantCoordinator,
     matches_current_requirement,
 )
+from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+    InternalOrchestrationContinuation,
+)
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle, TaskState
 
@@ -150,6 +153,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
         source_agent_id: str = "platform.meaningful_side_effect",
         source_step_id: str | None = None,
         on_authorization: Callable[[MeaningfulSideEffectAuthorizationResult], None] | None = None,
+        hitl_continuation: InternalOrchestrationContinuation | None = None,
     ) -> T | MeaningfulSideEffectAuthorizationResult:
         """Fresh enforcement evaluation before ``execute``.
 
@@ -226,6 +230,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
                 apply_governed_continuation_pause(
                     task,
                     authorization.governed_continuation_request,
+                    hitl_continuation=hitl_continuation,
                 )
                 lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
             return authorization

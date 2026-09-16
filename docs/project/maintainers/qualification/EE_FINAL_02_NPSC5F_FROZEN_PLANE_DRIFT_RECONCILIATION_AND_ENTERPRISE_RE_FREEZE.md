@@ -18,6 +18,7 @@
 | R4 post-qualified baseline (EE-FINAL-02) | `7a3569c64e892588992635c9cee10c264a9fc200` |
 | H9 interim Evidence Plane baseline | `48a33db23fafab89b5fdb4ff217dfcb113dd6cc5` |
 | **OBS-RECONSTRUCTION-1 qualified re-freeze** | `743a3865198e8fcec53029f935fbedc4cae6f9df` |
+| **OBS-ASOF-REBASE-R1 qualified re-freeze** | `52b9dc41ed7dd83e5516d852f1ef7295cc0b10af` |
 
 ## Drift window (`3bec620` → `7a3569c64`)
 
@@ -77,3 +78,19 @@ Matrix: `testing_support/npsc5f_final_regression_matrix.py` via `test_npsc5f_fin
 | `intergrax/runtime/observability/historical_reconstruction.py` | Import boundary | QUALIFIED_COMPATIBLE — consumes canonical reconstruction package |
 
 Sentinels `NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA` and `R4_POST_QUALIFIED_BASELINE_SHA` advanced to `743a3865198e8fcec53029f935fbedc4cae6f9df` with `test_obs_reconstruction_1_architecture.py` and NPSC-5F regression matrix evidence.
+
+## OBS-ASOF-REBASE-R1 drift window (`743a386` → `52b9dc41`)
+
+| Change | Layer | Contract impact | Authority impact | Evidence impact |
+|--------|-------|-----------------|------------------|-----------------|
+| `ExecutionLineageAsOfReader` in `intergrax/contracts/execution_lineage.py` | Contracts | Additive read port; `AsOfBoundary` input | None — optional provider capability | None — no new evidence write path |
+| `historical_reconstruction.py` DI for `execution_lineage_as_of` | Observability / R4 | Wiring only | None | Read-only reconstruction unchanged |
+| `execution_reconstruction.py` E-scoped resolver + `NOT_APPLICABLE` | Observability / R4 quality | Stricter at historical **E** — disables current lineage without as-of provider | None | Canonical journal/causal facts unchanged; lineage enrichment explicit |
+
+**Decision:** `QUALIFIED_COMPATIBLE` — no new authority, no identity minting, no timestamp heuristic for E-axis, no current-lineage fallback at historical **E**.
+
+**Post-R1 protected-surface commits (`52b9dc41` → `HEAD`):** `execution_continuation` / `execution_identity` contract edits only — **OUT_OF_SCOPE / REQUIRES_SEPARATE_QUALIFICATION** (GR-5 continuation), not absorbed into this baseline.
+
+**Regression:** `test_obs_asof_rebase_r1_lineage_integrity.py`, `test_obs_asof_rebase_architecture.py`, `test_obs_asof_rebase_qualification.py`, NPSC-5F drift sentinels, mandatory matrix.
+
+Sentinels `NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA`, `R4_POST_QUALIFIED_BASELINE_SHA`, and `R4_QUALITY_IMPLEMENTATION_SHA` advanced to `52b9dc41ed7dd83e5516d852f1ef7295cc0b10af` (not `HEAD`-blind).

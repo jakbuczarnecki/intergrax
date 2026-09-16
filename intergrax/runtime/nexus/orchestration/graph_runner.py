@@ -17,6 +17,7 @@ from intergrax.runtime.execution.attempt_lifecycle.durability_policy import (
 from intergrax.contracts.execution_identity import (
     AttemptId,
     RunId,
+    require_active_execution_id,
     require_active_execution_identity,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -26,8 +27,16 @@ from intergrax.runtime.cancellation.coordinator import (
     CancellationCoordinator,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.request_contract import human_request_event_payload
+from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+    InternalOrchestrationContinuation,
+    establish_canonical_hitl_pause,
+    execution_continuation_identity_for_task,
+    require_internal_hitl_continuation,
+    resolve_continuation_id_for_execution,
+)
+from intergrax.contracts.governed_continuation_correlation import ContinuationReason
+from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.nexus.execution.execution_graph import (
     ExecutionGraph,
@@ -39,7 +48,6 @@ from intergrax.runtime.observability.qualification_runtime_trace import (
     DeferredPersistedTraceFinalize,
 )
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
-from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
@@ -128,6 +136,7 @@ class NexusGraphRunner:
     execution_lineage_persistence: ExecutionLineagePersistence | None = None
     max_run_retries: int = 0
     production_mode: bool = False
+    hitl_continuation: InternalOrchestrationContinuation | None = None
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
     decision_exposure_session: object | None = None
 
@@ -571,7 +580,41 @@ class NexusGraphRunner:
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
                 await self.finalize_trace(trace_emitter, executions, task_id=task.task_id)
             return GraphPhaseOutcome(early_result=hook_failure)
-        HumanPauseCoordinator.apply_pause(task, paused)
+        hitl = require_internal_hitl_continuation(self.hitl_continuation)
+        run_id, attempt_id = require_active_execution_identity()
+        execution_id = require_active_execution_id()
+        identity = execution_continuation_identity_for_task(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+        )
+        human_request = paused.human_request
+        if human_request is None:
+            raise RuntimeError("human_request required for graph HITL pause")
+        pause_record = task.runtime.governance.pause_record
+        if (
+            pause_record is not None
+            and pause_record.human_request_id == human_request.request_id
+        ):
+            pause_id = pause_record.pause_id
+        else:
+            pause_id = f"pause_{human_request.request_id}"
+        governed = human_request.governed_continuation
+        continuation_id = resolve_continuation_id_for_execution(paused)
+        reason = governed.reason if governed is not None else ContinuationReason.COMPLIANCE
+        establish_canonical_hitl_pause(
+            task,
+            identity=identity,
+            continuation_id=continuation_id,
+            reason=reason,
+            pause_id=pause_id,
+            human_request_id=human_request.request_id,
+            capability=hitl,
+            governed_correlation=governed,
+            human_prompt=human_request.prompt,
+            execution_interrupt=paused.execution_interrupt,
+        )
         lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
         await self.maybe_checkpoint(
             task,

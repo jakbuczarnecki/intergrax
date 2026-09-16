@@ -24,6 +24,7 @@ from intergrax.memory.contracts.memory_recall import (
     MemoryRecallReasonCode,
     MemorySupersessionIntent,
 )
+from intergrax.memory.contracts.procedural_memory import ProcedureMemoryCapability
 
 __all__ = [
     "EpisodicMemoryCapability",
@@ -49,6 +50,7 @@ __all__ = [
     "UserMemoryRecallCapabilityResult",
     "UserMemoryRememberCapabilityResult",
     "UserProfileMemoryCapability",
+    "ProcedureMemoryCapability",
     "MemoryControlSupersessionApplyResult",
     "user_memory_scope",
 ]

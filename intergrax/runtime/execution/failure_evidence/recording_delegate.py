@@ -14,6 +14,7 @@ from intergrax.contracts.execution_failure_evidence import (
 from intergrax.contracts.execution_identity import require_active_execution_id
 from intergrax.runtime.execution.boundary import ExecutionDelegate
 from intergrax.runtime.execution.failure_evidence.active_context import (
+    peek_active_execution_evidence_context,
     validate_active_execution_evidence_context,
 )
 
@@ -39,10 +40,6 @@ class ExecutionFailureRecordingDelegate(Generic[RequestT, ResultT]):
             raise
 
     def _record_delegate_failure(self) -> None:
-        from intergrax.runtime.execution.failure_evidence.active_context import (
-            peek_active_execution_evidence_context,
-        )
-
         if peek_active_execution_evidence_context() is None:
             return
         context = validate_active_execution_evidence_context()

@@ -54,6 +54,7 @@ from intergrax.contracts.meaningful_side_effect import (
 from intergrax.contracts.meaningful_side_effect_policy import MeaningfulSideEffectPolicyRule
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.human.governed_continuation_bridge import (
+    apply_governed_continuation_pause,
     bridge_governed_continuation_to_execution_result,
     bridge_governed_continuation_to_governance,
     compose_continuation_human_request,
@@ -266,16 +267,29 @@ def test_require_human_produces_canonical_pause_composition(gr3_active_execution
         )
     )
     executed: list[str] = []
-    task = _task()
+    task = _task(_TASK_ID)
     lifecycle = TaskLifecycle()
     lifecycle.transition(task, TaskState.CLASSIFIED)
     lifecycle.transition(task, TaskState.PLANNED)
 
+    from intergrax.runtime.execution.continuation.composition import (
+        wire_execution_engine_continuation_dependencies,
+    )
+    from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+        InternalOrchestrationContinuation,
+    )
+
+    _continuation_deps = wire_execution_engine_continuation_dependencies()
+    hitl_continuation = InternalOrchestrationContinuation(
+        port=_continuation_deps.continuation,
+        lifecycle_driver=_continuation_deps.lifecycle_driver,
+    )
     result = boundary.authorize_and_execute(
         _enforcement_request(membership),
         lambda: executed.append("side-effect"),
         task=task,
         lifecycle=lifecycle,
+        hitl_continuation=hitl_continuation,
     )
     assert isinstance(result, MeaningfulSideEffectAuthorizationResult)
     assert result.permitted is False
@@ -419,19 +433,32 @@ def test_continuation_request_is_not_execution_authority(gr3_active_execution) -
     assert "blocked" not in executed
 
 
-def test_canonical_hitl_reuse_human_pause_coordinator() -> None:
-    task = _task()
-    continuation = _continuation_request()
-    execution = bridge_governed_continuation_to_execution_result(continuation)
+def test_canonical_hitl_reuse_human_pause_coordinator(gr3_active_execution) -> None:
+    from intergrax.runtime.execution.continuation.composition import (
+        wire_execution_engine_continuation_dependencies,
+    )
+    from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+        InternalOrchestrationContinuation,
+    )
 
-    HumanPauseCoordinator.apply_pause(task, execution)
+    task = _task(_TASK_ID)
+    continuation = _continuation_request()
+    deps = wire_execution_engine_continuation_dependencies()
+    apply_governed_continuation_pause(
+        task,
+        continuation,
+        hitl_continuation=InternalOrchestrationContinuation(
+            port=deps.continuation,
+            lifecycle_driver=deps.lifecycle_driver,
+        ),
+    )
 
     gov = task.runtime.governance
     assert gov.paused is True
     assert gov.pause_record is not None
-    assert gov.pause_record.human_request_id == execution.human_request.request_id
+    assert gov.human_request is not None
+    assert gov.pause_record.human_request_id == gov.human_request.request_id
     assert gov.execution_interrupt is not None
-    assert gov.execution_interrupt.interrupt_id == execution.execution_interrupt.interrupt_id
 
 
 def test_correlation_enum_round_trip_preserves_types() -> None:

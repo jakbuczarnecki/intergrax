@@ -15,6 +15,9 @@ from intergrax.memory.resolver.discovery import (
 from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
 from intergrax.memory.resolver.materialization import MemoryStoreMaterializationContext
 from intergrax.memory.resolver.resolver import (
+    materialize_entity_temporal_memory_store,
+    materialize_long_horizon_memory_store,
+    materialize_procedural_memory_store,
     materialize_session_storage,
     materialize_user_profile_store,
 )
@@ -28,6 +31,9 @@ __all__ = [
     "MemoryStorePluginResolutionError",
     "classify_memory_store_plugin",
     "discover_classified_memory_store_plugins",
+    "materialize_entity_temporal_memory_store",
+    "materialize_long_horizon_memory_store",
+    "materialize_procedural_memory_store",
     "materialize_session_storage",
     "materialize_user_profile_store",
 ]

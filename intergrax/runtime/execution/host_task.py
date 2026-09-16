@@ -22,15 +22,24 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
 )
-from intergrax.contracts.execution_capacity_admission import ExecutionCapacityAdmissionPort
-from intergrax.contracts.execution_failure_evidence import ExecutionFailureEvidenceRecorder
+from intergrax.contracts.execution_capacity_admission import (
+    ExecutionCapacityAdmissionPort,
+)
+from intergrax.contracts.execution_failure_evidence import (
+    ExecutionFailureEvidenceRecorder,
+)
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
 from intergrax.contracts.recovery_admission import RecoveryAdmissionPort
 from intergrax.contracts.root_execution_launch import (
     RootExecutionLaunchDisposition,
     RootExecutionLaunchRequest,
 )
-from intergrax.contracts.runtime_execution_admission import RootExecutionAuthorityAdmissionPort
+from intergrax.contracts.runtime_execution_admission import (
+    RootExecutionAuthorityAdmissionPort,
+)
 from intergrax.runtime.execution.agentic import AgentEnginePort
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.execution_terminal.persistence import (
@@ -103,6 +112,9 @@ from intergrax.runtime.nexus.orchestration_capabilities import (
 )
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 
 
 def resolve_task_execution_capabilities(
@@ -127,10 +139,6 @@ def task_result_from_agent_execution(
     run_id: RunId,
     execution_result: AgentExecutionResult,
 ) -> TaskResult:
-    from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
-        terminal_task_result_exposure_no_decision_gate,
-    )
-
     state = (
         TaskState.COMPLETED
         if execution_result.status is AgentExecutionStatus.COMPLETED
@@ -213,7 +221,9 @@ class _HostTaskTerminalPublishingDelegate:
 
     def __init__(
         self,
-        inner: ExecutionDelegate[ExecutionRequest[TaskExecutionInput, TaskResult], TaskResult],
+        inner: ExecutionDelegate[
+            ExecutionRequest[TaskExecutionInput, TaskResult], TaskResult
+        ],
         *,
         terminal_publisher: HostTaskTerminalPublisher | None,
         task: Task,
@@ -222,7 +232,9 @@ class _HostTaskTerminalPublishingDelegate:
         self._terminal_publisher = terminal_publisher
         self._task = task
 
-    async def _publish_terminal_for_state(self, state: TaskState, *, agent_id: str | None) -> None:
+    async def _publish_terminal_for_state(
+        self, state: TaskState, *, agent_id: str | None
+    ) -> None:
         if self._terminal_publisher is None:
             return
         if terminal_outcome_from_task_state(state) is None:
@@ -249,7 +261,9 @@ class _HostTaskTerminalPublishingDelegate:
         try:
             result = await self._inner.execute(request)
         except Exception:
-            await self._publish_terminal_for_state(TaskState.FAILED, agent_id=self._task.agent_id)
+            await self._publish_terminal_for_state(
+                TaskState.FAILED, agent_id=self._task.agent_id
+            )
             raise
         await self._publish_terminal_for_state(
             result.state,
@@ -289,6 +303,7 @@ class HostTaskExecution:
     _failure_evidence_recorder: ExecutionFailureEvidenceRecorder | None = None
     _recovery_admission: RecoveryAdmissionPort | None = None
     _execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None
+    _continuation_state_store: ExecutionContinuationStateStore | None = None
 
     def _launcher_for_task(
         self,
@@ -296,7 +311,9 @@ class HostTaskExecution:
         *,
         execution_capacity_admission: ExecutionCapacityAdmissionPort | None,
     ) -> DefaultRootExecutionLauncher[
-        HostRootExecutionIntakePayload[ExecutionRequest[TaskExecutionInput, TaskResult]],
+        HostRootExecutionIntakePayload[
+            ExecutionRequest[TaskExecutionInput, TaskResult]
+        ],
         TaskResult,
     ]:
         intake = HostFacadeRootExecutionIntake(
@@ -341,6 +358,7 @@ class HostTaskExecution:
             execution_lineage_persistence=self._execution_lineage_persistence,
             failure_evidence_recorder=self._failure_evidence_recorder,
             execution_capacity_admission=execution_capacity_admission,
+            continuation_state_store=self._continuation_state_store,
         )
 
     async def execute(
@@ -410,7 +428,9 @@ class HostTaskExecution:
                 apply_runtime_checkpoint_to_task(task, resume_checkpoint.runtime)
         if self._revision_admission is not None:
             preview_options = RootExecutionOptions(
-                authority=resolve_root_parent_execution_authority(task.execution_authority),
+                authority=resolve_root_parent_execution_authority(
+                    task.execution_authority
+                ),
                 tenant_id=task.tenant_id,
                 run_id=identity.run_id,
                 attempt_id=identity.attempt_id,
@@ -447,7 +467,9 @@ class HostTaskExecution:
         try:
             if restore_existing_execution:
                 continuation_options = RootExecutionOptions(
-                    authority=resolve_root_parent_execution_authority(task.execution_authority),
+                    authority=resolve_root_parent_execution_authority(
+                        task.execution_authority
+                    ),
                     tenant_id=task.tenant_id,
                     run_id=identity.run_id,
                     attempt_id=identity.attempt_id,
@@ -475,8 +497,12 @@ class HostTaskExecution:
                     tenant_id=task.tenant_id,
                     workspace_id=host_workspace_id(task),
                     principal_id=host_principal_id(task),
-                    root_execution_operation=root_execution_operation_from_request(request),
-                    collaborative_authority_scopes=host_upstream_collaborative_scopes(task),
+                    root_execution_operation=root_execution_operation_from_request(
+                        request
+                    ),
+                    collaborative_authority_scopes=host_upstream_collaborative_scopes(
+                        task
+                    ),
                     effective_authority_decision=host_upstream_effective_authority_decision(),
                     payload=HostRootExecutionIntakePayload(
                         execution_request=request,
@@ -490,10 +516,6 @@ class HostTaskExecution:
                 ),
             )
             if launch_result.disposition is not RootExecutionLaunchDisposition.LAUNCHED:
-                from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
-                    terminal_task_result_exposure_no_decision_gate,
-                )
-
                 return TaskResult(
                     task_id=task.task_id,
                     run_id=identity.run_id,

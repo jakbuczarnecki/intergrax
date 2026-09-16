@@ -16,6 +16,8 @@ _MARKETPLACE_MODULE = "intergrax.marketplace"
 _CONTRACTS_MODULE = "intergrax.contracts.marketplace"
 
 _FORBIDDEN_IMPORT_PREFIXES = (
+    "intergrax.nexus",
+    "intergrax.runtime.nexus",
     "intergrax.tools.registry.runtime",
     "intergrax.skills.registry.runtime",
     "intergrax.agent_distribution",

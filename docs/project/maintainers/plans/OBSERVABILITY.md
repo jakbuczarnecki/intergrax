@@ -66,13 +66,15 @@
 | 5 | **OBS-COVERAGE-1** | P1 | **Done / Closed** (2026-09-15) | Platform evidence coverage matrix — P1 paths **PROVEN**; DG-005 **NOT PROVEN** (P2) — [arch matrix](../../architecture/OBSERVABILITY.md#platform-evidence-coverage-matrix-obs-coverage-1) |
 | 6 | **OBS-TRACE-1** | P2 | **Done / Closed (NOT REQUIRED)** | Qualified producers/consumers — `TraceEvent` stays run-scoped; gates `test_obs_trace_1_qualification.py` |
 | 7 | **OBS-RECONSTRUCTION-1** | P1 | **Done / Closed** | Single shared factual reconstruction module owned by Evidence Plane (`runtime.observability.reconstruction`); DIAG consumes only |
-| 8 | **OBS-ASOF-REBASE** | P1/P2 | **Done / Closed** (2026-09-15) | Historical execution query on canonical **E** + Execution Tree ports + shared reconstruction — [arch § OBS-ASOF-REBASE](../../architecture/OBSERVABILITY.md#obs-asof-rebase--historical-execution-query-rebase-closed-2026-09-15) |
+| 8 | **OBS-ASOF-REBASE** | P1/P2 | **Done / Closed** (2026-09-15); **R1 lineage integrity** — **Done** (E-scoped / explicit disable) | Historical execution query on canonical **E** + shared reconstruction; lineage at **E** via `ExecutionLineageAsOfReader` or explicit `NOT_APPLICABLE` — [arch § E-Scoped Lineage](../../architecture/OBSERVABILITY.md#e-scoped-lineage-semantics-obs-asof-rebase-r1) |
+| 8R1 | **OBS-ASOF-REBASE-R1** | P1 | **Done** | Prevent current lineage from contaminating as-of reconstruction; optional E-capability port |
 | 9 | **TRACE-ASOF-3** | Conditional | **NOT REQUIRED** | Materialization only if measurably required; logical as-of at **E** is canonical after OBS-ASOF-REBASE |
-| 10 | **OBS-BITEMP-REBASE** | P2 | Planned | E/K/V/S composition without axis mixing |
-| 11 | **OBS-DIAG-CONFORMANCE** | P1 | Planned | E2E proof Producer → Evidence → Reconstruction → DIAG |
-| 12 | **OBS-FINAL-CERTIFICATION** | P1 | Planned | Enterprise Observability closure |
+| 10 | **OBS-BITEMP-REBASE** | P2 | **Done / Closed** (2026-09-15) | E/K/V/S independent temporal coordinate — [arch § OBS-BITEMP-REBASE](../../architecture/OBSERVABILITY.md#obs-bitemp-rebase--ekvs-temporal-coordinate-closed-2026-09-15) |
+| 11 | **OBS-DIAG-CONFORMANCE** | P1 | **PASS / CLOSED** (2026-09-15) | E2E proof Producer → Evidence → Reconstruction → DIAG — `pytest -m obs_diag_conformance` |
+| 11R1 | **OBS-DIAG-CONFORMANCE-R1** | P1 | **Done / Closed** | Diagnostics consume `ExecutionReconstructionReader`; default `ExecutionReconstructor` |
+| 12 | **OBS-FINAL-CERTIFICATION** | P1 | **Done / Closed** (2026-09-16) — **PASS — ENTERPRISE CERTIFIED** | Final enterprise recertification — [`qualification/OBS_FINAL_ENTERPRISE_CERTIFICATION.md`](../qualification/OBS_FINAL_ENTERPRISE_CERTIFICATION.md) |
 
-**TRACE-ASOF-4** and **TRACE-BITEMP-4** remain **Planned**; **TRACE-ASOF-4** is unblocked to delegate to the OBS-ASOF-REBASE canonical path. **TRACE-BITEMP-4** remains blocked on **OBS-BITEMP-REBASE**.
+**TRACE-ASOF-4** and **TRACE-BITEMP-4** remain **Planned / Conditional**; **TRACE-ASOF-4** may delegate to OBS-ASOF-REBASE. **TRACE-BITEMP-4** is unblocked for optional thin public surface only (core composition closed under OBS-BITEMP-REBASE).
 
 Closed TRACE phases (1A–1C, ASOF-1/2, BITEMP-1/3, NPSC-5F evidence plane) stay **Done** — not duplicated as active work below.
 

@@ -16,6 +16,9 @@ from intergrax.runtime.execution.continuation.service import (
     ExecutionContinuationService,
     execution_continuation_port,
 )
+from intergrax.runtime.task.execution_continuation_projection import (
+    wire_task_execution_continuation_projection_sink,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,7 +34,7 @@ def wire_execution_continuation_port(
     *,
     state_store: ExecutionContinuationStateStore | None = None,
 ) -> ExecutionContinuationPort:
-    """Resolve continuation port; explicit ``state_store=None`` uses in-memory default."""
+    """Dedicated continuation composition; ``state_store=None`` uses in-memory default."""
     store = wire_execution_continuation_state_store(state_store=state_store)
     service = ExecutionContinuationService(store)
     return execution_continuation_port(service)
@@ -56,4 +59,5 @@ __all__ = [
     "ExecutionEngineContinuationDependencies",
     "wire_execution_continuation_port",
     "wire_execution_engine_continuation_dependencies",
+    "wire_task_execution_continuation_projection_sink",
 ]

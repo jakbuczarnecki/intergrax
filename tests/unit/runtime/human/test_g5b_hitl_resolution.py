@@ -422,8 +422,55 @@ def test_two_independent_approval_cycles() -> None:
 
 @pytest.mark.asyncio
 async def test_intake_runner_passes_explicit_pause_identity() -> None:
+    from intergrax.contracts.governed_continuation_correlation import (
+        ContinuationReason,
+        GovernedContinuationCorrelation,
+    )
+    from intergrax.runtime.execution.continuation.composition import (
+        wire_execution_engine_continuation_dependencies,
+    )
+    from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+        InternalOrchestrationContinuation,
+        establish_canonical_hitl_pause,
+        execution_continuation_identity_for_task,
+    )
+
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
-    _active_pause(task, pause_id="pause-intake", human_request_id="hr-intake")
+    governed = GovernedContinuationCorrelation(
+        continuation_request_id="gcr_intake_test",
+        reason=ContinuationReason.SECURITY,
+        task_id=TASK_ID,
+        run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=EXECUTION_ID,
+        operation_id="op_intake",
+    )
+    task.runtime.governance.human_request = HumanRequest(
+        request_id="hr-intake",
+        prompt="approve?",
+        governed_continuation=governed,
+    )
+    deps = wire_execution_engine_continuation_dependencies()
+    hitl_continuation = InternalOrchestrationContinuation(
+        port=deps.continuation,
+        lifecycle_driver=deps.lifecycle_driver,
+    )
+    with bound_hitl_test_execution_identity():
+        establish_canonical_hitl_pause(
+            task,
+            identity=execution_continuation_identity_for_task(
+                task,
+                run_id=RUN_ID,
+                attempt_id=ATTEMPT_ID,
+                execution_id=EXECUTION_ID,
+            ),
+            continuation_id="gcr_intake_test",
+            reason=ContinuationReason.SECURITY,
+            pause_id="pause-intake",
+            human_request_id="hr-intake",
+            capability=hitl_continuation,
+            governed_correlation=governed,
+        )
     task.options.human.verdict = "approve"
     task.options.human.pause_id = "pause-intake"
     task.options.human.human_request_id = "hr-intake"
@@ -436,6 +483,7 @@ async def test_intake_runner_passes_explicit_pause_identity() -> None:
         publish=AsyncMock(),
         restore_long_running=AsyncMock(),
         execution_identity=ActiveExecutionIdentity(),
+        hitl_continuation=hitl_continuation,
     )
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)

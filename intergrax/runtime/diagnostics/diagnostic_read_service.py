@@ -22,10 +22,10 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
 from intergrax.runtime.diagnostics.diagnostic_lineage_projection import (
     project_execution_lineage_view,
 )
+from intergrax.contracts.execution_reconstruction import ExecutionReconstructionReader
 from intergrax.runtime.observability.reconstruction import (
     ExecutionReconstruction,
     ExecutionReconstructionIntegrityError,
-    ExecutionReconstructor,
 )
 from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnalysisIntegrityError,
@@ -86,7 +86,7 @@ class DiagnosticReadService:
         self,
         problem_persistence: ProblemPersistence,
         occurrence_persistence: ProblemOccurrencePersistence,
-        execution_reconstructor: ExecutionReconstructor,
+        execution_reconstructor: ExecutionReconstructionReader,
         *,
         lifecycle_analyzer: LifecycleAnomalyAnalyzer | None = None,
         assessment_builder: DiagnosticAssessmentBuilder | None = None,
@@ -347,7 +347,7 @@ def _reconstruct_occurrence_view(
     *,
     tenant_id: str,
     problem: Problem,
-    reconstructor: ExecutionReconstructor,
+    reconstructor: ExecutionReconstructionReader,
     lifecycle_analyzer: LifecycleAnomalyAnalyzer,
     assessment_builder: DiagnosticAssessmentBuilder,
     decision_context_provider: DecisionContextProvider | None,

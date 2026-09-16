@@ -171,6 +171,20 @@ See the [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_A
 
 See the [Platform Plugins architecture](../architecture/PLATFORM_PLUGINS.md) for the strategic direction and current boundaries.
 
+### Governed Self-Organizing Organization
+
+**Strategic outcome (North Star program — not a shipped capability)**
+
+Demonstrate that organizational capabilities, responsibilities, and structure can emerge and evolve from mission, constraints, and resources without being fully predefined.
+
+**Evidence path (outcome-based, not a delivery schedule):**
+
+```text
+10 scenario proofs → integrated qualification → North Star challenge
+```
+
+Program framing: [Autonomous Organization](AUTONOMOUS_ORGANIZATION.md). No dates or release promises apply to this direction.
+
 ## Discovery signals and decision discipline
 
 Use discovery to inform product decisions - not to substitute for building or for later solution validation.

@@ -12,7 +12,6 @@ from pydantic import BaseModel
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tools.catalog_dispatch import (
     catalog_tool_ids,
     invoke_catalog_tool_ids,
@@ -24,7 +23,14 @@ from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecution
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolHandler
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, tools_agent_make_contract
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_request_for_tests,
+    canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
+    tools_agent_make_contract,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -67,16 +73,18 @@ def _runtime_state_with_invoker(registry: ToolRegistry) -> RuntimeState:
         session_manager=build_in_memory_session_manager(),
         prompt_registry=MagicMock(),
     )
+    catalog_seed = "run-catalog-1"
     return RuntimeState(
         context=ctx,
-        request=RuntimeRequest(
+        request=build_runtime_request_for_tests(
+            seed=catalog_seed,
             agent_id="agent-1",
             user_id="user-1",
             session_id="session-1",
             tenant_id="tenant-1",
             message="find issues",
         ),
-        run_id="run-catalog-1",
+        run_id=canonical_run_id_for_tests(catalog_seed),
         tool_traces=[],
     )
 
@@ -92,11 +100,12 @@ async def test_invoke_catalog_tool_ids_without_use_tools_flag() -> None:
     _register_catalog_tool(registry)
     state = _runtime_state_with_invoker(registry)
 
-    count = invoke_catalog_tool_ids(
-        state=state,
-        tool_ids=[CATALOG_TOOL_ID],
-        tool_inputs={CATALOG_TOOL_ID: {"value": 3}},
-    )
+    with canonical_governed_execution_scope("run-catalog-1"):
+        count = invoke_catalog_tool_ids(
+            state=state,
+            tool_ids=[CATALOG_TOOL_ID],
+            tool_inputs={CATALOG_TOOL_ID: {"value": 3}},
+        )
 
     assert count == 1
     assert state.used_tools is True
@@ -127,7 +136,8 @@ async def test_tool_runtime_invoke_dispatches_catalog_ids_without_use_tools() ->
             new_callable=AsyncMock,
         ) as tools_step_mock,
     ):
-        result = await ToolRuntime.invoke(state=state, plan=plan)
+        with canonical_governed_execution_scope("run-catalog-1"):
+            result = await ToolRuntime.invoke(state=state, plan=plan)
 
     tools_step_mock.assert_not_awaited()
     assert result.used_tools is True

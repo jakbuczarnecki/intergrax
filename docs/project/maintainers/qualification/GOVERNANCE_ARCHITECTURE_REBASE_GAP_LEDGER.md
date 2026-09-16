@@ -256,8 +256,9 @@ Historical AUDIT-5 findings remain valid context; closure requires identity rebi
 | GR-5-ADR1 | Canonical Execution HITL Continuation Ownership | **DONE** | One lifecycle authority; Nexus internal; `ExecutionContinuationPort` direction | GR-1 | — | No (docs) | ADR-GR-5-001 |
 | GR-5-R1 | Canonical Execution Continuation Contract | **DONE** | Typed `ExecutionContinuationPort` + DTOs (`execution_continuation.py`) | GR-5-ADR1 | — | Yes | Contract + boundary tests |
 | GR-5-R2 | Canonical Pause/Resume Integration | **CANDIDATE CLOSED** (await audit) | UER owns transitions via `ExecutionContinuationService`; not root admission on resume; **TRANSITIONAL — NOT GR-5 COMPLETE** (R3/R4/R5) | GR-5-R1 | — | Yes | Lifecycle integration tests |
-| GR-5-R3 | Task / HumanPauseCoordinator projection alignment | PLANNED | `WAITING_FOR_HUMAN` derived from canonical state | GR-5-R2 | — | Yes | Projection parity tests |
-| GR-5-R4 | Nexus internal HITL lifecycle integration | PLANNED | Intake/graph runners via port | GR-5-R2 | — | Yes | Orchestration HITL qual |
+| GR-5-R3 | Task / HumanPauseCoordinator projection alignment | CANDIDATE CLOSED | Canonical continuation first; Task/Human replayable materialized view | GR-5-R2, GR-5-R3-R1 | — | Yes | Projection parity + canonical-first tests |
+| GR-5-R3-R1 | Canonical-first resolution & atomic projection commit | DONE | `apply_resolution` before accepted Task projection; projection prepare/commit | GR-5-R3 | — | Yes | `test_gr5_r3_r1_canonical_first_atomic_projection.py` |
+| GR-5-R4 | Execution Engine Internal HITL Orchestration Alignment | PLANNED | Internal orchestration via port | GR-5-R2 | — | Yes | Orchestration HITL qual |
 | GR-5-R5 | Checkpoint restart + exact identity qualification | PLANNED | Pause → restart → same four IDs | GR-5-R3, GR-5-R4 | — | Yes | Restart qualification |
 | GR-5 | HITL / Governed Continuation Rebase | **OPEN** | End-to-end same-Execution pause/resume | GR-5-R1…R5 | G5*, PG-FIX-C | Yes | HITL E2E per strategy |
 | GR-6 | Decision → Governance Integration | PLANNED | Decision provenance where material | GR-1 | — | Yes | Decision-version binding tests |

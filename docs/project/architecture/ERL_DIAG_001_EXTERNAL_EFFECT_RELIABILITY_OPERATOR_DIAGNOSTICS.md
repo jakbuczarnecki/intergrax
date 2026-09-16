@@ -17,7 +17,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 | --- | --- |
 | [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md) | ERL boundaries |
 | [`ERL_QUAL_004_PLATFORM_CAPABILITY_GAP_ANALYSIS.md`](ERL_QUAL_004_PLATFORM_CAPABILITY_GAP_ANALYSIS.md) | Capability gap |
-| [`docs/ERL_QUAL_004_DIAGNOSTICS_PLATFORM_GAP.md`](../../../ERL_QUAL_004_DIAGNOSTICS_PLATFORM_GAP.md) | Diagnostics integration gap |
+| [`ERL_QUAL_004_DIAGNOSTICS_PLATFORM_GAP.md`](ERL_QUAL_004_DIAGNOSTICS_PLATFORM_GAP.md) | Diagnostics integration gap |
 | `intergrax.contracts.diagnostics` | Problem persistence spine |
 | `intergrax.contracts.diagnostic_investigation` | Operator read vocabulary |
 | `intergrax.contracts.diagnostic_extension_evidence` | Domain enrichment SPI |

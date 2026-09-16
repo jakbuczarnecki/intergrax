@@ -19,6 +19,13 @@ from intergrax.contracts.human_approver import human_approval_event_payload
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+    InternalOrchestrationContinuation,
+    canonical_execution_is_resumed,
+    canonical_resume_after_authorization,
+    execution_continuation_identity_for_task,
+    require_internal_hitl_continuation,
+)
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.human_response import (
     clear_consumed_human_input,
@@ -44,6 +51,7 @@ class NexusIntakeRunner:
     publish: PublishFn
     restore_long_running: RestoreFn
     execution_identity: ActiveExecutionIdentity | None = None
+    hitl_continuation: InternalOrchestrationContinuation | None = None
 
     async def run(
         self,
@@ -55,9 +63,25 @@ class NexusIntakeRunner:
         normalize_human_response(task)
         await self.restore_long_running(task)
 
+        continuation_identity = None
+        if self.execution_identity is not None:
+            run_id_lr, attempt_id_lr = self.execution_identity.require()
+            execution_id_lr = self.execution_identity.execution_id
+            if execution_id_lr is not None:
+                continuation_identity = execution_continuation_identity_for_task(
+                    task,
+                    run_id=run_id_lr,
+                    attempt_id=attempt_id_lr,
+                    execution_id=execution_id_lr,
+                )
+
         if (
             LongRunningCoordinator.is_long_running(task)
-            and HumanPauseCoordinator.is_resumed(task)
+            and continuation_identity is not None
+            and canonical_execution_is_resumed(
+                self.hitl_continuation,
+                identity=continuation_identity,
+            )
             and task.state in LongRunningCoordinator.paused_states()
         ):
             task.state = TaskState.CREATED
@@ -90,10 +114,13 @@ class NexusIntakeRunner:
                 raise RuntimeError("active execution identity required for intake emission")
             hitl_run_id, hitl_attempt_id = self.execution_identity.require()
         if verdict == HumanResponseVerdict.REJECT:
-            HumanPauseCoordinator.resolve_human_response(
+            hitl = require_internal_hitl_continuation(self.hitl_continuation)
+            HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
                 task,
                 HumanResponseVerdict.REJECT,
                 approver=approver,  # type: ignore[arg-type]
+                continuation=hitl.port,
+                projection_sink=hitl.projection_sink,
                 pause_id=response_pause_id,
                 human_request_id=response_request_id,
                 run_id=hitl_run_id,
@@ -107,10 +134,13 @@ class NexusIntakeRunner:
             clear_consumed_human_input(task)
             return IntakePhaseOutcome(early_result=result)
         if verdict == HumanResponseVerdict.ESCALATE:
-            HumanPauseCoordinator.resolve_human_response(
+            hitl = require_internal_hitl_continuation(self.hitl_continuation)
+            HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
                 task,
                 HumanResponseVerdict.ESCALATE,
                 approver=approver,  # type: ignore[arg-type]
+                continuation=hitl.port,
+                projection_sink=hitl.projection_sink,
                 pause_id=response_pause_id,
                 human_request_id=response_request_id,
                 run_id=hitl_run_id,
@@ -124,20 +154,26 @@ class NexusIntakeRunner:
             clear_consumed_human_input(task)
             return IntakePhaseOutcome(early_result=result)
 
-        if HumanPauseCoordinator.is_resumed(task):
+        if verdict == HumanResponseVerdict.APPROVE:
             run_id = hitl_run_id
             attempt_id = hitl_attempt_id
             if run_id is None or attempt_id is None:
                 raise RuntimeError("active execution identity required for intake emission")
-            HumanPauseCoordinator.resolve_human_response(
+            hitl = require_internal_hitl_continuation(self.hitl_continuation)
+            authorized = HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
                 task,
                 HumanResponseVerdict.APPROVE,
                 approver=approver,  # type: ignore[arg-type]
+                continuation=hitl.port,
+                projection_sink=hitl.projection_sink,
                 pause_id=response_pause_id,
                 human_request_id=response_request_id,
                 run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=self.execution_identity.execution_id if self.execution_identity else None,
                 response_text=task.options.human.response_text,
             )
+            canonical_resume_after_authorization(task, authorized, capability=hitl)
             resolution = task.runtime.governance.hitl_resolution
             assert resolution is not None
             self.hitl.persist_human_decision(
@@ -176,7 +212,6 @@ class NexusIntakeRunner:
             if task.runtime.governance.human_request is not None:
                 GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
                 task.sync_metadata()
-            HumanPauseCoordinator.clear_pause(task)
             clear_consumed_human_input(task)
 
         return IntakePhaseOutcome()

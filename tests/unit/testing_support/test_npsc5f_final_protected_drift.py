@@ -68,7 +68,7 @@ def test_final_drift_classifier_does_not_flag_whole_runtime_sentinel() -> None:
 
 
 def test_final_baseline_sha_recorded() -> None:
-    assert NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA == "743a3865198e8fcec53029f935fbedc4cae6f9df"
+    assert NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA == "52b9dc41ed7dd83e5516d852f1ef7295cc0b10af"
 
 
 def test_final_no_breaking_protected_drift_since_baseline() -> None:

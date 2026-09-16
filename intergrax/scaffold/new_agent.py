@@ -116,8 +116,7 @@ def _acp_agent_hooks(
     *,
     pattern: str,
 ) -> str:
-    return (
-        f"""\
+    return f"""\
             async def perceive(self, step_ctx: AgentStepContext) -> Observation:
                 _ = step_ctx
                 return Observation(summary="TODO: domain perception")
@@ -151,7 +150,6 @@ def _acp_agent_hooks(
                     confidence=0.9,
                 )
 """
-    )
 
 
 def _acp_agent_py(
@@ -163,7 +161,9 @@ def _acp_agent_py(
     reference: bool = False,
 ) -> str:
     if reference:
-        return _acp_reference_agent_py(slug, class_name, primary_capability, pattern=pattern)
+        return _acp_reference_agent_py(
+            slug, class_name, primary_capability, pattern=pattern
+        )
     base_class = SCAFFOLD_PATTERNS[pattern]
     pattern_import = _PATTERN_IMPORTS[pattern]
     hooks = _acp_agent_hooks(slug, class_name, primary_capability, pattern=pattern)
@@ -199,7 +199,7 @@ def _acp_agent_py(
         # optional LLMRoutingProfile on ApplicationEnvironmentProfile; agents use stub LLM below only in tests.
 
 
-        class _{ _pascal_name(slug) }StubLLM(LLMAdapter):
+        class _{_pascal_name(slug)}StubLLM(LLMAdapter):
             provider = "{slug}"
             model = "{slug}-stub"
 
@@ -288,7 +288,7 @@ def _acp_reference_agent_py(
         from typing import Optional, Sequence
 
 
-        class _{ _pascal_name(slug) }StubLLM(LLMAdapter):
+        class _{_pascal_name(slug)}StubLLM(LLMAdapter):
             provider = "{slug}"
             model = "{slug}-stub"
 
@@ -334,7 +334,9 @@ def _acp_reference_agent_py(
     )
 
 
-def _acp_contract_py(slug: str, class_name: str, primary_capability: str, *, pattern: str) -> str:
+def _acp_contract_py(
+    slug: str, class_name: str, primary_capability: str, *, pattern: str
+) -> str:
     enum_member = _PATTERN_ENUM_MEMBER[pattern]
     return dedent(
         f'''\
@@ -381,7 +383,7 @@ def _acp_test_agent_py(slug: str, class_name: str, primary_capability: str) -> s
         from {slug}.contract import build_agent_contract
         from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
         from intergrax.contracts.agent_run_enums import AgentRunStatus
-        from testing_support.builder import canonical_execution_identity_scope
+        from intergrax.dev_support.execution_identity_scope import canonical_execution_identity_scope
 
 
         @pytest.mark.asyncio
@@ -483,7 +485,9 @@ def _notebook_stub(slug: str, primary_capability: str) -> str:
     )
 
 
-def _readme(slug: str, class_name: str, capabilities: list[str], *, pattern: str) -> str:
+def _readme(
+    slug: str, class_name: str, capabilities: list[str], *, pattern: str
+) -> str:
     caps = ", ".join(f"`{c}`" for c in capabilities)
     return dedent(
         f"""\
@@ -595,7 +599,9 @@ def create_acp_pattern_agent(
         _acp_contract_py(slug, class_name, primary_capability, pattern=normalized),
         force=force,
     )
-    _write(target / "capabilities.py", _capabilities_py(slug, capabilities), force=force)
+    _write(
+        target / "capabilities.py", _capabilities_py(slug, capabilities), force=force
+    )
     _write(target / "steps" / "__init__.py", "", force=force)
     _write(target / "steps" / "domain_job.py", _domain_job_py(slug), force=force)
     _write(target / "tests" / "__init__.py", "", force=force)

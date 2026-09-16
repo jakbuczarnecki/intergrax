@@ -435,6 +435,11 @@ flowchart TD
 
 Approval does not expand authority beyond the admitted envelope.
 
+One exact four-ID Execution may own sequential continuation episodes (`continuation_id`
+C1, C2, C3, …). Historical episodes remain addressable by id; exactly one episode is
+**current** at a time (store-maintained index, not Task projection). Execution progress
+and internal orchestration evaluate the canonical current episode lifecycle state.
+
 ---
 
 ## 34. Failure / chaos containment

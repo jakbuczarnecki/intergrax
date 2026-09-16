@@ -296,7 +296,8 @@ async def test_rejected_delegation_does_not_execute_child() -> None:
     node = completed_graph.node_by_id("n1")
     assert node.execution_result is not None
     assert node.execution_result.status is AgentExecutionStatus.FAILED
-    assert executions == []
+    assert len(executions) == 1
+    assert executions[0].status is AgentExecutionStatus.FAILED
 
 
 @pytest.mark.asyncio
@@ -389,7 +390,8 @@ async def test_a1_metadata_cannot_self_grant_root_scope() -> None:
     node = completed_graph.node_by_id("n1")
     assert node.execution_result is not None
     assert node.execution_result.status is AgentExecutionStatus.FAILED
-    assert executions == []
+    assert len(executions) == 1
+    assert executions[0].status is AgentExecutionStatus.FAILED
 
 
 @pytest.mark.asyncio

@@ -30,7 +30,7 @@ from intergrax.contracts.collaborative_work import (
     WorkArtifactVersionRef,
     WorkspaceMembership,
 )
-from intergrax.contracts.decision import DecisionId, validate_decision_id
+from intergrax.contracts.decision_identity import DecisionId, validate_decision_id
 from intergrax.contracts.execution_identity import (
     validate_attempt_id,
     validate_execution_id,

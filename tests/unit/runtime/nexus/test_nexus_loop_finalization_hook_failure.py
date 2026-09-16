@@ -13,9 +13,21 @@ from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from intergrax.runtime.task.task import TaskContext, TaskState
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.runtime.governance.active_execution_authority import (
+    bind_active_execution_authority,
+    reset_active_execution_authority,
+)
+from testing_support.builder import (
+    build_task_for_tests,
+    canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_FINALIZATION_SEED = "nexus-finalization-hook"
 
 
 def _hook_failure_events(loop: NexusLoop, *, point: str) -> list:
@@ -46,21 +58,30 @@ async def test_after_finalization_hook_failure_emits_runtime_event_and_keeps_suc
     registry.register(EchoAgent())
     loop = NexusLoop(registry, middleware=pipeline)
 
-    result = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="hello",
-            context=TaskContext(capability="echo.basic"),
+    task = build_task_for_tests(
+        seed=_FINALIZATION_SEED,
+        tenant_id="t1",
+        user_id="u1",
+        message="hello",
+    ).model_copy(update={"context": TaskContext(capability="echo.basic")})
+    with canonical_governed_execution_scope(_FINALIZATION_SEED):
+        authority_token = bind_active_execution_authority(
+            ParentExecutionAuthority.unrestricted_root(),
         )
-    )
+        try:
+            result = await loop.handle_task(
+                task,
+                run_id=canonical_run_id_for_tests(_FINALIZATION_SEED),
+            )
+        finally:
+            reset_active_execution_authority(authority_token)
 
     assert result.state is TaskState.COMPLETED
     events = _hook_failure_events(loop, point=HookPoint.AFTER_FINALIZATION.value)
     assert len(events) >= 1
     event = events[-1]
     assert event.task_id == result.task_id
-    assert event.run_id == result.task_id
+    assert event.run_id == str(canonical_run_id_for_tests(_FINALIZATION_SEED))
     assert event.payload.get("hook_name") == "lifecycle_hook"
     assert event.payload.get("error_type") == "NexusLifecycleHookError"
     assert "cleanup hook failed" in str(event.payload.get("reason", ""))
@@ -79,14 +100,24 @@ async def test_before_finalization_hook_failure_emits_runtime_event_and_fails_ta
     registry.register(EchoAgent())
     loop = NexusLoop(registry, middleware=pipeline)
 
-    result = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="hello",
-            context=TaskContext(capability="echo.basic"),
+    task = build_task_for_tests(
+        seed=f"{_FINALIZATION_SEED}-before",
+        tenant_id="t1",
+        user_id="u1",
+        message="hello",
+    ).model_copy(update={"context": TaskContext(capability="echo.basic")})
+    before_seed = f"{_FINALIZATION_SEED}-before"
+    with canonical_governed_execution_scope(before_seed):
+        authority_token = bind_active_execution_authority(
+            ParentExecutionAuthority.unrestricted_root(),
         )
-    )
+        try:
+            result = await loop.handle_task(
+                task,
+                run_id=canonical_run_id_for_tests(before_seed),
+            )
+        finally:
+            reset_active_execution_authority(authority_token)
 
     assert result.state is TaskState.COMPLETED
     assert result.summary.validation.valid is False
