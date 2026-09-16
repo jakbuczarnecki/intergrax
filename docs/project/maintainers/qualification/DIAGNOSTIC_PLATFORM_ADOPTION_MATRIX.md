@@ -1,5 +1,7 @@
 # Diagnostic Platform Adoption Matrix - DIAG-PLATFORM-A
 
+> **Qualification record — not current architecture SSOT.** Architecture authority: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md). This matrix is evidence of adoption qualification at the baseline SHA below.
+
 **Program:** DIAG-PLATFORM-QUALIFICATION  
 **Branch baseline:** `development` @ `74410b039ab11740abf22003c62e3c0ea9bda829`
 **Engine qualification:** [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](DIAGNOSTIC_HARDENING_CLOSEOUT.md) (HARDEN complete)  
@@ -144,6 +146,17 @@ Initialized scenario surfaces: NATIVE = 1, LEGACY = 0
 
 ---
 
+## Bypass matrix (production posture)
+
+| Surface type | Allowed direct bypass? |
+| ------------ | -----------------------: |
+| PRODUCT | **NO** |
+| PRODUCTION_ATTACHED scenario | **NO** |
+| LAB | Explicit conditional only |
+| DEBUG | Explicitly non-production |
+
+---
+
 ## Known gaps (non-BYPASS)
 
 | Gap | Impact |
@@ -151,8 +164,9 @@ Initialized scenario surfaces: NATIVE = 1, LEGACY = 0
 | HTTP `DiagnosticReadService` only on `governed_contractor_application` factory | Other PRODUCT hosts: write path NATIVE; operator read via shared wiring elsewhere or future dashboard adoption |
 | `check_application_production_gates` scans `*_application` only | `attestation_demo`, `poc_template`, `intergrax_assistant` outside APP-PROD factory scan (lab scaffolds) |
 | Factory gate vs execution-path gate | `check_no_ad_hoc_nexus_in_factories` validates composition (no direct `NexusLoop()` in factories); execution-path adoption is evidenced by P3 E2E proofs, not static per-request analysis |
-| Only **1** initialized scenario | Second scenario proof blocked until next `IMPLEMENTATION_INITIALIZED` scenario ships |
-| Kafka queue → worker → Nexus → diagnostics | Queue transport qualified separately; full P4 async diagnostic spine not yet composed in one external proof |
+| Only **1** initialized scenario | Design-only scenario packages are **NOT_APPLICABLE** until initialized; do not count as E2E-qualified surfaces |
+| HITL pause/restart/resume → terminal diagnostics | Dedicated E2E **NOT YET PROVEN** |
+| Kafka queue → worker → Nexus → diagnostics | Queue transport qualified separately; full P4 async diagnostic spine **NOT YET PROVEN** in one external proof |
 
 ---
 

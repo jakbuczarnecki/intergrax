@@ -1,5 +1,7 @@
 # OBS-FINAL-CERTIFICATION — Final Enterprise Observability Certification
 
+> **Enterprise certification record at the certified code SHA below — not a substitute for day-to-day architecture SSOT.** For current Observability + Diagnostics spine semantics reconciled to `development`, use [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) and [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md).
+
 ## Final Verdict (authoritative)
 
 **PASS — ENTERPRISE CERTIFIED** (R1 clean exact-SHA recertification, 2026-09-16)

@@ -1,5 +1,7 @@
 # Diagnostic Platform Qualification - Closeout
 
+> **Qualification record at historical SHAs — not architecture SSOT.** Current spine semantics: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md).
+
 **Program:** DIAG-PLATFORM-QUALIFICATION (A–F) + R1 execution-authority re-audit
 **Result:** **PASS**
 **Start HEAD:** `74410b039ab11740abf22003c62e3c0ea9bda829`

@@ -1,8 +1,8 @@
-# ADR-OBS-005: Runtime event delivery failure contract (EventSinkPort)
+﻿# ADR-OBS-005: Runtime event delivery failure contract (EventSinkPort)
 
 | Field | Value |
 |-------|-------|
-| **Status** | Proposed — design freeze for P1B-R3 (D1-R2 contract invariants + policy extension; GitHub audit required before implementation) |
+| **Status** | Accepted — Implemented (P1B-R3 / P1B-R3-R1); OTLP wire typing remains partial per OBS-EXPORT-TRANSPORT-CONTRACT-D1 |
 | **Date** | 2026-09-14 (revised D1-R2) |
 | **Deciders** | Platform observability / VPI platform evolution |
 | **Related** | `intergrax/contracts/event_delivery.py` · ADR-OBS-001 · VPI-PLATFORM-EVOLUTION-P1B-D1 · P1B-D1-R1 · P1B-D1-R2 · P1B-R3 · **P1B-R3-D1** · OBS-EXPORT-TRANSPORT-CONTRACT-D1 |
@@ -643,3 +643,18 @@ Effective outcome = execution plane (`RuntimeEventBus`) after invariants.
 **P1B-R3 isolation (required for unblock):** Typed `EventExportSinkPort.export(ObservabilityExportPayload)` and `RuntimeEventExportSink` must confine `object` to the OTLP adapter seam only — `RuntimeEventBus` and `EventSinkPort` plugins never accept or forward untyped export blobs. Until OBS-EXPORT-TRANSPORT-CONTRACT-D1 closes, documentation and qualification must state: **enterprise-complete delivery boundary** (P1B-R3) ≠ **enterprise-complete OTLP transport contract**.
 
 Related inventory: `docs/project/maintainers/qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_E_OTLP_TRANSPORT_INVENTORY.md`, ADR_ENTERPRISE_OTLP_TRANSPORT_ADAPTER.
+## Implementation status
+
+Reconciled against `development` @ `a669e15e413a1ff9556ba33318560636286d823f`. Independent GitHub audit of qualification claims remains required.
+
+| ADR decision | Production artifact | Qualification |
+| ------------ | ------------------- | ------------- |
+| `ObservabilityExportPayload` + `make_deliverable_event` | `intergrax/contracts/event_delivery.py`, `runtime_event_delivery.py` | `test_bounded_delivery_p1b_r3_r2.py` |
+| `EventDeliveryBoundaryError` on port boundary | `intergrax/contracts/event_delivery.py`, `BoundedEventSink` | `test_bounded_delivery_p1b_r3_r2.py`, `test_bounded_delivery_p1b_r3_r3.py` |
+| Contract-pure `DeliverableEvent` (no `source_event` side channel) | `BoundedEventSink`, `RuntimeEventExportSink` | `test_bounded_delivery_p1b_r3_r2.py` |
+| `EventSinkDeliveryReactionPort` + default reaction | `EnterpriseDefaultEventSinkDeliveryReaction`, `RuntimeEventBus` | `test_bounded_delivery_completion_p1b_r3_r1.py` |
+| `CriticalEventDeliveryError` bus-only | `RuntimeEventBus` | P1B-R3-R1 completion tests |
+| W5 production composition wiring | `env_wiring.event_delivery` | `test_enterprise_scale_resilience_w5_b2_composition_wiring.py`, `test_enterprise_scale_resilience_w5_c_event_export.py` |
+| OTLP typed export at bridge | `EventExportSinkPort.export(ObservabilityExportPayload)` | P4 OTLP application E2E (DIAG); OTLP transport `object` seam — **partial** (OBS-EXPORT-TRANSPORT-CONTRACT-D1) |
+
+**Partial / follow-up:** OBS-EXPORT-TRANSPORT-CONTRACT-D1 (OTLP wire carrier typing) does not invalidate Plane B delivery closure documented in W5-A historical inventory supersession.

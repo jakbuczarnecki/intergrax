@@ -1,6 +1,10 @@
 # Intergrax Central Diagnostics
 
-**Intergrax Central Diagnostics** is the **one** canonical deterministic diagnostic engine for the platform. It interprets persisted platform facts - primarily `RuntimeEvent` execution evidence - into tenant-scoped `Problem` state, bounded operator read models, and optional investigation inputs. It does **not** mint execution identity, own observability export, or treat vendor telemetry or AI conclusions as truth.
+**Intergrax Central Diagnostics** is the **one** canonical deterministic diagnostic engine for the platform. It interprets persisted platform facts - primarily `RuntimeEvent` execution evidence - into tenant-scoped `Problem` state, bounded operator read models, and optional investigation inputs. It does **not** mint execution identity, own observability export, own shared factual reconstruction, or treat vendor telemetry or AI conclusions as truth.
+
+**Last reconciled against `development` @ `a669e15e413a1ff9556ba33318560636286d823f`.** **SSOT:** diagnostic interpretation — this document; evidence / reconstruction — [`OBSERVABILITY.md`](OBSERVABILITY.md). Qualification records are evidence at historical SHAs, not architecture override.
+
+**Platform operational spine:** see [`OBSERVABILITY.md` — Platform Operational Spine](OBSERVABILITY.md#platform-operational-spine). Diagnostics is the **interpretation plane** after shared reconstruction — not a second evidence or execution authority.
 
 **Persisted platform facts are truth. AI is not truth.**
 
@@ -964,8 +968,18 @@ Engine HARDEN: M1–M24 PROVEN=22 NOT_APPLICABLE=2
 
 ```text
 Platform adoption: NATIVE production surfaces = 4 PRODUCT hosts + 1 initialized scenario
-BYPASS = 0 · true P3 flows = 4 · true P4 platform E2E = 2 · P4 persistence = 1
+BYPASS = 0 · design-only scenarios = NOT_APPLICABLE until initialized
+true P3 flows = 4 · true P4 platform E2E = 2 (Mongo + OTLP application paths) · P4 persistence-only ≠ full spine
 ```
+
+**Explicit remaining limitations (documentation SSOT):**
+
+| Limitation | Status |
+| ---------- | ------ |
+| **DG-005** cross-topology `RuntimeEvent` persistence / reconstruction | **NOT PROVEN** |
+| Kafka → worker → execution → diagnostics (full external spine) | **NOT YET PROVEN** (transport-only proofs ≠ diagnostic P4) |
+| HITL pause/restart/resume → terminal diagnostics | **NOT YET PROVEN** (dedicated E2E) |
+| Operator HTTP/dashboard read | Central **write** path qualified; **read** exposure varies by PRODUCT host |
 
 Execution System owns root execution authority. Nexus = orchestration participant, not execution authority.
 
