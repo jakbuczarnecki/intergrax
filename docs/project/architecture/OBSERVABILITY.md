@@ -329,10 +329,18 @@ Reference: VPI `platform_proofs/scenarios/verified_product_identification/applic
 | -- | -------- | ----- | ------ | --------- |
 | Causal `RuntimeExecutionRef` without `ExecutionId` | — | — | **Closed (OBS-CAUSAL-2)** — `platform_causal_evidence.v2` | — |
 | Functional evidence contracts live under `runtime.diagnostics` while OBS records | — | — | **Closed (OBS-FUNCTIONAL-CONTRACTS-1 / R1)** — `intergrax.contracts.functional_evidence` | — |
-| `ExecutionReconstructor` package placement under `diagnostics` | P1 | Evidence + DIAG | Shared factual layer semantically OBS; single implementation today | **OBS-RECONSTRUCTION-1** |
 | Emit-path `ExecutionId` coverage not fully certified on all paths | — | — | **Closed (OBS-COVERAGE-1 / R1)** — mandatory `pytest -m obs_coverage_p1` qualification | — |
 | `TraceEvent` correlates primarily via `run_id` | — | — | **Closed (OBS-TRACE-1)** — run-scoped Plane B; execution correlation via `RuntimeEvent` / lineage | — |
-| OBS → DIAG imports for reconstruction (functional evidence moved) | P1 | Architecture | Dependency direction vs frozen flow (boundary decided in OBS-BOUNDARY-1) | **OBS-RECONSTRUCTION-1** |
+| OBS → DIAG imports for reconstruction (functional evidence moved) | — | — | **Closed (OBS-RECONSTRUCTION-1 / OBS-DIAG-CONFORMANCE-R1)** | — |
+| `ExecutionReconstructor` package placement under `diagnostics` | — | — | **Closed (OBS-RECONSTRUCTION-1)** — `runtime.observability.reconstruction` | — |
+
+## OBS-FINAL-CERTIFICATION — Enterprise closure (2026-09-16)
+
+**Verdict:** **PASS — ENTERPRISE CERTIFIED** on exact committed SHA recorded in [`docs/project/maintainers/qualification/OBS_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/OBS_FINAL_ENTERPRISE_CERTIFICATION.md).
+
+Mandatory proof: OBS architecture gate bundle + `pytest -m obs_coverage_p1` + scoped `obs_diag_conformance` / `obs_trace_1` paths (**0** failed). Full `tests/unit/runtime/architecture/` failures (**38**) contain **no** `test_obs_*` regressions; classified as non–Observability debt in the certification record.
+
+**Conditional (unchanged):** TRACE-ASOF-3 **NOT REQUIRED**; TRACE-ASOF-4 / TRACE-BITEMP-4 **CONDITIONAL**.
 
 ### Evidence Plane freeze (NPSC-5F enterprise certification)
 

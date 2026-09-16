@@ -72,7 +72,7 @@
 | 10 | **OBS-BITEMP-REBASE** | P2 | **Done / Closed** (2026-09-15) | E/K/V/S independent temporal coordinate — [arch § OBS-BITEMP-REBASE](../../architecture/OBSERVABILITY.md#obs-bitemp-rebase--ekvs-temporal-coordinate-closed-2026-09-15) |
 | 11 | **OBS-DIAG-CONFORMANCE** | P1 | **PASS / CLOSED** (2026-09-15) | E2E proof Producer → Evidence → Reconstruction → DIAG — `pytest -m obs_diag_conformance` |
 | 11R1 | **OBS-DIAG-CONFORMANCE-R1** | P1 | **Done / Closed** | Diagnostics consume `ExecutionReconstructionReader`; default `ExecutionReconstructor` |
-| 12 | **OBS-FINAL-CERTIFICATION** | P1 | Planned | Enterprise Observability closure |
+| 12 | **OBS-FINAL-CERTIFICATION** | P1 | **Done / Closed** (2026-09-16) — **PASS — ENTERPRISE CERTIFIED** | Final enterprise recertification — [`qualification/OBS_FINAL_ENTERPRISE_CERTIFICATION.md`](../qualification/OBS_FINAL_ENTERPRISE_CERTIFICATION.md) |
 
 **TRACE-ASOF-4** and **TRACE-BITEMP-4** remain **Planned / Conditional**; **TRACE-ASOF-4** may delegate to OBS-ASOF-REBASE. **TRACE-BITEMP-4** is unblocked for optional thin public surface only (core composition closed under OBS-BITEMP-REBASE).
 
