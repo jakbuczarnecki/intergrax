@@ -117,7 +117,7 @@ Use, modification, or distribution without written permission is prohibited.
 |-------|-------|
 | **ID** | MP-4R6 |
 | **Status** | **READY_FOR_FINAL_INDEPENDENT_MP4R6_CLOSURE_AUDIT** |
-| **Purpose** | After caller proof: delete duplicate contracts/services/tests/docs; generic checkpoint restore deserializes persisted HITL approver evidence or fails closed; legacy human decision SQLite rows without canonical `approver_json` are never promoted into authenticated `HumanApproverEvidence` on read (missing provenance fails closed at persistence deserialization) |
+| **Purpose** | After caller proof: delete duplicate contracts/services/tests/docs; generic checkpoint restore deserializes persisted HITL approver evidence or fails closed; legacy human decision SQLite rows without canonical `approver_json` are never promoted into authenticated `HumanApproverEvidence` on read (missing provenance fails closed at persistence deserialization); offline inventory/disposition via `HumanDecisionLegacyDataAssessment`, history-only `LegacyHumanDecisionArchiveRecord`, and `scripts/maintenance/human_decision_legacy_disposition_cli.py` (dry-run default, exact external recovery only) |
 | **Dependencies** | MP-4R1…R5 |
 
 ---
