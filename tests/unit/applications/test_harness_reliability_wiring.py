@@ -124,7 +124,10 @@ def test_validate_reliability_wiring_rejects_store_when_idempotency_disabled() -
 
 def test_materialize_runtime_config_applies_idempotency_store() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="rel.runtime")
-    request = RuntimeRequest(
+    from testing_support.builder import build_runtime_request_for_tests
+
+    request = build_runtime_request_for_tests(
+        seed="reliability-runtime-config",
         message="hello",
         tenant_id="t1",
         agent_id="echo",

@@ -17,10 +17,13 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
 from echo.echo_agent import EchoAgent
+from testing_support.builder import (
+    build_runtime_request_for_tests,
+    canonical_execution_identity_scope,
+)
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.integration, pytest.mark.gate]
@@ -93,16 +96,16 @@ async def test_graph_path_emits_context_assembled_with_engine_id() -> None:
 async def test_uaep_path_emits_context_assembled_with_engine_id() -> None:
     bus = RuntimeEventBus(record_history=True)
     engine = AgentEngine({"echo": EchoAgent()}, event_bus=bus)
-    request = RuntimeRequest(
-        tenant_id="t1",
-        user_id="u1",
-        session_id="s1",
-        agent_id="echo",
-        message="uaep assemble",
-        metadata={"run_id": "run_ce_paths", "task_id": "task_ce_paths"},
-    )
-
-    result = await engine.run_with_result(request)
+    with canonical_execution_identity_scope("ce-paths-uaep"):
+        request = build_runtime_request_for_tests(
+            seed="ce-paths-uaep",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            agent_id="echo",
+            message="uaep assemble",
+        )
+        result = await engine.run_with_result(request)
 
     assert result.status == AgentExecutionStatus.COMPLETED
     assembled = [e for e in bus.history if e.event_type == RuntimeEventType.CONTEXT_ASSEMBLED]

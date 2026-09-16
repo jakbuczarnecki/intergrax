@@ -18,6 +18,10 @@ from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, Ex
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep, TaskPlanner
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import (
+    build_runtime_request_for_tests,
+    canonical_execution_identity_scope,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
@@ -209,20 +213,17 @@ async def test_uaep_executor_stops_on_cancellation():
     _MultiStepUaepAgent.step_runs = 0
     agent = _MultiStepUaepAgent()
     executor = UAEPExecutor()
-    request = RuntimeRequest(
-        tenant_id="t1",
-        user_id="u1",
-        session_id="sess_1",
-        agent_id="uaep_cancel",
-        message="cancel uaep",
-        metadata={
-            "task_id": "task_uaep_cancel",
-            "run_id": "task_uaep_cancel",
-            "cancellation_requested": True,
-        },
-    )
-
-    answer, validation, _ = await executor.execute(agent, request)
+    with canonical_execution_identity_scope("uaep-cancel"):
+        request = build_runtime_request_for_tests(
+            seed="uaep-cancel",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="sess_1",
+            agent_id="uaep_cancel",
+            message="cancel uaep",
+            metadata={"cancellation_requested": True},
+        )
+        answer, validation, _ = await executor.execute(agent, request)
 
     assert _MultiStepUaepAgent.step_runs == 0
     assert not validation.valid

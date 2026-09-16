@@ -18,8 +18,8 @@ from intergrax.llm_adapters.routing import (
     RoutingContext,
 )
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from lab_application.host.settings import LabApplicationSettings
+from testing_support.builder import build_runtime_request_for_tests
 from testing_support.builder import FakeLLMAdapter
 
 
@@ -82,7 +82,8 @@ def test_mid_run_budget_threshold_swaps_adapter_model(monkeypatch: pytest.Monkey
 @pytest.mark.gate
 def test_materialize_runtime_config_wraps_evaluating_adapter() -> None:
     env = build_lab_environment_profile(LabApplicationSettings())
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="lab-routing-evaluating-adapter",
         agent_id="lab-agent",
         user_id="user-1",
         session_id="sess-1",

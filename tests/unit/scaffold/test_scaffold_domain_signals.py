@@ -54,15 +54,19 @@ def test_scaffolded_agent_signal_emit_importable(tmp_path: Path) -> None:
         registry = importlib.import_module(f"{slug}.signals.registry")
         registry.register_signal_schemas()
         emit_mod = importlib.import_module(f"{slug}.signals.emit")
-        from intergrax.runtime.events.emit_context import EmitContext
         from intergrax.runtime.events.event_bus import RuntimeEventBus
+        from testing_support.builder import build_emit_context_for_tests
         from intergrax.runtime.events.event_kind_registry import clear_event_kind_registry
         from intergrax.runtime.events.runtime_event import RuntimeEventType
 
         clear_event_kind_registry()
         registry.register_signal_schemas()
         bus = RuntimeEventBus(record_history=True)
-        ctx = EmitContext(task_id="t1", run_id="r1", tenant_id="tenant-a", bus=bus)
+        ctx = build_emit_context_for_tests(
+            seed="scaffold-agent-signal",
+            tenant_id="tenant-a",
+            bus=bus,
+        )
         event = emit_mod.emit_milestone_reached(ctx, milestone="boot")
         assert event.event_type == RuntimeEventType.DOMAIN_SIGNAL
         assert event.event_kind == f"agents.{slug}.milestone_reached"

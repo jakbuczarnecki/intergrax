@@ -15,6 +15,10 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import (
+    build_runtime_request_for_tests,
+    canonical_execution_identity_scope,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import (
@@ -98,16 +102,17 @@ async def test_uaep_sandbox_tool_gateway(tmp_path):
     manager = SandboxSessionManager(root=tmp_path)
     uaep = UAEPExecutor(sandbox_manager=manager)
     agent = _SandboxToolAgent()
-    request = RuntimeRequest(
-        tenant_id="t1",
-        user_id="u1",
-        session_id="s1",
-        agent_id="sandbox_runner",
-        message="via sandbox tool",
-        metadata={SANDBOX_FLAG: True, "task_id": "task_sbox_1"},
-    )
-
-    answer, validation, _governance = await uaep.execute(agent, request)
+    with canonical_execution_identity_scope("sandbox-uaep"):
+        request = build_runtime_request_for_tests(
+            seed="sandbox-uaep",
+            tenant_id="t1",
+            user_id="u1",
+            session_id="s1",
+            agent_id="sandbox_runner",
+            message="via sandbox tool",
+            metadata={SANDBOX_FLAG: True},
+        )
+        answer, validation, _governance = await uaep.execute(agent, request)
 
     assert validation.valid is True
     assert answer.route is not None

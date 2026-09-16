@@ -17,6 +17,8 @@ from testing_support.builder import (
     build_fake_embedding_manager,
     build_in_memory_session_manager,
     build_in_memory_vectorstore_manager,
+    build_runtime_request_for_tests,
+    canonical_execution_identity_scope,
 )
 
 
@@ -67,7 +69,8 @@ async def test_agent_engine_run_with_result_returns_canonical_shape():
     agent = _ContractUaepAgent()
     engine = AgentEngine({"test": agent})
 
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="run-with-result-shape",
         tenant_id="t1",
         user_id="u1",
         session_id="s1",
@@ -75,7 +78,8 @@ async def test_agent_engine_run_with_result_returns_canonical_shape():
         message="hello",
     )
 
-    result = await engine.run_with_result(request)
+    with canonical_execution_identity_scope("run-with-result-shape"):
+        result = await engine.run_with_result(request)
 
     assert result.agent_id == "test"
     assert result.status == AgentExecutionStatus.COMPLETED

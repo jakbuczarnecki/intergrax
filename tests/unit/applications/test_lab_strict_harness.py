@@ -11,8 +11,7 @@ from intergrax.applications._shared.lab_runtime_config import build_lab_agent_ru
 from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -27,7 +26,8 @@ def test_strict_harness_runtime_config_uses_production_mode_and_trace_path(
         trace_db_path=trace_db,
     )
     config = build_lab_agent_runtime_config(
-        request=RuntimeRequest(
+        request=build_runtime_request_for_tests(
+            seed="lab-strict-harness",
             tenant_id="t1",
             user_id="u1",
             session_id="s1",

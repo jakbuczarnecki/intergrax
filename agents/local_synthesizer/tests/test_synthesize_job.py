@@ -9,22 +9,60 @@ import pytest
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.tools.providers.workspace.service import WORKSPACE_WRITE_FILE_TOOL_ID
+from testing_support.builder import (
+    build_runtime_execution_context_for_tests,
+    build_runtime_request_for_tests,
+    canonical_run_id_for_tests,
+)
 from local_synthesizer.steps.synthesize_job import run_synthesize_job
+
+
+def _synth_exec_ctx(
+    seed: str,
+    *,
+    metadata: dict[str, object],
+    message: str = "synthesize",
+    tool_gateway: object | None = None,
+) -> RuntimeExecutionContext:
+    request = build_runtime_request_for_tests(
+        seed=seed,
+        agent_id="local_synthesizer",
+        tenant_id="t1",
+        user_id="u1",
+        session_id="s1",
+        message=message,
+        metadata=metadata,
+    )
+    return build_runtime_execution_context_for_tests(
+        seed=seed,
+        agent_id="local_synthesizer",
+        request=request,
+        tool_gateway=tool_gateway,
+        tenant_id="t1",
+    )
 
 
 def _step_ctx(
     exec_ctx: RuntimeExecutionContext | None,
     *,
-    run_id: str = "run-test",
+    run_id: str | None = None,
     message: str = "",
 ) -> AgentStepContext:
     metadata: dict[str, object] = {}
     if exec_ctx is not None:
         metadata["uaep_exec_ctx"] = exec_ctx
+    resolved_run_id = (
+        run_id
+        if run_id is not None
+        else (
+            str(exec_ctx.run_id)
+            if exec_ctx is not None
+            else str(canonical_run_id_for_tests("local-synth-step"))
+        )
+    )
     return AgentStepContext(
-        run_id=run_id,
+        run_id=resolved_run_id,
         agent_id="local_synthesizer",
         contract_id="local_synthesizer",
         message=message,
@@ -35,18 +73,10 @@ def _step_ctx(
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_run_synthesize_job_rejects_non_shadow_workspace() -> None:
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_synthesizer",
-        request=RuntimeRequest(
-            agent_id="local_synthesizer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="prepare report",
-            metadata={"draft": "hello", "shadow_workspace": False},
-        ),
+    exec_ctx = _synth_exec_ctx(
+        "synth-non-shadow",
+        message="prepare report",
+        metadata={"draft": "hello", "shadow_workspace": False},
     )
 
     output = await run_synthesize_job(_step_ctx(exec_ctx))
@@ -76,43 +106,35 @@ async def test_run_synthesize_job_consumes_prior_search_handoff() -> None:
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-pipeline",
-        run_id="run-pipeline",
-        agent_id="local_synthesizer",
-        request=RuntimeRequest(
-            agent_id="local_synthesizer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="synthesize pipeline draft",
-            metadata={
-                "shadow_workspace": True,
-                "output_name": "pipeline-draft.md",
-                "prior_agent_outputs": {
-                    "node_local_search": {
-                        "agent_id": "local_search",
-                        "summary": "local_search: search job — query='pipeline', results=1",
-                        "structured_data": {
-                            "search_summary": {
-                                "used": True,
-                                "reason": "retrieve_complete",
-                                "query": "pipeline",
-                                "num_results": 1,
-                                "evidence": [
-                                    {
-                                        "text": "Pipeline evidence paragraph",
-                                        "source_path": "/data/fixture.txt",
-                                        "chunk_id": "chunk-pipeline-1",
-                                    }
-                                ],
-                                "selected_artifact_ref": "chunk:chunk-pipeline-1",
-                            }
-                        },
-                    }
-                },
+    exec_ctx = _synth_exec_ctx(
+        "synth-pipeline-handoff",
+        message="synthesize pipeline draft",
+        metadata={
+            "shadow_workspace": True,
+            "output_name": "pipeline-draft.md",
+            "prior_agent_outputs": {
+                "node_local_search": {
+                    "agent_id": "local_search",
+                    "summary": "local_search: search job — query='pipeline', results=1",
+                    "structured_data": {
+                        "search_summary": {
+                            "used": True,
+                            "reason": "retrieve_complete",
+                            "query": "pipeline",
+                            "num_results": 1,
+                            "evidence": [
+                                {
+                                    "text": "Pipeline evidence paragraph",
+                                    "source_path": "/data/fixture.txt",
+                                    "chunk_id": "chunk-pipeline-1",
+                                }
+                            ],
+                            "selected_artifact_ref": "chunk:chunk-pipeline-1",
+                        }
+                    },
+                }
             },
-        ),
+        },
         tool_gateway=gateway,
     )
 
@@ -144,32 +166,23 @@ async def test_run_synthesize_job_prefers_explicit_evidence_over_prior_handoff()
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-explicit",
-        run_id="run-explicit",
-        agent_id="local_synthesizer",
-        request=RuntimeRequest(
-            agent_id="local_synthesizer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="synthesize",
-            metadata={
-                "shadow_workspace": True,
-                "output_name": "explicit-draft.md",
-                "evidence": [{"text": "Explicit evidence wins", "source_path": "/explicit.txt"}],
-                "prior_agent_outputs": {
-                    "node_local_search": {
-                        "agent_id": "local_search",
-                        "structured_data": {
-                            "search_summary": {
-                                "evidence": [{"text": "Prior evidence ignored"}],
-                            }
-                        },
-                    }
-                },
+    exec_ctx = _synth_exec_ctx(
+        "synth-explicit-evidence",
+        metadata={
+            "shadow_workspace": True,
+            "output_name": "explicit-draft.md",
+            "evidence": [{"text": "Explicit evidence wins", "source_path": "/explicit.txt"}],
+            "prior_agent_outputs": {
+                "node_local_search": {
+                    "agent_id": "local_search",
+                    "structured_data": {
+                        "search_summary": {
+                            "evidence": [{"text": "Prior evidence ignored"}],
+                        }
+                    },
+                }
             },
-        ),
+        },
         tool_gateway=gateway,
     )
 
@@ -198,36 +211,27 @@ async def test_run_synthesize_job_reads_shared_context_reads_handoff() -> None:
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-shared",
-        run_id="run-shared",
-        agent_id="local_synthesizer",
-        request=RuntimeRequest(
-            agent_id="local_synthesizer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="synthesize",
-            metadata={
-                "shadow_workspace": True,
-                "shared_context_reads": {
-                    "node_local_search": {
-                        "agent_id": "local_search",
-                        "structured_data": {
-                            "search_summary": {
-                                "query": "shared query",
-                                "evidence": [
-                                    {
-                                        "text": "Shared context evidence",
-                                        "source_path": "/shared.txt",
-                                    }
-                                ],
-                            }
-                        },
-                    }
-                },
+    exec_ctx = _synth_exec_ctx(
+        "synth-shared-context",
+        metadata={
+            "shadow_workspace": True,
+            "shared_context_reads": {
+                "node_local_search": {
+                    "agent_id": "local_search",
+                    "structured_data": {
+                        "search_summary": {
+                            "query": "shared query",
+                            "evidence": [
+                                {
+                                    "text": "Shared context evidence",
+                                    "source_path": "/shared.txt",
+                                }
+                            ],
+                        }
+                    },
+                }
             },
-        ),
+        },
         tool_gateway=gateway,
     )
 
@@ -242,18 +246,10 @@ async def test_run_synthesize_job_reads_shared_context_reads_handoff() -> None:
 @pytest.mark.unit
 @pytest.mark.asyncio
 async def test_run_synthesize_job_fails_safe_without_content() -> None:
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_synthesizer",
-        request=RuntimeRequest(
-            agent_id="local_synthesizer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="",
-            metadata={"shadow_workspace": True},
-        ),
+    exec_ctx = _synth_exec_ctx(
+        "synth-no-content",
+        message="",
+        metadata={"shadow_workspace": True},
     )
 
     output = await run_synthesize_job(_step_ctx(exec_ctx))
@@ -270,7 +266,7 @@ async def test_run_synthesize_job_fails_safe_without_content() -> None:
 async def test_run_synthesize_job_fails_safe_without_tool_gateway() -> None:
     output = await run_synthesize_job(
         AgentStepContext(
-            run_id="run-test",
+            run_id=str(canonical_run_id_for_tests("synth-no-gateway")),
             agent_id="local_synthesizer",
             contract_id="local_synthesizer",
             message="prepare client email",
@@ -307,30 +303,22 @@ async def test_run_synthesize_job_writes_draft_to_shadow_workspace() -> None:
     gateway = AsyncMock()
     gateway.invoke = AsyncMock(side_effect=_invoke_tool)
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_synthesizer",
-        request=RuntimeRequest(
-            agent_id="local_synthesizer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="prepare client email",
-            metadata={
-                "shadow_workspace": True,
-                "output_name": "client-email.md",
-                "search_summary": {"query": "project X"},
-                "selected_artifact_ref": "chunk:chunk-1",
-                "evidence": [
-                    {
-                        "text": "Project X overview",
-                        "source_path": "/data/report.txt",
-                        "chunk_id": "chunk-1",
-                    }
-                ],
-            },
-        ),
+    exec_ctx = _synth_exec_ctx(
+        "synth-shadow-write",
+        message="prepare client email",
+        metadata={
+            "shadow_workspace": True,
+            "output_name": "client-email.md",
+            "search_summary": {"query": "project X"},
+            "selected_artifact_ref": "chunk:chunk-1",
+            "evidence": [
+                {
+                    "text": "Project X overview",
+                    "source_path": "/data/report.txt",
+                    "chunk_id": "chunk-1",
+                }
+            ],
+        },
         tool_gateway=gateway,
     )
 
@@ -358,18 +346,10 @@ async def test_run_synthesize_job_fails_safe_on_write_error() -> None:
         )
     )
 
-    exec_ctx = RuntimeExecutionContext(
-        task_id="task-1",
-        run_id="run-1",
-        agent_id="local_synthesizer",
-        request=RuntimeRequest(
-            agent_id="local_synthesizer",
-            tenant_id="t1",
-            user_id="u1",
-            session_id="s1",
-            message="ignored",
-            metadata={"shadow_workspace": True, "draft": "final body"},
-        ),
+    exec_ctx = _synth_exec_ctx(
+        "synth-write-error",
+        message="ignored",
+        metadata={"shadow_workspace": True, "draft": "final body"},
         tool_gateway=gateway,
     )
 

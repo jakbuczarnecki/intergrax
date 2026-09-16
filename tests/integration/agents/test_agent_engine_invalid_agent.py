@@ -5,7 +5,7 @@
 import pytest
 
 from intergrax.agents.agent_engine import AgentEngine
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import build_runtime_request_for_tests
 
 
 # ----------------------------------------
@@ -15,12 +15,13 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 async def test_agent_engine_raises_for_unknown_agent():
     engine = AgentEngine({})  # no agents registered
 
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="unknown-agent",
         tenant_id="t1",
         user_id="u1",
         session_id="s1",
         agent_id="unknown",
-        message="hello"
+        message="hello",
     )
 
     with pytest.raises(Exception):

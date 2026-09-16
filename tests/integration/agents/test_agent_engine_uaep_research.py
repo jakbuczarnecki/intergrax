@@ -7,8 +7,11 @@ from intergrax.agents import supports_uaep
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from research.research_agent import ResearchAgent
+from testing_support.builder import (
+    build_runtime_request_for_tests,
+    canonical_execution_identity_scope,
+)
 from research.summary_agent import SummaryAgent
 
 
@@ -25,16 +28,17 @@ def test_research_agents_support_uaep():
 async def test_agent_engine_runs_research_via_uaep():
     bus = RuntimeEventBus()
     engine = AgentEngine({"research": ResearchAgent()}, event_bus=bus)
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="research-uaep",
         tenant_id="t1",
         user_id="u1",
         session_id="s1",
         agent_id="research",
         message="market trends in AI logistics",
-        metadata={"run_id": "run_research_uaep", "task_id": "task_research_uaep"},
     )
 
-    result = await engine.run_with_result(request)
+    with canonical_execution_identity_scope("research-uaep"):
+        result = await engine.run_with_result(request)
 
     assert result.agent_id == "research"
     assert result.status == AgentExecutionStatus.COMPLETED
@@ -49,16 +53,17 @@ async def test_agent_engine_runs_research_via_uaep():
 async def test_agent_engine_runs_summary_via_uaep():
     bus = RuntimeEventBus()
     engine = AgentEngine({"research-summary": SummaryAgent()}, event_bus=bus)
-    request = RuntimeRequest(
+    request = build_runtime_request_for_tests(
+        seed="summary-uaep",
         tenant_id="t1",
         user_id="u1",
         session_id="s1",
         agent_id="research-summary",
         message="--- prior agent outputs ---\nfindings line one",
-        metadata={"run_id": "run_summary_uaep", "task_id": "task_summary_uaep"},
     )
 
-    result = await engine.run_with_result(request)
+    with canonical_execution_identity_scope("summary-uaep"):
+        result = await engine.run_with_result(request)
 
     assert result.status == AgentExecutionStatus.COMPLETED
     assert result.summary.startswith("summary:")

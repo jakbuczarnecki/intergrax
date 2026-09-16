@@ -140,8 +140,8 @@ def _agent_signal_test(slug: str) -> str:
 
         import pytest
 
-        from intergrax.runtime.events.emit_context import EmitContext
         from intergrax.runtime.events.event_bus import RuntimeEventBus
+        from testing_support.builder import build_emit_context_for_tests
         from intergrax.runtime.events.event_kind_registry import clear_event_kind_registry
         from intergrax.runtime.events.runtime_event import RuntimeEventType
         from intergrax.runtime.observability.extension_sdk import agent_signal_event_kind
@@ -161,7 +161,11 @@ def _agent_signal_test(slug: str) -> str:
 
         def test_agent_signal_emits_domain_signal() -> None:
             bus = RuntimeEventBus(record_history=True)
-            ctx = EmitContext(task_id="task-1", run_id="run-1", tenant_id="tenant-a", bus=bus)
+            ctx = build_emit_context_for_tests(
+                seed="scaffold-signal",
+                tenant_id="tenant-a",
+                bus=bus,
+            )
             event = emit_milestone_reached(ctx, milestone="scaffold", detail="smoke")
             kind = agent_signal_event_kind("{slug}", "milestone_reached")
             assert event.event_type == RuntimeEventType.DOMAIN_SIGNAL
