@@ -10,6 +10,7 @@ from enum import StrEnum
 from intergrax.core.plugins.discovery import EntryPointSpec
 from intergrax.memory.contracts.memory_store_plugin import (
     EntityTemporalMemoryStorePlugin,
+    LongHorizonMemoryStorePlugin,
     ProceduralMemoryStorePlugin,
     SessionStoragePlugin,
     UserProfileStorePlugin,
@@ -23,6 +24,7 @@ class MemoryStorePluginKind(StrEnum):
     SESSION_TURN_INDEX = "session_turn_index"
     ENTITY_TEMPORAL = "entity_temporal"
     PROCEDURAL = "procedural"
+    LONG_HORIZON = "long_horizon"
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,6 +46,8 @@ def classify_memory_store_plugin(plugin_type: type) -> MemoryStorePluginKind | N
         return MemoryStorePluginKind.ENTITY_TEMPORAL
     if isinstance(plugin_type, ProceduralMemoryStorePlugin):
         return MemoryStorePluginKind.PROCEDURAL
+    if isinstance(plugin_type, LongHorizonMemoryStorePlugin):
+        return MemoryStorePluginKind.LONG_HORIZON
     if isinstance(plugin_type, UserProfileStorePlugin):
         return MemoryStorePluginKind.USER_PROFILE_STORE
     if isinstance(plugin_type, SessionStoragePlugin):
