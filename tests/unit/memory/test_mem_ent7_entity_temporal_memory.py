@@ -9,6 +9,9 @@ from datetime import datetime, timezone
 
 import pytest
 
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.memory.memory_security_governance_service import build_default_memory_security_governance_service
+
 from intergrax.applications._shared.entity_graph_wiring import resolve_entity_temporal_memory_store
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -58,6 +61,11 @@ from intergrax.memory.stores.in_memory_entity_temporal_memory_store import (
 from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
 
 pytestmark = pytest.mark.gate
+
+
+def _identity(scope: EntityMemoryScope) -> RequestIdentity:
+    return RequestIdentity(tenant_id=scope.tenant_id, user_id=scope.user_id or "user-a")
+
 
 
 def _scope(tenant: str, user: str = "user-a") -> EntityMemoryScope:
@@ -211,7 +219,7 @@ def test_referential_integrity_on_relation() -> None:
 
 def test_indexer_source_memory_linkage_and_revision_update() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope = _scope("tenant-idx", "user-1")
     entry = UserProfileMemoryEntry(
         entry_id="mem-42",
@@ -221,7 +229,7 @@ def test_indexer_source_memory_linkage_and_revision_update() -> None:
         provenance=MemoryProvenance(source_type=MemoryRecordSourceType.SESSION_EXTRACTION),
         trust=MemoryRecordTrust(trust_class=MemoryTrustClass.MODEL_INFERENCE),
     )
-    indexer.index_memory_entry(scope, entry)
+    indexer.index_memory_entry(_identity(scope), scope, entry)
     entity_id = entity_memory_entity_id_for_entry(scope, "mem-42")
     projected = store.get_entity(scope, entity_id)
     assert projected is not None
@@ -236,7 +244,7 @@ def test_indexer_source_memory_linkage_and_revision_update() -> None:
         provenance=entry.provenance,
         trust=entry.trust,
     )
-    indexer.index_memory_entry(scope, entry_v4)
+    indexer.index_memory_entry(_identity(scope), scope, entry_v4)
     projected_v4 = store.get_entity(scope, entity_id)
     assert projected_v4 is not None
     assert projected_v4.source_memory_revision == 4
@@ -245,7 +253,7 @@ def test_indexer_source_memory_linkage_and_revision_update() -> None:
 
 def test_delete_by_source_memory() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope = _scope("tenant-del", "user-1")
     entry = UserProfileMemoryEntry(
         entry_id="mem-del",
@@ -253,7 +261,7 @@ def test_delete_by_source_memory() -> None:
         kind=MemoryKind.USER_FACT,
         revision=1,
     )
-    indexer.index_memory_entry(scope, entry)
+    indexer.index_memory_entry(_identity(scope), scope, entry)
     entity_id = entity_memory_entity_id_for_entry(scope, "mem-del")
     user_id = entity_memory_user_entity_id(scope)
     rel_id = entity_memory_relation_id_for_has_memory(scope, "mem-del")
@@ -380,12 +388,12 @@ class _RecordingEntityStore:
 def test_external_store_injectable_without_core_changes() -> None:
     fake = _RecordingEntityStore()
     assert isinstance(fake, EntityTemporalMemoryStore)
-    indexer = DefaultEntityMemoryIndexer(fake)
+    indexer = DefaultEntityMemoryIndexer(fake, security_governance=build_default_memory_security_governance_service())
     scope = _scope("tenant-fake", "u1")
     entry = UserProfileMemoryEntry(entry_id="e1", content="hello", kind=MemoryKind.USER_FACT, revision=1)
-    indexer.index_memory_entry(scope, entry)
+    indexer.index_memory_entry(_identity(scope), scope, entry)
     assert fake.upserts
-    indexer.remove_memory_entry(scope, "e1")
+    indexer.remove_memory_entry(_identity(scope), scope, "e1")
     assert fake.deletes == [(scope, "e1")]
 
 
@@ -503,10 +511,11 @@ def test_equal_valid_from_orders_by_relation_id() -> None:
 
 def test_stale_source_revision_preserves_projection_content() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope = _scope("tenant-stale", "user-1")
     provenance = MemoryProvenance(source_type=MemoryRecordSourceType.SESSION_EXTRACTION)
     indexer.index_memory_entry(
+        _identity(scope),
         scope,
         UserProfileMemoryEntry(
             entry_id="mem-stale",
@@ -517,6 +526,7 @@ def test_stale_source_revision_preserves_projection_content() -> None:
         ),
     )
     indexer.index_memory_entry(
+        _identity(scope),
         scope,
         UserProfileMemoryEntry(
             entry_id="mem-stale",
@@ -598,12 +608,12 @@ def _relation_exists(
 
 def test_same_tenant_same_source_id_different_users_both_projections_exist() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope_a = EntityMemoryScope(tenant_id="T", user_id="A")
     scope_b = EntityMemoryScope(tenant_id="T", user_id="B")
     source_id = "M"
-    indexer.index_memory_entry(scope_a, _memory_entry(source_id, revision=4))
-    indexer.index_memory_entry(scope_b, _memory_entry(source_id, revision=3))
+    indexer.index_memory_entry(_identity(scope_a), scope_a, _memory_entry(source_id, revision=4))
+    indexer.index_memory_entry(_identity(scope_b), scope_b, _memory_entry(source_id, revision=3))
 
     entity_a = entity_memory_entity_id_for_entry(scope_a, source_id)
     entity_b = entity_memory_entity_id_for_entry(scope_b, source_id)
@@ -622,12 +632,12 @@ def test_same_tenant_same_source_id_different_users_both_projections_exist() -> 
 
 def test_delete_by_source_memory_removes_only_scoped_user_a() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope_a = EntityMemoryScope(tenant_id="T", user_id="A")
     scope_b = EntityMemoryScope(tenant_id="T", user_id="B")
     source_id = "M"
-    indexer.index_memory_entry(scope_a, _memory_entry(source_id, revision=5))
-    indexer.index_memory_entry(scope_b, _memory_entry(source_id, revision=3))
+    indexer.index_memory_entry(_identity(scope_a), scope_a, _memory_entry(source_id, revision=5))
+    indexer.index_memory_entry(_identity(scope_b), scope_b, _memory_entry(source_id, revision=3))
 
     entity_a = entity_memory_entity_id_for_entry(scope_a, source_id)
     entity_b = entity_memory_entity_id_for_entry(scope_b, source_id)
@@ -648,12 +658,12 @@ def test_delete_by_source_memory_removes_only_scoped_user_a() -> None:
 
 def test_delete_by_source_memory_removes_only_scoped_user_b() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope_a = EntityMemoryScope(tenant_id="T", user_id="A")
     scope_b = EntityMemoryScope(tenant_id="T", user_id="B")
     source_id = "M"
-    indexer.index_memory_entry(scope_a, _memory_entry(source_id))
-    indexer.index_memory_entry(scope_b, _memory_entry(source_id))
+    indexer.index_memory_entry(_identity(scope_a), scope_a, _memory_entry(source_id))
+    indexer.index_memory_entry(_identity(scope_b), scope_b, _memory_entry(source_id))
 
     entity_a = entity_memory_entity_id_for_entry(scope_a, source_id)
     entity_b = entity_memory_entity_id_for_entry(scope_b, source_id)
@@ -668,11 +678,11 @@ def test_delete_by_source_memory_removes_only_scoped_user_b() -> None:
 
 def test_same_scope_double_index_is_idempotent() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope = EntityMemoryScope(tenant_id="T", user_id="A")
     entry = _memory_entry("M", revision=4)
-    indexer.index_memory_entry(scope, entry)
-    indexer.index_memory_entry(scope, entry)
+    indexer.index_memory_entry(_identity(scope), scope, entry)
+    indexer.index_memory_entry(_identity(scope), scope, entry)
     entity_id = entity_memory_entity_id_for_entry(scope, "M")
     rel_id = entity_memory_relation_id_for_has_memory(scope, "M")
     user_id = entity_memory_user_entity_id(scope)
@@ -692,12 +702,12 @@ def test_same_scope_double_index_is_idempotent() -> None:
 
 def test_higher_revision_updates_same_scoped_ids() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope = EntityMemoryScope(tenant_id="T", user_id="A")
-    indexer.index_memory_entry(scope, _memory_entry("M", revision=4, content="v4"))
+    indexer.index_memory_entry(_identity(scope), scope, _memory_entry("M", revision=4, content="v4"))
     entity_id = entity_memory_entity_id_for_entry(scope, "M")
     rel_id = entity_memory_relation_id_for_has_memory(scope, "M")
-    indexer.index_memory_entry(scope, _memory_entry("M", revision=5, content="v5"))
+    indexer.index_memory_entry(_identity(scope), scope, _memory_entry("M", revision=5, content="v5"))
     projected = store.get_entity(scope, entity_id)
     assert projected is not None
     assert projected.source_memory_revision == 5
@@ -711,12 +721,12 @@ def test_higher_revision_updates_same_scoped_ids() -> None:
 
 def test_stale_revision_on_one_user_does_not_affect_sibling_user() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope_a = EntityMemoryScope(tenant_id="T", user_id="A")
     scope_b = EntityMemoryScope(tenant_id="T", user_id="B")
-    indexer.index_memory_entry(scope_a, _memory_entry("M", revision=5, content="A v5"))
-    indexer.index_memory_entry(scope_b, _memory_entry("M", revision=3, content="B v3"))
-    indexer.index_memory_entry(scope_a, _memory_entry("M", revision=3, content="stale A"))
+    indexer.index_memory_entry(_identity(scope_a), scope_a, _memory_entry("M", revision=5, content="A v5"))
+    indexer.index_memory_entry(_identity(scope_b), scope_b, _memory_entry("M", revision=3, content="B v3"))
+    indexer.index_memory_entry(_identity(scope_a), scope_a, _memory_entry("M", revision=3, content="stale A"))
 
     entity_a = store.get_entity(scope_a, entity_memory_entity_id_for_entry(scope_a, "M"))
     entity_b = store.get_entity(scope_b, entity_memory_entity_id_for_entry(scope_b, "M"))
@@ -764,12 +774,12 @@ def test_projection_key_absent_workspace_not_colliding_with_dash_workspace() -> 
 
 def test_same_tenant_same_source_different_workspaces_both_projections_exist() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W1")
     scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W2")
     source_id = "M"
-    indexer.index_memory_entry(scope_ws1, _memory_entry(source_id, revision=5))
-    indexer.index_memory_entry(scope_ws2, _memory_entry(source_id, revision=3))
+    indexer.index_memory_entry(_identity(scope_ws1), scope_ws1, _memory_entry(source_id, revision=5))
+    indexer.index_memory_entry(_identity(scope_ws2), scope_ws2, _memory_entry(source_id, revision=3))
 
     entity_1 = entity_memory_entity_id_for_entry(scope_ws1, source_id)
     entity_2 = entity_memory_entity_id_for_entry(scope_ws2, source_id)
@@ -787,12 +797,12 @@ def test_same_tenant_same_source_different_workspaces_both_projections_exist() -
 
 def test_delete_by_source_memory_removes_only_scoped_workspace_w1() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W1")
     scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W2")
     source_id = "M"
-    indexer.index_memory_entry(scope_ws1, _memory_entry(source_id, revision=5))
-    indexer.index_memory_entry(scope_ws2, _memory_entry(source_id, revision=3))
+    indexer.index_memory_entry(_identity(scope_ws1), scope_ws1, _memory_entry(source_id, revision=5))
+    indexer.index_memory_entry(_identity(scope_ws2), scope_ws2, _memory_entry(source_id, revision=3))
 
     entity_1 = entity_memory_entity_id_for_entry(scope_ws1, source_id)
     entity_2 = entity_memory_entity_id_for_entry(scope_ws2, source_id)
@@ -811,12 +821,12 @@ def test_delete_by_source_memory_removes_only_scoped_workspace_w1() -> None:
 
 def test_delete_by_source_memory_removes_only_scoped_workspace_w2() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W1")
     scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W2")
     source_id = "M"
-    indexer.index_memory_entry(scope_ws1, _memory_entry(source_id))
-    indexer.index_memory_entry(scope_ws2, _memory_entry(source_id))
+    indexer.index_memory_entry(_identity(scope_ws1), scope_ws1, _memory_entry(source_id))
+    indexer.index_memory_entry(_identity(scope_ws2), scope_ws2, _memory_entry(source_id))
 
     entity_2 = entity_memory_entity_id_for_entry(scope_ws2, source_id)
     rel_2 = entity_memory_relation_id_for_has_memory(scope_ws2, source_id)
@@ -830,11 +840,11 @@ def test_delete_by_source_memory_removes_only_scoped_workspace_w2() -> None:
 
 def test_no_dangling_relations_after_workspace_scoped_delete() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W1")
     scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W2")
-    indexer.index_memory_entry(scope_ws1, _memory_entry("M", revision=1))
-    indexer.index_memory_entry(scope_ws2, _memory_entry("M", revision=1))
+    indexer.index_memory_entry(_identity(scope_ws1), scope_ws1, _memory_entry("M", revision=1))
+    indexer.index_memory_entry(_identity(scope_ws2), scope_ws2, _memory_entry("M", revision=1))
     user_id = entity_memory_user_entity_id(scope_ws1)
     store.delete_by_source_memory(scope_ws1, "M")
 
@@ -854,12 +864,12 @@ def test_no_dangling_relations_after_workspace_scoped_delete() -> None:
 
 def test_stale_revision_on_one_workspace_does_not_affect_sibling_workspace() -> None:
     store = InMemoryEntityTemporalMemoryStore()
-    indexer = DefaultEntityMemoryIndexer(store)
+    indexer = DefaultEntityMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope_ws1 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W1")
     scope_ws2 = EntityMemoryScope(tenant_id="T", user_id="U", workspace_id="W2")
-    indexer.index_memory_entry(scope_ws1, _memory_entry("M", revision=5, content="W1 v5"))
-    indexer.index_memory_entry(scope_ws2, _memory_entry("M", revision=3, content="W2 v3"))
-    indexer.index_memory_entry(scope_ws1, _memory_entry("M", revision=4, content="stale W1"))
+    indexer.index_memory_entry(_identity(scope_ws1), scope_ws1, _memory_entry("M", revision=5, content="W1 v5"))
+    indexer.index_memory_entry(_identity(scope_ws2), scope_ws2, _memory_entry("M", revision=3, content="W2 v3"))
+    indexer.index_memory_entry(_identity(scope_ws1), scope_ws1, _memory_entry("M", revision=4, content="stale W1"))
 
     entity_1 = store.get_entity(scope_ws1, entity_memory_entity_id_for_entry(scope_ws1, "M"))
     entity_2 = store.get_entity(scope_ws2, entity_memory_entity_id_for_entry(scope_ws2, "M"))

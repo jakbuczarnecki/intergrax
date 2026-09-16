@@ -16,6 +16,7 @@ from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryRecordTrust,
     parse_memory_record_timestamp,
 )
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.entity_temporal_memory import (
     EntityMemoryScope,
     entity_memory_source_projection_key,
@@ -472,6 +473,7 @@ class ProcedureMemoryCapability(Protocol):
 
     def remember_procedure(
         self,
+        identity: RequestIdentity,
         scope: ProceduralMemoryScope,
         record: ProcedureRecord,
     ) -> ProcedureRecord: ...
@@ -485,18 +487,21 @@ class ProcedureMemoryCapability(Protocol):
 
     def deprecate_procedure(
         self,
+        identity: RequestIdentity,
         scope: ProceduralMemoryScope,
         procedure_id: str,
     ) -> ProcedureRecord | None: ...
 
     def supersede_procedure(
         self,
+        identity: RequestIdentity,
         scope: ProceduralMemoryScope,
         request: ProcedureSupersessionRequest,
     ) -> tuple[ProcedureRecord, ProcedureRecord]: ...
 
     def delete_projection_by_source_memory(
         self,
+        identity: RequestIdentity,
         scope: ProceduralMemoryScope,
         source_memory_id: str,
     ) -> int: ...

@@ -10,6 +10,9 @@ from datetime import datetime, timezone
 
 import pytest
 
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.memory.memory_security_governance_service import build_default_memory_security_governance_service
+
 from intergrax.applications._shared.long_horizon_memory_wiring import (
     resolve_long_horizon_memory_capability,
     resolve_long_horizon_memory_store,
@@ -63,6 +66,11 @@ from intergrax.memory.stores.in_memory_long_horizon_memory_store import (
 )
 
 pytestmark = pytest.mark.gate
+
+
+def _identity(tenant: str = "T", user: str = "user-a") -> RequestIdentity:
+    return RequestIdentity(tenant_id=tenant, user_id=user)
+
 
 
 def _scope(
@@ -164,6 +172,7 @@ def _service(
         _store=store or InMemoryLongHorizonMemoryStore(),
         _strategies=build_default_long_horizon_strategies(),
         _source_authority=authority or _ScopedSourceAuthority(resolved_scope),
+        _security_governance=build_default_memory_security_governance_service(),
     )
 
 
@@ -340,7 +349,7 @@ def test_source_deletion_invalidates_leaf() -> None:
     scope = _scope("T")
     record = _leaf("s1", sources=(MemorySourceRef("gone", 1),))
     service._store.upsert_summary(scope, record)
-    invalidated = service.invalidate_summaries_for_deleted_source(scope, "gone")
+    invalidated = service.invalidate_summaries_for_deleted_source(_identity(), scope, "gone")
     assert "s1" in invalidated
     stored = service._store.get_summary(scope, "s1")
     assert stored is not None
@@ -371,6 +380,7 @@ def test_compaction_idempotent_retry() -> None:
     service = _service()
     scope = _scope("T")
     request = LongHorizonCompactionRequest(
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
         scope=scope,
         target_level=1,
         sources=_sources(("mem-1", 1), ("mem-2", 1)),
@@ -391,7 +401,8 @@ def test_compaction_parent_child_level_invariant() -> None:
     with pytest.raises(LongHorizonMemoryViolation):
         service.compact(
             LongHorizonCompactionRequest(
-                scope=scope,
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
+        scope=scope,
                 target_level=1,
                 child_summaries=(child,),
             )
@@ -559,6 +570,7 @@ def test_source_authority_rejects_cross_tenant() -> None:
     service = _service(scope=scope)
     other_scope = _scope("tenant-b")
     request = LongHorizonCompactionRequest(
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
         scope=other_scope,
         target_level=1,
         sources=_sources(("mem-1", 1)),
@@ -572,6 +584,7 @@ def test_source_authority_rejects_cross_user() -> None:
     scope = _scope("T", user="user-a")
     service = _service(scope=scope)
     request = LongHorizonCompactionRequest(
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
         scope=_scope("T", user="user-b"),
         target_level=1,
         sources=_sources(("mem-1", 1)),
@@ -584,6 +597,7 @@ def test_source_authority_rejects_cross_workspace() -> None:
     scope = _scope("T", workspace="ws-a")
     service = _service(scope=scope)
     request = LongHorizonCompactionRequest(
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
         scope=_scope("T", workspace="ws-b"),
         target_level=1,
         sources=_sources(("mem-1", 1)),
@@ -608,6 +622,7 @@ def test_source_authority_revision_mismatch_rejects() -> None:
 
     service = _service(scope=scope, authority=_ExactRevisionAuthority(scope))
     request = LongHorizonCompactionRequest(
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
         scope=scope,
         target_level=1,
         sources=_sources(("mem-1", 1)),
@@ -631,7 +646,8 @@ def test_source_authority_missing_source_rejects() -> None:
     service = _service(scope=scope, authority=_MissingAuthority(scope))
     result = service.compact(
         LongHorizonCompactionRequest(
-            scope=scope,
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
+        scope=scope,
             target_level=1,
             sources=_sources(("mem-1", 1)),
         )
@@ -660,7 +676,12 @@ def test_compaction_uses_authority_content_not_caller_spoof() -> None:
         observed_at="2025-03-01T12:00:00+00:00",
     )
     result = service.compact(
-        LongHorizonCompactionRequest(scope=scope, target_level=1, sources=(spoofed,))
+        LongHorizonCompactionRequest(
+            identity=_identity(scope.tenant_id, scope.user_id or "user-a"),
+            scope=scope,
+            target_level=1,
+            sources=(spoofed,),
+        )
     )
     assert result.created
     assert "verified canonical body" in result.created[0].content
@@ -689,7 +710,8 @@ def test_authority_postcondition_rejects_wrong_memory_id() -> None:
     service = _service(store=store, scope=scope, authority=_WrongMemoryIdAuthority(scope))
     result = service.compact(
         LongHorizonCompactionRequest(
-            scope=scope,
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
+        scope=scope,
             target_level=1,
             sources=_sources(("M1", 4)),
         )
@@ -723,7 +745,8 @@ def test_authority_postcondition_rejects_wrong_revision() -> None:
     service = _service(store=store, scope=scope, authority=_WrongRevisionAuthority(scope))
     result = service.compact(
         LongHorizonCompactionRequest(
-            scope=scope,
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
+        scope=scope,
             target_level=1,
             sources=_sources(("M1", 4)),
         )
@@ -756,7 +779,8 @@ def test_authority_postcondition_rejects_wrong_memory_id_and_revision() -> None:
     service = _service(scope=scope, authority=_WrongIdAndRevisionAuthority(scope))
     result = service.compact(
         LongHorizonCompactionRequest(
-            scope=scope,
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
+        scope=scope,
             target_level=1,
             sources=_sources(("M1", 4)),
         )
@@ -782,7 +806,8 @@ def test_authority_postcondition_matching_snapshot_compacts_with_exact_lineage()
     service = _service(scope=scope, authority=authority)
     result = service.compact(
         LongHorizonCompactionRequest(
-            scope=scope,
+        identity=_identity(scope.tenant_id, scope.user_id or 'user-a'),
+        scope=scope,
             target_level=1,
             sources=_sources(("M1", 4)),
         )

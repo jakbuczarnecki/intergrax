@@ -12,6 +12,9 @@ import math
 
 import pytest
 
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.memory.memory_security_governance_service import build_default_memory_security_governance_service
+
 from intergrax.applications._shared.procedural_memory_wiring import (
     resolve_procedural_memory_capability,
     resolve_procedural_memory_store,
@@ -60,6 +63,14 @@ from intergrax.memory.stores.in_memory_procedural_memory_store import InMemoryPr
 from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
 
 pytestmark = pytest.mark.gate
+
+
+def _identity(tenant: str = "tenant-1", user: str = "user-a") -> RequestIdentity:
+    return RequestIdentity(tenant_id=tenant, user_id=user)
+
+
+def _identity_for_scope(scope: ProceduralMemoryScope) -> RequestIdentity:
+    return RequestIdentity(tenant_id=scope.tenant_id, user_id=scope.user_id or "user-a")
 
 
 def _scope(
@@ -116,6 +127,7 @@ def _service(store: InMemoryProceduralMemoryStore | None = None) -> ProceduralMe
     return ProceduralMemoryService(
         _store=store or InMemoryProceduralMemoryStore(),
         _strategies=build_default_procedural_memory_strategies(),
+        _security_governance=build_default_memory_security_governance_service(),
     )
 
 
@@ -148,8 +160,8 @@ def test_procedure_versioning_same_id() -> None:
 
 def test_tenant_isolation() -> None:
     service = _service()
-    service.remember_procedure(_scope("T1"), _procedure("proc-shared"))
-    service.remember_procedure(_scope("T2"), _procedure("proc-shared"))
+    service.remember_procedure(_identity("T1"), _scope("T1"), _procedure("proc-shared"))
+    service.remember_procedure(_identity("T2"), _scope("T2"), _procedure("proc-shared"))
     r1 = service.recall_procedures(
         _scope("T1"),
         ProcedureQuery(limit=5),
@@ -167,8 +179,8 @@ def test_tenant_isolation() -> None:
 
 def test_workspace_scope_isolation() -> None:
     service = _service()
-    service.remember_procedure(_scope("T", workspace="W1"), _procedure("proc-w"))
-    service.remember_procedure(_scope("T", workspace="W2"), _procedure("proc-w"))
+    service.remember_procedure(_identity("T"), _scope("T", workspace="W1"), _procedure("proc-w"))
+    service.remember_procedure(_identity("T"), _scope("T", workspace="W2"), _procedure("proc-w"))
     w1 = service.recall_procedures(
         _scope("T", workspace="W1"),
         ProcedureQuery(limit=5),
@@ -186,8 +198,8 @@ def test_workspace_scope_isolation() -> None:
 def test_applicability_required_capability() -> None:
     service = _service()
     scope = _scope("T")
-    service.remember_procedure(scope, _procedure("with-cap", capabilities=("billing",)))
-    service.remember_procedure(scope, _procedure("no-cap"))
+    service.remember_procedure(_identity_for_scope(scope), scope, _procedure("with-cap", capabilities=("billing",)))
+    service.remember_procedure(_identity_for_scope(scope), scope, _procedure("no-cap"))
     with_cap = service.recall_procedures(
         scope,
         ProcedureQuery(limit=10),
@@ -215,8 +227,8 @@ def test_ranking_deterministic_and_tie_break() -> None:
     assert [p.procedure_id for p in ordered] == ["proc-a", "proc-b"]
     service = _service()
     scope = _scope("T")
-    service.remember_procedure(scope, _procedure("proc-b", quality=0.5))
-    service.remember_procedure(scope, _procedure("proc-a", quality=0.5))
+    service.remember_procedure(_identity_for_scope(scope), scope, _procedure("proc-b", quality=0.5))
+    service.remember_procedure(_identity_for_scope(scope), scope, _procedure("proc-a", quality=0.5))
     ctx = ProcedureRecallContext(available_capabilities=())
     first = service.recall_procedures(scope, ProcedureQuery(limit=10), ctx)
     second = service.recall_procedures(scope, ProcedureQuery(limit=10), ctx)
@@ -227,8 +239,9 @@ def test_supersession_recall_excludes_superseded_by_default() -> None:
     store = InMemoryProceduralMemoryStore()
     service = _service(store)
     scope = _scope("T")
-    service.remember_procedure(scope, _procedure("proc-A"))
+    service.remember_procedure(_identity_for_scope(scope), scope, _procedure("proc-A"))
     service.supersede_procedure(
+        _identity_for_scope(scope),
         scope,
         ProcedureSupersessionRequest(
             superseded_procedure_id="proc-A",
@@ -292,7 +305,7 @@ def test_idempotent_source_projection() -> None:
 
 def test_delete_by_source_memory() -> None:
     store = InMemoryProceduralMemoryStore()
-    indexer = DefaultProceduralMemoryIndexer(store)
+    indexer = DefaultProceduralMemoryIndexer(store, security_governance=build_default_memory_security_governance_service())
     scope = _scope("T")
     entry = UserProfileMemoryEntry(
         entry_id="mem-del",
@@ -301,10 +314,10 @@ def test_delete_by_source_memory() -> None:
         revision=1,
         created_at="2025-01-01T00:00:00+00:00",
     )
-    indexer.index_memory_entry(scope, entry)
+    indexer.index_memory_entry(_identity_for_scope(scope), scope, entry)
     pid = procedure_id_for_source_memory(scope, "mem-del")
     assert store.get_procedure(scope, pid) is not None
-    removed = indexer.remove_memory_entry(scope, "mem-del")
+    removed = indexer.remove_memory_entry(_identity_for_scope(scope), scope, "mem-del")
     assert removed == 1
     assert store.get_procedure(scope, pid) is None
 
@@ -324,7 +337,7 @@ def test_recall_bounded_limit() -> None:
     service = _service()
     scope = _scope("T")
     for idx in range(5):
-        service.remember_procedure(scope, _procedure(f"proc-{idx}"))
+        service.remember_procedure(_identity_for_scope(scope), scope, _procedure(f"proc-{idx}"))
     result = service.recall_procedures(
         scope,
         ProcedureQuery(limit=2),
@@ -348,7 +361,7 @@ def test_temporal_applicability_as_of() -> None:
         source_memory_id="mem-temporal",
         source_memory_revision=1,
     )
-    service.remember_procedure(scope, record)
+    service.remember_procedure(_identity_for_scope(scope), scope, record)
     inside = service.recall_procedures(
         scope,
         ProcedureQuery(

@@ -9,6 +9,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryProvenance,
     MemoryRecordGovernance,
@@ -356,12 +357,14 @@ class EntityMemoryIndexer(Protocol):
 
     def index_memory_entry(
         self,
+        identity: RequestIdentity,
         scope: EntityMemoryScope,
         entry: UserProfileMemoryEntry,
     ) -> None: ...
 
     def remove_memory_entry(
         self,
+        identity: RequestIdentity,
         scope: EntityMemoryScope,
         memory_entry_id: str,
     ) -> None: ...

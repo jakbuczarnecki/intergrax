@@ -222,6 +222,21 @@ class DefaultMemoryGovernancePolicy:
 
     def evaluate(self, request: MemoryGovernanceEvaluationRequest) -> MemoryGovernanceDecision:
         operation = request.context.operation
+        restricted_ops = {
+            MemoryGovernanceOperation.REMEMBER,
+            MemoryGovernanceOperation.PROMOTE,
+            MemoryGovernanceOperation.PROJECT,
+            MemoryGovernanceOperation.COMPACT,
+        }
+        for source in request.source_records:
+            if source.governance.data_classification is DataClassification.RESTRICTED:
+                if operation in restricted_ops:
+                    return _deny_decision(
+                        policy_id=self.policy_id,
+                        operation=operation,
+                        reason_code=MemoryGovernanceReasonCode.SENSITIVE_DATA_POLICY,
+                        subject_memory_id=source.memory_id,
+                    )
         record = request.proposed_record or request.existing_record
         if record is None:
             return _allow_decision(policy_id=self.policy_id, operation=operation)

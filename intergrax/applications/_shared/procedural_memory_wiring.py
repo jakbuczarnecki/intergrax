@@ -6,6 +6,10 @@ from __future__ import annotations
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.memory.contracts.procedural_memory import ProcedureMemoryStore
+from intergrax.applications._shared.memory_security_governance_wiring import (
+    resolve_memory_security_governance_service,
+)
+from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
 from intergrax.memory.procedural_memory_service import (
     ProceduralMemoryService,
     build_default_procedural_memory_strategies,
@@ -49,12 +53,18 @@ def resolve_procedural_memory_store(
 
 def resolve_procedural_memory_capability(
     env: ApplicationEnvironmentProfile,
+    *,
+    security_governance: MemorySecurityGovernanceService | None = None,
 ) -> ProceduralMemoryService | None:
     """Materialize procedural memory capability when enabled."""
     store = resolve_procedural_memory_store(env)
     if store is None:
         return None
+    governance = resolve_memory_security_governance_service(
+        security_governance=security_governance,
+    )
     return ProceduralMemoryService(
         _store=store,
         _strategies=build_default_procedural_memory_strategies(),
+        _security_governance=governance,
     )

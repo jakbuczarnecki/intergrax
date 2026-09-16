@@ -18,6 +18,7 @@ from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryTrustClass,
     parse_memory_record_timestamp,
 )
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.entity_temporal_memory import EntityMemoryScope
 from intergrax.memory.contracts.temporal_chronology import (
     memory_chronological_ordinal,
@@ -419,6 +420,7 @@ def validate_canonical_source_snapshot(
 class LongHorizonCompactionRequest:
     scope: LongHorizonMemoryScope
     target_level: int
+    identity: RequestIdentity
     sources: tuple[LongHorizonCompactionSource, ...] = ()
     child_summaries: tuple[LongHorizonSummaryRecord, ...] = ()
     reference_time: datetime | None = None
@@ -692,6 +694,7 @@ class LongHorizonMemoryCapability(Protocol):
 
     def invalidate_summaries_for_deleted_source(
         self,
+        identity: RequestIdentity,
         scope: LongHorizonMemoryScope,
         source_memory_id: str,
     ) -> tuple[str, ...]: ...

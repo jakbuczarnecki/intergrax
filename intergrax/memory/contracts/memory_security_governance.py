@@ -26,6 +26,7 @@ __all__ = [
     "MemoryAuthorizationPolicy",
     "MemoryGovernanceConstraint",
     "MemoryGovernanceDecision",
+    "MemoryGovernanceDenied",
     "MemoryGovernanceEvaluationRequest",
     "MemoryGovernanceOperation",
     "MemoryGovernanceOutcome",
@@ -114,6 +115,16 @@ class MemoryGovernanceDecision:
             MemoryGovernanceOutcome.ALLOW,
             MemoryGovernanceOutcome.ALLOW_WITH_CONSTRAINTS,
         }
+
+
+class MemoryGovernanceDenied(PermissionError):
+    """Governance rejected a memory mutation (neutral boundary; map to control plane at edge)."""
+
+    decision: MemoryGovernanceDecision
+
+    def __init__(self, message: str, *, decision: MemoryGovernanceDecision) -> None:
+        super().__init__(message)
+        self.decision = decision
 
 
 @dataclass(frozen=True, slots=True)
