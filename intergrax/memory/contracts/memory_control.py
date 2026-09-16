@@ -6,7 +6,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from intergrax.memory.contracts.memory_security_governance import MemoryGovernanceDecision
 
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.memory_lifecycle import (
@@ -72,7 +75,9 @@ class MemoryControlAccessDenied(PermissionError):
 class MemoryControlGovernanceDenied(PermissionError):
     """Security/governance boundary rejected the memory operation."""
 
-    def __init__(self, message: str, *, decision: object) -> None:
+    decision: MemoryGovernanceDecision
+
+    def __init__(self, message: str, *, decision: MemoryGovernanceDecision) -> None:
         super().__init__(message)
         self.decision = decision
 

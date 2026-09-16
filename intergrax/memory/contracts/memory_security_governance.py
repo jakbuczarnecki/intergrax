@@ -37,7 +37,6 @@ __all__ = [
     "MemoryRetentionDecision",
     "MemoryRetentionPolicy",
     "MemorySecurityContext",
-    "MemorySecurityGovernanceConfig",
     "MemorySecurityStrategySet",
     "MemoryTrustEvaluationPolicy",
     "MemoryTrustEvaluationResult",
@@ -182,11 +181,6 @@ class MemoryTrustEvaluationResult:
     policy_version: str
     escalation_blocked: bool = False
     reason_code: MemoryGovernanceReasonCode = MemoryGovernanceReasonCode.ALLOWED
-
-
-@dataclass(frozen=True, slots=True)
-class MemorySecurityGovernanceConfig:
-    enabled: bool = True
 
 
 @dataclass(frozen=True, slots=True)

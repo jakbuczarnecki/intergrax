@@ -13,7 +13,6 @@ from intergrax.memory.contracts.memory_security_governance import (
     MemoryGovernanceOutcome,
     MemoryGovernanceReasonCode,
     MemoryRetentionAction,
-    MemorySecurityGovernanceConfig,
     MemorySecurityStrategySet,
 )
 from intergrax.memory.strategies.defaults.memory_security_governance import (
@@ -94,17 +93,8 @@ def _merge_decisions(
 @dataclass(slots=True)
 class MemorySecurityGovernanceService:
     strategies: MemorySecurityStrategySet
-    config: MemorySecurityGovernanceConfig = MemorySecurityGovernanceConfig()
 
     def evaluate(self, request: MemoryGovernanceEvaluationRequest) -> MemoryGovernanceDecision:
-        if not self.config.enabled:
-            return MemoryGovernanceDecision(
-                outcome=MemoryGovernanceOutcome.ALLOW,
-                reason_code=MemoryGovernanceReasonCode.ALLOWED,
-                policy_id="memory.security.disabled",
-                policy_version="1.0.0",
-                operation=request.context.operation,
-            )
         if self.strategies is None:
             return _fail_closed_decision(request, reason_code=MemoryGovernanceReasonCode.POLICY_MISSING)
         try:
@@ -195,9 +185,7 @@ def _is_valid_decision(decision: MemoryGovernanceDecision) -> bool:
 def build_default_memory_security_governance_service(
     *,
     strategies: MemorySecurityStrategySet | None = None,
-    config: MemorySecurityGovernanceConfig | None = None,
 ) -> MemorySecurityGovernanceService:
     return MemorySecurityGovernanceService(
         strategies=strategies or build_default_memory_security_strategy_set(),
-        config=config or MemorySecurityGovernanceConfig(),
     )
