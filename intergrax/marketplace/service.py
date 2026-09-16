@@ -21,11 +21,11 @@ from intergrax.contracts.marketplace import (
     MarketplacePublisherMetadata,
 )
 from intergrax.marketplace.errors import MarketplaceCatalogConfigurationError
+from intergrax.contracts.marketplace.metadata_source import MarketplaceMetadataSource
 from intergrax.marketplace.listing import (
     MarketplaceCapabilityListing,
     MarketplaceCapabilityListingView,
 )
-from intergrax.marketplace.source import MarketplaceCapabilityCatalogSource
 
 
 @dataclass(frozen=True, slots=True)
@@ -42,7 +42,7 @@ class MarketplaceCatalogService:
         self,
         *,
         catalog: FederatedCapabilityCatalog,
-        marketplace_sources: tuple[MarketplaceCapabilityCatalogSource, ...],
+        marketplace_sources: tuple[MarketplaceMetadataSource, ...],
     ) -> None:
         self._catalog = catalog
         snapshot = catalog.snapshot()
@@ -106,7 +106,7 @@ def _index_canonical_entries(
 
 def _validate_marketplace_sources_in_catalog(
     catalog: FederatedCapabilityCatalog,
-    marketplace_sources: tuple[MarketplaceCapabilityCatalogSource, ...],
+    marketplace_sources: tuple[MarketplaceMetadataSource, ...],
 ) -> None:
     catalog_source_ids = {source.source_id for source in catalog.sources}
     for source in marketplace_sources:
@@ -119,7 +119,7 @@ def _validate_marketplace_sources_in_catalog(
 
 def _build_listing_index(
     snapshot: CapabilityCatalogSnapshot,
-    marketplace_sources: tuple[MarketplaceCapabilityCatalogSource, ...],
+    marketplace_sources: tuple[MarketplaceMetadataSource, ...],
 ) -> dict[tuple[str, str, str, str], _ListingProductMetadata]:
     canonical_by_identity = _index_canonical_entries(snapshot)
     index: dict[tuple[str, str, str, str], _ListingProductMetadata] = {}

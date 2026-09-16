@@ -13,6 +13,10 @@ from intergrax.contracts.capability_catalog.evidence import (
     SCHEMA_CAPABILITY_DISCOVERY_AVAILABILITY_EVIDENCE_V1,
     CapabilityDiscoveryAvailabilityEvidence,
 )
+from intergrax.contracts.capability_catalog.entry import (
+    SCHEMA_CAPABILITY_CATALOG_ENTRY_V1,
+    CapabilityCatalogEntry,
+)
 from intergrax.contracts.capability_catalog.identity import (
     SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1,
     SCHEMA_CAPABILITY_LOGICAL_IDENTITY_V1,
@@ -53,6 +57,7 @@ from intergrax.contracts.capability_catalog.scope import (
     CapabilityDiscoveryScope,
     CapabilityDiscoveryScopeMode,
 )
+from intergrax.contracts.capability_catalog.source import CapabilityCatalogSource
 from intergrax.contracts.capability_catalog.skill_version_binding import (
     SkillVersionBindingDisposition,
 )
@@ -100,6 +105,8 @@ from intergrax.contracts.capability_catalog.work_stage_loop import (
 __all__ = [
     "AvailabilityDisposition",
     "CapabilityCatalogContractError",
+    "CapabilityCatalogEntry",
+    "CapabilityCatalogSource",
     "CapabilityDiscoveryAvailabilityEvidence",
     "CapabilityDiscoveryIdentity",
     "CapabilityDiscoveryQuery",
@@ -129,6 +136,7 @@ __all__ = [
     "NORMATIVE_CAPABILITY_GOVERNANCE_REASON_CODES",
     "NORMATIVE_CAPABILITY_STAGE_VOCABULARY",
     "SCHEMA_CAPABILITY_DISCOVERY_AVAILABILITY_EVIDENCE_V1",
+    "SCHEMA_CAPABILITY_CATALOG_ENTRY_V1",
     "SCHEMA_CAPABILITY_DISCOVERY_IDENTITY_V1",
     "SCHEMA_CAPABILITY_DISCOVERY_QUERY_V1",
     "SCHEMA_CAPABILITY_DISCOVERY_SCOPE_V1",

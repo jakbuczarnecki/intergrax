@@ -150,31 +150,36 @@ Platform operates on **contracts**, not hardcoded consumers → implementations.
 | Layer | Packages |
 | ----- | -------- |
 | Discovery / identity / query / governance / ranking | `intergrax.contracts.capability_catalog` |
+| Catalog source port | `CapabilityCatalogSource` in `intergrax.contracts.capability_catalog` |
 | Product metadata | `intergrax.contracts.marketplace` |
+| Listing projection SPI | `MarketplaceListingProjection` in `intergrax.contracts.marketplace` |
+| Marketplace metadata SPI | `MarketplaceMetadataSource` in `intergrax.contracts.marketplace` |
 | Usage attribution | `intergrax.contracts.capability_metering` |
 | Default implementations | `intergrax.capability_catalog`, `intergrax.marketplace`, `intergrax.capability_metering` |
 
-**Finding:** `CapabilityCatalogSource` Protocol lives in implementation package (`intergrax.capability_catalog.source`), not contracts — promote in ME-RB2.
+**ME-RB2 (closed):** `CapabilityCatalogSource`, `MarketplaceListingProjection`, and `MarketplaceMetadataSource` are public replaceable ports; default implementations remain in implementation packages only.
 
 ---
 
 ## 10. Plugin architecture
 
-Replaceable variation points (target state):
+Replaceable variation points (post ME-RB2):
 
 | Variation | Contract today | Verdict |
 | --------- | -------------- | ------- |
-| Catalog source | `CapabilityCatalogSource` (impl package) | PARTIAL |
+| Catalog source | `CapabilityCatalogSource` (`intergrax.contracts.capability_catalog`) | ENTERPRISE_READY |
 | Ranker | `CapabilityRanker` | ENTERPRISE_READY |
 | Governance evaluator | contracts + adapter evaluators | ENTERPRISE_READY |
-| Listing projection | functions in `marketplace.projection` | PARTIAL |
-| Marketplace metadata backend | `MarketplaceCapabilityCatalogSource` class | PARTIAL |
+| Listing projection | `MarketplaceListingProjection` + `DefaultMarketplaceListingProjection` | ENTERPRISE_READY |
+| Marketplace metadata backend | `MarketplaceMetadataSource` + `InMemoryMarketplaceMetadataSource` | ENTERPRISE_READY |
 | Search / text filter | inline in `MarketplaceCatalogService` | PARTIAL (documented as product filter) |
 | Recommendation | none | MISSING |
 | Availability evidence | typed evidence contracts | PARTIAL |
 | Lifecycle handoff | domain-specific (AC-4, tool/skill ports) | MISSING common envelope |
 
 Do **not** add empty Protocols without semantics (ME-RB2 scope).
+
+**ME-RB1 gaps:** ME-RB1-002, ME-RB1-003, ME-RB1-004 — **closed in ME-RB2**.
 
 ---
 

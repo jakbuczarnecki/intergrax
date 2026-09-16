@@ -5,17 +5,6 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from intergrax.contracts.capability_catalog.source import CapabilityCatalogSource
 
-from intergrax.capability_catalog.entry import CapabilityCatalogEntry
-
-
-class CapabilityCatalogSource(Protocol):
-    """Minimal read-only port: source identity → enumerate entries."""
-
-    @property
-    def source_id(self) -> str:
-        """Stable catalog source instance identifier."""
-
-    def read_entries(self) -> tuple[CapabilityCatalogEntry, ...]:
-        """Return all entries currently visible from this source."""
+__all__ = ["CapabilityCatalogSource"]

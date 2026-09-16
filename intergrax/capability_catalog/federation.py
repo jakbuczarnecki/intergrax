@@ -12,7 +12,7 @@ from intergrax.capability_catalog.errors import (
     CapabilityCatalogSourceFailure,
 )
 from intergrax.capability_catalog.snapshot import CapabilityCatalogSnapshot
-from intergrax.capability_catalog.source import CapabilityCatalogSource
+from intergrax.contracts.capability_catalog.source import CapabilityCatalogSource
 
 
 def _source_id_sort_key(source_id: str) -> str:
