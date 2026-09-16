@@ -40,7 +40,7 @@ from intergrax.memory.contracts.long_horizon_memory import (
     long_horizon_summary_id_for_batch,
     sort_child_summary_refs,
     sort_memory_source_refs,
-    _validate_canonical_source_snapshot,
+    validate_canonical_source_snapshot,
 )
 
 __all__ = [
@@ -209,7 +209,7 @@ class LongHorizonMemoryService:
                 source.memory_id,
                 source.revision,
             )
-            _validate_canonical_source_snapshot(source, snapshot)
+            validate_canonical_source_snapshot(source, snapshot)
             resolved.append(
                 LongHorizonCompactionSource(
                     memory_id=snapshot.memory_id,

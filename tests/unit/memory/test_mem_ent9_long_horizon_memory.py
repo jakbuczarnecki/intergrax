@@ -18,6 +18,8 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     MemoryProfile,
 )
+from intergrax.memory import contracts
+from intergrax.memory.contracts import long_horizon_memory as long_horizon_memory_contracts
 from intergrax.memory.contracts.long_horizon_memory import (
     CanonicalMemorySourceSnapshot,
     ChildSummaryRef,
@@ -37,8 +39,10 @@ from intergrax.memory.contracts.long_horizon_memory import (
     long_horizon_summary_id_for_batch,
     order_long_horizon_summaries_deterministic,
     select_temporal_coverage,
+    validate_canonical_source_snapshot,
     validate_long_horizon_summary_record,
 )
+from intergrax.memory import long_horizon_memory_service
 from intergrax.memory.long_horizon_memory_service import (
     LongHorizonMemoryService,
     build_default_long_horizon_strategies,
@@ -903,3 +907,20 @@ def test_recall_query_rejects_reversed_range() -> None:
             covered_from="2025-02-01T00:00:00+00:00",
             covered_until="2025-01-01T00:00:00+00:00",
         )
+
+
+def test_long_horizon_service_does_not_import_private_canonical_validator() -> None:
+    source = inspect.getsource(long_horizon_memory_service)
+    assert "_validate_canonical_source_snapshot" not in source
+
+
+def test_validate_canonical_source_snapshot_is_public_contract() -> None:
+    assert hasattr(long_horizon_memory_contracts, "validate_canonical_source_snapshot")
+    assert (
+        "validate_canonical_source_snapshot"
+        in long_horizon_memory_contracts.__all__
+    )
+    assert validate_canonical_source_snapshot is getattr(
+        contracts.long_horizon_memory,
+        "validate_canonical_source_snapshot",
+    )

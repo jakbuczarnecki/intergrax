@@ -64,6 +64,7 @@ __all__ = [
     "select_temporal_coverage",
     "sort_memory_source_refs",
     "sort_child_summary_refs",
+    "validate_canonical_source_snapshot",
     "validate_long_horizon_summary_record",
 ]
 
@@ -400,7 +401,7 @@ class LongHorizonCompactionSource:
             parse_memory_record_timestamp("observed_at", self.observed_at)
 
 
-def _validate_canonical_source_snapshot(
+def validate_canonical_source_snapshot(
     requested: LongHorizonCompactionSource,
     snapshot: CanonicalMemorySourceSnapshot,
 ) -> None:
