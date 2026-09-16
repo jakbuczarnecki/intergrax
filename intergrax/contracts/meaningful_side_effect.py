@@ -30,6 +30,7 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.contracts.decision_governance_material import DecisionGovernanceMaterialRef
 from intergrax.contracts.validation import validate_content_digest
 
 SCHEMA_MEANINGFUL_SIDE_EFFECT_REQUEST_V1: Final = "meaningful_side_effect_request.v1"
@@ -73,6 +74,7 @@ class MeaningfulSideEffectRequest(BaseModel):
     external_target: str | None = None
     correlation: Mapping[str, Any] = Field(default_factory=dict)
     context: Mapping[str, Any] = Field(default_factory=dict)
+    decision_governance_material: DecisionGovernanceMaterialRef | None = None
 
     @field_validator("action", "side_effect_scope_id")
     @classmethod

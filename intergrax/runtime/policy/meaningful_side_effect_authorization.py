@@ -33,6 +33,9 @@ from intergrax.runtime.human.governed_continuation_grant import (
     GovernedContinuationGrantCoordinator,
     matches_current_requirement,
 )
+from intergrax.runtime.decision_governance_material import (
+    assert_decision_governance_material_bound,
+)
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
 )
@@ -105,6 +108,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
             )
         try:
             self._inner_execution_guard.assert_meaningful_side_effect_bound(side_effect)
+            assert_decision_governance_material_bound(side_effect)
         except CanonicalInnerGovernanceViolation as exc:
             return self._inner_enforcement_denied(request, reason=exc.reason)
         except RuntimeError as exc:
