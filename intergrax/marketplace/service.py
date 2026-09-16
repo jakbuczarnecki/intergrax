@@ -33,7 +33,10 @@ from intergrax.marketplace.listing import (
     MarketplaceCapabilityListing,
     MarketplaceCapabilityListingView,
 )
+from intergrax.contracts.marketplace.query_context import MarketplaceQueryContext
+from intergrax.contracts.marketplace.visibility import MarketplaceVisibility
 from intergrax.marketplace.search import DefaultMarketplaceListingTextSearchStrategy
+from intergrax.marketplace.visibility import MarketplaceVisibilityEvaluator
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +44,7 @@ class _ListingProductMetadata:
     listing_id: str | None
     publisher_metadata: MarketplacePublisherMetadata | None
     commercial_metadata: MarketplaceCommercialMetadata | None
+    visibility: MarketplaceVisibility | None
 
 
 class MarketplaceCatalogService:
@@ -52,10 +56,14 @@ class MarketplaceCatalogService:
         catalog: FederatedCapabilityCatalog,
         marketplace_sources: tuple[MarketplaceMetadataSource, ...],
         listing_text_search: CapabilitySearchStrategy | None = None,
+        visibility_evaluator: MarketplaceVisibilityEvaluator | None = None,
     ) -> None:
         self._catalog = catalog
         self._listing_text_search = (
             listing_text_search or DefaultMarketplaceListingTextSearchStrategy()
+        )
+        self._visibility_evaluator = (
+            visibility_evaluator or MarketplaceVisibilityEvaluator()
         )
         snapshot = catalog.snapshot()
         _validate_marketplace_sources_in_catalog(catalog, marketplace_sources)
@@ -65,10 +73,12 @@ class MarketplaceCatalogService:
         self,
         query: CapabilityDiscoveryQuery,
         *,
+        marketplace_query_context: MarketplaceQueryContext | None = None,
         availability_evidence: CapabilityDiscoveryAvailabilityEvidence | None = None,
         query_text: str | None = None,
     ) -> tuple[MarketplaceCapabilityListingView, ...]:
         """List marketplace listings matching a Stage-3 discovery query."""
+        query_context = marketplace_query_context or MarketplaceQueryContext()
         snapshot = self._catalog.snapshot()
         candidates = discover_capability_candidates(
             snapshot,
@@ -77,7 +87,13 @@ class MarketplaceCatalogService:
         )
         listing_candidates: list[CapabilityDiscoveryCandidate] = []
         for candidate in candidates:
-            if self._listing_index.get(candidate.identity.sort_key) is None:
+            metadata = self._listing_index.get(candidate.identity.sort_key)
+            if metadata is None:
+                continue
+            if not self._visibility_evaluator.is_visible(
+                metadata.visibility,
+                query_context,
+            ):
                 continue
             listing_candidates.append(candidate)
 
@@ -104,10 +120,15 @@ class MarketplaceCatalogService:
     def get_listing(
         self,
         identity_key: CapabilityIdentityKey,
+        *,
+        marketplace_query_context: MarketplaceQueryContext | None = None,
     ) -> MarketplaceCapabilityListing | None:
         """Return one marketplace listing by canonical identity key, if present."""
+        query_context = marketplace_query_context or MarketplaceQueryContext()
         metadata = self._listing_index.get(identity_key.sort_key)
         if metadata is None:
+            return None
+        if not self._visibility_evaluator.is_visible(metadata.visibility, query_context):
             return None
         snapshot = self._catalog.snapshot()
         canonical = _index_canonical_entries(snapshot).get(identity_key.sort_key)
@@ -163,6 +184,7 @@ def _build_listing_index(
                 listing_id=listing.listing_id,
                 publisher_metadata=listing.publisher_metadata,
                 commercial_metadata=listing.commercial_metadata,
+                visibility=listing.visibility,
             )
     return index
 
@@ -176,6 +198,7 @@ def _build_listing(
         capability=capability,
         publisher_metadata=metadata.publisher_metadata,
         commercial_metadata=metadata.commercial_metadata,
+        visibility=metadata.visibility,
     )
 
 

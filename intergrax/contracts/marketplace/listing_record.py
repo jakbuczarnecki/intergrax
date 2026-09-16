@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
 from intergrax.contracts.marketplace.commercial import MarketplaceCommercialMetadata
 from intergrax.contracts.marketplace.publisher import MarketplacePublisherMetadata
+from intergrax.contracts.marketplace.visibility import MarketplaceVisibility
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,3 +27,4 @@ class MarketplaceListingRecord:
     listing_id: str | None = None
     publisher_metadata: MarketplacePublisherMetadata | None = None
     commercial_metadata: MarketplaceCommercialMetadata | None = None
+    visibility: MarketplaceVisibility | None = None

@@ -226,6 +226,26 @@ def test_marketplace_package_has_no_pricing_or_billing_authority_api() -> None:
                 )
 
 
+def test_me9_visibility_contracts_do_not_import_marketplace_implementation() -> None:
+    for module_name in (
+        "intergrax.contracts.marketplace.visibility",
+        "intergrax.contracts.marketplace.query_context",
+    ):
+        module = importlib.import_module(module_name)
+        path = Path(module.__file__)
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for imported in _collect_imports(tree):
+            if imported == _MARKETPLACE_MODULE or imported.startswith(f"{_MARKETPLACE_MODULE}."):
+                raise AssertionError(f"{module_name} imports marketplace implementation")
+
+
+def test_me9_tenant_isolation_uses_central_visibility_module() -> None:
+    service_path = _package_root(_MARKETPLACE_MODULE) / "service.py"
+    tree = ast.parse(service_path.read_text(encoding="utf-8"))
+    imported = _collect_imports(tree)
+    assert "intergrax.marketplace.visibility" in imported
+
+
 def test_marketplace_service_does_not_import_ranking_with_commercial_metadata() -> None:
     service_module = importlib.import_module("intergrax.marketplace.service")
     path = Path(service_module.__file__)

@@ -14,6 +14,7 @@ from intergrax.contracts.capability_catalog.availability import AvailabilityDisp
 from intergrax.contracts.capability_catalog.entry import CapabilityCatalogEntry
 from intergrax.contracts.marketplace.commercial import MarketplaceCommercialMetadata
 from intergrax.contracts.marketplace.publisher import MarketplacePublisherMetadata
+from intergrax.contracts.marketplace.visibility import MarketplaceVisibility
 
 SCHEMA_MARKETPLACE_CAPABILITY_LISTING_V1: Final = "marketplace_capability_listing.v1"
 SCHEMA_MARKETPLACE_CAPABILITY_LISTING_VIEW_V1: Final = (
@@ -33,6 +34,7 @@ class MarketplaceCapabilityListing(BaseModel):
     capability: CapabilityCatalogEntry
     publisher_metadata: MarketplacePublisherMetadata | None = None
     commercial_metadata: MarketplaceCommercialMetadata | None = None
+    visibility: MarketplaceVisibility | None = None
 
     @field_validator("listing_id")
     @classmethod

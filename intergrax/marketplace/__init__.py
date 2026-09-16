@@ -29,6 +29,12 @@ from intergrax.marketplace.search import (
     DefaultMarketplaceListingTextSearchStrategy,
 )
 from intergrax.marketplace.service import MarketplaceCatalogService, snapshot_without_marketplace
+from intergrax.marketplace.visibility import (
+    MarketplaceVisibilityEvaluator,
+    MarketplaceVisibilityPolicyExtension,
+    hard_marketplace_tenant_isolation,
+    resolve_marketplace_visibility,
+)
 from intergrax.marketplace.snapshot import (
     SCHEMA_MARKETPLACE_CATALOG_SNAPSHOT_V1,
     MarketplaceCatalogSnapshot,
@@ -50,6 +56,10 @@ __all__ = [
     "MARKETPLACE_LISTING_TEXT_SEARCH_STRATEGY_ID",
     "MarketplaceCatalogService",
     "MarketplaceDiscoveryService",
+    "MarketplaceVisibilityEvaluator",
+    "MarketplaceVisibilityPolicyExtension",
+    "hard_marketplace_tenant_isolation",
+    "resolve_marketplace_visibility",
     "MarketplaceRecommendationService",
     "MarketplaceCatalogSnapshot",
     "MarketplaceListingRecord",

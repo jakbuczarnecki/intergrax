@@ -84,6 +84,7 @@ class DefaultMarketplaceListingProjection:
             capability=capability,
             publisher_metadata=record.publisher_metadata,
             commercial_metadata=record.commercial_metadata,
+            visibility=record.visibility,
         )
         validate_listing_source_consistency(source, listing)
         return listing

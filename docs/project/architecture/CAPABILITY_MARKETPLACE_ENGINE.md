@@ -502,6 +502,39 @@ Proofs: `tests/unit/marketplace/test_me8_commercial_metering_boundary.py`, `test
 
 ---
 
+## ME-9 — Multi-Tenant / Private Marketplace (closed)
+
+Marketplace visibility is **explicit**, **typed**, and **fail-closed**. It is not IAM, not execution entitlement, not governance, and not commercial classification.
+
+```text
+Catalog candidates (single federated truth)
+      ↓
+Marketplace query + MarketplaceQueryContext (explicit tenant_id when needed)
+      ↓
+Hard tenant isolation (non-disableable)
+      ↓
+Optional MarketplaceVisibilityPolicyExtension (may only further restrict)
+      ↓
+Governance (unchanged)
+      ↓
+Ranking (only visible candidates)
+      ↓
+Marketplace results
+```
+
+| Scope | Semantics |
+| ----- | --------- |
+| `PUBLIC` | Discoverable by any marketplace caller (still subject to governance) |
+| `TENANT_PRIVATE` | Discoverable only when `MarketplaceQueryContext.tenant_id` matches listing `tenant_id` |
+
+Listings without `visibility` metadata default to **PUBLIC** (backward compatible). Missing tenant context returns **PUBLIC only** — private listings are excluded.
+
+Platform tenant identity for discovery scope reuse: `CapabilityDiscoveryScope.tenant_id` (catalog) remains separate from `MarketplaceQueryContext.tenant_id` (marketplace product visibility).
+
+Proofs: `tests/unit/marketplace/test_me9_multi_tenant_private_marketplace.py`, `tests/unit/contracts/marketplace/test_marketplace_visibility_contracts.py`.
+
+---
+
 ## Architecture gates (ME-RB1)
 
 Enforced in tests:
@@ -513,6 +546,7 @@ Enforced in tests:
 - `tests/unit/marketplace/test_me_rb2_plugin_architecture.py`
 - `tests/unit/marketplace/test_me7_publisher_version_provenance.py`
 - `tests/unit/marketplace/test_me8_commercial_metering_boundary.py`
+- `tests/unit/marketplace/test_me9_multi_tenant_private_marketplace.py`
 - `tests/unit/contracts/capability_metering/test_capability_metering_contract_import_gates.py`
 - `tests/unit/architecture/test_capability_catalog_v1_program_boundaries.py`
 
