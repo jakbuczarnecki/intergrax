@@ -50,6 +50,17 @@ def test_memory_core_has_no_module_level_asyncio_lock() -> None:
         assert not locks, f"{path} assigns module-level asyncio.Lock: {locks}"
 
 
+def test_mem_ent14_resilience_helpers_no_baseexception_contract() -> None:
+    for path in _iter_py_files(_RESILIENCE_ROOT):
+        tree = _parse(path)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and node.id == "BaseException":
+                pytest.fail(f"{path} references BaseException in resilience harness")
+            if isinstance(node, ast.ExceptHandler) and node.type is not None:
+                if isinstance(node.type, ast.Name) and node.type.id == "BaseException":
+                    pytest.fail(f"{path} catches BaseException")
+
+
 def test_mem_ent14_tests_avoid_sleep_based_races() -> None:
     patterns = ("test_mem_ent14_",)
     files = [
@@ -68,6 +79,13 @@ def test_mem_ent14_tests_avoid_sleep_based_races() -> None:
                     and node.func.attr == "sleep"
                 ):
                     pytest.fail(f"{path} uses asyncio.sleep for concurrency proof")
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                if (
+                    isinstance(node.func.value, ast.Name)
+                    and node.func.value.id == "time"
+                    and node.func.attr == "sleep"
+                ):
+                    pytest.fail(f"{path} uses time.sleep for concurrency proof")
 
 
 def test_mem_ent14_resilience_helpers_no_unbounded_retry_loops() -> None:

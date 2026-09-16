@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import threading
 from dataclasses import replace
 
 from intergrax.memory.contracts.entity_temporal_memory import (
@@ -72,10 +73,19 @@ class InMemoryEntityTemporalMemoryStore:
     """Vendor-neutral in-memory ``EntityTemporalMemoryStore``."""
 
     def __init__(self) -> None:
+        self._lock = threading.RLock()
         self._entities: dict[tuple[str, str], EntityRecord] = {}
         self._relations: dict[tuple[str, str], EntityRelationRecord] = {}
 
     def upsert_entity(self, scope: EntityMemoryScope, record: EntityRecord) -> EntityRecord:
+        with self._lock:
+            return self._upsert_entity_unlocked(scope, record)
+
+    def _upsert_entity_unlocked(
+        self,
+        scope: EntityMemoryScope,
+        record: EntityRecord,
+    ) -> EntityRecord:
         key = (scope.tenant_id, record.entity_id)
         existing = self._entities.get(key)
         if existing is not None:
@@ -99,12 +109,22 @@ class InMemoryEntityTemporalMemoryStore:
         return merged
 
     def get_entity(self, scope: EntityMemoryScope, entity_id: str) -> EntityRecord | None:
-        return self._entities.get((scope.tenant_id, entity_id))
+        with self._lock:
+            return self._entities.get((scope.tenant_id, entity_id))
 
     def get_relation(self, scope: EntityMemoryScope, relation_id: str) -> EntityRelationRecord | None:
-        return self._relations.get((scope.tenant_id, relation_id))
+        with self._lock:
+            return self._relations.get((scope.tenant_id, relation_id))
 
     def upsert_relation(
+        self,
+        scope: EntityMemoryScope,
+        record: EntityRelationRecord,
+    ) -> EntityRelationRecord:
+        with self._lock:
+            return self._upsert_relation_unlocked(scope, record)
+
+    def _upsert_relation_unlocked(
         self,
         scope: EntityMemoryScope,
         record: EntityRelationRecord,
@@ -133,6 +153,14 @@ class InMemoryEntityTemporalMemoryStore:
         return merged
 
     def query_relations(
+        self,
+        scope: EntityMemoryScope,
+        query: EntityRelationQuery,
+    ) -> EntityRelationResult:
+        with self._lock:
+            return self._query_relations_unlocked(scope, query)
+
+    def _query_relations_unlocked(
         self,
         scope: EntityMemoryScope,
         query: EntityRelationQuery,
@@ -166,13 +194,22 @@ class InMemoryEntityTemporalMemoryStore:
         return EntityRelationResult(relations=bounded)
 
     def list_entities(self, scope: EntityMemoryScope) -> tuple[EntityRecord, ...]:
-        return tuple(
-            record
-            for (tenant_id, _entity_id), record in self._entities.items()
-            if tenant_id == scope.tenant_id
-        )
+        with self._lock:
+            return tuple(
+                record
+                for (tenant_id, _entity_id), record in self._entities.items()
+                if tenant_id == scope.tenant_id
+            )
 
     def delete_by_source_memory(self, scope: EntityMemoryScope, source_memory_id: str) -> int:
+        with self._lock:
+            return self._delete_by_source_memory_unlocked(scope, source_memory_id)
+
+    def _delete_by_source_memory_unlocked(
+        self,
+        scope: EntityMemoryScope,
+        source_memory_id: str,
+    ) -> int:
         memory_id = (source_memory_id or "").strip()
         if not memory_id:
             return 0
@@ -196,7 +233,7 @@ class InMemoryEntityTemporalMemoryStore:
         record: EntityRelationRecord,
     ) -> None:
         for endpoint in (record.source_entity_id, record.target_entity_id):
-            if self.get_entity(scope, endpoint) is None:
+            if self._entities.get((scope.tenant_id, endpoint)) is None:
                 raise EntityTemporalMemoryNotFound(
                     f"entity endpoint not found for relation: {endpoint}"
                 )

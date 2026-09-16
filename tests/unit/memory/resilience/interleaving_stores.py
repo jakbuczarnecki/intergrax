@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Callable
 
 from intergrax.memory.contracts.entity_temporal_memory import (
@@ -56,3 +57,16 @@ class InterleavingProceduralMemoryStore(InMemoryProceduralMemoryStore):
             finally:
                 self.pre_commit = hook
         return super().upsert_procedure(scope, record)
+
+
+class OverlapBarrierEntityTemporalMemoryStore(InMemoryEntityTemporalMemoryStore):
+    """Synchronizes two revision writers inside ``upsert_entity`` before store lock."""
+
+    overlap_upsert_barrier: threading.Barrier | None = None
+
+    def upsert_entity(self, scope: EntityMemoryScope, record: EntityRecord) -> EntityRecord:
+        barrier = self.overlap_upsert_barrier
+        incoming_revision = record.source_memory_revision
+        if barrier is not None and incoming_revision in {4, 6}:
+            barrier.wait(timeout=5.0)
+        return super().upsert_entity(scope, record)

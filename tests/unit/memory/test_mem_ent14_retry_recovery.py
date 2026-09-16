@@ -43,8 +43,11 @@ from intergrax.memory.user_profile_memory import (
 )
 from tests.unit.memory.resilience.fault_injection import (
     AmbiguousCommitUserProfileStore,
+    FailAfterCommitOnceUserProfileStore,
     FailBeforeCommitUserProfileStore,
+    FailFirstThenSucceedUserProfileStore,
 )
+from tests.unit.memory.resilience.recovery_projection import FailOnceRepairableProjection
 from tests.unit.memory.test_mem_ent8_procedural_memory import _procedure
 
 pytestmark = pytest.mark.unit
@@ -63,7 +66,8 @@ def _identity() -> RequestIdentity:
 
 
 @pytest.mark.asyncio
-async def test_ambiguous_commit_retry_preserves_single_profile_effect() -> None:
+async def test_ambiguous_commit_retry_preserves_single_semantic_profile_state() -> None:
+    """Multiple physical writes after ambiguous failure → one semantic final state."""
     store = AmbiguousCommitUserProfileStore()
     profile = UserProfile(
         identity=UserIdentity(user_id=_USER),
@@ -80,7 +84,23 @@ async def test_ambiguous_commit_retry_preserves_single_profile_effect() -> None:
 
 
 @pytest.mark.asyncio
-async def test_fail_before_commit_retry_leaves_no_duplicate_profile_row() -> None:
+async def test_fail_before_commit_real_second_attempt_persists_once() -> None:
+    store = FailFirstThenSucceedUserProfileStore()
+    profile = UserProfile(
+        identity=UserIdentity(user_id=_USER),
+        preferences=UserPreferences(),
+        system_instructions="persist-on-second-attempt",
+    )
+    with pytest.raises(TimeoutError):
+        await store.save_profile(tenant_id=_TENANT, profile=profile)
+    await store.save_profile(tenant_id=_TENANT, profile=profile)
+    loaded = await store.get_profile(tenant_id=_TENANT, user_id=_USER)
+    assert loaded.system_instructions == "persist-on-second-attempt"
+    assert store.attempts == 2
+
+
+@pytest.mark.asyncio
+async def test_fail_before_commit_store_without_retry_leaves_empty_profile() -> None:
     store = FailBeforeCommitUserProfileStore()
     profile = UserProfile(
         identity=UserIdentity(user_id=_USER),
@@ -92,6 +112,22 @@ async def test_fail_before_commit_retry_leaves_no_duplicate_profile_row() -> Non
     loaded = await store.get_profile(tenant_id=_TENANT, user_id=_USER)
     assert (loaded.system_instructions or "") == ""
     assert store.attempts == 1
+
+
+@pytest.mark.asyncio
+async def test_fail_after_commit_once_second_call_succeeds_with_single_semantic_state() -> None:
+    store = FailAfterCommitOnceUserProfileStore()
+    profile = UserProfile(
+        identity=UserIdentity(user_id=_USER),
+        preferences=UserPreferences(),
+        system_instructions="ambiguous-once",
+    )
+    with pytest.raises(TimeoutError):
+        await store.save_profile(tenant_id=_TENANT, profile=profile)
+    await store.save_profile(tenant_id=_TENANT, profile=profile)
+    loaded = await store.get_profile(tenant_id=_TENANT, user_id=_USER)
+    assert loaded.system_instructions == "ambiguous-once"
+    assert store.commit_count == 2
 
 
 @pytest.mark.asyncio
@@ -212,6 +248,44 @@ async def test_projection_failure_after_canonical_remember_reports_partial_failu
     assert failed
     assert failed[0].failure is not None
     assert failed[0].failure.category is MemoryProjectionFailureCategory.RETRYABLE
+
+
+@pytest.mark.asyncio
+async def test_projection_failure_then_reconcile_repairs_missing_entry() -> None:
+    store = InMemoryUserProfileStore()
+    projection = FailOnceRepairableProjection()
+    mgr = UserProfileManager(
+        store,
+        tenant_id=_TENANT,
+        memory_projections=(projection,),
+    )
+    plane = DefaultMemoryControlPlane(
+        user_profile=UserProfileManagerMemoryCapability(_manager=mgr),
+    )
+    identity = _identity()
+    scope = user_memory_scope(identity)
+    from intergrax.memory.contracts.memory_control import MemoryControlPartialLifecycleError
+
+    with pytest.raises(MemoryControlPartialLifecycleError) as exc_info:
+        await plane.remember(
+            identity,
+            scope,
+            MemoryControlRememberRequest(content="canonical fact for repair"),
+        )
+    lifecycle = exc_info.value.lifecycle
+    assert lifecycle.primary_applied is True
+    assert projection.entries == {}
+    assert projection.upsert_attempts == 1
+
+    first = await mgr.reconcile_memory_projections(_USER)
+    assert first.disposition is MemoryReconciliationDisposition.REPAIRED
+    assert projection.repair_count == 1
+    assert len(projection.entries) == 1
+
+    repair_before = projection.repair_count
+    second = await mgr.reconcile_memory_projections(_USER)
+    assert second.disposition is MemoryReconciliationDisposition.CONSISTENT
+    assert projection.repair_count == repair_before
 
 
 @pytest.mark.asyncio

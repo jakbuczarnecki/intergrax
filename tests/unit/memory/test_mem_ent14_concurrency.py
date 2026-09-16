@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import threading
 from dataclasses import replace
 
 import pytest
@@ -37,7 +38,9 @@ from intergrax.memory.stores.in_memory_procedural_memory_store import (
 from tests.unit.memory.resilience.interleaving_stores import (
     InterleavingEntityTemporalMemoryStore,
     InterleavingProceduralMemoryStore,
+    OverlapBarrierEntityTemporalMemoryStore,
 )
+from tests.unit.memory.resilience.concurrency import run_two_writers_with_start_barrier
 from tests.unit.memory.test_mem_ent8_procedural_memory import _procedure
 from tests.unit.memory.test_mem_ent9_long_horizon_memory import _leaf
 
@@ -188,7 +191,36 @@ def test_long_horizon_same_revision_conflict_is_deterministic() -> None:
         store.upsert_summary(scope, conflicting)
 
 
-def test_tenant_isolation_under_concurrent_entity_writes() -> None:
+def test_entity_real_thread_concurrent_revision_writers_rev6_vs_rev4() -> None:
+    store = OverlapBarrierEntityTemporalMemoryStore()
+    scope = _entity_scope()
+    memory_id = "mem-thread-rev"
+    store.upsert_entity(scope, _entity_projection(scope, memory_id=memory_id, revision=5, name="v5"))
+    store.overlap_upsert_barrier = threading.Barrier(2)
+    start = threading.Barrier(2)
+
+    def _write(revision: int, name: str) -> EntityRecord:
+        start.wait(timeout=5.0)
+        return store.upsert_entity(
+            scope,
+            _entity_projection(scope, memory_id=memory_id, revision=revision, name=name),
+        )
+
+    result_a, result_b = run_two_writers_with_start_barrier(
+        start_barrier=start,
+        writer_a=lambda: _write(6, "v6"),
+        writer_b=lambda: _write(4, "stale"),
+    )
+    assert result_a.error is None
+    assert result_b.error is None
+    entity_id = entity_memory_entity_id_for_entry(scope, memory_id)
+    final = store.get_entity(scope, entity_id)
+    assert final is not None
+    assert final.source_memory_revision == 6
+    assert final.canonical_name == "v6"
+
+
+def test_tenant_isolation_entity_writes_sequential_scopes() -> None:
     store = InMemoryEntityTemporalMemoryStore()
     scope_a = _entity_scope(_TENANT_A)
     scope_b = _entity_scope(_TENANT_B)
