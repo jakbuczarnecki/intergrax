@@ -9,11 +9,11 @@
 | Field | SHA |
 | --- | --- |
 | starting SHA | `e16ccafa4d61615dd1e74d261f711ceb4f8284b6` |
-| task commit SHA | _(filled at commit)_ |
-| certified SHA | _(same as task commit)_ |
-| current development SHA | _(post-commit `git rev-parse HEAD`)_ |
+| task commit SHA | `40491b9d3b0500cab69af52560725c6f846349cb` |
+| certified SHA | `40491b9d3b0500cab69af52560725c6f846349cb` |
+| current development SHA | `40491b9d3b0500cab69af52560725c6f846349cb` |
 
-**Date:** 2026-09-16  
+**Date:** 2026-09-16
 **Branch:** `development`
 
 ## Executive certification statement
