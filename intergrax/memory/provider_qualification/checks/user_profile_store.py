@@ -13,6 +13,7 @@ from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderQualificationFailureReason,
 )
 from intergrax.memory.provider_qualification.checks._helpers import failed, passed
+from intergrax.memory.provider_qualification.checks._suite import validate_canonical_check_suite
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
 from intergrax.memory.user_profile_store import UserProfileStore
 
@@ -239,12 +240,65 @@ class UserProfileSaveIdempotencyCheck:
         return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
 
 
+@dataclass(frozen=True, slots=True)
+class UserProfilePersistenceFidelityCheck:
+    check_id: str = "user_profile.persistence_fidelity"
+
+    @property
+    def capability(self) -> MemoryProviderCapabilityKind:
+        return _CAPABILITY
+
+    @property
+    def severity(self) -> MemoryProviderCheckSeverity:
+        return _REQUIRED
+
+    async def run(
+        self,
+        instance: UserProfileStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult:
+        store = instance
+        tenant = _tenant_a(context)
+        user_id = f"{context.user_qualification_id}-fidelity"
+        instructions = f"fidelity-{context.qualification_run_id}"
+        profile = UserProfile(
+            identity=UserIdentity(user_id=user_id),
+            preferences=UserPreferences(preferred_language="pl", tone="concise"),
+            system_instructions=instructions,
+            version=7,
+        )
+        await store.save_profile(tenant_id=tenant, profile=profile)
+        loaded = await store.get_profile(tenant_id=tenant, user_id=user_id)
+        if (
+            loaded.version != 7
+            or loaded.preferences.preferred_language != "pl"
+            or loaded.preferences.tone != "concise"
+            or (loaded.system_instructions or "") != instructions
+        ):
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
+            )
+        return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
+
+
 USER_PROFILE_STORE_CHECKS: tuple[UserProfileStoreQualificationCheck, ...] = (
     UserProfileTenantIsolationCheck(),
     UserProfileUserIsolationCheck(),
     UserProfileDeleteScopeCheck(),
     UserProfileIdempotentDeleteCheck(),
     UserProfileSaveIdempotencyCheck(),
+    UserProfilePersistenceFidelityCheck(),
+)
+
+validate_canonical_check_suite(
+    USER_PROFILE_STORE_CHECKS,
+    capability=_CAPABILITY,
+    check_id_of=lambda item: item.check_id,
+    capability_of=lambda item: item.capability,
+    severity_of=lambda item: item.severity,
 )
 
 

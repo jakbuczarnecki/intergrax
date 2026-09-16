@@ -1,0 +1,226 @@
+# © Artur Czarnecki. All rights reserved.
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from intergrax.llm.messages import ChatMessage
+from intergrax.memory.contracts.provider_qualification import (
+    MemoryProviderCapabilityKind,
+    MemoryProviderCheckResult,
+    MemoryProviderCheckSeverity,
+    MemoryProviderQualificationContext,
+    MemoryProviderQualificationFailureReason,
+    SessionTurnIndexStoreQualificationCheck,
+)
+from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
+from intergrax.memory.provider_qualification.checks._helpers import failed, passed
+from intergrax.memory.provider_qualification.checks._suite import validate_canonical_check_suite
+
+_CAPABILITY = MemoryProviderCapabilityKind.SESSION_TURN_INDEX_STORE
+_REQUIRED = MemoryProviderCheckSeverity.REQUIRED
+
+
+def _tenant_a(context: MemoryProviderQualificationContext) -> str:
+    return f"{context.tenant_qualification_id}-a"
+
+
+def _tenant_b(context: MemoryProviderQualificationContext) -> str:
+    return f"{context.tenant_qualification_id}-b"
+
+
+@dataclass(frozen=True, slots=True)
+class SessionTurnIndexTenantIsolationCheck:
+    check_id: str = "session_turn_index.tenant_isolation"
+
+    @property
+    def capability(self) -> MemoryProviderCapabilityKind:
+        return _CAPABILITY
+
+    @property
+    def severity(self) -> MemoryProviderCheckSeverity:
+        return _REQUIRED
+
+    async def run(
+        self,
+        instance: SessionTurnIndexStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult:
+        store = instance
+        marker = f"tenant-marker-{context.qualification_run_id}"
+        message = ChatMessage(role="user", content=marker, entry_id=f"entry-tenant-{context.qualification_run_id}")
+        await store.upsert_turn(
+            tenant_id=_tenant_a(context),
+            session_id=f"session-{context.qualification_run_id}",
+            user_id=context.user_qualification_id,
+            message=message,
+        )
+        hits = await store.search_turns(
+            query=marker,
+            tenant_id=_tenant_b(context),
+            session_id=f"session-{context.qualification_run_id}",
+            user_id=context.user_qualification_id,
+        )
+        if hits:
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.TENANT_ISOLATION_FAILURE,
+            )
+        return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
+
+
+@dataclass(frozen=True, slots=True)
+class SessionTurnIndexSessionIsolationCheck:
+    check_id: str = "session_turn_index.session_isolation"
+
+    @property
+    def capability(self) -> MemoryProviderCapabilityKind:
+        return _CAPABILITY
+
+    @property
+    def severity(self) -> MemoryProviderCheckSeverity:
+        return _REQUIRED
+
+    async def run(
+        self,
+        instance: SessionTurnIndexStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult:
+        store = instance
+        marker = f"session-marker-{context.qualification_run_id}"
+        message = ChatMessage(
+            role="user",
+            content=marker,
+            entry_id=f"entry-session-{context.qualification_run_id}",
+        )
+        session_a = f"session-a-{context.qualification_run_id}"
+        session_b = f"session-b-{context.qualification_run_id}"
+        await store.upsert_turn(
+            tenant_id=_tenant_a(context),
+            session_id=session_a,
+            user_id=context.user_qualification_id,
+            message=message,
+        )
+        hits = await store.search_turns(
+            query=marker,
+            tenant_id=_tenant_a(context),
+            session_id=session_b,
+            user_id=context.user_qualification_id,
+        )
+        if hits:
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.USER_ISOLATION_FAILURE,
+            )
+        return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
+
+
+@dataclass(frozen=True, slots=True)
+class SessionTurnIndexUpsertSearchCheck:
+    check_id: str = "session_turn_index.upsert_search"
+
+    @property
+    def capability(self) -> MemoryProviderCapabilityKind:
+        return _CAPABILITY
+
+    @property
+    def severity(self) -> MemoryProviderCheckSeverity:
+        return _REQUIRED
+
+    async def run(
+        self,
+        instance: SessionTurnIndexStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult:
+        store = instance
+        content = f"searchable-{context.qualification_run_id}"
+        entry_id = f"entry-search-{context.qualification_run_id}"
+        session_id = f"session-search-{context.qualification_run_id}"
+        await store.upsert_turn(
+            tenant_id=_tenant_a(context),
+            session_id=session_id,
+            user_id=context.user_qualification_id,
+            message=ChatMessage(role="assistant", content=content, entry_id=entry_id),
+        )
+        hits = await store.search_turns(
+            query=content,
+            tenant_id=_tenant_a(context),
+            session_id=session_id,
+            user_id=context.user_qualification_id,
+        )
+        if not any(str(item.get("entry_id")) == entry_id for item in hits):
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
+            )
+        return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
+
+
+@dataclass(frozen=True, slots=True)
+class SessionTurnIndexTombstoneCheck:
+    check_id: str = "session_turn_index.tombstone_scope"
+
+    @property
+    def capability(self) -> MemoryProviderCapabilityKind:
+        return _CAPABILITY
+
+    @property
+    def severity(self) -> MemoryProviderCheckSeverity:
+        return _REQUIRED
+
+    async def run(
+        self,
+        instance: SessionTurnIndexStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult:
+        store = instance
+        content = f"tombstone-{context.qualification_run_id}"
+        entry_id = f"entry-tomb-{context.qualification_run_id}"
+        session_id = f"session-tomb-{context.qualification_run_id}"
+        await store.upsert_turn(
+            tenant_id=_tenant_a(context),
+            session_id=session_id,
+            user_id=context.user_qualification_id,
+            message=ChatMessage(role="user", content=content, entry_id=entry_id),
+        )
+        await store.tombstone_turn(entry_id)
+        hits = await store.search_turns(
+            query=content,
+            tenant_id=_tenant_a(context),
+            session_id=session_id,
+            user_id=context.user_qualification_id,
+        )
+        if hits:
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.DELETE_ISOLATION_FAILURE,
+            )
+        return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
+
+
+SESSION_TURN_INDEX_STORE_CHECKS: tuple[SessionTurnIndexStoreQualificationCheck, ...] = (
+    SessionTurnIndexTenantIsolationCheck(),
+    SessionTurnIndexSessionIsolationCheck(),
+    SessionTurnIndexUpsertSearchCheck(),
+    SessionTurnIndexTombstoneCheck(),
+)
+
+validate_canonical_check_suite(
+    SESSION_TURN_INDEX_STORE_CHECKS,
+    capability=_CAPABILITY,
+    check_id_of=lambda item: item.check_id,
+    capability_of=lambda item: item.capability,
+    severity_of=lambda item: item.severity,
+)
+
+
+def default_session_turn_index_checks() -> tuple[SessionTurnIndexStoreQualificationCheck, ...]:
+    return SESSION_TURN_INDEX_STORE_CHECKS

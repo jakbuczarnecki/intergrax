@@ -92,3 +92,32 @@ def _imports_intergrax_runtime(path: Path) -> bool:
 def test_qualification_package_has_no_runtime_imports() -> None:
     for path in _iter_py_files(_QUAL_ROOT):
         assert not _imports_intergrax_runtime(path), f"{path} imports intergrax.runtime"
+
+
+def test_qualification_package_has_no_rag_imports() -> None:
+    for path in _iter_py_files(_QUAL_ROOT):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                assert not node.module.startswith("intergrax.rag"), f"{path} imports intergrax.rag"
+
+
+def test_canonical_check_suites_have_unique_required_ids() -> None:
+    from intergrax.memory.provider_qualification.checks import (
+        ENTITY_TEMPORAL_MEMORY_STORE_CHECKS,
+        LONG_HORIZON_MEMORY_STORE_CHECKS,
+        PROCEDURE_MEMORY_STORE_CHECKS,
+        SESSION_TURN_INDEX_STORE_CHECKS,
+        USER_PROFILE_STORE_CHECKS,
+    )
+
+    for suite in (
+        USER_PROFILE_STORE_CHECKS,
+        ENTITY_TEMPORAL_MEMORY_STORE_CHECKS,
+        PROCEDURE_MEMORY_STORE_CHECKS,
+        LONG_HORIZON_MEMORY_STORE_CHECKS,
+        SESSION_TURN_INDEX_STORE_CHECKS,
+    ):
+        ids = [item.check_id for item in suite]
+        assert len(ids) == len(set(ids))
+        assert all(item.strip() for item in ids)

@@ -16,6 +16,10 @@ from intergrax.memory.provider_qualification.checks.procedure_memory_store impor
     PROCEDURE_MEMORY_STORE_CHECKS,
     default_procedure_checks,
 )
+from intergrax.memory.provider_qualification.checks.session_turn_index_store import (
+    SESSION_TURN_INDEX_STORE_CHECKS,
+    default_session_turn_index_checks,
+)
 from intergrax.memory.provider_qualification.checks.user_profile_store import (
     USER_PROFILE_STORE_CHECKS,
     default_user_profile_checks,
@@ -25,9 +29,11 @@ __all__ = [
     "default_entity_temporal_checks",
     "default_long_horizon_checks",
     "default_procedure_checks",
+    "default_session_turn_index_checks",
     "default_user_profile_checks",
     "ENTITY_TEMPORAL_MEMORY_STORE_CHECKS",
     "LONG_HORIZON_MEMORY_STORE_CHECKS",
     "PROCEDURE_MEMORY_STORE_CHECKS",
+    "SESSION_TURN_INDEX_STORE_CHECKS",
     "USER_PROFILE_STORE_CHECKS",
 ]

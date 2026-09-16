@@ -33,6 +33,7 @@ from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderQualificationResult,
     MemoryProviderQualificationStatus,
     ProcedureMemoryStoreQualificationCheck,
+    SessionTurnIndexStoreQualificationCheck,
     UserProfileStoreQualificationCheck,
     validate_memory_provider_descriptor,
     validate_memory_provider_qualification_request,
@@ -46,8 +47,10 @@ from intergrax.memory.provider_qualification.checks import (
     default_entity_temporal_checks,
     default_long_horizon_checks,
     default_procedure_checks,
+    default_session_turn_index_checks,
     default_user_profile_checks,
 )
+from intergrax.memory.provider_qualification.checks._suite import merge_canonical_and_extra_checks
 from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
 from intergrax.memory.provider_qualification.factory import MemoryProviderInstanceFactory
 from intergrax.memory.user_profile_store import UserProfileStore
@@ -62,18 +65,6 @@ def _sorted_capabilities(
     return tuple(sorted(capabilities, key=lambda item: item.value))
 
 
-def _merge_checks_by_id(
-    defaults: tuple[T, ...],
-    extra: tuple[T, ...],
-    *,
-    id_of: Callable[[T], str],
-) -> tuple[T, ...]:
-    by_id: dict[str, T] = {id_of(item): item for item in defaults}
-    for item in extra:
-        by_id[id_of(item)] = item
-    return tuple(by_id[key] for key in sorted(by_id))
-
-
 def _capability_status(
     *,
     capability: MemoryProviderCapabilityKind,
@@ -82,6 +73,7 @@ def _capability_status(
     factory_missing: bool,
     descriptor_unsupported: bool,
     required_capability: bool,
+    coverage_missing: bool = False,
 ) -> MemoryProviderCapabilityQualification:
     if descriptor_unsupported or factory_missing:
         status = (
@@ -102,28 +94,41 @@ def _capability_status(
     checks_executed = len(check_results)
     checks_passed = sum(1 for item in check_results if item.passed)
     checks_failed = checks_executed - checks_passed
-    reason_codes = tuple(
-        sorted(
-            {
-                item.reason_code
-                for item in check_results
-                if not item.passed and item.reason_code is not None
-            },
-            key=lambda code: code.value,
-        )
-    )
+    coverage_reasons: tuple[MemoryProviderQualificationFailureReason, ...] = ()
     required_failures = any(
         not item.passed and item.severity is MemoryProviderCheckSeverity.REQUIRED
         for item in check_results
     )
     if materialization_blocked:
         status = MemoryProviderQualificationStatus.BLOCKED
-    elif not check_results and required_capability:
-        status = MemoryProviderQualificationStatus.NOT_SUPPORTED
+    elif coverage_missing and required_capability:
+        status = MemoryProviderQualificationStatus.NOT_QUALIFIED
+        coverage_reasons = (MemoryProviderQualificationFailureReason.QUALIFICATION_COVERAGE_MISSING,)
+    elif not check_results:
+        status = (
+            MemoryProviderQualificationStatus.NOT_QUALIFIED
+            if required_capability
+            else MemoryProviderQualificationStatus.NOT_SUPPORTED
+        )
+        if required_capability:
+            coverage_reasons = (MemoryProviderQualificationFailureReason.QUALIFICATION_COVERAGE_MISSING,)
     elif required_failures:
         status = MemoryProviderQualificationStatus.NOT_QUALIFIED
     else:
         status = MemoryProviderQualificationStatus.QUALIFIED
+    reason_codes = tuple(
+        sorted(
+            {
+                *coverage_reasons,
+                *{
+                    item.reason_code
+                    for item in check_results
+                    if not item.passed and item.reason_code is not None
+                },
+            },
+            key=lambda code: code.value,
+        )
+    )
     return MemoryProviderCapabilityQualification(
         capability=capability,
         status=status,
@@ -226,6 +231,7 @@ class MemoryProviderQualificationRunner:
     extra_entity_temporal_checks: tuple[EntityTemporalMemoryStoreQualificationCheck, ...] = ()
     extra_procedure_checks: tuple[ProcedureMemoryStoreQualificationCheck, ...] = ()
     extra_long_horizon_checks: tuple[LongHorizonMemoryStoreQualificationCheck, ...] = ()
+    extra_session_turn_index_checks: tuple[SessionTurnIndexStoreQualificationCheck, ...] = ()
     observability: MemoryDiagnosticEmitter = field(
         default_factory=default_memory_diagnostic_emitter
     )
@@ -326,11 +332,21 @@ class MemoryProviderQualificationRunner:
             factory = factories.user_profile_store
             if factory is None:
                 return None
-            checks = _merge_checks_by_id(
+            checks = merge_canonical_and_extra_checks(
                 default_user_profile_checks(),
                 self.extra_user_profile_checks,
                 id_of=lambda c: c.check_id,
             )
+            if not checks:
+                return _capability_status(
+                    capability=capability,
+                    check_results=(),
+                    materialization_blocked=False,
+                    factory_missing=False,
+                    descriptor_unsupported=False,
+                    required_capability=required_capability,
+                    coverage_missing=True,
+                )
 
             async def _run_user_profile(inst: UserProfileStore) -> list[MemoryProviderCheckResult]:
                 return [await check.run(inst, context) for check in checks]
@@ -354,11 +370,21 @@ class MemoryProviderQualificationRunner:
             factory = factories.entity_temporal_memory_store
             if factory is None:
                 return None
-            checks = _merge_checks_by_id(
+            checks = merge_canonical_and_extra_checks(
                 default_entity_temporal_checks(),
                 self.extra_entity_temporal_checks,
                 id_of=lambda c: c.check_id,
             )
+            if not checks:
+                return _capability_status(
+                    capability=capability,
+                    check_results=(),
+                    materialization_blocked=False,
+                    factory_missing=False,
+                    descriptor_unsupported=False,
+                    required_capability=required_capability,
+                    coverage_missing=True,
+                )
 
             async def _run_entity(
                 inst: EntityTemporalMemoryStore,
@@ -384,11 +410,21 @@ class MemoryProviderQualificationRunner:
             factory = factories.procedure_memory_store
             if factory is None:
                 return None
-            checks = _merge_checks_by_id(
+            checks = merge_canonical_and_extra_checks(
                 default_procedure_checks(),
                 self.extra_procedure_checks,
                 id_of=lambda c: c.check_id,
             )
+            if not checks:
+                return _capability_status(
+                    capability=capability,
+                    check_results=(),
+                    materialization_blocked=False,
+                    factory_missing=False,
+                    descriptor_unsupported=False,
+                    required_capability=required_capability,
+                    coverage_missing=True,
+                )
 
             async def _run_procedure(
                 inst: ProcedureMemoryStore,
@@ -414,11 +450,21 @@ class MemoryProviderQualificationRunner:
             factory = factories.long_horizon_memory_store
             if factory is None:
                 return None
-            checks = _merge_checks_by_id(
+            checks = merge_canonical_and_extra_checks(
                 default_long_horizon_checks(),
                 self.extra_long_horizon_checks,
                 id_of=lambda c: c.check_id,
             )
+            if not checks:
+                return _capability_status(
+                    capability=capability,
+                    check_results=(),
+                    materialization_blocked=False,
+                    factory_missing=False,
+                    descriptor_unsupported=False,
+                    required_capability=required_capability,
+                    coverage_missing=True,
+                )
 
             async def _run_long_horizon(
                 inst: LongHorizonMemoryStore,
@@ -444,11 +490,26 @@ class MemoryProviderQualificationRunner:
             factory = factories.session_turn_index_store
             if factory is None:
                 return None
+            checks = merge_canonical_and_extra_checks(
+                default_session_turn_index_checks(),
+                self.extra_session_turn_index_checks,
+                id_of=lambda c: c.check_id,
+            )
+            if not checks:
+                return _capability_status(
+                    capability=capability,
+                    check_results=(),
+                    materialization_blocked=False,
+                    factory_missing=False,
+                    descriptor_unsupported=False,
+                    required_capability=required_capability,
+                    coverage_missing=True,
+                )
 
             async def _run_session_turn_index(
-                _inst: SessionTurnIndexStore,
+                inst: SessionTurnIndexStore,
             ) -> list[MemoryProviderCheckResult]:
-                return []
+                return [await check.run(inst, context) for check in checks]
 
             check_results, materialization_blocked = await _qualify_typed_capability(
                 capability=capability,

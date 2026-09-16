@@ -193,7 +193,7 @@ async def test_reference_in_memory_user_profile_qualifies() -> None:
     assert result.status is MemoryProviderQualificationStatus.QUALIFIED
     cap = result.capability_results[0]
     assert cap.checks_failed == 0
-    assert cap.checks_executed >= 5
+    assert cap.checks_executed >= 6
 
 
 @pytest.mark.asyncio

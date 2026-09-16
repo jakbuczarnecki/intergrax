@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Protocol
 from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryStore
 from intergrax.memory.contracts.long_horizon_memory import LongHorizonMemoryStore
 from intergrax.memory.contracts.procedural_memory import ProcedureMemoryStore
+from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
 
 if TYPE_CHECKING:
     from intergrax.memory.user_profile_store import UserProfileStore
@@ -31,6 +32,7 @@ __all__ = [
     "EntityTemporalMemoryStoreQualificationCheck",
     "ProcedureMemoryStoreQualificationCheck",
     "LongHorizonMemoryStoreQualificationCheck",
+    "SessionTurnIndexStoreQualificationCheck",
     "validate_memory_provider_descriptor",
     "validate_memory_provider_qualification_request",
 ]
@@ -69,6 +71,8 @@ class MemoryProviderQualificationFailureReason(str, Enum):
     PLUGIN_LOAD_FAILURE = "plugin_load_failure"
     CLEANUP_FAILURE = "cleanup_failure"
     MATERIALIZATION_FAILURE = "materialization_failure"
+    QUALIFICATION_COVERAGE_MISSING = "qualification_coverage_missing"
+    SOURCE_FIDELITY_FAILURE = "source_fidelity_failure"
 
 
 class MemoryProviderCheckSeverity(str, Enum):
@@ -176,6 +180,14 @@ class LongHorizonMemoryStoreQualificationCheck(MemoryProviderQualificationCheckM
     async def run(
         self,
         instance: LongHorizonMemoryStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult: ...
+
+
+class SessionTurnIndexStoreQualificationCheck(MemoryProviderQualificationCheckMetadata, Protocol):
+    async def run(
+        self,
+        instance: SessionTurnIndexStore,
         context: MemoryProviderQualificationContext,
     ) -> MemoryProviderCheckResult: ...
 
