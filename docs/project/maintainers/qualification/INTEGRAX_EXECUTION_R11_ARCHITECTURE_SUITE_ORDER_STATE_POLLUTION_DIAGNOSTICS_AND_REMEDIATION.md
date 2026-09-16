@@ -228,7 +228,7 @@ Session artifacts only under `.tmp/session/r11/` (gitignored).
 
 ## Commit SHA
 
-*(filled after commit)*
+`534e91aaa4fcfb74cc7d3ac6640c4fab480abd2f`
 
 ## Final Verdict
 
