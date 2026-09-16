@@ -13,6 +13,10 @@ from applications.governed_contractor_application.host.collaborative_work_bounda
     build_external_work_authorization_boundary,
     default_external_work_decision_requirement_policy,
 )
+from applications.governed_contractor_application.tests.host.gr6_collaborative_work_test_support import (
+    gr6_fixture_authority_clock,
+    gr6_seeded_collaborative_work_repositories,
+)
 from external_contractor_adapter.external_work_adapter import (
     META_CORRELATION_ID,
     META_IDEMPOTENCY_KEY,
@@ -97,11 +101,15 @@ def _runtime_policy() -> DeterministicMeaningfulSideEffectPolicy:
 
 
 def _production_boundary(task_id):
-    return build_external_work_authorization_boundary(
-        _runtime_policy(),
+    repositories = gr6_seeded_collaborative_work_repositories(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
+    )
+    return build_external_work_authorization_boundary(
+        _runtime_policy(),
+        collaborative_work_repositories=repositories,
+        authority_clock=gr6_fixture_authority_clock,
         task_scope=StaticActiveTaskScope(task_id),
     )
 
@@ -232,11 +240,15 @@ def test_production_boundary_create_remains_not_required() -> None:
 def test_production_composition_accepts_injected_permissive_policy() -> None:
     task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
     fake = DeterministicExternalWorkFake()
-    boundary = build_external_work_authorization_boundary(
-        _runtime_policy(),
+    repositories = gr6_seeded_collaborative_work_repositories(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
+    )
+    boundary = build_external_work_authorization_boundary(
+        _runtime_policy(),
+        collaborative_work_repositories=repositories,
+        authority_clock=gr6_fixture_authority_clock,
         decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
         task_scope=StaticActiveTaskScope(task_id),
     )

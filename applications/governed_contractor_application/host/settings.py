@@ -13,6 +13,7 @@ from intergrax.contracts.decision_requirement_policy import DecisionRequirementP
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
 from intergrax.fastapi_core.config import ApiEnvironment
+from intergrax.collaborative_work.persistence import CollaborativeWorkMaterializedRepositories
 from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
@@ -75,6 +76,7 @@ class GovernedContractorBackendSettings(IntergraxApplicationSettingsBase):
     ) = None
     decision_requirement_policy: DecisionRequirementPolicy | None = None
     runtime_policy_bundle: ImmutableRuntimePolicyBundle | None = None
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None
     host_attestor: HostAttestor | None = None
     attestation_required: bool = False
 

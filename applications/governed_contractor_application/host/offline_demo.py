@@ -24,8 +24,8 @@ from external_contractor_adapter.external_work_adapter import (
     META_WORKSPACE_REF,
     ExternalWorkAdapter,
 )
-from applications.governed_contractor_application.host.collaborative_work_boundary import (
-    build_external_work_authorization_boundary,
+from applications.governed_contractor_application.host.collaborative_work_local_fixture import (
+    build_seeded_in_memory_external_work_authorization_boundary,
 )
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
@@ -255,7 +255,7 @@ def run_offline_governed_contractor_demo(
     bundle = build_demo_policy_bundle()
     policy = RuntimePolicyBundleEvaluator(bundle, clock=lambda: _T0)
     fake = DeterministicExternalWorkFake()
-    authorization_boundary = build_external_work_authorization_boundary(
+    authorization_boundary = build_seeded_in_memory_external_work_authorization_boundary(
         policy,
         tenant_id="offline-demo-tenant",
         workspace_id="workspace-a",

@@ -21,6 +21,11 @@ from governed_contractor_application.host.stores import (
     PolicyBundleArtifactStore,
     ProofReceiptStore,
 )
+from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkMaterializedRepositories,
+    CollaborativeWorkRepositories,
+    collaborative_work_core_repositories,
+)
 from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
@@ -76,6 +81,19 @@ def resolve_production_decision_requirement_policy(
     return policy
 
 
+def resolve_production_collaborative_work_repositories(
+    settings: GovernedContractorBackendSettings,
+) -> CollaborativeWorkRepositories:
+    bundle = settings.collaborative_work_repositories
+    if bundle is None:
+        raise ValueError(
+            "production external work requires settings.collaborative_work_repositories "
+            "(CollaborativeWorkMaterializedRepositories); inject authoritative repository "
+            "state at composition time",
+        )
+    return collaborative_work_core_repositories(bundle)
+
+
 def build_governed_external_work_production_runtime(
     integration: ExternalWorkIntegration,
     *,
@@ -86,6 +104,7 @@ def build_governed_external_work_production_runtime(
     capabilities: ExternalWorkProviderCapabilities,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
     policy_bundle: ImmutableRuntimePolicyBundle,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories,
     execution_store: GovernedExecutionStore,
     receipt_store: ProofReceiptStore,
     bundle_store: PolicyBundleArtifactStore,
@@ -104,11 +123,10 @@ def build_governed_external_work_production_runtime(
         bundle,
         clock=clock or (lambda: _PRODUCTION_POLICY_ISSUED_AT),
     )
+    cw_repositories = collaborative_work_core_repositories(collaborative_work_repositories)
     authorization_boundary = build_external_work_authorization_boundary(
         policy_evaluator,
-        tenant_id=tenant_id,
-        workspace_id=workspace_id,
-        principal_id=principal_id,
+        collaborative_work_repositories=cw_repositories,
         decision_requirement_policy=resolved_policy,
         task_scope=task_scope,
     )
@@ -143,9 +161,6 @@ def wire_governed_contractor_production_external_work_settings(
     *,
     integration: ExternalWorkIntegration | None = None,
     task_scope: ActiveExecutionTaskScopePort | None = None,
-    tenant_id: str = "tenant-a",
-    workspace_id: str = "workspace-a",
-    principal_id: str = "u1",
 ) -> GovernedContractorBackendSettings:
     """Apply production meaningful-side-effect boundary slots on host settings."""
     resolved_integration = integration
@@ -161,12 +176,11 @@ def wire_governed_contractor_production_external_work_settings(
 
     bundle = resolve_production_runtime_policy_bundle(settings)
     decision_policy = resolve_production_decision_requirement_policy(settings)
+    cw_repositories = resolve_production_collaborative_work_repositories(settings)
     policy_evaluator = RuntimePolicyBundleEvaluator(bundle)
     boundary = build_external_work_authorization_boundary(
         policy_evaluator,
-        tenant_id=tenant_id,
-        workspace_id=workspace_id,
-        principal_id=principal_id,
+        collaborative_work_repositories=cw_repositories,
         decision_requirement_policy=decision_policy,
         task_scope=task_scope,
     )
@@ -182,6 +196,7 @@ def wire_governed_contractor_production_external_work_settings(
 __all__ = [
     "GovernedExternalWorkProductionRuntime",
     "build_governed_external_work_production_runtime",
+    "resolve_production_collaborative_work_repositories",
     "resolve_production_decision_requirement_policy",
     "resolve_production_runtime_policy_bundle",
     "wire_governed_contractor_production_external_work_settings",

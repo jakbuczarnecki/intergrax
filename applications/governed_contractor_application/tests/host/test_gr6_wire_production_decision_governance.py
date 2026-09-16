@@ -16,6 +16,10 @@ from applications.governed_contractor_application.host.production_external_work_
     build_governed_external_work_production_runtime,
     wire_governed_contractor_production_external_work_settings,
 )
+from applications.governed_contractor_application.tests.host.gr6_collaborative_work_test_support import (
+    gr6_fixture_authority_clock,
+    gr6_seeded_collaborative_work_repositories,
+)
 from external_contractor_adapter.external_work_adapter import (
     META_CORRELATION_ID,
     META_IDEMPOTENCY_KEY,
@@ -282,6 +286,11 @@ def _production_runtime(
 ):
     policy = decision_requirement_policy
     execution_store, receipt_store, bundle_store, continuation_store = _in_memory_stores()
+    cw_repositories = gr6_seeded_collaborative_work_repositories(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        principal_id=_PRINCIPAL,
+    )
     return build_governed_external_work_production_runtime(
         fake,
         tenant_id=_TENANT,
@@ -291,6 +300,7 @@ def _production_runtime(
         capabilities=quote_first_partner_capability_fixture(provider_id=_PROVIDER),
         decision_requirement_policy=policy,  # type: ignore[arg-type]
         policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+        collaborative_work_repositories=cw_repositories,
         execution_store=execution_store,
         receipt_store=receipt_store,
         bundle_store=bundle_store,
@@ -517,6 +527,11 @@ def test_production_runtime_uses_injected_execution_store() -> None:
     task_id, run_id, _, _ = default_gr3_identity_bundle()
     fake = DeterministicExternalWorkFake()
     execution_store, receipt_store, bundle_store, continuation_store = _in_memory_stores()
+    cw_repositories = gr6_seeded_collaborative_work_repositories(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        principal_id=_PRINCIPAL,
+    )
     runtime = build_governed_external_work_production_runtime(
         fake,
         tenant_id=_TENANT,
@@ -525,6 +540,7 @@ def test_production_runtime_uses_injected_execution_store() -> None:
         task_scope=StaticActiveTaskScope(task_id),
         capabilities=quote_first_partner_capability_fixture(provider_id=_PROVIDER),
         policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+        collaborative_work_repositories=cw_repositories,
         execution_store=execution_store,
         receipt_store=receipt_store,
         bundle_store=bundle_store,
@@ -549,11 +565,17 @@ def test_strict_host_composition_wires_agent_boundary_and_integration(
     fake = DeterministicExternalWorkFake()
     bundle = _test_policy_bundle()
     task_scope = StaticActiveTaskScope(mint_task_id())
+    cw_repositories = gr6_seeded_collaborative_work_repositories(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        principal_id=_PRINCIPAL,
+    )
     settings = wire_governed_contractor_production_external_work_settings(
         replace(
             GovernedContractorBackendSettings.from_env(),
             external_work_integration=fake,
             runtime_policy_bundle=bundle,  # type: ignore[arg-type]
+            collaborative_work_repositories=cw_repositories,
         ),
         task_scope=task_scope,
     )
@@ -609,11 +631,31 @@ def test_strict_host_composition_wires_agent_boundary_and_integration(
     assert host_settings.meaningful_side_effect_authorization_boundary is not None
 
 
-def test_production_settings_wire_authorization_boundary_idempotent() -> None:
+def test_production_wire_fails_closed_when_collaborative_work_repositories_missing() -> None:
     fake = DeterministicExternalWorkFake()
     base = replace(
         GovernedContractorBackendSettings.from_env(),
         runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+    )
+    with pytest.raises(ValueError, match="collaborative_work_repositories"):
+        wire_governed_contractor_production_external_work_settings(
+            base,
+            integration=fake,
+            task_scope=StaticActiveTaskScope(mint_task_id()),
+        )
+
+
+def test_production_settings_wire_authorization_boundary_idempotent() -> None:
+    fake = DeterministicExternalWorkFake()
+    cw_repositories = gr6_seeded_collaborative_work_repositories(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        principal_id=_PRINCIPAL,
+    )
+    base = replace(
+        GovernedContractorBackendSettings.from_env(),
+        runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+        collaborative_work_repositories=cw_repositories,
     )
     wired = wire_governed_contractor_production_external_work_settings(
         base,
