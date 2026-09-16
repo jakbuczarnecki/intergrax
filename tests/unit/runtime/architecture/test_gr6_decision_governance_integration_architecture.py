@@ -72,6 +72,14 @@ def test_decision_governed_coordinator_uses_canonical_authorization_boundary() -
     assert "decision_and_execute" not in source
 
 
+def test_canonical_boundary_wires_decision_requirement_policy() -> None:
+    source = (
+        _REPO / "intergrax/runtime/policy/meaningful_side_effect_authorization.py"
+    ).read_text(encoding="utf-8")
+    assert "decision_requirement_policy" in source
+    assert "_enforce_decision_requirement" in source
+
+
 def test_meaningful_side_effect_carries_typed_decision_material_field() -> None:
     source = (_REPO / "intergrax/contracts/meaningful_side_effect.py").read_text(
         encoding="utf-8",
