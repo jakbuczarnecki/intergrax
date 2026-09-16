@@ -11,6 +11,7 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_CANCEL_EXTERNAL_WORK,
     ACTION_CREATE_EXTERNAL_WORK,
 )
+from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
 from intergrax.collaborative_work.in_memory_repository import (
@@ -37,7 +38,11 @@ from intergrax.contracts.collaborative_work import (
     PolicyLayerApplicability,
     WorkspaceMembershipRole,
 )
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.runtime.governance.decision_requirement_policy import (
+    decision_governed_side_effect_requirement_policy,
+)
 from intergrax.runtime.governance.meaningful_side_effect_authorization_composition import (
     build_default_wired_meaningful_side_effect_authorization_boundary,
 )
@@ -54,12 +59,21 @@ _DEFAULT_SCOPE = "external_work.mutate"
 _NOW = datetime(2026, 6, 15, 12, 0, tzinfo=UTC)
 
 
+def default_external_work_decision_requirement_policy() -> DecisionRequirementPolicy:
+    """Production default — quote acceptance requires Decision provenance (GR-6-R2)."""
+    return decision_governed_side_effect_requirement_policy(
+        required_actions=frozenset({ACTION_ACCEPT_QUOTE}),
+    )
+
+
 def build_external_work_authorization_boundary(
     runtime_policy_evaluator: object,
     *,
     tenant_id: str = "tenant-a",
     workspace_id: str = "workspace-a",
     principal_id: str = "u1",
+    decision_requirement_policy: DecisionRequirementPolicy | None = None,
+    task_scope: ActiveExecutionTaskScopePort | None = None,
 ) -> MeaningfulSideEffectAuthorizationBoundary:
     """Construct a canonical boundary for governed-contractor host/demo wiring."""
     membership_repo = InMemoryWorkspaceMembershipRepository()
@@ -125,6 +139,13 @@ def build_external_work_authorization_boundary(
         policy_evaluator=CollaborativePolicyEvaluator(policy_repo),
         runtime_policy_evaluator=runtime_policy_evaluator,  # type: ignore[arg-type]
     )
+    resolved_decision_requirement_policy = (
+        decision_requirement_policy
+        if decision_requirement_policy is not None
+        else default_external_work_decision_requirement_policy()
+    )
     return build_default_wired_meaningful_side_effect_authorization_boundary(
         enforcement_gate=gate,
+        decision_requirement_policy=resolved_decision_requirement_policy,
+        task_scope=task_scope,
     )

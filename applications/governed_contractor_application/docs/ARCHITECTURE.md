@@ -177,6 +177,8 @@ Tier-3 composition root
 
 Quote **receipt** is observational (continuation surface only). Quote **acceptance** is meaningful (`ACCEPT_QUOTE`). Product policy packs / business rules remain deferred - host injects a deterministic evaluator when proving the path.
 
+`build_external_work_authorization_boundary` wires the platform `DecisionRequirementPolicy` contract into `MeaningfulSideEffectAuthorizationBoundary` (GR-6-R2). Production default classifies `ACCEPT_QUOTE` as Decision **required**; callers may inject an alternate policy implementation. Offline demo tooling passes `PermissiveDecisionRequirementPolicy` until Decision-bound accept is composed end-to-end.
+
 ---
 
 ## 7.1 Governed proof profile (GEC-6)

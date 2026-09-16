@@ -27,6 +27,9 @@ from external_contractor_adapter.external_work_adapter import (
 from applications.governed_contractor_application.host.collaborative_work_boundary import (
     build_external_work_authorization_boundary,
 )
+from intergrax.runtime.governance.decision_requirement_policy import (
+    PermissiveDecisionRequirementPolicy,
+)
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
     ACTION_CREATE_EXTERNAL_WORK,
@@ -256,6 +259,7 @@ def run_offline_governed_contractor_demo(
         tenant_id="offline-demo-tenant",
         workspace_id="workspace-a",
         principal_id="offline-demo-user",
+        decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
     )
     adapter = ExternalWorkAdapter(fake, authorization_boundary=authorization_boundary)
     recovery_attestor = build_deterministic_test_attestor(
