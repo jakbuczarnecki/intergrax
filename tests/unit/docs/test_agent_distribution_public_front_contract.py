@@ -57,7 +57,24 @@ def test_public_front_structure() -> None:
     assert "## Core mental model" in front
     assert "AVAILABLE ≠ INSTALLED" in front
     assert "AgentRegistry projection" in front
-    assert "Nexus capability routing" in front
+    assert "Execution Engine public" in front
+    assert "private orchestration" in front.lower()
+
+
+_FORBIDDEN_STALE_PUBLIC_NEXUS_BOUNDARY = (
+    "AgentRegistry → Nexus",
+    "Nexus capability routing (ROUTABLE",
+    "Tier-1 execution / routing",
+    "execution stays on AgentRegistry + Nexus",
+)
+
+
+def test_public_front_does_not_present_nexus_as_public_boundary() -> None:
+    front = _public_front(_read(DOC_PATH))
+    for phrase in _FORBIDDEN_STALE_PUBLIC_NEXUS_BOUNDARY:
+        assert phrase not in front, (
+            f"Public front still presents stale Nexus public-boundary wording: {phrase!r}"
+        )
 
 
 def test_public_front_excludes_maintainer_headlines() -> None:

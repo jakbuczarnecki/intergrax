@@ -10,7 +10,7 @@
 
 ## Goal
 
-Implement the Tier-0 Agent Distribution domain so operators can discover, install, bind, configure, enable, upgrade, rollback, and uninstall agents **without** hot-loading Python, **without** LKW-local stores, and **without** breaking deterministic runtime graphs or Nexus capability routing.
+Implement the Tier-0 Agent Distribution domain so operators can discover, install, bind, configure, enable, upgrade, rollback, and uninstall agents **without** hot-loading Python, **without** LKW-local stores, and **without** breaking deterministic runtime graphs or canonical **Execution Engine** admission/routing semantics (Nexus remains private orchestration inside Execution Engine).
 
 ### Protocol v2 remediation - TIER_LAYER_BOUNDARIES (2026-08-18)
 
@@ -71,7 +71,7 @@ Implement the Tier-0 Agent Distribution domain so operators can discover, instal
 ## Non-goals (program)
 
 - Marketplace billing, reviews, publisher portal
-- Second Nexus or registry
+- Second public execution registry or marketplace-specific routing fork
 - Runtime hot-load
 - LKW-specific installer or persistence
 - Mandating Docker for all topologies

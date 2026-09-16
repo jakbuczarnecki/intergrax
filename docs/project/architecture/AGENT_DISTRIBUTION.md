@@ -1,8 +1,8 @@
 # Agent Distribution and Management
 
-**Intergrax Agent Distribution and Management** is the Tier-0 platform plane that governs how agent packages move from catalog discovery through installation, application binding, deterministic dependency closure, immutable materialization, and activation - before Tier-1 **AgentRegistry** projection and Nexus capability routing answer what is actually running and routable.
+**Intergrax Agent Distribution and Management** is the Tier-0 platform plane that governs how agent packages move from catalog discovery through installation, application binding, deterministic dependency closure, immutable materialization, and activation - before Tier-1 **AgentRegistry** serving projection and the **Execution Engine public execution boundary** answer what is actually running and governable for execution admission.
 
-The domain sits **below** Tier-3 application composition and **above** Tier-1 execution: applications declare defaults and host admin surfaces; Agent Distribution owns durable install/bind/enable state and produces revision-bound runtime artifacts; **AgentRegistry** remains a derived projection; **Nexus** remains capability routing only.
+The domain sits **below** Tier-3 application composition and **above** Tier-1 execution: applications declare defaults and host admin surfaces; Agent Distribution owns durable install/bind/enable state and produces revision-bound runtime artifacts; **AgentRegistry** remains a derived serving projection; **Execution Engine** owns execution admission and capability routing at public contracts; **Nexus** remains **private orchestration inside Execution Engine** only (not a public Agent Distribution API).
 
 ## Why it matters
 
@@ -13,7 +13,7 @@ Without a separate distribution layer, operators and product surfaces collapse d
 - **Application binding ≠ activation** - durable bindings and enablement do not by themselves swap the active runtime revision.
 - **Catalog listing ≠ trusted runnable agent** - trust, provenance, and revocation gates precede production activation.
 - **Runtime must not guess dependency closure** - every activated revision requires a deterministic lock produced from an effective roster, not floating catalog state.
-- **Marketplace must not become a second runtime** - discovery and publisher onboarding are product/catalog surfaces; execution stays on AgentRegistry + Nexus.
+- **Marketplace must not become a second runtime** - discovery and publisher onboarding are product/catalog surfaces; execution enters only through **Execution Engine public contracts** after materialization and activation (not marketplace or private orchestration APIs).
 
 Agent Distribution keeps these steps explicit and authoritative so third-party agents, enterprise catalogs, and future marketplace listings can attach without forking orchestration or hot-loading Python into a live process.
 
@@ -31,7 +31,7 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 
 **Durable reference production lifecycle (EA-01/EA-02):** SQLite-backed store adapters behind existing Tier-0 store protocols prove **durable single-host / multi-process** install → bind → revision → activation → serving with restart recovery, **deterministic projection rehydration**, and CAS semantics. This is **reference durability**, not distributed multi-region HA. Evidence: `tests/integration/agent_distribution/test_enterprise_agent_lifecycle_durable_e2e.py`, `tests/integration/agent_distribution/test_enterprise_projection_rehydration_e2e.py`.
 
-**D. Future marketplace / product surfaces.** [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) is a **future** ecosystem discovery experience - one possible `CatalogSourceProvider` implementation plus publisher onboarding. Billing, reviews, checkout, publisher portal, and marketplace-specific Nexus branches are **not shipped**. Marketplace does not replace Agent Distribution authority, AgentRegistry, or Nexus. AC-4 does **not** require a marketplace backend.
+**D. Future marketplace / product surfaces.** [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) is a **future** ecosystem discovery experience - one possible `CatalogSourceProvider` implementation plus publisher onboarding. Billing, reviews, checkout, publisher portal, and marketplace-specific execution forks are **not shipped**. Marketplace does not replace Agent Distribution authority, AgentRegistry serving projection, or Execution Engine public admission. Marketplace does not import or name Nexus as a lifecycle or routing contract. AC-4 does **not** require a marketplace backend.
 
 > [!NOTE]
 > **Maturity boundary:** AC-1–AC-6 architecture authority is **implemented and frozen** for reference production V1 (final audit: [`maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md`](../maintainers/audits/AGENT_PLATFORM_AC1_AC6_FINAL_ARCHITECTURE_AUDIT.md)). Public product rollout, durable multi-instance production, and commercial marketplace remain **out of scope** for this maturity tier. Frozen architecture documentation is not equivalent to universal production rollout.
@@ -50,10 +50,11 @@ Read this hub in four layers - do not merge them into a single “shipped” hea
 | **Dependency closure** | Effective roster → deterministic resolver → immutable `MaterializedRuntimeLock` |
 | **Materialization** | Topology-abstract adapters produce runtime artifacts from lock + graph - Model B immutability |
 | **Activation** | `RuntimeRevision` swap (PREPARE/READY/COMMIT/DRAIN) - enablement alone is insufficient |
-| **AgentRegistry projection** | Tier-1 **derived** population from materialization - not install-state authority |
-| **Nexus routing** | Capability routing over **ROUTABLE** subset - Distribution MUST NOT add routing branches |
+| **AgentRegistry projection** | Tier-1 **derived** serving population from materialization - not install-state authority |
+| **Execution admission / routing** | **Execution Engine** public boundary over **ROUTABLE** subset - Distribution MUST NOT add routing branches |
+| **Private orchestration** | **Nexus** inside Execution Engine when orchestration strategy applies - not a public AD/marketplace API |
 | **Trust / provenance** | `AgentPackageTrust` parallel to Platform Plugins - fail-closed before activation |
-| **Marketplace relation** | Future catalog/discovery surface only - not execution fork, not second Nexus |
+| **Marketplace relation** | Future catalog/discovery surface only - not execution fork, not second Execution Engine surface |
 | **LKW relation** | Future **consumer** via generic platform APIs - MUST NOT own stores, catalog, or materializer |
 | **AC-4 capability plane** | Task need → resolve → discover → match → select → acquire → delegate → release (§35) |
 | **AC-5 factory authority** | Revision-bound `RuntimeAgentFactoryResolver` → `invoke_canonical_agent_factory(ctx, binding)` (§21) |
@@ -113,11 +114,14 @@ Agents may originate from different catalogs and ownership scopes, but every pro
                                │
                                ▼
                         AGENT REGISTRY
-                    derived runtime projection
+                    derived serving projection
                                │
                                ▼
-                             NEXUS
-                     capability resolution
+              EXECUTION ENGINE PUBLIC BOUNDARY
+                  admission · capability routing
+                               │
+                               ▼
+           private orchestration (Nexus when applicable)
                                │
                                ▼
                   APPLICATIONS / SCENARIOS
@@ -140,7 +144,9 @@ activation (RuntimeRevision)
   ↓
 AgentRegistry projection (MaterializedRegistryProjection)
   ↓
-Nexus capability routing (ROUTABLE agents)
+Execution Engine public execution boundary (ROUTABLE agents)
+  ↓
+private orchestration (Nexus when orchestration strategy applies)
 ```
 
 ### Canonical lifecycle E2E proof
@@ -211,16 +217,18 @@ canonical activation
         ↓
 RuntimeRevision
         ↓
-AgentRegistry
+AgentRegistry (serving projection)
         ↓
-Nexus
+Execution Engine public contracts
+        ↓
+private Nexus orchestration when strategy requires
 ```
 
 ### Agent Manager ≠ Agent Distribution
 
 **Agent Manager** is an **implemented** derived read/control facade over `AgentPlatformAdminService` and canonical lifecycle stores. Operators use it to inspect install/bind/enable/serving state and issue governed mutations; it does **not** own lifecycle authority.
 
-[Agent Marketplace](../overview/AGENT_MARKETPLACE.md) remains a **future** product/discovery surface — convenient listing for discovering packages. Architecturally it is **not** runtime, **not** `AgentRegistry`, **not** Nexus, and **not** lifecycle authority.
+[Agent Marketplace](../overview/AGENT_MARKETPLACE.md) remains a **future** product/discovery surface — convenient listing for discovering packages. Architecturally it is **not** runtime, **not** `AgentRegistry`, **not** Execution Engine public admission, **not** Nexus (private orchestration only), and **not** lifecycle authority.
 
 Agent Manager / Marketplace **MAY** call Tier-0 Agent Distribution services. They **MUST NOT** replace Agent Distribution, fork activation semantics, or become a second path into production runtime.
 
@@ -232,10 +240,11 @@ Agent Manager / Marketplace **MAY** call Tier-0 Agent Distribution services. The
 | -------- | ----------------- | ---- |
 | **Agent Marketplace** (future) | Where do operators discover/list packages? | Product/ecosystem discovery - one catalog provider kind |
 | **Agent Distribution** | What is installed, bound, trusted, locked, materialized, activated? | Tier-0 distribution / activation authority |
-| **AgentRegistry** | What agent instances exist for the active revision? | Tier-1 runtime projection - derived only |
-| **Nexus** | Which agent handles this capability request? | Tier-1 execution / routing - derived only |
+| **AgentRegistry** | What agent instances exist for the active revision? | Tier-1 serving projection - derived only |
+| **Execution Engine** | Who admits work and owns capability routing at the public boundary? | Tier-1 execution authority (contracts / admission) |
+| **Nexus** | How is orchestration topology scheduled when strategy requires it? | Private implementation inside Execution Engine - not a public AD API |
 
-Marketplace MUST NOT replace AgentRegistry, replace Nexus, create a second execution runtime, or bypass activation/trust boundaries. Platform Plugins remain the broader extension/package architecture - Agent Distribution is the **agent-specific** distribution canon; reuse trust patterns only (§10, Platform Plugins §16–§18).
+Marketplace MUST NOT replace AgentRegistry, bypass Execution Engine public admission, create a second execution runtime, or bypass activation/trust boundaries. Platform Plugins remain the broader extension/package architecture - Agent Distribution is the **agent-specific** distribution canon; reuse trust patterns only (§10, Platform Plugins §16–§18).
 
 Orthogonal lifecycle dimensions (normative):
 
@@ -289,7 +298,7 @@ AVAILABLE ≠ INSTALLED ≠ BOUND_TO_APPLICATION ≠ CONFIGURED ≠ ENABLED
 19. [Materialization model](#19-materialization-model)
 20. [Activation and rollback model](#20-activation-and-rollback-model)
 21. [AgentRegistry projection](#21-agentregistry-projection)
-22. [Nexus routing boundary](#22-nexus-routing-boundary)
+22. [Execution Engine admission and routing boundary](#22-nexus-routing-boundary)
 23. [Persistence and source-of-truth matrix](#23-persistence-and-source-of-truth-matrix)
 24. [Concurrency and transaction semantics](#24-concurrency-and-transaction-semantics)
 25. [Failure and recovery semantics](#25-failure-and-recovery-semantics)
@@ -308,7 +317,7 @@ AVAILABLE ≠ INSTALLED ≠ BOUND_TO_APPLICATION ≠ CONFIGURED ≠ ENABLED
 
 ## 1. Purpose and scope
 
-This document is the **canonical architecture** for the Intergrax **Agent Distribution and Management** platform - the Tier-0 plane that separates **catalog availability**, **installation**, **application binding**, **deterministic runtime dependency closure**, **immutable materialization**, and **activation** from Tier-1 **execution** (`AgentRegistry`, Nexus capability routing).
+This document is the **canonical architecture** for the Intergrax **Agent Distribution and Management** platform - the Tier-0 plane that separates **catalog availability**, **installation**, **application binding**, **deterministic runtime dependency closure**, **immutable materialization**, and **activation** from Tier-1 **execution** (`AgentRegistry` serving projection and **Execution Engine** public admission — Nexus is private orchestration only).
 
 **In scope (architecture only):**
 
@@ -371,7 +380,7 @@ AVAILABLE
 | **CONFIGURED** | Binding config validated against agent config contract | Tier-0 Agent Distribution |
 | **ENABLED** | Operator enablement true (policy may override) | Tier-0 Agent Distribution |
 | **REGISTERED_IN_RUNTIME** | Agent instance present in `AgentRegistry` after materialization | Tier-1 runtime (derived) |
-| **ROUTABLE** | Nexus may select agent for capability | Tier-1 routing policy (derived) |
+| **ROUTABLE** | Execution Engine may admit agent for capability at public boundary | Execution Engine routing policy (derived from registry + policy) |
 
 **Normative rule:** no persistence layer may claim a later dimension is true when an earlier required dimension failed (e.g. never `INSTALLED` without verified artifact; never `REGISTERED` without successful activation materialization).
 
@@ -380,10 +389,10 @@ AVAILABLE
 | Invariant | Enforcement |
 |-----------|-------------|
 | Tier-0 distribution ownership | Contracts, verification, installation/binding stores, lock production |
-| Tier-1 `AgentRegistry` execution ownership | Population from materialization only; no install state |
+| Tier-1 `AgentRegistry` projection | Population from materialization only; no install state |
 | Tier-2 reusable agent packages | `AgentContract` + `pyproject.toml` metadata in package |
 | Tier-3 application defaults / admin hosting | Manifest defaults; harness admin API surface |
-| Capability-based Nexus routing | Unchanged - [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §16 |
+| Capability-based routing at Execution Engine public boundary | Unchanged semantics - [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §16; Nexus private when orchestration strategy applies |
 | Immutable production runtime | Model B materialization + activation swap |
 | Minimal runtime graph | [`APPLICATION_RUNTIME_GRAPH_MODEL.md`](APPLICATION_RUNTIME_GRAPH_MODEL.md) |
 | Deterministic dependency closure | §15–§16 - **every activated runtime revision** |
@@ -405,8 +414,9 @@ CatalogSourceProvider
   → CandidateApplicationRuntimeGraph
   → RuntimeMaterialization
   → Activation (RuntimeRevision)
-  → AgentRegistry (projection)
-  → Nexus capability routing (ROUTABLE subset)
+  → AgentRegistry (serving projection)
+  → Execution Engine public execution boundary (ROUTABLE subset)
+  → private orchestration (Nexus when orchestration strategy applies)
 ```
 
 **Authority separation (AGENT-CONSOLIDATION-2):**
@@ -436,14 +446,14 @@ ApplicationManifest (`app_id`, enabled roster bindings)
   → Capability Graph
 ```
 
-Capability Map is a **derived architecture/discovery projection**. It MUST NOT become lifecycle or runtime authority (installation, binding, activation, `RuntimeRevision`, serving state, registry materialization, or Nexus routing).
+Capability Map is a **derived architecture/discovery projection**. It MUST NOT become lifecycle or runtime authority (installation, binding, activation, `RuntimeRevision`, serving state, registry materialization, or Execution Engine admission/routing).
 
 `AgentCapabilityMetadataProvider` and `ApplicationCapabilityMetadataProvider` MUST NOT become activation, routing, or runtime authority. `build_catalog_capability_graph()` has no default agent or application inventory and no default discovery root — callers pass metadata providers, otherwise inventory nodes for that plane are omitted.
 
 Runtime execution remains a separate chain:
 
 ```text
-AgentInstallation → EffectiveRoster → RuntimeRevision → RegistryProjection → AgentRegistry → Nexus
+AgentInstallation → EffectiveRoster → RuntimeRevision → RegistryProjection → AgentRegistry → Execution Engine public boundary → private orchestration (Nexus when applicable)
 ```
 
 **Marketplace** is one **future** `CatalogSourceProvider` implementation only - not a runtime fork.
@@ -455,7 +465,8 @@ AgentInstallation → EffectiveRoster → RuntimeRevision → RegistryProjection
 ```text
 Tier-0  intergrax/agent_distribution/          distribution contracts, trust, stores (interfaces),
                                               dependency lock producer, catalog provider interfaces
-Tier-1  intergrax/runtime/registry/          AgentRegistry, routing policy, Nexus (unchanged spine)
+Tier-1  intergrax/runtime/                  Execution Engine public layer (contracts, admission, routing boundary)
+                                              AgentRegistry serving projection; private orchestration (Nexus when applicable)
 Tier-2  agents/<slug>/                       AgentContract, package metadata, agent pyproject
 Tier-3  applications/<app>/                ApplicationManifest defaults, host admin routes, env profiles
 ```
@@ -469,8 +480,9 @@ Tier-3  applications/<app>/                ApplicationManifest defaults, host ad
 | Dependency resolution + lock | Tier-0 coordinator | Consumes effective roster + declarations |
 | `CandidateApplicationRuntimeGraph` | Shared util (`application_runtime_graph.py` extended) | Pre-activation simulation |
 | `RuntimeRevision` / activation | Tier-0 + Tier-3 host orchestration | Atomic from application perspective |
-| `AgentRegistry` | Tier-1 | Derived execution index |
-| Nexus routing | Tier-1 | `find_by_capability` unchanged |
+| `AgentRegistry` | Tier-1 | Derived serving projection / execution index |
+| Execution admission / capability routing | Execution Engine (Tier-1 public boundary) | Registry-backed capability match; policy unchanged |
+| Private orchestration (Nexus) | Execution Engine implementation | Not a public Agent Distribution or marketplace contract |
 | `ApplicationManifest.agents` | Tier-3 release artifact | Default roster template only |
 | Admin API routes | Tier-3 host | Calls Tier-0 services - shared across apps |
 
@@ -1015,7 +1027,7 @@ logical_agent_id = binding.contract_id
 |----------|----------|
 | Duplicate `logical_agent_id` in durable store | Reject write - fail closed |
 | Two `default=true` after merge | Merge fails; activation blocked |
-| Duplicate capability across enabled agents | Allowed; Nexus routing uses registry + policy - document in capability graph; merge emits **warning** evidence |
+| Duplicate capability across enabled agents | Allowed; Execution Engine routing uses registry + policy - document in capability graph; merge emits **warning** evidence |
 | Manifest agent + tombstone | Excluded from effective roster |
 | Enabled binding → missing installation | Merge fails closed for activation |
 
@@ -1647,20 +1659,25 @@ Remediation tracked as **AGSYS-IDENTITY-PROJECTION** in [plan](../maintainers/pl
 
 ---
 
-## 22. Nexus routing boundary
+<a id="22-nexus-routing-boundary"></a>
 
-Unchanged normative invariant from §16:
+## 22. Execution Engine admission and routing boundary
 
-- Nexus selects by **capability** → `AgentRegistry.find_by_capability`.
+Normative invariant from §16 and Execution Engine canon ([`EXECUTION_ENGINE.md`](../maintainers/architecture/EXECUTION_ENGINE.md)):
+
+- **Execution Engine** owns execution admission and capability routing at the **public execution boundary** — consumers use platform contracts, not private orchestration implementations.
+- Capability match is registry-backed: `AgentRegistry.find_by_capability` under Execution-owned admission semantics.
 - **ROUTABLE** ⊆ **REGISTERED** agents passing `evaluate_agent_routing` (lifecycle, certification, production mode).
+- **Nexus** schedules orchestration topology **inside** Execution Engine when orchestration strategy applies — not a public Agent Distribution or marketplace API.
 
-Distribution plane MUST NOT add marketplace-specific routing branches or second Nexus.
+Distribution plane MUST NOT add marketplace-specific routing branches or a second public execution surface.
 
 ```text
 Task.required_capability
+  → Execution Engine public admission (registry-backed capability match)
   → AgentRegistry.find_by_capability
   → evaluate_agent_routing(contract)
-  → agent.run()
+  → governed agent execution (private Nexus orchestration only when orchestration strategy applies)
 ```
 
 Install/enable/disable affects routing only after **BUILD/APPLY + ACTIVATE** (traffic commit) for the target `application_environment_id`. Desired-state changes alone never mutate the live registry.
@@ -1763,12 +1780,12 @@ LKW (`local_workspace_application`) remains **consumer only**.
 | Present Discover / Install / Configure / Enable / Disable / Upgrade / Rollback / Uninstall UX | Own `AgentInstallationStore` |
 | Call **generic** platform harness admin APIs | Implement `CatalogSourceProvider` |
 | Prove end-to-end capability routing after platform materialization | Own materializer or resolver |
-| Keep `GET /v1/local_workspace/agents` as registry introspection | Fork Nexus or registry |
+| Keep `GET /v1/local_workspace/agents` as registry introspection | Fork Execution Engine admission or registry |
 
 **Future proof journey:**
 
 ```text
-discover → install → bind/configure → enable → invoke (Nexus) → disable → upgrade/rollback → uninstall
+discover → install → bind/configure → enable → invoke (Execution Engine public boundary) → disable → upgrade/rollback → uninstall
 ```
 
 All transitions invoke **platform-owned** capabilities - identical API surface for other Tier-3 apps.
@@ -1783,7 +1800,7 @@ All transitions invoke **platform-owned** capabilities - identical API surface f
 | Digest-pinned install + lock | Publisher portal |
 | Trust / revocation pipeline | Recommendation engine |
 | Org private catalog provider | LKW-specific store |
-| Neutral installation plane | Marketplace Nexus branch |
+| Neutral installation plane | Marketplace execution fork |
 
 Marketplace = **catalog provider + publisher onboarding** - not execution fork.
 
@@ -1840,7 +1857,7 @@ Built-in monorepo agents map to `builtin_package_ref` until explicit install rec
 
 - Production code (AP-3+)
 - LKW-local stores or marketplace product
-- Second Nexus or execution registry
+- Second public execution registry or marketplace-specific routing fork
 - Runtime hot-load of arbitrary agent code
 - Marketplace billing / commercial workflows
 - Replacing `AgentContract` or capability routing
@@ -1938,7 +1955,7 @@ bootstrap_production_registry_projection()
       → ApplicationEnvironmentServingStore.get_serving_record()
       → RuntimeRegistryProjectionStore.get(revision_id)
       → MaterializedRegistryProjection
-      → HarnessHostRuntime / Nexus
+      → HarnessHostRuntime (Execution Engine public serving consumer)
 ```
 
 Host MUST NOT activate, project, select latest revision, rebuild registry, or mutate serving pointer.
@@ -2162,10 +2179,10 @@ AC-3 Agent Lifecycle (AgentPlatformAdminService)
         │
         │ ACTIVE registry projection
         ▼
-Tier-1 Runtime / Nexus
+Execution Engine public boundary
         │
         ▼
-Execution (ChildExecutionRunner for delegated work)
+Execution (ChildExecutionRunner for delegated work; private Nexus orchestration when strategy applies)
 
 Side boundary:
   SpecialistInvocationPort = application/plugin-specific execution adapter
@@ -2427,7 +2444,7 @@ Shared `ProductionProcessComposition` remains application-neutral.
 11. Production composition uses one AC-3 universe.
 12. Specialist invocation is typed plugin boundary.
 13. Registry is derived projection (§21).
-14. Nexus is routing, not lifecycle (§22).
+14. Execution Engine owns admission/routing at public boundary; Nexus is private orchestration, not lifecycle (§22).
 15. Marketplace is discovery/product surface only — not lifecycle owner.
 
 ### 35.27 Frozen extension rule
@@ -2454,7 +2471,7 @@ Selection and delegation evidence carry sufficient source-qualified identity for
 
 ### 35.30 Marketplace boundary
 
-Marketplace may become a `CatalogSourceProvider` / discovery source. AC-4 does **not** require marketplace. Marketplace does **not** own installation, runtime, registry, Nexus, or lifecycle.
+Marketplace may become a `CatalogSourceProvider` / discovery source. AC-4 does **not** require marketplace. Marketplace does **not** own installation, runtime, registry, Execution Engine admission, or lifecycle.
 
 ---
 
@@ -2488,7 +2505,7 @@ Dynamic acquisition enters at **DISCOVER/RESOLVE** only — never via alternate 
 | Factory resolution | `RuntimeAgentFactoryResolver` |
 | Registry projection | revision-bound `build_application_registry` / projection coordinator |
 | Traffic activation | `ActivationService` |
-| Capability routing | Nexus |
+| Capability routing / execution admission | Execution Engine (public boundary) |
 | Active revocation | `AgentEmergencyRevocationService` → `ActivationService.rollback()` |
 | Process root | `ProductionProcessComposition` |
 
@@ -2544,8 +2561,8 @@ flowchart TB
   end
   AD[Agent Distribution authority]
   RP[Runtime projection]
-  EX[Execution Nexus]
-  sources --> AD --> RP --> EX
+  EE[Execution Engine public boundary]
+  sources --> AD --> RP --> EE
 ```
 
 ### Lifecycle authority chain
