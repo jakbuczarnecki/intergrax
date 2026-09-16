@@ -39,6 +39,7 @@ __all__ = [
     "emit_lifecycle_terminal",
     "emit_reconciliation_terminal",
     "emit_compaction_terminal",
+    "emit_entity_projection_terminal",
     "emit_procedural_terminal",
     "scope_identity_fields",
     "governance_diagnostic_outcome",
@@ -122,6 +123,38 @@ def emit_control_plane_terminal(
             revision=revision,
             failure_class=failure_class,
             duration_seconds=duration_seconds,
+        )
+    )
+
+
+def emit_entity_projection_terminal(
+    emitter: MemoryDiagnosticEmitter,
+    *,
+    tenant_id: str,
+    user_id: str | None,
+    workspace_id: str | None,
+    operation: MemoryDiagnosticOperation,
+    outcome: MemoryDiagnosticOutcome,
+    memory_id: str | None = None,
+    revision: int | None = None,
+    projection_id: str | None = None,
+    failure_class: MemoryDiagnosticFailureClass | None = None,
+) -> None:
+    emitter.emit(
+        MemoryDiagnosticEvent(
+            event_id=emitter.new_event_id(),
+            reference_time_iso=emitter.reference_time_iso(),
+            operation=operation,
+            phase=MemoryDiagnosticPhase.PROJECTION,
+            outcome=outcome,
+            component=MemoryDiagnosticComponent.ENTITY_TEMPORAL,
+            tenant_id=tenant_id,
+            user_id=user_id,
+            workspace_id=workspace_id,
+            memory_id=memory_id,
+            revision=revision,
+            projection_id=projection_id,
+            failure_class=failure_class,
         )
     )
 

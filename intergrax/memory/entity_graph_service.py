@@ -11,6 +11,7 @@ from intergrax.memory.contracts.entity_temporal_memory import (
     EntityTemporalMemoryStore,
 )
 from intergrax.memory.entity_memory_indexing import DefaultEntityMemoryIndexer
+from intergrax.memory.memory_diagnostic_emitter import MemoryDiagnosticEmitter
 from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
 from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
 
@@ -24,12 +25,14 @@ class EntityGraphMemoryService:
         *,
         security_governance: MemorySecurityGovernanceService,
         indexer: EntityMemoryIndexer | None = None,
+        diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
     ) -> None:
         self._store = store
         self._security_governance = security_governance
         self._indexer = indexer or DefaultEntityMemoryIndexer(
             store,
             security_governance=security_governance,
+            diagnostic_emitter=diagnostic_emitter,
         )
 
     @property

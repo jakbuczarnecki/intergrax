@@ -5,9 +5,15 @@
 from __future__ import annotations
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications._shared.memory_observability_wiring import (
+    resolve_memory_diagnostic_emitter,
+)
 from intergrax.applications._shared.memory_security_governance_wiring import (
     resolve_memory_security_governance_service,
 )
+from intergrax.memory.contracts.memory_observability import MemoryObservabilitySink
+from intergrax.memory.entity_memory_indexing import DefaultEntityMemoryIndexer
+from intergrax.memory.memory_diagnostic_emitter import MemoryDiagnosticEmitter
 from intergrax.memory.contracts.entity_temporal_memory import (
     EntityTemporalMemoryCapability,
     EntityTemporalMemoryStore,
@@ -56,17 +62,52 @@ def resolve_entity_temporal_memory_capability(
     env: ApplicationEnvironmentProfile,
     *,
     security_governance: MemorySecurityGovernanceService | None = None,
+    memory_observability_sink: MemoryObservabilitySink | None = None,
+    memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
+    store: EntityTemporalMemoryStore | None = None,
 ) -> EntityTemporalMemoryCapability | None:
     """Materialize governed entity/temporal read capability when enabled."""
-    store = resolve_entity_temporal_memory_store(env)
-    if store is None:
+    resolved_store = store if store is not None else resolve_entity_temporal_memory_store(env)
+    if resolved_store is None:
         return None
+    emitter = resolve_memory_diagnostic_emitter(
+        sink=memory_observability_sink,
+        emitter=memory_diagnostic_emitter,
+    )
     governance = resolve_memory_security_governance_service(
         security_governance=security_governance,
+        memory_diagnostic_emitter=emitter,
     )
     return EntityTemporalMemoryService(
-        _store=store,
+        _store=resolved_store,
         _security_governance=governance,
+    )
+
+
+def resolve_entity_memory_indexer(
+    env: ApplicationEnvironmentProfile,
+    *,
+    security_governance: MemorySecurityGovernanceService | None = None,
+    memory_observability_sink: MemoryObservabilitySink | None = None,
+    memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
+    store: EntityTemporalMemoryStore | None = None,
+) -> DefaultEntityMemoryIndexer | None:
+    """Materialize governed entity projection indexer when entity memory is enabled."""
+    resolved_store = store if store is not None else resolve_entity_temporal_memory_store(env)
+    if resolved_store is None:
+        return None
+    emitter = resolve_memory_diagnostic_emitter(
+        sink=memory_observability_sink,
+        emitter=memory_diagnostic_emitter,
+    )
+    governance = resolve_memory_security_governance_service(
+        security_governance=security_governance,
+        memory_diagnostic_emitter=emitter,
+    )
+    return DefaultEntityMemoryIndexer(
+        resolved_store,
+        security_governance=governance,
+        diagnostic_emitter=emitter,
     )
 
 
