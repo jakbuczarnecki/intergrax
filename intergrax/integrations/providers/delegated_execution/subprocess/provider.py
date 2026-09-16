@@ -184,6 +184,7 @@ class SubprocessDelegatedExecutionProvider(
                 self._transport.roundtrip,
                 wire,
                 timeout_seconds=self._config.request_timeout_seconds,
+                connect_timeout_seconds=self._config.connect_timeout_seconds,
             )
         except DelegatedExecutionPostDispatchTransportError:
             return _outcome_unknown(
@@ -216,6 +217,7 @@ class SubprocessDelegatedExecutionProvider(
                 provider_operation_id=provider_operation_id,
             )
 
+        if response.status is WorkerResponseStatus.ERROR:
             code = (response.error_code or "PROVIDER_FAILURE").strip()
             return delegated_failure_outcome(
                 category=DelegatedExecutionOutcomeCategory.PROVIDER_FAILURE,
@@ -255,6 +257,24 @@ class SubprocessDelegatedExecutionProvider(
                 invocation_id=invocation_id,
             )
         except DelegatedExecutionContractError:
+            return delegated_failure_outcome(
+                category=DelegatedExecutionOutcomeCategory.PLATFORM_FAILURE,
+                failure_code="OUTCOME_CONTRACT_MISMATCH",
+                failure_message=_CONTRACT_MISMATCH_MESSAGE,
+                provider_invocation=invocation,
+                provider_outcome=_failed_outcome(
+                    invocation_id=invocation_id,
+                    started_at=started_at,
+                    error_code="OUTCOME_CONTRACT_MISMATCH",
+                    provider_request_id=provider_request_id,
+                    provider_operation_id=provider_operation_id,
+                ),
+            )
+
+        if (
+            response.provider_request_id != provider_request_id
+            or response.provider_operation_id != provider_operation_id
+        ):
             return delegated_failure_outcome(
                 category=DelegatedExecutionOutcomeCategory.PLATFORM_FAILURE,
                 failure_code="OUTCOME_CONTRACT_MISMATCH",
@@ -313,6 +333,7 @@ class SubprocessDelegatedExecutionProvider(
             self._transport.roundtrip,
             wire,
             timeout_seconds=self._config.request_timeout_seconds,
+            connect_timeout_seconds=self._config.connect_timeout_seconds,
         )
         if response.status is WorkerResponseStatus.ERROR:
             raise DelegatedExecutionTransportError("status read failed")
@@ -342,6 +363,7 @@ class SubprocessDelegatedExecutionProvider(
             self._transport.roundtrip,
             wire,
             timeout_seconds=self._config.request_timeout_seconds,
+            connect_timeout_seconds=self._config.connect_timeout_seconds,
         )
         if response.status is WorkerResponseStatus.ERROR:
             if response.error_code == "NOT_FOUND":
@@ -384,6 +406,7 @@ class SubprocessDelegatedExecutionProvider(
                 self._transport.roundtrip,
                 wire,
                 timeout_seconds=self._config.request_timeout_seconds,
+                connect_timeout_seconds=self._config.connect_timeout_seconds,
             )
         except DelegatedExecutionTransportError:
             return delegated_control_outcome(
@@ -422,7 +445,8 @@ class SubprocessDelegatedExecutionProvider(
         response = await asyncio.to_thread(
             self._transport.roundtrip,
             wire,
-            timeout_seconds=self._config.connect_timeout_seconds,
+            timeout_seconds=self._config.request_timeout_seconds,
+            connect_timeout_seconds=self._config.connect_timeout_seconds,
         )
         return int(response.execute_count or 0)
 

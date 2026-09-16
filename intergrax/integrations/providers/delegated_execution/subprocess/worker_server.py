@@ -42,6 +42,7 @@ class _OperationRecord:
     execution_id: str
     physical_status: _PhysicalStatus
     result_value: str | None = None
+    status_spoof_field: str | None = None
 
 
 @dataclass
@@ -116,11 +117,18 @@ def handle_worker_request(state: WorkerState, raw: bytes) -> WorkerResponse | No
                 code="NOT_FOUND",
                 message="operation not found",
             )
+        spoof = record.status_spoof_field
+        req_id = record.provider_request_id
+        op_id_out = record.provider_operation_id
+        if spoof == "provider_request_id":
+            req_id = "spoof-req"
+        elif spoof == "provider_operation_id":
+            op_id_out = "spoof-op"
         return WorkerResponse(
             request_id=request.request_id,
             status=WorkerResponseStatus.OK,
-            provider_request_id=record.provider_request_id,
-            provider_operation_id=record.provider_operation_id,
+            provider_request_id=req_id,
+            provider_operation_id=op_id_out,
             physical_status=record.physical_status.value,
         )
 
@@ -196,12 +204,37 @@ def handle_worker_request(state: WorkerState, raw: bytes) -> WorkerResponse | No
             state.execute_count += 1
         return None
 
+    if behavior == "error_auth_rejected":
+        return _error_response(
+            request.request_id,
+            code="AUTH_REJECTED",
+            message="auth rejected",
+        )
+    if behavior == "error_invalid_request":
+        return _error_response(
+            request.request_id,
+            code="INVALID_REQUEST",
+            message="invalid execute request",
+        )
+    if behavior == "error_capacity":
+        return _error_response(
+            request.request_id,
+            code="CAPACITY_EXCEEDED",
+            message="worker at capacity",
+        )
+
     provider_request_id = request.provider_request_id or f"sub-req-{uuid.uuid4().hex}"
     provider_operation_id = request.provider_operation_id or f"sub-op-{uuid.uuid4().hex}"
     invocation_id = request.invocation_id or f"sub-inv-{uuid.uuid4().hex}"
 
     if behavior == "spoof_execution_id":
         provider_request_id = request.execution_id
+
+    if behavior == "spoof_provider_request_id":
+        provider_request_id = "spoof-req-id"
+
+    if behavior == "spoof_provider_operation_id":
+        provider_operation_id = "spoof-op-id"
 
     if behavior == "invalid_response":
         raise ValueError("worker forced invalid response path")
@@ -229,6 +262,11 @@ def handle_worker_request(state: WorkerState, raw: bytes) -> WorkerResponse | No
             invocation_id=invocation_id,
             execution_id=request.execution_id,
             physical_status=_PhysicalStatus.RUNNING,
+            status_spoof_field=(
+                "provider_request_id"
+                if behavior == "status_spoof_provider_request_id"
+                else None
+            ),
         )
         with state.lock:
             state.operations[provider_operation_id] = record

@@ -43,7 +43,13 @@ class SubprocessDelegatedExecutionTransport(Protocol):
     def port(self) -> int:
         ...
 
-    def roundtrip(self, request: WorkerRequest, *, timeout_seconds: float) -> WorkerResponse:
+    def roundtrip(
+        self,
+        request: WorkerRequest,
+        *,
+        timeout_seconds: float,
+        connect_timeout_seconds: float | None = None,
+    ) -> WorkerResponse:
         ...
 
     def close(self) -> None:
@@ -93,15 +99,26 @@ class TcpSubprocessDelegatedExecutionTransport(SubprocessDelegatedExecutionTrans
         port = int(port_line.strip().removeprefix("PORT="))
         return cls(_host="127.0.0.1", _port=port, _process=process)
 
-    def roundtrip(self, request: WorkerRequest, *, timeout_seconds: float) -> WorkerResponse:
+    def roundtrip(
+        self,
+        request: WorkerRequest,
+        *,
+        timeout_seconds: float,
+        connect_timeout_seconds: float | None = None,
+    ) -> WorkerResponse:
         payload = json.dumps(request.model_dump(mode="json"), separators=(",", ":")).encode("utf-8")
         if len(payload) > _MAX_FRAME_BYTES:
             raise DelegatedExecutionTransportError("request frame too large")
+        connect_to = (
+            connect_timeout_seconds
+            if connect_timeout_seconds is not None
+            else timeout_seconds
+        )
         dispatched = False
         try:
             with socket.create_connection(
                 (self._host, self._port),
-                timeout=timeout_seconds,
+                timeout=connect_to,
             ) as sock:
                 sock.sendall(struct.pack(">I", len(payload)) + payload)
                 dispatched = True
@@ -153,7 +170,13 @@ class FailingConnectTransport(SubprocessDelegatedExecutionTransport):
     def port(self) -> int:
         return self._port
 
-    def roundtrip(self, request: WorkerRequest, *, timeout_seconds: float) -> WorkerResponse:
+    def roundtrip(
+        self,
+        request: WorkerRequest,
+        *,
+        timeout_seconds: float,
+        connect_timeout_seconds: float | None = None,
+    ) -> WorkerResponse:
         raise DelegatedExecutionTransportError("connect refused")
 
     def close(self) -> None:
