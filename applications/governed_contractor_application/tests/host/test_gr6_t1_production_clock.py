@@ -30,13 +30,16 @@ from external_contractor_adapter.side_effect_actions import ACTION_CREATE_EXTERN
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
+from applications.governed_contractor_application.tests.host.durable_provider_invocation_test_store import (
+    DurableTestProviderInvocationStore,
+)
 from governed_contractor_application.host.stores import (
     InMemoryContinuationStateStore,
     InMemoryGovernedExecutionStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryProofReceiptStore,
-    InMemoryProviderInvocationStore,
 )
+from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
 from intergrax.contracts.money import MoneyAmount
 from intergrax.contracts.external_work_provider_capabilities import (
@@ -74,14 +77,14 @@ def _in_memory_stores() -> tuple[
     InMemoryProofReceiptStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryContinuationStateStore,
-    InMemoryProviderInvocationStore,
+    ProviderInvocationStore,
 ]:
     return (
         InMemoryGovernedExecutionStore(),
         InMemoryProofReceiptStore(),
         InMemoryPolicyBundleArtifactStore(),
         InMemoryContinuationStateStore(),
-        InMemoryProviderInvocationStore(),
+        DurableTestProviderInvocationStore(),
     )
 
 

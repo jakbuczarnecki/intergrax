@@ -48,13 +48,16 @@ from governed_contractor_application.host.environment_profile import (
 from governed_contractor_application.host.lifecycle_states import GovernedExternalWorkHostState
 from governed_contractor_application.host.main import create_governed_contractor_process_app
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from applications.governed_contractor_application.tests.host.durable_provider_invocation_test_store import (
+    DurableTestProviderInvocationStore,
+)
 from governed_contractor_application.host.stores import (
     InMemoryContinuationStateStore,
     InMemoryGovernedExecutionStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryProofReceiptStore,
-    InMemoryProviderInvocationStore,
 )
+from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from governed_contractor_application.manifest import build_governed_contractor_manifest
 from intergrax.applications._shared.production_process_composition import (
     create_reference_production_process_composition,
@@ -179,14 +182,14 @@ def _in_memory_stores() -> tuple[
     InMemoryProofReceiptStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryContinuationStateStore,
-    InMemoryProviderInvocationStore,
+    ProviderInvocationStore,
 ]:
     return (
         InMemoryGovernedExecutionStore(),
         InMemoryProofReceiptStore(),
         InMemoryPolicyBundleArtifactStore(),
         InMemoryContinuationStateStore(),
-        InMemoryProviderInvocationStore(),
+        DurableTestProviderInvocationStore(),
     )
 
 

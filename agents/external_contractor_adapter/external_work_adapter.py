@@ -1006,11 +1006,7 @@ class ExternalWorkAdapter:
                 error_code=ExternalWorkErrorCode.INVALID_REQUEST,
                 error_message=str(exc),
                 error_retryable=False,
-                policy_decision=PolicyDecision(
-                    action=PolicyAction.DENY,
-                    reason="provider_invocation_intent_persistence_failed",
-                    policy_rule_id="adapter.provider_invocation_intent_persistence",
-                ),
+                policy_decision=None,
                 metadata={"side_effect_action": action},
             )
         except ExternalWorkError as exc:

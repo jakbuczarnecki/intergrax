@@ -106,7 +106,6 @@ def _adapter_result_is_governance_policy_denial(
     if adapter_result.reason in {
         "external_work_error",
         "side_effect_authorization_failed",
-        "provider_invocation_intent_persistence_failed",
     }:
         return False
     return True

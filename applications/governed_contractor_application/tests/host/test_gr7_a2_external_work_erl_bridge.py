@@ -33,13 +33,16 @@ from external_contractor_adapter.tests.fakes.deterministic_external_work import 
     DeterministicExternalWorkFake,
 )
 from governed_contractor_application.host.lifecycle_states import GovernedExternalWorkHostState
+from applications.governed_contractor_application.tests.host.durable_provider_invocation_test_store import (
+    DurableTestProviderInvocationStore,
+)
 from governed_contractor_application.host.stores import (
     InMemoryContinuationStateStore,
     InMemoryGovernedExecutionStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryProofReceiptStore,
-    InMemoryProviderInvocationStore,
 )
+from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from intergrax.contracts.enterprise_reliability.admission_boundary import (
     ExternalEffectAdmissionCaseError,
     ExternalEffectAdmissionPhase,
@@ -114,14 +117,14 @@ def _stores() -> tuple[
     InMemoryProofReceiptStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryContinuationStateStore,
-    InMemoryProviderInvocationStore,
+    ProviderInvocationStore,
 ]:
     return (
         InMemoryGovernedExecutionStore(),
         InMemoryProofReceiptStore(),
         InMemoryPolicyBundleArtifactStore(),
         InMemoryContinuationStateStore(),
-        InMemoryProviderInvocationStore(),
+        DurableTestProviderInvocationStore(),
     )
 
 

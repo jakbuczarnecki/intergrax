@@ -141,6 +141,11 @@ def build_governed_external_work_production_runtime(
             "production external work requires provider_invocation_store "
             "(ProviderInvocationStore); inject durable invocation lifecycle at composition time",
         )
+    if not provider_invocation_store.is_durable:
+        raise ValueError(
+            "production external work requires durable provider_invocation_store "
+            "(is_durable must be True); non-durable stores are for tests, fixtures, and offline demo only",
+        )
     invocation_dispatch = GovernedProviderInvocationDispatchGate(
         store=provider_invocation_store,
     )

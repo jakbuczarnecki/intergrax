@@ -47,12 +47,14 @@ from governed_contractor_application.host.collaborative_work_local_fixture impor
     seed_external_work_collaborative_governance_state,
 )
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from applications.governed_contractor_application.tests.host.durable_provider_invocation_test_store import (
+    DurableTestProviderInvocationStore,
+)
 from governed_contractor_application.host.stores import (
     InMemoryContinuationStateStore,
     InMemoryGovernedExecutionStore,
     InMemoryPolicyBundleArtifactStore,
     InMemoryProofReceiptStore,
-    InMemoryProviderInvocationStore,
 )
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
@@ -258,7 +260,7 @@ def _in_memory_stores():
         InMemoryProofReceiptStore(),
         InMemoryPolicyBundleArtifactStore(),
         InMemoryContinuationStateStore(),
-        InMemoryProviderInvocationStore(),
+        DurableTestProviderInvocationStore(),
     )
 
 

@@ -6,14 +6,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pytest
+from intergrax.contracts.policy_action import PolicyAction
 
 from applications.governed_contractor_application.host.production_external_work_composition import (
     build_governed_external_work_production_runtime,
 )
 from applications.governed_contractor_application.tests.host.gr6_collaborative_work_test_support import (
     gr6_seeded_collaborative_work_repositories,
+)
+from applications.governed_contractor_application.tests.host.durable_provider_invocation_test_store import (
+    DurableTestProviderInvocationStore,
 )
 from applications.governed_contractor_application.tests.host.test_gr7_a2_external_work_erl_bridge import (
     RecordingAdmissionPort,
@@ -174,6 +179,8 @@ def test_intent_persistence_failure_zero_provider_calls() -> None:
     assert step.reason == "provider_invocation_intent_persistence_failed"
     assert step.external_effect_outcome is None
     assert store.outcomes == {}
+    decision = step.adapter_result.policy_decision
+    assert decision is None or decision.action is not PolicyAction.DENY
 
 
 def test_outcome_persistence_failure_single_provider_call() -> None:
@@ -195,7 +202,7 @@ def test_failure_outcome_persisted_no_ger() -> None:
     fake = DeterministicExternalWorkFake(
         fail_create_with_code={_FAIL_IDEMP: ExternalWorkErrorCode.PERMANENT_PROVIDER_FAILURE},
     )
-    store = InMemoryProviderInvocationStore()
+    store = DurableTestProviderInvocationStore()
     task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
     runtime = _runtime_with_store(fake, task_id, store)
     step, _ = _create_step(
@@ -209,7 +216,7 @@ def test_failure_outcome_persisted_no_ger() -> None:
     )
     assert step.governed_result is None
     assert step.external_effect_outcome is ExternalEffectOutcome.FAILURE
-    inv_id = next(iter(store._invocations))
+    inv_id = next(iter(store._invocations))  # noqa: SLF001
     assert store.get_outcome(inv_id).status is ProviderInvocationStatus.FAILED
 
 
@@ -219,7 +226,7 @@ def test_unknown_outcome_persisted() -> None:
             _UNCERTAIN_IDEMP: ExternalWorkErrorCode.PROVIDER_OUTCOME_UNCERTAIN,
         },
     )
-    store = InMemoryProviderInvocationStore()
+    store = DurableTestProviderInvocationStore()
     task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
     runtime = _runtime_with_store(fake, task_id, store)
     step, _ = _create_step(
@@ -231,7 +238,7 @@ def test_unknown_outcome_persisted() -> None:
         execution_id,
         idempotency_key=_UNCERTAIN_IDEMP,
     )
-    inv_id = next(iter(store._invocations))
+    inv_id = next(iter(store._invocations))  # noqa: SLF001
     assert store.get_outcome(inv_id).status is ProviderInvocationStatus.UNKNOWN
     assert step.external_effect_outcome is ExternalEffectOutcome.UNKNOWN
 
@@ -272,12 +279,60 @@ def test_duplicate_intent_conflict_rejected() -> None:
 def test_crash_window_intent_without_outcome_after_dispatch() -> None:
     """Simulate crash after provider: intent durable, outcome missing until finalize."""
     fake = DeterministicExternalWorkFake()
-    store = InMemoryProviderInvocationStore()
+    store = DurableTestProviderInvocationStore()
     task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
     runtime = _runtime_with_store(fake, task_id, store)
     _create_step(runtime, fake, task_id, run_id, attempt_id, execution_id)
-    assert len(store._invocations) == 1
-    assert len(store._outcomes) == 1
+    assert len(store._invocations) == 1  # noqa: SLF001
+    assert len(store._outcomes) == 1  # noqa: SLF001
+
+
+def test_production_rejects_non_durable_in_memory_store() -> None:
+    fake = DeterministicExternalWorkFake()
+    task_id, _, _, _ = default_gr3_identity_bundle()
+    cw = gr6_seeded_collaborative_work_repositories(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        principal_id=_PRINCIPAL,
+    )
+    from applications.governed_contractor_application.tests.host.test_gr7_a2_external_work_erl_bridge import (
+        _policy_bundle,
+    )
+
+    execution_store = InMemoryGovernedExecutionStore()
+    receipt_store = InMemoryProofReceiptStore()
+    bundle_store = InMemoryPolicyBundleArtifactStore()
+    continuation_store = InMemoryContinuationStateStore()
+    with pytest.raises(ValueError, match="is_durable"):
+        build_governed_external_work_production_runtime(
+            fake,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            principal_id=_PRINCIPAL,
+            task_scope=StaticActiveTaskScope(task_id),  # type: ignore[arg-type]
+            capabilities=quote_first_partner_capability_fixture(provider_id=_PROVIDER),
+            policy_bundle=_policy_bundle(),  # type: ignore[arg-type]
+            collaborative_work_repositories=cw,
+            execution_store=execution_store,
+            receipt_store=receipt_store,
+            bundle_store=bundle_store,
+            continuation_store=continuation_store,
+            provider_invocation_store=InMemoryProviderInvocationStore(),
+        )
+
+
+def test_production_accepts_custom_durable_store() -> None:
+    fake = DeterministicExternalWorkFake()
+    task_id, _, _, _ = default_gr3_identity_bundle()
+    store = RecordingProviderInvocationStore()
+    runtime = _runtime_with_store(fake, task_id, store)
+    assert runtime.orchestrator is not None
+
+
+def test_host_stores_module_has_no_duplicate_provider_invocation_store_port() -> None:
+    text = Path(__file__).resolve().parents[2] / "host" / "stores.py"
+    source = text.read_text(encoding="utf-8")
+    assert "ProviderInvocationStorePort" not in source
 
 
 def test_production_runtime_requires_provider_invocation_store_kwarg() -> None:

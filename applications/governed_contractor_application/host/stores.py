@@ -61,22 +61,6 @@ class PolicyBundleArtifactStore(Protocol):
 
 
 @runtime_checkable
-class ProviderInvocationStorePort(Protocol):
-    """Host alias for ``intergrax.contracts.provider_invocation_store.ProviderInvocationStore``."""
-
-    @property
-    def is_durable(self) -> bool: ...
-
-    def put_invocation(self, invocation: ProviderInvocation) -> None: ...
-
-    def get_invocation(self, invocation_id: str) -> ProviderInvocation | None: ...
-
-    def put_outcome(self, outcome: ProviderInvocationOutcome) -> None: ...
-
-    def get_outcome(self, invocation_id: str) -> ProviderInvocationOutcome | None: ...
-
-
-@runtime_checkable
 class ContinuationStateStore(Protocol):
     def put_continuation(
         self,
