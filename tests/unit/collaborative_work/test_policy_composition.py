@@ -388,14 +388,20 @@ def test_runtime_meaningful_side_effect_deny_survives_composition() -> None:
     assert authority.decision.action is PolicyAction.ALLOW
 
     runtime_engine = RuntimePolicyEngine()
-    side_effect_request = MeaningfulSideEffectRequest(
+    from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+    from tests.unit.runtime.governance.gr3_test_support import (
+        minimal_meaningful_side_effect_request_for_tests,
+    )
+
+    side_effect_request = minimal_meaningful_side_effect_request_for_tests(
         action="external_work.accept_quote",
         kinds=(MeaningfulSideEffectKind.COMMITMENT,),
         side_effect_scope_id="scope-quote-1",
-        task_id="task-1",
-        run_id="run-1",
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
         principal_id=_ACTING,
         tenant_id=_TENANT,
+        resource=None,
     )
     runtime_decision = runtime_engine.evaluate_meaningful_side_effect(side_effect_request)
     assert runtime_decision.action is PolicyAction.DENY

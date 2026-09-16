@@ -70,7 +70,15 @@ def test_evaluator_allow_with_scope_narrowing() -> None:
             ),
         ),
     )
-    result = evaluator.evaluate(_request())
+    result = evaluator.evaluate(
+        RuntimeExecutionPolicyAdmissionRequest(
+            tenant_id="tenant-a",
+            workspace_id="workspace-x",
+            principal_id="principal-1",
+            collaborative_authority_scopes=("workspace.read", "workspace.write"),
+            execution_operation=WORKER_ROOT_EXECUTION_OPERATION,
+        ),
+    )
     assert result.policy_decision.action is PolicyAction.ALLOW
     assert result.approved_scopes == ("workspace.read",)
 

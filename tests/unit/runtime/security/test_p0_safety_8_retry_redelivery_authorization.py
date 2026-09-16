@@ -105,7 +105,7 @@ class EventTrackingInvoker(AuthCountingInvoker):
         self._events = events
 
     def _require_current_attempt_authorization(self, **kwargs: object) -> None:
-        self._events.append("authorization")
+        self._events.append("attempt_authorization")
         return super()._require_current_attempt_authorization(**kwargs)  # type: ignore[arg-type]
 
 
@@ -300,11 +300,20 @@ def test_authority_revoked_during_backoff_blocks_retry_with_ordering_proof() -> 
         scope_policy=scope,
     )
 
-    def _sleep_then_revoke(_seconds: float) -> None:
+    def _sleep_then_revoke(
+        _seconds: float,
+        *,
+        should_abort: object = None,
+        poll_interval_seconds: float = 0.05,
+    ) -> None:
+        del should_abort, poll_interval_seconds
         events.append("sleep")
         scope.revoke()
 
-    with patch("intergrax.runtime.nexus.tools.invoker.time.sleep", side_effect=_sleep_then_revoke):
+    with patch(
+        "intergrax.runtime.nexus.tools.invoker.cooperative_delay_seconds",
+        side_effect=_sleep_then_revoke,
+    ):
         with pytest.raises(ToolScopeViolationError):
             invoker.invoke(
                 state=DummyState(),
@@ -313,7 +322,12 @@ def test_authority_revoked_during_backoff_blocks_retry_with_ordering_proof() -> 
             )
 
     assert calls["n"] == 1
-    assert events == ["authorization", "executor", "sleep", "authorization"]
+    assert events == [
+        "attempt_authorization",
+        "executor",
+        "sleep",
+        "attempt_authorization",
+    ]
 
 
 def test_fresh_scope_authorization_blocks_retry_when_revoked() -> None:
