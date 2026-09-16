@@ -8,6 +8,11 @@ from datetime import datetime, timezone
 
 import pytest
 
+from external_contractor_adapter.side_effect_actions import (
+    ACTION_ACCEPT_QUOTE,
+    ACTION_CANCEL_EXTERNAL_WORK,
+    ACTION_CREATE_EXTERNAL_WORK,
+)
 from intergrax.contracts.evaluated_policy_decision import EvaluatedPolicyDecision
 from intergrax.contracts.governed_execution_result import GovernedExecutionResult
 from intergrax.contracts.governed_proof import GovernedProofProfile
@@ -112,6 +117,54 @@ def test_consistent_result_ok() -> None:
     assert _ger().execution_id == "exec-1"
 
 
+def test_external_work_create_action_operation_binding_ok() -> None:
+    result = _ger(
+        action=ACTION_CREATE_EXTERNAL_WORK,
+        proof=_proof(action=ACTION_CREATE_EXTERNAL_WORK),
+        provider_invocation=_invocation(operation="create_work"),
+    )
+    assert result.action == ACTION_CREATE_EXTERNAL_WORK
+    assert result.provider_invocation.operation == "create_work"
+
+
+def test_external_work_accept_quote_action_operation_binding_ok() -> None:
+    result = _ger(
+        action=ACTION_ACCEPT_QUOTE,
+        proof=_proof(action=ACTION_ACCEPT_QUOTE),
+        provider_invocation=_invocation(operation="submit_quote_acceptance"),
+    )
+    assert result.action == ACTION_ACCEPT_QUOTE
+
+
+def test_external_work_cancel_action_operation_binding_ok() -> None:
+    result = _ger(
+        action=ACTION_CANCEL_EXTERNAL_WORK,
+        proof=_proof(action=ACTION_CANCEL_EXTERNAL_WORK),
+        provider_invocation=_invocation(operation="cancel_work"),
+    )
+    assert result.action == ACTION_CANCEL_EXTERNAL_WORK
+
+
+def test_external_work_action_operation_mismatch_rejected() -> None:
+    with pytest.raises(ValueError, match="action_operation_mismatch"):
+        _ger(
+            action=ACTION_ACCEPT_QUOTE,
+            proof=_proof(action=ACTION_ACCEPT_QUOTE),
+            provider_invocation=_invocation(operation="create_work"),
+        )
+
+
+def test_legacy_uppercase_action_not_in_binding_map() -> None:
+    """GR-6 canonical identity only — legacy CREATE_EXTERNAL_WORK is not validated."""
+    legacy = "CREATE_EXTERNAL_WORK"
+    result = _ger(
+        action=legacy,
+        proof=_proof(action=legacy),
+        provider_invocation=_invocation(operation="create_work"),
+    )
+    assert result.action == legacy
+
+
 def test_reject_mismatched_task() -> None:
     with pytest.raises(ValueError, match="task_id_inconsistent"):
         _ger(proof=_proof(task_id="other"))
@@ -128,7 +181,7 @@ def test_reject_cross_execution_proof_decision() -> None:
 
 
 def test_neutral_contract_accepts_non_external_work_action_identity() -> None:
-    """GovernedExecutionResult must not encode External Work action→operation rules."""
+    """Non-External-Work actions are not subject to action→operation binding."""
     action = "payments.capture"
     result = _ger(
         action=action,
