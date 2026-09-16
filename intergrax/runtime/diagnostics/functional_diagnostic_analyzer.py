@@ -44,7 +44,7 @@ from intergrax.contracts.functional_evidence.persistence import (
 from intergrax.runtime.diagnostics.functional_validation_lookup import (
     FunctionalValidationEvidenceLookup,
 )
-from intergrax.runtime.observability.functional_validation_evidence import (
+from intergrax.contracts.functional_validation_evidence import (
     FunctionalValidationOutcome,
 )
 

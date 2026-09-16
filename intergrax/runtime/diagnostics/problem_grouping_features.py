@@ -34,7 +34,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingSubjectRef,
     normalize_assessment,
 )
-from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
+from intergrax.contracts.platform_problem_signal import PlatformProblemSignal
 from intergrax.runtime.events.event_taxonomy import EventCategory
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.observability.causal_evidence import CausalRelationKind

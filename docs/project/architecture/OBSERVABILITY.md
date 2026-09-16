@@ -1319,7 +1319,7 @@ Need a new signal?
 
 | Property | Requirement |
 |----------|-------------|
-| Semantic model | `PlatformProblemSignal` is the vendor-neutral problem/error signal model (`problem_signal.py`). |
+| Semantic model | `PlatformProblemSignal` is the vendor-neutral problem/error signal contract (`intergrax/contracts/platform_problem_signal.py`; legacy re-export under `runtime/observability/problem_signal.py`). |
 | Not a replacement for `RuntimeEvent` | Execution/audit history remains on the spine; problems are a separate explicit plane. |
 | Not a generic log record | Problems require classified taxonomy fields - not unstructured diagnostic text. |
 | Not vendor-specific | No Sentry/Elastic/OTLP semantics in the platform model; vendors project sanitized envelopes only. |
@@ -1446,7 +1446,7 @@ await reporter.report(
 - Do **not** turn every `RuntimeEvent` (or every `ObservabilityEmitter.emit_step`) into a `PlatformProblemSignal`.
 - Do **not** add `ObservabilityEmitter.emit_problem`, automatic global exception hooks, or `RuntimeEventBus` subscribers that auto-emit problems (deferred / out of scope for OBS-PROBLEM-3).
 
-**Code references:** `problem_signal.py` · `problem_export.py` · `problem_reporter.py` · `export_boundary.py` · `export_policy.py`. **Plan:** OBS-PROBLEM-3 in [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md).
+**Code references:** Canonical contracts — `intergrax/contracts/platform_problem_signal.py` · `intergrax/contracts/functional_validation_evidence.py`. Runtime export/safety — `problem_export.py` · `problem_reporter.py` · `export_boundary.py` · `export_policy.py`. **Plan:** OBS-PROBLEM-3 in [`plan/OBSERVABILITY.md`](../maintainers/plans/OBSERVABILITY.md).
 
 ### DIAG subsystem (analytical over canonical evidence)
 

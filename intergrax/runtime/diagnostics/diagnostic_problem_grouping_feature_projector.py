@@ -35,7 +35,7 @@ from intergrax.runtime.diagnostics.problem_grouping_features import (
 from intergrax.runtime.events.execution_position import PositionedRuntimeEvent
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
-from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
+from intergrax.contracts.platform_problem_signal import PlatformProblemSignal
 
 _RETRY_RELATED_EVENT_TYPES: frozenset[RuntimeEventType] = frozenset(
     {

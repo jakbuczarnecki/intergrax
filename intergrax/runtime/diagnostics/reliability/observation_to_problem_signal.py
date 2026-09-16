@@ -18,8 +18,8 @@ from intergrax.runtime.diagnostics.reliability.reliability_diagnostic_handoff im
 from intergrax.runtime.diagnostics.reliability.reliability_observability_attributes import (
     ExternalEffectReliabilityObservabilityAttributes,
 )
-from intergrax.runtime.observability.export_attributes import ObservabilityArtifactReference
-from intergrax.runtime.observability.problem_signal import (
+from intergrax.contracts.observability_artifact_reference import ObservabilityArtifactReference
+from intergrax.contracts.platform_problem_signal import (
     PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY,
     PROBLEM_SOURCE_LAYER_RUNTIME,
     PROBLEM_STATUS_DETECTED,

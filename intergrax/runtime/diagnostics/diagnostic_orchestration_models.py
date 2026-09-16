@@ -16,7 +16,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyId,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleResult
-from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
+from intergrax.contracts.platform_problem_signal import PlatformProblemSignal
 
 from intergrax.runtime.diagnostics.signal_diagnostic_assessment import SignalDiagnosticAssessment
 

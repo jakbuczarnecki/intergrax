@@ -669,7 +669,7 @@ External/domain validator ──► PlatformProblemSignal
 
 ### Canonical trigger decision
 
-`PlatformProblemSignal` is the canonical functional-failure trigger. External/domain validators emit typed `FunctionalValidationEvidence`; observability may export the signal; central diagnostics consumes it. No parallel `FunctionalProblemSignal` bus.
+`PlatformProblemSignal` is the canonical functional-failure trigger. External/domain validators emit typed `FunctionalValidationEvidence`; observability may export the signal; central diagnostics consumes it. Cross-layer consumers import both from `intergrax/contracts/platform_problem_signal.py` and `intergrax/contracts/functional_validation_evidence.py` (runtime observability paths are compatibility re-exports only). No parallel `FunctionalProblemSignal` bus.
 
 New platform kind: `platform.functional_outcome_invalid` (`PROBLEM_KIND_PLATFORM_FUNCTIONAL_OUTCOME_INVALID`).
 
@@ -895,7 +895,7 @@ deterministic findings / limitations
 optional higher-level inference later (NOT in F1/F2)
 ```
 
-**Code references:** Contracts — `intergrax/contracts/functional_evidence/`. Persistence providers — `intergrax/runtime/observability/functional_evidence/` (DIAG consumes `FunctionalEvidencePersistence` only). DIAG reconstruction — `functional_evidence_reconstruction.py` · `problem_signal.py` · `intergrax/contracts/functional_evidence_bounds.py`.
+**Code references:** Contracts — `intergrax/contracts/functional_evidence/` · `intergrax/contracts/platform_problem_signal.py` · `intergrax/contracts/functional_validation_evidence.py`. Persistence providers — `intergrax/runtime/observability/functional_evidence/` (DIAG consumes `FunctionalEvidencePersistence` only). DIAG reconstruction — `functional_evidence_reconstruction.py` · `intergrax/contracts/functional_evidence_bounds.py`.
 
 ### Functional evidence persistence qualification (F1-R2 / D1)
 

@@ -15,7 +15,7 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticOrchestrationResult,
 )
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
-from intergrax.runtime.observability.problem_signal import PlatformProblemSignal
+from intergrax.contracts.platform_problem_signal import PlatformProblemSignal
 
 
 class TerminalExecutionDiagnosticTrigger:
