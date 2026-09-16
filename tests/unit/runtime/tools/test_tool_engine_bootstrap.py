@@ -47,6 +47,21 @@ class _Handler(ToolHandler[_In, _Out]):
 class _TraceState:
     run_id = "run-bootstrap"
     tenant_id = "tenant-bootstrap"
+    request = type("Req", (), {"metadata": {}})()
+
+    @property
+    def context(self):
+        return type(
+            "Ctx",
+            (),
+            {
+                "config": type(
+                    "Cfg",
+                    (),
+                    {"policy_bundle": None, "production_mode": False},
+                )()
+            },
+        )()
 
     def trace_event(self, **kwargs: object) -> None:
         pass
@@ -153,10 +168,21 @@ def test_runtime_context_scope_policy_denies_on_invoke_path() -> None:
 class _ClosePoolState:
     run_id = "run-r6a-context-close"
     tenant_id = "tenant-bootstrap"
+    request = type("Req", (), {"metadata": {}})()
 
     @property
     def context(self):
-        return type("Ctx", (), {"config": type("Cfg", (), {"policy_bundle": None})()})()
+        return type(
+            "Ctx",
+            (),
+            {
+                "config": type(
+                    "Cfg",
+                    (),
+                    {"policy_bundle": None, "production_mode": False},
+                )()
+            },
+        )()
 
     def trace_event(self, *args, **kwargs) -> None:
         del args, kwargs

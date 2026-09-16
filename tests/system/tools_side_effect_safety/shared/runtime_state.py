@@ -37,7 +37,16 @@ class ProofRuntimeState:
       return type(
           "Ctx",
           (),
-          {"config": type("Cfg", (), {"policy_bundle": self._policy_bundle})()},
+          {
+              "config": type(
+                  "Cfg",
+                  (),
+                  {
+                      "policy_bundle": self._policy_bundle,
+                      "production_mode": False,
+                  },
+              )()
+          },
       )()
 
   def set_policy_bundle(self, bundle: object | None) -> None:

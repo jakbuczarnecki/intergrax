@@ -123,10 +123,17 @@ class DummyState:
         self.run_id = _RUN_ID
         self.tenant_id = "tenant_test"
         self.declarative_hitl_grant = None
+        self.request = type("Req", (), {"metadata": {}})()
         self._context = type(
             "Ctx",
             (),
-            {"config": type("Cfg", (), {"policy_bundle": policy_bundle})()},
+            {
+                "config": type(
+                    "Cfg",
+                    (),
+                    {"policy_bundle": policy_bundle, "production_mode": False},
+                )()
+            },
         )()
 
     @property

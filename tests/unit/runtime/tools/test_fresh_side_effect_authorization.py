@@ -165,7 +165,13 @@ class GovernanceDummyState:
         self._governance_context = type(
             "Ctx",
             (),
-            {"config": type("Cfg", (), {"policy_bundle": None})()},
+            {
+                "config": type(
+                    "Cfg",
+                    (),
+                    {"policy_bundle": None, "production_mode": False},
+                )()
+            },
         )()
 
     @property

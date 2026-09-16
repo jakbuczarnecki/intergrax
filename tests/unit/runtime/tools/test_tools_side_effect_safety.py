@@ -106,6 +106,7 @@ class DummyState:
     ) -> None:
         self._tenant_id = tenant_id
         self.run_id = "run1"
+        self.request = type("Req", (), {"metadata": {}})()
         self.declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
         self._context = type(
             "Ctx",
