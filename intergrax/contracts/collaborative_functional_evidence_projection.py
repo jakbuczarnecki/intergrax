@@ -11,13 +11,11 @@ from typing import Final
 
 from intergrax.contracts.collaborative_decision_binding import CollaborativeDecisionBinding
 from intergrax.contracts.execution_identity import EventId
+from intergrax.contracts.functional_evidence.models import PipelineOperationStatus
 from intergrax.contracts.functional_evidence.correlation import (
     FunctionalEvidenceExecutionCorrelation,
 )
-from intergrax.contracts.functional_evidence.models import (
-    PipelineOperationStatus,
-    PlatformFunctionalEvidence,
-)
+from intergrax.contracts.functional_evidence.models import PlatformFunctionalEvidence
 
 COLLABORATIVE_DECISION_BINDING_EVIDENCE_PRODUCER: Final = "collaborative_work.decision_binding"
 COLLABORATIVE_DECISION_BINDING_CREATE_OPERATION_ID: Final = (
@@ -45,13 +43,19 @@ class CollaborativeDecisionBindingAssociationNotRepresentable(
 
 @dataclass(frozen=True, slots=True)
 class CollaborativeDecisionBindingCreateOutcomeProjection:
-    """Inputs for projecting a decision-binding create operation outcome fact only."""
+    """
+    Inputs for projecting a decision-binding create **operation** outcome fact only.
 
-    binding: CollaborativeDecisionBinding
+    Represents the operation attempt, not the binding domain object. ``binding`` is required
+    only for ``SUCCEEDED`` outcomes where an authoritative binding was committed.
+    """
+
+    tenant_id: str
     operation_status: PipelineOperationStatus
     execution_correlation: FunctionalEvidenceExecutionCorrelation
     recorded_at: datetime
     evidence_id: EventId | None = None
+    binding: CollaborativeDecisionBinding | None = None
 
 
 class CollaborativeFunctionalEvidenceProjectionStrategy(ABC):

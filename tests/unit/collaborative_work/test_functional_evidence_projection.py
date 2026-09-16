@@ -120,6 +120,7 @@ def test_append_without_execution_correlation_is_not_applicable() -> None:
         append_decision_binding_create_outcome_evidence(
             _RecordingPersistence(),
             DefaultCollaborativeFunctionalEvidenceProjection(),
+            tenant_id="tenant-a",
             binding=_binding(),
             operation_status=PipelineOperationStatus.SUCCEEDED,
             execution_correlation=None,
@@ -141,6 +142,7 @@ def test_operation_outcome_uses_exact_execution_correlation() -> None:
     evidence = append_decision_binding_create_outcome_evidence(
         persistence,
         DefaultCollaborativeFunctionalEvidenceProjection(),
+        tenant_id="tenant-a",
         binding=_binding(),
         operation_status=PipelineOperationStatus.SUCCEEDED,
         execution_correlation=correlation,
@@ -171,6 +173,7 @@ def test_tenant_mismatch_fail_closed() -> None:
         append_decision_binding_create_outcome_evidence(
             _RecordingPersistence(),
             DefaultCollaborativeFunctionalEvidenceProjection(),
+            tenant_id="tenant-a",
             binding=_binding(),
             operation_status=PipelineOperationStatus.SUCCEEDED,
             execution_correlation=correlation,
@@ -193,6 +196,7 @@ def test_duplicate_evidence_id_idempotent_replay() -> None:
     first = append_decision_binding_create_outcome_evidence(
         persistence,
         strategy,
+        tenant_id="tenant-a",
         binding=_binding(),
         operation_status=PipelineOperationStatus.SUCCEEDED,
         execution_correlation=correlation,
@@ -202,6 +206,7 @@ def test_duplicate_evidence_id_idempotent_replay() -> None:
     second = append_decision_binding_create_outcome_evidence(
         persistence,
         strategy,
+        tenant_id="tenant-a",
         binding=_binding(),
         operation_status=PipelineOperationStatus.SUCCEEDED,
         execution_correlation=correlation,
@@ -225,6 +230,7 @@ def test_duplicate_evidence_id_different_content_conflicts() -> None:
     append_decision_binding_create_outcome_evidence(
         persistence,
         strategy,
+        tenant_id="tenant-a",
         binding=_binding(),
         operation_status=PipelineOperationStatus.SUCCEEDED,
         execution_correlation=correlation,
@@ -235,9 +241,32 @@ def test_duplicate_evidence_id_different_content_conflicts() -> None:
         append_decision_binding_create_outcome_evidence(
             persistence,
             strategy,
-            binding=_binding(),
+            tenant_id="tenant-a",
             operation_status=PipelineOperationStatus.FAILED,
             execution_correlation=correlation,
             recorded_at=datetime(2026, 1, 2, tzinfo=UTC),
             evidence_id=evidence_id,
         )
+
+
+def test_failed_operation_outcome_without_binding() -> None:
+    provenance = ExecutionProvenanceRef(
+        task_id=_TASK,
+        run_id=_RUN,
+        attempt_id=_ATTEMPT,
+        execution_id=_EXECUTION,
+    )
+    correlation = execution_correlation_from_provenance(tenant_id="tenant-a", execution=provenance)
+    persistence = _RecordingPersistence()
+    evidence = append_decision_binding_create_outcome_evidence(
+        persistence,
+        DefaultCollaborativeFunctionalEvidenceProjection(),
+        tenant_id="tenant-a",
+        operation_status=PipelineOperationStatus.FAILED,
+        execution_correlation=correlation,
+        recorded_at=datetime(2026, 1, 2, tzinfo=UTC),
+    )
+    assert evidence.kind is PipelineEvidenceKind.OPERATION_OUTCOME
+    assert evidence.operation_outcome is not None
+    assert evidence.operation_outcome.status is PipelineOperationStatus.FAILED
+    assert evidence.operation_outcome.operation_name == COLLABORATIVE_DECISION_BINDING_CREATE_OPERATION_ID

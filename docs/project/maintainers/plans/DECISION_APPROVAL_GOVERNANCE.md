@@ -101,12 +101,13 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R5 |
-| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
-| **Purpose** | Multiplayer adopts canonical Evidence Plane via contract-only projection; **no** Multiplayer evidence store |
+| **Status** | **READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** |
+| **Purpose** | Multiplayer adopts canonical Evidence Plane via contract-only projection; **operation execution evidence coverage** only; **no** Multiplayer evidence store |
 | **Dependencies** | MP-4R4 closed |
-| **Implemented** | `CollaborativeFunctionalEvidenceProjectionStrategy` + `DefaultCollaborativeFunctionalEvidenceProjection`; composition helper `append_decision_binding_create_outcome_evidence` → `FunctionalEvidencePersistence`; architecture gates `test_mp4r5_evidence_plane_adoption_gates.py` |
-| **Blocked (architecture)** | `CollaborativeDecisionBinding` association (`WorkItem` ↔ exact `DecisionProposalRef`) — **no** frozen `PipelineEvidenceKind` semantic fit; requires platform Evidence Plane contract decision before full association evidence |
-| **Proof requirements** | `pytest tests/unit/runtime/architecture/test_mp4r5_evidence_plane_adoption_gates.py tests/unit/collaborative_work/test_functional_evidence_projection.py`; MP-4R0…R4 gates remain green |
+| **Implemented** | `CollaborativeFunctionalEvidenceProjectionStrategy` + `DefaultCollaborativeFunctionalEvidenceProjection`; `CollaborativeDecisionBindingApplicationService` + `decision_binding_composition` wiring; `append_decision_binding_create_outcome_evidence` → `FunctionalEvidencePersistence`; FAILED create outcomes without synthetic binding (`tenant_id` + optional `binding` on SUCCEEDED only); architecture gates `test_mp4r5_evidence_plane_adoption_gates.py` |
+| **Deferred platform gap (explicit)** | MP-4R5 covers canonical **operation-outcome** evidence adoption. Full typed evidence representation of **WorkItem ↔ DecisionProposalRef** is **not** represented by frozen Evidence Plane v2. No semantic workaround is permitted. Future support requires a separate Evidence Plane architecture decision. |
+| **Blocked (architecture)** | Association fact — same as deferred gap above (`CollaborativeDecisionBindingAssociationNotRepresentable`) |
+| **Proof requirements** | `pytest tests/unit/runtime/architecture/test_mp4r5_evidence_plane_adoption_gates.py tests/unit/collaborative_work/test_functional_evidence_projection.py tests/unit/collaborative_work/test_decision_binding_application_evidence.py`; MP-4R0…R4 gates remain green |
 
 ---
 
@@ -171,4 +172,4 @@ Historical implementation notes for MP-4B–D remain in git history and contract
 
 ## Next step
 
-Independent MP-4R5 audit on GitHub. MP-4R6 NOT STARTED.
+Final independent MP-4R5 closure audit on GitHub. MP-4R6 NOT STARTED.

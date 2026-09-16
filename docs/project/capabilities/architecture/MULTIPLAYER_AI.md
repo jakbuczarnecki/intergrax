@@ -30,7 +30,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 **B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented and closed in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence, production PostgreSQL qualification). Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
 
-**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4R0…MP-4R4 CLOSED**; **MP-4R5 — READY_FOR_INDEPENDENT_AUDIT** (canonical Evidence Plane adoption via contract-only projection; operation outcome only — binding association pending Evidence Plane contract); MP-4B/MP-4C/MP-4D **RETIRED** — see [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap. **MP-4R6 NOT STARTED.**
+**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4R0…MP-4R4 CLOSED**; **MP-4R5 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** (canonical Evidence Plane adoption via contract-only projection; operation outcome only — binding association pending Evidence Plane contract); MP-4B/MP-4C/MP-4D **RETIRED** — see [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap. **MP-4R6 NOT STARTED.**
 
 **D. Proof boundary.** Runtime / public **E2E proof for Multiplayer AI as a product capability is not established**. Architecture and partial MP-1 implementation do not imply end-to-end collaborative product readiness.
 
@@ -103,7 +103,7 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4R5 — READY_FOR_INDEPENDENT_AUDIT** (Evidence Plane adoption; no Multiplayer evidence store)
+**Current active task:** **MP-4R5 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** (Evidence Plane adoption; no Multiplayer evidence store)
 **Next task:** Independent MP-4R5 audit — **MP-4R6 NOT STARTED**
 
 ## Cursor read scope (token budget)
@@ -458,7 +458,7 @@ not replace existing Evidence.
 
 ### MP-4R — Canonical core integration (replaces pre-rebase MP-4 program)
 
-**Status:** **MP-4R5 — READY_FOR_INDEPENDENT_AUDIT** — ADR-MP-009 **Accepted**; MP-4R0…MP-4R4 **CLOSED**; MP-4B/MP-4C/MP-4D **RETIRED**; Evidence adoption = `FunctionalEvidencePersistence` + projection strategy (operation outcome); association fact **blocked** on frozen Evidence Plane contract; MP-4R6…MP-4R8 **NOT STARTED**.
+**Status:** **MP-4R5 — READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** — ADR-MP-009 **Accepted**; MP-4R0…MP-4R4 **CLOSED**; MP-4B/MP-4C/MP-4D **RETIRED**; Evidence adoption = `FunctionalEvidencePersistence` + projection strategy (operation outcome); association fact **blocked** on frozen Evidence Plane contract; MP-4R6…MP-4R8 **NOT STARTED**.
 
 **Intent:** Associate collaborative work (WorkItem, WorkArtifact) with **canonical** Decision, Governance/HITL, Execution continuation (`ExecutionContinuationPort`), Evidence, and Diagnostics — without owning Decision lifecycle, Approval/HITL authority, execution state, evidence facts, or diagnostic interpretation.
 
@@ -474,7 +474,7 @@ not replace existing Evidence.
 
 **Next active task:** **Independent MP-4R5 audit** — **MP-4R6 NOT STARTED**.
 
-**Evidence Plane adoption note (MP-4R5):** Multiplayer consumes canonical Evidence Plane contracts (`intergrax.contracts.functional_evidence`); it does **not** own evidence persistence or reinterpret frozen `PipelineEvidenceKind` semantics.
+**Evidence Plane adoption note (MP-4R5):** Multiplayer consumes canonical Evidence Plane contracts (`intergrax.contracts.functional_evidence`); it does **not** own evidence persistence or reinterpret frozen `PipelineEvidenceKind` semantics. MP-4R5 delivers **operation execution evidence coverage** for binding create (`OPERATION_OUTCOME` only). Full typed evidence for **WorkItem ↔ DecisionProposalRef** is **not** in frozen Evidence Plane v2 — **deferred platform decision**; no string/artifact workaround (`CollaborativeDecisionBindingAssociationNotRepresentable`). Application wiring: `CollaborativeDecisionBindingApplicationService` + `decision_binding_composition` (contracts injectable at composition root).
 
 ---
 

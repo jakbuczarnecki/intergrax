@@ -195,3 +195,48 @@ def test_decision_binding_service_does_not_emit_evidence_on_read_paths() -> None
         block = source.split(f"def {method_name}", maxsplit=1)[1].split("\n    def ", maxsplit=1)[0]
         assert "append" not in block
         assert "evidence" not in block.lower()
+
+
+_APPLICATION_PATH = _COLLABORATIVE_ROOT / "decision_binding_application.py"
+_COMPOSITION_PATH = _COLLABORATIVE_ROOT / "decision_binding_composition.py"
+_PROJECTION_CONTRACT = (
+    _REPO_ROOT / "intergrax" / "contracts" / "collaborative_functional_evidence_projection.py"
+)
+
+
+def test_create_outcome_projection_does_not_require_binding_for_failed() -> None:
+    source = _PROJECTION_CONTRACT.read_text(encoding="utf-8-sig")
+    assert "binding: CollaborativeDecisionBinding | None = None" in source
+    assert "tenant_id: str" in source
+
+
+def test_application_boundary_emits_create_outcome_evidence() -> None:
+    source = _APPLICATION_PATH.read_text(encoding="utf-8-sig")
+    assert "append_decision_binding_create_outcome_evidence" in source
+    assert "DefaultCollaborativeFunctionalEvidenceProjection" not in source
+    for imported in _collect_imports(_APPLICATION_PATH):
+        assert not imported.startswith(_FORBIDDEN_RUNTIME_OBS_PREFIX)
+
+
+def test_composition_wires_application_create_binding_path() -> None:
+    source = _COMPOSITION_PATH.read_text(encoding="utf-8-sig")
+    assert "build_collaborative_decision_binding_application_from_artifacts_bundle" in source
+    assert "DefaultCollaborativeFunctionalEvidenceProjection" not in source
+    imports = _collect_imports(_COMPOSITION_PATH)
+    assert not any("in_memory_functional_evidence" in item for item in imports)
+    assert not any("document_store_functional_evidence" in item for item in imports)
+
+
+def test_pipeline_evidence_kind_enum_unchanged_by_mp4r5_task_surface() -> None:
+    models_path = _FUNCTIONAL_EVIDENCE_CONTRACT_ROOT / "models.py"
+    source = models_path.read_text(encoding="utf-8-sig")
+    assert "class PipelineEvidenceKind(StrEnum):" in source
+    for kind in (
+        "ARTIFACT_LINEAGE",
+        "OPERATION_OUTCOME",
+        "CANDIDATE_RANK",
+        "SELECTION",
+        "OUTPUT_RELATION",
+        "VALIDATION",
+    ):
+        assert kind in source

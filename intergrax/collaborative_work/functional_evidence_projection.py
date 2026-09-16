@@ -21,6 +21,7 @@ from intergrax.contracts.functional_evidence.models import (
     PipelineEvidenceProvenance,
     PipelineEvidenceScope,
     PipelineOperationOutcomeFact,
+    PipelineOperationStatus,
     PlatformFunctionalEvidence,
 )
 from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
@@ -55,9 +56,18 @@ class DefaultCollaborativeFunctionalEvidenceProjection(
         self,
         projection: CollaborativeDecisionBindingCreateOutcomeProjection,
     ) -> PlatformFunctionalEvidence:
-        binding = projection.binding
-        if binding.tenant_id != projection.execution_correlation.tenant_id:
-            raise ValueError("execution correlation tenant_id must match binding tenant_id")
+        normalized_tenant = projection.tenant_id.strip()
+        if not normalized_tenant or projection.tenant_id != normalized_tenant:
+            raise ValueError("tenant_id must be non-empty and normalized")
+        if normalized_tenant != projection.execution_correlation.tenant_id:
+            raise ValueError("execution correlation tenant_id must match operation tenant_id")
+        if projection.operation_status is PipelineOperationStatus.SUCCEEDED:
+            if projection.binding is None:
+                raise ValueError("SUCCEEDED operation outcome requires authoritative binding")
+            if projection.binding.tenant_id != normalized_tenant:
+                raise ValueError("binding tenant_id must match operation tenant_id")
+        elif projection.binding is not None:
+            raise ValueError("FAILED operation outcome must not include a binding instance")
         scope = PipelineEvidenceScope.from_correlation(projection.execution_correlation)
         evidence_id = projection.evidence_id if projection.evidence_id is not None else mint_event_id()
         return PlatformFunctionalEvidence(
