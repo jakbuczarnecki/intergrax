@@ -87,13 +87,13 @@ from intergrax.runtime.diagnostics.providers.runtime_event_scope_provider import
     RUNTIME_EVENT_SCOPE_PROVIDER_ID,
     RuntimeEventScopeProvider,
 )
-from intergrax.runtime.observability.reconstruction import (
+from intergrax.contracts.execution_reconstruction import (
     ExecutionReconstruction,
     ExecutionReconstructionIntegrityError,
-    ExecutionReconstructor,
     ReconstructedAttempt,
     RuntimeHistoryCompleteness,
 )
+from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticAssessment,
     DiagnosticAssessmentBuilder,

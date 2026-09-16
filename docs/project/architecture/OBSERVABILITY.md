@@ -246,7 +246,7 @@ DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · opera
 
 **Frozen:** Observability records facts; it does not decide operational meaning. Diagnostics interprets facts; it does not mint execution identity, own evidence persistence, or maintain a competing Execution Tree.
 
-**Import debt (OBS-RECONSTRUCTION-1):** `HistoricalReconstructionService` and shared `ExecutionReconstructor` live under Observability; Diagnostics **imports** `runtime.observability.reconstruction` — not the reverse. Functional evidence contracts and providers remain under `intergrax.contracts.functional_evidence` and `intergrax.runtime.observability.functional_evidence` (**OBS-FUNCTIONAL-CONTRACTS-1** / **R1** closed).
+**OBS-CONTRACT-BOUNDARY-1 (closed):** Neutral reconstruction port and read models live under **`intergrax.contracts.execution_reconstruction`** (+ `execution_reconstruction_models`, `execution_reconstruction_lineage`). Default **`ExecutionReconstructor`** remains under `intergrax.runtime.observability.reconstruction`. Diagnostics and other cross-layer consumers depend on the contract types only; they do **not** import the runtime reconstruction DTO module.
 
 **OBS-DIAG-CONFORMANCE-R1 (closed):** Evidence Plane exposes factual reconstruction through neutral read contract **`ExecutionReconstructionReader`** (`intergrax.contracts.execution_reconstruction`). Default implementation remains **`ExecutionReconstructor`**. Diagnostic consumers depend on the contract only; composition roots may still construct the default implementation.
 
@@ -1512,7 +1512,7 @@ Transport redelivery alone must **not** create new runtime identity.
 | `RuntimeEventPersistence` | Canonical persisted evidence authority - accepted `RuntimeEvent` history with persistence-owned `ExecutionEventPosition` |
 | `CausalEvidencePersistence` | Canonical persisted relation evidence authority - immutable `PlatformCausalEvidence` linking transport to execution |
 
-**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)` (`intergrax.runtime.observability.reconstruction`; **semantic and physical owner:** Evidence Plane shared factual reconstruction — see [OBS-REBASE-1](#obs-rebase-1--platform-ssot-frozen-2026-09-13)). It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only. Diagnostics and `HistoricalReconstructionService` **consume** this layer; they do not own persisted evidence.
+**Derived read model (NOT persisted, NOT a source of truth):** `ExecutionReconstruction` is a **contract-owned** read model (`intergrax.contracts.execution_reconstruction`) computed at read time by `ExecutionReconstructor.reconstruct_execution(tenant_id, task_id, run_id)` (default implementation: `intergrax.runtime.observability.reconstruction`; **semantic owner:** Evidence Plane shared factual reconstruction — see [OBS-REBASE-1](#obs-rebase-1--platform-ssot-frozen-2026-09-13)). It joins causal evidence and positioned runtime events for one canonical execution scope. No diagnosis, anomaly classification, or root-cause semantics — factual reconstruction only. Diagnostics and `HistoricalReconstructionService` **consume** the contract read model; they do not own persisted evidence.
 
 **Ordering rules (do not mix):**
 

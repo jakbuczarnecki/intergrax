@@ -9,10 +9,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 
 from intergrax.contracts.execution_identity import AttemptId, EventId, RunId, TaskId
-from intergrax.runtime.observability.reconstruction import (
+from intergrax.contracts.execution_reconstruction import (
     ExecutionReconstruction,
-    RuntimeHistoryCompleteness,
     ReconstructedAttempt,
+    RuntimeHistoryCompleteness,
 )
 from intergrax.runtime.events.asof_projection import (
     apply_lifecycle_event,
@@ -21,9 +21,10 @@ from intergrax.runtime.events.asof_projection import (
     RunExecutionLifecycleStatus,
     RunLifecycleViolationKind,
 )
-from intergrax.runtime.events.execution_position import ExecutionEventPosition, PositionedRuntimeEvent
+from intergrax.contracts.execution_event_position import ExecutionEventPosition
+from intergrax.contracts.positioned_runtime_event import PositionedRuntimeEvent
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
+from intergrax.contracts.platform_causal_evidence import PlatformCausalEvidence
 from intergrax.runtime.observability.causal_evidence_persistence import causal_evidence_query_order_key
 
 

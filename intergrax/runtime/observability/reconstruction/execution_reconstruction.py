@@ -10,7 +10,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from enum import StrEnum
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -18,6 +17,14 @@ from intergrax.contracts.execution_identity import (
     TaskId,
     validate_run_id,
     validate_task_id,
+)
+from intergrax.contracts.execution_reconstruction_models import (
+    ExecutionAttemptDiscoveryCompleteness,
+    ExecutionAttemptDiscoveryReadStatus,
+    ExecutionReconstruction,
+    ExecutionReconstructionIntegrityError,
+    ReconstructedAttempt,
+    RuntimeHistoryCompleteness,
 )
 from intergrax.contracts.execution_lineage import (
     ExecutionLineageAsOfReader,
@@ -30,49 +37,27 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageUnavailableError,
     build_execution_lineage_run_scope,
 )
-from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
-    ExecutionLineageCompleteness,
+from intergrax.contracts.execution_reconstruction_lineage import (
     ExecutionLineageReadStatus,
-    ExecutionLineageReconstructionIntegrityError,
     ReconstructedAttemptLineage,
+)
+from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
+    ExecutionLineageReconstructionIntegrityError,
     reconstruct_attempt_lineage,
 )
-from intergrax.runtime.events.execution_position import AsOfBoundary, PositionedRuntimeEvent
+from intergrax.contracts.execution_event_position import AsOfBoundary
+from intergrax.contracts.positioned_runtime_event import PositionedRuntimeEvent
 from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.unified_run_journal import (
     PositionedJournalBoundaryNotFoundError,
     PositionedJournalPrefixTruncatedError,
     load_positioned_run_journal_through,
 )
-from intergrax.runtime.observability.causal_evidence import PlatformCausalEvidence
+from intergrax.contracts.platform_causal_evidence import PlatformCausalEvidence
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
     causal_evidence_query_order_key,
 )
-
-
-class ExecutionReconstructionIntegrityError(Exception):
-    """Raised when canonical persistence returns facts outside the requested scope."""
-
-
-class RuntimeHistoryCompleteness(StrEnum):
-    """Whether positioned runtime history for the run is complete or truncated."""
-
-    COMPLETE = "complete"
-    TRUNCATED = "truncated"
-
-
-class ExecutionAttemptDiscoveryReadStatus(StrEnum):
-    AVAILABLE = "available"
-    UNAVAILABLE = "unavailable"
-    NOT_APPLICABLE = "not_applicable"
-
-
-class ExecutionAttemptDiscoveryCompleteness(StrEnum):
-    COMPLETE = "complete"
-    LEGACY_UNKNOWN = "legacy_unknown"
-    TRUNCATED = "truncated"
-    NOT_APPLICABLE = "not_applicable"
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,83 +75,6 @@ class _AttemptBuildResult:
     attempts: tuple[ReconstructedAttempt, ...]
     discovery_read_status: ExecutionAttemptDiscoveryReadStatus | None
     discovery_completeness: ExecutionAttemptDiscoveryCompleteness | None
-
-
-@dataclass(frozen=True, slots=True)
-class ReconstructedAttempt:
-    """One attempt within an execution reconstruction — derived, not canonical."""
-
-    attempt_id: AttemptId
-    causal_evidence: tuple[PlatformCausalEvidence, ...]
-    positioned_events: tuple[PositionedRuntimeEvent, ...]
-    lineage: ReconstructedAttemptLineage | None = None
-
-    @property
-    def has_transport_evidence(self) -> bool:
-        return bool(self.causal_evidence)
-
-    @property
-    def has_runtime_events(self) -> bool:
-        return bool(self.positioned_events)
-
-
-@dataclass(frozen=True, slots=True)
-class ExecutionReconstruction:
-    """
-    Derived read model joining runtime execution history and causal evidence.
-
-    NOT persisted and NOT a source of truth.
-    """
-
-    tenant_id: str
-    task_id: TaskId
-    run_id: RunId
-    causal_evidence: tuple[PlatformCausalEvidence, ...]
-    positioned_events: tuple[PositionedRuntimeEvent, ...]
-    attempts: tuple[ReconstructedAttempt, ...]
-    runtime_history_completeness: RuntimeHistoryCompleteness
-    attempt_discovery_read_status: ExecutionAttemptDiscoveryReadStatus | None = None
-    attempt_discovery_completeness: ExecutionAttemptDiscoveryCompleteness | None = None
-
-    @property
-    def attempt_count(self) -> int:
-        return len(self.attempts)
-
-    @property
-    def has_transport_evidence(self) -> bool:
-        return bool(self.causal_evidence)
-
-    @property
-    def has_runtime_events(self) -> bool:
-        return bool(self.positioned_events)
-
-    @property
-    def is_runtime_history_complete(self) -> bool:
-        return self.runtime_history_completeness is RuntimeHistoryCompleteness.COMPLETE
-
-    @property
-    def has_lineage_evidence(self) -> bool:
-        return any(
-            attempt.lineage is not None
-            and attempt.lineage.read_status is ExecutionLineageReadStatus.AVAILABLE
-            for attempt in self.attempts
-        )
-
-    @property
-    def has_complete_lineage(self) -> bool:
-        return any(
-            attempt.lineage is not None
-            and attempt.lineage.completeness is ExecutionLineageCompleteness.COMPLETE
-            for attempt in self.attempts
-        )
-
-    @property
-    def has_partial_lineage(self) -> bool:
-        return any(
-            attempt.lineage is not None
-            and attempt.lineage.completeness is ExecutionLineageCompleteness.PARTIAL
-            for attempt in self.attempts
-        )
 
 
 class ExecutionReconstructor:

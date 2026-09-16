@@ -25,7 +25,7 @@ from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticFinding,
     DiagnosticLimitation,
 )
-from intergrax.runtime.observability.reconstruction import ExecutionReconstruction
+from intergrax.contracts.execution_reconstruction import ExecutionReconstruction
 from intergrax.runtime.diagnostics.problem_grouping import (
     DeterministicProblemSignature,
     ProblemGroupingCandidate,

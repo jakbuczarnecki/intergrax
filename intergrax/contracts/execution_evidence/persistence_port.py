@@ -14,7 +14,7 @@ if TYPE_CHECKING:
         AsOfBoundary,
         ExecutionEventPosition,
     )
-    from intergrax.runtime.events.execution_position import PositionedRuntimeEvent
+    from intergrax.contracts.positioned_runtime_event import PositionedRuntimeEvent
     from intergrax.runtime.events.persistence_contract import TaskRuntimeEventRuns
     from intergrax.runtime.events.runtime_event import RuntimeEvent
 

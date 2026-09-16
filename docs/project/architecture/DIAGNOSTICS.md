@@ -56,9 +56,9 @@ Central diagnostics answers:
 
 > **What did the platform deterministically detect and persist as a recurring operational Problem?**
 
-It is implemented under `intergrax/runtime/diagnostics/` as a **single spine** (interpretation only — factual reconstruction is **shared** under `intergrax.runtime.observability.reconstruction`, consumed not owned):
+It is implemented under `intergrax/runtime/diagnostics/` as a **single spine** (interpretation only — factual reconstruction read models are **contract-owned**, default implementation under Observability):
 
-- `ExecutionReconstructor` → `ExecutionReconstruction` — **Evidence Plane shared factual reconstruction** (**OBS-RECONSTRUCTION-1**); DIAG imports and consumes only
+- `ExecutionReconstructionReader` → `ExecutionReconstruction` — **neutral contract** (`intergrax.contracts.execution_reconstruction`); default `ExecutionReconstructor` is wired at composition roots only (**OBS-CONTRACT-BOUNDARY-1** / **OBS-RECONSTRUCTION-1**)
 - `LifecycleAnomalyAnalyzer` + `DiagnosticAssessmentBuilder` + `ExecutionFailureAnalyzer` - deterministic assessment (lifecycle anomalies plus durable `EXECUTION_FAILED` execution-boundary facts — R2)
 - `ProblemGroupingEngine` + `ProblemGroupingStrategyRegistry` - structural grouping hypotheses (strategy id → registered `ProblemGroupingStrategy`; **proven pluggable seam** — strategies propose; engine validates; `ProblemId` lifecycle remains in `ProblemLifecycleEngine`)
 - `ProblemLifecycleEngine` - stable `Problem` identity and lifecycle
@@ -126,7 +126,7 @@ Central Diagnostics remains the **only** owner of diagnostic interpretation: ano
 
 `ExecutionReconstructor` and `ExecutionReconstruction` are **shared factual reconstruction** (journal prefix, causal evidence, optional lineage, completeness, tenant/run scope validation). They **do not** classify root cause, mint Problems, or emit diagnostic certainty. DIAG **consumes** reconstruction; it does **not** own evidence recording or Execution Tree authority.
 
-**Physical ownership:** `intergrax.runtime.observability.reconstruction` (**OBS-RECONSTRUCTION-1** closed). **Semantic owner:** Evidence Plane / shared factual reconstruction. Diagnostics **consumes** shared factual reconstruction; it does **not** own reconstruction.
+**Contract ownership:** `ExecutionReconstructionReader` + `ExecutionReconstruction` read models — `intergrax.contracts.execution_reconstruction` (**OBS-CONTRACT-BOUNDARY-1** closed). **Implementation:** `ExecutionReconstructor` — `intergrax.runtime.observability.reconstruction` (**OBS-RECONSTRUCTION-1**). Diagnostics **consumes** the contract; it does **not** own reconstruction or import runtime reconstruction DTOs.
 
 | Component | Owner (semantic) | DIAG? |
 | --------- | ---------------- | ----- |

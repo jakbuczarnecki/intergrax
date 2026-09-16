@@ -15,13 +15,13 @@ from intergrax.contracts.execution_lineage import (
     ExecutionLineageSegmentLifecycle,
 )
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
-from intergrax.runtime.observability.reconstruction.execution_lineage_reconstruction import (
-    ExecutionLineageCompleteness,
-    ExecutionLineageReadStatus,
-)
-from intergrax.runtime.observability.reconstruction import (
+from intergrax.contracts.execution_reconstruction import (
     ExecutionAttemptDiscoveryCompleteness,
     ExecutionAttemptDiscoveryReadStatus,
+)
+from intergrax.contracts.execution_reconstruction_lineage import (
+    ExecutionLineageCompleteness,
+    ExecutionLineageReadStatus,
 )
 from intergrax.runtime.diagnostics.deterministic_problem_reconciliation import (
     DeterministicProblemReconciliationKey,
