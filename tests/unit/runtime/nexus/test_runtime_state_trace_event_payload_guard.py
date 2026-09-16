@@ -9,16 +9,16 @@ from typing import Any, Dict
 
 import pytest
 
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tracing.session.session_consolidation_diag import SessionConsolidationDiagV1
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload, TraceComponent, TraceLevel
 
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_runtime_state_for_tests,
+    canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
+)
 
 
 pytestmark = pytest.mark.unit
@@ -39,37 +39,15 @@ class _DummyDiag(DiagnosticPayload):
         return {"value": int(self.value)}
 
 
+_TRACE_GUARD_SEED = "trace-guard-test"
+
+
 @pytest.fixture
 def runtime_state() -> RuntimeState:
-    config = RuntimeConfig(
-        llm_adapter=FakeLLMAdapter(fixed_text="OK"),
-        enable_rag=False,
-        enable_websearch=False,
-        tools_mode="off",
-        production_mode=False,
-    )
-
-    session_manager = SessionManager(storage=InMemorySessionStorage())
-
-    ctx = RuntimeContext.build(
-        config=config,
-        session_manager=session_manager,
-    )
-
-    request = RuntimeRequest(
-        tenant_id="test-tenant",
-        agent_id="agent_test",
-        session_id="trace-guard-test-session",
-        user_id="trace-guard-test-user",
-        message="test",
-        attachments=[],
-    )
-
-    return RuntimeState(
-        context=ctx,
-        request=request,
-        run_id="trace-guard-test-run-001",
-    )
+    state = build_runtime_state_for_tests(run_id=_TRACE_GUARD_SEED)
+    state.context.config.llm_adapter = FakeLLMAdapter(fixed_text="OK")
+    with canonical_execution_identity_scope(_TRACE_GUARD_SEED):
+        yield state
 
 
 def test_trace_event_rejects_non_diagnostic_payload(runtime_state: RuntimeState) -> None:
@@ -139,7 +117,7 @@ def test_trace_event_sets_run_id_component_level_and_message(runtime_state: Runt
     )
 
     ev = runtime_state.trace_events[-1]
-    assert ev.run_id == "trace-guard-test-run-001"
+    assert ev.run_id == str(canonical_run_id_for_tests(_TRACE_GUARD_SEED))
     assert ev.component == TraceComponent.ENGINE
     assert ev.level == TraceLevel.WARNING
     assert ev.step == "guard"

@@ -8,7 +8,6 @@ import threading
 import time
 from dataclasses import dataclass
 from typing import cast
-
 import pytest
 from pydantic import BaseModel
 
@@ -29,6 +28,7 @@ from intergrax.contracts.dependency_concurrency_admission import (
 from intergrax.contracts.idempotency_store import InvocationStatus
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.errors.tool_scope_violation_error import ToolScopeViolationError
+from intergrax.runtime.cancellation.coordinator import cooperative_delay_seconds
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
     DependencyAttemptExecutionBoundary,
@@ -661,14 +661,15 @@ def test_no_permit_held_during_backoff(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     observed_during_backoff: list[int] = []
 
-    original_sleep = time.sleep
-
-    def _sleep(seconds: float) -> None:
+    def _delay(seconds: float, **kwargs: object) -> None:
         if seconds >= 0.05:
             observed_during_backoff.append(harness.admission.active_permits)
-        original_sleep(seconds)
+        cooperative_delay_seconds(seconds, **kwargs)
 
-    monkeypatch.setattr(time, "sleep", _sleep)
+    monkeypatch.setattr(
+        "intergrax.runtime.nexus.tools.invoker.cooperative_delay_seconds",
+        _delay,
+    )
     run_id = canonical_run_id_for_tests("backoff-no-permit")
     state = build_runtime_state_for_tests(run_id=run_id)
     with canonical_execution_identity_scope(run_id):

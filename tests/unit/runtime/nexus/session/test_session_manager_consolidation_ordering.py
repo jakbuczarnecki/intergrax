@@ -26,6 +26,7 @@ class _RecordingConsolidationService:
         messages: Sequence[ChatMessage],
         *,
         run_id: str | None = None,
+        tenant_id: str | None = None,
     ) -> object:
         contents = tuple((message.content or "") for message in messages)
         self.calls.append((user_id, session_id, contents))

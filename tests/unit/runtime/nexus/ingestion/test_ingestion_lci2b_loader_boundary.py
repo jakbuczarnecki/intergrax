@@ -159,7 +159,7 @@ async def test_attachment_ingestion_uses_real_loader_callback_and_scope(
     assert native_metadata["attachment_type"] == "file"
     assert native_metadata["session_id"] == "sess-1"
     assert native_metadata["user_id"] == "user-1"
-    assert native_metadata["workspace_id"] == "workspace-1"
+    assert "workspace_id" not in native_metadata
     assert "tenant_id" not in native_metadata
     assert "namespace" not in native_metadata
     assert splitter.received[0].scope.tenant_id == "tenant.test"
@@ -172,7 +172,7 @@ async def test_attachment_ingestion_uses_real_loader_callback_and_scope(
     assert stored_metadata["attachment_type"] == "file"
     assert stored_metadata["session_id"] == "sess-1"
     assert stored_metadata["user_id"] == "user-1"
-    assert stored_metadata["workspace_id"] == "workspace-1"
+    assert "workspace_id" not in stored_metadata
     assert stored_metadata["tenant_id"] == "tenant.test"
     assert stored_metadata["namespace"] == "workspace-1"
 
@@ -185,7 +185,6 @@ async def test_attachment_ingestion_uses_real_loader_callback_and_scope(
             "attachment_id": attachment.id,
             "session_id": "sess-1",
             "user_id": "user-1",
-            "workspace_id": "workspace-1",
         },
     )
     assert loaded[0].scope.tenant_id == "tenant.test"

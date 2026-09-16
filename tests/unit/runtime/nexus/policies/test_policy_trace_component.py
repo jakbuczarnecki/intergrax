@@ -7,7 +7,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests, canonical_execution_identity_scope
 
 pytestmark = pytest.mark.unit
 
@@ -19,14 +19,16 @@ def test_policy_trace_component_is_recorded() -> None:
     This is a foundational observability requirement for retry/timeout/HITL logic.
     """
 
-    state = build_runtime_state_for_tests(run_id="test-run-policy-trace")
+    run_seed = "test-run-policy-trace"
+    state = build_runtime_state_for_tests(run_id=run_seed)
 
-    state.trace_event(
-        component=TraceComponent.POLICY,
-        step="retry_attempt",
-        level=TraceLevel.INFO,
-        message="Retry attempt 1 due to transient failure",
-    )
+    with canonical_execution_identity_scope(run_seed):
+        state.trace_event(
+            component=TraceComponent.POLICY,
+            step="retry_attempt",
+            level=TraceLevel.INFO,
+            message="Retry attempt 1 due to transient failure",
+        )
 
     assert len(state.trace_events) == 1
 

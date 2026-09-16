@@ -21,8 +21,28 @@ from intergrax.runtime.nexus.context.uaep_assemble import (
     assemble_uaep_session_prompt,
 )
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from testing_support.builder import build_runtime_request_for_tests, canonical_task_id_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.asyncio]
+
+
+def _uaep_request(
+    seed: str,
+    *,
+    message: str,
+    metadata: dict[str, object],
+) -> RuntimeRequest:
+    enriched = dict(metadata)
+    enriched.setdefault("task_id", str(canonical_task_id_for_tests(seed)))
+    return build_runtime_request_for_tests(
+        seed=seed,
+        agent_id="agent-1",
+        user_id="user-1",
+        session_id="sess-1",
+        message=message,
+        tenant_id="t1",
+        metadata=enriched,
+    )
 
 
 @pytest.fixture(autouse=True)
@@ -50,16 +70,10 @@ class _Adapter(LLMAdapter):
 async def test_assemble_uaep_session_injects_workspace() -> None:
     registry = materialize_context_plugin_registry(["intergrax.builtin"])
     engine = CodebaseContextEngine(registry=registry)
-    request = RuntimeRequest(
-        agent_id="agent-1",
-        user_id="user-1",
-        session_id="sess-1",
+    request = _uaep_request(
+        "uaep-workspace",
         message="fix bug",
-        tenant_id="t1",
-        metadata={
-            "workspace_files": {"app.py": "print('hi')\n"},
-            "task_id": "task-1",
-        },
+        metadata={"workspace_files": {"app.py": "print('hi')\n"}},
     )
     prompt = await assemble_uaep_session_prompt(
         request,
@@ -74,14 +88,10 @@ async def test_assemble_uaep_session_injects_workspace() -> None:
 async def test_assemble_uaep_session_includes_full_history_with_revision() -> None:
     registry = materialize_context_plugin_registry(["intergrax.builtin"])
     engine = CodebaseContextEngine(registry=registry)
-    request = RuntimeRequest(
-        agent_id="agent-1",
-        user_id="user-1",
-        session_id="sess-1",
+    request = _uaep_request(
+        "uaep-history-rev",
         message="follow up",
-        tenant_id="t1",
         metadata={
-            "task_id": "task-1",
             "session_context_revision_id": "rev-uaep-1",
             "session_history_messages": [
                 ChatMessage(role="user", content="first question", entry_id="uaep-u1"),
@@ -111,14 +121,10 @@ async def test_assemble_uaep_session_includes_full_history_with_revision() -> No
 async def test_assemble_uaep_session_rejects_raw_history_without_revision() -> None:
     registry = materialize_context_plugin_registry(["intergrax.builtin"])
     engine = CodebaseContextEngine(registry=registry)
-    request = RuntimeRequest(
-        agent_id="agent-1",
-        user_id="user-1",
-        session_id="sess-1",
+    request = _uaep_request(
+        "uaep-no-revision",
         message="follow up",
-        tenant_id="t1",
         metadata={
-            "task_id": "task-1",
             "session_history_messages": [
                 ChatMessage(role="user", content="orphan", entry_id="uaep-u2"),
             ],
@@ -138,14 +144,10 @@ async def test_assemble_uaep_session_rejects_raw_history_without_revision() -> N
 async def test_uaep_message_assembly_preserves_structured_history() -> None:
     registry = materialize_context_plugin_registry(["intergrax.builtin"])
     engine = CodebaseContextEngine(registry=registry)
-    request = RuntimeRequest(
-        agent_id="agent-1",
-        user_id="user-1",
-        session_id="sess-1",
+    request = _uaep_request(
+        "uaep-structured-history",
         message="follow up",
-        tenant_id="t1",
         metadata={
-            "task_id": "task-1",
             "session_context_revision_id": "rev-uaep-2",
             "session_history_messages": [
                 ChatMessage(role="user", content="history user", entry_id="uaep-u3"),
@@ -177,14 +179,10 @@ async def test_uaep_message_assembly_preserves_structured_history() -> None:
 async def test_uaep_prompt_projection_rejects_structured_history() -> None:
     registry = materialize_context_plugin_registry(["intergrax.builtin"])
     engine = CodebaseContextEngine(registry=registry)
-    request = RuntimeRequest(
-        agent_id="agent-1",
-        user_id="user-1",
-        session_id="sess-1",
+    request = _uaep_request(
+        "uaep-prompt-reject",
         message="follow up",
-        tenant_id="t1",
         metadata={
-            "task_id": "task-1",
             "session_context_revision_id": "rev-uaep-3",
             "session_history_messages": [
                 ChatMessage(role="user", content="history user", entry_id="uaep-u4"),
@@ -205,13 +203,10 @@ async def test_uaep_prompt_projection_rejects_structured_history() -> None:
 async def test_uaep_prompt_projection_keeps_simple_context_compatibility() -> None:
     registry = materialize_context_plugin_registry(["intergrax.builtin"])
     engine = CodebaseContextEngine(registry=registry)
-    request = RuntimeRequest(
-        agent_id="agent-1",
-        user_id="user-1",
-        session_id="sess-1",
+    request = _uaep_request(
+        "uaep-simple",
         message="simple objective",
-        tenant_id="t1",
-        metadata={"task_id": "task-1", "workspace_files": {"app.py": "print('hi')\n"}},
+        metadata={"workspace_files": {"app.py": "print('hi')\n"}},
     )
     prompt = await assemble_uaep_session_prompt(
         request,

@@ -37,8 +37,13 @@ from unittest.mock import MagicMock
 
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import Task, TaskContext
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    build_task_for_tests,
+    canonical_run_id_for_tests,
+    canonical_task_id_for_tests,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -49,6 +54,9 @@ def _catalog() -> None:
     bootstrap_context_catalog(register_shipped=True, discover_entry_points=False)
     yield
     reset_context_catalog_bootstrap_for_tests()
+
+
+_HANDLE_BRIDGE_SEED = "runtime-state-handle-bridge"
 
 
 def _runtime_state(**metadata: object) -> RuntimeState:
@@ -67,19 +75,10 @@ def _runtime_state(**metadata: object) -> RuntimeState:
             _ = messages, kwargs
             return LLMAdapterResponse(content="ok")
 
-    config = RuntimeConfig(llm_adapter=_Adapter(), production_mode=False)
-    request = RuntimeRequest(
-        agent_id="agent",
-        user_id="user",
-        session_id="session",
-        message="question",
-        metadata=dict(metadata),
-    )
-    return RuntimeState(
-        context=RuntimeContext(config=config, session_manager=MagicMock()),
-        request=request,
-        run_id="run-1",
-    )
+    state = build_runtime_state_for_tests(run_id=_HANDLE_BRIDGE_SEED)
+    state.context.config.llm_adapter = _Adapter()
+    state.request.metadata.update(metadata)
+    return state
 
 
 def test_extract_provider_metadata_from_rag_chunks() -> None:
@@ -127,8 +126,8 @@ async def test_synced_request_metadata_enables_rag_provider_collect() -> None:
     provider = next(p for p in registry.list_providers() if p.provider_id == "builtin.rag")
     request = ContextAssemblyRequest(
         trace_id="t1",
-        run_id="run-1",
-        task_id="task-1",
+        run_id=str(canonical_run_id_for_tests(_HANDLE_BRIDGE_SEED)),
+        task_id=str(canonical_task_id_for_tests(_HANDLE_BRIDGE_SEED)),
         tenant_id="tenant-1",
         assembly_scope="uaep_turn",
         objective="question",
@@ -136,12 +135,16 @@ async def test_synced_request_metadata_enables_rag_provider_collect() -> None:
         budget_policy=ContextBudgetSnapshot(max_chars=8000),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    task = Task(
+    task = build_task_for_tests(
+        seed=_HANDLE_BRIDGE_SEED,
         tenant_id="tenant-1",
         user_id="user",
         message="question",
-        context=TaskContext(),
-        metadata=dict(state.request.metadata),
+    ).model_copy(
+        update={
+            "context": TaskContext(),
+            "metadata": dict(state.request.metadata),
+        }
     )
     handles = build_graph_provider_handles(
         task,

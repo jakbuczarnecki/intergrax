@@ -12,16 +12,19 @@ from intergrax.runtime.nexus.context.shared_task_context import (
 )
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
 from intergrax.runtime.task.task import Task
+from testing_support.builder import build_task_for_tests, canonical_run_id_for_tests
+
+_SHARED_SEED = "shared-1"
 
 
 def _task() -> Task:
-    return Task(tenant_id="t1", user_id="u1", message="hello", task_id="task_shared_1")
+    return build_task_for_tests(seed=_SHARED_SEED, tenant_id="t1", user_id="u1", message="hello")
 
 
 def _execution(*, agent_id: str = "agent_a", summary: str = "done") -> AgentExecutionResult:
     return AgentExecutionResult(
         agent_id=agent_id,
-        run_id="task_shared_1",
+        run_id=str(canonical_run_id_for_tests(_SHARED_SEED)),
         status=AgentExecutionStatus.COMPLETED,
         summary=summary,
         structured_data={"score": 9},

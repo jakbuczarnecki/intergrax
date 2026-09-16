@@ -19,9 +19,14 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.orchestration.task_finisher import build_nexus_task_result
 from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
-from intergrax.runtime.task.task import Task, TaskState
+from intergrax.runtime.task.task import TaskState
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from intergrax.runtime.task.task_metadata_keys import TaskResultMetadataKey
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
+from intergrax.contracts.execution_identity import mint_attempt_id
+from testing_support.builder import build_task_for_tests, canonical_run_id_for_tests, canonical_task_id_for_tests
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -30,17 +35,22 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 def test_build_nexus_task_result_attaches_run_artifact_bundle(tmp_path) -> None:
     shadow_manager = ShadowWorkspaceManager(root=tmp_path / "shadow")
     sandbox_manager = SandboxSessionManager(root=tmp_path / "sandbox")
-    task = Task(
+    finisher_seed = "task-finisher-1"
+    task = build_task_for_tests(
+        seed=finisher_seed,
         tenant_id="tenant-1",
         user_id="user-1",
         message="finish",
-        state=TaskState.COMPLETED,
-        metadata=seed_application_environment_state(
-            app_id="legal",
-            profile_id="legal.product",
-            execution_mode=ExecutionMode.STRICT,
-            task_id="task-finisher-1",
-        ),
+    ).model_copy(
+        update={
+            "state": TaskState.COMPLETED,
+            "metadata": seed_application_environment_state(
+                app_id="legal",
+                profile_id="legal.product",
+                execution_mode=ExecutionMode.STRICT,
+                task_id=str(canonical_task_id_for_tests(finisher_seed)),
+            ),
+        }
     )
     stage_application_artifact(
         task,
@@ -56,14 +66,17 @@ def test_build_nexus_task_result_attaches_run_artifact_bundle(tmp_path) -> None:
     executions = [
         AgentExecutionResult(
             agent_id="legal",
-            run_id="run-legal-1",
+            run_id=str(canonical_run_id_for_tests(finisher_seed)),
             status=AgentExecutionStatus.COMPLETED,
             summary="done",
         )
     ]
     result = build_nexus_task_result(
         task,
-        TaskTraceEmitter(run_id=task.task_id),
+        TaskTraceEmitter(
+            run_id=canonical_run_id_for_tests(finisher_seed),
+            attempt_id=mint_attempt_id(),
+        ),
         answer="done",
         executions=executions,
         validation=ValidationResult(valid=True),
@@ -74,6 +87,7 @@ def test_build_nexus_task_result_attaches_run_artifact_bundle(tmp_path) -> None:
         event_bus=RuntimeEventBus(),
         shadow_manager=shadow_manager,
         sandbox_manager=sandbox_manager,
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
     )
     assert TaskResultMetadataKey.RUN_ARTIFACT_BUNDLE in result.metadata
     bundle = result.metadata[TaskResultMetadataKey.RUN_ARTIFACT_BUNDLE]

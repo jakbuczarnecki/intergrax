@@ -15,12 +15,10 @@ from pydantic import BaseModel
 
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_result import EmbeddingResult
-from intergrax.contracts.execution_identity import TaskId
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.patterns.parallel_semantic_batch import ParallelSemanticBatchPattern
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
@@ -28,7 +26,13 @@ from intergrax.runtime.nexus.tools.tool_invocation_pattern import pattern_for_mo
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry import ToolRegistry
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, canonical_execution_identity_scope, canonical_run_id_for_tests
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    build_runtime_request_for_tests,
+    canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -87,7 +91,6 @@ def _registry() -> ToolRegistry:
 
 def _state(registry: ToolRegistry, embedder: BagOfWordsEmbeddingManager) -> RuntimeState:
     run_id = canonical_run_id_for_tests("run-semantic-batch")
-    task_id = TaskId(f"task_{run_id[4:]}")
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(),
         production_mode=False,
@@ -103,14 +106,13 @@ def _state(registry: ToolRegistry, embedder: BagOfWordsEmbeddingManager) -> Runt
     )
     return RuntimeState(
         context=ctx,
-        request=RuntimeRequest(
+        request=build_runtime_request_for_tests(
+            seed="run-semantic-batch",
             agent_id="agent-1",
             user_id="user-1",
             session_id="session-1",
             tenant_id="tenant-1",
             message="retrieve documents about contracts",
-            task_id=task_id,
-            run_id=run_id,
         ),
         run_id=run_id,
     )
@@ -127,7 +129,7 @@ def test_parallel_semantic_batch_invokes_semantic_top_k() -> None:
     state = _state(registry, embedder)
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
 
-    with canonical_execution_identity_scope(state.run_id):
+    with canonical_governed_execution_scope("run-semantic-batch"):
         result = ParallelSemanticBatchPattern().execute(
             state=state,
             invoker=invoker,

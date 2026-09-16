@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import ast
 import inspect
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import pytest
@@ -25,7 +25,7 @@ from intergrax.runtime.nexus.responses.response_schema import (
 )
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
-from testing_support.builder import FakeLLMAdapter
+from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests, canonical_run_id_for_tests
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -136,17 +136,21 @@ def _history_layer(
         config=config,
         session_manager=session_manager,
     )
+    history_seed = "engine-history-layer"
     state = _StubRuntimeState(
         session=_StubSession(tenant_id="tenant-1", id="session-1"),
-        request=RuntimeRequest(
-            tenant_id="tenant-1",
-            agent_id="agent-1",
-            user_id="user-1",
-            session_id="session-1",
-            message="probe",
+        request=replace(
+            build_runtime_request_for_tests(
+                seed=history_seed,
+                tenant_id="tenant-1",
+                agent_id="agent-1",
+                user_id="user-1",
+                session_id="session-1",
+                message="probe",
+            ),
             history_compression_strategy=strategy,
         ),
-        run_id="run-1",
+        run_id=str(canonical_run_id_for_tests(history_seed)),
         base_history=None,
         history_token_count=None,
     )

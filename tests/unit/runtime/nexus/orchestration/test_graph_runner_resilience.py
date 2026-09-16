@@ -23,7 +23,9 @@ from intergrax.runtime.nexus.response.final_response_composer import FinalRespon
 from intergrax.runtime.execution.attempt_lifecycle import AttemptLifecycleService, InMemoryAttemptLifecycleStore
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService, InMemoryExecutionTerminalStore
 from intergrax.runtime.nexus.retry.retry_engine import _resilience_policy_from_task
-from intergrax.runtime.task.task import Task, TaskState
+from intergrax.runtime.task.task import TaskState
+from testing_support.builder import build_task_for_tests
+from testing_support.graph_execution_context import bound_graph_execution_context
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
 
@@ -31,14 +33,17 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_resilience_policy_disallows_partial_result() -> None:
-    task = Task(
-        task_id="t1",
+    task = build_task_for_tests(
+        seed="graph-runner-resilience",
         tenant_id="tenant",
         user_id="user",
         message="hello",
-        metadata={
-            "resilience_policy.v1": ResiliencePolicy(allow_partial_result=False).model_dump(),
-        },
+    ).model_copy(
+        update={
+            "metadata": {
+                "resilience_policy.v1": ResiliencePolicy(allow_partial_result=False).model_dump(),
+            },
+        }
     )
     policy = _resilience_policy_from_task(task)
     assert policy is not None
@@ -139,17 +144,20 @@ async def test_graph_runner_honors_allow_partial_result_lifecycle(
     allow_partial_result: bool,
     expected_state: TaskState,
 ) -> None:
-    task = Task(
-        task_id="task_partial_policy",
+    task = build_task_for_tests(
+        seed="task-partial-policy",
         tenant_id="tenant",
         user_id="user",
         message="hello",
-        state=TaskState.RUNNING,
-        metadata={
-            "resilience_policy.v1": ResiliencePolicy(
-                allow_partial_result=allow_partial_result,
-            ).model_dump(),
-        },
+    ).model_copy(
+        update={
+            "state": TaskState.RUNNING,
+            "metadata": {
+                "resilience_policy.v1": ResiliencePolicy(
+                    allow_partial_result=allow_partial_result,
+                ).model_dump(),
+            },
+        }
     )
     graph = _partial_multi_node_graph(task.task_id)
     runner = _build_runner(executions=_mixed_executions(), graph=graph)
@@ -157,12 +165,13 @@ async def test_graph_runner_honors_allow_partial_result_lifecycle(
     trace_emitter = MagicMock(spec=TaskTraceEmitter)
     plan = NexusPlan(task_id=task.task_id, classification="test")
 
-    await runner.run(
-        task,
-        plan=plan,
-        graph=graph,
-        lifecycle=lifecycle,
-        trace_emitter=trace_emitter,
-    )
+    with bound_graph_execution_context():
+        await runner.run(
+            task,
+            plan=plan,
+            graph=graph,
+            lifecycle=lifecycle,
+            trace_emitter=trace_emitter,
+        )
 
     assert task.state is expected_state

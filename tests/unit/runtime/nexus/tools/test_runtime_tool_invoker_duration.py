@@ -8,7 +8,7 @@ import pytest
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
-from testing_support.builder import build_runtime_state_for_tests
+from testing_support.builder import build_runtime_state_for_tests, canonical_governed_execution_scope
 
 pytestmark = pytest.mark.unit
 
@@ -57,16 +57,18 @@ def test_runtime_tool_invoker_emits_duration_ms():
         scope_policy=scope_policy,
     )
 
-    state = build_runtime_state_for_tests(run_id="test_run")
+    run_seed = "test_run"
+    state = build_runtime_state_for_tests(run_id=run_seed)
 
     request = ToolExecutionRequest(
-        run_id="test_run",
+        run_id=str(state.run_id),
         tool_id="test_tool",
         step_id="1",
         input=InputModel(value=10),
     )
 
-    result = invoker.invoke(state=state, agent_id="agent_test", request=request)
+    with canonical_governed_execution_scope(run_seed):
+        result = invoker.invoke(state=state, agent_id="agent_test", request=request)
 
     assert isinstance(result, ToolExecutionResult)
     assert result.success is True

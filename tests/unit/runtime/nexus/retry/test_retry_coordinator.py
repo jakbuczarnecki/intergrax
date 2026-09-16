@@ -10,6 +10,7 @@ from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.retry.coordinator import RetryCoordinator
 from intergrax.runtime.nexus.retry.retry_engine import RetryRecord
 from intergrax.runtime.task.task import Task, TaskContext
+from testing_support.builder import build_task_for_tests, canonical_governed_execution_scope
 
 pytestmark = pytest.mark.gate
 
@@ -34,18 +35,22 @@ def test_should_retry_run_respects_policy() -> None:
 
 
 def test_scheduled_event_for_agent_retry() -> None:
-    task = Task(tenant_id="t", user_id="u", context=TaskContext())
-    coordinator = RetryCoordinator(max_run_retries=0, retry_run_on=frozenset())
-    event = coordinator.scheduled_event_for_agent_retry(
-        task,
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
-        record=RetryRecord(
-            attempt=1,
-            agent_id="a1",
-            reason="validation_failed",
-            alternate_agent_id="a2",
-        ),
+    run_seed = "retry-coordinator-agent"
+    task = build_task_for_tests(seed=run_seed, tenant_id="t", user_id="u").model_copy(
+        update={"context": TaskContext()}
     )
+    coordinator = RetryCoordinator(max_run_retries=0, retry_run_on=frozenset())
+    with canonical_governed_execution_scope(run_seed):
+        event = coordinator.scheduled_event_for_agent_retry(
+            task,
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            record=RetryRecord(
+                attempt=1,
+                agent_id="a1",
+                reason="validation_failed",
+                alternate_agent_id="a2",
+            ),
+        )
     assert event.event_type == RuntimeEventType.RETRY_SCHEDULED
     assert event.payload["alternate_agent_id"] == "a2"
