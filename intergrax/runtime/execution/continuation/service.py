@@ -52,7 +52,7 @@ class ExecutionContinuationService:
             human_request_id=request.human_request_id,
             requested_at=request.requested_at,
         )
-        if not self._store.insert_if_absent(pending):
+        if not self._store.begin_current_episode_if_predecessor_allows(pending):
             raise ExecutionContinuationError(
                 "duplicate continuation",
                 code=ExecutionContinuationErrorCode.DUPLICATE_CONTINUATION,
@@ -136,7 +136,7 @@ class ExecutionContinuationService:
                 "continuation not found",
                 code=ExecutionContinuationErrorCode.NOT_FOUND,
             )
-        pending = self._store.find_by_identity(lookup.identity)
+        pending = self._store.resolve_current_episode_for_identity(lookup.identity)
         if pending is None:
             raise ExecutionContinuationError(
                 "continuation not found",

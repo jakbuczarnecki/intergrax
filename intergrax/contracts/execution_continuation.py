@@ -258,6 +258,20 @@ _PROGRESS_BLOCKING_LIFECYCLE_STATES: frozenset[ExecutionContinuationLifecycleSta
 )
 
 
+def execution_continuation_lifecycle_is_terminal(
+    state: ExecutionContinuationLifecycleState,
+) -> bool:
+    """Whether the lifecycle state closes the continuation episode."""
+    return state in _TERMINAL_LIFECYCLE_STATES
+
+
+def execution_continuation_lifecycle_permits_successor_episode(
+    state: ExecutionContinuationLifecycleState,
+) -> bool:
+    """Whether a new continuation episode may replace ``state`` as the current episode."""
+    return execution_continuation_lifecycle_is_terminal(state)
+
+
 def execution_continuation_lifecycle_blocks_execution_progress(
     state: ExecutionContinuationLifecycleState,
 ) -> bool:
@@ -664,6 +678,8 @@ __all__ = [
     "SCHEMA_PENDING_EXECUTION_CONTINUATION_V1",
     "advance_continuation_lifecycle",
     "execution_continuation_lifecycle_blocks_execution_progress",
+    "execution_continuation_lifecycle_is_terminal",
+    "execution_continuation_lifecycle_permits_successor_episode",
     "apply_resolution_to_pending",
     "apply_resume_to_pending",
     "assert_execution_continuation_identity_match",

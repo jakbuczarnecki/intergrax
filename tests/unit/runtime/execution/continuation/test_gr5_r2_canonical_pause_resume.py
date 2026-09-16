@@ -484,11 +484,23 @@ def test_replaceable_implementation_and_falsey_store_preserved() -> None:
         ) -> PendingExecutionContinuation | None:
             return custom_store.find_by_identity(identity)
 
+        def resolve_current_episode_for_identity(
+            self,
+            identity: ExecutionContinuationIdentity,
+        ) -> PendingExecutionContinuation | None:
+            return custom_store.resolve_current_episode_for_identity(identity)
+
         def resolve_identity_for_execution_progress(
             self,
             identity: ExecutionContinuationIdentity,
         ) -> PendingExecutionContinuation | None:
             return custom_store.resolve_identity_for_execution_progress(identity)
+
+        def begin_current_episode_if_predecessor_allows(
+            self,
+            pending: PendingExecutionContinuation,
+        ) -> bool:
+            return custom_store.begin_current_episode_if_predecessor_allows(pending)
 
         def insert_if_absent(self, pending: PendingExecutionContinuation) -> bool:
             return custom_store.insert_if_absent(pending)
