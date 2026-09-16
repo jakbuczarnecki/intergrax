@@ -40,6 +40,7 @@ def build_lkw_test_registry_projection(
         env,
         builders=LOCAL_WORKSPACE_AGENT_BUILDERS,
         revision_id=revision_id,
+        settings=resolved_settings,
     )
 
 
