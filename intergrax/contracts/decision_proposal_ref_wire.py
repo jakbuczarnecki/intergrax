@@ -1,6 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Lossless JSON wire encoding for canonical ``DecisionProposalRef`` (contract-only)."""
+"""Canonical typed serialization helper for ``DecisionProposalRef`` (contract-only).
+
+Ownership: platform canonical Decision contracts — encode/decode/validate wire fields only.
+Does not define Decision lifecycle, identity rules, or outcome semantics (see
+``decision_identity`` / ``decision_record`` validators).
+"""
 
 from __future__ import annotations
 
@@ -27,9 +32,9 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
-from intergrax.knowledge.contracts.validation import JsonValue
+from intergrax.contracts.structured_json_value import StructuredJsonObject
 
-JsonObject: TypeAlias = dict[str, JsonValue]
+JsonObject: TypeAlias = StructuredJsonObject
 
 
 def _require_mapping(value: object, label: str) -> JsonObject:

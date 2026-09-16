@@ -16,6 +16,14 @@ _BINDING_ROOT = _REPO_ROOT / "intergrax" / "collaborative_work"
 _BINDING_CONTRACT = _REPO_ROOT / "intergrax" / "contracts" / "collaborative_decision_binding.py"
 _DECISION_ROOT = _REPO_ROOT / "intergrax" / "runtime" / "decision"
 _SERVICE_PATH = _BINDING_ROOT / "decision_binding_service.py"
+_WIRE_PATH = _REPO_ROOT / "intergrax" / "contracts" / "decision_proposal_ref_wire.py"
+_FORBIDDEN_FEATURE_DOMAIN_PREFIXES = (
+    "intergrax.knowledge",
+    "intergrax.memory",
+    "intergrax.rag",
+    "intergrax.marketplace",
+    "intergrax.applications",
+)
 _FORBIDDEN_RUNTIME_PREFIXES = (
     "intergrax.runtime.execution",
     "intergrax.runtime.nexus",
@@ -82,6 +90,14 @@ def test_decision_runtime_does_not_import_collaborative_binding() -> None:
         for imported in _collect_imports(module):
             if "collaborative_decision_binding" in imported:
                 violations.append(f"{module.relative_to(_REPO_ROOT)}: {imported}")
+    assert violations == []
+
+
+def test_decision_proposal_ref_wire_has_no_feature_domain_imports() -> None:
+    violations: list[str] = []
+    for imported in _collect_imports(_WIRE_PATH):
+        if any(imported.startswith(prefix) for prefix in _FORBIDDEN_FEATURE_DOMAIN_PREFIXES):
+            violations.append(imported)
     assert violations == []
 
 
