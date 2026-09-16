@@ -8,7 +8,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from hashlib import sha256
 
-from intergrax.contracts.execution_identity import RunId
+from intergrax.contracts.execution_identity import ExecutionId, RunId
 
 
 def canonical_run_id_for_tests(run_id: str) -> RunId:
@@ -46,3 +46,36 @@ def canonical_execution_identity_scope(run_id: str):
         yield canonical_run_id
     finally:
         reset_active_execution_identity(token)
+
+
+def refresh_active_execution_id_for_tests(
+    execution_id: ExecutionId | None = None,
+) -> ExecutionId:
+    """
+    Re-bind ``execution_id`` on the current active run/attempt (e.g. after retry transition).
+
+    Uses canonical minting only; does not create a parallel identity authority.
+    """
+    from intergrax.contracts.execution_identity import (
+        bind_active_execution_identity,
+        mint_execution_id,
+        peek_active_execution_task_id,
+        peek_active_parent_execution_id,
+        require_active_execution_identity,
+        validate_execution_id,
+    )
+
+    run_id, attempt_id = require_active_execution_identity()
+    resolved = (
+        validate_execution_id(execution_id)
+        if execution_id is not None
+        else mint_execution_id()
+    )
+    bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=resolved,
+        parent_execution_id=peek_active_parent_execution_id(),
+        task_id=peek_active_execution_task_id(),
+    )
+    return resolved

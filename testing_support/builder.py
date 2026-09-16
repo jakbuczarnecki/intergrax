@@ -8,7 +8,11 @@ from contextlib import contextmanager
 from datetime import datetime
 import os
 from pathlib import Path
-from typing import Any, Mapping, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence
+
+if TYPE_CHECKING:
+    from intergrax.runtime.events.emit_context import EmitContext
+    from intergrax.runtime.task.task import Task
 
 import urllib.request
 import urllib.error
@@ -48,6 +52,7 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 from intergrax.runtime.replay.policy import PolicyDecision, PolicyDecisionType
 from intergrax.runtime.replay.regression import RegressionSignals
+from intergrax.contracts.execution_identity import TaskId
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.runtime_execution_context import (
     RuntimeExecutionContext,
@@ -502,7 +507,7 @@ def build_runtime_state_for_tests(*, run_id: str) -> RuntimeState:
     return RuntimeState(context=ctx, run_id=canonical_run_id, request=request)
 
 
-def canonical_task_id_for_tests(seed: str) -> str:
+def canonical_task_id_for_tests(seed: str) -> TaskId:
     """Canonical TaskId correlated with :func:`canonical_run_id_for_tests` for the same seed."""
     from hashlib import sha256
 
@@ -514,6 +519,64 @@ def canonical_task_id_for_tests(seed: str) -> str:
         return validate_task_id(seed)
     digest = sha256(seed.encode()).hexdigest()[:32]
     return validate_task_id(f"task_{digest}")
+
+
+def canonical_kernel_identity_for_tests(run_seed: str) -> tuple[str, str]:
+    """Canonical ``(task_id, run_id)`` strings for kernel / step harness tests."""
+    return (
+        str(canonical_task_id_for_tests(run_seed)),
+        str(canonical_run_id_for_tests(run_seed)),
+    )
+
+
+def build_task_for_tests(
+    *,
+    seed: str = "unit-test",
+    tenant_id: str = "t1",
+    user_id: str = "u1",
+    message: str = "",
+    session_id: str | None = None,
+    agent_id: str | None = None,
+) -> Task:
+    """Build a contract-valid :class:`~intergrax.runtime.task.task.Task` for unit tests."""
+    from intergrax.runtime.task.task import Task, TaskContext
+
+    return Task(
+        task_id=canonical_task_id_for_tests(seed),
+        tenant_id=tenant_id,
+        user_id=user_id,
+        message=message,
+        session_id=session_id,
+        agent_id=agent_id,
+        context=TaskContext(),
+    )
+
+
+def build_emit_context_for_tests(
+    *,
+    seed: str = "unit-test",
+    task_id: str | None = None,
+    run_id: str | None = None,
+    attempt_id: str | None = None,
+    execution_id: str | None = None,
+    tenant_id: str | None = None,
+    correlation_id: str = "",
+    bus: object | None = None,
+    production_mode: bool = False,
+) -> EmitContext:
+    """Build a contract-valid :class:`~intergrax.runtime.events.emit_context.EmitContext`."""
+    from testing_support.runtime_events import emit_context_test_identity
+
+    return emit_context_test_identity(
+        task_id=task_id or canonical_task_id_for_tests(seed),
+        run_id=run_id or canonical_run_id_for_tests(seed),
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        tenant_id=tenant_id,
+        correlation_id=correlation_id,
+        bus=bus,
+        production_mode=production_mode,
+    )
 
 
 def build_runtime_request_for_tests(
@@ -658,6 +721,43 @@ def canonical_governed_execution_scope(run_id: str, *, bind_budget: bool = True)
         if budget_token is not None:
             reset_active_execution_budget(budget_token)
         reset_active_execution_identity(identity_token)
+
+
+@contextmanager
+def kernel_step_test_scope(run_seed: str, *, bind_budget: bool = True):
+    """Bind canonical identity and yield ``(task_id, run_id)`` for step kernel tests."""
+    with canonical_governed_execution_scope(run_seed, bind_budget=bind_budget):
+        yield canonical_kernel_identity_for_tests(run_seed)
+
+
+@contextmanager
+def governed_runtime_state_scope(run_id: str, *, bind_budget: bool = True):
+    """
+    Bind canonical execution identity (and optional budget) while yielding
+    :func:`build_runtime_state_for_tests` for the same ``run_id`` seed.
+    """
+    with canonical_governed_execution_scope(run_id, bind_budget=bind_budget):
+        yield build_runtime_state_for_tests(run_id=run_id)
+
+
+def build_stub_nexus_loop_for_unified_task_runner() -> object:
+    """
+    Minimal NexusLoop stand-in for :class:`~intergrax.runtime.task.unified_task_runner.UnifiedTaskRunner` tests.
+
+    Declares ``execution_lineage_persistence = None`` so root execution does not touch lineage stores.
+    """
+    from intergrax.runtime.events.event_bus import RuntimeEventBus
+
+    class _StubNexusLoop:
+        execution_budget_ledger_factory = None
+        run_budget = None
+        execution_lineage_persistence = None
+        event_bus = RuntimeEventBus()
+
+        async def publish_orchestration_root_terminal_runtime(self, task: object) -> None:
+            return None
+
+    return _StubNexusLoop()
 
 
 class DummyRunStore(RunStore):
