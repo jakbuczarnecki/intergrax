@@ -39,8 +39,11 @@ _FORBIDDEN_AUTHORITY_CLASS_NAMES = frozenset(
         "ProblemLifecycleEngine",
     },
 )
-_LEGACY_DECISION_CONTRACT = _REPO_ROOT / "intergrax" / "contracts" / "decision.py"
-_LEGACY_DECISION_PACKAGE = _REPO_ROOT / "intergrax" / "contracts" / "decision"
+_DECISION_INTEGRATION_PACKAGE = _REPO_ROOT / "intergrax" / "contracts" / "decision"
+_INTEGRATION_NAMESPACE_PREFIXES = (
+    "intergrax.contracts.decision",
+    "intergrax.contracts.decision.integration",
+)
 _LEGACY_APPROVAL_CONTRACT = _REPO_ROOT / "intergrax" / "contracts" / "approval.py"
 _LEGACY_APPROVAL_PACKAGE = _REPO_ROOT / "intergrax" / "approval"
 _CANONICAL_DECISION_MODULE_PREFIXES = (
@@ -95,10 +98,13 @@ def _collect_class_definitions(path: Path) -> list[tuple[int, str]]:
 
 
 def _is_legacy_mp4b_decision_import(module: str) -> bool:
-    if module == "intergrax.contracts.decision":
-        return True
-    if not module.startswith("intergrax.contracts.decision."):
+    if any(
+        module == prefix or module.startswith(f"{prefix}.")
+        for prefix in _INTEGRATION_NAMESPACE_PREFIXES
+    ):
         return False
+    if not module.startswith("intergrax.contracts.decision."):
+        return module == "intergrax.contracts.decision"
     return not any(
         module == prefix or module.startswith(f"{prefix}.")
         for prefix in _CANONICAL_DECISION_MODULE_PREFIXES
@@ -174,8 +180,9 @@ def test_mp4r0_multiplayer_production_does_not_import_legacy_mp4_decision_contra
 
 
 def test_mp4r0_legacy_mp4_surfaces_remain_quarantined_pending_convergence() -> None:
-    """Caller-proof retirement path — legacy modules exist but are not MP-4R0 expansion targets."""
-    assert _LEGACY_DECISION_CONTRACT.is_file()
-    assert _LEGACY_DECISION_PACKAGE.is_dir()
+    """MP-4R1 retired MP-4B module; Approval package remains quarantined until MP-4R2."""
+    legacy_decision_module = _REPO_ROOT / "intergrax" / "contracts" / "decision.py"
+    assert not legacy_decision_module.is_file()
+    assert _DECISION_INTEGRATION_PACKAGE.is_dir()
     assert _LEGACY_APPROVAL_CONTRACT.is_file()
     assert _LEGACY_APPROVAL_PACKAGE.is_dir()

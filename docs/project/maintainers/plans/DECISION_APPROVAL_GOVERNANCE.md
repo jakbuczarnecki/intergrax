@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4R0 — CLOSURE FIX / READY_FOR_REAUDIT** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B/C `FROZEN_PENDING_CONVERGENCE` · MP-4D `FROZEN_PENDING_AUTHORITY_REBASE` · **MP-4R1 NOT STARTED**
+**Status:** **MP-4R1 — READY_FOR_INDEPENDENT_AUDIT** · **MP-4R0** closed · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `FROZEN_PENDING_CONVERGENCE` · MP-4D `FROZEN_PENDING_AUTHORITY_REBASE` · **MP-4R2 NOT STARTED**
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -45,10 +45,12 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R1 |
-| **Status** | **NOT STARTED** |
+| **Status** | **READY_FOR_INDEPENDENT_AUDIT** |
 | **Purpose** | Converge `intergrax/contracts/decision.py` onto canonical Decision System (`decision_identity`, lifecycle, resolution, finalization); resolve **MP-4R1 convergence debt** (`decision/` package shadowing sibling `decision.py`, `importlib` dynamic MP-4B export bridge) |
 | **Dependencies** | MP-4R0 closed |
-| **Acceptance** | No duplicate `DecisionId` in production paths; only genuine collaborative reference types remain |
+| **Acceptance** | No duplicate `DecisionId` in production paths; Decision Integration SPI preserved; `test_mp4r1_decision_authority_convergence_gates.py` green |
+| **Proof requirements** | `pytest tests/unit/runtime/architecture/test_mp4r1_decision_authority_convergence_gates.py`; decision integration + canonical decision suites |
+| **Next step** | Independent MP-4R1 audit → MP-4R2 (NOT STARTED) |
 
 ---
 
@@ -135,7 +137,7 @@ Use, modification, or distribution without written permission is prohibited.
 | Slice | Status |
 |-------|--------|
 | MP-4A | SUPERSEDED_BY_MP4R0 |
-| MP-4B | FROZEN_PENDING_CONVERGENCE |
+| MP-4B | RETIRED (MP-4R1) |
 | MP-4C | FROZEN_PENDING_CONVERGENCE |
 | MP-4D | FROZEN_PENDING_AUTHORITY_REBASE |
 | MP-4E | CANCELLED_BEFORE_START |

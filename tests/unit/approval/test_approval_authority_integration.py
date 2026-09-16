@@ -53,7 +53,7 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
-from intergrax.contracts.decision import mint_decision_id
+from intergrax.contracts.decision_identity import mint_decision_id
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
