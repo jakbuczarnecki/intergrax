@@ -43,6 +43,11 @@ class _OperationRecord:
     physical_status: _PhysicalStatus
     result_value: str | None = None
     status_spoof_field: str | None = None
+    status_omit_field: str | None = None
+    status_force_error: bool = False
+    reattach_force_error: bool = False
+    reattach_omit_field: str | None = None
+    reattach_spoof_field: str | None = None
 
 
 @dataclass
@@ -117,18 +122,35 @@ def handle_worker_request(state: WorkerState, raw: bytes) -> WorkerResponse | No
                 code="NOT_FOUND",
                 message="operation not found",
             )
+        if record.status_force_error:
+            return _error_response(
+                request.request_id,
+                code="PROVIDER_FAILURE",
+                message="status read rejected by worker",
+            )
         spoof = record.status_spoof_field
         req_id = record.provider_request_id
         op_id_out = record.provider_operation_id
+        inv_id = record.invocation_id
         if spoof == "provider_request_id":
             req_id = "spoof-req"
         elif spoof == "provider_operation_id":
             op_id_out = "spoof-op"
+        elif spoof == "invocation_id":
+            inv_id = "spoof-inv"
+        omit = record.status_omit_field
+        if omit == "provider_request_id":
+            req_id = None
+        elif omit == "provider_operation_id":
+            op_id_out = None
+        elif omit == "invocation_id":
+            inv_id = None
         return WorkerResponse(
             request_id=request.request_id,
             status=WorkerResponseStatus.OK,
             provider_request_id=req_id,
             provider_operation_id=op_id_out,
+            invocation_id=inv_id,
             physical_status=record.physical_status.value,
         )
 
@@ -154,6 +176,7 @@ def handle_worker_request(state: WorkerState, raw: bytes) -> WorkerResponse | No
             status=WorkerResponseStatus.OK,
             provider_request_id=record.provider_request_id,
             provider_operation_id=record.provider_operation_id,
+            invocation_id=record.invocation_id,
         )
 
     if request.method is WorkerRpcMethod.REATTACH:
@@ -172,14 +195,38 @@ def handle_worker_request(state: WorkerState, raw: bytes) -> WorkerResponse | No
                 code="NOT_FOUND",
                 message="operation not found",
             )
+        if record.reattach_force_error:
+            return _error_response(
+                request.request_id,
+                code="PROVIDER_FAILURE",
+                message="reattach rejected by worker",
+            )
         kind = "reattached"
         if record.physical_status is _PhysicalStatus.SUCCEEDED:
             kind = "already_attached"
+        req_id = record.provider_request_id
+        op_id_out = record.provider_operation_id
+        inv_id = record.invocation_id
+        spoof = record.reattach_spoof_field
+        if spoof == "provider_request_id":
+            req_id = "spoof-req"
+        elif spoof == "provider_operation_id":
+            op_id_out = "spoof-op"
+        elif spoof == "invocation_id":
+            inv_id = "spoof-inv"
+        omit = record.reattach_omit_field
+        if omit == "provider_request_id":
+            req_id = None
+        elif omit == "provider_operation_id":
+            op_id_out = None
+        elif omit == "invocation_id":
+            inv_id = None
         return WorkerResponse(
             request_id=request.request_id,
             status=WorkerResponseStatus.OK,
-            provider_request_id=record.provider_request_id,
-            provider_operation_id=record.provider_operation_id,
+            provider_request_id=req_id,
+            provider_operation_id=op_id_out,
+            invocation_id=inv_id,
             physical_status=record.physical_status.value,
             reattachment_kind=kind,
         )
@@ -256,17 +303,50 @@ def handle_worker_request(state: WorkerState, raw: bytes) -> WorkerResponse | No
         if behavior == "slow":
             threading.Event().wait(timeout=3600.0)
 
+        status_spoof: str | None = None
+        if behavior == "status_spoof_provider_request_id":
+            status_spoof = "provider_request_id"
+        elif behavior == "status_spoof_provider_operation_id":
+            status_spoof = "provider_operation_id"
+        elif behavior == "status_spoof_invocation_id":
+            status_spoof = "invocation_id"
+
+        status_omit: str | None = None
+        if behavior == "status_missing_provider_request_id":
+            status_omit = "provider_request_id"
+        elif behavior == "status_missing_provider_operation_id":
+            status_omit = "provider_operation_id"
+        elif behavior == "status_missing_invocation_id":
+            status_omit = "invocation_id"
+
+        reattach_omit: str | None = None
+        if behavior == "reattach_missing_provider_request_id":
+            reattach_omit = "provider_request_id"
+        elif behavior == "reattach_missing_provider_operation_id":
+            reattach_omit = "provider_operation_id"
+        elif behavior == "reattach_missing_invocation_id":
+            reattach_omit = "invocation_id"
+
+        reattach_spoof: str | None = None
+        if behavior == "reattach_spoof_provider_request_id":
+            reattach_spoof = "provider_request_id"
+        elif behavior == "reattach_spoof_provider_operation_id":
+            reattach_spoof = "provider_operation_id"
+        elif behavior == "reattach_spoof_invocation_id":
+            reattach_spoof = "invocation_id"
+
         record = _OperationRecord(
             provider_request_id=provider_request_id,
             provider_operation_id=provider_operation_id,
             invocation_id=invocation_id,
             execution_id=request.execution_id,
             physical_status=_PhysicalStatus.RUNNING,
-            status_spoof_field=(
-                "provider_request_id"
-                if behavior == "status_spoof_provider_request_id"
-                else None
-            ),
+            status_spoof_field=status_spoof,
+            status_omit_field=status_omit,
+            status_force_error=behavior == "status_read_provider_error",
+            reattach_force_error=behavior == "reattach_provider_error",
+            reattach_omit_field=reattach_omit,
+            reattach_spoof_field=reattach_spoof,
         )
         with state.lock:
             state.operations[provider_operation_id] = record
@@ -281,6 +361,7 @@ def handle_worker_request(state: WorkerState, raw: bytes) -> WorkerResponse | No
             status=WorkerResponseStatus.OK,
             provider_request_id=provider_request_id,
             provider_operation_id=provider_operation_id,
+            invocation_id=invocation_id,
             result=WorkerExecuteResult(
                 value=result_value,
                 child_execution_id=request.execution_id,

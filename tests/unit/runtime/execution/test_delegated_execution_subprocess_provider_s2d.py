@@ -686,19 +686,19 @@ async def test_c1_t10_worker_crash_normalized_transport_failure() -> None:
         assert outcome.invocation_binding is not None
         execution_id = outcome.invocation_binding.execution_id
         provider.close()
-        revived = create_subprocess_delegated_execution_provider(config=_config())
-        try:
-            status = DelegatedExecutionStatusReadService(
-                DelegatedInvocationCorrelationService(store),
-                _fresh_resolver(revived),
-            )
-            read = await status.read_status_by_execution_id(execution_id)
-            assert read.category is DelegatedExecutionStatusOutcomeCategory.TRANSPORT_FAILURE
-            assert read.failure_code == "TRANSPORT_FAILURE"
-            assert "ConnectionRefusedError" not in str(read.failure_message)
-            assert "BrokenPipeError" not in str(read.failure_message)
-        finally:
-            revived.close()
+        failing = SubprocessDelegatedExecutionProvider(
+            _config(),
+            transport=FailingConnectTransport(),
+        )
+        status = DelegatedExecutionStatusReadService(
+            DelegatedInvocationCorrelationService(store),
+            _fresh_resolver(failing),
+        )
+        read = await status.read_status_by_execution_id(execution_id)
+        assert read.category is DelegatedExecutionStatusOutcomeCategory.TRANSPORT_FAILURE
+        assert read.failure_code == "TRANSPORT_FAILURE"
+        assert "ConnectionRefusedError" not in str(read.failure_message)
+        assert "BrokenPipeError" not in str(read.failure_message)
     finally:
         pass
 
@@ -922,6 +922,267 @@ async def test_c1_t23_secret_never_leaks_in_provider_paths() -> None:
         assert _SECRET not in blob
     finally:
         provider.close()
+
+
+@pytest.mark.asyncio
+async def test_c2_t1_status_explicit_provider_error_via_service(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(
+            value="status-err",
+            behavior="status_read_provider_error",
+        ),
+    )
+    assert outcome.invocation_binding is not None
+    status = _fresh_status_service(store, subprocess_provider)
+    read = await status.read_status_by_execution_id(outcome.invocation_binding.execution_id)
+    assert read.category is DelegatedExecutionStatusOutcomeCategory.PROVIDER_FAILURE
+
+
+@pytest.mark.asyncio
+async def test_c2_t2_status_transport_failure_via_service(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(value="status-transport"),
+    )
+    assert outcome.invocation_binding is not None
+    execution_id = outcome.invocation_binding.execution_id
+    failing = SubprocessDelegatedExecutionProvider(
+        _config(),
+        transport=FailingConnectTransport(),
+    )
+    status = DelegatedExecutionStatusReadService(
+        DelegatedInvocationCorrelationService(store),
+        _fresh_resolver(failing),
+    )
+    read = await status.read_status_by_execution_id(execution_id)
+    assert read.category is DelegatedExecutionStatusOutcomeCategory.TRANSPORT_FAILURE
+
+
+@pytest.mark.asyncio
+async def test_c2_t3_reattach_explicit_provider_error_via_service(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(
+            value="reattach-err",
+            behavior="reattach_provider_error",
+        ),
+    )
+    assert outcome.invocation_binding is not None
+    continuation = _fresh_continuation_service(store, subprocess_provider)
+    reattach = await continuation.reattach_by_execution_id(
+        outcome.invocation_binding.execution_id,
+    )
+    assert reattach.category is DelegatedExecutionContinuationOutcomeCategory.PROVIDER_FAILURE
+
+
+@pytest.mark.asyncio
+async def test_c2_t4_reattach_not_found_via_service(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(value="reattach-nf"),
+    )
+    assert outcome.invocation_binding is not None
+    provider = create_subprocess_delegated_execution_provider(config=_config())
+    try:
+        continuation = _fresh_continuation_service(store, provider)
+        reattach = await continuation.reattach_by_execution_id(
+            outcome.invocation_binding.execution_id,
+        )
+        assert (
+            reattach.category
+            is DelegatedExecutionContinuationOutcomeCategory.PROVIDER_OPERATION_NOT_FOUND
+        )
+    finally:
+        provider.close()
+
+
+@pytest.mark.asyncio
+async def test_c2_t5_reattach_transport_failure_via_service(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(value="reattach-transport"),
+    )
+    assert outcome.invocation_binding is not None
+    execution_id = outcome.invocation_binding.execution_id
+    failing = SubprocessDelegatedExecutionProvider(
+        _config(),
+        transport=FailingConnectTransport(),
+    )
+    continuation = DelegatedExecutionContinuationService(
+        DelegatedInvocationCorrelationService(store),
+        _fresh_resolver(failing),
+    )
+    reattach = await continuation.reattach_by_execution_id(execution_id)
+    assert reattach.category is DelegatedExecutionContinuationOutcomeCategory.TRANSPORT_FAILURE
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "behavior",
+    [
+        "status_missing_provider_request_id",
+        "status_missing_provider_operation_id",
+        "status_missing_invocation_id",
+    ],
+)
+async def test_c2_t6_t8_status_missing_correlation_mismatch(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+    behavior: str,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(value="status-miss", behavior=behavior),
+    )
+    assert outcome.invocation_binding is not None
+    status = _fresh_status_service(store, subprocess_provider)
+    read = await status.read_status_by_execution_id(outcome.invocation_binding.execution_id)
+    assert (
+        read.category
+        is DelegatedExecutionStatusOutcomeCategory.STATUS_OUTCOME_CONTRACT_MISMATCH
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "behavior",
+    [
+        "status_spoof_provider_request_id",
+        "status_spoof_provider_operation_id",
+        "status_spoof_invocation_id",
+    ],
+)
+async def test_c2_t9_t11_status_spoof_fail_closed(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+    behavior: str,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(value="status-spoof", behavior=behavior),
+    )
+    assert outcome.invocation_binding is not None
+    status = _fresh_status_service(store, subprocess_provider)
+    read = await status.read_status_by_execution_id(outcome.invocation_binding.execution_id)
+    assert (
+        read.category
+        is DelegatedExecutionStatusOutcomeCategory.STATUS_OUTCOME_CONTRACT_MISMATCH
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "behavior",
+    [
+        "reattach_missing_provider_request_id",
+        "reattach_missing_provider_operation_id",
+        "reattach_missing_invocation_id",
+    ],
+)
+async def test_c2_t12_t14_reattach_missing_correlation_mismatch(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+    behavior: str,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(value="reattach-miss", behavior=behavior),
+    )
+    assert outcome.invocation_binding is not None
+    continuation = _fresh_continuation_service(store, subprocess_provider)
+    reattach = await continuation.reattach_by_execution_id(
+        outcome.invocation_binding.execution_id,
+    )
+    assert (
+        reattach.category
+        is DelegatedExecutionContinuationOutcomeCategory.CONTINUATION_OUTCOME_CONTRACT_MISMATCH
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "behavior",
+    [
+        "reattach_spoof_provider_request_id",
+        "reattach_spoof_provider_operation_id",
+        "reattach_spoof_invocation_id",
+    ],
+)
+async def test_c2_t15_t17_reattach_spoof_fail_closed(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+    behavior: str,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(value="reattach-spoof", behavior=behavior),
+    )
+    assert outcome.invocation_binding is not None
+    continuation = _fresh_continuation_service(store, subprocess_provider)
+    reattach = await continuation.reattach_by_execution_id(
+        outcome.invocation_binding.execution_id,
+    )
+    assert (
+        reattach.category
+        is DelegatedExecutionContinuationOutcomeCategory.CONTINUATION_OUTCOME_CONTRACT_MISMATCH
+    )
+
+
+def test_c2_no_observation_correlation_fallback_in_provider_module() -> None:
+    source = _PROVIDER_MODULE.read_text(encoding="utf-8")
+    forbidden = (
+        "response.provider_request_id or inv.provider_request_id",
+        "response.provider_operation_id or inv.provider_operation_id",
+    )
+    for pattern in forbidden:
+        assert pattern not in source
+
+
+@pytest.mark.asyncio
+async def test_c2_t18_status_error_message_sanitized(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(
+            value="sanitize-status",
+            behavior="status_read_provider_error",
+        ),
+    )
+    assert outcome.invocation_binding is not None
+    status = _fresh_status_service(store, subprocess_provider)
+    read = await status.read_status_by_execution_id(outcome.invocation_binding.execution_id)
+    assert read.failure_message is not None
+    assert "status read rejected" not in read.failure_message
+    assert "worker" not in read.failure_message.lower()
+
+
+@pytest.mark.asyncio
+async def test_c2_t19_reattach_error_message_sanitized(
+    subprocess_provider: SubprocessDelegatedExecutionProvider,
+) -> None:
+    outcome, store, _service = await _run_delegated_durable(
+        subprocess_provider,
+        payload=SubprocessEchoPayload(
+            value="sanitize-reattach",
+            behavior="reattach_provider_error",
+        ),
+    )
+    assert outcome.invocation_binding is not None
+    continuation = _fresh_continuation_service(store, subprocess_provider)
+    reattach = await continuation.reattach_by_execution_id(
+        outcome.invocation_binding.execution_id,
+    )
+    assert reattach.failure_message is not None
+    assert "reattach rejected" not in reattach.failure_message
+    assert "worker" not in reattach.failure_message.lower()
 
 
 def test_s2d_t29_no_global_registry() -> None:

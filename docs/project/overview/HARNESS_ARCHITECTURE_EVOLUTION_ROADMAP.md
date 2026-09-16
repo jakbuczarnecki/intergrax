@@ -594,11 +594,15 @@ Do not rebuild existing sandbox providers solely for parity.
 
 **P2.1-S2 = OPEN** (S2C CLOSED; remaining S2 adoption slices beyond durable correlation plane).
 
-**P2.1-S2D — real external delegated provider production qualification = CLOSED** (provider seam production-qualified against ``subprocess_delegated_execution`` on development; real subprocess + TCP transport boundary; qualified capabilities: execute, status, cancel, reattachment; unsupported: pause, resume, interrupt, streaming; evidence: ``tests/unit/runtime/execution/test_delegated_execution_subprocess_provider_s2d.py`` + S2C regression suite).
+**P2.1-S2D — real external delegated provider production qualification = CLOSED** (provider seam production-qualified against ``subprocess_delegated_execution``; P2.1-S2D-C2 trust-boundary hardening: provider explicit ERROR ≠ transport; observation correlation from worker evidence only; fail-closed mismatch/spoof; evidence: ``tests/unit/runtime/execution/test_delegated_execution_subprocess_provider_s2d.py`` + S2C regression suite).
 
-**P2.1-S2D qualified provider:** ``intergrax.integrations.providers.delegated_execution.subprocess`` — ``SubprocessDelegatedExecutionProvider`` (``provider_id=subprocess_delegated_execution``, ``provider_version=1.0.0``).
+**P2.1-S2D qualified provider:** ``subprocess_delegated_execution`` — ``SubprocessDelegatedExecutionProvider`` (``provider_version=1.0.0``).
 
-**P2.1-S2D qualification evidence:** ``.tmp/session/P2.1-S2D/regression.log`` (session-local; not committed).
+**P2.1-S2D qualification SHA:** ``e875d848d`` (P2.1-S2D-C2).
+
+**P2.1-S2D qualified capabilities:** execute, status, cancel, reattachment. **Unsupported:** pause, resume, interrupt, streaming.
+
+**P2.1-S2D qualification evidence:** ``.tmp/session/P2.1-S2D-C2/regression.log`` (session-local; not committed).
 
 Tests: `tests/unit/runtime/execution/test_delegated_execution_provider.py`, `tests/unit/runtime/execution/test_delegated_execution_adoption.py`, `tests/unit/runtime/execution/test_delegated_execution_control.py`, `tests/unit/runtime/execution/test_delegated_execution_invocation_binding_issuance.py`, `tests/unit/runtime/execution/test_delegated_invocation_correlation_durability.py`, `tests/unit/runtime/execution/test_delegated_execution_status.py`, `tests/unit/runtime/execution/test_delegated_execution_query.py`, `tests/unit/runtime/execution/test_delegated_execution_continuation.py`, `tests/unit/runtime/architecture/test_mp4r3_execution_continuation_integration_gates.py`, `tests/unit/runtime/execution/continuation/test_gr5_r5_restart_exact_identity.py`, `tests/unit/runtime/execution/test_delegated_execution_subprocess_provider_s2d.py`
 

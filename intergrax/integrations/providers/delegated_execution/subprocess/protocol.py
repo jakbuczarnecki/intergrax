@@ -62,6 +62,7 @@ class WorkerResponse(BaseModel):
     result: WorkerExecuteResult | None = None
     provider_request_id: str | None = None
     provider_operation_id: str | None = None
+    invocation_id: str | None = None
     physical_status: str | None = None
     reattachment_kind: str | None = None
     execute_count: int | None = None

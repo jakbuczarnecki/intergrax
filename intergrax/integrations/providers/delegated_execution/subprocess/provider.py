@@ -28,6 +28,7 @@ from intergrax.contracts.delegated_execution_provider import (
     DelegatedExecutionOutcome,
     DelegatedExecutionOutcomeCategory,
     DelegatedExecutionProvider,
+    DelegatedExecutionProviderError,
     DelegatedExecutionRequest,
     DelegatedExecutionTransportError,
     assert_provider_native_ids_distinct_from_execution,
@@ -329,20 +330,24 @@ class SubprocessDelegatedExecutionProvider(
             provider_operation_id=inv.provider_operation_id,
             invocation_id=inv.invocation_id,
         )
-        response = await asyncio.to_thread(
-            self._transport.roundtrip,
-            wire,
-            timeout_seconds=self._config.request_timeout_seconds,
-            connect_timeout_seconds=self._config.connect_timeout_seconds,
-        )
+        try:
+            response = await asyncio.to_thread(
+                self._transport.roundtrip,
+                wire,
+                timeout_seconds=self._config.request_timeout_seconds,
+                connect_timeout_seconds=self._config.connect_timeout_seconds,
+            )
+        except DelegatedExecutionTransportError:
+            raise
         if response.status is WorkerResponseStatus.ERROR:
-            raise DelegatedExecutionTransportError("status read failed")
+            raise DelegatedExecutionProviderError(_PROVIDER_FAILURE_MESSAGE)
         physical = _map_physical_status(response.physical_status)
+        invocation_id = response.invocation_id or ""
         return DelegatedExecutionProviderStatusObservation(
             provider_id=self._provider_id,
-            invocation_id=inv.invocation_id,
-            provider_request_id=response.provider_request_id or inv.provider_request_id,
-            provider_operation_id=response.provider_operation_id or inv.provider_operation_id,
+            invocation_id=invocation_id,
+            provider_request_id=response.provider_request_id,
+            provider_operation_id=response.provider_operation_id,
             physical_status=physical,
         )
 
@@ -359,12 +364,15 @@ class SubprocessDelegatedExecutionProvider(
             provider_operation_id=inv.provider_operation_id,
             invocation_id=inv.invocation_id,
         )
-        response = await asyncio.to_thread(
-            self._transport.roundtrip,
-            wire,
-            timeout_seconds=self._config.request_timeout_seconds,
-            connect_timeout_seconds=self._config.connect_timeout_seconds,
-        )
+        try:
+            response = await asyncio.to_thread(
+                self._transport.roundtrip,
+                wire,
+                timeout_seconds=self._config.request_timeout_seconds,
+                connect_timeout_seconds=self._config.connect_timeout_seconds,
+            )
+        except DelegatedExecutionTransportError:
+            raise
         if response.status is WorkerResponseStatus.ERROR:
             if response.error_code == "NOT_FOUND":
                 return DelegatedExecutionProviderReattachmentObservation(
@@ -374,15 +382,15 @@ class SubprocessDelegatedExecutionProvider(
                     provider_operation_id=inv.provider_operation_id,
                     kind=DelegatedExecutionReattachmentKind.OPERATION_NOT_FOUND,
                 )
-            raise DelegatedExecutionTransportError("reattach failed")
+            raise DelegatedExecutionProviderError(_PROVIDER_FAILURE_MESSAGE)
         kind = DelegatedExecutionReattachmentKind.REATTACHED
         if response.reattachment_kind == "already_attached":
             kind = DelegatedExecutionReattachmentKind.ALREADY_ATTACHED
         return DelegatedExecutionProviderReattachmentObservation(
             provider_id=self._provider_id,
-            invocation_id=inv.invocation_id,
-            provider_request_id=response.provider_request_id or inv.provider_request_id,
-            provider_operation_id=response.provider_operation_id or inv.provider_operation_id,
+            invocation_id=response.invocation_id or "",
+            provider_request_id=response.provider_request_id,
+            provider_operation_id=response.provider_operation_id,
             kind=kind,
         )
 
