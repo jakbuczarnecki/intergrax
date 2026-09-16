@@ -256,24 +256,8 @@ def prepare_task_continuation_projection(
                 idempotent_no_op=True,
             )
         if stored_digest is None:
-            return _PreparedTaskContinuationProjection(
-                continuation_id=pending.continuation_id,
-                revision=pending.revision,
-                lifecycle_state_value=pending.lifecycle_state.value,
-                payload_digest=incoming_digest,
-                paused=governance_paused_for_lifecycle(pending.lifecycle_state),
-                pause_record=None,
-                human_request=None,
-                clear_hitl_and_grants=False,
-                hitl_resolution=None,
-                human_verdict_option=None,
-                human_pause_id=None,
-                human_request_id_option=None,
-                clear_pause_on_resume=False,
-                clear_pause_on_cancel=False,
-                clear_declarative_hitl_on_resume=False,
-                replace_completed_continuation=False,
-                idempotent_no_op=True,
+            raise ExecutionContinuationProjectionError(
+                "legacy projection lacks payload digest; same-revision equality cannot be verified",
             )
 
     _validate_pending_snapshot_for_projection(pending)
