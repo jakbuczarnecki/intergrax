@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4R0…MP-4R5 CLOSED** — **MP-4R6 — READY_FOR_INDEPENDENT_AUDIT** (ADR-MP-009)
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4R0…MP-4R7 CLOSED** — **MP-4R8 — READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** (ADR-MP-009)
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4R6** — Legacy removal & migration (independent audit pending)
-**Next task:** Independent **MP-4R7** audit → **MP-4R8 NOT STARTED**
+**Current active task:** **MP-4R8** — Final closure audit (`READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT`; formal MP-4 closure pending independent GitHub audit)
+**Next task:** Independent **MP-4** program audit on GitHub — **no further MP-4 implementation slices**
 
 ---
 
@@ -206,7 +206,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **MP-4R7 READY_FOR_INDEPENDENT_MP4R7_AUDIT** — MP-4R0…MP-4R6 **CLOSED**; MP-4B/MP-4C/MP-4D **RETIRED**; MP-4R8 **NOT STARTED** |
+| **Status** | **MP-4R0…MP-4R7 CLOSED** — **MP-4R8 READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT**; MP-4B/MP-4C/MP-4D **RETIRED** |
 | **Purpose** | Multiplayer **bindings/projections** over canonical Decision, Governance/HITL, Execution continuation, Evidence, and Diagnostics — no duplicate authorities |
 | **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) + Collaborative Work for work primitives |
 | **Dependencies** | MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3 ownership **FROZEN**; canonical Decision + GR-5 continuation |
@@ -227,8 +227,8 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-4R4 | Collaborative decision binding | **CLOSED** |
 | MP-4R5 | Evidence Plane adoption | **CLOSED** |
 | MP-4R6 | Legacy removal & migration | **READY_FOR_INDEPENDENT_AUDIT** |
-| MP-4R7 | Enterprise integration qualification | **READY_FOR_INDEPENDENT_MP4R7_AUDIT** |
-| MP-4R8 | Final closure audit | NOT STARTED |
+| MP-4R7 | Enterprise integration qualification | **CLOSED** |
+| MP-4R8 | Final closure audit | **READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** |
 
 ### Legacy MP-4 (historical)
 

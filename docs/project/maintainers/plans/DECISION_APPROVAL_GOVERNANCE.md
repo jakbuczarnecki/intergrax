@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4R3 CLOSED** · **MP-4R4 CLOSED** · **MP-4R5 — READY_FOR_INDEPENDENT_AUDIT** (operation-outcome adoption only; binding association blocked on Evidence Plane contract) · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
+**Status:** **MP-4R0…MP-4R7 CLOSED** · **MP-4R8 — READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -127,7 +127,7 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R7 |
-| **Status** | **READY_FOR_INDEPENDENT_MP4R7_AUDIT** |
+| **Status** | **CLOSED** |
 | **Purpose** | E2E proof: Collaborative Work → canonical Decision → Governance/HITL → `ExecutionContinuationPort` → Execution → Evidence → Diagnostics |
 | **Dependencies** | MP-4R6 |
 | **Qualification** | `testing_support/mp4r7_enterprise_integration/` composition + `tests/unit/mp4r7/test_enterprise_integration_qualification.py` + `test_mp4r7_enterprise_integration_gates.py` |
@@ -139,8 +139,8 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R8 |
-| **Status** | **NOT STARTED** |
-| **Purpose** | Independent architecture/code audit; closes MP-4 program |
+| **Status** | **READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** |
+| **Purpose** | Final repository-wide ownership/bypass audit; Cursor cannot self-certify formal MP-4 closure |
 | **Dependencies** | MP-4R7 |
 
 ---

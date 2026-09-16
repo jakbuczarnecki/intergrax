@@ -458,7 +458,7 @@ not replace existing Evidence.
 
 ### MP-4R — Canonical core integration (replaces pre-rebase MP-4 program)
 
-**Status:** **MP-4R5 — READY_FOR_FINAL_INDEPENDENT_MP4R5_CLOSURE_AUDIT** — ADR-MP-009 **Accepted**; MP-4R0…MP-4R4 **CLOSED**; MP-4B/MP-4C/MP-4D **RETIRED**; Evidence adoption = `FunctionalEvidencePersistence` + projection strategy (operation outcome); association fact **blocked** on frozen Evidence Plane contract; MP-4R6…MP-4R8 **NOT STARTED**.
+**Status:** **MP-4R0…MP-4R7 CLOSED** — **MP-4R8 — READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** — ADR-MP-009 **Accepted**; MP-4B/MP-4C/MP-4D **RETIRED**; Evidence adoption = `FunctionalEvidencePersistence` + projection (operation outcome); association fact **blocked** on frozen Evidence Plane contract (documented non-blocking limitation).
 
 **Intent:** Associate collaborative work (WorkItem, WorkArtifact) with **canonical** Decision, Governance/HITL, Execution continuation (`ExecutionContinuationPort`), Evidence, and Diagnostics — without owning Decision lifecycle, Approval/HITL authority, execution state, evidence facts, or diagnostic interpretation.
 
@@ -472,7 +472,7 @@ not replace existing Evidence.
 
 **Legacy removed (MP-4R2):** `intergrax/contracts/approval.py`, `intergrax/approval/` — human judgment via canonical `decision_human_review` + Governance/HITL. MP-4B module **removed** (MP-4R1); `intergrax/contracts/decision/` = Integration SPI only.
 
-**Next active task:** **Independent MP-4R5 audit** — **MP-4R6 NOT STARTED**.
+**Next active task:** **Independent MP-4 final audit** (GitHub) — implementation **STOP** until formal MP-4 closure.
 
 **Evidence Plane adoption note (MP-4R5):** Multiplayer consumes canonical Evidence Plane contracts (`intergrax.contracts.functional_evidence`); it does **not** own evidence persistence or reinterpret frozen `PipelineEvidenceKind` semantics. MP-4R5 delivers **operation execution evidence coverage** for binding create (`OPERATION_OUTCOME` only). Full typed evidence for **WorkItem ↔ DecisionProposalRef** is **not** in frozen Evidence Plane v2 — **deferred platform decision**; no string/artifact workaround (`CollaborativeDecisionBindingAssociationNotRepresentable`). Application wiring: `CollaborativeDecisionBindingApplicationService` + `decision_binding_composition` (contracts injectable at composition root). Primary operation failure remains authoritative when failed-operation-outcome evidence emission fails (best-effort secondary reporting per hosted bootstrap reporter semantics; secondary failure is logged, not propagated over the domain error).
 

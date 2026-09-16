@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4 / MP-4R)
 
-**Status:** **MP-4R3 CLOSED** · **MP-4R4 CLOSED** (Collaborative `DecisionProposalRef` binding; Multiplayer-owned association only) · **MP-4R5 — READY_FOR_FINAL_INDEPENDENT_MP4R5_CLOSURE_AUDIT** (operation-outcome evidence adoption; WorkItem ↔ DecisionProposalRef association — **deferred** frozen Evidence Plane gap) · **MP-4R2** closed · **MP-4R1** closed · **MP-4R0** closed · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `RETIRED` (MP-4R1) · **MP-4C** `RETIRED` (MP-4R2) · **MP-4D** `RETIRED` (MP-4R2) · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8
+**Status:** **MP-4R0…MP-4R7 CLOSED** · **MP-4R8 — READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** (Cursor final closure audit at `365082a4`; formal MP-4 program closure requires independent GitHub audit) · legacy **MP-4A** `SUPERSEDED_BY_MP4R0` · **MP-4B** `RETIRED` (MP-4R1) · **MP-4C** `RETIRED` (MP-4R2) · **MP-4D** `RETIRED` (MP-4R2) · legacy MP-4E…MP-4H **cancelled/replaced** by MP-4R1…MP-4R8
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (1:1):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -58,29 +58,49 @@ Multiplayer MUST NOT own diagnostic interpretation.
 ## Target integration model
 
 ```text
-                PLATFORM CORE
-
-      Canonical Decision System
-                │
-        Governance / HITL
-                │
-      ExecutionContinuationPort
-                │
-         Execution Engine
-                │
-           Evidence Plane
-                │
-           Diagnostics
-
-                ↑
-       typed references / bindings
-
-          MULTIPLAYER PLANE
-                │
-       WorkItem / Assignment
-                │
- WorkArtifact / WorkArtifactVersion
+Collaborative Work (WorkItem / Assignment / WorkArtifact)
+        ↓
+CollaborativeDecisionBinding (association only)
+        ↓
+exact DecisionProposalRef
+        ↓
+Decision System (lifecycle / resolution)
+        ↓
+Governance (ALLOW / DENY / REQUIRE_HUMAN)
+        ↓
+Human Review / HITL when required
+        ↓
+post-human Governance
+        ↓
+DecisionExecutionAuthorization + current-policy validation
+        ↓
+ExecutionContinuationPort (pause / resume)
+        ↓
+Execution Engine (identity + lifecycle; Nexus internal)
+        ↓
+Evidence Plane (facts)
+        ↓
+Factual reconstruction
+        ↓
+Diagnostics (interpretation)
 ```
+
+---
+
+## MP-4R8 ownership matrix (enterprise closure)
+
+| Concern | Canonical owner | Canonical contract surface |
+|---------|-----------------|----------------------------|
+| Decision truth | Decision System | `decision_identity`, `decision_lifecycle`, `decision_record`, … |
+| Human approval | Human Review / HITL | `decision_human_review`, `HumanApproverEvidence` |
+| Governance authorization | Governance | `DecisionGovernanceDecision`, evaluator plugins |
+| Execution authorization | Governance-derived authorization | `DecisionExecutionAuthorization`, `mint_validated_execution_authorization` |
+| Continuation lifecycle | Execution | `ExecutionContinuationPort` |
+| Collaborative association | Multiplayer Collaborative Work | `CollaborativeDecisionBinding`, `CollaborativeDecisionBindingRepository` |
+| Evidence facts | Evidence Plane | `FunctionalEvidencePersistence`, `PlatformFunctionalEvidence` |
+| Diagnostics interpretation | Diagnostics | functional diagnostic specs / analyzers |
+
+**Known non-blocking limitation (frozen):** `CollaborativeDecisionBinding` WorkItem ↔ `DecisionProposalRef` association has **no** dedicated frozen Evidence Plane v2 fact kind; MP-4R5 adopts **operation outcome** evidence only — no `OUTPUT_RELATION` / `ARTIFACT_LINEAGE` workaround.
 
 ---
 
@@ -152,10 +172,10 @@ configured platform implementation
 | **MP-4R2** — Human review / Approval convergence | **CLOSED** |
 | MP-4R3 — Execution continuation integration | **CLOSED** |
 | MP-4R4 — Collaborative decision binding | **CLOSED** |
-| MP-4R5 — Evidence Plane adoption | **READY_FOR_FINAL_INDEPENDENT_MP4R5_CLOSURE_AUDIT** |
-| MP-4R6 — Legacy removal & migration | **READY_FOR_FINAL_INDEPENDENT_MP4R6_CLOSURE_AUDIT** — legacy verdict metadata read-only compatibility; missing approver provenance never synthesized on generic restore or SQLite human-decision read deserialization; offline legacy disposition contract + admin CLI (dry-run default; CLI strategies: history-only quarantine report and controlled delete only; non-authoritative archive JSON via `--export-archive-json`; programmatic provenance recovery via configured `HumanDecisionApproverRecoverySource` only) |
-| MP-4R7 — Enterprise integration qualification | **READY_FOR_INDEPENDENT_MP4R7_AUDIT** — contract-first E2E qualification harness (`testing_support/mp4r7_enterprise_integration/`); association binding evidence gap unchanged (no Evidence Plane v2 workaround) |
-| MP-4R8 — Final closure audit | NOT STARTED |
+| MP-4R5 — Evidence Plane adoption | **CLOSED** — operation-outcome evidence; binding association evidence gap **deferred** (frozen Evidence Plane contract) |
+| MP-4R6 — Legacy removal & migration | **CLOSED** — retired MP-4 authority paths; fail-closed legacy human-decision provenance; admin-only disposition CLI |
+| MP-4R7 — Enterprise integration qualification | **CLOSED** — `testing_support/mp4r7_enterprise_integration/` + architecture gates + E2E qualification tests |
+| MP-4R8 — Final closure audit | **READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** — meta-gates `test_mp4r8_final_closure_meta_gates.py`; independent GitHub audit required before formal MP-4 closure |
 
 Detail: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md).
 
