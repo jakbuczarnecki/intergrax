@@ -42,7 +42,14 @@ def parse_debt_register(register_text: str) -> tuple[DebtBurnDownRecord, ...]:
 
 
 def parse_done_audit_ideal_ids(audit_register_text: str) -> tuple[str, ...]:
-    return tuple(sorted({match.group(1) for match in _DONE_AUDIT_PATTERN.finditer(audit_register_text)}))
+    return tuple(
+        sorted(
+            {
+                match.group(1)
+                for match in _DONE_AUDIT_PATTERN.finditer(audit_register_text)
+            }
+        )
+    )
 
 
 def build_debt_burn_down_report(
@@ -69,8 +76,17 @@ def build_debt_burn_down_report(
 
 
 def load_debt_burn_down_report(repo_root: Path) -> DebtBurnDownReport:
-    debt_path = repo_root / "docs" / "guides" / "ARCHITECTURE_DEBT_REGISTER.md"
-    audit_path = repo_root / "docs" / "plan" / "AUDIT_IDEAL_2026.md"
+    debt_path = (
+        repo_root
+        / "docs"
+        / "project"
+        / "technical"
+        / "guides"
+        / "ARCHITECTURE_DEBT_REGISTER.md"
+    )
+    audit_path = (
+        repo_root / "docs" / "project" / "maintainers" / "plans" / "AUDIT_IDEAL_2026.md"
+    )
     return build_debt_burn_down_report(
         debt_register_text=debt_path.read_text(encoding="utf-8"),
         audit_register_text=audit_path.read_text(encoding="utf-8"),
