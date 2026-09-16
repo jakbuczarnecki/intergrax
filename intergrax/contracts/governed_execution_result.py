@@ -26,13 +26,6 @@ from intergrax.contracts.runtime_policy import PolicyAction
 SCHEMA_GOVERNED_EXECUTION_RESULT_V1: Final = "governed_execution_result.v1"
 _NON_EMPTY = Field(min_length=1)
 
-# Domain action (DecisionExecutionActionKind) → provider operation (External Work).
-_ACTION_TO_OPERATION: dict[str, str] = {
-    "external_work.create": "create_work",
-    "external_work.accept_quote": "submit_quote_acceptance",
-    "external_work.cancel": "cancel_work",
-}
-
 
 class GovernedExecutionResult(BaseModel):
     """Single atomic post-execution result for host attestation / recovery."""
@@ -110,9 +103,6 @@ class GovernedExecutionResult(BaseModel):
             raise ValueError("invocation_id_outcome_mismatch")
         if out.status is not ProviderInvocationStatus.SUCCEEDED:
             raise ValueError("governed_execution_requires_succeeded_outcome")
-        expected_op = _ACTION_TO_OPERATION.get(self.action)
-        if expected_op is not None and inv.operation != expected_op:
-            raise ValueError("action_operation_mismatch")
         if self.correlation_id and inv.correlation_id and (
             self.correlation_id != inv.correlation_id
             or (

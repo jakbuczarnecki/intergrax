@@ -11,13 +11,17 @@ from __future__ import annotations
 
 from typing import Final
 
-from intergrax.contracts.decision_authorization import validate_decision_execution_action_kind
+from intergrax.contracts.decision_authorization import (
+    DecisionExecutionActionKind,
+    validate_decision_execution_action_kind,
+)
 
-
-def _external_work_action_kind(value: str) -> str:
-    return str(validate_decision_execution_action_kind(value))
-
-
-ACTION_CREATE_EXTERNAL_WORK: Final = _external_work_action_kind("external_work.create")
-ACTION_ACCEPT_QUOTE: Final = _external_work_action_kind("external_work.accept_quote")
-ACTION_CANCEL_EXTERNAL_WORK: Final = _external_work_action_kind("external_work.cancel")
+ACTION_CREATE_EXTERNAL_WORK: Final[DecisionExecutionActionKind] = (
+    validate_decision_execution_action_kind("external_work.create")
+)
+ACTION_ACCEPT_QUOTE: Final[DecisionExecutionActionKind] = (
+    validate_decision_execution_action_kind("external_work.accept_quote")
+)
+ACTION_CANCEL_EXTERNAL_WORK: Final[DecisionExecutionActionKind] = (
+    validate_decision_execution_action_kind("external_work.cancel")
+)

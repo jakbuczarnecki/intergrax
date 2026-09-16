@@ -125,3 +125,15 @@ def test_reject_mismatched_invocation() -> None:
 def test_reject_cross_execution_proof_decision() -> None:
     with pytest.raises(ValueError, match="proof_policy_rule_mismatch"):
         _ger(proof=_proof(policy_rule_id="other-rule"))
+
+
+def test_neutral_contract_accepts_non_external_work_action_identity() -> None:
+    """GovernedExecutionResult must not encode External Work action→operation rules."""
+    action = "payments.capture"
+    result = _ger(
+        action=action,
+        proof=_proof(action=action),
+        provider_invocation=_invocation(operation="capture_payment"),
+    )
+    assert result.action == action
+    assert result.provider_invocation.operation == "capture_payment"
