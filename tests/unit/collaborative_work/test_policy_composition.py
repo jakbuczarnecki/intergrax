@@ -389,7 +389,7 @@ def test_runtime_meaningful_side_effect_deny_survives_composition() -> None:
 
     runtime_engine = RuntimePolicyEngine()
     side_effect_request = MeaningfulSideEffectRequest(
-        action="ACCEPT_QUOTE",
+        action="external_work.accept_quote",
         kinds=(MeaningfulSideEffectKind.COMMITMENT,),
         side_effect_scope_id="scope-quote-1",
         task_id="task-1",

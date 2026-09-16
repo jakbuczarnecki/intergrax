@@ -38,7 +38,7 @@ def _event(**overrides: object) -> ExecutionBoundaryEvent:
         "tenant_id": "tenant-1",
         "actor": "host",
         "provider_id": "provider-1",
-        "action": "CREATE_EXTERNAL_WORK",
+        "action": "external_work.create",
         "policy": PolicyDecisionSection(
             bundle_id="bundle-1",
             bundle_version="1.0.0",

@@ -22,7 +22,7 @@ _T0 = datetime(2026, 7, 21, 10, 0, 0, tzinfo=timezone.utc)
 _DIGEST = "sha256:" + ("ab" * 32)
 
 
-def _decision(*, action: str = "CREATE_EXTERNAL_WORK") -> EvaluatedPolicyDecision:
+def _decision(*, action: str = "external_work.create") -> EvaluatedPolicyDecision:
     d = PolicyDecision(
         action=PolicyAction.ALLOW,
         policy_rule_id="r.create",
@@ -48,7 +48,7 @@ def _proof(**overrides) -> GovernedProofProfile:
         tenant_id="ten1",
         task_id="t1",
         run_id="r1",
-        action="CREATE_EXTERNAL_WORK",
+        action="external_work.create",
         resource="scope",
         provider_id="prov",
         policy_action=PolicyAction.ALLOW,
@@ -96,7 +96,7 @@ def _ger(**overrides) -> GovernedExecutionResult:
         tenant_id="ten1",
         correlation_id="c1",
         idempotency_key="i1",
-        action="CREATE_EXTERNAL_WORK",
+        action="external_work.create",
         evaluated_policy_decision=_decision(),
         provider_invocation=_invocation(),
         provider_outcome=_outcome(),

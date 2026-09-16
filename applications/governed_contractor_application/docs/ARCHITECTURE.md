@@ -175,9 +175,9 @@ Tier-3 composition root
 | Forward evidence only after ALLOW | Treat evidence or resume as allow |
 | Observational reads (`get_quote`, timeline, …) without mutation policy | Escape workspace allowlists |
 
-Quote **receipt** is observational (continuation surface only). Quote **acceptance** is meaningful (`ACCEPT_QUOTE`). Product policy packs / business rules remain deferred - host injects a deterministic evaluator when proving the path.
+Quote **receipt** is observational (continuation surface only). Quote **acceptance** is meaningful (`external_work.accept_quote` — `DecisionExecutionActionKind`). Product policy packs / business rules remain deferred - host injects a deterministic evaluator when proving the path.
 
-`build_external_work_authorization_boundary` wires the platform `DecisionRequirementPolicy` contract into `MeaningfulSideEffectAuthorizationBoundary` (GR-6-R2). Production default classifies `ACCEPT_QUOTE` as Decision **required**; callers may inject an alternate policy implementation. Offline demo tooling passes `PermissiveDecisionRequirementPolicy` until Decision-bound accept is composed end-to-end.
+`build_external_work_authorization_boundary` wires the platform `DecisionRequirementPolicy` contract into `MeaningfulSideEffectAuthorizationBoundary` (GR-6-R2). Production default classifies `external_work.accept_quote` as Decision **required**; the same kind string binds `MeaningfulSideEffectRequest.action` and `DecisionGovernanceMaterialRef` (GR-6-ARCH). Callers may inject an alternate policy implementation. Offline demo tooling passes `PermissiveDecisionRequirementPolicy` until Decision-bound accept is composed end-to-end.
 
 ---
 

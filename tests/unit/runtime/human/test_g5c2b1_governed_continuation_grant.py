@@ -468,7 +468,7 @@ def test_quote_acceptance_require_human_grant_preserves_canonical_digest() -> No
         continuation_request_id=CONTINUATION_1,
         side_effect_scope_id=SCOPE_1,
         side_effect_scope_digest=QUOTE_SCOPE_DIGEST_1,
-        operation_id="ACCEPT_QUOTE",
+        operation_id="external_work.accept_quote",
         policy_rule_id=POLICY_RULE,
         resource_scope=RESOURCE,
         policy_action=PolicyAction.REQUIRE_HUMAN,

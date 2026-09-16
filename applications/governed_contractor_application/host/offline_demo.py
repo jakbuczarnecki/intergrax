@@ -32,6 +32,7 @@ from intergrax.runtime.governance.decision_requirement_policy import (
 )
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
+    ACTION_CANCEL_EXTERNAL_WORK,
     ACTION_CREATE_EXTERNAL_WORK,
 )
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
@@ -182,7 +183,7 @@ def build_demo_policy_bundle(
                 rule_id="demo.CANCEL_EXTERNAL_WORK",
                 description="allow cancel",
                 effect="allow",
-                match_action="CANCEL_EXTERNAL_WORK",
+                match_action=ACTION_CANCEL_EXTERNAL_WORK,
             ),
         ),
         issued_at=issued_at or _T0,

@@ -101,10 +101,10 @@ def test_empty_policy_rule_id_remains_valid() -> None:
 
 def test_audit_payload_carries_domain_diagnostics() -> None:
     decision = _decision(
-        audit_payload={"request_digest": "sha256:ff", "match_action": "CREATE_EXTERNAL_WORK"}
+        audit_payload={"request_digest": "sha256:ff", "match_action": "external_work.create"}
     )
     assert decision.audit_payload["request_digest"] == "sha256:ff"
-    assert decision.audit_payload["match_action"] == "CREATE_EXTERNAL_WORK"
+    assert decision.audit_payload["match_action"] == "external_work.create"
 
 
 def test_audit_payload_does_not_substitute_canonical_bundle_provenance() -> None:

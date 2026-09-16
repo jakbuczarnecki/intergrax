@@ -26,11 +26,11 @@ from intergrax.contracts.runtime_policy import PolicyAction
 SCHEMA_GOVERNED_EXECUTION_RESULT_V1: Final = "governed_execution_result.v1"
 _NON_EMPTY = Field(min_length=1)
 
-# Domain action → provider operation (External Work).
+# Domain action (DecisionExecutionActionKind) → provider operation (External Work).
 _ACTION_TO_OPERATION: dict[str, str] = {
-    "CREATE_EXTERNAL_WORK": "create_work",
-    "ACCEPT_QUOTE": "submit_quote_acceptance",
-    "CANCEL_EXTERNAL_WORK": "cancel_work",
+    "external_work.create": "create_work",
+    "external_work.accept_quote": "submit_quote_acceptance",
+    "external_work.cancel": "cancel_work",
 }
 
 

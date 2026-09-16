@@ -33,12 +33,12 @@ def _bundle(**kwargs):
             PolicyBundleRule(
                 rule_id="r.create",
                 effect="allow",
-                match_action="CREATE_EXTERNAL_WORK",
+                match_action="external_work.create",
             ),
             PolicyBundleRule(
                 rule_id="r.accept",
                 effect="allow",
-                match_action="ACCEPT_QUOTE",
+                match_action="external_work.accept_quote",
             ),
         ),
     )
@@ -51,7 +51,7 @@ def _bundle(**kwargs):
     )
 
 
-def _request(action: str = "CREATE_EXTERNAL_WORK") -> MeaningfulSideEffectRequest:
+def _request(action: str = "external_work.create") -> MeaningfulSideEffectRequest:
     return MeaningfulSideEffectRequest(
         action=action,
         kinds=(MeaningfulSideEffectKind.MUTATION,),
@@ -92,7 +92,7 @@ def test_action_inconsistent_with_rule_fails_assert() -> None:
             PolicyBundleRule(
                 rule_id="r.deny",
                 effect="deny",
-                match_action="CREATE_EXTERNAL_WORK",
+                match_action="external_work.create",
             ),
         )
     )

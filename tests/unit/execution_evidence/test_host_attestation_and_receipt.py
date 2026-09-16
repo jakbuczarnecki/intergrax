@@ -51,7 +51,7 @@ def _proof():
         tenant_id="tenant-1",
         task_id="task-1",
         run_id="run-1",
-        action="CREATE_EXTERNAL_WORK",
+        action="external_work.create",
         resource="scope",
         provider_id="provider-1",
         policy_action=PolicyAction.ALLOW,
@@ -94,7 +94,7 @@ def test_valid_receipt_verifies() -> None:
     [
         lambda e: e.model_copy(update={"task_id": "task-mutated"}),
         lambda e: e.model_copy(update={"run_id": "run-mutated"}),
-        lambda e: e.model_copy(update={"action": "CANCEL_EXTERNAL_WORK"}),
+        lambda e: e.model_copy(update={"action": "external_work.cancel"}),
         lambda e: e.model_copy(update={"correlation_id": "corr-mutated"}),
         lambda e: e.model_copy(update={"idempotency_key": "idem-mutated"}),
         lambda e: e.model_copy(update={"principal_id": "principal-mutated"}),

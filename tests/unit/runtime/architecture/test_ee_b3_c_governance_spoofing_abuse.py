@@ -63,7 +63,7 @@ def test_ee_b3_c_spoofed_evaluated_policy_decision_rejected() -> None:
             PolicyBundleRule(
                 rule_id="r.deny",
                 effect="deny",
-                match_action="CREATE_EXTERNAL_WORK",
+                match_action="external_work.create",
             ),
         ),
         issued_at=_T0,

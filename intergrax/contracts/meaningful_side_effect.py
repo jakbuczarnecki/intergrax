@@ -50,7 +50,10 @@ class MeaningfulSideEffectKind(StrEnum):
 class MeaningfulSideEffectRequest(BaseModel):
     """Proposed external side effect for policy evaluation before execution.
 
-    ``action`` is a consumer-defined identifier (e.g. domain ``ACCEPT_QUOTE``).
+    ``action`` identifies the proposed side effect. When Decision governance
+    material is attached, ``action`` must equal ``bound_action_kind`` and
+    satisfy ``DecisionExecutionActionKind`` (see ``decision_authorization``).
+    Domain adapters define concrete kind strings (e.g. ``external_work.accept_quote``).
     Domain-specific payloads belong in ``context`` / ``correlation`` — not as
     quote- or provider-SDK-typed fields on this model.
     """

@@ -24,7 +24,7 @@ from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
 from tests.unit.runtime.governance.gr3_test_support import default_gr3_identity_bundle
 
 _T0 = datetime(2026, 7, 21, 9, 0, 0, tzinfo=timezone.utc)
-_ACTION = "CREATE_EXTERNAL_WORK"
+_ACTION = "external_work.create"
 _TASK, _RUN, _ATTEMPT, _EXECUTION = default_gr3_identity_bundle()
 _EVALUATOR_SOURCE = (
     Path(__file__).resolve().parents[4]
