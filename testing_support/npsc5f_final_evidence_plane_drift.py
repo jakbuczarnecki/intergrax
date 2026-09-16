@@ -18,7 +18,10 @@ from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 # Prior H9 interim baseline: ``48a33db23fafab89b5fdb4ff217dfcb113dd6cc5``.
 # OBS-RECONSTRUCTION-1: factual reconstruction relocation to Evidence Plane (read-only, contract-first).
 # OBS-ASOF-REBASE-R1: E-scoped lineage port + fail-closed disable of current lineage at historical E.
-NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "52b9dc41ed7dd83e5516d852f1ef7295cc0b10af"
+# HARDENING_9_NPSC5F: OBS-CONTRACT-BOUNDARY-1 / R1 — contract-owned runtime_event, reconstruction DTOs,
+# positioned evidence boundary; qualified re-freeze @ ``a2b33ba965c57cd3c812720f7b5f84b40b2b32f1``.
+# Prior OBS-ASOF-REBASE-R1 baseline: ``52b9dc41ed7dd83e5516d852f1ef7295cc0b10af``.
+NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "a2b33ba965c57cd3c812720f7b5f84b40b2b32f1"
 
 NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
 NPSC_5F_R1_FINAL_SHA = "455c09f342f995ac0a6fcb03ffef2f4d3e36a447"

@@ -36,7 +36,8 @@ Storage
 | ----- | --- |
 | Evidence persistence port introduction | `39ac19d5ba9be3d7b7498d20539a8b2defed676c` |
 | Port failure isolation + bus resilience wiring | `3d298f651` … `8fb9c0fb5` |
-| **R1 re-signoff baseline** (`R1_POST_R2_QUALIFIED_BASELINE_SHA`) | `ed780d47e7bc60e0ac019fb9bee8961dac9493c5` |
+| **R1 re-signoff baseline** (historical) | `ed780d47e7bc60e0ac019fb9bee8961dac9493c5` |
+| **R1 re-signoff baseline** (`R1_POST_R2_QUALIFIED_BASELINE_SHA`, HARDENING_9 OBS-CONTRACT-BOUNDARY) | `a2b33ba965c57cd3c812720f7b5f84b40b2b32f1` |
 | H9 pre-gate event sink delivery (`event_bus.py`, commits `29d6dd660`, `8621ee133`) | **QUALIFIED_COMPATIBLE** — injectable `EventSinkDeliveryReactionPort`; durable commit before sink; no second evidence path |
 
 Post re-signoff, `collect_r1_protected_production_drift(from_sha=R1_POST_R2_QUALIFIED_BASELINE_SHA)` must remain empty unless a new qualified R1 change is recorded.
