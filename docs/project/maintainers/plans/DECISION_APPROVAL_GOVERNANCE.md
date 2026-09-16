@@ -101,10 +101,10 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R5 |
-| **Status** | **READY_FOR_FINAL_INDEPENDENT_CLOSURE_AUDIT** |
+| **Status** | **READY_FOR_FINAL_INDEPENDENT_MP4R5_CLOSURE_AUDIT** |
 | **Purpose** | Multiplayer adopts canonical Evidence Plane via contract-only projection; **operation execution evidence coverage** only; **no** Multiplayer evidence store |
 | **Dependencies** | MP-4R4 closed |
-| **Implemented** | `CollaborativeFunctionalEvidenceProjectionStrategy` + `DefaultCollaborativeFunctionalEvidenceProjection`; `CollaborativeDecisionBindingApplicationService` + `decision_binding_composition` wiring; `append_decision_binding_create_outcome_evidence` → `FunctionalEvidencePersistence`; FAILED create outcomes without synthetic binding (`tenant_id` + optional `binding` on SUCCEEDED only); architecture gates `test_mp4r5_evidence_plane_adoption_gates.py` |
+| **Implemented** | `CollaborativeFunctionalEvidenceProjectionStrategy` + `DefaultCollaborativeFunctionalEvidenceProjection`; `CollaborativeDecisionBindingApplicationService` + `decision_binding_composition` wiring; `append_decision_binding_create_outcome_evidence` → `FunctionalEvidencePersistence`; FAILED create outcomes without synthetic binding (`tenant_id` + optional `binding` on SUCCEEDED only); primary domain failure precedence over best-effort failed-operation-outcome emission (hosted bootstrap reporter semantics); architecture gates `test_mp4r5_evidence_plane_adoption_gates.py` |
 | **Deferred platform gap (explicit)** | MP-4R5 covers canonical **operation-outcome** evidence adoption. Full typed evidence representation of **WorkItem ↔ DecisionProposalRef** is **not** represented by frozen Evidence Plane v2. No semantic workaround is permitted. Future support requires a separate Evidence Plane architecture decision. |
 | **Blocked (architecture)** | Association fact — same as deferred gap above (`CollaborativeDecisionBindingAssociationNotRepresentable`) |
 | **Proof requirements** | `pytest tests/unit/runtime/architecture/test_mp4r5_evidence_plane_adoption_gates.py tests/unit/collaborative_work/test_functional_evidence_projection.py tests/unit/collaborative_work/test_decision_binding_application_evidence.py`; MP-4R0…R4 gates remain green |

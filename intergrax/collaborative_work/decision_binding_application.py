@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -26,6 +27,8 @@ from intergrax.contracts.functional_evidence.correlation import (
 from intergrax.contracts.functional_evidence.models import PipelineOperationStatus
 from intergrax.contracts.functional_evidence.persistence import FunctionalEvidencePersistence
 
+_LOGGER = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True, slots=True)
 class CollaborativeDecisionBindingEvidenceAdoption:
@@ -39,8 +42,11 @@ class CollaborativeDecisionBindingApplicationService:
     """
     Coordinates authoritative binding create with optional canonical operation-outcome evidence.
 
-    Domain authority remains in ``CollaborativeDecisionBindingService``. Evidence failures
-    propagate per ``FunctionalEvidencePersistence`` contract semantics (no local rollback).
+    Domain authority remains in ``CollaborativeDecisionBindingService``. Successful binding
+    commits are not rolled back when evidence append fails; evidence exceptions propagate per
+    ``FunctionalEvidencePersistence`` contract semantics. When binding create fails, failed
+    operation-outcome evidence is best-effort (hosted bootstrap failure reporter semantics):
+    secondary emission errors are logged and must not replace the primary domain failure.
     """
 
     def __init__(
@@ -67,15 +73,12 @@ class CollaborativeDecisionBindingApplicationService:
             binding = self._binding_service.create_binding(request)
         except Exception:
             if adoption is not None and execution_correlation is not None:
-                append_decision_binding_create_outcome_evidence(
-                    adoption.persistence,
-                    adoption.strategy,
-                    tenant_id=request.tenant_id,
-                    operation_status=PipelineOperationStatus.FAILED,
+                self._emit_failed_create_outcome_evidence_after_primary_failure(
+                    adoption=adoption,
+                    request=request,
                     execution_correlation=execution_correlation,
                     recorded_at=recorded_at,
                     evidence_id=evidence_id,
-                    binding=None,
                 )
             raise
 
@@ -91,6 +94,32 @@ class CollaborativeDecisionBindingApplicationService:
                 binding=binding,
             )
         return binding
+
+    @staticmethod
+    def _emit_failed_create_outcome_evidence_after_primary_failure(
+        *,
+        adoption: CollaborativeDecisionBindingEvidenceAdoption,
+        request: CreateCollaborativeDecisionBindingRequest,
+        execution_correlation: FunctionalEvidenceExecutionCorrelation,
+        recorded_at: datetime,
+        evidence_id: EventId | None,
+    ) -> None:
+        try:
+            append_decision_binding_create_outcome_evidence(
+                adoption.persistence,
+                adoption.strategy,
+                tenant_id=request.tenant_id,
+                operation_status=PipelineOperationStatus.FAILED,
+                execution_correlation=execution_correlation,
+                recorded_at=recorded_at,
+                evidence_id=evidence_id,
+                binding=None,
+            )
+        except Exception:
+            _LOGGER.exception(
+                "failed-operation-outcome evidence emission after binding create failure; "
+                "primary operation failure is preserved",
+            )
 
     @staticmethod
     def _require_timezone_aware(value: datetime) -> datetime:

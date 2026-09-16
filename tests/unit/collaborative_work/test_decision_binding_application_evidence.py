@@ -85,6 +85,7 @@ from intergrax.contracts.functional_evidence.models import (
 from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidencePersistence,
     FunctionalEvidencePersistenceConflictError,
+    FunctionalEvidencePersistenceIntegrityError,
 )
 from testing_support.builder import canonical_run_id_for_tests, canonical_task_id_for_tests
 
@@ -405,3 +406,109 @@ def test_custom_persistence_and_strategy_injected() -> None:
     app = _application(persistence=persistence, strategy=spy, gate=gate, service=service)
     app.create_binding(_binding_request(), execution_correlation=_correlation(), evidence_id=mint_event_id())
     assert len(spy.projections) == 1
+
+
+class _FailingAppendPersistence(_RecordingPersistence):
+    def __init__(self, *, message: str) -> None:
+        super().__init__()
+        self._message = message
+
+    def append(self, evidence: PlatformFunctionalEvidence) -> PlatformFunctionalEvidence:
+        raise FunctionalEvidencePersistenceIntegrityError(self._message)
+
+
+class _FailingProjectionStrategy(CollaborativeFunctionalEvidenceProjectionStrategy):
+    def project_decision_binding_create_outcome(
+        self,
+        projection: CollaborativeDecisionBindingCreateOutcomeProjection,
+    ) -> PlatformFunctionalEvidence:
+        raise RuntimeError("projection failed after primary failure")
+
+    def project_decision_binding_association(self, binding, *, execution_correlation=None):  # type: ignore[no-untyped-def]
+        raise NotImplementedError
+
+
+def test_primary_failure_preserved_when_failed_evidence_persistence_fails(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    from intergrax.collaborative_work.functional_evidence_projection import (
+        DefaultCollaborativeFunctionalEvidenceProjection,
+    )
+
+    gate, service, _work_item_repo = _build_gate_and_service()
+    persistence = _FailingAppendPersistence(message="evidence store unavailable")
+    app = _application(
+        persistence=persistence,
+        strategy=DefaultCollaborativeFunctionalEvidenceProjection(),
+        gate=gate,
+        service=service,
+    )
+    caplog.set_level("ERROR", logger=CollaborativeDecisionBindingApplicationService.__module__)
+    with pytest.raises(WorkItemNotFound) as exc_info:
+        app.create_binding(_binding_request(), execution_correlation=_correlation())
+    assert type(exc_info.value) is WorkItemNotFound
+    assert persistence.items == []
+    assert any(
+        "primary operation failure is preserved" in record.message
+        for record in caplog.records
+        if record.levelname == "ERROR"
+    )
+
+
+def test_primary_failure_preserved_when_failed_evidence_projection_fails(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    gate, service, _work_item_repo = _build_gate_and_service()
+    persistence = _RecordingPersistence()
+    app = _application(
+        persistence=persistence,
+        strategy=_FailingProjectionStrategy(),
+        gate=gate,
+        service=service,
+    )
+    caplog.set_level("ERROR", logger=CollaborativeDecisionBindingApplicationService.__module__)
+    with pytest.raises(WorkItemNotFound) as exc_info:
+        app.create_binding(_binding_request(), execution_correlation=_correlation())
+    assert type(exc_info.value) is WorkItemNotFound
+    assert persistence.items == []
+    assert any(
+        "primary operation failure is preserved" in record.message
+        for record in caplog.records
+        if record.levelname == "ERROR"
+    )
+
+
+def test_success_binding_not_rolled_back_when_evidence_append_fails() -> None:
+    from intergrax.collaborative_work.functional_evidence_projection import (
+        DefaultCollaborativeFunctionalEvidenceProjection,
+    )
+    from intergrax.collaborative_work.repository import CreateWorkItemCommand
+    from intergrax.contracts.collaborative_work import WorkItemState
+
+    gate, service, work_item_repo = _build_gate_and_service()
+    work_item_repo.create(
+        CreateWorkItemCommand(
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            work_item_id=_WORK_ITEM_ID,
+            state=WorkItemState.OPEN,
+            created_by_principal_id=_ACTING,
+            created_at=_NOW,
+            updated_at=_NOW,
+        ),
+    )
+    persistence = _FailingAppendPersistence(message="evidence append failed on success path")
+    app = _application(
+        persistence=persistence,
+        strategy=DefaultCollaborativeFunctionalEvidenceProjection(),
+        gate=gate,
+        service=service,
+    )
+    with pytest.raises(FunctionalEvidencePersistenceIntegrityError, match="evidence append failed"):
+        app.create_binding(_binding_request(), execution_correlation=_correlation())
+    bindings = service.list_bindings_for_work_item(
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        work_item_id=_WORK_ITEM_ID,
+    )
+    assert len(bindings) == 1

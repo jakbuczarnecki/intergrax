@@ -218,6 +218,17 @@ def test_application_boundary_emits_create_outcome_evidence() -> None:
         assert not imported.startswith(_FORBIDDEN_RUNTIME_OBS_PREFIX)
 
 
+def test_application_boundary_preserves_primary_failure_when_secondary_evidence_emission_fails() -> None:
+    source = _APPLICATION_PATH.read_text(encoding="utf-8-sig")
+    assert "_emit_failed_create_outcome_evidence_after_primary_failure" in source
+    assert "primary operation failure is preserved" in source
+    tree = ast.parse(source, filename=str(_APPLICATION_PATH))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ExceptHandler) and node.body:
+            if len(node.body) == 1 and isinstance(node.body[0], ast.Pass):
+                raise AssertionError("MP-4R5 application path must not swallow exceptions with bare pass")
+
+
 def test_composition_wires_application_create_binding_path() -> None:
     source = _COMPOSITION_PATH.read_text(encoding="utf-8-sig")
     assert "build_collaborative_decision_binding_application_from_artifacts_bundle" in source
