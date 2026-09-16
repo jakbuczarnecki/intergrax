@@ -16,9 +16,14 @@ from intergrax.contracts.decision_authorization import (
     validate_decision_execution_action_kind,
 )
 from intergrax.contracts.decision_human_review import (
+    DecisionHumanReviewOutcome,
     DecisionHumanReviewPending,
+    DecisionHumanReviewProvenance,
+    decision_human_review_decision,
     governance_requires_human_review_reason,
 )
+from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.human_approver import HumanApproverAuthMode, HumanApproverEvidence
 from intergrax.contracts.decision_identity import (
     DecisionExecutionLineage,
     DecisionScope,
@@ -69,6 +74,7 @@ from intergrax.runtime.decision_flow import (
     DecisionFlowIdentitySeed,
     DecisionFlowRequest,
     DecisionFlowScope,
+    resume_decision_flow_after_human_review,
     decision_identity_from_seed,
     validate_decision_critic_authority_config,
 )
@@ -554,3 +560,116 @@ async def test_revision_exhausted_without_human_terminal_rejected(lifecycle_bind
     assert result.resolution_record is not None
     assert result.resolution_record.resolution is DecisionResolution.REJECTED
     assert result.lifecycle_state.stage is DecisionLifecycleStage.FINALIZATION
+
+
+def _test_approver(tenant_id: str = "tenant-a") -> HumanApproverEvidence:
+    return HumanApproverEvidence(
+        tenant_id=tenant_id,
+        user_id="operator-1",
+        principal_type=PrincipalType.USER,
+        auth_subject="idp:subject:operator-1",
+        auth_mode=HumanApproverAuthMode.IDENTITY_PROVIDER,
+    )
+
+
+@pytest.mark.asyncio
+async def test_resume_after_governance_human_approve_reaches_terminal(lifecycle_binding) -> None:
+    port = RecordingHumanReviewPort()
+    evaluator_spec = _governance_spec(
+        RequireHumanGovernanceEvaluator(
+            action=evaluator_spec_action(),
+            policy_context=evaluator_spec_policy(),
+        ),
+    )
+    gate = CanonicalDecisionFlowGate(
+        capabilities=DecisionFlowGateCapabilities(
+            verification_pipeline=_pipeline(PassedStage(kind="test.stage")),
+            revision_policy=decision_revision_policy(max_revisions=0),
+            scopes=frozenset({DecisionFlowScope.UAEP_STEP}),
+            governance_spec=evaluator_spec,
+            human_review_port=port,
+        ),
+    )
+    pending = await gate.evaluate(
+        DecisionFlowRequest(
+            identity_seed=_identity_seed(),
+            artifact_kind=validate_decision_artifact_kind("test.payload"),
+            payload=Payload(text="ok"),
+            flow_scope=DecisionFlowScope.UAEP_STEP,
+        ),
+    )
+    assert pending.human_review_pending is not None
+    review_request = pending.human_review_pending.request
+    decision = decision_human_review_decision(
+        request=review_request,
+        outcome=DecisionHumanReviewOutcome.APPROVED,
+        approver=_test_approver(),
+        provenance=DecisionHumanReviewProvenance(
+            human_record_id="hdec-test-approve",
+            human_request_id=str(review_request.request_id),
+        ),
+    )
+    resumed = resume_decision_flow_after_human_review(
+        gate=gate,
+        pending_result=pending,
+        decision=decision,
+    )
+    assert resumed.result.host_action is DecisionFlowHostAction.CONTINUE
+    assert resumed.result.lifecycle_state.stage is DecisionLifecycleStage.TERMINAL
+    assert resumed.result.authorization is not None
+    assert resumed.lifecycle_stages_observed == (
+        DecisionLifecycleStage.FINALIZATION,
+        DecisionLifecycleStage.TERMINAL,
+    )
+
+
+@pytest.mark.asyncio
+async def test_resume_after_governance_human_reject_records_resolution(lifecycle_binding) -> None:
+    port = RecordingHumanReviewPort()
+    evaluator_spec = _governance_spec(
+        RequireHumanGovernanceEvaluator(
+            action=evaluator_spec_action(),
+            policy_context=evaluator_spec_policy(),
+        ),
+    )
+    gate = CanonicalDecisionFlowGate(
+        capabilities=DecisionFlowGateCapabilities(
+            verification_pipeline=_pipeline(PassedStage(kind="test.stage")),
+            revision_policy=decision_revision_policy(max_revisions=0),
+            scopes=frozenset({DecisionFlowScope.UAEP_STEP}),
+            governance_spec=evaluator_spec,
+            human_review_port=port,
+        ),
+    )
+    pending = await gate.evaluate(
+        DecisionFlowRequest(
+            identity_seed=_identity_seed(),
+            artifact_kind=validate_decision_artifact_kind("test.payload"),
+            payload=Payload(text="ok"),
+            flow_scope=DecisionFlowScope.UAEP_STEP,
+        ),
+    )
+    assert pending.human_review_pending is not None
+    review_request = pending.human_review_pending.request
+    decision = decision_human_review_decision(
+        request=review_request,
+        outcome=DecisionHumanReviewOutcome.REJECTED,
+        approver=_test_approver(),
+        provenance=DecisionHumanReviewProvenance(
+            human_record_id="hdec-test-reject",
+            human_request_id=str(review_request.request_id),
+        ),
+    )
+    resumed = resume_decision_flow_after_human_review(
+        gate=gate,
+        pending_result=pending,
+        decision=decision,
+    )
+    assert resumed.result.host_action is DecisionFlowHostAction.BLOCK
+    assert resumed.result.lifecycle_state.stage is DecisionLifecycleStage.TERMINAL
+    assert resumed.result.resolution_record is not None
+    assert resumed.result.resolution_record.resolution is DecisionResolution.REJECTED
+    assert resumed.lifecycle_stages_observed == (
+        DecisionLifecycleStage.FINALIZATION,
+        DecisionLifecycleStage.TERMINAL,
+    )

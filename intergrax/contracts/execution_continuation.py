@@ -68,10 +68,6 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
-from intergrax.contracts.decision_human_review import (
-    DecisionHumanReviewDecision,
-    DecisionHumanReviewOutcome,
-)
 from intergrax.contracts.governed_continuation_correlation import (
     ContinuationReason,
     GovernedContinuationCorrelation,
@@ -605,21 +601,6 @@ def assert_pending_matches_resolution_command(
             )
 
 
-def decision_human_review_outcome_to_execution_verdict(
-    outcome: DecisionHumanReviewOutcome,
-) -> ExecutionHumanVerdict:
-    """Map canonical Decision human review outcome to execution continuation verdict."""
-    if type(outcome) is not DecisionHumanReviewOutcome:
-        raise TypeError("outcome must be DecisionHumanReviewOutcome")
-    if outcome is DecisionHumanReviewOutcome.APPROVED:
-        return ExecutionHumanVerdict.APPROVE
-    if outcome is DecisionHumanReviewOutcome.REJECTED:
-        return ExecutionHumanVerdict.REJECT
-    if outcome is DecisionHumanReviewOutcome.ESCALATED:
-        return ExecutionHumanVerdict.ESCALATE
-    raise ValueError(f"unsupported DecisionHumanReviewOutcome: {outcome!s}")
-
-
 def execution_continuation_resolution_command_for_pending_human_verdict(
     pending: PendingExecutionContinuation,
     *,
@@ -667,36 +648,6 @@ def execution_continuation_resolution_command_for_pending_human_verdict(
         operation_id=operation_id,
         side_effect_scope_id=side_effect_scope_id,
         side_effect_scope_digest=side_effect_scope_digest,
-        resolved_at=resolved_at,
-    )
-
-
-def execution_continuation_resolution_command_from_decision_human_review_decision(
-    pending: PendingExecutionContinuation,
-    decision: DecisionHumanReviewDecision,
-    *,
-    resolved_at: str,
-) -> ExecutionContinuationResolutionCommand:
-    """Project one consumed Decision human review decision onto continuation resolution."""
-    if type(decision) is not DecisionHumanReviewDecision:
-        raise TypeError("decision must be DecisionHumanReviewDecision")
-    provenance_request_id = decision.provenance.human_request_id.strip()
-    if provenance_request_id != str(decision.request_id):
-        raise ExecutionContinuationError(
-            "decision human_request_id must match request_id",
-            code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
-        )
-    if decision.approver.tenant_id != decision.proposal_ref.identity.tenant_id:
-        raise ExecutionContinuationError(
-            "decision approver tenant_id mismatch",
-            code=ExecutionContinuationErrorCode.IDENTITY_MISMATCH,
-        )
-    verdict = decision_human_review_outcome_to_execution_verdict(decision.outcome)
-    return execution_continuation_resolution_command_for_pending_human_verdict(
-        pending,
-        verdict=verdict,
-        approver=decision.approver,
-        human_request_id=provenance_request_id,
         resolved_at=resolved_at,
     )
 
@@ -811,9 +762,7 @@ __all__ = [
     "execution_continuation_lifecycle_permits_successor_episode",
     "apply_resolution_to_pending",
     "apply_resume_to_pending",
-    "decision_human_review_outcome_to_execution_verdict",
     "execution_continuation_resolution_command_for_pending_human_verdict",
-    "execution_continuation_resolution_command_from_decision_human_review_decision",
     "assert_execution_continuation_identity_match",
     "assert_governed_correlation_matches_continuation",
     "assert_pending_matches_resolution_command",

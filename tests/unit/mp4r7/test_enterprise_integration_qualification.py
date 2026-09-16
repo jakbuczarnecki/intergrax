@@ -52,6 +52,10 @@ async def test_mp4r7_same_human_review_authorizes_continuation() -> None:
     assert decision_phase.approver_tenant_id == continuation_phase.approver_tenant_id
     assert result.human_request_id == decision_phase.human_request_id
     assert result.decision_final_stage is DecisionLifecycleStage.TERMINAL
+    assert result.decision_lifecycle_stages_observed == (
+        DecisionLifecycleStage.FINALIZATION,
+        DecisionLifecycleStage.TERMINAL,
+    )
     assert qualification_approver_factory_call_count() == 1
     assert "hr_mp4r7" not in (result.human_request_id or "")
 

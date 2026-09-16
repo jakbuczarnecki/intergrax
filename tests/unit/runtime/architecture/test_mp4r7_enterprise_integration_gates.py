@@ -91,11 +91,39 @@ def test_mp4r7_scenario_uses_canonical_human_review_continuation_bridge() -> Non
     scenario = _R7_ROOT / "scenario.py"
     text = scenario.read_text(encoding="utf-8-sig")
     assert (
+        "intergrax.contracts.decision.integration.execution_continuation"
+        in text
+    )
+    assert (
         "execution_continuation_resolution_command_from_decision_human_review_decision"
         in text
     )
     assert "_HUMAN_REQUEST_ID" not in text
     assert "ExecutionHumanVerdict.APPROVE" not in text
+
+
+def test_mp4r7_execution_continuation_contract_has_no_decision_human_review_import() -> None:
+    module = _REPO_ROOT / "intergrax" / "contracts" / "execution_continuation.py"
+    text = module.read_text(encoding="utf-8-sig")
+    assert "decision_human_review" not in text
+
+
+def test_mp4r7_decision_integration_bridge_imports_contracts_only() -> None:
+    module = (
+        _REPO_ROOT
+        / "intergrax"
+        / "contracts"
+        / "decision"
+        / "integration"
+        / "execution_continuation.py"
+    )
+    violations: list[str] = []
+    for lineno, imported in _collect_imports(module):
+        if imported == "__future__":
+            continue
+        if not imported.startswith("intergrax.contracts"):
+            violations.append(f"{module.relative_to(_REPO_ROOT)}:{lineno} imports {imported}")
+    assert not violations, "\n".join(violations)
 
 
 def test_mp4r7_scenario_does_not_fabricate_primary_error_in_evidence_handler() -> None:

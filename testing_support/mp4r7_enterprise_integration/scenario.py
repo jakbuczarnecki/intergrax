@@ -34,10 +34,8 @@ from intergrax.contracts.decision_record import (
     validate_decision_artifact_kind,
 )
 from intergrax.contracts.decision_revision import decision_revision_policy
-from intergrax.contracts.decision_lifecycle import transition_decision_lifecycle
-from intergrax.contracts.decision_resolution import (
-    AuthoritativeResolutionRecord,
-    DecisionResolution,
+from intergrax.contracts.decision.integration.execution_continuation import (
+    execution_continuation_resolution_command_from_decision_human_review_decision,
 )
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationError,
@@ -48,7 +46,6 @@ from intergrax.contracts.execution_continuation import (
     ExecutionPauseRequest,
     PendingExecutionContinuation,
     execution_continuation_recovery_handle_for_continuation_id,
-    execution_continuation_resolution_command_from_decision_human_review_decision,
 )
 from intergrax.contracts.functional_evidence import (
     PipelineEvidenceKind,
@@ -66,6 +63,7 @@ from intergrax.runtime.decision_flow import (
     DecisionFlowIdentitySeed,
     DecisionFlowRequest,
     DecisionFlowScope,
+    resume_decision_flow_after_human_review,
 )
 from intergrax.runtime.decision_human_review import validate_consumed_human_review_decision
 from intergrax.runtime.execution.active_decision_lifecycle_host import (
@@ -140,6 +138,7 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
 
     def __init__(self, composition: Mp4R7EnterpriseIntegrationComposition) -> None:
         self._composition = composition
+        self._require_human_gate: CanonicalDecisionFlowGate[object] | None = None
 
     def _execution_lineage(self) -> DecisionExecutionLineage:
         composition = self._composition
@@ -211,28 +210,19 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
         )
         return self._composition.continuation_port.apply_resolution(command)
 
-    def _finalize_decision_lifecycle_after_human_review(
-        self,
-        flow,
-        decision,
-    ) -> tuple[DecisionLifecycleStage, ...]:
-        lifecycle = flow.lifecycle_state
-        if decision.outcome is DecisionHumanReviewOutcome.APPROVED:
-            transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
-            return (
-                lifecycle.stage,
-                DecisionLifecycleStage.FINALIZATION,
-                DecisionLifecycleStage.TERMINAL,
+    def _resume_decision_flow_after_human_review(self, flow, decision):
+        gate = self._require_human_gate
+        if gate is None:
+            raise AssertionError("require-human decision flow gate missing")
+        token = bind_active_decision_lifecycle_host(CanonicalDecisionLifecycleHost())
+        try:
+            return resume_decision_flow_after_human_review(
+                gate=gate,
+                pending_result=flow,
+                decision=decision,
             )
-        if decision.outcome is DecisionHumanReviewOutcome.REJECTED:
-            identity = decision.proposal_ref.identity
-            AuthoritativeResolutionRecord(
-                identity=identity,
-                resolution=DecisionResolution.REJECTED,
-            )
-            transition_decision_lifecycle(lifecycle, DecisionLifecycleStage.TERMINAL)
-            return (lifecycle.stage, DecisionLifecycleStage.TERMINAL)
-        raise AssertionError("unsupported human review outcome for decision finalization")
+        finally:
+            reset_active_decision_lifecycle_host(token)
 
     def _resume_command(self, *, expected_revision: int) -> ExecutionContinuationResumeCommand:
         return ExecutionContinuationResumeCommand(
@@ -283,6 +273,7 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
                 human_review_port=composition.human_review_port,
             ),
         )
+        self._require_human_gate = gate
         lineage = self._execution_lineage()
         token = bind_active_decision_lifecycle_host(CanonicalDecisionLifecycleHost())
         try:
@@ -469,7 +460,11 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             decision=decision,
             target_proposal_ref=proposal_ref,
         )
-        decision_stages = self._finalize_decision_lifecycle_after_human_review(flow, decision)
+        resume_outcome = self._resume_decision_flow_after_human_review(flow, decision)
+        flow = resume_outcome.result
+        decision_stages = resume_outcome.lifecycle_stages_observed
+        if flow.lifecycle_state.stage is not DecisionLifecycleStage.TERMINAL:
+            raise AssertionError("decision flow must reach TERMINAL after human review")
         resumed = self._resume_after_human_review(waiting, decision)
         if resumed.lifecycle_state is not ExecutionContinuationLifecycleState.RESUMED:
             raise AssertionError("execution must reach RESUMED")
@@ -525,7 +520,7 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             human_request_id=human_request_id,
             continuation_id=_CONTINUATION_ID,
             human_authority_continuity=authority_snapshots,
-            decision_final_stage=DecisionLifecycleStage.TERMINAL,
+            decision_final_stage=flow.lifecycle_state.stage,
         )
 
     async def run_human_reject(self) -> Mp4R7EnterpriseIntegrationQualificationResult:
@@ -554,7 +549,10 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             decision=decision,
             target_proposal_ref=proposal_ref,
         )
-        self._finalize_decision_lifecycle_after_human_review(flow, decision)
+        reject_resume = self._resume_decision_flow_after_human_review(flow, decision)
+        flow = reject_resume.result
+        if flow.lifecycle_state.stage is not DecisionLifecycleStage.TERMINAL:
+            raise AssertionError("reject path must terminalize decision lifecycle")
         resolved = self._apply_human_review_to_continuation(waiting, decision)
         if resolved.lifecycle_state is not ExecutionContinuationLifecycleState.REJECTED:
             raise AssertionError("human reject must terminal REJECTED continuation state")
@@ -601,11 +599,11 @@ class Mp4R7EnterpriseIntegrationScenarioExecutor:
             ),
             evidence_records=(),
             diagnostics=None,
-            decision_lifecycle_stages_observed=(flow.lifecycle_state.stage,),
+            decision_lifecycle_stages_observed=reject_resume.lifecycle_stages_observed,
             pause_id=waiting.pause_id,
             human_request_id=human_request_id,
             continuation_id=_CONTINUATION_ID,
-            decision_final_stage=DecisionLifecycleStage.TERMINAL,
+            decision_final_stage=flow.lifecycle_state.stage,
         )
 
     async def run_stale_proposal(self) -> Mp4R7EnterpriseIntegrationQualificationResult:
