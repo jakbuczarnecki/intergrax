@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
-
+from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStoreCreationContext
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
 
 
@@ -13,11 +12,17 @@ class ExternalSessionTurnIndexStorePlugin:
         return "external.session_turn_index"
 
     @classmethod
-    def create_session_turn_index(cls, **kwargs: Any) -> VectorSessionTurnIndexStore:
+    def create_session_turn_index(
+        cls,
+        context: SessionTurnIndexStoreCreationContext,
+    ) -> VectorSessionTurnIndexStore:
+        if context.embedding_manager is None or context.vectorstore_manager is None:
+            raise ValueError("embedding_manager and vectorstore_manager are required")
         return VectorSessionTurnIndexStore(
-            embedding_manager=kwargs["embedding_manager"],
-            vectorstore_manager=kwargs["vectorstore_manager"],
-            index_roles=kwargs.get("index_roles", ("user", "assistant")),
-            tenant_id=str(kwargs.get("tenant_id") or "default"),
-            vector_index_namespace=kwargs.get("vector_index_namespace"),
+            embedding_manager=context.embedding_manager,
+            vectorstore_manager=context.vectorstore_manager,
+            index_roles=context.index_roles,
+            tenant_id=context.tenant_id,
+            vector_index_namespace=context.vector_index_namespace,
+            workspace_id=context.workspace_id,
         )

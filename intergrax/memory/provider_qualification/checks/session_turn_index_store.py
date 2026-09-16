@@ -152,7 +152,7 @@ class SessionTurnIndexUpsertSearchCheck:
             session_id=session_id,
             user_id=context.user_qualification_id,
         )
-        if not any(str(item.get("entry_id")) == entry_id for item in hits):
+        if not any(hit.entry_id == entry_id for hit in hits):
             return failed(
                 check_id=self.check_id,
                 capability=_CAPABILITY,
@@ -206,11 +206,131 @@ class SessionTurnIndexTombstoneCheck:
         return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
 
 
+@dataclass(frozen=True, slots=True)
+class SessionTurnIndexUserIsolationCheck:
+    check_id: str = "session_turn_index.user_isolation"
+
+    @property
+    def capability(self) -> MemoryProviderCapabilityKind:
+        return _CAPABILITY
+
+    @property
+    def severity(self) -> MemoryProviderCheckSeverity:
+        return _REQUIRED
+
+    async def run(
+        self,
+        instance: SessionTurnIndexStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult:
+        store = instance
+        marker = f"user-marker-{context.qualification_run_id}"
+        entry_id = f"entry-user-{context.qualification_run_id}"
+        session_id = f"session-user-{context.qualification_run_id}"
+        other_user = f"{context.user_qualification_id}-other"
+        await store.upsert_turn(
+            tenant_id=_tenant_a(context),
+            session_id=session_id,
+            user_id=context.user_qualification_id,
+            message=ChatMessage(role="user", content=marker, entry_id=entry_id),
+        )
+        hits = await store.search_turns(
+            query=marker,
+            tenant_id=_tenant_a(context),
+            session_id=session_id,
+            user_id=other_user,
+        )
+        if hits:
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.USER_ISOLATION_FAILURE,
+            )
+        return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
+
+
+@dataclass(frozen=True, slots=True)
+class SessionTurnIndexSearchResultFidelityCheck:
+    check_id: str = "session_turn_index.search_result_fidelity"
+
+    @property
+    def capability(self) -> MemoryProviderCapabilityKind:
+        return _CAPABILITY
+
+    @property
+    def severity(self) -> MemoryProviderCheckSeverity:
+        return _REQUIRED
+
+    async def run(
+        self,
+        instance: SessionTurnIndexStore,
+        context: MemoryProviderQualificationContext,
+    ) -> MemoryProviderCheckResult:
+        store = instance
+        content = f"fidelity-{context.qualification_run_id}"
+        entry_id = f"entry-fidelity-{context.qualification_run_id}"
+        session_id = f"session-fidelity-{context.qualification_run_id}"
+        tenant_id = _tenant_a(context)
+        message = ChatMessage(role="assistant", content=content, entry_id=entry_id)
+        await store.upsert_turn(
+            tenant_id=tenant_id,
+            session_id=session_id,
+            user_id=context.user_qualification_id,
+            message=message,
+        )
+        hits = await store.search_turns(
+            query=content,
+            tenant_id=tenant_id,
+            session_id=session_id,
+            user_id=context.user_qualification_id,
+        )
+        matched = next((hit for hit in hits if hit.entry_id == entry_id), None)
+        if matched is None:
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
+            )
+        if matched.tenant_id != tenant_id:
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
+            )
+        if matched.session_id != session_id:
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
+            )
+        if matched.user_id != context.user_qualification_id:
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
+            )
+        if matched.message.entry_id != entry_id or matched.message.content != content:
+            return failed(
+                check_id=self.check_id,
+                capability=_CAPABILITY,
+                severity=_REQUIRED,
+                reason_code=MemoryProviderQualificationFailureReason.CONTRACT_MISMATCH,
+            )
+        return passed(check_id=self.check_id, capability=_CAPABILITY, severity=_REQUIRED)
+
+
 SESSION_TURN_INDEX_STORE_CHECKS: tuple[SessionTurnIndexStoreQualificationCheck, ...] = (
     SessionTurnIndexTenantIsolationCheck(),
     SessionTurnIndexSessionIsolationCheck(),
+    SessionTurnIndexUserIsolationCheck(),
     SessionTurnIndexUpsertSearchCheck(),
     SessionTurnIndexTombstoneCheck(),
+    SessionTurnIndexSearchResultFidelityCheck(),
 )
 
 validate_canonical_check_suite(

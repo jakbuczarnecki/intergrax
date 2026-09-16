@@ -8,7 +8,10 @@ import json
 from typing import Any, Sequence
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
+from intergrax.memory.contracts.session_turn_index import (
+    SessionTurnIndexHit,
+    SessionTurnIndexStore,
+)
 from intergrax.memory.memory_vector_namespace import (
     EPISODIC_INDEX_DOMAIN,
     LTM_INDEX_DOMAIN,
@@ -161,7 +164,7 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
         top_k: int = 8,
         score_threshold: float | None = None,
         include_cross_session: bool = False,
-    ) -> list[dict[str, Any]]:
+    ) -> list[SessionTurnIndexHit]:
         q = (query or "").strip()
         if not q:
             return []
@@ -185,20 +188,29 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
             metadata_filter=MetadataFilter(conditions=where),
         )
 
-        hits: list[dict[str, Any]] = []
+        hits: list[SessionTurnIndexHit] = []
         for hit in raw_hits:
             score = float(hit.similarity_score)
             if score_threshold is not None and score < score_threshold:
                 continue
             document = hit.document
             meta = dict(document.metadata)
+            entry_id = document.identity.document_id
+            session_id_value = str(meta.get("session_id") or "")
+            user_id_value = str(meta.get("user_id") or "") or None
+            role = str(meta.get("role") or "user")
             hits.append(
-                {
-                    "text": document.content,
-                    "score": score,
-                    "message_id": document.identity.document_id,
-                    "session_id": str(meta.get("session_id") or ""),
-                    "role": str(meta.get("role") or ""),
-                }
+                SessionTurnIndexHit(
+                    entry_id=entry_id,
+                    tenant_id=tenant_id,
+                    session_id=session_id_value,
+                    user_id=user_id_value,
+                    message=ChatMessage(
+                        role=role,
+                        content=document.content,
+                        entry_id=entry_id,
+                    ),
+                    score=score,
+                )
             )
         return hits

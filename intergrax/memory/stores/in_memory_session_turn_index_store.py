@@ -7,7 +7,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
+from intergrax.memory.contracts.session_turn_index import (
+    SessionTurnIndexHit,
+    SessionTurnIndexStore,
+)
 
 
 @dataclass(slots=True)
@@ -58,9 +61,9 @@ class InMemorySessionTurnIndexStore(SessionTurnIndexStore):
         top_k: int = 8,
         score_threshold: float | None = None,
         include_cross_session: bool = False,
-    ) -> list[dict[str, object]]:
+    ) -> list[SessionTurnIndexHit]:
         needle = (query or "").strip().lower()
-        matched: list[dict[str, object]] = []
+        matched: list[SessionTurnIndexHit] = []
         for entry_id, row in self._rows.items():
             if entry_id in self._tombstoned:
                 continue
@@ -75,14 +78,15 @@ class InMemorySessionTurnIndexStore(SessionTurnIndexStore):
             if needle and needle not in content.lower():
                 continue
             matched.append(
-                {
-                    "entry_id": entry_id,
-                    "session_id": row.session_id,
-                    "user_id": row.user_id,
-                    "content": content,
-                    "score": 1.0,
-                }
+                SessionTurnIndexHit(
+                    entry_id=entry_id,
+                    tenant_id=row.tenant_id,
+                    session_id=row.session_id,
+                    user_id=row.user_id,
+                    message=row.message,
+                    score=1.0,
+                )
             )
         if score_threshold is not None:
-            matched = [item for item in matched if float(item["score"]) >= score_threshold]
+            matched = [item for item in matched if item.score >= score_threshold]
         return matched[:top_k]

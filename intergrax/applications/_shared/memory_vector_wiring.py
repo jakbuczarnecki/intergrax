@@ -11,6 +11,10 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
+from intergrax.memory.contracts.session_turn_index import (
+    SessionTurnIndexStore,
+    SessionTurnIndexStoreCreationContext,
+)
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_store import UserProfileStore
@@ -121,11 +125,13 @@ def build_session_turn_index_store(
     plugin_types = list(session_turn_index_plugins) or discover_session_turn_index_plugin_types()
     for plugin_type in plugin_types:
         return plugin_type.create_session_turn_index(
-            embedding_manager=rag_stack.embedding_manager,
-            vectorstore_manager=rag_stack.vectorstore_manager,
-            index_roles=profile.session_index_roles,
-            tenant_id=resolved_tenant_id,
-            vector_index_namespace=profile.vector_index_namespace,
+            SessionTurnIndexStoreCreationContext(
+                tenant_id=resolved_tenant_id,
+                embedding_manager=rag_stack.embedding_manager,
+                vectorstore_manager=rag_stack.vectorstore_manager,
+                index_roles=tuple(profile.session_index_roles),
+                vector_index_namespace=profile.vector_index_namespace,
+            )
         )
 
     return VectorSessionTurnIndexStore(

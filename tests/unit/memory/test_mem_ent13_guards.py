@@ -102,6 +102,73 @@ def test_qualification_package_has_no_rag_imports() -> None:
                 assert not node.module.startswith("intergrax.rag"), f"{path} imports intergrax.rag"
 
 
+_SESSION_TURN_INDEX_CONTRACT = (
+    _REPO / "intergrax" / "memory" / "contracts" / "session_turn_index.py"
+)
+
+
+def _function_kwonly_uses_any(path: Path) -> bool:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            for arg in node.args.kwonlyargs:
+                if arg.arg == "kwargs" and arg.annotation is not None:
+                    if _annotation_uses_name(arg.annotation, "Any"):
+                        return True
+            if node.args.vararg and node.args.vararg.arg == "kwargs":
+                return True
+    return False
+
+
+def _annotation_uses_name(node: ast.AST, name: str) -> bool:
+    if isinstance(node, ast.Name) and node.id == name:
+        return True
+    if isinstance(node, ast.Subscript):
+        return _annotation_uses_name(node.value, name) or _annotation_uses_name(
+            node.slice, name
+        )
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+        return _annotation_uses_name(node.left, name) or _annotation_uses_name(node.right, name)
+    if isinstance(node, ast.Tuple):
+        return any(_annotation_uses_name(elt, name) for elt in node.elts)
+    return False
+
+
+def _collect_public_contract_annotation_names(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.arg) and node.annotation is not None:
+            for label in ("object", "Any"):
+                if _annotation_uses_name(node.annotation, label):
+                    names.add(label)
+        if isinstance(node, ast.AnnAssign) and node.annotation is not None:
+            for label in ("object", "Any"):
+                if _annotation_uses_name(node.annotation, label):
+                    names.add(label)
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and node.returns is not None:
+            if _annotation_uses_name(node.returns, "Any"):
+                names.add("Any")
+            if _annotation_uses_name(node.returns, "dict"):
+                if isinstance(node.returns, ast.Subscript):
+                    names.add("raw_dict_result")
+    return names
+
+
+def test_session_turn_index_public_contract_is_fully_typed() -> None:
+    path = _SESSION_TURN_INDEX_CONTRACT
+    names = _collect_public_contract_annotation_names(path)
+    assert "Any" not in names
+    assert "object" not in names
+    assert "raw_dict_result" not in names
+    assert not _function_kwonly_uses_any(path)
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.AsyncFunctionDef) and node.name == "search_turns":
+            assert node.returns is not None
+            assert _annotation_uses_name(node.returns, "SessionTurnIndexHit")
+
+
 def test_canonical_check_suites_have_unique_required_ids() -> None:
     from intergrax.memory.provider_qualification.checks import (
         ENTITY_TEMPORAL_MEMORY_STORE_CHECKS,

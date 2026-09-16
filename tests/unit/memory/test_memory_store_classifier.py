@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStoreCreationContext
 from intergrax.memory.resolver import MemoryStorePluginKind, classify_memory_store_plugin
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
@@ -40,7 +41,10 @@ class _SessionTurnIndexPlugin:
         return "test.session_turn_index"
 
     @classmethod
-    def create_session_turn_index(cls, **_kwargs) -> VectorSessionTurnIndexStore:
+    def create_session_turn_index(
+        cls,
+        _context: SessionTurnIndexStoreCreationContext,
+    ) -> VectorSessionTurnIndexStore:
         raise NotImplementedError
 
 
@@ -71,7 +75,10 @@ def test_classifier_prefers_session_turn_index_when_all_methods_present() -> Non
             return InMemorySessionStorage()
 
         @classmethod
-        def create_session_turn_index(cls, **_kwargs) -> VectorSessionTurnIndexStore:
+        def create_session_turn_index(
+            cls,
+            _context: SessionTurnIndexStoreCreationContext,
+        ) -> VectorSessionTurnIndexStore:
             raise NotImplementedError
 
     assert (
