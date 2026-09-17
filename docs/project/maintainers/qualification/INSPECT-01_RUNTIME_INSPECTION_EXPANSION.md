@@ -109,6 +109,8 @@ Events without recorded tenant provenance are unsupported for tenant-safe inspec
 
 **INSPECT-01-RQ:** **PASSED** — enterprise requalification of the full Runtime Inspection surface (not a scope expansion of C).
 
+**RQ remediation:** **RQ-R1 proof closure** — canonical port pluginability, full snapshot redaction, expanded architecture gate scope (record exact SHA in git log after closeout).
+
 **INSPECT-01:** **ENTERPRISE QUALIFIED** (qualified HEAD: RQ closeout commit on `development`).
 
 **Next recommended task:** **HOST-01** — Host/API/MCP/ACP Convergence.
@@ -160,6 +162,8 @@ Sections expose safe summaries, refs, and token counts only — no memory payloa
 **Status:** **PASSED**
 
 **Qualified HEAD:** RQ closeout commit `test(inspection): complete enterprise requalification` on `development` (record exact SHA in qualification report / git log).
+
+**RQ remediation:** **RQ-R1 proof closure** — hardened RQ-Q5 (canonical `MemoryRuntimeOperationReadPort` → adapter → federation), RQ-Q7 (model + tool secrets absent from final snapshot), RQ-Q10 (runtime + canonical contract surface). Record R1 commit SHA in report.
 
 **Gates:** **RQ-Q1..RQ-Q10** in `catalog.py` `INSPECT_01_RQ_Q_CATALOG` (`test_inspect_01_rq_enterprise_requalification.py`). Prior **A-Q1..A-Q15**, **B-Q1..B-Q20**, **C1-Q1..C1-Q15**, and **C-Q1..C-Q18** (plus **C-R1** post-audit gates) remain required regressions.
 

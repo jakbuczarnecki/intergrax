@@ -134,7 +134,11 @@ class ToolRuntimeInvocationInspectionAdapter(RuntimeInspectionToolReadPort):
                     outcome=record.outcome,
                     status_label=record.status_label,
                     failure_classification=record.failure_classification,
-                    args_digest_ref=record.args_digest_ref,
+                    args_digest_ref=(
+                        sanitize_inspection_text(record.args_digest_ref)
+                        if record.args_digest_ref
+                        else None
+                    ),
                     provider_correlation_ref=record.provider_correlation_ref,
                     governance_evidence_refs=record.governance_evidence_refs,
                     evidence_refs=record.evidence_refs,

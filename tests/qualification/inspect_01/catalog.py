@@ -211,7 +211,7 @@ INSPECT_01_RQ_Q_CATALOG: tuple[Inspect01RQEvidence, ...] = (
     ),
     Inspect01RQEvidence(
         "RQ-Q5",
-        "Plugin/custom source substitution",
+        "Plugin/custom canonical memory port substitution",
         (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q5_plugin_custom_source_substitution"),),
     ),
     Inspect01RQEvidence(
@@ -236,7 +236,7 @@ INSPECT_01_RQ_Q_CATALOG: tuple[Inspect01RQEvidence, ...] = (
     ),
     Inspect01RQEvidence(
         "RQ-Q10",
-        "Architecture/prohibited-pattern gate",
+        "Architecture gate (runtime + canonical contract surface)",
         (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q10_architecture_prohibited_pattern_gate"),),
     ),
 )

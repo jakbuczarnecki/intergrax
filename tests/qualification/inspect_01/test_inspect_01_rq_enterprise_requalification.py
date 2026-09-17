@@ -21,6 +21,7 @@ from intergrax.contracts.execution_continuation import (
 from intergrax.contracts.execution_identity import mint_execution_id, mint_task_id
 from intergrax.contracts.execution_reconstruction_models import ExecutionReconstruction
 from intergrax.contracts.memory_runtime_read import (
+    MemoryRuntimeExecutionScope,
     MemoryRuntimeOperationReadPort,
     MemoryRuntimeOperationReadResult,
 )
@@ -32,7 +33,6 @@ from intergrax.contracts.runtime_inspection import (
     RuntimeInspectionTenantBoundaryError,
 )
 from intergrax.contracts.runtime_inspection.errors import RuntimeInspectionError
-from intergrax.contracts.runtime_inspection.sections import RuntimeInspectionMemorySection
 from intergrax.contracts.runtime_inspection.sources import RuntimeInspectionExecutionScope
 from intergrax.runtime.agent_governance.audit import InMemoryGovernanceAuditSink
 from intergrax.runtime.agent_governance.audit_read import InMemoryGovernanceAuditReadAdapter
@@ -97,7 +97,99 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _RUNTIME_INSPECTION_DIR = _REPO_ROOT / "intergrax" / "runtime" / "runtime_inspection"
+_CONTRACTS_ROOT = _REPO_ROOT / "intergrax" / "contracts"
+_RUNTIME_INSPECTION_CONTRACT_DIR = _CONTRACTS_ROOT / "runtime_inspection"
+_RQ_Q10_CANONICAL_CONTRACT_FILES = (
+    _CONTRACTS_ROOT / "memory_runtime_read.py",
+    _CONTRACTS_ROOT / "model_runtime_read.py",
+    _CONTRACTS_ROOT / "external_work_runtime_read.py",
+    _CONTRACTS_ROOT / "execution_artifact_read.py",
+    _CONTRACTS_ROOT / "execution_scope_identity.py",
+    _CONTRACTS_ROOT / "tool_runtime_read.py",
+    _CONTRACTS_ROOT / "governance_audit_read.py",
+    _CONTRACTS_ROOT / "execution_continuation_read.py",
+)
+_FORBIDDEN_REFLECTION_NAMES = frozenset({"getattr", "setattr", "hasattr"})
+_FORBIDDEN_ABI_TOKENS = ("dict[str, Any]",)
+_VENDOR_MODULE_TOKENS = frozenset(
+    {
+        "openai",
+        "anthropic",
+        "boto3",
+        "aws",
+        "azure",
+        "gcp",
+        "redis",
+        "celery",
+        "kafka",
+        "postgres",
+        "psycopg",
+        "s3",
+    },
+)
+_FORBIDDEN_CONTRACT_IMPORT_PREFIXES = (
+    "agents.",
+    "applications.",
+    "intergrax.runtime.",
+)
 _OTHER_TENANT = "tenant-inspect-rq-other"
+
+
+def _rq_q10_scan_paths() -> tuple[Path, ...]:
+    paths: set[Path] = set(_RUNTIME_INSPECTION_DIR.rglob("*.py"))
+    paths.update(_RUNTIME_INSPECTION_CONTRACT_DIR.rglob("*.py"))
+    paths.update(_RQ_Q10_CANONICAL_CONTRACT_FILES)
+    return tuple(sorted(paths))
+
+
+def _rq_q10_contract_paths() -> tuple[Path, ...]:
+    paths: set[Path] = set(_RUNTIME_INSPECTION_CONTRACT_DIR.rglob("*.py"))
+    paths.update(_RQ_Q10_CANONICAL_CONTRACT_FILES)
+    return tuple(sorted(paths))
+
+
+def _rq_q10_reflection_hits(tree: ast.AST) -> frozenset[str]:
+    hits: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and node.id in _FORBIDDEN_REFLECTION_NAMES:
+            hits.add(node.id)
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in _FORBIDDEN_REFLECTION_NAMES
+        ):
+            hits.add(node.func.id)
+    return frozenset(hits)
+
+
+def _rq_q10_imported_modules(tree: ast.AST) -> tuple[str, ...]:
+    modules: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module is not None:
+            modules.append(node.module)
+    return tuple(modules)
+
+
+def _rq_q10_vendor_module_hits(modules: tuple[str, ...]) -> frozenset[str]:
+    hits: set[str] = set()
+    for module in modules:
+        parts = module.lower().split(".")
+        for token in _VENDOR_MODULE_TOKENS:
+            if token in parts or module.lower() == token or module.lower().startswith(f"{token}."):
+                hits.add(token)
+    return frozenset(hits)
+
+
+def _rq_q10_forbidden_contract_imports(modules: tuple[str, ...]) -> tuple[str, ...]:
+    blocked: list[str] = []
+    for module in modules:
+        for prefix in _FORBIDDEN_CONTRACT_IMPORT_PREFIXES:
+            if module == prefix.removesuffix(".") or module.startswith(prefix):
+                blocked.append(module)
+                break
+    return tuple(blocked)
 
 
 def _representative_reconstruction() -> ExecutionReconstruction:
@@ -237,21 +329,40 @@ def test_rq_q4_optional_unavailable_source_partial() -> None:
 
 
 def test_rq_q5_plugin_custom_source_substitution() -> None:
-    class _CustomMemory:
+    class _CustomMemoryPort(MemoryRuntimeOperationReadPort):
         source_id = "rq_custom_memory"
 
-        def read_memory_operations(self, scope: RuntimeInspectionExecutionScope):
-            return RuntimeInspectionMemorySection(
-                operations=(),
-                completeness=RuntimeInspectionCompleteness.COMPLETE,
-                source_id=self.source_id,
+        def list_operations(
+            self,
+            scope: MemoryRuntimeExecutionScope,
+            *,
+            limit: int,
+        ) -> MemoryRuntimeOperationReadResult:
+            assert scope.tenant_id == _TENANT
+            assert scope.task_id == _SCOPE.task_id
+            assert scope.run_id == _SCOPE.run_id
+            assert scope.attempt_id == _SCOPE.attempt_id
+            assert scope.execution_id == _EXEC
+            record = _memory_record(source_category="rq_custom_canonical")
+            return MemoryRuntimeOperationReadResult(
+                records=(record,),
+                is_truncated=False,
             )
 
-    snapshot = _enterprise_service(memory_reader=_CustomMemory()).inspect(
+    memory_reader = MemoryOperationInspectionAdapter(_CustomMemoryPort())
+    snapshot = _enterprise_service(memory_reader=memory_reader).inspect(
         RuntimeInspectionQuery(tenant_id=_TENANT, execution_id=_EXEC),
     )
     assert snapshot.memory is not None
     assert snapshot.memory.source_id == "rq_custom_memory"
+    assert len(snapshot.memory.operations) == 1
+    operation = snapshot.memory.operations[0]
+    assert operation.execution_id == _EXEC
+    assert operation.attempt_id == _SCOPE.attempt_id
+    assert snapshot.identity.task_id == _SCOPE.task_id
+    assert snapshot.identity.run_id == _SCOPE.run_id
+    assert snapshot.identity.attempt_id == _SCOPE.attempt_id
+    assert snapshot.identity.execution_id == _EXEC
     assert snapshot.tools is not None
 
 
@@ -315,7 +426,9 @@ def test_rq_q7_redaction_boundary() -> None:
     )
     serialized = json.dumps(snapshot.model_dump(mode="json"), sort_keys=True)
     assert _C_SECRET not in serialized
+    assert _B_SECRET not in serialized
     assert not payload_contains_raw_secret(serialized, raw_secret=_C_SECRET)
+    assert not payload_contains_raw_secret(serialized, raw_secret=_B_SECRET)
 
 
 def test_rq_q8_deterministic_repeated_inspection() -> None:
@@ -351,24 +464,34 @@ def test_rq_q9_truncation_completeness_consistency() -> None:
 
 
 def test_rq_q10_architecture_prohibited_pattern_gate() -> None:
-    forbidden_names = {"getattr", "setattr", "hasattr"}
-    vendor_tokens = (
-        "openai",
-        "anthropic",
-        "boto3",
-        "redis",
-        "celery",
-        "kafka",
-    )
-    for path in sorted(_RUNTIME_INSPECTION_DIR.rglob("*.py")):
+    runtime_paths = sorted(_RUNTIME_INSPECTION_DIR.rglob("*.py"))
+    contract_paths = _rq_q10_contract_paths()
+    assert runtime_paths, "runtime inspection tree must be non-empty"
+    assert contract_paths, "canonical contract surface must be non-empty"
+
+    for path in _rq_q10_scan_paths():
         source = path.read_text(encoding="utf-8")
-        tree = ast.parse(source)
-        names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
-        hit = forbidden_names.intersection(names)
-        assert not hit, f"{path.relative_to(_REPO_ROOT)} uses forbidden reflection names: {hit}"
-        lower = source.lower()
-        for token in vendor_tokens:
-            assert token not in lower, f"{path.name} references vendor token {token!r}"
+        tree = ast.parse(source, filename=str(path))
+        reflection = _rq_q10_reflection_hits(tree)
+        assert not reflection, (
+            f"{path.relative_to(_REPO_ROOT)} uses forbidden reflection names: {reflection}"
+        )
+        vendor_hits = _rq_q10_vendor_module_hits(_rq_q10_imported_modules(tree))
+        assert not vendor_hits, (
+            f"{path.relative_to(_REPO_ROOT)} imports vendor modules: {vendor_hits}"
+        )
+
+    for path in contract_paths:
+        text = path.read_text(encoding="utf-8")
+        for token in _FORBIDDEN_ABI_TOKENS:
+            assert token not in text, (
+                f"{path.relative_to(_REPO_ROOT)} contains forbidden ABI token {token!r}"
+            )
+        tree = ast.parse(text, filename=str(path))
+        blocked = _rq_q10_forbidden_contract_imports(_rq_q10_imported_modules(tree))
+        assert not blocked, (
+            f"{path.relative_to(_REPO_ROOT)} imports concrete/runtime modules: {blocked}"
+        )
 
     bad = _representative_reconstruction()
     events = list(bad.positioned_events)
