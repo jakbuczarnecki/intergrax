@@ -1,4 +1,4 @@
-# ADR-MEM-XINT-002: Unified Information & Context Authority (Memory × CE × RAG × Tools)
+﻿# ADR-MEM-XINT-002: Unified Information & Context Authority (Memory × CE × RAG × Tools)
 
 | Field | Value |
 |-------|-------|
@@ -503,11 +503,13 @@ Tier boundaries preserved; MEM-ENT invariants authoritative; aligns with ADR-UCL
 
 MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normative policy pipeline ordering closure (this revision). Bounded regression: `.tmp/session/MEM-XINT-2-R/pytest.log`. Production code unchanged in MEM-XINT-2-R.
 
-**MEM-XINT-4-R (UE-9D):** MXINT-4 closed for iterative ReAct � multi-round bounded tool loops require `run_bounded_tool_loop_async` with wired `ContextEngine`; sync `BoundedReactPattern` no longer appends native tool messages for model-facing feedback.
+**MEM-XINT-4-R (UE-9D):** MXINT-4 closed for iterative ReAct � multi-round bounded tool loops require `run_bounded_tool_loop_async` with wired `ContextEngine`; sync `BoundedReactPattern` no longer appends native tool messages for model-facing feedback.
 
-## MEM-XINT-5 / MEM-XINT-5-R implementation status (2026-09-17)
+## MEM-XINT-5 / MEM-XINT-5-R / MEM-XINT-5-R2 implementation status (2026-09-17)
 
-**Status:** MEM-XINT-5 **CLOSED** (authority ownership + policy replaceability closure).
+**Status:** MEM-XINT-5 **CLOSED** (authority ownership, policy replaceability, and hard invariant envelope — MEM-XINT-5-R2).
+
+**Traceability:** An earlier revision marked MEM-XINT-5 closed after MEM-XINT-5-R alone; **R2** was required to block replaceable pipelines from mutating immutable source facts (provenance, authority after trusted assignment, sensitivity, scope, source identity, canonical content, raw relevance signal, fragment lineage).
 
 ### Authority
 
@@ -538,3 +540,13 @@ MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normat
 | Authority contract validation | Hard | Collection + engine post-gate |
 | Cross-source normalize/dedup/conflict/rank/budget | Pluginable strategies | ContextPolicyPipeline |
 | Entire pipeline orchestration | Replaceable (wrapped by hard gates) | Injected ContextPolicyPipeline |
+
+### Hard policy invariant envelope (MEM-XINT-5-R2)
+
+**Flow (engine-owned):** collect → trusted authority assignment → scope isolation → **hard canonicalize** → **hard exact dedup** → `ContextFragmentInvariantSnapshot` → replaceable behavioral pipeline (`normalize` → `semantic_dedup` → `conflict` → `rank` → `budget`) → `validate_policy_pipeline_result` (fail closed) → authority contract gate → scope isolation (defense in depth) → compile.
+
+**Immutable source facts (per surviving fragment):** `fragment_id`, `source`, `source_id`, `provider_provenance`, `authority_class`, `sensitivity`, `scope_ref`, canonical content hash (recomputed; do not trust plugin `content_hash`), `raw_relevance_signal`.
+
+**Contracts:** `ContextFragmentInvariantSnapshot`, `ContextPolicyInvariantViolationCode`, `ContextPolicyInvariantViolationError`; logic in `intergrax/context/policy/invariants.py`; hard pre-stages in `intergrax/context/policy/hard_stages.py`.
+
+**Replaceable `ContextPolicyPipeline`:** behavioral stages only — cannot skip hard canonicalize/exact dedup (engine runs them before snapshot). No registry override for the invariant validator.

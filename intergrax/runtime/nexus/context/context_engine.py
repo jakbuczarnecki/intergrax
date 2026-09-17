@@ -38,6 +38,11 @@ from intergrax.context.policy.pipeline import (
     default_context_policy_strategies,
 )
 from intergrax.context.policy.authority import filter_fragments_by_authority_contract
+from intergrax.context.policy.hard_stages import run_hard_policy_pre_stages
+from intergrax.context.policy.invariants import (
+    build_fragment_invariant_snapshots,
+    validate_policy_pipeline_result,
+)
 from intergrax.context.policy.scope_isolation import isolate_assembly_scope
 from intergrax.context.protocols import ContextPolicyPipeline
 from intergrax.context.formatter import (
@@ -314,15 +319,27 @@ class DefaultNexusContextEngine:
         collected_fragments, scope_excluded = isolate_assembly_scope(collected_fragments, request)
         fragments_excluded.extend(scope_excluded)
 
+        collected_fragments, hard_excluded, hard_decisions = run_hard_policy_pre_stages(
+            collected_fragments,
+        )
+        fragments_excluded.extend(hard_excluded)
+
+        invariant_snapshots = build_fragment_invariant_snapshots(collected_fragments)
+
         policy_strategies = self._resolve_policy_strategies()
         policy_result = self._policy_pipeline.execute(
             collected_fragments,
             request,
             strategies=policy_strategies,
         )
+        validate_policy_pipeline_result(
+            invariant_snapshots,
+            policy_result,
+            pipeline_id=self._policy_pipeline.pipeline_id,
+        )
         collected_fragments = list(policy_result.fragments)
         fragments_excluded.extend(policy_result.excluded)
-        policy_decisions = policy_result.decisions
+        policy_decisions = (*hard_decisions, *policy_result.decisions)
         collected_fragments, authority_excluded = filter_fragments_by_authority_contract(
             collected_fragments,
             descriptors_by_id=descriptors_by_id,

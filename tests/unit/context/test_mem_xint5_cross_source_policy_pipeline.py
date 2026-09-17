@@ -23,11 +23,13 @@ from intergrax.context.contracts import (
     replace_context_fragment,
 )
 from intergrax.context.policy.exact_dedup import exact_dedup_fragments
+from intergrax.context.policy.hard_stages import run_hard_policy_pre_stages
 from intergrax.context.policy.pipeline import (
     ContextCrossSourcePolicyPipeline,
     ContextPolicyStrategies,
     default_context_policy_strategies,
 )
+from intergrax.context.policy.scope_isolation import isolate_assembly_scope
 from intergrax.context.policy.score_normalizer import DefaultContextScoreNormalizer
 from intergrax.context.policy.semantic_dedup import DefaultContextSemanticDeduper
 from intergrax.context.ranker import DefaultContextRanker
@@ -124,15 +126,14 @@ def test_normalizer_maps_out_of_range_raw_score() -> None:
 
 
 def test_scope_isolation_excludes_foreign_tenant() -> None:
-    pipeline = ContextCrossSourcePolicyPipeline()
     foreign = _fragment(
         fragment_id="foreign",
         content="secret",
         scope=ContextFragmentScopeRef(tenant_id="tenant-b"),
     )
-    result = pipeline.execute([foreign], _request(tenant_id="tenant-a"))
-    assert result.fragments == ()
-    assert result.excluded and result.excluded[0][1] == ContextPolicyReasonCode.SCOPE_INCOMPATIBLE.value
+    kept, excluded = isolate_assembly_scope([foreign], _request(tenant_id="tenant-a"))
+    assert kept == []
+    assert excluded and excluded[0][1] == ContextPolicyReasonCode.SCOPE_INCOMPATIBLE.value
 
 
 def test_pipeline_order_proof_via_stage_trace() -> None:
@@ -141,10 +142,10 @@ def test_pipeline_order_proof_via_stage_trace() -> None:
         _fragment(fragment_id="f1", content="alpha"),
         _fragment(fragment_id="f2", content="beta"),
     ]
-    result = pipeline.execute(fragments, _request())
-    stages = [decision.stage for decision in result.decisions]
+    hard_fragments, _hard_excluded, hard_decisions = run_hard_policy_pre_stages(fragments)
+    result = pipeline.execute(hard_fragments, _request())
+    stages = [decision.stage for decision in (*hard_decisions, *result.decisions)]
     assert stages == [
-        ContextPolicyStage.SCOPE_ISOLATION,
         ContextPolicyStage.CANONICALIZE,
         ContextPolicyStage.EXACT_DEDUP,
         ContextPolicyStage.NORMALIZE,

@@ -211,6 +211,37 @@ class ContextProviderProvenance:
         )
 
 
+class ContextPolicyInvariantViolationCode(str, Enum):
+    """Hard invariant failures for replaceable policy pipelines (MEM-XINT-5-R2)."""
+
+    DUPLICATE_FRAGMENT_ID = "duplicate_fragment_id"
+    UNKNOWN_FRAGMENT = "unknown_fragment"
+    SOURCE_CHANGED = "source_changed"
+    SOURCE_ID_CHANGED = "source_id_changed"
+    PROVENANCE_CHANGED = "provenance_changed"
+    AUTHORITY_CHANGED = "authority_changed"
+    SENSITIVITY_CHANGED = "sensitivity_changed"
+    SCOPE_CHANGED = "scope_changed"
+    CONTENT_CHANGED = "content_changed"
+    RAW_RELEVANCE_CHANGED = "raw_relevance_changed"
+    INVALID_DECISION_REFERENCE = "invalid_decision_reference"
+
+
+@dataclass(frozen=True, slots=True)
+class ContextFragmentInvariantSnapshot:
+    """Immutable source facts captured before replaceable policy stages."""
+
+    fragment_id: str
+    source: ContextFragmentSource
+    source_id: str
+    provider_provenance: ContextProviderProvenance | None
+    authority_class: ContextAuthorityClass
+    sensitivity: DataClassification
+    scope_ref: ContextFragmentScopeRef | None
+    canonical_content_hash: str
+    raw_relevance_signal: float
+
+
 @dataclass(frozen=True, slots=True)
 class ContextProviderSetSnapshot:
     """Deterministic provider-set identity — descriptors only, no provider objects."""

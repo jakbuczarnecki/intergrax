@@ -15,12 +15,9 @@ from intergrax.context.contracts import (
     ContextPolicyReasonCode,
     ContextPolicyStage,
 )
-from intergrax.context.policy.scope_isolation import isolate_assembly_scope
 from intergrax.context.policy.budget_allocator import DefaultContextBudgetAllocator
-from intergrax.context.policy.canonicalization import canonicalize_fragment_for_policy
 from intergrax.context.policy.conflict_resolver import DefaultContextConflictResolver
 from intergrax.context.policy.config import ContextPolicyPipelineConfig
-from intergrax.context.policy.exact_dedup import exact_dedup_fragments
 from intergrax.context.policy.score_normalizer import DefaultContextScoreNormalizer
 from intergrax.context.policy.semantic_dedup import DefaultContextSemanticDeduper
 from intergrax.context.ranker import DefaultContextRanker
@@ -76,7 +73,7 @@ def default_context_policy_strategies() -> ContextPolicyStrategies:
 
 
 class ContextCrossSourcePolicyPipeline:
-    """Deterministic CE policy stages between collect and compile."""
+    """Replaceable behavioral CE policy stages (normalize → budget)."""
 
     @property
     def pipeline_id(self) -> str:
@@ -102,45 +99,6 @@ class ContextCrossSourcePolicyPipeline:
         decisions: list[ContextPolicyDecision] = []
         excluded: list[tuple[ContextFragment, str]] = []
         working = list(fragments)
-
-        before = list(working)
-        working, scope_excluded = isolate_assembly_scope(working, request)
-        excluded.extend(scope_excluded)
-        decisions.append(
-            _decision(
-                stage=ContextPolicyStage.SCOPE_ISOLATION,
-                strategy_id="platform.scope_isolation.v1",
-                before=before,
-                after=working,
-                reason_code=ContextPolicyReasonCode.SCOPE_INCOMPATIBLE,
-            ),
-        )
-
-        before = list(working)
-        working = [canonicalize_fragment_for_policy(fragment) for fragment in working]
-        decisions.append(
-            _decision(
-                stage=ContextPolicyStage.CANONICALIZE,
-                strategy_id="platform.canonicalize.v1",
-                before=before,
-                after=working,
-                reason_code=ContextPolicyReasonCode.CONFLICT_RESOLVED,
-                detail="canonical_content",
-            ),
-        )
-
-        before = list(working)
-        working, exact_dropped, _exact_audit = exact_dedup_fragments(working)
-        excluded.extend(exact_dropped)
-        decisions.append(
-            _decision(
-                stage=ContextPolicyStage.EXACT_DEDUP,
-                strategy_id="platform.exact_dedup.v1",
-                before=before,
-                after=working,
-                reason_code=ContextPolicyReasonCode.EXACT_DUPLICATE_CONTENT,
-            ),
-        )
 
         before = list(working)
         normalized: list[ContextFragment] = []

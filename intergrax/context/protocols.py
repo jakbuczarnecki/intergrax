@@ -122,7 +122,7 @@ class ContextBudgetAllocator(Protocol):
 
 @runtime_checkable
 class ContextPolicyPipeline(Protocol):
-    """Replaceable cross-source policy orchestration (MEM-XINT-5-R)."""
+    """Replaceable behavioral policy stages only (normalize → budget; MEM-XINT-5-R2)."""
 
     @property
     def pipeline_id(self) -> str: ...
