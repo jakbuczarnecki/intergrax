@@ -148,6 +148,100 @@ def test_cross_workspace_collaborative_candidate_rejected() -> None:
         validate_collaborative_work_source_candidate_isolation(request=request, candidate=candidate)
 
 
+def _collaborative_work_artifact_ref(
+    *,
+    work_item_id: str,
+    tenant_id: str = "tenant-a",
+    workspace_id: str = "ws-1",
+) -> WorkArtifactVersionRef:
+    return WorkArtifactVersionRef(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        work_item_id=work_item_id,
+        work_artifact_id="art-1",
+        work_artifact_version_id="v-1",
+    )
+
+
+def _collaborative_request(**scope_overrides: object) -> ContextViewCollaborativeWorkSourceRequest:
+    return ContextViewCollaborativeWorkSourceRequest(
+        scope=_scope(**scope_overrides),
+        acting_principal_id="principal-1",
+        eligible_visibility_classes=(ContextViewVisibilityClass.WORK_ITEM,),
+    )
+
+
+def test_collaborative_wrapper_and_nested_work_item_mismatch_rejected() -> None:
+    with pytest.raises(ValidationError, match="work_item_id"):
+        ContextViewCollaborativeWorkSourceRef(
+            tenant_id="tenant-a",
+            workspace_id="ws-1",
+            work_item_id="wi-1",
+            work_artifact_version=_collaborative_work_artifact_ref(work_item_id="wi-2"),
+        )
+
+
+def test_nested_artifact_work_item_mismatch_with_request_scope_rejected() -> None:
+    request = _collaborative_request(work_item_id="wi-1")
+    with pytest.raises(ValueError, match="work_item_id"):
+        ContextViewCollaborativeWorkSourceCandidate(
+            source_ref=ContextViewCollaborativeWorkSourceRef(
+                tenant_id="tenant-a",
+                workspace_id="ws-1",
+                work_artifact_version=_collaborative_work_artifact_ref(work_item_id="wi-2"),
+            ),
+            candidate_scope=_scope(work_item_id="wi-1"),
+            suggested_visibility=ContextViewVisibilityClass.WORK_ITEM,
+        )
+    ref = ContextViewCollaborativeWorkSourceRef(
+        tenant_id="tenant-a",
+        workspace_id="ws-1",
+        work_artifact_version=_collaborative_work_artifact_ref(work_item_id="wi-2"),
+    )
+    bypass = ContextViewCollaborativeWorkSourceCandidate.model_construct(
+        source_ref=ref,
+        candidate_scope=_scope(work_item_id="wi-1"),
+        suggested_visibility=ContextViewVisibilityClass.WORK_ITEM,
+    )
+    with pytest.raises(ValueError, match="work_item_id"):
+        validate_collaborative_work_source_candidate_isolation(
+            request=request,
+            candidate=bypass,
+        )
+
+
+def test_nested_only_work_item_locator_passes_isolation() -> None:
+    request = _collaborative_request(work_item_id="wi-1")
+    candidate = ContextViewCollaborativeWorkSourceCandidate(
+        source_ref=ContextViewCollaborativeWorkSourceRef(
+            tenant_id="tenant-a",
+            workspace_id="ws-1",
+            work_artifact_version=_collaborative_work_artifact_ref(work_item_id="wi-1"),
+        ),
+        candidate_scope=_scope(work_item_id="wi-1"),
+        suggested_visibility=ContextViewVisibilityClass.WORK_ITEM,
+    )
+    validate_collaborative_work_source_candidate_isolation(request=request, candidate=candidate)
+
+
+def test_workspace_level_collaborative_candidate_with_nested_artifact_passes() -> None:
+    request = ContextViewCollaborativeWorkSourceRequest(
+        scope=_scope(),
+        acting_principal_id="principal-1",
+        eligible_visibility_classes=(ContextViewVisibilityClass.WORKSPACE_SHARED,),
+    )
+    candidate = ContextViewCollaborativeWorkSourceCandidate(
+        source_ref=ContextViewCollaborativeWorkSourceRef(
+            tenant_id="tenant-a",
+            workspace_id="ws-1",
+            work_artifact_version=_collaborative_work_artifact_ref(work_item_id="wi-specific"),
+        ),
+        candidate_scope=_scope(),
+        suggested_visibility=ContextViewVisibilityClass.WORKSPACE_SHARED,
+    )
+    validate_collaborative_work_source_candidate_isolation(request=request, candidate=candidate)
+
+
 def test_work_item_mismatch_rejected() -> None:
     request = ContextViewCollaborativeWorkSourceRequest(
         scope=_scope(work_item_id="wi-1"),

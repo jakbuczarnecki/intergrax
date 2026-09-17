@@ -148,6 +148,36 @@ def _visibility_allowed(
     return suggested in eligible
 
 
+def _nested_collaborative_ref_work_item_id(
+    ref: ContextViewCollaborativeWorkSourceRef,
+) -> str | None:
+    version = ref.work_artifact_version
+    if version is None:
+        return None
+    return version.work_item_id
+
+
+def _require_collaborative_work_item_locators_aligned(
+    *,
+    ref: ContextViewCollaborativeWorkSourceRef,
+    expected_work_item_id: str | None,
+    scope_mismatch_message: str,
+) -> None:
+    """Fail closed when wrapper and nested locators disagree or breach expected scope."""
+    wrapper = ref.work_item_id
+    nested = _nested_collaborative_ref_work_item_id(ref)
+    if wrapper is not None and nested is not None and wrapper != nested:
+        raise ValueError(
+            "work_artifact_version work_item_id must match work_item_id when both set",
+        )
+    if expected_work_item_id is None:
+        return
+    if wrapper is not None and wrapper != expected_work_item_id:
+        raise ValueError(scope_mismatch_message)
+    if nested is not None and nested != expected_work_item_id:
+        raise ValueError(scope_mismatch_message)
+
+
 class ContextViewMemorySourceCandidate(BaseModel):
     """Transient memory candidate — locator only."""
 
@@ -233,9 +263,11 @@ class ContextViewCollaborativeWorkSourceCandidate(BaseModel):
             raise ValueError(
                 "collaborative source_ref workspace_id must match candidate_scope workspace_id",
             )
-        if scope.work_item_id is not None and ref.work_item_id is not None:
-            if ref.work_item_id != scope.work_item_id:
-                raise ValueError("collaborative source_ref work_item_id must match candidate_scope")
+        _require_collaborative_work_item_locators_aligned(
+            ref=ref,
+            expected_work_item_id=scope.work_item_id,
+            scope_mismatch_message="collaborative source_ref work_item_id must match candidate_scope",
+        )
         return self
 
 
@@ -369,9 +401,11 @@ def validate_collaborative_work_source_candidate_isolation(
         raise ValueError("collaborative source_ref tenant_id must match request scope tenant_id")
     if ref.workspace_id != request.scope.workspace_id:
         raise ValueError("collaborative source_ref workspace_id must match request scope workspace_id")
-    if request.scope.work_item_id is not None and ref.work_item_id is not None:
-        if ref.work_item_id != request.scope.work_item_id:
-            raise ValueError("collaborative source_ref work_item_id must match request work_item_id")
+    _require_collaborative_work_item_locators_aligned(
+        ref=ref,
+        expected_work_item_id=request.scope.work_item_id,
+        scope_mismatch_message="collaborative source_ref work_item_id must match request work_item_id",
+    )
     if not _scopes_collaboratively_compatible(request.scope, candidate.candidate_scope):
         raise ValueError("collaborative candidate scope is not compatible with request scope")
     if not _visibility_allowed(
