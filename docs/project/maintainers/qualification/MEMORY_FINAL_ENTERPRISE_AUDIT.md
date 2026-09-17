@@ -449,4 +449,303 @@ Recorded when committed on `development` (see git log after commit).
 
 ---
 
-> Wynik tego audytu musi zostać niezależnie zweryfikowany na podstawie kodu z GitHuba przed rozpoczęciem kolejnego etapu finalnej certyfikacji Memory.
+# MEM-FINAL-AUDIT-2 — Enterprise Contract & Layer Audit
+
+**Stage:** contract-first architecture · layer boundaries · runtime call-path proof (not security/lifecycle cert, not real-vendor E2E).  
+**Baseline AUDIT-1 commit (ancestor required):** `b4ee4ef6e6081a0a4d006e8704b11575d378e31f`  
+**AUDIT-2 execution HEAD (before commit):** `a177bb2e825ddd5b68bd434ef044e1b340bcaf93` · branch `development` · clean working tree.
+
+---
+
+## AUDIT-2 — Repo state (execution)
+
+| Field | Value |
+| ----- | ----- |
+| HEAD (before) | `a177bb2e825ddd5b68bd434ef044e1b340bcaf93` |
+| Branch | `development` |
+| AUDIT-1 ancestor | YES (`merge-base --is-ancestor b4ee4ef… HEAD`) |
+| Working tree | clean |
+| Foreign WIP | none |
+| Conflicts | none |
+
+**Scope modules:** inventory M-001…M-070 unchanged except corrections below; deep read on `intergrax/memory/contracts/**`, `default_memory_control_plane.py`, `user_profile_manager.py`, `user_profile_memory_lifecycle.py`, `resolver/**`, `provider_qualification/**`, `applications/_shared/memory*_wiring.py`, `runtime/nexus/context/memory_context_invocation.py`, `runtime/user_profile/session_memory_consolidation_service.py`, `runtime/task_memory/**`, `runtime/organization/**`, `tools/providers/memory/**`, `tools/providers/ltm/**`, guard tests MEM-ENT-11/13 + contract boundary AST.
+
+---
+
+## AUDIT-2 — Enterprise binary gate matrix (runtime-reachable surfaces)
+
+Legend: all gates must be YES except **Core vendor dispatch**, **Runtime bypass**, **Private cross-layer internals**, **Hard invariant → arbitrary plugin** (those must be NO).
+
+| Surface | Contract | Consumer typed | Concrete only in composition | Replace w/o core edit | External via contract | Core vendor dispatch | Layer OK | Runtime bypass | Cross-layer `._` | Invariant/strategy confusion |
+| ------- | -------- | -------------- | ------------------------------ | --------------------- | --------------------- | -------------------- | -------- | -------------- | ---------------- | ---------------------------- |
+| MemoryControlPlane | YES | YES | YES | YES | YES | NO | YES | NO | NO | NO |
+| DefaultMemoryControlPlane | YES (impl of Protocol) | composition returns Protocol | YES — ctor injects capabilities only | YES | YES | NO | YES | NO | NO | NO |
+| UserProfile stack | YES | YES (`UserProfileStore`, capability) | YES stores in wiring/resolver | YES (EP + plugin tests) | YES (fixture EP) | NO | YES* | NO canonical mutation | NO | NO |
+| Projections / lifecycle | YES | YES coordinator → `UserProfileMemoryProjection` | PARTIAL — default LTM vector projection built inside `UserProfileManager` when RAG deps set | PARTIAL | YES custom projection tests | NO | YES | NO | NO | NO |
+| Entity temporal | YES | YES service/indexer/store Protocols | YES | YES (`_FakeEntityTemporalMemoryStorePlugin`) | YES | NO | YES | NO | NO | NO |
+| Procedural / long-horizon | YES | YES | YES | YES (fake plugins ENT-8/9) | YES | NO | YES | NO | NO | NO |
+| SessionTurnIndex | YES | YES (store Protocol) | YES vector adapter + EP | YES | YES qual + plugins | NO in memory core | YES | NO STI→qdrant in core | NO | NO |
+| Task memory | YES (`TaskMemoryPersistence` + plane TASK scope) | YES coordinator/view | YES (`store.py` opener) | YES | host inject | NO in memory core | YES | NO — parallel **scope** not canonical user bypass | NO | NO |
+| Organization memory | YES (`OrganizationProfileStore`) | YES manager→store | YES wiring | YES | partial | NO | YES | NO — not on plane by design | NO | NO |
+| Conversational | YES (legacy store Protocol) | session/chat | YES | YES | YES | NO | YES | NO dual canonical LTM authority | NO | NO |
+| CE recall | YES | `MemoryControlPlane` only | YES | YES | YES | NO | YES | NO | NO | NO |
+| Tools LTM | YES | plane required fail-closed | YES | YES | YES | NO | YES | NO manager fallback | NO | NO |
+| Tools task KV | YES | `TaskMemoryViewBinding` | YES | YES | YES | NO | YES | LEGAL parallel TASK domain | NO | NO |
+| Session consolidation | YES | `plane.remember` | YES | YES | YES | NO | YES | NO | NO | NO |
+| Resolver / EP | YES | typed classification | YES | YES plugin e2e | YES | NO | PARTIAL† | NO | NO | NO |
+| Provider qualification | YES | checks on store Protocol | YES | YES | YES | NO in runner core | YES | NO | NO | NO |
+| Recall strategies | YES | plane + pipeline | YES | YES MEM-ENT-6 | YES | NO | YES | NO | NO | NO |
+| Governance | YES | plane before capability | YES | YES custom strategy tests | YES | NO | YES | NO | NO | NO |
+
+\*Single **AUDIT-2 layer note:** `intergrax/memory/resolver/materialization.py` imports `ApplicationEnvironmentProfile` from `intergrax.applications.contracts` — memory package → applications tier (see layer matrix). Not a runtime bypass.  
+†Resolver context type couples memory resolver to Tier-3 profile dataclass; replaceability of stores unaffected.
+
+**AUDIT-2 CORRECTION (M-002):** DefaultMemoryControlPlane — binary gates **PASS** for contract/layer audit; “PARTIAL” in M-002 referred to certification evidence, not missing Protocol boundary.
+
+---
+
+## AUDIT-2 — Contract matrix (summary)
+
+| Surface | Contract | Consumer typed to contract | Implementation injected | External replaceable | Verdict |
+| ------- | -------- | -------------------------- | ----------------------- | -------------------- | ------- |
+| Control plane | `MemoryControlPlane` | CE, tools LTM, consolidation | `build_default_memory_control_plane` | custom plane stub tests | PASS |
+| UserProfile | `UserProfileStore`, `UserProfileMemoryCapability` | Manager, plane adapter | `memory_wiring`, resolver | SQLite + EP fixture | PASS |
+| Entity / procedural / LH | store + capability Protocols | services, wiring | resolver + `_shared/*_wiring` | fake store plugins | PASS |
+| SessionTurnIndex | `SessionTurnIndexStore` | vector service, EP | composition / RAG ports | plugin + in-memory | PASS (E2E vendor = AUDIT-5) |
+| Task | `TaskMemoryPersistence`, `TaskMemoryCapability` | coordinator, plane TASK ops | `open_task_memory_store` | in-memory inject | PASS parallel domain |
+| Org | `OrganizationProfileStore` | `OrganizationProfileManager` | `memory_wiring` | sqlite/in-mem | PASS parallel domain |
+| Conversational | `ConversationalMemoryStore` | session paths | session wiring | sqlite/in-mem | LEGACY isolated |
+
+---
+
+## AUDIT-2 — Layer dependency matrix (real imports)
+
+| From | To | Dependency | Legal | Evidence |
+| ---- | -- | ---------- | ----- | -------- |
+| `intergrax/memory/contracts` | stdlib, `intergrax.contracts` | types only | YES | AST guard `test_memory_contract_boundary` |
+| `intergrax/memory/*` services | `intergrax/memory/stores/*` | **no** direct store imports in `*service.py` | YES | grep: 0 matches |
+| `intergrax/memory` core | vendor SDKs | none | YES | grep pymongo/qdrant/psycopg/redis/chromadb/pinecone in `intergrax/memory/**`: **0**; `test_mem_ent13_guards`, ENT-8/9/12 vendor tests |
+| `intergrax/memory/resolver/materialization.py` | `intergrax.applications.contracts.environment_profile` | materialization context | **NO (tier-up)** | single import — P1 layer debt |
+| `intergrax/runtime/*` consumers | `intergrax.memory.contracts` | plane/capabilities | YES | CE, consolidation |
+| `intergrax/tools/providers/ltm` | `MemoryControlPlane` | recall/remember | YES | no `UserProfileManager` |
+| `applications/_shared/memory_wiring.py` | concrete stores + resolver | composition root | YES | legal boundary |
+| `integrations/providers/*` | memory store Protocols | adapters | YES | sqlite task/user paths |
+
+**Forbidden dependency count (runtime memory core):** memory→applications **1 module** (materialization context only); memory→vendor SDK **0**; contracts→implementation **0** (AST enforced).
+
+---
+
+## AUDIT-2 — Concrete implementation import matrix (selected)
+
+| Consumer layer | Concrete import | Legal? |
+| -------------- | --------------- | ------ |
+| memory core services | none of SQLite/Qdrant/Mongo stores | YES |
+| `default_memory_control_plane.py` | none — only capabilities | YES |
+| `user_profile_manager.py` | `UserProfileLtmVectorProjection` default factory | **P1** — composition should own default projection wiring |
+| `applications/_shared/memory_wiring.py` | InMemory/SQLite/org/session stores | YES |
+| `runtime/task_memory/store.py` | `SQLiteTaskMemoryStore` | YES (runtime composition opener) |
+| `runtime/nexus/session/session_manager.py` | `UserProfileManager` (typed service) | YES internal recall helper |
+| tests / qual harness | in-memory + sqlite fixtures | TEST_ONLY / qual |
+
+---
+
+## AUDIT-2 — MemoryControlPlane boundary
+
+**Runtime callers (production paths):** `memory_context_invocation` (`isinstance(plane, MemoryControlPlane)`), `session_memory_consolidation_service` (typed ctor), `tools/providers/ltm/service.py` (fail-closed if missing), `tools/providers/memory/service.py` semantic LTM branch (`plane.recall`).
+
+**DefaultMemoryControlPlane** appears only in composition (`memory_control_wiring.build_default_memory_control_plane`) and tests — **PASS**.
+
+**Constructor proof:** `DefaultMemoryControlPlane` fields are Protocol-typed capabilities + governance/emitter/strategies — **no store construction** (lines 378–388 `default_memory_control_plane.py`).
+
+---
+
+## AUDIT-2 — UserProfile / projection / entity / procedural / LH / STI / task / org (proof pointers)
+
+| Area | Proof |
+| ---- | ----- |
+| UserProfileManager → store | `__init__(store: UserProfileStore)` — never SQLite type |
+| Plane → capability | `UserProfileManagerMemoryCapability` adapter; plane calls capability methods |
+| Lifecycle → projection | `UserProfileMemoryLifecycleCoordinator(projections: Sequence[UserProfileMemoryProjection])` |
+| Entity indexer → store | `EntityTemporalMemoryService` + `DefaultEntityMemoryIndexer` use store Protocol |
+| Procedural / LH | `ProceduralMemoryService` / `LongHorizonMemoryService` store-injected |
+| STI | `SessionTurnIndexStore` Protocol; vector backend via ports (`session_turn_index_service.py`), not qdrant import in memory core |
+| Task | host → `TaskMemoryCoordinator` → `TaskMemoryPersistence`; plane `task_memory: TaskMemoryCapability` for remember/delete TASK scope |
+| Org | `OrganizationProfileManager(OrganizationProfileStore)` — **verdict: PARALLEL LEGITIMATE DOMAIN** (org semantic authority separate from user canonical plane; not MEMORY AUTHORITY FRAGMENTATION for user facts) |
+| Conversational | session transcript store — **LEGACY_COMPAT**; not authoritative user LTM |
+
+---
+
+## AUDIT-2 — CE integration
+
+`memory_context_invocation.py`: resolves plane from wiring extras as `MemoryControlPlane`; recall via `plane.recall` + identity spine — **no concrete memory implementation imports**.
+
+---
+
+## AUDIT-2 — Tools
+
+- **LTM:** `_require_memory_control_context` — denies without plane; uses `plane.recall` / remember — **PASS** (`test_ltm_trusted_identity` asserts manager not called).
+- **Task KV:** `memory_view` binding → `TaskMemoryCoordinator` path — parallel TASK scope, not user canonical mutation bypass.
+
+---
+
+## AUDIT-2 — Session consolidation
+
+Source inspection + test: `SessionMemoryConsolidationService.consolidate_session` uses `self._memory_control_plane.remember`; AST guard `test_session_consolidation_service_does_not_call_profile_manager_add_memory_entry` — **PASS**.
+
+---
+
+## AUDIT-2 — Resolver / EP / fail-closed
+
+Flow confirmed: `discover_classified_memory_store_plugins` → classifier → `materialize_*` with plugin ids from `MemoryProfile` — **no** `if provider == "x"` in `intergrax/memory/**` core (grep: 0). Missing/ambiguous plugin → explicit errors in wiring (`memory_plugin_bootstrap_errors`, resolver fail-closed tests in ENT-13). Entry-point group **`intergrax.memory_stores`** evidenced by fixture `tests/fixtures/plugin_packages/memory_store_plugin/pyproject.toml`.
+
+**External plugin proof:** `test_mem_ent7/8/9_*_Fake*StorePlugin` — register class → resolve → materialize without core edit.
+
+---
+
+## AUDIT-2 — Provider qualification
+
+Runner + checks operate on store **Protocol** instances; `test_qualification_core_has_no_vendor_imports` — no SQLite/provider_id dispatch in canonical runner — **PASS**.
+
+---
+
+## AUDIT-2 — Hard invariant vs replaceable strategy
+
+| Invariant | Hard owner | Replaceable? | Enforcement |
+| --------- | ---------- | ------------ | ----------- |
+| Trusted identity / user scope | plane + `RequestIdentity` spine | NO | CE recall, LTM tools, MEM-ENT-15 |
+| Governance before mutation | `DefaultMemoryControlPlane` + `MemorySecurityGovernanceService` | policy strategies only inside governance bundle | MEM-ENT-11 remember guard test |
+| Canonical user facts | `UserProfileStore` via manager lifecycle | NO | plane remember path |
+| Projection ≠ authority | lifecycle coordinator | projection impl replaceable | reconcile tests |
+| Lineage / revision | models + store contracts | NO | qual checks |
+
+**Strategy direct store mutations:** **0** in `intergrax/memory/strategies/**` (no store `save`/`put`).
+
+**Projection as canonical authority:** **0** runtime paths treat vector/entity index as sole writer of user profile facts — writes go primary store then projections.
+
+---
+
+## AUDIT-2 — Replaceable mechanism map (minimum)
+
+| Mechanism | Contract | Default | External path | Core edit for swap? |
+| --------- | -------- | ------- | ------------- | ------------------- |
+| UserProfileStore | `UserProfileStore` / plugin | host sqlite/in-mem | EP `intergrax.memory_stores` | NO |
+| EntityTemporalMemoryStore | Protocol + plugin | in-mem ref | EP + fake plugin tests | NO |
+| EntityMemoryIndexer | Protocol | `DefaultEntityMemoryIndexer` | inject indexer | NO |
+| EntityTemporalMemoryCapability | Protocol | wired service | `_shared/entity_graph_wiring` | NO |
+| Projection | `UserProfileMemoryProjection` | LTM vector if RAG deps | inject sequence | NO (but default concrete in manager = wiring smell) |
+| Procedural / LH store | Protocol | in-mem | EP | NO |
+| SessionTurnIndexStore | Protocol | vector/in-mem | EP + ports | NO |
+| Recall strategies | `MemoryRecallStrategySet` | defaults bundle | inject set | NO |
+| Observability sink | `MemoryObservabilitySink` | diagnostic emitter | inject | NO |
+| Qualification check | store Protocol | harness | custom store instance | NO |
+
+---
+
+## AUDIT-2 — Runtime bypass inventory (re-verified)
+
+| Path | Classification | Severity |
+| ---- | -------------- | -------- |
+| `SessionMemoryConsolidationService` → plane.remember | LEGAL_INTERNAL | — |
+| Tools LTM without plane | fail-closed | — |
+| `SessionManager.search_longterm_memory` → `UserProfileManager` | **CANONICAL_BYPASS** (recall skips plane governance/recall pipeline) | **P1** |
+| Task tools → TaskMemoryView | PARALLEL_DOMAIN | P2 evidence |
+| Org `add_memory_entry` | PARALLEL_DOMAIN | P2 cert gap |
+| Conversational stores | LEGACY_COMPAT | P2 |
+| Entity graph legacy | LEGACY guarded | P2 |
+| Integration test direct manager | TEST_ONLY | P3 |
+| `UserProfileManager.add_memory_entry` via plane capability | LEGAL_INTERNAL (owner) | — |
+
+---
+
+## AUDIT-2 — Raw public API / reflection / private access
+
+| Location | Finding | Classification | Severity |
+| -------- | ------- | -------------- | -------- |
+| `contracts/memory_store_plugin.py` | `**kwargs: Any` factory hooks | opaque vendor payload | P2 |
+| `contracts/memory_models.py` | `metadata: Dict[str, Any]` | serialization boundary | P2 |
+| `memory_context_invocation.py` | `dict[str, Any]` engine payload | serialization boundary | P3 |
+| Qualification runner | AST forbids getattr/setattr in qual core | guarded | OK |
+| Resolver | no getattr in resolver package | OK | — |
+
+Cross-owner `._store._conn` in runtime memory paths: **none flagged** in audited production modules (spot checks; full `_` scan deferred to AUDIT-3).
+
+---
+
+## AUDIT-2 — Composition proof flows (one each)
+
+| Flow | config → instance |
+| ---- | ----------------- |
+| UserProfile | `MemoryProfile.user_profile_store_plugin_id` / sqlite baseline → `resolve_memory_platform_wiring` → `UserProfileStore` → `UserProfileManager` → plane |
+| Entity | `enable_*` + resolver → `EntityTemporalMemoryStore` → service capability |
+| Procedural / LH | plugin id → materialize → service |
+| STI | host vector wiring + `SessionTurnIndexStore` |
+| Task | `open_task_memory_store` / inject → coordinator → optional plane `TaskMemoryCapability` |
+| Org | sqlite/in-mem org store in `memory_wiring` → `OrganizationProfileManager` |
+
+---
+
+## AUDIT-2 — Replaceability test evidence
+
+- Fake store plugins: ENT-7/8/9 unit tests  
+- Custom plane: `MemoryControlPlaneTestStub`, `RecordingMemoryControlPlane` (MEM-ENT-11, MEM-XINT-3)  
+- Custom projection/indexer: `RecordingEntityMemoryIndexer` + protocol isinstance test  
+- Plugin EP: integration memory plugin e2e (AUDIT-1 map)
+
+**Bounded static checks run:** `uv run pytest tests/unit/memory/test_memory_contract_boundary.py tests/unit/memory/test_mem_ent13_guards.py tests/unit/memory/test_mem_ent11_platform_boundaries.py -q` → **26 passed**.
+
+---
+
+## AUDIT-2 — Architecture guard coverage
+
+Existing: `test_memory_contract_boundary` (contracts AST), `test_mem_ent13_guards` (qual vendor/reflection), `test_mem_ent11_platform_boundaries` (consolidation/plane/governance), ENT-8/9/12 vendor import tests, `test_mem_ent15_r2_identity_guards` (consolidation source), MEM-XINT runtime recall plane test.
+
+**New guards added in AUDIT-2:** none (code already guarded; gaps are architectural debt not fixable in audit-only task).
+
+---
+
+## AUDIT-2 — P0 / P1 / P2 / P3
+
+**P0:** **NONE** (no ungoverned canonical mutation bypass; no core vendor SDK; no projection writes canonical truth; no strategy store mutation).
+
+**P1:**
+
+1. **Runtime LTM recall bypass:** `SessionManager.search_longterm_memory` calls `UserProfileManager.search_longterm_memory` without `MemoryControlPlane.recall` (governance/recall strategy envelope skipped on that path).
+2. **Core default concrete projection:** `UserProfileManager._resolve_memory_projections` instantiates `UserProfileLtmVectorProjection` inside memory core when RAG deps present — should be composition-only for strict enterprise replaceability.
+3. **Layer coupling:** `memory/resolver/materialization.py` → `applications.contracts.environment_profile` (memory must not depend on applications tier).
+
+**P2:** Org/task parallel domains certification gaps; SessionTurnIndex real-vendor E2E; conversational legacy coexistence; public `Any` on plugin factories; incomplete composition proof for all hosts; fail-closed downgrade paths in dev profiles (documented in wiring comments).
+
+**P3:** `memory/__init__.py` exports; maintainer doc drift; test-only manager shortcuts.
+
+---
+
+## AUDIT-2 — Changes to AUDIT-1 classifications
+
+| ID | Change | Reason |
+| -- | ------ | ------ |
+| M-002 | AUDIT-2 CORRECTION: contract/layer **PASS**; keep “not fully proven” for cert | Binary gate matrix |
+| M-071 (implicit) | SessionManager LTM search | New bypass row — recall not plane-routed |
+
+---
+
+## AUDIT-2 — Overall verdict
+
+**PASS WITH CORRECTIONS — MEMORY CONTRACT/LAYER AUDIT NOT CLOSED**
+
+Contract-first architecture and replaceability **hold** for canonical mutation, composition, plugins, and CE/tools LTM paths. Closure blocked by **P1** items: session-manager recall bypass, in-core default LTM projection materialization, and memory→applications import in resolver materialization context. No **MEM-FINAL-AUDIT-2 — ARCHITECTURE IMPLEMENTATION GAP** (fixes are wiring/routing refactors, not ownership model change).
+
+---
+
+## AUDIT-2 — Commit
+
+| Field | Value |
+| ----- | ----- |
+| SHA | `b71a265f769a07d4e022551763fb22c1176977f6` |
+| Message | `docs(memory): audit enterprise contracts and layer boundaries` |
+| Files | `docs/project/maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md` |
+| HEAD after | same commit on `development` |
+
+---
+
+> Wynik MEM-FINAL-AUDIT-1 musi zostać niezależnie zweryfikowany na podstawie kodu z GitHuba przed MEM-FINAL-AUDIT-2 (baseline `b4ee4ef6…`).  
+> Wynik MEM-FINAL-AUDIT-2 musi zostać niezależnie zaudytowany na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-3.
