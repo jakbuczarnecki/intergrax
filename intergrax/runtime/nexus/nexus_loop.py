@@ -465,6 +465,7 @@ class NexusLoop:
         self._decision_exposure_selection = None
         self._decision_flow_verify_graph_final = False
         self._decision_exposure_session = None
+        self._runtime_event_count_baseline = 0
 
     def set_hold_persisted_trace_finalize(self, hold: bool) -> None:
         """When True, graph success defers persisted trace finalize for scenario observability."""
@@ -701,6 +702,7 @@ class NexusLoop:
                 "active execution budget execution_id mismatch with Nexus handle_task",
             )
         self._current_task = task
+        self._runtime_event_count_baseline = self._event_bus.event_count
         try:
             return await self._handle_task_impl(task)
         finally:
@@ -945,6 +947,9 @@ class NexusLoop:
             sandbox_manager=self._sandbox_manager,
             run_id=require_active_execution_identity()[0],
             authoritative_decision_exposure=exposure,
+            runtime_events_count=(
+                self._event_bus.event_count - self._runtime_event_count_baseline
+            ),
         )
         return result
 

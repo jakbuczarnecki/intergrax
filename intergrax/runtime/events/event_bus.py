@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+import threading
 import time
 from collections import defaultdict
 from dataclasses import dataclass
@@ -166,6 +167,8 @@ class RuntimeEventBus:
             raise ValueError("critical_completion_timeout_seconds must be > 0")
         self._critical_completion_timeout_seconds = critical_completion_timeout_seconds
         self._closed = False
+        self._event_count = 0
+        self._event_count_lock = threading.Lock()
 
     def attach_persistence(self, persistence: EvidencePersistencePort) -> None:
         """Wire or replace the persistence adapter after construction."""
@@ -260,6 +263,12 @@ class RuntimeEventBus:
     @property
     def history(self) -> List[RuntimeEvent]:
         return list(self._history_buffer.snapshot())
+
+    @property
+    def event_count(self) -> int:
+        """Count of events processed through this bus (independent of history retention)."""
+        with self._event_count_lock:
+            return self._event_count
 
     def clear_history(self) -> None:
         self._history_buffer.clear()
@@ -381,6 +390,8 @@ class RuntimeEventBus:
                     event.event_type.value,
                 )
         self._history_buffer.append(event)
+        with self._event_count_lock:
+            self._event_count += 1
 
     async def _dispatch_handlers_async(self, event: RuntimeEvent) -> None:
         for sid, _prio, handler in self._collect_handlers(event):

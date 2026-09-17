@@ -13,6 +13,10 @@ from intergrax.contracts.runtime_event_history import (
     DEFAULT_BOUNDED_RUNTIME_EVENT_HISTORY_CAPACITY,
     RuntimeEventHistoryBuffer,
     RuntimeEventHistoryPolicy,
+    RuntimeEventHistoryRetention,
+)
+from intergrax.runtime.events.runtime_event_history_validation import (
+    validate_runtime_event_history_buffer,
 )
 
 
@@ -20,6 +24,9 @@ class DisabledRuntimeEventHistory:
     """Null-object history buffer (no retention)."""
 
     __slots__ = ()
+
+    def retention(self) -> RuntimeEventHistoryRetention:
+        return RuntimeEventHistoryRetention(mode="disabled", capacity=None)
 
     def append(self, event: RuntimeEvent) -> None:
         del event
@@ -37,11 +44,16 @@ class BoundedRuntimeEventHistory:
     __slots__ = ("_capacity", "_deque", "_lock")
 
     def __init__(self, capacity: int) -> None:
+        if isinstance(capacity, bool) or type(capacity) is not int:
+            raise ValueError("capacity must be a positive int")
         if capacity <= 0:
             raise ValueError("capacity must be > 0")
         self._capacity = capacity
         self._deque: deque[RuntimeEvent] = deque(maxlen=capacity)
         self._lock = threading.Lock()
+
+    def retention(self) -> RuntimeEventHistoryRetention:
+        return RuntimeEventHistoryRetention(mode="bounded", capacity=self._capacity)
 
     def append(self, event: RuntimeEvent) -> None:
         with self._lock:
@@ -76,20 +88,24 @@ def resolve_runtime_event_history_buffer(
             raise ValueError(
                 "history_buffer cannot be combined with record_history or history_policy",
             )
+        validate_runtime_event_history_buffer(history_buffer)
         return history_buffer
     if record_history is not None and history_policy is not None:
         raise ValueError("record_history and history_policy are mutually exclusive")
     if record_history is False:
-        return DisabledRuntimeEventHistory()
-    if history_policy is not None:
-        return runtime_event_history_buffer_from_policy(history_policy)
-    if record_history is True:
-        return BoundedRuntimeEventHistory(
+        buffer = DisabledRuntimeEventHistory()
+    elif history_policy is not None:
+        buffer = runtime_event_history_buffer_from_policy(history_policy)
+    elif record_history is True:
+        buffer = BoundedRuntimeEventHistory(
             DEFAULT_BOUNDED_RUNTIME_EVENT_HISTORY_CAPACITY
         )
-    return runtime_event_history_buffer_from_policy(
-        RuntimeEventHistoryPolicy.enterprise_default()
-    )
+    else:
+        buffer = runtime_event_history_buffer_from_policy(
+            RuntimeEventHistoryPolicy.enterprise_default()
+        )
+    validate_runtime_event_history_buffer(buffer)
+    return buffer
 
 
 __all__ = [

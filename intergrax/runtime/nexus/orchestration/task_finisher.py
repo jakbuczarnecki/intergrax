@@ -64,6 +64,7 @@ def build_nexus_task_result(
     sandbox_manager: SandboxSessionManager,
     run_id: Optional["RunId"] = None,
     authoritative_decision_exposure: AuthoritativeDecisionExposure[object] | None = None,
+    runtime_events_count: int | None = None,
 ) -> TaskResult:
     primary = executions[-1] if executions else None
     composer_meta = composer.compose_metadata(
@@ -101,6 +102,11 @@ def build_nexus_task_result(
         if operation_count is not None:
             isolation.sandbox_operation_count = int(operation_count)
 
+    resolved_runtime_events = (
+        runtime_events_count
+        if runtime_events_count is not None
+        else event_bus.event_count
+    )
     summary = TaskResultSummary(
         validation=TaskValidationSummary(
             valid=validation.valid,
@@ -110,7 +116,7 @@ def build_nexus_task_result(
         metrics=TaskExecutionMetrics(
             cost=execution_metrics.cost,
             total_tokens=execution_metrics.total_tokens,
-            runtime_events=len(event_bus.history),
+            runtime_events=resolved_runtime_events,
             task_trace_events=len(trace_emitter.events),
         ),
         isolation=isolation,
