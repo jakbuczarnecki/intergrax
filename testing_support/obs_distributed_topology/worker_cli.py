@@ -17,8 +17,21 @@ def _bootstrap_qualification_import_root() -> None:
         return
     root_path = Path(root).resolve()
     root_str = str(root_path)
-    if root_str not in sys.path:
-        sys.path.insert(0, root_str)
+    filtered: list[str] = []
+    for entry in sys.path:
+        if not entry:
+            continue
+        try:
+            resolved = Path(entry).resolve()
+        except OSError:
+            filtered.append(entry)
+            continue
+        if resolved == root_path:
+            continue
+        if (resolved / "intergrax").is_dir():
+            continue
+        filtered.append(entry)
+    sys.path[:] = [root_str, *filtered]
 
 
 _bootstrap_qualification_import_root()

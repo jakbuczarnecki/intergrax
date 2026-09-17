@@ -10,6 +10,7 @@ from pathlib import Path
 
 import intergrax
 from intergrax.contracts.execution_event_position import AsOfBoundary
+from intergrax.contracts.execution_reconstruction_models import RuntimeHistoryCompleteness
 from intergrax.contracts.execution_identity import EventId, mint_event_id, mint_execution_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
@@ -19,6 +20,7 @@ from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
 )
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
+    STRATEGY_ID,
     DeterministicProblemGroupingStrategy,
 )
 from intergrax.runtime.diagnostics.diagnostic_problem_grouping_feature_projector import (
@@ -89,7 +91,6 @@ def run_writer_role(
     port = provider_factory(scenario.provider)
     bus = RuntimeEventBus(
         persistence=port,
-        record_history=False,
         history_policy=RuntimeEventHistoryPolicy.disabled(),
     )
     for planned in (
@@ -139,6 +140,29 @@ def run_reader_role(
         runtime_events=port,
         causal_evidence=InMemoryCausalEvidencePersistence(),
     )
+    primary_rows = list(
+        port.list_positioned_for_run(
+            str(scenario.primary_run_id),
+            tenant_id=scenario.primary_tenant,
+        )
+    )
+    if not primary_rows:
+        return ReaderWorkerResult(
+            role="reader",
+            qualification_sha=scenario.qualification_sha,
+            import_root=_import_root(),
+            intergrax_file=str(Path(intergrax.__file__).resolve()),
+            reader_provider_object_id=id(port),
+            runtime_history_completeness=RuntimeHistoryCompleteness.COMPLETE.value,
+            event_ids_in_order=(),
+            positions_in_order=(),
+            as_of_event_ids=(),
+            isolated_run_event_ids=(),
+            foreign_tenant_visible_count=0,
+            task_grouped_run_ids=(),
+            idempotent_run_count=0,
+        )
+
     reconstruction = reconstructor.reconstruct_execution(
         scenario.primary_tenant,
         scenario.primary_task_id,
@@ -153,10 +177,7 @@ def run_reader_role(
         run_id=scenario.primary_run_id,
         position=next(
             positioned.position
-            for positioned in port.list_positioned_for_run(
-                str(scenario.primary_run_id),
-                tenant_id=scenario.primary_tenant,
-            )
+            for positioned in primary_rows
             if str(positioned.event.event_id) == str(as_of_position.event_id)
         ),
     )
@@ -299,6 +320,8 @@ def run_diagnostics_role(
                 run_id=scenario.diagnostics_run_id,
             ),
         ),
+        grouping_strategy_id=STRATEGY_ID,
+        observed_at=diag_time,
     )
     result = orchestrator.run(request)
     return DiagnosticsWorkerResult(
