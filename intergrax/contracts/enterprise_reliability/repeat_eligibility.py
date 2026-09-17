@@ -55,7 +55,7 @@ class ExternalEffectRepeatPolicyRequest:
     """Policy inputs — durable invocation truth and effective contract only."""
 
     invocation: ProviderInvocation
-    outcome_status: ProviderInvocationStatus
+    outcome: ProviderInvocationOutcome
     effect_contract: ExternalEffectContract
     unknown_posture: UnknownUncertaintyPosture
 
@@ -223,7 +223,7 @@ def evaluate_external_effect_repeat_eligibility(
 
     policy_request = ExternalEffectRepeatPolicyRequest(
         invocation=invocation,
-        outcome_status=outcome.status,
+        outcome=outcome,
         effect_contract=contract,
         unknown_posture=posture,
     )

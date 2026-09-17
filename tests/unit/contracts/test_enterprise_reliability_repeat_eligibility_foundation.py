@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
@@ -30,6 +32,7 @@ from intergrax.contracts.enterprise_reliability import (
     evaluate_external_effect_repeat_eligibility,
     evaluate_unknown_uncertainty_posture,
 )
+from intergrax.contracts.external_work import ExternalWorkErrorCode
 from intergrax.contracts.external_work_provider_capabilities import (
     ExternalWorkProviderCapabilities,
 )
@@ -91,6 +94,48 @@ class _ExplodingPolicy:
         raise RuntimeError("policy broken")
 
 
+@dataclass
+class _RecordingPolicy:
+    allow: bool = True
+    calls: int = 0
+    last_request: ExternalEffectRepeatPolicyRequest | None = field(default=None)
+
+    def decide(
+        self,
+        request: ExternalEffectRepeatPolicyRequest,
+    ) -> ExternalEffectRepeatPolicyDecision:
+        self.calls += 1
+        self.last_request = request
+        return ExternalEffectRepeatPolicyDecision(allow_repeat=self.allow)
+
+
+class _TransientOnlyRepeatPolicy:
+    policy_id = "transient_only"
+
+    def decide(
+        self,
+        request: ExternalEffectRepeatPolicyRequest,
+    ) -> ExternalEffectRepeatPolicyDecision:
+        code = request.outcome.error_code
+        allow = code == ExternalWorkErrorCode.TRANSIENT_REMOTE_FAILURE.value
+        return ExternalEffectRepeatPolicyDecision(allow_repeat=allow)
+
+
+class _DenyPermanentFailedPolicy:
+    policy_id = "deny_permanent_failed"
+
+    def decide(
+        self,
+        request: ExternalEffectRepeatPolicyRequest,
+    ) -> ExternalEffectRepeatPolicyDecision:
+        if request.outcome.status is not ProviderInvocationStatus.FAILED:
+            return ExternalEffectRepeatPolicyDecision(allow_repeat=True)
+        permanent = request.outcome.error_code == (
+            ExternalWorkErrorCode.PERMANENT_PROVIDER_FAILURE.value
+        )
+        return ExternalEffectRepeatPolicyDecision(allow_repeat=not permanent)
+
+
 def _invocation(
     *,
     operation: str = "external_work.create_work",
@@ -108,11 +153,23 @@ def _invocation(
     )
 
 
-def _outcome(status: ProviderInvocationStatus) -> ProviderInvocationOutcome:
+def _outcome(
+    status: ProviderInvocationStatus,
+    *,
+    error_code: str | None = None,
+    external_status: str | None = None,
+    provider_request_id: str | None = None,
+    provider_operation_id: str | None = None,
+    invocation_id: str = "inv-1",
+) -> ProviderInvocationOutcome:
     return ProviderInvocationOutcome(
-        invocation_id="inv-1",
+        invocation_id=invocation_id,
         status=status,
         completed_at=_NOW,
+        error_code=error_code,
+        external_status=external_status,
+        provider_request_id=provider_request_id,
+        provider_operation_id=provider_operation_id,
     )
 
 
@@ -287,3 +344,151 @@ def test_policy_evaluation_failure_fail_closed() -> None:
 def test_eligible_binds_original_idempotency_key() -> None:
     result = _evaluate(invocation=_invocation(idempotency_key="stable-key-42"))
     assert result.idempotency_key == "stable-key-42"
+
+
+def test_policy_receives_full_provider_invocation_outcome() -> None:
+    outcome = _outcome(
+        ProviderInvocationStatus.UNKNOWN,
+        error_code="ignored-for-unknown",
+        external_status="ext-pending",
+        provider_request_id="req-99",
+        provider_operation_id="op-88",
+    )
+    recorder = _RecordingPolicy()
+    _evaluate(outcome=outcome, policy=recorder)
+    assert recorder.calls == 1
+    assert recorder.last_request is not None
+    req = recorder.last_request
+    assert isinstance(req.outcome, ProviderInvocationOutcome)
+    assert req.outcome.status is ProviderInvocationStatus.UNKNOWN
+    assert req.outcome.error_code == "ignored-for-unknown"
+    assert req.outcome.external_status == "ext-pending"
+    assert req.outcome.provider_request_id == "req-99"
+    assert req.outcome.provider_operation_id == "op-88"
+    assert not hasattr(req, "outcome_status")
+
+
+def test_failed_not_auto_eligible_without_policy_allow() -> None:
+    result = _evaluate(
+        outcome=_outcome(ProviderInvocationStatus.FAILED),
+        policy=default_deny_external_effect_repeat_policy(),
+    )
+    assert result.verdict is ExternalEffectRepeatEligibilityVerdict.NOT_ALLOWED
+    assert result.reason is ExternalEffectRepeatEligibilityReason.DENIED_POLICY
+
+
+def test_failed_transient_error_policy_allows_eligible() -> None:
+    outcome = _outcome(
+        ProviderInvocationStatus.FAILED,
+        error_code=ExternalWorkErrorCode.TRANSIENT_REMOTE_FAILURE.value,
+        external_status="503",
+    )
+    result = _evaluate(outcome=outcome, policy=_TransientOnlyRepeatPolicy())
+    assert result.verdict is ExternalEffectRepeatEligibilityVerdict.ELIGIBLE
+
+
+def test_failed_permanent_error_policy_denies() -> None:
+    outcome = _outcome(
+        ProviderInvocationStatus.FAILED,
+        error_code=ExternalWorkErrorCode.PERMANENT_PROVIDER_FAILURE.value,
+    )
+    result = _evaluate(outcome=outcome, policy=_DenyPermanentFailedPolicy())
+    assert result.verdict is ExternalEffectRepeatEligibilityVerdict.NOT_ALLOWED
+    assert result.reason is ExternalEffectRepeatEligibilityReason.DENIED_POLICY
+
+
+def test_failed_policy_inspects_error_code_not_core_hardcode() -> None:
+    recorder = _RecordingPolicy(allow=False)
+    outcome = _outcome(
+        ProviderInvocationStatus.FAILED,
+        error_code=ExternalWorkErrorCode.TRANSIENT_REMOTE_FAILURE.value,
+    )
+    _evaluate(outcome=outcome, policy=recorder)
+    assert recorder.last_request is not None
+    assert (
+        recorder.last_request.outcome.error_code
+        == ExternalWorkErrorCode.TRANSIENT_REMOTE_FAILURE.value
+    )
+
+
+def test_policy_not_called_for_succeeded() -> None:
+    recorder = _RecordingPolicy()
+    _evaluate(outcome=_outcome(ProviderInvocationStatus.SUCCEEDED), policy=recorder)
+    assert recorder.calls == 0
+
+
+def test_policy_not_called_without_idempotency_support() -> None:
+    caps = _caps(supports_idempotency=False)
+    contract = external_work_effect_contract_for_action(ACTION_CREATE_EXTERNAL_WORK, caps)
+    recorder = _RecordingPolicy()
+    _evaluate(contract=contract, policy=recorder)
+    assert recorder.calls == 0
+
+
+def test_policy_not_called_for_reconcile_only_posture() -> None:
+    contract = _contract(
+        idempotency=ExternalEffectCapabilitySupport.NOT_SUPPORTED,
+        reconciliation=ExternalEffectCapabilitySupport.SUPPORTED,
+    )
+    recorder = _RecordingPolicy()
+    _evaluate(contract=contract, policy=recorder)
+    assert recorder.calls == 0
+
+
+def test_policy_not_called_for_escalate_required_posture() -> None:
+    contract = _contract(
+        idempotency=ExternalEffectCapabilitySupport.NOT_SUPPORTED,
+        reconciliation=ExternalEffectCapabilitySupport.NOT_SUPPORTED,
+    )
+    assert evaluate_unknown_uncertainty_posture(contract) is (
+        UnknownUncertaintyPosture.ESCALATE_REQUIRED
+    )
+    recorder = _RecordingPolicy()
+    result = _evaluate(contract=contract, policy=recorder)
+    assert recorder.calls == 0
+    assert result.verdict is ExternalEffectRepeatEligibilityVerdict.NOT_ALLOWED
+    assert result.reason is ExternalEffectRepeatEligibilityReason.DENIED_IDEMPOTENCY_NOT_SUPPORTED
+
+
+def test_create_unknown_reconcile_only_hard_denied() -> None:
+    contract = _contract(
+        idempotency=ExternalEffectCapabilitySupport.NOT_SUPPORTED,
+        reconciliation=ExternalEffectCapabilitySupport.SUPPORTED,
+    )
+    result = _evaluate(contract=contract, policy=_AllowRepeatPolicy())
+    assert result.verdict is ExternalEffectRepeatEligibilityVerdict.NOT_ALLOWED
+
+
+def test_outcome_invocation_mismatch_policy_not_called() -> None:
+    recorder = _RecordingPolicy()
+    result = _evaluate(
+        outcome=_outcome(ProviderInvocationStatus.UNKNOWN, invocation_id="other"),
+        policy=recorder,
+    )
+    assert recorder.calls == 0
+    assert result.verdict is ExternalEffectRepeatEligibilityVerdict.NOT_ALLOWED
+    assert result.reason is ExternalEffectRepeatEligibilityReason.DENIED_INVALID_STATE
+
+
+def test_operation_mismatch_policy_not_called() -> None:
+    recorder = _RecordingPolicy()
+    result = _evaluate(
+        invocation=_invocation(operation="external_work.cancel_work"),
+        policy=recorder,
+    )
+    assert recorder.calls == 0
+    assert result.verdict is ExternalEffectRepeatEligibilityVerdict.NOT_ALLOWED
+
+
+def test_repeat_eligibility_module_has_no_external_work_integration_imports() -> None:
+    module_path = (
+        Path(__file__).resolve().parents[3]
+        / "intergrax"
+        / "contracts"
+        / "enterprise_reliability"
+        / "repeat_eligibility.py"
+    )
+    source = module_path.read_text(encoding="utf-8")
+    assert "ExternalWorkProviderCapabilities" not in source
+    assert "ExternalWorkAdapterResult" not in source
+    assert "ExternalWorkIntegration" not in source
