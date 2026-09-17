@@ -31,6 +31,7 @@ Memory **does not** decide what the model sees on a given turn - that is Context
 | **Persistence model** | Explicit stores (SQLite bundle, Mongo document store, in-memory fallbacks) - relational/document primary; vector indexes are retrieval indexes, not source of truth |
 | **Retrieval model** | `MemoryView` / Nexus steps; optional `ltm` and `episodic` vector domains when host wires the RAG integration stack |
 | **Context Engineering** | Consumes memory recall outputs; owns final context assembly, budgeting, and provenance |
+| **ContextView source (MP-5F)** | Memory exposes scoped **reference-read** port (`MemoryReferenceReadPort`) — B1 **CLOSED**; adapters **BLOCKED** until B2…B5 |
 | **RAG** | Owns external/document knowledge retrieval (`knowledge` index domain); distinct from user LTM and session episodic memory |
 | **Maturity** | Four-axis statement in [Current maturity](#current-maturity) - procedural memory **minimal**; public production qualification **not claimed** |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [extended satellite](satellites/MEMORY_extended_depth.md) · [plan](../maintainers/plans/MEMORY.md) |

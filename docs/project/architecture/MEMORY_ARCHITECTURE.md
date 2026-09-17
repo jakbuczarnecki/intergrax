@@ -138,6 +138,20 @@ Contract: `MemoryControlPlane` (`intergrax/memory/contracts/memory_control.py`).
 
 Task memory uses separate `TaskMemoryCapability` when injected; not all hosts wire it.
 
+### Reference-read port (MP-5F-B1 — CLOSED)
+
+**Ownership:** Memory owns read/retrieval semantics. The public reference-read capability exposes scoped canonical references only. ContextView adapters consume it but do not own it.
+
+Contract: `MemoryReferenceReadPort` (`intergrax/memory/contracts/memory_reference_read.py`). Default enumeration (user-profile surface, no payload hydration): `DefaultMemoryReferenceReader` (`intergrax/memory/default_memory_reference_reader.py`).
+
+| Concern | Behavior |
+| ------- | -------- |
+| Scope | `MemoryReferenceReadScope` — mandatory `tenant_id` + `workspace_id`; optional `user_id` and neutral `MemoryScopedResourceRef` |
+| Result | `MemoryRecordCanonicalRef` (`tenant_id`, `memory_id`, `revision`) — reference-first only |
+| Control plane | **Not** an extension of `MemoryControlPlane` recall (which returns hydrated items); separate replaceable read port |
+| MP-5 | No ContextView types in Memory; future MP-5F adapter maps refs to `ContextViewMemorySourceRef` |
+| Async | Port is **async**; MP-5D source ports are sync — MP-5F adapter integration requires an explicit sync/async composition decision (not a B1 blocker) |
+
 ---
 
 ## Core flow
