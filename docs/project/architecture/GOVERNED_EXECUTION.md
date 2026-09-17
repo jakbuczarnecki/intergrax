@@ -286,15 +286,18 @@ flowchart LR
 
 | Capability | INFERENCE | AGENTIC | ORCHESTRATION |
 | ---------- | --------- | ------- | ------------- |
-| Root admission | PARTIAL | PARTIAL | PARTIAL |
-| Inner guard | GAP / host-dependent | PARTIAL | PARTIAL |
-| Meaningful side effect spine | GAP | PARTIAL | PARTIAL |
-| Decision-bound MSE (GR-6) | GAP | PARTIAL | PARTIAL |
-| HITL continuation (GR-5) | GAP | PARTIAL | PARTIAL |
-| Reliability boundary (GR-7) | GAP | PARTIAL | PARTIAL |
+| Root admission | WIRED_NOT_QUALIFIED | QUALIFIED | QUALIFIED |
+| Inner guard | PARTIAL | PARTIAL | PARTIAL |
+| Policy evaluation (GEP) | PARTIAL | QUALIFIED | QUALIFIED |
+| Meaningful side effect spine | NOT_APPLICABLE | PARTIAL | PARTIAL |
+| Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
+| HITL continuation (GR-5) | GAP | QUALIFIED | PARTIAL |
+| Continuation (GR-5 port) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
+| Reliability boundary (GR-7) | GAP | QUALIFIED | PARTIAL |
+| Governance Evidence (GR-8) | WIRED_NOT_QUALIFIED | PARTIAL | PARTIAL |
 | Control-plane mutation | NOT_APPLICABLE (spine) | NOT_APPLICABLE | NOT_APPLICABLE — live **GAP** GR-12 |
 
-GR-10 qualification matrix remains **open** — this table reflects current code-truth, not enterprise closure.
+GR-10 qualification suite (`tests/qualification/governance/strategy/`) encodes this matrix; status **PARTIAL** — independent audit required before CLOSED.
 
 ### 10. Evidence / Diagnostics (Diagram #9)
 
@@ -645,12 +648,12 @@ Status vocabulary: **COVERED** (wired enforcement on demonstrated production-cla
 
 | Governance capability | INFERENCE | AGENTIC | ORCHESTRATION |
 | --------------------- | --------- | ------- | ------------- |
-| Root admission (GR-2) | PARTIAL (gated harness) | PARTIAL | PARTIAL |
-| Inner guard / MSE spine (GR-3) | GAP / host-dependent | PARTIAL | PARTIAL (primary proofs) |
-| Tool invoke policy | NOT_APPLICABLE / host | COVERED | COVERED |
-| Decision-required MSE (GR-6) | GAP | PARTIAL | PARTIAL (External Work host) |
-| HITL continuation port (GR-5) | GAP | PARTIAL | PARTIAL (Nexus-internal orchestration) |
-| Provider reliability boundary (GR-7) | GAP | PARTIAL (External Work) | PARTIAL (External Work) |
+| Root admission (GR-2) | WIRED_NOT_QUALIFIED (launcher + internal runtime; no Tier-3 host INFERENCE entry) | QUALIFIED (`HostTaskExecution` + launcher) | QUALIFIED (same host path) |
+| Inner guard / MSE spine (GR-3) | PARTIAL (identity on `InferenceExecutor`) | PARTIAL | PARTIAL (primary proofs) |
+| Tool invoke policy | NOT_APPLICABLE | COVERED | COVERED |
+| Decision-required MSE (GR-6) | NOT_APPLICABLE | QUALIFIED (MP-4R7 / governed contractor) | PARTIAL (External Work host) |
+| HITL continuation port (GR-5) | GAP | QUALIFIED (MP-4R7) | PARTIAL (orchestration HITL slices) |
+| Provider reliability boundary (GR-7) | GAP | QUALIFIED (governed contractor GR-7) | PARTIAL (External Work) |
 
 ### Decision → Governance (GR-6 result model)
 

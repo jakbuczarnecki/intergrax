@@ -180,7 +180,7 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-7 | External Effect / Reliability Boundary | **IMPLEMENTED** — qualification **OPEN** (ERL path; Reliability ≠ Governance) |
 | GR-8 | Governance Evidence Integration | **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** — [ADR-GR-8-001](../../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); independent final audit pending |
 | GR-9 | Diagnostic Consumption Proof | **OPEN** |
-| GR-10 | Execution Strategy Coverage | **OPEN** |
+| GR-10 | Execution Strategy Coverage | **PARTIAL** — qualification suite + matrix; INFERENCE HITL/Reliability residuals |
 | GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** |
 | GR-12 | Control-Plane Governance | **GAP** / **OPEN** |
 | GR-13 | Full Governance Proof Matrix | **OPEN** |

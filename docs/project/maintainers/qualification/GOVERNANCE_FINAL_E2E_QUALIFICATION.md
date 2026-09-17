@@ -107,7 +107,7 @@ Substitution rule: **contract + composition only** (no monkeypatch of private au
 | ID | Status |
 | -- | ------ |
 | GR-8 | OPEN — governance evidence correlation incomplete |
-| GR-10 | OPEN — strategy matrix not enterprise-closed |
+| GR-10 | **PARTIAL** — `tests/qualification/governance/strategy/`; matrix in `GOVERNED_EXECUTION.md` §9 |
 | GR-11 | OPEN — plugin enterprise certification |
 | GR-12 | GAP — control-plane mutation NOT QUALIFIED |
 | GR-13 | OPEN — full proof matrix superseded in part by GOV-FINAL-4 catalog |
