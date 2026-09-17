@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4)
 
-**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — CLOSED** · **MP-4D6 — CLOSED** · **MP-4D7 — NEXT**
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — CLOSED** · **MP-4D6 — CLOSED** · **MP-4D7 — CLOSED** · **MP-4D8 — NEXT**
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (execution/status only):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -919,6 +919,39 @@ Static review of MP-4 seams found no production domain imports of PostgreSQL bin
 
 ---
 
+## Documentation Regression Gates (MP-4D7)
+
+**Stage:** **CLOSED** (automated semantic documentation gates only — **no** runtime, contract, provider, composition, or schema changes).
+
+Lightweight regression gates guard the **documentation state** of MP-4 against future semantic drift between this canonical SSOT, maintainer/capability status docs, ownership rules, authority boundaries, contract-first seams, and qualification claims. Gates live in:
+
+`tests/unit/runtime/architecture/test_mp4d7_documentation_regression_gates.py`
+
+### Protected categories
+
+| Category | Intent |
+| -------- | ------ |
+| **Status synchronization** | MP-4 implementation closure and MP-4D stage markers stay aligned across SSOT + coordination docs |
+| **Canonical SSOT** | This file remains the sole MP-4 integration architecture entry point |
+| **Ownership** | Decision lifecycle vs binding association truth vs Execution continuation |
+| **Authority boundaries** | Human Review ≠ Governance; Governance owns WHETHER; authorization before execution/resume |
+| **Contract-first architecture** | Platform operates on contracts; critical MP-4 seams stay documented |
+| **Provider qualification boundaries** | PostgreSQL binding qualification does not generalize to full MP-4 E2E |
+| **R7 qualification boundary** | R7 = test-composition E2E; not full production provider E2E |
+| **Evidence / Reconstruction / Diagnostics separation** | Factual evidence vs reconstruction vs interpretation |
+| **D4 / D5 / D6 semantic separation** | Invariant→proof vs provider→qualification vs boundary certification |
+
+### Out of scope (by design)
+
+- Runtime behavior, import topology, and provider execution (covered by **MP-4R0…MP-4R8** architecture gates and qualification suites)
+- Full-document Markdown snapshots or formatting/layout assertions
+- Re-qualifying providers or re-running E2E matrices
+- Creating a second documentation SSOT or validation framework
+
+**D7 close criteria:** critical documentation invariants above are automated with semantic (not cosmetic) checks — **MP-4D7 — CLOSED**, **MP-4D8 — NEXT**.
+
+---
+
 ## Known limitations (summary)
 
 | Limitation | Status | Blocking? |
@@ -983,8 +1016,8 @@ Execution detail and proof commands: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](..
 | **MP-4D4** | **CLOSED** | E2E proof / invariant-to-test matrix |
 | **MP-4D5** | **CLOSED** | Provider / persistence qualification matrix |
 | **MP-4D6** | **CLOSED** | Enterprise boundary & pluginability certification (this §) |
-| **MP-4D7** | **NEXT** | Documentation regression gates |
-| MP-4D8 | NOT STARTED | Final enterprise documentation audit |
+| **MP-4D7** | **CLOSED** | Documentation regression gates (this §) |
+| **MP-4D8** | **NEXT** | Final enterprise documentation audit |
 
 Capability roadmap: [`MULTIPLAYER_AI` plan](../capabilities/plan/MULTIPLAYER_AI.md).
 
