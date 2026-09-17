@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4R0…MP-4R7 CLOSED** — **MP-4R8 — READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** (ADR-MP-009)
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4 implementation — FORMALLY CLOSED** (MP-4R0…MP-4R8 **CLOSED**; ADR-MP-009) — **MP-4 documentation certification — MP-4D1 CLOSED · MP-4D2 NEXT**
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4R8** — Final closure audit (`READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT`; formal MP-4 closure pending independent GitHub audit)
-**Next task:** Independent **MP-4** program audit on GitHub — **no further MP-4 implementation slices**
+**Current active task:** **MP-4D2** — Canonical architecture documentation consolidation (**NOT STARTED**; documentation/certification only)
+**Next task:** **MP-4D3** — Visual architecture layer — **NOT STARTED**
 
 ---
 
@@ -88,7 +88,8 @@ architecture hub:
 
 ```text
 MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
-→ MP-3 (work artifacts) → MP-4R (canonical Decision / Governance / Execution integration)
+→ MP-3 (work artifacts) → MP-4R (canonical Decision / Governance / Execution integration) — **implementation CLOSED**
+→ MP-4D (enterprise documentation & proof closure — active)
 → MP-5 (context view) → MP-6 (activity & evidence)
 → MP-7 (LKW adoption) → MP-8 (agent directory & external agents)
 → MP-9 (advanced UX / notifications / optional realtime)
@@ -206,12 +207,12 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **MP-4R0…MP-4R7 CLOSED** — **MP-4R8 READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT**; MP-4B/MP-4C/MP-4D **RETIRED** |
+| **Status** | **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED**; MP-4B/MP-4C/MP-4D **RETIRED** |
 | **Purpose** | Multiplayer **bindings/projections** over canonical Decision, Governance/HITL, Execution continuation, Evidence, and Diagnostics — no duplicate authorities |
 | **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) + Collaborative Work for work primitives |
 | **Dependencies** | MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3 ownership **FROZEN**; canonical Decision + GR-5 continuation |
 | **REUSED EXISTING CAPABILITY** | Decision System; Decision human review; Governance/HITL; `ExecutionContinuationPort`; Evidence Plane; Diagnostics |
-| **NEW CAPABILITY REQUIRED (future)** | Collaborative Decision binding / projection (**MP-4R4+**, design gate only) |
+| **NEW CAPABILITY REQUIRED (delivered)** | Collaborative Decision binding / projection — **MP-4R4 CLOSED** |
 | **Explicit out of scope (SUPERSEDED / HISTORICAL)** | Legacy MP-4 program rows treating Decision, Approval, `DecisionResponse`, or public Nexus HITL bridge as **NEW Multiplayer primitives** |
 | **Architecture/ADR gate** | ADR-MP-009 **Accepted** at MP-4R0 |
 | **User-visible outcome** | Collaborative work associated with canonical decisions and governed execution without parallel decision/approval stores |
@@ -226,9 +227,24 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-4R3 | Execution continuation integration | **CLOSED** |
 | MP-4R4 | Collaborative decision binding | **CLOSED** |
 | MP-4R5 | Evidence Plane adoption | **CLOSED** |
-| MP-4R6 | Legacy removal & migration | **READY_FOR_INDEPENDENT_AUDIT** |
+| MP-4R6 | Legacy removal & migration | **CLOSED** |
 | MP-4R7 | Enterprise integration qualification | **CLOSED** |
-| MP-4R8 | Final closure audit | **READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** |
+| MP-4R8 | Final closure audit | **CLOSED** |
+
+### MP-4D — Enterprise documentation & proof closure
+
+**Does not reopen MP-4 implementation.** Canonical architecture: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md).
+
+| Stage | Status | Summary |
+|-------|--------|---------|
+| **MP-4D1** | **CLOSED** | Synchronize documentation state with closed implementation |
+| **MP-4D2** | **NEXT** | Consolidate canonical architecture entry point |
+| MP-4D3 | NOT STARTED | Professional visual architecture layer |
+| MP-4D4 | NOT STARTED | E2E proof / invariant-to-test matrix |
+| MP-4D5 | NOT STARTED | Provider/persistence qualification boundaries |
+| MP-4D6 | NOT STARTED | Contract-first/pluginability certification in docs |
+| MP-4D7 | NOT STARTED | Documentation regression gates |
+| MP-4D8 | NOT STARTED | Final enterprise documentation audit |
 
 ### Legacy MP-4 (historical)
 
