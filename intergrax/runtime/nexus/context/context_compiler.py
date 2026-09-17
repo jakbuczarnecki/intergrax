@@ -20,10 +20,8 @@ from intergrax.runtime.nexus.context.context_compiler_models import (
     ContextCompileResult,
     DegradationStepKind,
 )
-from intergrax.runtime.nexus.context.degradation_ladder import (
-    LADDER_ORDER,
-    apply_degradation_step,
-)
+from intergrax.context.budget.degradation import ContextDegradationPolicy, DefaultContextDegradationPolicy
+from intergrax.runtime.nexus.context.degradation_ladder import apply_degradation_step
 
 
 def _default_count_tokens(text: str) -> int:
@@ -130,13 +128,19 @@ class ContextCompiler:
       *,
       count_tokens: Callable[[str], int] | None = None,
       margin_tokens: int = 256,
+      degradation_policy: ContextDegradationPolicy | None = None,
   ) -> None:
       self._count_tokens = count_tokens or _default_count_tokens
       self._margin_tokens = margin_tokens
+      self._degradation_policy = degradation_policy or DefaultContextDegradationPolicy()
 
   def count_tokens(self, text: str) -> int:
       """Public token estimator for CE planning and compilation."""
       return self._count_tokens(text)
+
+  @property
+  def margin_tokens(self) -> int:
+      return self._margin_tokens
 
   def resolve_global_input_budget(
       self,
@@ -161,6 +165,7 @@ class ContextCompiler:
       config: "RuntimeConfig",
       *,
       max_output_tokens: Optional[int] = None,
+      input_budget_tokens: Optional[int] = None,
   ) -> ContextCompileResult:
       decision = _resolve_decision_profile(config)
 
@@ -177,10 +182,13 @@ class ContextCompiler:
                   preserved.append(message)
           working = preserved
 
-      budget_tokens = self.resolve_global_input_budget(
-          config,
-          max_output_tokens=max_output_tokens,
-      )
+      if input_budget_tokens is not None and input_budget_tokens > 0:
+          budget_tokens = input_budget_tokens
+      else:
+          budget_tokens = self.resolve_global_input_budget(
+              config,
+              max_output_tokens=max_output_tokens,
+          )
 
       candidates = classify_candidates(working, count_tokens=self._count_tokens)
       total_tokens = sum(candidate.token_estimate for candidate in candidates)
@@ -198,7 +206,7 @@ class ContextCompiler:
       bytes_removed = 0
       trimmed = False
 
-      for step in LADDER_ORDER:
+      for step in self._degradation_policy.ladder_order():
           if step == DegradationStepKind.FULL:
               continue
           if step == DegradationStepKind.REDUCE_INJECTION_BLOCKS:

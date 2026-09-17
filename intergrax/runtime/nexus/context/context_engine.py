@@ -28,6 +28,7 @@ from intergrax.context.provider_lifecycle import (
     validate_required_sources_fulfilled,
     validate_required_sources_have_eligible_providers,
 )
+from intergrax.context.budget import global_allocatable_tokens, resolve_authoritative_model_budget
 from intergrax.context.planner import ContextPlanner
 from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
@@ -59,6 +60,7 @@ from intergrax.runtime.observability.context_counters import get_context_counter
 from intergrax.runtime.policy.context_assembly_policy import run_pre_context_policy_gate
 from intergrax.runtime.nexus.context.compile_service import compile_chat_messages
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
+from intergrax.runtime.nexus.context.model_capability import snapshot_model_capability
 from intergrax.runtime.nexus.context.context_compiler_models import (
     DegradationStepKind,
 )
@@ -325,11 +327,26 @@ class DefaultNexusContextEngine:
 
         invariant_snapshots = build_fragment_invariant_snapshots(collected_fragments)
 
+        llm_adapter = runtime_config.llm_adapter
+        if llm_adapter is None:
+            raise ValueError("ContextAssemblyRuntimeDependencies.runtime_config.llm_adapter is required")
+        model_capability = snapshot_model_capability(
+            llm_adapter,
+            max_output_tokens=max_output_tokens,
+            margin_tokens=self._compiler.margin_tokens,
+        )
+        resolved_model_budget = resolve_authoritative_model_budget(
+            capability=model_capability,
+            request=request,
+        )
+        fragment_budget_tokens = global_allocatable_tokens(resolved_model_budget)
+
         policy_strategies = self._resolve_policy_strategies()
         policy_result = self._policy_pipeline.execute(
             collected_fragments,
             request,
             strategies=policy_strategies,
+            fragment_budget_tokens=fragment_budget_tokens,
         )
         validate_policy_pipeline_result(
             invariant_snapshots,
@@ -378,10 +395,7 @@ class DefaultNexusContextEngine:
         else:
             messages_for_compile = merge_fragment_messages(raw_messages, fragment_messages)
 
-        resolved_budget = self._compiler.resolve_global_input_budget(
-            runtime_config,
-            max_output_tokens=max_output_tokens,
-        )
+        resolved_budget = fragment_budget_tokens
         session_history = await _load_session_history_snapshot(request, ctx)
         optimization_policy = _resolve_optimization_policy(runtime)
         planner = ContextPlanner(count_tokens=self._compiler.count_tokens)
@@ -426,6 +440,7 @@ class DefaultNexusContextEngine:
             runtime_config,
             compiler=self._compiler,
             max_output_tokens=max_output_tokens,
+            input_budget_tokens=fragment_budget_tokens,
             run_preflight=False,
         )
         compiled_hash = compute_model_facing_messages_hash(compile_result.messages)

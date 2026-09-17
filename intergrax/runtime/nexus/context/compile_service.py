@@ -21,6 +21,7 @@ def compile_chat_messages(
     *,
     compiler: ContextCompiler | None = None,
     max_output_tokens: Optional[int] = None,
+    input_budget_tokens: Optional[int] = None,
     run_preflight: bool = True,
 ) -> ContextCompileResult:
     """Apply global budget compiler + optional preflight on a message list."""
@@ -29,6 +30,7 @@ def compile_chat_messages(
         list(messages),
         config,
         max_output_tokens=max_output_tokens,
+        input_budget_tokens=input_budget_tokens,
     )
     if run_preflight:
         verify_context_preflight(

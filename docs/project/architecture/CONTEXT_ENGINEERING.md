@@ -122,8 +122,8 @@ At a high level, every assembly for one model call follows this path:
 3. **Normalize** - schema version, dedup keys, `content_hash`; remove duplicates.
 4. **Score and rank** - relevance, freshness, confidence; step-aware boosts; mandatory fragments first.
 5. **Policy** - `BEFORE_CONTEXT_BUILD` hooks, thresholds, poisoning rules, required/excluded sources.
-6. **Budget** - global token allocation from `llm_adapter.context_window_tokens` minus output reserve.
-7. **Degrade / compress** - `DegradationLadder` and optional compression stages handle overflow per implemented semantics.
+6. **Budget** - authoritative resolution via `resolve_authoritative_model_budget` (`ResolvedModelContextBudget`) from provider-neutral `ModelContextCapabilitySnapshot` (adapter window minus output reserve and platform margin); fragment allocation uses `fragment_budget_tokens` from that single resolution (CE-02).
+7. **Degrade / compress** - replaceable `ContextDegradationPolicy` + `ContextCompactionStrategy` (default path is deterministic, no LLM); `DegradationLadder` enforces overflow in `ContextCompiler`.
 8. **Format** - `ChatMessage[]` or `AgentContextBundle.message` for the adapter.
 9. **Validate** - `verify_context_preflight` - never-overflow boundary before the adapter.
 10. **Emit** - `CONTEXT_ASSEMBLED` v2, provenance records, optional OTel spans when wired.
@@ -143,6 +143,24 @@ flowchart TB
 
     REQ --> COL --> NRM --> SCR --> BUD --> DEG --> FMT --> VAL --> OUT --> LLM
 ```
+
+**CE-02 budget governance (ownership):**
+
+```text
+Sources → Policy pipeline → ContextPlanner (semantic plan)
+  → Budget policy (allocation) → Compaction / degradation → ContextPlan
+  → ContextCompiler (model window guard) → AssembledContext
+```
+
+| Role | Owner |
+| ---- | ----- |
+| Semantic planning | `ContextPlanner` |
+| Global model-facing budget | `resolve_authoritative_model_budget` + `ContextModelBudgetPolicy` |
+| Per-source fragment allocation | `ContextBudgetAllocator` (policy pipeline) |
+| Content reduction | `ContextCompactionStrategy` |
+| Degradation order | `ContextDegradationPolicy` |
+| Hard model window enforcement | `ContextCompiler` |
+| Transport serialization | LLM adapter (no semantic truncation) |
 
 **Hot-path reality (as-built):** ACP uses `ContextCompiler` via `compile_service` before LLM; graph and UAEP session paths use full `ContextEngine.assemble()` when engine + `llm_adapter` are wired, including UCL-managed **EPHEMERAL_ASSEMBLY** on `PRIMARY_MODEL_CALL` (closeout proof: UCL `test_uaep_assemble`). Remaining non-uniform surfaces: `ContextOrchestrator` (codebase preset only), `ContextManager` presentation fallback outside the UCL-managed primary path, planned **TOKEN-CE** wiring, optional OTel. Details: [Engineering canon §2](#2-production-readiness-verdict-2026-06-12-post-ce-ext) (2026-06-12 snapshot + supersession notes).
 
