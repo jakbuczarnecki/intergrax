@@ -89,6 +89,7 @@ def test_crash_ambiguity_intent_without_outcome_not_explicit_unknown() -> None:
 def test_unknown_host_state_from_persisted_outcome_single_classification(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from governed_contractor_application.host import orchestrator as host_orchestrator
     from governed_contractor_application.host import provider_invocation_lifecycle as pil
 
     classify_calls = 0
@@ -100,6 +101,11 @@ def test_unknown_host_state_from_persisted_outcome_single_classification(
         return original(**kwargs)  # type: ignore[arg-type]
 
     monkeypatch.setattr(pil, "classify_provider_invocation_status", counting_classify)
+    monkeypatch.setattr(
+        host_orchestrator,
+        "classify_provider_invocation_status",
+        counting_classify,
+    )
 
     from applications.governed_contractor_application.tests.host.test_gr7_a3_durable_provider_invocation import (
         _runtime_with_store,
