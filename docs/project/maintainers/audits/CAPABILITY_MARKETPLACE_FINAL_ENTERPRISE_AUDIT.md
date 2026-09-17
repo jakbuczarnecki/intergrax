@@ -2,7 +2,8 @@
 
 **Task:** ME-18 Final Marketplace Enterprise Audit  
 **Branch:** `development`  
-**Audited SHA (evidence baseline):** `b10000a87f0d58dace8248c85acfc11a89bb9cc0` (+ ME-18 gate tests / this document in follow-up commit)  
+**Audited code baseline (AUDITED_CODE_SHA):** `b10000a87f0d58dace8248c85acfc11a89bb9cc0`
+**ME-18 audit record (AUDIT_RECORD_SHA):** `29033e7297eae832281aff542089f66d152aa65f` (gates + this document at audit commit)
 **Scope:** Capability Marketplace — Agent / Tool / Skill verticals, mixed integration, production qualification revalidation  
 **Out of scope:** Virtual Worker, Dynamic Organization, general Planner, Worker Engine redesign, Nexus public surface
 
@@ -13,13 +14,20 @@
 | Field | Value |
 | --- | --- |
 | branch | `development` |
-| start HEAD | `b10000a87f0d58dace8248c85acfc11a89bb9cc0` |
-| origin/development | `53c83ceacbfd96f3a68e3dff80a0b40998ec7c65` (local HEAD ahead) |
-| worktree | clean except ME-18 artifacts |
+| ME-18-CLOSE verification HEAD | see ME-18-CLOSE session report (`development` at pin push) |
+| audited code HEAD | `b10000a87f0d58dace8248c85acfc11a89bb9cc0` |
+| worktree | unrelated GR-7 / observability WIP excluded from Marketplace closure commit |
 
-## 2. Audited SHA
+## 2. Repository evidence pins
 
-Primary code evidence: `b10000a87f0d58dace8248c85acfc11a89bb9cc0`. ME-18 adds `test_me18_*` gates only (no production logic change in audit closure commit).
+| Field | SHA |
+| --- | --- |
+| Marketplace production-qualified baseline (ME-17-C1) | `53c83ceacbfd96f3a68e3dff80a0b40998ec7c65` |
+| Final audited repository baseline (`AUDITED_CODE_SHA`) | `b10000a87f0d58dace8248c85acfc11a89bb9cc0` |
+| ME-18 audit + gates commit (`AUDIT_RECORD_SHA`) | `29033e7297eae832281aff542089f66d152aa65f` |
+| Closure documentation commit | not self-referenced here; see ME-18-CLOSE report after `docs(marketplace): finalize enterprise audit record` |
+
+Primary Marketplace production evidence remains `AUDITED_CODE_SHA`. `AUDIT_RECORD_SHA` adds `test_me18_*` gates and this audit record only (no Marketplace production logic change in ME-18).
 
 ## 3. Final audit scope
 
@@ -293,14 +301,27 @@ MARKETPLACE ENTERPRISE AUDIT PASSED
 
 (P0 = 0, P1 = 0; all architecture gates green; P2 trust items explicitly owned outside Marketplace.)
 
-## 44. Commit SHA
+## 44. Commit SHA evidence
 
-Recorded after ME-18 commit (see git log).
+| Role | SHA |
+| --- | --- |
+| `AUDITED_CODE_SHA` | `b10000a87f0d58dace8248c85acfc11a89bb9cc0` |
+| `AUDIT_RECORD_SHA` (ME-18 gates + audit doc at audit time) | `29033e7297eae832281aff542089f66d152aa65f` |
+
+Orphan local-only doc pin `e1e7ea4938c48660a2d2d1b5fc0abf458e21301e` is **not** on `development`; superseded by ME-18-CLOSE closure documentation commit (see session report).
 
 ## 45. Session closure recommendation
 
 ```text
 CAPABILITY MARKETPLACE SESSION READY TO CLOSE
+```
+
+## 46. ME-18-CLOSE formal session status
+
+After ME-18-CLOSE documentation pin is on `origin/development`:
+
+```text
+CAPABILITY MARKETPLACE SESSION CLOSED
 ```
 
 ---
