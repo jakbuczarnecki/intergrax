@@ -121,6 +121,18 @@ def _task_control_response(result) -> HarnessTaskControlResponse:
     )
 
 
+def task_from_harness_async_run_request(body: HarnessAsyncRunRequest) -> Task:
+    """Map harness HTTP async-run body to canonical platform Task."""
+    return Task(
+        task_id=mint_task_id(),
+        tenant_id=body.tenant_id,
+        user_id=body.user_id,
+        message=body.message,
+        context=TaskContext(capability=body.capability),
+        metadata=dict(body.metadata),
+    )
+
+
 def mount_canonical_harness_task_routes(
     app: FastAPI,
     *,
@@ -142,14 +154,7 @@ def mount_canonical_harness_task_routes(
 
     @router.post("/run-async")
     async def run_async_route(body: HarnessAsyncRunRequest) -> dict[str, Any]:
-        task = Task(
-            task_id=mint_task_id(),
-            tenant_id=body.tenant_id,
-            user_id=body.user_id,
-            message=body.message,
-            context=TaskContext(capability=body.capability),
-            metadata=dict(body.metadata),
-        )
+        task = task_from_harness_async_run_request(body)
         if task_enricher is not None:
             task = task_enricher(task)
         return await run_async_task_executor(task_executor, task, index=async_index)

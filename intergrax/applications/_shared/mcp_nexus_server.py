@@ -16,6 +16,30 @@ from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.tools.registry.runtime import ToolRegistry
 
 
+def task_from_mcp_agent_intake(
+    *,
+    message: str,
+    capability: str,
+    tenant_id: str,
+    user_id: str,
+    session_id: str | None = None,
+    intent: str | None = None,
+) -> Task:
+    """Map MCP agent intake fields to canonical platform Task."""
+    context = (
+        TaskContext(capability=capability, intent=intent)
+        if intent
+        else TaskContext(capability=capability)
+    )
+    return Task(
+        tenant_id=tenant_id,
+        user_id=user_id,
+        session_id=session_id,
+        message=message,
+        context=context,
+    )
+
+
 async def execute_mcp_agent_task(
     host_execution: HostTaskExecutionPort,
     *,
@@ -27,13 +51,13 @@ async def execute_mcp_agent_task(
     intent: str | None = None,
 ) -> dict[str, object]:
     """Run one MCP agent task through canonical host task execution."""
-    context = TaskContext(capability=capability, intent=intent) if intent else TaskContext(capability=capability)
-    task = Task(
+    task = task_from_mcp_agent_intake(
+        message=message,
+        capability=capability,
         tenant_id=tenant_id,
         user_id=user_id,
         session_id=session_id,
-        message=message,
-        context=context,
+        intent=intent,
     )
     result = await host_execution.execute(task)
     return {

@@ -497,6 +497,18 @@ TaskResult (canonical) → host-specific serialization
 
 Qualification: `tests/qualification/host_01/` (HOST-Q1..HOST-Q12). CLI (`intergrax run`) is a process bootstrap only — it does not define a separate execution path. ACP enriches `Task` metadata at composition time; it is not a parallel host server.
 
+| Surface | Classification |
+| ------- | -------------- |
+| HTTP harness (`harness_task_routes`) | **Production execution host** — maps intake → `HostTaskExecutionExecutor` / port |
+| FastAPI Core run dispatch (`HostTaskExecutionRunAdapter`) | **Production execution host** — `ExecutionRequest` → port |
+| MCP (`execute_mcp_agent_task`) | **Production execution host** — tool intake → port |
+| Queue worker (`QueuedHostTaskExecutionAdapter` + `NexusWorkerRuntime`) | **Execution transport** — enqueue/decode only; worker invokes same port |
+| Scenario / eval (`execute_scenario_task`, platform proofs) | **Non-production eval entry** — converges on port but not product intake |
+| ACP checkpoint enricher | **Metadata enricher** — mutates `Task` before port; not a host server |
+| CLI (`intergrax run`) | **Bootstrap only** — no execution semantics |
+| Application hosting / embedded lab | **Bootstrap / composition** — wires port; not alternate orchestration |
+| `ThreadedExecutionAdapter` | **Legacy subsystem** — must not appear in Tier-3 production composition |
+
 ### `HarnessApplication`
 
 Fluent author-facing builder (lab/scaffold flows) producing manifest + `build_harness_host_runtime()` / FastAPI app. Convenience facade - not a second platform.

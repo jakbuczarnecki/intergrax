@@ -22,7 +22,13 @@ HOST_01_Q_CATALOG: tuple[Host01QEvidence, ...] = (
     Host01QEvidence(
         "HOST-Q1",
         "Discovered hosts reach canonical application boundary",
-        (_nid("test_host_01_gates.py", "test_host_q1_production_surfaces_use_host_task_execution_port"),),
+        (
+            _nid("test_host_01_gates.py", "test_host_q1_production_surfaces_use_host_task_execution_port"),
+            _nid(
+                "test_host_01_gates.py",
+                "test_host_threaded_execution_adapter_not_wired_in_production_composition",
+            ),
+        ),
     ),
     Host01QEvidence(
         "HOST-Q2",

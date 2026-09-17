@@ -8,25 +8,51 @@ import ast
 import importlib
 from dataclasses import dataclass
 from pathlib import Path
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import Request
 
-from intergrax.applications._shared.harness_task_routes import HarnessAsyncRunRequest
-from intergrax.applications._shared.mcp_nexus_server import execute_mcp_agent_task
-from intergrax.contracts.execution_identity import mint_task_id
+from intergrax.applications._shared.async_task_dispatch import (
+    InMemoryAsyncTaskIndex,
+    run_async_task_executor,
+)
+from intergrax.applications._shared.harness_task_routes import (
+    HarnessAsyncRunRequest,
+    task_from_harness_async_run_request,
+)
+from intergrax.applications._shared.mcp_nexus_server import (
+    execute_mcp_agent_task,
+    task_from_mcp_agent_intake,
+)
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.fastapi_core.errors.handlers import global_exception_handler
 from intergrax.fastapi_core.errors.mapping import map_exception_to_api_error
+from intergrax.fastapi_core.execution.models import ExecutionRequest as FastApiExecutionRequest
+from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.execution.facade import Execution as ExecutionFacade
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.governance.default_root_execution_launcher import DefaultRootExecutionLauncher
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
+from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
+from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
+from intergrax.runtime.task.worker_payload import encode_execution_request
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
 )
@@ -41,6 +67,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 _SHARED_HOST = _REPO_ROOT / "intergrax" / "applications" / "_shared"
 _HOST_TASK = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
 _CONTRACTS_EXECUTION_REQUEST = _REPO_ROOT / "intergrax" / "contracts" / "execution_request.py"
+_THREADED_ADAPTER_MODULE = "intergrax.fastapi_core.execution.adapters.threaded_adapter"
 
 _HOST_ADAPTER_FILES = (
     _SHARED_HOST / "mcp_nexus_server.py",
@@ -48,6 +75,15 @@ _HOST_ADAPTER_FILES = (
     _REPO_ROOT / "intergrax" / "runtime" / "task" / "host_task_execution_run_adapter.py",
     _REPO_ROOT / "intergrax" / "runtime" / "interactions" / "task_executor.py",
     _SHARED_HOST / "harness_task_routes.py",
+)
+
+_HOST_ADAPTER_IMPORT_GATE_FILES = _HOST_ADAPTER_FILES + (
+    _REPO_ROOT / "intergrax" / "runtime" / "task" / "queued_host_task_execution_adapter.py",
+)
+
+_PRODUCTION_COMPOSITION_ROOTS = (
+    _REPO_ROOT / "intergrax" / "applications",
+    _REPO_ROOT / "applications",
 )
 
 _FORBIDDEN_HOST_ADAPTER_TOKENS = ("getattr(", "setattr(", "hasattr(", "GLOBAL_REGISTRY", "service_locator")
@@ -65,7 +101,7 @@ _TRANSPORT_IMPORT_MARKERS = ("fastapi", "fastmcp", "starlette", "uvicorn", "mcp.
 
 
 @dataclass(frozen=True, slots=True)
-class CanonicalHostTaskIntent:
+class _TaskSemanticCore:
     tenant_id: str
     user_id: str
     message: str
@@ -74,59 +110,14 @@ class CanonicalHostTaskIntent:
     intent: str | None
 
 
-def _task_from_harness_async(body: HarnessAsyncRunRequest) -> CanonicalHostTaskIntent:
-    return CanonicalHostTaskIntent(
-        tenant_id=body.tenant_id,
-        user_id=body.user_id,
-        message=body.message,
-        capability=body.capability,
-        session_id=None,
-        intent=None,
-    )
-
-
-def _task_from_mcp_intake(
-    *,
-    message: str,
-    capability: str,
-    tenant_id: str,
-    user_id: str,
-    session_id: str | None = None,
-    intent: str | None = None,
-) -> CanonicalHostTaskIntent:
-    return CanonicalHostTaskIntent(
-        tenant_id=tenant_id,
-        user_id=user_id,
-        message=message,
-        capability=capability,
-        session_id=session_id,
-        intent=intent,
-    )
-
-
-def _build_mcp_task(intent: CanonicalHostTaskIntent) -> Task:
-    context = (
-        TaskContext(capability=intent.capability, intent=intent.intent)
-        if intent.intent
-        else TaskContext(capability=intent.capability)
-    )
-    return Task(
-        tenant_id=intent.tenant_id,
-        user_id=intent.user_id,
-        session_id=intent.session_id,
-        message=intent.message,
-        context=context,
-    )
-
-
-def _build_harness_task(intent: CanonicalHostTaskIntent, metadata: dict[str, object] | None = None) -> Task:
-    return Task(
-        task_id=mint_task_id(),
-        tenant_id=intent.tenant_id,
-        user_id=intent.user_id,
-        message=intent.message,
-        context=TaskContext(capability=intent.capability),
-        metadata=dict(metadata or {}),
+def _task_semantic_core(task: Task) -> _TaskSemanticCore:
+    return _TaskSemanticCore(
+        tenant_id=task.tenant_id,
+        user_id=task.user_id,
+        message=task.message,
+        capability=task.context.capability,
+        session_id=task.session_id,
+        intent=task.context.intent,
     )
 
 
@@ -147,24 +138,168 @@ def _completed_task_result() -> TaskResult:
     )
 
 
-def test_host_q1_production_surfaces_use_host_task_execution_port() -> None:
+def _iter_production_composition_python_files() -> list[Path]:
+    paths: list[Path] = []
+    for root in _PRODUCTION_COMPOSITION_ROOTS:
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*.py"):
+            rel = path.relative_to(_REPO_ROOT).as_posix()
+            if "runtime-context" in rel or "/docker/" in rel:
+                continue
+            paths.append(path)
+    return paths
+
+
+def _collect_threaded_adapter_production_references() -> list[str]:
+    violations: list[str] = []
+    for path in _iter_production_composition_python_files():
+        rel = path.relative_to(_REPO_ROOT).as_posix()
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        except SyntaxError:
+            continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    for alias in node.names:
+                        mod = alias.name
+                        if mod == _THREADED_ADAPTER_MODULE or mod.endswith(".threaded_adapter"):
+                            violations.append(f"{rel}: import {mod!r}")
+                if isinstance(node, ast.ImportFrom) and node.module:
+                    mod = node.module
+                    if mod == _THREADED_ADAPTER_MODULE or mod.endswith(".threaded_adapter"):
+                        violations.append(f"{rel}: from {mod!r}")
+                    if any(
+                        isinstance(child, ast.alias) and child.name == "ThreadedExecutionAdapter"
+                        for child in node.names
+                    ):
+                        violations.append(f"{rel}: imports ThreadedExecutionAdapter from {mod!r}")
+    return violations
+
+
+async def _await_async_index_task(index: InMemoryAsyncTaskIndex, task_id: str) -> None:
+    task = index._tasks.get(task_id)
+    assert task is not None
+    await task
+
+
+@pytest.mark.asyncio
+async def test_host_q1_production_surfaces_use_host_task_execution_port() -> None:
+    port = AsyncMock(spec=HostTaskExecutionPort)
+    port.execute = AsyncMock(return_value=_completed_task_result())
+
+    harness_body = HarnessAsyncRunRequest(
+        tenant_id="tenant-q1",
+        user_id="user-q1",
+        message="http-path",
+        capability="demo.cap",
+        metadata={"channel": "http"},
+    )
+    harness_task = task_from_harness_async_run_request(harness_body)
+    executor = HostTaskExecutionExecutor(port)
+    index = InMemoryAsyncTaskIndex()
+    await run_async_task_executor(executor, harness_task, index=index)
+    await _await_async_index_task(index, harness_task.task_id)
+    port.execute.assert_awaited_once()
+
+    port.reset_mock()
+    await execute_mcp_agent_task(
+        port,
+        message="mcp-path",
+        capability="demo.cap",
+        tenant_id="tenant-q1",
+        user_id="user-q1",
+    )
+    port.execute.assert_awaited_once()
+
+    port.reset_mock()
+    run_service = MagicMock()
+    adapter = HostTaskExecutionRunAdapter(port)
+    adapter.bind_run_service(run_service)
+    run_id = mint_run_id()
+    core_request = FastApiExecutionRequest(
+        run_id=run_id,
+        tenant_id="tenant-q1",
+        user_id="user-q1",
+        input_payload={"message": "core-path", "capability": "demo.cap"},
+    )
+    await adapter.start_execution(core_request)
+    port.execute.assert_awaited_once()
+    run_service.mark_running.assert_called_once_with(run_id)
+    run_service.mark_completed.assert_called_once()
+
+    port.reset_mock()
+    worker_runtime = NexusWorkerRuntime(port)
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    identity = BackgroundExecutionIdentity(
+        tenant_id="tenant-q1",
+        task_id=TaskId(task_id),
+        run_id=RunId(run_id),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    queue_task = Task(
+        tenant_id="tenant-q1",
+        user_id="user-q1",
+        message="queue-worker-path",
+        context=TaskContext(capability="demo.cap"),
+    )
+    encoded = encode_execution_request(
+        FastApiExecutionRequest(
+            run_id=str(identity.run_id),
+            tenant_id="tenant-q1",
+            user_id="user-q1",
+            input_payload=task_to_execution_payload(queue_task),
+        )
+    )
+    worker_runtime.execute_payload(
+        encoded,
+        tenant_id="tenant-q1",
+        run_id=str(identity.run_id),
+        execution_identity=identity,
+    )
+    port.execute.assert_awaited_once()
+
+    scenario_source = (_SHARED_HOST / "scenario_runtime_baseline.py").read_text(encoding="utf-8")
+    assert "host_execution.execute" in scenario_source
+
     mcp_source = (_SHARED_HOST / "mcp_nexus_server.py").read_text(encoding="utf-8")
-    run_adapter = (
-        _REPO_ROOT / "intergrax" / "runtime" / "task" / "host_task_execution_run_adapter.py"
-    ).read_text(encoding="utf-8")
-    task_control = (_SHARED_HOST / "task_control_wiring.py").read_text(encoding="utf-8")
     assert "HostTaskExecutionPort" in mcp_source
-    assert "host_execution.execute" in mcp_source
-    assert "HostTaskExecutionPort" in run_adapter
-    assert "HostTaskExecutionExecutor" in run_adapter
-    assert "host_execution: HostTaskExecutionPort" in task_control
 
 
-def test_host_q2_host_task_roots_on_root_execution_launcher() -> None:
-    source = _HOST_TASK.read_text(encoding="utf-8")
-    assert "DefaultRootExecutionLauncher" in source
-    assert "root_authority_admission" in source
-    assert "launcher.launch" in source
+def test_host_threaded_execution_adapter_not_wired_in_production_composition() -> None:
+    violations = _collect_threaded_adapter_production_references()
+    assert violations == [], "\n".join(violations)
+
+
+@pytest.mark.asyncio
+async def test_host_q2_host_task_roots_on_root_execution_launcher() -> None:
+    registry = AgentRegistry()
+    nexus_loop = NexusLoop(registry)
+    host_execution = _governed_host_execution(nexus_loop)
+    launch_calls = 0
+    original_launch = DefaultRootExecutionLauncher.launch
+
+    async def _spy_launch(self, request, *args, **kwargs):
+        nonlocal launch_calls
+        launch_calls += 1
+        return await original_launch(self, request, *args, **kwargs)
+
+    with patch.object(DefaultRootExecutionLauncher, "launch", _spy_launch):
+        with patch(
+            "intergrax.runtime.execution.host_task.TaskBoundAgenticDelegate.execute",
+            new_callable=AsyncMock,
+            return_value=_completed_task_result(),
+        ):
+            task = Task(
+                tenant_id="t",
+                user_id="u",
+                message="governance",
+                context=TaskContext(capability="external_contractor.adapt"),
+            )
+            await host_execution.execute(task)
+            assert launch_calls == 1
 
 
 def test_host_q3_host_task_resolves_root_execution_context() -> None:
@@ -228,7 +363,7 @@ def test_host_q8_host_adapter_modules_static_gate() -> None:
 
 def test_host_q12_host_adapter_import_layer_gate() -> None:
     violations: list[str] = []
-    for path in _HOST_ADAPTER_FILES:
+    for path in _HOST_ADAPTER_IMPORT_GATE_FILES:
         tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
         rel = path.relative_to(_REPO_ROOT).as_posix()
         for node in ast.walk(tree):
@@ -270,20 +405,14 @@ def test_host_q10_mcp_and_http_harness_map_equivalent_task_semantics() -> None:
         capability="demo.cap",
         metadata={"source": "http"},
     )
-    harness_intent = _task_from_harness_async(harness_body)
-    mcp_intent = _task_from_mcp_intake(
+    harness_task = task_from_harness_async_run_request(harness_body)
+    mcp_task = task_from_mcp_agent_intake(
         message="hello",
         capability="demo.cap",
         tenant_id="tenant-a",
         user_id="user-b",
     )
-    assert harness_intent == mcp_intent
-    harness_task = _build_harness_task(harness_intent, metadata={"source": "http"})
-    mcp_task = _build_mcp_task(mcp_intent)
-    assert harness_task.tenant_id == mcp_task.tenant_id
-    assert harness_task.user_id == mcp_task.user_id
-    assert harness_task.message == mcp_task.message
-    assert harness_task.context.capability == mcp_task.context.capability
+    assert _task_semantic_core(harness_task) == _task_semantic_core(mcp_task)
 
 
 @pytest.mark.asyncio
