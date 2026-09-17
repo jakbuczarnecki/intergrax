@@ -537,7 +537,7 @@ Collaborative Work owns **who may see which context categories under which colla
 
 **Public contracts (MP-5B):** [`intergrax/contracts/context_view.py`](../../../intergrax/contracts/context_view.py) — `ContextViewRequest`, `ContextViewScope`, `ContextViewEntry` + typed `ContextViewEntrySourceRef` variants, immutable `ContextView` result; MP-1 `EffectiveAuthorityRequest` linkage only (no duplicate authority model).
 
-**Visibility policy (MP-5C):** [`intergrax/contracts/context_view_visibility_policy.py`](../../../intergrax/contracts/context_view_visibility_policy.py) — `ContextViewVisibilityPolicy`, `ContextViewVisibilityPolicyInput`, immutable `ContextViewPolicyDecision`; default implementation [`intergrax/collaborative_work/context_view_visibility.py`](../../../intergrax/collaborative_work/context_view_visibility.py) reuses MP-1 `CollaborativeWorkAuthorityResolver` before eligibility (no retrieval / composition).
+**Visibility policy (MP-5C):** [`intergrax/contracts/context_view_visibility_policy.py`](../../../intergrax/contracts/context_view_visibility_policy.py) — `ContextViewVisibilityPolicy`, `ContextViewVisibilityPolicyInput`, immutable `ContextViewPolicyDecision`; `ContextViewVisibilityEvaluator` enforces platform `collaborative_work.context_view.read` via `CONTEXT_VIEW_READ_AUTHORITY_SCOPE` before any injected policy; replaceable strategies own category / visibility-class eligibility only. Default implementation [`intergrax/collaborative_work/context_view_visibility.py`](../../../intergrax/collaborative_work/context_view_visibility.py) reuses MP-1 `CollaborativeWorkAuthorityResolver` (no retrieval / composition).
 
 ```text
 ContextViewRequest

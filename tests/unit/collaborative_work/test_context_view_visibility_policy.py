@@ -28,6 +28,7 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembership,
     WorkspaceMembershipRole,
 )
+from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.context_view import (
     ContextViewCategory,
     ContextViewOperationScope,
@@ -43,7 +44,6 @@ from intergrax.contracts.context_view_visibility_policy import (
     ContextViewPolicyOutcome,
     ContextViewVisibilityPolicy,
     ContextViewVisibilityPolicyInput,
-    DefaultContextViewVisibilityPolicyConfig,
     fail_closed_context_view_policy_decision,
 )
 
@@ -147,12 +147,11 @@ def _evaluator(
     delegation_repo: InMemoryAuthorityDelegationRepository | None = None,
     authority_repo: InMemoryPrincipalAuthorityRepository | None = None,
     policy: ContextViewVisibilityPolicy | None = None,
-    config: DefaultContextViewVisibilityPolicyConfig | None = None,
 ) -> ContextViewVisibilityEvaluator:
     membership_repo = membership_repo or _membership_repo()
     delegation_repo = delegation_repo or _delegation_repo()
     authority_repo = authority_repo or _authority_repo()
-    policy = policy or DefaultContextViewVisibilityPolicy(config)
+    policy = policy or DefaultContextViewVisibilityPolicy()
     return ContextViewVisibilityEvaluator(
         authority_resolver=_resolver(
             membership_repo=membership_repo,
@@ -161,7 +160,6 @@ def _evaluator(
         ),
         visibility_policy=policy,
         delegation_repository=delegation_repo,
-        policy_config=config,
     )
 
 
@@ -180,6 +178,25 @@ class _StubVisibilityPolicy:
             policy_id=self.policy_id,
             effective_scope=policy_input.request.scope,
             denial_reason=ContextViewPolicyDenialReason.POLICY_AMBIGUITY,
+        )
+
+
+class _AllowMemoryOnlyPolicy:
+    """Custom policy with no default-policy config dependency."""
+
+    @property
+    def policy_id(self) -> str:
+        return "custom.memory_only"
+
+    def evaluate(self, policy_input: ContextViewVisibilityPolicyInput) -> ContextViewPolicyDecision:
+        scope = policy_input.request.scope
+        return ContextViewPolicyDecision(
+            outcome=ContextViewPolicyOutcome.ALLOW,
+            policy_id=self.policy_id,
+            effective_scope=scope,
+            eligible_categories=(ContextViewCategory.MEMORY,),
+            eligible_visibility_classes=(ContextViewVisibilityClass.PRIVATE_TO_PRINCIPAL,),
+            private_visibility_principal_id=policy_input.request.acting_principal_id,
         )
 
 
@@ -497,3 +514,30 @@ def test_custom_policy_replaceable_without_abi_change() -> None:
     ).evaluate(_request())
     assert len(stub.calls) == 1
     assert stub.policy_id == "custom.visibility.policy"
+    assert stub.calls[0].effective_authority.decision.action is PolicyAction.ALLOW
+
+
+def test_evaluator_custom_policy_without_default_policy_config() -> None:
+    """Pluginability: evaluator must not require DefaultContextViewVisibilityPolicyConfig."""
+    membership_repo = _membership_repo()
+    authority_repo = _authority_repo()
+    _seed_membership(membership_repo)
+    _seed_authority(authority_repo)
+    custom = _AllowMemoryOnlyPolicy()
+    decision = ContextViewVisibilityEvaluator(
+        authority_resolver=_resolver(
+            membership_repo=membership_repo,
+            authority_repo=authority_repo,
+        ),
+        visibility_policy=custom,
+    ).evaluate(_request())
+    assert decision.outcome is ContextViewPolicyOutcome.ALLOW
+    assert decision.policy_id == "custom.memory_only"
+    assert decision.eligible_categories == (ContextViewCategory.MEMORY,)
+
+
+def test_evaluator_constructor_has_no_default_policy_config_parameter() -> None:
+    import inspect
+
+    signature = inspect.signature(ContextViewVisibilityEvaluator.__init__)
+    assert "policy_config" not in signature.parameters

@@ -149,7 +149,6 @@ class DefaultContextViewVisibilityPolicyConfig(BaseModel):
         SCHEMA_DEFAULT_CONTEXT_VIEW_VISIBILITY_POLICY_CONFIG_V1
     )
     policy_id: str = DEFAULT_CONTEXT_VIEW_VISIBILITY_POLICY_ID
-    required_authority_scope: str = CONTEXT_VIEW_READ_AUTHORITY_SCOPE
     workspace_shared_delegation_scope: str = "collaborative_work.context_view.workspace_shared"
     platform_visible_delegation_scope: str = "collaborative_work.context_view.platform_visible"
 

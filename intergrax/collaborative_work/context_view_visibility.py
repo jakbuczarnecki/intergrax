@@ -81,13 +81,10 @@ class ContextViewVisibilityEvaluator:
         authority_resolver: CollaborativeWorkAuthorityResolver,
         visibility_policy: ContextViewVisibilityPolicy,
         delegation_repository: AuthorityDelegationRepository | None = None,
-        policy_config: DefaultContextViewVisibilityPolicyConfig | None = None,
     ) -> None:
         self._authority_resolver = authority_resolver
         self._visibility_policy = visibility_policy
         self._delegation_repository = delegation_repository
-        config = policy_config or DefaultContextViewVisibilityPolicyConfig()
-        self._required_authority_scope = config.required_authority_scope
 
     def evaluate(self, request: ContextViewRequest) -> ContextViewPolicyDecision:
         policy_id = self._visibility_policy.policy_id
@@ -110,7 +107,7 @@ class ContextViewVisibilityEvaluator:
 
         authority_request = build_context_view_effective_authority_request(
             request,
-            required_authority_scope=self._required_authority_scope,
+            required_authority_scope=CONTEXT_VIEW_READ_AUTHORITY_SCOPE,
         )
         authority_decision = self._authority_resolver.resolve(authority_request)
         if authority_decision.decision.action is not PolicyAction.ALLOW:

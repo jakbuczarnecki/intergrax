@@ -92,6 +92,45 @@ def test_mp5c_public_policy_contract_symbols_exist() -> None:
         assert symbol in text, f"missing {symbol}"
 
 
+def _evaluator_init_parameter_names() -> set[str]:
+    tree = ast.parse(_DEFAULT_POLICY.read_text(encoding="utf-8"), filename=str(_DEFAULT_POLICY))
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != "ContextViewVisibilityEvaluator":
+            continue
+        for item in node.body:
+            if isinstance(item, ast.FunctionDef) and item.name == "__init__":
+                args = item.args
+                names = [arg.arg for arg in args.args[1:]]
+                names.extend(arg.arg for arg in args.kwonlyargs)
+                return set(names)
+    raise AssertionError("ContextViewVisibilityEvaluator.__init__ not found")
+
+
+def test_mp5c_evaluator_not_coupled_to_default_policy_config() -> None:
+    params = _evaluator_init_parameter_names()
+    forbidden = {"policy_config", "config"}
+    leaked = params & forbidden
+    assert not leaked, f"evaluator constructor leaks default config: {sorted(leaked)}"
+
+    text = _DEFAULT_POLICY.read_text(encoding="utf-8")
+    evaluator_block_start = text.index("class ContextViewVisibilityEvaluator")
+    default_policy_start = text.index("class DefaultContextViewVisibilityPolicy")
+    evaluator_source = text[evaluator_block_start:default_policy_start]
+    assert "DefaultContextViewVisibilityPolicyConfig" not in evaluator_source
+    assert "DefaultContextViewVisibilityPolicy" not in evaluator_source
+
+
+def test_mp5c_default_policy_config_has_no_platform_authority_scope_field() -> None:
+    contract_text = _POLICY_CONTRACT.read_text(encoding="utf-8")
+    config_start = contract_text.index("class DefaultContextViewVisibilityPolicyConfig")
+    config_end = contract_text.index(
+        "\ndef fail_closed_context_view_policy_decision",
+        config_start,
+    )
+    config_block = contract_text[config_start:config_end]
+    assert "required_authority_scope" not in config_block
+
+
 def test_mp5c_closed_mp5d_next_docs_markers() -> None:
     docs = (
         _REPO_ROOT / "docs" / "project" / "architecture" / "COLLABORATIVE_WORK.md",
