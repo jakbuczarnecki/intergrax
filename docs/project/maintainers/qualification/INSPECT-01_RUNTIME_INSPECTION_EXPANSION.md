@@ -98,3 +98,39 @@ Events without recorded tenant provenance are unsupported for tenant-safe inspec
 ### Qualification gates
 
 **C1-Q1..C1-Q15** in `catalog.py` `INSPECT_01_C1_Q_CATALOG` (`test_inspect_01b_c1_governance_integrity.py`).
+
+## INSPECT-01-C — Extended Domain Read Adoption
+
+**Task intake `origin/development`:** recorded at INSPECT-01-C closeout.
+
+### Domain read ownership
+
+| Domain | Canonical owner | Read contract | Inspection section |
+| --- | --- | --- | --- |
+| Memory usage facts | Task memory / runtime spine | `MemoryRuntimeOperationReadPort` (`intergrax/contracts/memory_runtime_read.py`) | `RuntimeInspectionMemorySection` |
+| Model invocation facts | LLM runtime spine | `ModelRuntimeInvocationReadPort` (`intergrax/contracts/model_runtime_read.py`) | `RuntimeInspectionModelSection` |
+| External work boundary facts | External operations spine | `ExternalWorkRuntimeFactReadPort` (`intergrax/contracts/external_work_runtime_read.py`) | `RuntimeInspectionExternalWorkSection` |
+| Artifact metadata | Harness artifact refs on spine | `ExecutionArtifactMetadataReadPort` (`intergrax/contracts/execution_artifact_read.py`) | `RuntimeInspectionArtifactSection` |
+
+Default federation adapters project spine events via `ExecutionReconstruction` (`Reconstruction*Reader` under `intergrax/runtime/runtime_inspection/adapters/`). Custom implementations plug in through the same read ports and `RuntimeInspection*ReadPort` facades.
+
+### Tenant / identity / integrity
+
+Spine events must match the full `RuntimeInspectionExecutionScope` identity spine (`validate_spine_event_scope`). Cross-tenant spine facts raise `TENANT_BOUNDARY`. Identity mismatch raises `SOURCE_INTEGRITY` (never downgraded to optional `PARTIAL` completeness). Malformed external-operation typed payloads raise `SOURCE_INTEGRITY`.
+
+### Availability / empty
+
+Empty sections with `source_available=True` when the reader succeeds with zero records. Reader failures emit `RuntimeInspectionSourceFailure` and optional-domain `PARTIAL` completeness.
+
+### Security
+
+Sections expose safe summaries, refs, and token counts only — no memory payloads, prompts, artifact URIs, or vendor error bodies.
+
+### Qualification gates
+
+**C-Q1..C-Q18** in `catalog.py` `INSPECT_01_C_Q_CATALOG` (`test_inspect_01c_extended_domains.py`). **A-Q***, **B-Q***, and **C1-Q*** catalogs remain required regressions.
+
+### Conscious limits
+
+- External work inspection reflects spine-recorded external **operation** failures, not live vendor polling or full `ExternalWorkSnapshot` lifecycle stores (see BG-01 / integrations).
+- Artifact metadata is derived from spine `artifact_refs` / `artifact_id` registrations, not binary artifact store reads (see ART-01).

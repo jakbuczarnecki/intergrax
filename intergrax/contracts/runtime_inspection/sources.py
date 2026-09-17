@@ -17,10 +17,14 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.execution_reconstruction import ExecutionReconstruction
 from intergrax.contracts.runtime_inspection.sections import (
+    RuntimeInspectionArtifactSection,
     RuntimeInspectionContinuationSection,
     RuntimeInspectionDiagnosticSection,
     RuntimeInspectionEvidenceSection,
+    RuntimeInspectionExternalWorkSection,
     RuntimeInspectionGovernanceSection,
+    RuntimeInspectionMemorySection,
+    RuntimeInspectionModelSection,
     RuntimeInspectionToolSection,
 )
 
@@ -139,6 +143,58 @@ class RuntimeInspectionContinuationReadPort(Protocol):
     ) -> RuntimeInspectionContinuationSection: ...
 
 
+@runtime_checkable
+class RuntimeInspectionMemoryReadPort(Protocol):
+    """Optional memory usage facts for one execution scope."""
+
+    @property
+    def source_id(self) -> str: ...
+
+    def read_memory_operations(
+        self,
+        scope: RuntimeInspectionExecutionScope,
+    ) -> RuntimeInspectionMemorySection: ...
+
+
+@runtime_checkable
+class RuntimeInspectionModelReadPort(Protocol):
+    """Optional model invocation facts for one execution scope."""
+
+    @property
+    def source_id(self) -> str: ...
+
+    def read_model_invocations(
+        self,
+        scope: RuntimeInspectionExecutionScope,
+    ) -> RuntimeInspectionModelSection: ...
+
+
+@runtime_checkable
+class RuntimeInspectionExternalWorkReadPort(Protocol):
+    """Optional external work facts for one execution scope."""
+
+    @property
+    def source_id(self) -> str: ...
+
+    def read_external_work(
+        self,
+        scope: RuntimeInspectionExecutionScope,
+    ) -> RuntimeInspectionExternalWorkSection: ...
+
+
+@runtime_checkable
+class RuntimeInspectionArtifactReadPort(Protocol):
+    """Optional artifact metadata for one execution scope."""
+
+    @property
+    def source_id(self) -> str: ...
+
+    def read_artifacts(
+        self,
+        scope: RuntimeInspectionExecutionScope,
+    ) -> RuntimeInspectionArtifactSection: ...
+
+
 __all__ = [
     "RuntimeInspectionDiagnosticReadPort",
     "RuntimeInspectionEvidenceReadPort",
@@ -149,5 +205,9 @@ __all__ = [
     "RuntimeInspectionScopeLookupResult",
     "RuntimeInspectionContinuationReadPort",
     "RuntimeInspectionGovernanceReadPort",
+    "RuntimeInspectionMemoryReadPort",
+    "RuntimeInspectionModelReadPort",
+    "RuntimeInspectionExternalWorkReadPort",
+    "RuntimeInspectionArtifactReadPort",
     "RuntimeInspectionToolReadPort",
 ]

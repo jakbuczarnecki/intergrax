@@ -25,6 +25,13 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.agent_runtime_governance import ToolAuthorizationDecisionState
 from intergrax.contracts.execution_continuation import ExecutionContinuationLifecycleState
 from intergrax.contracts.runtime_inspection.completeness import RuntimeInspectionCompleteness
+from intergrax.contracts.execution_artifact_read import ExecutionArtifactLifecycleStatus
+from intergrax.contracts.external_work_runtime_read import ExternalWorkRuntimeStatus
+from intergrax.contracts.memory_runtime_read import (
+    MemoryRuntimeOperationClass,
+    MemoryRuntimeOperationStatus,
+)
+from intergrax.contracts.model_runtime_read import ModelRuntimeInvocationStatus
 from intergrax.contracts.tool_runtime_read import ToolRuntimeInvocationOutcome
 
 
@@ -237,6 +244,158 @@ class RuntimeInspectionContinuationSection(BaseModel):
     source_available: bool = True
 
 
+class RuntimeInspectionMemoryOperation(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    operation_ref: str = Field(min_length=1)
+    memory_class: str = Field(min_length=1)
+    operation_class: MemoryRuntimeOperationClass
+    operation_status: MemoryRuntimeOperationStatus
+    record_ref: str | None = None
+    source_category: str = Field(min_length=1)
+    execution_id: ExecutionId
+    attempt_id: AttemptId | None = None
+    sequence_key: int = Field(ge=1)
+    evidence_refs: tuple[str, ...] = Field(default_factory=tuple)
+    safe_summary: str = Field(min_length=1)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
+
+    @field_validator("attempt_id", mode="before")
+    @classmethod
+    def _validate_attempt_id(cls, value: object | None) -> AttemptId | None:
+        if value is None:
+            return None
+        return validate_attempt_id(value)
+
+
+class RuntimeInspectionMemorySection(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    operations: tuple[RuntimeInspectionMemoryOperation, ...] = Field(default_factory=tuple)
+    is_truncated: bool = False
+    completeness: RuntimeInspectionCompleteness
+    source_id: str = Field(min_length=1)
+    source_available: bool = True
+
+
+class RuntimeInspectionModelInvocation(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    invocation_ref: str = Field(min_length=1)
+    model_ref: str = Field(min_length=1)
+    capability_label: str = Field(min_length=1)
+    invocation_status: ModelRuntimeInvocationStatus
+    prompt_tokens: int = Field(ge=0)
+    completion_tokens: int = Field(ge=0)
+    total_tokens: int = Field(ge=0)
+    finish_reason: str | None = None
+    execution_id: ExecutionId
+    attempt_id: AttemptId | None = None
+    sequence_key: int = Field(ge=1)
+    evidence_refs: tuple[str, ...] = Field(default_factory=tuple)
+    safe_summary: str = Field(min_length=1)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
+
+    @field_validator("attempt_id", mode="before")
+    @classmethod
+    def _validate_attempt_id(cls, value: object | None) -> AttemptId | None:
+        if value is None:
+            return None
+        return validate_attempt_id(value)
+
+
+class RuntimeInspectionModelSection(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    invocations: tuple[RuntimeInspectionModelInvocation, ...] = Field(default_factory=tuple)
+    is_truncated: bool = False
+    completeness: RuntimeInspectionCompleteness
+    source_id: str = Field(min_length=1)
+    source_available: bool = True
+
+
+class RuntimeInspectionExternalWorkEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    work_ref: str = Field(min_length=1)
+    work_class: str = Field(min_length=1)
+    work_status: ExternalWorkRuntimeStatus
+    provider_ref: str = Field(min_length=1)
+    failure_classification: str = Field(min_length=1)
+    retryable: bool = False
+    execution_id: ExecutionId
+    attempt_id: AttemptId | None = None
+    sequence_key: int = Field(ge=1)
+    evidence_refs: tuple[str, ...] = Field(default_factory=tuple)
+    safe_summary: str = Field(min_length=1)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
+
+    @field_validator("attempt_id", mode="before")
+    @classmethod
+    def _validate_attempt_id(cls, value: object | None) -> AttemptId | None:
+        if value is None:
+            return None
+        return validate_attempt_id(value)
+
+
+class RuntimeInspectionExternalWorkSection(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    work_entries: tuple[RuntimeInspectionExternalWorkEntry, ...] = Field(default_factory=tuple)
+    is_truncated: bool = False
+    completeness: RuntimeInspectionCompleteness
+    source_id: str = Field(min_length=1)
+    source_available: bool = True
+
+
+class RuntimeInspectionArtifactEntry(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    artifact_ref: str = Field(min_length=1)
+    artifact_type: str = Field(min_length=1)
+    lifecycle_status: ExecutionArtifactLifecycleStatus
+    content_classification: str = Field(min_length=1)
+    execution_id: ExecutionId
+    attempt_id: AttemptId | None = None
+    sequence_key: int = Field(ge=1)
+    evidence_refs: tuple[str, ...] = Field(default_factory=tuple)
+    safe_summary: str = Field(min_length=1)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
+
+    @field_validator("attempt_id", mode="before")
+    @classmethod
+    def _validate_attempt_id(cls, value: object | None) -> AttemptId | None:
+        if value is None:
+            return None
+        return validate_attempt_id(value)
+
+
+class RuntimeInspectionArtifactSection(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    artifacts: tuple[RuntimeInspectionArtifactEntry, ...] = Field(default_factory=tuple)
+    is_truncated: bool = False
+    completeness: RuntimeInspectionCompleteness
+    source_id: str = Field(min_length=1)
+    source_available: bool = True
+
+
 __all__ = [
     "RuntimeInspectionDiagnosticFinding",
     "RuntimeInspectionDiagnosticSection",
@@ -252,4 +411,12 @@ __all__ = [
     "RuntimeInspectionGovernanceDecisionEntry",
     "RuntimeInspectionGovernanceSection",
     "RuntimeInspectionContinuationSection",
+    "RuntimeInspectionMemoryOperation",
+    "RuntimeInspectionMemorySection",
+    "RuntimeInspectionModelInvocation",
+    "RuntimeInspectionModelSection",
+    "RuntimeInspectionExternalWorkEntry",
+    "RuntimeInspectionExternalWorkSection",
+    "RuntimeInspectionArtifactEntry",
+    "RuntimeInspectionArtifactSection",
 ]

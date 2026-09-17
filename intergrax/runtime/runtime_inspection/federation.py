@@ -23,12 +23,16 @@ from intergrax.contracts.runtime_inspection.read_port import RuntimeInspectionRe
 from intergrax.contracts.runtime_inspection.sections import RuntimeInspectionIdentitySection
 from intergrax.contracts.runtime_inspection.snapshot import RuntimeInspectionSnapshot
 from intergrax.contracts.runtime_inspection.sources import (
+    RuntimeInspectionArtifactReadPort,
     RuntimeInspectionContinuationReadPort,
     RuntimeInspectionDiagnosticReadPort,
     RuntimeInspectionEvidenceReadPort,
     RuntimeInspectionExecutionFactsReader,
     RuntimeInspectionExecutionScopeReader,
+    RuntimeInspectionExternalWorkReadPort,
     RuntimeInspectionGovernanceReadPort,
+    RuntimeInspectionMemoryReadPort,
+    RuntimeInspectionModelReadPort,
     RuntimeInspectionScopeLookupOutcome,
     RuntimeInspectionToolReadPort,
 )
@@ -71,6 +75,10 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
         tool_reader: RuntimeInspectionToolReadPort | None = None,
         governance_reader: RuntimeInspectionGovernanceReadPort | None = None,
         continuation_reader: RuntimeInspectionContinuationReadPort | None = None,
+        memory_reader: RuntimeInspectionMemoryReadPort | None = None,
+        model_reader: RuntimeInspectionModelReadPort | None = None,
+        external_work_reader: RuntimeInspectionExternalWorkReadPort | None = None,
+        artifact_reader: RuntimeInspectionArtifactReadPort | None = None,
     ) -> None:
         self._scope_reader = scope_reader
         self._execution_facts_reader = execution_facts_reader
@@ -79,6 +87,10 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
         self._tool_reader = tool_reader
         self._governance_reader = governance_reader
         self._continuation_reader = continuation_reader
+        self._memory_reader = memory_reader
+        self._model_reader = model_reader
+        self._external_work_reader = external_work_reader
+        self._artifact_reader = artifact_reader
         _validate_unique_source_ids(
             scope_reader.source_id,
             execution_facts_reader.source_id,
@@ -87,6 +99,10 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
             tool_reader.source_id if tool_reader is not None else None,
             governance_reader.source_id if governance_reader is not None else None,
             continuation_reader.source_id if continuation_reader is not None else None,
+            memory_reader.source_id if memory_reader is not None else None,
+            model_reader.source_id if model_reader is not None else None,
+            external_work_reader.source_id if external_work_reader is not None else None,
+            artifact_reader.source_id if artifact_reader is not None else None,
         )
 
     def inspect(self, query: RuntimeInspectionQuery) -> RuntimeInspectionSnapshot:
@@ -134,6 +150,10 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
         tools_section = None
         governance_section = None
         continuation_section = None
+        memory_section = None
+        model_section = None
+        external_work_section = None
+        artifacts_section = None
         optional_completeness: list[RuntimeInspectionCompleteness] = []
 
         if self._diagnostic_reader is not None:
@@ -220,6 +240,50 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
             elif continuation_section is not None:
                 optional_completeness.append(continuation_section.completeness)
 
+        memory_section, memory_failures = _read_integrity_aware_sections(
+            "memory",
+            self._memory_reader,
+            lambda reader: reader.read_memory_operations(scope),
+        )
+        source_failures.extend(memory_failures)
+        if memory_section is not None:
+            optional_completeness.append(memory_section.completeness)
+        elif memory_failures:
+            optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
+
+        model_section, model_failures = _read_integrity_aware_sections(
+            "model",
+            self._model_reader,
+            lambda reader: reader.read_model_invocations(scope),
+        )
+        source_failures.extend(model_failures)
+        if model_section is not None:
+            optional_completeness.append(model_section.completeness)
+        elif model_failures:
+            optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
+
+        external_work_section, external_work_failures = _read_integrity_aware_sections(
+            "external_work",
+            self._external_work_reader,
+            lambda reader: reader.read_external_work(scope),
+        )
+        source_failures.extend(external_work_failures)
+        if external_work_section is not None:
+            optional_completeness.append(external_work_section.completeness)
+        elif external_work_failures:
+            optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
+
+        artifacts_section, artifact_failures = _read_integrity_aware_sections(
+            "artifacts",
+            self._artifact_reader,
+            lambda reader: reader.read_artifacts(scope),
+        )
+        source_failures.extend(artifact_failures)
+        if artifacts_section is not None:
+            optional_completeness.append(artifacts_section.completeness)
+        elif artifact_failures:
+            optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
+
         identity = RuntimeInspectionIdentitySection(
             tenant_id=scope.tenant_id,
             task_id=scope.task_id,
@@ -248,9 +312,44 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
             tools=tools_section,
             governance=governance_section,
             continuation=continuation_section,
+            memory=memory_section,
+            model=model_section,
+            external_work=external_work_section,
+            artifacts=artifacts_section,
             completeness=completeness,
             source_failures=tuple(source_failures),
         )
+
+
+def _read_integrity_aware_sections(domain: str, reader, read_callable):
+    if reader is None:
+        return None, []
+    try:
+        section = read_callable(reader)
+        return section, []
+    except RuntimeInspectionError as exc:
+        if exc.code in (
+            RuntimeInspectionErrorCode.SOURCE_INTEGRITY,
+            RuntimeInspectionErrorCode.TENANT_BOUNDARY,
+        ):
+            raise
+        return None, [
+            RuntimeInspectionSourceFailure(
+                source_id=reader.source_id,
+                domain=domain,
+                code=RuntimeInspectionSourceFailureCode.UNAVAILABLE,
+                reason_code="source_reader_failed",
+            ),
+        ]
+    except Exception:
+        return None, [
+            RuntimeInspectionSourceFailure(
+                source_id=reader.source_id,
+                domain=domain,
+                code=RuntimeInspectionSourceFailureCode.UNAVAILABLE,
+                reason_code="source_reader_failed",
+            ),
+        ]
 
 
 def _read_optional_section(domain: str, source_id: str, read_callable):

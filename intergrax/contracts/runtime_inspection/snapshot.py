@@ -12,12 +12,16 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from intergrax.contracts.runtime_inspection.completeness import RuntimeInspectionCompleteness
 from intergrax.contracts.runtime_inspection.failures import RuntimeInspectionSourceFailure
 from intergrax.contracts.runtime_inspection.sections import (
+    RuntimeInspectionArtifactSection,
     RuntimeInspectionContinuationSection,
     RuntimeInspectionDiagnosticSection,
     RuntimeInspectionEvidenceSection,
     RuntimeInspectionExecutionStateSection,
+    RuntimeInspectionExternalWorkSection,
     RuntimeInspectionGovernanceSection,
     RuntimeInspectionIdentitySection,
+    RuntimeInspectionMemorySection,
+    RuntimeInspectionModelSection,
     RuntimeInspectionTimelineSection,
     RuntimeInspectionToolSection,
 )
@@ -36,6 +40,10 @@ class RuntimeInspectionSnapshot(BaseModel):
     tools: RuntimeInspectionToolSection | None = None
     governance: RuntimeInspectionGovernanceSection | None = None
     continuation: RuntimeInspectionContinuationSection | None = None
+    memory: RuntimeInspectionMemorySection | None = None
+    model: RuntimeInspectionModelSection | None = None
+    external_work: RuntimeInspectionExternalWorkSection | None = None
+    artifacts: RuntimeInspectionArtifactSection | None = None
     completeness: RuntimeInspectionCompleteness
     source_failures: tuple[RuntimeInspectionSourceFailure, ...] = Field(default_factory=tuple)
     consistency_note: str = Field(

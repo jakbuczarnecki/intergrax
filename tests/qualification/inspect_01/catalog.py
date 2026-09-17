@@ -151,3 +151,27 @@ INSPECT_01_C1_Q_CATALOG: tuple[Inspect01C1QEvidence, ...] = (
         (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q15_full_inspect_a_b_regression"),),
     ),
 )
+
+Inspect01CQEvidence = Inspect01C1QEvidence
+
+
+INSPECT_01_C_Q_CATALOG: tuple[Inspect01CQEvidence, ...] = (
+    Inspect01CQEvidence("C-Q1", "Memory canonical read", (_nid("test_inspect_01c_extended_domains.py", "test_c_q1_memory_canonical_read"),)),
+    Inspect01CQEvidence("C-Q2", "Model canonical read", (_nid("test_inspect_01c_extended_domains.py", "test_c_q2_model_canonical_read"),)),
+    Inspect01CQEvidence("C-Q3", "External Work canonical read", (_nid("test_inspect_01c_extended_domains.py", "test_c_q3_external_work_canonical_read"),)),
+    Inspect01CQEvidence("C-Q4", "Artifact canonical read", (_nid("test_inspect_01c_extended_domains.py", "test_c_q4_artifact_canonical_read"),)),
+    Inspect01CQEvidence("C-Q5", "Cross-tenant fail closed", (_nid("test_inspect_01c_extended_domains.py", "test_c_q5_cross_tenant_fail_closed"),)),
+    Inspect01CQEvidence("C-Q6", "Identity mismatch SOURCE_INTEGRITY", (_nid("test_inspect_01c_extended_domains.py", "test_c_q6_identity_mismatch_source_integrity"),)),
+    Inspect01CQEvidence("C-Q7", "Empty vs unavailable", (_nid("test_inspect_01c_extended_domains.py", "test_c_q7_empty_vs_unavailable"),)),
+    Inspect01CQEvidence("C-Q8", "Availability PARTIAL", (_nid("test_inspect_01c_extended_domains.py", "test_c_q8_availability_partial"),)),
+    Inspect01CQEvidence("C-Q9", "Integrity not downgraded", (_nid("test_inspect_01c_extended_domains.py", "test_c_q9_integrity_not_partial_only"),)),
+    Inspect01CQEvidence("C-Q10", "No write side effects", (_nid("test_inspect_01c_extended_domains.py", "test_c_q10_no_write_side_effects"),)),
+    Inspect01CQEvidence("C-Q11", "No model execution during read", (_nid("test_inspect_01c_extended_domains.py", "test_c_q11_no_model_execution_during_read"),)),
+    Inspect01CQEvidence("C-Q12", "Custom sources through contracts", (_nid("test_inspect_01c_extended_domains.py", "test_c_q12_custom_sources_through_contracts"),)),
+    Inspect01CQEvidence("C-Q13", "Provider-neutral contracts", (_nid("test_inspect_01c_extended_domains.py", "test_c_q13_provider_neutral_contracts"),)),
+    Inspect01CQEvidence("C-Q14", "No reflection patterns", (_nid("test_inspect_01c_extended_domains.py", "test_c_q14_no_reflection_patterns"),)),
+    Inspect01CQEvidence("C-Q15", "Deterministic order", (_nid("test_inspect_01c_extended_domains.py", "test_c_q15_deterministic_order"),)),
+    Inspect01CQEvidence("C-Q16", "Redaction boundaries", (_nid("test_inspect_01c_extended_domains.py", "test_c_q16_redaction"),)),
+    Inspect01CQEvidence("C-Q17", "INSPECT-01-A regression", (_nid("test_inspect_01c_extended_domains.py", "test_c_q17_inspect_a_regression_smoke"),)),
+    Inspect01CQEvidence("C-Q18", "INSPECT-01-B/C1 regression", (_nid("test_inspect_01c_extended_domains.py", "test_c_q18_inspect_b_c1_regression_smoke"),)),
+)
