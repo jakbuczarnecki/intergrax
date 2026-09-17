@@ -13,7 +13,7 @@ via an injected policy boundary before provider-bound side effects.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Callable, Mapping, NamedTuple, TypeVar
+from typing import Any, Callable, Mapping, NamedTuple, TypeVar, cast
 
 from intergrax.runtime.execution.decision_governed_side_effect import (
     DecisionGovernedSideEffectInputs,
@@ -55,9 +55,6 @@ from intergrax.contracts.collaborative_work import (
     MembershipResolutionMode,
 )
 from intergrax.contracts.money import MoneyAmount
-from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_emission import (
-    ProviderInvocationReliabilityDispatchContext,
-)
 from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_evidence import (
     ProviderInvocationReliabilityEvidenceObserver,
 )
@@ -71,6 +68,12 @@ from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.integrations.contracts.external_work import (
     ExternalWorkError,
     ExternalWorkIntegration,
+)
+from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_dispatch_context import (
+    ProviderInvocationReliabilityDispatchContext,
+)
+from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_dispatch_port import (
+    ProviderInvocationReliabilityAwareDispatchPort,
 )
 from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_early_lifecycle import (
     emit_governance_authorized,
@@ -1041,7 +1044,16 @@ class ExternalWorkAdapter:
                         raise ProviderInvocationPersistenceError(
                             "provider_invocation_required_for_durable_dispatch",
                         )
-                    return self._invocation_dispatch.dispatch_after_intent_persisted(
+                    if reliability_dispatch is None:
+                        return self._invocation_dispatch.dispatch_after_intent_persisted(
+                            provider_invocation,
+                            _dispatch_provider,
+                        )
+                    aware_dispatch = cast(
+                        ProviderInvocationReliabilityAwareDispatchPort,
+                        self._invocation_dispatch,
+                    )
+                    return aware_dispatch.dispatch_after_intent_persisted(
                         provider_invocation,
                         _dispatch_provider,
                         reliability_dispatch=reliability_dispatch,

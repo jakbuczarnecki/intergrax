@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar
 
-from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_emission import (
+from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_dispatch_context import (
     ProviderInvocationReliabilityDispatchContext,
 )
 

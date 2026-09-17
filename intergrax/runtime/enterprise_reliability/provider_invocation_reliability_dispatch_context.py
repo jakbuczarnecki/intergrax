@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Per-invocation context for GR-7-A8 reliability evidence emission (projection only)."""
+"""Internal dispatch-time bundle for GR-7-A8 early lifecycle evidence (projection only)."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_
 
 @dataclass(frozen=True, slots=True)
 class ProviderInvocationReliabilityDispatchContext:
-    """Optional dispatch-time correlation for early lifecycle evidence."""
+    """Optional dispatch-time correlation for early lifecycle evidence emission."""
 
     tenant_id: str
     effect_contract_id: str | None
