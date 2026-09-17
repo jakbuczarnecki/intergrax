@@ -63,9 +63,9 @@ It is retained as evidence, not as a second current-state matrix.
 
 ### MP-5F-B2 — scoped knowledge reference read boundary (CLOSED)
 
-**Status:** **CLOSED** (contract + default retrieval projection reader). **Next:** MP-5F-B3 (UCL read boundary). **MP-5F** remains **BLOCKED** until B3…B4 + B5 adapter integration.
+**Status:** **CLOSED** (contract + hardened canonical identity projection). **Next:** MP-5F-B3 (UCL read boundary). **MP-5F** remains **BLOCKED** until B3…B4 + B5 adapter integration.
 
-Knowledge/RAG owns retrieval, ranking, indexing and provider semantics. Public surface: `KnowledgeReferenceReadPort` / `KnowledgeReferenceReadScope` / `KnowledgeChunkCanonicalRef` in `intergrax/knowledge/contracts/knowledge_reference_read.py`. Default reader projects `RetrievalService`-compatible backends without payload hydration; mandatory fail-closed tenant/workspace capability binding. No ContextView types in Knowledge/RAG; no MP-5 adapter in this slice.
+Knowledge/RAG owns retrieval, ranking, indexing and provider semantics. Public surface: `KnowledgeReferenceReadPort` / `KnowledgeReferenceReadScope` / `KnowledgeChunkCanonicalRef` in `intergrax/knowledge/contracts/knowledge_reference_read.py`. Default reader projects `RetrievalService`-compatible backends without payload hydration; mandatory fail-closed tenant/workspace capability binding. Canonical locator: logical `vector_id` only (no fallback to `chunk.id`); document identity from `root_document_id` / typed document id; projection errors fail the read. No ContextView types in Knowledge/RAG; no MP-5 adapter in this slice.
 
 ---
 

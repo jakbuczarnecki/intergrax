@@ -27,6 +27,7 @@ __all__ = [
     "KnowledgeReferenceReadResult",
     "KnowledgeReferenceReadScope",
     "KnowledgeReferenceReadScopeError",
+    "KnowledgeReferenceProjectionError",
     "KnowledgeScopedResourceRef",
     "validate_knowledge_reference_read_request",
 ]
@@ -46,6 +47,15 @@ class KnowledgeReferenceReadOutcome(str, Enum):
 
 class KnowledgeReferenceReadScopeError(ValueError):
     """Request scope or fields violate Knowledge reference-read invariants."""
+
+
+class KnowledgeReferenceProjectionError(ValueError):
+    """A retrieval hit cannot be projected to a canonical knowledge reference."""
+
+    def __init__(self, reason: str) -> None:
+        cleaned = (reason or "").strip() or "projection_failed"
+        self.reason = cleaned
+        super().__init__(cleaned)
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,7 +142,13 @@ class KnowledgeReferenceReadRequest:
 
 @dataclass(frozen=True, slots=True)
 class KnowledgeChunkCanonicalRef:
-    """Canonical chunk identity for stable ContextView ``knowledge_ref`` mapping."""
+    """Canonical reference for one retrievable indexed knowledge item.
+
+    ``knowledge_ref`` is the provider-neutral logical ``vector_id`` persisted by
+    the native vector store (one indexed chunk / vector record). It must not
+    alias ``document_id``, which is the canonical owning document identity
+    (``KnowledgeDocumentIdentity.root_document_id`` when lineage is present).
+    """
 
     tenant_id: str
     knowledge_ref: str

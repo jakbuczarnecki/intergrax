@@ -264,6 +264,8 @@ The accepted RAG-PROD-13 result and the closed RAG-PROD-14 production handoff ar
 
 **Knowledge/RAG owns retrieval, ranking, indexing and provider semantics.** The public reference-read capability (`KnowledgeReferenceReadPort` in `intergrax/knowledge/contracts/knowledge_reference_read.py`) exposes scoped canonical references only via retrieval projection (`DefaultKnowledgeReferenceReader` in `intergrax/rag/default_knowledge_reference_reader.py`). MP-5 adapters consume it but do not own retrieval. **MP-5D source ports are sync; Memory B1 reference-read is async — B5 requires explicit sync/async integration for each domain.**
 
+**MP-5F-B2 canonical identity (reference projection):** `KnowledgeChunkCanonicalRef.knowledge_ref` is the provider-neutral logical `vector_id` from the native vector-store ABI (`VectorStoreRecord` / `VectorStoreHit`); it is not interchangeable with `RetrievalChunk.id` (document identity on the typed retrieval path). `document_id` is the canonical owning document identity: `provenance.root_document_id` when lineage is present, otherwise `RetrievalChunk.id` when that field carries `KnowledgeDocumentIdentity.document_id`. Missing `vector_id`, missing document identity, or provenance that contradicts the hit’s canonical locator fails closed (`KnowledgeReferenceProjectionError` → read outcome `UNAVAILABLE` with `identity_projection:*`); in-scope hits are not silently dropped and there is no `vector_id or chunk.id` fallback. Rank and relevance score do not affect `knowledge_ref`.
+
 ### Navigation and documentation inventory
 
 | Classification | File | Ownership |

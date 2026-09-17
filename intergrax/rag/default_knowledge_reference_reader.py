@@ -10,6 +10,7 @@ from typing import Protocol, runtime_checkable
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.knowledge.contracts.knowledge_reference_read import (
     KnowledgeChunkCanonicalRef,
+    KnowledgeReferenceProjectionError,
     KnowledgeReferenceReadOutcome,
     KnowledgeReferenceReadRequest,
     KnowledgeReferenceReadResult,
@@ -30,6 +31,7 @@ __all__ = [
     "KnowledgeReferenceReadCapabilityBinding",
     "KnowledgeReferenceReadConfigurationError",
     "KnowledgeReferenceRetrievalBackend",
+    "project_retrieval_chunk_to_canonical_ref",
 ]
 
 
@@ -133,20 +135,48 @@ def _chunk_matches_scope(
     return True
 
 
-def _chunk_to_canonical_ref(
+def _provenance_str(provenance: dict[str, object], key: str) -> str | None:
+    value = provenance.get(key)
+    if not isinstance(value, str):
+        return None
+    cleaned = value.strip()
+    return cleaned or None
+
+
+def project_retrieval_chunk_to_canonical_ref(
     chunk: RetrievalChunk,
     *,
     tenant_id: str,
 ) -> KnowledgeChunkCanonicalRef:
-    knowledge_ref = (chunk.vector_id or chunk.id or "").strip()
+    """Map one in-scope retrieval hit to ``KnowledgeChunkCanonicalRef`` (fail-closed)."""
+    vector_id = chunk.vector_id
+    if vector_id is None or not str(vector_id).strip():
+        raise KnowledgeReferenceProjectionError("missing_canonical_vector_id")
+
+    knowledge_ref = str(vector_id).strip()
     provenance = chunk.provenance or {}
-    source_id = provenance.get("source_id")
-    source = source_id if isinstance(source_id, str) and source_id.strip() else None
+    provenance_vector_id = _provenance_str(provenance, "vector_id")
+    if provenance_vector_id is not None and provenance_vector_id != knowledge_ref:
+        raise KnowledgeReferenceProjectionError("provenance_vector_id_mismatch")
+
+    chunk_document_id = (chunk.id or "").strip()
+    provenance_document_id = _provenance_str(provenance, "document_id")
+    if provenance_document_id is not None and chunk_document_id:
+        if provenance_document_id != chunk_document_id:
+            raise KnowledgeReferenceProjectionError("provenance_document_id_mismatch")
+
+    document_id = _provenance_str(provenance, "root_document_id")
+    if document_id is None:
+        document_id = chunk_document_id or None
+    if document_id is None:
+        raise KnowledgeReferenceProjectionError("missing_canonical_document_id")
+
+    source = _provenance_str(provenance, "source_id")
     score = float(chunk.score) if chunk.score is not None else None
     return KnowledgeChunkCanonicalRef(
         tenant_id=tenant_id,
         knowledge_ref=knowledge_ref,
-        document_id=chunk.id,
+        document_id=document_id,
         source_id=source,
         rank=int(chunk.rank),
         relevance_score=score,
@@ -238,9 +268,17 @@ class DefaultKnowledgeReferenceReader:
         for chunk in result.chunks:
             if not _chunk_matches_scope(chunk, scope=request.scope):
                 continue
-            refs.append(
-                _chunk_to_canonical_ref(chunk, tenant_id=request.scope.tenant_id)
-            )
+            try:
+                projected = project_retrieval_chunk_to_canonical_ref(
+                    chunk,
+                    tenant_id=request.scope.tenant_id,
+                )
+            except KnowledgeReferenceProjectionError as exc:
+                return KnowledgeReferenceReadResult(
+                    outcome=KnowledgeReferenceReadOutcome.UNAVAILABLE,
+                    reason=f"identity_projection:{exc.reason}",
+                )
+            refs.append(projected)
             if len(refs) >= request.query.limit:
                 break
 

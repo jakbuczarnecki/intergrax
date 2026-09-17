@@ -15,6 +15,7 @@ from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
 from intergrax.knowledge.contracts.knowledge_reference_read import (
     KNOWLEDGE_REFERENCE_READ_MAX_LIMIT,
     KnowledgeChunkCanonicalRef,
+    KnowledgeReferenceProjectionError,
     KnowledgeReferenceReadOutcome,
     KnowledgeReferenceReadPort,
     KnowledgeReferenceReadQuery,
@@ -29,6 +30,7 @@ from intergrax.rag.default_knowledge_reference_reader import (
     DefaultKnowledgeReferenceReader,
     KnowledgeReferenceReadCapabilityBinding,
     KnowledgeReferenceReadConfigurationError,
+    project_retrieval_chunk_to_canonical_ref,
 )
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
@@ -427,3 +429,117 @@ def test_knowledge_reference_read_default_impl_boundary_ast() -> None:
         forbidden_module_prefixes=_FORBIDDEN_DEFAULT_MODULE_PREFIXES,
     )
     assert not violations, "\n".join(violations)
+
+
+def test_missing_vector_id_fails_closed_not_chunk_id_fallback() -> None:
+    chunk = RetrievalChunk(
+        id="doc-only",
+        text="body",
+        score=0.5,
+        rank=0,
+        vector_id=None,
+        scope={"tenant_id": "tenant-a", "workspace_id": "ws-a"},
+        provenance={"root_document_id": "doc-only"},
+    )
+    with pytest.raises(KnowledgeReferenceProjectionError) as exc_info:
+        project_retrieval_chunk_to_canonical_ref(chunk, tenant_id="tenant-a")
+    assert exc_info.value.reason == "missing_canonical_vector_id"
+
+    backend = _FakeRetrievalBackend(chunks=(chunk,))
+    reader = _configured_reader(backend)
+    result = reader.read_references(
+        _identity(),
+        KnowledgeReferenceReadRequest(scope=_scope(), query=_query()),
+    )
+    assert result.outcome is KnowledgeReferenceReadOutcome.UNAVAILABLE
+    assert "missing_canonical_vector_id" in result.reason
+
+
+def test_knowledge_ref_stable_across_rank_and_score() -> None:
+    base = _sample_chunk(vector_id="vec-stable", document_id="doc-1")
+    variants = (
+        RetrievalChunk(
+            id=base.id,
+            text=base.text,
+            score=0.1,
+            rank=9,
+            channel=base.channel,
+            vector_id=base.vector_id,
+            scope=base.scope,
+            provenance=base.provenance,
+        ),
+        RetrievalChunk(
+            id=base.id,
+            text=base.text,
+            score=0.99,
+            rank=0,
+            channel=base.channel,
+            vector_id=base.vector_id,
+            scope=base.scope,
+            provenance=base.provenance,
+        ),
+    )
+    refs = [
+        project_retrieval_chunk_to_canonical_ref(v, tenant_id="tenant-a")
+        for v in variants
+    ]
+    assert refs[0].knowledge_ref == refs[1].knowledge_ref == "vec-stable"
+    assert refs[0].knowledge_ref != refs[0].document_id
+
+
+def test_document_id_uses_root_document_not_chunk_id_when_lineage_differs() -> None:
+    chunk = RetrievalChunk(
+        id="derivative-chunk-doc",
+        text="body",
+        score=0.7,
+        rank=1,
+        vector_id="vec-derivative",
+        scope={"tenant_id": "tenant-a", "workspace_id": "ws-a"},
+        provenance={
+            "root_document_id": "root-source-doc",
+            "source_id": "src-1",
+        },
+    )
+    ref = project_retrieval_chunk_to_canonical_ref(chunk, tenant_id="tenant-a")
+    assert ref.document_id == "root-source-doc"
+    assert ref.document_id != chunk.id
+    assert ref.knowledge_ref == "vec-derivative"
+
+
+def test_provenance_vector_id_mismatch_fails_closed() -> None:
+    chunk = RetrievalChunk(
+        id="doc-1",
+        text="body",
+        score=0.5,
+        rank=0,
+        vector_id="vec-a",
+        scope={"tenant_id": "tenant-a", "workspace_id": "ws-a"},
+        provenance={
+            "vector_id": "vec-b",
+            "root_document_id": "doc-1",
+        },
+    )
+    with pytest.raises(KnowledgeReferenceProjectionError) as exc_info:
+        project_retrieval_chunk_to_canonical_ref(chunk, tenant_id="tenant-a")
+    assert exc_info.value.reason == "provenance_vector_id_mismatch"
+
+
+def test_canonical_knowledge_ref_is_provider_neutral_string() -> None:
+    ref = project_retrieval_chunk_to_canonical_ref(
+        _sample_chunk(vector_id="logical-vector-42"),
+        tenant_id="tenant-a",
+    )
+    lowered = ref.knowledge_ref.lower()
+    for vendor in ("qdrant", "pinecone", "pgvector", "chroma", "weaviate"):
+        assert vendor not in lowered
+
+
+def test_no_semantic_identity_fallback_in_default_reader_source() -> None:
+    source = _DEFAULT_READER.read_text(encoding="utf-8")
+    forbidden_patterns = (
+        "vector_id or chunk.id",
+        "chunk.id or chunk.vector_id",
+        "chunk.vector_id or chunk.id",
+    )
+    for pattern in forbidden_patterns:
+        assert pattern not in source
