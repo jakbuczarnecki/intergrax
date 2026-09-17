@@ -404,6 +404,7 @@ Do not delete or rename historical artifacts as part of hub maintenance.
 | Scale / resilience | **CANONICAL** maintainer architecture + W0/W1 quals |
 | EE-FINAL enterprise certification | **CLOSED / FROZEN** — [`EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md`](../qualification/EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md) |
 | Post-freeze exhaustive gap audit | **PASS** — [`EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md`](../qualification/EXECUTION_ENGINE_POST_FREEZE_EXHAUSTIVE_GAP_AUDIT.md) |
+| Execution session closure (final enterprise certification) | **CLOSED** — [`INTEGRAX_EXECUTION_SESSION_CLOSURE_AND_FINAL_ENTERPRISE_CERTIFICATION.md`](../qualification/INTEGRAX_EXECUTION_SESSION_CLOSURE_AND_FINAL_ENTERPRISE_CERTIFICATION.md) |
 | Execution Engine workstream | **FINAL** — build new capabilities on canonical engine only |
 
 ---
