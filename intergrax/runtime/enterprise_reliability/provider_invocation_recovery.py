@@ -258,6 +258,26 @@ def execute_provider_invocation_recovery(
                 provider_mutation_count=0,
                 block_reason=ProviderInvocationRecoveryExecutionBlockReason.INVOCATION_MISSING,
             )
+        try:
+            repeat_port_capable = ports.repeat.supports_provider_operation(
+                invocation.operation
+            )
+        except Exception:
+            return ProviderInvocationRecoveryExecutionResult(
+                decision=decision,
+                execution_attempted=True,
+                disposition=ProviderInvocationRecoveryExecutionDisposition.BLOCKED,
+                provider_mutation_count=0,
+                block_reason=ProviderInvocationRecoveryExecutionBlockReason.REPEAT_EXECUTION_UNSUPPORTED,
+            )
+        if not repeat_port_capable:
+            return ProviderInvocationRecoveryExecutionResult(
+                decision=decision,
+                execution_attempted=True,
+                disposition=ProviderInvocationRecoveryExecutionDisposition.BLOCKED,
+                provider_mutation_count=0,
+                block_reason=ProviderInvocationRecoveryExecutionBlockReason.REPEAT_EXECUTION_UNSUPPORTED,
+            )
         invocation_key = (invocation.idempotency_key or "").strip()
         try:
             repeat_result = ports.repeat.execute_idempotent_repeat(
