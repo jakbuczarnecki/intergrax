@@ -35,6 +35,7 @@ from intergrax.queueing.contracts.task_queue import (
 )
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
+from intergrax.queueing.worker.result_codec import encode_logical_task_result
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.background_execution.identity_persistence import (
     KvBackgroundExecutionIdentityPersistence,
@@ -48,7 +49,7 @@ from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.governance.default_root_execution_launcher import DefaultRootExecutionLauncher
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
+from intergrax.runtime.task.nexus_worker_execution import NexusTaskWorkerOutput, NexusWorkerRuntime
 from intergrax.runtime.task.queued_host_task_execution_adapter import QueuedHostTaskExecutionAdapter
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
@@ -494,15 +495,15 @@ async def test_bg_q8_custom_task_queue_plugin() -> None:
     def _worker(request: TaskRequest) -> bytes:
         identity = _worker_identity(tenant_id=request.tenant_id, run_id=RunId(request.run_id))
         identity_holder.append(identity)
-        from intergrax.runtime.task.nexus_worker_execution import NexusTaskWorkerOutput
-
         payload = runtime.execute_payload(
             request.payload,
             tenant_id=request.tenant_id,
             run_id=request.run_id,
             execution_identity=identity,
         )
-        return NexusTaskWorkerOutput(result_payload=payload).model_dump_json().encode("utf-8")
+        return encode_logical_task_result(
+            ToolExecutionResult.ok(NexusTaskWorkerOutput(result_payload=payload))
+        )
 
     queue = _FakeTaskQueue(_worker)
     run_service = MagicMock()
@@ -518,6 +519,14 @@ async def test_bg_q8_custom_task_queue_plugin() -> None:
     )
     port.execute.assert_awaited_once()
     assert identity_holder
+    run_service.mark_completed.assert_called_once()
+    run_service.mark_failed.assert_not_called()
+    completed_args, completed_kwargs = run_service.mark_completed.call_args
+    assert completed_args[0] == run_id
+    result_payload = completed_kwargs.get("result_payload")
+    assert isinstance(result_payload, dict)
+    assert result_payload.get("answer") == "ok"
+    assert result_payload.get("state") == TaskState.COMPLETED.value
 
 
 def test_bg_q9_background_intake_import_layer_gate() -> None:

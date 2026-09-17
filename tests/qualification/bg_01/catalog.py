@@ -65,7 +65,7 @@ BG_01_Q_CATALOG: tuple[Bg01QEvidence, ...] = (
     ),
     Bg01QEvidence(
         "BG-Q8",
-        "Custom TaskQueue provider without execution core changes",
+        "Custom TaskQueue provider executes canonical host task and returns a valid canonical result without core changes",
         (_nid("test_bg_01_gates.py", "test_bg_q8_custom_task_queue_plugin"),),
     ),
     Bg01QEvidence(
