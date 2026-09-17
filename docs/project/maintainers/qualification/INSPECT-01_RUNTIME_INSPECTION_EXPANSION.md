@@ -101,7 +101,13 @@ Events without recorded tenant provenance are unsupported for tenant-safe inspec
 
 ## INSPECT-01-C — Extended Domain Read Adoption
 
-**Task intake `origin/development`:** recorded at INSPECT-01-C closeout.
+**Status:** **INSPECT-01-C: CLOSED** (INSPECT-01-C-FINAL qualification on `development`).
+
+**Qualified HEAD:** `e6f005f328b8ab9f7d822a614855ed9be8936168` (`origin/development` at closeout).
+
+**Remediation lineage:** INSPECT-01-C-R1 / INSPECT-01-C-R1A — identity provenance, truncation/completeness, cross-tenant integrity (last audited fix `ebcabb28a38d1d51d55fa2568ba8e2a93490f6ba`).
+
+**Next recommended task:** **INSPECT-01-RQ** — enterprise requalification of the full Runtime Inspection surface (not a scope expansion of C).
 
 ### Domain read ownership
 
@@ -138,7 +144,7 @@ Sections expose safe summaries, refs, and token counts only — no memory payloa
 
 ### Qualification gates
 
-**C-Q1..C-Q18** in `catalog.py` `INSPECT_01_C_Q_CATALOG` (`test_inspect_01c_extended_domains.py`). **A-Q***, **B-Q***, and **C1-Q*** catalogs remain required regressions.
+**C-Q1..C-Q18** in `catalog.py` `INSPECT_01_C_Q_CATALOG` (`test_inspect_01c_extended_domains.py`). Additional **C-R1** gates (`test_c_r1_*` in the same module) cover post-audit provenance and custom canonical port wiring. **A-Q***, **B-Q***, and **C1-Q*** catalogs remain required regressions.
 
 ### Conscious limits
 
