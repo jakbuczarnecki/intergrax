@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4)
 
-**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — CLOSED** · **MP-4D6 — NEXT**
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — CLOSED** · **MP-4D6 — CLOSED** · **MP-4D7 — NEXT**
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (execution/status only):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -828,6 +828,97 @@ provider ≠ authority · provider ≠ semantic owner · contract is replaceable
 
 ---
 
+## Enterprise Boundary & Pluginability Certification (MP-4D6)
+
+**Stage:** **CLOSED** (documentation / static architecture verification only — **no** production code, contract, composition, or provider changes).
+
+**Principle (unchanged):**
+
+```text
+PLATFORM OPERATES ON CONTRACTS, NOT IMPLEMENTATIONS.
+```
+
+**D6 scope vs D4 / D5:**
+
+| Stage | Focus |
+| ----- | ----- |
+| **MP-4D4** | Invariant → proof |
+| **MP-4D5** | Provider → durability → qualification |
+| **MP-4D6** | Contract boundary → external replacement → layer safety → authority isolation |
+
+D6 may cite D4/D5 gates and qualification rows as **supporting evidence**; it does **not** re-run full E2E or re-qualify providers.
+
+**Certification rule:** a seam is **CERTIFIED** only when all hold: (1) unambiguous semantic owner, (2) public contract exists, (3) domain/integration depends on contract, (4) implementation selected at composition, (5) replaceable without changing domain semantics, (6) concrete provider is not authority, (7) no direct side-channel / bypass on the MP-4 path, (8) no layer-boundary violation. Otherwise **PARTIAL** or **NOT CERTIFIED**.
+
+**External replacement** (per contract): **YES** = new adapter implementing the public contract + composition wiring only; **PARTIAL** = contract supports replacement but MP-4-scoped proof is in-memory / qualification-only; **NO** = domain hardcodes implementation or composition cannot substitute.
+
+### Boundary certification matrix
+
+| Surface / seam | Semantic owner | Platform contract | Composition point | Replaceable? | Layer-safe? | Provider-neutral? | Certification | Evidence / limitation |
+| -------------- | -------------- | ----------------- | ----------------- | ------------ | ----------- | ----------------- | ------------- | --------------------- |
+| Collaborative decision binding persistence | Collaborative Work (association truth) | `CollaborativeDecisionBindingRepository` (`intergrax/collaborative_work/repository.py`) | `open_postgresql_collaborative_work_repositories` · `build_collaborative_decision_binding_service` · `build_collaborative_decision_binding_application_from_artifacts_bundle` | YES | YES | YES | **CERTIFIED** | `CollaborativeDecisionBindingService` depends on protocol only; PostgreSQL in `persistence.py` / `postgresql_repository.py` only; no Decision lifecycle in binding service |
+| Human review handoff | Decision / Governance flow (HITL semantics) | `DecisionHumanReviewPort` | Host / `DecisionFlowGateCapabilities.human_review_port`; MP-4R7: `Mp4R7RecordingHumanReviewPort` in `open_mp4r7_enterprise_integration_composition` | YES | YES | YES | **CERTIFIED** | `decision_flow.py` requests/consumes port; Human Review does not mint `DecisionExecutionAuthorization`; post-review path re-enters `DecisionAuthorizationEvaluator` (`resume_decision_flow_after_human_review`) |
+| Governance evaluation | Governance (WHETHER) | `DecisionAuthorizationEvaluator` | `DecisionFlowGovernanceSpec.evaluator` on `DecisionFlowGateCapabilities`; host/plugin composition | YES | YES | YES | **CERTIFIED** | `evaluate_decision_governance_with(evaluator=…)` — no hardcoded evaluator class in `decision_flow.py` |
+| Execution authorization object | Governance (mint) · Execution (consume) | `DecisionExecutionAuthorization` + validators | `mint_validated_execution_authorization` (`intergrax/runtime/decision_authorization.py`) after ALLOW; consumption via `validate_execution_authorization_bundle` / `authorize_and_execute_decision_bound_side_effect` | N/A (canonical VO) | YES | YES | **CERTIFIED** | Mint only after governance ALLOW (incl. post-human re-evaluation); Execution/Multiplayer/Diagnostics/Human Review do not synthesize authorization on MP-4 paths |
+| Execution continuation lifecycle | Execution Engine | `ExecutionContinuationPort` | `wire_execution_continuation_port` · `wire_execution_engine_continuation_dependencies` | YES | YES | YES | **CERTIFIED** | Multiplayer has no continuation store; Nexus consumes port internally only |
+| Continuation state persistence | Execution Engine | `ExecutionContinuationStateStore` | `wire_execution_continuation_state_store` · `backing_execution_continuation_state_store`; MP-4R7: `open_mp4r7_enterprise_integration_composition(durable_continuation=…)` | YES | YES | YES | **CERTIFIED** | Domain logic uses contract; in-memory / backing adapters under `intergrax/runtime/execution/continuation/persistence.py` |
+| Functional evidence (MP-4 emit) | Evidence Plane | `FunctionalEvidencePersistence` | `wire_functional_evidence_runtime(persistence=…)`; MP-4R5: `append_decision_binding_create_outcome_evidence` + `decision_binding_composition` injects adoption | YES | YES | YES | **CERTIFIED** | `decision_binding_evidence.py` takes `FunctionalEvidencePersistence` only; no MP-owned evidence repository |
+| Factual reconstruction (Diagnostics input) | Evidence Plane | `ExecutionReconstructionReader` | Composition roots (e.g. diagnostic read service ctor); default `ExecutionReconstructor` at wiring only | YES | YES | YES | **CERTIFIED** | `diagnostic_read_service.py` / `diagnostic_orchestrator.py` type against contract |
+| Diagnostics authority (MP-4) | Diagnostics (interpretation) | Read contracts + reconstruction reader | Diagnostic composition roots | N/A | YES | YES | **CERTIFIED** | No authorize/resume/mint on diagnostic read paths reviewed for MP-4; does not own Evidence truth |
+| Nexus vs MP-4 public surface | Execution (internal) | *Not an MP-4 contract* | Execution / Nexus runtime only | N/A | YES | YES | **CERTIFIED** | Architecture gates: no `intergrax.runtime.nexus` imports in multiplayer production modules (`test_mp4r0_*`, `test_mp4r3_*`, `test_mp4r4_*`, `test_mp4r5_*`) |
+| Decision lifecycle vs binding | Decision System vs Collaborative Work | `DecisionProposalRef` + binding model | Binding service only stores association | N/A | YES | YES | **CERTIFIED** | No `DecisionRepository` under `intergrax/collaborative_work/`; binding does not transition Decision lifecycle |
+
+**Replaceability summary (external adapter + composition):**
+
+| Contract | External replacement |
+| -------- | -------------------- |
+| `CollaborativeDecisionBindingRepository` | **YES** |
+| `DecisionHumanReviewPort` | **YES** |
+| `DecisionAuthorizationEvaluator` | **YES** |
+| `ExecutionContinuationPort` / `ExecutionContinuationStateStore` | **YES** |
+| `FunctionalEvidencePersistence` | **YES** |
+| `ExecutionReconstructionReader` | **YES** |
+
+### Certified seams (quick audit)
+
+| Contract | Owner | Replaceable | Composition | Result |
+| -------- | ----- | ----------- | ----------- | ------ |
+| `CollaborativeDecisionBindingRepository` | Collaborative Work | YES | `open_postgresql_collaborative_work_repositories` / artifact bundle builders | **CERTIFIED** |
+| `DecisionHumanReviewPort` | Decision / HITL handoff | YES | Host `DecisionFlowGateCapabilities` | **CERTIFIED** |
+| `DecisionAuthorizationEvaluator` | Governance | YES | `DecisionFlowGovernanceSpec` | **CERTIFIED** |
+| `DecisionExecutionAuthorization` | Governance mint · Execution consume | — | `mint_validated_execution_authorization` | **CERTIFIED** (authority boundary) |
+| `ExecutionContinuationPort` | Execution Engine | YES | `wire_execution_engine_continuation_dependencies` | **CERTIFIED** |
+| `ExecutionContinuationStateStore` | Execution Engine | YES | `wire_execution_continuation_state_store` | **CERTIFIED** |
+| `FunctionalEvidencePersistence` | Evidence Plane | YES | `wire_functional_evidence_runtime` | **CERTIFIED** |
+| `ExecutionReconstructionReader` | Evidence Plane | YES | Diagnostic / OBS composition | **CERTIFIED** |
+
+### Boundary findings
+
+**No blocking MP-4 boundary violations identified.**
+
+Static review of MP-4 seams found no production domain imports of PostgreSQL binding adapters, no Multiplayer-owned Decision repository/lifecycle, no Multiplayer-owned continuation or Evidence store, no Human Review bypass of Governance mint path, no Diagnostics authorization/resume on reviewed MP-4 surfaces, and no Nexus exposure as MP-4 public API (architecture gates green).
+
+### Pluginability gaps
+
+| Gap | Meaning | Blocking? |
+| --- | ------- | --------: |
+| MP-4R7 uses `Mp4R7RecordingHumanReviewPort` | Proves `DecisionHumanReviewPort` replaceability; not canonical production host adapter | NO |
+| MP-4R7 default composition in-memory binding + evidence | Contract-first wiring proof; durable providers qualified separately (D5) | NO |
+| No MP-4-scoped external third-party provider sample | Enterprise replacement model is adapter + composition; no separate vendor adapter in repo | NO |
+| Named production durable `ExecutionContinuationStateStore` adapter | Restart semantics qualified via backing reference (D5); not a D6 boundary defect | NO |
+
+**Certification summary:**
+
+| Certification | Count |
+| ------------- | ----: |
+| **CERTIFIED** | 11 |
+| **PARTIAL** | 0 |
+| **NOT CERTIFIED** | 0 |
+
+**D6 close criteria:** all critical seams **CERTIFIED**; gaps are proof-depth / qualification scope only — **MP-4D6 — CLOSED**, **MP-4D7 — NEXT**.
+
+---
+
 ## Known limitations (summary)
 
 | Limitation | Status | Blocking? |
@@ -891,8 +982,8 @@ Execution detail and proof commands: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](..
 | **MP-4D3** | **CLOSED** | Professional visual architecture layer (Mermaid in this SSOT) |
 | **MP-4D4** | **CLOSED** | E2E proof / invariant-to-test matrix |
 | **MP-4D5** | **CLOSED** | Provider / persistence qualification matrix |
-| **MP-4D6** | **NEXT** | Enterprise pluginability certification (docs) |
-| MP-4D7 | NOT STARTED | Documentation regression gates |
+| **MP-4D6** | **CLOSED** | Enterprise boundary & pluginability certification (this §) |
+| **MP-4D7** | **NEXT** | Documentation regression gates |
 | MP-4D8 | NOT STARTED | Final enterprise documentation audit |
 
 Capability roadmap: [`MULTIPLAYER_AI` plan](../capabilities/plan/MULTIPLAYER_AI.md).
