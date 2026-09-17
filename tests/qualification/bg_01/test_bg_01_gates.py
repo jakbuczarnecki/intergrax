@@ -77,7 +77,9 @@ _BG_WORKER_SURFACE = (
     _BG_INTAKE_ROOT,
     _REPO_ROOT / "intergrax" / "queueing" / "worker" / "execution.py",
     _REPO_ROOT / "intergrax" / "queueing" / "worker" / "dispatcher.py",
+    _REPO_ROOT / "intergrax" / "queueing" / "worker" / "result_codec.py",
     _REPO_ROOT / "intergrax" / "runtime" / "task" / "nexus_worker_execution.py",
+    _REPO_ROOT / "intergrax" / "runtime" / "task" / "queued_host_task_execution_adapter.py",
     _REPO_ROOT / "intergrax" / "runtime" / "task" / "worker_bootstrap.py",
 )
 _PRODUCTION_COMPOSITION_ROOTS = (
@@ -238,6 +240,27 @@ def test_bg_q1_worker_invokes_host_task_execution_port() -> None:
     port.execute.assert_awaited_once()
 
 
+def test_bg_q1_production_background_execution_surfaces_use_host_port() -> None:
+    """Active production composition roots converge host-task workloads to HostTaskExecutionPort."""
+    queue_wiring = (
+        _REPO_ROOT / "intergrax" / "applications" / "_shared" / "queue_worker_wiring.py"
+    ).read_text(encoding="utf-8-sig")
+    lkw_factory = (
+        _REPO_ROOT
+        / "applications"
+        / "local_workspace_application"
+        / "host"
+        / "background_worker_factory.py"
+    ).read_text(encoding="utf-8-sig")
+    worker_bootstrap = (
+        _REPO_ROOT / "intergrax" / "runtime" / "task" / "worker_bootstrap.py"
+    ).read_text(encoding="utf-8-sig")
+    assert "QueuedHostTaskExecutionAdapter" in queue_wiring
+    assert "create_nexus_celery_worker_app" in queue_wiring
+    assert "HostTaskExecution" in lkw_factory
+    assert "register_nexus_task_worker" in worker_bootstrap or "NexusWorkerRuntime" in worker_bootstrap
+
+
 def test_bg_q2_identity_forwarded_to_host_execution() -> None:
     port = AsyncMock(spec=HostTaskExecutionPort)
     port.execute = AsyncMock(return_value=_completed_task_result())
@@ -252,6 +275,35 @@ def test_bg_q2_identity_forwarded_to_host_execution() -> None:
         execution_identity=identity,
     )
     _, kwargs = port.execute.await_args
+    assert kwargs["run_id"] == run_id
+    assert kwargs["attempt_id"] == attempt_id
+
+
+def test_bg_q2_full_canonical_identity_on_task_and_host_kwargs() -> None:
+    port = AsyncMock(spec=HostTaskExecutionPort)
+    port.execute = AsyncMock(return_value=_completed_task_result())
+    runtime = NexusWorkerRuntime(port)
+    execution_id = mint_execution_id()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    identity = BackgroundExecutionIdentity(
+        tenant_id="tenant-bg-full",
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    runtime.execute_payload(
+        _encoded_request(identity, tenant_id=identity.tenant_id),
+        tenant_id=identity.tenant_id,
+        run_id=str(identity.run_id),
+        execution_identity=identity,
+    )
+    args, kwargs = port.execute.await_args
+    task_arg = args[0]
+    assert task_arg.tenant_id == identity.tenant_id
+    assert task_arg.task_id == identity.task_id
     assert kwargs["run_id"] == run_id
     assert kwargs["attempt_id"] == attempt_id
 
@@ -347,6 +399,29 @@ def test_bg_q6_transport_retry_separate_from_attempt_lifecycle() -> None:
     assert "self.retry" in dispatcher_source
     assert "AttemptLifecycleService" in dispatcher_source
     assert "attempt_lifecycle.transition" not in dispatcher_source
+
+
+def test_bg_q6_transport_redelivery_does_not_reconcile_new_attempt() -> None:
+    deps = make_kv_admission_dependencies()
+    transport = BackgroundTransportExecutionRef(
+        tenant_id="tenant-a",
+        provider="broker",
+        transport_task_id="retry-attempt-stable",
+    )
+    first = admit_background_execution_reentry(
+        transport_ref=transport,
+        identity_persistence=deps.identity_persistence,
+        attempt_lifecycle=deps.attempt_lifecycle,
+        execution_terminal=deps.execution_terminal,
+    )
+    second = admit_background_execution_reentry(
+        transport_ref=transport,
+        identity_persistence=deps.identity_persistence,
+        attempt_lifecycle=deps.attempt_lifecycle,
+        execution_terminal=deps.execution_terminal,
+    )
+    assert second.identity.attempt_id == first.identity.attempt_id
+    assert second.identity.execution_id == first.identity.execution_id
 
 
 def test_bg_q7_terminal_redelivery_safe_disposition() -> None:
@@ -467,6 +542,37 @@ def test_bg_q10_resume_path_uses_host_execution() -> None:
     assert "_reconcile_resume_identity" in source
     assert "resume_checkpoint" in source
     assert "self._host_execution.execute" in source
+
+
+@pytest.mark.asyncio
+async def test_bg_q10_resume_checkpoint_forwarded_to_host_execute() -> None:
+    from intergrax.runtime.long_running.models import TaskCheckpoint
+    from intergrax.runtime.task.task_state import TaskState
+
+    port = AsyncMock(spec=HostTaskExecutionPort)
+    port.execute = AsyncMock(return_value=_completed_task_result())
+    checkpoint = TaskCheckpoint(
+        task_id=str(mint_task_id()),
+        tenant_id="tenant-bg",
+        resume_token="resume-token",
+        task_state=TaskState.RUNNING,
+        runtime=None,
+    )
+    runtime = NexusWorkerRuntime(port, checkpoint_store=MagicMock())
+    identity = _worker_identity()
+    with patch.object(
+        NexusWorkerRuntime,
+        "_reconcile_resume_identity",
+        return_value=(identity, checkpoint),
+    ):
+        runtime.execute_payload(
+            _encoded_request(identity),
+            tenant_id=identity.tenant_id,
+            run_id=str(identity.run_id),
+            execution_identity=identity,
+        )
+    _, kwargs = port.execute.await_args
+    assert kwargs["resume_checkpoint"] is checkpoint
 
 
 def test_bg_q11_no_transport_lease_as_execution_timeout() -> None:

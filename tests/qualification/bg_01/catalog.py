@@ -21,13 +21,19 @@ def _nid(test_file: str, test_name: str) -> str:
 BG_01_Q_CATALOG: tuple[Bg01QEvidence, ...] = (
     Bg01QEvidence(
         "BG-Q1",
-        "Production background consumers reach canonical HostTaskExecutionPort",
-        (_nid("test_bg_01_gates.py", "test_bg_q1_worker_invokes_host_task_execution_port"),),
+        "All active production background task-execution consumers reach HostTaskExecutionPort",
+        (
+            _nid("test_bg_01_gates.py", "test_bg_q1_worker_invokes_host_task_execution_port"),
+            _nid("test_bg_01_gates.py", "test_bg_q1_production_background_execution_surfaces_use_host_port"),
+        ),
     ),
     Bg01QEvidence(
         "BG-Q2",
-        "Canonical identity preserved through worker execute_payload",
-        (_nid("test_bg_01_gates.py", "test_bg_q2_identity_forwarded_to_host_execution"),),
+        "Canonical identity (tenant, task, run, attempt) preserved through worker execute_payload",
+        (
+            _nid("test_bg_01_gates.py", "test_bg_q2_identity_forwarded_to_host_execution"),
+            _nid("test_bg_01_gates.py", "test_bg_q2_full_canonical_identity_on_task_and_host_kwargs"),
+        ),
     ),
     Bg01QEvidence(
         "BG-Q3",
@@ -47,7 +53,10 @@ BG_01_Q_CATALOG: tuple[Bg01QEvidence, ...] = (
     Bg01QEvidence(
         "BG-Q6",
         "Transport retry policy distinct from execution attempt lifecycle owner",
-        (_nid("test_bg_01_gates.py", "test_bg_q6_transport_retry_separate_from_attempt_lifecycle"),),
+        (
+            _nid("test_bg_01_gates.py", "test_bg_q6_transport_retry_separate_from_attempt_lifecycle"),
+            _nid("test_bg_01_gates.py", "test_bg_q6_transport_redelivery_does_not_reconcile_new_attempt"),
+        ),
     ),
     Bg01QEvidence(
         "BG-Q7",
@@ -67,7 +76,10 @@ BG_01_Q_CATALOG: tuple[Bg01QEvidence, ...] = (
     Bg01QEvidence(
         "BG-Q10",
         "Resume/checkpoint path re-enters host execution with resume_checkpoint",
-        (_nid("test_bg_01_gates.py", "test_bg_q10_resume_path_uses_host_execution"),),
+        (
+            _nid("test_bg_01_gates.py", "test_bg_q10_resume_path_uses_host_execution"),
+            _nid("test_bg_01_gates.py", "test_bg_q10_resume_checkpoint_forwarded_to_host_execute"),
+        ),
     ),
     Bg01QEvidence(
         "BG-Q11",
