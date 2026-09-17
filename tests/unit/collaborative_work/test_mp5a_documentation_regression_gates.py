@@ -38,7 +38,6 @@ _STATUS_DOCS: dict[str, Path] = {
 _REQUIRED_MARKERS = (
     "MP-5A — APPROVED / CLOSED",
     "MP-5 ownership — FROZEN",
-    "MP-5B — NEXT",
     "ADR-MP-006",
 )
 
