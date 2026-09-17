@@ -38,22 +38,14 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
     peek_active_parent_execution_id,
 )
-from intergrax.runtime.execution.authority.policy import (
-    DefaultStrictAuthorityPolicy,
-    ExecutionAuthorityPolicy,
-)
+from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
 from intergrax.runtime.execution.boundary import (
     ExecutionAdmissionHook,
-    ExecutionDelegate,
     ExecutionIdentityBinding,
 )
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
 from intergrax.runtime.execution.budget.models import ExecutionBudgetReservationGrant
-from intergrax.runtime.execution.budget.policy import (
-    DefaultSharedPoolBudgetPolicy,
-    ExecutionBudgetAllocationPolicy,
-)
-from intergrax.runtime.execution.child import ChildExecutionRunner
+from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
 from intergrax.runtime.execution.delegated_execution.context_projection import (
     project_delegated_execution_context,
 )
@@ -63,7 +55,12 @@ from intergrax.runtime.execution.delegated_execution.correlation_composition imp
 from intergrax.runtime.execution.delegated_execution.correlation_service import (
     DelegatedInvocationCorrelationService,
 )
-from intergrax.runtime.execution.active_execution_budget import require_active_execution_budget
+from intergrax.runtime.execution.active_execution_budget import (
+    require_active_execution_budget,
+)
+from intergrax.runtime.execution.execution_work_port import (
+    DelegatedProviderChildExecutionEngine,
+)
 from intergrax.runtime.governance.active_execution_authority import (
     peek_active_effective_delegation,
     require_active_execution_authority,
@@ -97,8 +94,7 @@ class DelegatedExecutionPort(Protocol[RequestT, ResultT]):
             ExecutionAdmissionHook[DelegatedExecutionWorkUnit[RequestT]],
             ...,
         ] = (),
-    ) -> DelegatedExecutionOutcome[ResultT]:
-        ...
+    ) -> DelegatedExecutionOutcome[ResultT]: ...
 
 
 class _DelegatedProviderDispatchDelegate(
@@ -186,7 +182,10 @@ class _DelegatedProviderDispatchDelegate(
             DelegatedInvocationCorrelationConflictError,
             DelegatedInvocationCorrelationIntegrityError,
         ) as exc:
-            if enriched.provider_invocation is None or enriched.provider_outcome is None:
+            if (
+                enriched.provider_invocation is None
+                or enriched.provider_outcome is None
+            ):
                 return delegated_provider_outcome_contract_mismatch_failure(
                     failure_message=(
                         "correlation persistence failed without provider evidence"
@@ -217,7 +216,7 @@ class DelegatedExecutionService(Generic[RequestT, ResultT]):
     a concrete provider implementation.
     """
 
-    __slots__ = ("_child_runner", "_dispatch_delegate")
+    __slots__ = ("_child_engine", "_dispatch_delegate")
 
     def __init__(
         self,
@@ -236,9 +235,8 @@ class DelegatedExecutionService(Generic[RequestT, ResultT]):
             correlation_durability_policy
             or DelegatedInvocationCorrelationDurabilityPolicy()
         )
-        if (
-            correlation_durability_policy is None
-            and (correlation_store is not None or correlation_service is not None)
+        if correlation_durability_policy is None and (
+            correlation_store is not None or correlation_service is not None
         ):
             raise DelegatedInvocationCorrelationCompositionError(
                 "correlation_durability_policy required when wiring correlation store "
@@ -253,20 +251,12 @@ class DelegatedExecutionService(Generic[RequestT, ResultT]):
             provider,
             correlation_service=resolved_correlation,
         )
-        self._child_runner = ChildExecutionRunner[
+        self._child_engine = DelegatedProviderChildExecutionEngine[
             DelegatedExecutionWorkUnit[RequestT],
             DelegatedExecutionOutcome[ResultT],
         ](
-            authority_policy=(
-                authority_policy
-                if authority_policy is not None
-                else DefaultStrictAuthorityPolicy()
-            ),
-            budget_policy=(
-                budget_policy
-                if budget_policy is not None
-                else DefaultSharedPoolBudgetPolicy()
-            ),
+            authority_policy=authority_policy,
+            budget_policy=budget_policy,
             ledger=ledger,
         )
 
@@ -283,7 +273,7 @@ class DelegatedExecutionService(Generic[RequestT, ResultT]):
         ] = (),
     ) -> DelegatedExecutionOutcome[ResultT]:
         work = DelegatedExecutionWorkUnit(payload=payload, operation=operation)
-        return await self._child_runner.execute(
+        return await self._child_engine.execute(
             request=work,
             delegate=self._dispatch_delegate,
             admission_hooks=admission_hooks,
