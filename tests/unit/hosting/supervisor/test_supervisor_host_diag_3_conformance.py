@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DG-001D R3 — supervisor pre-engine failure HOST-DIAG-3 conformance tests."""
 

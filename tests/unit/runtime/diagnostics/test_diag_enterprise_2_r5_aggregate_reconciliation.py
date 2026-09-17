@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DIAG-ENTERPRISE-2-R5 snapshot-safe occurrence aggregate repair proofs."""
 

@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """ERL-DIAG-001B — reliability diagnostic runtime bridge tests."""
 

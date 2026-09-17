@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DIAG-ENTERPRISE-1-R3 maintenance safety-age contract and recoverable projection health."""
 

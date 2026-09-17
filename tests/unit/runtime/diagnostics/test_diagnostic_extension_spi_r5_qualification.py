@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DIAG R5 qualification matrix — extension SPI (A1–A7)."""
 

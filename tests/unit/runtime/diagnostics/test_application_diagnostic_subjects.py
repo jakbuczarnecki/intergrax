@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """HOST-DIAG-2 — typed non-execution diagnostic subject orchestration tests."""
 

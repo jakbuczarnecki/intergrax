@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DIAG-ENTERPRISE-1-R2 real Mongo list-index reconciliation proof."""
 

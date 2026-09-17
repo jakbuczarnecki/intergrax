@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DG-001A — default hosted runner vs canonical HOST-DIAG-3 composition qualification."""
 

@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """NPSC-5E/R1 Final — cross-layer canonical execution-attempt retry qualification & freeze."""
 

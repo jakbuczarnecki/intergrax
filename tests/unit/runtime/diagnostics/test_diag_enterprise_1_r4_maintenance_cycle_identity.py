@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DIAG-ENTERPRISE-1-R4 maintenance cycle identity and projection health correctness."""
 

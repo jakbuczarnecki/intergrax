@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DG-001B4 — worker pre-B5 HostedBootstrapFailureRecord integration qualification."""
 

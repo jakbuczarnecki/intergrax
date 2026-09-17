@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DIAG-FOUNDATION-4 — consistent identity and diagnostic behavior across entrypoints."""
 

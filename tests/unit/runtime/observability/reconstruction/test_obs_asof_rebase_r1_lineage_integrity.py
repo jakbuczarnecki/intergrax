@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """OBS-ASOF-REBASE-R1 — E-scoped lineage reconstruction integrity."""
 

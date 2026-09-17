@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """Product observability dashboard real harness host composition (ONE-SPINE-2)."""
 

@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """HOST-DIAG-3 — HostedApplication failure → central diagnostic integration tests."""
 

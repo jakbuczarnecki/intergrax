@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """SCENARIO-PLATFORM-4 — LAB and production-attached scenario runtime profiles."""
 

@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """NPSC-5E/R2 Final — checkpoint & durable resume qualification and freeze."""
 

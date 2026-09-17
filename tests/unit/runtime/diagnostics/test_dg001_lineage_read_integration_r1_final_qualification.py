@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DG-001 lineage read integration R1 final qualification matrix (D8–D13, C1–C15, §69–§73)."""
 

@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """HARDEN-2A — deterministic multi-instance Problem persistence concurrency proofs."""
 

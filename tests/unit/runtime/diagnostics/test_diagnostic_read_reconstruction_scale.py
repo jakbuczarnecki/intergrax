@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """DIAG-READ-SCALE: request-scoped execution reconstruction reuse proofs."""
 

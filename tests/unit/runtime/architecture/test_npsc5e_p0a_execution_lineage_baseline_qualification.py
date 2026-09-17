@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """NPSC-5E-P0A — execution lineage baseline reconciliation & qualification."""
 

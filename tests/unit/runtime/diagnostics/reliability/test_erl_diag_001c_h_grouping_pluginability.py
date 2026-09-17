@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """ERL-DIAG-001C-H — public observation grouping SPI controls central Problem grouping."""
 

@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """HARDEN-4F — shared Mongo docker lifecycle + Mongo-backed product host helpers."""
 

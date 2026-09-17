@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """HARDEN-1D — DocumentStoreProblemPersistence must not report false write success."""
 

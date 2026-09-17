@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """OBS-DIAG-CONFORMANCE — canonical evidence → reconstruction → diagnostics E2E."""
 

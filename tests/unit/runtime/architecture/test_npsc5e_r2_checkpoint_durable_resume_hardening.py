@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """NPSC-5E/R2 — checkpoint durable resume hardening qualification."""
 

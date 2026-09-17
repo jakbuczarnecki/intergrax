@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """HARDENING-8 — diagnostic Problem persistence contract boundary."""
 

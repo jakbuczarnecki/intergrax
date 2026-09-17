@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """ERL-DIAG-001C — reliability grouping and occurrence identity tests."""
 

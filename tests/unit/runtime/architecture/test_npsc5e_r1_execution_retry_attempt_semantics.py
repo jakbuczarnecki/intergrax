@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """NPSC-5E/R1 — canonical execution-attempt retry & attempt semantics qualification."""
 

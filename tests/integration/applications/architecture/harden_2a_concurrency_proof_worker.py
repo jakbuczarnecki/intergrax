@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """HARDEN-2A/2C subprocess worker — cross-process Problem persistence and lifecycle proofs."""
 
