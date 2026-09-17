@@ -242,7 +242,7 @@ async def test_alternative_tool_order_executes_planner_selected_sequence(
     )
     bundle = build_runtime_bundle()
     state, _ = _build_runtime_state(bundle)
-    gathering = gather_incident_evidence(
+    gathering = await gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
@@ -274,7 +274,7 @@ async def test_observability_correlates_decision_trace_tool_trace_and_evidence(
     )
     bundle = build_runtime_bundle()
     state, _ = _build_runtime_state(bundle)
-    gathering = gather_incident_evidence(
+    gathering = await gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
@@ -365,12 +365,12 @@ async def test_scope_violation_emits_diagnostic_without_unresolved_conversion(
     assert domain_payload["completion_mode"] != COMPLETION_UNRESOLVED
 
 
-def test_gather_incident_evidence_requires_runtime_config_tool_invoker() -> None:
+async def test_gather_incident_evidence_requires_runtime_config_tool_invoker() -> None:
     bundle = build_runtime_bundle()
     state, _ = _build_runtime_state(bundle)
     state.context.config.tool_invoker = None
     with pytest.raises(RuntimeError, match="incident_runtime_tool_invoker_missing"):
-        gather_incident_evidence(
+        await gather_incident_evidence(
             runtime_state=state,
             registry=bundle.registry,
             scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
@@ -378,7 +378,7 @@ def test_gather_incident_evidence_requires_runtime_config_tool_invoker() -> None
         )
 
 
-def test_gather_incident_evidence_delegates_to_runtime_config_tool_invoker() -> None:
+async def test_gather_incident_evidence_delegates_to_runtime_config_tool_invoker() -> None:
     bundle = build_runtime_bundle()
     state, _ = _build_runtime_state(bundle)
     canonical = state.context.config.tool_invoker
@@ -386,7 +386,7 @@ def test_gather_incident_evidence_delegates_to_runtime_config_tool_invoker() -> 
     sentinel = _SentinelCanonicalInvoker(inner=canonical, registry=bundle.registry)
     state.context.config.tool_invoker = sentinel
 
-    gathering = gather_incident_evidence(
+    gathering = await gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
@@ -397,7 +397,7 @@ def test_gather_incident_evidence_delegates_to_runtime_config_tool_invoker() -> 
     assert sentinel.invoke_count > 0
 
 
-def test_incident_scoped_invoker_preserves_decorated_canonical_invoker() -> None:
+async def test_incident_scoped_invoker_preserves_decorated_canonical_invoker() -> None:
     bundle = build_runtime_bundle()
     state, _ = _build_runtime_state(bundle)
     canonical = state.context.config.tool_invoker
@@ -405,7 +405,7 @@ def test_incident_scoped_invoker_preserves_decorated_canonical_invoker() -> None
     decorated = _MarkedDecoratorInvoker(canonical)
     state.context.config.tool_invoker = decorated
 
-    gathering = gather_incident_evidence(
+    gathering = await gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),
@@ -416,7 +416,7 @@ def test_incident_scoped_invoker_preserves_decorated_canonical_invoker() -> None
     assert decorated.wrapped_invocations > 0
 
 
-def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
+async def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     class _OutOfScopeLLM(ScriptedIncidentInvestigationLLM):
@@ -450,7 +450,7 @@ def test_scope_rejection_does_not_invoke_canonical_tool_invoker(
     sentinel = _SentinelCanonicalInvoker(inner=canonical, registry=bundle.registry)
     state.context.config.tool_invoker = sentinel
 
-    gathering = gather_incident_evidence(
+    gathering = await gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id),

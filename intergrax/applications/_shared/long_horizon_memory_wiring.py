@@ -56,10 +56,8 @@ def resolve_long_horizon_memory_store(
     )
     catalog = MemoryStorePluginCatalog.from_discovery(discovery)
     ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id=None,
         integration_profile=env.integration_profile,
-        rag_stack=None,
     )
     return materialize_long_horizon_memory_store(plugin_id, ctx, catalog=catalog)
 

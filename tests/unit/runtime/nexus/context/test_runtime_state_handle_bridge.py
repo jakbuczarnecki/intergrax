@@ -146,7 +146,9 @@ async def test_synced_request_metadata_enables_rag_provider_collect() -> None:
             "metadata": dict(state.request.metadata),
         }
     )
-    handles = build_graph_provider_handles(
+    from intergrax.runtime.nexus.context.provider_handles import build_graph_provider_context_bundle
+
+    runtime, handles, sources = build_graph_provider_context_bundle(
         task,
         runtime_config=state.context.config,
         messages=[ChatMessage(role="user", content="question")],
@@ -155,7 +157,12 @@ async def test_synced_request_metadata_enables_rag_provider_collect() -> None:
         agent_id="agent",
         engine_id="default",
     )
-    ctx = ContextProviderContext(engine_id="default", handles=handles)
+    ctx = ContextProviderContext(
+        engine_id="default",
+        sources=sources,
+        runtime=runtime,
+        handles=handles,
+    )
     fragments = await provider.collect(request, ctx)
     assert fragments
     assert fragments[0].source == ContextFragmentSource.RAG

@@ -39,7 +39,7 @@ from intergrax.runtime.diagnostics.providers.problem_scope_provider import (
     PROBLEM_SCOPE_PROVIDER_ID,
     ProblemScopeProvider,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     create_problem_for_tests,
     document_store_occurrence_persistence_for_tests,
     document_store_problem_persistence_for_tests,

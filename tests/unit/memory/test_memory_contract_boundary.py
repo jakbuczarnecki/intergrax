@@ -12,11 +12,27 @@ from tests.unit.memory.memory_contract_boundary_ast import scan_memory_contracts
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 CONTRACTS_ROOT = REPO_ROOT / "intergrax" / "memory" / "contracts"
+_MEMORY_ROOT = REPO_ROOT / "intergrax" / "memory"
 
 
 def test_memory_contracts_do_not_import_implementation_modules() -> None:
     violations = scan_memory_contracts_tree(CONTRACTS_ROOT)
     assert not violations, "\n".join(v.as_message() for v in violations)
+
+
+def test_memory_package_does_not_import_applications_tier() -> None:
+    forbidden = "intergrax.applications"
+    for path in sorted(_MEMORY_ROOT.rglob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        assert forbidden not in text, f"{path} imports applications tier"
+
+
+def test_memory_resolver_does_not_import_rag_bootstrap() -> None:
+    resolver_root = _MEMORY_ROOT / "resolver"
+    forbidden = "intergrax.rag.bootstrap"
+    for path in sorted(resolver_root.rglob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        assert forbidden not in text, f"{path} imports RAG bootstrap tier"
 
 
 def test_public_user_profile_memory_reexports_canonical_models() -> None:

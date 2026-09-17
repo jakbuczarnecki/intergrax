@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4R0…MP-4R7 CLOSED** — **MP-4R8 — READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** (ADR-MP-009)
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — **MP-3A…MP-3H — APPROVED / CLOSED** — **MP-4 implementation — FORMALLY CLOSED** (MP-4R0…MP-4R8 **CLOSED**; ADR-MP-009) — **MP-4 documentation certification — CLOSED** (MP-4D1–D8) — **MP-5A — APPROVED / CLOSED** — **MP-5B — APPROVED / CLOSED** — **MP-5C — APPROVED / CLOSED** — **MP-5 ownership — FROZEN**
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4R8** — Final closure audit (`READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT`; formal MP-4 closure pending independent GitHub audit)
-**Next task:** Independent **MP-4** program audit on GitHub — **no further MP-4 implementation slices**
+**Current active task:** **MP-5F — NEXT** (source adapters / integration — **BLOCKED** until B2…B5; **MP-5F-B1 — CLOSED**; **MP-5F-B2 — NEXT**). MP-5E **`ContextViewComposer`** / **`DefaultContextViewComposer`** — **APPROVED / CLOSED** (`intergrax/contracts/context_view_composition.py`).
+**Previous:** **MP-5C — APPROVED / CLOSED** — principal visibility policy (`intergrax/contracts/context_view_visibility_policy.py`)
 
 ---
 
@@ -88,7 +88,8 @@ architecture hub:
 
 ```text
 MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
-→ MP-3 (work artifacts) → MP-4R (canonical Decision / Governance / Execution integration)
+→ MP-3 (work artifacts) → MP-4R (canonical Decision / Governance / Execution integration) — **implementation CLOSED**
+→ MP-4D (enterprise documentation & proof closure — active)
 → MP-5 (context view) → MP-6 (activity & evidence)
 → MP-7 (LKW adoption) → MP-8 (agent directory & external agents)
 → MP-9 (advanced UX / notifications / optional realtime)
@@ -157,7 +158,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Addressable shared work units assignable to principals and agents |
 | **Acceptance criteria** | WorkItems are durable and independently addressable; WorkItemState is not TaskState; multiple tasks/runs may relate to one WorkItem; stale authoritative mutations fail explicitly; Nexus does not own WorkItem lifecycle |
 | **Expected proof/evidence** | Contract tests; lifecycle tests; assignment authorization tests; concurrency/conflict tests; idempotency tests; provenance linkage to real four-part `ExecutionProvenanceRef` |
-| **Next implementation row** | **Independent MP-3C audit** — MP-3D **NOT STARTED** |
+| **Next implementation row** | **MP-5F — NEXT** (MP-5E **APPROVED / CLOSED**) |
 
 ---
 
@@ -166,7 +167,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **Ownership FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; runtime **IN PROGRESS** |
+| **Status** | **ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; **MP-3A…MP-3H — APPROVED / CLOSED** |
 | **Purpose** | Durable collaborative outputs with versioning and provenance. |
 | **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) — frozen by ADR-MP-004; full slice rows § COLLAB-WORK-3 |
 | **Reused domain capabilities** | UCL (consumption only); Memory indexing/retrieval; Proof Receipts attestation; MP-1 authority; MP-2 repository/CAS/idempotency patterns; optional `ExecutionProvenanceRef` |
@@ -180,7 +181,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Versioned collaborative artifacts with lineage |
 | **Acceptance criteria** | A WorkArtifactVersion is the authoritative collaborative output; versions remain addressable after executions end; publication preserves principal/work/execution lineage; current-version updates detect stale writes; atomic initial creation and subsequent publication via dedicated port (no dangling `current_version_id`, no orphan initial version) |
 | **Expected proof/evidence** | Contract tests; authorization/isolation tests; version/concurrency tests; idempotent initial create tests; idempotent publication tests; cross-process publication proof (MP-3E); provenance/evidence integration proof (MP-3G) |
-| **Next implementation row** | **Independent MP-3C audit** — MP-3D **NOT STARTED** |
+| **Next implementation row** | **MP-5F — NEXT** (**MP-5E — APPROVED / CLOSED**) |
 
 ### MP-3 architectural implementation slices
 
@@ -190,12 +191,12 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 |-------|-------|--------|
 | MP-3A | Contracts + invariants + `ArtifactContentRef` | APPROVED / CLOSED |
 | MP-3B | Ports + in-memory + `ArtifactPublicationRepository` (atomic initial create + publish) | APPROVED / CLOSED |
-| MP-3C | Publication service + MP-1 authority | READY_FOR_INDEPENDENT_AUDIT |
-| MP-3D | SQLite transactional persistence | NOT STARTED |
-| MP-3E | PostgreSQL + qualification | NOT STARTED |
-| MP-3F | Content storage adapters (after 3E) | NOT STARTED |
-| MP-3G | Execution/evidence integration | READY_FOR_INDEPENDENT_AUDIT |
-| MP-3H | Final independent review | NOT STARTED |
+| MP-3C | Publication service + MP-1 authority | APPROVED / CLOSED |
+| MP-3D | SQLite transactional persistence | APPROVED / CLOSED |
+| MP-3E | PostgreSQL + qualification | APPROVED / CLOSED |
+| MP-3F | Content storage adapters (after 3E) | APPROVED / CLOSED |
+| MP-3G | Execution/evidence integration | APPROVED / CLOSED |
+| MP-3H | Final enterprise certification | APPROVED / CLOSED |
 
 ---
 
@@ -206,12 +207,12 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **MP-4R0…MP-4R7 CLOSED** — **MP-4R8 READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT**; MP-4B/MP-4C/MP-4D **RETIRED** |
+| **Status** | **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED**; MP-4B/MP-4C/MP-4D **RETIRED** |
 | **Purpose** | Multiplayer **bindings/projections** over canonical Decision, Governance/HITL, Execution continuation, Evidence, and Diagnostics — no duplicate authorities |
 | **Owning domain** | [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) + Collaborative Work for work primitives |
 | **Dependencies** | MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3 ownership **FROZEN**; canonical Decision + GR-5 continuation |
 | **REUSED EXISTING CAPABILITY** | Decision System; Decision human review; Governance/HITL; `ExecutionContinuationPort`; Evidence Plane; Diagnostics |
-| **NEW CAPABILITY REQUIRED (future)** | Collaborative Decision binding / projection (**MP-4R4+**, design gate only) |
+| **NEW CAPABILITY REQUIRED (delivered)** | Collaborative Decision binding / projection — **MP-4R4 CLOSED** |
 | **Explicit out of scope (SUPERSEDED / HISTORICAL)** | Legacy MP-4 program rows treating Decision, Approval, `DecisionResponse`, or public Nexus HITL bridge as **NEW Multiplayer primitives** |
 | **Architecture/ADR gate** | ADR-MP-009 **Accepted** at MP-4R0 |
 | **User-visible outcome** | Collaborative work associated with canonical decisions and governed execution without parallel decision/approval stores |
@@ -226,9 +227,24 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-4R3 | Execution continuation integration | **CLOSED** |
 | MP-4R4 | Collaborative decision binding | **CLOSED** |
 | MP-4R5 | Evidence Plane adoption | **CLOSED** |
-| MP-4R6 | Legacy removal & migration | **READY_FOR_INDEPENDENT_AUDIT** |
+| MP-4R6 | Legacy removal & migration | **CLOSED** |
 | MP-4R7 | Enterprise integration qualification | **CLOSED** |
-| MP-4R8 | Final closure audit | **READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** |
+| MP-4R8 | Final closure audit | **CLOSED** |
+
+### MP-4D — Enterprise documentation & proof closure
+
+**Does not reopen MP-4 implementation.** Canonical architecture: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md).
+
+| Stage | Status | Summary |
+|-------|--------|---------|
+| **MP-4D1** | **CLOSED** | Synchronize documentation state with closed implementation |
+| **MP-4D2** | **CLOSED** | Consolidate canonical architecture entry point |
+| **MP-4D3** | **CLOSED** | Visual architecture layer (Mermaid in architecture SSOT) |
+| **MP-4D4** | **CLOSED** | E2E proof / invariant-to-test matrix |
+| **MP-4D5** | **CLOSED** | Provider/persistence qualification boundaries |
+| **MP-4D6** | **CLOSED** | Enterprise boundary & pluginability certification |
+| **MP-4D7** | **CLOSED** | Documentation regression gates |
+| **MP-4D8** | **CLOSED** | Final enterprise documentation audit |
 
 ### Legacy MP-4 (historical)
 
@@ -244,22 +260,74 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 
 ## MP-5 - Principal-scoped ContextView
 
+**MP-5 ownership — FROZEN** — [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) · [ADR-MP-006](../../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**.
+
+| Slice | Purpose | Status |
+|-------|---------|--------|
+| MP-5A | Ownership, contracts architecture, ADR, docs sync | **APPROVED / CLOSED** |
+| MP-5B | Core typed Principal-scoped ContextView contracts | **APPROVED / CLOSED** |
+| MP-5C | Principal-scope visibility policy | **APPROVED / CLOSED** |
+| MP-5D | Source composition ports | **APPROVED / CLOSED** |
+| MP-5E | Default composition implementation | **CLOSED** |
+| MP-5F | Source adapters / integration | **NEXT** |
+| MP-5G | E2E / isolation qualification | PLANNED |
+| MP-5H | Final MP-5 enterprise certification | PLANNED |
+
+### MP-5A — ContextView ownership & contract architecture gate
+
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | PLANNED / NOT STARTED |
-| **Purpose** | Principal-scoped context view composing UCL, Context Engineering, Memory, and Knowledge. |
-| **Likely owning domain plans** | `UNIFIED_CONTEXT_LIFECYCLE.md`, `CONTEXT_ENGINEERING.md`, `MEMORY.md`, `RAG.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
-| **Dependencies** | MP-1 accepted |
-| **Exact scope** | Principal-scoped ContextView policy and composition over UCL, Context Engineering, Memory, and Knowledge |
-| **REUSED EXISTING CAPABILITY** | UCL, Context Engineering, Memory, RAG/Knowledge, Token Optimization (`TOKEN-10E-*` etc.) |
-| **NEW CAPABILITY REQUIRED** | ContextView contract and principal-scope composition policy |
-| **Explicit out of scope** | Relabeling `TOKEN-10E-*` or UCL rows as MP-5 implementation |
-| **Architecture/ADR gate** | Principal-specific context, private/shared memory boundary, least-context external access, and UCL ownership accepted; ADR-MP-006 completed |
-| **Pre-implementation domain-sync gate** | Bounded ownership check → domain architecture/plan sync with MP-5 rows |
-| **User-visible outcome** | Membership-aware context visible to each collaborative principal |
-| **Acceptance criteria** | Context visibility is principal-specific and membership/policy-aware; private memory is not automatically shared; shared state is not automatically model context; external agents receive minimum required context and resources; UCL remains lifecycle authority |
-| **Expected proof/evidence** | Context contract tests; isolation/authorization tests; private-to-shared promotion tests; least-context external-agent tests; integration and provenance proof |
+| **Status** | **APPROVED / CLOSED** |
+| **Purpose** | Freeze semantic owner, public contract boundary, anti-substitution, and MP-5 decomposition before runtime. |
+| **Owning domain** | [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) |
+| **Dependencies** | MP-1 **CLOSED** |
+| **REUSED EXISTING CAPABILITY** | MP-1 authority; UCL; CE; Memory; RAG/Knowledge; Token Optimization |
+| **NEW CAPABILITY REQUIRED** | None at MP-5A (contracts land in MP-5B) |
+| **Explicit out of scope** | Runtime resolver, adapters, storage, providers, Nexus contract surface |
+| **Architecture/ADR gate** | **ADR-MP-006 Accepted** |
+| **Acceptance criteria** | Single owner; `ContextView ≠ storage`; dependency direction frozen; threat model documented |
+| **Next step** | **MP-5F — NEXT** |
+
+### MP-5B — Core ContextView contracts
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P2 |
+| **Status** | **MP-5B — APPROVED / CLOSED** |
+| **Purpose** | Typed, extra-forbid Principal-scoped ContextView contracts in Collaborative Work namespace |
+| **Owning domain plan** | [`plan/COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) |
+| **Dependencies** | MP-5A **CLOSED** |
+| **REUSED EXISTING CAPABILITY** | `EffectiveAuthorityRequest`, `WorkArtifactVersionRef`, domain source locator refs |
+| **NEW CAPABILITY REQUIRED** | `intergrax/contracts/context_view.py` — request/scope/entry/ref/result |
+| **Explicit out of scope** | Default composer (MP-5E); source adapters (MP-5F); composition ports (MP-5D) |
+| **Expected proof/evidence** | `test_context_view_contracts.py`; architecture gates; docs regression |
+| **Next step** | **MP-5C — APPROVED / CLOSED** |
+
+### MP-5C — Principal-scope visibility policy
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P2 |
+| **Status** | **MP-5C — APPROVED / CLOSED** |
+| **Purpose** | Fail-closed principal visibility eligibility (`ContextViewVisibilityPolicy` + `ContextViewPolicyDecision`) |
+| **NEW CAPABILITY REQUIRED** | `intergrax/contracts/context_view_visibility_policy.py`; default `intergrax/collaborative_work/context_view_visibility.py` |
+| **REUSED EXISTING CAPABILITY** | MP-1 `CollaborativeWorkAuthorityResolver` |
+| **Explicit out of scope** | Composition ports (MP-5D); retrieval; source adapters |
+| **Expected proof/evidence** | `test_context_view_visibility_policy.py`; architecture gates; docs regression |
+| **Next step** | **MP-5D — APPROVED / CLOSED** |
+
+### MP-5D — Source composition ports
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P2 |
+| **Status** | **MP-5D — APPROVED / CLOSED** |
+| **Purpose** | **source composition ports** — typed per-domain source ports for reference-first candidates after `ContextViewPolicyDecision` |
+| **NEW CAPABILITY REQUIRED** | `intergrax/contracts/context_view_source_ports.py` |
+| **Explicit out of scope** | Default composer (MP-5E); source adapters (MP-5F); retrieval; storage |
+| **Expected proof/evidence** | `test_context_view_source_ports.py`; architecture gates; docs regression |
+| **Next step** | **MP-5F — NEXT** |
 
 ---
 

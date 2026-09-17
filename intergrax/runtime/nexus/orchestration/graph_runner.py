@@ -27,10 +27,10 @@ from intergrax.runtime.cancellation.coordinator import (
     CancellationCoordinator,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.request_contract import human_request_event_payload
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
+    canonical_execution_is_resumed,
     establish_canonical_hitl_pause,
     execution_continuation_identity_for_task,
     require_internal_hitl_continuation,
@@ -390,7 +390,25 @@ class NexusGraphRunner:
             )
 
         if executions and executions[-1].status == AgentExecutionStatus.NEEDS_INPUT:
-            if HumanPauseCoordinator.is_resumed(task):
+            run_id, attempt_id = self.graph_executor.execution_identity.require()
+            execution_id = require_active_execution_id()
+            runtime_checkpoint = task.runtime.orchestration.runtime_checkpoint
+            if runtime_checkpoint is not None:
+                execution_id = next(
+                    entry.execution_id
+                    for entry in runtime_checkpoint.execution_tree.entries
+                    if entry.parent_execution_id is None
+                )
+            continuation_identity = execution_continuation_identity_for_task(
+                task,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+            )
+            if canonical_execution_is_resumed(
+                self.hitl_continuation,
+                identity=continuation_identity,
+            ):
                 last = executions[-1]
                 executions[-1] = last.model_copy(
                     update={

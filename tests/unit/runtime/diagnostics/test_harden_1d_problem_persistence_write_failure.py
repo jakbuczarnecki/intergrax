@@ -23,7 +23,7 @@ from testing_support.delegating_failing_conditional_document_store import (
     DelegatingFailingConditionalDocumentStore,
     DocumentStoreWriteFailureMode,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     document_store_problem_persistence_for_tests,
 )
 

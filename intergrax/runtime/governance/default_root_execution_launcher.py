@@ -69,6 +69,10 @@ class DefaultRootExecutionLauncher(
                 collaborative_authority_scopes=request.collaborative_authority_scopes,
                 effective_authority_decision=request.effective_authority_decision,
                 root_execution_operation=request.root_execution_operation,
+                task_id=request.task_id,
+                run_id=request.run_id,
+                attempt_id=request.attempt_id,
+                execution_id=request.execution_id,
             )
         )
         launch_disposition = _DISPOSITION_MAP.get(

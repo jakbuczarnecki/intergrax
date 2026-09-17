@@ -16,8 +16,14 @@ R1_IMPLEMENTATION_SHA = "455d3b216f0ad56ea9cdf9db6e0f760b50063a81"
 # Re-advanced after NPSC-5F/R1 durable evidence re-signoff (port adapter + resilience; R1 invariants).
 # Re-advanced H9 pre-gate: contract-pure event sink delivery + bounded critical completion (29d6dd660, 8621ee133).
 # HARDENING_9_NPSC5F: ``runtime_event.py`` contract shim (OBS-CONTRACT-BOUNDARY-1-R1); R1 durability unchanged.
-# Prior re-signoff baseline: ``ed780d47e7bc60e0ac019fb9bee8961dac9493c5``.
-R1_POST_R2_QUALIFIED_BASELINE_SHA = "a2b33ba965c57cd3c812720f7b5f84b40b2b32f1"
+# HARDENING_9_NPSC5F V2: OBS-CONTRACT-BOUNDARY-2 / persistence contract cleanup / runtime history bounds
+# (``event_bus.py``, ``persistence_contract.py``) — contract-first; durable commit path unchanged.
+# Prior re-signoff baseline: ``a2b33ba965c57cd3c812720f7b5f84b40b2b32f1`` (V2 freeze @ ``22c4793da``).
+# HARDENING_9_NPSC5F V3: OBS-RUNTIME-HISTORY-BOUNDS-R1 + identity remediation (``36de9ed76``, ``4c809e84a``);
+# ``event_bus.py`` event_count + composition validation; durable commit-before-delivery unchanged.
+# HARDENING_9_NPSC5F V4: OBS-RUNTIME-HISTORY-BOUNDS-R3 (``39265e263``) + platform-owned validation
+# (``82d7989bf`` on ``runtime_event_history_validation.py``); ``history_strategy`` wiring only.
+R1_POST_R2_QUALIFIED_BASELINE_SHA = "33576b80521dda7dfc0e5895c943f91dfebffa94"
 
 _R1_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {

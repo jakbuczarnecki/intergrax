@@ -20,8 +20,17 @@ from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 # OBS-ASOF-REBASE-R1: E-scoped lineage port + fail-closed disable of current lineage at historical E.
 # HARDENING_9_NPSC5F: OBS-CONTRACT-BOUNDARY-1 / R1 — contract-owned runtime_event, reconstruction DTOs,
 # positioned evidence boundary; qualified re-freeze @ ``a2b33ba965c57cd3c812720f7b5f84b40b2b32f1``.
+# HARDENING_9_NPSC5F V2: OBS-CONTRACT-BOUNDARY-2, persistence port type graph, runtime history bounds
+# (78f4350c8, 1d2936c4c, 550227883); qualified re-freeze @ ``22c4793da4ba751fff6c93f780a7f6848650a5d9``.
+# HARDENING_9_NPSC5F V3: OBS-R1 history bounds + probe identity remediation (``36de9ed76``, ``4c809e84a``).
 # Prior OBS-ASOF-REBASE-R1 baseline: ``52b9dc41ed7dd83e5516d852f1ef7295cc0b10af``.
-NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "a2b33ba965c57cd3c812720f7b5f84b40b2b32f1"
+# HARDENING_9_NPSC5F V4: OBS-RUNTIME-HISTORY-BOUNDS-R3 (``39265e263``) + platform-owned validation
+# (``82d7989bf``); Nexus metric-scope wiring classified unrelated (``intergrax/runtime/nexus/``).
+# HARDENING_9_NPSC5F: OBS-DELIVERY-QOS-SCALE (``97503fd39``, ``b84eb1c2b``) — admission port,
+# CRITICAL reserved capacity, atomic non-critical admission; qualified re-freeze @ ``1c21eb774…``.
+# HARDENING_9_NPSC5F_EVENT_DELIVERY_QOS_R2_R3: R2 shutdown linearization (``f6b4b542b``),
+# R3 fail-closed pending enqueue drain timeout (``eba9f6bff``); qualified re-freeze @ ``eba9f6bff…``.
+NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "eba9f6bff1e19c14e9590ff22fb6312e27463450"
 
 NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
 NPSC_5F_R1_FINAL_SHA = "455c09f342f995ac0a6fcb03ffef2f4d3e36a447"

@@ -2,8 +2,14 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.llm.messages import ChatMessage
+from intergrax.memory.contracts.memory_control import (
+    MemoryControlPlane,
+    MemoryControlRecallRequest,
+    user_memory_scope,
+)
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.runtime.nexus.session.session_message_append_result import SessionMessageAppendResult
 from intergrax.runtime.nexus.tracing.session.session_consolidation_diag import SessionConsolidationDiagV1
@@ -65,6 +71,7 @@ class SessionManager:
         user_turns_consolidation_interval: Optional[int] = GLOBAL_SETTINGS.default_user_turns_consolidation_interval,
         consolidation_cooldown_seconds: Optional[int] = GLOBAL_SETTINGS.default_consolidation_cooldown_seconds,
         memory_consolidation_mode: str = "manual",
+        memory_control_plane: Optional["MemoryControlPlane"] = None,
     ) -> None:
         """
         Initialize a new SessionManager instance.
@@ -94,6 +101,7 @@ class SessionManager:
 
         # High-level managers for profile-based instructions (optional).
         self._user_profile_manager = user_profile_manager
+        self._memory_control_plane = memory_control_plane
         self._organization_profile_manager = organization_profile_manager
 
         # Optional service that can consolidate a single session into
@@ -420,25 +428,33 @@ class SessionManager:
 
     async def search_user_longterm_memory(
         self,
-        user_id: str,
+        identity: RequestIdentity,
         query: str,
         *,
         top_k: Optional[int] = None,
         score_threshold: Optional[float] = None,
     ) -> Optional[Dict[str, Any]]:
         """
-        Delegate long-term memory retrieval to UserProfileManager (if available).
-        Engine should not know how the profile manager implements retrieval.
+        Recall long-term user memory via the canonical Memory Control Plane.
         """
-        if self._user_profile_manager is None:
+        if self._memory_control_plane is None:
             return None
 
-        return await self._user_profile_manager.search_longterm_memory(
-            user_id=user_id,
-            query=query,
-            top_k=top_k,
-            score_threshold=score_threshold,
+        from intergrax.runtime.nexus.context.memory_context_invocation import (
+            engine_ltm_recall_from_control_plane,
         )
+
+        scope = user_memory_scope(identity)
+        recall = await self._memory_control_plane.recall(
+            identity,
+            scope,
+            MemoryControlRecallRequest(
+                query=query,
+                top_k=top_k if top_k is not None else 6,
+                score_threshold=score_threshold,
+            ),
+        )
+        return engine_ltm_recall_from_control_plane(recall)
 
     async def search_session_semantic_recall(
         self,
@@ -481,6 +497,9 @@ class SessionManager:
     def user_profile_manager(self) -> UserProfileManager | None:
         return self._user_profile_manager
 
+    @property
+    def memory_control_plane(self) -> Optional["MemoryControlPlane"]:
+        return self._memory_control_plane
 
     # ------------------------------------------------------------------
     # Organization profile memory – prompt-level instructions (per session)

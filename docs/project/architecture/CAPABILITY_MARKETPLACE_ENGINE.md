@@ -64,12 +64,99 @@ Normative composition (implemented slices in parentheses):
 | Provenance | `intergrax.contracts.capability_catalog.provenance` | On catalog entries |
 | Availability projection | Discovery evidence + listing views | Not install/enable authority |
 | Marketplace visibility | Listing + source identity | Stage 7 private sources |
-| Recommendation host | **Gap** — no dedicated recommendation SPI (ME-RB1-006) |
+| Recommendation host | `intergrax.capability_catalog.recommendation` | `CapabilityRecommendationStrategy` (ME-5; governed input only) |
 | Lifecycle handoff contracts | `intergrax.contracts.marketplace` + `intergrax.marketplace.handoff` (ME-RB4) |
 | Discovery → selection → handoff traceability | `intergrax.contracts.marketplace.handoff_traceability` + `intergrax.marketplace.handoff_traceability` (ME-10) |
 | Usage attribution handoff | `intergrax.contracts.capability_metering` | Events ≠ billing |
 
 **Join surface:** `MarketplaceCatalogService` joins Stage-3 discovery candidates with marketplace product metadata keyed by canonical identity.
+
+### 3.1 Canonical end-to-end architecture (visual)
+
+Normative responsibility boundary: Marketplace discovers, narrows, recommends, and hands off **intent**; domain authorities own install/activate/trust/execution. `selection ≠ authorization`, `recommendation ≠ authorization`, `handoff accepted ≠ installed ≠ active ≠ execution`.
+
+```mermaid
+flowchart TB
+  subgraph providers["Catalog providers (domain + external)"]
+    AGP["Agent vertical adapter"]
+    TOP["Tool vertical adapter"]
+    SKP["Skill vertical adapter"]
+    CUS["Custom CapabilityCatalogSource"]
+  end
+
+  subgraph ports["Public replaceable contracts"]
+    CCS["CapabilityCatalogSource"]
+    META["MarketplaceMetadataSource"]
+    PROJ["MarketplaceListingProjection"]
+  end
+
+  providers --> CCS
+  CCS --> FED["FederatedCapabilityCatalog"]
+  META --> MCS["MarketplaceCatalogService"]
+  PROJ --> MCS
+  FED --> MCS
+
+  MCS --> VIS["Visibility filtering"]
+  VIS --> SEA["CapabilitySearchStrategy"]
+  SEA --> RNK["CapabilityRanker"]
+  RNK --> GOV["CapabilityGovernanceEvaluator"]
+  GOV --> REC["CapabilityRecommendationStrategy"]
+  REC --> SEL["Explicit selection"]
+  SEL --> HO["Typed lifecycle handoff"]
+
+  subgraph lifecycle_auth["Lifecycle authority (not Marketplace)"]
+    AD["Agent Distribution"]
+    TD["Tool domain"]
+    SD["Skill domain"]
+  end
+
+  HO --> AD
+  HO --> TD
+  HO --> SD
+
+  EE["Execution Engine — execution authority"]
+  AD --> EE
+  TD --> EE
+  SD --> EE
+
+  subgraph support["Parallel planes (non-authoritative)"]
+    OBS["MarketplaceDiagnosticObserver"]
+    CAC["CapabilityCatalogSnapshotCache"]
+    MAPI["MachineCapabilityAcquisition API"]
+    USG["Usage attribution / commercial display"]
+  end
+
+  FED -.-> CAC
+  MCS -.-> OBS
+  MCS -.-> MAPI
+  MCS -.-> USG
+```
+
+Canonical logical pipeline (same story as the diagram):
+
+```text
+Domain / external catalog providers
+        ↓
+public CapabilityCatalogSource contracts
+        ↓
+Federated Capability Catalog
+        ↓
+Marketplace catalog/listing projection
+        ↓
+visibility filtering
+        ↓
+search → ranking → governance narrowing → recommendation
+        ↓
+explicit selection
+        ↓
+typed lifecycle handoff
+        ↓
+domain-owned lifecycle authority (Agent / Tool / Skill)
+        ↓
+Execution Engine (execution only — outside Marketplace)
+```
+
+**Not Marketplace:** trust authority, governance engine of record, billing/settlement, Nexus orchestration, or runtime registry mutation.
 
 ---
 
@@ -250,19 +337,21 @@ Platform operates on **contracts**, not hardcoded consumers → implementations.
 
 ## 10. Plugin architecture
 
-Replaceable variation points (post ME-RB2):
+Replaceable variation points (contract-first; defaults are **not** the platform contract):
 
-| Variation | Contract today | Verdict |
-| --------- | -------------- | ------- |
-| Catalog source | `CapabilityCatalogSource` (`intergrax.contracts.capability_catalog`) | ENTERPRISE_READY |
-| Ranker | `CapabilityRanker` | ENTERPRISE_READY |
-| Governance evaluator | contracts + adapter evaluators | ENTERPRISE_READY |
-| Listing projection | `MarketplaceListingProjection` + `DefaultMarketplaceListingProjection` | ENTERPRISE_READY |
-| Marketplace metadata backend | `MarketplaceMetadataSource` + `InMemoryMarketplaceMetadataSource` | ENTERPRISE_READY |
-| Search | `CapabilitySearchStrategy` + `DefaultMarketplaceListingTextSearchStrategy` | ENTERPRISE_READY (ME-5) |
-| Recommendation | `CapabilityRecommendationStrategy` + `DefaultTopRankedCapabilityRecommendationStrategy` | ENTERPRISE_READY (ME-5) |
-| Availability evidence | typed evidence contracts | PARTIAL |
-| Lifecycle handoff | `MarketplaceLifecycleHandoffRequest` + domain-owned handoff ports | ENTERPRISE_READY (ME-RB4-C1) |
+| Mechanism | Public contract | Default implementation | Custom implementation |
+| --------- | --------------- | ---------------------- | --------------------- |
+| Catalog source | `CapabilityCatalogSource` (`intergrax.contracts.capability_catalog`) | Domain adapters + `FederatedCapabilityCatalog` | Yes (ME-RB2 custom source proofs) |
+| Metadata source | `MarketplaceMetadataSource` | `InMemoryMarketplaceMetadataSource` / federated wiring | Yes |
+| Listing projection | `MarketplaceListingProjection` | `DefaultMarketplaceListingProjection` | Yes |
+| Search | `CapabilitySearchStrategy` | `DefaultMarketplaceListingTextSearchStrategy` | Yes (ME-5) |
+| Ranking | `CapabilityRanker` | Stable identity / keyword rankers | Yes |
+| Governance | `CapabilityGovernanceEvaluator` + evidence DTOs | Vertical adapter evaluators | Yes |
+| Recommendation | `CapabilityRecommendationStrategy` | `DefaultTopRankedCapabilityRecommendationStrategy` | Yes (ME-5; governed candidates only) |
+| Diagnostics observer | `MarketplaceDiagnosticObserver` | `NoOpMarketplaceDiagnosticObserver` | Yes (ME-10) |
+| Snapshot / cache | `CapabilityCatalogSnapshotCache` (+ observer ports) | `BoundedInMemoryCapabilityCatalogSnapshotCache` / NoOp | Yes (ME-11) |
+| Lifecycle handoff handler | `MarketplaceLifecycleHandoffHandler` + typed payloads | Vertical handlers + `CapabilityHandoffDeliveryService` | Yes (ME-RB4) |
+| Availability evidence | typed evidence contracts on catalog entries | baseline availability-preserving evaluator | PARTIAL (evidence depth; not lifecycle authority) |
 
 Do **not** add empty Protocols without semantics (ME-RB2 scope).
 
@@ -575,10 +664,13 @@ Common Marketplace (federated catalog: Agent + Tool + Skill listings)
 Agent Distribution  │  Tool acquisition  │  Skill acquisition
     (independent lifecycle authorities — no universal mixed engine)
     ↓ MixedCapabilityCompositionReadiness (read-only gate)
-runtime composition (registry projection + application_tool_registry + skill host wiring)
-    ↓ HarnessHostRuntime.execution.execute(Task)
+application composition (registry projection + application_tool_registry + application_skill_registry)
+    ↓ canonical runtime-owned HostSkillCatalogWiring + Tool invoker injection
+HarnessHostRuntime.execution.execute(Task)   ← Task callers never inject infrastructure Skill wiring manually
 Agent principal consumes bound Skill context + invokes Tool → deterministic mixed output
 ```
+
+**ME-16-C1 (canonical skill wiring):** `application_skill_registry` is sufficient public composition input (parity with `application_tool_registry`). Execution injects `HostSkillCatalogWiring` into runtime request metadata; tests must not attach skill wiring on `Task.metadata`.
 
 **ME-16 hard invariants:** Mixed composition does not collapse lifecycle authorities; Agent, Tool and Skill preserve independent identities; execution begins only after all required capabilities are ready; Skill remains non-executable; Marketplace remains discovery/handoff plane only.
 
@@ -769,6 +861,7 @@ Proofs: `tests/unit/marketplace/test_me11_scale_resilience_caching.py`, federati
 
 Enforced in tests:
 
+- `tests/unit/docs/test_capability_marketplace_canonical_documentation_gates.py` (ME-18-DOC-Q1 canonical doc invariants)
 - `tests/unit/marketplace/test_marketplace_architecture_gates.py`
 - `tests/unit/marketplace/test_common_marketplace_engine_rb1_gates.py`
 - `tests/unit/capability_catalog/test_architecture_gates.py`

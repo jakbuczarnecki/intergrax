@@ -300,6 +300,7 @@ def run_offline_governed_contractor_demo(
         authorization_boundary=authorization_boundary,
         invocation_dispatch=GovernedProviderInvocationDispatchGate(
             store=invocation_store,
+            clock=lambda: _T0,
         ),
     )
     recovery_attestor = build_deterministic_test_attestor(

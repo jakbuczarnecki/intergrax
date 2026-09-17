@@ -12,7 +12,9 @@ from pathlib import Path
 import pytest
 
 from intergrax.applications._shared.application_build_context import (
+    ApplicationPythonSyntaxError,
     materialize_application_build_context,
+    validate_canonical_application_python_syntax,
 )
 from intergrax.applications._shared.application_runtime_graph import (
     agent_distribution_name,
@@ -112,6 +114,23 @@ def _build_transitive_fixture(root: Path) -> None:
             _agent_pyproject(dist=agent_distribution_name(agent_dir), deps=deps),
         )
         _write(root / "agents" / agent_dir / "mod.py", f"NAME = {agent_dir!r}\n")
+
+
+@pytest.mark.gate
+def test_canonical_application_python_syntax_gate() -> None:
+    validate_canonical_application_python_syntax(REPO)
+
+
+@pytest.mark.gate
+@pytest.mark.parametrize("app", ["local_workspace_application", "lab_application"])
+def test_materialized_runtime_context_python_compiles(app: str, tmp_path: Path) -> None:
+    out = tmp_path / "ctx"
+    materialize_application_build_context(
+        repo_root=REPO,
+        application=app,
+        output=out,
+        pkg_port=8020 if "local" in app else 8090,
+    )
 
 
 @pytest.mark.gate
@@ -264,6 +283,35 @@ def test_unexpected_agent_directory_fails_closed(
 
     monkeypatch.setattr(mod, "_copy_filtered_tree", sneaky_copy)
     with pytest.raises(ValueError, match="DOCKER_ISOLATION_FAILED"):
+        materialize_application_build_context(
+            repo_root=repo,
+            application="example_application",
+            output=out,
+            pkg_port=8000,
+        )
+
+
+@pytest.mark.gate
+def test_invalid_materialized_runtime_context_syntax_fail_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from intergrax.applications._shared import application_build_context as mod
+
+    repo = tmp_path / "repo"
+    _build_transitive_fixture(repo)
+    out = tmp_path / "ctx"
+    real_copy = mod._copy_filtered_tree
+
+    def sneaky_copy(src: Path, dst: Path, **kwargs):  # type: ignore[no-untyped-def]
+        result = real_copy(src, dst, **kwargs)
+        if src.name == "example_application":
+            (dst / "syntax_trap.py").write_text("def broken(\n", encoding="utf-8")
+        return result
+
+    monkeypatch.setattr(mod, "_copy_filtered_tree", sneaky_copy)
+    with pytest.raises(
+        ApplicationPythonSyntaxError, match="DOCKER_RUNTIME_CONTEXT_SYNTAX_FAILED"
+    ):
         materialize_application_build_context(
             repo_root=repo,
             application="example_application",

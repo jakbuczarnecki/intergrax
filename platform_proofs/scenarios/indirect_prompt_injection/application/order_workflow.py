@@ -15,7 +15,7 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
 )
 from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 from intergrax.runtime.nexus.tools.investigation_proof import InvestigationProof
-from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
+from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop_async
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -216,7 +216,7 @@ def _append_tool_trace(
     )
 
 
-def execute_order_workflow(
+async def execute_order_workflow(
     *,
     runtime_state: RuntimeState,
     registry: ToolRegistry,
@@ -289,7 +289,7 @@ def execute_order_workflow(
     loop_result = None
     investigation_proof: InvestigationProof | None = None
     try:
-        loop_result = run_bounded_tool_loop(
+        loop_result = await run_bounded_tool_loop_async(
             state=runtime_state,
             invoker=invoker,
             tool_planner=planner,

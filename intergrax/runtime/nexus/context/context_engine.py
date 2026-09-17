@@ -33,7 +33,18 @@ from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
     SessionHistorySnapshot,
 )
-from intergrax.context.dedup import dedup_fragments_by_hash
+from intergrax.context.policy.pipeline import (
+    ContextPolicyStrategies,
+    default_context_policy_strategies,
+)
+from intergrax.context.policy.authority import filter_fragments_by_authority_contract
+from intergrax.context.policy.hard_stages import run_hard_policy_pre_stages
+from intergrax.context.policy.invariants import (
+    build_fragment_invariant_snapshots,
+    validate_policy_pipeline_result,
+)
+from intergrax.context.policy.scope_isolation import isolate_assembly_scope
+from intergrax.context.protocols import ContextPolicyPipeline
 from intergrax.context.formatter import (
     DefaultContextFormatter,
     merge_fragment_messages,
@@ -53,12 +64,9 @@ from intergrax.runtime.nexus.context.context_compiler_models import (
 )
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
-from intergrax.runtime.wiring.context_runtime_bridge import (
-    CONTEXT_OPTIMIZATION_POLICY_HANDLE,
-    resolve_context_optimization_policy,
-)
+from intergrax.runtime.wiring.context_runtime_bridge import resolve_context_optimization_policy
+from intergrax.runtime.nexus.context.assembly_runtime_deps import ContextAssemblyRuntimeDependencies
 from intergrax.runtime.nexus.context.ucl_orchestration import (
-    NEXUS_UCL_RUNTIME_HANDLE,
     NexusUCLExecutionError,
     NexusUCLExecutionReason,
     NexusUCLRuntimeDependencies,
@@ -95,12 +103,11 @@ def _compile_preserved_planned_context(
 
 
 def _resolve_optimization_policy(
-    ctx: ContextProviderContext,
-    runtime_config: RuntimeConfig,
+    runtime: ContextAssemblyRuntimeDependencies,
 ) -> ContextOptimizationPolicy | None:
     return resolve_context_optimization_policy(
-        runtime_config,
-        direct_policy=ctx.handles.get(CONTEXT_OPTIMIZATION_POLICY_HANDLE),
+        runtime.runtime_config,
+        direct_policy=runtime.optimization_policy,
     )
 
 
@@ -116,6 +123,7 @@ class DefaultNexusContextEngine:
         validator: DefaultContextValidator | None = None,
         ranker: DefaultContextRanker | None = None,
         formatter: DefaultContextFormatter | None = None,
+        policy_pipeline: ContextPolicyPipeline | None = None,
     ) -> None:
         self._engine_id = engine_id
         self._registry = registry or ContextPluginRegistry()
@@ -123,6 +131,11 @@ class DefaultNexusContextEngine:
         self._validator = validator or DefaultContextValidator()
         self._ranker = ranker or DefaultContextRanker()
         self._formatter = formatter or DefaultContextFormatter()
+        if policy_pipeline is None:
+            from intergrax.context.policy.pipeline import ContextCrossSourcePolicyPipeline
+
+            policy_pipeline = ContextCrossSourcePolicyPipeline()
+        self._policy_pipeline = policy_pipeline
 
     @property
     def engine_id(self) -> str:
@@ -131,6 +144,16 @@ class DefaultNexusContextEngine:
     @property
     def registry(self) -> ContextPluginRegistry:
         return self._registry
+
+    def _resolve_policy_strategies(self) -> ContextPolicyStrategies:
+        defaults = default_context_policy_strategies()
+        return ContextPolicyStrategies(
+            score_normalizer=self._registry.score_normalizer or defaults.score_normalizer,
+            semantic_deduper=self._registry.semantic_deduper or defaults.semantic_deduper,
+            conflict_resolver=self._registry.conflict_resolver or defaults.conflict_resolver,
+            ranker=self._registry.ranker or self._ranker,
+            budget_allocator=self._registry.allocator or defaults.budget_allocator,
+        )
 
     async def assemble(
         self,
@@ -156,15 +179,18 @@ class DefaultNexusContextEngine:
         provider_ctx: ContextProviderContext | None = None,
     ) -> AssembledContext:
         ctx = provider_ctx or ContextProviderContext(engine_id=self._engine_id)
-        runtime_config: RuntimeConfig | None = ctx.handles.get("runtime_config")
-        raw_messages: list[ChatMessage] = list(ctx.handles.get("messages") or [])
-        max_output_tokens = ctx.handles.get("max_output_tokens")
+        runtime = ctx.runtime
+        if runtime is None:
+            raise ValueError(
+                "ContextProviderContext.runtime is required for canonical assembly "
+                "(explicit ContextAssemblyRuntimeDependencies; legacy handles are not hydrated)"
+            )
+        runtime_config = runtime.runtime_config
+        raw_messages: list[ChatMessage] = list(runtime.base_messages)
+        max_output_tokens = runtime.max_output_tokens
 
-        if runtime_config is None:
-            raise ValueError("ContextProviderContext.handles must include runtime_config")
-
-        event_bus = _event_bus_from_handles(ctx)
-        event_ctx = _assembly_event_context(request, ctx)
+        event_bus = runtime.event_bus if isinstance(runtime.event_bus, RuntimeEventBus) else None
+        event_ctx = _assembly_event_context(request, runtime)
 
         pre_gate = run_pre_context_policy_gate(request)
         if not pre_gate.allowed:
@@ -286,34 +312,53 @@ class DefaultNexusContextEngine:
             request=request,
         )
 
-        unique, dropped = dedup_fragments_by_hash(collected_fragments)
-        collected_fragments = unique
-        fragments_excluded.extend(dropped)
-        if dropped:
-            counters = get_context_counters()
-            counters.candidate_dropped_total += len(dropped)
-            if event_bus is not None:
-                from intergrax.runtime.events.context_skill_recording import (
-                    record_context_candidate_dropped,
-                )
+        descriptors_by_id = {
+            bound.descriptor.provider_id: bound.descriptor for bound in bound_set.providers
+        }
+        collected_fragments, scope_excluded = isolate_assembly_scope(collected_fragments, request)
+        fragments_excluded.extend(scope_excluded)
 
-                for fragment, reason in dropped:
-                    record_context_candidate_dropped(
-                        event_bus,
-                        provider_id=(
-                            fragment.provider_provenance.provider_id
-                            if fragment.provider_provenance is not None
-                            else fragment.source_id or "dedup"
-                        ),
-                        provider_version=(
-                            fragment.provider_provenance.provider_version
-                            if fragment.provider_provenance is not None
-                            else ""
-                        ),
-                        drop_reason=reason,
-                        engine_id=self._engine_id,
-                        **event_ctx,
-                    )
+        collected_fragments, hard_excluded, hard_decisions = run_hard_policy_pre_stages(
+            collected_fragments,
+        )
+        fragments_excluded.extend(hard_excluded)
+
+        invariant_snapshots = build_fragment_invariant_snapshots(collected_fragments)
+
+        policy_strategies = self._resolve_policy_strategies()
+        policy_result = self._policy_pipeline.execute(
+            collected_fragments,
+            request,
+            strategies=policy_strategies,
+        )
+        validate_policy_pipeline_result(
+            invariant_snapshots,
+            policy_result,
+            pipeline_id=self._policy_pipeline.pipeline_id,
+        )
+        collected_fragments = list(policy_result.fragments)
+        fragments_excluded.extend(policy_result.excluded)
+        policy_decisions = (*hard_decisions, *policy_result.decisions)
+        collected_fragments, authority_excluded = filter_fragments_by_authority_contract(
+            collected_fragments,
+            descriptors_by_id=descriptors_by_id,
+        )
+        fragments_excluded.extend(authority_excluded)
+        collected_fragments, post_scope_excluded = isolate_assembly_scope(
+            collected_fragments,
+            request,
+        )
+        fragments_excluded.extend(post_scope_excluded)
+        if policy_result.excluded:
+            counters = get_context_counters()
+            counters.candidate_dropped_total += len(policy_result.excluded)
+
+        _record_fragment_exclusion_drop_events(
+            event_bus,
+            fragments_excluded,
+            engine_id=self._engine_id,
+            event_ctx=event_ctx,
+        )
 
         post_gate = run_pre_context_policy_gate(request, collected=tuple(collected_fragments))
         if not post_gate.allowed:
@@ -321,36 +366,7 @@ class DefaultNexusContextEngine:
             _record_validation_failed(event_bus, event_ctx, post_gate.errors, stage="post_collect_policy")
             raise ValueError("; ".join(post_gate.errors))
 
-        ranked_fragments: list[ContextFragment] = []
-        if collected_fragments:
-            with context_span("context.budget.allocate"):
-                ranked_fragments, quality_excluded = self._ranker.rank_with_exclusions(
-                    collected_fragments,
-                    request,
-                )
-                fragments_excluded.extend(quality_excluded)
-                if quality_excluded and event_bus is not None:
-                    from intergrax.runtime.events.context_skill_recording import (
-                        record_context_candidate_dropped,
-                    )
-
-                    for fragment, reason in quality_excluded:
-                        record_context_candidate_dropped(
-                            event_bus,
-                            provider_id=(
-                                fragment.provider_provenance.provider_id
-                                if fragment.provider_provenance is not None
-                                else fragment.source_id or fragment.source.value
-                            ),
-                            provider_version=(
-                                fragment.provider_provenance.provider_version
-                                if fragment.provider_provenance is not None
-                                else ""
-                            ),
-                            drop_reason=reason,
-                            engine_id=self._engine_id,
-                            **event_ctx,
-                        )
+        ranked_fragments: list[ContextFragment] = list(collected_fragments)
 
         formatter = self._registry.formatter or self._formatter
         fragment_messages = formatter.format(ranked_fragments, request)
@@ -367,7 +383,7 @@ class DefaultNexusContextEngine:
             max_output_tokens=max_output_tokens,
         )
         session_history = await _load_session_history_snapshot(request, ctx)
-        optimization_policy = _resolve_optimization_policy(ctx, runtime_config)
+        optimization_policy = _resolve_optimization_policy(runtime)
         planner = ContextPlanner(count_tokens=self._compiler.count_tokens)
         context_plan = planner.plan(
             request,
@@ -384,9 +400,9 @@ class DefaultNexusContextEngine:
             ),
         )
 
-        ucl_runtime = ctx.handles.get(NEXUS_UCL_RUNTIME_HANDLE)
+        ucl_runtime = runtime.ucl_runtime
         if ucl_runtime is not None and not isinstance(ucl_runtime, NexusUCLRuntimeDependencies):
-            raise ValueError("nexus_ucl_runtime handle must be NexusUCLRuntimeDependencies")
+            raise ValueError("ContextAssemblyRuntimeDependencies.ucl_runtime must be NexusUCLRuntimeDependencies")
 
         try:
             ucl_resolution = await resolve_ucl_context_plan(
@@ -441,6 +457,9 @@ class DefaultNexusContextEngine:
             context_plan=context_plan,
             provider_outcomes=tuple(provider_outcomes),
             provider_set_snapshot=bound_set.snapshot,
+            policy_decisions=policy_decisions,
+            policy_semantic_dedup=policy_result.semantic_dedup_decisions,
+            policy_conflicts=policy_result.conflict_decisions,
         )
 
         validation = self._validator.validate(
@@ -488,19 +507,37 @@ async def _load_session_history_snapshot(
     return await provider.load_snapshot(request, ctx)
 
 
-def _event_bus_from_handles(ctx: ContextProviderContext) -> RuntimeEventBus | None:
-    bus = ctx.handles.get("event_bus")
-    if isinstance(bus, RuntimeEventBus):
-        return bus
-    return None
+def _record_fragment_exclusion_drop_events(
+    event_bus: RuntimeEventBus | None,
+    exclusions: list[tuple[ContextFragment, str]],
+    *,
+    engine_id: str,
+    event_ctx: dict[str, str | None],
+) -> None:
+    if event_bus is None or not exclusions:
+        return
+    from intergrax.runtime.events.context_skill_recording import (
+        record_context_candidate_dropped,
+    )
+
+    for fragment, drop_reason in exclusions:
+        provenance = fragment.provider_provenance
+        record_context_candidate_dropped(
+            event_bus,
+            provider_id=provenance.provider_id if provenance is not None else "unknown",
+            provider_version=provenance.provider_version if provenance is not None else "",
+            drop_reason=drop_reason,
+            engine_id=engine_id,
+            **event_ctx,
+        )
 
 
 def _assembly_event_context(
     request: ContextAssemblyRequest,
-    ctx: ContextProviderContext,
+    runtime: ContextAssemblyRuntimeDependencies,
 ) -> dict[str, str | None]:
-    node_id = ctx.handles.get("node_id")
-    agent_id = ctx.handles.get("agent_id")
+    node_id = runtime.node_id
+    agent_id = runtime.agent_id
     return {
         "task_id": request.task_id,
         "run_id": request.run_id,

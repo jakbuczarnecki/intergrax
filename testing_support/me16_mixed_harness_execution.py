@@ -27,10 +27,6 @@ from testing_support.canonical_me16_mixed_agent import (
     ME16_MIXED_TASK_INPUT,
     ME16_MIXED_TENANT,
 )
-from intergrax.agents.persistence.skill_host_wiring import (
-    HostSkillCatalogWiring,
-    attach_skill_host_wiring_metadata,
-)
 from testing_support.canonical_me14_echo_tool import ME14_TOOL_LOGICAL_ID
 
 def me16_mixed_execution_manifest(
@@ -109,18 +105,12 @@ async def run_me16_mixed_host_execution(
         application_skill_registry=skill_lifecycle.registry,
         llm_adapter=FakeLLMAdapter(),
     )
-    skill_wiring = HostSkillCatalogWiring(
-        skill_profile=skill_lifecycle.skill_profile,
-        skill_registry=skill_lifecycle.registry,
-        skill_pinning_store=host_runtime.skill_pinning_store,
-    )
     task = Task(
         tenant_id=ME16_MIXED_TENANT,
         user_id="me16-proof-user",
         message=ME16_MIXED_TASK_INPUT,
         agent_id=ME16_MIXED_CONTRACT_ID,
         context=TaskContext(capability=ME16_MIXED_CAPABILITY),
-        metadata=attach_skill_host_wiring_metadata({}, skill_wiring),
     )
     return await host_runtime.execution.execute(task)
 

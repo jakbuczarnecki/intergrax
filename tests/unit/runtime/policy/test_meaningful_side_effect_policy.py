@@ -16,6 +16,9 @@ from intergrax.contracts.meaningful_side_effect_policy import MeaningfulSideEffe
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from tests.unit.runtime.governance.gr3_test_support import default_gr3_identity_bundle
+
+_TASK, _RUN, _ATTEMPT, _EXECUTION = default_gr3_identity_bundle()
 
 
 def _request(**overrides: object) -> MeaningfulSideEffectRequest:
@@ -23,8 +26,10 @@ def _request(**overrides: object) -> MeaningfulSideEffectRequest:
         "action": "external_work.accept_quote",
         "kinds": (MeaningfulSideEffectKind.COMMITMENT, MeaningfulSideEffectKind.MUTATION),
         "side_effect_scope_id": "scope-gec5",
-        "task_id": "task-1",
-        "run_id": "run-1",
+        "task_id": _TASK,
+        "run_id": _RUN,
+        "attempt_id": _ATTEMPT,
+        "execution_id": _EXECUTION,
         "principal_id": "user-1",
         "tenant_id": "tenant-a",
         "external_target": "provider-x",

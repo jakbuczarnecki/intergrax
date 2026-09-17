@@ -1531,6 +1531,7 @@ Task(capability=local.workspace.pipeline, intent=local_workspace_full)
 | [`host/tool_wiring.py`](../host/tool_wiring.py) | LKW tool allowlist |
 | [`host/settings.py`](../host/settings.py) | `LOCAL_WORKSPACE_*` env, RAG flags |
 | [`host/wiring.py`](../host/wiring.py) | Registry + `wire_application_environment` |
+| [`host/host_runtime_composition.py`](../host/host_runtime_composition.py) | Canonical harness host runtime + tenant authority (HTTP + worker) |
 | [`host/factory.py`](../host/factory.py) | FastAPI Core + MCP |
 | [`serving/fastapi_router.py`](../serving/fastapi_router.py) | `/run`, `/agents` |
 | [`mcp/server.py`](../mcp/server.py) | FastMCP mount |

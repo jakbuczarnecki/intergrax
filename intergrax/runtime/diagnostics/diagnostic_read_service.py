@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from intergrax.runtime.diagnostics.diagnostic_assessment import (
+    DiagnosticAssessment,
     DiagnosticAssessmentBuilder,
     DiagnosticAssessmentIntegrityError,
 )
@@ -22,6 +23,7 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
 from intergrax.runtime.diagnostics.diagnostic_lineage_projection import (
     project_execution_lineage_view,
 )
+from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.contracts.execution_reconstruction import (
     ExecutionReconstruction,
     ExecutionReconstructionIntegrityError,
@@ -54,6 +56,9 @@ from intergrax.runtime.diagnostics.decision_context_read_models import (
 )
 from intergrax.runtime.diagnostics.diagnostic_extension_service import (
     DiagnosticExtensionService,
+)
+from intergrax.runtime.diagnostics.execution_reconstruction_read_session import (
+    ExecutionReconstructionReadSession,
 )
 from intergrax.runtime.diagnostics.diagnostic_operator_investigation_projection import (
     project_investigation_view,
@@ -151,6 +156,22 @@ class DiagnosticReadService:
             max_limit=MAX_OCCURRENCE_LIMIT,
         )
 
+        reconstruction_session = ExecutionReconstructionReadSession(self._reconstructor)
+        return self._build_problem_detail(
+            tenant_id=tenant_id,
+            problem_id=problem_id,
+            occurrence_limit=occurrence_limit,
+            reconstruction_session=reconstruction_session,
+        )
+
+    def _build_problem_detail(
+        self,
+        *,
+        tenant_id: str,
+        problem_id: ProblemId,
+        occurrence_limit: int,
+        reconstruction_session: ExecutionReconstructionReadSession,
+    ) -> DiagnosticProblemDetail | None:
         problem = self._persistence.get(tenant_id=tenant_id, problem_id=problem_id)
         if problem is None:
             return None
@@ -173,7 +194,7 @@ class DiagnosticReadService:
                 occurrence,
                 tenant_id=tenant_id,
                 problem=problem,
-                reconstructor=self._reconstructor,
+                reconstructor=reconstruction_session,
                 lifecycle_analyzer=self._lifecycle_analyzer,
                 assessment_builder=self._assessment_builder,
                 decision_context_provider=self._decision_context_provider,
@@ -253,10 +274,12 @@ class DiagnosticReadService:
         if occurrence_index < 0:
             raise ValueError("occurrence_index must be >= 0")
 
-        detail = self.get_problem(
+        reconstruction_session = ExecutionReconstructionReadSession(self._reconstructor)
+        detail = self._build_problem_detail(
             tenant_id=tenant_id,
             problem_id=problem_id,
             occurrence_limit=occurrence_limit,
+            reconstruction_session=reconstruction_session,
         )
         if detail is None:
             return DiagnosticInvestigationResult(
@@ -282,7 +305,7 @@ class DiagnosticReadService:
         execution = subject_ref.execution()
         if execution is not None:
             try:
-                reconstruction = self._reconstructor.reconstruct_execution(
+                reconstruction = reconstruction_session.reconstruct_execution(
                     tenant_id,
                     execution.task_id,
                     execution.run_id,
@@ -294,13 +317,17 @@ class DiagnosticReadService:
         related_risk_signals = ()
         forecast_risk_signals = ()
         if self._predictive_investigation_service is not None:
-            related_risk_signals = self._predictive_investigation_service.related_risk_signals(
-                problem_detail=detail,
-                occurrence=occurrence_view,
+            related_risk_signals = (
+                self._predictive_investigation_service.related_risk_signals(
+                    problem_detail=detail,
+                    occurrence=occurrence_view,
+                )
             )
-            forecast_risk_signals = self._predictive_investigation_service.forecast_risk_signals(
-                problem_detail=detail,
-                occurrence=occurrence_view,
+            forecast_risk_signals = (
+                self._predictive_investigation_service.forecast_risk_signals(
+                    problem_detail=detail,
+                    occurrence=occurrence_view,
+                )
             )
 
         investigation = project_investigation_view(
@@ -311,6 +338,42 @@ class DiagnosticReadService:
             forecast_risk_signals=forecast_risk_signals,
         )
         return DiagnosticInvestigationResult(investigation=investigation)
+
+    def assess_execution_scope_for_inspection(
+        self,
+        *,
+        tenant_id: str,
+        task_id: TaskId,
+        run_id: RunId,
+    ) -> DiagnosticAssessment | None:
+        """
+        Bounded execution-scope diagnostic assessment for federated runtime inspection.
+
+        Reuses the same reconstruction + lifecycle + assessment path as occurrence reads.
+        """
+        tenant_id = _require_tenant_id(tenant_id)
+        try:
+            reconstruction = self._reconstructor.reconstruct_execution(
+                tenant_id,
+                task_id,
+                run_id,
+            )
+        except ExecutionReconstructionIntegrityError as exc:
+            raise DiagnosticReadIntegrityError(str(exc)) from exc
+        if reconstruction.tenant_id != tenant_id:
+            raise DiagnosticReadIntegrityError(
+                "reconstruction tenant_id does not match lookup tenant scope",
+            )
+        if _is_execution_evidence_unavailable(reconstruction):
+            return None
+        try:
+            lifecycle = self._lifecycle_analyzer.analyze(reconstruction)
+            return self._assessment_builder.assess(reconstruction, lifecycle)
+        except (
+            DiagnosticAssessmentIntegrityError,
+            LifecycleAnalysisIntegrityError,
+        ) as exc:
+            raise DiagnosticReadIntegrityError(str(exc)) from exc
 
 
 def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:

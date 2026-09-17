@@ -35,7 +35,12 @@ from intergrax.runtime.diagnostics.diagnostic_operator_investigation_read_models
     FailureInvestigationSummary,
 )
 from intergrax.runtime.events.payload_registry import validate_payload_envelope
-from intergrax.runtime.events.payloads.canonical import ExternalOperationFailurePayloadV1
+from intergrax.runtime.events.payloads.canonical import (
+    ExternalOperationFailurePayloadV1,
+)
+from intergrax.runtime.diagnostics.diagnostic_operator_story_projection import (
+    project_operator_story,
+)
 from intergrax.runtime.diagnostics.diagnostic_precision import FailureBoundary
 from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticOccurrenceReadStatus,
@@ -74,7 +79,9 @@ def project_investigation_view(
     preventive_recommendations: tuple[RelatedPreventiveRecommendationView, ...] = (),
     preventive_action_history: tuple[RelatedPreventiveActionHistoryEntryView, ...] = (),
     self_healing_history: tuple[RelatedSelfHealingHistoryEntryView, ...] = (),
-    healing_workflow_history: tuple[RelatedSelfHealingWorkflowHistoryEntryView, ...] = (),
+    healing_workflow_history: tuple[
+        RelatedSelfHealingWorkflowHistoryEntryView, ...
+    ] = (),
     healing_execution_timeline: HealingExecutionTimelineView | None = None,
     adaptive_healing_insights: tuple[AdaptiveHealingInsightView, ...] = (),
 ) -> DiagnosticInvestigationView:
@@ -122,6 +129,11 @@ def project_investigation_view(
         assessment,
         reconstruction,
     )
+    operator_story = project_operator_story(
+        occurrence=occurrence,
+        reconstruction=reconstruction,
+        assessment=assessment,
+    )
 
     return DiagnosticInvestigationView(
         problem=summary,
@@ -141,6 +153,7 @@ def project_investigation_view(
         recommendations=recommendations,
         assistant_payload=assistant_payload,
         investigation_limitations=limitations,
+        operator_story=operator_story,
         related_risk_signals=related_risk_signals,
         forecast_risk_signals=forecast_risk_signals,
         prediction_history=prediction_history,
@@ -244,7 +257,10 @@ def _project_evidence_summary(
                     is_causal_claim=False,
                 )
             )
-    if not items and occurrence.read_status is not DiagnosticOccurrenceReadStatus.AVAILABLE:
+    if (
+        not items
+        and occurrence.read_status is not DiagnosticOccurrenceReadStatus.AVAILABLE
+    ):
         items.append(
             DiagnosticEvidenceExplanation(
                 headline="Diagnostic assessment unavailable",
@@ -281,7 +297,10 @@ def _project_timeline(
                     observed_at=event.timestamp,
                     execution_id=event.execution_id,
                     event_id=event.event_id,
-                    sort_key=(int(event.timestamp.timestamp()), positioned.position.value),
+                    sort_key=(
+                        int(event.timestamp.timestamp()),
+                        positioned.position.value,
+                    ),
                 )
             )
 
@@ -340,7 +359,9 @@ def _project_timeline(
     )
 
 
-def _timeline_kind_for_event(event_type: RuntimeEventType) -> DiagnosticTimelineEntryKind:
+def _timeline_kind_for_event(
+    event_type: RuntimeEventType,
+) -> DiagnosticTimelineEntryKind:
     if event_type is RuntimeEventType.EXECUTION_FAILED:
         return DiagnosticTimelineEntryKind.EXECUTION_FAILURE
     return DiagnosticTimelineEntryKind.RUNTIME_EVENT
@@ -355,7 +376,9 @@ def _project_impact_graph(
         return DiagnosticImpactGraph(
             root_execution_id=None,
             nodes=(),
-            completeness_limitations=("Execution lineage unavailable for impact projection.",),
+            completeness_limitations=(
+                "Execution lineage unavailable for impact projection.",
+            ),
         )
 
     failed_ids: set[str] = set()
@@ -655,7 +678,9 @@ def _project_external_operation_failures(
             or finding.external_operation_failure_kind is None
         ):
             continue
-        event_id = finding.supporting_event_ids[0] if finding.supporting_event_ids else None
+        event_id = (
+            finding.supporting_event_ids[0] if finding.supporting_event_ids else None
+        )
         by_event[str(event_id or finding.operation_attempt_id)] = (
             DiagnosticExternalOperationFailureView(
                 execution_id=finding.execution_id,

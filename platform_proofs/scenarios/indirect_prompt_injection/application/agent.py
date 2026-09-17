@@ -101,7 +101,7 @@ class OrderAssistantAgent(Agent):
         if request_message.strip():
             user_message = request_message
 
-        workflow_result = execute_order_workflow(
+        workflow_result = await execute_order_workflow(
             runtime_state=runtime_state,
             registry=self._registry,
             order_id=self._order_id,

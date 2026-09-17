@@ -49,7 +49,7 @@ from intergrax.runtime.diagnostics.problem_persistence import (
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentRecord
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     TEST_PROBLEM_LIST_CURSOR_SECRET,
     document_store_occurrence_persistence_for_tests,
     document_store_problem_persistence_for_tests,

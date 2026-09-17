@@ -18,7 +18,7 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationStopReason
 from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
-from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
+from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop_async
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.runtime.nexus.tools.tool_planning_prompts import (
     composed_investigation_policy_prompt,
@@ -596,7 +596,7 @@ def _model_visible_references_before_planner_loop(
     return tuple(references)
 
 
-def gather_incident_evidence(
+async def gather_incident_evidence(
     *,
     runtime_state: RuntimeState,
     registry: ToolRegistry,
@@ -669,7 +669,7 @@ def gather_incident_evidence(
         baseline_outputs=baseline_outputs,
     )
     try:
-        loop_result = run_bounded_tool_loop(
+        loop_result = await run_bounded_tool_loop_async(
             state=runtime_state,
             invoker=invoker,
             tool_planner=planner,

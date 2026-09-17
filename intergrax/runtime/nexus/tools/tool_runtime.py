@@ -262,6 +262,13 @@ class ToolRuntime:
                 trace_step=trace_step,
             )
 
+        merge_provider_metadata_into_request(state)
+        from intergrax.runtime.nexus.context.canonical_context_composition import (
+            enforce_context_engine_when_provider_sources_active,
+        )
+
+        enforce_context_engine_when_provider_sources_active(state)
+
         return ToolRuntimeResult(
             used_rag=state.used_rag,
             used_websearch=state.used_websearch,

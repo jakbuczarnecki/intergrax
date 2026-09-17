@@ -46,7 +46,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingEngine,
     ProblemGroupingStrategyRegistry,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     lifecycle_engine_for_tests,
 )
 from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (

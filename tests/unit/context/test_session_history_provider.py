@@ -30,6 +30,7 @@ from intergrax.context.contracts import (
     ContextDecisionSnapshot,
     ContextProviderContext,
 )
+from intergrax.context.source_inputs import ContextProviderSourceInputs, ContextSessionSourceInput
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage
 
@@ -50,17 +51,21 @@ def _request() -> ContextAssemblyRequest:
     )
 
 
-def _bound_handles(
+def _bound_context(
     snapshot: object,
     *,
     scope_id: str = "scope",
     revision_id: str = "rev",
-) -> dict[str, object]:
-    return {
-        SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
-        SESSION_HISTORY_CONTEXT_SCOPE_HANDLE: scope_id,
-        SESSION_HISTORY_REVISION_HANDLE: revision_id,
-    }
+) -> ContextProviderContext:
+    return ContextProviderContext(
+        sources=ContextProviderSourceInputs(
+            session=ContextSessionSourceInput(
+                snapshot=snapshot,
+                binding_context_scope_id=scope_id,
+                binding_revision_id=revision_id,
+            ),
+        ),
+    )
 
 
 @pytest.mark.asyncio
@@ -75,7 +80,7 @@ async def test_canonical_provider_returns_full_snapshot_fragments() -> None:
         revision_id="rev",
         messages=messages,
     )
-    ctx = ContextProviderContext(handles=_bound_handles(snapshot))
+    ctx = _bound_context(snapshot)
     fragments = await _collect_session_history(_request(), ctx)
     assert len(fragments) == 12
     assert fragments[0].metadata["message_id"] == "m0"
@@ -108,7 +113,7 @@ async def test_include_session_history_false_returns_none() -> None:
         budget_policy=ContextBudgetSnapshot(),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    assert await provider.load_snapshot(request, ContextProviderContext(handles={SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot})) is None
+    assert await provider.load_snapshot(request, _bound_context(snapshot)) is None
 
 
 def test_canonical_provider_has_no_last_n_slicing() -> None:
@@ -129,10 +134,7 @@ async def test_raw_legacy_handle_requires_snapshot() -> None:
             ],
         }
     )
-    with pytest.raises(SessionHistorySnapshotRequiredError) as exc_info:
-        await _collect_session_history(_request(), ctx)
-    assert str(exc_info.value) == SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON
-    assert exc_info.value.reason == SESSION_HISTORY_SNAPSHOT_REQUIRED_REASON
+    assert await _collect_session_history(_request(), ctx) == []
 
 
 @pytest.mark.asyncio
@@ -143,13 +145,14 @@ async def test_snapshot_has_priority_when_snapshot_and_legacy_handles_both_exist
         revision_id="rev",
         messages=[ChatMessage(role="user", content="canonical", entry_id="m1")],
     )
+    ctx = _bound_context(snapshot)
     ctx = ContextProviderContext(
+        sources=ctx.sources,
         handles={
-            **_bound_handles(snapshot),
             SESSION_HISTORY_MESSAGES_HANDLE: [
                 ChatMessage(role="user", content="legacy", entry_id="legacy-1"),
             ],
-        }
+        },
     )
     fragments = await _collect_session_history(_request(), ctx)
     assert len(fragments) == 1
@@ -192,9 +195,7 @@ async def test_include_history_false_snapshot_handle_returns_empty() -> None:
         revision_id="rev",
         messages=[ChatMessage(role="user", content="canonical", entry_id="m1")],
     )
-    ctx = ContextProviderContext(
-        handles=_bound_handles(snapshot, scope_id="scope", revision_id="rev")
-    )
+    ctx = _bound_context(snapshot, scope_id="scope", revision_id="rev")
     fragments = await _collect_session_history(_request_include_history(False), ctx)
     assert fragments == []
 
@@ -207,13 +208,14 @@ async def test_include_history_false_both_handles_returns_empty() -> None:
         revision_id="rev",
         messages=[ChatMessage(role="user", content="canonical", entry_id="m1")],
     )
+    ctx = _bound_context(snapshot)
     ctx = ContextProviderContext(
+        sources=ctx.sources,
         handles={
-            **_bound_handles(snapshot),
             SESSION_HISTORY_MESSAGES_HANDLE: [
                 ChatMessage(role="user", content="legacy", entry_id="legacy-1"),
             ],
-        }
+        },
     )
     fragments = await _collect_session_history(_request_include_history(False), ctx)
     assert fragments == []
@@ -231,7 +233,7 @@ def _snapshot_for_binding() -> object:
 @pytest.mark.asyncio
 async def test_provider_rejects_snapshot_from_other_tenant() -> None:
     snapshot = _snapshot_for_binding()
-    ctx = ContextProviderContext(handles=_bound_handles(snapshot))
+    ctx = _bound_context(snapshot)
     request = ContextAssemblyRequest(
         trace_id="trace",
         run_id="run",
@@ -254,9 +256,7 @@ async def test_provider_rejects_snapshot_from_other_tenant() -> None:
 @pytest.mark.asyncio
 async def test_provider_rejects_snapshot_from_other_scope() -> None:
     snapshot = _snapshot_for_binding()
-    ctx = ContextProviderContext(
-        handles=_bound_handles(snapshot, scope_id="wrong-scope", revision_id="rev")
-    )
+    ctx = _bound_context(snapshot, scope_id="wrong-scope", revision_id="rev")
     with pytest.raises(SessionHistorySnapshotBindingError):
         await HandleSessionHistoryProvider().load_snapshot(_request(), ctx)
 
@@ -264,9 +264,7 @@ async def test_provider_rejects_snapshot_from_other_scope() -> None:
 @pytest.mark.asyncio
 async def test_provider_rejects_snapshot_from_other_revision() -> None:
     snapshot = _snapshot_for_binding()
-    ctx = ContextProviderContext(
-        handles=_bound_handles(snapshot, scope_id="scope", revision_id="wrong-rev")
-    )
+    ctx = _bound_context(snapshot, scope_id="scope", revision_id="wrong-rev")
     with pytest.raises(SessionHistorySnapshotBindingError):
         await HandleSessionHistoryProvider().load_snapshot(_request(), ctx)
 
@@ -274,7 +272,7 @@ async def test_provider_rejects_snapshot_from_other_revision() -> None:
 @pytest.mark.asyncio
 async def test_provider_rejects_unbound_snapshot() -> None:
     snapshot = _snapshot_for_binding()
-    ctx = ContextProviderContext(handles={SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot})
+    ctx = _bound_context(snapshot, scope_id="", revision_id="")
     with pytest.raises(SessionHistorySnapshotBindingError):
         await HandleSessionHistoryProvider().load_snapshot(_request(), ctx)
 
@@ -282,7 +280,7 @@ async def test_provider_rejects_unbound_snapshot() -> None:
 @pytest.mark.asyncio
 async def test_provider_accepts_exactly_bound_snapshot() -> None:
     snapshot = _snapshot_for_binding()
-    ctx = ContextProviderContext(handles=_bound_handles(snapshot))
+    ctx = _bound_context(snapshot)
     loaded = await HandleSessionHistoryProvider().load_snapshot(_request(), ctx)
     assert loaded is snapshot
 
@@ -438,7 +436,7 @@ def test_structural_guards_session_history_r1() -> None:
     from intergrax.runtime.nexus.context import provider_handles as handles_mod
 
     builtin_source = inspect.getsource(builtin_mod._collect_session_history)
-    assert "require_session_history_messages" in builtin_source
+    assert "load_snapshot" in builtin_source
     assert "fragments_from_session_history(" not in builtin_source
 
     legacy_source = inspect.getsource(legacy_mod.fragments_from_session_history)
@@ -460,8 +458,7 @@ def test_structural_guards_session_history_r1() -> None:
     assert "SESSION_HISTORY" in dedup_source
     assert "source_id" in dedup_source
 
-    handles_source = inspect.getsource(handles_mod.build_graph_provider_handles)
-    assert "validate_session_history_snapshot_binding" in handles_source
-    assert "SESSION_HISTORY_CONTEXT_SCOPE_HANDLE" in handles_source
-    assert "SESSION_HISTORY_REVISION_HANDLE" in handles_source
-    assert "SESSION_HISTORY_MESSAGES_HANDLE]" not in handles_source
+    sources_source = inspect.getsource(handles_mod.build_graph_provider_sources)
+    assert "validate_session_history_snapshot_binding" in sources_source
+    assert "ContextSessionSourceInput" in sources_source
+    assert "SESSION_HISTORY_MESSAGES_HANDLE]" not in sources_source

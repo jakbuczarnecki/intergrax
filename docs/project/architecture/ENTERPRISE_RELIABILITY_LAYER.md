@@ -138,6 +138,31 @@ Enterprise Reliability Layer
 | **Compensation Handling** | “Undo or offset what already happened.” | Planning (`CompensationPlan`) and bounded execution (`CompensationExecutionRequest` → plugin gateway → `CompensationExecutionResult`) — see [`RECOVERY_AND_COMPENSATION.md`](RECOVERY_AND_COMPENSATION.md#compensation-execution-boundary-erl-foundation). |
 | **External Effect Contracts** | “Declare how safe this operation is.” | Integrations/tools declare idempotency and reconciliation hooks—architecture only until implementation. |
 | **Audit Evidence** | “Prove what we knew and when.” | Emitted on the Observability spine; Reliability/ERL own behavior, Observability owns persistence. |
+| **Provider invocation reliability trace (GR-7-A8)** | “Reconstruct intent → outcome → reconcile → recovery without log archaeology.” | Durable `ProviderInvocation` / `ProviderInvocationOutcome` remain historical truth; `ProviderInvocationReliabilityFact` projections (pluggable `ProviderInvocationReliabilityEvidenceObserver`) record lifecycle phases without altering A2–A7 semantics. |
+
+```text
+Governance authorization
+→ ProviderInvocation (intent)
+→ dispatch / outcome persistence
+→ UNKNOWN / crash ambiguity
+→ repeat eligibility
+→ reconciliation (0 provider mutations)
+→ recovery decision + execution
+→ Evidence/Trace projection (not authority)
+```
+
+**GR-7-A8-R1 wiring matrix** (projection at canonical owner; one emission per phase):
+
+| Phase | Canonical owner | Observer emission point |
+| ----- | --------------- | ----------------------- |
+| `GOVERNANCE_AUTHORIZED` | `MeaningfulSideEffectAuthorizationBoundary.authorize_and_execute` (ALLOW / consumed grant) | `on_execution_authorized` → adapter `emit_governance_authorized` |
+| `INTENT_PERSISTED` | `persist_provider_invocation_intent` via `GovernedProviderInvocationDispatchGate` | After durable `put_invocation` |
+| `INTENT_PERSISTENCE_FAILED` | Same gate | On `ProviderInvocationPersistenceError` before `execute` |
+| `DISPATCH_ATTEMPTED` | Same gate | Immediately before provider `execute` callback |
+| `OUTCOME_PERSISTED` / `UNKNOWN_ADMITTED` | `GovernedExternalWorkOrchestrator._persist_observed_provider_outcome` | After durable `put_outcome` |
+| `OUTCOME_PERSISTENCE_FAILED` | Same orchestrator path | On outcome persist failure |
+| `CRASH_AMBIGUITY_ADMITTED` | Recovery decision (GR-7-A7) | `project_recovery_decision_evidence` only |
+| A5–A7 later phases | Unchanged GR-7-A5/A6/A7 owners | Existing `evidence_observer` on reconcile/recovery |
 
 ---
 

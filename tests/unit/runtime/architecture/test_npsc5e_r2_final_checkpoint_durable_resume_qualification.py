@@ -66,7 +66,7 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 

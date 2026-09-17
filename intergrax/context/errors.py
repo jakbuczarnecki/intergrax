@@ -4,7 +4,11 @@
 
 from __future__ import annotations
 
-from intergrax.context.contracts import ContextFragmentSource, ContextProviderDescriptor
+from intergrax.context.contracts import (
+    ContextFragmentSource,
+    ContextPolicyInvariantViolationCode,
+    ContextProviderDescriptor,
+)
 
 
 class ContextProviderLifecycleError(RuntimeError):
@@ -34,6 +38,32 @@ class ContextProviderContractViolationError(ContextProviderLifecycleError, Value
         )
         if detail:
             message = f"{message} ({detail})"
+        super().__init__(message)
+
+
+class ContextPolicyInvariantViolationError(ContextProviderLifecycleError, ValueError):
+    """Replaceable policy pipeline violated hard fragment lineage invariants."""
+
+    def __init__(
+        self,
+        *,
+        fragment_id: str,
+        invariant: ContextPolicyInvariantViolationCode,
+        pipeline_id: str,
+        expected: str = "",
+        actual: str = "",
+    ) -> None:
+        self.fragment_id = fragment_id
+        self.invariant = invariant
+        self.pipeline_id = pipeline_id
+        self.expected = expected
+        self.actual = actual
+        message = (
+            f"context policy invariant violation [{invariant.value}] "
+            f"fragment={fragment_id} pipeline={pipeline_id}"
+        )
+        if expected or actual:
+            message = f"{message} expected={expected!r} actual={actual!r}"
         super().__init__(message)
 
 

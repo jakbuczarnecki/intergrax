@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import datetime, timezone
 
 from external_contractor_adapter.external_work_adapter import ExternalWorkAdapter
 from governed_contractor_application.host.collaborative_work_boundary import (
@@ -26,6 +26,9 @@ from governed_contractor_application.host.stores import (
     GovernedExecutionStore,
     PolicyBundleArtifactStore,
     ProofReceiptStore,
+)
+from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_evidence import (
+    ProviderInvocationReliabilityEvidenceObserver,
 )
 from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from intergrax.collaborative_work.persistence import (
@@ -117,8 +120,10 @@ def build_governed_external_work_production_runtime(
     attestor: HostAttestor | None = None,
     clock: Callable[[], datetime] | None = None,
     reliability_bridge: GovernedExternalWorkEnterpriseReliabilityBridge | None = None,
+    reliability_evidence_observer: ProviderInvocationReliabilityEvidenceObserver | None = None,
 ) -> GovernedExternalWorkProductionRuntime:
     """Construct orchestrator + adapter wired through canonical governance boundary."""
+    resolved_clock = clock or (lambda: datetime.now(timezone.utc))
     bundle = policy_bundle
     resolved_policy = (
         decision_requirement_policy
@@ -148,11 +153,16 @@ def build_governed_external_work_production_runtime(
         )
     invocation_dispatch = GovernedProviderInvocationDispatchGate(
         store=provider_invocation_store,
+        clock=resolved_clock,
     )
     adapter = ExternalWorkAdapter(
         integration,
         authorization_boundary=authorization_boundary,
         invocation_dispatch=invocation_dispatch,
+        reliability_aware_invocation_dispatch=invocation_dispatch,
+        reliability_evidence_observer=reliability_evidence_observer,
+        provider_capabilities=capabilities,
+        clock=resolved_clock,
     )
     orchestrator = GovernedExternalWorkOrchestrator(
         adapter=adapter,
@@ -165,11 +175,12 @@ def build_governed_external_work_production_runtime(
         bundle_store=bundle_store,
         continuation_store=continuation_store,
         provider_invocation_store=provider_invocation_store,
-        clock=clock,
+        clock=resolved_clock,
         reliability_bridge=(
             reliability_bridge
             or GovernedExternalWorkEnterpriseReliabilityBridge.production()
         ),
+        reliability_evidence_observer=reliability_evidence_observer,
     )
     return GovernedExternalWorkProductionRuntime(
         adapter=adapter,

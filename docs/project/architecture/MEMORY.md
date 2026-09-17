@@ -1,5 +1,7 @@
 # Memory
 
+> **Enterprise architecture (MEM-ENT closeout):** canonical control plane, authority map, certification scope, and extension guides live in [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) ([provider](MEMORY_PROVIDER_EXTENSION_GUIDE.md) · [projection](MEMORY_PROJECTION_EXTENSION_GUIDE.md)). This hub remains the product-oriented domain overview.
+
 **Intergrax Memory** is the platform domain that governs **what the harness remembers** - session turns, task-scoped state, user and organization profiles, and durable long-term facts - across execution boundaries, with explicit stores, write policies, and recall contracts.
 
 ## Why it matters
@@ -29,6 +31,7 @@ Memory **does not** decide what the model sees on a given turn - that is Context
 | **Persistence model** | Explicit stores (SQLite bundle, Mongo document store, in-memory fallbacks) - relational/document primary; vector indexes are retrieval indexes, not source of truth |
 | **Retrieval model** | `MemoryView` / Nexus steps; optional `ltm` and `episodic` vector domains when host wires the RAG integration stack |
 | **Context Engineering** | Consumes memory recall outputs; owns final context assembly, budgeting, and provenance |
+| **ContextView source (MP-5F)** | Memory exposes scoped **reference-read** port (`MemoryReferenceReadPort`) — B1 **CLOSED**; adapters **BLOCKED** until B2…B5 |
 | **RAG** | Owns external/document knowledge retrieval (`knowledge` index domain); distinct from user LTM and session episodic memory |
 | **Maturity** | Four-axis statement in [Current maturity](#current-maturity) - procedural memory **minimal**; public production qualification **not claimed** |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [extended satellite](satellites/MEMORY_extended_depth.md) · [plan](../maintainers/plans/MEMORY.md) |
@@ -129,9 +132,10 @@ Memory exposes pluggable store surfaces for hosts that need non-default backends
 
 | Surface | Entry point group | Guide |
 | ------- | ----------------- | ----- |
-| `UserProfileStorePlugin` | `intergrax.memory_stores` | [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) |
+| `UserProfileStorePlugin` | `intergrax.memory_stores` | [`MEMORY_PROVIDER_EXTENSION_GUIDE.md`](MEMORY_PROVIDER_EXTENSION_GUIDE.md) · [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) |
 | `SessionStoragePlugin` | `intergrax.memory_stores` | same |
 | `SessionTurnIndexStorePlugin` | `intergrax.memory_stores` | same |
+| Control plane / projections | Tier-1 contracts | [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · [`MEMORY_PROJECTION_EXTENSION_GUIDE.md`](MEMORY_PROJECTION_EXTENSION_GUIDE.md) |
 
 Tier-3 hosts wire the integration RAG stack (`EmbeddingManager`, `VectorstoreManager`, `RetrievalService`) into memory facades - agents never open vector databases directly. Routing overview: [`EXTENSION_AUTHOR_GUIDE.md`](../technical/guides/EXTENSION_AUTHOR_GUIDE.md) §9.
 
@@ -243,7 +247,7 @@ There is **no** dedicated public proof route in [`docs/project/proofs/`](../proo
 | **Engineering canon** | [Below](#engineering-canon) - stores, lifecycle, write/read paths |
 | **Extended depth** | [`satellites/MEMORY_extended_depth.md`](satellites/MEMORY_extended_depth.md) - compression matrix, strategy selection, authoring guides (§8+) |
 | **Implementation plan** | [`maintainers/plans/MEMORY.md`](../maintainers/plans/MEMORY.md) |
-| **ADRs** | [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) · [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) |
+| **ADRs** | [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) · [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) · [ADR-MEM-XINT-002](../technical/adr/entries/2026-09-17/ADR-MEM-XINT-002.md) |
 | **Store plugins** | [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) |
 | **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · [`audit_results/`](../../audit_results/README.md) |
 | **Target architecture** | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |

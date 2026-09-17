@@ -16,10 +16,18 @@ from intergrax.contracts.diagnostic_investigation import (
     DiagnosticRecommendationKind,
     DiagnosticRootCauseStatus,
 )
+from intergrax.contracts.execution_event_position import ExecutionEventPosition
 from intergrax.contracts.execution_identity import EventId, ExecutionId
-from intergrax.contracts.multi_agent_failure_localization import DiagnosticFailureBoundary
-from intergrax.runtime.diagnostics.decision_context_read_models import DecisionContextView
-from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessment
+from intergrax.contracts.multi_agent_failure_localization import (
+    DiagnosticFailureBoundary,
+)
+from intergrax.runtime.diagnostics.decision_context_read_models import (
+    DecisionContextView,
+)
+from intergrax.runtime.diagnostics.diagnostic_assessment import (
+    DiagnosticAssessment,
+    DiagnosticFindingKind,
+)
 from intergrax.runtime.diagnostics.diagnostic_precision import FailureBoundary
 from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticExecutionLineageView,
@@ -156,6 +164,68 @@ class DiagnosticExecutionContextSummary:
     lineage: DiagnosticExecutionLineageView | None
 
 
+class DiagnosticOperatorStoryPointStatus(StrEnum):
+    AVAILABLE = "available"
+    UNAVAILABLE = "unavailable"
+
+
+class DiagnosticOperatorStoryFirstFailedScope(StrEnum):
+    """Whether first failure is proven over full history or only visible evidence."""
+
+    PROVEN_IN_AVAILABLE_EVIDENCE = "proven_in_available_evidence"
+    FIRST_OBSERVED_IN_AVAILABLE_EVIDENCE = "first_observed_in_available_evidence"
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticOperatorStoryEvidenceRef:
+    """Traceable pointer into canonical execution evidence — not a payload copy."""
+
+    execution_id: ExecutionId | None = None
+    event_id: EventId | None = None
+    evidence_id: EventId | None = None
+    position: ExecutionEventPosition | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticOperatorStoryPoint:
+    """One factual execution anchor in the last-good / first-failed story."""
+
+    status: DiagnosticOperatorStoryPointStatus
+    unavailable_reason: str | None = None
+    execution_id: ExecutionId | None = None
+    event_id: EventId | None = None
+    position: ExecutionEventPosition | None = None
+    event_type_label: str | None = None
+    observed_at: datetime | None = None
+    finding_kind: DiagnosticFindingKind | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticOperatorStoryTransition:
+    """Factual ordering between anchors — not proof of causality."""
+
+    from_position: ExecutionEventPosition | None
+    to_position: ExecutionEventPosition | None
+    intervening_event_count: int
+    is_causal_claim: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticOperatorStory:
+    """
+    DG-003 derived operator story: last known-good → first proven failure → evidence.
+
+    Diagnostics-owned interpretation only; execution facts come from reconstruction.
+    """
+
+    last_good: DiagnosticOperatorStoryPoint
+    first_failed: DiagnosticOperatorStoryPoint
+    transition: DiagnosticOperatorStoryTransition | None
+    supporting_evidence: tuple[DiagnosticOperatorStoryEvidenceRef, ...]
+    limitations: tuple[str, ...]
+    first_failed_scope: DiagnosticOperatorStoryFirstFailedScope | None = None
+
+
 @dataclass(frozen=True, slots=True)
 class DiagnosticStructuredInvestigationPayload:
     """
@@ -204,6 +274,7 @@ class DiagnosticInvestigationView:
     recommendations: tuple[DiagnosticRecommendation, ...]
     assistant_payload: DiagnosticStructuredInvestigationPayload
     investigation_limitations: tuple[str, ...]
+    operator_story: DiagnosticOperatorStory
     related_risk_signals: tuple[RelatedPredictiveRiskSignalView, ...] = ()
     forecast_risk_signals: tuple[RelatedPredictiveRiskSignalView, ...] = ()
     prediction_history: tuple[RelatedPredictiveHistoryEntryView, ...] = ()
@@ -211,7 +282,9 @@ class DiagnosticInvestigationView:
     preventive_recommendations: tuple[RelatedPreventiveRecommendationView, ...] = ()
     preventive_action_history: tuple[RelatedPreventiveActionHistoryEntryView, ...] = ()
     self_healing_history: tuple[RelatedSelfHealingHistoryEntryView, ...] = ()
-    healing_workflow_history: tuple[RelatedSelfHealingWorkflowHistoryEntryView, ...] = ()
+    healing_workflow_history: tuple[
+        RelatedSelfHealingWorkflowHistoryEntryView, ...
+    ] = ()
     healing_execution_timeline: HealingExecutionTimelineView | None = None
     adaptive_healing_insights: tuple[AdaptiveHealingInsightView, ...] = ()
     external_operation_context: tuple[DiagnosticExternalOperationContextView, ...] = ()
@@ -232,6 +305,12 @@ __all__ = [
     "DiagnosticInvestigationResult",
     "DiagnosticInvestigationSeverity",
     "DiagnosticInvestigationView",
+    "DiagnosticOperatorStory",
+    "DiagnosticOperatorStoryEvidenceRef",
+    "DiagnosticOperatorStoryFirstFailedScope",
+    "DiagnosticOperatorStoryPoint",
+    "DiagnosticOperatorStoryPointStatus",
+    "DiagnosticOperatorStoryTransition",
     "DiagnosticRecommendation",
     "DiagnosticStructuredInvestigationPayload",
     "DiagnosticTimeline",

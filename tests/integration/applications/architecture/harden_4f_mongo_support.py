@@ -47,7 +47,7 @@ from intergrax.runtime.diagnostics.document_store_problem_persistence import (
 from intergrax.runtime.diagnostics.problem_lifecycle import Problem, ProblemId
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from tests.integration.runtime.diag_final_otel_support import attach_retry_violation_injector
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import document_store_problem_persistence_for_tests
+from testing_support.runtime.diagnostics.problem_persistence_test_support import document_store_problem_persistence_for_tests
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _COMPOSE_FILE = _REPO_ROOT / "infra" / "docker" / "mongodb" / "docker-compose.yml"

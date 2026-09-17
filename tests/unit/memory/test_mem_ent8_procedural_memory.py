@@ -449,7 +449,6 @@ def test_plugin_resolution_external_provider() -> None:
     )
     catalog = MemoryStorePluginCatalog.from_discovery(discovery)
     ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id=None,
         integration_profile=env.integration_profile,
     )
@@ -474,7 +473,6 @@ def test_plugin_resolution_invalid_provider_fails() -> None:
     )
     catalog = MemoryStorePluginCatalog.from_discovery(discovery)
     ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id=None,
         integration_profile=env.integration_profile,
     )

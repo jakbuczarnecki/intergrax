@@ -14,8 +14,11 @@ from intergrax.context.errors import ContextProviderRegistrationError
 from intergrax.context.provider_descriptor import resolve_provider_descriptor
 from intergrax.context.protocols import (
     ContextBudgetAllocator,
+    ContextConflictResolver,
     ContextFormatter,
     ContextRanker,
+    ContextScoreNormalizer,
+    ContextSemanticDeduper,
     ContextSourceProvider,
     ContextValidator,
 )
@@ -41,6 +44,9 @@ class ContextPluginRegistry:
     _providers: dict[str, _RegisteredProvider] = field(default_factory=dict)
     _ranker: ContextRanker | None = None
     _allocator: ContextBudgetAllocator | None = None
+    _score_normalizer: ContextScoreNormalizer | None = None
+    _semantic_deduper: ContextSemanticDeduper | None = None
+    _conflict_resolver: ContextConflictResolver | None = None
     _formatter: ContextFormatter | None = None
     _validator: ContextValidator | None = None
     _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
@@ -59,6 +65,8 @@ class ContextPluginRegistry:
                 provider_version=descriptor.provider_version,
                 supported_sources=descriptor.supported_sources,
                 origin=origin.strip(),
+                trusted_authority_class=descriptor.trusted_authority_class,
+                allowed_authority_classes=descriptor.allowed_authority_classes,
             )
         with self._lock:
             existing = self._providers.get(descriptor.provider_id)
@@ -125,32 +133,67 @@ class ContextPluginRegistry:
             )
 
     def set_ranker(self, ranker: ContextRanker | None) -> None:
-        self._ranker = ranker
+        with self._lock:
+            self._ranker = ranker
 
     def set_allocator(self, allocator: ContextBudgetAllocator | None) -> None:
-        self._allocator = allocator
+        with self._lock:
+            self._allocator = allocator
+
+    def set_score_normalizer(self, normalizer: ContextScoreNormalizer | None) -> None:
+        with self._lock:
+            self._score_normalizer = normalizer
+
+    def set_semantic_deduper(self, deduper: ContextSemanticDeduper | None) -> None:
+        with self._lock:
+            self._semantic_deduper = deduper
+
+    def set_conflict_resolver(self, resolver: ContextConflictResolver | None) -> None:
+        with self._lock:
+            self._conflict_resolver = resolver
 
     def set_formatter(self, formatter: ContextFormatter | None) -> None:
-        self._formatter = formatter
+        with self._lock:
+            self._formatter = formatter
 
     def set_validator(self, validator: ContextValidator | None) -> None:
-        self._validator = validator
+        with self._lock:
+            self._validator = validator
 
     @property
     def ranker(self) -> ContextRanker | None:
-        return self._ranker
+        with self._lock:
+            return self._ranker
 
     @property
     def allocator(self) -> ContextBudgetAllocator | None:
-        return self._allocator
+        with self._lock:
+            return self._allocator
+
+    @property
+    def score_normalizer(self) -> ContextScoreNormalizer | None:
+        with self._lock:
+            return self._score_normalizer
+
+    @property
+    def semantic_deduper(self) -> ContextSemanticDeduper | None:
+        with self._lock:
+            return self._semantic_deduper
+
+    @property
+    def conflict_resolver(self) -> ContextConflictResolver | None:
+        with self._lock:
+            return self._conflict_resolver
 
     @property
     def formatter(self) -> ContextFormatter | None:
-        return self._formatter
+        with self._lock:
+            return self._formatter
 
     @property
     def validator(self) -> ContextValidator | None:
-        return self._validator
+        with self._lock:
+            return self._validator
 
 
 @dataclass(frozen=True)

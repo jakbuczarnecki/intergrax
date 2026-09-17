@@ -272,6 +272,7 @@ def test_audit_events_generated_on_decision() -> None:
     assert len(sink.events) == 1
     event = sink.events[0]
     assert event.agent_id == "invoice-agent"
+    assert event.tenant_id == "tenant-a"
     assert event.tool_id == "invoice.read"
     assert event.decision is ToolAuthorizationDecisionState.ALLOW
     assert event.event_id.startswith("governance_evt_")

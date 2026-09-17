@@ -145,6 +145,21 @@ def test_external_work_cancel_action_operation_binding_ok() -> None:
     assert result.action == ACTION_CANCEL_EXTERNAL_WORK
 
 
+def test_external_work_effect_contract_matches_provider_invocation_operation() -> None:
+    from intergrax.contracts.governed_execution_result import (
+        external_work_invocation_operation_matches_effect_contract,
+    )
+
+    assert external_work_invocation_operation_matches_effect_contract(
+        contract_operation_key="external_work.create_work",
+        invocation_operation="create_work",
+    )
+    assert not external_work_invocation_operation_matches_effect_contract(
+        contract_operation_key="external_work.accept_quote",
+        invocation_operation="create_work",
+    )
+
+
 def test_external_work_action_operation_mismatch_rejected() -> None:
     with pytest.raises(ValueError, match="action_operation_mismatch"):
         _ger(

@@ -208,7 +208,6 @@ def _external_user_profile_catalog() -> MemoryStorePluginCatalog:
 async def test_external_plugin_materialization_canonical_qualification() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.13c.external.plugin")
     ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id="qual-tenant-plugin",
         integration_profile=IntegrationProfile(),
     )
@@ -241,7 +240,6 @@ async def test_external_plugin_materialization_canonical_qualification() -> None
 async def test_external_plugin_partial_capability_matrix() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.13c.partial")
     ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id="qual-tenant",
         integration_profile=IntegrationProfile(),
     )

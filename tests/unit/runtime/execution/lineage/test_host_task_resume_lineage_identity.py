@@ -38,7 +38,7 @@ from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]

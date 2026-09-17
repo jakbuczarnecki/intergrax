@@ -41,7 +41,7 @@ from intergrax.runtime.execution.lineage.codecs import (
     encode_execution_lineage_admission_record,
 )
 from intergrax.runtime.execution.lineage.persistence import InMemoryExecutionLineagePersistence
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 

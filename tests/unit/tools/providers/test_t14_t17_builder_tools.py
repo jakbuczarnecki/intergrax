@@ -8,6 +8,15 @@ import pytest
 
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.memory.contracts.memory_control import (
+    MemoryControlPlaneScope,
+    MemoryControlRecallItem,
+    MemoryControlRecallRequest,
+    MemoryControlRecallResult,
+    MemoryControlRememberRequest,
+    MemoryControlRememberResult,
+    MemoryControlScopeRef,
+)
 from intergrax.integrations.contracts.issue_tracker import IssueComment, IssueRecord, IssueSearchResult
 from intergrax.integrations.providers.http_client.allowlist.client import AllowlistHttpClient
 from intergrax.memory.user_profile_memory import (
@@ -49,6 +58,8 @@ from intergrax.tools.providers.skill_tool.contracts import SkillResolveInput
 from intergrax.tools.providers.skill_tool.service import skill_resolve
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
+from testing_support.memory_control_plane_test_stub import MemoryControlPlaneTestStub
+
 pytestmark = pytest.mark.unit
 
 
@@ -67,6 +78,39 @@ class _FakeAgentRegistry:
             name="Demo Agent",
             description="Demo",
             capabilities=["demo.cap"],
+        )
+
+
+class _BuilderLtmPlane(MemoryControlPlaneTestStub):
+    async def recall(
+        self,
+        identity: RequestIdentity,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlRecallRequest,
+    ) -> MemoryControlRecallResult:
+        _ = (identity, scope)
+        items = ()
+        if "intergrax" in request.query.lower():
+            items = (
+                MemoryControlRecallItem(
+                    entry_id="e-builder",
+                    content="Intergrax harness builder",
+                    kind=MemoryKind.USER_FACT,
+                    score=1.0,
+                ),
+            )
+        return MemoryControlRecallResult(scope=MemoryControlPlaneScope.USER, items=items)
+
+    async def remember(
+        self,
+        identity: RequestIdentity,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlRememberRequest,
+    ) -> MemoryControlRememberResult:
+        _ = (identity, scope, request)
+        return MemoryControlRememberResult(
+            scope=MemoryControlPlaneScope.USER,
+            entry_id="written-builder",
         )
 
 
@@ -226,6 +270,7 @@ def test_ltm_memory_context_and_http_tools() -> None:
         http_client=AllowlistHttpClient(allowed_hosts=frozenset({"example.com"})),
         extras={
             "request_identity": RequestIdentity(tenant_id="default", user_id="u1"),
+            "memory_control_plane": _BuilderLtmPlane(),
         },
     )
     ltm_hits = ltm_search(ctx, LtmSearchInput(user_id="u1", query="intergrax"))

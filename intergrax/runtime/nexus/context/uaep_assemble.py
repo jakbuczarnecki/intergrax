@@ -17,7 +17,7 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.graph_assembly import text_from_assembled_messages
-from intergrax.runtime.nexus.context.provider_handles import build_graph_provider_handles
+from intergrax.runtime.nexus.context.provider_handles import build_graph_provider_context_bundle
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
 
@@ -63,17 +63,20 @@ async def assemble_uaep_session_messages(
     runtime_config = RuntimeConfig(llm_adapter=llm_adapter, production_mode=False)
     base_message = request.message or ""
     engine_id = engine.engine_id
+    runtime, handles, sources = build_graph_provider_context_bundle(
+        _task_stub_from_request(request),
+        runtime_config=runtime_config,
+        messages=[ChatMessage(role="user", content=base_message)],
+        event_bus=event_bus,
+        node_id=agent_id,
+        agent_id=agent_id,
+        engine_id=engine_id,
+    )
     provider_ctx = ContextProviderContext(
         engine_id=engine_id,
-        handles=build_graph_provider_handles(
-            _task_stub_from_request(request),
-            runtime_config=runtime_config,
-            messages=[ChatMessage(role="user", content=base_message)],
-            event_bus=event_bus,
-            node_id=agent_id,
-            agent_id=agent_id,
-            engine_id=engine_id,
-        ),
+        sources=sources,
+        runtime=runtime,
+        handles=handles,
     )
     assembled = await engine.assemble(assembly_request, provider_ctx=provider_ctx)
     return assembled.messages

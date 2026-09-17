@@ -17,6 +17,7 @@ from intergrax.applications._shared.memory_wiring import (
 from intergrax.applications._shared.memory_vector_wiring import resolve_rag_stack_for_memory_wiring
 from intergrax.applications.contracts.environment_profile import MemoryProfile
 from langchain_core.documents import Document
+from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
 from intergrax.llm.messages import ChatMessage
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.user_profile_memory import UserProfileMemoryEntry
@@ -88,13 +89,19 @@ async def test_ltm_vector_wiring_search_returns_hits_after_write() -> None:
     assert session_manager.user_profile_manager._tenant_id == "tenant-memory"
 
     fact = "User prefers concise technical answers in Polish."
+    identity = RequestIdentity(
+        tenant_id="tenant-memory",
+        user_id="tester",
+        principal_type=PrincipalType.USER,
+        auth_subject="tester",
+    )
     await session_manager.user_profile_manager.add_memory_entry(
+        identity,
         "tester",
         UserProfileMemoryEntry(content=fact, kind="user_fact"),
     )
-
     result = await session_manager.search_user_longterm_memory(
-        "tester",
+        identity,
         fact,
         top_k=4,
     )

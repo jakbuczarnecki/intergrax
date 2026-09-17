@@ -52,7 +52,7 @@ from intergrax.runtime.execution.retry import (
 from intergrax.runtime.execution.retry.policy import project_resilience_failure_kind
 from intergrax.runtime.reliability.step_retry_budget import StepRetryBudget
 from intergrax.runtime.resilience.policy_resolver import resolve_failure_action
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 

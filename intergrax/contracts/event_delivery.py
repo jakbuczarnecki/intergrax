@@ -188,10 +188,19 @@ class EventDeliveryPolicy:
     important_wait_timeout_seconds: float = 0.05
     critical_completion_timeout_seconds: float = 5.0
     drain_shutdown_timeout_seconds: float = 30.0
+    critical_reserved_capacity: int = 0
 
     def __post_init__(self) -> None:
+        if isinstance(self.max_capacity, bool):
+            raise TypeError("max_capacity must be int, not bool")
+        if isinstance(self.critical_reserved_capacity, bool):
+            raise TypeError("critical_reserved_capacity must be int, not bool")
         if self.max_capacity < 1:
             raise ValueError("max_capacity must be >= 1")
+        if self.critical_reserved_capacity < 0:
+            raise ValueError("critical_reserved_capacity must be >= 0")
+        if self.critical_reserved_capacity > self.max_capacity:
+            raise ValueError("critical_reserved_capacity must be <= max_capacity")
         if self.important_wait_timeout_seconds < 0:
             raise ValueError("important_wait_timeout_seconds must be >= 0")
         if self.critical_completion_timeout_seconds <= 0:
@@ -262,6 +271,13 @@ class EventExportSinkPort(Protocol):
 @runtime_checkable
 class EventDeliveryObligationPolicyPort(Protocol):
     def obligation_for(self, priority: EventPriority) -> EventDeliveryObligation: ...
+
+
+@runtime_checkable
+class EventDeliveryAdmissionPolicyPort(Protocol):
+    """Capacity partitioning for non-CRITICAL admission (CRITICAL may use reserved slots)."""
+
+    def max_non_critical_buffered_events(self, policy: EventDeliveryPolicy) -> int: ...
 
 
 @runtime_checkable

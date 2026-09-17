@@ -13,20 +13,22 @@
 
 Governed Execution mechanisms already exist in the platform (policy evaluation, meaningful-side-effect contracts, collaborative-work enforcement, HITL continuation). AUDIT-5 identified accepted gaps requiring remediation.
 
-**GR-0 rebase (2026-09-14, HEAD `fe2edc8077234437b13345daaf46633867fe8f31`):** Post–Unified Execution Runtime audit reconciles **code truth** with this plan. Canonical gap inventory and enterprise roadmap: [`qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](../qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md).
+**GOV-FINAL-1 (2026-09-17):** Maintainer status synchronized to `development` code truth. **Architecture authority:** [`architecture/GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md) only — this plan is roadmap/status, not a second SSOT. Gap ledger: [`qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](../qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md).
 
-**PG-FIX summary after rebase (distinct from AUDIT-5 persistence):**
+**GOV-FINAL-2 (session):** GR-3 `authorize_and_execute` allowlist includes Decision-bound Execution adapter; GR-4 removes undocumented Nexus import from `meaningful_side_effect_authorization.py` (pause via governed-continuation bridge). Enterprise qualification matrix still open (GR-8/10/13).
 
-| Block | IMPLEMENTED (code) | VERIFIED | CLOSED |
-| ----- | ------------------ | -------- | ------ |
-| PG-FIX-A | Core spine (`CollaborativeWorkEnforcementGate`, `MeaningfulSideEffectAuthorizationBoundary`) | Partial — targeted tests / adapter paths | **No** — not every consumer path qualified |
-| PG-FIX-B | `RuntimePolicyEngine` specificity / precedence | Partial — `test_pg_fix_b_*` | **No** — GR-4 requalification open |
-| PG-FIX-C | Scoped grant + consume-before-effect mechanism | Partial — G5C / PG-FIX-C tests; **Attempt/Execution binding (GR-1)** | **No** — UER HITL ownership gaps (GR-5) |
-| PG-FIX-D | Typed rule matching (no `rule_id` suffix dispatch) | Partial — `test_pg_fix_d_*` | **No** — GR-4 requalification open |
+**PG-FIX legacy map (final reconciliation — auditable):**
 
-Historical AUDIT-5 rows remain authoritative **context**; they are **not** erased. Closure requires GR-1+ (identity rebind, UER HITL, evidence, qualification).
+| Block | Original problem | Superseding GR-* | Status after GOV-FINAL-1 | Remaining gap |
+| ----- | ---------------- | ---------------- | ------------------------ | ------------- |
+| PG-FIX-A | Duplicate / adapter-owned side-effect policy paths | GR-3 inner spine | **SUPERSEDED_BY_GR_3** (mechanism) — **PARTIAL** qualification | Not every consumer path wired; universal coverage unproven |
+| PG-FIX-B | Non-deterministic policy precedence | GR-4 policy core | **SUPERSEDED_BY_GR_4** — **IMPLEMENTED** / enterprise sign-off **OPEN** (GR-13) | GR-4-R1 Nexus-neutral bundle assembly |
+| PG-FIX-C | Scoped grant vs global ALLOW | GR-1 identity + GR-5 continuation | Grant binding **CLOSED** (GR-1); lifecycle **PARTIAL** (GR-5 candidate) | Strategy-wide HITL qual (GR-10) |
+| PG-FIX-D | Hidden `rule_id` suffix matching | GR-4 policy core | **SUPERSEDED_BY_GR_4** — **IMPLEMENTED** / enterprise sign-off **OPEN** (GR-13) | Plugin enterprise certification (GR-11) |
 
-**Active roadmap:** **GR-0** complete → **GR-1** (Execution Identity Rebinding) next. See gap ledger § GR enterprise roadmap.
+Historical AUDIT-5 rows remain **context**; they are not erased. **Enterprise CLOSED** for PG-FIX blocks requires GR-13 / GR-16 — not claimed here.
+
+**Active roadmap:** GR-1…GR-7 implementation slices landed on `development`; **GR-8+** and enterprise qualification remain open. See gap ledger § GR enterprise roadmap and architecture § Governance implementation truth.
 
 Audit persistence alone never constitutes implementation or verification evidence.
 
@@ -159,32 +161,31 @@ Audit persistence alone never constitutes implementation or verification evidenc
 
 Implementation requires code, tests, and independent verification before any block moves to **CLOSED**. Audit persistence does not constitute implementation or verification evidence.
 
-## GR enterprise roadmap (post–UER rebase)
+## GR enterprise roadmap (GOV-FINAL-1 code truth)
 
-Frozen at GR-0. Full rows, evidence, and old G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](../qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md).
+Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](../qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md). Status vocabulary: mechanism may be **IMPLEMENTED** while GR scope or enterprise qualification remains **OPEN**.
 
 | ID | Task | Status |
 | --- | --- | --- |
-| GR-0 | Architecture Rebase & Gap Ledger | Complete (this rebase) |
-| GR-1 | Execution Identity Rebinding | **NEXT** |
-| GR-2 | Execution Admission Governance | Planned |
-| GR-3 | Inner Evaluation Spine Reconciliation | Planned |
-| GR-4 | Policy Resolution & Catalog Requalification | Planned |
-| GR-5-ADR1 | Canonical Execution HITL Continuation Ownership | **Done** — [ADR-GR-5-001](../../technical/adr/entries/2026-09-15/ADR-GR-5-001.md) (`ExecutionContinuationPort`; Nexus internal) |
-| GR-5-R1 | Canonical Execution Continuation Contract | **Done** — `intergrax/contracts/execution_continuation.py` |
-| GR-5-R2 | Canonical Pause/Resume Integration | **Next** |
-| GR-5-R3–R5 | Projection, Nexus internal HITL, restart qual | Planned (see ADR §13) |
-| GR-5 | HITL / Governed Continuation Execution Rebase | Open |
-| GR-6 | Decision → Governance Integration | Planned |
-| GR-7 | External Effect / Reliability Boundary | Planned |
-| GR-8 | Governance Evidence Integration | Planned |
-| GR-9 | Diagnostic Consumption Proof | Planned |
-| GR-10 | Execution Strategy Coverage | Planned |
-| GR-11 | Plugin & Enterprise Extensibility Certification | Planned |
-| GR-12 | Control-Plane Governance | Planned |
-| GR-13 | Full Governance Proof Matrix | Planned |
-| GR-14 | Real Application Integration — LKW | Planned |
-| GR-15 | Governance UX / Application Contract | Planned |
-| GR-16 | Enterprise Qualification & Claims | Planned |
+| GR-0 | Architecture Rebase & Gap Ledger | **CLOSED** |
+| GR-1 | Execution Identity Rebinding | **CLOSED** |
+| GR-2 | Execution Admission Governance | **IMPLEMENTED** — qualification **OPEN** (candidate closed; audit pending) |
+| GR-3 | Inner Evaluation Spine Reconciliation | **IMPLEMENTED** — qualification **OPEN** (GR-3-R1/R2 done) |
+| GR-4 | Policy Resolution & Catalog Requalification | **IMPLEMENTED** — qualification **OPEN**; GR-4-R1 **OPEN** |
+| GR-5-ADR1 | Canonical Execution HITL Continuation Ownership | **CLOSED** — [ADR-GR-5-001](../../technical/adr/entries/2026-09-15/ADR-GR-5-001.md) |
+| GR-5-R1 | Canonical Execution Continuation Contract | **CLOSED** |
+| GR-5-R2–R5 | Pause/resume integration, projection, restart qual | **IMPLEMENTED** — qualification **OPEN** (candidate closed slices) |
+| GR-5 | HITL / Governed Continuation Rebase | **IMPLEMENTED** — enterprise qualification **OPEN** (GR-10) |
+| GR-6 | Decision → Governance Integration | **IMPLEMENTED** — qualification **OPEN** (host-qualified; not all strategies) |
+| GR-7 | External Effect / Reliability Boundary | **IMPLEMENTED** — qualification **OPEN** (ERL path; Reliability ≠ Governance) |
+| GR-8 | Governance Evidence Integration | **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** — [ADR-GR-8-001](../../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); independent final audit pending |
+| GR-9 | Diagnostic Consumption Proof | **OPEN** |
+| GR-10 | Execution Strategy Coverage | **PARTIAL** — qualification suite + matrix; INFERENCE HITL/Reliability residuals |
+| GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** |
+| GR-12 | Control-Plane Governance | **GAP** / **OPEN** |
+| GR-13 | Full Governance Proof Matrix | **OPEN** |
+| GR-14 | Real Application Integration — LKW | **OPEN** |
+| GR-15 | Governance UX / Application Contract | **OPEN** |
+| GR-16 | Enterprise Qualification & Claims | **OPEN** |
 
 ---

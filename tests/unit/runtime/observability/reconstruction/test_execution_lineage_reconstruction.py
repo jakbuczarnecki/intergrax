@@ -38,7 +38,7 @@ from intergrax.runtime.observability.reconstruction import (
 )
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.execution.lineage.persistence import InMemoryExecutionLineagePersistence
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 from intergrax.runtime.observability.causal_evidence import (
     CausalRelationKind,
     MessageBusTaskRef,

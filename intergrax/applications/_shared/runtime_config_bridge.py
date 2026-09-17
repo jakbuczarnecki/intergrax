@@ -168,6 +168,9 @@ def materialize_runtime_config(
         idempotency_store=reliability_wiring.idempotency_store,
     )
     apply_context_profiles_from_environment(config, env)
+    from intergrax.applications._shared.context_wiring import apply_context_engine_to_runtime_config
+
+    apply_context_engine_to_runtime_config(config, env)
     if config.context_budget_policy is None and config.llm_adapter is not None:
         from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 
@@ -273,10 +276,6 @@ def build_runtime_context_from_environment(
         rag_stack=rag_stack,
     )
     if config.tool_wiring_context is not None:
-        from intergrax.applications._shared.memory_control_wiring import (
-            build_default_memory_control_plane,
-        )
-
         extras = dict(config.tool_wiring_context.extras)
         extras["session_manager"] = session_manager
         if request.canonical_identity is not None:
@@ -284,9 +283,9 @@ def build_runtime_context_from_environment(
         replace_kwargs: dict[str, object] = {"extras": extras}
         if session_manager.user_profile_manager is not None:
             replace_kwargs["user_profile_manager"] = session_manager.user_profile_manager
-            extras["memory_control_plane"] = build_default_memory_control_plane(
-                user_profile_manager=session_manager.user_profile_manager,
-            )
+        host_plane = session_manager.memory_control_plane
+        if host_plane is not None:
+            extras["memory_control_plane"] = host_plane
         config.tool_wiring_context = replace(config.tool_wiring_context, **replace_kwargs)
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
     return RuntimeContext.build(

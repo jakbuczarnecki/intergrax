@@ -29,7 +29,6 @@ from intergrax.memory.contracts.memory_lifecycle import (
 from intergrax.memory.memory_diagnostic_emitter import MemoryDiagnosticEmitter
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecycleCoordinator
 from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN, resolve_memory_index_collection
-from intergrax.memory.user_profile_ltm_vector_projection import UserProfileLtmVectorProjection
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
@@ -108,28 +107,10 @@ class UserProfileManager:
         self._longterm_top_k = int(longterm_top_k)
         self._longterm_score_threshold = float(longterm_score_threshold)
         self._memory_lifecycle = UserProfileMemoryLifecycleCoordinator(
-            projections=self._resolve_memory_projections(memory_projections),
+            projections=tuple(memory_projections or ()),
             diagnostic_emitter=diagnostic_emitter,
             tenant_id=tenant_id,
         )
-
-    def _resolve_memory_projections(
-        self,
-        configured: Sequence[UserProfileMemoryProjection] | None,
-    ) -> tuple[UserProfileMemoryProjection, ...]:
-        if configured is not None:
-            return tuple(configured)
-        if self._embedding_manager is not None and self._vectorstore_manager is not None:
-            return (
-                UserProfileLtmVectorProjection(
-                    embedding_manager=self._embedding_manager,
-                    vectorstore_manager=self._vectorstore_manager,
-                    tenant_id=self._tenant_id,
-                    vector_index_namespace=self._vector_index_namespace,
-                    workspace_id=self._workspace_id,
-                ),
-            )
-        return ()
 
     async def _get_store_profile(self, user_id: str) -> UserProfile:
         return await self._store.get_profile(tenant_id=self._tenant_id, user_id=user_id)

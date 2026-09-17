@@ -18,14 +18,12 @@ from datetime import datetime, timezone
 from typing import Mapping
 
 from external_contractor_adapter.schemas.adapt_result import ExternalWorkAdapterResult
-from external_contractor_adapter.side_effect_actions import (
-    ACTION_ACCEPT_QUOTE,
-    ACTION_CANCEL_EXTERNAL_WORK,
-    ACTION_CREATE_EXTERNAL_WORK,
-)
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
 from intergrax.contracts.runtime_policy import PolicyAction
-from intergrax.contracts.governed_execution_result import GovernedExecutionResult
+from intergrax.contracts.governed_execution_result import (
+    GovernedExecutionResult,
+    external_work_provider_operation_for_decision_action,
+)
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
 from intergrax.runtime.execution_evidence.compose import (
     AttestationOutcome,
@@ -33,13 +31,6 @@ from intergrax.runtime.execution_evidence.compose import (
     attest_governed_execution_result,
     invocation_id_from_adapter_metadata,
 )
-
-_ACTION_TO_OPERATION: Mapping[str, str] = {
-    ACTION_CREATE_EXTERNAL_WORK: "create_work",
-    ACTION_ACCEPT_QUOTE: "submit_quote_acceptance",
-    ACTION_CANCEL_EXTERNAL_WORK: "cancel_work",
-}
-
 
 def produce_attested_receipt_for_governed_result(
     result: GovernedExecutionResult,
@@ -158,8 +149,12 @@ def _provider_was_invoked(result: ExternalWorkAdapterResult) -> bool:
 
 
 def _resolve_operation(result: ExternalWorkAdapterResult) -> str:
-    if result.proof is not None and result.proof.action in _ACTION_TO_OPERATION:
-        return _ACTION_TO_OPERATION[result.proof.action]
+    if result.proof is not None:
+        canonical = external_work_provider_operation_for_decision_action(
+            result.proof.action,
+        )
+        if canonical is not None:
+            return canonical
     meta_op = result.metadata.get("provider_operation")
     if isinstance(meta_op, str) and meta_op.strip():
         return meta_op.strip()

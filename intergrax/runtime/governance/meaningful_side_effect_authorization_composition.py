@@ -15,6 +15,7 @@ from intergrax.contracts.decision_requirement_policy import DecisionRequirementP
 from intergrax.runtime.governance.canonical_inner_execution_guard import (
     DefaultCanonicalInnerExecutionGuard,
 )
+from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )
@@ -41,12 +42,14 @@ def build_meaningful_side_effect_authorization_boundary(
     enforcement_gate: CollaborativeWorkEnforcementGate,
     inner_execution_guard: CanonicalInnerExecutionGuardPort,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
+    governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
 ) -> MeaningfulSideEffectAuthorizationBoundary:
     """Wire enforcement gate and inner guard behind the shared policy boundary."""
     return MeaningfulSideEffectAuthorizationBoundary(
         enforcement_gate=enforcement_gate,
         inner_execution_guard=inner_execution_guard,
         decision_requirement_policy=decision_requirement_policy,
+        governance_evidence_recorder=governance_evidence_recorder,
     )
 
 

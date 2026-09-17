@@ -2,7 +2,6 @@
 # Intergrax framework – proprietary and confidential.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.memory.contracts.memory_control import (
@@ -12,7 +11,7 @@ from intergrax.memory.contracts.memory_control import (
     MemoryControlRememberRequest,
     user_memory_scope,
 )
-from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
+from intergrax.memory.user_profile_memory import MemoryKind
 from intergrax.tools._shared.async_dispatch import run_async
 from intergrax.tools.providers.ltm.contracts import (
     LtmMemoryHit,
@@ -21,52 +20,24 @@ from intergrax.tools.providers.ltm.contracts import (
     LtmWriteFactInput,
     LtmWriteFactOutput,
 )
-from intergrax.tools.registry.runtime_bindings import UserProfileManagerBinding
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 LTM_SEARCH_TOOL_ID = "ltm.search"
 LTM_WRITE_FACT_TOOL_ID = "ltm.write_fact"
 
 
-def _require_user_profile_manager(ctx: ToolWiringContext) -> UserProfileManagerBinding:
-    manager = ctx.user_profile_manager or ctx.extras.get("user_profile_manager")
-    if manager is None:
-        raise RuntimeError("user_profile_manager_not_configured")
-    if not isinstance(manager, UserProfileManagerBinding):
-        raise RuntimeError("user_profile_manager_invalid_type")
-    return manager
-
-
-def _keyword_hits(profile: object, query: str) -> list[LtmMemoryHit]:
-    needle = query.lower()
-    hits: list[LtmMemoryHit] = []
-    entries = attribute_access.optional(profile, "memory_entries", []) or []
-    for entry in entries:
-        if attribute_access.optional(entry, "deleted", False):
-            continue
-        content = str(attribute_access.optional(entry, "content", "") or "")
-        if needle in content.lower():
-            kind = attribute_access.optional(entry, "kind", MemoryKind.OTHER)
-            kind_value = kind.value if hasattr(kind, "value") else str(kind)
-            hits.append(
-                LtmMemoryHit(
-                    entry_id=str(attribute_access.optional(entry, "entry_id", "")),
-                    content=content,
-                    kind=kind_value,
-                    score=1.0,
-                )
-            )
-    return hits
-
-
-def _control_plane_from_context(
+def _require_memory_control_context(
     ctx: ToolWiringContext,
-) -> tuple[MemoryControlPlane, RequestIdentity] | None:
-    plane = ctx.extras.get("memory_control_plane")
+) -> tuple[MemoryControlPlane, RequestIdentity]:
     identity = ctx.extras.get("request_identity")
-    if isinstance(plane, MemoryControlPlane) and isinstance(identity, RequestIdentity):
-        return plane, identity
-    return None
+    if not isinstance(identity, RequestIdentity):
+        raise MemoryControlAccessDenied("trusted request identity required")
+    if not (identity.user_id or "").strip():
+        raise MemoryControlAccessDenied("trusted request identity required")
+    plane = ctx.extras.get("memory_control_plane")
+    if not isinstance(plane, MemoryControlPlane):
+        raise MemoryControlAccessDenied("memory_control_plane_not_configured")
+    return plane, identity
 
 
 def _assert_tool_user_matches_identity(params_user_id: str, identity: RequestIdentity) -> None:
@@ -77,114 +48,54 @@ def _assert_tool_user_matches_identity(params_user_id: str, identity: RequestIde
 
 
 def ltm_search(ctx: ToolWiringContext, params: LtmSearchInput) -> LtmSearchOutput:
-    control = _control_plane_from_context(ctx)
+    plane, identity = _require_memory_control_context(ctx)
     query = params.query.strip()
-    if control is not None:
-        plane, identity = control
-        _assert_tool_user_matches_identity(params.user_id, identity)
-        scope = user_memory_scope(identity)
-        recall = run_async(
-            plane.recall(
-                identity,
-                scope,
-                MemoryControlRecallRequest(query=query, top_k=params.top_k),
-            )
+    _assert_tool_user_matches_identity(params.user_id, identity)
+    scope = user_memory_scope(identity)
+    recall = run_async(
+        plane.recall(
+            identity,
+            scope,
+            MemoryControlRecallRequest(query=query, top_k=params.top_k),
         )
-        hits = [
-            LtmMemoryHit(
-                entry_id=item.entry_id,
-                content=item.content,
-                kind=item.kind.value,
-                score=float(item.score or 0.0),
-            )
-            for item in recall.items
-        ]
-        return LtmSearchOutput(
-            used=bool(hits),
-            hits=hits,
-            reason=recall.reason,
+    )
+    hits = [
+        LtmMemoryHit(
+            entry_id=item.entry_id,
+            content=item.content,
+            kind=item.kind.value,
+            score=float(item.score or 0.0),
         )
-
-    manager = _require_user_profile_manager(ctx)
-    user_id = params.user_id.strip()
-
-    if manager.is_longterm_rag_enabled():
-        result = run_async(
-            manager.search_longterm_memory(
-                user_id,
-                query,
-                top_k=params.top_k,
-            )
-        )
-        hits_raw = result.get("hits") or []
-        scores = result.get("scores") or []
-        hits: list[LtmMemoryHit] = []
-        for index, entry in enumerate(hits_raw):
-            kind = attribute_access.optional(entry, "kind", MemoryKind.OTHER)
-            kind_value = kind.value if hasattr(kind, "value") else str(kind)
-            score = float(scores[index]) if index < len(scores) else 0.0
-            hits.append(
-                LtmMemoryHit(
-                    entry_id=str(attribute_access.optional(entry, "entry_id", "")),
-                    content=str(attribute_access.optional(entry, "content", "") or ""),
-                    kind=kind_value,
-                    score=score,
-                )
-            )
-        debug = result.get("debug") or {}
-        used = bool(debug.get("used") or result.get("used_longterm"))
-        return LtmSearchOutput(used=used, hits=hits, reason=str(debug.get("reason") or "ok"))
-
-    profile = run_async(manager.get_profile(user_id))
-    hits = _keyword_hits(profile, query)[: params.top_k]
-    return LtmSearchOutput(used=bool(hits), hits=hits, reason="keyword_fallback")
+        for item in recall.items
+    ]
+    return LtmSearchOutput(
+        used=bool(hits),
+        hits=hits,
+        reason=recall.reason,
+    )
 
 
 def ltm_write_fact(ctx: ToolWiringContext, params: LtmWriteFactInput) -> LtmWriteFactOutput:
-    control = _control_plane_from_context(ctx)
-    if control is not None:
-        plane, identity = control
-        _assert_tool_user_matches_identity(params.user_id, identity)
-        scope = user_memory_scope(identity)
-        kind_name = params.kind.strip().lower() or "user_fact"
-        try:
-            kind = MemoryKind(kind_name)
-        except ValueError:
-            kind = MemoryKind.OTHER
-        remembered = run_async(
-            plane.remember(
-                identity,
-                scope,
-                MemoryControlRememberRequest(
-                    content=params.content.strip(),
-                    kind=kind,
-                    title=params.title.strip() or None,
-                ),
-            )
-        )
-        return LtmWriteFactOutput(
-            written=True,
-            entry_id=remembered.entry_id or "",
-        )
-
-    identity_raw = ctx.extras.get("request_identity")
-    if not isinstance(identity_raw, RequestIdentity):
-        raise MemoryControlAccessDenied("trusted request identity required")
-    identity = identity_raw
-    if not (identity.user_id or "").strip():
-        raise MemoryControlAccessDenied("trusted request identity required")
+    plane, identity = _require_memory_control_context(ctx)
     _assert_tool_user_matches_identity(params.user_id, identity)
-
-    manager = _require_user_profile_manager(ctx)
+    scope = user_memory_scope(identity)
     kind_name = params.kind.strip().lower() or "user_fact"
     try:
         kind = MemoryKind(kind_name)
     except ValueError:
         kind = MemoryKind.OTHER
-    entry = UserProfileMemoryEntry(
-        content=params.content.strip(),
-        kind=kind,
-        title=params.title.strip() or None,
+    remembered = run_async(
+        plane.remember(
+            identity,
+            scope,
+            MemoryControlRememberRequest(
+                content=params.content.strip(),
+                kind=kind,
+                title=params.title.strip() or None,
+            ),
+        )
     )
-    saved = run_async(manager.add_memory_entry(identity, params.user_id.strip(), entry))
-    return LtmWriteFactOutput(written=True, entry_id=str(attribute_access.optional(saved, "entry_id", "")))
+    return LtmWriteFactOutput(
+        written=True,
+        entry_id=remembered.entry_id or "",
+    )

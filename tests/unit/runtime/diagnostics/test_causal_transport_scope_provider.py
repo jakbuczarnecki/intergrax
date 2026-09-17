@@ -60,7 +60,7 @@ from intergrax.runtime.observability.document_store_causal_evidence_persistence 
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     create_problem_for_tests,
     document_store_occurrence_persistence_for_tests,
     document_store_problem_persistence_for_tests,

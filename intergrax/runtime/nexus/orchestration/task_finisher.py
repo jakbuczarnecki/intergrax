@@ -13,7 +13,9 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.human.request_contract import human_request_event_payload
-from intergrax.runtime.nexus.orchestration.run_artifact_bundle_builder import build_run_artifact_bundle
+from intergrax.runtime.nexus.orchestration.run_artifact_bundle_builder import (
+    build_run_artifact_bundle,
+)
 from intergrax.contracts.run_artifact_bundle import RUN_ARTIFACT_BUNDLE_METADATA_KEY
 from intergrax.runtime.nexus.orchestration.application_run_summary_builder import (
     build_application_run_summary,
@@ -24,11 +26,15 @@ from intergrax.runtime.nexus.orchestration.workspace_cleanup import (
     clear_isolation_refs_in_task_env_state,
 )
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
-from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
+from intergrax.runtime.nexus.response.final_response_composer import (
+    FinalResponseComposer,
+)
 from intergrax.runtime.nexus.retry.retry_engine import RetryRecord
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
-from intergrax.contracts.decision_authoritative_exposure import AuthoritativeDecisionExposure
+from intergrax.contracts.decision_authoritative_exposure import (
+    AuthoritativeDecisionExposure,
+)
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.task_contract import (
     TaskExecutionMetrics,
@@ -38,7 +44,10 @@ from intergrax.runtime.task.task_contract import (
     TaskRetryRecord,
     TaskValidationSummary,
 )
-from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey, TaskResultMetadataKey
+from intergrax.runtime.task.task_metadata_keys import (
+    TaskMetadataKey,
+    TaskResultMetadataKey,
+)
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_ID_KEY
@@ -63,7 +72,9 @@ def build_nexus_task_result(
     shadow_manager: ShadowWorkspaceManager,
     sandbox_manager: SandboxSessionManager,
     run_id: Optional["RunId"] = None,
-    authoritative_decision_exposure: AuthoritativeDecisionExposure[object] | None = None,
+    authoritative_decision_exposure: AuthoritativeDecisionExposure[object]
+    | None = None,
+    runtime_events_count: int | None = None,
 ) -> TaskResult:
     primary = executions[-1] if executions else None
     composer_meta = composer.compose_metadata(
@@ -90,17 +101,24 @@ def build_nexus_task_result(
 
     isolation = TaskIsolationSummary()
     if primary and primary.structured_data.get(SHADOW_WORKSPACE_ID_KEY):
-        isolation.shadow_workspace_id = str(primary.structured_data[SHADOW_WORKSPACE_ID_KEY])
+        isolation.shadow_workspace_id = str(
+            primary.structured_data[SHADOW_WORKSPACE_ID_KEY]
+        )
         artifact_count = primary.structured_data.get("shadow_artifact_count")
         if artifact_count is not None:
             isolation.shadow_artifact_count = int(artifact_count)
 
     if primary and primary.structured_data.get(SANDBOX_SESSION_ID_KEY):
-        isolation.sandbox_session_id = str(primary.structured_data[SANDBOX_SESSION_ID_KEY])
+        isolation.sandbox_session_id = str(
+            primary.structured_data[SANDBOX_SESSION_ID_KEY]
+        )
         operation_count = primary.structured_data.get("sandbox_operation_count")
         if operation_count is not None:
             isolation.sandbox_operation_count = int(operation_count)
 
+    resolved_runtime_events = (
+        runtime_events_count if runtime_events_count is not None else 0
+    )
     summary = TaskResultSummary(
         validation=TaskValidationSummary(
             valid=validation.valid,
@@ -110,7 +128,7 @@ def build_nexus_task_result(
         metrics=TaskExecutionMetrics(
             cost=execution_metrics.cost,
             total_tokens=execution_metrics.total_tokens,
-            runtime_events=len(event_bus.history),
+            runtime_events=resolved_runtime_events,
             task_trace_events=len(trace_emitter.events),
         ),
         isolation=isolation,
@@ -181,9 +199,26 @@ def build_nexus_task_result(
         executions=executions,
     )
     app_summary.metadata[RUN_ARTIFACT_BUNDLE_METADATA_KEY] = bundle_payload
-    result.metadata[TaskResultMetadataKey.APPLICATION_RUN_SUMMARY] = app_summary.model_dump(
-        mode="json"
+    result.metadata[TaskResultMetadataKey.APPLICATION_RUN_SUMMARY] = (
+        app_summary.model_dump(mode="json")
     )
     result.metadata[TaskResultMetadataKey.RUN_ARTIFACT_BUNDLE] = bundle_payload
     result.sync_metadata()
     return result
+
+
+def apply_runtime_events_metric_to_task_result(
+    result: TaskResult,
+    runtime_events_count: int,
+) -> TaskResult:
+    """Attach bus-accepted runtime event count to any final ``TaskResult``."""
+    if result.summary.metrics.runtime_events == runtime_events_count:
+        return result
+    metrics = result.summary.metrics.model_copy(
+        update={"runtime_events": runtime_events_count},
+    )
+    summary = result.summary.model_copy(update={"metrics": metrics})
+    return result.model_copy(update={"summary": summary})
+
+
+__all__ = ["apply_runtime_events_metric_to_task_result", "build_nexus_task_result"]

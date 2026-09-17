@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import os
@@ -95,6 +96,52 @@ def _should_skip(path: Path, *, repo_root: Path) -> bool:
     if path.name.endswith(".egg-info"):
         return True
     return False
+
+
+class ApplicationPythonSyntaxError(ValueError):
+    """Canonical application Python failed syntax validation."""
+
+
+def _collect_python_syntax_errors(
+    paths: list[Path],
+    *,
+    display_root: Path,
+) -> list[str]:
+    errors: list[str] = []
+    for path in paths:
+        try:
+            ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        except SyntaxError as exc:
+            rel = path.relative_to(display_root)
+            errors.append(f"{rel}: line {exc.lineno}: {exc.msg}")
+    return errors
+
+
+def validate_canonical_application_python_syntax(repo_root: Path) -> None:
+    """Validate Tier-3 application Python sources; skip Docker packaging artifacts."""
+    repo_root = repo_root.resolve()
+    applications_root = repo_root / "applications"
+    if not applications_root.is_dir():
+        return
+    paths = [
+        path
+        for path in sorted(applications_root.rglob("*.py"))
+        if not _should_skip(path, repo_root=repo_root)
+    ]
+    errors = _collect_python_syntax_errors(paths, display_root=repo_root)
+    if errors:
+        raise ApplicationPythonSyntaxError(
+            "APPLICATION_CANONICAL_PYTHON_SYNTAX_FAILED:\n" + "\n".join(errors)
+        )
+
+
+def _validate_materialized_runtime_context_syntax(context_root: Path) -> None:
+    paths = sorted(context_root.rglob("*.py"))
+    errors = _collect_python_syntax_errors(paths, display_root=context_root)
+    if errors:
+        raise ApplicationPythonSyntaxError(
+            "DOCKER_RUNTIME_CONTEXT_SYNTAX_FAILED:\n" + "\n".join(errors)
+        )
 
 
 def scan_secrets(path: Path, content: bytes) -> None:
@@ -405,6 +452,8 @@ def materialize_application_build_context(
             "DOCKER_ISOLATION_FAILED: agent directory mismatch in context: "
             f"actual={actual_agent_dirs} expected={expected_agent_dirs}"
         )
+
+    _validate_materialized_runtime_context_syntax(output)
 
     return manifest
 

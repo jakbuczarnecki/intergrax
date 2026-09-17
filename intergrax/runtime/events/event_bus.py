@@ -8,10 +8,25 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+import threading
 import time
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Awaitable, Callable, DefaultDict, List, Optional, Set, Union
+
+from intergrax.contracts.execution_identity import RunId, TaskId
+from intergrax.contracts.runtime_event_history import (
+    RuntimeEventHistoryBuffer,
+    RuntimeEventHistoryPolicy,
+    RuntimeEventHistoryStrategy,
+)
+from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
+from intergrax.runtime.events.runtime_event_metric_scope import (
+    _RuntimeEventMetricScopeRegistry,
+)
+from intergrax.runtime.events.runtime_event_history import (
+    resolve_runtime_event_history_buffer,
+)
 from uuid import uuid4
 
 from intergrax.contracts.event_delivery import (
@@ -40,8 +55,12 @@ from intergrax.contracts.execution_evidence.persistence_boundary_errors import (
     EvidencePersistenceBoundaryError,
     MandatoryEvidencePersistenceError,
 )
-from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
-from intergrax.runtime.events.evidence_persistence_adapter import as_evidence_persistence_port
+from intergrax.contracts.execution_evidence.persistence_port import (
+    EvidencePersistencePort,
+)
+from intergrax.runtime.events.evidence_persistence_adapter import (
+    as_evidence_persistence_port,
+)
 from intergrax.runtime.events.persistence_contract import resolve_event_tenant_id
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.runtime_persistence_resilience import (
@@ -89,7 +108,10 @@ class _TaxonomySubscription:
         if self.event_types is not None and event.event_type not in self.event_types:
             return False
         if self.categories is not None:
-            if event.event_category is None or event.event_category not in self.categories:
+            if (
+                event.event_category is None
+                or event.event_category not in self.categories
+            ):
                 return False
         if self.kind_prefix is not None and not (event.event_kind or "").startswith(
             self.kind_prefix
@@ -111,21 +133,32 @@ class RuntimeEventBus:
         self,
         *,
         persistence: Optional[EvidencePersistencePort] = None,
-        record_history: bool = True,
+        record_history: bool | None = None,
+        history_policy: RuntimeEventHistoryPolicy | None = None,
+        history_buffer: RuntimeEventHistoryBuffer | None = None,
+        history_strategy: RuntimeEventHistoryStrategy | None = None,
         event_sink: EventSinkPort | None = None,
         delivery_metrics: InternalDeliveryMetrics | None = None,
         delivery_reaction: EventSinkDeliveryReactionPort | None = None,
         critical_completion_timeout_seconds: float = 5.0,
     ) -> None:
-        self._handlers: DefaultDict[RuntimeEventType, List[tuple[str, int, EventHandler]]] = (
-            defaultdict(list)
-        )
+        self._handlers: DefaultDict[
+            RuntimeEventType, List[tuple[str, int, EventHandler]]
+        ] = defaultdict(list)
         self._wildcard: List[tuple[str, int, EventHandler]] = []
         self._taxonomy: List[_TaxonomySubscription] = []
-        self._history: List[RuntimeEvent] = []
-        self._record_history: bool = record_history
-        self._persistence: Optional[EvidencePersistencePort] = as_evidence_persistence_port(
-            persistence,
+        self._history_buffer: RuntimeEventHistoryBuffer = (
+            resolve_runtime_event_history_buffer(
+                record_history=record_history,
+                history_policy=history_policy,
+                history_buffer=history_buffer,
+                history_strategy=history_strategy,
+            )
+        )
+        self._persistence: Optional[EvidencePersistencePort] = (
+            as_evidence_persistence_port(
+                persistence,
+            )
         )
         self._event_sink: EventSinkPort | None = event_sink
         self._delivery_reaction: EventSinkDeliveryReactionPort = (
@@ -142,6 +175,9 @@ class RuntimeEventBus:
             raise ValueError("critical_completion_timeout_seconds must be > 0")
         self._critical_completion_timeout_seconds = critical_completion_timeout_seconds
         self._closed = False
+        self._event_count = 0
+        self._event_count_lock = threading.Lock()
+        self._metric_scopes = _RuntimeEventMetricScopeRegistry()
 
     def attach_persistence(self, persistence: EvidencePersistencePort) -> None:
         """Wire or replace the persistence adapter after construction."""
@@ -208,11 +244,17 @@ class RuntimeEventBus:
 
     def unsubscribe(self, subscription_id: str) -> None:
         self._wildcard = [t for t in self._wildcard if t[0] != subscription_id]
-        self._taxonomy = [t for t in self._taxonomy if t.subscription_id != subscription_id]
+        self._taxonomy = [
+            t for t in self._taxonomy if t.subscription_id != subscription_id
+        ]
         for et in list(self._handlers.keys()):
-            self._handlers[et] = [t for t in self._handlers[et] if t[0] != subscription_id]
+            self._handlers[et] = [
+                t for t in self._handlers[et] if t[0] != subscription_id
+            ]
 
-    def _collect_handlers(self, event: RuntimeEvent) -> List[tuple[str, int, EventHandler]]:
+    def _collect_handlers(
+        self, event: RuntimeEvent
+    ) -> List[tuple[str, int, EventHandler]]:
         handlers: List[tuple[str, int, EventHandler]] = list(self._wildcard)
         handlers.extend(self._handlers.get(event.event_type, []))
         for sub in self._taxonomy:
@@ -229,10 +271,24 @@ class RuntimeEventBus:
 
     @property
     def history(self) -> List[RuntimeEvent]:
-        return list(self._history)
+        return list(self._history_buffer.snapshot())
+
+    @property
+    def event_count(self) -> int:
+        """Count of events processed through this bus (independent of history retention)."""
+        with self._event_count_lock:
+            return self._event_count
 
     def clear_history(self) -> None:
-        self._history.clear()
+        self._history_buffer.clear()
+
+    def open_runtime_event_metric_scope(
+        self,
+        task_id: TaskId,
+        run_id: RunId,
+    ) -> RuntimeEventMetricScope:
+        """Count bus-accepted events for ``task_id`` + ``run_id`` until ``close()``."""
+        return self._metric_scopes.open(task_id, run_id)
 
     def record(self, event: RuntimeEvent, *, tenant_id: Optional[str] = None) -> None:
         """Synchronous append for callers that cannot await (e.g. TaskLifecycle)."""
@@ -284,7 +340,9 @@ class RuntimeEventBus:
         if metrics is not None and record_result is not None:
             metrics.record(record_result, latency_seconds=latency)
         if reaction is EventDeliveryReaction.FAIL_EXECUTION:
-            message = f"critical runtime event {deliverable.event_id} delivery failed at sink"
+            message = (
+                f"critical runtime event {deliverable.event_id} delivery failed at sink"
+            )
             if boundary_error is not None:
                 raise CriticalEventDeliveryError(message) from boundary_error
             raise CriticalEventDeliveryError(message)
@@ -329,7 +387,10 @@ class RuntimeEventBus:
         tenant_id: Optional[str] = None,
     ) -> None:
         requirement = evidence_persistence_requirement(event)
-        if self._persistence is not None and requirement is not EvidencePersistenceRequirement.NOT_PERSISTED:
+        if (
+            self._persistence is not None
+            and requirement is not EvidencePersistenceRequirement.NOT_PERSISTED
+        ):
             scoped_tenant = resolve_event_tenant_id(event, tenant_id)
             try:
                 self._persistence.append(event, tenant_id=scoped_tenant)
@@ -345,8 +406,10 @@ class RuntimeEventBus:
                     "RuntimeEvent persistence failed for %s",
                     event.event_type.value,
                 )
-        if self._record_history:
-            self._history.append(event)
+        self._history_buffer.append(event)
+        with self._event_count_lock:
+            self._event_count += 1
+        self._metric_scopes.record_accepted(event.task_id, event.run_id)
 
     async def _dispatch_handlers_async(self, event: RuntimeEvent) -> None:
         for sid, _prio, handler in self._collect_handlers(event):

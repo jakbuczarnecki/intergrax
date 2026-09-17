@@ -18,6 +18,16 @@ from intergrax.contracts.autonomous_work.execution_authority import (
 )
 from intergrax.contracts.collaborative_work import EffectiveAuthorityDecision
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    validate_attempt_id,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.root_execution_operation import (
     RootExecutionOperation,
     normalize_root_execution_policy_operation,
@@ -45,6 +55,10 @@ class RootExecutionAuthorityAdmissionRequest:
     collaborative_authority_scopes: tuple[str, ...]
     effective_authority_decision: EffectiveAuthorityDecision
     root_execution_operation: RootExecutionOperation
+    task_id: TaskId | None = None
+    run_id: RunId | None = None
+    attempt_id: AttemptId | None = None
+    execution_id: ExecutionId | None = None
 
     def __post_init__(self) -> None:
         if not self.tenant_id.strip():
@@ -63,6 +77,14 @@ class RootExecutionAuthorityAdmissionRequest:
         if type(self.root_execution_operation) is not RootExecutionOperation:
             raise TypeError("root_execution_operation must be RootExecutionOperation")
         normalize_root_execution_policy_operation(self.root_execution_operation)
+        if self.task_id is not None:
+            validate_task_id(self.task_id)
+        if self.run_id is not None:
+            validate_run_id(self.run_id)
+        if self.attempt_id is not None:
+            validate_attempt_id(self.attempt_id)
+        if self.execution_id is not None:
+            validate_execution_id(self.execution_id)
 
 
 @dataclass(frozen=True, slots=True)

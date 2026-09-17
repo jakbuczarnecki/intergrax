@@ -17,10 +17,7 @@ from intergrax.applications._shared.diagnostic_read_wiring import (
 from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_diagnostic_orchestrator,
 )
-from intergrax.applications._shared.harness_host_runtime import (
-    HarnessHostRuntime,
-    build_harness_host_runtime,
-)
+from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.hosted_application_diagnostic_wiring import (
     HostedDiagnosticTenantBinding,
     build_hosted_application_diagnostic_event_publisher,
@@ -66,6 +63,10 @@ from local_workspace_application.host.background_worker_factory import (
 )
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
+)
+from local_workspace_application.host.host_runtime_composition import (
+    build_local_workspace_harness_host_runtime,
+    resolve_local_workspace_host_tenant_binding,
 )
 from local_workspace_application.host.message_bus_wiring import local_workspace_message_bus_enabled
 from local_workspace_application.host.observability_wiring import (
@@ -145,16 +146,16 @@ def _build_worker_diagnostic_runtime(
     registry_projection: MaterializedRegistryProjection,
     settings: LocalWorkspaceBackendSettings,
     document_store: DocumentStore,
+    environment_profile: ApplicationEnvironmentProfile,
 ) -> HarnessHostRuntime:
-    manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
-    return build_harness_host_runtime(
-        manifest,
-        manifest.resolved_environment(),
+    return build_local_workspace_harness_host_runtime(
         settings=settings,
-        idempotency_db_path=Path(settings.idempotency_db_path),
-        document_store=document_store,
         registry_projection=registry_projection,
-    )
+        manifest=LOCAL_WORKSPACE_APPLICATION_MANIFEST,
+        environment=environment_profile,
+        document_store=document_store,
+        idempotency_db_path=Path(settings.idempotency_db_path),
+    ).runtime
 
 
 def build_local_workspace_worker_bootstrap_diagnostics(
@@ -164,13 +165,15 @@ def build_local_workspace_worker_bootstrap_diagnostics(
     environment_profile: ApplicationEnvironmentProfile,
     document_store: DocumentStore,
 ) -> LocalWorkspaceWorkerBootstrapDiagnostics:
+    host_tenant_binding = resolve_local_workspace_host_tenant_binding(settings)
     tenant_binding = HostedDiagnosticTenantBinding(
-        tenant_id=environment_profile.profile_id,
+        tenant_id=host_tenant_binding.tenant_id,
     )
     runtime = _build_worker_diagnostic_runtime(
         registry_projection=registry_projection,
         settings=settings,
         document_store=document_store,
+        environment_profile=environment_profile,
     )
     dependencies = resolve_host_diagnostic_read_dependencies(runtime)
     orchestrator = build_diagnostic_orchestrator(dependencies)

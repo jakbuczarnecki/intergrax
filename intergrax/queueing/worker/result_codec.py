@@ -10,9 +10,39 @@ from typing import Any, Dict, Optional, Union
 
 from pydantic import BaseModel
 
+from intergrax.runtime.task.nexus_worker_execution import NexusTaskWorkerOutput
 from intergrax.tools.execution_models import ToolExecutionError, ToolExecutionResult
 
 BytesLike = Union[bytes, str]
+
+
+class WorkerPayloadError(ValueError):
+    """Worker result could not be decoded into a canonical host run payload."""
+
+
+def decode_host_task_result_payload(raw: object) -> Optional[Dict[str, Any]]:
+    """
+    Decode ``TaskQueue.get_result().output`` into RunService ``result_payload``.
+
+    Supported transport shapes (explicit union only):
+    - ``bytes`` / ``str``: UTF-8 JSON logical-task envelope from ``encode_logical_task_result``
+    - ``ToolExecutionResult`` with ``NexusTaskWorkerOutput`` output (in-process test surfaces)
+    """
+    if raw is None:
+        return None
+    if isinstance(raw, (bytes, str)):
+        try:
+            envelope = decode_logical_task_result(raw)
+        except (UnicodeDecodeError, ValueError, TypeError):
+            return None
+        return nexus_result_payload_from_envelope(envelope)
+    if isinstance(raw, ToolExecutionResult):
+        if not raw.success or raw.output is None:
+            return None
+        if isinstance(raw.output, NexusTaskWorkerOutput):
+            return dict(raw.output.result_payload)
+        return None
+    return None
 
 
 def encode_logical_task_result(result: ToolExecutionResult[BaseModel]) -> bytes:
@@ -52,6 +82,17 @@ def nexus_result_payload_from_envelope(envelope: Dict[str, Any]) -> Optional[Dic
     if not isinstance(result_payload, dict):
         return None
     return dict(result_payload)
+
+
+__all__ = [
+    "WorkerPayloadError",
+    "BytesLike",
+    "decode_host_task_result_payload",
+    "decode_logical_task_result",
+    "encode_logical_task_result",
+    "nexus_result_payload_from_envelope",
+    "worker_result_bytes_from_transport",
+]
 
 
 def worker_result_bytes_from_transport(raw: object) -> Optional[bytes]:

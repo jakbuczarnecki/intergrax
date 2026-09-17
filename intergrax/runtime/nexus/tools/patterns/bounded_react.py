@@ -8,47 +8,19 @@ from collections.abc import Sequence
 
 from intergrax.contracts.model_visible_evidence import ModelVisibleEvidenceReference
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.budget.budget_ticks import (
-    enforce_wall_time_budget,
-    record_planner_iteration_and_enforce,
+from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
+    reject_sync_iterative_bounded_tool_loop,
 )
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.tools.investigation_proof import (
-    InvestigationProof,
-    InvestigationProofStep,
-    build_investigation_proof_step_from_action_context,
-    collect_available_evidence_ids,
-    investigation_native_planner_protocol_config,
-    prepare_native_planner_messages_with_follow_up_context,
-)
-from intergrax.runtime.nexus.tools.native_tool_plan_alignment import (
-    validate_native_tool_plan_alignment,
-)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.patterns.single_pass import SinglePassPattern
-from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
-    ToolInvocationResult,
-    ToolInvocationStopReason,
-)
-from intergrax.runtime.nexus.tools.tool_loop import (
-    _coerce_messages,
-    append_native_tool_messages,
-    execute_planned_tool_calls,
-    record_identical_tool_call_fingerprints,
-    validate_identical_tool_call_repeats,
-)
-from intergrax.runtime.nexus.tools.tool_planning_policy import (
-    native_tool_choice_for_investigation_round,
-)
-from intergrax.runtime.nexus.tools.tool_planner_protocol import (
-    IterativeToolPlannerProtocol,
-    ToolPlannerProtocol,
-)
+from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationResult
+from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.tools.core.tool_plan import ToolCallPlan
 
 
 class BoundedReactPattern:
-    """Plan → invoke → observe loop with native ``role=tool`` messages."""
+    """Plan → invoke → observe; multi-round feedback is CE-only (async entry)."""
 
     @property
     def pattern_id(self) -> str:
@@ -79,113 +51,5 @@ class BoundedReactPattern:
                 planner_input=planner_input,
             )
 
-        if not isinstance(planner, IterativeToolPlannerProtocol):
-            raise TypeError(
-                "Bounded iterative tool invocation (max_iterations > 1) requires "
-                "a planner implementing IterativeToolPlannerProtocol"
-            )
-
-        messages = _coerce_messages(planner_input)
-        appended: list[ChatMessage] = []
-        all_traces: list = []
-        iterations = 0
-        stop_reason: ToolInvocationStopReason = "max_iterations"
-        fingerprint_counts: dict[str, int] = {}
-        loop_cfg = state.context.config
-        proof_steps: list[InvestigationProofStep] = []
-
-        while iterations < max_iters:
-            if iterations >= 1:
-                enforce_wall_time_budget(state)
-            record_planner_iteration_and_enforce(state)
-            iterations += 1
-            planning_messages = prepare_native_planner_messages_with_follow_up_context(
-                messages,
-                round_index=iterations,
-                prior_model_visible_references=prior_model_visible_references,
-            )
-            protocol_config = investigation_native_planner_protocol_config(
-                messages,
-                prior_model_visible_references,
-            )
-            planner_round = planner.plan_native_round(
-                planning_messages,
-                allowed_tool_ids=allowed_tool_ids,
-                run_id=state.run_id,
-                tool_choice=native_tool_choice_for_investigation_round(
-                    protocol_config=protocol_config,
-                    tools_mode=state.context.config.tools_mode,
-                ),
-                protocol_config=protocol_config,
-            )
-            llm_result = planner_round.response
-            tool_plan = planner_round.tool_plan
-
-            if llm_result.content and not tool_plan.calls:
-                stop_reason = "planner_final_answer"
-                break
-
-            if not tool_plan.calls:
-                stop_reason = "empty_tool_calls"
-                break
-
-            validate_native_tool_plan_alignment(
-                planner_round.materialized_tool_calls,
-                tool_plan,
-            )
-
-            proof_steps.append(
-                build_investigation_proof_step_from_action_context(
-                    round_index=iterations,
-                    action_context=planner_round.action_context,
-                    tool_calls=planner_round.materialized_tool_calls,
-                    messages_before_round=messages,
-                    prior_model_visible_references=prior_model_visible_references,
-                )
-            )
-
-            validate_identical_tool_call_repeats(
-                tool_plan.calls,
-                fingerprint_counts=fingerprint_counts,
-                max_repeats=loop_cfg.max_identical_tool_call_repeats,
-            )
-            record_identical_tool_call_fingerprints(tool_plan.calls, fingerprint_counts)
-            round_outcomes = execute_planned_tool_calls(
-                state=state,
-                invoker=invoker,
-                calls=tool_plan.calls,
-                idempotency_prefix=f"{state.run_id}:loop{iterations}",
-            )
-            all_traces.extend(outcome.trace for outcome in round_outcomes)
-            before = len(messages)
-            # TRANSITIONAL (UE-9D): legacy sync path without context_engine wiring.
-            # Owner of removal: UE-9D.
-            append_native_tool_messages(
-                messages,
-                assistant_content=llm_result.content,
-                tool_calls=planner_round.materialized_tool_calls,
-                outcomes=round_outcomes,
-            )
-            appended.extend(messages[before:])
-
-        investigation_proof: InvestigationProof | None = None
-        if proof_steps:
-            final_available_evidence_ids: tuple[str, ...] = ()
-            if stop_reason == "planner_final_answer":
-                final_available_evidence_ids = collect_available_evidence_ids(
-                    messages,
-                    prior_model_visible_references,
-                )
-            investigation_proof = InvestigationProof(
-                steps=tuple(proof_steps),
-                final_available_evidence_ids=final_available_evidence_ids,
-            )
-
-        return ToolInvocationResult(
-            tool_traces=all_traces,
-            loop_iterations=iterations,
-            stop_reason=stop_reason,
-            appended_messages=appended,
-            used_native_tool_messages=True,
-            investigation_proof=investigation_proof,
-        )
+        reject_sync_iterative_bounded_tool_loop(max_iters)
+        raise AssertionError("unreachable after reject_sync_iterative_bounded_tool_loop")

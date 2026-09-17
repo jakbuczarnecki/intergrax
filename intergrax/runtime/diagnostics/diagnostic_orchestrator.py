@@ -10,7 +10,9 @@ Does not schedule work, subscribe to events, or introduce new diagnostic truth.
 
 from __future__ import annotations
 
-from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
+from intergrax.runtime.diagnostics.diagnostic_assessment import (
+    DiagnosticAssessmentBuilder,
+)
 from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticExecutionAnalysis,
     DiagnosticExecutionScope,
@@ -32,6 +34,9 @@ from intergrax.runtime.diagnostics.problem_grouping_features import (
 from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
 from intergrax.runtime.diagnostics.signal_diagnostic_assessment import (
     SignalDiagnosticAssessmentBuilder,
+)
+from intergrax.runtime.diagnostics.execution_reconstruction_read_session import (
+    ExecutionReconstructionReadSession,
 )
 
 
@@ -62,15 +67,24 @@ class DiagnosticOrchestrator:
             signal_assessment_builder or SignalDiagnosticAssessmentBuilder()
         )
 
-    def run(self, request: DiagnosticOrchestrationRequest) -> DiagnosticOrchestrationResult:
+    def run(
+        self, request: DiagnosticOrchestrationRequest
+    ) -> DiagnosticOrchestrationResult:
         tenant_id = validate_orchestration_request(request)
 
         assessment_inputs: list[ProblemGroupingAssessmentInput] = []
         execution_results: list[DiagnosticExecutionAnalysis] = []
         signal_subject_results: list[DiagnosticSignalSubjectAnalysis] = []
+        reconstruction_session = ExecutionReconstructionReadSession(
+            self._execution_reconstructor,
+        )
 
         for scope in request.executions:
-            analysis = self._analyze_execution_scope(tenant_id, scope)
+            analysis = self._analyze_execution_scope(
+                tenant_id,
+                scope,
+                reconstruction_session=reconstruction_session,
+            )
             assessment_inputs.append(analysis.assessment_input)
             execution_results.append(analysis.execution_analysis)
 
@@ -100,8 +114,10 @@ class DiagnosticOrchestrator:
         self,
         tenant_id: str,
         scope: DiagnosticExecutionScope,
+        *,
+        reconstruction_session: ExecutionReconstructionReadSession,
     ) -> _ScopedExecutionAnalysis:
-        reconstruction = self._execution_reconstructor.reconstruct_execution(
+        reconstruction = reconstruction_session.reconstruct_execution(
             tenant_id,
             scope.task_id,
             scope.run_id,
@@ -136,7 +152,9 @@ class DiagnosticOrchestrator:
         tenant_id: str,
         scope: DiagnosticSignalSubjectScope,
     ) -> _ScopedSignalSubjectAnalysis:
-        from intergrax.runtime.diagnostics.diagnostic_subject import ApplicationDiagnosticSubjectRef
+        from intergrax.runtime.diagnostics.diagnostic_subject import (
+            ApplicationDiagnosticSubjectRef,
+        )
 
         subject_ref = ApplicationDiagnosticSubjectRef(
             tenant_id=tenant_id,

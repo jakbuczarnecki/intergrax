@@ -9,6 +9,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -112,7 +113,9 @@ def _consume_total_tokens(
     ledger.grant_child_budget(
         execution_id=child_id,
         parent_execution_id=root_execution_id,
-        decision=ChildBudgetAllocationDecision(mode=ExecutionBudgetAllocationMode.SHARED),
+        decision=ChildBudgetAllocationDecision(
+            mode=ExecutionBudgetAllocationMode.SHARED
+        ),
     )
     ledger.consume_budget(child_id, BudgetUsageTotals(total_tokens=amount))
     ledger.release_child_budget(child_id)
@@ -181,7 +184,9 @@ def test_three_attempts_accumulate_consumption_and_leave_ten_remaining() -> None
     amounts = (40, 30, 20)
     for amount in amounts:
         ledger = _open_ledger(factory, run_id=run_id, attempt_id=mint_attempt_id())
-        _consume_total_tokens(ledger, root_execution_id=mint_execution_id(), amount=amount)
+        _consume_total_tokens(
+            ledger, root_execution_id=mint_execution_id(), amount=amount
+        )
 
     final_ledger = _open_ledger(factory, run_id=run_id, attempt_id=mint_attempt_id())
     assert final_ledger.snapshot_root_available().max_total_tokens == 10
@@ -192,7 +197,9 @@ def test_next_attempt_fails_when_requesting_more_than_remaining_budget() -> None
     run_id = mint_run_id()
     for amount in (40, 30, 20):
         ledger = _open_ledger(factory, run_id=run_id, attempt_id=mint_attempt_id())
-        _consume_total_tokens(ledger, root_execution_id=mint_execution_id(), amount=amount)
+        _consume_total_tokens(
+            ledger, root_execution_id=mint_execution_id(), amount=amount
+        )
 
     over_budget = _open_ledger(factory, run_id=run_id, attempt_id=mint_attempt_id())
     child_id = mint_execution_id()
@@ -200,7 +207,9 @@ def test_next_attempt_fails_when_requesting_more_than_remaining_budget() -> None
     over_budget.grant_child_budget(
         execution_id=child_id,
         parent_execution_id=root_id,
-        decision=ChildBudgetAllocationDecision(mode=ExecutionBudgetAllocationMode.SHARED),
+        decision=ChildBudgetAllocationDecision(
+            mode=ExecutionBudgetAllocationMode.SHARED
+        ),
     )
     with pytest.raises(ExecutionBudgetError):
         over_budget.consume_budget(child_id, BudgetUsageTotals(total_tokens=20))
@@ -220,7 +229,9 @@ def test_different_runs_keep_independent_budgets() -> None:
 
 def test_parallel_workers_same_run_cannot_overspend() -> None:
     kv = _KV()
-    factory = create_durable_run_budget_ledger_factory(KvRunBudgetPersistence(kv), _LIMIT)
+    factory = create_durable_run_budget_ledger_factory(
+        KvRunBudgetPersistence(kv), _LIMIT
+    )
     run_id = mint_run_id()
     successes: list[int] = []
     failures: list[Exception] = []
@@ -235,7 +246,9 @@ def test_parallel_workers_same_run_cannot_overspend() -> None:
             ledger.grant_child_budget(
                 execution_id=child_id,
                 parent_execution_id=root_id,
-                decision=ChildBudgetAllocationDecision(mode=ExecutionBudgetAllocationMode.SHARED),
+                decision=ChildBudgetAllocationDecision(
+                    mode=ExecutionBudgetAllocationMode.SHARED
+                ),
             )
             ledger.consume_budget(child_id, BudgetUsageTotals(total_tokens=amount))
             ledger.release_child_budget(child_id)
@@ -263,7 +276,9 @@ def test_corrupt_persisted_budget_state_fails_closed() -> None:
     kv = _KV()
     run_id = mint_run_id()
     kv.set(_TENANT, f"run_budget_ledger:{run_id}", b"not-json")
-    factory = create_durable_run_budget_ledger_factory(KvRunBudgetPersistence(kv), _LIMIT)
+    factory = create_durable_run_budget_ledger_factory(
+        KvRunBudgetPersistence(kv), _LIMIT
+    )
 
     with pytest.raises(RunBudgetPersistenceError):
         _open_ledger(factory, run_id=run_id, attempt_id=mint_attempt_id())
@@ -285,10 +300,14 @@ async def test_normal_non_background_run_still_gets_fresh_budget(
     observed: list[int | None] = []
 
     async def _observe(task: Task) -> TaskResult:
-        from intergrax.runtime.execution.active_execution_budget import require_active_execution_budget
+        from intergrax.runtime.execution.active_execution_budget import (
+            require_active_execution_budget,
+        )
 
         observed.append(
-            require_active_execution_budget().ledger.snapshot_root_available().max_total_tokens
+            require_active_execution_budget()
+            .ledger.snapshot_root_available()
+            .max_total_tokens
         )
         return TaskResult(
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
@@ -297,7 +316,11 @@ async def test_normal_non_background_run_still_gets_fresh_budget(
             state=TaskState.COMPLETED,
         )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _observe)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_observe),
+    )
     runner = UnifiedTaskRunner(
         loop,
         execution_budget_ledger_factory=factory,
@@ -310,10 +333,14 @@ async def test_normal_non_background_run_still_gets_fresh_budget(
 
 
 @pytest.mark.asyncio
-async def test_local_retry_does_not_create_new_ledger(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_local_retry_does_not_create_new_ledger(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
-    inner_factory = create_execution_budget_ledger_factory(RunBudget(max_total_tokens=100))
+    inner_factory = create_execution_budget_ledger_factory(
+        RunBudget(max_total_tokens=100)
+    )
     factory = MagicMock(spec=ExecutionBudgetLedgerFactory, wraps=inner_factory)
     run_budget = RunBudget(max_total_tokens=100)
     loop = NexusLoop(
@@ -330,7 +357,11 @@ async def test_local_retry_does_not_create_new_ledger(monkeypatch: pytest.Monkey
             state=TaskState.COMPLETED,
         )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _noop)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_noop),
+    )
     runner = UnifiedTaskRunner(
         loop,
         execution_budget_ledger_factory=factory,

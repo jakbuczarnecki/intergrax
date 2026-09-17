@@ -132,6 +132,19 @@ class _MutableFederationSource(MarketplaceCapabilityCatalogSource):
 
     def set_entries(self, entries: tuple[CapabilityCatalogEntry, ...]) -> None:
         self._entries = entries
+        if len(entries) == 1:
+            entry = entries[0]
+            self._snapshot = self._snapshot.model_copy(
+                update={
+                    "listings": (
+                        self._snapshot.listings[0].model_copy(
+                            update={
+                                "capability": entry,
+                            },
+                        ),
+                    ),
+                },
+            )
 
 
 def _marketplace_record(
@@ -175,14 +188,15 @@ def test_provenance_mismatch_fails_closed() -> None:
         ),
     )
     catalog = FederatedCapabilityCatalog((marketplace_source,))
+    service = MarketplaceCatalogService(
+        catalog=catalog,
+        marketplace_sources=(marketplace_source,),
+    )
     with pytest.raises(
         MarketplaceCatalogConfigurationError,
         match="marketplace listing canonical facts must equal federated catalog entry",
     ):
-        MarketplaceCatalogService(
-            catalog=catalog,
-            marketplace_sources=(marketplace_source,),
-        )
+        service.list_listings(_discovery_query())
 
 
 def test_package_reference_mismatch_fails_closed() -> None:
@@ -194,11 +208,12 @@ def test_package_reference_mismatch_fails_closed() -> None:
         record=_marketplace_record(package_reference="B"),
     )
     catalog = FederatedCapabilityCatalog((marketplace_source,))
+    service = MarketplaceCatalogService(
+        catalog=catalog,
+        marketplace_sources=(marketplace_source,),
+    )
     with pytest.raises(MarketplaceCatalogConfigurationError):
-        MarketplaceCatalogService(
-            catalog=catalog,
-            marketplace_sources=(marketplace_source,),
-        )
+        service.list_listings(_discovery_query())
 
 
 def test_exact_canonical_match_succeeds() -> None:
@@ -290,14 +305,15 @@ def test_duplicate_identity_across_product_sources_fails_closed() -> None:
         records=(_marketplace_record(),),
     )
     catalog = FederatedCapabilityCatalog((marketplace_source,))
+    service = MarketplaceCatalogService(
+        catalog=catalog,
+        marketplace_sources=(marketplace_source,),
+    )
     with pytest.raises(
         MarketplaceCatalogConfigurationError,
         match="duplicate marketplace listing for the same source-qualified discovery identity",
     ):
-        MarketplaceCatalogService(
-            catalog=catalog,
-            marketplace_sources=(marketplace_source,),
-        )
+        service.list_listings(_discovery_query())
 
 
 def test_get_listing_returns_none_after_federation_removes_capability() -> None:

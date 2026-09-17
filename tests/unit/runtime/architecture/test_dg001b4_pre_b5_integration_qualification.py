@@ -45,7 +45,7 @@ from tests.unit.applications.local_workspace_application.test_lkw_background_wor
     _canonical_document_store,
     _failure_events,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     query_all_problems_for_tenant,
 )
 

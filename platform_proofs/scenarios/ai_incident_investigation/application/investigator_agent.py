@@ -235,7 +235,7 @@ class IncidentInvestigatorAgent(Agent):
             is_revision=is_revision,
         )
 
-        gathering = gather_incident_evidence(
+        gathering = await gather_incident_evidence(
             runtime_state=runtime_state,
             registry=self._runtime_composition.tool_registry,
             scope=self._incident_scope,

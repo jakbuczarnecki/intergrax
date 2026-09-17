@@ -73,7 +73,7 @@ def test_hardening_8_problem_persistence_port_is_swappable() -> None:
 
 
 def test_hardening_8_document_store_adapter_satisfies_problem_persistence_port() -> None:
-    from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    from testing_support.runtime.diagnostics.problem_persistence_test_support import (
         document_store_problem_persistence_for_tests,
     )
 

@@ -4,7 +4,7 @@
 **Hub:** [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md)
 **Strategy:** [`guides/INTERGRAX_DEVELOPMENT_STRATEGY.md`](../../technical/guides/INTERGRAX_DEVELOPMENT_STRATEGY.md)
 
-> When implementing this layer, read **only** the architecture doc and **this plan hub** (`plan/satellites` satellites on demand).
+> When implementing this layer, read **only** the architecture doc and **this plan hub** (`satellites` satellites on demand).
 
 **Cross-plan - Agent layer (ACP):** Per-agent `memory_view` and `memory_scope` (user vs org §30.9) resolve in `merge_environment` - [`plan/AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) **Wave 2** (`ACP-DX-2`). Agent session state (`AcpSessionState`) is separate from LTM namespaces; do not store secrets in `acp.state.v1` (architecture §25.2).
 
@@ -24,7 +24,7 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 
 ## Protocol v2 - Memory remediation (2026-08-18)
 
-**Audit:** [`docs/audit_results/2026-08-18/MEMORY.md`](../../audit_results/2026-08-18/MEMORY.md) · campaign [`README`](../../audit_results/2026-08-18/README.md)
+**Audit:** [`docs/audit_results/2026-08-18/MEMORY.md`](../../../audit_results/2026-08-18/MEMORY.md) · campaign [`README`](../../../audit_results/2026-08-18/README.md)
 **Status:** ACCEPTED findings - **PLANNED** remediation only. **Not implemented** by audit persistence task AUDIT-20260818-MEMORY-PERSIST.
 
 <a id="memory-scope-authority-integrity-2026-08-18"></a>
@@ -33,7 +33,7 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 
 **Priority:** P0/P1
 **Status:** `ACCEPTED / PLANNED`
-**Findings:** [`AUDIT-20260818-MEMORY-01`](../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-02`](../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-05`](../../audit_results/2026-08-18/MEMORY.md)
+**Findings:** [`AUDIT-20260818-MEMORY-01`](../../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-02`](../../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-05`](../../../audit_results/2026-08-18/MEMORY.md)
 
 **Outcome (planning only):**
 
@@ -47,7 +47,7 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 
 **Priority:** P1
 **Status:** `ACCEPTED / PLANNED`
-**Findings:** [`AUDIT-20260818-MEMORY-03`](../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-04`](../../audit_results/2026-08-18/MEMORY.md)
+**Findings:** [`AUDIT-20260818-MEMORY-03`](../../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-04`](../../../audit_results/2026-08-18/MEMORY.md)
 
 **Outcome (planning only):**
 
@@ -61,7 +61,7 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 
 **Priority:** P1/P2
 **Status:** `ACCEPTED / PLANNED`
-**Findings:** [`AUDIT-20260818-MEMORY-06`](../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-07`](../../audit_results/2026-08-18/MEMORY.md)
+**Findings:** [`AUDIT-20260818-MEMORY-06`](../../../audit_results/2026-08-18/MEMORY.md), [`AUDIT-20260818-MEMORY-07`](../../../audit_results/2026-08-18/MEMORY.md)
 
 **Outcome (planning only):**
 
@@ -71,10 +71,16 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 **Remediation rules:**
 
 - Revalidate each finding against then-current `development` HEAD before implementation.
-- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
+- Implementer may advance finding status only through **IMPLEMENTED**; independent verification required for **VERIFIED**; **CLOSED** per [`AUDIT_REMEDIATION_PROTOCOL.md`](../../../audit_results/AUDIT_REMEDIATION_PROTOCOL.md).
 - Historical **Done** rows in this plan remain historical facts - not rewritten as remediation completion.
 
 **Recommended remediation order (prioritization, not dependency graph):** MEMORY-SCOPE-AUTHORITY-INTEGRITY → MEMORY-DURABILITY-LIFECYCLE-INTEGRITY → MEMORY-READ-MUTATION-CONSISTENCY
+
+### MP-5F-B1 — scoped reference read boundary (CLOSED)
+
+**Status:** **CLOSED** (contract + hardened default user-profile enumerator). **Next:** MP-5F-B2 (Knowledge/RAG read boundary). **MP-5F** remains **BLOCKED** until B2…B4 + B5 adapter integration.
+
+Memory owns read/retrieval semantics. Public surface: `MemoryReferenceReadPort` / `MemoryReferenceReadScope` / `MemoryRecordCanonicalRef` in `intergrax/memory/contracts/memory_reference_read.py`. Default user-profile reader: mandatory fail-closed tenant/workspace capability binding; scope/governance enforcement shared with control plane via `memory_scope_authority.py`. No ContextView types in Memory; no MP-5 adapter in this slice.
 
 ---
 
@@ -82,13 +88,13 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 
 **Do not read this entire file in one session** (MEMORY plan).
 
-- **Implement / audit default:** Hub §6 · [`plan/satellites`](plan/satellites) satellites on demand. **On demand (one max):** [`plan/satellites/MEMORY_appendices.md`](plan/satellites/MEMORY_appendices.md) · [`plan/satellites/MEMORY_implementation_history.md`](plan/satellites/MEMORY_implementation_history.md). Phase AUDIT-IDEAL - **Planned** / open rows only. §6.1 maintenance queues - open P0/P1 only
+- **Implement / audit default:** Hub §6 · [`satellites`](satellites) satellites on demand. **On demand (one max):** [`satellites/MEMORY_appendices.md`](satellites/MEMORY_appendices.md) · [`satellites/MEMORY_implementation_history.md`](satellites/MEMORY_implementation_history.md). Phase AUDIT-IDEAL - **Planned** / open rows only. §6.1 maintenance queues - open P0/P1 only
 - **Token Optimization:** read feature pair + row `TOKEN-MEM-1`; inspect only memory summary/consolidation/write paths required for staging/rollback.
 - **Use** `Read` with offset/limit - open `### 6.1*` / Phase rows (**P0/P1**, Status ≠ Done) only.
 - **Skip** `(closed)`, `(complete)`, `Archived`, **Done** unless re-validating a cited gap.
 - **Architecture hub:** [`architecture/MEMORY.md`](../../architecture/MEMORY.md) read-scope block only.
-- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md).
-- **Satellites:** at most **one** `plan/satellites` file per session unless RESUME cites more.
+- **Platform audit:** [`docs/audit_results/AUDIT_PROTOCOL.md`](../../../audit_results/AUDIT_PROTOCOL.md).
+- **Satellites:** at most **one** `satellites` file per session unless RESUME cites more.
 
 ---
 
@@ -99,8 +105,8 @@ Load **only** the satellite matching your task or cited gap ID.
 
 | Satellite | Contents |
 |-----------|----------|
-| [`plan/satellites/MEMORY_appendices.md`](plan/satellites/MEMORY_appendices.md) | appendices |
-| [`plan/satellites/MEMORY_implementation_history.md`](plan/satellites/MEMORY_implementation_history.md) | implementation history |
+| [`satellites/MEMORY_appendices.md`](satellites/MEMORY_appendices.md) | appendices |
+| [`satellites/MEMORY_implementation_history.md`](satellites/MEMORY_implementation_history.md) | implementation history |
 
 > **Cursor context budget:** read hub read-scope block + **at most one** satellite per session.
 
@@ -159,5 +165,17 @@ Load **only** the satellite matching your task or cited gap ID.
 | AUDIT-IDEAL-16.2 | §16 Context | Semantic compression in production profiles | P2 | **Done** - owner CE §11 (`semantic_compression_enabled`) |
 
 **Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
+
+---
+
+## Enterprise memory hardening (MEM-ENT)
+
+| Task | Status | Notes |
+| ---- | ------ | ----- |
+| MEM-ENT-1…15 | **CLOSED** | Core, lifecycle, governance, providers, durability, resilience, E2E certification |
+| MEM-ENT-16 | **CLOSED** | Architecture & documentation — [`architecture/MEMORY_ARCHITECTURE.md`](../../architecture/MEMORY_ARCHITECTURE.md) |
+| MEM-XINT-1 | **NEXT** | Memory × Context Engineering × Tools × RAG cross-layer integration |
+
+Baseline pin for MEM-ENT-15 certification: `b7497564eb43050b93fa5eed00e83008b00278cb` (`test(memory): close public composition certification`).
 
 ---

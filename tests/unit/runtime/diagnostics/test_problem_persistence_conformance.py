@@ -15,7 +15,7 @@ from intergrax.runtime.diagnostics.persistence_conformance import (
     assert_problem_update_publishes_subject_indexes_atomically,
 )
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistence
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     document_store_problem_persistence_for_tests,
     in_memory_document_store_for_problem_tests,
 )

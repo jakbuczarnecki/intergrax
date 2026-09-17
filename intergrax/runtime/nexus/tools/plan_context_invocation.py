@@ -8,16 +8,11 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import Optional
 
-from intergrax.llm.messages import ChatMessage
-from intergrax.prompts.registry.prompt_registry_resolver import resolve_yaml_prompt_registry
 from intergrax.runtime.nexus.budget.budget_ticks import (
     record_rag_invocation_and_enforce,
     record_websearch_invocation_and_enforce,
 )
-from intergrax.runtime.nexus.context.tool_context_helpers import (
-    format_rag_context,
-    insert_context_before_last_user,
-)
+from intergrax.runtime.nexus.context.provider_handles import WEBSEARCH_BLOCKS_METADATA_KEY
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.context.runtime_state_handle_bridge import (
     merge_provider_metadata_into_request,
@@ -28,10 +23,8 @@ from intergrax.runtime.nexus.tools.catalog_context import (
     invoke_catalog_context_tool,
 )
 from intergrax.runtime.nexus.tools.catalog_dispatch import resolve_tool_registry
-from intergrax.runtime.nexus.tools.tool_loop import (
-    inject_tool_traces_system_context,
-    run_bounded_tool_loop_async,
-)
+from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
+from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop_async
 from intergrax.runtime.nexus.tools.tool_planner_input import resolve_tool_planner_input
 from intergrax.runtime.nexus.tools.adaptive_tool_mode_resolver import recommend_tool_modes
 from intergrax.runtime.nexus.tools.tool_selection import (
@@ -160,18 +153,6 @@ async def run_rag_context(state: RuntimeState) -> None:
         )
         return
 
-    if ctx.rag_prompt_builder is None:
-        raise RuntimeError("RAG enabled but rag_prompt_builder is not configured.")
-
-    bundle = ctx.rag_prompt_builder.build_rag_prompt(built)
-    context_messages = bundle.context_messages or []
-    if context_messages:
-        insert_context_before_last_user(state, context_messages)
-
-    rag_context_text = format_rag_context(retrieved_chunks)
-    if rag_context_text:
-        state.tools_context_parts.append("RAG CONTEXT:\n" + rag_context_text)
-
     state.trace_event(
         component=TraceComponent.ENGINE,
         step="rag",
@@ -181,7 +162,7 @@ async def run_rag_context(state: RuntimeState) -> None:
             rag_enabled=True,
             used_rag=True,
             chunks_count=len(retrieved_chunks),
-            context_messages_count=len(context_messages),
+            context_messages_count=0,
             warning=None,
         ),
     )
@@ -258,7 +239,6 @@ async def run_websearch_context(state: RuntimeState) -> None:
         return
 
     web_results: list[WebSearchResult] = []
-    context_messages: list[ChatMessage] = []
 
     try:
         web_results = await state.context.websearch_executor.search_async(
@@ -296,23 +276,23 @@ async def run_websearch_context(state: RuntimeState) -> None:
             run_id=state.run_id,
         )
         no_evidence = bool(bundle.no_evidence) or (bundle.sources_count == 0)
-        context_messages = bundle.context_messages or []
-        if context_messages:
-            insert_context_before_last_user(state, context_messages)
+        web_blocks: list[dict[str, str]] = []
+        for index, msg in enumerate(bundle.context_messages or []):
+            text = str(msg.content or "").strip()
+            if not text:
+                continue
+            web_blocks.append({"content": text, "source_id": f"web-{index}"})
+        if web_blocks:
+            state.request.metadata[WEBSEARCH_BLOCKS_METADATA_KEY] = web_blocks
             state.used_websearch = True
             used_websearch = True
-
-        web_context_texts: list[str] = []
-        for msg in context_messages:
-            if msg.content:
-                web_context_texts.append(msg.content)
-        context_blocks_count = len(web_context_texts)
-        if context_blocks_count == 0:
-            no_evidence = True
-        if web_context_texts:
-            preview = web_context_texts[0]
-            context_preview = (preview or "")[:preview_limit]
+            context_blocks_count = len(web_blocks)
+            preview = web_blocks[0]["content"]
+            context_preview = preview[:preview_limit]
             context_preview_chars = len(context_preview)
+        else:
+            context_blocks_count = 0
+            no_evidence = True
     except Exception as exc:
         error_type = type(exc).__name__
         error_message = str(exc)[:error_limit]
@@ -435,22 +415,15 @@ async def run_tools_context(state: RuntimeState) -> None:
             state.used_tools = True
             state.tool_traces = list(loop_result.tool_traces)
 
-        if loop_result.appended_messages and (
-            loop_result.used_ce_tool_feedback or loop_result.used_native_tool_messages
-        ):
+        if loop_result.appended_messages and loop_result.used_ce_tool_feedback:
             state.messages_for_llm.extend(loop_result.appended_messages)
         elif state.tool_traces:
-            registry = resolve_yaml_prompt_registry(
-                registry=state.context.prompt_registry,
-                catalog_path=state.context.config.prompt_catalog_path,
+            aggregate = loop_result.aggregate or ToolInvocationAggregate.from_traces(
+                state.tool_traces
             )
-            localized = registry.resolve_localized("tools_runtime_context")
-            inject_tool_traces_system_context(
-                state,
-                state.tool_traces,
-                runtime_context_prompt=localized.system,
-                aggregate=loop_result.aggregate,
-            )
+            combined = aggregate.combined_context.strip()
+            if combined:
+                state.tools_context_parts.append(combined)
     except Exception as exc:
         from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
             DeclarativePolicyHitlPauseRequired,

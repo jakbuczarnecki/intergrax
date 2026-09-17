@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -29,7 +30,9 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
 )
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+)
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
@@ -47,7 +50,9 @@ from intergrax.runtime.execution.orchestration import (
     execute_root_task,
     resolve_root_task_identity,
 )
-from intergrax.runtime.execution.request import ExecutionRequest as NeutralExecutionRequest
+from intergrax.runtime.execution.request import (
+    ExecutionRequest as NeutralExecutionRequest,
+)
 from intergrax.runtime.execution.runtime import (
     ExecutionRuntime,
     RootExecutionContext,
@@ -55,7 +60,10 @@ from intergrax.runtime.execution.runtime import (
 )
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
-from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
+from intergrax.runtime.execution.task_adapter import (
+    TaskExecutionInput,
+    execution_request_from_task,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -268,8 +276,12 @@ async def test_orchestration_root_runtime_completes_without_decision(
         message="hello",
         context=TaskContext(capability="echo.basic"),
     )
-    expected =     TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
+    expected = TaskResult(
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        task_id=task.task_id,
+        state=TaskState.COMPLETED,
+        answer="ok",
+    )
     registry = AgentRegistry()
     loop = NexusLoop(registry)
     request = execution_request_from_task(
@@ -286,7 +298,11 @@ async def test_orchestration_root_runtime_completes_without_decision(
         del task_arg
         return expected
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_handle_task)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_handle_task),
+    )
 
     identity = resolve_root_task_identity()
     result = await execute_root_task(task, nexus_loop=loop, identity=identity)
@@ -325,7 +341,9 @@ def test_ordinary_execution_request_constructible_without_decision_config() -> N
 
     assert request.input is not None
     assert request.output_type is RiskAssessment
-    assert neutral_request.capabilities == frozenset({ExecutionCapability.ORCHESTRATION})
+    assert neutral_request.capabilities == frozenset(
+        {ExecutionCapability.ORCHESTRATION}
+    )
     assert context.run_id == run_id
 
 

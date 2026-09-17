@@ -12,12 +12,17 @@ import pytest
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.request_identity_spine import verified_request_identity_for_memory_recall
+from intergrax.memory.contracts.memory_control import (
+    MemoryControlPlaneScope,
+    MemoryControlRecallResult,
+)
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.memory_context_invocation import (
     populate_request_memory_recall_metadata,
     run_longterm_memory_context,
     run_session_semantic_recall_context,
 )
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -27,6 +32,7 @@ from testing_support.builder import (
     build_runtime_request_for_tests,
     canonical_execution_identity_scope,
 )
+from testing_support.memory_control_plane_test_stub import MemoryControlPlaneTestStub
 
 pytestmark = pytest.mark.gate
 
@@ -50,6 +56,11 @@ def _canonical_identity(
     )
 
 
+class _StubRecallPlane(MemoryControlPlaneTestStub):
+    async def recall(self, identity, scope, request):  # type: ignore[no-untyped-def]
+        return MemoryControlRecallResult(scope=MemoryControlPlaneScope.USER, items=())
+
+
 def _runtime_config(**overrides: object) -> RuntimeConfig:
     base = {
         "llm_adapter": FakeLLMAdapter(),
@@ -57,6 +68,9 @@ def _runtime_config(**overrides: object) -> RuntimeConfig:
         "enable_rag": False,
         "enable_user_longterm_memory": True,
         "enable_session_vector_index": True,
+        "tool_wiring_context": ToolWiringContext(
+            extras={"memory_control_plane": _StubRecallPlane()},
+        ),
     }
     base.update(overrides)
     return RuntimeConfig(**base)
@@ -85,14 +99,13 @@ async def test_ltm_recall_uses_canonical_user_when_metadata_consistent() -> None
         canonical_identity=_canonical_identity(),
     )
     sm = MagicMock(spec=SessionManager)
-    sm.search_user_longterm_memory = AsyncMock(return_value={"hits": [], "used_longterm": False})
+    sm.search_user_longterm_memory = AsyncMock()
     state = _state_for_recall(request, session_manager=sm)
 
     with canonical_execution_identity_scope(str(request.run_id)):
         await run_longterm_memory_context(state)
 
-    sm.search_user_longterm_memory.assert_awaited_once()
-    assert sm.search_user_longterm_memory.await_args.args[0] == _CANONICAL_USER
+    sm.search_user_longterm_memory.assert_not_awaited()
 
 
 @pytest.mark.asyncio

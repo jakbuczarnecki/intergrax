@@ -15,7 +15,7 @@ from intergrax.runtime.diagnostics.reliability.reliability_diagnostic_strategy_c
 from tests.unit.erl_diagnostics_plugins.correlation_grouping_strategy import (
     CorrelationGroupingStrategy,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     build_diagnostic_orchestrator_stack_for_tests,
     query_all_occurrences_for_problem,
     query_all_problems_for_tenant,

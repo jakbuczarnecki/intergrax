@@ -6,22 +6,20 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from typing import Optional
 
 from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.fastapi_core.runs.service import RunService
 from intergrax.queueing.contracts.task_queue import TaskQueue, TaskRequest, TaskStatus
-from intergrax.queueing.worker.result_codec import (
-    decode_logical_task_result,
-    nexus_result_payload_from_envelope,
-)
-from intergrax.runtime.task.nexus_worker_execution import NexusTaskWorkerOutput
+from intergrax.queueing.worker.result_codec import decode_host_task_result_payload
 from intergrax.runtime.task.worker_payload import (
     NEXUS_TASK_V2_LOGICAL_NAME,
     encode_execution_request,
 )
-from intergrax.tools.execution_models import ToolExecutionResult
+
+HostTaskResultDecoder = Callable[[object], Optional[dict[str, object]]]
 
 
 class QueuedHostTaskExecutionAdapter(ExecutionAdapter):
@@ -42,6 +40,7 @@ class QueuedHostTaskExecutionAdapter(ExecutionAdapter):
         wait_for_result: bool = False,
         result_poll_interval_seconds: float = 0.05,
         result_poll_timeout_seconds: float = 30.0,
+        result_decoder: HostTaskResultDecoder | None = None,
     ) -> None:
         self._task_queue = task_queue
         self._run_service = run_service
@@ -49,6 +48,7 @@ class QueuedHostTaskExecutionAdapter(ExecutionAdapter):
         self._wait_for_result = wait_for_result
         self._poll_interval = result_poll_interval_seconds
         self._poll_timeout = result_poll_timeout_seconds
+        self._decode_worker_result = result_decoder or decode_host_task_result_payload
 
     async def start_execution(self, request: ExecutionRequest) -> None:
         self._run_service.mark_running(request.run_id)
@@ -98,7 +98,7 @@ class QueuedHostTaskExecutionAdapter(ExecutionAdapter):
 
     def _apply_queue_result(self, run_id: str, result) -> None:
         if result.status == TaskStatus.SUCCEEDED and result.output is not None:
-            payload = self._decode_worker_output(result.output)
+            payload = self._decode_worker_result(result.output)
             if payload is None:
                 self._run_service.mark_failed(
                     run_id,
@@ -115,37 +115,8 @@ class QueuedHostTaskExecutionAdapter(ExecutionAdapter):
             error_message=result.error_message or "worker task failed",
         )
 
-    @staticmethod
-    def _decode_worker_output(raw: object) -> Optional[dict]:
-        if isinstance(raw, bytes):
-            try:
-                envelope = decode_logical_task_result(raw)
-            except (UnicodeDecodeError, ValueError, TypeError):
-                return None
-            payload = nexus_result_payload_from_envelope(envelope)
-            if payload is not None:
-                return payload
-        if isinstance(raw, ToolExecutionResult):
-            if not raw.success or raw.output is None:
-                return None
-            if isinstance(raw.output, NexusTaskWorkerOutput):
-                return dict(raw.output.result_payload)
-            if hasattr(raw.output, "result_payload"):
-                return dict(raw.output.result_payload)
-            return None
-        if isinstance(raw, dict):
-            if "result_payload" in raw:
-                return dict(raw["result_payload"])
-            payload = nexus_result_payload_from_envelope(raw)
-            if payload is not None:
-                return payload
-            output = raw.get("output")
-            if isinstance(output, dict) and "result_payload" in output:
-                return dict(output["result_payload"])
-        return None
-
     def shutdown(self, wait: bool = True) -> None:
         return
 
 
-__all__ = ["QueuedHostTaskExecutionAdapter"]
+__all__ = ["QueuedHostTaskExecutionAdapter", "HostTaskResultDecoder"]

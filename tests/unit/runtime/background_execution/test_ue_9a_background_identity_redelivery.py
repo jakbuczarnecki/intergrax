@@ -58,7 +58,7 @@ from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.native_planner_action_context import NativePlannerRound
 from intergrax.runtime.nexus.tools.tool_loop import (
     execute_planned_tool_calls,
-    run_bounded_tool_loop,
+    run_bounded_tool_loop_async,
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
@@ -382,7 +382,8 @@ def _bind_identity(
     )
 
 
-def test_llm_retry_does_not_mint_new_attempt() -> None:
+@pytest.mark.asyncio
+async def test_llm_retry_does_not_mint_new_attempt() -> None:
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -392,9 +393,14 @@ def test_llm_retry_does_not_mint_new_attempt() -> None:
         execution_id=execution_id,
     )
     try:
+        from testing_support.context_engine_test_wiring import (
+            attach_test_context_engine_for_iterative_tool_loop,
+        )
+
         state = _runtime_state(run_id=run_id)
+        attach_test_context_engine_for_iterative_tool_loop(state)
         invoker = _RecordingInvoker()
-        run_bounded_tool_loop(
+        await run_bounded_tool_loop_async(
             state=state,
             invoker=invoker,
             tool_planner=_TwoRoundPlanner(),

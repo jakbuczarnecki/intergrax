@@ -10,8 +10,12 @@ from pathlib import Path
 
 import pytest
 
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from intergrax.agents.agent_engine import AgentEngine
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.agent_execution_result import (
+    AgentExecutionResult,
+    AgentExecutionStatus,
+)
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -38,8 +42,13 @@ from intergrax.runtime.execution.active_execution_resume import (
     peek_active_execution_resume_plan,
     reset_active_execution_resume_plan,
 )
-from intergrax.runtime.governance.active_execution_authority import peek_active_execution_authority
-from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
+from intergrax.runtime.governance.active_execution_authority import (
+    peek_active_execution_authority,
+)
+from intergrax.runtime.execution.boundary import (
+    ExecutionBoundary,
+    ExecutionIdentityBinding,
+)
 from intergrax.runtime.execution.budget.consumption import consume_llm_call
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.long_running.checkpoint_builder import (
@@ -126,7 +135,7 @@ class _CountingAgentEngine(AgentEngine):
 
 
 class _GatedCountingAgentEngine(_CountingAgentEngine):
-    __slots__ = ("_gate_open")
+    __slots__ = "_gate_open"
 
     def __init__(self, registry: AgentRegistry, *, gate_open: bool) -> None:
         super().__init__(registry)
@@ -292,7 +301,9 @@ async def test_ue_11e_resume_execution_tree_continuity(tmp_path: Path) -> None:
         root_execution_id=root_before,
     )
     counts_after_interrupt = engine.snapshot_counts()
-    assert counts_after_interrupt == _NodeInvocationCounts(agent_a=1, agent_b=1, agent_c=1, agent_d=0)
+    assert counts_after_interrupt == _NodeInvocationCounts(
+        agent_a=1, agent_b=1, agent_c=1, agent_d=0
+    )
 
     runtime_before = resolve_task_runtime_checkpoint(task_a)
     assert runtime_before is not None
@@ -547,7 +558,11 @@ async def test_concurrent_checkpoint_resumes_isolate_lineage_on_shared_graph_exe
         assert execution_c_after is not None
         entry_c_after = runtime_after.execution_tree.entry_by_graph_node_id(_NODE_C)
         assert entry_c_after is not None
-        return execution_c_before, execution_c_after, entry_c_after.resumed_from_execution_id
+        return (
+            execution_c_before,
+            execution_c_after,
+            entry_c_after.resumed_from_execution_id,
+        )
 
     task_id_a = mint_task_id()
     task_id_b = mint_task_id()
@@ -636,7 +651,9 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
         root_execution_id=root_before,
     )
     counts_after_interrupt = engine.snapshot_counts()
-    assert counts_after_interrupt == _NodeInvocationCounts(agent_a=1, agent_b=1, agent_c=1, agent_d=0)
+    assert counts_after_interrupt == _NodeInvocationCounts(
+        agent_a=1, agent_b=1, agent_c=1, agent_d=0
+    )
 
     runtime_before = resolve_task_runtime_checkpoint(task_a)
     assert runtime_before is not None
@@ -689,9 +706,17 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
         assert active_attempt_id == attempt_id
         await resume_executor.execute(resume_graph, task)
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=active_run_id,
+            state=TaskState.COMPLETED,
+        )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _handle_task_via_graph)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_handle_task_via_graph),
+    )
     runner = UnifiedTaskRunner(loop)
     await runner.run_task(task_b, resume_checkpoint=loaded)
 

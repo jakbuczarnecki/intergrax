@@ -187,7 +187,6 @@ def test_duplicate_plugin_id_fails_closed() -> None:
 def test_materialize_external_user_profile_store() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.resolver.user")
     ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id="tenant-a",
         integration_profile=IntegrationProfile(),
     )
@@ -202,7 +201,6 @@ def test_materialize_external_user_profile_store() -> None:
 def test_materialize_external_session_storage() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.resolver.session")
     ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id="tenant-a",
         integration_profile=IntegrationProfile(),
     )
@@ -371,7 +369,6 @@ def test_resolve_memory_platform_wiring_explicit_duplicate_id_fails() -> None:
 def test_materialize_invalid_return_fails() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.resolver.invalid")
     ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id=None,
         integration_profile=IntegrationProfile(),
     )
@@ -386,7 +383,6 @@ def test_materialize_invalid_return_fails() -> None:
 def test_materialize_exception_fails() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.resolver.broken")
     ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id=None,
         integration_profile=IntegrationProfile(),
     )

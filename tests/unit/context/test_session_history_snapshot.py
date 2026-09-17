@@ -131,8 +131,18 @@ def test_chat_message_roundtrip() -> None:
 
 @pytest.mark.asyncio
 async def test_provider_rejects_wrong_handle_type() -> None:
+    from intergrax.context.source_inputs import ContextProviderSourceInputs, ContextSessionSourceInput
+
     provider = HandleSessionHistoryProvider()
-    ctx = ContextProviderContext(handles={"session_history_snapshot": ["not-a-snapshot"]})
+    ctx = ContextProviderContext(
+        sources=ContextProviderSourceInputs(
+            session=ContextSessionSourceInput(
+                snapshot=["not-a-snapshot"],  # type: ignore[arg-type]
+                binding_context_scope_id="scope",
+                binding_revision_id="rev",
+            ),
+        ),
+    )
     with pytest.raises(ValueError, match="SessionHistorySnapshot"):
         await provider.load_snapshot(_request(), ctx)
 

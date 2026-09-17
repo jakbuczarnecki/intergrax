@@ -15,7 +15,7 @@ from intergrax.runtime.execution.lineage.root_activation import (
 )
 from intergrax.contracts.execution_identity import mint_task_id, mint_execution_id
 from intergrax.runtime.execution.identity_authority import mint_root_execution_identity
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 
 def test_post_open_segment_degradation_binding_on_crash_resume() -> None:

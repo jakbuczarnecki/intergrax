@@ -42,7 +42,7 @@ from tests.unit.applications.test_product_observability_dashboard_wiring import 
     _assess_retry_pair,
     _grouping_engine,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     TEST_PROBLEM_LIST_CURSOR_SECRET,
 )
 

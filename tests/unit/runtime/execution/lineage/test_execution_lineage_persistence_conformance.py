@@ -27,7 +27,7 @@ from intergrax.runtime.execution.lineage.document_store_persistence import (
 from intergrax.runtime.execution.lineage.persistence import (
     InMemoryExecutionLineagePersistence,
 )
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 
 def _scope(

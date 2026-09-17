@@ -115,6 +115,10 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.agents.persistence.skill_host_wiring import (
+    HostSkillCatalogWiring,
+    inject_acp_skill_host_wiring_metadata,
+)
 from intergrax.agents.persistence.tool_invoker_wiring import inject_acp_tool_invoker_metadata
 
 
@@ -159,7 +163,13 @@ def task_result_from_agent_execution(
 class TaskBoundAgenticDelegate:
     """Routes canonical agentic task requests through the governed agent engine."""
 
-    __slots__ = ("_task", "_agent_engine", "_agent_router", "_declarative_tool_invoker")
+    __slots__ = (
+        "_task",
+        "_agent_engine",
+        "_agent_router",
+        "_declarative_tool_invoker",
+        "_skill_host_wiring",
+    )
 
     def __init__(
         self,
@@ -168,11 +178,13 @@ class TaskBoundAgenticDelegate:
         agent_engine: AgentEnginePort,
         agent_router: AgentRouter,
         declarative_tool_invoker: DeclarativeToolInvoker | None = None,
+        skill_host_wiring: HostSkillCatalogWiring | None = None,
     ) -> None:
         self._task = task
         self._agent_engine = agent_engine
         self._agent_router = agent_router
         self._declarative_tool_invoker = declarative_tool_invoker
+        self._skill_host_wiring = skill_host_wiring
 
     async def execute(
         self,
@@ -194,6 +206,7 @@ class TaskBoundAgenticDelegate:
             agent_id=task.agent_id or "",
             tenant_id=task.tenant_id,
         )
+        inject_acp_skill_host_wiring_metadata(metadata, self._skill_host_wiring)
         runtime_request = replace(runtime_request, metadata=metadata)
         execution_result = await self._agent_engine.run_with_result(runtime_request)
         return task_result_from_agent_execution(
@@ -210,6 +223,7 @@ def build_host_task_strategy_router(
     agent_router: AgentRouter,
     orchestration_executor: OrchestrationExecutor,
     declarative_tool_invoker: DeclarativeToolInvoker | None = None,
+    skill_host_wiring: HostSkillCatalogWiring | None = None,
 ) -> StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult]:
     return StrategyExecutionRouter[
         TaskExecutionInput,
@@ -221,6 +235,7 @@ def build_host_task_strategy_router(
             agent_engine=agent_engine,
             agent_router=agent_router,
             declarative_tool_invoker=declarative_tool_invoker,
+            skill_host_wiring=skill_host_wiring,
         ),
         orchestration_executor=TaskBoundOrchestrationDelegate(
             task,
@@ -320,6 +335,7 @@ class HostTaskExecution:
     _execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None
     _continuation_state_store: ExecutionContinuationStateStore | None = None
     _declarative_tool_invoker: DeclarativeToolInvoker | None = None
+    _skill_host_wiring: HostSkillCatalogWiring | None = None
 
     def _launcher_for_task(
         self,
@@ -358,6 +374,7 @@ class HostTaskExecution:
             agent_router=self._agent_router,
             orchestration_executor=self._orchestration_executor,
             declarative_tool_invoker=self._declarative_tool_invoker,
+            skill_host_wiring=self._skill_host_wiring,
         )
         delegate = _HostTaskTerminalPublishingDelegate(
             router,

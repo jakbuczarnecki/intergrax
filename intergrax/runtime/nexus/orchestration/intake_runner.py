@@ -178,15 +178,26 @@ class NexusIntakeRunner:
                 execution_id=self.execution_identity.execution_id if self.execution_identity else None,
                 response_text=task.options.human.response_text,
             )
-            canonical_resume_after_authorization(task, authorized, capability=hitl)
+            resolution = task.runtime.governance.hitl_resolution
+            assert resolution is not None
+            if task.runtime.governance.declarative_hitl_pending is not None:
+                DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
+                task.sync_metadata()
+            if task.runtime.governance.human_request is not None:
+                GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
+                task.sync_metadata()
+            resumed_continuation = canonical_resume_after_authorization(
+                task, authorized, capability=hitl
+            )
             if (
                 LongRunningCoordinator.is_long_running(task)
-                and HumanPauseCoordinator.is_resumed(task)
+                and canonical_execution_is_resumed(
+                    hitl,
+                    identity=resumed_continuation.identity,
+                )
                 and task.state in LongRunningCoordinator.paused_states()
             ):
                 task.state = TaskState.CREATED
-            resolution = task.runtime.governance.hitl_resolution
-            assert resolution is not None
             self.hitl.persist_human_decision(
                 task,
                 HumanResponseVerdict.APPROVE,
@@ -217,12 +228,6 @@ class NexusIntakeRunner:
                 task,
                 verdict=HumanResponseVerdict.APPROVE.value,
             )
-            if task.runtime.governance.declarative_hitl_pending is not None:
-                DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
-                task.sync_metadata()
-            if task.runtime.governance.human_request is not None:
-                GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
-                task.sync_metadata()
             clear_consumed_human_input(task)
 
         return IntakePhaseOutcome()

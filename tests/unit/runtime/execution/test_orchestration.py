@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -15,8 +16,6 @@ from intergrax.contracts.execution_identity import (
     mint_execution_id,
     mint_run_id,
     mint_task_id,
-    peek_active_execution_id,
-    peek_active_execution_identity,
     require_active_execution_id,
     require_active_execution_identity,
     reset_active_execution_identity,
@@ -31,7 +30,10 @@ from intergrax.runtime.execution.orchestration import (
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
-from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
+from intergrax.runtime.execution.task_adapter import (
+    TaskExecutionInput,
+    execution_request_from_task,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
@@ -44,7 +46,9 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.asyncio
-async def test_orchestration_executor_invokes_handle_task_once_with_active_identity() -> None:
+async def test_orchestration_executor_invokes_handle_task_once_with_active_identity() -> (
+    None
+):
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
@@ -55,8 +59,12 @@ async def test_orchestration_executor_invokes_handle_task_once_with_active_ident
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
-    expected =     TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+    expected = TaskResult(
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        task_id=task.task_id,
+        run_id=run_id,
+        state=TaskState.COMPLETED,
+    )
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock(return_value=expected)
 
@@ -79,7 +87,9 @@ async def test_orchestration_executor_invokes_handle_task_once_with_active_ident
 
 
 @pytest.mark.asyncio
-async def test_orchestration_router_resolves_orchestration_request_with_real_resolver() -> None:
+async def test_orchestration_router_resolves_orchestration_request_with_real_resolver() -> (
+    None
+):
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
@@ -90,8 +100,12 @@ async def test_orchestration_router_resolves_orchestration_request_with_real_res
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
-    expected =     TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+    expected = TaskResult(
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        task_id=task.task_id,
+        run_id=run_id,
+        state=TaskState.COMPLETED,
+    )
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock(return_value=expected)
     request = execution_request_from_task(
@@ -131,7 +145,9 @@ async def test_orchestration_router_resolves_orchestration_request_with_real_res
 
 
 @pytest.mark.asyncio
-async def test_orchestration_router_fails_closed_when_strategy_is_not_orchestration() -> None:
+async def test_orchestration_router_fails_closed_when_strategy_is_not_orchestration() -> (
+    None
+):
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
@@ -174,7 +190,9 @@ async def test_orchestration_router_fails_closed_when_strategy_is_not_orchestrat
 
 
 @pytest.mark.asyncio
-async def test_nexus_preserves_boundary_execution_id(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_nexus_preserves_boundary_execution_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     registry = AgentRegistry()
     loop = NexusLoop(registry)
     run_id = mint_run_id()
@@ -188,9 +206,17 @@ async def test_nexus_preserves_boundary_execution_id(monkeypatch: pytest.MonkeyP
         captured["attempt_id"] = active_attempt_id
         captured["execution_id"] = require_active_execution_id()
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=active_run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=active_run_id,
+            state=TaskState.COMPLETED,
+        )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="execute")
     identity = resolve_root_task_identity(run_id=run_id, attempt_id=attempt_id)
     await execute_root_task(task, nexus_loop=loop, identity=identity)
@@ -235,9 +261,17 @@ async def test_nexus_does_not_rebind_when_boundary_execution_id_active(
 
     async def _fake_impl(task: Task) -> TaskResult:
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="execute")
     identity = resolve_root_task_identity(run_id=run_id, attempt_id=attempt_id)
     await execute_root_task(task, nexus_loop=loop, identity=identity)
@@ -255,9 +289,17 @@ async def test_direct_legacy_nexus_call_fails_without_upstream_context(
 
     async def _fake_impl(task: Task) -> TaskResult:
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="legacy")
 
     with pytest.raises(RuntimeError, match="active ExecutionId required"):
@@ -277,9 +319,17 @@ async def test_nexus_fails_closed_on_active_identity_mismatch(
 
     async def _fake_impl(task: Task) -> TaskResult:
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="mismatch")
     token = bind_active_execution_identity(
         run_id=run_id,
@@ -307,9 +357,17 @@ async def test_unified_task_runner_mints_root_execution_id_per_invocation(
         captured["attempt_id"] = attempt_id
         captured["execution_id"] = require_active_execution_id()
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     runner = UnifiedTaskRunner(loop)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="root")
     await runner.run_task(task)
@@ -343,9 +401,17 @@ async def test_unified_task_runner_passes_same_concrete_attempt_to_nexus(
         run_id, attempt_id = require_active_execution_identity()
         seen_attempt_ids.append(attempt_id)
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     runner = UnifiedTaskRunner(loop)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="attempt")
     await runner.run_task(task)
@@ -359,7 +425,9 @@ async def test_unified_task_runner_passes_same_concrete_attempt_to_nexus(
 async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
+    from intergrax.runtime.long_running.execution_tree_checkpoint import (
+        minimal_runtime_checkpoint,
+    )
     from intergrax.runtime.long_running.models import TaskCheckpoint
 
     run_id = mint_run_id()
@@ -374,9 +442,17 @@ async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
         assert active_run_id == run_id
         assert active_attempt_id == attempt_id
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     runner = UnifiedTaskRunner(loop)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume")
     checkpoint = TaskCheckpoint(
@@ -407,7 +483,9 @@ def _checkpoint(
     run_id: RunId,
     attempt_id: AttemptId,
 ) -> TaskCheckpoint:
-    from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
+    from intergrax.runtime.long_running.execution_tree_checkpoint import (
+        minimal_runtime_checkpoint,
+    )
     from intergrax.runtime.long_running.models import TaskCheckpoint
 
     return TaskCheckpoint(
@@ -444,7 +522,9 @@ def test_resolve_root_task_identity_restores_checkpoint_identity() -> None:
     assert identity.attempt_id == attempt_id
 
 
-def test_resolve_root_task_identity_allows_matching_explicit_checkpoint_identity() -> None:
+def test_resolve_root_task_identity_allows_matching_explicit_checkpoint_identity() -> (
+    None
+):
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     task_id = mint_task_id()
@@ -488,7 +568,9 @@ def test_resolve_root_task_identity_rejects_conflicting_attempt_id() -> None:
 
 def test_execution_identity_from_checkpoint_rejects_missing_runtime() -> None:
     from intergrax.runtime.long_running.models import TaskCheckpoint
-    from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
+    from intergrax.runtime.long_running.resume_planner import (
+        execution_identity_from_checkpoint,
+    )
 
     checkpoint = TaskCheckpoint(
         task_id=mint_task_id(),

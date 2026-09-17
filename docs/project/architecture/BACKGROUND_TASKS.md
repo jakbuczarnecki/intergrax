@@ -4,13 +4,13 @@
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)
-**Last updated:** 2026-09-14 — **HARNESS-Y3** background ↔ frozen Execution Engine ownership sync
+**Last updated:** 2026-09-17 — **BG-01-R1** execution scope closure + result codec (`tests/qualification/bg_01/`)
 
 | Axis | Status | Meaning |
 |------|--------|---------|
 | **Foundation / contracts** | **CURRENT** | `TaskQueue` / `MessageBus`, `TaskRequest`, `BackgroundTaskHandler`, `TaskQueueProviderRegistry`, worker intake + BG-EXEC identity/reentry |
-| **Execution integration** | **PARTIAL** | Worker intake uses execution-owned identity + re-entry admission; not every `TaskHandler` path is admitted via public `execution.execute` / full `ExecutionBoundary` |
-| **Production qualification** | **PARTIAL** | LKW.4E and platform proof stacks exist; not universal multi-tenant production qualification |
+| **Execution integration** | **COMPLETE** | All active production **host-task / agent harness** background execution converges through `NexusWorkerRuntime` → `HostTaskExecutionPort` (queue dispatch via `QueuedHostTaskExecutionAdapter` + typed `decode_host_task_result_payload`); provider workloads documented below are out of canonical execution semantics |
+| **Production qualification** | **PARTIAL** | LKW.4E, **BG-01** (`tests/qualification/bg_01/`, gates BG-Q1..Q15), **SCHED-01** long-running delayed resume (`tests/qualification/sched_01/`, gates SCHED-Q1..Q15); not universal multi-tenant production qualification |
 
 ---
 
@@ -93,6 +93,38 @@ execute_logical_task (registered TaskHandler) OR host-task Execution path (Nexus
 
 Host-task / agent workloads dispatched through `NexusWorkerRuntime` re-enter **host task execution** ports wired to the frozen Execution stack; logical `TaskHandler` paths use the same identity admission boundary before handler code runs.
 
+### B.2.1 Long-running delayed resume scheduling (SCHED-01)
+
+**Scope:** `LongRunningScheduler` + `ScheduledResume` / `ScheduledResumePersistence` — **when** to resume paused checkpoints and human-timeout ledger actions, not a second Execution Engine.
+
+```text
+ScheduledResume (platform schedule definition)
+    ↓
+ScheduledResumePersistence (store contract; SQLite provider in default harness)
+    ↓
+LongRunningScheduler.tick / poll loop (Clock via explicit `now` or SystemTimeProvider)
+    ↓
+claim_due + fence / lease (SchedulerLedger for human-timeout path)
+    ↓
+HostTaskResumeExecutor → HostTaskExecutionPort.execute(resume_checkpoint=…)
+    ↓
+frozen Execution Engine
+```
+
+| Topic | Supported @ SCHED-01 |
+|-------|----------------------|
+| Trigger types | **One-shot** delayed resume (`run_at_utc` ISO UTC); human-timeout ledger actions — **not** cron/interval/calendar in core |
+| Misfire (overdue one-shot) | **Fire once** on next poll when status is PENDING (no unbounded catch-up storm) |
+| Timezone | Persist **UTC instant** (`run_at_utc`); calendar timezone/DST — **NOT APPLICABLE** until calendar triggers exist |
+| Occurrence identity | `schedule_id` per `ScheduledResume` row (one logical occurrence per one-shot entry) |
+| Multi-instance coordination | **QUALIFIED** for shared `ScheduledResumePersistence` implementations that provide atomic `claim_due` + fencing (SCHED-Q5/Q6; proof uses two in-process scheduler instances over one SQLite store) |
+| Distributed multi-node deployment | **Provider-dependent**; not universally qualified by SCHED-01 (no independent multi-process / arbitrary distributed backend proof in this qualification slice) |
+| Retry ownership | Scheduler poll/claim retry **≠** queue transport retry **≠** execution attempt retry (UEA / AttemptLifecycleService) |
+
+**Multi-instance vs distributed:** one process may host multiple scheduler instances; SCHED-01 proves safe coordination when they share persistence with contract-grade claim/fence semantics. Universal multi-node correctness for every production store provider is **not** claimed here — custom `ScheduledResumePersistence` plugins (SCHED-Q10) prove replaceability, not distributed concurrency unless the implementation documents atomic claim + fence behavior.
+
+Production harness wiring: `wire_harness_host_long_running_scheduler` → `wire_long_running_scheduler_with_host_execution` (see `intergrax/runtime/long_running/wiring.py`). Qualification: `tests/qualification/sched_01/`.
+
 [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) is package installation/activation only. [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) may constrain worker capacity but does not own Execution identity.
 
 Aligned with [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) §11, §20, **UEA-INV-011**, **UEA-INV-021**.
@@ -135,10 +167,23 @@ Stable `TaskId`/`RunId` across process restart and concurrent workers requires a
 
 `TaskRequest.run_id` and broker message `run_id` remain **transport queue correlation** for status/events indexing; they are not canonical runtime `RunId`.
 
+#### Production handler classification (BG-01-R1)
+
+| Handler / logical task | Class | Execution boundary | Notes |
+|------------------------|-------|--------------------|-------|
+| `nexus.task.v2` (`NexusWorkerRuntime`) | **HOST TASK PIPELINE** | `HostTaskExecutionPort` via `QueuedHostTaskExecutionAdapter` / Celery dispatcher | Canonical agent harness execution |
+| `lkw.background_ingest.v1` | **HOST TASK PIPELINE** | `HostTaskExecution.execute` through ingest runner | LKW.4E proof; same execution stack as foreground host tasks |
+| `lkw.managed_workspace_sync.v1`, knowledge ingestion, vendor-knowledge sync tasks | **PROVIDER-SPECIFIC WORKLOAD** | `execute_logical_task` + intake admission only | Document/workspace sync and ingestion — not agent harness execution |
+| Dispatcher / broker housekeeping, compensation maintenance | **INTERNAL PLATFORM JOB** | Intake + handler; no business model execution | Transport and reliability mechanics |
+| Test/eval Celery stacks | **TEST/EVAL ONLY** | Same as production wiring with eager backends | Gate and integration proofs |
+
+**ACTIVE EXECUTION BYPASSES:** none for production host-task / agent workloads. Remaining `TaskHandler` registrations are provider workloads or platform jobs by design.
+
+**Result decoding owner:** `intergrax/queueing/worker/result_codec.py` (`decode_host_task_result_payload`) — `QueuedHostTaskExecutionAdapter` injects an optional decoder callable; default is the codec (no duck typing on worker boundaries).
+
 #### TARGET / ADOPTION GAPS
 
 - **Frozen rule (UEA §10):** queue redelivery **≠** automatically new logical execution; provider retry **≠** automatically new `AttemptId`. A **new** `AttemptId` requires an explicit whole-Run retry boundary.
-- **ADOPTION GAP:** universal admission of every background `TaskHandler` through public `execution.execute` / full `ExecutionBoundary` (today many paths use `execute_logical_task` after intake admission).
 - **ADOPTION GAP:** transport envelope carrying full runtime identity on enqueue (worker side stabilizes identity at intake today).
 
 ### Required audit evidence admission (BG-EXEC-3)

@@ -50,7 +50,7 @@ from intergrax.runtime.observability.problem_signal import (
     PROBLEM_KIND_PLATFORM_EXTERNAL_EFFECT_RELIABILITY,
     PROBLEM_SEVERITY_ERROR,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     build_diagnostic_orchestrator_stack_for_tests,
     query_all_problems_for_tenant,
 )

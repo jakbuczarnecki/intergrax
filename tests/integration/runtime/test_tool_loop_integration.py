@@ -25,7 +25,11 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.contracts.execution_identity import RunId, TaskId
-from intergrax.runtime.nexus.tools.tool_loop import execute_planned_tool_calls, run_bounded_tool_loop
+from intergrax.runtime.nexus.tools.tool_loop import (
+    execute_planned_tool_calls,
+    run_bounded_tool_loop,
+    run_bounded_tool_loop_async,
+)
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     PLANNER_ACTION_CONTEXT_TOOL_ID,
     NativePlannerActionContextError,
@@ -52,13 +56,14 @@ from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.tool_executor import ToolHandler
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, canonical_execution_identity_scope, tools_agent_make_contract
+from testing_support.context_engine_test_wiring import attach_test_context_engine_for_iterative_tool_loop
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 _INTEGRATION_RUN_ID = RunId("run_00000000000000000000000000000001")
 
 
-def _invoke_bounded_tool_loop(**kwargs):
+async def _invoke_bounded_tool_loop(**kwargs):
     from intergrax.contracts.execution_identity import require_active_execution_id
     from intergrax.runtime.execution.active_execution_budget import (
         bind_root_execution_budget,
@@ -68,6 +73,7 @@ def _invoke_bounded_tool_loop(**kwargs):
     from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 
     state = kwargs["state"]
+    max_iterations = int(kwargs.get("max_iterations", 1))
     with canonical_execution_identity_scope(state.run_id):
         budget_token = None
         if peek_active_execution_budget() is None:
@@ -76,6 +82,9 @@ def _invoke_bounded_tool_loop(**kwargs):
                 ledger=create_execution_budget_ledger(None),
             )
         try:
+            if max_iterations > 1:
+                attach_test_context_engine_for_iterative_tool_loop(state)
+                return await run_bounded_tool_loop_async(**kwargs)
             return run_bounded_tool_loop(**kwargs)
         finally:
             if budget_token is not None:
@@ -363,7 +372,7 @@ def _runtime_state(llm: FakeLLMAdapter) -> RuntimeState:
     )
 
 
-def test_bounded_tool_loop_two_iterations_native_messages() -> None:
+async def test_bounded_tool_loop_two_iterations_native_messages() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -374,7 +383,7 @@ def test_bounded_tool_loop_two_iterations_native_messages() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -481,7 +490,7 @@ class _FailAfterOneRoundLLM(FakeLLMAdapter):
         raise _PlannerExplodedError("planner exploded deterministically")
 
 
-def test_bounded_tool_loop_empty_tool_calls_stop_reason() -> None:
+async def test_bounded_tool_loop_empty_tool_calls_stop_reason() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -492,7 +501,7 @@ def test_bounded_tool_loop_empty_tool_calls_stop_reason() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -506,7 +515,7 @@ def test_bounded_tool_loop_empty_tool_calls_stop_reason() -> None:
     assert result.stop_reason == "empty_tool_calls"
 
 
-def test_bounded_tool_loop_max_iterations_stop_reason() -> None:
+async def test_bounded_tool_loop_max_iterations_stop_reason() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -518,7 +527,7 @@ def test_bounded_tool_loop_max_iterations_stop_reason() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -533,7 +542,7 @@ def test_bounded_tool_loop_max_iterations_stop_reason() -> None:
     assert llm._round == 3
 
 
-def test_bounded_tool_loop_planner_failure_propagates() -> None:
+async def test_bounded_tool_loop_planner_failure_propagates() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -545,7 +554,7 @@ def test_bounded_tool_loop_planner_failure_propagates() -> None:
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(_PlannerExplodedError, match="planner exploded deterministically"):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -555,7 +564,7 @@ def test_bounded_tool_loop_planner_failure_propagates() -> None:
         )
 
 
-def test_runbudget_max_tool_calls_aborts_after_second_invocation() -> None:
+async def test_runbudget_max_tool_calls_aborts_after_second_invocation() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -571,7 +580,7 @@ def test_runbudget_max_tool_calls_aborts_after_second_invocation() -> None:
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(BudgetExceededError, match="max_tool_calls"):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -595,7 +604,7 @@ def test_runbudget_max_tool_calls_aborts_after_second_invocation() -> None:
     assert budget_events[0].payload.actual == 2
 
 
-def test_runbudget_max_tool_calls_allows_full_loop_without_double_count() -> None:
+async def test_runbudget_max_tool_calls_allows_full_loop_without_double_count() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -609,7 +618,7 @@ def test_runbudget_max_tool_calls_allows_full_loop_without_double_count() -> Non
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -742,7 +751,7 @@ class _FailThenRecoverLLM(FakeLLMAdapter):
         return LLMAdapterResponse(content=f"confirmed:{_BEYOND_PREVIEW_MARKER}", tool_calls=())
 
 
-def test_model_facing_tool_result_preserves_output_beyond_trace_preview() -> None:
+async def test_model_facing_tool_result_preserves_output_beyond_trace_preview() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("long.tool", _LongIn, _LongOut),
@@ -753,7 +762,7 @@ def test_model_facing_tool_result_preserves_output_beyond_trace_preview() -> Non
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -782,7 +791,7 @@ def test_model_facing_tool_result_preserves_output_beyond_trace_preview() -> Non
     assert result.stop_reason == "planner_final_answer"
 
 
-def test_failed_tool_keeps_bounded_trace_and_model_facing_error() -> None:
+async def test_failed_tool_keeps_bounded_trace_and_model_facing_error() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("fail.tool", _FailIn, _FailOut),
@@ -793,7 +802,7 @@ def test_failed_tool_keeps_bounded_trace_and_model_facing_error() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -912,7 +921,7 @@ class _CustomIterativePlanner:
         )
 
 
-def test_custom_iterative_planner_runs_bounded_loop_without_degrading() -> None:
+async def test_custom_iterative_planner_runs_bounded_loop_without_degrading() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -925,7 +934,7 @@ def test_custom_iterative_planner_runs_bounded_loop_without_degrading() -> None:
     assert not isinstance(planner, ToolPlanningService)
     assert isinstance(planner, IterativeToolPlannerProtocol)
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -943,7 +952,7 @@ def test_custom_iterative_planner_runs_bounded_loop_without_degrading() -> None:
     assert planner._round == 2
 
 
-def test_base_only_planner_rejected_for_multi_iteration_bounded_loop() -> None:
+async def test_base_only_planner_rejected_for_multi_iteration_bounded_loop() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -959,7 +968,7 @@ def test_base_only_planner_rejected_for_multi_iteration_bounded_loop() -> None:
         TypeError,
         match="Bounded iterative tool invocation \\(max_iterations > 1\\) requires",
     ):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -969,7 +978,7 @@ def test_base_only_planner_rejected_for_multi_iteration_bounded_loop() -> None:
         )
 
 
-def test_base_only_planner_single_iteration_still_uses_single_pass() -> None:
+async def test_base_only_planner_single_iteration_still_uses_single_pass() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -980,7 +989,7 @@ def test_base_only_planner_single_iteration_still_uses_single_pass() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = _BaseOnlyPlanner()
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -1076,7 +1085,7 @@ class _MultiCallRoundPlanner:
         )
 
 
-def test_per_round_tool_call_limit_rejects_before_invocation() -> None:
+async def test_per_round_tool_call_limit_rejects_before_invocation() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -1090,7 +1099,7 @@ def test_per_round_tool_call_limit_rejects_before_invocation() -> None:
     planner = _MultiCallRoundPlanner(rounds=3)
 
     with pytest.raises(ValueError, match="max_tool_calls_per_round"):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -1102,7 +1111,7 @@ def test_per_round_tool_call_limit_rejects_before_invocation() -> None:
     assert _CountingHandler.invocations == 0
 
 
-def test_runbudget_planner_iterations_emits_diag_and_aborts() -> None:
+async def test_runbudget_planner_iterations_emits_diag_and_aborts() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -1116,7 +1125,7 @@ def test_runbudget_planner_iterations_emits_diag_and_aborts() -> None:
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(BudgetExceededError, match="max_planner_iterations"):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -1138,7 +1147,7 @@ def test_runbudget_planner_iterations_emits_diag_and_aborts() -> None:
     assert budget_events[0].payload.actual == 2
 
 
-def test_wall_time_budget_aborts_before_next_planner_round() -> None:
+async def test_wall_time_budget_aborts_before_next_planner_round() -> None:
     from datetime import datetime, timedelta, timezone
 
     registry = ToolRegistry()
@@ -1155,7 +1164,7 @@ def test_wall_time_budget_aborts_before_next_planner_round() -> None:
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(BudgetExceededError, match="max_wall_time_seconds"):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -1237,7 +1246,7 @@ class _RepeatCallPlanner:
         )
 
 
-def test_identical_call_repeat_limit_rejects_before_third_execution() -> None:
+async def test_identical_call_repeat_limit_rejects_before_third_execution() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -1250,7 +1259,7 @@ def test_identical_call_repeat_limit_rejects_before_third_execution() -> None:
     planner = _RepeatCallPlanner(rounds=3, value=7)
 
     with pytest.raises(RuntimeError, match="max_identical_tool_call_repeats"):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -1332,7 +1341,7 @@ class _AlternatingInputPlanner:
         )
 
 
-def test_identical_call_guard_tracks_inputs_independently() -> None:
+async def test_identical_call_guard_tracks_inputs_independently() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -1343,7 +1352,7 @@ def test_identical_call_guard_tracks_inputs_independently() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = _AlternatingInputPlanner()
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -1442,7 +1451,7 @@ class _MixedOutcomeRoundPlanner:
         )
 
 
-def test_partial_tool_failure_continues_with_both_observations() -> None:
+async def test_partial_tool_failure_continues_with_both_observations() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("alpha.tool", _InA, _OutA),
@@ -1452,7 +1461,7 @@ def test_partial_tool_failure_continues_with_both_observations() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = _MixedOutcomeRoundPlanner()
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -1580,7 +1589,7 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
         return LLMAdapterResponse(content="investigation complete", tool_calls=())
 
 
-def test_bounded_react_native_investigation_policy_once_per_provider_call() -> None:
+async def test_bounded_react_native_investigation_policy_once_per_provider_call() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("probe.a", _ProbeInA, _ProbeOutA),
@@ -1598,7 +1607,7 @@ def test_bounded_react_native_investigation_policy_once_per_provider_call() -> N
     planner = ToolPlanningService(llm=llm, tools=registry)
     loop_messages = [ChatMessage(role="user", content="investigate evidence")]
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -1761,7 +1770,7 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
         return LLMAdapterResponse(content="final investigation answer", tool_calls=())
 
 
-def test_bounded_react_multi_hop_investigation_proof() -> None:
+async def test_bounded_react_multi_hop_investigation_proof() -> None:
     registry = ToolRegistry()
     registry.register(
         tools_agent_make_contract("probe.a", _EvidenceIn, _EvidenceOut),
@@ -1781,7 +1790,7 @@ def test_bounded_react_multi_hop_investigation_proof() -> None:
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = ToolPlanningService(llm=llm, tools=registry)
 
-    result = _invoke_bounded_tool_loop(
+    result = await _invoke_bounded_tool_loop(
         state=state,
         invoker=invoker,
         tool_planner=planner,
@@ -1913,7 +1922,7 @@ def _registry_with_probe_tools() -> ToolRegistry:
         ),
     ],
 )
-def test_investigation_proof_invalid_follow_up_rejected_before_tool_b(
+async def test_investigation_proof_invalid_follow_up_rejected_before_tool_b(
     round2_tool_calls: tuple[LLMToolCall, ...],
     match: str,
 ) -> None:
@@ -1924,7 +1933,7 @@ def test_investigation_proof_invalid_follow_up_rejected_before_tool_b(
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(ValueError, match=match):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -1983,7 +1992,7 @@ class _OrphanBasisFollowUpLLM(FakeLLMAdapter):
         )
 
 
-def test_orphan_raw_evidence_basis_rejected_before_second_tool() -> None:
+async def test_orphan_raw_evidence_basis_rejected_before_second_tool() -> None:
     registry = _registry_with_probe_tools()
     llm = _OrphanBasisFollowUpLLM()
     state = _runtime_state(llm)
@@ -1991,7 +2000,7 @@ def test_orphan_raw_evidence_basis_rejected_before_second_tool() -> None:
     planner = ToolPlanningService(llm=llm, tools=registry)
 
     with pytest.raises(ValueError, match="unknown basis"):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -2130,7 +2139,7 @@ class _MisalignedCustomPlanner:
     "mismatch",
     ["name", "count", "arguments"],
 )
-def test_misaligned_custom_planner_rejected_before_tool_execution(
+async def test_misaligned_custom_planner_rejected_before_tool_execution(
     mismatch: str,
 ) -> None:
     registry = _registry_with_probe_tools()
@@ -2139,7 +2148,7 @@ def test_misaligned_custom_planner_rejected_before_tool_execution(
     planner = _MisalignedCustomPlanner(mismatch=mismatch)
 
     with pytest.raises(NativeToolPlanAlignmentError):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,
@@ -2152,14 +2161,14 @@ def test_misaligned_custom_planner_rejected_before_tool_execution(
     assert len(state.tool_traces) == 0
 
 
-def test_malformed_native_arguments_rejected_before_tool_execution() -> None:
+async def test_malformed_native_arguments_rejected_before_tool_execution() -> None:
     registry = _registry_with_probe_tools()
     state = _runtime_state(FakeLLMAdapter())
     invoker = RuntimeToolInvoker(registry=registry, executor=RegistryToolExecutor(registry))
     planner = _MisalignedCustomPlanner(mismatch="malformed_arguments")
 
     with pytest.raises(NativeToolPlanAlignmentError, match="malformed"):
-        _invoke_bounded_tool_loop(
+        await _invoke_bounded_tool_loop(
             state=state,
             invoker=invoker,
             tool_planner=planner,

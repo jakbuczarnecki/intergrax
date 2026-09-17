@@ -8,6 +8,13 @@ import inspect
 
 import pytest
 
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    reset_active_execution_identity,
+)
 from intergrax.context.bootstrap import bootstrap_context_catalog, reset_context_catalog_bootstrap_for_tests
 from intergrax.context.bootstrap import materialize_context_plugin_registry
 from intergrax.context.providers.builtin import _collect_session_history
@@ -56,7 +63,9 @@ from intergrax.runtime.nexus.context.provider_handles import (
     SESSION_CONTEXT_REVISION_METADATA_KEY,
     SESSION_HISTORY_MESSAGES_METADATA_KEY,
     SESSION_HISTORY_SNAPSHOT_METADATA_KEY,
+    build_graph_provider_context_bundle,
     build_graph_provider_handles,
+    build_graph_provider_sources,
 )
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionNode
 from intergrax.runtime.task.task import Task, TaskContext
@@ -175,7 +184,15 @@ async def test_graph_engine_path_includes_core_provider_fragments() -> None:
         depends_on=["dep-1"],
     )
 
-    bundle = await manager.build_agent_context_async(task, node, prior)
+    token = bind_active_execution_identity(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    try:
+        bundle = await manager.build_agent_context_async(task, node, prior)
+    finally:
+        reset_active_execution_identity(token)
 
     assert "[context:task_message:" in bundle.message
     assert "[context:graph_prior:dep-1]" in bundle.message
@@ -267,7 +284,7 @@ async def test_builtin_collectors_read_provider_handles() -> None:
             source_id="dep-2",
         ),
     )
-    handles = build_graph_provider_handles(
+    runtime, handles, sources = build_graph_provider_context_bundle(
         task,
         runtime_config=runtime_config,
         messages=[ChatMessage(role="user", content="handle task")],
@@ -280,7 +297,7 @@ async def test_builtin_collectors_read_provider_handles() -> None:
             ChatMessage(role="user", content="history turn", entry_id="hist-1"),
         ],
     )
-    ctx = ContextProviderContext(engine_id="default", handles=handles)
+    ctx = ContextProviderContext(engine_id="default", sources=sources, runtime=runtime, handles=handles)
 
     task_frags = await providers["builtin.task_message"].collect(request, ctx)
     prior_frags = await providers["builtin.graph_prior"].collect(request, ctx)
@@ -349,7 +366,7 @@ async def test_builtin_collectors_read_extended_handles() -> None:
             "attachment_summaries": [{"attachment_id": "att-1", "summary": "chart summary"}],
         },
     )
-    handles = build_graph_provider_handles(
+    runtime, handles, sources = build_graph_provider_context_bundle(
         task,
         runtime_config=runtime_config,
         messages=[ChatMessage(role="user", content="handle task")],
@@ -359,7 +376,7 @@ async def test_builtin_collectors_read_extended_handles() -> None:
         engine_id="default",
         shared_context_reads={"dep-x": {"summary": "shared"}},
     )
-    ctx = ContextProviderContext(engine_id="default", handles=handles)
+    ctx = ContextProviderContext(engine_id="default", sources=sources, runtime=runtime, handles=handles)
 
     rag_frags = await providers["builtin.rag"].collect(request, ctx)
     ltm_frags = await providers["builtin.longterm_memory"].collect(request, ctx)
@@ -393,8 +410,8 @@ async def test_raw_legacy_handle_requires_snapshot_via_builtin() -> None:
             ],
         },
     )
-    with pytest.raises(SessionHistorySnapshotRequiredError):
-        await providers["builtin.session_history"].collect(request, ctx)
+    fragments = await providers["builtin.session_history"].collect(request, ctx)
+    assert fragments == []
 
 
 def test_graph_handles_build_canonical_snapshot() -> None:
@@ -415,21 +432,12 @@ def test_graph_handles_build_canonical_snapshot() -> None:
         context=TaskContext(),
         metadata={SESSION_CONTEXT_REVISION_METADATA_KEY: "rev-1"},
     )
-    handles = build_graph_provider_handles(
+    sources = build_graph_provider_sources(
         task,
-        runtime_config=RuntimeConfig(llm_adapter=_WindowAdapter(), production_mode=False),
-        messages=[ChatMessage(role="user", content="task")],
-        event_bus=None,
-        node_id="n1",
-        agent_id="worker",
-        engine_id="default",
         session_history_messages=messages,
     )
-    assert SESSION_HISTORY_SNAPSHOT_HANDLE in handles
-    assert SESSION_HISTORY_CONTEXT_SCOPE_HANDLE in handles
-    assert SESSION_HISTORY_REVISION_HANDLE in handles
-    assert SESSION_HISTORY_MESSAGES_HANDLE not in handles
-    snapshot = handles[SESSION_HISTORY_SNAPSHOT_HANDLE]
+    assert sources.session is not None
+    snapshot = sources.session.snapshot
     assert len(snapshot.messages) == 2
     assert snapshot.messages[0].message_id == "m1"
     assert snapshot.messages[1].tool_call_id == "tc1"
@@ -444,14 +452,8 @@ def test_graph_handles_reject_raw_history_without_revision() -> None:
         context=TaskContext(),
     )
     with pytest.raises(SessionHistorySnapshotRequiredError):
-        build_graph_provider_handles(
+        build_graph_provider_sources(
             task,
-            runtime_config=RuntimeConfig(llm_adapter=_WindowAdapter(), production_mode=False),
-            messages=[ChatMessage(role="user", content="task")],
-            event_bus=None,
-            node_id="n1",
-            agent_id="worker",
-            engine_id="default",
             session_history_messages=[
                 ChatMessage(role="user", content="orphan", entry_id="m1"),
             ],
@@ -476,22 +478,16 @@ def test_graph_handles_accept_direct_snapshot() -> None:
             SESSION_CONTEXT_REVISION_METADATA_KEY: "rev-direct",
         },
     )
-    handles = build_graph_provider_handles(
+    sources = build_graph_provider_sources(
         task,
-        runtime_config=RuntimeConfig(llm_adapter=_WindowAdapter(), production_mode=False),
-        messages=[ChatMessage(role="user", content="task")],
-        event_bus=None,
-        node_id="n1",
-        agent_id="worker",
-        engine_id="default",
         session_history_messages=[
             ChatMessage(role="user", content="ignored", entry_id="ignored"),
         ],
     )
-    assert handles[SESSION_HISTORY_SNAPSHOT_HANDLE] is snapshot
-    assert handles[SESSION_HISTORY_CONTEXT_SCOPE_HANDLE] == "sess-direct"
-    assert handles[SESSION_HISTORY_REVISION_HANDLE] == "rev-direct"
-    assert SESSION_HISTORY_MESSAGES_HANDLE not in handles
+    assert sources.session is not None
+    assert sources.session.snapshot is snapshot
+    assert sources.session.snapshot.context_scope_id == "sess-direct"
+    assert sources.session.snapshot.revision_id == "rev-direct"
 
 
 def test_structural_guards_session_history_migration() -> None:
@@ -504,7 +500,7 @@ def test_structural_guards_session_history_migration() -> None:
     builtin_source = inspect.getsource(builtin_mod._collect_session_history)
     assert "fragments_from_session_history(" not in builtin_source
     assert "max_memory_entries_in_context" not in builtin_source
-    assert "require_session_history_messages" in builtin_source
+    assert "load_snapshot" in builtin_source
 
     legacy_source = inspect.getsource(legacy_mod.fragments_from_session_history)
     assert "[-max_entries:]" not in legacy_source
@@ -512,11 +508,10 @@ def test_structural_guards_session_history_migration() -> None:
     assert "require_session_history_messages" in legacy_source
     assert "SessionHistorySnapshotRequiredError" in legacy_source
 
-    handles_source = inspect.getsource(handles_mod.build_graph_provider_handles)
-    assert "SESSION_HISTORY_MESSAGES_HANDLE]" not in handles_source
-    assert "validate_session_history_snapshot_binding" in handles_source
-    assert "SESSION_HISTORY_CONTEXT_SCOPE_HANDLE" in handles_source
-    assert "SESSION_HISTORY_REVISION_HANDLE" in handles_source
+    sources_source = inspect.getsource(handles_mod.build_graph_provider_sources)
+    assert "SESSION_HISTORY_MESSAGES_HANDLE]" not in sources_source
+    assert "validate_session_history_snapshot_binding" in sources_source
+    assert "ContextSessionSourceInput" in sources_source
 
     bridge_source = inspect.getsource(bridge_mod.extract_provider_metadata_from_runtime_state)
     assert "SESSION_HISTORY_MESSAGES_METADATA_KEY" not in bridge_source
@@ -561,15 +556,7 @@ def test_graph_handles_reject_direct_snapshot_from_other_tenant() -> None:
         },
     )
     with pytest.raises(SessionHistorySnapshotBindingError):
-        build_graph_provider_handles(
-            task,
-            runtime_config=RuntimeConfig(llm_adapter=_WindowAdapter(), production_mode=False),
-            messages=[ChatMessage(role="user", content="task")],
-            event_bus=None,
-            node_id="n1",
-            agent_id="worker",
-            engine_id="default",
-        )
+        build_graph_provider_sources(task)
 
 
 def test_graph_handles_reject_direct_snapshot_from_other_session() -> None:
@@ -591,15 +578,7 @@ def test_graph_handles_reject_direct_snapshot_from_other_session() -> None:
         },
     )
     with pytest.raises(SessionHistorySnapshotBindingError):
-        build_graph_provider_handles(
-            task,
-            runtime_config=RuntimeConfig(llm_adapter=_WindowAdapter(), production_mode=False),
-            messages=[ChatMessage(role="user", content="task")],
-            event_bus=None,
-            node_id="n1",
-            agent_id="worker",
-            engine_id="default",
-        )
+        build_graph_provider_sources(task)
 
 
 def test_graph_handles_reject_direct_snapshot_from_other_revision() -> None:
@@ -621,15 +600,7 @@ def test_graph_handles_reject_direct_snapshot_from_other_revision() -> None:
         },
     )
     with pytest.raises(SessionHistorySnapshotBindingError):
-        build_graph_provider_handles(
-            task,
-            runtime_config=RuntimeConfig(llm_adapter=_WindowAdapter(), production_mode=False),
-            messages=[ChatMessage(role="user", content="task")],
-            event_bus=None,
-            node_id="n1",
-            agent_id="worker",
-            engine_id="default",
-        )
+        build_graph_provider_sources(task)
 
 
 def test_graph_handles_require_revision_for_direct_snapshot() -> None:
@@ -648,15 +619,7 @@ def test_graph_handles_require_revision_for_direct_snapshot() -> None:
         metadata={SESSION_HISTORY_SNAPSHOT_METADATA_KEY: snapshot},
     )
     with pytest.raises(SessionHistorySnapshotRequiredError):
-        build_graph_provider_handles(
-            task,
-            runtime_config=RuntimeConfig(llm_adapter=_WindowAdapter(), production_mode=False),
-            messages=[ChatMessage(role="user", content="task")],
-            event_bus=None,
-            node_id="n1",
-            agent_id="worker",
-            engine_id="default",
-        )
+        build_graph_provider_sources(task)
 
 
 @pytest.mark.parametrize(
@@ -664,14 +627,13 @@ def test_graph_handles_require_revision_for_direct_snapshot() -> None:
     [{}, (), "history", [{"role": "user", "content": "x"}], [object()]],
 )
 @pytest.mark.asyncio
-async def test_builtin_collector_rejects_malformed_legacy_handle(malformed: object) -> None:
+async def test_builtin_collector_ignores_malformed_legacy_handle(malformed: object) -> None:
     request = _assembly_request()
     ctx = ContextProviderContext(
         engine_id="default",
         handles={SESSION_HISTORY_MESSAGES_HANDLE: malformed},
     )
-    with pytest.raises(ValueError, match="session_history_messages"):
-        await _collect_session_history(request, ctx)
+    assert await _collect_session_history(request, ctx) == []
 
 
 @pytest.mark.parametrize(
@@ -691,15 +653,7 @@ def test_graph_handles_reject_malformed_metadata_history(malformed: object) -> N
         },
     )
     with pytest.raises(ValueError, match="session_history_messages"):
-        build_graph_provider_handles(
-            task,
-            runtime_config=RuntimeConfig(llm_adapter=_WindowAdapter(), production_mode=False),
-            messages=[ChatMessage(role="user", content="task")],
-            event_bus=None,
-            node_id="n1",
-            agent_id="worker",
-            engine_id="default",
-        )
+        build_graph_provider_sources(task)
 
 
 @pytest.mark.parametrize(
@@ -751,15 +705,21 @@ async def test_engine_preserves_exact_session_history_messages() -> None:
         messages=history,
     )
     base_messages = [ChatMessage(role="user", content="current turn", entry_id="current-user")]
+    from intergrax.context.source_inputs import ContextProviderSourceInputs, ContextSessionSourceInput
+
     provider_ctx = ContextProviderContext(
         engine_id="default",
+        sources=ContextProviderSourceInputs(
+            session=ContextSessionSourceInput(
+                snapshot=snapshot,
+                binding_context_scope_id="sess-engine",
+                binding_revision_id="rev-engine",
+            ),
+        ),
         handles={
             "runtime_config": runtime_config,
             "messages": base_messages,
             "max_output_tokens": 256,
-            SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
-            SESSION_HISTORY_CONTEXT_SCOPE_HANDLE: "sess-engine",
-            SESSION_HISTORY_REVISION_HANDLE: "rev-engine",
         },
     )
     request = ContextAssemblyRequest(
@@ -820,15 +780,21 @@ async def test_engine_preserves_distinct_history_messages_with_same_content() ->
         revision_id="rev-repeat",
         messages=history,
     )
+    from intergrax.context.source_inputs import ContextProviderSourceInputs, ContextSessionSourceInput
+
     provider_ctx = ContextProviderContext(
         engine_id="default",
+        sources=ContextProviderSourceInputs(
+            session=ContextSessionSourceInput(
+                snapshot=snapshot,
+                binding_context_scope_id="sess-repeat",
+                binding_revision_id="rev-repeat",
+            ),
+        ),
         handles={
             "runtime_config": runtime_config,
             "messages": [ChatMessage(role="user", content="current", entry_id="current-user")],
             "max_output_tokens": 256,
-            SESSION_HISTORY_SNAPSHOT_HANDLE: snapshot,
-            SESSION_HISTORY_CONTEXT_SCOPE_HANDLE: "sess-repeat",
-            SESSION_HISTORY_REVISION_HANDLE: "rev-repeat",
         },
     )
     request = ContextAssemblyRequest(

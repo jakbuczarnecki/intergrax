@@ -15,8 +15,9 @@ R2_IMPLEMENTATION_SHA = "632507420f0ab8360aede43a2740e8fccc44efb4"
 # Re-advanced after EE-FINAL-02: ``ExecutionEventPosition`` / ``AsOfBoundary`` lifted to
 # ``intergrax.contracts.execution_event_position`` — journal ordering invariants unchanged.
 # HARDENING_9_NPSC5F: ``execution_position.py`` re-export shim after OBS-CONTRACT-BOUNDARY-1 — ordering unchanged.
-# Prior R2 post-qualified baseline: ``7a3569c64e892588992635c9cee10c264a9fc200``.
-R2_POST_QUALIFIED_BASELINE_SHA = "a2b33ba965c57cd3c812720f7b5f84b40b2b32f1"
+# HARDENING_9_NPSC5F V2: ``TaskRuntimeEventRuns`` contract lift (1d2936c4c) — journal read semantics unchanged.
+# Prior R2 post-qualified baseline: ``a2b33ba965c57cd3c812720f7b5f84b40b2b32f1``.
+R2_POST_QUALIFIED_BASELINE_SHA = "22c4793da4ba751fff6c93f780a7f6848650a5d9"
 
 _R2_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {

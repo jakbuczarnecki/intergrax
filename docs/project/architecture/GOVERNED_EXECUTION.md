@@ -19,6 +19,381 @@ Agent and model behavior are common **examples** of inner evaluation points - no
 
 Primary audience: Principal / Staff engineers, architects, CTOs, security and governance evaluators, and builders integrating an application with Intergrax.
 
+**This file is the canonical architecture SSOT for the entire Governance Plane** (admission, inner evaluation, policy, HITL permission semantics, meaningful-side-effect authorization). It does **not** compete with [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md) (Decision / Approval / MP-4 integration SSOT) or [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md) (post-admission reliability). Implementation roadmap and auditable gap status: [`maintainers/plans/GOVERNED_EXECUTION.md`](../maintainers/plans/GOVERNED_EXECUTION.md) · [`GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](../maintainers/qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md).
+
+**GOV-FINAL-1 reconciliation (code truth on `development`):** documentation status below was synchronized to production paths and qualification tests; **enterprise certification of the full Governance Layer is not claimed.**
+
+---
+
+## Governance implementation truth (GOV-FINAL-1)
+
+Read this section before the historical G-stage narrative. **Target architecture ≠ current coverage.**
+
+### GOV-FINAL-2 runtime blockers (GR-3 / GR-4 architecture gates)
+
+- **GR-3:** `authorize_and_execute` production adapters are allowlist-gated; `DecisionGovernedSideEffectCoordinator` (`decision_governed_side_effect.py`) validates Decision provenance then delegates to `MeaningfulSideEffectAuthorizationBoundary` only (no alternate governance semantics).
+- **GR-4:** `MeaningfulSideEffectAuthorizationBoundary` policy core has no Nexus import; HITL pause wiring uses `apply_governed_continuation_pause` (Execution continuation composition / active store), not `InternalOrchestrationContinuation` in the policy module.
+- **Not closed by this slice:** GR-8 evidence, GR-10 strategy matrix, GR-12 control-plane mutation, full GR-13 enterprise qualification.
+
+### A. Enterprise architecture target
+
+Unchanged platform intent: contract-first evaluation at named **Governance Evaluation Points**; **Governance** answers permission; **Execution Runtime** owns lifecycle; **Reliability** owns post-admission uncertainty; **Decision System** owns decision truth (integration via GR-6 material, not governance substitution). **CONTROL_PLANE_MUTATION** remains a required taxonomy extension with **GAP** live coverage until domain executors share one authority context. Full target invariants: UEA-INV-021, ADR-GOVERNED-EXECUTION-001/002, Protocol v2.2 / control-plane sections below.
+
+### B. Implemented enterprise-certified mechanisms
+
+**None at Governance-Plane-wide scope.** Individual slices are regression-gated (GR-1 identity binding, GR-4 policy core gates, GR-6 architecture gates, GR-7 reliability boundary gates) but **GR-13 / GR-16 enterprise qualification is open**.
+
+### C. Implemented — qualification open
+
+| Mechanism | Code / contract anchor | Qualification evidence (non-exhaustive) | Enterprise CLOSED? |
+| --------- | ------------------------ | --------------------------------------- | ------------------ |
+| Execution identity on grants / side effects | `MeaningfulSideEffectRequest`, `GovernedContinuationApprovalGrant` | GR-1, GR-1-R1 tests | **Yes** (GR-1 scope) |
+| Root execution admission | `RuntimeExecutionPolicyAdmissionPort`, MODEL C1 gates | `test_gr2_*`, `test_gr2_r3_*` | **No** (GR-2 candidate; audit pending) |
+| Inner enforcement / task scope | `CanonicalInnerExecutionGuardPort`, composition modules | `test_gr3_*`, architecture AST gates | **No** (GR-3 candidate) |
+| Policy resolution / catalog core | `RuntimePolicyEngine`, `PolicyCatalog`, PG-FIX-B/D behavior | `test_pg_fix_b_*`, `test_pg_fix_d_*`, `test_gr4_policy_core_architecture_gates.py` | **No** (GR-4 candidate; GR-4-R1 assembly decouple open) |
+| HITL continuation contract + UER integration | `ExecutionContinuationPort`, ADR-GR-5-001 | `test_gr5_*`, MP-4 SSOT cross-checks | **No** (strategy-wide HITL qual open) |
+| Decision → Governance at meaningful effects | `DecisionRequirementPolicy`, `DecisionGovernanceMaterialRef`, canonical boundary | `test_gr6_*`, governed contractor host GR-6 suites | **No** (host-qualified paths; not all strategies/effects) |
+| External effect reliability boundary | `ProviderInvocation` store, ERL repeat/recovery/reconciliation, reliability evidence | `test_gr7_*`, governed contractor GR-7 host suites | **No** (Reliability ≠ Governance authority; not universal) |
+
+### D. Remaining platform gaps (explicit)
+
+- **Governance Evidence (GR-8):** public contract **frozen** — [ADR-GR-8-001](../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); spine **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** (independent final audit before CLOSED); **evaluation-point adoption** (AGENT_DECISION, INTERRUPT, PRE_MODEL, TOOL*, PRE_OUTPUT, POST_RUN, CONTROL_PLANE_MUTATION, fresh post-human re-evaluation) remains **open** under **GR-10 / GR-13**.
+- **Strategy coverage (GR-10):** INFERENCE / AGENTIC meaningful-side-effect and HITL paths not enterprise-qualified on production entry points.
+- **Control-plane mutation (GR-12):** **GAP** — no shared live enforcement across activation, AHI, ECP, plugins, live task control.
+- **Plugin enterprise certification (GR-11)** and **full proof matrix (GR-13)** open.
+- **Transitional Task/Nexus coupling** on some pause bridges — Execution owns lifecycle target; port integration incomplete on non-orchestration strategies.
+- **Human APPROVED ≠ Governance ALLOW** — fresh DENY still applies; resume requires scoped authorization (see HITL section).
+
+---
+
+## Visual Architecture Layer (GOV-FINAL-3)
+
+**Purpose:** diffable, contract-first diagrams for the **current** Governance Plane — ownership, ports, fail-closed paths, strategy coverage honesty, and open gaps. **Not** a second SSOT; extends this file only. Decision depth: [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md). Reliability depth: [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md). Gap ledger: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](../maintainers/qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md). HITL continuation: [ADR-GR-5-001](../technical/adr/entries/2026-09-15/ADR-GR-5-001.md).
+
+**Mini-audit rule (per diagram):** every node maps to a contract, port, or documented gap; ownership arrows match code-truth tables in § Governance implementation truth; **TARGET** labels are never drawn as live **COVERED**.
+
+### Status legend (text + diagram labels)
+
+| Status | Meaning |
+| ------ | ------- |
+| **COVERED** | Fail-closed enforcement demonstrated on named production-class paths (not platform-wide enterprise claim). |
+| **PARTIAL** | Mechanism exists; strategy, host, or qualification scope incomplete. |
+| **GAP** | Required capability missing or taxonomy-only. |
+| **TARGET** | Documented future architecture — not current live enforcement. |
+| **NOT_APPLICABLE** | Strategy or evaluation point legitimately out of scope for that row. |
+
+### 1. Governance Plane — visual entry map
+
+| # | Topic | Diagram below |
+| - | ----- | ------------- |
+| 1 | Semantic ownership | §2 Ownership map |
+| 2 | Root admission vs inner governance | §3 |
+| 3 | Meaningful side effects | §4 |
+| 4 | Decision → Governance → Execution | §5 |
+| 5 | HITL / continuation | §6 |
+| 6 | Governance → Reliability handoff | §7 |
+| 7 | Fail-closed negative paths | §8 |
+| 8 | Strategy coverage | §9 |
+| 9 | Evidence / Diagnostics | §10 |
+| 10 | Control-plane mutation | §11 TARGET |
+| 11 | Pluginability (ports) | §12 |
+| 12 | Open gaps (visual index) | §13 |
+
+### 2. Governance ownership map (Diagram #1)
+
+**Question answered:** Who owns which *kind* of truth — without a single “god engine”?
+
+```mermaid
+flowchart TB
+  subgraph DS["Decision System — owns decision truth"]
+    DM[Decision material / approval evidence]
+  end
+  subgraph GP["Governance Plane — owns permission"]
+    GOV[ALLOW / DENY / REQUIRE_HUMAN]
+  end
+  subgraph HR["Human Review / HITL — owns human judgment evidence"]
+    HJ[Human decision / approval record]
+  end
+  subgraph EX["Execution Runtime — owns lifecycle"]
+    LC[pause / wait / resume / terminate]
+    subgraph NEX["Nexus — internal orchestration only"]
+      ORCH[step loop / harness composition]
+    end
+  end
+  subgraph RL["Reliability — owns post-admission uncertainty"]
+    UNK[UNKNOWN / repeat / reconcile / recovery]
+  end
+  subgraph EV["Evidence Plane — records facts"]
+    FACT[RuntimeEvent / correlated facts]
+  end
+  subgraph DG["Diagnostics — interprets evidence"]
+    DIAG[reconstruction / analysis]
+  end
+  subgraph DE["Domain executors — own authorized mutations"]
+    MUT[activation / AHI / plugins / domain state]
+  end
+  DS -->|material when required| GP
+  HR -->|judgment evidence| GP
+  GP -->|authorization outcome| EX
+  GP -->|may execute once| DE
+  EX -->|consequential dispatch intent| RL
+  GP -.->|spine wired root+MSE GR-8| EV
+  EX -.->|execution facts| EV
+  RL -.->|reliability facts| EV
+  EV --> DIAG
+```
+
+No layer above substitutes another: **Governance ≠ Decision truth**; **Evidence ≠ authority**; **Diagnostics ≠ authority**.
+
+### 3. Root admission vs inner governance (Diagram #2)
+
+**Question answered:** How is **ROOT_EXECUTION_ADMISSION** separated from **inner** evaluation?
+
+```mermaid
+flowchart LR
+  REQ[Request] --> ROOT[ROOT_EXECUTION_ADMISSION<br/>RuntimeExecutionPolicyAdmissionPort]
+  ROOT -->|admit| START[Execution starts<br/>active Execution identity]
+  START --> INNER[Inner operation]
+  INNER --> GUARD[CanonicalInnerExecutionGuardPort<br/>inner guard]
+  GUARD --> EVAL[Governance evaluation<br/>at applicable GEP]
+  EVAL --> ACT[Authorized action or effect]
+  ROOT -.->|admission ≠ inner authorization| GUARD
+  START -.->|child execution authority ≠ governance policy| EVAL
+```
+
+**Admission** gates whether a **root** Execution may start. **Inner** points evaluate operations **inside** an already-admitted Execution. Neither replaces the other.
+
+### 4. Meaningful side effect flow (Diagram #3)
+
+**Question answered:** What is the canonical path before a consequential external effect runs?
+
+```mermaid
+flowchart TD
+  ID[Active Execution identity] --> MSR[MeaningfulSideEffectRequest]
+  MSR --> CIG[CanonicalInnerExecutionGuardPort]
+  CIG --> DRP[DecisionRequirementPolicy]
+  DRP -->|required| DMV[Decision material validation]
+  DRP -->|not required| CW
+  DMV --> CW[CollaborativeWorkEnforcementGate / policy composition]
+  CW --> MSE[MeaningfulSideEffectAuthorizationBoundary]
+  MSE --> OUT{Outcome}
+  OUT -->|ALLOW| ONCE[Execute exactly once]
+  OUT -->|DENY| STOP[DENY — stop]
+  OUT -->|REQUIRE_HUMAN| CONT[Continuation path — §6]
+```
+
+Provider / domain dispatch occurs **only** after **ALLOW** (GR-3 / GR-6 composition).
+
+### 5. Decision → Governance → Execution (Diagram #4)
+
+**Question answered:** Why is **Decision accepted ≠ Governance ALLOW**?
+
+```mermaid
+sequenceDiagram
+  participant DS as Decision System
+  participant DG as DecisionGovernedSideEffectCoordinator
+  participant GB as Governance Boundary<br/>MeaningfulSideEffectAuthorizationBoundary
+  participant EX as Execution Runtime
+  participant PD as Provider / Domain
+  DS->>DG: Decision material prepared
+  DG->>GB: authorize_and_execute request
+  GB->>GB: Re-evaluate governance<br/>DecisionRequirementPolicy + policy core
+  alt Governance ALLOW
+    GB->>EX: Authorized to proceed
+    EX->>PD: Dispatch once
+  else Governance DENY or REQUIRE_HUMAN
+    GB-->>EX: No unauthorized dispatch
+  end
+  Note over DS,GB: Decision accepted ≠ Governance ALLOW
+```
+
+Full MP-4 integration: [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md).
+
+### 6. HITL / continuation ownership (Diagram #5)
+
+**Question answered:** Who pauses, who judges, who re-authorizes?
+
+```mermaid
+flowchart TD
+  RH[Governance REQUIRE_HUMAN] --> GCR[GovernedContinuationRequest]
+  GCR --> ECP[ExecutionContinuationPort]
+  ECP --> PAUSE[Canonical PAUSE / WAITING]
+  PAUSE --> HRR[Human Review — request / waiting for human]
+  HRR --> HRRES[Human result evidence]
+  HRRES --> FRESH[Fresh Governance evaluation]
+  FRESH -->|ALLOW| RES[Execution resume — scoped continuation]
+  FRESH -->|DENY| BLOCK[Remain blocked — no execution]
+  HRRES -.->|Human APPROVED ≠ automatic Governance ALLOW| FRESH
+  FRESH -.->|Human APPROVED + fresh Governance DENY = no resume| BLOCK
+  ECP -.->|Execution owns pause / wait / resume lifecycle| PAUSE
+```
+
+Execution establishes and owns canonical pause/wait/resume state. Human Review supplies judgment evidence while the Execution is paused. Human approval never substitutes fresh Governance authorization.
+
+**Canonical lifecycle order:** REQUIRE_HUMAN → GovernedContinuationRequest → ExecutionContinuationPort → PAUSE / WAITING → Human Review → Human result → fresh Governance evaluation → ALLOW/DENY → resume scoped work / remain blocked.
+
+ADR-GR-5-001 defines continuation contracts; Nexus orchestration stays **inside** Execution (not HITL owner).
+
+### 7. Governance → Reliability handoff (Diagram #6)
+
+**Question answered:** Where does permission end and outcome uncertainty begin?
+
+```mermaid
+flowchart LR
+  AUTH[Governance ALLOW<br/>MAY IT EXECUTE?] --> INTENT[ProviderInvocation intent]
+  INTENT --> DISP[Provider dispatch]
+  DISP --> OUT[Outcome SUCCESS / FAILED / UNKNOWN]
+  OUT --> RLC[Reliability lifecycle<br/>repeat / reconcile / recovery]
+  AUTH -.->|Governance| Q1[Permission]
+  RLC -.->|Reliability| Q2[WHAT HAPPENED / SAFE NEXT?]
+```
+
+**UNKNOWN** is Reliability semantics — not a Governance evaluation failure. Depth: [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md).
+
+### 8. Fail-closed negative paths (Diagram #7)
+
+**Question answered:** Which conditions deny execution without substituting Reliability?
+
+```mermaid
+flowchart TD
+  subgraph FC["Fail-closed — Governance / authorization"]
+    E1[Missing active Execution] --> D1[DENY]
+    E2[Missing required Decision provenance] --> D2[DENY]
+    E3[Policy evaluation failure] --> D3[DENY]
+    E4[Human approval stale / mismatch] --> NX[No execution]
+    E5[Fresh DENY after human approval] --> NX
+    E6[Invalid resource / identity binding] --> NX
+  end
+```
+
+Reliability **UNKNOWN** handling is **out of scope** for this diagram (see §7).
+
+### 9. Strategy coverage (Diagram #8)
+
+**Question answered:** Which strategies are qualified at which governance capabilities?
+
+Aligned with § Strategy coverage matrix (GOV-FINAL-1); statuses are **text** in cells (not color-only).
+
+```mermaid
+flowchart LR
+  subgraph LEG["Legend"]
+    L1[COVERED]
+    L2[PARTIAL]
+    L3[GAP]
+    L4[NOT_APPLICABLE]
+  end
+```
+
+| Capability | INFERENCE | AGENTIC | ORCHESTRATION |
+| ---------- | --------- | ------- | ------------- |
+| Root admission | WIRED_NOT_QUALIFIED | QUALIFIED | QUALIFIED |
+| Inner guard | PARTIAL | PARTIAL | PARTIAL |
+| Policy evaluation (GEP) | PARTIAL | QUALIFIED | QUALIFIED |
+| Meaningful side effect spine | NOT_APPLICABLE | PARTIAL | PARTIAL |
+| Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
+| HITL continuation (GR-5) | GAP | QUALIFIED | PARTIAL |
+| Continuation (GR-5 port) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
+| Reliability boundary (GR-7) | GAP | QUALIFIED | PARTIAL |
+| Governance Evidence (GR-8) | WIRED_NOT_QUALIFIED | PARTIAL | PARTIAL |
+| Control-plane mutation | NOT_APPLICABLE (spine) | NOT_APPLICABLE | NOT_APPLICABLE — live **GAP** GR-12 |
+
+GR-10 qualification suite (`tests/qualification/governance/strategy/`) encodes this matrix; status **PARTIAL** — independent audit required before CLOSED.
+
+### 10. Evidence / Diagnostics (Diagram #9)
+
+**Question answered:** How do facts flow without becoming authority?
+
+```mermaid
+flowchart TD
+  GD[Governance decision facts GR-8] --> EP[Evidence Plane]
+  EF[Execution facts] --> EP
+  RF[Reliability facts GR-7] --> EP
+  EP --> REC[Reconstruction]
+  REC --> DIAG[Diagnostics]
+  EP -.->|Evidence ≠ authority| DIAG
+  DIAG -.->|Diagnostics ≠ authority| X[No ALLOW/DENY substitution]
+```
+
+**Governance Evidence spine (GR-8):** typed ``GovernanceDecisionEvidenceFact`` projected through ``GovernanceEvidencePersistencePort`` (default: ``RuntimeEvent`` + ``EvidencePersistencePort`` when five-ID correlation is present). **CANDIDATE CLOSED — awaiting independent GitHub audit.** Evidence does not return or alter ``PolicyDecision``; persistence failure does not flip DENY/REQUIRE_HUMAN into ALLOW.
+
+**Scope honesty:** GR-8 closure applies to **evidence infrastructure** (immutable fact contract, pluginable persistence port, default durable adapter, root admission + meaningful-side-effect emission). **Evaluation-point adoption coverage** across all GEP rows in §G3B is **not** GR-8 — residual wiring and strategy qualification are owned by **GR-10** and **GR-13**.
+
+```text
+Governance evaluation → PolicyDecision (authority)
+  → GovernanceDecisionEvidenceFact (immutable)
+  → GovernanceEvidencePersistencePort
+  → EvidencePersistencePort / custom plugin
+  → reconstruction / diagnostics (non-authoritative)
+```
+
+### 11. Control-plane mutation — TARGET only (Diagram #10)
+
+**Question answered:** What is the *target* model for platform mutations (not live unified enforcement)?
+
+```mermaid
+flowchart TD
+  SGC[TARGET: shared governance context] --> DA[Domain executor — agent activation / rollback]
+  SGC --> AHI[Domain executor — AHI mutation]
+  SGC --> CAP[Domain executor — capacity mutation]
+  SGC --> PLG[Domain executor — plugin activation]
+  SGC --> LTC[Domain executor — live task control]
+  SGC -.->|no central universal mutation executor| NOGOD[Not a platform god-engine]
+```
+
+**CONTROL_PLANE_MUTATION** status remains **GAP** (GR-12) — not **COVERED**; enterprise qualification not claimed.
+
+### 12. Pluginability — contract → composition → implementation (Diagram #11)
+
+**Question answered:** How may hosts replace governance *mechanisms* without moving semantic ownership?
+
+```mermaid
+flowchart LR
+  OWN[Governance semantic owner] --> PORT[Contract / port]
+  PORT --> COMP[Composition root / wiring]
+  COMP --> DEF[Default platform implementation]
+  COMP --> EXT[External / host implementation]
+```
+
+| Port / policy surface | Owner | Default role |
+| --------------------- | ----- | ------------ |
+| `RuntimeExecutionPolicyAdmissionPort` | Governance plane | Root admission before Execution |
+| `CanonicalInnerExecutionGuardPort` | Governance + Execution composition | Inner operation guard |
+| `DecisionRequirementPolicy` | Governance | Decision provenance requirement |
+| `ExecutionContinuationPort` | Execution Runtime | Pause / resume lifecycle |
+| `ProviderInvocationStore` | Reliability (ERL) | Durable invocation facts |
+| `RuntimePolicyEngine` / catalog evaluators | Governance | Policy evaluation at GEPs |
+| `MeaningfulSideEffectAuthorizationBoundary` | Governance | MSE ALLOW/DENY/REQUIRE_HUMAN |
+
+Concrete providers are **not** platform authority — only ports and composed boundaries are.
+
+### Architecture boundary table (visual companion)
+
+| Boundary | Owner | Contract | Replaceable? | Concrete implementation allowed in core? |
+| -------- | ----- | -------- | -----------: | ---------------------------------------: |
+| Root Execution admission | Governance plane | `RuntimeExecutionPolicyAdmissionPort` | Yes (host wiring) | Yes — gated launcher / MODEL C1 adapters |
+| Inner operation guard | Governance + Execution | `CanonicalInnerExecutionGuardPort` | Yes | Yes — composition modules |
+| Meaningful side effect authorization | Governance | `MeaningfulSideEffectAuthorizationBoundary` | Policy/gate injection | Yes — default boundary in policy runtime |
+| Decision material at MSE | Decision + Governance | `DecisionRequirementPolicy`, `DecisionGovernanceMaterialRef` | Host policies | Coordinator in Execution Engine |
+| HITL continuation | Execution Runtime | `ExecutionContinuationPort`, `GovernedContinuationRequest` | Yes | Yes — UER integration |
+| Live policy evaluation | Governance | `RuntimePolicyEngine`, `DeclarativePolicyEnforcer` | Handlers/plugins via catalog | Yes — core evaluators |
+| Post-admission provider outcomes | Reliability | `ProviderInvocation`, `ProviderInvocationStore` | Store backend | Yes — ERL contracts |
+| Control-plane mutations (GR-12) | Domain executors (target shared context) | Taxonomy extension — live **GAP** | Per domain | Domain-owned executors only |
+| Governance evidence emission | Governance → Evidence | `GovernanceEvidencePersistencePort`, `GovernanceDecisionEvidenceFact` | `RuntimeEventGovernanceEvidencePersistence` | **CANDIDATE CLOSED (GR-8)** — independent audit pending |
+
+### 13. Current gaps shown in this visual layer
+
+| Gap | Visual status |
+| --- | ------------- |
+| GR-8 Governance Evidence integration | CANDIDATE CLOSED in §10 — awaiting independent audit |
+| GR-10 Strategy coverage qualification | Matrix §9 — open |
+| GR-11 Plugin enterprise certification | Pluginability §12 — qual open |
+| GR-12 Control-plane mutation | TARGET §11 — **GAP** live |
+| GR-13 Full proof matrix | Not claimed — see maintainer plan |
+| GR-14 LKW integration | Planned |
+| GR-15 Governance UX / app contract | Planned |
+| GR-16 Enterprise qualification & claims | Planned — no full-plane enterprise claim |
+| Transitional HITL / Task–Nexus bridge coupling | §6 limitation note |
+
 ---
 
 ## At a glance
@@ -251,28 +626,64 @@ Contract hardening (**G1B**) - **implemented core** on owned live paths (not pla
 
 Not closed by this core: `RuntimePolicyBundle.domain_fragments` hardening, `MeaningfulSideEffectRequest` context/correlation hardening, remaining facade terminology, universal rule catalog, universal evaluation-point coverage, `decision_id` on every policy producer, or durable evidence persistence.
 
-### G3B - Governance Evaluation Point execution coverage (2026-08-17)
+### G3B - Governance Evaluation Point execution coverage (GOV-FINAL-1)
 
-Frozen audit baseline (G3) closed only where a live mechanism is wired to a mandatory execution boundary with enforced outcomes. Status vocabulary: **COVERED**, **PARTIAL**, **GAP**, **OBSERVE_ONLY**, **NOT_APPLICABLE**.
+Status vocabulary: **COVERED** (wired enforcement on demonstrated production-class paths), **PARTIAL**, **GAP**, **NOT_APPLICABLE**. **COVERED** requires a fail-closed enforcement path — not merely an interface. **ENTERPRISE** is not used here; see § Governance implementation truth.
 
-| Evaluation point | Status | Owner / mechanism | Canonical enforcement boundary | Qualification / remaining gap |
-| ---------------- | ------ | ----------------- | ------------------------------ | ----------------------------- |
-| **AGENT_DECISION** | **COVERED** | `RuntimePolicyEngine.evaluate_decision` via `ExecutionInterruptHandler.resolve_decision` | `UAEPExecutor` step loop - `GovernanceResolution.should_block_execution` before decision-driven control flow | Custom policy engines may return DENY; enforcement is mandatory at UAEP boundary |
-| **interrupt sub-boundary** | **COVERED** | `RuntimePolicyEngine.evaluate_interrupt` via `resolve_decision` / `resolve_interrupt` | `GovernanceResolution.should_block_execution` + `should_pause` on blocking interrupts | HITL semantic consolidation deferred to G5 |
-| **PRE_MODEL** | **COVERED** | `PolicyEngine.evaluate_pre_llm` | `PlanningRunner` (Nexus planning) · `PolicyEnforcingLLMRouter` wrapping `StepLLMRouter.complete` (ACP agent-step LLM) | Non-ACP direct adapter callers outside `StepLLMRouter` remain host-qualified |
-| **TOOL_PLAN_OR_ACCESS** | **COVERED** | `ToolAccessPolicy.apply` (+ optional `ToolScopePolicy` via bundle resolution) | `tool_runtime.execute_plan` before plan exposure / context side-effects | Host-owned planners outside Nexus `tool_runtime` path are host-qualified |
-| **TOOL_INVOCATION authorization** | **COVERED** | `RuntimeToolInvoker` authorization | Pre-handler authorization gate | Unchanged - regression-protected |
-| **TOOL_INVOCATION declarative policy** | **COVERED** | `DeclarativePolicyEnforcer` | `RuntimeToolInvoker` before handler | Unchanged - regression-protected |
-| **MEANINGFUL_SIDE_EFFECT** | **PARTIAL** | `MeaningfulSideEffectAuthorizationBoundary` (collaborative-work + External Work via injected boundary) · `RuntimePolicyBundleEvaluator` as `MeaningfulSideEffectEvaluator` for bundle-backed hosts | `MeaningfulSideEffectAuthorizationBoundary.authorize_and_execute` (External Work adapter) · `MeaningfulSideEffectAuthorizationBoundary.authorize` (collaborative-work) | Not every runtime side-effect path is wired through the canonical boundary; hosts must inject the boundary; contracts bind AttemptId/ExecutionId (GR-1 — gap ledger GOV-GAP-001 **CLOSED**) |
-| **PRE_OUTPUT** | **COVERED** | `PolicyEngine.evaluate_pre_output` | `HarnessKernel._policy_post_check` (terminal step) · `apply_pre_output_policy` in `NexusLoop._finish_task` | Non-terminal harness steps skip post-output evaluation by design |
-| **POST_RUN** | **PARTIAL** | `GovernanceService` → `ExecutionGuard.evaluate_run` | `invoke_post_run_governance` at `NexusLoop._finish_task` and `UAEPExecutor.execute` completion when `governance_service` is configured | Runs without an injected `GovernanceService` skip post-run evaluation by configuration |
-| **CONTROL_PLANE_MUTATION** | **GAP** | Domain-specialized executors (Agent Distribution, AHI, ECP, task-control, Platform Plugins) | Target: shared authority context before mutating active platform/application state - **not** a universal mutation executor | Minimum context: principal, tenant/scope, resource identity, current/target revision, risk, approval evidence, mutation/idempotency identity - see [Protocol v2 control-plane target invariants](#protocol-v2-control-plane-mutation-target-invariants-2026-08-18) |
+| Evaluation point | Status | Canonical owner | Canonical contract / port | Enforcement boundary | Strategy coverage | Enterprise qualification | Remaining limitation |
+| ---------------- | ------ | --------------- | ------------------------- | -------------------- | ----------------- | ------------------------ | -------------------- |
+| **ROOT_EXECUTION_ADMISSION** | **PARTIAL** | Governance plane | `RuntimeExecutionPolicyAdmissionPort` | Root launcher + MODEL C1 AST gates before root Execution | ORCHESTRATION/AGENTIC/INFERENCE entry paths gated in qualification suite; legacy harness entries explicitly classified | GR-2-R3 tests; independent audit pending | Not every historical launcher path enterprise-qualified |
+| **AGENT_DECISION** | **COVERED** | Governance | `RuntimePolicyEngine.evaluate_decision` | `UAEPExecutor` / interrupt handler — `GovernanceResolution.should_block_execution` | **AGENTIC** primary; INFERENCE N/A | UAEP regression gates | Custom hosts outside UAEP unqualified |
+| **INTERRUPT** | **COVERED** | Governance | `RuntimePolicyEngine.evaluate_interrupt` | `resolve_interrupt` / blocking interrupt composition | **AGENTIC** / **ORCHESTRATION** where interrupt path wired | Interrupt + HITL bridge tests | Inference-only runs typically N/A |
+| **PRE_MODEL** | **COVERED** | Governance | `PolicyEngine.evaluate_pre_llm` | `PlanningRunner`, `PolicyEnforcingLLMRouter` | **ORCHESTRATION**, **AGENTIC** (ACP) | Planning/agent LLM gates | Direct adapter bypass = host gap |
+| **TOOL_PLAN_OR_ACCESS** | **COVERED** | Governance | `ToolAccessPolicy` / bundle scope | `tool_runtime.execute_plan` | **ORCHESTRATION** | Tool runtime authority closure tests | Planners outside `tool_runtime` unqualified |
+| **TOOL_INVOCATION_AUTHORIZATION** | **COVERED** | Governance + tool runtime | `RuntimeToolInvoker` authorization gate | Pre-handler in `RuntimeToolInvoker` | **ORCHESTRATION**, **AGENTIC** | `test_tool_runtime_authority_closure` | — |
+| **TOOL_INVOCATION_POLICY** | **COVERED** | Governance | `DeclarativePolicyEnforcer` | `RuntimeToolInvoker` before handler | **ORCHESTRATION**, **AGENTIC** | Declarative policy regression | REQUIRE_HITL tool path host-qualified |
+| **MEANINGFUL_SIDE_EFFECT** | **PARTIAL** | Governance | `MeaningfulSideEffectAuthorizationBoundary`, `DecisionRequirementPolicy` (GR-6) | `authorize` / `authorize_and_execute`; provider dispatch only after authorization | External Work + collaborative-work production compositions; not all strategies | GR-1 identity **CLOSED**; GR-6 host suites; GR-3 inner guard | Not every effect path injected; inner-op (A) caller discipline still open on some adapters |
+| **PRE_OUTPUT** | **COVERED** | Governance | `PolicyEngine.evaluate_pre_output` | Harness terminal / Nexus finish paths | **ORCHESTRATION**, **AGENTIC** harness | Kernel/Nexus post-check tests | Non-terminal steps by design |
+| **POST_RUN** | **PARTIAL** | Governance | `GovernanceService` / `ExecutionGuard` | `invoke_post_run_governance` when service configured | **ORCHESTRATION**, **AGENTIC** when wired | Post-run integration tests | Optional configuration skips evaluation |
+| **CONTROL_PLANE_MUTATION** | **GAP** | Domain executors (target: shared governance context) | Taxonomy only — no universal port | Per-domain mutations without unified enforcement | **NOT_APPLICABLE** at platform spine | ECP/AHI/AD partial slices only | GR-12 open — cannot mark CLOSED |
+
+### Strategy coverage matrix (production entry points, GOV-FINAL-1)
+
+| Governance capability | INFERENCE | AGENTIC | ORCHESTRATION |
+| --------------------- | --------- | ------- | ------------- |
+| Root admission (GR-2) | WIRED_NOT_QUALIFIED (launcher + internal runtime; no Tier-3 host INFERENCE entry) | QUALIFIED (`HostTaskExecution` + launcher) | QUALIFIED (same host path) |
+| Inner guard / MSE spine (GR-3) | PARTIAL (identity on `InferenceExecutor`) | PARTIAL | PARTIAL (primary proofs) |
+| Tool invoke policy | NOT_APPLICABLE | COVERED | COVERED |
+| Decision-required MSE (GR-6) | NOT_APPLICABLE | QUALIFIED (MP-4R7 / governed contractor) | PARTIAL (External Work host) |
+| HITL continuation port (GR-5) | GAP | QUALIFIED (MP-4R7) | PARTIAL (orchestration HITL slices) |
+| Provider reliability boundary (GR-7) | GAP | QUALIFIED (governed contractor GR-7) | PARTIAL (External Work) |
+
+### Decision → Governance (GR-6 result model)
+
+Governance **authorizes** consequential effects; Decision System supplies **material** when policy requires it. At the canonical meaningful-side-effect boundary:
+
+- **`DecisionRequirementPolicy`** classifies whether Decision provenance is required per action/kind.
+- **`DecisionGovernanceMaterialRef`** binds decision subject, canonical action identity, and resource scope (GR-6-ARCH / GR-6-RS1).
+- **`DecisionGovernedSideEffectCoordinator`** (Execution Engine) sequences decision material with **`authorize_and_execute`** — Governance evaluation remains in the boundary; provider invocation runs only after authorization (fail-closed).
+- Production composition: governed contractor host wires policy + collaborative governance (`GR-6-WIRE`, `GR-6-CW1`, `GR-6-R2`); dynamic clock (GR-6-T1).
+
+Full Decision / Approval integration SSOT: [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md). Task history: gap ledger — not duplicated here.
+
+### External effect / Reliability boundary (GR-7 result model)
+
+**Reliability ≠ Governance authority.** Governance decides whether an effect may execute; **Enterprise Reliability Layer** manages durable intent/outcome (`ProviderInvocation`), **SUCCESS / FAILED / UNKNOWN**, repeat eligibility, reconciliation probes, controlled recovery, HITL escalation for ambiguity, and **reliability evidence** projections (GR-7-A8) — without substituting ALLOW/DENY.
+
+Logical effect identity is distinct from physical provider invocation; recovery/repeat ports are governed and fail-closed. Depth: [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md). **GR-7 reliability evidence ≠ platform-wide Governance Evidence (GR-8).**
 
 ---
 
 ## Human-in-the-loop
 
-Intergrax has **one canonical HITL system**. **Governance/HITL owns the human decision; UER/Execution owns pause/wait/resume lifecycle.** Reliability may recommend or escalate to HITL; Nexus decides orchestration continuation only when the paused Execution uses orchestration strategy. Direct inference or agentic Executions may use HITL without Nexus.
+Intergrax has **one canonical HITL system**. **Governance owns permission semantics** (ALLOW / DENY / REQUIRE_HUMAN). **Human Review** (Decision / collaborative flows) owns human judgment evidence where wired. **Execution Runtime owns pause / wait / resume lifecycle** via `ExecutionContinuationPort` (ADR-GR-5-001). **Nexus is internal Execution Engine orchestration**, not a public lifecycle authority. Reliability may recommend or escalate to HITL after admission; it does **not** grant execution permission.
+
+**Non-negotiable semantics (GR-5 / MP-4 aligned):**
+
+- **Human APPROVED ≠ automatic Governance ALLOW** — post-human governance re-evaluation can still DENY.
+- Human approval cannot bypass a fresh **DENY**.
+- **Resume requires valid scoped authorization** (grant / continuation contract), not merely stored approval evidence.
+- Some production bridges remain **transitional** (Task-shaped pause materialization); treat as **limitation** until GR-10 strategy qualification closes.
 
 `REQUIRE_HUMAN` connects conceptually to:
 
@@ -504,3 +915,20 @@ Orientation map: [Existing implementation map](#existing-implementation-map). Ca
 | Runtime architecture hub | [intergrax_runtime_architecture.md](intergrax_runtime_architecture.md) |
 
 Do not treat this document as a replacement for domain pair canon or maintainer plans.
+
+---
+
+## Documentation regression gates (GOV-FINAL-1 / GOV-FINAL-3 / GOV-FINAL-4)
+
+Semantic gates (no snapshot / line-number coupling) in `tests/unit/runtime/architecture/test_gov_final_1_documentation_regression_gates.py` guard:
+
+- this file remains the sole Governance Plane architecture SSOT;
+- maintainer plan + gap ledger do not regress GR-6 / GR-7 to **Planned** when implementation exists;
+- **Reliability ≠ Governance authority** and **Human APPROVED ≠ automatic ALLOW** remain explicit;
+- **CONTROL_PLANE_MUTATION** cannot read as enterprise **CLOSED** without an explicit qualification marker.
+
+`tests/unit/runtime/architecture/test_gov_final_3_visual_architecture_gates.py` guards the **Visual Architecture Layer** (required sections, Mermaid presence, authority semantics, strategy-gap honesty, no competing visual SSOT file).
+
+**GOV-FINAL-4 (E2E qualification matrix):** enterprise proof catalog and scenario/failure matrices live in [`maintainers/qualification/GOVERNANCE_FINAL_E2E_QUALIFICATION.md`](../maintainers/qualification/GOVERNANCE_FINAL_E2E_QUALIFICATION.md); executable evidence under `tests/qualification/governance/` with doc gates in `test_gov_final_4_documentation_regression_gates.py`. **Full Governance Plane enterprise certification is not claimed.**
+
+**GOVERNANCE-FINAL (enterprise certification decision):** final certification record — [`maintainers/qualification/GOVERNANCE_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/GOVERNANCE_FINAL_ENTERPRISE_CERTIFICATION.md) (audited SHA, test re-run, **NOT CERTIFIED — ENTERPRISE BLOCKERS REMAIN** on latest audit). Does not replace this architecture SSOT.

@@ -98,6 +98,18 @@ ME16_HOST_PROFILE_TOOL: Final = "host-profile-me16-tool"
 ME16_HOST_PROFILE_SKILL: Final = "host-profile-me16-skill"
 
 
+class MixedCapabilityCompositionNotReadyError(RuntimeError):
+    """Mixed Agent+Tool+Skill composition is not ready for canonical execution."""
+
+    def __init__(self, readiness: MixedCapabilityCompositionReadiness) -> None:
+        self.readiness = readiness
+        super().__init__(
+            "mixed capability composition not ready: "
+            f"agent={readiness.agent_ready} tool={readiness.tool_ready} "
+            f"skill={readiness.skill_ready}",
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class MixedCapabilityCompositionReadiness:
     agent_ready: bool
@@ -287,16 +299,22 @@ class MarketplaceMixedCapabilityProofStack:
             tool_lifecycle.registry,
             catalog_source_id=tool_provider.catalog_source_id,
         )
+        tool_catalog_registry: dict[str, object] = {
+            tool_provider.catalog_source_id: tool_provider,
+        }
+        if tool_catalog_provider is not None:
+            default_tool_provider = Me14ToolCatalogProvider()
+            tool_catalog_registry[default_tool_provider.catalog_source_id] = (
+                default_tool_provider
+            )
+        tool_acquisition = DynamicToolAcquisitionService(
+            catalog_registry=ToolCatalogProviderRegistry(tool_catalog_registry),
+            activation=tool_lifecycle,
+            materializer=tool_materializer,
+        )
         skill_materializer = Me15SkillHostBindingMaterializer(
             skill_lifecycle.registry,
             catalog_source_id=skill_provider.catalog_source_id,
-        )
-        tool_acquisition = DynamicToolAcquisitionService(
-            catalog_registry=ToolCatalogProviderRegistry(
-                {tool_provider.catalog_source_id: tool_provider},
-            ),
-            activation=tool_lifecycle,
-            materializer=tool_materializer,
         )
         skill_acquisition = DynamicSkillAcquisitionService(
             catalog_registry=SkillCatalogProviderRegistry(
@@ -388,22 +406,31 @@ class MarketplaceMixedCapabilityProofStack:
 
     def readiness(self) -> MixedCapabilityCompositionReadiness:
         config = self.lifecycle_config
-        serving_ready = False
-        try:
-            serving = self.agent_stack.admin.inspect_serving(
-                application_id=config.application_id,
-                application_environment_id=config.environment_id,
-            )
-            serving_ready = serving.traffic_serving_revision_id == config.revision_id
-        except Exception:
-            serving_ready = False
-        return MixedCapabilityCompositionReadiness(
-            agent_ready=serving_ready and self.agent_stack.resolve_registry_read().has(
-                config.logical_agent_id,
-            ),
-            tool_ready=self.tool_lifecycle.is_active(ME14_TOOL_LOGICAL_ID),
-            skill_ready=self.skill_lifecycle.is_bound(ME15_SKILL_LOGICAL_ID),
+        serving = self.agent_stack.admin.inspect_serving(
+            application_id=config.application_id,
+            application_environment_id=config.environment_id,
         )
+        serving_ready = serving.traffic_serving_revision_id == config.revision_id
+        agent_handoff = self.mixed_consumer.agent.last_envelope is not None
+        tool_handoff = self.mixed_consumer.tool.last_envelope is not None
+        skill_handoff = self.mixed_consumer.skill.last_envelope is not None
+        return MixedCapabilityCompositionReadiness(
+            agent_ready=(
+                agent_handoff
+                and serving_ready
+                and self.agent_stack.resolve_registry_read().has(
+                    config.logical_agent_id,
+                )
+            ),
+            tool_ready=tool_handoff and self.tool_lifecycle.is_active(ME14_TOOL_LOGICAL_ID),
+            skill_ready=skill_handoff and self.skill_lifecycle.is_bound(ME15_SKILL_LOGICAL_ID),
+        )
+
+    def assert_execution_readiness(self) -> MixedCapabilityCompositionReadiness:
+        readiness = self.readiness()
+        if not readiness.execution_allowed:
+            raise MixedCapabilityCompositionNotReadyError(readiness)
+        return readiness
 
     def _identity_key_for(self, logical_id: str, kind: CapabilityKind) -> CapabilityIdentityKey:
         snapshot = self.catalog_service._catalog.snapshot()
@@ -605,13 +632,7 @@ class MarketplaceMixedCapabilityProofStack:
     async def try_execute_when_not_ready(self, tmp_path: Path) -> None:
         if self.readiness().execution_allowed:
             raise AssertionError("expected partial readiness")
-        tool_registry = self.tool_lifecycle.registry_read()
-        await execute_me16_mixed_via_host_execution_engine(
-            agent_stack=self.agent_stack,
-            tool_registry=tool_registry,
-            skill_lifecycle=self.skill_lifecycle,
-            tmp_path=tmp_path,
-        )
+        self.assert_execution_readiness()
 
 
 __all__ = [
@@ -619,6 +640,7 @@ __all__ = [
     "MarketplaceMixedCapabilityE2EProofEvidence",
     "MarketplaceMixedCapabilityProofStack",
     "MarketplaceMixedHandoffConsumer",
+    "MixedCapabilityCompositionNotReadyError",
     "MixedCapabilityCompositionReadiness",
     "build_mixed_marketplace_catalog_service",
     "me16_agent_listing_v1",

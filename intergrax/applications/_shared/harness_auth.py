@@ -131,8 +131,12 @@ def require_harness_api_key(
 
 
 def _harness_auth_state_from_request(request: Request) -> HarnessAuthState | None:
+    return resolve_harness_auth_state_from_app(request.app)
+
+
+def resolve_harness_auth_state_from_app(app: object) -> HarnessAuthState | None:
     try:
-        state = request.app.state.harness_auth
+        state = app.state.harness_auth  # type: ignore[attr-defined]
     except AttributeError:
         return None
     if isinstance(state, HarnessAuthState):

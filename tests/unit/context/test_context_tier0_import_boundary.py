@@ -16,7 +16,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_context_tier0_import_boundary_script() -> None:
-    script = REPO_ROOT / "scripts" / "check_context_tier0_import_boundary.py"
+    script = REPO_ROOT / "scripts" / "maintenance" / "check_context_tier0_import_boundary.py"
     result = subprocess.run(
         [sys.executable, str(script)],
         cwd=REPO_ROOT,

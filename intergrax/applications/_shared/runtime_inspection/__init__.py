@@ -14,12 +14,16 @@ from intergrax.applications._shared.runtime_inspection.redaction import (
     sanitize_extension_evidence,
     sanitize_provider_failure_reason,
 )
+from intergrax.applications._shared.runtime_inspection.canonical_runtime_read import (
+    inspect_execution_runtime_snapshot,
+)
 from intergrax.applications._shared.runtime_inspection.service import (
     RuntimeInspectionService,
 )
 
 __all__ = [
     "RuntimeInspectionService",
+    "inspect_execution_runtime_snapshot",
     "default_runtime_inspection_providers",
     "profile_contains_no_raw_secrets",
     "redacted_profile_snapshot",

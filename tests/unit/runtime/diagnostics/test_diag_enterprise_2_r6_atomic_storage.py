@@ -29,7 +29,7 @@ from intergrax.runtime.diagnostics.problem_occurrence_partition_fingerprint impo
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrenceAppendResult,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     document_store_occurrence_persistence_for_tests,
     document_store_problem_persistence_for_tests,
     in_memory_document_store_for_problem_tests,

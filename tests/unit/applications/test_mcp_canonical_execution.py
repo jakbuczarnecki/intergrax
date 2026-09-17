@@ -64,10 +64,15 @@ async def test_shared_mcp_run_agent_uses_canonical_execution_facade() -> None:
     facade_calls = 0
     original_execute = ExecutionFacade.execute
 
-    async def _spy_execute(self, request, *, options):
+    async def _spy_execute(self, request, *, options, held_root_capacity_permit=None):
         nonlocal facade_calls
         facade_calls += 1
-        return await original_execute(self, request, options=options)
+        return await original_execute(
+            self,
+            request,
+            options=options,
+            held_root_capacity_permit=held_root_capacity_permit,
+        )
 
     with patch.object(ExecutionFacade, "execute", _spy_execute):
         with patch(
@@ -263,10 +268,15 @@ async def test_mcp_request_produces_single_root_execution_invocation() -> None:
     facade_calls = 0
     original_facade_execute = ExecutionFacade.execute
 
-    async def _count_facade_execute(self, request, *, options):
+    async def _count_facade_execute(self, request, *, options, held_root_capacity_permit=None):
         nonlocal facade_calls
         facade_calls += 1
-        return await original_facade_execute(self, request, options=options)
+        return await original_facade_execute(
+            self,
+            request,
+            options=options,
+            held_root_capacity_permit=held_root_capacity_permit,
+        )
 
     async def _count_router_execute(
         self: StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult],

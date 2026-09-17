@@ -51,7 +51,7 @@ from intergrax.runtime.execution.retry import (
     evaluate_execution_retry_eligibility,
 )
 from intergrax.runtime.reliability.step_retry_budget import StepRetryBudget
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 

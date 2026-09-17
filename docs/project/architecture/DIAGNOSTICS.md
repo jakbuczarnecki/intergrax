@@ -338,6 +338,32 @@ Do **not** document `Diagnostics → MongoDB` as production architecture. The en
 
 `DiagnosticReadService` is **not** a separate source of truth. It composes reads over `ProblemPersistence`, `RuntimeEventPersistence`, and causal evidence where applicable.
 
+**DIAG-READ-SCALE (request-scoped reuse):** one operator read request may touch many `ProblemOccurrence` rows that share the same execution scope `(tenant_id, task_id, run_id, execution_as_of)`. `ExecutionReconstructionReadSession` memoizes factual `ExecutionReconstruction` results **only for that request** via `ExecutionReconstructionReader`. This is an optimization, not a second source of truth; reuse ends when the read request completes. Different `AsOfBoundary` values are distinct scopes. No cross-tenant reuse.
+
+```text
+ProblemOccurrences (bounded page)
+  → group by reconstruction scope
+  → ExecutionReconstructionReader (once per unique scope per request)
+  → shared factual ExecutionReconstruction in request session
+  → DiagnosticAssessment / operator projections
+```
+
+**DG-003 (operator story):** `DiagnosticInvestigationView.operator_story` is a derived Diagnostics read model (`last_good` → `first_failed` → `supporting_evidence`). It reuses the same request-scoped `ExecutionReconstruction` as assessment and timeline projection — no additional reconstruction per story. `ExecutionEventPosition` determines factual ordering; timestamps are display-only (`observed_at`). `first_failed` is the first failure boundary supported by available evidence — not root cause. Incomplete runtime history surfaces `FIRST_OBSERVED_IN_AVAILABLE_EVIDENCE` scope and explicit limitations.
+
+For every operator-story evidence reference carrying both `event_id` and `ExecutionEventPosition`, the pair must match the canonical `PositionedRuntimeEvent` in `ExecutionReconstruction.positioned_events` (`event_id` ↔ `position` authority). The **failure-anchor position** (`first_failed`) is independent: it is not copied onto every supporting evidence event. External or non-runtime `evidence_id` references without a canonical execution position keep `position` absent — the projector does not synthesize positions from finding metadata or timestamps.
+
+```text
+ProblemOccurrence
+  → DiagnosticReadService.get_investigation
+  → ExecutionReconstructionReadSession
+  → ExecutionReconstruction
+  → DiagnosticAssessment
+  → DG-003 operator story projection
+  → last_good → first_failed → evidence
+```
+
+DG-003 does not own execution facts, persist story state, or bypass `ExecutionReconstructionReader`.
+
 ```text
 Problem
   → occurrence
@@ -352,7 +378,7 @@ flowchart TB
     P[Problem record]
     O[ProblemOccurrence]
     S[SubjectRef]
-    ER[ExecutionReconstructor]
+    ER[ExecutionReconstructionReader]
     RE[RuntimeEvents]
     A[DiagnosticAssessment]
 
@@ -976,7 +1002,7 @@ true P3 flows = 4 · true P4 platform E2E = 2 (Mongo + OTLP application paths) �
 
 | Limitation | Status |
 | ---------- | ------ |
-| **DG-005** cross-topology `RuntimeEvent` persistence / reconstruction | **NOT PROVEN** |
+| **DG-005** process-isolated diagnostics over persisted execution evidence (`ExecutionReconstructionReader`; no writer `RuntimeEventBus` sharing); qualification harness is **provider-neutral** (SQLite `sqlite-file` is the current qualified backend) | **PROVEN** — `test_obs_dg005_distributed_topology_qualification.py` |
 | Kafka → worker → execution → diagnostics (full external spine) | **P4 NOT PROVEN** (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`) |
 | HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — durable checkpoint round-trip + GR-5 continuation spine (`test_obs_universal_spine_hitl_restart_e2e.py`); long-running Nexus resume integration **PRE_EXISTING** at HEAD (`handle_task` / `run_id`) |
 | Operator HTTP/dashboard read | Central **write** path qualified; **read** exposure varies by PRODUCT host |

@@ -41,7 +41,7 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 pytestmark = [pytest.mark.unit, pytest.mark.obs_coverage_p1]
 

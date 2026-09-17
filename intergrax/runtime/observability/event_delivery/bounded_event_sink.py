@@ -14,6 +14,7 @@ from typing import Literal
 
 from intergrax.contracts.event_delivery import (
     DeliverableEvent,
+    EventDeliveryAdmissionPolicyPort,
     EventDeliveryBoundaryError,
     EventDeliveryBoundaryFailureKind,
     EventDeliveryDisposition,
@@ -30,10 +31,15 @@ from intergrax.contracts.event_delivery import (
     EventSinkPort,
     effective_event_delivery_obligation,
 )
+from intergrax.runtime.observability.event_delivery.enterprise_default_event_delivery_admission_policy import (
+    EnterpriseDefaultEventDeliveryAdmissionPolicy,
+)
 from intergrax.runtime.observability.event_delivery.enterprise_default_event_delivery_obligation_policy import (
     EnterpriseDefaultEventDeliveryObligationPolicy,
 )
-from intergrax.runtime.observability.event_delivery.event_sink_health import MutableEventSinkHealth
+from intergrax.runtime.observability.event_delivery.event_sink_health import (
+    MutableEventSinkHealth,
+)
 from intergrax.runtime.observability.event_delivery.logging_post_admission_failure_observer import (
     LoggingEventDeliveryPostAdmissionFailureObserver,
 )
@@ -108,7 +114,9 @@ class BoundedEventSink:
         policy: EventDeliveryPolicy,
         *,
         obligation_policy: EventDeliveryObligationPolicyPort | None = None,
-        late_failure_observer: EventDeliveryPostAdmissionFailureObserverPort | None = None,
+        admission_policy: EventDeliveryAdmissionPolicyPort | None = None,
+        late_failure_observer: EventDeliveryPostAdmissionFailureObserverPort
+        | None = None,
         health: EventSinkHealthPort | None = None,
     ) -> None:
         self._downstream = downstream
@@ -117,6 +125,11 @@ class BoundedEventSink:
             obligation_policy
             if obligation_policy is not None
             else EnterpriseDefaultEventDeliveryObligationPolicy()
+        )
+        self._admission_policy = (
+            admission_policy
+            if admission_policy is not None
+            else EnterpriseDefaultEventDeliveryAdmissionPolicy()
         )
         self._late_failure_observer = (
             late_failure_observer
@@ -127,9 +140,21 @@ class BoundedEventSink:
         self._queue: queue.Queue[_QueuedItem | None] = queue.Queue(
             maxsize=policy.max_capacity,
         )
+        self._non_critical_limit = self._validated_non_critical_limit()
+        self._non_critical_buffered = 0
+        # ``_quota_lock`` / ``_quota_condition``: non-critical quota, shutdown
+        # linearization vs admission, and in-flight physical enqueue count.
+        # Admission linearization point: successful ``_reserve_non_critical_slot``
+        # or ``_begin_physical_enqueue`` under this lock. Shutdown linearization
+        # point: ``_stop.set()`` under the same lock in ``close()``.
+        self._quota_lock = threading.Lock()
+        self._quota_condition = threading.Condition(self._quota_lock)
+        self._pending_physical_enqueue = 0
         self._stop = threading.Event()
         self._worker_drained_normally = threading.Event()
-        self._worker = threading.Thread(target=self._drain_loop, name="w5a-event-drain", daemon=True)
+        self._worker = threading.Thread(
+            target=self._drain_loop, name="w5a-event-drain", daemon=True
+        )
         self._worker.start()
 
     @property
@@ -150,7 +175,9 @@ class BoundedEventSink:
         priority: EventPriority,
         deadline: float | None = None,
     ) -> EventDeliveryResult:
-        obligation = effective_event_delivery_obligation(priority, self._obligation_policy)
+        obligation = effective_event_delivery_obligation(
+            priority, self._obligation_policy
+        )
         depth = self.pending_depth
 
         if self._health.health_state() is EventSinkHealthState.UNHEALTHY:
@@ -183,7 +210,9 @@ class BoundedEventSink:
         if obligation is EventDeliveryObligation.COMPLETION:
             completion = _CompletionSignal()
             if completion_deadline is None:
-                completion_deadline = time.monotonic() + self._policy.critical_completion_timeout_seconds
+                completion_deadline = (
+                    time.monotonic() + self._policy.critical_completion_timeout_seconds
+                )
 
         item = _QueuedItem(
             priority=priority,
@@ -194,9 +223,7 @@ class BoundedEventSink:
         )
 
         if priority is EventPriority.BEST_EFFORT:
-            try:
-                self._queue.put_nowait(item)
-            except queue.Full:
+            if not self._try_admit_non_critical_nowait(item):
                 return self._make_result(
                     disposition=EventDeliveryDisposition.DROPPED,
                     priority=priority,
@@ -211,15 +238,25 @@ class BoundedEventSink:
             )
 
         if priority is EventPriority.CRITICAL:
-            try:
-                self._queue.put_nowait(item)
-            except queue.Full:
+            if not self._begin_physical_enqueue():
                 return self._make_result(
                     disposition=EventDeliveryDisposition.REJECTED,
                     priority=priority,
                     obligation=obligation,
                     buffered_depth=depth,
                 )
+            try:
+                try:
+                    self._queue.put_nowait(item)
+                except queue.Full:
+                    return self._make_result(
+                        disposition=EventDeliveryDisposition.REJECTED,
+                        priority=priority,
+                        obligation=obligation,
+                        buffered_depth=depth,
+                    )
+            finally:
+                self._finish_physical_enqueue()
             assert completion is not None and completion_deadline is not None
             return self._wait_for_completion(
                 completion=completion,
@@ -229,12 +266,17 @@ class BoundedEventSink:
                 event=event,
             )
 
-        timeout = self._important_timeout(deadline)
-        try:
-            self._queue.put(item, timeout=timeout)
-        except queue.Full:
+        admission_deadline = self._important_admission_deadline(deadline)
+        if not self._admit_non_critical(item, admission_deadline=admission_deadline):
+            if not self._worker.is_alive():
+                self._health.mark_unhealthy()
+                disposition = EventDeliveryDisposition.REJECTED
+            elif self._stop.is_set():
+                disposition = EventDeliveryDisposition.REJECTED
+            else:
+                disposition = EventDeliveryDisposition.DEFERRED
             return self._make_result(
-                disposition=EventDeliveryDisposition.DEFERRED,
+                disposition=disposition,
                 priority=priority,
                 obligation=obligation,
                 buffered_depth=depth,
@@ -259,14 +301,20 @@ class BoundedEventSink:
         if self._stop.is_set():
             self._raise_if_shutdown_not_successful()
             return
-        if not self._worker.is_alive() and not self._worker_drained_normally.is_set():
+        worker_dead_before_shutdown = (
+            not self._worker.is_alive() and not self._worker_drained_normally.is_set()
+        )
+        with self._quota_condition:
             self._stop.set()
+            self._quota_condition.notify_all()
+            if not worker_dead_before_shutdown:
+                self._wait_pending_physical_enqueue_drain()
+        if worker_dead_before_shutdown:
             self._health.mark_unhealthy()
             raise EventDeliveryBoundaryError(
                 kind=EventDeliveryBoundaryFailureKind.SINK_UNAVAILABLE,
                 message="bounded event drain worker is not alive",
             )
-        self._stop.set()
         self._enqueue_shutdown_sentinel()
         self._worker.join(timeout=self._policy.drain_shutdown_timeout_seconds)
         self._validate_worker_shutdown_after_join()
@@ -346,7 +394,10 @@ class BoundedEventSink:
             )
 
     def _raise_if_shutdown_not_successful(self) -> None:
-        if self._worker_drained_normally.is_set() and self._health.health_state() is EventSinkHealthState.HEALTHY:
+        if (
+            self._worker_drained_normally.is_set()
+            and self._health.health_state() is EventSinkHealthState.HEALTHY
+        ):
             return
         self._health.mark_unhealthy()
         raise EventDeliveryBoundaryError(
@@ -354,13 +405,133 @@ class BoundedEventSink:
             message="bounded event sink shutdown did not complete successfully",
         )
 
-    def _important_timeout(self, deadline: float | None) -> float:
+    def _validated_non_critical_limit(self) -> int:
+        raw = self._admission_policy.max_non_critical_buffered_events(self._policy)
+        if type(raw) is bool:
+            raise TypeError(
+                "max_non_critical_buffered_events must return int, not bool",
+            )
+        if type(raw) is not int:
+            raise TypeError(
+                "max_non_critical_buffered_events must return int",
+            )
+        if raw < 0:
+            raise ValueError(
+                "max_non_critical_buffered_events must be >= 0",
+            )
+        if raw > self._policy.max_capacity:
+            raise ValueError(
+                "max_non_critical_buffered_events must be <= max_capacity",
+            )
+        return raw
+
+    def _try_admit_non_critical_nowait(self, item: _QueuedItem) -> bool:
+        return self._admit_non_critical(item, admission_deadline=None)
+
+    def _important_admission_deadline(self, deadline: float | None) -> float:
+        policy_cap = time.monotonic() + self._policy.important_wait_timeout_seconds
         if deadline is not None:
+            return min(deadline, policy_cap)
+        return policy_cap
+
+    def _begin_physical_enqueue(self) -> bool:
+        with self._quota_condition:
+            if self._stop.is_set():
+                return False
+            if not self._worker.is_alive():
+                return False
+            self._pending_physical_enqueue += 1
+            return True
+
+    def _finish_physical_enqueue(self) -> None:
+        with self._quota_condition:
+            self._pending_physical_enqueue -= 1
+            self._quota_condition.notify_all()
+
+    def _wait_pending_physical_enqueue_drain(self) -> None:
+        """Block until in-flight physical enqueues finish or the shutdown deadline expires.
+
+        Returns only when ``_pending_physical_enqueue`` reaches zero. If the deadline
+        expires while reservations remain, marks the sink unhealthy and raises
+        ``EventDeliveryBoundaryError`` (fail-closed — no shutdown sentinel).
+        """
+        deadline = time.monotonic() + self._policy.drain_shutdown_timeout_seconds
+        while self._pending_physical_enqueue > 0:
+            if (
+                not self._worker.is_alive()
+                and not self._worker_drained_normally.is_set()
+            ):
+                self._health.mark_unhealthy()
+                raise EventDeliveryBoundaryError(
+                    kind=EventDeliveryBoundaryFailureKind.SINK_UNAVAILABLE,
+                    message="bounded event drain worker is not alive",
+                )
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                return 0.0
-            return min(remaining, self._policy.important_wait_timeout_seconds)
-        return self._policy.important_wait_timeout_seconds
+                self._health.mark_unhealthy()
+                raise EventDeliveryBoundaryError(
+                    kind=EventDeliveryBoundaryFailureKind.INTERNAL_ERROR,
+                    message=(
+                        "pending physical delivery enqueue did not drain "
+                        "before shutdown deadline"
+                    ),
+                )
+            self._quota_condition.wait(timeout=remaining)
+
+    def _reserve_non_critical_slot(self, admission_deadline: float | None) -> bool:
+        with self._quota_condition:
+            while True:
+                if self._stop.is_set():
+                    return False
+                if not self._worker.is_alive():
+                    return False
+                if self._non_critical_buffered < self._non_critical_limit:
+                    self._non_critical_buffered += 1
+                    self._pending_physical_enqueue += 1
+                    return True
+                if admission_deadline is None:
+                    return False
+                remaining = admission_deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self._quota_condition.wait(timeout=remaining)
+
+    def _release_non_critical_slot(self) -> None:
+        with self._quota_condition:
+            self._non_critical_buffered -= 1
+            self._quota_condition.notify_all()
+
+    def _admit_non_critical(
+        self,
+        item: _QueuedItem,
+        *,
+        admission_deadline: float | None,
+    ) -> bool:
+        if not self._reserve_non_critical_slot(admission_deadline):
+            return False
+        admitted = False
+        try:
+            if admission_deadline is None:
+                self._queue.put_nowait(item)
+            else:
+                remaining = admission_deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self._queue.put(item, timeout=remaining)
+            admitted = True
+            return True
+        except queue.Full:
+            return False
+        finally:
+            if not admitted:
+                self._release_non_critical_slot()
+            self._finish_physical_enqueue()
+
+    def _dequeue_accounting(self, item: _QueuedItem | None) -> None:
+        if item is None:
+            return
+        if item.priority is not EventPriority.CRITICAL:
+            self._release_non_critical_slot()
 
     def _make_result(
         self,
@@ -500,6 +671,7 @@ class BoundedEventSink:
             while True:
                 item = self._queue.get()
                 try:
+                    self._dequeue_accounting(item)
                     if item is None:
                         self._worker_drained_normally.set()
                         break
@@ -508,4 +680,6 @@ class BoundedEventSink:
                     self._queue.task_done()
         except Exception:
             self._health.mark_unhealthy()
+            with self._quota_condition:
+                self._quota_condition.notify_all()
             logger.exception("bounded event drain worker terminated unexpectedly")

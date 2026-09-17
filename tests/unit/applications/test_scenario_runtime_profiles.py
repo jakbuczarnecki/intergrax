@@ -27,7 +27,7 @@ from intergrax.applications.contracts.manifest import AgentBinding, ApplicationM
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.diagnostics.persistence_conformance import sample_problem
 from intergrax.runtime.diagnostics.document_store_problem_persistence import wire_problem_persistence
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     TEST_PROBLEM_LIST_CURSOR_SECRET,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType

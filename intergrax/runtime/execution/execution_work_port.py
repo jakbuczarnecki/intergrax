@@ -12,8 +12,19 @@ from intergrax.agent_distribution.delegated_subtasks import (
     DelegatedChildExecutionOptions,
     DelegatedSubtaskDelegate,
 )
-from intergrax.runtime.execution.boundary import ExecutionDelegate
+from intergrax.runtime.execution.authority.policy import (
+    DefaultStrictAuthorityPolicy,
+    ExecutionAuthorityPolicy,
+)
+from intergrax.runtime.execution.boundary import (
+    ExecutionAdmissionHook,
+    ExecutionDelegate,
+)
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedger
+from intergrax.runtime.execution.budget.policy import (
+    DefaultSharedPoolBudgetPolicy,
+    ExecutionBudgetAllocationPolicy,
+)
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.request import ExecutionRequest
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
@@ -26,7 +37,9 @@ DelegatedResultT = TypeVar("DelegatedResultT")
 
 
 @dataclass(frozen=True, slots=True)
-class DelegatedSpecialistChildWorkEnvelope(Generic[DelegatedRequestT, DelegatedResultT]):
+class DelegatedSpecialistChildWorkEnvelope(
+    Generic[DelegatedRequestT, DelegatedResultT]
+):
     """Typed child-work payload for delegated specialist execution (AC-4 / U4)."""
 
     domain_request: DelegatedRequestT
@@ -40,8 +53,7 @@ class ExecutionWorkPort(Protocol[InputT, OutputT, ResultT]):
     async def execute(
         self,
         request: ExecutionRequest[InputT, OutputT],
-    ) -> ResultT:
-        ...
+    ) -> ResultT: ...
 
 
 class ChildExecutionWorkPort(Generic[InputT, OutputT, ResultT]):
@@ -85,7 +97,9 @@ def child_execution_work_port(
     return ChildExecutionWorkPort(delegate, ledger=ledger)
 
 
-class _DelegatedSpecialistEnvelopeDelegate(Generic[DelegatedRequestT, DelegatedResultT]):
+class _DelegatedSpecialistEnvelopeDelegate(
+    Generic[DelegatedRequestT, DelegatedResultT]
+):
     """Routes envelope-bearing execution requests to the per-invocation specialist."""
 
     async def execute(
@@ -99,7 +113,9 @@ class _DelegatedSpecialistEnvelopeDelegate(Generic[DelegatedRequestT, DelegatedR
         return await envelope.specialist.execute(envelope.domain_request)
 
 
-class DelegatedSubtaskChildExecutionWorkPort(Generic[DelegatedRequestT, DelegatedResultT]):
+class DelegatedSubtaskChildExecutionWorkPort(
+    Generic[DelegatedRequestT, DelegatedResultT]
+):
     """
     Canonical child work owner for delegated specialist invocations (U4 / EP-15).
 
@@ -116,7 +132,9 @@ class DelegatedSubtaskChildExecutionWorkPort(Generic[DelegatedRequestT, Delegate
         ]()
         self._child_runner = ChildExecutionRunner[
             ExecutionRequest[
-                DelegatedSpecialistChildWorkEnvelope[DelegatedRequestT, DelegatedResultT],
+                DelegatedSpecialistChildWorkEnvelope[
+                    DelegatedRequestT, DelegatedResultT
+                ],
                 DelegatedResultT,
             ],
             DelegatedResultT,
@@ -156,3 +174,55 @@ def delegated_subtask_child_execution_work_port(
 ) -> DelegatedSubtaskChildExecutionWorkPort[DelegatedRequestT, DelegatedResultT]:
     """Build canonical delegated-subtask child work port at composition root."""
     return DelegatedSubtaskChildExecutionWorkPort(ledger=ledger)
+
+
+WorkT = TypeVar("WorkT")
+ChildResultT = TypeVar("ChildResultT")
+
+
+class DelegatedProviderChildExecutionEngine(Generic[WorkT, ChildResultT]):
+    """
+    Canonical child execution owner for delegated provider adoption (P2.1 / U5).
+
+    Keeps :class:`ChildExecutionRunner` construction on the frozen adapter surface.
+    """
+
+    __slots__ = ("_child_runner",)
+
+    def __init__(
+        self,
+        *,
+        ledger: ExecutionBudgetLedger | None = None,
+        authority_policy: ExecutionAuthorityPolicy | None = None,
+        budget_policy: ExecutionBudgetAllocationPolicy | None = None,
+    ) -> None:
+        self._child_runner = ChildExecutionRunner[WorkT, ChildResultT](
+            authority_policy=(
+                authority_policy
+                if authority_policy is not None
+                else DefaultStrictAuthorityPolicy()
+            ),
+            budget_policy=(
+                budget_policy
+                if budget_policy is not None
+                else DefaultSharedPoolBudgetPolicy()
+            ),
+            ledger=ledger,
+        )
+
+    async def execute(
+        self,
+        *,
+        request: WorkT,
+        delegate: ExecutionDelegate[WorkT, ChildResultT],
+        admission_hooks: tuple[ExecutionAdmissionHook[WorkT], ...] = (),
+        requested_permission_scopes: tuple[str, ...] | None = None,
+        requested_budget: RunBudget | None = None,
+    ) -> ChildResultT:
+        return await self._child_runner.execute(
+            request=request,
+            delegate=delegate,
+            admission_hooks=admission_hooks,
+            requested_permission_scopes=requested_permission_scopes,
+            requested_budget=requested_budget,
+        )

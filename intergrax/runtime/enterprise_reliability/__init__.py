@@ -36,6 +36,31 @@ from intergrax.runtime.enterprise_reliability.reconciliation_orchestration impor
     ReconciliationOrchestrationError,
     plan_external_effect_reconciliation,
 )
+from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_evidence import (
+    emit_provider_invocation_reliability_fact,
+    project_recovery_decision_evidence,
+    project_recovery_execution_evidence,
+)
+from intergrax.runtime.enterprise_reliability.provider_invocation_reconciliation import (
+    ProviderInvocationReconciliationRun,
+    reconcile_durable_provider_invocation_unknown,
+)
+from intergrax.runtime.enterprise_reliability.provider_invocation_recovery import (
+    ProviderInvocationRecoveryExecutionBlockReason,
+    ProviderInvocationRecoveryExecutionDisposition,
+    ProviderInvocationRecoveryExecutionPorts,
+    ProviderInvocationRecoveryExecutionResult,
+    ProviderInvocationRecoveryHitlResult,
+    ProviderInvocationRecoveryRepeatResult,
+    build_recovery_escalation_context,
+    decide_provider_invocation_recovery,
+    execute_provider_invocation_recovery,
+)
+from intergrax.runtime.enterprise_reliability.default_provider_invocation_recovery_policy import (
+    DEFAULT_FAIL_CLOSED_PROVIDER_INVOCATION_RECOVERY_POLICY_ID,
+    DefaultFailClosedProviderInvocationRecoveryPolicy,
+    default_fail_closed_provider_invocation_recovery_policy,
+)
 from intergrax.runtime.enterprise_reliability.resolution_execution import (
     ExternalEffectResolutionRun,
     execute_external_effect_resolution,
@@ -111,6 +136,23 @@ __all__ = [
     "evaluate_external_effect_governance",
     "handoff_recovery_lifecycle_to_execution",
     "plan_external_effect_reconciliation",
+    "ProviderInvocationReconciliationRun",
+    "reconcile_durable_provider_invocation_unknown",
+    "emit_provider_invocation_reliability_fact",
+    "project_recovery_decision_evidence",
+    "project_recovery_execution_evidence",
+    "DEFAULT_FAIL_CLOSED_PROVIDER_INVOCATION_RECOVERY_POLICY_ID",
+    "DefaultFailClosedProviderInvocationRecoveryPolicy",
+    "ProviderInvocationRecoveryExecutionBlockReason",
+    "ProviderInvocationRecoveryExecutionDisposition",
+    "ProviderInvocationRecoveryExecutionPorts",
+    "ProviderInvocationRecoveryExecutionResult",
+    "ProviderInvocationRecoveryHitlResult",
+    "ProviderInvocationRecoveryRepeatResult",
+    "build_recovery_escalation_context",
+    "decide_provider_invocation_recovery",
+    "default_fail_closed_provider_invocation_recovery_policy",
+    "execute_provider_invocation_recovery",
     "recommend_external_effect_recovery_lifecycle",
     "UncertaintyResolutionError",
     "admit_external_effect_into_enterprise_reliability",

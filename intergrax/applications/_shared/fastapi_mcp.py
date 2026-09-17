@@ -15,7 +15,10 @@ from fastapi import FastAPI
 from fastmcp import FastMCP
 
 from intergrax.applications._shared.fastapi_lifespan import LifespanFn, combine_lifespans
-from intergrax.applications._shared.harness_auth import HarnessAuthState, apply_harness_auth_middleware
+from intergrax.applications._shared.harness_auth import (
+    apply_harness_auth_middleware,
+    resolve_harness_auth_state_from_app,
+)
 
 
 def _normalize_mount_path(mount_path: str) -> str:
@@ -54,11 +57,9 @@ def couple_fastapi_with_mcp(
     )
     wrapper.mount(mcp_mount, mcp_app)
     wrapper.mount("/", fastapi_app)
-    require_auth = False
-    if hasattr(fastapi_app.state, "harness_auth"):
-        inner_auth = fastapi_app.state.harness_auth
-        if isinstance(inner_auth, HarnessAuthState):
-            wrapper.state.harness_auth = inner_auth
-            require_auth = inner_auth.require_api_key
+    inner_auth = resolve_harness_auth_state_from_app(fastapi_app)
+    require_auth = inner_auth.require_api_key if inner_auth is not None else False
+    if inner_auth is not None:
+        wrapper.state.harness_auth = inner_auth
     apply_harness_auth_middleware(wrapper, require_auth=require_auth)
     return wrapper

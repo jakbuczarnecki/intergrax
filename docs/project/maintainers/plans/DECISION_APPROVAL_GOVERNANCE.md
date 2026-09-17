@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4R0…MP-4R7 CLOSED** · **MP-4R8 — READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — CLOSED** · **MP-4D6 — CLOSED** · **MP-4D7 — CLOSED** · **MP-4D8 — CLOSED** · **MP-4 documentation certification — CLOSED** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -101,13 +101,14 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R5 |
-| **Status** | **READY_FOR_FINAL_INDEPENDENT_MP4R5_CLOSURE_AUDIT** |
+| **Status** | **CLOSED** |
 | **Purpose** | Multiplayer adopts canonical Evidence Plane via contract-only projection; **operation execution evidence coverage** only; **no** Multiplayer evidence store |
 | **Dependencies** | MP-4R4 closed |
 | **Implemented** | `CollaborativeFunctionalEvidenceProjectionStrategy` + `DefaultCollaborativeFunctionalEvidenceProjection`; `CollaborativeDecisionBindingApplicationService` + `decision_binding_composition` wiring; `append_decision_binding_create_outcome_evidence` → `FunctionalEvidencePersistence`; FAILED create outcomes without synthetic binding (`tenant_id` + optional `binding` on SUCCEEDED only); primary domain failure precedence over best-effort failed-operation-outcome emission (hosted bootstrap reporter semantics); architecture gates `test_mp4r5_evidence_plane_adoption_gates.py` |
 | **Deferred platform gap (explicit)** | MP-4R5 covers canonical **operation-outcome** evidence adoption. Full typed evidence representation of **WorkItem ↔ DecisionProposalRef** is **not** represented by frozen Evidence Plane v2. No semantic workaround is permitted. Future support requires a separate Evidence Plane architecture decision. |
 | **Blocked (architecture)** | Association fact — same as deferred gap above (`CollaborativeDecisionBindingAssociationNotRepresentable`) |
 | **Proof requirements** | `pytest tests/unit/runtime/architecture/test_mp4r5_evidence_plane_adoption_gates.py tests/unit/collaborative_work/test_functional_evidence_projection.py tests/unit/collaborative_work/test_decision_binding_application_evidence.py`; MP-4R0…R4 gates remain green |
+| **Next step** | **CLOSED** — independent closure audit passed |
 
 ---
 
@@ -116,9 +117,11 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R6 |
-| **Status** | **READY_FOR_FINAL_INDEPENDENT_MP4R6_CLOSURE_AUDIT** |
+| **Status** | **CLOSED** |
 | **Purpose** | After caller proof: delete duplicate contracts/services/tests/docs; generic checkpoint restore deserializes persisted HITL approver evidence or fails closed; legacy human decision SQLite rows without canonical `approver_json` are never promoted into authenticated `HumanApproverEvidence` on read (missing provenance fails closed at persistence deserialization); offline inventory/disposition via `HumanDecisionLegacyDataAssessment`, history-only `LegacyHumanDecisionArchiveRecord`, explicit archive JSON export, and `scripts/maintenance/human_decision_legacy_disposition_cli.py` (dry-run default; CLI-wired strategies: history-only quarantine + controlled delete; programmatic provenance recovery via `HumanDecisionApproverRecoverySource` only) |
 | **Dependencies** | MP-4R1…R5 |
+| **Proof requirements** | `pytest tests/unit/runtime/architecture/test_mp4r6_legacy_removal_gates.py` |
+| **Next step** | **CLOSED** — independent closure audit passed |
 
 ---
 
@@ -131,6 +134,8 @@ Use, modification, or distribution without written permission is prohibited.
 | **Purpose** | E2E proof: Collaborative Work → canonical Decision → Governance/HITL → `ExecutionContinuationPort` → Execution → Evidence → Diagnostics |
 | **Dependencies** | MP-4R6 |
 | **Qualification** | `testing_support/mp4r7_enterprise_integration/` composition + `tests/unit/mp4r7/test_enterprise_integration_qualification.py` + `test_mp4r7_enterprise_integration_gates.py` |
+| **Scope note** | **R7** = architectural/cross-domain E2E using **canonical production contracts** (test composition where configured) — **not** full production-deployment E2E on all real providers. **Binding PostgreSQL** = separately real-provider qualified (**MP-4R4**). |
+| **Next step** | **CLOSED** — independent closure audit passed |
 
 ---
 
@@ -139,9 +144,30 @@ Use, modification, or distribution without written permission is prohibited.
 | Field | Value |
 |-------|-------|
 | **ID** | MP-4R8 |
-| **Status** | **READY_FOR_INDEPENDENT_FINAL_MP4_AUDIT** |
-| **Purpose** | Final repository-wide ownership/bypass audit; Cursor cannot self-certify formal MP-4 closure |
+| **Status** | **CLOSED** |
+| **Purpose** | Final repository-wide ownership/bypass audit; meta-gates beyond R0–R7 slices |
 | **Dependencies** | MP-4R7 |
+| **Proof requirements** | `pytest tests/unit/runtime/architecture/test_mp4r8_final_closure_meta_gates.py` |
+| **Next step** | **CLOSED** — MP-4 **FORMALLY CLOSED** |
+
+---
+
+## Enterprise Documentation & Proof Closure (MP-4D)
+
+**Documentation/certification only — does not reopen MP-4 implementation.**
+
+| ID | Status | Purpose |
+|----|--------|---------|
+| **MP-4D1** | **CLOSED** | Synchronize documentation state with actual closed implementation |
+| **MP-4D2** | **CLOSED** | Consolidate canonical architecture documentation into one coherent entry point |
+| **MP-4D3** | **CLOSED** | Professional visual architecture layer in architecture SSOT (**D3 closed**) |
+| **MP-4D4** | **CLOSED** | E2E proof / invariant-to-test matrix (architecture SSOT § E2E Proof & Qualification Matrix) |
+| **MP-4D5** | **CLOSED** | Provider / persistence qualification matrix |
+| **MP-4D6** | **CLOSED** | Enterprise boundary & pluginability certification (architecture § MP-4D6) |
+| **MP-4D7** | **CLOSED** | Documentation regression gates (architecture § MP-4D7) |
+| **MP-4D8** | **CLOSED** | Final enterprise documentation audit (architecture § Final Enterprise Documentation Audit) |
+
+**Architecture SSOT:** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) — this plan tracks execution/status only.
 
 ---
 
@@ -173,4 +199,6 @@ Historical implementation notes for MP-4B–D remain in git history and contract
 
 ## Next step
 
-Final independent MP-4R5 closure audit on GitHub. MP-4R6 NOT STARTED.
+**MP-4 documentation certification — CLOSED** (MP-4D1–D8; SSOT: architecture § Final Enterprise Documentation Audit). **No MP-4R implementation work.** **No active MP-4D stage.**
+
+---

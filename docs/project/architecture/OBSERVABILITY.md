@@ -928,7 +928,7 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 
 | ID | Limitation |
 | -- | ---------- |
-| **DG-005** | Cross-topology `RuntimeEvent` persistence / reconstruction **NOT PROVEN** |
+| **DG-005** | Process-isolated writer / reader / diagnostics over shared durable `EvidencePersistencePort` — **PROVEN** (`test_obs_dg005_distributed_topology_qualification.py`; see [DG-005 distributed topology](#dg-005-distributed-topology-qualification)) |
 | **Async spine** | Kafka → worker → execution → diagnostics full single P4 external spine **NOT YET PROVEN** |
 | **HITL / restart** | pause/restart/resume → terminal diagnostics dedicated E2E **NOT YET PROVEN** |
 | **Operator read** | Central diagnostic **write** path qualified; HTTP/dashboard read exposure **varies by PRODUCT host** |
@@ -938,8 +938,22 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | ---- | ----- | --------- |
 | **Architecture (A)** | **A4** | Frozen spine, E/K/V/S model, ownership boundaries coherent |
 | **Implementation (I)** | **I4** | Core evidence, reconstruction, delivery boundary shipped; OECP code not shipped |
-| **Production (P)** | **P2** | SQLite defaults; distributed / cross-topology qualification gaps remain |
+| **Production (P)** | **P2** | SQLite defaults; DG-005 process-isolated topology qualified; multi-region / partition claims **not** certified |
 | **Evidence (E)** | **E3** | Strong unit/gate proof; not universal E4 for every platform path |
+
+### DG-005 distributed topology qualification
+
+**Qualified claim:** independent OS processes (writer, reader, diagnostics) may compose against the **same durable provider-backed evidence store** using **provider-neutral** `EvidencePersistencePort` / `ExecutionReconstructionReader` contracts. The writer may use `RuntimeEventBus(record_history=False)`; reconstruction and diagnostics **must not** depend on process-local `RuntimeEventBus.history`, shared Python store objects, or writer process memory.
+
+**Non-claims:** multi-region replication, network partition tolerance, geo-distributed ordering, HA failover, and cross-datacenter consistency are **not** certified by DG-005.
+
+**Harness:** `testing_support/obs_distributed_topology/` — topology orchestration depends only on qualification provider contracts (`EvidenceProviderDescriptor`, resolver/factory seam, `EvidencePersistencePort`). **SQLite file-backed adapter** (`sqlite-file`) is the **currently qualified** concrete provider; additional providers may bind the same contract without changing writer/reader/diagnostics roles. Child workers use git-archive exact-SHA imports.
+
+| Role | Authority |
+| ---- | --------- |
+| Writer process | Persists canonical evidence through `EvidencePersistencePort` |
+| Reader process | Reconstructs from durable evidence through platform contracts |
+| Diagnostics process | Consumes `ExecutionReconstructionReader`; no `RuntimeEventBus` sharing |
 
 | Sub-area | Implementation | Evidence |
 | -------- | -------------- | -------- |
@@ -960,6 +974,7 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | Execution lineage | `ExecutionLineageReader` | Platform lineage stores | Custom reader |
 | Historical E/K/V/S composition | `HistoricalReconstructionService` | Default composition root | N/A (composition, not second reconstructor) |
 | Event delivery | `EventSinkPort` | `BoundedEventSink` stack | Custom `EventSinkPort` |
+| Delivery admission capacity | `EventDeliveryAdmissionPolicyPort` | `EnterpriseDefaultEventDeliveryAdmissionPolicy` | Custom admission / reserve strategy |
 | Event delivery reaction | `EventSinkDeliveryReactionPort` | `EnterpriseDefaultEventSinkDeliveryReaction` | Custom reaction (non-CRITICAL) |
 | Export transport | `EventExportSinkPort` | OTLP / recording sinks | Vendor adapter |
 | Problem grouping | `ProblemGroupingStrategy` | `DeterministicProblemGroupingStrategy` | Registered strategies |
@@ -984,6 +999,30 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | Reconstruction implementation | no | yes via `ExecutionReconstructionReader` |
 
 Custom implementations **must** honor platform contracts — pluginability is not arbitrary semantics.
+
+### Process-local delivery QoS (Plane B, non-canonical)
+
+Delivery/export is **not** durable execution evidence. Canonical facts remain on `RuntimeEvent` persistence; the bounded sink is a **best-effort transport buffer** only.
+
+| Priority | Obligation (default) | Admission when buffer pressured | Completion |
+| -------- | ------------------- | --------------------------------- | ---------- |
+| `BEST_EFFORT` | `ADMISSION` | `DROPPED` (no wait) | n/a |
+| `IMPORTANT` | `ADMISSION` | bounded wait → `DEFERRED` | n/a |
+| `CRITICAL` | `COMPLETION` (platform floor) | `REJECTED` when no slot; reserved capacity protects admission from lower-priority fill | producer waits until downstream completes or completion timeout → `REJECTED` |
+
+**Capacity:** one FIFO `BoundedEventSink` worker drains a single bounded queue (`max_capacity`). Total process-local retained delivery backlog is **≤ `max_capacity`**. `EventDeliveryPolicy.critical_reserved_capacity` plus `EventDeliveryAdmissionPolicyPort` cap how many slots `BEST_EFFORT` / `IMPORTANT` may occupy; **CRITICAL may use the reserved slots** so lower priorities cannot consume the entire buffer. Enterprise application wiring derives a default reserve when the profile omits an explicit value.
+
+**Non-critical admission (R1):** `BEST_EFFORT` and `IMPORTANT` share one non-critical quota authority inside `BoundedEventSink`. Non-critical admission is coordinated atomically across concurrent `BEST_EFFORT` and `IMPORTANT` publishers — lower-priority concurrent publishers cannot oversubscribe the configured non-critical quota. `IMPORTANT` waits within one bounded admission deadline (monotonic) for both quota availability and physical queue space; `BEST_EFFORT` never waits. Quota is released when a non-critical item leaves the delivery buffer (dequeue), not after downstream completion. Custom `EventDeliveryAdmissionPolicyPort` implementations remain supported; invalid `max_non_critical_buffered_events` results are rejected at sink construction.
+
+**Admission vs shutdown (R2):** Under the quota coordination lock, each publisher must pass lifecycle checks (`stop`, worker liveness) **before** non-critical quota reservation or CRITICAL physical enqueue reservation. The admission linearization point is a successful reservation under that lock; shutdown linearization is `_stop.set()` under the same lock in `close()`. Publishers that lose the race are rejected (`REJECTED` / `DROPPED` per priority) and never enqueue. Publishers that win before shutdown may finish `queue` insertion as pre-shutdown work; `close()` waits (bounded by `drain_shutdown_timeout_seconds`) for in-flight reservations to complete physical enqueue before enqueueing the shutdown sentinel, so no user item is ordered after the sentinel. The shutdown sentinel is never permitted to overtake a pre-shutdown admitted physical enqueue. Terminal worker failure uses the same lifecycle gate — no new admission after the worker is dead.
+
+**Pending enqueue shutdown (R3):** If pre-shutdown admitted physical enqueues do not complete before the shutdown deadline, `close()` fails closed: the sink is marked **unhealthy**, `EventDeliveryBoundaryError` is raised to the caller, the shutdown sentinel is **not** inserted, and downstream `close()` is not invoked as part of a successful shutdown path. Delivery shutdown failure remains a non-canonical transport failure — canonical execution evidence is unchanged.
+
+**Scheduling / ordering:** **global FIFO** per sink instance (single consumer). Priority affects **admission and disposition**, not preemptive reordering of already-queued events. **Queued** CRITICAL traffic may therefore wait behind earlier lower-priority items (**queue head-of-line**). A **slow in-flight** `downstream.publish` still blocks the sole worker (**downstream HOL**) — not removed by admission reserve alone.
+
+**Shutdown:** `close()` sets stop under the admission coordination lock, wakes quota waiters, drains in-flight physical enqueue reservations within `drain_shutdown_timeout_seconds` (or fails closed on timeout per R3), enqueues a sentinel only after that drain succeeds, joins the worker, then closes downstream — fail-closed semantics unchanged for callers.
+
+Qualification: `tests/unit/runtime/observability/test_obs_delivery_qos_scale.py`.
 
 ### Duplication matrix (forbidden)
 
@@ -1186,6 +1225,12 @@ The Harness Observability Spine (§3) is the write/read/export path; this sectio
 | **Platform observability signal** | Non-execution platform/domain lifecycle signal on HOS (application instance, component, infrastructure) with its own identity and correlation - **no** `TaskId`/`RunId`/`AttemptId` | A `RuntimeEvent` with synthetic execution identity |
 
 **Implementation detail:** Plane A/B/C breakdown, field catalog, and bridge mechanics - §4. Correlation identifiers - §6 and [Required correlation fields](#required-correlation-fields) below. Layered `event_type` / `event_kind` governance - §4.4 and [Event type governance](#event-type-governance) below.
+
+### Process-local `RuntimeEventBus` history (OBS-RUNTIME-HISTORY-BOUNDS)
+
+`RuntimeEventBus.history` is **bounded or disabled** process-local diagnostic state. **Platform-owned retention** (`PlatformOwnedRuntimeEventHistoryBuffer`) is the sole owner of the retained event window (typically `deque(maxlen=capacity)` or disabled). Optional **`RuntimeEventHistoryStrategy`** plugins receive an immutable bounded snapshot via `on_history_window` after each platform update; they may project, filter, or notify but **must not** replace bus retention or serve as `RuntimeEventBus.history` authority. Policy wiring uses `RuntimeEventHistoryPolicy`; wire strategies with `history_strategy=`. The platform **strictly bounds memory retained by its local RuntimeEvent history**; arbitrary external in-process code remains responsible for its own unrelated memory usage. It is **not** canonical execution evidence. Full historical reads, reconstruction, and As-Of projection **must** use `EvidencePersistencePort` (and shared reconstruction readers) — not the bus snapshot. Local ring-buffer eviction **does not** delete persisted evidence and **must not** change publish/record persistence, delivery, or handler dispatch semantics.
+
+`TaskExecutionMetrics.runtime_events` is the count of `RuntimeEvent` records **accepted by the bus** for the task result’s canonical `task_id` + `run_id` scope via `RuntimeEventBus.open_runtime_event_metric_scope` (closed when `handle_task` completes). The metric scope belongs to **one `handle_task` invocation**, is **explicitly propagated** through Nexus result assembly via typed `_handle_task_impl` calls (runtime signature inspection is prohibited), and is **not** stored on the shared `NexusLoop` instance. It is **not** `len(history)`, **not** a global `event_count` delta, and **not** a durable evidence count. `RuntimeEventBus.event_count` remains a process-wide diagnostic total only. **RuntimeEvent metric scopes are invocation-local and identity-scoped** (`task_id` + `run_id`); overlapping bus metric scopes remain isolated when multiple scopes are open. This observability contract **does not certify** full `NexusLoop` `handle_task` concurrency safety — other invocation-specific `NexusLoop` fields (for example `_current_task`, `_trace_emitter`, decision-exposure session state) remain shared mutable instance state outside this metric-scope guarantee (**remaining gap: NEXUS-HANDLETASK-CONCURRENCY-AUDIT**, Execution/Nexus ownership).
 
 **Cross-layer canon:** [`SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md) §7 · [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) §42.1 · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) §12.2 · [`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md#attempt-ledger) · [`TOOLS.md`](TOOLS.md) · [`INTEGRATIONS.md`](INTEGRATIONS.md) · [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §31 · [`CRITIC_VERIFICATION.md`](CRITIC_VERIFICATION.md#boundary-with-observability--evaluation-control-plane-oecp) · [`ADAPTIVE_HARNESS_INTELLIGENCE.md`](ADAPTIVE_HARNESS_INTELLIGENCE.md#governance-boundary) · [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md#scaling-action-governance) · [`CODE_CRAFT.md`](CODE_CRAFT.md#codecraft-safety-boundary)
 

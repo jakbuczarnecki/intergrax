@@ -295,7 +295,7 @@ def test_npsc5f_r3_h1_r1_sentinel_clean_since_qualified_enum_baseline() -> None:
 def test_npsc5f_r3_h1_integrated_head_pin_recorded() -> None:
     """Qualified baseline is immutable provenance; remote HEAD may advance after qualification record."""
     assert NPSC5F_R3_H1_QUALIFIED_BASELINE_SHA == (
-        "ad1a1e57fc70529aedcbfa27808fffdbfe5fdd14"
+        "62fdceac2122738751a8a1caeffe16c986dfe47d"
     )
     assert_frozen_baseline_is_ancestor_of_remote(
         repo_root=_REPO_ROOT,
