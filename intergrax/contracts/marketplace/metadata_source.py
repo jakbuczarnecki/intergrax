@@ -19,6 +19,11 @@ class MarketplaceMetadataSource(Protocol):
     Implementations may also satisfy ``CapabilityCatalogSource`` when the same
     backend supplies canonical catalog entries for federation.
 
+    ``read_listings`` is a **runtime snapshot read** (current provider state).
+    Callers such as ``MarketplaceCatalogService`` invoke it at query/read
+    boundaries, not during service construction. Construction validates static
+    wiring (duplicate ``source_id``, federation membership) only.
+
     ``read_listings`` failures and malformed snapshots must propagate; providers
     must not return empty tuples to mask duplicate identity or identity mismatch.
     """
@@ -32,4 +37,4 @@ class MarketplaceMetadataSource(Protocol):
         """Declared source identity for listings from this provider."""
 
     def read_listings(self) -> tuple[MarketplaceCapabilityListing, ...]:
-        """Return all product listings currently visible from this provider."""
+        """Return the current product listing snapshot from this provider."""

@@ -65,7 +65,13 @@ class _ListingProductMetadata:
 
 
 class MarketplaceCatalogService:
-    """Join federated catalog discovery with marketplace product metadata."""
+    """Join federated catalog discovery with marketplace product metadata.
+
+    Construction performs static federation/wiring validation only. Each
+    ``query_listings`` / ``get_listing`` call reads the current metadata snapshot
+    from every configured source, validates it, then joins against one catalog
+    snapshot for that query.
+    """
 
     def __init__(
         self,
@@ -84,7 +90,7 @@ class MarketplaceCatalogService:
         )
         self._marketplace_sources = marketplace_sources
         _validate_marketplace_sources_in_catalog(catalog, marketplace_sources)
-        _validate_marketplace_metadata_sources(marketplace_sources)
+        _validate_marketplace_metadata_source_configuration(marketplace_sources)
 
     def list_listings(
         self,
@@ -117,7 +123,7 @@ class MarketplaceCatalogService:
         query_context = marketplace_query_context or MarketplaceQueryContext()
         snapshot = self._catalog.snapshot()
         catalog_federation_completeness = snapshot.federation_completeness
-        listing_index = _build_listing_index(snapshot, self._marketplace_sources)
+        listing_index = _build_validated_listing_index(snapshot, self._marketplace_sources)
         candidates = discover_capability_candidates(
             snapshot,
             query,
@@ -203,7 +209,7 @@ class MarketplaceCatalogService:
         """Return one marketplace listing by canonical identity key, if present."""
         query_context = marketplace_query_context or MarketplaceQueryContext()
         snapshot = self._catalog.snapshot()
-        listing_index = _build_listing_index(snapshot, self._marketplace_sources)
+        listing_index = _build_validated_listing_index(snapshot, self._marketplace_sources)
         metadata = listing_index.get(identity_key.sort_key)
         if metadata is None:
             return None
@@ -234,34 +240,29 @@ def _validate_marketplace_sources_in_catalog(
             )
 
 
-def _validate_marketplace_metadata_sources(
+def _validate_marketplace_metadata_source_configuration(
     marketplace_sources: tuple[MarketplaceMetadataSource, ...],
 ) -> None:
+    """Static wiring checks only — must not call ``MarketplaceMetadataSource.read_listings``."""
     seen_source_ids: set[str] = set()
-    seen_identity_keys: set[tuple[str, str, str, str]] = set()
     for source in marketplace_sources:
         if source.source_id in seen_source_ids:
             raise MarketplaceCatalogConfigurationError(
                 f"duplicate catalog source_id in federation: {source.source_id!r}",
             )
         seen_source_ids.add(source.source_id)
-        for listing in source.read_listings():
-            identity_key = listing.capability.identity.sort_key
-            if identity_key in seen_identity_keys:
-                raise MarketplaceCatalogConfigurationError(
-                    "duplicate marketplace listing for the same source-qualified discovery identity",
-                )
-            seen_identity_keys.add(identity_key)
 
 
-def _build_listing_index(
+def _build_validated_listing_index(
     snapshot: CapabilityCatalogSnapshot,
     marketplace_sources: tuple[MarketplaceMetadataSource, ...],
 ) -> dict[tuple[str, str, str, str], _ListingProductMetadata]:
+    """Read each metadata source once and validate the returned snapshot before join."""
     canonical_by_identity = _index_canonical_entries(snapshot)
     index: dict[tuple[str, str, str, str], _ListingProductMetadata] = {}
     for source in marketplace_sources:
-        for listing in source.read_listings():
+        source_listings = source.read_listings()
+        for listing in source_listings:
             identity_key = listing.capability.identity.sort_key
             if identity_key in index:
                 raise MarketplaceCatalogConfigurationError(

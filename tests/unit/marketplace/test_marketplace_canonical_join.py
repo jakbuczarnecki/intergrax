@@ -305,14 +305,15 @@ def test_duplicate_identity_across_product_sources_fails_closed() -> None:
         records=(_marketplace_record(),),
     )
     catalog = FederatedCapabilityCatalog((marketplace_source,))
+    service = MarketplaceCatalogService(
+        catalog=catalog,
+        marketplace_sources=(marketplace_source,),
+    )
     with pytest.raises(
         MarketplaceCatalogConfigurationError,
         match="duplicate marketplace listing for the same source-qualified discovery identity",
     ):
-        MarketplaceCatalogService(
-            catalog=catalog,
-            marketplace_sources=(marketplace_source,),
-        )
+        service.list_listings(_discovery_query())
 
 
 def test_get_listing_returns_none_after_federation_removes_capability() -> None:

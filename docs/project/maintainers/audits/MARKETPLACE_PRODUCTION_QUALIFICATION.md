@@ -37,7 +37,10 @@ No SLA claimed — numbers only.
 
 ## Production hardening in ME-17
 
-- `MarketplaceCatalogService`: eager metadata validation (`duplicate source_id`, duplicate listing identity) at construction; canonical join validation on first federated read (unchanged semantics, ME-12 single-snapshot preserved).
+- ME-17 (initial): eager duplicate `source_id` checks at construction; canonical join on federated read.
+- **ME-17-C1 (correction):** `MarketplaceCatalogService` construction validates **static wiring only** (duplicate metadata `source_id`, federation membership). `MarketplaceMetadataSource.read_listings()` runs **once per source per query** at the query/read boundary; snapshot validation (duplicate source-qualified identity, canonical fact mismatch) applies to that read, not to construction. ME-12 single catalog snapshot per query preserved.
+
+Evidence: `tests/unit/marketplace/test_me17_c1_metadata_source_read_semantics.py`.
 
 ## Remaining gaps
 
