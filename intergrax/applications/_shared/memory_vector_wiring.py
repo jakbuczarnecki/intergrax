@@ -133,6 +133,7 @@ def build_user_profile_manager(
                 vectorstore_manager=rag_stack.vectorstore_manager,
                 tenant_id=resolved_tenant_id,
                 vector_index_namespace=profile.vector_index_namespace,
+                workspace_id=None,
             )
         )
     if projections:

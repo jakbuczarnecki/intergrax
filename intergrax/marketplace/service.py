@@ -84,6 +84,7 @@ class MarketplaceCatalogService:
         )
         self._marketplace_sources = marketplace_sources
         _validate_marketplace_sources_in_catalog(catalog, marketplace_sources)
+        _validate_marketplace_metadata_sources(marketplace_sources)
 
     def list_listings(
         self,
@@ -233,19 +234,33 @@ def _validate_marketplace_sources_in_catalog(
             )
 
 
-def _build_listing_index(
-    snapshot: CapabilityCatalogSnapshot,
+def _validate_marketplace_metadata_sources(
     marketplace_sources: tuple[MarketplaceMetadataSource, ...],
-) -> dict[tuple[str, str, str, str], _ListingProductMetadata]:
-    canonical_by_identity = _index_canonical_entries(snapshot)
-    index: dict[tuple[str, str, str, str], _ListingProductMetadata] = {}
+) -> None:
     seen_source_ids: set[str] = set()
+    seen_identity_keys: set[tuple[str, str, str, str]] = set()
     for source in marketplace_sources:
         if source.source_id in seen_source_ids:
             raise MarketplaceCatalogConfigurationError(
                 f"duplicate catalog source_id in federation: {source.source_id!r}",
             )
         seen_source_ids.add(source.source_id)
+        for listing in source.read_listings():
+            identity_key = listing.capability.identity.sort_key
+            if identity_key in seen_identity_keys:
+                raise MarketplaceCatalogConfigurationError(
+                    "duplicate marketplace listing for the same source-qualified discovery identity",
+                )
+            seen_identity_keys.add(identity_key)
+
+
+def _build_listing_index(
+    snapshot: CapabilityCatalogSnapshot,
+    marketplace_sources: tuple[MarketplaceMetadataSource, ...],
+) -> dict[tuple[str, str, str, str], _ListingProductMetadata]:
+    canonical_by_identity = _index_canonical_entries(snapshot)
+    index: dict[tuple[str, str, str, str], _ListingProductMetadata] = {}
+    for source in marketplace_sources:
         for listing in source.read_listings():
             identity_key = listing.capability.identity.sort_key
             if identity_key in index:
