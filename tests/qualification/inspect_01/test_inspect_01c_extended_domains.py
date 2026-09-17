@@ -11,12 +11,15 @@ from datetime import datetime, timezone
 import pytest
 
 from intergrax.contracts.execution_artifact_read import (
+    ExecutionArtifactMetadataReadPort,
     ExecutionArtifactMetadataReadResult,
     ExecutionArtifactMetadataRecord,
     ExecutionArtifactLifecycleStatus,
 )
 from intergrax.contracts.execution_identity import (
     ExecutionId,
+    RunId,
+    TaskId,
     mint_attempt_id,
     mint_event_id,
     mint_execution_id,
@@ -29,17 +32,20 @@ from intergrax.contracts.execution_reconstruction_models import (
 )
 from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
 from intergrax.contracts.external_work_runtime_read import (
+    ExternalWorkRuntimeFactReadPort,
     ExternalWorkRuntimeFactReadResult,
     ExternalWorkRuntimeFactRecord,
     ExternalWorkRuntimeStatus,
 )
 from intergrax.contracts.memory_runtime_read import (
     MemoryRuntimeOperationClass,
+    MemoryRuntimeOperationReadPort,
     MemoryRuntimeOperationReadResult,
     MemoryRuntimeOperationRecord,
     MemoryRuntimeOperationStatus,
 )
 from intergrax.contracts.model_runtime_read import (
+    ModelRuntimeInvocationReadPort,
     ModelRuntimeInvocationReadResult,
     ModelRuntimeInvocationRecord,
     ModelRuntimeInvocationStatus,
@@ -95,6 +101,40 @@ from tests.qualification.inspect_01.test_inspect_01a_federation import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _RAW_SECRET = "INSPECT_C_SECRET_xyz"
+_OTHER_TENANT = "tenant-inspect-c-other"
+
+
+def _scope_identity_fields(
+    *,
+    tenant_id: str = _TENANT,
+    task_id: TaskId = _SCOPE.task_id,
+    run_id: RunId = _SCOPE.run_id,
+    execution_id: ExecutionId = _EXEC,
+) -> dict[str, object]:
+    return {
+        "tenant_id": tenant_id,
+        "task_id": task_id,
+        "run_id": run_id,
+        "execution_id": execution_id,
+        "attempt_id": _SCOPE.attempt_id,
+    }
+
+
+def _memory_record(**overrides: object) -> MemoryRuntimeOperationRecord:
+    base = {
+        "operation_ref": "op-1",
+        "memory_class": "task",
+        "operation_class": MemoryRuntimeOperationClass.READ,
+        "operation_status": MemoryRuntimeOperationStatus.HIT,
+        "record_ref": "rec",
+        "source_category": "custom",
+        **_scope_identity_fields(),
+        "sequence_key": 1,
+        "evidence_refs": (),
+        "safe_summary": "ok",
+    }
+    base.update(overrides)
+    return MemoryRuntimeOperationRecord(**base)
 
 
 def _base_event(**overrides: object) -> RuntimeEvent:
@@ -277,32 +317,16 @@ def test_c_q8_availability_partial() -> None:
 
 
 def test_c_q9_integrity_not_partial_only() -> None:
-    wrong_exec = mint_execution_id()
+    from intergrax.contracts.runtime_inspection.errors import RuntimeInspectionError
 
     class _BadMemory:
         source_id = "bad_memory"
 
         def list_operations(self, scope, *, limit: int):
             return MemoryRuntimeOperationReadResult(
-                records=(
-                    MemoryRuntimeOperationRecord(
-                        operation_ref="op-1",
-                        memory_class="task",
-                        operation_class=MemoryRuntimeOperationClass.READ,
-                        operation_status=MemoryRuntimeOperationStatus.HIT,
-                        record_ref="rec",
-                        source_category="custom",
-                        execution_id=wrong_exec,
-                        attempt_id=_SCOPE.attempt_id,
-                        sequence_key=1,
-                        evidence_refs=(),
-                        safe_summary="ok",
-                    ),
-                ),
+                records=(_memory_record(execution_id=mint_execution_id()),),
                 is_truncated=False,
             )
-
-    from intergrax.contracts.runtime_inspection.errors import RuntimeInspectionError
 
     with pytest.raises(RuntimeInspectionError) as exc_info:
         FederatedRuntimeInspectionReadService(
@@ -407,11 +431,35 @@ def test_c_q14_no_reflection_patterns() -> None:
     assert "getattr" not in names
 
 
-def test_c_q15_deterministic_order() -> None:
-    reconstruction = _extended_reconstruction()
-    reader = ReconstructionMemoryOperationReader(_FactsReader(reconstruction))
+def test_c_q15_truncation_completeness_via_adapter() -> None:
     from intergrax.contracts.memory_runtime_read import MemoryRuntimeExecutionScope
 
+    class _TruncatedMemory(MemoryRuntimeOperationReadPort):
+        source_id = "trunc_mem"
+
+        def list_operations(self, scope, *, limit: int):
+            records = tuple(_memory_record(sequence_key=i) for i in range(1, limit + 1))
+            return MemoryRuntimeOperationReadResult(records=records, is_truncated=True)
+
+    adapter = MemoryOperationInspectionAdapter(_TruncatedMemory(), operation_limit=4)
+    section = adapter.read_memory_operations(_SCOPE)
+    assert len(section.operations) == 4
+    assert section.is_truncated is True
+    assert section.completeness is RuntimeInspectionCompleteness.PARTIAL
+
+    class _CompleteMemory(MemoryRuntimeOperationReadPort):
+        source_id = "complete_mem"
+
+        def list_operations(self, scope, *, limit: int):
+            return MemoryRuntimeOperationReadResult(records=(), is_truncated=False)
+
+    complete = MemoryOperationInspectionAdapter(_CompleteMemory()).read_memory_operations(_SCOPE)
+    assert complete.operations == ()
+    assert complete.is_truncated is False
+    assert complete.completeness is RuntimeInspectionCompleteness.COMPLETE
+
+    reconstruction = _extended_reconstruction()
+    reader = ReconstructionMemoryOperationReader(_FactsReader(reconstruction))
     scope = MemoryRuntimeExecutionScope(
         tenant_id=_TENANT,
         task_id=_SCOPE.task_id,
@@ -452,6 +500,272 @@ def test_c_q17_inspect_a_regression_smoke() -> None:
         execution_facts_reader=_FactsReader(),
     ).inspect(RuntimeInspectionQuery(tenant_id=_TENANT, execution_id=_EXEC))
     assert snapshot.identity.execution_id == _EXEC
+
+
+def test_c_r1_missing_tenant_spine_provenance() -> None:
+    from intergrax.contracts.runtime_inspection.errors import RuntimeInspectionError
+
+    bad = _extended_reconstruction()
+    events = list(bad.positioned_events)
+    first = events[0].event.model_copy(update={"tenant_id": None})
+    events[0] = _positioned(first, 1)
+    reconstruction = replace(bad, positioned_events=tuple(events))
+    with pytest.raises(RuntimeInspectionError) as exc_info:
+        _federated(reconstruction).inspect(
+            RuntimeInspectionQuery(tenant_id=_TENANT, execution_id=_EXEC),
+        )
+    assert exc_info.value.code is RuntimeInspectionErrorCode.SOURCE_INTEGRITY
+
+
+@pytest.mark.parametrize("domain", ["memory", "model", "external_work", "artifact"])
+def test_c_r1_custom_port_cross_tenant_same_execution(domain: str) -> None:
+    facts = _FactsReader(_extended_reconstruction())
+    memory_reader = MemoryOperationInspectionAdapter(ReconstructionMemoryOperationReader(facts))
+    model_reader = ModelInvocationInspectionAdapter(ReconstructionModelInvocationReader(facts))
+    external_work_reader = ExternalWorkInspectionAdapter(ReconstructionExternalWorkFactReader(facts))
+    artifact_reader = ArtifactMetadataInspectionAdapter(ReconstructionArtifactMetadataReader(facts))
+
+    if domain == "memory":
+
+        class _Bad(MemoryRuntimeOperationReadPort):
+            source_id = "x_mem"
+
+            def list_operations(self, scope, *, limit: int):
+                return MemoryRuntimeOperationReadResult(
+                    records=(_memory_record(tenant_id=_OTHER_TENANT),),
+                    is_truncated=False,
+                )
+
+        memory_reader = MemoryOperationInspectionAdapter(_Bad())
+    elif domain == "model":
+
+        class _Bad(ModelRuntimeInvocationReadPort):
+            source_id = "x_model"
+
+            def list_invocations(self, scope, *, limit: int):
+                return ModelRuntimeInvocationReadResult(
+                    records=(
+                        ModelRuntimeInvocationRecord(
+                            invocation_ref="inv",
+                            model_ref="m",
+                            capability_label="c",
+                            invocation_status=ModelRuntimeInvocationStatus.RECORDED,
+                            prompt_tokens=0,
+                            completion_tokens=0,
+                            total_tokens=0,
+                            finish_reason=None,
+                            **_scope_identity_fields(tenant_id=_OTHER_TENANT),
+                            sequence_key=1,
+                            evidence_refs=(),
+                            safe_summary="ok",
+                        ),
+                    ),
+                    is_truncated=False,
+                )
+
+        model_reader = ModelInvocationInspectionAdapter(_Bad())
+    elif domain == "external_work":
+
+        class _Bad(ExternalWorkRuntimeFactReadPort):
+            source_id = "x_ext"
+
+            def list_work_facts(self, scope, *, limit: int):
+                return ExternalWorkRuntimeFactReadResult(
+                    records=(
+                        ExternalWorkRuntimeFactRecord(
+                            work_ref="w",
+                            work_class="c",
+                            work_status=ExternalWorkRuntimeStatus.FAILED,
+                            provider_ref="p",
+                            failure_classification="f",
+                            retryable=False,
+                            **_scope_identity_fields(tenant_id=_OTHER_TENANT),
+                            sequence_key=1,
+                            evidence_refs=(),
+                            safe_summary="ok",
+                        ),
+                    ),
+                    is_truncated=False,
+                )
+
+        external_work_reader = ExternalWorkInspectionAdapter(_Bad())
+    else:
+
+        class _Bad(ExecutionArtifactMetadataReadPort):
+            source_id = "x_art"
+
+            def list_artifact_metadata(self, scope, *, limit: int):
+                return ExecutionArtifactMetadataReadResult(
+                    records=(
+                        ExecutionArtifactMetadataRecord(
+                            artifact_ref="a",
+                            artifact_type="t",
+                            lifecycle_status=ExecutionArtifactLifecycleStatus.REGISTERED,
+                            content_classification="internal",
+                            **_scope_identity_fields(tenant_id=_OTHER_TENANT),
+                            sequence_key=1,
+                            evidence_refs=(),
+                            safe_summary="ok",
+                        ),
+                    ),
+                    is_truncated=False,
+                )
+
+        artifact_reader = ArtifactMetadataInspectionAdapter(_Bad())
+
+    with pytest.raises(RuntimeInspectionTenantBoundaryError):
+        FederatedRuntimeInspectionReadService(
+            scope_reader=_ScopeReader(),
+            execution_facts_reader=facts,
+            memory_reader=memory_reader,
+            model_reader=model_reader,
+            external_work_reader=external_work_reader,
+            artifact_reader=artifact_reader,
+        ).inspect(RuntimeInspectionQuery(tenant_id=_TENANT, execution_id=_EXEC))
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("task_id", mint_task_id()),
+        ("run_id", mint_run_id()),
+        ("attempt_id", mint_attempt_id()),
+        ("execution_id", mint_execution_id()),
+    ],
+)
+def test_c_r1_identity_collision_source_integrity(field: str, value: object) -> None:
+    from intergrax.contracts.runtime_inspection.errors import RuntimeInspectionError
+
+    overrides = {field: value}
+
+    class _BadMemory(MemoryRuntimeOperationReadPort):
+        source_id = "collision_mem"
+
+        def list_operations(self, scope, *, limit: int):
+            return MemoryRuntimeOperationReadResult(
+                records=(_memory_record(**overrides),),
+                is_truncated=False,
+            )
+
+    with pytest.raises(RuntimeInspectionError) as exc_info:
+        MemoryOperationInspectionAdapter(_BadMemory()).read_memory_operations(_SCOPE)
+    assert exc_info.value.code is RuntimeInspectionErrorCode.SOURCE_INTEGRITY
+
+
+def test_c_r1_missing_tenant_on_custom_record() -> None:
+    from intergrax.contracts.runtime_inspection.errors import RuntimeInspectionError
+
+    class _BadMemory(MemoryRuntimeOperationReadPort):
+        source_id = "no_tenant_mem"
+
+        def list_operations(self, scope, *, limit: int):
+            return MemoryRuntimeOperationReadResult(
+                records=(_memory_record(tenant_id=""),),
+                is_truncated=False,
+            )
+
+    with pytest.raises(RuntimeInspectionError) as exc_info:
+        MemoryOperationInspectionAdapter(_BadMemory()).read_memory_operations(_SCOPE)
+    assert exc_info.value.code is RuntimeInspectionErrorCode.SOURCE_INTEGRITY
+
+
+def test_c_r1_custom_canonical_memory_port() -> None:
+    class _Custom(MemoryRuntimeOperationReadPort):
+        source_id = "custom_canonical_memory"
+
+        def list_operations(self, scope, *, limit: int):
+            return MemoryRuntimeOperationReadResult(
+                records=(_memory_record(),),
+                is_truncated=False,
+            )
+
+    section = MemoryOperationInspectionAdapter(_Custom()).read_memory_operations(_SCOPE)
+    assert section.source_id == "custom_canonical_memory"
+    assert len(section.operations) == 1
+
+
+def test_c_r1_custom_canonical_model_port() -> None:
+    class _Custom(ModelRuntimeInvocationReadPort):
+        source_id = "custom_canonical_model"
+
+        def list_invocations(self, scope, *, limit: int):
+            return ModelRuntimeInvocationReadResult(
+                records=(
+                    ModelRuntimeInvocationRecord(
+                        invocation_ref="inv",
+                        model_ref="m",
+                        capability_label="c",
+                        invocation_status=ModelRuntimeInvocationStatus.RECORDED,
+                        prompt_tokens=1,
+                        completion_tokens=0,
+                        total_tokens=1,
+                        finish_reason=None,
+                        **_scope_identity_fields(),
+                        sequence_key=1,
+                        evidence_refs=(),
+                        safe_summary="ok",
+                    ),
+                ),
+                is_truncated=False,
+            )
+
+    section = ModelInvocationInspectionAdapter(_Custom()).read_model_invocations(_SCOPE)
+    assert section.source_id == "custom_canonical_model"
+    assert len(section.invocations) == 1
+
+
+def test_c_r1_custom_canonical_external_work_port() -> None:
+    class _Custom(ExternalWorkRuntimeFactReadPort):
+        source_id = "custom_canonical_external"
+
+        def list_work_facts(self, scope, *, limit: int):
+            return ExternalWorkRuntimeFactReadResult(
+                records=(
+                    ExternalWorkRuntimeFactRecord(
+                        work_ref="w",
+                        work_class="c",
+                        work_status=ExternalWorkRuntimeStatus.FAILED,
+                        provider_ref="p",
+                        failure_classification="f",
+                        retryable=False,
+                        **_scope_identity_fields(),
+                        sequence_key=1,
+                        evidence_refs=(),
+                        safe_summary="ok",
+                    ),
+                ),
+                is_truncated=False,
+            )
+
+    section = ExternalWorkInspectionAdapter(_Custom()).read_external_work(_SCOPE)
+    assert section.source_id == "custom_canonical_external"
+    assert len(section.work_entries) == 1
+
+
+def test_c_r1_custom_canonical_artifact_port() -> None:
+    class _Custom(ExecutionArtifactMetadataReadPort):
+        source_id = "custom_canonical_artifact"
+
+        def list_artifact_metadata(self, scope, *, limit: int):
+            return ExecutionArtifactMetadataReadResult(
+                records=(
+                    ExecutionArtifactMetadataRecord(
+                        artifact_ref="a",
+                        artifact_type="t",
+                        lifecycle_status=ExecutionArtifactLifecycleStatus.REGISTERED,
+                        content_classification="internal",
+                        **_scope_identity_fields(),
+                        sequence_key=1,
+                        evidence_refs=(),
+                        safe_summary="ok",
+                    ),
+                ),
+                is_truncated=False,
+            )
+
+    section = ArtifactMetadataInspectionAdapter(_Custom()).read_artifacts(_SCOPE)
+    assert section.source_id == "custom_canonical_artifact"
+    assert len(section.artifacts) == 1
 
 
 def test_c_q18_inspect_b_c1_regression_smoke() -> None:

@@ -42,6 +42,9 @@ class ModelRuntimeInvocationRecord:
     completion_tokens: int
     total_tokens: int
     finish_reason: str | None
+    tenant_id: str
+    task_id: TaskId
+    run_id: RunId
     execution_id: ExecutionId
     attempt_id: AttemptId | None
     sequence_key: int

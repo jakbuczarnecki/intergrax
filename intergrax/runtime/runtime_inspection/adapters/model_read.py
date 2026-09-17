@@ -8,9 +8,7 @@ from __future__ import annotations
 from intergrax.contracts.model_runtime_read import (
     ModelRuntimeExecutionScope,
     ModelRuntimeInvocationReadPort,
-    ModelRuntimeInvocationRecord,
 )
-from intergrax.contracts.runtime_inspection.completeness import RuntimeInspectionCompleteness
 from intergrax.contracts.runtime_inspection.errors import (
     RuntimeInspectionError,
     RuntimeInspectionErrorCode,
@@ -27,7 +25,13 @@ from intergrax.contracts.runtime_inspection.sources import (
     RuntimeInspectionExecutionScope,
     RuntimeInspectionModelReadPort,
 )
-from intergrax.runtime.runtime_inspection.adapters.scope_integrity import validate_spine_event_scope
+from intergrax.runtime.runtime_inspection.adapters.scope_integrity import (
+    validate_domain_record_scope,
+    validate_spine_event_scope,
+)
+from intergrax.runtime.runtime_inspection.adapters.truncation_completeness import (
+    completeness_for_read_result,
+)
 from intergrax.runtime.runtime_inspection.model_projection import (
     project_model_invocations_from_reconstruction,
 )
@@ -42,21 +46,6 @@ def _to_model_scope(scope: RuntimeInspectionExecutionScope) -> ModelRuntimeExecu
         attempt_id=scope.attempt_id,
         execution_id=scope.execution_id,
     )
-
-
-def _validate_record_scope(
-    scope: RuntimeInspectionExecutionScope,
-    record: ModelRuntimeInvocationRecord,
-    *,
-    source_id: str,
-) -> None:
-    if record.execution_id != scope.execution_id:
-        raise RuntimeInspectionError(
-            RuntimeInspectionErrorCode.SOURCE_INTEGRITY,
-            "model invocation execution_id mismatch",
-            execution_id=scope.execution_id,
-            source_id=source_id,
-        )
 
 
 class ReconstructionModelInvocationReader:
@@ -129,7 +118,12 @@ class ModelInvocationInspectionAdapter(RuntimeInspectionModelReadPort):
         )
         invocations: list[RuntimeInspectionModelInvocation] = []
         for record in result.records:
-            _validate_record_scope(scope, record, source_id=self.source_id)
+            validate_domain_record_scope(
+                scope,
+                record,
+                source_id=self.source_id,
+                record_label="model invocation",
+            )
             invocations.append(
                 RuntimeInspectionModelInvocation(
                     invocation_ref=record.invocation_ref,
@@ -147,11 +141,7 @@ class ModelInvocationInspectionAdapter(RuntimeInspectionModelReadPort):
                     safe_summary=sanitize_inspection_text(record.safe_summary),
                 ),
             )
-        completeness = (
-            RuntimeInspectionCompleteness.COMPLETE
-            if invocations or not result.is_truncated
-            else RuntimeInspectionCompleteness.PARTIAL
-        )
+        completeness = completeness_for_read_result(result.is_truncated)
         return RuntimeInspectionModelSection(
             invocations=tuple(invocations),
             is_truncated=result.is_truncated,

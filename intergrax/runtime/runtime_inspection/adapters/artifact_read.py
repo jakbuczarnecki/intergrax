@@ -8,9 +8,7 @@ from __future__ import annotations
 from intergrax.contracts.execution_artifact_read import (
     ExecutionArtifactExecutionScope,
     ExecutionArtifactMetadataReadPort,
-    ExecutionArtifactMetadataRecord,
 )
-from intergrax.contracts.runtime_inspection.completeness import RuntimeInspectionCompleteness
 from intergrax.contracts.runtime_inspection.errors import (
     RuntimeInspectionError,
     RuntimeInspectionErrorCode,
@@ -27,7 +25,13 @@ from intergrax.contracts.runtime_inspection.sources import (
     RuntimeInspectionExecutionFactsReader,
     RuntimeInspectionExecutionScope,
 )
-from intergrax.runtime.runtime_inspection.adapters.scope_integrity import validate_spine_event_scope
+from intergrax.runtime.runtime_inspection.adapters.scope_integrity import (
+    validate_domain_record_scope,
+    validate_spine_event_scope,
+)
+from intergrax.runtime.runtime_inspection.adapters.truncation_completeness import (
+    completeness_for_read_result,
+)
 from intergrax.runtime.runtime_inspection.artifact_projection import (
     project_artifact_metadata_from_reconstruction,
 )
@@ -44,21 +48,6 @@ def _to_artifact_scope(
         attempt_id=scope.attempt_id,
         execution_id=scope.execution_id,
     )
-
-
-def _validate_record_scope(
-    scope: RuntimeInspectionExecutionScope,
-    record: ExecutionArtifactMetadataRecord,
-    *,
-    source_id: str,
-) -> None:
-    if record.execution_id != scope.execution_id:
-        raise RuntimeInspectionError(
-            RuntimeInspectionErrorCode.SOURCE_INTEGRITY,
-            "artifact metadata execution_id mismatch",
-            execution_id=scope.execution_id,
-            source_id=source_id,
-        )
 
 
 class ReconstructionArtifactMetadataReader:
@@ -131,7 +120,12 @@ class ArtifactMetadataInspectionAdapter(RuntimeInspectionArtifactReadPort):
         )
         artifacts: list[RuntimeInspectionArtifactEntry] = []
         for record in result.records:
-            _validate_record_scope(scope, record, source_id=self.source_id)
+            validate_domain_record_scope(
+                scope,
+                record,
+                source_id=self.source_id,
+                record_label="artifact metadata",
+            )
             artifacts.append(
                 RuntimeInspectionArtifactEntry(
                     artifact_ref=record.artifact_ref,
@@ -145,11 +139,7 @@ class ArtifactMetadataInspectionAdapter(RuntimeInspectionArtifactReadPort):
                     safe_summary=sanitize_inspection_text(record.safe_summary),
                 ),
             )
-        completeness = (
-            RuntimeInspectionCompleteness.COMPLETE
-            if artifacts or not result.is_truncated
-            else RuntimeInspectionCompleteness.PARTIAL
-        )
+        completeness = completeness_for_read_result(result.is_truncated)
         return RuntimeInspectionArtifactSection(
             artifacts=tuple(artifacts),
             is_truncated=result.is_truncated,

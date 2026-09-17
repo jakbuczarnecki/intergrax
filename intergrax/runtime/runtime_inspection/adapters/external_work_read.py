@@ -8,9 +8,7 @@ from __future__ import annotations
 from intergrax.contracts.external_work_runtime_read import (
     ExternalWorkRuntimeExecutionScope,
     ExternalWorkRuntimeFactReadPort,
-    ExternalWorkRuntimeFactRecord,
 )
-from intergrax.contracts.runtime_inspection.completeness import RuntimeInspectionCompleteness
 from intergrax.contracts.runtime_inspection.errors import (
     RuntimeInspectionError,
     RuntimeInspectionErrorCode,
@@ -27,7 +25,13 @@ from intergrax.contracts.runtime_inspection.sources import (
     RuntimeInspectionExecutionScope,
     RuntimeInspectionExternalWorkReadPort,
 )
-from intergrax.runtime.runtime_inspection.adapters.scope_integrity import validate_spine_event_scope
+from intergrax.runtime.runtime_inspection.adapters.scope_integrity import (
+    validate_domain_record_scope,
+    validate_spine_event_scope,
+)
+from intergrax.runtime.runtime_inspection.adapters.truncation_completeness import (
+    completeness_for_read_result,
+)
 from intergrax.runtime.runtime_inspection.external_work_projection import (
     project_external_work_from_reconstruction,
 )
@@ -44,21 +48,6 @@ def _to_external_work_scope(
         attempt_id=scope.attempt_id,
         execution_id=scope.execution_id,
     )
-
-
-def _validate_record_scope(
-    scope: RuntimeInspectionExecutionScope,
-    record: ExternalWorkRuntimeFactRecord,
-    *,
-    source_id: str,
-) -> None:
-    if record.execution_id != scope.execution_id:
-        raise RuntimeInspectionError(
-            RuntimeInspectionErrorCode.SOURCE_INTEGRITY,
-            "external work execution_id mismatch",
-            execution_id=scope.execution_id,
-            source_id=source_id,
-        )
 
 
 class ReconstructionExternalWorkFactReader:
@@ -139,7 +128,12 @@ class ExternalWorkInspectionAdapter(RuntimeInspectionExternalWorkReadPort):
         )
         entries: list[RuntimeInspectionExternalWorkEntry] = []
         for record in result.records:
-            _validate_record_scope(scope, record, source_id=self.source_id)
+            validate_domain_record_scope(
+                scope,
+                record,
+                source_id=self.source_id,
+                record_label="external work fact",
+            )
             entries.append(
                 RuntimeInspectionExternalWorkEntry(
                     work_ref=record.work_ref,
@@ -155,11 +149,7 @@ class ExternalWorkInspectionAdapter(RuntimeInspectionExternalWorkReadPort):
                     safe_summary=sanitize_inspection_text(record.safe_summary),
                 ),
             )
-        completeness = (
-            RuntimeInspectionCompleteness.COMPLETE
-            if entries or not result.is_truncated
-            else RuntimeInspectionCompleteness.PARTIAL
-        )
+        completeness = completeness_for_read_result(result.is_truncated)
         return RuntimeInspectionExternalWorkSection(
             work_entries=tuple(entries),
             is_truncated=result.is_truncated,

@@ -47,6 +47,9 @@ class MemoryRuntimeOperationRecord:
     operation_status: MemoryRuntimeOperationStatus
     record_ref: str | None
     source_category: str
+    tenant_id: str
+    task_id: TaskId
+    run_id: RunId
     execution_id: ExecutionId
     attempt_id: AttemptId | None
     sequence_key: int

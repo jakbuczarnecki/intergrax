@@ -116,7 +116,17 @@ Default federation adapters project spine events via `ExecutionReconstruction` (
 
 ### Tenant / identity / integrity
 
-Spine events must match the full `RuntimeInspectionExecutionScope` identity spine (`validate_spine_event_scope`). Cross-tenant spine facts raise `TENANT_BOUNDARY`. Identity mismatch raises `SOURCE_INTEGRITY` (never downgraded to optional `PARTIAL` completeness). Malformed external-operation typed payloads raise `SOURCE_INTEGRITY`.
+Spine events must match the full `RuntimeInspectionExecutionScope` identity spine (`validate_spine_event_scope`). Cross-tenant spine facts raise `TENANT_BOUNDARY`. Missing spine `tenant_id` provenance raises `SOURCE_INTEGRITY` (fail closed — no default/unknown tenant placeholders).
+
+Canonical domain read records (`MemoryRuntimeOperationRecord`, `ModelRuntimeInvocationRecord`, `ExternalWorkRuntimeFactRecord`, `ExecutionArtifactMetadataRecord`) carry full execution provenance (`tenant_id`, `task_id`, `run_id`, `attempt_id`, `execution_id`). Adapters validate each record with `validate_domain_record_scope` against the shared `ExecutionScopeIdentity` contract. Cross-tenant records raise `TENANT_BOUNDARY`; any other identity mismatch raises `SOURCE_INTEGRITY` (never downgraded to `PARTIAL` / `UNAVAILABLE` / empty). Malformed external-operation typed payloads raise `SOURCE_INTEGRITY`.
+
+Custom implementations qualify at the canonical read ports (`MemoryRuntimeOperationReadPort`, `ModelRuntimeInvocationReadPort`, `ExternalWorkRuntimeFactReadPort`, `ExecutionArtifactMetadataReadPort`) wired through the inspection adapters.
+
+### Truncation / completeness
+
+`is_truncated=True` maps to section `PARTIAL`; `is_truncated=False` maps to `COMPLETE` (`completeness_for_read_result`) — independent of whether any records were returned. **C-Q15** exercises truncation/completeness through `MemoryOperationInspectionAdapter`, not projection-only ordering checks.
+
+`scope.attempt_id is None` remains valid for execution-level inspection; when scope specifies an `attempt_id`, records with a different attempt raise `SOURCE_INTEGRITY`.
 
 ### Availability / empty
 

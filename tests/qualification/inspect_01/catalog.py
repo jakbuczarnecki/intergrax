@@ -170,7 +170,11 @@ INSPECT_01_C_Q_CATALOG: tuple[Inspect01CQEvidence, ...] = (
     Inspect01CQEvidence("C-Q12", "Custom sources through contracts", (_nid("test_inspect_01c_extended_domains.py", "test_c_q12_custom_sources_through_contracts"),)),
     Inspect01CQEvidence("C-Q13", "Provider-neutral contracts", (_nid("test_inspect_01c_extended_domains.py", "test_c_q13_provider_neutral_contracts"),)),
     Inspect01CQEvidence("C-Q14", "No reflection patterns", (_nid("test_inspect_01c_extended_domains.py", "test_c_q14_no_reflection_patterns"),)),
-    Inspect01CQEvidence("C-Q15", "Deterministic order", (_nid("test_inspect_01c_extended_domains.py", "test_c_q15_deterministic_order"),)),
+    Inspect01CQEvidence(
+        "C-Q15",
+        "Truncation completeness and deterministic order",
+        (_nid("test_inspect_01c_extended_domains.py", "test_c_q15_truncation_completeness_via_adapter"),),
+    ),
     Inspect01CQEvidence("C-Q16", "Redaction boundaries", (_nid("test_inspect_01c_extended_domains.py", "test_c_q16_redaction"),)),
     Inspect01CQEvidence("C-Q17", "INSPECT-01-A regression", (_nid("test_inspect_01c_extended_domains.py", "test_c_q17_inspect_a_regression_smoke"),)),
     Inspect01CQEvidence("C-Q18", "INSPECT-01-B/C1 regression", (_nid("test_inspect_01c_extended_domains.py", "test_c_q18_inspect_b_c1_regression_smoke"),)),

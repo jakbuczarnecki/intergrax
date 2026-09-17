@@ -40,6 +40,9 @@ class ExternalWorkRuntimeFactRecord:
     provider_ref: str
     failure_classification: str
     retryable: bool
+    tenant_id: str
+    task_id: TaskId
+    run_id: RunId
     execution_id: ExecutionId
     attempt_id: AttemptId | None
     sequence_key: int

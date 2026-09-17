@@ -8,9 +8,7 @@ from __future__ import annotations
 from intergrax.contracts.memory_runtime_read import (
     MemoryRuntimeExecutionScope,
     MemoryRuntimeOperationReadPort,
-    MemoryRuntimeOperationRecord,
 )
-from intergrax.contracts.runtime_inspection.completeness import RuntimeInspectionCompleteness
 from intergrax.contracts.runtime_inspection.errors import (
     RuntimeInspectionError,
     RuntimeInspectionErrorCode,
@@ -27,7 +25,13 @@ from intergrax.contracts.runtime_inspection.sources import (
     RuntimeInspectionExecutionScope,
     RuntimeInspectionMemoryReadPort,
 )
-from intergrax.runtime.runtime_inspection.adapters.scope_integrity import validate_spine_event_scope
+from intergrax.runtime.runtime_inspection.adapters.scope_integrity import (
+    validate_domain_record_scope,
+    validate_spine_event_scope,
+)
+from intergrax.runtime.runtime_inspection.adapters.truncation_completeness import (
+    completeness_for_read_result,
+)
 from intergrax.runtime.runtime_inspection.memory_projection import (
     project_memory_operations_from_reconstruction,
 )
@@ -42,21 +46,6 @@ def _to_memory_scope(scope: RuntimeInspectionExecutionScope) -> MemoryRuntimeExe
         attempt_id=scope.attempt_id,
         execution_id=scope.execution_id,
     )
-
-
-def _validate_record_scope(
-    scope: RuntimeInspectionExecutionScope,
-    record: MemoryRuntimeOperationRecord,
-    *,
-    source_id: str,
-) -> None:
-    if record.execution_id != scope.execution_id:
-        raise RuntimeInspectionError(
-            RuntimeInspectionErrorCode.SOURCE_INTEGRITY,
-            "memory operation execution_id mismatch",
-            execution_id=scope.execution_id,
-            source_id=source_id,
-        )
 
 
 class ReconstructionMemoryOperationReader:
@@ -129,7 +118,12 @@ class MemoryOperationInspectionAdapter(RuntimeInspectionMemoryReadPort):
         )
         operations: list[RuntimeInspectionMemoryOperation] = []
         for record in result.records:
-            _validate_record_scope(scope, record, source_id=self.source_id)
+            validate_domain_record_scope(
+                scope,
+                record,
+                source_id=self.source_id,
+                record_label="memory operation",
+            )
             operations.append(
                 RuntimeInspectionMemoryOperation(
                     operation_ref=record.operation_ref,
@@ -145,11 +139,7 @@ class MemoryOperationInspectionAdapter(RuntimeInspectionMemoryReadPort):
                     safe_summary=sanitize_inspection_text(record.safe_summary),
                 ),
             )
-        completeness = (
-            RuntimeInspectionCompleteness.COMPLETE
-            if operations or not result.is_truncated
-            else RuntimeInspectionCompleteness.PARTIAL
-        )
+        completeness = completeness_for_read_result(result.is_truncated)
         return RuntimeInspectionMemorySection(
             operations=tuple(operations),
             is_truncated=result.is_truncated,
