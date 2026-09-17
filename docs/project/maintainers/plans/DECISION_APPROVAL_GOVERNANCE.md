@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — NEXT** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — NEXT** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -159,8 +159,8 @@ Use, modification, or distribution without written permission is prohibited.
 | ID | Status | Purpose |
 |----|--------|---------|
 | **MP-4D1** | **CLOSED** | Synchronize documentation state with actual closed implementation |
-| **MP-4D2** | **NEXT** | Consolidate canonical architecture documentation into one coherent entry point |
-| MP-4D3 | NOT STARTED | Add professional visual architecture layer (**D3 owns** visual closure) |
+| **MP-4D2** | **CLOSED** | Consolidate canonical architecture documentation into one coherent entry point |
+| **MP-4D3** | **NEXT** | Add professional visual architecture layer (**D3 owns** visual closure) |
 | MP-4D4 | NOT STARTED | Create E2E proof / invariant-to-test matrix |
 | MP-4D5 | NOT STARTED | Document provider/persistence qualification boundaries |
 | MP-4D6 | NOT STARTED | Certify contract-first/pluginability boundaries in docs |
@@ -199,6 +199,6 @@ Historical implementation notes for MP-4B–D remain in git history and contract
 
 ## Next step
 
-**MP-4D2** — Canonical Architecture Documentation Consolidation (**MP-4D1 CLOSED**). **No MP-4R implementation work.**
+**MP-4D3** — Visual Architecture Layer (**MP-4D2 CLOSED**). **No MP-4R implementation work.**
 
 ---

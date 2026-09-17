@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4 implementation — FORMALLY CLOSED** (MP-4R0…MP-4R8 **CLOSED**; ADR-MP-009) — **MP-4 documentation certification — MP-4D1 CLOSED · MP-4D2 NEXT**
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4 implementation — FORMALLY CLOSED** (MP-4R0…MP-4R8 **CLOSED**; ADR-MP-009) — **MP-4 documentation certification — MP-4D1–D2 CLOSED · MP-4D3 NEXT**
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4D2** — Canonical architecture documentation consolidation (**NOT STARTED**; documentation/certification only)
-**Next task:** **MP-4D3** — Visual architecture layer — **NOT STARTED**
+**Current active task:** **MP-4D3** — Visual architecture layer (**NEXT**; documentation/certification only)
+**Next task:** **MP-4D4** — E2E proof / invariant-to-test matrix — **NOT STARTED**
 
 ---
 
@@ -238,7 +238,8 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Stage | Status | Summary |
 |-------|--------|---------|
 | **MP-4D1** | **CLOSED** | Synchronize documentation state with closed implementation |
-| **MP-4D2** | **NEXT** | Consolidate canonical architecture entry point |
+| **MP-4D2** | **CLOSED** | Consolidate canonical architecture entry point |
+| **MP-4D3** | **NEXT** | Visual architecture layer |
 | MP-4D3 | NOT STARTED | Professional visual architecture layer |
 | MP-4D4 | NOT STARTED | E2E proof / invariant-to-test matrix |
 | MP-4D5 | NOT STARTED | Provider/persistence qualification boundaries |
