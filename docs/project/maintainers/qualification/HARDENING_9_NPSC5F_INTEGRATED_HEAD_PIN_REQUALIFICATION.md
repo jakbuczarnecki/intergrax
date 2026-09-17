@@ -7,7 +7,8 @@
 **HEAD movement after open:** `62fdceac2` — docs/test gate only (`OUTSIDE_H1_SURFACE`); included in pin.  
 **Previous H1 baseline:** `ad1a1e57fc70529aedcbfa27808fffdbfe5fdd14`  
 **New H1 baseline:** `62fdceac2122738751a8a1caeffe16c986dfe47d`  
-**Previous H1 qualification record:** `145bbd74e6d4175a5b868ed71ed1a6353b2c2c3b`
+**Previous H1 qualification record:** `145bbd74e6d4175a5b868ed71ed1a6353b2c2c3b`  
+**New H1 qualification record (proof commit):** `c94ba8ffe16e80466637a842e8ce71af854ccb67`
 
 ## Executive summary
 

@@ -26,7 +26,7 @@ from testing_support.npsc5f_r3_protected_drift import (
 NPSC5F_R3_H1_QUALIFIED_BASELINE_SHA = "62fdceac2122738751a8a1caeffe16c986dfe47d"
 
 # Qualification-record commit (proof artifacts); may trail ``origin/development`` after push.
-NPSC5F_R3_H1_QUALIFICATION_RECORD_SHA = "145bbd74e6d4175a5b868ed71ed1a6353b2c2c3b"
+NPSC5F_R3_H1_QUALIFICATION_RECORD_SHA = "c94ba8ffe16e80466637a842e8ce71af854ccb67"
 
 _H1_EVENT_SURFACE_CLASSIFICATION_BUCKETS = frozenset("ABCDEFGHIJK")
 
