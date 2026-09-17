@@ -122,13 +122,16 @@ flowchart TB
     AD2 --> CSP
     AD3 --> CSP
     AD4 --> CSP
-    CSP --> CE[ContextEngine.assemble]
-    CE --> NORM[Normalize scores]
-    NORM --> DED[Dedup identity + content]
-    DED --> CONF[Conflict resolve]
+    CSP --> CE[ContextEngine.assemble policy spine]
+    CE --> CAN[Canonicalize fragments]
+    CAN --> EXD[Exact dedup content_hash]
+    EXD --> NORM[Score normalization]
+    NORM --> SEM[Semantic dedup]
+    SEM --> CONF[Conflict resolve]
     CONF --> RANK[Rank]
-    RANK --> BUD[Budget + compression]
-    BUD --> COMP[Compiler / formatter]
+    RANK --> BUD[Budget allocate]
+    BUD --> OVF[Compression / overflow]
+    OVF --> COMP[Compiler / formatter]
     COMP --> FMC[FINAL MODEL CONTEXT]
 ```
 
@@ -190,26 +193,28 @@ flowchart LR
 | RAG index update | RAG pipeline | Automatic from tool output |
 | Tool state | Tool runtime | Memory plane without explicit remember |
 
-### Diagram 4 — Cross-source policy pipeline (target CE inner pipeline)
+### Diagram 4 — Cross-source policy pipeline (normative CE inner pipeline)
 
 ```mermaid
 flowchart TD
-    COL[Provider collect + canonicalize]
-    COL --> PRE[Pre/post collect policy gate]
-    PRE --> HASH[Identity dedup content_hash]
-    HASH --> SEM[Semantic dedup optional strategy]
-    SEM --> NORM[ScoreNormalizer per source_type]
-    NORM --> CONF[ConflictResolver]
+    COL[Collect providers]
+    COL --> CAN[Canonicalize fragments]
+    CAN --> EXD[Exact identity/content dedup]
+    EXD --> NORM[Score normalization]
+    NORM --> SEM[Semantic dedup]
+    SEM --> CONF[Conflict resolution]
     CONF --> RANK[ContextRanker]
-    RANK --> ALLOC[BudgetAllocator + mandatory/preferred/optional]
-    ALLOC --> OVER[Overflow: drop optional / compress / truncate allowed types]
-    OVER --> FMT[ContextFormatter + compile_service]
+    RANK --> ALLOC[BudgetAllocator]
+    ALLOC --> OVF[Compression / overflow]
+    OVF --> FMT[ContextFormatter + compile_service]
     FMT --> OUT[AssembledContext + provenance manifest]
 ```
 
-**Ordering invariant:** normalize → dedup (identity then semantic) → conflict → rank → budget → compile. **Deterministic** tie-break: `normalized_score`, `source_priority` (policy), `freshness_score`, `source_id`, `fragment_id`.
+**Ordering invariant (normative, single canonical sequence):** collect → canonicalize → exact identity/content dedup → score normalization → semantic dedup → conflict resolution → ranking → budget allocation → compression/overflow → compile. No alternate conceptual ordering.
 
-**Raw scores preserved:** normalization adds fields; does not erase provider scores in metadata.
+**Deterministic** tie-break after normalization: `normalized_relevance_score`, `authority_class` policy weight, `source_priority`, `freshness_score`, `confidence_score`, `source_id`, `fragment_id`.
+
+**Raw vs normalized scores:** provider/domain adapters set `raw_relevance_signal` (and existing `freshness_score` / `confidence_score` where applicable). The **Score normalization** stage writes `normalized_relevance_score` and updates ranking input; raw signals are retained on the fragment contract and are not dropped into unbounded metadata as the canonical store.
 
 ### Diagram 5 — Migration phases
 
@@ -232,7 +237,7 @@ Each phase: reversible flags, working runtime, **no permanent dual-path**; remov
 | | Flow |
 |---|------|
 | CURRENT | Runtime → `SessionManager.search_user_longterm_memory` → `UserProfileManager.search_longterm_memory` → metadata handles + legacy injection |
-| TARGET | Runtime/tool → `MemoryControlPlane.recall` → typed result → composition adapter → `LTM_ENTRIES` handle → `builtin.longterm_memory` → CE only |
+| TARGET | Runtime/tool → `MemoryControlPlane.recall` → `MemoryControlRecallResult` → composition adapter → `ContextProviderSourceInputs.memory` → `builtin.longterm_memory` → CE only |
 | MIGRATION | MXINT-3: rewire `populate_request_memory_recall_metadata` / deprecate semantic gateway on `SessionManager`; thin adapter keeps API surface if needed |
 
 **MXINT-02**
@@ -271,54 +276,130 @@ Each phase: reversible flags, working runtime, **no permanent dual-path**; remov
 
 Deprecation states: **ACTIVE → MIGRATION (flag) → DEPRECATED → REMOVE**.
 
+### MEM-XINT-2-R — Typed source boundary (closure)
+
+**Formal answer:** `ContextProviderContext.handles: dict[str, Any]` is **not** the canonical cross-layer semantic transport for new enterprise paths. It remains **legacy/internal compatibility envelope** until MXINT-4/6 migration completes.
+
+**Target transport model (minimal core evolution):**
+
+| Layer | Contract | Role |
+|-------|----------|------|
+| Domain | `MemoryControlRecallResult`, RAG `RetrievalResult` / chunk records, `ToolExecutionResult` / `IterativeToolOutputBlock`, session episodic hit rows, `RequestIdentity` | Semantic authority stays in bounded domains |
+| Composition (Tier-1 Nexus) | **`ContextProviderSourceInputs`** (new Tier-0 carrier) + **`ContextSourceAccess`** (new provider-facing accessor) | Typed bridge built by `intergrax/runtime/nexus/context/*`; adapters translate domain results → `ContextFragment` |
+| CE collect | `ContextSourceProvider.collect(request, ctx)` | Provider receives **only** the typed slice for its `supported_sources` via `ContextSourceAccess` — not the full cross-source bag |
+
+**`ContextProviderSourceInputs` (design — MXINT-4 implements):** frozen, runtime-only, non-serialized dataclass with optional typed slots (not a growing union god-type):
+
+- `identity: RequestIdentity | None` — trusted scope spine (tenant / user / session / workspace refs); **not** `handles["request_identity"]` on target paths
+- `memory: MemoryContextSourceInput | None` — wraps `MemoryControlRecallResult | None`
+- `rag: RagContextSourceInput | None` — wraps domain `RetrievalResult` or normalized chunk tuple per RAG contract
+- `tools: ToolContextSourceInput | None` — wraps `tuple[IterativeToolOutputBlock, ...]` plus tool observation contracts when wired
+- `session_semantic: SessionSemanticContextSourceInput | None` — wraps typed episodic hit records (replacing ad-hoc `session_vector_hits` dict rows at the boundary)
+- `legacy_handles: dict[str, Any] | None` — **compatibility only**; populated during migration from today's `ContextProviderContext.handles`
+
+**`ContextProviderContext` (target shape):** retains `engine_id`, `plugin_ids`; adds `sources: ContextProviderSourceInputs`; keeps `handles` as deprecated alias to `legacy_handles` during migration.
+
+**Custom / external `ContextSourceProvider` plugins:** register a **`RegisteredContextSourceDescriptor`** (source id + payload type + adapter protocol) in the plugin catalog — not string→`Any`. CE dispatches typed payload to the registered adapter; escape hatch stays typed.
+
+**Provider isolation (hard):** `builtin.longterm_memory` sees memory slot only; `builtin.rag` sees RAG slot only; `builtin.tool_output` sees tool slot only; `SessionSemanticRecallProvider` sees session semantic slot only. Composition layer enforces segregation; providers **consume** scope and **do not establish** authority/trust.
+
+**Removal condition for `handles`:** after all builtin providers + reference Nexus hosts read inputs via `ContextProviderSourceInputs` / `ContextSourceAccess`, legacy_bridge is MIGRATE→DEPRECATE, and **MXINT-6** certification proves no production dependency on raw handle keys for semantic data.
+
+### MEM-XINT-2-R — Source origin vs authority
+
+**`ContextFragmentSource` = origin/category only** (where the fragment entered CE: `LONGTERM_MEMORY`, `RAG`, `TOOL_OUTPUT`, `SESSION_HISTORY_SEMANTIC`, etc.). It does **not** imply authority, trust, or sensitivity.
+
+**Authority classification (separate typed contract — MXINT-5 fields on `ContextFragment`):**
+
+| `ContextAuthorityClass` (new enum) | Typical `ContextFragmentSource` | Assigned by |
+|-----------------------------------|---------------------------------|-------------|
+| `CANONICAL_MEMORY` | `LONGTERM_MEMORY` | Composition after `MemoryControlPlane.recall` governance |
+| `DERIVED_MEMORY` | `LONGTERM_MEMORY` | Composition when recall is derived/summary path (policy-defined) |
+| `RAG_EVIDENCE` | `RAG` / `WEBSEARCH` | RAG integration adapter |
+| `TOOL_OBSERVATION` | `TOOL_OUTPUT` | Tool runtime adapter (untrusted by default) |
+| `SESSION_EPISODIC` | `SESSION_HISTORY_SEMANTIC` | SessionTurnIndex recall adapter |
+| `SYSTEM_CONTEXT` | `SYSTEM_INSTRUCTIONS` / `POLICY_OVERLAY` | Policy/harness composition only |
+
+Providers **must not** self-elevate to `CANONICAL_MEMORY`, `SYSTEM_CONTEXT`, or privileged trust. Domain/composition assigns `authority_class`, `trust_tier`, and `sensitivity` before or during adapter emission; CE may apply inclusion policy but **cannot** reclassify RAG evidence as canonical memory.
+
+### Normative Cross-Source Pipeline
+
+| Stage | Owner | Hard / strategy | Replaceable implementation |
+|-------|-------|-----------------|---------------------------|
+| Collect | CE engine + `ContextSourceProvider` registry | Hard semantics (scoped collect) | Per-provider collect logic |
+| Canonicalize | CE platform | Hard | Default normalizes ids, hashes, provider provenance attachment |
+| Exact dedup | CE platform | Hard deterministic semantics | Pluggable mechanism under fixed semantics |
+| Score normalization | CE policy layer | Strategy | `ContextScoreNormalizer` plugin (MXINT-5); default deterministic identity map |
+| Semantic dedup | CE policy layer | Strategy | `ContextSemanticDeduper` plugin (MXINT-5); default no-op |
+| Conflict resolution | CE policy layer | Strategy | `ContextConflictResolver` plugin (MXINT-5); default pass-through |
+| Ranking | CE policy layer | Strategy | `ContextRanker` (existing); consumes post-conflict fragments |
+| Budget allocation | CE policy layer | Strategy | `ContextBudgetAllocator` / compiler integration |
+| Compression / overflow | CE policy layer | Strategy | Separate stage after budget; may drop optional / truncate allowed types |
+| Compile / format | CE platform | Contract-driven | `ContextFormatter` + compile service — **no semantic authority decisions** |
+
+Default implementations for strategy stages: **deterministic, LLM-free**. Optional semantic LLM strategies are external plugins only.
+
+### Scoring and metadata policy (MXINT-5 target fields)
+
+| Field | Storage | Owner |
+|-------|---------|-------|
+| `raw_relevance_signal` | Typed `ContextFragment` field (new) | Domain adapter at collect |
+| `normalized_relevance_score` | Typed `ContextFragment` field (new) | Score normalization stage |
+| `relevance_score` | Existing `[0,1]` field | Becomes ranking-facing normalized score after MXINT-5 (migration alias during transition) |
+| `freshness_score`, `confidence_score` | Existing typed fields | Domain adapter; normalization may adjust per policy |
+| `authority_class`, `trust_tier`, `sensitivity`, `scope_ref` | Typed `ContextFragment` fields (new) | Composition/domain assignment — **not** `metadata[...]` |
+| `metadata` | `dict[str, Any]` | Provider-specific auxiliary data only — not central enterprise invariants |
+
+`ContextFragment.metadata` and `ContextProviderContext.handles` remain in CE-1.x code; **future hard semantics must not be added only via metadata keys.**
+
 ### Contracts
 
-#### Reuse (NO NEW CORE CONTRACT REQUIRED for CE-1.x core)
+#### Core contract evolution decision
 
-Keep and extend in place:
+**MINIMAL CORE CONTRACT EVOLUTION REQUIRED** (Tier-0 `intergrax/context/contracts.py` + protocols, implemented MXINT-4/5 — not in MEM-XINT-2-R):
+
+| New / extended contract | Purpose |
+|-------------------------|---------|
+| `ContextProviderSourceInputs` + per-source input wrappers | Typed cross-layer carrier replacing canonical `dict[str, Any]` handles |
+| `ContextSourceAccess` (protocol) | Provider-scoped typed accessors over `ContextProviderContext` |
+| `ContextAuthorityClass` (+ `trust_tier` / `sensitivity` models as needed) | Authority separate from `ContextFragmentSource` |
+| `ContextFragment` fields: `authority_class`, `trust_tier`, `sensitivity`, `scope_ref`, `raw_relevance_signal`, `normalized_relevance_score` | Policy pipeline inputs without metadata smuggling |
+| `RegisteredContextSourceDescriptor` | Typed custom plugin source registration |
+| `ContextScoreNormalizer`, `ContextConflictResolver`, `ContextSemanticDeduper` | MXINT-5 strategy protocols |
+
+Reuse unchanged semantics:
 
 | Contract | Role |
 |----------|------|
-| `ContextFragment` | Universal CE candidate; already has `source`, `source_id`, scores, `mandatory`, `provider_provenance`, `metadata` |
-| `ContextFragmentSource` | Maps to authority class (see below) |
+| `ContextFragment` | Universal CE candidate; `source` = origin only |
+| `ContextFragmentSource` | **Origin/category only** — not authority |
 | `ContextAssemblyRequest` | Scoped assembly input (`tenant_id`, trace/run/task ids) |
-| `ContextProviderContext.handles` | Typed runtime handles (not serialized) — **`request_identity`** must be supplied by composition layer |
+| `ContextProviderContext.handles` | **Legacy compatibility envelope** during migration — not canonical transport |
 | `ContextSourceProvider` | Provider plugin boundary |
 | `ContextAssemblyProvenance` / `AssembledContext.provenance` | Lineage v2 |
 | `MemoryControlRecallResult` / `MemoryControlRememberRequest` | Memory recall/write semantics |
-| `RequestIdentity` | Spine for scope; no synthetic identity |
-
-#### Minimal extensions (MXINT-4/5 — design only)
-
-1. **Normative `ContextFragment.metadata` keys** (documented constants, not unbounded dict at adapter boundaries for new code):
-
-   - `authority_class`: `canonical_memory` \| `derived_memory` \| `rag_evidence` \| `tool_observation` \| `session_episodic` \| `system_context`
-   - `trust_tier`, `sensitivity`, `scope_ref` (tenant/user/session)
-   - `raw_relevance_score`, `normalized_relevance_score`
-   - `memory_entry_id`, `rag_chunk_id`, `tool_call_id`, `session_message_id` (source-specific ids)
-
-2. **`ContextScoreNormalizer` protocol** (CE plugin, MXINT-5).
-
-3. **`ContextConflictResolver` protocol** (CE plugin, MXINT-5) — no Memory writes.
-
-4. **`ContextSemanticDeduper` protocol** (optional).
-
-5. **`ContextAssemblyDecisionRecord`** optional manifest on `AssembledContext` (vNext field).
+| `RequestIdentity` | Typed identity spine on `ContextProviderSourceInputs.identity` |
 
 #### Contract impact matrix
 
 | Contract | Keep | Extend | Deprecate | New |
 |----------|------|--------|-----------|-----|
-| `ContextFragment` | ✓ | metadata keys + raw/normalized scores | | |
-| `ContextAssemblyProvenance` | ✓ | transformation steps (optional) | | |
+| `ContextProviderContext` | ✓ | `sources: ContextProviderSourceInputs` | `handles` as canonical API | `ContextSourceAccess` |
+| `ContextFragment` | ✓ | authority + raw/normalized score fields | metadata for hard invariants | |
+| `ContextAssemblyProvenance` | ✓ | optional transformation steps | | |
 | `AssembledContext` | ✓ | optional decision manifest | | |
-| `ContextRanker` | ✓ | consume normalized scores | | |
-| `ContextSourceProvider` | ✓ | | | |
+| `ContextRanker` | ✓ | consume `normalized_relevance_score` | | |
+| `ContextBudgetAllocator` | ✓ | post-rank budget + handoff to overflow stage | | |
+| `ContextSourceProvider` | ✓ | collect via `ContextSourceAccess` | raw `handles[...]` in new providers | |
 | `MemoryControlPlane` | ✓ | | | |
+| `legacy_bridge` handle adapters | ✓ | | direct semantic use | typed composition builders |
 | `SessionManager.search_user_longterm_memory` | | adapter-only | public semantic use | |
 | RAG/tool prompt builders | | | direct model injection | |
+| | | | | `ContextProviderSourceInputs` (MXINT-4) |
+| | | | | `ContextAuthorityClass` + trust/sensitivity (MXINT-5) |
 | | | | | `ContextScoreNormalizer` (MXINT-5) |
 | | | | | `ContextConflictResolver` (MXINT-5) |
+| | | | | `ContextSemanticDeduper` (MXINT-5) |
 
 ### Pluginability map
 
@@ -371,6 +452,10 @@ Untrusted RAG/tool content defaults non-privileged; no control of memory authori
 
 Legacy APIs as thin adapters to plane; no dual governance; migration-only feature flags with removal conditions.
 
+**`ContextProviderContext.handles`:** legacy compatibility surface during MXINT-4 migration. New enterprise paths **must not** depend on raw handle keys for semantic payloads. Composition builds `ContextProviderSourceInputs` from plane/RAG/tool/session adapters; `legacy_bridge` → **MIGRATE** (MXINT-4) → **DEPRECATE** → **REMOVE** (MXINT-6 after certification).
+
+**`RequestIdentity`:** must flow via `ContextProviderSourceInputs.identity` on target paths, not as an arbitrary string key in `handles`.
+
 ## Rejected alternatives
 
 1. **Keep manager fallback for resilience** — resilience ≠ authority bypass.
@@ -416,4 +501,4 @@ Tier boundaries preserved; MEM-ENT invariants authoritative; aligns with ADR-UCL
 
 ## Implementation notes
 
-Documentation only in MEM-XINT-2. Bounded regression: see `.tmp/session/MEM-XINT-2/pytest.log`.
+MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normative policy pipeline ordering closure (this revision). Bounded regression: `.tmp/session/MEM-XINT-2-R/pytest.log`. Production code unchanged in MEM-XINT-2-R.
