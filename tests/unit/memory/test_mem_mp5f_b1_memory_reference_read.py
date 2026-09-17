@@ -28,6 +28,7 @@ from intergrax.memory.contracts.memory_reference_read import (
 from intergrax.memory.default_memory_reference_reader import (
     DefaultMemoryReferenceReader,
     MemoryReferenceReadCapabilityBinding,
+    MemoryReferenceReadConfigurationError,
 )
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.user_profile_manager import UserProfileManager
@@ -38,6 +39,9 @@ pytestmark = pytest.mark.gate
 
 _REPO = Path(__file__).resolve().parents[3]
 _CONTRACT = _REPO / "intergrax" / "memory" / "contracts" / "memory_reference_read.py"
+_DEFAULT_READER = (
+    _REPO / "intergrax" / "memory" / "default_memory_reference_reader.py"
+)
 
 _FORBIDDEN_IMPORT_PREFIXES = (
     "intergrax.contracts.context_view",
@@ -127,6 +131,37 @@ def test_non_ok_result_cannot_carry_references() -> None:
         )
 
 
+def _configured_reader(
+    capability: UserProfileManagerMemoryCapability,
+    *,
+    tenant_id: str = "tenant-a",
+    workspace_id: str = "ws-a",
+) -> DefaultMemoryReferenceReader:
+    return DefaultMemoryReferenceReader(
+        user_profile=capability,
+        capability_binding=MemoryReferenceReadCapabilityBinding(
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+        ),
+    )
+
+
+def test_configured_reader_requires_capability_binding() -> None:
+    store = InMemoryUserProfileStore()
+    manager = UserProfileManager(store, tenant_id="tenant-a", workspace_id="ws-a")
+    capability = UserProfileManagerMemoryCapability(manager)
+    with pytest.raises(MemoryReferenceReadConfigurationError):
+        DefaultMemoryReferenceReader(user_profile=capability)
+
+
+def test_capability_binding_requires_non_empty_workspace() -> None:
+    with pytest.raises(MemoryReferenceReadConfigurationError):
+        MemoryReferenceReadCapabilityBinding(
+            tenant_id="tenant-a",
+            workspace_id="  ",
+        )
+
+
 @pytest.mark.asyncio
 async def test_empty_ok_when_no_records() -> None:
     store = InMemoryUserProfileStore()
@@ -136,13 +171,7 @@ async def test_empty_ok_when_no_records() -> None:
         workspace_id="ws-a",
     )
     capability = UserProfileManagerMemoryCapability(manager)
-    reader = DefaultMemoryReferenceReader(
-        user_profile=capability,
-        capability_binding=MemoryReferenceReadCapabilityBinding(
-            tenant_id="tenant-a",
-            workspace_id="ws-a",
-        ),
-    )
+    reader = _configured_reader(capability)
     identity = _identity()
     result = await reader.read_references(
         identity,
@@ -166,13 +195,7 @@ async def test_default_reader_returns_refs_without_content() -> None:
         kind=MemoryKind.PREFERENCE,
     )
     await capability.add_memory_entry(_identity(), entry)
-    reader = DefaultMemoryReferenceReader(
-        user_profile=capability,
-        capability_binding=MemoryReferenceReadCapabilityBinding(
-            tenant_id="tenant-a",
-            workspace_id="ws-a",
-        ),
-    )
+    reader = _configured_reader(capability)
     result = await reader.read_references(
         _identity(),
         MemoryReferenceReadRequest(scope=_scope()),
@@ -196,6 +219,45 @@ async def test_cross_tenant_scope_rejected() -> None:
 
 
 @pytest.mark.asyncio
+async def test_correct_workspace_accepted_via_binding() -> None:
+    store = InMemoryUserProfileStore()
+    manager = UserProfileManager(store, tenant_id="tenant-a", workspace_id="ws-a")
+    capability = UserProfileManagerMemoryCapability(manager)
+    reader = _configured_reader(capability)
+    result = await reader.read_references(
+        _identity(),
+        MemoryReferenceReadRequest(scope=_scope(workspace_id="ws-a")),
+    )
+    assert result.outcome is MemoryReferenceReadOutcome.OK
+
+
+@pytest.mark.asyncio
+async def test_binding_tenant_mismatch_rejected() -> None:
+    store = InMemoryUserProfileStore()
+    manager = UserProfileManager(store, tenant_id="tenant-a", workspace_id="ws-a")
+    capability = UserProfileManagerMemoryCapability(manager)
+    reader = _configured_reader(capability, tenant_id="tenant-b", workspace_id="ws-a")
+    result = await reader.read_references(
+        _identity(tenant_id="tenant-a"),
+        MemoryReferenceReadRequest(scope=_scope(tenant_id="tenant-a")),
+    )
+    assert result.outcome is MemoryReferenceReadOutcome.SCOPE_REJECTED
+
+
+@pytest.mark.asyncio
+async def test_request_tenant_mismatch_rejected_before_binding() -> None:
+    store = InMemoryUserProfileStore()
+    manager = UserProfileManager(store, tenant_id="tenant-b", workspace_id="ws-a")
+    capability = UserProfileManagerMemoryCapability(manager)
+    reader = _configured_reader(capability, tenant_id="tenant-b", workspace_id="ws-a")
+    result = await reader.read_references(
+        _identity(tenant_id="tenant-a"),
+        MemoryReferenceReadRequest(scope=_scope(tenant_id="tenant-b")),
+    )
+    assert result.outcome is MemoryReferenceReadOutcome.SCOPE_REJECTED
+
+
+@pytest.mark.asyncio
 async def test_wrong_workspace_rejected_via_binding() -> None:
     store = InMemoryUserProfileStore()
     manager = UserProfileManager(
@@ -204,13 +266,7 @@ async def test_wrong_workspace_rejected_via_binding() -> None:
         workspace_id="ws-a",
     )
     capability = UserProfileManagerMemoryCapability(manager)
-    reader = DefaultMemoryReferenceReader(
-        user_profile=capability,
-        capability_binding=MemoryReferenceReadCapabilityBinding(
-            tenant_id="tenant-a",
-            workspace_id="ws-a",
-        ),
-    )
+    reader = _configured_reader(capability)
     result = await reader.read_references(
         _identity(),
         MemoryReferenceReadRequest(scope=_scope(workspace_id="ws-other")),
@@ -223,13 +279,7 @@ async def test_resource_scope_rejected_when_unsupported() -> None:
     store = InMemoryUserProfileStore()
     manager = UserProfileManager(store, tenant_id="tenant-a", workspace_id="ws-a")
     capability = UserProfileManagerMemoryCapability(manager)
-    reader = DefaultMemoryReferenceReader(
-        user_profile=capability,
-        capability_binding=MemoryReferenceReadCapabilityBinding(
-            tenant_id="tenant-a",
-            workspace_id="ws-a",
-        ),
-    )
+    reader = _configured_reader(capability)
     scope = MemoryReferenceReadScope(
         tenant_id="tenant-a",
         workspace_id="ws-a",
@@ -280,8 +330,8 @@ async def test_custom_reader_satisfies_port() -> None:
     assert result.references[0].memory_id == "custom-ref"
 
 
-def test_memory_reference_read_contract_boundary_ast() -> None:
-    tree = ast.parse(_CONTRACT.read_text(encoding="utf-8"), filename=str(_CONTRACT))
+def _memory_reference_read_boundary_violations(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     violations: list[str] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.ImportFrom) or not node.module:
@@ -290,12 +340,28 @@ def test_memory_reference_read_contract_boundary_ast() -> None:
         for prefix in _FORBIDDEN_IMPORT_PREFIXES:
             if module.startswith(prefix):
                 violations.append(f"{module} at line {node.lineno}")
+        if module == "intergrax.memory.default_memory_control_plane":
+            for alias in node.names:
+                if alias.name.startswith("_"):
+                    violations.append(
+                        f"private control plane import {alias.name} at line {node.lineno}"
+                    )
         if module == "typing" and any(
             alias.name == "Any" for alias in node.names
         ):
             violations.append(f"typing.Any at line {node.lineno}")
-    source = _CONTRACT.read_text(encoding="utf-8")
-    for name in ("getattr(", "hasattr("):
+    source = path.read_text(encoding="utf-8")
+    for name in ("getattr(", "hasattr(", "setattr("):
         if name in source:
             violations.append(f"dynamic attribute access: {name}")
+    return violations
+
+
+def test_memory_reference_read_contract_boundary_ast() -> None:
+    violations = _memory_reference_read_boundary_violations(_CONTRACT)
+    assert not violations, "\n".join(violations)
+
+
+def test_memory_reference_read_default_impl_boundary_ast() -> None:
+    violations = _memory_reference_read_boundary_violations(_DEFAULT_READER)
     assert not violations, "\n".join(violations)

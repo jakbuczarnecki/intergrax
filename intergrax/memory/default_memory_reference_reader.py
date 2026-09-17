@@ -26,9 +26,9 @@ from intergrax.memory.contracts.memory_security_governance import (
     MemoryGovernanceOperation,
     MemorySecurityContext,
 )
-from intergrax.memory.default_memory_control_plane import (
-    _assert_scope_authorized,
-    _governance_service_or_default,
+from intergrax.memory.memory_scope_authority import (
+    assert_memory_scope_authorized,
+    governance_service_or_default,
 )
 from intergrax.memory.memory_security_governance_service import (
     MemorySecurityGovernanceService,
@@ -36,15 +36,37 @@ from intergrax.memory.memory_security_governance_service import (
 )
 from intergrax.memory.recall.retrieval import candidates_from_profile_scan
 
-__all__ = ["DefaultMemoryReferenceReader", "MemoryReferenceReadCapabilityBinding"]
+__all__ = [
+    "DefaultMemoryReferenceReader",
+    "MemoryReferenceReadCapabilityBinding",
+    "MemoryReferenceReadConfigurationError",
+]
+
+
+class MemoryReferenceReadConfigurationError(ValueError):
+    """Default reader wiring violates mandatory capability authority invariants."""
 
 
 @dataclass(frozen=True, slots=True)
 class MemoryReferenceReadCapabilityBinding:
-    """Workspace/tenant binding for a configured user-profile memory surface."""
+    """Authoritative tenant/workspace binding for a configured user-profile surface."""
 
     tenant_id: str
-    workspace_id: str | None
+    workspace_id: str
+
+    def __post_init__(self) -> None:
+        tenant = (self.tenant_id or "").strip()
+        workspace = (self.workspace_id or "").strip()
+        if not tenant:
+            raise MemoryReferenceReadConfigurationError(
+                "tenant_id must be non-empty"
+            )
+        if not workspace:
+            raise MemoryReferenceReadConfigurationError(
+                "workspace_id must be non-empty"
+            )
+        object.__setattr__(self, "tenant_id", tenant)
+        object.__setattr__(self, "workspace_id", workspace)
 
 
 def _control_scope_for_user_read(
@@ -75,18 +97,16 @@ def _security_context(
     )
 
 
-def _scope_binding_rejected(
-    binding: MemoryReferenceReadCapabilityBinding | None,
+def _capability_binding_rejects_request(
+    binding: MemoryReferenceReadCapabilityBinding,
+    identity: RequestIdentity,
     request: MemoryReferenceReadRequest,
 ) -> bool:
-    if binding is None:
-        return False
+    if binding.tenant_id != identity.tenant_id:
+        return True
     if binding.tenant_id != request.scope.tenant_id:
         return True
-    bound_workspace = (binding.workspace_id or "").strip()
-    if not bound_workspace:
-        return False
-    return bound_workspace != request.scope.workspace_id
+    return binding.workspace_id != request.scope.workspace_id
 
 
 @dataclass
@@ -99,6 +119,12 @@ class DefaultMemoryReferenceReader:
         default_factory=build_default_memory_security_governance_service
     )
 
+    def __post_init__(self) -> None:
+        if self.user_profile is not None and self.capability_binding is None:
+            raise MemoryReferenceReadConfigurationError(
+                "capability_binding is required when user_profile is configured"
+            )
+
     async def read_references(
         self,
         identity: RequestIdentity,
@@ -108,7 +134,16 @@ class DefaultMemoryReferenceReader:
         if invalid is not None:
             return MemoryReferenceReadResult(outcome=invalid, reason="identity_scope")
 
-        if _scope_binding_rejected(self.capability_binding, request):
+        if self.user_profile is None:
+            return MemoryReferenceReadResult(
+                outcome=MemoryReferenceReadOutcome.UNAVAILABLE,
+                reason="user_profile_capability_not_configured",
+            )
+
+        binding = self.capability_binding
+        assert binding is not None
+
+        if _capability_binding_rejects_request(binding, identity, request):
             return MemoryReferenceReadResult(
                 outcome=MemoryReferenceReadOutcome.SCOPE_REJECTED,
                 reason="capability_workspace_binding",
@@ -120,12 +155,6 @@ class DefaultMemoryReferenceReader:
                 reason="resource_scope_unsupported_for_surface",
             )
 
-        if self.user_profile is None:
-            return MemoryReferenceReadResult(
-                outcome=MemoryReferenceReadOutcome.UNAVAILABLE,
-                reason="user_profile_capability_not_configured",
-            )
-
         if request.scope.user_id is None:
             return MemoryReferenceReadResult(
                 outcome=MemoryReferenceReadOutcome.SCOPE_REJECTED,
@@ -134,14 +163,14 @@ class DefaultMemoryReferenceReader:
 
         try:
             control_scope = _control_scope_for_user_read(request)
-            _assert_scope_authorized(identity, control_scope)
+            assert_memory_scope_authorized(identity, control_scope)
         except MemoryControlAccessDenied:
             return MemoryReferenceReadResult(
                 outcome=MemoryReferenceReadOutcome.ACCESS_DENIED,
                 reason="identity_user_scope",
             )
 
-        governance_service = _governance_service_or_default(self.security_governance)
+        governance_service = governance_service_or_default(self.security_governance)
         recall_governance_request = MemoryGovernanceEvaluationRequest(
             context=_security_context(
                 identity, control_scope, MemoryGovernanceOperation.RECALL

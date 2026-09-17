@@ -147,6 +147,8 @@ Contract: `MemoryReferenceReadPort` (`intergrax/memory/contracts/memory_referenc
 | Concern | Behavior |
 | ------- | -------- |
 | Scope | `MemoryReferenceReadScope` — mandatory `tenant_id` + `workspace_id`; optional `user_id` and neutral `MemoryScopedResourceRef` |
+| Workspace authority | `DefaultMemoryReferenceReader` requires `MemoryReferenceReadCapabilityBinding` when user-profile capability is configured; identity, request scope, and binding tenant/workspace must align (fail-closed) |
+| Shared enforcement | Control plane and reference-read surfaces share Memory-owned scope/governance primitives (`memory_scope_authority.py`) |
 | Result | `MemoryRecordCanonicalRef` (`tenant_id`, `memory_id`, `revision`) — reference-first only |
 | Control plane | **Not** an extension of `MemoryControlPlane` recall (which returns hydrated items); separate replaceable read port |
 | MP-5 | No ContextView types in Memory; future MP-5F adapter maps refs to `ContextViewMemorySourceRef` |
