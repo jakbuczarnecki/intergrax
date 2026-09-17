@@ -25,6 +25,7 @@ from intergrax.context.errors import (
     ContextProviderRegistrationError,
     RequiredContextSourceUnavailableError,
 )
+from intergrax.context.policy.authority import enforce_provider_authority
 from intergrax.context.provider_descriptor import (
     compute_provider_set_fingerprint,
     resolve_provider_descriptor,
@@ -306,6 +307,7 @@ def canonicalize_fragment(
             reason_code="provider.contract_violation",
             detail="fragment_id must be non-empty",
         )
+    fragment = enforce_provider_authority(fragment, descriptor=descriptor)
     return ContextFragment(
         fragment_id=fragment.fragment_id,
         source=fragment.source,
@@ -319,6 +321,14 @@ def canonicalize_fragment(
         metadata=fragment.metadata,
         content_hash=fragment.content_hash,
         provider_provenance=provenance,
+        authority_class=fragment.authority_class,
+        trust_score=fragment.trust_score,
+        sensitivity=fragment.sensitivity,
+        scope_ref=fragment.scope_ref,
+        raw_relevance_signal=fragment.raw_relevance_signal,
+        normalized_relevance_score=fragment.normalized_relevance_score,
+        conflict_key=fragment.conflict_key,
+        semantic_fingerprint=fragment.semantic_fingerprint,
     )
 
 

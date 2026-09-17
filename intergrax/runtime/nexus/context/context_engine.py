@@ -33,7 +33,11 @@ from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
     SessionHistorySnapshot,
 )
-from intergrax.context.dedup import dedup_fragments_by_hash
+from intergrax.context.policy.pipeline import (
+    ContextCrossSourcePolicyPipeline,
+    ContextPolicyStrategies,
+    default_context_policy_strategies,
+)
 from intergrax.context.formatter import (
     DefaultContextFormatter,
     merge_fragment_messages,
@@ -116,6 +120,7 @@ class DefaultNexusContextEngine:
         validator: DefaultContextValidator | None = None,
         ranker: DefaultContextRanker | None = None,
         formatter: DefaultContextFormatter | None = None,
+        policy_pipeline: ContextCrossSourcePolicyPipeline | None = None,
     ) -> None:
         self._engine_id = engine_id
         self._registry = registry or ContextPluginRegistry()
@@ -123,6 +128,7 @@ class DefaultNexusContextEngine:
         self._validator = validator or DefaultContextValidator()
         self._ranker = ranker or DefaultContextRanker()
         self._formatter = formatter or DefaultContextFormatter()
+        self._policy_pipeline = policy_pipeline or ContextCrossSourcePolicyPipeline()
 
     @property
     def engine_id(self) -> str:
@@ -131,6 +137,16 @@ class DefaultNexusContextEngine:
     @property
     def registry(self) -> ContextPluginRegistry:
         return self._registry
+
+    def _resolve_policy_strategies(self) -> ContextPolicyStrategies:
+        defaults = default_context_policy_strategies()
+        return ContextPolicyStrategies(
+            score_normalizer=self._registry.score_normalizer or defaults.score_normalizer,
+            semantic_deduper=self._registry.semantic_deduper or defaults.semantic_deduper,
+            conflict_resolver=self._registry.conflict_resolver or defaults.conflict_resolver,
+            ranker=self._registry.ranker or self._ranker,
+            budget_allocator=self._registry.allocator or defaults.budget_allocator,
+        )
 
     async def assemble(
         self,
@@ -286,34 +302,15 @@ class DefaultNexusContextEngine:
             request=request,
         )
 
-        unique, dropped = dedup_fragments_by_hash(collected_fragments)
-        collected_fragments = unique
-        fragments_excluded.extend(dropped)
-        if dropped:
+        policy_strategies = self._resolve_policy_strategies()
+        policy_pipeline = ContextCrossSourcePolicyPipeline(strategies=policy_strategies)
+        policy_result = policy_pipeline.execute(collected_fragments, request)
+        collected_fragments = list(policy_result.fragments)
+        fragments_excluded.extend(policy_result.excluded)
+        policy_decisions = policy_result.decisions
+        if policy_result.excluded:
             counters = get_context_counters()
-            counters.candidate_dropped_total += len(dropped)
-            if event_bus is not None:
-                from intergrax.runtime.events.context_skill_recording import (
-                    record_context_candidate_dropped,
-                )
-
-                for fragment, reason in dropped:
-                    record_context_candidate_dropped(
-                        event_bus,
-                        provider_id=(
-                            fragment.provider_provenance.provider_id
-                            if fragment.provider_provenance is not None
-                            else fragment.source_id or "dedup"
-                        ),
-                        provider_version=(
-                            fragment.provider_provenance.provider_version
-                            if fragment.provider_provenance is not None
-                            else ""
-                        ),
-                        drop_reason=reason,
-                        engine_id=self._engine_id,
-                        **event_ctx,
-                    )
+            counters.candidate_dropped_total += len(policy_result.excluded)
 
         post_gate = run_pre_context_policy_gate(request, collected=tuple(collected_fragments))
         if not post_gate.allowed:
@@ -321,36 +318,7 @@ class DefaultNexusContextEngine:
             _record_validation_failed(event_bus, event_ctx, post_gate.errors, stage="post_collect_policy")
             raise ValueError("; ".join(post_gate.errors))
 
-        ranked_fragments: list[ContextFragment] = []
-        if collected_fragments:
-            with context_span("context.budget.allocate"):
-                ranked_fragments, quality_excluded = self._ranker.rank_with_exclusions(
-                    collected_fragments,
-                    request,
-                )
-                fragments_excluded.extend(quality_excluded)
-                if quality_excluded and event_bus is not None:
-                    from intergrax.runtime.events.context_skill_recording import (
-                        record_context_candidate_dropped,
-                    )
-
-                    for fragment, reason in quality_excluded:
-                        record_context_candidate_dropped(
-                            event_bus,
-                            provider_id=(
-                                fragment.provider_provenance.provider_id
-                                if fragment.provider_provenance is not None
-                                else fragment.source_id or fragment.source.value
-                            ),
-                            provider_version=(
-                                fragment.provider_provenance.provider_version
-                                if fragment.provider_provenance is not None
-                                else ""
-                            ),
-                            drop_reason=reason,
-                            engine_id=self._engine_id,
-                            **event_ctx,
-                        )
+        ranked_fragments: list[ContextFragment] = list(collected_fragments)
 
         formatter = self._registry.formatter or self._formatter
         fragment_messages = formatter.format(ranked_fragments, request)
@@ -441,6 +409,9 @@ class DefaultNexusContextEngine:
             context_plan=context_plan,
             provider_outcomes=tuple(provider_outcomes),
             provider_set_snapshot=bound_set.snapshot,
+            policy_decisions=policy_decisions,
+            policy_semantic_dedup=policy_result.semantic_dedup_decisions,
+            policy_conflicts=policy_result.conflict_decisions,
         )
 
         validation = self._validator.validate(

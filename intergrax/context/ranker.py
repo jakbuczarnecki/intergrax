@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.context.contracts import ContextAssemblyRequest, ContextFragment, ContextFragmentSource
+from intergrax.context.contracts import ContextAssemblyRequest, ContextFragment, ContextFragmentSource, replace_context_fragment
 from intergrax.context.quality import ContextChunkSignal, evaluate_context_engineering
 
 STEP_KIND_SOURCE_BOOSTS: dict[str, frozenset[ContextFragmentSource]] = {
@@ -15,6 +15,7 @@ STEP_KIND_SOURCE_BOOSTS: dict[str, frozenset[ContextFragmentSource]] = {
 }
 
 _BOOST_DELTA = 0.15
+_QUALITY_BYPASS_SOURCES = frozenset({ContextFragmentSource.SESSION_HISTORY})
 
 
 class DefaultContextRanker:
@@ -35,40 +36,59 @@ class DefaultContextRanker:
         fragments: list[ContextFragment],
         request: ContextAssemblyRequest,
     ) -> tuple[list[ContextFragment], list[tuple[ContextFragment, str]]]:
-        if not fragments or not request.step_kind:
-            return self._partition_quality_gate(
-                sorted(fragments, key=lambda item: item.relevance_score, reverse=True)
+        session_fragments = [fragment for fragment in fragments if fragment.source is ContextFragmentSource.SESSION_HISTORY]
+        non_session = [fragment for fragment in fragments if fragment.source is not ContextFragmentSource.SESSION_HISTORY]
+        if not non_session and not request.step_kind:
+            return self._partition_quality_gate(session_fragments)
+        ranked_non_session, excluded = self._rank_non_session(non_session, request)
+        included, quality_excluded = self._partition_quality_gate(ranked_non_session + session_fragments)
+        return included, excluded + quality_excluded
+
+    def _rank_non_session(
+        self,
+        fragments: list[ContextFragment],
+        request: ContextAssemblyRequest,
+    ) -> tuple[list[ContextFragment], list[tuple[ContextFragment, str]]]:
+        if not fragments:
+            return [], []
+        if not request.step_kind:
+            return (
+                sorted(
+                    fragments,
+                    key=lambda item: (-item.normalized_relevance_score, item.fragment_id),
+                ),
+                [],
             )
 
         boosted_sources = STEP_KIND_SOURCE_BOOSTS.get(request.step_kind, frozenset())
         if not boosted_sources:
-            return self._partition_quality_gate(
-                sorted(fragments, key=lambda item: item.relevance_score, reverse=True)
+            return (
+                sorted(
+                    fragments,
+                    key=lambda item: (-item.normalized_relevance_score, item.fragment_id),
+                ),
+                [],
             )
 
         ranked: list[ContextFragment] = []
         for fragment in fragments:
             if fragment.source in boosted_sources:
-                boosted_score = min(1.0, fragment.relevance_score + _BOOST_DELTA)
+                boosted_score = min(1.0, fragment.normalized_relevance_score + _BOOST_DELTA)
                 ranked.append(
-                    ContextFragment(
-                        fragment_id=fragment.fragment_id,
-                        source=fragment.source,
-                        source_id=fragment.source_id,
-                        content=fragment.content,
-                        token_estimate=fragment.token_estimate,
+                    replace_context_fragment(
+                        fragment,
                         relevance_score=boosted_score,
-                        freshness_score=fragment.freshness_score,
-                        confidence_score=fragment.confidence_score,
-                        mandatory=fragment.mandatory,
-                        metadata=dict(fragment.metadata),
-                        content_hash=fragment.content_hash,
+                        normalized_relevance_score=boosted_score,
                     )
                 )
             else:
                 ranked.append(fragment)
-        return self._partition_quality_gate(
-            sorted(ranked, key=lambda item: item.relevance_score, reverse=True)
+        return (
+            sorted(
+                ranked,
+                key=lambda item: (-item.normalized_relevance_score, item.fragment_id),
+            ),
+            [],
         )
 
     def _partition_quality_gate(
@@ -85,7 +105,7 @@ class DefaultContextRanker:
                     if fragment.source is ContextFragmentSource.SESSION_HISTORY
                     else fragment.content_hash
                 ),
-                relevance_score=fragment.relevance_score,
+                relevance_score=fragment.normalized_relevance_score,
                 freshness_score=fragment.freshness_score,
                 confidence_score=fragment.confidence_score,
             )
@@ -93,11 +113,17 @@ class DefaultContextRanker:
         ]
         report = evaluate_context_engineering(chunks=signals)
         passed_ids = {record.chunk_id for record in report.records if record.passed}
-        included = [fragment for fragment in fragments if fragment.fragment_id in passed_ids]
+        included = [
+            fragment
+            for fragment in fragments
+            if fragment.fragment_id in passed_ids
+            or fragment.source in _QUALITY_BYPASS_SOURCES
+        ]
         excluded = [
             (fragment, "quality_threshold")
             for fragment in fragments
             if fragment.fragment_id not in passed_ids
+            and fragment.source not in _QUALITY_BYPASS_SOURCES
         ]
         return included, excluded
 

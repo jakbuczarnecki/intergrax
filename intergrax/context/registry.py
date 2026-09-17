@@ -14,8 +14,11 @@ from intergrax.context.errors import ContextProviderRegistrationError
 from intergrax.context.provider_descriptor import resolve_provider_descriptor
 from intergrax.context.protocols import (
     ContextBudgetAllocator,
+    ContextConflictResolver,
     ContextFormatter,
     ContextRanker,
+    ContextScoreNormalizer,
+    ContextSemanticDeduper,
     ContextSourceProvider,
     ContextValidator,
 )
@@ -41,6 +44,9 @@ class ContextPluginRegistry:
     _providers: dict[str, _RegisteredProvider] = field(default_factory=dict)
     _ranker: ContextRanker | None = None
     _allocator: ContextBudgetAllocator | None = None
+    _score_normalizer: ContextScoreNormalizer | None = None
+    _semantic_deduper: ContextSemanticDeduper | None = None
+    _conflict_resolver: ContextConflictResolver | None = None
     _formatter: ContextFormatter | None = None
     _validator: ContextValidator | None = None
     _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
@@ -130,6 +136,15 @@ class ContextPluginRegistry:
     def set_allocator(self, allocator: ContextBudgetAllocator | None) -> None:
         self._allocator = allocator
 
+    def set_score_normalizer(self, normalizer: ContextScoreNormalizer | None) -> None:
+        self._score_normalizer = normalizer
+
+    def set_semantic_deduper(self, deduper: ContextSemanticDeduper | None) -> None:
+        self._semantic_deduper = deduper
+
+    def set_conflict_resolver(self, resolver: ContextConflictResolver | None) -> None:
+        self._conflict_resolver = resolver
+
     def set_formatter(self, formatter: ContextFormatter | None) -> None:
         self._formatter = formatter
 
@@ -143,6 +158,18 @@ class ContextPluginRegistry:
     @property
     def allocator(self) -> ContextBudgetAllocator | None:
         return self._allocator
+
+    @property
+    def score_normalizer(self) -> ContextScoreNormalizer | None:
+        return self._score_normalizer
+
+    @property
+    def semantic_deduper(self) -> ContextSemanticDeduper | None:
+        return self._semantic_deduper
+
+    @property
+    def conflict_resolver(self) -> ContextConflictResolver | None:
+        return self._conflict_resolver
 
     @property
     def formatter(self) -> ContextFormatter | None:

@@ -11,10 +11,13 @@ from intergrax.context.contracts import (
     AssembledContext,
     BudgetAllocationResult,
     ContextAssemblyRequest,
+    ContextConflictDecision,
     ContextFragment,
     ContextFragmentSource,
+    ContextNormalizationInput,
     ContextProviderContext,
     ContextProviderDescriptor,
+    ContextSemanticDedupDecision,
 )
 from intergrax.context.session_history import SessionHistorySnapshot
 from intergrax.llm.messages import ChatMessage
@@ -41,6 +44,44 @@ class ContextSourceProvider(Protocol):
 
 
 @runtime_checkable
+class ContextScoreNormalizer(Protocol):
+    """Maps source-native relevance signals to normalized CE scores."""
+
+    @property
+    def strategy_id(self) -> str: ...
+
+    def normalize(self, item: ContextNormalizationInput) -> ContextFragment: ...
+
+
+@runtime_checkable
+class ContextSemanticDeduper(Protocol):
+    """Removes near-duplicate fragments after score normalization."""
+
+    @property
+    def strategy_id(self) -> str: ...
+
+    def deduplicate(
+        self,
+        fragments: list[ContextFragment],
+        request: ContextAssemblyRequest,
+    ) -> tuple[list[ContextFragment], tuple[ContextSemanticDedupDecision, ...]]: ...
+
+
+@runtime_checkable
+class ContextConflictResolver(Protocol):
+    """Resolves conflicting evidence without mutating Memory stores."""
+
+    @property
+    def strategy_id(self) -> str: ...
+
+    def resolve(
+        self,
+        fragments: list[ContextFragment],
+        request: ContextAssemblyRequest,
+    ) -> tuple[list[ContextFragment], tuple[ContextConflictDecision, ...]]: ...
+
+
+@runtime_checkable
 class ContextRanker(Protocol):
     """Orders fragments after collect and before budget allocation."""
 
@@ -53,10 +94,19 @@ class ContextRanker(Protocol):
         request: ContextAssemblyRequest,
     ) -> list[ContextFragment]: ...
 
+    def rank_with_exclusions(
+        self,
+        fragments: list[ContextFragment],
+        request: ContextAssemblyRequest,
+    ) -> tuple[list[ContextFragment], list[tuple[ContextFragment, str]]]: ...
+
 
 @runtime_checkable
 class ContextBudgetAllocator(Protocol):
     """Allocates token budget across ranked fragments."""
+
+    @property
+    def strategy_id(self) -> str: ...
 
     def allocate(
         self,

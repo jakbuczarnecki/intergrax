@@ -6,11 +6,13 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Literal, Self
 
 from intergrax.contracts.context_assembly import ContextSummaryTier, TaskContextAssemblyOptions
+from intergrax.contracts.data_classification import DataClassification
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
 
@@ -47,9 +49,79 @@ class ContextFragmentSource(str, Enum):
     CUSTOM = "custom"
 
 
+def canonicalize_fragment_content(text: str) -> str:
+    """Deterministic minimal canonicalization before content hashing (no semantic rewrite)."""
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    return normalized.strip()
+
+
 def content_hash_for_text(text: str) -> str:
     """Stable dedup key for fragment content."""
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    canonical = canonicalize_fragment_content(text)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+class ContextAuthorityClass(str, Enum):
+    """Typed authority for cross-source policy (MEM-XINT-2-R)."""
+
+    UNASSIGNED = "unassigned"
+    SYSTEM_CONTEXT = "system_context"
+    CANONICAL_MEMORY = "canonical_memory"
+    DERIVED_MEMORY = "derived_memory"
+    RAG_EVIDENCE = "rag_evidence"
+    TOOL_OBSERVATION = "tool_observation"
+    SESSION_EPISODIC = "session_episodic"
+
+
+PROVIDER_FORBIDDEN_AUTHORITY_CLASSES: frozenset[ContextAuthorityClass] = frozenset(
+    {
+        ContextAuthorityClass.SYSTEM_CONTEXT,
+        ContextAuthorityClass.CANONICAL_MEMORY,
+    }
+)
+
+
+class ContextPolicyStage(str, Enum):
+    SCOPE_ISOLATION = "scope_isolation"
+    CANONICALIZE = "canonicalize"
+    EXACT_DEDUP = "exact_dedup"
+    NORMALIZE = "normalize"
+    SEMANTIC_DEDUP = "semantic_dedup"
+    CONFLICT = "conflict"
+    RANK = "rank"
+    BUDGET = "budget"
+
+
+class ContextPolicyReasonCode(str, Enum):
+    SCOPE_INCOMPATIBLE = "scope_incompatible"
+    EXACT_DUPLICATE_IDENTITY = "exact_duplicate_identity"
+    EXACT_DUPLICATE_CONTENT = "exact_duplicate_content"
+    SEMANTIC_DUPLICATE = "semantic_duplicate"
+    CONFLICT_RESOLVED = "conflict_resolved"
+    BUDGET_EXCLUDED = "budget_excluded"
+    QUALITY_THRESHOLD = "quality_threshold"
+
+
+class ContextConflictAction(str, Enum):
+    KEEP_BOTH = "keep_both"
+    PREFER_LEFT = "prefer_left"
+    PREFER_RIGHT = "prefer_right"
+    DOWNRANK_LEFT = "downrank_left"
+    DOWNRANK_RIGHT = "downrank_right"
+    ANNOTATE = "annotate"
+
+
+@dataclass(frozen=True, slots=True)
+class ContextFragmentScopeRef:
+    tenant_id: str
+    user_id: str = ""
+    execution_scope_key: str = ""
+
+    def __post_init__(self) -> None:
+        tenant = self.tenant_id.strip()
+        if not tenant:
+            raise ValueError("tenant_id must be non-empty")
+        object.__setattr__(self, "tenant_id", tenant)
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,16 +242,50 @@ class ContextFragment:
     metadata: dict[str, Any] = field(default_factory=dict)
     content_hash: str = ""
     provider_provenance: ContextProviderProvenance | None = None
+    authority_class: ContextAuthorityClass = ContextAuthorityClass.UNASSIGNED
+    trust_score: float = 0.75
+    sensitivity: DataClassification = DataClassification.INTERNAL
+    scope_ref: ContextFragmentScopeRef | None = None
+    raw_relevance_signal: float | None = None
+    normalized_relevance_score: float | None = None
+    conflict_key: str = ""
+    semantic_fingerprint: str = ""
 
     def __post_init__(self) -> None:
+        canonical_content = canonicalize_fragment_content(self.content)
         if not self.content_hash:
-            object.__setattr__(self, "content_hash", content_hash_for_text(self.content))
-        for name in ("relevance_score", "freshness_score", "confidence_score"):
+            object.__setattr__(
+                self,
+                "content_hash",
+                hashlib.sha256(canonical_content.encode("utf-8")).hexdigest(),
+            )
+        for name in ("freshness_score", "confidence_score", "trust_score"):
             value = object.__getattribute__(self, name)
             if not 0.0 <= value <= 1.0:
                 raise ValueError(f"{name} must be in [0, 1], got {value}")
+        raw_signal = self.raw_relevance_signal
+        if raw_signal is None:
+            raw_signal = self.relevance_score
+        if math.isnan(raw_signal) or math.isinf(raw_signal):
+            raw_signal = 0.0
+        object.__setattr__(self, "raw_relevance_signal", raw_signal)
+        normalized = self.normalized_relevance_score
+        if normalized is None:
+            normalized = _clamp_unit_interval(self.relevance_score)
+        else:
+            normalized = _clamp_unit_interval(normalized)
+        object.__setattr__(self, "normalized_relevance_score", normalized)
+        if not 0.0 <= self.relevance_score <= 1.0:
+            raise ValueError(f"relevance_score must be in [0, 1], got {self.relevance_score}")
         if self.token_estimate < 0:
             raise ValueError("token_estimate must be >= 0")
+        if not self.semantic_fingerprint:
+            fingerprint_source = canonical_content.casefold()
+            object.__setattr__(
+                self,
+                "semantic_fingerprint",
+                hashlib.sha256(fingerprint_source.encode("utf-8")).hexdigest(),
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -229,6 +335,87 @@ class ContextAssemblyRequest:
         )
 
 
+def _clamp_unit_interval(value: float) -> float:
+    if math.isnan(value) or math.isinf(value):
+        return 0.0
+    if value < 0.0:
+        return 0.0
+    if value > 1.0:
+        return 1.0
+    return value
+
+
+@dataclass(frozen=True, slots=True)
+class ContextNormalizationInput:
+    fragment: ContextFragment
+    request: ContextAssemblyRequest
+
+
+@dataclass(frozen=True, slots=True)
+class ContextSemanticDedupDecision:
+    kept_fragment_id: str
+    suppressed_fragment_ids: tuple[str, ...]
+    reason_code: ContextPolicyReasonCode
+    strategy_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class ContextConflictDecision:
+    left_fragment_id: str
+    right_fragment_id: str
+    action: ContextConflictAction
+    kept_fragment_ids: tuple[str, ...]
+    reason_code: ContextPolicyReasonCode
+    strategy_id: str
+
+
+@dataclass(frozen=True, slots=True)
+class ContextPolicyDecision:
+    stage: ContextPolicyStage
+    strategy_id: str
+    input_fragment_ids: tuple[str, ...]
+    output_fragment_ids: tuple[str, ...]
+    reason_code: ContextPolicyReasonCode
+    detail: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class ContextPolicyPipelineResult:
+    fragments: tuple[ContextFragment, ...]
+    excluded: tuple[tuple[ContextFragment, str], ...]
+    decisions: tuple[ContextPolicyDecision, ...]
+    semantic_dedup_decisions: tuple[ContextSemanticDedupDecision, ...] = ()
+    conflict_decisions: tuple[ContextConflictDecision, ...] = ()
+
+
+def replace_context_fragment(fragment: ContextFragment, **updates: object) -> ContextFragment:
+    """Return a copy of ``fragment`` with selective field overrides."""
+    current = {
+        "fragment_id": fragment.fragment_id,
+        "source": fragment.source,
+        "source_id": fragment.source_id,
+        "content": fragment.content,
+        "token_estimate": fragment.token_estimate,
+        "relevance_score": fragment.relevance_score,
+        "freshness_score": fragment.freshness_score,
+        "confidence_score": fragment.confidence_score,
+        "mandatory": fragment.mandatory,
+        "metadata": dict(fragment.metadata),
+        "content_hash": fragment.content_hash,
+        "provider_provenance": fragment.provider_provenance,
+        "authority_class": fragment.authority_class,
+        "trust_score": fragment.trust_score,
+        "sensitivity": fragment.sensitivity,
+        "scope_ref": fragment.scope_ref,
+        "raw_relevance_signal": fragment.raw_relevance_signal,
+        "normalized_relevance_score": fragment.normalized_relevance_score,
+        "conflict_key": fragment.conflict_key,
+        "semantic_fingerprint": fragment.semantic_fingerprint,
+    }
+    current.update(updates)
+    return ContextFragment(**current)  # type: ignore[arg-type]
+
+
 @dataclass
 class ContextProviderContext:
     """Runtime handles for provider ``collect`` — not serialized or logged at INFO."""
@@ -265,4 +452,7 @@ class AssembledContext:
     context_plan: ContextPlan | None = None
     provider_outcomes: tuple[ContextProviderCollectionOutcome, ...] = ()
     provider_set_snapshot: ContextProviderSetSnapshot | None = None
+    policy_decisions: tuple[ContextPolicyDecision, ...] = ()
+    policy_semantic_dedup: tuple[ContextSemanticDedupDecision, ...] = ()
+    policy_conflicts: tuple[ContextConflictDecision, ...] = ()
     schema_version: str = ASSEMBLED_CONTEXT_SCHEMA
