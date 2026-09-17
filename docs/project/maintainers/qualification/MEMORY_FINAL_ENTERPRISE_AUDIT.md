@@ -860,3 +860,156 @@ Contract-first architecture and replaceability **hold** for canonical mutation, 
 **PASS — MEM-FINAL-AUDIT-2 FULLY CLOSED** (pending independent GitHub SHA verification before AUDIT-3).
 
 > Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-3.
+
+---
+
+# MEM-FINAL-AUDIT-3 — Security, Lifecycle & Resilience Certification
+
+**Stage:** security · scope isolation · governance order · lifecycle · partial failure · reconciliation · concurrency semantics · observability (not real-vendor E2E, not behavioral evals).
+**Baseline AUDIT-2 closed SHA (ancestor required):** `9a6319e0e710029fb7ccfed1f1c2e7588cda4ff0`
+**AUDIT-3 execution HEAD (before commit):** `05f38bf7ccdff9d167f810b0742bb6b765365014` · branch `development`.
+
+## AUDIT-3 — Repo state (execution)
+
+| Field | Value |
+| ----- | ----- |
+| HEAD (before) | `05f38bf7ccdff9d167f810b0742bb6b765365014` |
+| Branch | `development` |
+| AUDIT-2 ancestor | YES |
+| Working tree (before) | foreign governance WIP unstaged (excluded from AUDIT-3 commit) |
+| Foreign WIP | governance qualification/docs (not staged) |
+| Conflicts | none |
+
+**Audited surfaces:** MemoryControlPlane · UserProfile + lifecycle · entity temporal · procedural · long-horizon · SessionTurnIndex (reference) · episodic (readiness only) · task memory · organization memory · conversational legacy · governance · identity propagation · supersession · reconciliation · projection lifecycle · observability · retry/idempotency · concurrency · partial failure.
+
+## AUDIT-3 — Identity architecture
+
+- **Spine:** `RequestIdentity` from `intergrax.contracts.agent_run`; recall uses `verified_request_identity_for_memory_recall` (`memory_context_invocation.py`, tools LTM, consolidation → `plane.remember/recall/forget/reconcile`).
+- **Synthetic identity in memory core:** `RequestIdentity(` occurrences under `intergrax/memory/**` = **0** (guard: `test_memory_core_forbids_synthetic_request_identity_construction`).
+- **Propagation proofs:** MEM-ENT-15-R identity E2E · MEM-ENT-15-R2 trusted identity unit · MEM-XINT-3 runtime recall plane · session consolidation integration · LTM tool fail-closed (`test_ltm_trusted_identity`).
+
+## AUDIT-3 — Hard invariants
+
+| Invariant | Status |
+| --------- | ------ |
+| identity integrity | **PASS** |
+| scope integrity | **PASS** |
+| governance order (validate → govern → canonical → projection) | **PASS** |
+| canonical authority | **PASS** |
+| projection isolation (projection ≠ truth) | **PASS** |
+| revision integrity | **PASS** (entity/procedural/LH ENT-14 concurrency; user profile via store contract) |
+| lineage integrity | **PASS** (ENT-15 core lifecycle supersession) |
+| reconciliation scope | **PASS** |
+
+**P0:** NONE
+**P1 (AUDIT-3 scope):** NONE
+
+**P2/P3 deferred:** episodic enterprise completeness (AUDIT-1 P1 placeholder) · STI real-vendor E2E (AUDIT-5) · ambiguous vendor timeout without idempotency key (documented ENT-15 ambiguous commit + reconcile path) · org-not-on-plane by design.
+
+## AUDIT-3 — Security matrix (summary)
+
+| Surface | Identity | Tenant | User | Governance | Attack tests | Verdict |
+| ------- | -------- | ------ | ---- | ---------- | ------------ | ------- |
+| MemoryControlPlane | YES | YES | YES | YES | cross-tenant/user scope ENT-3 · ENT-15 | **SECURITY/LIFECYCLE CERTIFIED** |
+| UserProfile / lifecycle | YES | YES | YES | YES | lifecycle + reconcile ENT-2/14 | **CERTIFIED** |
+| Entity temporal | YES | YES | YES | YES | ENT-10B deny · ENT-14 isolation | **CERTIFIED** |
+| Procedural | YES | YES | YES | YES | ENT-8/10B | **CERTIFIED** |
+| Long-horizon | YES | YES | YES | YES | ENT-9 source authority | **CERTIFIED** |
+| SessionTurnIndex | YES | YES | N/A session | host | tenant scope unit | **READY BUT NOT FULLY PROVEN** (vendor E2E = AUDIT-5) |
+| Episodic | partial | YES | YES | partial | placeholder | **GAP** (known AUDIT-1) |
+| Task memory | YES | YES | task scope | host flag | ENT-1R2 · runtime unit | **CERTIFIED** (parallel domain) |
+| Organization | YES | YES | org | manager | in-mem store unit | **CERTIFIED** (parallel domain) |
+| Conversational legacy | session | YES | session | n/a | cross-tenant in-mem | **LEGACY** safe isolation |
+| CE recall / tools LTM | trusted only | YES | YES | recall filter | MEM-XINT-3 fail-closed | **CERTIFIED** |
+
+## AUDIT-3 — Lifecycle matrix (summary)
+
+| Surface | Create | Update | Delete | Supersede | Revision | Reconcile | Verdict |
+| ------- | ------ | ------ | ------ | --------- | -------- | --------- | ------- |
+| Control plane USER | remember | remember/supersede | forget | supersede | profile entries | reconcile | **CERTIFIED** |
+| Projections | upsert | upsert | remove | sync | n/a | repair | **CERTIFIED** |
+| Entity temporal | index | revision CAS | delete | lineage | monotonic | service reconcile | **CERTIFIED** |
+| Procedural | remember | version | deactivate | supersede | monotonic | N/A | **CERTIFIED** |
+| Long-horizon | persist | compact | delete | tree | monotonic | rebuild | **CERTIFIED** |
+| STI | upsert | upsert | delete | n/a | n/a | host | **READY BUT NOT FULLY PROVEN** |
+
+## AUDIT-3 — Resilience matrix (summary)
+
+| Surface | Primary failure | Partial projection | Retry | Idempotency | Recovery | Verdict |
+| ------- | --------------- | ------------------ | ----- | ----------- | -------- | ------- |
+| USER plane | no false success ENT-15 | PARTIAL + diagnostic ENT-15/14 | classified ENT-14 | reconcile×2 ENT-14 · forget retry NOT_FOUND AUDIT-3 | reconcile repairs ENT-15 | **CERTIFIED** |
+| SQLite profile | reopen isolation ENT-14 | coordinator partial ENT-2 | ENT-14 | store-level | reconcile | **CERTIFIED** |
+| Entity/proc/LH in-mem | fail before write | N/A single store | ENT-14 | revision reject stale | deterministic | **CERTIFIED** |
+
+## AUDIT-3 — Concurrency matrix (mutable reference stores)
+
+| Store | Thread-safe | Async-safe | Process-safe | Lock/TX/CAS | Verdict |
+| ----- | ----------- | ---------- | ------------ | ----------- | ------- |
+| InMemoryUserProfileStore | caller-serialized | yes (async API) | no | none | **explicit reference** |
+| SQLite user profile | DB lock | executor-bound | file lock | TX | **CERTIFIED** |
+| InMemoryEntityTemporal | ENT-14 barrier tests | sync | no | revision compare | **CERTIFIED** |
+| InMemoryProcedural | ENT-14 | sync | no | revision | **CERTIFIED** |
+| InMemoryLongHorizon | ENT-14 | sync | no | revision | **CERTIFIED** |
+| InMemoryTaskMemoryStore | unit isolation | async | no | REPLACE policy | **CERTIFIED** |
+| InMemorySessionTurnIndex | tenant scope tests | async | no | upsert | **caller-serialized** |
+
+## AUDIT-3 — Security attack matrix
+
+| Attack | Expected | Result |
+| ------ | -------- | ------ |
+| tenant mismatch | DENY | **PASS** (`test_cross_tenant_scope_rejected`, ENT-15 isolation) |
+| user mismatch | DENY | **PASS** (`test_cross_user_scope_rejected`) |
+| forged scope | DENY | **PASS** scope ref vs identity |
+| projection writes canonical | impossible | **PASS** architecture |
+| governance deny then retry | still deny | **PASS** ENT-15 governance |
+| stale revision | conflict/reject | **PASS** ENT-14 entity/proc/LH |
+| supersede foreign entry | DENY | **PASS** scope + governance |
+| reconcile foreign scope | DENY | **PASS** LTM reconcile tenant test |
+| deleted memory recall | absent | **PASS** forget lifecycle ENT-3 |
+| malformed lineage | reject | **PASS** ENT-15 core lifecycle |
+
+## AUDIT-3 — Required proofs (test mapping)
+
+| Requirement | Evidence |
+| ----------- | -------- |
+| governance before mutation | `default_memory_control_plane._enforce_governance` before `_remember_user`; ENT-10/10B |
+| governance denial unchanged stores | `test_governance_deny_zero_canonical_and_projection_writes` |
+| governance exception fail-closed | `test_fail_closed_on_policy_exception` (ENT-10) |
+| primary OK + projection fail | `test_partial_projection_failure_then_reconcile_repairs_recall` |
+| reconcile idempotent | `test_reconcile_idempotent_second_pass_consistent` (ENT-14/2) |
+| concurrent canonical write | ENT-14 barrier writers |
+| STI derived ≠ canonical loss | architecture + host session store separate (AUDIT-1 M-067) |
+
+## AUDIT-3 — Test doubles (contract-based)
+
+`RecordingMemoryProjection` · `RecoveryProjection` (`resilience/recovery_projection.py`) · `FailAfterCommitOnceUserProfileStore` · `MemoryControlPlaneTestStub` · `RecordingRecallPlane` · interleaving/overlap barrier stores (ENT-14) · `_deny_governance` fixture.
+
+## AUDIT-3 — Test execution
+
+| Suite | Result |
+| ----- | ------ |
+| Targeted AUDIT-3 (ENT-3/10/14/15 e2e security) | **76 passed** |
+| `tests/unit/memory/**` + `tests/integration/memory/**` | **612 passed** (3 deprecation warnings) |
+| Runtime/tools memory related | **55 passed** after UAEP LTM flag fix (2 fixes: task-memory UAEP tests unrelated to plane) |
+| MEM-XINT-6 CE assembly | **unchanged PRE_EXISTING_FAILURE set** per AUDIT-2-R2 (not AUDIT-3 regression) |
+
+**New regressions:** NONE (UAEP integration tests updated for fail-closed LTM recall when plane absent — aligns with MEM-XINT-3).
+
+## AUDIT-3 — Changes made
+
+| File | Purpose |
+| ---- | ------- |
+| `tests/unit/memory/test_mem_audit3_security_lifecycle_certification.py` | AUDIT-3 guards + forget retry semantics |
+| `tests/integration/runtime/test_uaep_memory_view.py` | Disable LTM on task-memory UAEP harness (plane not configured) |
+
+## AUDIT-3 — Certification verdict per surface
+
+See security/lifecycle matrices above. **Episodic** remains **GAP** (placeholder). **STI** **READY BUT NOT FULLY PROVEN** until AUDIT-5.
+
+## AUDIT-3 — Final verdict
+
+**PASS — MEM-FINAL-AUDIT-3 SECURITY/LIFECYCLE/RESILIENCE CERTIFIED** (pending independent GitHub SHA verification before AUDIT-4).
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-4 AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-3 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-4.

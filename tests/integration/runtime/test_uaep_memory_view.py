@@ -52,6 +52,7 @@ class _MemoryUaepAgent(Agent):
             enable_rag=False,
             production_mode=False,
             tenant_id=request.tenant_id,
+            enable_user_longterm_memory=False,
         )
         return RuntimeContext.build(
             config=config,
