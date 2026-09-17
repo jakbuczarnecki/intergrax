@@ -65,3 +65,89 @@ INSPECT_01_B_Q_CATALOG: tuple[Inspect01BQEvidence, ...] = (
     Inspect01BQEvidence("B-Q19", "INSPECT-01-A regression", (_nid("test_inspect_01b_qualification_batch.py", "test_b_q19_inspect_01_a_regression_paths"),)),
     Inspect01BQEvidence("B-Q20", "Frozen TR/GV/SESSION regression", (_nid("test_inspect_01b_qualification_batch.py", "test_b_q20_frozen_subsystem_regression_paths"),)),
 )
+
+
+@dataclass(frozen=True, slots=True)
+class Inspect01C1QEvidence:
+    q_id: str
+    title: str
+    pytest_node_ids: tuple[str, ...]
+
+
+INSPECT_01_C1_Q_CATALOG: tuple[Inspect01C1QEvidence, ...] = (
+    Inspect01C1QEvidence(
+        "C1-Q1",
+        "Tenant filtered by Governance read port",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q1_tenant_filtered_by_governance_read_port"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q2",
+        "Cross-tenant same ExecutionId fail closed",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q2_cross_tenant_same_execution_id_fail_closed"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q3",
+        "TaskId mismatch SOURCE_INTEGRITY",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q3_task_id_mismatch_source_integrity"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q4",
+        "RunId mismatch SOURCE_INTEGRITY",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q4_run_id_mismatch_source_integrity"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q5",
+        "AttemptId mismatch SOURCE_INTEGRITY",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q5_attempt_id_mismatch_source_integrity"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q6",
+        "ExecutionId mismatch SOURCE_INTEGRITY",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q6_execution_id_mismatch_source_integrity"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q7",
+        "Valid empty governance source != unavailable",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q7_valid_empty_governance_source_not_unavailable"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q8",
+        "Governance availability failure → PARTIAL",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q8_governance_availability_failure_partial"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q9",
+        "Governance integrity failure ≠ PARTIAL",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q9_governance_integrity_failure_not_partial"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q10",
+        "No policy re-evaluation",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q10_no_policy_re_evaluation"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q11",
+        "No read-side writes",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q11_no_read_side_writes"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q12",
+        "Custom GovernanceAuditReadPort works",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q12_custom_governance_audit_read_port"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q13",
+        "Provider-neutral contracts",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q13_provider_neutral_contracts"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q14",
+        "No opaque ABI/vendor leakage",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q14_no_opaque_abi_vendor_leakage"),),
+    ),
+    Inspect01C1QEvidence(
+        "C1-Q15",
+        "Full INSPECT A+B regression",
+        (_nid("test_inspect_01b_c1_governance_integrity.py", "test_c1_q15_full_inspect_a_b_regression"),),
+    ),
+)

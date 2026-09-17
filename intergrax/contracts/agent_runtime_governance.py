@@ -291,6 +291,7 @@ class GovernanceAuditEvent(BaseModel):
         SCHEMA_GOVERNANCE_AUDIT_EVENT_V1
     )
     event_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
     execution_id: ExecutionId | None = None
     run_id: RunId
     attempt_id: AttemptId
@@ -302,7 +303,7 @@ class GovernanceAuditEvent(BaseModel):
     policy_results: tuple[PolicyEvaluationResult, ...] = ()
     timestamp: datetime
 
-    @field_validator("event_id", "agent_id", "capability", "tool_id")
+    @field_validator("event_id", "tenant_id", "agent_id", "capability", "tool_id")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()

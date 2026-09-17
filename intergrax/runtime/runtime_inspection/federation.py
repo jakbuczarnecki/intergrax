@@ -179,16 +179,34 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
                 optional_completeness.append(tools_section.completeness)
 
         if self._governance_reader is not None:
-            governance_section, governance_failure = _read_optional_section(
-                "governance",
-                self._governance_reader.source_id,
-                lambda: self._governance_reader.read_governance_decisions(scope),
-            )
-            if governance_failure is not None:
-                source_failures.append(governance_failure)
-                optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
-            elif governance_section is not None:
+            try:
+                governance_section = self._governance_reader.read_governance_decisions(scope)
                 optional_completeness.append(governance_section.completeness)
+            except RuntimeInspectionError as exc:
+                if exc.code in (
+                    RuntimeInspectionErrorCode.SOURCE_INTEGRITY,
+                    RuntimeInspectionErrorCode.TENANT_BOUNDARY,
+                ):
+                    raise
+                source_failures.append(
+                    RuntimeInspectionSourceFailure(
+                        source_id=self._governance_reader.source_id,
+                        domain="governance",
+                        code=RuntimeInspectionSourceFailureCode.UNAVAILABLE,
+                        reason_code="governance_reader_failed",
+                    ),
+                )
+                optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
+            except Exception:
+                source_failures.append(
+                    RuntimeInspectionSourceFailure(
+                        source_id=self._governance_reader.source_id,
+                        domain="governance",
+                        code=RuntimeInspectionSourceFailureCode.UNAVAILABLE,
+                        reason_code="governance_reader_failed",
+                    ),
+                )
+                optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
 
         if self._continuation_reader is not None:
             continuation_section, continuation_failure = _read_optional_section(

@@ -11,6 +11,18 @@ from intergrax.contracts.agent_runtime_governance import GovernanceAuditEvent
 from intergrax.contracts.execution_identity import ExecutionId
 
 
+class GovernanceAuditReadError(Exception):
+    """Typed governance audit read failure — no secret-bearing strings as ABI."""
+
+
+class GovernanceAuditReadTenantBoundaryError(GovernanceAuditReadError):
+    """Recorded audit fact tenant does not match the scoped read query."""
+
+
+class GovernanceAuditReadIntegrityError(GovernanceAuditReadError):
+    """Recorded audit fact identity does not match scoped read query."""
+
+
 @runtime_checkable
 class GovernanceAuditReadPort(Protocol):
     """Returns recorded governance decisions for an execution — no re-evaluation."""
@@ -27,4 +39,9 @@ class GovernanceAuditReadPort(Protocol):
     ) -> tuple[GovernanceAuditEvent, ...]: ...
 
 
-__all__ = ["GovernanceAuditReadPort"]
+__all__ = [
+    "GovernanceAuditReadError",
+    "GovernanceAuditReadIntegrityError",
+    "GovernanceAuditReadPort",
+    "GovernanceAuditReadTenantBoundaryError",
+]

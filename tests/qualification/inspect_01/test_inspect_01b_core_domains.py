@@ -175,6 +175,7 @@ def _record_governance(
     sink.record(
         GovernanceAuditEvent(
             event_id=mint_governance_audit_event_id(),
+            tenant_id=_TENANT,
             execution_id=_EXEC,
             run_id=_SCOPE.run_id,
             attempt_id=_SCOPE.attempt_id,

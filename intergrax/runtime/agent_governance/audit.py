@@ -44,6 +44,7 @@ class GovernanceAuditRecorder:
     ) -> GovernanceAuditEvent:
         event = GovernanceAuditEvent(
             event_id=mint_governance_audit_event_id(),
+            tenant_id=request.agent.tenant_id,
             execution_id=request.execution_id,
             run_id=request.run_id,
             attempt_id=request.attempt_id,

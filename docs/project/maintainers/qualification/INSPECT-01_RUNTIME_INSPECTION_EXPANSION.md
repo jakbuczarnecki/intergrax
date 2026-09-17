@@ -73,3 +73,28 @@ Tool/governance/continuation sections expose safe summaries, digests, and eviden
 ### Qualification gates
 
 `tests/qualification/inspect_01/` — **B-Q1..B-Q20** (see `catalog.py` `INSPECT_01_B_Q_CATALOG`). **A-Q1..A-Q15** remain required regressions.
+
+## INSPECT-01-B-C1 — Governance Tenant & Identity Integrity Closure
+
+**Task intake `origin/development`:** `856683946abbaec313892cf61726f33e7c31eeac`  
+**Closeout HEAD:** recorded at INSPECT-01-B-C1 commit on `development`.
+
+### Root cause
+
+`GovernanceAuditReadPort.list_audit_events_for_execution` accepted `tenant_id` but `InMemoryGovernanceAuditReadAdapter` filtered only by `ExecutionId`. `GovernanceAuditInspectionAdapter` validated execution id only, not the full identity spine.
+
+### Tenant provenance
+
+Canonical `tenant_id` on immutable `GovernanceAuditEvent`, recorded at audit write time from `ToolAuthorizationRequest.agent.tenant_id` (`GovernanceAuditRecorder`). No inference from agent naming or global registries.
+
+### Identity validation
+
+Governance facts enter inspection only when `tenant_id`, `task_id`, `run_id`, `attempt_id`, and `execution_id` match `RuntimeInspectionExecutionScope`. Tenant collision on matching `ExecutionId` raises tenant boundary (fail closed). Identity mismatch raises `SOURCE_INTEGRITY`. Federation re-raises governance integrity/tenant errors; availability failures remain `PARTIAL`.
+
+### Legacy semantics
+
+Events without recorded tenant provenance are unsupported for tenant-safe inspection (constructor requires `tenant_id`; no default/unknown placeholders).
+
+### Qualification gates
+
+**C1-Q1..C1-Q15** in `catalog.py` `INSPECT_01_C1_Q_CATALOG` (`test_inspect_01b_c1_governance_integrity.py`).
