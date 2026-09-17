@@ -13,7 +13,7 @@ via an injected policy boundary before provider-bound side effects.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Callable, Mapping, NamedTuple, TypeVar, cast
+from typing import Any, Callable, Mapping, NamedTuple, TypeVar
 
 from intergrax.runtime.execution.decision_governed_side_effect import (
     DecisionGovernedSideEffectInputs,
@@ -172,6 +172,9 @@ class ExternalWorkAdapter:
         *,
         authorization_boundary: MeaningfulSideEffectAuthorizationBoundary | None = None,
         invocation_dispatch: ProviderInvocationDispatchPort | None = None,
+        reliability_aware_invocation_dispatch: (
+            ProviderInvocationReliabilityAwareDispatchPort | None
+        ) = None,
         reliability_evidence_observer: ProviderInvocationReliabilityEvidenceObserver | None = None,
         provider_capabilities: ExternalWorkProviderCapabilities | None = None,
         clock: Callable[[], datetime] | None = None,
@@ -180,6 +183,7 @@ class ExternalWorkAdapter:
         # Host/tests inject; missing boundary fails closed for meaningful actions.
         self._authorization_boundary = authorization_boundary
         self._invocation_dispatch = invocation_dispatch
+        self._reliability_aware_invocation_dispatch = reliability_aware_invocation_dispatch
         self._reliability_evidence_observer = reliability_evidence_observer
         self._provider_capabilities = provider_capabilities
         self._clock = clock
@@ -1044,19 +1048,18 @@ class ExternalWorkAdapter:
                         raise ProviderInvocationPersistenceError(
                             "provider_invocation_required_for_durable_dispatch",
                         )
-                    if reliability_dispatch is None:
-                        return self._invocation_dispatch.dispatch_after_intent_persisted(
+                    if (
+                        reliability_dispatch is not None
+                        and self._reliability_aware_invocation_dispatch is not None
+                    ):
+                        return self._reliability_aware_invocation_dispatch.dispatch_after_intent_persisted(
                             provider_invocation,
                             _dispatch_provider,
+                            reliability_dispatch=reliability_dispatch,
                         )
-                    aware_dispatch = cast(
-                        ProviderInvocationReliabilityAwareDispatchPort,
-                        self._invocation_dispatch,
-                    )
-                    return aware_dispatch.dispatch_after_intent_persisted(
+                    return self._invocation_dispatch.dispatch_after_intent_persisted(
                         provider_invocation,
                         _dispatch_provider,
-                        reliability_dispatch=reliability_dispatch,
                     )
                 return _dispatch_provider()
 

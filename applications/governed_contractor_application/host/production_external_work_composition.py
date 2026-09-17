@@ -159,6 +159,7 @@ def build_governed_external_work_production_runtime(
         integration,
         authorization_boundary=authorization_boundary,
         invocation_dispatch=invocation_dispatch,
+        reliability_aware_invocation_dispatch=invocation_dispatch,
         reliability_evidence_observer=reliability_evidence_observer,
         provider_capabilities=capabilities,
         clock=resolved_clock,
