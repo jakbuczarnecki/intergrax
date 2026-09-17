@@ -179,3 +179,64 @@ INSPECT_01_C_Q_CATALOG: tuple[Inspect01CQEvidence, ...] = (
     Inspect01CQEvidence("C-Q17", "INSPECT-01-A regression", (_nid("test_inspect_01c_extended_domains.py", "test_c_q17_inspect_a_regression_smoke"),)),
     Inspect01CQEvidence("C-Q18", "INSPECT-01-B/C1 regression", (_nid("test_inspect_01c_extended_domains.py", "test_c_q18_inspect_b_c1_regression_smoke"),)),
 )
+
+
+@dataclass(frozen=True, slots=True)
+class Inspect01RQEvidence:
+    q_id: str
+    title: str
+    pytest_node_ids: tuple[str, ...]
+
+
+INSPECT_01_RQ_Q_CATALOG: tuple[Inspect01RQEvidence, ...] = (
+    Inspect01RQEvidence(
+        "RQ-Q1",
+        "Complete federation snapshot",
+        (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q1_complete_federation_snapshot"),),
+    ),
+    Inspect01RQEvidence(
+        "RQ-Q2",
+        "Tenant fail-closed across federation",
+        (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q2_tenant_fail_closed_across_federation"),),
+    ),
+    Inspect01RQEvidence(
+        "RQ-Q3",
+        "Integrity failure not downgraded",
+        (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q3_integrity_failure_not_downgraded"),),
+    ),
+    Inspect01RQEvidence(
+        "RQ-Q4",
+        "Optional unavailable source → PARTIAL",
+        (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q4_optional_unavailable_source_partial"),),
+    ),
+    Inspect01RQEvidence(
+        "RQ-Q5",
+        "Plugin/custom source substitution",
+        (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q5_plugin_custom_source_substitution"),),
+    ),
+    Inspect01RQEvidence(
+        "RQ-Q6",
+        "Read-only E2E",
+        (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q6_read_only_e2e"),),
+    ),
+    Inspect01RQEvidence(
+        "RQ-Q7",
+        "Redaction boundary",
+        (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q7_redaction_boundary"),),
+    ),
+    Inspect01RQEvidence(
+        "RQ-Q8",
+        "Deterministic repeated inspection",
+        (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q8_deterministic_repeated_inspection"),),
+    ),
+    Inspect01RQEvidence(
+        "RQ-Q9",
+        "Truncation/completeness consistency",
+        (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q9_truncation_completeness_consistency"),),
+    ),
+    Inspect01RQEvidence(
+        "RQ-Q10",
+        "Architecture/prohibited-pattern gate",
+        (_nid("test_inspect_01_rq_enterprise_requalification.py", "test_rq_q10_architecture_prohibited_pattern_gate"),),
+    ),
+)

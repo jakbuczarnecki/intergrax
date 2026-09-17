@@ -107,7 +107,11 @@ Events without recorded tenant provenance are unsupported for tenant-safe inspec
 
 **Remediation lineage:** INSPECT-01-C-R1 / INSPECT-01-C-R1A — identity provenance, truncation/completeness, cross-tenant integrity (last audited fix `ebcabb28a38d1d51d55fa2568ba8e2a93490f6ba`).
 
-**Next recommended task:** **INSPECT-01-RQ** — enterprise requalification of the full Runtime Inspection surface (not a scope expansion of C).
+**INSPECT-01-RQ:** **PASSED** — enterprise requalification of the full Runtime Inspection surface (not a scope expansion of C).
+
+**INSPECT-01:** **ENTERPRISE QUALIFIED** (qualified HEAD: RQ closeout commit on `development`).
+
+**Next recommended task:** **HOST-01** — Host/API/MCP/ACP Convergence.
 
 ### Domain read ownership
 
@@ -150,3 +154,17 @@ Sections expose safe summaries, refs, and token counts only — no memory payloa
 
 - External work inspection reflects spine-recorded external **operation** failures, not live vendor polling or full `ExternalWorkSnapshot` lifecycle stores (see BG-01 / integrations).
 - Artifact metadata is derived from spine `artifact_refs` / `artifact_id` registrations, not binary artifact store reads (see ART-01).
+
+## INSPECT-01-RQ — Enterprise Requalification
+
+**Status:** **PASSED**
+
+**Qualified HEAD:** RQ closeout commit `test(inspection): complete enterprise requalification` on `development` (record exact SHA in qualification report / git log).
+
+**Gates:** **RQ-Q1..RQ-Q10** in `catalog.py` `INSPECT_01_RQ_Q_CATALOG` (`test_inspect_01_rq_enterprise_requalification.py`). Prior **A-Q1..A-Q15**, **B-Q1..B-Q20**, **C1-Q1..C1-Q15**, and **C-Q1..C-Q18** (plus **C-R1** post-audit gates) remain required regressions.
+
+**Test surface (qualification module):** **97** gate tests in `tests/qualification/inspect_01/` (`uv run pytest tests/qualification/inspect_01/ -q` at closeout).
+
+**Conscious limits (unchanged from C):** same external-work / artifact / live-polling boundaries; RQ validates federation semantics and enterprise guarantees, not new product scope.
+
+**Next recommended task:** **HOST-01** — Host/API/MCP/ACP Convergence.
