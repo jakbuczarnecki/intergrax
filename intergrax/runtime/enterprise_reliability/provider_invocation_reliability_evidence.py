@@ -114,6 +114,8 @@ def project_intent_persisted(
     tenant_id: str,
     effect_contract_id: str | None,
     recorded_at: datetime,
+    execution_id: str | None = None,
+    attempt_id: str | None = None,
 ) -> ProviderInvocationReliabilityFact:
     return ProviderInvocationReliabilityFact(
         phase=ProviderInvocationReliabilityTracePhase.INTENT_PERSISTED,
@@ -122,6 +124,8 @@ def project_intent_persisted(
             invocation,
             tenant_id=tenant_id,
             effect_contract_id=effect_contract_id,
+            execution_id=execution_id,
+            attempt_id=attempt_id,
         ),
     )
 
@@ -150,6 +154,8 @@ def project_dispatch_attempted(
     effect_contract_id: str | None,
     recorded_at: datetime,
     provider_mutation_attempted: bool,
+    execution_id: str | None = None,
+    attempt_id: str | None = None,
 ) -> ProviderInvocationReliabilityFact:
     return ProviderInvocationReliabilityFact(
         phase=ProviderInvocationReliabilityTracePhase.DISPATCH_ATTEMPTED,
@@ -158,6 +164,8 @@ def project_dispatch_attempted(
             invocation,
             tenant_id=tenant_id,
             effect_contract_id=effect_contract_id,
+            execution_id=execution_id,
+            attempt_id=attempt_id,
         ),
         provider_mutation_attempted=provider_mutation_attempted,
     )
@@ -170,6 +178,7 @@ def project_outcome_persisted(
     tenant_id: str,
     effect_contract_id: str | None,
     recorded_at: datetime,
+    execution_id: str | None = None,
 ) -> ProviderInvocationReliabilityFact:
     phase = ProviderInvocationReliabilityTracePhase.OUTCOME_PERSISTED
     if outcome.status is ProviderInvocationStatus.UNKNOWN:
@@ -181,6 +190,7 @@ def project_outcome_persisted(
             invocation,
             tenant_id=tenant_id,
             effect_contract_id=effect_contract_id,
+            execution_id=execution_id,
         ),
         invocation_status=outcome.status,
     )
@@ -192,11 +202,16 @@ def project_outcome_persistence_failed(
     tenant_id: str,
     recorded_at: datetime,
     detail: str,
+    execution_id: str | None = None,
 ) -> ProviderInvocationReliabilityFact:
     return ProviderInvocationReliabilityFact(
         phase=ProviderInvocationReliabilityTracePhase.OUTCOME_PERSISTENCE_FAILED,
         recorded_at=recorded_at,
-        correlation=correlation_from_invocation(invocation, tenant_id=tenant_id),
+        correlation=correlation_from_invocation(
+            invocation,
+            tenant_id=tenant_id,
+            execution_id=execution_id,
+        ),
         detail=detail[:512],
     )
 
@@ -269,8 +284,8 @@ def project_reconciliation_completed(
             tenant_id=tenant_id,
             effect_contract_id=effect_contract_id,
         ),
-        reconciliation_verdict=result.verdict.value,
-        reconciliation_reason=result.reason.value,
+        reconciliation_verdict=result.verdict,
+        reconciliation_reason=result.reason,
         reconciliation_plugin_id=plugin_id,
         reconciliation_probe_ref=probe_ref,
         evidence_ref=evidence_ref,

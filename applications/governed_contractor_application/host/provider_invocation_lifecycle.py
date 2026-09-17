@@ -9,6 +9,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import TypeVar
 
+from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_emission import (
+    ProviderInvocationReliabilityDispatchContext,
+)
+
 from external_contractor_adapter.external_effect_outcome_projection import (
     ExternalWorkSideEffectObservation,
     project_external_work_side_effect_to_effect_outcome,
@@ -30,6 +34,11 @@ from intergrax.contracts.provider_invocation_store import (
     provider_invocations_equivalent,
 )
 from intergrax.runtime.attestation.canonical_json import stable_payload_hash
+from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_early_lifecycle import (
+    emit_dispatch_attempted,
+    emit_intent_persisted,
+    emit_intent_persistence_failed,
+)
 
 T = TypeVar("T")
 
@@ -139,13 +148,48 @@ class GovernedProviderInvocationDispatchGate:
     """Production dispatch gate: intent durability then provider execute."""
 
     store: ProviderInvocationStore
+    clock: Callable[[], datetime]
 
     def dispatch_after_intent_persisted(
         self,
         invocation: ProviderInvocation,
         execute: Callable[[], T],
+        *,
+        reliability_dispatch: ProviderInvocationReliabilityDispatchContext | None = None,
     ) -> T:
-        persist_provider_invocation_intent(self.store, invocation)
+        recorded_at = self.clock()
+        try:
+            persist_provider_invocation_intent(self.store, invocation)
+        except ProviderInvocationPersistenceError as exc:
+            if reliability_dispatch is not None:
+                emit_intent_persistence_failed(
+                    invocation=invocation,
+                    tenant_id=reliability_dispatch.tenant_id,
+                    recorded_at=recorded_at,
+                    detail=str(exc),
+                    observer=reliability_dispatch.observer,
+                )
+            raise
+        if reliability_dispatch is not None:
+            emit_intent_persisted(
+                invocation=invocation,
+                tenant_id=reliability_dispatch.tenant_id,
+                effect_contract_id=reliability_dispatch.effect_contract_id,
+                execution_id=reliability_dispatch.execution_id,
+                attempt_id=reliability_dispatch.attempt_id,
+                recorded_at=recorded_at,
+                observer=reliability_dispatch.observer,
+            )
+            emit_dispatch_attempted(
+                invocation=invocation,
+                tenant_id=reliability_dispatch.tenant_id,
+                effect_contract_id=reliability_dispatch.effect_contract_id,
+                execution_id=reliability_dispatch.execution_id,
+                attempt_id=reliability_dispatch.attempt_id,
+                recorded_at=recorded_at,
+                provider_mutation_attempted=True,
+                observer=reliability_dispatch.observer,
+            )
         return execute()
 
 

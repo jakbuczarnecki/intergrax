@@ -80,6 +80,7 @@ def authorize_and_execute_decision_bound_side_effect(
     source_agent_id: str = "platform.decision_governed_side_effect",
     source_step_id: str | None = None,
     on_authorization: Callable[[MeaningfulSideEffectAuthorizationResult], None] | None = None,
+    on_execution_authorized: Callable[[], None] | None = None,
 ) -> TResult | MeaningfulSideEffectAuthorizationResult:
     """Validate Decision provenance, then invoke canonical ``authorize_and_execute``."""
     side_effect = enforcement_request.meaningful_side_effect_request
@@ -127,6 +128,7 @@ def authorize_and_execute_decision_bound_side_effect(
         source_agent_id=source_agent_id,
         source_step_id=source_step_id,
         on_authorization=on_authorization,
+        on_execution_authorized=on_execution_authorized,
     )
 
 

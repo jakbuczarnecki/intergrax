@@ -12,6 +12,7 @@ via an injected policy boundary before provider-bound side effects.
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, Callable, Mapping, NamedTuple, TypeVar
 
 from intergrax.runtime.execution.decision_governed_side_effect import (
@@ -54,6 +55,15 @@ from intergrax.contracts.collaborative_work import (
     MembershipResolutionMode,
 )
 from intergrax.contracts.money import MoneyAmount
+from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_emission import (
+    ProviderInvocationReliabilityDispatchContext,
+)
+from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_evidence import (
+    ProviderInvocationReliabilityEvidenceObserver,
+)
+from intergrax.contracts.external_work_provider_capabilities import (
+    ExternalWorkProviderCapabilities,
+)
 from intergrax.contracts.provider_invocation import ProviderInvocation
 from intergrax.contracts.provider_invocation_dispatch import ProviderInvocationDispatchPort
 from intergrax.contracts.provider_invocation_store import ProviderInvocationPersistenceError
@@ -62,9 +72,15 @@ from intergrax.integrations.contracts.external_work import (
     ExternalWorkError,
     ExternalWorkIntegration,
 )
+from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_early_lifecycle import (
+    emit_governance_authorized,
+)
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
     MeaningfulSideEffectAuthorizationResult,
+)
+from external_contractor_adapter.external_effect_contracts import (
+    external_work_effect_contract_for_action,
 )
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -153,11 +169,17 @@ class ExternalWorkAdapter:
         *,
         authorization_boundary: MeaningfulSideEffectAuthorizationBoundary | None = None,
         invocation_dispatch: ProviderInvocationDispatchPort | None = None,
+        reliability_evidence_observer: ProviderInvocationReliabilityEvidenceObserver | None = None,
+        provider_capabilities: ExternalWorkProviderCapabilities | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         self._integration = integration
         # Host/tests inject; missing boundary fails closed for meaningful actions.
         self._authorization_boundary = authorization_boundary
         self._invocation_dispatch = invocation_dispatch
+        self._reliability_evidence_observer = reliability_evidence_observer
+        self._provider_capabilities = provider_capabilities
+        self._clock = clock
 
     @property
     def integration(self) -> ExternalWorkIntegration:
@@ -166,6 +188,54 @@ class ExternalWorkAdapter:
     @property
     def authorization_boundary(self) -> MeaningfulSideEffectAuthorizationBoundary | None:
         return self._authorization_boundary
+
+    def _reliability_effect_contract_id(self, action: str) -> str | None:
+        if self._provider_capabilities is None:
+            return None
+        return external_work_effect_contract_for_action(
+            action,
+            self._provider_capabilities,
+        ).contract_id
+
+    def _reliability_dispatch_context(
+        self,
+        *,
+        tenant_id: str,
+        action: str,
+        execution_id: str,
+        attempt_id: str,
+    ) -> ProviderInvocationReliabilityDispatchContext | None:
+        if self._reliability_evidence_observer is None:
+            return None
+        return ProviderInvocationReliabilityDispatchContext(
+            tenant_id=tenant_id,
+            effect_contract_id=self._reliability_effect_contract_id(action),
+            execution_id=execution_id,
+            attempt_id=attempt_id,
+            observer=self._reliability_evidence_observer,
+        )
+
+    def _emit_governance_authorized_evidence(
+        self,
+        *,
+        invocation: ProviderInvocation,
+        tenant_id: str,
+        action: str,
+        governance_execution_id: str,
+    ) -> None:
+        if self._reliability_evidence_observer is None or self._clock is None:
+            return
+        contract_id = self._reliability_effect_contract_id(action)
+        if contract_id is None:
+            return
+        emit_governance_authorized(
+            invocation=invocation,
+            tenant_id=tenant_id,
+            effect_contract_id=contract_id,
+            governance_execution_id=governance_execution_id,
+            recorded_at=self._clock(),
+            observer=self._reliability_evidence_observer,
+        )
 
     def discover(self) -> ExternalWorkProviderDescriptor:
         return self._integration.discover()
@@ -958,6 +1028,13 @@ class ExternalWorkAdapter:
                 provider_mutation_dispatched = True
                 return execute()
 
+            reliability_dispatch = self._reliability_dispatch_context(
+                tenant_id=resolved_tenant,
+                action=action,
+                execution_id=execution_id,
+                attempt_id=attempt_id,
+            )
+
             def _tracked_execute() -> T:
                 if self._invocation_dispatch is not None:
                     if provider_invocation is None:
@@ -967,6 +1044,7 @@ class ExternalWorkAdapter:
                     return self._invocation_dispatch.dispatch_after_intent_persisted(
                         provider_invocation,
                         _dispatch_provider,
+                        reliability_dispatch=reliability_dispatch,
                     )
                 return _dispatch_provider()
 
@@ -975,6 +1053,16 @@ class ExternalWorkAdapter:
             ) -> None:
                 nonlocal authorized_snapshot
                 authorized_snapshot = authorization
+
+            def _emit_governance_authorized() -> None:
+                if provider_invocation is None:
+                    return
+                self._emit_governance_authorized_evidence(
+                    invocation=provider_invocation,
+                    tenant_id=resolved_tenant,
+                    action=action,
+                    governance_execution_id=execution_id,
+                )
 
             if decision_governance is not None:
                 boundary_result = authorize_and_execute_decision_bound_side_effect(
@@ -989,6 +1077,7 @@ class ExternalWorkAdapter:
                     lifecycle=lifecycle,
                     source_agent_id="external_contractor_adapter",
                     on_authorization=_capture_authorization,
+                    on_execution_authorized=_emit_governance_authorized,
                 )
             else:
                 boundary_result = self._authorization_boundary.authorize_and_execute(
@@ -998,6 +1087,7 @@ class ExternalWorkAdapter:
                     lifecycle=lifecycle,
                     source_agent_id="external_contractor_adapter",
                     on_authorization=_capture_authorization,
+                    on_execution_authorized=_emit_governance_authorized,
                 )
         except ProviderInvocationPersistenceError as exc:
             return ExternalWorkAdapterResult(

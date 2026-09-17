@@ -12,6 +12,10 @@ from typing import Final, Protocol
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.enterprise_reliability.effect_contract import UnknownUncertaintyPosture
+from intergrax.contracts.enterprise_reliability.provider_invocation_reconciliation import (
+    ProviderInvocationReconciliationReason,
+    ProviderInvocationReconciliationVerdict,
+)
 from intergrax.contracts.enterprise_reliability.provider_invocation_recovery import (
     ProviderInvocationRecoveryAction,
     ProviderInvocationRecoveryDispatchState,
@@ -88,8 +92,8 @@ class ProviderInvocationReliabilityFact(BaseModel):
     repeat_eligibility_reason: ExternalEffectRepeatEligibilityReason | None = None
     repeat_policy_id: str | None = Field(default=None, max_length=256)
     unknown_posture: UnknownUncertaintyPosture | None = None
-    reconciliation_verdict: str | None = Field(default=None, max_length=64)
-    reconciliation_reason: str | None = Field(default=None, max_length=64)
+    reconciliation_verdict: ProviderInvocationReconciliationVerdict | None = None
+    reconciliation_reason: ProviderInvocationReconciliationReason | None = None
     reconciliation_plugin_id: str | None = Field(default=None, max_length=256)
     reconciliation_probe_ref: str | None = Field(default=None, max_length=256)
     evidence_ref: str | None = Field(default=None, max_length=512)

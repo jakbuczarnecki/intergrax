@@ -151,6 +151,19 @@ Governance authorization
 → Evidence/Trace projection (not authority)
 ```
 
+**GR-7-A8-R1 wiring matrix** (projection at canonical owner; one emission per phase):
+
+| Phase | Canonical owner | Observer emission point |
+| ----- | --------------- | ----------------------- |
+| `GOVERNANCE_AUTHORIZED` | `MeaningfulSideEffectAuthorizationBoundary.authorize_and_execute` (ALLOW / consumed grant) | `on_execution_authorized` → adapter `emit_governance_authorized` |
+| `INTENT_PERSISTED` | `persist_provider_invocation_intent` via `GovernedProviderInvocationDispatchGate` | After durable `put_invocation` |
+| `INTENT_PERSISTENCE_FAILED` | Same gate | On `ProviderInvocationPersistenceError` before `execute` |
+| `DISPATCH_ATTEMPTED` | Same gate | Immediately before provider `execute` callback |
+| `OUTCOME_PERSISTED` / `UNKNOWN_ADMITTED` | `GovernedExternalWorkOrchestrator._persist_observed_provider_outcome` | After durable `put_outcome` |
+| `OUTCOME_PERSISTENCE_FAILED` | Same orchestrator path | On outcome persist failure |
+| `CRASH_AMBIGUITY_ADMITTED` | Recovery decision (GR-7-A7) | `project_recovery_decision_evidence` only |
+| A5–A7 later phases | Unchanged GR-7-A5/A6/A7 owners | Existing `evidence_observer` on reconcile/recovery |
+
 ---
 
 ## Integration with existing Intergrax architecture

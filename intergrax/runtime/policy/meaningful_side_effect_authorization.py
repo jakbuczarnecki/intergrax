@@ -211,6 +211,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
         source_agent_id: str = "platform.meaningful_side_effect",
         source_step_id: str | None = None,
         on_authorization: Callable[[MeaningfulSideEffectAuthorizationResult], None] | None = None,
+        on_execution_authorized: Callable[[], None] | None = None,
         hitl_continuation: InternalOrchestrationContinuation | None = None,
     ) -> T | MeaningfulSideEffectAuthorizationResult:
         """Fresh enforcement evaluation before ``execute``.
@@ -253,6 +254,8 @@ class MeaningfulSideEffectAuthorizationBoundary:
                     operation_id=operation_id,
                     resource_scope=resource_scope,
                 )
+            if on_execution_authorized is not None:
+                on_execution_authorized()
             return execute()
 
         if action is PolicyAction.REQUIRE_HUMAN:
@@ -273,6 +276,8 @@ class MeaningfulSideEffectAuthorizationBoundary:
                         expected_grant_id=stored_grant.grant_id,
                     )
                     if consumed is not None:
+                        if on_execution_authorized is not None:
+                            on_execution_authorized()
                         return execute()
                 GovernedContinuationGrantCoordinator.clear_obsolete_grant_for_proposal(
                     task,

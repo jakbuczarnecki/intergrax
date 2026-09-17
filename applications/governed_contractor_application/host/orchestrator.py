@@ -36,7 +36,13 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_CANCEL_EXTERNAL_WORK,
     ACTION_CREATE_EXTERNAL_WORK,
 )
+from external_contractor_adapter.external_effect_contracts import (
+    external_work_effect_contract_for_action,
+)
 from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOutcome
+from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_evidence import (
+    ProviderInvocationReliabilityEvidenceObserver,
+)
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
 from intergrax.contracts.execution_evidence.boundary_event import ExecutionBoundaryEvent
 from intergrax.contracts.execution_evidence.receipt import ProofReceipt
@@ -76,6 +82,10 @@ from governed_contractor_application.host.provider_invocation_lifecycle import (
     build_provider_invocation_outcome,
     classify_provider_invocation_status,
     persist_provider_invocation_outcome,
+)
+from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_early_lifecycle import (
+    emit_outcome_persisted,
+    emit_outcome_persistence_failed,
 )
 from governed_contractor_application.host.lifecycle_states import (
     GovernedExternalWorkHostState,
@@ -155,6 +165,7 @@ class GovernedExternalWorkOrchestrator:
         clock: Callable[[], datetime] | None = None,
         actor: str = "governed_contractor_host",
         reliability_bridge: GovernedExternalWorkEnterpriseReliabilityBridge | None = None,
+        reliability_evidence_observer: ProviderInvocationReliabilityEvidenceObserver | None = None,
     ) -> None:
         self._adapter = adapter
         self._policy = policy
@@ -169,6 +180,7 @@ class GovernedExternalWorkOrchestrator:
         self._clock = clock or (lambda: datetime.now(timezone.utc))
         self._actor = actor
         self._reliability_bridge = reliability_bridge
+        self._reliability_evidence_observer = reliability_evidence_observer
         self._bundle_store.put_bundle(bundle)
 
     @property
@@ -602,6 +614,7 @@ class GovernedExternalWorkOrchestrator:
             execution_id=execution_id,
             action=action,
             completed_at=completed,
+            tenant_id=tenant_id,
         )
         if isinstance(persist_result, OrchestratorStepResult):
             return persist_result
@@ -853,6 +866,7 @@ class GovernedExternalWorkOrchestrator:
         execution_id: str,
         action: str,
         completed_at: datetime,
+        tenant_id: str | None,
     ) -> OrchestratorStepResult | ProviderInvocationOutcome | None:
         attempted = external_work_provider_mutation_attempted(
             adapter_result,
@@ -872,12 +886,27 @@ class GovernedExternalWorkOrchestrator:
             execution_id=execution_id,
             action=action,
         )
+        resolved_tenant = (tenant_id or "").strip() or None
+        effect_contract_id = external_work_effect_contract_for_action(
+            action,
+            self._capabilities,
+        ).contract_id
+        recorded_at = completed_at
         try:
             persist_provider_invocation_outcome(
                 self._provider_invocation_store,
                 outcome,
             )
-        except ProviderInvocationPersistenceError:
+        except ProviderInvocationPersistenceError as exc:
+            if resolved_tenant is not None:
+                emit_outcome_persistence_failed(
+                    invocation=invocation,
+                    tenant_id=resolved_tenant,
+                    execution_id=execution_id,
+                    recorded_at=recorded_at,
+                    detail=str(exc),
+                    observer=self._reliability_evidence_observer,
+                )
             failed = GovernedExternalWorkHostState.EXECUTION_FAILED
             self._execution_store.put_state(execution_id, failed)
             return OrchestratorStepResult(
@@ -888,6 +917,16 @@ class GovernedExternalWorkOrchestrator:
                 attestation=None,
                 receipt=None,
                 reason="provider_invocation_outcome_persistence_failed",
+            )
+        if resolved_tenant is not None:
+            emit_outcome_persisted(
+                invocation=invocation,
+                outcome=outcome,
+                tenant_id=resolved_tenant,
+                effect_contract_id=effect_contract_id,
+                execution_id=execution_id,
+                recorded_at=recorded_at,
+                observer=self._reliability_evidence_observer,
             )
         return outcome
 

@@ -153,7 +153,10 @@ def _orch(
         workspace_id="workspace-pc",
         principal_id="pc-user",
         active_task_id=_PC_TASK,
-        invocation_dispatch=GovernedProviderInvocationDispatchGate(store=invocation_store),
+        invocation_dispatch=GovernedProviderInvocationDispatchGate(
+            store=invocation_store,
+            clock=lambda: _T0,
+        ),
     )
     return (
         GovernedExternalWorkOrchestrator(
