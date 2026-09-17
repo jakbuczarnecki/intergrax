@@ -94,8 +94,13 @@ SCHED_01_Q_CATALOG: tuple[Sched01QEvidence, ...] = (
     ),
     Sched01QEvidence(
         "SCHED-Q13",
-        "Scheduled resume wired through host execution port (no scheduler-local engine)",
-        (_nid("test_sched_01_gates.py", "test_sched_q13_production_wiring_uses_host_task_resume_executor"),),
+        "Production scheduler wiring behaviorally resumes through HostTaskExecutionPort",
+        (
+            _nid(
+                "test_sched_01_gates.py",
+                "test_sched_q13_production_wiring_resumes_through_host_task_execution_port",
+            ),
+        ),
     ),
     Sched01QEvidence(
         "SCHED-Q14",

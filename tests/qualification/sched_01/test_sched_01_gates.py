@@ -39,6 +39,7 @@ from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResumeStatus,
 )
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
+from intergrax.runtime.long_running.wiring import wire_long_running_scheduler_with_host_execution
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
@@ -408,13 +409,44 @@ async def test_sched_q12_cancelled_pending_not_dispatched(tmp_path) -> None:
     port.execute.assert_not_awaited()
 
 
-def test_sched_q13_production_wiring_uses_host_task_resume_executor() -> None:
-    wiring_source = (
-        _REPO_ROOT / "intergrax" / "runtime" / "long_running" / "wiring.py"
-    ).read_text(encoding="utf-8")
-    assert "HostTaskResumeExecutor" in wiring_source
-    assert "wire_long_running_scheduler_with_host_execution" in wiring_source
-    assert "UnifiedTaskRunner" not in wiring_source
+@pytest.mark.asyncio
+async def test_sched_q13_production_wiring_resumes_through_host_task_execution_port(
+    tmp_path,
+) -> None:
+    store = SQLiteTaskCheckpointStore(db_path=tmp_path / "q13_wiring.db")
+    port = AsyncMock(spec=HostTaskExecutionPort)
+    port.execute = AsyncMock(return_value=_ok_result())
+    wiring = wire_long_running_scheduler_with_host_execution(
+        checkpoint_store=store,
+        host_execution=port,
+        poll_interval_seconds=1.0,
+    )
+    assert wiring is not None
+    scheduler = wiring.scheduler
+    checkpoint = _paused_checkpoint()
+    store.save(checkpoint)
+    due_at = datetime.now(timezone.utc) - timedelta(seconds=30)
+    store.schedule(
+        ScheduledResume(
+            task_id=checkpoint.task_id,
+            tenant_id=checkpoint.tenant_id,
+            resume_token=checkpoint.resume_token,
+            run_at_utc=due_at.isoformat(),
+        ),
+    )
+    assert await scheduler.tick(now=datetime.now(timezone.utc)) == 1
+    port.execute.assert_awaited_once()
+    kwargs = port.execute.await_args.kwargs
+    resumed = kwargs["resume_checkpoint"]
+    assert resumed is not None
+    assert resumed.task_id == checkpoint.task_id
+    assert resumed.resume_token == checkpoint.resume_token
+    assert resumed.runtime is not None
+    assert checkpoint.runtime is not None
+    assert kwargs["run_id"] == checkpoint.runtime.run_id
+    assert kwargs["attempt_id"] == checkpoint.runtime.attempt_id
+    assert resumed.runtime.run_id == checkpoint.runtime.run_id
+    assert resumed.runtime.attempt_id == checkpoint.runtime.attempt_id
 
 
 def test_sched_q14_scheduling_core_import_layer_gate() -> None:

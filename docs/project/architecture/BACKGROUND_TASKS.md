@@ -117,8 +117,11 @@ frozen Execution Engine
 | Misfire (overdue one-shot) | **Fire once** on next poll when status is PENDING (no unbounded catch-up storm) |
 | Timezone | Persist **UTC instant** (`run_at_utc`); calendar timezone/DST — **NOT APPLICABLE** until calendar triggers exist |
 | Occurrence identity | `schedule_id` per `ScheduledResume` row (one logical occurrence per one-shot entry) |
-| Multi-node | **MULTI-NODE QUALIFIED** when workers share one `ScheduledResumePersistence` (atomic `claim_due` + fence) |
+| Multi-instance coordination | **QUALIFIED** for shared `ScheduledResumePersistence` implementations that provide atomic `claim_due` + fencing (SCHED-Q5/Q6; proof uses two in-process scheduler instances over one SQLite store) |
+| Distributed multi-node deployment | **Provider-dependent**; not universally qualified by SCHED-01 (no independent multi-process / arbitrary distributed backend proof in this qualification slice) |
 | Retry ownership | Scheduler poll/claim retry **≠** queue transport retry **≠** execution attempt retry (UEA / AttemptLifecycleService) |
+
+**Multi-instance vs distributed:** one process may host multiple scheduler instances; SCHED-01 proves safe coordination when they share persistence with contract-grade claim/fence semantics. Universal multi-node correctness for every production store provider is **not** claimed here — custom `ScheduledResumePersistence` plugins (SCHED-Q10) prove replaceability, not distributed concurrency unless the implementation documents atomic claim + fence behavior.
 
 Production harness wiring: `wire_harness_host_long_running_scheduler` → `wire_long_running_scheduler_with_host_execution` (see `intergrax/runtime/long_running/wiring.py`). Qualification: `tests/qualification/sched_01/`.
 
