@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4 implementation — FORMALLY CLOSED** (MP-4R0…MP-4R8 **CLOSED**; ADR-MP-009) — **MP-4 documentation certification — MP-4D1–D7 CLOSED · MP-4D8 NEXT**
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ownership FROZEN / ACCEPTED** — **MP-4 implementation — FORMALLY CLOSED** (MP-4R0…MP-4R8 **CLOSED**; ADR-MP-009) — **MP-4 documentation certification — CLOSED** (MP-4D1–D8)
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4D8** — Final enterprise documentation audit (**NEXT**; documentation only)
-**Previous:** **MP-4D6** — Enterprise boundary and pluginability certification — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D6)
+**Current active task:** *(none — MP-4 documentation certification closed)*  
+**Previous:** **MP-4D8** — Final enterprise documentation audit — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § Final Enterprise Documentation Audit)
 
 ---
 
@@ -244,7 +244,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | **MP-4D5** | **CLOSED** | Provider/persistence qualification boundaries |
 | **MP-4D6** | **CLOSED** | Enterprise boundary & pluginability certification |
 | **MP-4D7** | **CLOSED** | Documentation regression gates |
-| **MP-4D8** | **NEXT** | Final enterprise documentation audit |
+| **MP-4D8** | **CLOSED** | Final enterprise documentation audit |
 
 ### Legacy MP-4 (historical)
 

@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — CLOSED** · **MP-4D6 — CLOSED** · **MP-4D7 — CLOSED** · **MP-4D8 — NEXT** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — CLOSED** · **MP-4D6 — CLOSED** · **MP-4D7 — CLOSED** · **MP-4D8 — CLOSED** · **MP-4 documentation certification — CLOSED** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -165,7 +165,7 @@ Use, modification, or distribution without written permission is prohibited.
 | **MP-4D5** | **CLOSED** | Provider / persistence qualification matrix |
 | **MP-4D6** | **CLOSED** | Enterprise boundary & pluginability certification (architecture § MP-4D6) |
 | **MP-4D7** | **CLOSED** | Documentation regression gates (architecture § MP-4D7) |
-| **MP-4D8** | **NEXT** | Final enterprise documentation audit |
+| **MP-4D8** | **CLOSED** | Final enterprise documentation audit (architecture § Final Enterprise Documentation Audit) |
 
 **Architecture SSOT:** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) — this plan tracks execution/status only.
 
@@ -199,6 +199,6 @@ Historical implementation notes for MP-4B–D remain in git history and contract
 
 ## Next step
 
-**MP-4D5** — Provider & Persistence Qualification Matrix — **CLOSED** (SSOT: architecture § Provider & Persistence Qualification Matrix). **MP-4D6** — Enterprise Boundary & Pluginability Certification — **CLOSED** (SSOT: architecture § MP-4D6). **MP-4D7** — Documentation Regression Gates — **CLOSED** (SSOT: architecture § MP-4D7). **MP-4D8 — NEXT.** **No MP-4R implementation work.**
+**MP-4 documentation certification — CLOSED** (MP-4D1–D8; SSOT: architecture § Final Enterprise Documentation Audit). **No MP-4R implementation work.** **No active MP-4D stage.**
 
 ---

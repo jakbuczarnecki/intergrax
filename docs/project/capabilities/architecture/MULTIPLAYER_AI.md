@@ -30,7 +30,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 **B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented and closed in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence, production PostgreSQL qualification). Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
 
-**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4 implementation — FORMALLY CLOSED** (**MP-4R0…MP-4R8 CLOSED**); **MP-4 documentation certification — MP-4D1–D7 CLOSED · MP-4D8 NEXT** — canonical detail in [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap.
+**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4 implementation — FORMALLY CLOSED** (**MP-4R0…MP-4R8 CLOSED**); **MP-4 documentation certification — CLOSED** (MP-4D1–D8) — canonical detail in [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap.
 
 **D. Proof boundary.** Runtime / public **E2E proof for Multiplayer AI as a product capability is not established**. Architecture and partial MP-1 implementation do not imply end-to-end collaborative product readiness.
 
@@ -103,7 +103,7 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-4D8** — Final enterprise documentation audit (**NEXT**)
+**Current active task:** *(none — MP-4 documentation certification closed)*
 **Previous:** **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
@@ -458,7 +458,7 @@ not replace existing Evidence.
 
 ### MP-4R — Canonical core integration (replaces pre-rebase MP-4 program)
 
-**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** — ADR-MP-009 **Accepted**; MP-4B/MP-4C/MP-4D **RETIRED**; Evidence adoption = `FunctionalEvidencePersistence` + projection (operation outcome); association fact **not** in frozen Evidence Plane v2 (**non-blocking** limitation). **MP-4D1–D7 CLOSED · MP-4D8 NEXT**.
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** — ADR-MP-009 **Accepted**; MP-4B/MP-4C/MP-4D **RETIRED**; Evidence adoption = `FunctionalEvidencePersistence` + projection (operation outcome); association fact **not** in frozen Evidence Plane v2 (**non-blocking** limitation). **MP-4D1–D8 CLOSED** · **MP-4 documentation certification — CLOSED**.
 
 **Intent:** Associate collaborative work (WorkItem, WorkArtifact) with **canonical** Decision, Governance/HITL, Execution continuation (`ExecutionContinuationPort`), Evidence, and Diagnostics — without owning Decision lifecycle, Approval/HITL authority, execution state, evidence facts, or diagnostic interpretation.
 
@@ -472,7 +472,7 @@ not replace existing Evidence.
 
 **Legacy removed (MP-4R2):** `intergrax/contracts/approval.py`, `intergrax/approval/` — human judgment via canonical `decision_human_review` + Governance/HITL. MP-4B module **removed** (MP-4R1); `intergrax/contracts/decision/` = Integration SPI only.
 
-**Next active task:** **MP-4D8** — Final enterprise documentation audit (**NEXT**). **No MP-4R implementation.**
+**Next active task:** *(none for MP-4 documentation certification — CLOSED)*. **No MP-4R implementation.**
 
 **R7 scope (summary):** architectural/cross-domain E2E on canonical production contracts; binding PostgreSQL separately qualified in **MP-4R4**. Detail: architecture hub § R7 provider scope.
 
@@ -594,7 +594,7 @@ Each decision is required before the relevant implementation:
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 | **ADR-MP-008** | Workspace platformization / LKW migration |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 ownership **FROZEN**; MP-3 runtime **IN PROGRESS**. **ADR-MP-009 Accepted** — **MP-4R0…MP-4R8 CLOSED**; **MP-4 FORMALLY CLOSED**; **MP-4D** documentation certification active. ADR-MP-006…008 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 ownership **FROZEN**; MP-3 runtime **IN PROGRESS**. **ADR-MP-009 Accepted** — **MP-4R0…MP-4R8 CLOSED**; **MP-4 FORMALLY CLOSED**; **MP-4D** documentation certification **CLOSED** (MP-4D1–D8). ADR-MP-006…008 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 

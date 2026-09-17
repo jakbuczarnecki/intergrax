@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4)
 
-**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — CLOSED** · **MP-4D6 — CLOSED** · **MP-4D7 — CLOSED** · **MP-4D8 — NEXT**
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — CLOSED** · **MP-4D6 — CLOSED** · **MP-4D7 — CLOSED** · **MP-4D8 — CLOSED** · **MP-4 documentation certification — CLOSED**
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (execution/status only):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -74,7 +74,7 @@ Implementation: ENTERPRISE
 Architecture: ENTERPRISE
 Authority / Security: ENTERPRISE
 E2E qualification: CLOSED (architectural / cross-domain — see § E2E qualification)
-Documentation certification: MP-4D1–D8 (D2 consolidates this entry point)
+Documentation certification: CLOSED (MP-4D1–D8; D2 consolidates this entry point)
 ```
 
 **MP-4D1–D8** are **documentation and proof-closure stages only**; they **do not reopen** MP-4 implementation.
@@ -915,7 +915,7 @@ Static review of MP-4 seams found no production domain imports of PostgreSQL bin
 | **PARTIAL** | 0 |
 | **NOT CERTIFIED** | 0 |
 
-**D6 close criteria:** all critical seams **CERTIFIED**; gaps are proof-depth / qualification scope only — **MP-4D6 — CLOSED**, **MP-4D7 — NEXT**.
+**D6 close criteria (historical):** all critical seams **CERTIFIED**; gaps are proof-depth / qualification scope only — **MP-4D6 — CLOSED** at D6 close (successor stage MP-4D7).
 
 ---
 
@@ -948,7 +948,108 @@ Lightweight regression gates guard the **documentation state** of MP-4 against f
 - Re-qualifying providers or re-running E2E matrices
 - Creating a second documentation SSOT or validation framework
 
-**D7 close criteria:** critical documentation invariants above are automated with semantic (not cosmetic) checks — **MP-4D7 — CLOSED**, **MP-4D8 — NEXT**.
+**D7 close criteria (historical):** critical documentation invariants above are automated with semantic (not cosmetic) checks — **MP-4D7 — CLOSED** at D7 close (successor stage MP-4D8). Post-D8 final status is guarded by § Final Enterprise Documentation Audit and D7 regression gates.
+
+**Documentation gates ≠ runtime qualification:** D7 gates do not substitute for MP-4R0…R8 architecture gates or provider/E2E qualification suites.
+
+---
+
+## Final Enterprise Documentation Audit (MP-4D8)
+
+**Stage:** **CLOSED** (documentation audit and status synchronization only — **no** production code, contract, provider, composition, or schema changes).
+
+### Audit scope
+
+Final consistency review across MP-4D1–D7 deliverables in this SSOT and coordinated status docs (`maintainers/plan/DECISION_APPROVAL_GOVERNANCE.md`, `capabilities/MULTIPLAYER_AI` architecture/plan). Adjacent domain SSOTs consulted only for ownership cross-check (`DECISION_SYSTEM`, `GOVERNED_EXECUTION`, `UNIFIED_EXECUTION_ARCHITECTURE`, `COLLABORATIVE_WORK`, `OBSERVABILITY`, `DIAGNOSTICS`, ADR-MP-009). No repo-wide documentation scan; no new mechanisms.
+
+### Final result
+
+```text
+ENTERPRISE DOCUMENTATION CERTIFIED
+```
+
+No blocking contradiction, ownership collision, authority ambiguity, qualification overclaim, provider scope inflation, pluginability false claim, or status drift found at D8 close. Regression gates (MP-4D7) updated to guard post-D8 final status.
+
+### Final certification summary
+
+| Area | Result |
+| ---- | ------ |
+| Ownership | CERTIFIED |
+| Authority boundaries | CERTIFIED |
+| E2E proof model | CERTIFIED |
+| Provider qualification model | CERTIFIED |
+| Contract-first / pluginability | CERTIFIED |
+| Documentation regression protection | CERTIFIED |
+| Status consistency | CERTIFIED |
+
+### Ownership certification
+
+| Concern | Canonical owner |
+| ------- | ----------------- |
+| Decision lifecycle | Decision System |
+| Human Review | Human Review / HITL (judgment evidence) |
+| Governance | Governance (WHETHER) |
+| Execution authorization | Governance-derived `DecisionExecutionAuthorization` |
+| Execution continuation | Execution Engine (`ExecutionContinuationPort`, `ExecutionContinuationStateStore`) |
+| Collaborative binding | Collaborative Work (association truth only) |
+| Evidence facts | Evidence Plane |
+| Reconstruction | Evidence Plane / observability reconstruction |
+| Diagnostics interpretation | Diagnostics |
+| Nexus orchestration | Execution Engine (**internal**; not MP-4 public boundary) |
+
+Multiplayer does **not** own Decision lifecycle, Governance authority, continuation lifecycle/store, Evidence truth, or Diagnostics authority. No second owner for the same semantics.
+
+### Authority certification
+
+- **Human APPROVED ≠ Governance ALLOW**; **post-human Governance re-evaluation** is required (Diagrams 2–3, MP-4D4 rows B, D6 certification).
+- **Governance owns WHETHER** (`ALLOW`, `DENY`, `REQUIRE_HUMAN`); Human Review, Diagnostics, and Execution do **not** mint authorization.
+- **`DecisionExecutionAuthorization`:** governance-derived, validated before execution/resume, consumed by Execution — not owned or minted by Multiplayer, Human Review, or Diagnostics.
+- **Evidence Plane** owns factual truth; **reconstruction** = factual rebuild; **Diagnostics** = interpretation only (cannot authorize or resume execution).
+- **Nexus:** internal to Execution; not an MP-4 public integration surface.
+
+### Proof certification (MP-4D4)
+
+- **Invariant matrix rows:** 20 (Primary Qualification summary **TOTAL** 20).
+- Each row: one **Primary Qualification**; optional **Supporting Proof Types** — no mixed primary labels.
+- **R7 boundary:** architectural / cross-domain E2E on **canonical production contracts** with **test composition** — **not** full production provider deployment in one run.
+- **PostgreSQL proof boundary:** `PostgreSQLCollaborativeDecisionBindingRepository` under `CollaborativeDecisionBindingRepository` only — does **not** prove full MP-4 production E2E.
+
+**Runtime/provider qualification vs architectural boundary certification:** D4/D5 may mark `ExecutionReconstructionReader` as **NOT QUALIFIED** on the MP-4 provider/runtime surface while D6 marks the seam **CERTIFIED** for contract-first boundary and external replacement — these are complementary, not contradictory.
+
+### Provider qualification certification (MP-4D5)
+
+- **Implementation rows:** 16 (**TOTAL** in Primary qualification summary).
+- **PRODUCTION QUALIFIED:** 1 — `PostgreSQLCollaborativeDecisionBindingRepository` only.
+- One implementation = one row = one durability class = one qualification level (no hybrid provider rows).
+- `ExecutionContinuationDurableBacking`: **reference / qualification-only**, not a production DB adapter.
+- `InMemoryFunctionalEvidencePersistence` vs `DocumentStoreFunctionalEvidencePersistence`: separated; Document Store is **CONTRACT QUALIFIED**, not MP-4 full production E2E qualified.
+
+### Pluginability certification (MP-4D6)
+
+Critical seams **CERTIFIED** with external replacement via **public contract + composition wiring** (provider is not semantic authority): `CollaborativeDecisionBindingRepository`, `DecisionHumanReviewPort`, `DecisionAuthorizationEvaluator`, `ExecutionContinuationPort`, `ExecutionContinuationStateStore`, `FunctionalEvidencePersistence`, `ExecutionReconstructionReader`. **CERTIFIED** (boundary) ≠ **PRODUCTION QUALIFIED** (runtime provider proof).
+
+### Regression protection certification (MP-4D7)
+
+Six semantic documentation gates in `tests/unit/runtime/architecture/test_mp4d7_documentation_regression_gates.py`: status synchronization, canonical SSOT, authority boundaries, contract-first pluginability, proof/provider boundaries, Evidence/Reconstruction/Diagnostics separation. No full-document snapshots, line-number coupling, or formatting-only assertions. Post-D8 gates require **MP-4 FORMALLY CLOSED**, **MP-4D7 CLOSED**, **MP-4D8 CLOSED**, and **MP-4 documentation certification CLOSED** across active status docs.
+
+### Known non-blocking limitations (D8 summary)
+
+| Limitation | Blocking? |
+| ---------- | --------: |
+| No full single-run production E2E across all durable providers in one MP-4 run | NO |
+| No MP-4-scoped `ExecutionReconstructionReader` runtime/provider qualification | NO |
+| No canonical production durable `ExecutionContinuationStateStore` DB adapter qualified on MP-4 path (backing is qualification reference) | NO |
+| Human review production host adapter not production-qualified in R7 composition | NO |
+| Binding association fact gap (MP-4R5) | NO |
+
+### Final closure statement
+
+```text
+MP-4 implementation: FORMALLY CLOSED
+MP-4 documentation certification: CLOSED (MP-4D1–D8)
+```
+
+MP-4D8 completes the documentation certification program; it does **not** reopen MP-4R implementation, create MP-4D9, or alter runtime semantics.
 
 ---
 
@@ -1017,7 +1118,7 @@ Execution detail and proof commands: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](..
 | **MP-4D5** | **CLOSED** | Provider / persistence qualification matrix |
 | **MP-4D6** | **CLOSED** | Enterprise boundary & pluginability certification (this §) |
 | **MP-4D7** | **CLOSED** | Documentation regression gates (this §) |
-| **MP-4D8** | **NEXT** | Final enterprise documentation audit |
+| **MP-4D8** | **CLOSED** | Final enterprise documentation audit (this §) |
 
 Capability roadmap: [`MULTIPLAYER_AI` plan](../capabilities/plan/MULTIPLAYER_AI.md).
 

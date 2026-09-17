@@ -90,10 +90,16 @@ def _d7_closed(text: str) -> bool:
     )
 
 
-def _d8_next(text: str) -> bool:
-    return "MP-4D8 — NEXT" in text or bool(
-        re.search(r"\*\*MP-4D8\*\*\s*\|\s*\*\*NEXT\*\*", text)
-    ) or bool(re.search(r"MP-4D8[^|\n]{0,24}\bNEXT\b", text))
+def _d8_closed(text: str) -> bool:
+    return "MP-4D8 — CLOSED" in text or bool(
+        re.search(r"\*\*MP-4D8\*\*\s*\|\s*\*\*CLOSED\*\*", text)
+    )
+
+
+def _documentation_certification_closed(text: str) -> bool:
+    return "MP-4 documentation certification — CLOSED" in text or (
+        "MP-4 documentation certification" in text and "CLOSED" in text and "MP-4D1–D8" in text
+    )
 
 
 def test_mp4d7_status_documents_are_synchronized() -> None:
@@ -101,10 +107,16 @@ def test_mp4d7_status_documents_are_synchronized() -> None:
     canonical = texts["canonical"]
 
     assert _d7_closed(canonical), (
-        "MP-4 status drift: canonical SSOT must mark MP-4D7 CLOSED after D7 close"
+        "MP-4 status drift: canonical SSOT must mark MP-4D7 CLOSED"
     )
-    assert _d8_next(canonical), (
-        "MP-4 status drift: canonical SSOT must mark MP-4D8 as NEXT active documentation stage"
+    assert _d8_closed(canonical), (
+        "MP-4 status drift: canonical SSOT must mark MP-4D8 CLOSED after D8 close"
+    )
+    assert _documentation_certification_closed(canonical), (
+        "MP-4 status drift: canonical SSOT must mark MP-4 documentation certification CLOSED"
+    )
+    assert "MP-4D8 — NEXT" not in canonical, (
+        "MP-4 status drift: canonical SSOT must not mark MP-4D8 as NEXT after D8 close"
     )
     _assert_contains_any(
         canonical,
@@ -124,11 +136,20 @@ def test_mp4d7_status_documents_are_synchronized() -> None:
         assert "MP-4D7 — NEXT" not in text and "**MP-4D7** — Documentation regression gates (**NEXT**)" not in text, (
             f"MP-4 status drift: {name} still marks MP-4D7 NEXT while canonical SSOT has D7 CLOSED"
         )
-        assert _d7_closed(text) or "MP-4D1–D7 CLOSED" in text or "MP-4D1–D6 CLOSED · MP-4D7 CLOSED" in text, (
+        assert _d7_closed(text) or "MP-4D1–D8" in text or "MP-4D1–D7 CLOSED" in text, (
             f"MP-4 status drift: {name} does not reflect MP-4D7 CLOSED"
         )
-        assert _d8_next(text), (
-            f"MP-4 status drift: {name} does not mark MP-4D8 NEXT while canonical SSOT does"
+        assert _d8_closed(text) or "MP-4D1–D8" in text, (
+            f"MP-4 status drift: {name} does not mark MP-4D8 CLOSED while canonical SSOT does"
+        )
+        assert _documentation_certification_closed(text) or "MP-4D1–D8" in text, (
+            f"MP-4 status drift: {name} does not reflect MP-4 documentation certification CLOSED"
+        )
+        assert "MP-4D8 — NEXT" not in text and "**MP-4D8** | **NEXT**" not in text, (
+            f"MP-4 status drift: {name} still marks MP-4D8 NEXT after D8 close"
+        )
+        assert "MP-4D7 — NEXT" not in text, (
+            f"MP-4 status drift: {name} still marks MP-4D7 NEXT"
         )
         assert "MP-4 implementation IN PROGRESS" not in text and "MP-4 — IN PROGRESS" not in text, (
             f"MP-4 status drift: {name} contradicts formally closed MP-4 implementation"
@@ -271,6 +292,9 @@ def test_mp4d7_evidence_reconstruction_diagnostics_separation_is_preserved() -> 
 
     assert "Documentation Regression Gates (MP-4D7)" in canonical, (
         "MP-4D7 documentation: canonical SSOT must document regression gate scope"
+    )
+    assert "Final Enterprise Documentation Audit (MP-4D8)" in canonical, (
+        "MP-4D8 documentation: canonical SSOT must document final enterprise audit section"
     )
     assert str(_D7_GATE_MODULE.relative_to(_REPO_ROOT)).replace("\\", "/") in canonical, (
         "MP-4D7 documentation: canonical SSOT must point maintainers to D7 gate module path"
