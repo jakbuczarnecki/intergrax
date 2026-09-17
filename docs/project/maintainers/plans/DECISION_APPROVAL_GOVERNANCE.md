@@ -6,7 +6,7 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Decision / Approval / Governance — Implementation Plan (MP-4R)
 
-**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — NEXT** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — NEXT** · legacy MP-4A `SUPERSEDED_BY_MP4R0` · MP-4B `RETIRED` · MP-4C `RETIRED` (MP-4R2) · MP-4D `RETIRED` (MP-4R2)
 **Architecture (1:1):** [`../../architecture/DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)
 **ADR:** [ADR-MP-009](../../technical/adr/entries/2026-09-15/ADR-MP-009.md) · [ADR-MP-005](../../technical/adr/entries/2026-09-08/ADR-MP-005.md) (historical)
 **Feature coordination:** [`MULTIPLAYER_AI`](../../capabilities/plan/MULTIPLAYER_AI.md)
@@ -161,8 +161,8 @@ Use, modification, or distribution without written permission is prohibited.
 | **MP-4D1** | **CLOSED** | Synchronize documentation state with actual closed implementation |
 | **MP-4D2** | **CLOSED** | Consolidate canonical architecture documentation into one coherent entry point |
 | **MP-4D3** | **CLOSED** | Professional visual architecture layer in architecture SSOT (**D3 closed**) |
-| **MP-4D4** | **NEXT** | Create E2E proof / invariant-to-test matrix |
-| MP-4D5 | NOT STARTED | Document provider/persistence qualification boundaries |
+| **MP-4D4** | **CLOSED** | E2E proof / invariant-to-test matrix (architecture SSOT § E2E Proof & Qualification Matrix) |
+| **MP-4D5** | **NEXT** | Provider / persistence qualification matrix |
 | MP-4D6 | NOT STARTED | Certify contract-first/pluginability boundaries in docs |
 | MP-4D7 | NOT STARTED | Add documentation regression protection |
 | MP-4D8 | NOT STARTED | Final enterprise documentation audit |
@@ -199,6 +199,6 @@ Historical implementation notes for MP-4B–D remain in git history and contract
 
 ## Next step
 
-**MP-4D4** — E2E Proof and Qualification Matrix (**MP-4D3 CLOSED**). **No MP-4R implementation work.**
+**MP-4D5** — Provider & Persistence Qualification Matrix (**MP-4D4 CLOSED**). **No MP-4R implementation work.**
 
 ---

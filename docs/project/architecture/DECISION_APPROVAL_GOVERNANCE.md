@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4)
 
-**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — NEXT**
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — NEXT**
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (execution/status only):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -654,6 +654,78 @@ Proof harness reference: `testing_support/mp4r7_enterprise_integration/` and arc
 
 ---
 
+## E2E Proof & Qualification Matrix (MP-4D4)
+
+**Purpose:** auditable mapping from MP-4 integration invariants to **existing** executable proof. Test files remain SSOT for assertion semantics; this table states **qualification level only**.
+
+**Qualification levels (use exactly one primary label per row):**
+
+| Level | Meaning |
+| ----- | ------- |
+| **DIRECT TEST** | Runtime/unit test directly asserts the invariant |
+| **E2E TEST** | Multi-step qualification scenario (may use test composition — not full production deployment) |
+| **PROVIDER QUALIFIED** | Real production provider implementation exercised (separate from contract-only proof) |
+| **ARCHITECTURAL / STATIC** | Import/AST/structure gates — no runtime E2E for that claim |
+| **PARTIAL** | Proof covers only part of the invariant |
+| **NOT QUALIFIED** | No sufficient proof located for MP-4 integration surface |
+
+**Scope column:** **contract** = port/protocol behavior; **R7 composition** = `testing_support/mp4r7_enterprise_integration/` with in-memory binding/evidence stores and wired canonical continuation; **decision-flow unit** = `intergrax/runtime/decision_flow.py` harness; **PostgreSQL provider** = MP-4R4 live DB qualification only.
+
+| Invariant / capability | Existing proof | Scope | Qualification | Limitation |
+| ---------------------- | -------------- | ----- | ------------- | ---------- |
+| **A. Multiplayer does not own Decision lifecycle** | `test_mp4r1_no_multiplayer_decision_repository_in_collaborative_work`; `test_mp4r0_multiplayer_production_defines_no_duplicate_platform_authority_classes` | production `collaborative_work` tree | **ARCHITECTURAL / STATIC** | Does not runtime-exercise every Decision host path |
+| **A. Binding references exact `DecisionProposalRef` (not a second Decision lifecycle)** | `test_binding_contract_uses_decision_proposal_ref`; `test_binding_contract_has_no_decision_outcome_fields`; `test_decision_runtime_does_not_import_collaborative_binding`; `test_exact_decision_version_preserved_after_new_version_exists` | contract gates + `test_decision_binding_service.py` | **ARCHITECTURAL / STATIC** + **DIRECT TEST** | Service tests use in-memory/SQLite repo, not PostgreSQL |
+| **B. Human Review ≠ Governance authority** | `test_mp4r2_human_review_outcome_is_not_execution_authorization_type`; `test_mp4r2_multiplayer_does_not_define_approval_hitl_authority` | contracts + production scan | **DIRECT TEST** + **ARCHITECTURAL / STATIC** | Does not prove all host adapters |
+| **B. Human APPROVED ≠ automatic execution ALLOW** | `test_mp4r7_human_approve_governance_deny_prevents_continuation_and_operation`; `test_resume_after_human_approve_uses_governance_evaluator_not_synthetic_allow` (`test_decision_flow.py`); `test_mp4r7_decision_flow_resume_does_not_synthesize_governance_allow` | R7 composition + decision-flow unit + AST gate on `decision_flow.py` | **E2E TEST** + **DIRECT TEST** + **ARCHITECTURAL / STATIC** | R7 uses qualification composition, not production deployment |
+| **B. Post-human Governance re-evaluation** | `test_mp4r7_human_approve_governance_deny_*` (post-human `DENY`); `test_mp4r7_success_e2e` (post-human `ALLOW` path); `test_resume_after_governance_human_approve_reaches_terminal` | R7 composition + decision-flow unit | **E2E TEST** + **DIRECT TEST** | No single test named “re-evaluate only”; behavior inferred from deny/allow paths |
+| **C. Governance outcomes ALLOW / DENY / REQUIRE_HUMAN** | `test_governance_deny_blocks_action_without_rejecting_accepted_decision`; `test_governance_allow_mints_authorization`; `test_governance_require_human_with_port_pending`; `test_mp4r2_governance_require_human_leaves_authorization_none` | decision-flow unit + MP-4R2 gate | **DIRECT TEST** | Evaluator plugins beyond test harness not exhaustively qualified |
+| **C. DENY → no execution** | `test_mp4r7_human_approve_governance_deny_prevents_continuation_and_operation` (no auth, no resume, no op evidence); `test_governance_deny_blocks_action_without_rejecting_accepted_decision` | R7 composition + decision-flow unit | **E2E TEST** + **DIRECT TEST** | R7 composition only |
+| **D. `DecisionExecutionAuthorization` + validation before execution** | `test_mp4r7_success_e2e` (`execution_authorization_present` / `validated`); `test_mp4r7_stale_current_policy_blocks_execution_after_human_approval`; `test_mp4r7_scenario_enforces_execution_authorization_before_resume`; `test_governance_allow_mints_authorization` | R7 composition + gates + decision-flow unit | **E2E TEST** + **ARCHITECTURAL / STATIC** + **DIRECT TEST** | Authorization helpers qualified in R7 harness, not every production composition root |
+| **E. Stale policy → BLOCK (fail-closed)** | `test_mp4r7_stale_current_policy_blocks_execution_after_human_approval` | R7 composition | **E2E TEST** | In-memory providers; not PostgreSQL/full stack |
+| **F. Stale proposal / version mismatch → BLOCK** | `test_mp4r7_stale_proposal_fail_closed`; `test_mp4r2_stale_human_review_decision_rejected_for_revised_proposal` | R7 composition + MP-4R2 async gate | **E2E TEST** + **DIRECT TEST** | R7 stale path is scenario-specific |
+| **G. Missing / invalid approver & provenance → fail-closed** | `test_mp4r6_persistence_deserialization_does_not_map_user_id_to_approver`; `test_mp4r6_sqlite_human_decision_store_read_path_does_not_synthesize_approver`; `test_mp4r3_identity_mismatch_qualification`; `test_mp4r3_governed_correlation_mismatch_fail_closed` | legacy restore + continuation qualification | **DIRECT TEST** | **PARTIAL** for full MP-4 E2E — not re-run inside `test_mp4r7_*` success path |
+| **H. Cross-tenant / scope isolation** | `test_mp4r7_cross_tenant_fail_closed`; `test_cross_tenant_decision_rejected`; `test_tenant_isolation_on_get` (`test_decision_binding_service.py`); `test_postgresql_decision_binding_tenant_isolation` | R7 composition + contract service + PostgreSQL provider | **E2E TEST** + **DIRECT TEST** + **PROVIDER QUALIFIED** | Execution-flow cross-tenant proof is R7 composition only; binding isolation proven separately per scope |
+| **I. `ExecutionContinuationPort` public boundary; Multiplayer does not own pause/resume** | `test_mp4r3_no_multiplayer_continuation_repository`; `test_mp4r3_no_duplicate_continuation_lifecycle_authority`; `test_mp4r7_scenario_uses_public_continuation_port`; `test_mp4r7_process_restart_resume` | production scan + R7 composition | **ARCHITECTURAL / STATIC** + **E2E TEST** | `test_mp4r3_multiplayer_has_no_production_continuation_port_caller` — no production MP caller today |
+| **I. No side-channel resume (approval → resume shortcut)** | `test_mp4r3_no_approval_to_resume_shortcut_in_multiplayer`; `test_mp4r7_scenario_does_not_resume_on_terminal_alone` | production scan + R7 scenario structure | **ARCHITECTURAL / STATIC** | Does not prove all future host code paths |
+| **J. Nexus internal to Execution; no public MP-4 Nexus dependency** | `test_mp4r0_multiplayer_production_has_no_public_nexus_dependency`; `test_mp4r3_multiplayer_production_has_no_public_nexus_dependency`; `test_binding_modules_do_not_import_execution_or_nexus_runtime`; `test_collaborative_work_has_no_nexus_dependency` | production `collaborative_work` | **ARCHITECTURAL / STATIC** | Static import scan — not runtime Nexus isolation across entire platform |
+| **K. `CollaborativeDecisionBinding` + repository port** | `test_decision_binding_service.py` (round-trip, idempotency, isolation); `test_mp4r4_*` gates; `test_postgresql_decision_binding_*` (8 tests) | contract service + gates + PostgreSQL | **DIRECT TEST** + **ARCHITECTURAL / STATIC** + **PROVIDER QUALIFIED** | PostgreSQL proof **does not** qualify governance/execution E2E |
+| **L. Evidence Plane — facts not authority** | `test_mp4r5_evidence_plane_adoption_gates.py` (persistence contract only, no MP evidence store); `test_success_emits_single_operation_outcome`; `test_decision_binding_service_does_not_emit_evidence_on_read_paths` | collaborative_work + gates | **DIRECT TEST** + **ARCHITECTURAL / STATIC** | Association fact gap documented in MP-4R5 gates |
+| **M. Primary domain failure > secondary evidence failure** | `test_mp4r7_evidence_failure_preserves_primary`; `test_application_boundary_preserves_primary_failure_when_secondary_evidence_emission_fails`; `test_mp4r7_scenario_does_not_fabricate_primary_error_in_evidence_handler` | R7 composition + application boundary + AST gate | **E2E TEST** + **DIRECT TEST** + **ARCHITECTURAL / STATIC** | R7 uses injected failing persistence in composition |
+| **N. `ExecutionReconstructionReader` — factual reconstruction** | *(no MP-4-scoped test referencing this port found)* | — | **NOT QUALIFIED** | Contract listed in SSOT; reconstruction behavior qualified outside MP-4D4 matrix (platform observability suites) |
+| **O. Diagnostics reads/interprets evidence; cannot authorize execution** | `test_mp4r7_success_e2e` (`diagnostics.operation_outcome_check_status == proven_pass` after operation); `test_collaborative_work_does_not_import_diagnostics` (MP-4R5 gate) | R7 composition + import gate | **PARTIAL** | No MP-4 test proving Diagnostics APIs cannot mint `DecisionExecutionAuthorization` or call `ExecutionContinuationPort` |
+
+**Proof commands (representative, not exhaustive):**
+
+```bash
+uv run pytest tests/unit/mp4r7/test_enterprise_integration_qualification.py
+uv run pytest tests/unit/runtime/architecture/test_mp4r7_enterprise_integration_gates.py
+uv run pytest tests/unit/runtime/architecture/test_mp4r4_collaborative_decision_binding_gates.py
+uv run pytest tests/unit/runtime/architecture/test_mp4r5_evidence_plane_adoption_gates.py
+uv run pytest tests/integration/collaborative_work/test_postgresql_decision_binding_qualification.py -m "integration and network"
+```
+
+### Qualification boundaries
+
+| Label | What it proves | What it does **not** prove |
+| ----- | -------------- | --------------------------- |
+| **Contract proof** | Port/protocol semantics, service behavior against a test double or in-memory provider | That every production provider implementation is qualified |
+| **R7 test-composition E2E** | Cross-domain flow on **canonical production contracts** with `open_mp4r7_enterprise_integration_composition()` (in-memory binding repo, in-memory functional evidence, wired `ExecutionContinuationPort`) | Full production deployment E2E on all real providers |
+| **PostgreSQL provider qualification (MP-4R4)** | `CollaborativeDecisionBindingRepository` production PostgreSQL adapter (concurrency, idempotency, tenant isolation) | Decision governance, human review, execution authorization, or diagnostics |
+| **Full production E2E** | *Not claimed by MP-4 closed program* | Would require real providers for every port in one run — deferred to **MP-4D5** / explicit future qualification |
+
+**PLATFORM OPERATES ON CONTRACTS, NOT IMPLEMENTATIONS:** a green **PROVIDER QUALIFIED** row for PostgreSQL binding does **not** generalize to all `CollaborativeDecisionBindingRepository` implementations.
+
+### Known proof gaps (MP-4D4)
+
+| Gap | Meaning | Blocking? |
+| --- | ------- | --------: |
+| No MP-4-scoped proof for `ExecutionReconstructionReader` factual read model | Reconstruction is an integration contract in this SSOT but not exercised in MP-4R7/R4/R5 qualification tests | NO (MP-4D5/D6 may extend) |
+| Diagnostics authority isolation | Import gates + success-path diagnostic **read** proven; no runtime test that Diagnostics cannot authorize execution on MP-4 surface | NO |
+| Approver/provenance fail-closed | Strong MP-4R3/MP-4R6 unit qualification; not duplicated in MP-4R7 E2E matrix | NO |
+| R7 E2E provider stack | Binding/evidence stores are in-memory in R7; PostgreSQL binding qualified only via separate MP-4R4 integration module | NO (documented boundary) |
+
+---
+
 ## Known limitations (summary)
 
 | Limitation | Status | Blocking? |
@@ -661,7 +733,7 @@ Proof harness reference: `testing_support/mp4r7_enterprise_integration/` and arc
 | Binding association lacks dedicated Evidence Plane v2 fact | Accepted platform limitation | NO |
 | R7 E2E uses test composition / configured providers | Documented qualification boundary | NO |
 | Full provider coverage matrix | Deferred to **MP-4D5** | NO |
-| Invariant → exact test matrix | Deferred to **MP-4D4** | NO |
+| Invariant → exact test matrix | **MP-4D4** (§ E2E Proof & Qualification Matrix) | NO |
 
 ---
 
@@ -715,8 +787,8 @@ Execution detail and proof commands: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](..
 | **MP-4D1** | **CLOSED** | Synchronize documentation state with closed implementation |
 | **MP-4D2** | **CLOSED** | Consolidate canonical architecture into this entry point |
 | **MP-4D3** | **CLOSED** | Professional visual architecture layer (Mermaid in this SSOT) |
-| **MP-4D4** | **NEXT** | E2E proof / invariant-to-test matrix |
-| MP-4D5 | NOT STARTED | Provider / persistence qualification matrix |
+| **MP-4D4** | **CLOSED** | E2E proof / invariant-to-test matrix |
+| **MP-4D5** | **NEXT** | Provider / persistence qualification matrix |
 | MP-4D6 | NOT STARTED | Enterprise pluginability certification (docs) |
 | MP-4D7 | NOT STARTED | Documentation regression gates |
 | MP-4D8 | NOT STARTED | Final enterprise documentation audit |
