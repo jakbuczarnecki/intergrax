@@ -40,6 +40,21 @@ from intergrax.runtime.enterprise_reliability.provider_invocation_reconciliation
     ProviderInvocationReconciliationRun,
     reconcile_durable_provider_invocation_unknown,
 )
+from intergrax.runtime.enterprise_reliability.provider_invocation_recovery import (
+    ProviderInvocationRecoveryExecutionDisposition,
+    ProviderInvocationRecoveryExecutionPorts,
+    ProviderInvocationRecoveryExecutionResult,
+    ProviderInvocationRecoveryHitlResult,
+    ProviderInvocationRecoveryRepeatResult,
+    build_recovery_escalation_context,
+    decide_provider_invocation_recovery,
+    execute_provider_invocation_recovery,
+)
+from intergrax.runtime.enterprise_reliability.default_provider_invocation_recovery_policy import (
+    DEFAULT_FAIL_CLOSED_PROVIDER_INVOCATION_RECOVERY_POLICY_ID,
+    DefaultFailClosedProviderInvocationRecoveryPolicy,
+    default_fail_closed_provider_invocation_recovery_policy,
+)
 from intergrax.runtime.enterprise_reliability.resolution_execution import (
     ExternalEffectResolutionRun,
     execute_external_effect_resolution,
@@ -117,6 +132,17 @@ __all__ = [
     "plan_external_effect_reconciliation",
     "ProviderInvocationReconciliationRun",
     "reconcile_durable_provider_invocation_unknown",
+    "DEFAULT_FAIL_CLOSED_PROVIDER_INVOCATION_RECOVERY_POLICY_ID",
+    "DefaultFailClosedProviderInvocationRecoveryPolicy",
+    "ProviderInvocationRecoveryExecutionDisposition",
+    "ProviderInvocationRecoveryExecutionPorts",
+    "ProviderInvocationRecoveryExecutionResult",
+    "ProviderInvocationRecoveryHitlResult",
+    "ProviderInvocationRecoveryRepeatResult",
+    "build_recovery_escalation_context",
+    "decide_provider_invocation_recovery",
+    "default_fail_closed_provider_invocation_recovery_policy",
+    "execute_provider_invocation_recovery",
     "recommend_external_effect_recovery_lifecycle",
     "UncertaintyResolutionError",
     "admit_external_effect_into_enterprise_reliability",
