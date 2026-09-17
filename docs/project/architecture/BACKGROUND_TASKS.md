@@ -4,13 +4,13 @@
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)
-**Last updated:** 2026-09-14 — **HARNESS-Y3** background ↔ frozen Execution Engine ownership sync
+**Last updated:** 2026-09-17 — **BG-01** background execution convergence qualification (`tests/qualification/bg_01/`)
 
 | Axis | Status | Meaning |
 |------|--------|---------|
 | **Foundation / contracts** | **CURRENT** | `TaskQueue` / `MessageBus`, `TaskRequest`, `BackgroundTaskHandler`, `TaskQueueProviderRegistry`, worker intake + BG-EXEC identity/reentry |
 | **Execution integration** | **PARTIAL** | Worker intake uses execution-owned identity + re-entry admission; not every `TaskHandler` path is admitted via public `execution.execute` / full `ExecutionBoundary` |
-| **Production qualification** | **PARTIAL** | LKW.4E and platform proof stacks exist; not universal multi-tenant production qualification |
+| **Production qualification** | **PARTIAL** | LKW.4E, **BG-01** (`tests/qualification/bg_01/`, gates BG-Q1..Q15), and platform proof stacks; not universal multi-tenant production qualification |
 
 ---
 
