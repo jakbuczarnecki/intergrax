@@ -19,7 +19,13 @@ from intergrax.contracts.runtime_execution_policy_admission import (
     RuntimeExecutionPolicyAdmissionPort,
     RuntimeExecutionPolicyAdmissionRequest,
 )
+from intergrax.contracts.evaluated_policy_decision import request_digest_for_payload
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernedExecutionEvaluationPoint,
+    build_governance_fact_from_policy_decision,
+)
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
 def _map_runtime_policy_action(
     decision: PolicyDecision,
 ) -> RootExecutionAuthorityAdmissionDisposition:
@@ -69,8 +75,52 @@ class RootExecutionAuthorityAdmissionService:
         self,
         *,
         runtime_policy_admission: RuntimeExecutionPolicyAdmissionPort,
+        governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
     ) -> None:
         self._runtime_policy_admission = runtime_policy_admission
+        self._governance_evidence_recorder = governance_evidence_recorder
+
+    def _record_evidence(
+        self,
+        request: RootExecutionAuthorityAdmissionRequest,
+        decision: PolicyDecision,
+    ) -> None:
+        recorder = self._governance_evidence_recorder
+        if recorder is None or recorder.persistence is None:
+            return
+        if decision.action not in (
+            PolicyAction.ALLOW,
+            PolicyAction.DENY,
+            PolicyAction.REQUIRE_HUMAN,
+        ):
+            return
+        digest = request_digest_for_payload(
+            {
+                "tenant_id": request.tenant_id,
+                "workspace_id": request.workspace_id,
+                "principal_id": request.principal_id,
+                "root_execution_operation": request.root_execution_operation.value,
+                "collaborative_scopes": request.collaborative_authority_scopes,
+            }
+        )
+        idempotency_key = f"root_admission:{digest}:{decision.action.value}:{decision.policy_rule_id}"
+        fact = build_governance_fact_from_policy_decision(
+            evaluation_point=GovernedExecutionEvaluationPoint.ROOT_EXECUTION_ADMISSION,
+            tenant_id=request.tenant_id,
+            workspace_id=request.workspace_id,
+            principal_id=request.principal_id,
+            decision=decision,
+            request_digest=digest,
+            idempotency_key=idempotency_key,
+            action=request.root_execution_operation.policy_operation(),
+            resource_type="root_execution",
+            resource_scope=request.root_execution_operation.value,
+            task_id=request.task_id,
+            run_id=request.run_id,
+            attempt_id=request.attempt_id,
+            execution_id=request.execution_id,
+        )
+        recorder.record(fact)
 
     def authorize(
         self,
@@ -78,10 +128,12 @@ class RootExecutionAuthorityAdmissionService:
     ) -> RootExecutionAuthorityAdmissionResult:
         collaborative_decision = request.effective_authority_decision.decision
         if collaborative_decision.action is not PolicyAction.ALLOW:
-            return RootExecutionAuthorityAdmissionResult(
+            result = RootExecutionAuthorityAdmissionResult(
                 disposition=_map_collaborative_evidence(collaborative_decision.action),
                 policy_decision=collaborative_decision,
             )
+            self._record_evidence(request, collaborative_decision)
+            return result
 
         runtime_result = self._runtime_policy_admission.evaluate(
             RuntimeExecutionPolicyAdmissionRequest(
@@ -96,42 +148,52 @@ class RootExecutionAuthorityAdmissionService:
             request.collaborative_authority_scopes,
             runtime_result.approved_scopes,
         ):
-            return RootExecutionAuthorityAdmissionResult(
-                disposition=RootExecutionAuthorityAdmissionDisposition.DENIED,
-                policy_decision=PolicyDecision(
-                    action=PolicyAction.DENY,
-                    reason="runtime_approved_scopes_exceed_collaborative_authority",
-                    policy_rule_id="runtime.root_execution_admission.scope_widening",
-                ),
+            deny = PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="runtime_approved_scopes_exceed_collaborative_authority",
+                policy_rule_id="runtime.root_execution_admission.scope_widening",
             )
+            result = RootExecutionAuthorityAdmissionResult(
+                disposition=RootExecutionAuthorityAdmissionDisposition.DENIED,
+                policy_decision=deny,
+            )
+            self._record_evidence(request, deny)
+            return result
         runtime_decision = runtime_result.policy_decision
         disposition = _map_runtime_policy_action(runtime_decision)
         if disposition is not RootExecutionAuthorityAdmissionDisposition.ALLOWED:
-            return RootExecutionAuthorityAdmissionResult(
+            result = RootExecutionAuthorityAdmissionResult(
                 disposition=disposition,
                 policy_decision=runtime_decision,
             )
+            self._record_evidence(request, runtime_decision)
+            return result
 
         trusted_scopes = _narrow_collaborative_scopes(
             request.collaborative_authority_scopes,
             runtime_result.approved_scopes,
         )
         if not trusted_scopes:
-            return RootExecutionAuthorityAdmissionResult(
-                disposition=RootExecutionAuthorityAdmissionDisposition.DENIED,
-                policy_decision=PolicyDecision(
-                    action=PolicyAction.DENY,
-                    reason="runtime_approved_scopes_empty_after_narrowing",
-                    policy_rule_id="runtime.root_execution_admission.scope_narrowing",
-                ),
+            deny = PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="runtime_approved_scopes_empty_after_narrowing",
+                policy_rule_id="runtime.root_execution_admission.scope_narrowing",
             )
+            result = RootExecutionAuthorityAdmissionResult(
+                disposition=RootExecutionAuthorityAdmissionDisposition.DENIED,
+                policy_decision=deny,
+            )
+            self._record_evidence(request, deny)
+            return result
 
         trusted = ParentExecutionAuthority.scoped(trusted_scopes)
-        return RootExecutionAuthorityAdmissionResult(
+        result = RootExecutionAuthorityAdmissionResult(
             disposition=RootExecutionAuthorityAdmissionDisposition.ALLOWED,
             trusted_parent_execution_authority=trusted,
             policy_decision=runtime_decision,
         )
+        self._record_evidence(request, runtime_decision)
+        return result
 
 
 def _map_collaborative_evidence(

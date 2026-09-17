@@ -28,8 +28,15 @@ from intergrax.contracts.decision_requirement_policy import (
     DecisionRequirementContext,
     DecisionRequirementPolicy,
 )
+from intergrax.contracts.evaluated_policy_decision import request_digest_for_payload
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernedExecutionEvaluationPoint,
+    build_governance_fact_from_policy_decision,
+)
+from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
     classify_decision_requirement,
@@ -71,6 +78,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
         enforcement_gate: CollaborativeWorkEnforcementGate,
         inner_execution_guard: CanonicalInnerExecutionGuardPort,
         decision_requirement_policy: DecisionRequirementPolicy | None = None,
+        governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
     ) -> None:
         self._enforcement_gate = enforcement_gate
         self._inner_execution_guard = inner_execution_guard
@@ -79,6 +87,73 @@ class MeaningfulSideEffectAuthorizationBoundary:
             if decision_requirement_policy is not None
             else PermissiveDecisionRequirementPolicy()
         )
+        self._governance_evidence_recorder = governance_evidence_recorder
+
+    def _record_governance_evidence(
+        self,
+        request: CollaborativeWorkEnforcementRequest,
+        decision: PolicyDecision,
+    ) -> None:
+        recorder = self._governance_evidence_recorder
+        if recorder is None or recorder.persistence is None:
+            return
+        if decision.action not in (
+            PolicyAction.ALLOW,
+            PolicyAction.DENY,
+            PolicyAction.REQUIRE_HUMAN,
+        ):
+            return
+        side_effect = request.meaningful_side_effect_request
+        tenant_id = request.tenant_id
+        workspace_id = request.workspace_id
+        principal_id = request.acting_principal_id
+        task_id = None
+        run_id = None
+        attempt_id = None
+        execution_id = None
+        action = request.operation_id
+        resource_type = ""
+        resource_scope = request.resource_scope or ""
+        decision_material = None
+        if type(side_effect) is MeaningfulSideEffectRequest:
+            if side_effect.tenant_id:
+                tenant_id = side_effect.tenant_id
+            principal_id = side_effect.principal_id or principal_id
+            task_id = side_effect.task_id
+            run_id = side_effect.run_id
+            attempt_id = side_effect.attempt_id
+            execution_id = side_effect.execution_id
+            action = side_effect.action
+            resource_type = side_effect.kinds[0].value if side_effect.kinds else ""
+            resource_scope = side_effect.side_effect_scope_id
+            decision_material = side_effect.decision_governance_material
+        digest = request_digest_for_payload(
+            {
+                "operation_id": request.operation_id,
+                "resource_scope": request.resource_scope,
+                "decision_action": decision.action.value,
+                "policy_rule_id": decision.policy_rule_id,
+            }
+        )
+        idempotency_key = f"mse:{digest}:{decision.action.value}"
+        fact = build_governance_fact_from_policy_decision(
+            evaluation_point=GovernedExecutionEvaluationPoint.MEANINGFUL_SIDE_EFFECT,
+            tenant_id=tenant_id,
+            workspace_id=workspace_id,
+            principal_id=principal_id,
+            decision=decision,
+            request_digest=digest,
+            idempotency_key=idempotency_key,
+            action=action,
+            resource_type=resource_type,
+            resource_scope=resource_scope,
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            decision_material_ref=decision_material,
+        )
+        recorder.record(fact)
 
     @staticmethod
     def _inner_enforcement_denied(
@@ -100,13 +175,15 @@ class MeaningfulSideEffectAuthorizationBoundary:
             authority_scope=request.resource_scope,
             composition=composition,
         )
-        return MeaningfulSideEffectAuthorizationResult(
+        result = MeaningfulSideEffectAuthorizationResult(
             permitted=False,
             decision=deny,
             enforcement_result=enforcement_result,
             requires_governed_continuation=False,
             governed_continuation_request=None,
         )
+        self._record_governance_evidence(request, deny)
+        return result
 
     def _assert_inner_execution(
         self,
@@ -190,13 +267,15 @@ class MeaningfulSideEffectAuthorizationBoundary:
             source_agent_id=source_agent_id,
             source_step_id=source_step_id,
         )
-        return MeaningfulSideEffectAuthorizationResult(
+        result = MeaningfulSideEffectAuthorizationResult(
             permitted=permitted,
             decision=decision,
             enforcement_result=enforcement_result,
             requires_governed_continuation=requires_continuation,
             governed_continuation_request=governed_continuation_request,
         )
+        self._record_governance_evidence(request, decision)
+        return result
 
     def authorize_and_execute(
         self,

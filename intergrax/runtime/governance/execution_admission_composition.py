@@ -26,6 +26,7 @@ from intergrax.runtime.governance.runtime_execution_policy_admission import (
 from intergrax.runtime.governance.default_root_execution_launcher import (
     DefaultRootExecutionLauncher,
 )
+from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
 PayloadT = TypeVar("PayloadT")
@@ -48,10 +49,12 @@ def build_fail_closed_runtime_execution_policy_admission() -> RuntimeExecutionPo
 def build_root_execution_authority_admission(
     *,
     runtime_policy_admission: RuntimeExecutionPolicyAdmissionPort,
+    governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
 ) -> RootExecutionAuthorityAdmissionService:
     """Trusted root authority admission with an explicitly configured policy port."""
     return RootExecutionAuthorityAdmissionService(
         runtime_policy_admission=runtime_policy_admission,
+        governance_evidence_recorder=governance_evidence_recorder,
     )
 
 

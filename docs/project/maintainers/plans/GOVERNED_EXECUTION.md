@@ -178,7 +178,7 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-5 | HITL / Governed Continuation Rebase | **IMPLEMENTED** — enterprise qualification **OPEN** (GR-10) |
 | GR-6 | Decision → Governance Integration | **IMPLEMENTED** — qualification **OPEN** (host-qualified; not all strategies) |
 | GR-7 | External Effect / Reliability Boundary | **IMPLEMENTED** — qualification **OPEN** (ERL path; Reliability ≠ Governance) |
-| GR-8 | Governance Evidence Integration | **OPEN** / **PARTIAL** |
+| GR-8 | Governance Evidence Integration | **CANDIDATE CLOSED** — awaiting independent GitHub audit |
 | GR-9 | Diagnostic Consumption Proof | **OPEN** |
 | GR-10 | Execution Strategy Coverage | **OPEN** |
 | GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** |

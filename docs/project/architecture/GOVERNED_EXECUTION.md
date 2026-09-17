@@ -302,7 +302,7 @@ GR-10 qualification matrix remains **open** — this table reflects current code
 
 ```mermaid
 flowchart TD
-  GD[Governance decisions — partial emission GR-8] --> EP[Evidence Plane]
+  GD[Governance decision facts GR-8] --> EP[Evidence Plane]
   EF[Execution facts] --> EP
   RF[Reliability facts GR-7] --> EP
   EP --> REC[Reconstruction]
@@ -311,7 +311,15 @@ flowchart TD
   DIAG -.->|Diagnostics ≠ authority| X[No ALLOW/DENY substitution]
 ```
 
-**Governance Evidence correlation = PARTIAL / OPEN (GR-8)** — do not treat full five-ID governance emission as complete.
+**Governance Evidence spine (GR-8):** typed ``GovernanceDecisionEvidenceFact`` projected through ``GovernanceEvidencePersistencePort`` (default: ``RuntimeEvent`` + ``EvidencePersistencePort`` when five-ID correlation is present). **CANDIDATE CLOSED — awaiting independent GitHub audit.** Evidence does not return or alter ``PolicyDecision``; persistence failure does not flip DENY/REQUIRE_HUMAN into ALLOW.
+
+```text
+Governance evaluation → PolicyDecision (authority)
+  → GovernanceDecisionEvidenceFact (immutable)
+  → GovernanceEvidencePersistencePort
+  → EvidencePersistencePort / custom plugin
+  → reconstruction / diagnostics (non-authoritative)
+```
 
 ### 11. Control-plane mutation — TARGET only (Diagram #10)
 
@@ -365,13 +373,13 @@ Concrete providers are **not** platform authority — only ports and composed bo
 | Live policy evaluation | Governance | `RuntimePolicyEngine`, `DeclarativePolicyEnforcer` | Handlers/plugins via catalog | Yes — core evaluators |
 | Post-admission provider outcomes | Reliability | `ProviderInvocation`, `ProviderInvocationStore` | Store backend | Yes — ERL contracts |
 | Control-plane mutations (GR-12) | Domain executors (target shared context) | Taxonomy extension — live **GAP** | Per domain | Domain-owned executors only |
-| Governance evidence emission | Observability / Evidence | RuntimeEvent five-ID target | Exporters | **PARTIAL** — GR-8 open |
+| Governance evidence emission | Governance → Evidence | `GovernanceEvidencePersistencePort`, `GovernanceDecisionEvidenceFact` | `RuntimeEventGovernanceEvidencePersistence` | **CANDIDATE CLOSED (GR-8)** — independent audit pending |
 
 ### 13. Current gaps shown in this visual layer
 
 | Gap | Visual status |
 | --- | ------------- |
-| GR-8 Governance Evidence integration | PARTIAL / OPEN in §10 |
+| GR-8 Governance Evidence integration | CANDIDATE CLOSED in §10 — awaiting independent audit |
 | GR-10 Strategy coverage qualification | Matrix §9 — open |
 | GR-11 Plugin enterprise certification | Pluginability §12 — qual open |
 | GR-12 Control-plane mutation | TARGET §11 — **GAP** live |
