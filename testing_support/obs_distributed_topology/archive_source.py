@@ -43,4 +43,6 @@ def resolve_intergrax_import_root(source_root: Path) -> Path:
     nested = resolved / "intergrax"
     if nested.is_dir() and (nested / "__init__.py").is_file():
         return resolved
-    raise FileNotFoundError(f"intergrax package not found under archive root {resolved}")
+    raise FileNotFoundError(
+        f"intergrax package not found under archive root {resolved}"
+    )

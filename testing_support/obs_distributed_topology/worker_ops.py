@@ -4,16 +4,24 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
+from dataclasses import asdict, is_dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import intergrax
 from intergrax.contracts.execution_event_position import AsOfBoundary
-from intergrax.contracts.execution_reconstruction_models import RuntimeHistoryCompleteness
-from intergrax.contracts.execution_identity import EventId, mint_event_id, mint_execution_id
+from intergrax.contracts.execution_reconstruction_models import (
+    RuntimeHistoryCompleteness,
+)
+from intergrax.contracts.execution_identity import (
+    EventId,
+    mint_event_id,
+    mint_execution_id,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
+from intergrax.runtime.diagnostics.diagnostic_assessment import (
+    DiagnosticAssessmentBuilder,
+)
 from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticExecutionScope,
     DiagnosticOrchestrationRequest,
@@ -111,7 +119,7 @@ def run_writer_role(
             PositionedEventSummary(
                 event_id=str(event.event_id),
                 position=positioned.position.value,
-                tenant_id=event.tenant_id,
+                tenant_id=event.tenant_id or scenario.primary_tenant,
                 task_id=str(event.task_id),
                 run_id=str(event.run_id),
                 attempt_id=str(event.attempt_id),
@@ -334,5 +342,12 @@ def run_diagnostics_role(
     )
 
 
-def worker_result_to_json_dict(result: object) -> dict[str, object]:
+def worker_result_to_json_dict(
+    result: WriterWorkerResult
+    | ReaderWorkerResult
+    | DiagnosticsWorkerResult
+    | IdempotentRetryWorkerResult,
+) -> dict[str, object]:
+    if not is_dataclass(result):
+        raise TypeError("worker result must be a dataclass")
     return asdict(result)

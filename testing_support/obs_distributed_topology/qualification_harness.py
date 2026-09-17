@@ -15,7 +15,9 @@ from testing_support.obs_distributed_topology.archive_source import (
     materialize_git_archive_source_tree,
     resolve_intergrax_import_root,
 )
-from testing_support.obs_distributed_topology.scenario_builder import build_dg005_scenario
+from testing_support.obs_distributed_topology.scenario_builder import (
+    build_dg005_scenario,
+)
 from testing_support.obs_distributed_topology.scenario_io import write_scenario
 
 

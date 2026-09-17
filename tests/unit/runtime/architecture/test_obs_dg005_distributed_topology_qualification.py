@@ -17,13 +17,20 @@ from testing_support.obs_distributed_topology.qualification_harness import (
 from testing_support.obs_distributed_topology.archive_source import (
     resolve_intergrax_import_root,
 )
-from testing_support.obs_distributed_topology.scenario_builder import build_dg005_scenario
-from testing_support.obs_distributed_topology.scenario_io import read_scenario, write_scenario
+from testing_support.obs_distributed_topology.scenario_builder import (
+    build_dg005_scenario,
+)
+from testing_support.obs_distributed_topology.scenario_io import (
+    read_scenario,
+    write_scenario,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.obs_diag_conformance]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_RECONSTRUCTION_PKG = _REPO_ROOT / "intergrax" / "runtime" / "observability" / "reconstruction"
+_RECONSTRUCTION_PKG = (
+    _REPO_ROOT / "intergrax" / "runtime" / "observability" / "reconstruction"
+)
 _DIAG_ROOT = _REPO_ROOT / "intergrax" / "runtime" / "diagnostics"
 _SESSION_ROOT = _REPO_ROOT / ".tmp" / "session" / "OBS-DG005-DISTRIBUTED-TOPOLOGY"
 
@@ -86,7 +93,9 @@ def test_dg005_diagnostics_modules_do_not_import_sqlite_runtime_store() -> None:
 
 
 @pytest.mark.gate
-def test_dg005_process_isolated_topology_qualification(tmp_path_factory: pytest.TempPathFactory) -> None:
+def test_dg005_process_isolated_topology_qualification(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
     qualification_sha = _git_head_sha()
     work_dir = tmp_path_factory.mktemp("dg005")
     report = run_dg005_topology_qualification(
@@ -121,20 +130,30 @@ def test_dg005_process_isolated_topology_qualification(tmp_path_factory: pytest.
     ]
 
     assert reader["runtime_history_completeness"] == "complete"
-    assert list(reader["event_ids_in_order"]) == expected_run_ids
-    assert list(reader["positions_in_order"]) == list(
-        range(1, len(expected_run_ids) + 1)
-    )
-    assert len(reader["as_of_event_ids"]) == scenario.as_of_position_index
+    event_ids_in_order = reader["event_ids_in_order"]
+    positions_in_order = reader["positions_in_order"]
+    as_of_event_ids = reader["as_of_event_ids"]
+    isolated_run_event_ids = reader["isolated_run_event_ids"]
+    task_grouped_run_ids = reader["task_grouped_run_ids"]
+    grouping_candidates = diagnostics["grouping_candidates"]
+    assert isinstance(event_ids_in_order, list)
+    assert isinstance(positions_in_order, list)
+    assert isinstance(as_of_event_ids, list)
+    assert isinstance(isolated_run_event_ids, list)
+    assert isinstance(task_grouped_run_ids, list)
+    assert isinstance(grouping_candidates, int)
+    assert event_ids_in_order == expected_run_ids
+    assert positions_in_order == list(range(1, len(expected_run_ids) + 1))
+    assert len(as_of_event_ids) == scenario.as_of_position_index
     assert reader["foreign_tenant_visible_count"] == 0
-    assert set(reader["isolated_run_event_ids"]) == {
+    assert set(isolated_run_event_ids) == {
         str(e.event_id) for e in scenario.isolated_run_events
     }
-    assert str(scenario.primary_run_id) in reader["task_grouped_run_ids"]
-    assert str(scenario.isolated_run_id) in reader["task_grouped_run_ids"]
+    assert str(scenario.primary_run_id) in task_grouped_run_ids
+    assert str(scenario.isolated_run_id) in task_grouped_run_ids
     assert idempotent["listed_count"] == len(expected_run_ids)
     assert diagnostics["execution_analyses"] == 1
-    assert diagnostics["grouping_candidates"] >= 1
+    assert grouping_candidates >= 1
 
 
 @pytest.mark.gate
@@ -176,10 +195,14 @@ def test_dg005_empty_backend_sees_no_writer_evidence(
     empty_reader = load_json_result(empty_result)
     assert empty_reader["event_ids_in_order"] in ([], ())
     assert empty_reader["idempotent_run_count"] == 0
-    assert len(writer["primary_summaries"]) > 0
+    primary_summaries = writer["primary_summaries"]
+    assert isinstance(primary_summaries, list)
+    assert len(primary_summaries) > 0
 
 
-def _child_env_for_archive(archive_root: Path, qualification_sha: str) -> dict[str, str]:
+def _child_env_for_archive(
+    archive_root: Path, qualification_sha: str
+) -> dict[str, str]:
     from testing_support.obs_distributed_topology.qualification_harness import (
         _child_env,
     )

@@ -63,8 +63,12 @@ def scenario_to_dict(scenario: Dg005Scenario) -> dict[str, Any]:
         "primary_attempt_id": str(scenario.primary_attempt_id),
         "primary_execution_id": str(scenario.primary_execution_id),
         "primary_events": [_planned_to_dict(e) for e in scenario.primary_events],
-        "isolated_run_events": [_planned_to_dict(e) for e in scenario.isolated_run_events],
-        "foreign_tenant_events": [_planned_to_dict(e) for e in scenario.foreign_tenant_events],
+        "isolated_run_events": [
+            _planned_to_dict(e) for e in scenario.isolated_run_events
+        ],
+        "foreign_tenant_events": [
+            _planned_to_dict(e) for e in scenario.foreign_tenant_events
+        ],
         "diagnostics_task_id": str(scenario.diagnostics_task_id),
         "diagnostics_run_id": str(scenario.diagnostics_run_id),
         "diagnostics_attempt_id": str(scenario.diagnostics_attempt_id),
