@@ -17,8 +17,11 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.execution_reconstruction import ExecutionReconstruction
 from intergrax.contracts.runtime_inspection.sections import (
+    RuntimeInspectionContinuationSection,
     RuntimeInspectionDiagnosticSection,
     RuntimeInspectionEvidenceSection,
+    RuntimeInspectionGovernanceSection,
+    RuntimeInspectionToolSection,
 )
 
 
@@ -97,6 +100,45 @@ class RuntimeInspectionEvidenceReadPort(Protocol):
     ) -> RuntimeInspectionEvidenceSection: ...
 
 
+@runtime_checkable
+class RuntimeInspectionToolReadPort(Protocol):
+    """Optional ToolRuntime invocation facts for one execution scope."""
+
+    @property
+    def source_id(self) -> str: ...
+
+    def read_tool_invocations(
+        self,
+        scope: RuntimeInspectionExecutionScope,
+    ) -> RuntimeInspectionToolSection: ...
+
+
+@runtime_checkable
+class RuntimeInspectionGovernanceReadPort(Protocol):
+    """Optional recorded governance decisions for one execution scope."""
+
+    @property
+    def source_id(self) -> str: ...
+
+    def read_governance_decisions(
+        self,
+        scope: RuntimeInspectionExecutionScope,
+    ) -> RuntimeInspectionGovernanceSection: ...
+
+
+@runtime_checkable
+class RuntimeInspectionContinuationReadPort(Protocol):
+    """Optional continuation lifecycle facts for one execution scope."""
+
+    @property
+    def source_id(self) -> str: ...
+
+    def read_continuation_state(
+        self,
+        scope: RuntimeInspectionExecutionScope,
+    ) -> RuntimeInspectionContinuationSection: ...
+
+
 __all__ = [
     "RuntimeInspectionDiagnosticReadPort",
     "RuntimeInspectionEvidenceReadPort",
@@ -105,4 +147,7 @@ __all__ = [
     "RuntimeInspectionExecutionScopeReader",
     "RuntimeInspectionScopeLookupOutcome",
     "RuntimeInspectionScopeLookupResult",
+    "RuntimeInspectionContinuationReadPort",
+    "RuntimeInspectionGovernanceReadPort",
+    "RuntimeInspectionToolReadPort",
 ]

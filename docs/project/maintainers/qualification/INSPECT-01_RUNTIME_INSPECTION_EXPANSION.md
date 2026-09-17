@@ -41,3 +41,35 @@ Dependency direction: Tier-3 → canonical contracts; contracts do not import ap
 | Tool/Governance/Session/Memory full sections | INSPECT-01-B |
 | Search/RQ surfaces | INSPECT-01-RQ |
 | Memory persistence gaps | MEM-01 / INSPECT-01-C |
+
+## INSPECT-01-B — Core Domain Read Adoption
+
+**Baseline parent (INSPECT-01-A):** `6b3744f356c6e725fc124843f1da4a8fd5417120`  
+**Task intake `origin/development`:** `995c66f42e54e41c1a62495dc87ace0ccb0fd469`  
+**Closeout HEAD:** recorded at INSPECT-01-B commit on `development`.
+
+### Domain read ownership
+
+| Domain | Canonical owner | Read contract | Inspection section |
+| --- | --- | --- | --- |
+| Tool invocations | ToolRuntime spine / reconstruction | `ToolRuntimeInvocationReadPort` (`intergrax/contracts/tool_runtime_read.py`) | `RuntimeInspectionToolSection` |
+| Governance decisions | Agent runtime governance audit | `GovernanceAuditReadPort` (`intergrax/contracts/governance_audit_read.py`) | `RuntimeInspectionGovernanceSection` |
+| Continuation lifecycle | `ExecutionContinuationStateStore` | `ExecutionContinuationSnapshotReadPort` (`intergrax/contracts/execution_continuation_read.py`) | `RuntimeInspectionContinuationSection` |
+
+### Federation
+
+`FederatedRuntimeInspectionReadService` accepts optional `tool_reader`, `governance_reader`, and `continuation_reader` (explicit injection only). Optional source failure domains: `tool_runtime`, `governance`, `continuation`.
+
+### Partial / empty semantics
+
+- **Empty + `source_available=True`:** reader succeeded, zero records.
+- **Unavailable:** typed `RuntimeInspectionSourceFailure` on reader failure; snapshot section omitted.
+- **Integrity:** wrong `ExecutionId` / tenant on facts → `INTEGRITY` failure (fail closed).
+
+### Security
+
+Tool/governance/continuation sections expose safe summaries, digests, and evidence refs only (no raw args, policy secrets, or human response bodies).
+
+### Qualification gates
+
+`tests/qualification/inspect_01/` — **B-Q1..B-Q20** (see `catalog.py` `INSPECT_01_B_Q_CATALOG`). **A-Q1..A-Q15** remain required regressions.

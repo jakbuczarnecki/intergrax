@@ -23,11 +23,14 @@ from intergrax.contracts.runtime_inspection.read_port import RuntimeInspectionRe
 from intergrax.contracts.runtime_inspection.sections import RuntimeInspectionIdentitySection
 from intergrax.contracts.runtime_inspection.snapshot import RuntimeInspectionSnapshot
 from intergrax.contracts.runtime_inspection.sources import (
+    RuntimeInspectionContinuationReadPort,
     RuntimeInspectionDiagnosticReadPort,
     RuntimeInspectionEvidenceReadPort,
     RuntimeInspectionExecutionFactsReader,
     RuntimeInspectionExecutionScopeReader,
+    RuntimeInspectionGovernanceReadPort,
     RuntimeInspectionScopeLookupOutcome,
+    RuntimeInspectionToolReadPort,
 )
 from intergrax.runtime.runtime_inspection.adapters.execution_reconstruction import (
     execution_state_section,
@@ -65,16 +68,25 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
         execution_facts_reader: RuntimeInspectionExecutionFactsReader,
         diagnostic_reader: RuntimeInspectionDiagnosticReadPort | None = None,
         evidence_reader: RuntimeInspectionEvidenceReadPort | None = None,
+        tool_reader: RuntimeInspectionToolReadPort | None = None,
+        governance_reader: RuntimeInspectionGovernanceReadPort | None = None,
+        continuation_reader: RuntimeInspectionContinuationReadPort | None = None,
     ) -> None:
         self._scope_reader = scope_reader
         self._execution_facts_reader = execution_facts_reader
         self._diagnostic_reader = diagnostic_reader
         self._evidence_reader = evidence_reader
+        self._tool_reader = tool_reader
+        self._governance_reader = governance_reader
+        self._continuation_reader = continuation_reader
         _validate_unique_source_ids(
             scope_reader.source_id,
             execution_facts_reader.source_id,
             diagnostic_reader.source_id if diagnostic_reader is not None else None,
             evidence_reader.source_id if evidence_reader is not None else None,
+            tool_reader.source_id if tool_reader is not None else None,
+            governance_reader.source_id if governance_reader is not None else None,
+            continuation_reader.source_id if continuation_reader is not None else None,
         )
 
     def inspect(self, query: RuntimeInspectionQuery) -> RuntimeInspectionSnapshot:
@@ -119,6 +131,9 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
 
         diagnostics_section = None
         evidence_section = None
+        tools_section = None
+        governance_section = None
+        continuation_section = None
         optional_completeness: list[RuntimeInspectionCompleteness] = []
 
         if self._diagnostic_reader is not None:
@@ -151,6 +166,42 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
                 )
                 optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
 
+        if self._tool_reader is not None:
+            tools_section, tool_failure = _read_optional_section(
+                "tool_runtime",
+                self._tool_reader.source_id,
+                lambda: self._tool_reader.read_tool_invocations(scope),
+            )
+            if tool_failure is not None:
+                source_failures.append(tool_failure)
+                optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
+            elif tools_section is not None:
+                optional_completeness.append(tools_section.completeness)
+
+        if self._governance_reader is not None:
+            governance_section, governance_failure = _read_optional_section(
+                "governance",
+                self._governance_reader.source_id,
+                lambda: self._governance_reader.read_governance_decisions(scope),
+            )
+            if governance_failure is not None:
+                source_failures.append(governance_failure)
+                optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
+            elif governance_section is not None:
+                optional_completeness.append(governance_section.completeness)
+
+        if self._continuation_reader is not None:
+            continuation_section, continuation_failure = _read_optional_section(
+                "continuation",
+                self._continuation_reader.source_id,
+                lambda: self._continuation_reader.read_continuation_state(scope),
+            )
+            if continuation_failure is not None:
+                source_failures.append(continuation_failure)
+                optional_completeness.append(RuntimeInspectionCompleteness.UNAVAILABLE)
+            elif continuation_section is not None:
+                optional_completeness.append(continuation_section.completeness)
+
         identity = RuntimeInspectionIdentitySection(
             tenant_id=scope.tenant_id,
             task_id=scope.task_id,
@@ -176,8 +227,38 @@ class FederatedRuntimeInspectionReadService(RuntimeInspectionReadPort):
             timeline=timeline_section,
             diagnostics=diagnostics_section,
             evidence=evidence_section,
+            tools=tools_section,
+            governance=governance_section,
+            continuation=continuation_section,
             completeness=completeness,
             source_failures=tuple(source_failures),
+        )
+
+
+def _read_optional_section(domain: str, source_id: str, read_callable):
+    try:
+        section = read_callable()
+        return section, None
+    except RuntimeInspectionError as exc:
+        if exc.code is RuntimeInspectionErrorCode.SOURCE_INTEGRITY:
+            return None, RuntimeInspectionSourceFailure(
+                source_id=source_id,
+                domain=domain,
+                code=RuntimeInspectionSourceFailureCode.INTEGRITY,
+                reason_code="source_integrity",
+            )
+        return None, RuntimeInspectionSourceFailure(
+            source_id=source_id,
+            domain=domain,
+            code=RuntimeInspectionSourceFailureCode.UNAVAILABLE,
+            reason_code="source_reader_failed",
+        )
+    except Exception:
+        return None, RuntimeInspectionSourceFailure(
+            source_id=source_id,
+            domain=domain,
+            code=RuntimeInspectionSourceFailureCode.UNAVAILABLE,
+            reason_code="source_reader_failed",
         )
 
 

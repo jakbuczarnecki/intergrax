@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Composition-time validation for ``RuntimeEventHistoryBuffer`` plugins."""
+"""Composition-time validation for platform-owned history buffers."""
 
 from __future__ import annotations
 
@@ -20,7 +20,6 @@ from intergrax.contracts.runtime_event_history import (
     RuntimeEventHistoryBuffer,
     RuntimeEventHistoryRetention,
 )
-
 _PROBE_NAMESPACE = "history-retention-probe"
 
 
@@ -46,12 +45,22 @@ def _probe_event(label: str) -> RuntimeEvent:
     )
 
 
-def validate_runtime_event_history_buffer(buffer: RuntimeEventHistoryBuffer) -> None:
-    """Reject custom buffers that do not declare bounded/disabled finite retention."""
+def validate_platform_runtime_event_history_buffer(
+    buffer: RuntimeEventHistoryBuffer,
+) -> None:
+    """Verify platform-owned retention mechanics (not external plugin honesty)."""
+    from intergrax.runtime.events.runtime_event_history import (
+        PlatformOwnedRuntimeEventHistoryBuffer,
+    )
+
+    if not isinstance(buffer, PlatformOwnedRuntimeEventHistoryBuffer):
+        raise TypeError(
+            "runtime event history buffer must be PlatformOwnedRuntimeEventHistoryBuffer",
+        )
     retention = buffer.retention()
     if not isinstance(retention, RuntimeEventHistoryRetention):
         raise ValueError(
-            "history buffer retention must be RuntimeEventHistoryRetention"
+            "history buffer retention must be RuntimeEventHistoryRetention",
         )
     if retention.mode == "disabled":
         for index in range(3):
@@ -68,9 +77,14 @@ def validate_runtime_event_history_buffer(buffer: RuntimeEventHistoryBuffer) -> 
         buffer.append(_probe_event(f"bounded-{index}"))
     if len(buffer.snapshot()) > capacity:
         raise ValueError(
-            "history buffer snapshot exceeds declared bounded retention capacity",
+            "platform history buffer snapshot exceeds declared bounded retention capacity",
         )
     buffer.clear()
 
 
-__all__ = ["validate_runtime_event_history_buffer"]
+validate_runtime_event_history_buffer = validate_platform_runtime_event_history_buffer
+
+__all__ = [
+    "validate_platform_runtime_event_history_buffer",
+    "validate_runtime_event_history_buffer",
+]

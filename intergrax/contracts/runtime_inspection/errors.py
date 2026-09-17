@@ -14,6 +14,7 @@ class RuntimeInspectionErrorCode(StrEnum):
     NOT_FOUND = "not_found"
     TENANT_BOUNDARY = "tenant_boundary"
     EXECUTION_FACTS_UNAVAILABLE = "execution_facts_unavailable"
+    SOURCE_INTEGRITY = "source_integrity"
     CONFIGURATION = "configuration"
 
 
