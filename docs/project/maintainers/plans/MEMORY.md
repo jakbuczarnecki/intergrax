@@ -161,3 +161,15 @@ Load **only** the satellite matching your task or cited gap ID.
 **Delivery rule:** One **AUDIT-IDEAL-*** ID per PR → update this table + master register → gate green.
 
 ---
+
+## Enterprise memory hardening (MEM-ENT)
+
+| Task | Status | Notes |
+| ---- | ------ | ----- |
+| MEM-ENT-1…15 | **CLOSED** | Core, lifecycle, governance, providers, durability, resilience, E2E certification |
+| MEM-ENT-16 | **CLOSED** | Architecture & documentation — [`architecture/MEMORY_ARCHITECTURE.md`](../../architecture/MEMORY_ARCHITECTURE.md) |
+| MEM-XINT-1 | **NEXT** | Memory × Context Engineering × Tools × RAG cross-layer integration |
+
+Baseline pin for MEM-ENT-15 certification: `b7497564eb43050b93fa5eed00e83008b00278cb` (`test(memory): close public composition certification`).
+
+---
