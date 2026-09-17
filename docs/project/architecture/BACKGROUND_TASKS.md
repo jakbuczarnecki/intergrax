@@ -10,7 +10,7 @@
 |------|--------|---------|
 | **Foundation / contracts** | **CURRENT** | `TaskQueue` / `MessageBus`, `TaskRequest`, `BackgroundTaskHandler`, `TaskQueueProviderRegistry`, worker intake + BG-EXEC identity/reentry |
 | **Execution integration** | **COMPLETE** | All active production **host-task / agent harness** background execution converges through `NexusWorkerRuntime` → `HostTaskExecutionPort` (queue dispatch via `QueuedHostTaskExecutionAdapter` + typed `decode_host_task_result_payload`); provider workloads documented below are out of canonical execution semantics |
-| **Production qualification** | **PARTIAL** | LKW.4E, **BG-01** (`tests/qualification/bg_01/`, gates BG-Q1..Q15), and platform proof stacks; not universal multi-tenant production qualification |
+| **Production qualification** | **PARTIAL** | LKW.4E, **BG-01** (`tests/qualification/bg_01/`, gates BG-Q1..Q15), **SCHED-01** long-running delayed resume (`tests/qualification/sched_01/`, gates SCHED-Q1..Q15); not universal multi-tenant production qualification |
 
 ---
 
@@ -92,6 +92,35 @@ execute_logical_task (registered TaskHandler) OR host-task Execution path (Nexus
 ```
 
 Host-task / agent workloads dispatched through `NexusWorkerRuntime` re-enter **host task execution** ports wired to the frozen Execution stack; logical `TaskHandler` paths use the same identity admission boundary before handler code runs.
+
+### B.2.1 Long-running delayed resume scheduling (SCHED-01)
+
+**Scope:** `LongRunningScheduler` + `ScheduledResume` / `ScheduledResumePersistence` — **when** to resume paused checkpoints and human-timeout ledger actions, not a second Execution Engine.
+
+```text
+ScheduledResume (platform schedule definition)
+    ↓
+ScheduledResumePersistence (store contract; SQLite provider in default harness)
+    ↓
+LongRunningScheduler.tick / poll loop (Clock via explicit `now` or SystemTimeProvider)
+    ↓
+claim_due + fence / lease (SchedulerLedger for human-timeout path)
+    ↓
+HostTaskResumeExecutor → HostTaskExecutionPort.execute(resume_checkpoint=…)
+    ↓
+frozen Execution Engine
+```
+
+| Topic | Supported @ SCHED-01 |
+|-------|----------------------|
+| Trigger types | **One-shot** delayed resume (`run_at_utc` ISO UTC); human-timeout ledger actions — **not** cron/interval/calendar in core |
+| Misfire (overdue one-shot) | **Fire once** on next poll when status is PENDING (no unbounded catch-up storm) |
+| Timezone | Persist **UTC instant** (`run_at_utc`); calendar timezone/DST — **NOT APPLICABLE** until calendar triggers exist |
+| Occurrence identity | `schedule_id` per `ScheduledResume` row (one logical occurrence per one-shot entry) |
+| Multi-node | **MULTI-NODE QUALIFIED** when workers share one `ScheduledResumePersistence` (atomic `claim_due` + fence) |
+| Retry ownership | Scheduler poll/claim retry **≠** queue transport retry **≠** execution attempt retry (UEA / AttemptLifecycleService) |
+
+Production harness wiring: `wire_harness_host_long_running_scheduler` → `wire_long_running_scheduler_with_host_execution` (see `intergrax/runtime/long_running/wiring.py`). Qualification: `tests/qualification/sched_01/`.
 
 [`AGENT_DISTRIBUTION.md`](AGENT_DISTRIBUTION.md) is package installation/activation only. [`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md) may constrain worker capacity but does not own Execution identity.
 
