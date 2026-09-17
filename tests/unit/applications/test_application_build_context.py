@@ -13,6 +13,7 @@ import pytest
 
 from intergrax.applications._shared.application_build_context import (
     materialize_application_build_context,
+    validate_canonical_application_python_syntax,
 )
 from intergrax.applications._shared.application_runtime_graph import (
     agent_distribution_name,
@@ -112,6 +113,23 @@ def _build_transitive_fixture(root: Path) -> None:
             _agent_pyproject(dist=agent_distribution_name(agent_dir), deps=deps),
         )
         _write(root / "agents" / agent_dir / "mod.py", f"NAME = {agent_dir!r}\n")
+
+
+@pytest.mark.gate
+def test_canonical_application_python_syntax_gate() -> None:
+    validate_canonical_application_python_syntax(REPO)
+
+
+@pytest.mark.gate
+@pytest.mark.parametrize("app", ["local_workspace_application", "lab_application"])
+def test_materialized_runtime_context_python_compiles(app: str, tmp_path: Path) -> None:
+    out = tmp_path / "ctx"
+    materialize_application_build_context(
+        repo_root=REPO,
+        application=app,
+        output=out,
+        pkg_port=8020 if "local" in app else 8090,
+    )
 
 
 @pytest.mark.gate
