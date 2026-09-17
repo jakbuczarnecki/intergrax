@@ -55,26 +55,31 @@ def _insufficient(
     )
 
 
+_ACCEPT_STATUS_EVIDENCE: dict[ExternalWorkStatus, ExternalEffectEvidenceVerdict] = {
+    ExternalWorkStatus.ACCEPTED: ExternalEffectEvidenceVerdict.DEFINITIVE_SUCCESS,
+}
+
+_CANCEL_STATUS_EVIDENCE: dict[ExternalWorkStatus, ExternalEffectEvidenceVerdict] = {
+    ExternalWorkStatus.CANCELLED: ExternalEffectEvidenceVerdict.DEFINITIVE_SUCCESS,
+}
+
+
 def _verdict_for_contract(
     *,
     contract_id: str,
     status: ExternalWorkStatus,
 ) -> ExternalEffectEvidenceVerdict:
+    """Map aggregate ``get_work`` status to operation-specific evidence — conservative."""
     if contract_id == _ACCEPT_CONTRACT_ID:
-        if status is ExternalWorkStatus.ACCEPTED:
-            return ExternalEffectEvidenceVerdict.DEFINITIVE_SUCCESS
-        if status in {
-            ExternalWorkStatus.CANCELLED,
-            ExternalWorkStatus.FAILED,
-        }:
-            return ExternalEffectEvidenceVerdict.DEFINITIVE_FAILURE
-        return ExternalEffectEvidenceVerdict.INSUFFICIENT
+        return _ACCEPT_STATUS_EVIDENCE.get(
+            status,
+            ExternalEffectEvidenceVerdict.INSUFFICIENT,
+        )
     if contract_id == _CANCEL_CONTRACT_ID:
-        if status is ExternalWorkStatus.CANCELLED:
-            return ExternalEffectEvidenceVerdict.DEFINITIVE_SUCCESS
-        if status is ExternalWorkStatus.ACCEPTED:
-            return ExternalEffectEvidenceVerdict.DEFINITIVE_FAILURE
-        return ExternalEffectEvidenceVerdict.INSUFFICIENT
+        return _CANCEL_STATUS_EVIDENCE.get(
+            status,
+            ExternalEffectEvidenceVerdict.INSUFFICIENT,
+        )
     return ExternalEffectEvidenceVerdict.INSUFFICIENT
 
 

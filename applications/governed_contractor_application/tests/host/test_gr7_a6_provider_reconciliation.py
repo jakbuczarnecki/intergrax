@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from typing import get_type_hints
 
 import pytest
 
@@ -38,6 +39,7 @@ from external_contractor_adapter.tests.fakes.deterministic_external_work import 
 from governed_contractor_application.host.stores import InMemoryProofReceiptStore
 from intergrax.contracts.enterprise_reliability import (
     EnterpriseReliabilityCapabilityKind,
+    EnterpriseReliabilityPlugin,
     EnterpriseReliabilityPluginDescriptor,
     ExternalEffectEvidenceVerdict,
     ReconciliationProbeRequest,
@@ -57,7 +59,8 @@ from intergrax.contracts.enterprise_reliability.repeat_eligibility import (
     ExternalEffectRepeatPolicyRequest,
     evaluate_external_effect_repeat_eligibility,
 )
-from intergrax.contracts.external_work import QuoteAcceptanceEvidence
+from intergrax.contracts.external_work import ExternalWorkStatus, QuoteAcceptanceEvidence
+from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
 from intergrax.contracts.external_work_provider_capabilities import (
     quote_first_partner_capability_fixture,
 )
@@ -123,10 +126,10 @@ def _resolution_plugin(
 
 
 def _reconciliation_stack(
-    fake: DeterministicExternalWorkFake,
+    integration: ExternalWorkIntegration,
 ) -> GovernedExternalWorkProviderReconciliation:
     return GovernedExternalWorkProviderReconciliation.build(
-        fake,
+        integration,
         resolution_plugin=_resolution_plugin(),
     )
 
@@ -311,7 +314,7 @@ def test_accept_unknown_still_unknown_when_quote_not_accepted() -> None:
     assert stack.correlation_registry.get_work_calls == 1
 
 
-def test_accept_unknown_confirmed_failed_when_cancelled() -> None:
+def test_accept_unknown_still_unknown_when_work_later_cancelled() -> None:
     fake = DeterministicExternalWorkFake()
     create_inv = _create_external_task(fake)
     accept_inv = _accept_invocation(create_inv)
@@ -332,7 +335,105 @@ def test_accept_unknown_confirmed_failed_when_cancelled() -> None:
         capabilities=caps,
         tenant_id=_TENANT,
     )
-    assert run.result.verdict is ProviderInvocationReconciliationVerdict.CONFIRMED_FAILED
+    assert run.result.verdict is ProviderInvocationReconciliationVerdict.STILL_UNKNOWN
+
+
+def test_cancel_unknown_still_unknown_when_probe_shows_accepted() -> None:
+    fake = DeterministicExternalWorkFake()
+    create_inv = _create_external_task(fake)
+    cancel_inv = _cancel_invocation(create_inv)
+    correlation = external_task_correlation_from_invocation(
+        task_id=cancel_inv.task_id,
+        run_id=cancel_inv.run_id,
+        provider_id=cancel_inv.provider_id,
+        external_task_id=cancel_inv.external_task_id or "",
+        correlation_id=cancel_inv.correlation_id,
+        idempotency_key=cancel_inv.idempotency_key,
+    )
+    quote = fake.get_quote(correlation)
+    fake.submit_quote_acceptance(
+        correlation,
+        _acceptance_evidence(quote.quote_id),
+        idempotency_key="idem-prior-accept",
+    )
+    stack = _reconciliation_stack(fake)
+    caps = quote_first_partner_capability_fixture(provider_id=_PROVIDER)
+    run = stack.reconcile_unknown(
+        invocation=cancel_inv,
+        outcome=_unknown_outcome(cancel_inv.invocation_id),
+        capabilities=caps,
+        tenant_id=_TENANT,
+    )
+    assert run.result.verdict is ProviderInvocationReconciliationVerdict.STILL_UNKNOWN
+    assert run.result.verdict is not ProviderInvocationReconciliationVerdict.CONFIRMED_FAILED
+
+
+@dataclass(frozen=True, slots=True)
+class _GetWorkStatusOverrideIntegration:
+    """Test double — overrides observed status without mutating provider state."""
+
+    _inner: DeterministicExternalWorkFake
+    _status: ExternalWorkStatus
+
+    def get_work(self, correlation):
+        snapshot = self._inner.get_work(correlation)
+        return snapshot.model_copy(update={"status": self._status})
+
+    def __getattr__(self, name: str):
+        return getattr(self._inner, name)
+
+
+def test_accept_unknown_still_unknown_when_probe_shows_failed() -> None:
+    fake = DeterministicExternalWorkFake()
+    create_inv = _create_external_task(fake)
+    accept_inv = _accept_invocation(create_inv)
+    integration = _GetWorkStatusOverrideIntegration(fake, ExternalWorkStatus.FAILED)
+    stack = _reconciliation_stack(integration)
+    caps = quote_first_partner_capability_fixture(provider_id=_PROVIDER)
+    run = stack.reconcile_unknown(
+        invocation=accept_inv,
+        outcome=_unknown_outcome(accept_inv.invocation_id),
+        capabilities=caps,
+        tenant_id=_TENANT,
+    )
+    assert run.result.verdict is ProviderInvocationReconciliationVerdict.STILL_UNKNOWN
+
+
+def test_cancel_unknown_still_unknown_when_probe_shows_failed() -> None:
+    fake = DeterministicExternalWorkFake()
+    create_inv = _create_external_task(fake)
+    cancel_inv = _cancel_invocation(create_inv)
+    integration = _GetWorkStatusOverrideIntegration(fake, ExternalWorkStatus.FAILED)
+    stack = _reconciliation_stack(integration)
+    caps = quote_first_partner_capability_fixture(provider_id=_PROVIDER)
+    run = stack.reconcile_unknown(
+        invocation=cancel_inv,
+        outcome=_unknown_outcome(cancel_inv.invocation_id),
+        capabilities=caps,
+        tenant_id=_TENANT,
+    )
+    assert run.result.verdict is ProviderInvocationReconciliationVerdict.STILL_UNKNOWN
+
+
+def test_governed_external_work_reconciliation_build_is_strongly_typed() -> None:
+    from pathlib import Path
+    import inspect
+
+    source = Path(
+        inspect.getfile(GovernedExternalWorkProviderReconciliation),
+    ).read_text(encoding="utf-8")
+    assert "integration: object" not in source
+    assert "resolution_plugin: object" not in source
+    assert "type: ignore" not in source
+    hints = get_type_hints(GovernedExternalWorkProviderReconciliation.build)
+    assert hints["integration"] is ExternalWorkIntegration
+    assert hints["resolution_plugin"] == EnterpriseReliabilityPlugin | None
+    fake: ExternalWorkIntegration = DeterministicExternalWorkFake()
+    stack = GovernedExternalWorkProviderReconciliation.build(
+        fake,
+        resolution_plugin=_resolution_plugin(),
+    )
+    assert stack.gateway is not None
 
 
 def test_probe_read_failure_not_confirmed_failure() -> None:

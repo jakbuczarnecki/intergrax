@@ -22,8 +22,10 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_CREATE_EXTERNAL_WORK,
 )
 from intergrax.contracts.enterprise_reliability.plugin_spi import (
+    EnterpriseReliabilityPlugin,
     EnterpriseReliabilityPluginRegistry,
 )
+from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
 from intergrax.contracts.enterprise_reliability.provider_invocation_reconciliation import (
     ProviderInvocationReconciliationRequest,
     provider_invocation_reconciliation_correlation_id,
@@ -64,9 +66,9 @@ class GovernedExternalWorkProviderReconciliation:
     @classmethod
     def build(
         cls,
-        integration: object,
+        integration: ExternalWorkIntegration,
         *,
-        resolution_plugin: object | None = None,
+        resolution_plugin: EnterpriseReliabilityPlugin | None = None,
     ) -> GovernedExternalWorkProviderReconciliation:
         registry: EnterpriseReliabilityPluginRegistry = (
             InMemoryEnterpriseReliabilityPluginRegistry()
@@ -74,12 +76,12 @@ class GovernedExternalWorkProviderReconciliation:
         correlation_registry = ExternalWorkReconciliationCorrelationRegistry()
         registry.register(
             ExternalWorkReconciliationPlugin(
-                _integration=integration,  # type: ignore[arg-type]
+                _integration=integration,
                 _correlation_registry=correlation_registry,
             ),
         )
         if resolution_plugin is not None:
-            registry.register(resolution_plugin)  # type: ignore[arg-type]
+            registry.register(resolution_plugin)
         return cls(
             gateway=EnterpriseReliabilityPluginGatewayImpl(registry),
             correlation_registry=correlation_registry,
