@@ -131,18 +131,18 @@ def effective_scope_within_request_scope(
         return False
     if effective_scope.workspace_id != request_scope.workspace_id:
         return False
-    if effective_scope.work_item_id is not None:
-        if request_scope.work_item_id != effective_scope.work_item_id:
+    if request_scope.work_item_id is not None:
+        if effective_scope.work_item_id != request_scope.work_item_id:
             return False
-    effective_op = effective_scope.operation_scope
     request_op = request_scope.operation_scope
-    if effective_op is not None:
-        if request_op is None:
+    effective_op = effective_scope.operation_scope
+    if request_op is not None:
+        if effective_op is None:
             return False
-        if request_op.operation_id != effective_op.operation_id:
+        if effective_op.operation_id != request_op.operation_id:
             return False
-        if effective_op.resource_scope is not None:
-            if request_op.resource_scope != effective_op.resource_scope:
+        if request_op.resource_scope is not None:
+            if effective_op.resource_scope != request_op.resource_scope:
                 return False
     return True
 

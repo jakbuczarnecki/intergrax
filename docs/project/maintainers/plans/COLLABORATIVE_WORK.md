@@ -588,7 +588,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 |-------|-------|
 | **ID** | MP-5E |
 | **Status** | **MP-5E — APPROVED / CLOSED** |
-| **Purpose** | Replaceable `ContextViewComposer` / `DefaultContextViewComposer`: approved policy → injected source ports → validated reference-first `ContextView` |
+| **Purpose** | Replaceable `ContextViewComposer` / `DefaultContextViewComposer`: approved policy → injected source ports → validated reference-first `ContextView`; `effective_scope` may narrow but never broaden the originating request scope |
 | **Proof** | `intergrax/contracts/context_view_composition.py`; `intergrax/collaborative_work/context_view_composition.py`; `test_context_view_composition.py`; `test_context_view_composition_architecture_gates.py`; `test_mp5e_documentation_regression_gates.py` |
 | **Next step** | **MP-5F — NEXT** |
 

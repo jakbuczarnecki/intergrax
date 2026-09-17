@@ -28,11 +28,13 @@ from intergrax.contracts.context_view_composition import (
     ContextViewCompositionCandidateIsolationError,
     ContextViewCompositionPolicyDeniedError,
     ContextViewCompositionRequest,
+    ContextViewCompositionRequestAlignmentError,
     ContextViewCompositionSourceFailureError,
     ContextViewCompositionValidatedCandidate,
     ContextViewComposer,
     ContextViewEntryIdentityStrategy,
     ContextViewIdentityStrategy,
+    effective_scope_within_request_scope,
     validate_context_view_matches_composition_request,
 )
 from intergrax.contracts.context_view_source_ports import (
@@ -69,6 +71,15 @@ def _request(**overrides: object) -> ContextViewRequest:
     }
     payload.update(overrides)
     return ContextViewRequest(**payload)
+
+
+def _request_for_scope(scope: ContextViewScope, **overrides: object) -> ContextViewRequest:
+    operation_id = (
+        scope.operation_scope.operation_id
+        if scope.operation_scope is not None
+        else "op.read_context"
+    )
+    return _request(scope=scope, operation_id=operation_id, **overrides)
 
 
 def _allow_decision(
@@ -356,3 +367,212 @@ def test_default_category_ordering_strategy_is_replaceable() -> None:
 def test_identity_strategies_are_replaceable() -> None:
     assert isinstance(Sha256ContextViewEntryIdentityStrategy(), ContextViewEntryIdentityStrategy)
     assert isinstance(Sha256ContextViewIdentityStrategy(), ContextViewIdentityStrategy)
+
+
+def _compose_with_effective_scope(
+    *,
+    request_scope: ContextViewScope,
+    effective_scope: ContextViewScope,
+) -> None:
+    memory = _RecordingMemoryPort()
+    request = _request_for_scope(request_scope)
+    decision = _allow_decision(request, effective_scope=effective_scope)
+    DefaultContextViewComposer(memory_source=memory).compose(
+        ContextViewCompositionRequest(request=request, policy_decision=decision),
+    )
+
+
+def _compose_with_effective_scope_expect_alignment_error(
+    *,
+    request_scope: ContextViewScope,
+    effective_scope: ContextViewScope,
+) -> None:
+    memory = _RecordingMemoryPort()
+    request = _request_for_scope(request_scope)
+    decision = _allow_decision(request, effective_scope=effective_scope)
+    with pytest.raises(ContextViewCompositionRequestAlignmentError):
+        DefaultContextViewComposer(memory_source=memory).compose(
+            ContextViewCompositionRequest(request=request, policy_decision=decision),
+        )
+    assert memory.calls == []
+
+
+def test_work_item_broadening_rejected_zero_source_calls() -> None:
+    _compose_with_effective_scope_expect_alignment_error(
+        request_scope=_scope(work_item_id="wi-1"),
+        effective_scope=_scope(),
+    )
+
+
+def test_work_item_narrowing_passes_source_gets_narrowed_work_item() -> None:
+    memory = _RecordingMemoryPort()
+    narrowed = _scope(work_item_id="wi-1")
+    request = _request(scope=_scope())
+    decision = _allow_decision(request, effective_scope=narrowed)
+    DefaultContextViewComposer(memory_source=memory).compose(
+        ContextViewCompositionRequest(request=request, policy_decision=decision),
+    )
+    assert memory.calls[0].scope.work_item_id == "wi-1"
+
+
+def test_different_work_item_rejected() -> None:
+    _compose_with_effective_scope_expect_alignment_error(
+        request_scope=_scope(work_item_id="wi-1"),
+        effective_scope=_scope(work_item_id="wi-2"),
+    )
+
+
+def test_operation_broadening_rejected() -> None:
+    op = ContextViewOperationScope(operation_id="op-1")
+    _compose_with_effective_scope_expect_alignment_error(
+        request_scope=_scope(operation_scope=op),
+        effective_scope=_scope(operation_scope=None),
+    )
+
+
+def test_operation_narrowing_passes() -> None:
+    op = ContextViewOperationScope(operation_id="op-1")
+    _compose_with_effective_scope(
+        request_scope=_scope(),
+        effective_scope=_scope(operation_scope=op),
+    )
+
+
+def test_operation_id_mismatch_rejected() -> None:
+    _compose_with_effective_scope_expect_alignment_error(
+        request_scope=_scope(
+            operation_scope=ContextViewOperationScope(operation_id="op-1"),
+        ),
+        effective_scope=_scope(
+            operation_scope=ContextViewOperationScope(operation_id="op-2"),
+        ),
+    )
+
+
+def test_resource_narrowing_passes() -> None:
+    op = ContextViewOperationScope(
+        operation_id="op.read_context",
+        resource_scope="res-1",
+    )
+    base_op = ContextViewOperationScope(operation_id="op.read_context")
+    _compose_with_effective_scope(
+        request_scope=_scope(operation_scope=base_op),
+        effective_scope=_scope(operation_scope=op),
+    )
+
+
+def test_resource_broadening_rejected() -> None:
+    op_with = ContextViewOperationScope(
+        operation_id="op.read_context",
+        resource_scope="res-1",
+    )
+    op_without = ContextViewOperationScope(operation_id="op.read_context")
+    _compose_with_effective_scope_expect_alignment_error(
+        request_scope=_scope(operation_scope=op_with),
+        effective_scope=_scope(operation_scope=op_without),
+    )
+
+
+def test_resource_mismatch_rejected() -> None:
+    _compose_with_effective_scope_expect_alignment_error(
+        request_scope=_scope(
+            operation_scope=ContextViewOperationScope(
+                operation_id="op.read_context",
+                resource_scope="res-1",
+            ),
+        ),
+        effective_scope=_scope(
+            operation_scope=ContextViewOperationScope(
+                operation_id="op.read_context",
+                resource_scope="res-2",
+            ),
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("request_overrides", "effective_overrides", "expected_within"),
+    [
+        pytest.param({}, {}, True, id="workspace-unchanged"),
+        pytest.param({}, {"work_item_id": "wi-1"}, True, id="workspace-to-work-item"),
+        pytest.param({"work_item_id": "wi-1"}, {}, False, id="work-item-to-workspace"),
+        pytest.param(
+            {},
+            {"operation_scope": ContextViewOperationScope(operation_id="op-1")},
+            True,
+            id="no-op-to-op",
+        ),
+        pytest.param(
+            {"operation_scope": ContextViewOperationScope(operation_id="op-1")},
+            {},
+            False,
+            id="op-to-no-op",
+        ),
+        pytest.param(
+            {},
+            {
+                "operation_scope": ContextViewOperationScope(
+                    operation_id="op.read_context",
+                    resource_scope="res-1",
+                ),
+            },
+            True,
+            id="no-resource-to-resource",
+        ),
+        pytest.param(
+            {
+                "operation_scope": ContextViewOperationScope(
+                    operation_id="op.read_context",
+                    resource_scope="res-1",
+                ),
+            },
+            {
+                "operation_scope": ContextViewOperationScope(
+                    operation_id="op.read_context",
+                ),
+            },
+            False,
+            id="resource-to-no-resource",
+        ),
+        pytest.param(
+            {"work_item_id": "wi-1"},
+            {"work_item_id": "wi-2"},
+            False,
+            id="work-item-mismatch",
+        ),
+        pytest.param(
+            {
+                "operation_scope": ContextViewOperationScope(operation_id="op-1"),
+            },
+            {
+                "operation_scope": ContextViewOperationScope(operation_id="op-2"),
+            },
+            False,
+            id="operation-mismatch",
+        ),
+        pytest.param(
+            {"tenant_id": "tenant-a"},
+            {"tenant_id": "tenant-b"},
+            False,
+            id="cross-tenant"),
+        pytest.param(
+            {"workspace_id": "ws-1"},
+            {"workspace_id": "ws-2"},
+            False,
+            id="cross-workspace"),
+    ],
+)
+def test_effective_scope_subset_relation_table(
+    request_overrides: dict[str, object],
+    effective_overrides: dict[str, object],
+    expected_within: bool,
+) -> None:
+    request_scope = _scope(**request_overrides)
+    effective_scope = _scope(**effective_overrides)
+    assert (
+        effective_scope_within_request_scope(
+            request_scope=request_scope,
+            effective_scope=effective_scope,
+        )
+        is expected_within
+    )

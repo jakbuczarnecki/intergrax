@@ -270,7 +270,6 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-5D | Source composition ports | **APPROVED / CLOSED** |
 | MP-5E | Default composition implementation | **CLOSED** |
 | MP-5F | Source adapters / integration | **NEXT** |
-| MP-5F | Source adapters / integration | PLANNED |
 | MP-5G | E2E / isolation qualification | PLANNED |
 | MP-5H | Final MP-5 enterprise certification | PLANNED |
 
