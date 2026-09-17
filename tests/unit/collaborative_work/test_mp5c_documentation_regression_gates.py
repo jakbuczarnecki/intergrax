@@ -131,7 +131,7 @@ def test_mp5c_default_policy_config_has_no_platform_authority_scope_field() -> N
     assert "required_authority_scope" not in config_block
 
 
-def test_mp5c_closed_mp5d_next_docs_markers() -> None:
+def test_mp5c_closed_docs_markers() -> None:
     docs = (
         _REPO_ROOT / "docs" / "project" / "architecture" / "COLLABORATIVE_WORK.md",
         _REPO_ROOT / "docs" / "project" / "maintainers" / "plans" / "COLLABORATIVE_WORK.md",
@@ -141,5 +141,4 @@ def test_mp5c_closed_mp5d_next_docs_markers() -> None:
     for path in docs:
         text = path.read_text(encoding="utf-8-sig")
         assert "MP-5C — APPROVED / CLOSED" in text, path.name
-        assert "MP-5D — NEXT" in text, path.name
         assert "context_view_visibility_policy.py" in text, path.name
