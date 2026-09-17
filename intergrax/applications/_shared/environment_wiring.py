@@ -390,20 +390,25 @@ def wire_application_environment(
             tenant_id=tenant_id,
             rag_stack=rag_stack,
         )
-    if user_profile_manager is not None:
-        from dataclasses import replace
+    from dataclasses import replace
 
+    session_wiring_extras = {
+        **wiring_context.extras,
+        "session_manager": session_manager,
+    }
+    host_memory_plane = session_manager.memory_control_plane
+    if host_memory_plane is not None:
+        session_wiring_extras["memory_control_plane"] = host_memory_plane
+    if user_profile_manager is not None:
         wiring_context = replace(
             wiring_context,
             user_profile_manager=user_profile_manager,
-            extras={**wiring_context.extras, "session_manager": session_manager},
+            extras=session_wiring_extras,
         )
     else:
-        from dataclasses import replace
-
         wiring_context = replace(
             wiring_context,
-            extras={**wiring_context.extras, "session_manager": session_manager},
+            extras=session_wiring_extras,
         )
     wiring_context = wire_session_storage_tool_binding(
         wiring_context, memory_wiring.session_storage

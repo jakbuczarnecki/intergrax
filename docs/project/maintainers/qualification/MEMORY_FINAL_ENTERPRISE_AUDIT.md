@@ -784,4 +784,79 @@ Contract-first architecture and replaceability **hold** for canonical mutation, 
 
 ### AUDIT-2 status after R (pending independent GitHub verification)
 
-**MEM-FINAL-AUDIT-2 CLOSED** — subject to external re-audit on exact closure commit SHA before MEM-FINAL-AUDIT-3.
+**PASS WITH CORRECTIONS — MEM-FINAL-AUDIT-2-R NOT CLOSED** (independent re-audit `ea809d9f19c9bc0fcac9feb7eed5177f4518837b`).
+
+---
+
+## MEM-FINAL-AUDIT-2-R2 — Canonical Plane Composition & Regression Closure
+
+**Audited baseline (R):** `ea809d9f19c9bc0fcac9feb7eed5177f4518837b` (ancestor on closure branch: **YES**).
+**Parent MEM-XINT SHA:** `08b182e948e59756548b1525a7fc56d180409bb1`.
+**HEAD before R2:** `41a145332921de5d49f8f78099aca85d5591ef51` on `development`.
+
+### R2-1 — MemoryControlPlane composition inventory
+
+| Composition site | Host/runtime scope | Why plane is built | Shared or duplicate (pre-R2) |
+| ---------------- | ------------------ | ------------------ | ---------------------------- |
+| `applications/_shared/memory_wiring.py` → `build_session_manager_from_environment` | Canonical Tier-3 host session bootstrap | Default factory when `user_profile_manager` present and no injection | **Host authority (once per session build)** |
+| `applications/_shared/runtime_config_bridge.py` → `build_runtime_context_from_environment` | Same runtime host as SessionManager | Second `build_default_memory_control_plane(...)` into `tool_wiring_context.extras` | **DUPLICATE** (different instance, same config intent) |
+| `applications/_shared/environment_wiring.py` → `wire_application_environment` | Application harness host | SessionManager built via `build_session_manager_from_environment`; extras lacked plane | **MISSING shared extras** (CE/tools could not see host plane) |
+| `runtime/nexus/context/memory_context_invocation.py` | CE recall | Reads `config.tool_wiring_context.extras["memory_control_plane"]` | **Depends on extras authority** (was duplicate plane from bridge) |
+| Tests / e2e harnesses | Isolated harness | Local plane for qualification | **LEGAL** (independent hosts) |
+
+**Root cause:** consumer-owned second default build in `runtime_config_bridge` instead of reusing the SessionManager host plane.
+
+**R2 correction:** build plane **once** in `build_session_manager_from_environment` (or inject custom via `memory_control_plane=`); propagate **same instance** to `tool_wiring_context.extras["memory_control_plane"]` in `environment_wiring` and `runtime_config_bridge`; CE reads that extras transport (typed authority = SessionManager host plane). `SessionManager.memory_control_plane` public property added for composition proof.
+
+**Guards:** `tests/unit/applications/test_mem_audit2_r2_host_memory_control_plane_composition.py` (shared identity + custom stub injection + static guard: bridge must not call `build_default_memory_control_plane`).
+
+### R2-2 — RagStack / materialization boundary
+
+| Consumer | `rag_stack` usage |
+| -------- | ----------------- |
+| `memory/resolver/resolver.py` factory kwargs | **None** (tenant_id only) |
+| `memory/resolver/materialization.py` | Field only (unused) |
+| Application wiring building `MemoryStoreMaterializationContext` | Passed `rag_stack=None` or omitted |
+
+**Verdict:** **REMOVED FROM MEMORY MATERIALIZATION BOUNDARY** — `MemoryStoreMaterializationContext` fields: `tenant_id`, `integration_profile` only. Guard: `test_memory_resolver_does_not_import_rag_bootstrap`.
+
+**IntegrationProfile verdict:** **LEGAL_PORT_DEPENDENCY** (`intergrax.integrations.registry.profile` platform contract).
+
+### R2-3 — MEM-XINT parent vs final (suite: `tests/integration/context/test_mem_xint6_cross_layer_e2e_certification.py`, sequential, no xdist)
+
+| Test | Parent `08b182e94` | Final (R2 closure) | Classification |
+| ---- | ------------------ | ------------------ | -------------- |
+| `test_memory_recall_enters_model_only_through_context_engine` | FAIL | FAIL | **PRE_EXISTING_FAILURE** (CE `ContextProviderContext.runtime` required) |
+| `test_rag_evidence_enters_model_only_through_context_engine` | FAIL | FAIL | **PRE_EXISTING_FAILURE** |
+| `test_session_episodic_and_canonical_memory_distinct_in_ce` | FAIL | FAIL | **PRE_EXISTING_FAILURE** |
+| `test_mixed_source_full_pipeline_stages_and_provenance_walkthrough` | FAIL | FAIL | **PRE_EXISTING_FAILURE** |
+| `test_remember_recall_roundtrip_reaches_ce_without_manager_bypass` | FAIL | FAIL | **PRE_EXISTING_FAILURE** |
+| `test_deterministic_assembly_two_runs_match` | FAIL | FAIL | **PRE_EXISTING_FAILURE** |
+| `test_typed_sources_documented_on_provider_context` | FAIL | FAIL | **PRE_EXISTING_FAILURE** (doc string drift in `context/contracts.py`) |
+
+**Regression verdict:** **NO MEMORY REGRESSION** — identical failure set and root causes on parent and final; Memory R/R2 diff does not touch CE assembly runtime hydration.
+
+### P1 table (post-R2)
+
+| P1 | Status |
+| --- | ------ |
+| P1-1 direct recall bypass | **CLOSED** |
+| P1-2 concrete projection core construction | **CLOSED** |
+| P1-3 memory→applications | **CLOSED** |
+| P1-4 duplicated host semantic plane | **CLOSED** |
+
+**New P1:** **NONE**
+
+### Targeted verification (R2)
+
+| Suite | Result |
+| ----- | ------ |
+| `test_mem_audit2_r2_host_memory_control_plane_composition` + P1 guards | **PASS** |
+| `tests/unit/memory/**` + `tests/integration/memory/**` | **633 passed** |
+| `tests/unit/runtime/nexus/session/**` + integration session | **included above** |
+
+### R2 verdict
+
+**PASS — MEM-FINAL-AUDIT-2 FULLY CLOSED** (pending independent GitHub SHA verification before AUDIT-3).
+
+> Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-3.

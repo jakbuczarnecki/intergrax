@@ -27,6 +27,14 @@ def test_memory_package_does_not_import_applications_tier() -> None:
         assert forbidden not in text, f"{path} imports applications tier"
 
 
+def test_memory_resolver_does_not_import_rag_bootstrap() -> None:
+    resolver_root = _MEMORY_ROOT / "resolver"
+    forbidden = "intergrax.rag.bootstrap"
+    for path in sorted(resolver_root.rglob("*.py")):
+        text = path.read_text(encoding="utf-8")
+        assert forbidden not in text, f"{path} imports RAG bootstrap tier"
+
+
 def test_public_user_profile_memory_reexports_canonical_models() -> None:
     assert legacy_surface.UserProfile is canonical_models.UserProfile
     assert (

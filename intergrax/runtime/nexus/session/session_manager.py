@@ -497,6 +497,9 @@ class SessionManager:
     def user_profile_manager(self) -> UserProfileManager | None:
         return self._user_profile_manager
 
+    @property
+    def memory_control_plane(self) -> Optional["MemoryControlPlane"]:
+        return self._memory_control_plane
 
     # ------------------------------------------------------------------
     # Organization profile memory – prompt-level instructions (per session)

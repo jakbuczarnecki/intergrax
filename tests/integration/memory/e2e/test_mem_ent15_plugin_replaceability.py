@@ -54,7 +54,6 @@ async def test_reference_and_plugin_providers_equivalent_semantic_recall() -> No
     ctx = MemoryStoreMaterializationContext(
         tenant_id="tenant-ent15-plugin",
         integration_profile=env.integration_profile,
-        rag_stack=None,
     )
     plugin_store = materialize_user_profile_store(
         ExternalInMemoryUserProfileStorePlugin.plugin_id(),

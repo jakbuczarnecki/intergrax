@@ -49,6 +49,7 @@ from intergrax.memory.resolver.discovery import (
 from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
 from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
 from intergrax.applications._shared.memory_control_wiring import build_default_memory_control_plane
+from intergrax.memory.contracts.memory_control import MemoryControlPlane
 from intergrax.applications._shared.entity_graph_wiring import (
     resolve_entity_temporal_memory_capability,
 )
@@ -317,6 +318,7 @@ def build_session_manager_from_environment(
     integration_profile: IntegrationProfile | None = None,
     memory_wiring: MemoryPlatformWiring | None = None,
     rag_stack: RagStack | None = None,
+    memory_control_plane: MemoryControlPlane | None = None,
 ) -> SessionManager:
     """Construct ``SessionManager`` with profile managers driven by ``MemoryProfile``."""
     wiring = memory_wiring or resolve_memory_platform_wiring(
@@ -352,11 +354,11 @@ def build_session_manager_from_environment(
         rag_stack=rag_stack,
     )
 
-    memory_control_plane = (
-        build_default_memory_control_plane(user_profile_manager=user_manager)
-        if user_manager is not None
-        else None
-    )
+    resolved_memory_control_plane = memory_control_plane
+    if resolved_memory_control_plane is None and user_manager is not None:
+        resolved_memory_control_plane = build_default_memory_control_plane(
+            user_profile_manager=user_manager,
+        )
 
     return SessionManager(
         wiring.session_storage,
@@ -368,5 +370,5 @@ def build_session_manager_from_environment(
         session_index_score_threshold=memory_profile.session_index_score_threshold,
         include_cross_session_episodic=memory_profile.include_cross_session_episodic,
         memory_consolidation_mode=memory_profile.consolidation_mode,
-        memory_control_plane=memory_control_plane,
+        memory_control_plane=resolved_memory_control_plane,
     )
