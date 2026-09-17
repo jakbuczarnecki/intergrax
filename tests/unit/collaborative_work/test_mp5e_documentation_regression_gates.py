@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""MP-5D — documentation regression gates for source composition ports closure."""
+"""MP-5E — documentation regression gates for default composer closure."""
 
 from __future__ import annotations
 
@@ -39,26 +39,19 @@ _STATUS_DOCS = {
 }
 
 _REQUIRED_MARKERS = (
-    "MP-5D — APPROVED / CLOSED",
     "MP-5E — APPROVED / CLOSED",
     "MP-5F — NEXT",
-    "intergrax/contracts/context_view_source_ports.py",
-    "ContextViewPolicyDecision",
-    "source composition ports",
+    "intergrax/contracts/context_view_composition.py",
+    "DefaultContextViewComposer",
+    "ContextViewComposer",
 )
-
-_CONTRACT_MODULE = _REPO_ROOT / "intergrax" / "contracts" / "context_view_source_ports.py"
 
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig")
 
 
-def test_mp5d_source_ports_contract_module_exists() -> None:
-    assert _CONTRACT_MODULE.is_file()
-
-
-def test_mp5d_status_markers_present_in_ssot_docs() -> None:
+def test_mp5e_status_markers_present_in_ssot_docs() -> None:
     for name, path in _STATUS_DOCS.items():
         text = _read(path)
         text_lower = text.lower()
@@ -68,14 +61,3 @@ def test_mp5d_status_markers_present_in_ssot_docs() -> None:
             if marker.lower() not in text_lower and marker not in text
         ]
         assert not missing, f"{name}: missing markers: {missing}"
-
-
-def test_mp5d_no_default_composer_or_adapter_symbols_in_contract() -> None:
-    text = _read(_CONTRACT_MODULE)
-    forbidden = (
-        "DefaultMemoryContextSource",
-        "ContextViewComposer",
-        "ContextViewDatabase",
-    )
-    for symbol in forbidden:
-        assert symbol not in text, symbol

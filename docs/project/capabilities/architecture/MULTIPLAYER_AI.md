@@ -30,7 +30,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 **B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented and closed in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence, production PostgreSQL qualification). Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
 
-**C. Planned / not started as Multiplayer phases.** **MP-3 — ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004; MP-3H). **MP-4 implementation — FORMALLY CLOSED** (**MP-4R0…MP-4R8 CLOSED**); **MP-4 documentation certification — CLOSED** (MP-4D1–D8) — canonical detail in [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). **MP-5A — APPROVED / CLOSED** (ADR-MP-006); **MP-5B — APPROVED / CLOSED**; **MP-5C — APPROVED / CLOSED**; **MP-5D — APPROVED / CLOSED**; MP-5E…MP-9 remain roadmap.
+**C. Planned / not started as Multiplayer phases.** **MP-3 — ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004; MP-3H). **MP-4 implementation — FORMALLY CLOSED** (**MP-4R0…MP-4R8 CLOSED**); **MP-4 documentation certification — CLOSED** (MP-4D1–D8) — canonical detail in [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). **MP-5A — APPROVED / CLOSED** (ADR-MP-006); **MP-5B — APPROVED / CLOSED**; **MP-5C — APPROVED / CLOSED**; **MP-5D — APPROVED / CLOSED**; **MP-5E — APPROVED / CLOSED**; MP-5F…MP-9 remain roadmap.
 
 **D. Proof boundary.** Runtime / public **E2E proof for Multiplayer AI as a product capability is not established**. Architecture and partial MP-1 implementation do not imply end-to-end collaborative product readiness.
 
@@ -103,7 +103,7 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-5E — NEXT** (Default composition implementation; MP-5D **`intergrax/contracts/context_view_source_ports.py`** — **CLOSED**).
+**Current active task:** **MP-5F — NEXT** (Source adapters / integration; MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**).
 **Previous:** **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
@@ -438,7 +438,7 @@ not replace existing Evidence.
 
 **Delivered:** WorkItem, Assignment, shared-work lifecycle, concurrency, idempotency, and `WorkItemExecutionLink` provenance — contracts (2A) and implementation (2B…2G).
 
-**Next capability slice:** **MP-5E — NEXT** (Default composition implementation).
+**Next capability slice:** **MP-5F — NEXT** (Source adapters / integration).
 
 ---
 
@@ -469,7 +469,7 @@ not replace existing Evidence.
 | MP-3G | Execution/evidence integration | APPROVED / CLOSED |
 | MP-3H | Final enterprise certification | APPROVED / CLOSED |
 
-**Next active task:** **MP-5E — NEXT** (**MP-5D — APPROVED / CLOSED**).
+**Next active task:** **MP-5F — NEXT** (**MP-5E — APPROVED / CLOSED**).
 
 **Architectural implementation slices:** MP-3A contracts → MP-3B ports/publication port (atomic initial create + publish) → MP-3C service + authority → MP-3D SQLite → MP-3E PostgreSQL → MP-3F content adapters → MP-3G execution/evidence → MP-3H closure. MP-3F follows MP-3E (metadata/content-ref qualification does not require live content provider).
 
@@ -505,7 +505,7 @@ not replace existing Evidence.
 
 **Owning domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) — **MP-5 ownership — FROZEN** ([ADR-MP-006](../../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**).
 
-**MP-5A — APPROVED / CLOSED** (architecture / ownership / contract gate only). **MP-5B — APPROVED / CLOSED** (`intergrax/contracts/context_view.py`). **MP-5C — APPROVED / CLOSED** (`intergrax/contracts/context_view_visibility_policy.py`). **MP-5D — APPROVED / CLOSED** — after `ContextViewPolicyDecision`, **source composition ports** (`intergrax/contracts/context_view_source_ports.py`). Default runtime composition **NOT STARTED** (MP-5E).
+**MP-5A — APPROVED / CLOSED** (architecture / ownership / contract gate only). **MP-5B — APPROVED / CLOSED** (`intergrax/contracts/context_view.py`). **MP-5C — APPROVED / CLOSED** (`intergrax/contracts/context_view_visibility_policy.py`). **MP-5D — APPROVED / CLOSED** — after `ContextViewPolicyDecision`, **source composition ports** (`intergrax/contracts/context_view_source_ports.py`). **MP-5E — APPROVED / CLOSED** — `ContextViewComposer` + `DefaultContextViewComposer` (`intergrax/contracts/context_view_composition.py`, `intergrax/collaborative_work/context_view_composition.py`).
 
 **Reused (not owners):** MP-1 `EffectiveAuthorityRequest` / membership / delegation; UCL lifecycle ports; CE model-facing assembly; Memory recall; Knowledge/RAG retrieval; Token Optimization executors; CE / Evidence provenance for admission audit.
 
@@ -535,7 +535,8 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 | MP-5B | Core typed ContextView contracts | **APPROVED / CLOSED** |
 | MP-5C | Principal-scope visibility policy | **APPROVED / CLOSED** |
 | MP-5D | Source composition ports | **APPROVED / CLOSED** |
-| MP-5E | Default composition implementation | **NEXT** |
+| MP-5E | Default composition implementation | **CLOSED** |
+| MP-5F | Source adapters / integration | **NEXT** |
 | MP-5F | Source adapters / integration | PLANNED |
 | MP-5G | E2E / isolation qualification | PLANNED |
 | MP-5H | Final MP-5 enterprise certification | PLANNED |
