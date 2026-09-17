@@ -91,6 +91,15 @@ from intergrax.contracts.enterprise_reliability.repeat_eligibility import (
     evaluate_external_effect_repeat_eligibility,
     external_effect_repeat_policy_id,
 )
+from intergrax.contracts.enterprise_reliability.provider_invocation_reconciliation import (
+    ProviderInvocationReconciliationPreparation,
+    ProviderInvocationReconciliationReason,
+    ProviderInvocationReconciliationRequest,
+    ProviderInvocationReconciliationResult,
+    ProviderInvocationReconciliationVerdict,
+    prepare_provider_invocation_reconciliation,
+    provider_invocation_reconciliation_correlation_id,
+)
 from intergrax.contracts.enterprise_reliability.case_lifecycle import (
     ReliabilityCaseLifecycleContextError,
     ReliabilityCaseLifecycleRecord,
@@ -378,6 +387,13 @@ __all__ = [
     "ExternalEffectRepeatPolicyIdentifiable",
     "ExternalEffectRepeatPolicyRequest",
     "external_effect_repeat_policy_id",
+    "ProviderInvocationReconciliationPreparation",
+    "ProviderInvocationReconciliationReason",
+    "ProviderInvocationReconciliationRequest",
+    "ProviderInvocationReconciliationResult",
+    "ProviderInvocationReconciliationVerdict",
+    "prepare_provider_invocation_reconciliation",
+    "provider_invocation_reconciliation_correlation_id",
     "ReconciliationStrategyAdvice",
     "evaluate_unknown_uncertainty_posture",
     "assert_resolution_advice_consistent_with_evidence",
