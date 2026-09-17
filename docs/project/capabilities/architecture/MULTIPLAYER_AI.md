@@ -430,7 +430,7 @@ not replace existing Evidence.
 
 **Delivered:** WorkItem, Assignment, shared-work lifecycle, concurrency, idempotency, and `WorkItemExecutionLink` provenance — contracts (2A) and implementation (2B…2G).
 
-**Next capability:** MP-3 (see § MP-3 — active open slice **MP-3G**).
+**Next capability:** MP-3 (see § MP-3 — active open slice **MP-3H**).
 
 ---
 
@@ -458,10 +458,10 @@ not replace existing Evidence.
 | MP-3D | SQLite transactional persistence | APPROVED / CLOSED |
 | MP-3E | PostgreSQL + qualification | APPROVED / CLOSED |
 | MP-3F | Content storage adapters | APPROVED / CLOSED |
-| MP-3G | Execution/evidence integration | READY_FOR_INDEPENDENT_AUDIT |
+| MP-3G | Execution/evidence integration | APPROVED / CLOSED |
 | MP-3H | Final independent review | NOT STARTED |
 
-**Next active task:** **MP-3G — NEXT** (READY_FOR_INDEPENDENT_AUDIT — independent audit pending; **MP-3H NOT STARTED**).
+**Next active task:** **MP-3H — NEXT** (**MP-3G — APPROVED / CLOSED**; integration semantics certified).
 
 **Architectural implementation slices:** MP-3A contracts → MP-3B ports/publication port (atomic initial create + publish) → MP-3C service + authority → MP-3D SQLite → MP-3E PostgreSQL → MP-3F content adapters → MP-3G execution/evidence → MP-3H closure. MP-3F follows MP-3E (metadata/content-ref qualification does not require live content provider).
 
