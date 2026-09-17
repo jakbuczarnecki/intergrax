@@ -291,9 +291,9 @@ flowchart LR
 | Policy evaluation (GEP) | PARTIAL | QUALIFIED | QUALIFIED |
 | Meaningful side effect spine | NOT_APPLICABLE | PARTIAL | PARTIAL |
 | Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
-| HITL continuation (GR-5) | GAP | QUALIFIED | PARTIAL |
+| HITL continuation (GR-5) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Continuation (GR-5 port) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
-| Reliability boundary (GR-7) | GAP | QUALIFIED | PARTIAL |
+| Reliability boundary (GR-7) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Governance Evidence (GR-8) | WIRED_NOT_QUALIFIED | PARTIAL | PARTIAL |
 | Control-plane mutation | NOT_APPLICABLE (spine) | NOT_APPLICABLE | NOT_APPLICABLE — live **GAP** GR-12 |
 
@@ -652,8 +652,8 @@ Status vocabulary: **COVERED** (wired enforcement on demonstrated production-cla
 | Inner guard / MSE spine (GR-3) | PARTIAL (identity on `InferenceExecutor`) | PARTIAL | PARTIAL (primary proofs) |
 | Tool invoke policy | NOT_APPLICABLE | COVERED | COVERED |
 | Decision-required MSE (GR-6) | NOT_APPLICABLE | QUALIFIED (MP-4R7 / governed contractor) | PARTIAL (External Work host) |
-| HITL continuation port (GR-5) | GAP | QUALIFIED (MP-4R7) | PARTIAL (orchestration HITL slices) |
-| Provider reliability boundary (GR-7) | GAP | QUALIFIED (governed contractor GR-7) | PARTIAL (External Work) |
+| HITL continuation port (GR-5) | NOT_APPLICABLE (no strategy-path REQUIRE_HUMAN) | QUALIFIED (MP-4R7) | PARTIAL (orchestration HITL slices) |
+| Provider reliability boundary (GR-7) | NOT_APPLICABLE (not a GR-7 external effect) | QUALIFIED (governed contractor GR-7) | PARTIAL (External Work) |
 
 ### Decision → Governance (GR-6 result model)
 

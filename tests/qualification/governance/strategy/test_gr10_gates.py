@@ -17,8 +17,12 @@ from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRe
 from intergrax.runtime.execution.strategy import ExecutionStrategy, execution_strategy_from_capabilities
 from tests.qualification.governance.strategy.catalog import (
     GR10_FINAL_CAPABILITY_MATRIX,
+    GR10_INFERENCE_CAPABILITY_SEMANTICS,
     GR10_PRODUCTION_INVENTORY,
+    GR10_SCENARIO_CATALOG,
+    Gr10Applicability,
     Gr10CoverageStatus,
+    gr10_matrix_inference_status,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -159,3 +163,68 @@ def test_gr10_host_execution_wiring_no_service_locator() -> None:
         source = path.read_text(encoding="utf-8-sig")
         for forbidden in _FORBIDDEN_SERVICE_LOCATOR_NAMES:
             assert forbidden not in source
+
+
+def test_gr10_inference_inventory_and_matrix_semantics_are_consistent() -> None:
+    semantics = {row.capability: row for row in GR10_INFERENCE_CAPABILITY_SEMANTICS}
+    matrix_by_cap = {row.capability: row.inference for row in GR10_FINAL_CAPABILITY_MATRIX}
+    assert semantics.keys() == matrix_by_cap.keys()
+    for capability, expected in semantics.items():
+        assert matrix_by_cap[capability] is gr10_matrix_inference_status(capability)
+        if expected.applicability is Gr10Applicability.NOT_APPLICABLE:
+            assert matrix_by_cap[capability] is Gr10CoverageStatus.NOT_APPLICABLE
+            assert expected.coverage is None
+            assert matrix_by_cap[capability] is not Gr10CoverageStatus.GAP
+        else:
+            assert expected.coverage is matrix_by_cap[capability]
+
+
+def test_gr10_inventory_and_capability_matrix_are_consistent() -> None:
+    """NOT_APPLICABLE in production inventory must not pair with GAP in the matrix."""
+    inference_inventory = next(
+        entry for entry in GR10_PRODUCTION_INVENTORY if entry.strategy == "INFERENCE"
+    )
+    for label, path in (
+        ("hitl", inference_inventory.hitl_path),
+        ("reliability", inference_inventory.reliability_path),
+    ):
+        assert "NOT_APPLICABLE" in path, label
+    matrix = {row.capability: row.inference for row in GR10_FINAL_CAPABILITY_MATRIX}
+    assert matrix["HITL"] is Gr10CoverageStatus.NOT_APPLICABLE
+    assert matrix["Reliability"] is Gr10CoverageStatus.NOT_APPLICABLE
+    for row in GR10_FINAL_CAPABILITY_MATRIX:
+        if row.inference is Gr10CoverageStatus.NOT_APPLICABLE:
+            assert row.inference is not Gr10CoverageStatus.GAP
+
+
+def test_gr10_not_applicable_capabilities_are_not_enterprise_blockers() -> None:
+    for row in GR10_INFERENCE_CAPABILITY_SEMANTICS:
+        if row.applicability is Gr10Applicability.NOT_APPLICABLE:
+            assert row.coverage is None
+
+
+def test_gr10_inf_d_honest_about_inference_executor_pre_model_gap() -> None:
+    inf_d = next(entry for entry in GR10_SCENARIO_CATALOG if entry.scenario_id == "INF-D")
+    assert inf_d.expected_status is Gr10CoverageStatus.PARTIAL
+    assert "InferenceExecutor" in inf_d.title
+    assert "agentic" in inf_d.title.lower()
+
+
+_QUAL_DOC = (
+    _REPO_ROOT
+    / "docs"
+    / "project"
+    / "maintainers"
+    / "qualification"
+    / "GOVERNANCE_FINAL_E2E_QUALIFICATION.md"
+)
+
+
+def test_gr10_current_doc_status_gr8_closed_gr10_partial() -> None:
+    text = _QUAL_DOC.read_text(encoding="utf-8-sig")
+    section_start = text.find("## Current qualification status")
+    assert section_start != -1
+    section = text[section_start : section_start + 1200]
+    assert "GR-8" in section and "CLOSED" in section
+    assert "GR-10" in section and "PARTIAL" in section
+    assert "GR-8 | OPEN" not in section

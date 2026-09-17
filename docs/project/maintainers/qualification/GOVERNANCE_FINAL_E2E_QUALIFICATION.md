@@ -102,11 +102,18 @@ Full pytest mapping: `GOV_FINAL_4_FAILURE_CATALOG` in `catalog.py`.
 
 Substitution rule: **contract + composition only** (no monkeypatch of private authority fields).
 
+## Current qualification status
+
+| Slice | Status | Notes |
+| ----- | ------ | ----- |
+| GR-8 | **CLOSED** | Public contract frozen — ADR-GR-8-001; spine CANDIDATE CLOSED after GR-8-R1 independent audit |
+| GR-10 | **PARTIAL** | Strategy matrix in `GOVERNED_EXECUTION.md` §9 + `tests/qualification/governance/strategy/`; INFERENCE PRE_MODEL runtime gap remains |
+
 ## Remaining gaps
 
 | ID | Status |
 | -- | ------ |
-| GR-8 | OPEN — governance evidence correlation incomplete |
+| GR-8 | **CLOSED** — see **Current qualification status** (historical runs may reference pre-R1 OPEN) |
 | GR-10 | **PARTIAL** — `tests/qualification/governance/strategy/`; matrix in `GOVERNED_EXECUTION.md` §9 |
 | GR-11 | OPEN — plugin enterprise certification |
 | GR-12 | GAP — control-plane mutation NOT QUALIFIED |

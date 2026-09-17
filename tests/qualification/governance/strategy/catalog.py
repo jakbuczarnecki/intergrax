@@ -16,6 +16,21 @@ class Gr10CoverageStatus(StrEnum):
     NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
+class Gr10Applicability(StrEnum):
+    """Whether a governance capability belongs to a strategy scope (not implementation)."""
+
+    APPLICABLE = "APPLICABLE"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10InferenceCapabilitySemantics:
+    capability: str
+    applicability: Gr10Applicability
+    coverage: Gr10CoverageStatus | None
+    reason: str
+
+
 @dataclass(frozen=True, slots=True)
 class Gr10ProductionEntry:
     strategy: str
@@ -65,6 +80,82 @@ _GR7_A3 = (
 )
 _GR10_GATES = "tests/qualification/governance/strategy/test_gr10_gates.py"
 
+# SSOT for INFERENCE applicability vs coverage (GR-10-R1). Matrix/inventory must not contradict.
+GR10_INFERENCE_CAPABILITY_SEMANTICS: tuple[Gr10InferenceCapabilitySemantics, ...] = (
+    Gr10InferenceCapabilitySemantics(
+        "Root admission",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.WIRED_NOT_QUALIFIED,
+        "DefaultRootExecutionLauncher + ExecutionRuntime; no Tier-3 host INFERENCE entry; "
+        "launcher DENY/ALLOW qualified; full enterprise proof open.",
+    ),
+    Gr10InferenceCapabilitySemantics(
+        "Inner Governance",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "InferenceExecutor binds active execution identity; no UAEP inner guard on direct path.",
+    ),
+    Gr10InferenceCapabilitySemantics(
+        "Policy evaluation",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "PRE_MODEL (evaluate_pre_llm) required before model invocation; InferenceExecutor "
+        "calls LLMAdapter.generate_structured without PRE_MODEL seam.",
+    ),
+    Gr10InferenceCapabilitySemantics(
+        "MSE",
+        Gr10Applicability.NOT_APPLICABLE,
+        None,
+        "Structured inference seam is not a meaningful external side effect (GOVERNED_EXECUTION §9).",
+    ),
+    Gr10InferenceCapabilitySemantics(
+        "Decision-bound effect",
+        Gr10Applicability.NOT_APPLICABLE,
+        None,
+        "No DecisionRequirementPolicy / consequential MSE on canonical inference-only path.",
+    ),
+    Gr10InferenceCapabilitySemantics(
+        "HITL",
+        Gr10Applicability.NOT_APPLICABLE,
+        None,
+        "No INFERENCE evaluation point emits REQUIRE_HUMAN (AGENT_DECISION/INTERRUPT/MSE N/A; "
+        "PRE_MODEL engine returns ALLOW/DENY only). Root admission REQUIRE_HUMAN is root "
+        "admission, not GR-5 continuation.",
+    ),
+    Gr10InferenceCapabilitySemantics(
+        "Continuation",
+        Gr10Applicability.NOT_APPLICABLE,
+        None,
+        "ExecutionContinuationPort applies when governance pauses mid-strategy; INFERENCE has "
+        "no applicable HITL trigger on the strategy path.",
+    ),
+    Gr10InferenceCapabilitySemantics(
+        "Reliability",
+        Gr10Applicability.NOT_APPLICABLE,
+        None,
+        "GR-7 ProviderInvocation boundary applies to governed external effects after MSE "
+        "authorization, not structured LLM read/inference adapter calls.",
+    ),
+    Gr10InferenceCapabilitySemantics(
+        "Governance Evidence",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.WIRED_NOT_QUALIFIED,
+        "ROOT_EXECUTION_ADMISSION wired on launcher path; PRE_MODEL evidence not emitted from "
+        "InferenceExecutor until PRE_MODEL remediation.",
+    ),
+)
+
+
+def gr10_matrix_inference_status(capability: str) -> Gr10CoverageStatus:
+    """Map semantics to matrix cell (NOT_APPLICABLE when capability is out of scope)."""
+    for row in GR10_INFERENCE_CAPABILITY_SEMANTICS:
+        if row.capability == capability:
+            if row.applicability is Gr10Applicability.NOT_APPLICABLE:
+                return Gr10CoverageStatus.NOT_APPLICABLE
+            assert row.coverage is not None
+            return row.coverage
+    raise KeyError(f"unknown GR-10 capability for INFERENCE semantics: {capability!r}")
+
 
 GR10_PRODUCTION_INVENTORY: tuple[Gr10ProductionEntry, ...] = (
     Gr10ProductionEntry(
@@ -98,63 +189,63 @@ GR10_PRODUCTION_INVENTORY: tuple[Gr10ProductionEntry, ...] = (
 GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
     Gr10CapabilityCell(
         "Root admission",
-        Gr10CoverageStatus.WIRED_NOT_QUALIFIED,
+        gr10_matrix_inference_status("Root admission"),
         Gr10CoverageStatus.QUALIFIED,
         Gr10CoverageStatus.QUALIFIED,
         "INFERENCE: launcher op qualified; Tier-3 host resolves AGENT/ORCH only.",
     ),
     Gr10CapabilityCell(
         "Inner Governance",
-        Gr10CoverageStatus.PARTIAL,
+        gr10_matrix_inference_status("Inner Governance"),
         Gr10CoverageStatus.PARTIAL,
         Gr10CoverageStatus.PARTIAL,
         "Identity binding on inference; UAEP/graph for agentic/orchestration.",
     ),
     Gr10CapabilityCell(
         "Policy evaluation",
-        Gr10CoverageStatus.PARTIAL,
+        gr10_matrix_inference_status("Policy evaluation"),
         Gr10CoverageStatus.QUALIFIED,
         Gr10CoverageStatus.QUALIFIED,
         "PRE_MODEL on agentic LLM router; InferenceExecutor skips PRE_MODEL.",
     ),
     Gr10CapabilityCell(
         "MSE",
-        Gr10CoverageStatus.NOT_APPLICABLE,
+        gr10_matrix_inference_status("MSE"),
         Gr10CoverageStatus.PARTIAL,
         Gr10CoverageStatus.PARTIAL,
         "INFERENCE: no meaningful external side effect on canonical inference seam.",
     ),
     Gr10CapabilityCell(
         "Decision-bound effect",
-        Gr10CoverageStatus.NOT_APPLICABLE,
+        gr10_matrix_inference_status("Decision-bound effect"),
         Gr10CoverageStatus.QUALIFIED,
         Gr10CoverageStatus.PARTIAL,
         "MP-4R7 agentic; orchestration via External Work host slices.",
     ),
     Gr10CapabilityCell(
         "HITL",
-        Gr10CoverageStatus.GAP,
+        gr10_matrix_inference_status("HITL"),
         Gr10CoverageStatus.QUALIFIED,
         Gr10CoverageStatus.PARTIAL,
-        "INFERENCE-only runs lack qualified HITL path (GOV-GAP-004 residual).",
+        "INFERENCE: no strategy-path REQUIRE_HUMAN (N/A). Agentic/orch GR-5 proofs.",
     ),
     Gr10CapabilityCell(
         "Continuation",
-        Gr10CoverageStatus.NOT_APPLICABLE,
+        gr10_matrix_inference_status("Continuation"),
         Gr10CoverageStatus.QUALIFIED,
         Gr10CoverageStatus.PARTIAL,
         "GR-5 port; orchestration transitional Task projection in places.",
     ),
     Gr10CapabilityCell(
         "Reliability",
-        Gr10CoverageStatus.GAP,
+        gr10_matrix_inference_status("Reliability"),
         Gr10CoverageStatus.QUALIFIED,
         Gr10CoverageStatus.PARTIAL,
-        "GR-7 on governed contractor; not all orchestration mutations qualified.",
+        "INFERENCE: outside GR-7 external-effect boundary. GR-7 on governed contractor host.",
     ),
     Gr10CapabilityCell(
         "Governance Evidence",
-        Gr10CoverageStatus.WIRED_NOT_QUALIFIED,
+        gr10_matrix_inference_status("Governance Evidence"),
         Gr10CoverageStatus.PARTIAL,
         Gr10CoverageStatus.PARTIAL,
         "GR-8 spine on root admission + MSE; not all GEPs per strategy.",
@@ -194,7 +285,7 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
     Gr10ScenarioEvidence(
         "INF-D",
         "INFERENCE",
-        "PRE_MODEL DENY → zero model invocation (agentic LLM seam)",
+        "PRE_MODEL reference proof on agentic LLM router; InferenceExecutor seam still open",
         (
             _nid(_G3B, "test_pre_model_policy_blocks_provider_before_complete"),
         ),
