@@ -10,6 +10,8 @@
 | ----- | ----- |
 | Branch | `development` |
 | baseline SHA | `c3255c7c1fc589b9e5863f7560ee208df942341a` |
+| code baseline tested (GOV-FINAL-4-R1) | `242db6f00634a866e3bb30807ff8ae6db3f36e2d` |
+| qualification run date | 2026-09-17 (UTC+2 operator session) |
 
 baseline SHA: `c3255c7c1fc589b9e5863f7560ee208df942341a`
 | Qualification suite | `tests/qualification/governance/` |
@@ -114,23 +116,41 @@ Substitution rule: **contract + composition only** (no monkeypatch of private au
 ## Claim boundary
 
 - **Full Governance Plane enterprise certified: NO**
+- **GOV-FINAL-4 qualification evidence integrity: VERIFIED** (R1 — collectable pytest node IDs, composition pluginability proof, persisted mandatory run counts).
 - **GOV-FINAL-4 enterprise E2E qualification matrix: PARTIAL COMPLETE** — canonical paths proven on named composition roots; runtime strategy and control-plane gaps remain.
 - **QUALIFICATION BLOCKED BY GR-10** for strategy-wide closure; **NOT QUALIFIED — GR-12 OPEN** for control-plane mutation.
 
 ## Test commands
 
-Single process, no xdist:
+Single process, no xdist (`one process: YES`, `xdist: DISABLED`):
 
 ```powershell
+$env:PYTEST_ADDOPTS="-p no:xdist"
 uv run pytest tests/qualification/governance/ -q
 uv run pytest tests/unit/runtime/architecture/test_gov_final_1_documentation_regression_gates.py tests/unit/runtime/architecture/test_gov_final_3_visual_architecture_gates.py tests/unit/runtime/architecture/test_gov_final_4_documentation_regression_gates.py -q
-uv run pytest tests/unit/runtime/architecture/test_gr3_canonical_inner_enforcement.py tests/unit/runtime/architecture/test_gr4_policy_core_architecture_gates.py tests/unit/runtime/architecture/test_gr5_continuation_contract_architecture.py tests/unit/runtime/architecture/test_gr6_decision_governance_integration_architecture.py tests/unit/runtime/architecture/test_gr6_r1_decision_requirement_architecture.py -q
+uv run pytest tests/unit/runtime/architecture/test_gr3_inner_enforcement_architecture_gates.py tests/unit/runtime/architecture/test_gr4_policy_core_architecture_gates.py tests/unit/runtime/architecture/test_gr5_continuation_contract_architecture.py tests/unit/runtime/architecture/test_gr6_decision_governance_integration_architecture.py tests/unit/runtime/architecture/test_gr6_r1_decision_requirement_architecture.py -q
 uv run pytest tests/unit/mp4r7/test_enterprise_integration_qualification.py tests/unit/runtime/architecture/test_mp4r7_enterprise_integration_gates.py -q
+uv run pytest applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py applications/governed_contractor_application/tests/host/test_gr7_a3_durable_provider_invocation.py applications/governed_contractor_application/tests/host/test_gr7_a4_unknown_host_state_separation.py applications/governed_contractor_application/tests/host/test_gr7_a6_provider_reconciliation.py applications/governed_contractor_application/tests/host/test_gr7_a7_provider_recovery.py -q
+```
+
+Full catalog evidence batch (all unique non-GAP node IDs from `GOV_FINAL_4_EVIDENCE_PYTEST_NODE_IDS`):
+
+```powershell
+uv run python -c "from tests.qualification.governance.catalog import GOV_FINAL_4_EVIDENCE_PYTEST_NODE_IDS; print(' '.join(GOV_FINAL_4_EVIDENCE_PYTEST_NODE_IDS))" | ForEach-Object { uv run pytest $_.Split(' ') -q }
 ```
 
 ## Result counts
 
-Populate after mandatory run in CI / operator session (see commit message / session report).
+Mandatory run on code baseline `242db6f00634a866e3bb30807ff8ae6db3f36e2d` (GOV-FINAL-4-R1 evidence commit may update only result persistence in this doc).
+
+| Suite | Command | Passed | Failed | Skipped |
+| ----- | ------- | -----: | -----: | ------: |
+| GOV-FINAL-4 qualification | `uv run pytest tests/qualification/governance/ -q` | 20 | 0 | 0 |
+| GOV docs | `uv run pytest tests/unit/runtime/architecture/test_gov_final_1_documentation_regression_gates.py tests/unit/runtime/architecture/test_gov_final_3_visual_architecture_gates.py tests/unit/runtime/architecture/test_gov_final_4_documentation_regression_gates.py -q` | 29 | 0 | 0 |
+| GR-3/4/5/6 + MP-4 | `uv run pytest tests/unit/runtime/architecture/test_gr3_inner_enforcement_architecture_gates.py tests/unit/runtime/architecture/test_gr4_policy_core_architecture_gates.py tests/unit/runtime/architecture/test_gr5_continuation_contract_architecture.py tests/unit/runtime/architecture/test_gr6_decision_governance_integration_architecture.py tests/unit/runtime/architecture/test_gr6_r1_decision_requirement_architecture.py tests/unit/mp4r7/test_enterprise_integration_qualification.py tests/unit/runtime/architecture/test_mp4r7_enterprise_integration_gates.py -q` | 47 | 0 | 0 |
+| GR-7 host | `uv run pytest applications/governed_contractor_application/tests/host/test_gr7_a2_external_work_erl_bridge.py applications/governed_contractor_application/tests/host/test_gr7_a3_durable_provider_invocation.py applications/governed_contractor_application/tests/host/test_gr7_a4_unknown_host_state_separation.py applications/governed_contractor_application/tests/host/test_gr7_a6_provider_reconciliation.py applications/governed_contractor_application/tests/host/test_gr7_a7_provider_recovery.py -q` | 61 | 0 | 0 |
+
+Execution mode: **one process: YES**, **no xdist: YES** (`PYTEST_ADDOPTS=-p no:xdist`).
 
 ## Existing suite reuse
 

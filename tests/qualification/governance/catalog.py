@@ -68,7 +68,7 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         GovFinal4ScenarioResult.QUALIFIED,
         (
             _nid(_Q_AUTH, "test_scenario_a_root_admission_allow_single_intake"),
-            _nid(_GR2_LAUNCHER, "test_launcher_allow_runs_admission_and_intake_once[ROOT_AGENT]"),
+            _nid(_GR2_LAUNCHER, "test_launcher_allow_runs_admission_and_intake_once[root.execution.agent]"),
         ),
     ),
     GovFinal4ScenarioEvidence(
@@ -78,7 +78,7 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         GovFinal4ScenarioResult.QUALIFIED,
         (
             _nid(_Q_AUTH, "test_scenario_b_root_admission_deny_zero_intake"),
-            _nid(_GR2_LAUNCHER, "test_launcher_deny_skips_intake[ROOT_AGENT]"),
+            _nid(_GR2_LAUNCHER, "test_launcher_deny_skips_intake[root.execution.agent]"),
         ),
     ),
     GovFinal4ScenarioEvidence(
@@ -113,10 +113,10 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         GovFinal4ScenarioResult.QUALIFIED,
         (
             _nid(_GR3, "test_no_active_execution_blocks_effect"),
-            _nid(_GR3, "test_identity_mismatch_blocks_effect[task_id]"),
-            _nid(_GR3, "test_identity_mismatch_blocks_effect[run_id]"),
-            _nid(_GR3, "test_identity_mismatch_blocks_effect[attempt_id]"),
-            _nid(_GR3, "test_identity_mismatch_blocks_effect[execution_id]"),
+            _nid(_GR3, "test_identity_mismatch_blocks_effect[task]"),
+            _nid(_GR3, "test_identity_mismatch_blocks_effect[run]"),
+            _nid(_GR3, "test_identity_mismatch_blocks_effect[attempt]"),
+            _nid(_GR3, "test_identity_mismatch_blocks_effect[execution]"),
         ),
     ),
     GovFinal4ScenarioEvidence(
@@ -379,3 +379,35 @@ GOV_FINAL_4_FAILURE_CATALOG: tuple[GovFinal4FailureEvidence, ...] = (
 
 def scenario_ids_a_through_z() -> frozenset[str]:
     return frozenset(entry.scenario_id for entry in GOV_FINAL_4_SCENARIO_CATALOG if entry.scenario_id.isalpha())
+
+
+def gov_final_4_scenario_evidence_pytest_node_ids() -> tuple[str, ...]:
+    ids: list[str] = []
+    for entry in GOV_FINAL_4_SCENARIO_CATALOG:
+        if entry.result is GovFinal4ScenarioResult.GAP:
+            continue
+        ids.extend(entry.primary_pytest_node_ids)
+    return tuple(ids)
+
+
+def gov_final_4_failure_evidence_pytest_node_ids() -> tuple[str, ...]:
+    return tuple(
+        node_id for entry in GOV_FINAL_4_FAILURE_CATALOG for node_id in entry.pytest_node_ids
+    )
+
+
+def gov_final_4_unique_catalog_pytest_node_ids() -> tuple[str, ...]:
+    seen: set[str] = set()
+    unique: list[str] = []
+    for node_id in (
+        *gov_final_4_scenario_evidence_pytest_node_ids(),
+        *gov_final_4_failure_evidence_pytest_node_ids(),
+    ):
+        if node_id in seen:
+            continue
+        seen.add(node_id)
+        unique.append(node_id)
+    return tuple(unique)
+
+
+GOV_FINAL_4_EVIDENCE_PYTEST_NODE_IDS: tuple[str, ...] = gov_final_4_unique_catalog_pytest_node_ids()

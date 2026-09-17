@@ -30,6 +30,12 @@ _FORBIDDEN_FULL_CLAIMS = (
     "Governance Layer enterprise certified",
 )
 
+_FORBIDDEN_RESULT_PLACEHOLDERS = (
+    "Populate after mandatory run",
+    "TBD",
+    "TODO result counts",
+)
+
 
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig")
@@ -97,3 +103,18 @@ def test_gov_final_4_no_false_full_enterprise_claim_in_qualification_doc() -> No
     assert "Full Governance Plane enterprise certified: NO" in claim_section
     for phrase in _FORBIDDEN_FULL_CLAIMS:
         assert phrase not in text
+
+
+def test_gov_final_4_qualification_doc_has_persisted_result_counts() -> None:
+    text = _read(QUAL_DOC)
+    for label in ("Passed", "Failed", "Skipped"):
+        assert label in text
+    assert "one process" in text.lower()
+    assert "no xdist" in text.lower() or "xdist: disabled" in text.lower()
+    for phrase in _FORBIDDEN_RESULT_PLACEHOLDERS:
+        assert phrase not in text
+
+
+def test_gov_final_4_qualification_doc_records_evidence_integrity_claim() -> None:
+    text = _read(QUAL_DOC)
+    assert "GOV-FINAL-4 qualification evidence integrity" in text
