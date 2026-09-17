@@ -140,8 +140,10 @@ class BoundedEventSink:
         self._queue: queue.Queue[_QueuedItem | None] = queue.Queue(
             maxsize=policy.max_capacity,
         )
+        self._non_critical_limit = self._validated_non_critical_limit()
         self._non_critical_buffered = 0
-        self._buffered_count_lock = threading.Lock()
+        self._quota_lock = threading.Lock()
+        self._quota_condition = threading.Condition(self._quota_lock)
         self._stop = threading.Event()
         self._worker_drained_normally = threading.Event()
         self._worker = threading.Thread(
@@ -248,21 +250,17 @@ class BoundedEventSink:
                 event=event,
             )
 
-        if self._non_critical_at_capacity():
+        admission_deadline = self._important_admission_deadline(deadline)
+        if not self._admit_non_critical(item, admission_deadline=admission_deadline):
+            if not self._worker.is_alive():
+                self._health.mark_unhealthy()
+                disposition = EventDeliveryDisposition.REJECTED
+            elif self._stop.is_set():
+                disposition = EventDeliveryDisposition.REJECTED
+            else:
+                disposition = EventDeliveryDisposition.DEFERRED
             return self._make_result(
-                disposition=EventDeliveryDisposition.DEFERRED,
-                priority=priority,
-                obligation=obligation,
-                buffered_depth=depth,
-            )
-        timeout = self._important_timeout(deadline)
-        try:
-            self._queue.put(item, timeout=timeout)
-            with self._buffered_count_lock:
-                self._non_critical_buffered += 1
-        except queue.Full:
-            return self._make_result(
-                disposition=EventDeliveryDisposition.DEFERRED,
+                disposition=disposition,
                 priority=priority,
                 obligation=obligation,
                 buffered_depth=depth,
@@ -289,12 +287,16 @@ class BoundedEventSink:
             return
         if not self._worker.is_alive() and not self._worker_drained_normally.is_set():
             self._stop.set()
+            with self._quota_condition:
+                self._quota_condition.notify_all()
             self._health.mark_unhealthy()
             raise EventDeliveryBoundaryError(
                 kind=EventDeliveryBoundaryFailureKind.SINK_UNAVAILABLE,
                 message="bounded event drain worker is not alive",
             )
         self._stop.set()
+        with self._quota_condition:
+            self._quota_condition.notify_all()
         self._enqueue_shutdown_sentinel()
         self._worker.join(timeout=self._policy.drain_shutdown_timeout_seconds)
         self._validate_worker_shutdown_after_join()
@@ -385,38 +387,86 @@ class BoundedEventSink:
             message="bounded event sink shutdown did not complete successfully",
         )
 
-    def _max_non_critical_buffered(self) -> int:
-        return self._admission_policy.max_non_critical_buffered_events(self._policy)
-
-    def _non_critical_at_capacity(self) -> bool:
-        with self._buffered_count_lock:
-            return self._non_critical_buffered >= self._max_non_critical_buffered()
+    def _validated_non_critical_limit(self) -> int:
+        raw = self._admission_policy.max_non_critical_buffered_events(self._policy)
+        if type(raw) is bool:
+            raise TypeError(
+                "max_non_critical_buffered_events must return int, not bool",
+            )
+        if type(raw) is not int:
+            raise TypeError(
+                "max_non_critical_buffered_events must return int",
+            )
+        if raw < 0:
+            raise ValueError(
+                "max_non_critical_buffered_events must be >= 0",
+            )
+        if raw > self._policy.max_capacity:
+            raise ValueError(
+                "max_non_critical_buffered_events must be <= max_capacity",
+            )
+        return raw
 
     def _try_admit_non_critical_nowait(self, item: _QueuedItem) -> bool:
-        with self._buffered_count_lock:
-            if self._non_critical_buffered >= self._max_non_critical_buffered():
-                return False
-            try:
-                self._queue.put_nowait(item)
-            except queue.Full:
-                return False
+        return self._admit_non_critical(item, admission_deadline=None)
+
+    def _important_admission_deadline(self, deadline: float | None) -> float:
+        policy_cap = time.monotonic() + self._policy.important_wait_timeout_seconds
+        if deadline is not None:
+            return min(deadline, policy_cap)
+        return policy_cap
+
+    def _reserve_non_critical_slot(self, admission_deadline: float | None) -> bool:
+        with self._quota_condition:
+            while self._non_critical_buffered >= self._non_critical_limit:
+                if self._stop.is_set():
+                    return False
+                if not self._worker.is_alive():
+                    return False
+                if admission_deadline is None:
+                    return False
+                remaining = admission_deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self._quota_condition.wait(timeout=remaining)
             self._non_critical_buffered += 1
             return True
+
+    def _release_non_critical_slot(self) -> None:
+        with self._quota_condition:
+            self._non_critical_buffered -= 1
+            self._quota_condition.notify_all()
+
+    def _admit_non_critical(
+        self,
+        item: _QueuedItem,
+        *,
+        admission_deadline: float | None,
+    ) -> bool:
+        if not self._reserve_non_critical_slot(admission_deadline):
+            return False
+        admitted = False
+        try:
+            if admission_deadline is None:
+                self._queue.put_nowait(item)
+            else:
+                remaining = admission_deadline - time.monotonic()
+                if remaining <= 0:
+                    return False
+                self._queue.put(item, timeout=remaining)
+            admitted = True
+            return True
+        except queue.Full:
+            return False
+        finally:
+            if not admitted:
+                self._release_non_critical_slot()
 
     def _dequeue_accounting(self, item: _QueuedItem | None) -> None:
         if item is None:
             return
         if item.priority is not EventPriority.CRITICAL:
-            with self._buffered_count_lock:
-                self._non_critical_buffered -= 1
-
-    def _important_timeout(self, deadline: float | None) -> float:
-        if deadline is not None:
-            remaining = deadline - time.monotonic()
-            if remaining <= 0:
-                return 0.0
-            return min(remaining, self._policy.important_wait_timeout_seconds)
-        return self._policy.important_wait_timeout_seconds
+            self._release_non_critical_slot()
 
     def _make_result(
         self,
@@ -565,4 +615,6 @@ class BoundedEventSink:
                     self._queue.task_done()
         except Exception:
             self._health.mark_unhealthy()
+            with self._quota_condition:
+                self._quota_condition.notify_all()
             logger.exception("bounded event drain worker terminated unexpectedly")
