@@ -21,7 +21,9 @@ R1_IMPLEMENTATION_SHA = "455d3b216f0ad56ea9cdf9db6e0f760b50063a81"
 # Prior re-signoff baseline: ``a2b33ba965c57cd3c812720f7b5f84b40b2b32f1`` (V2 freeze @ ``22c4793da``).
 # HARDENING_9_NPSC5F V3: OBS-RUNTIME-HISTORY-BOUNDS-R1 + identity remediation (``36de9ed76``, ``4c809e84a``);
 # ``event_bus.py`` event_count + composition validation; durable commit-before-delivery unchanged.
-R1_POST_R2_QUALIFIED_BASELINE_SHA = "6b3744f356c6e725fc124843f1da4a8fd5417120"
+# HARDENING_9_NPSC5F V4: OBS-RUNTIME-HISTORY-BOUNDS-R3 (``39265e263``) + platform-owned validation
+# (``82d7989bf`` on ``runtime_event_history_validation.py``); ``history_strategy`` wiring only.
+R1_POST_R2_QUALIFIED_BASELINE_SHA = "33576b80521dda7dfc0e5895c943f91dfebffa94"
 
 _R1_PROTECTED_EXACT_PATHS: frozenset[str] = frozenset(
     {
