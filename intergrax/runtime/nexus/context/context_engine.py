@@ -34,10 +34,12 @@ from intergrax.context.session_history import (
     SessionHistorySnapshot,
 )
 from intergrax.context.policy.pipeline import (
-    ContextCrossSourcePolicyPipeline,
     ContextPolicyStrategies,
     default_context_policy_strategies,
 )
+from intergrax.context.policy.authority import filter_fragments_by_authority_contract
+from intergrax.context.policy.scope_isolation import isolate_assembly_scope
+from intergrax.context.protocols import ContextPolicyPipeline
 from intergrax.context.formatter import (
     DefaultContextFormatter,
     merge_fragment_messages,
@@ -120,7 +122,7 @@ class DefaultNexusContextEngine:
         validator: DefaultContextValidator | None = None,
         ranker: DefaultContextRanker | None = None,
         formatter: DefaultContextFormatter | None = None,
-        policy_pipeline: ContextCrossSourcePolicyPipeline | None = None,
+        policy_pipeline: ContextPolicyPipeline | None = None,
     ) -> None:
         self._engine_id = engine_id
         self._registry = registry or ContextPluginRegistry()
@@ -128,7 +130,11 @@ class DefaultNexusContextEngine:
         self._validator = validator or DefaultContextValidator()
         self._ranker = ranker or DefaultContextRanker()
         self._formatter = formatter or DefaultContextFormatter()
-        self._policy_pipeline = policy_pipeline or ContextCrossSourcePolicyPipeline()
+        if policy_pipeline is None:
+            from intergrax.context.policy.pipeline import ContextCrossSourcePolicyPipeline
+
+            policy_pipeline = ContextCrossSourcePolicyPipeline()
+        self._policy_pipeline = policy_pipeline
 
     @property
     def engine_id(self) -> str:
@@ -302,12 +308,31 @@ class DefaultNexusContextEngine:
             request=request,
         )
 
+        descriptors_by_id = {
+            bound.descriptor.provider_id: bound.descriptor for bound in bound_set.providers
+        }
+        collected_fragments, scope_excluded = isolate_assembly_scope(collected_fragments, request)
+        fragments_excluded.extend(scope_excluded)
+
         policy_strategies = self._resolve_policy_strategies()
-        policy_pipeline = ContextCrossSourcePolicyPipeline(strategies=policy_strategies)
-        policy_result = policy_pipeline.execute(collected_fragments, request)
+        policy_result = self._policy_pipeline.execute(
+            collected_fragments,
+            request,
+            strategies=policy_strategies,
+        )
         collected_fragments = list(policy_result.fragments)
         fragments_excluded.extend(policy_result.excluded)
         policy_decisions = policy_result.decisions
+        collected_fragments, authority_excluded = filter_fragments_by_authority_contract(
+            collected_fragments,
+            descriptors_by_id=descriptors_by_id,
+        )
+        fragments_excluded.extend(authority_excluded)
+        collected_fragments, post_scope_excluded = isolate_assembly_scope(
+            collected_fragments,
+            request,
+        )
+        fragments_excluded.extend(post_scope_excluded)
         if policy_result.excluded:
             counters = get_context_counters()
             counters.candidate_dropped_total += len(policy_result.excluded)

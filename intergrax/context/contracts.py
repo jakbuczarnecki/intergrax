@@ -167,6 +167,10 @@ class ContextProviderDescriptor:
     provider_version: str
     supported_sources: frozenset[ContextFragmentSource]
     origin: str = "builtin"
+    trusted_authority_class: ContextAuthorityClass | None = None
+    allowed_authority_classes: frozenset[ContextAuthorityClass] = frozenset(
+        {ContextAuthorityClass.UNASSIGNED},
+    )
     schema_version: str = CONTEXT_PROVIDER_DESCRIPTOR_SCHEMA
 
     def __post_init__(self) -> None:
@@ -318,6 +322,7 @@ class ContextAssemblyRequest:
     step_index: int | None = None
     graph_node_id: str | None = None
     step_kind: str | None = None
+    user_id: str = ""
     required_sources: frozenset[ContextFragmentSource] = frozenset()
     excluded_sources: frozenset[ContextFragmentSource] = frozenset()
     execution_scope: ModelCallExecutionScope = ModelCallExecutionScope.PRIMARY_MODEL_CALL

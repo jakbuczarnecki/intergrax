@@ -300,6 +300,7 @@ def test_provider_forbidden_authority_rejected_in_canonicalize_path() -> None:
         provider_id="rag",
         provider_version="1.0.0",
         supported_sources=frozenset({ContextFragmentSource.RAG}),
+        origin="plugin",
     )
     with pytest.raises(ContextProviderContractViolationError):
         enforce_provider_authority(fragment, descriptor=descriptor)

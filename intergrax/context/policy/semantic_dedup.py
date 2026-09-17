@@ -1,10 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Default semantic dedup strategy (MEM-XINT-5)."""
+"""Default normalized fingerprint dedup strategy (MEM-XINT-5 / MEM-XINT-5-R)."""
 
 from __future__ import annotations
-
-from dataclasses import dataclass
 
 from intergrax.context.contracts import (
     ContextAssemblyRequest,
@@ -16,20 +14,12 @@ from intergrax.context.contracts import (
 from intergrax.context.policy.authority import authority_rank
 
 
-@dataclass(frozen=True, slots=True)
-class SemanticDedupPolicyConfig:
-    max_pairwise_candidates: int = 256
-
-
 class DefaultContextSemanticDeduper:
-    """Conservative fingerprint-based deduper — deterministic, LLM-free."""
+    """Deterministic normalized-content duplicate detection — not embedding similarity."""
 
     @property
     def strategy_id(self) -> str:
-        return "default_context_semantic_deduper.v1"
-
-    def __init__(self, *, config: SemanticDedupPolicyConfig | None = None) -> None:
-        self._config = config or SemanticDedupPolicyConfig()
+        return "default_context_normalized_fingerprint_deduper.v1"
 
     def deduplicate(
         self,
@@ -73,8 +63,4 @@ class DefaultContextSemanticDeduper:
                     ),
                 )
             kept.append(winner)
-        # Preserve collect order for downstream session snapshot planning.
-        if len(fragments) > self._config.max_pairwise_candidates:
-            # Bounded path: fingerprint grouping only (no quadratic expansion).
-            pass
         return kept, tuple(decisions)

@@ -1,35 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Trusted authority mapping for context fragments (MEM-XINT-5)."""
+"""Trusted authority validation for context fragments (MEM-XINT-5-R)."""
 
 from __future__ import annotations
 
 from intergrax.context.contracts import (
     ContextAuthorityClass,
     ContextFragment,
-    ContextFragmentSource,
+    ContextProviderDescriptor,
     PROVIDER_FORBIDDEN_AUTHORITY_CLASSES,
     replace_context_fragment,
 )
 from intergrax.context.errors import ContextProviderContractViolationError
-from intergrax.context.contracts import ContextProviderDescriptor
-
-AUTHORITY_BY_SOURCE: dict[ContextFragmentSource, ContextAuthorityClass] = {
-    ContextFragmentSource.SYSTEM_INSTRUCTIONS: ContextAuthorityClass.SYSTEM_CONTEXT,
-    ContextFragmentSource.POLICY_OVERLAY: ContextAuthorityClass.SYSTEM_CONTEXT,
-    ContextFragmentSource.LONGTERM_MEMORY: ContextAuthorityClass.CANONICAL_MEMORY,
-    ContextFragmentSource.RAG: ContextAuthorityClass.RAG_EVIDENCE,
-    ContextFragmentSource.WEBSEARCH: ContextAuthorityClass.RAG_EVIDENCE,
-    ContextFragmentSource.TOOL_OUTPUT: ContextAuthorityClass.TOOL_OBSERVATION,
-    ContextFragmentSource.SESSION_HISTORY: ContextAuthorityClass.SESSION_EPISODIC,
-    ContextFragmentSource.SESSION_HISTORY_SEMANTIC: ContextAuthorityClass.SESSION_EPISODIC,
-    ContextFragmentSource.TASK_MESSAGE: ContextAuthorityClass.DERIVED_MEMORY,
-    ContextFragmentSource.GRAPH_PRIOR: ContextAuthorityClass.DERIVED_MEMORY,
-    ContextFragmentSource.SHARED_CONTEXT: ContextAuthorityClass.DERIVED_MEMORY,
-    ContextFragmentSource.ATTACHMENT: ContextAuthorityClass.DERIVED_MEMORY,
-    ContextFragmentSource.WORKSPACE: ContextAuthorityClass.DERIVED_MEMORY,
-    ContextFragmentSource.CUSTOM: ContextAuthorityClass.DERIVED_MEMORY,
-}
 
 _AUTHORITY_RANK: dict[ContextAuthorityClass, int] = {
     ContextAuthorityClass.SYSTEM_CONTEXT: 100,
@@ -46,8 +28,8 @@ def authority_rank(authority: ContextAuthorityClass) -> int:
     return _AUTHORITY_RANK.get(authority, 0)
 
 
-def resolve_authority_for_source(source: ContextFragmentSource) -> ContextAuthorityClass:
-    return AUTHORITY_BY_SOURCE.get(source, ContextAuthorityClass.DERIVED_MEMORY)
+def allowed_authority_classes(descriptor: ContextProviderDescriptor) -> frozenset[ContextAuthorityClass]:
+    return descriptor.allowed_authority_classes
 
 
 def enforce_provider_authority(
@@ -55,16 +37,47 @@ def enforce_provider_authority(
     *,
     descriptor: ContextProviderDescriptor | None = None,
 ) -> ContextFragment:
-    mapped = resolve_authority_for_source(fragment.source)
-    declared = fragment.authority_class
-    if declared in PROVIDER_FORBIDDEN_AUTHORITY_CLASSES and declared != mapped:
-        if descriptor is None:
+    if descriptor is None:
+        if fragment.authority_class in PROVIDER_FORBIDDEN_AUTHORITY_CLASSES:
             raise ValueError("provider self-elevated authority class")
+        return fragment
+
+    permitted = allowed_authority_classes(descriptor)
+    declared = fragment.authority_class
+    if declared not in permitted:
         raise ContextProviderContractViolationError(
             descriptor=descriptor,
             reason_code="provider.contract_violation",
-            detail="forbidden authority self-assignment",
+            detail="authority class not permitted for provider descriptor",
         )
-    if declared is ContextAuthorityClass.UNASSIGNED:
-        return replace_context_fragment(fragment, authority_class=mapped)
+    if declared is ContextAuthorityClass.UNASSIGNED and descriptor.trusted_authority_class is not None:
+        return replace_context_fragment(
+            fragment,
+            authority_class=descriptor.trusted_authority_class,
+        )
     return fragment
+
+
+def filter_fragments_by_authority_contract(
+    fragments: list[ContextFragment],
+    *,
+    descriptors_by_id: dict[str, ContextProviderDescriptor],
+) -> tuple[list[ContextFragment], list[tuple[ContextFragment, str]]]:
+    kept: list[ContextFragment] = []
+    excluded: list[tuple[ContextFragment, str]] = []
+    for fragment in fragments:
+        provenance = fragment.provider_provenance
+        provider_id = provenance.provider_id if provenance is not None else ""
+        descriptor = descriptors_by_id.get(provider_id)
+        if descriptor is None:
+            if fragment.authority_class in PROVIDER_FORBIDDEN_AUTHORITY_CLASSES:
+                excluded.append((fragment, "authority.contract_violation"))
+                continue
+            kept.append(fragment)
+            continue
+        permitted = allowed_authority_classes(descriptor)
+        if fragment.authority_class not in permitted:
+            excluded.append((fragment, "authority.contract_violation"))
+            continue
+        kept.append(fragment)
+    return kept, excluded

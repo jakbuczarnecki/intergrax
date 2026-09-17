@@ -504,3 +504,37 @@ Tier boundaries preserved; MEM-ENT invariants authoritative; aligns with ADR-UCL
 MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normative policy pipeline ordering closure (this revision). Bounded regression: `.tmp/session/MEM-XINT-2-R/pytest.log`. Production code unchanged in MEM-XINT-2-R.
 
 **MEM-XINT-4-R (UE-9D):** MXINT-4 closed for iterative ReAct — multi-round bounded tool loops require `run_bounded_tool_loop_async` with wired `ContextEngine`; sync `BoundedReactPattern` no longer appends native tool messages for model-facing feedback.
+
+## MEM-XINT-5 / MEM-XINT-5-R implementation status (2026-09-17)
+
+**Status:** MEM-XINT-5 **CLOSED** (authority ownership + policy replaceability closure).
+
+### Authority
+
+- ContextFragmentSource is **origin only**; CE policy pipeline does **not** infer authority from source.
+- Trusted authority is bound on ContextProviderDescriptor.trusted_authority_class / llowed_authority_classes, populated for shipped builtins via intergrax/context/trusted_provider_bindings.py and uild_provider_descriptor.
+- Collection boundary validation: enforce_provider_authority in intergrax/context/policy/authority.py (fail-closed for privileged self-assignment).
+- Engine hard post-gate: ilter_fragments_by_authority_contract after replaceable pipeline execution.
+
+### Policy replaceability
+
+- Protocol: ContextPolicyPipeline in intergrax/context/protocols.py.
+- Default implementation: ContextCrossSourcePolicyPipeline with execute(..., strategies=...).
+- DefaultNexusContextEngine uses injected self._policy_pipeline (no concrete recreation in _assemble_inner).
+
+### Semantic dedup default
+
+- Default DefaultContextSemanticDeduper performs **deterministic normalized fingerprint** grouping (not embedding similarity). Custom ContextSemanticDeduper plugins may implement true semantic similarity.
+
+### Scope isolation
+
+- Hard gate: isolate_assembly_scope (intergrax/context/policy/scope_isolation.py) enforces tenant match, optional ContextAssemblyRequest.user_id, and execution scope key un_id:task_id.
+
+### Replaceable vs hard invariants
+
+| Mechanism | Hard / pluginable | Owner |
+| --- | --- | --- |
+| Scope isolation (pre/post) | Hard | CE engine + shared scope module |
+| Authority contract validation | Hard | Collection + engine post-gate |
+| Cross-source normalize/dedup/conflict/rank/budget | Pluginable strategies | ContextPolicyPipeline |
+| Entire pipeline orchestration | Replaceable (wrapped by hard gates) | Injected ContextPolicyPipeline |

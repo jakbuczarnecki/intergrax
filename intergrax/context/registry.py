@@ -65,6 +65,8 @@ class ContextPluginRegistry:
                 provider_version=descriptor.provider_version,
                 supported_sources=descriptor.supported_sources,
                 origin=origin.strip(),
+                trusted_authority_class=descriptor.trusted_authority_class,
+                allowed_authority_classes=descriptor.allowed_authority_classes,
             )
         with self._lock:
             existing = self._providers.get(descriptor.provider_id)
@@ -131,53 +133,67 @@ class ContextPluginRegistry:
             )
 
     def set_ranker(self, ranker: ContextRanker | None) -> None:
-        self._ranker = ranker
+        with self._lock:
+            self._ranker = ranker
 
     def set_allocator(self, allocator: ContextBudgetAllocator | None) -> None:
-        self._allocator = allocator
+        with self._lock:
+            self._allocator = allocator
 
     def set_score_normalizer(self, normalizer: ContextScoreNormalizer | None) -> None:
-        self._score_normalizer = normalizer
+        with self._lock:
+            self._score_normalizer = normalizer
 
     def set_semantic_deduper(self, deduper: ContextSemanticDeduper | None) -> None:
-        self._semantic_deduper = deduper
+        with self._lock:
+            self._semantic_deduper = deduper
 
     def set_conflict_resolver(self, resolver: ContextConflictResolver | None) -> None:
-        self._conflict_resolver = resolver
+        with self._lock:
+            self._conflict_resolver = resolver
 
     def set_formatter(self, formatter: ContextFormatter | None) -> None:
-        self._formatter = formatter
+        with self._lock:
+            self._formatter = formatter
 
     def set_validator(self, validator: ContextValidator | None) -> None:
-        self._validator = validator
+        with self._lock:
+            self._validator = validator
 
     @property
     def ranker(self) -> ContextRanker | None:
-        return self._ranker
+        with self._lock:
+            return self._ranker
 
     @property
     def allocator(self) -> ContextBudgetAllocator | None:
-        return self._allocator
+        with self._lock:
+            return self._allocator
 
     @property
     def score_normalizer(self) -> ContextScoreNormalizer | None:
-        return self._score_normalizer
+        with self._lock:
+            return self._score_normalizer
 
     @property
     def semantic_deduper(self) -> ContextSemanticDeduper | None:
-        return self._semantic_deduper
+        with self._lock:
+            return self._semantic_deduper
 
     @property
     def conflict_resolver(self) -> ContextConflictResolver | None:
-        return self._conflict_resolver
+        with self._lock:
+            return self._conflict_resolver
 
     @property
     def formatter(self) -> ContextFormatter | None:
-        return self._formatter
+        with self._lock:
+            return self._formatter
 
     @property
     def validator(self) -> ContextValidator | None:
-        return self._validator
+        with self._lock:
+            return self._validator
 
 
 @dataclass(frozen=True)

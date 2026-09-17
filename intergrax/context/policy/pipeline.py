@@ -9,16 +9,13 @@ from dataclasses import dataclass
 from intergrax.context.contracts import (
     ContextAssemblyRequest,
     ContextFragment,
-    ContextFragmentScopeRef,
     ContextNormalizationInput,
     ContextPolicyDecision,
     ContextPolicyPipelineResult,
     ContextPolicyReasonCode,
     ContextPolicyStage,
-    replace_context_fragment,
-    ContextAuthorityClass,
 )
-from intergrax.context.policy.authority import resolve_authority_for_source
+from intergrax.context.policy.scope_isolation import isolate_assembly_scope
 from intergrax.context.policy.budget_allocator import DefaultContextBudgetAllocator
 from intergrax.context.policy.canonicalization import canonicalize_fragment_for_policy
 from intergrax.context.policy.conflict_resolver import DefaultContextConflictResolver
@@ -81,6 +78,10 @@ def default_context_policy_strategies() -> ContextPolicyStrategies:
 class ContextCrossSourcePolicyPipeline:
     """Deterministic CE policy stages between collect and compile."""
 
+    @property
+    def pipeline_id(self) -> str:
+        return "intergrax.context.cross_source_policy.v1"
+
     def __init__(
         self,
         *,
@@ -94,27 +95,17 @@ class ContextCrossSourcePolicyPipeline:
         self,
         fragments: list[ContextFragment],
         request: ContextAssemblyRequest,
+        *,
+        strategies: ContextPolicyStrategies | None = None,
     ) -> ContextPolicyPipelineResult:
+        active_strategies = strategies or self._strategies
         decisions: list[ContextPolicyDecision] = []
         excluded: list[tuple[ContextFragment, str]] = []
         working = list(fragments)
 
         before = list(working)
-        scoped: list[ContextFragment] = []
-        for fragment in working:
-            if fragment.scope_ref is None:
-                scoped.append(
-                    replace_context_fragment(
-                        fragment,
-                        scope_ref=ContextFragmentScopeRef(tenant_id=request.tenant_id),
-                    ),
-                )
-                continue
-            if fragment.scope_ref.tenant_id != request.tenant_id:
-                excluded.append((fragment, ContextPolicyReasonCode.SCOPE_INCOMPATIBLE.value))
-            else:
-                scoped.append(fragment)
-        working = scoped
+        working, scope_excluded = isolate_assembly_scope(working, request)
+        excluded.extend(scope_excluded)
         decisions.append(
             _decision(
                 stage=ContextPolicyStage.SCOPE_ISOLATION,
@@ -126,17 +117,6 @@ class ContextCrossSourcePolicyPipeline:
         )
 
         before = list(working)
-        working = [
-            (
-                replace_context_fragment(
-                    fragment,
-                    authority_class=resolve_authority_for_source(fragment.source),
-                )
-                if fragment.authority_class is ContextAuthorityClass.UNASSIGNED
-                else fragment
-            )
-            for fragment in working
-        ]
         working = [canonicalize_fragment_for_policy(fragment) for fragment in working]
         decisions.append(
             _decision(
@@ -145,7 +125,7 @@ class ContextCrossSourcePolicyPipeline:
                 before=before,
                 after=working,
                 reason_code=ContextPolicyReasonCode.CONFLICT_RESOLVED,
-                detail="canonical_content_and_authority",
+                detail="canonical_content",
             ),
         )
 
@@ -166,7 +146,7 @@ class ContextCrossSourcePolicyPipeline:
         normalized: list[ContextFragment] = []
         for fragment in working:
             normalized.append(
-                self._strategies.score_normalizer.normalize(
+                active_strategies.score_normalizer.normalize(
                     ContextNormalizationInput(fragment=fragment, request=request),
                 ),
             )
@@ -174,7 +154,7 @@ class ContextCrossSourcePolicyPipeline:
         decisions.append(
             _decision(
                 stage=ContextPolicyStage.NORMALIZE,
-                strategy_id=self._strategies.score_normalizer.strategy_id,
+                strategy_id=active_strategies.score_normalizer.strategy_id,
                 before=before,
                 after=working,
                 reason_code=ContextPolicyReasonCode.CONFLICT_RESOLVED,
@@ -183,7 +163,7 @@ class ContextCrossSourcePolicyPipeline:
         )
 
         before = list(working)
-        working, semantic_decisions = self._strategies.semantic_deduper.deduplicate(working, request)
+        working, semantic_decisions = active_strategies.semantic_deduper.deduplicate(working, request)
         if semantic_decisions:
             suppressed_ids = {
                 suppressed
@@ -198,7 +178,7 @@ class ContextCrossSourcePolicyPipeline:
         decisions.append(
             _decision(
                 stage=ContextPolicyStage.SEMANTIC_DEDUP,
-                strategy_id=self._strategies.semantic_deduper.strategy_id,
+                strategy_id=active_strategies.semantic_deduper.strategy_id,
                 before=before,
                 after=working,
                 reason_code=ContextPolicyReasonCode.SEMANTIC_DUPLICATE,
@@ -206,11 +186,11 @@ class ContextCrossSourcePolicyPipeline:
         )
 
         before = list(working)
-        working, conflict_decisions = self._strategies.conflict_resolver.resolve(working, request)
+        working, conflict_decisions = active_strategies.conflict_resolver.resolve(working, request)
         decisions.append(
             _decision(
                 stage=ContextPolicyStage.CONFLICT,
-                strategy_id=self._strategies.conflict_resolver.strategy_id,
+                strategy_id=active_strategies.conflict_resolver.strategy_id,
                 before=before,
                 after=working,
                 reason_code=ContextPolicyReasonCode.CONFLICT_RESOLVED,
@@ -218,13 +198,13 @@ class ContextCrossSourcePolicyPipeline:
         )
 
         before = list(working)
-        ranked, quality_excluded = self._strategies.ranker.rank_with_exclusions(working, request)
+        ranked, quality_excluded = active_strategies.ranker.rank_with_exclusions(working, request)
         excluded.extend(quality_excluded)
         working = ranked
         decisions.append(
             _decision(
                 stage=ContextPolicyStage.RANK,
-                strategy_id=self._strategies.ranker.ranker_id,
+                strategy_id=active_strategies.ranker.ranker_id,
                 before=before,
                 after=working,
                 reason_code=ContextPolicyReasonCode.QUALITY_THRESHOLD,
@@ -232,7 +212,7 @@ class ContextCrossSourcePolicyPipeline:
         )
 
         before = list(working)
-        allocation = self._strategies.budget_allocator.allocate(
+        allocation = active_strategies.budget_allocator.allocate(
             working,
             request.budget_policy.max_tokens_estimate,
             request,
@@ -242,7 +222,7 @@ class ContextCrossSourcePolicyPipeline:
         decisions.append(
             _decision(
                 stage=ContextPolicyStage.BUDGET,
-                strategy_id=self._strategies.budget_allocator.strategy_id,
+                strategy_id=active_strategies.budget_allocator.strategy_id,
                 before=before,
                 after=working,
                 reason_code=ContextPolicyReasonCode.BUDGET_EXCLUDED,

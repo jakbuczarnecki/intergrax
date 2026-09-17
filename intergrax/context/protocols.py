@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from intergrax.context.contracts import (
     AssembledContext,
@@ -15,12 +15,16 @@ from intergrax.context.contracts import (
     ContextFragment,
     ContextFragmentSource,
     ContextNormalizationInput,
+    ContextPolicyPipelineResult,
     ContextProviderContext,
     ContextProviderDescriptor,
     ContextSemanticDedupDecision,
 )
 from intergrax.context.session_history import SessionHistorySnapshot
 from intergrax.llm.messages import ChatMessage
+
+if TYPE_CHECKING:
+    from intergrax.context.policy.pipeline import ContextPolicyStrategies
 
 
 @runtime_checkable
@@ -114,6 +118,22 @@ class ContextBudgetAllocator(Protocol):
         budget_tokens: int,
         request: ContextAssemblyRequest,
     ) -> BudgetAllocationResult: ...
+
+
+@runtime_checkable
+class ContextPolicyPipeline(Protocol):
+    """Replaceable cross-source policy orchestration (MEM-XINT-5-R)."""
+
+    @property
+    def pipeline_id(self) -> str: ...
+
+    def execute(
+        self,
+        fragments: list[ContextFragment],
+        request: ContextAssemblyRequest,
+        *,
+        strategies: ContextPolicyStrategies | None = None,
+    ) -> ContextPolicyPipelineResult: ...
 
 
 @runtime_checkable
