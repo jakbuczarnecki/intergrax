@@ -53,9 +53,13 @@ from intergrax.runtime.nexus.tools.native_planner_action_context import (
     resolve_native_planner_protocol,
 )
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
+    wire_default_nexus_context_engine_if_unset,
+)
 from intergrax.runtime.nexus.tools.tool_loop import (
     execute_planned_tool_calls,
     run_bounded_tool_loop,
+    run_bounded_tool_loop_async,
 )
 from intergrax.runtime.nexus.tools.tool_planner_protocol import IterativeToolPlannerProtocol
 from intergrax.tools.core.tool_plan import PlannedToolCall, ToolCallPlan
@@ -426,14 +430,27 @@ class ToolLoopExecutionDelegate:
             )
         state = _runtime_state(run_id=request.run_id)
         state.context.config.max_parallel_tool_calls = self._max_parallel_read_only
-        run_bounded_tool_loop(
-            state=state,
-            invoker=self._invoker,
-            tool_planner=self._planner,
-            planner_input=[ChatMessage(role="user", content=request.message)],
-            allowed_tool_ids=("probe.read",),
-            max_iterations=self._max_iterations,
-        )
+        if self._max_iterations > 1:
+            wire_default_nexus_context_engine_if_unset(state)
+            asyncio.run(
+                run_bounded_tool_loop_async(
+                    state=state,
+                    invoker=self._invoker,
+                    tool_planner=self._planner,
+                    planner_input=[ChatMessage(role="user", content=request.message)],
+                    allowed_tool_ids=("probe.read",),
+                    max_iterations=self._max_iterations,
+                )
+            )
+        else:
+            run_bounded_tool_loop(
+                state=state,
+                invoker=self._invoker,
+                tool_planner=self._planner,
+                planner_input=[ChatMessage(role="user", content=request.message)],
+                allowed_tool_ids=("probe.read",),
+                max_iterations=self._max_iterations,
+            )
         if budget_token is not None:
             reset_active_execution_budget(budget_token)
         return AgentExecutionResult(
@@ -478,15 +495,18 @@ def test_bounded_react_iterations_preserve_execution_id() -> None:
     invoker = _recording_invoker()
     planner = _TwoRoundPlanner()
 
+    wire_default_nexus_context_engine_if_unset(state)
     token, budget_token = _bind_canonical_execution_context(identity)
     try:
-        result = run_bounded_tool_loop(
-            state=state,
-            invoker=invoker,
-            tool_planner=planner,
-            planner_input=[ChatMessage(role="user", content="iterate")],
-            allowed_tool_ids=("probe.read",),
-            max_iterations=2,
+        result = asyncio.run(
+            run_bounded_tool_loop_async(
+                state=state,
+                invoker=invoker,
+                tool_planner=planner,
+                planner_input=[ChatMessage(role="user", content="iterate")],
+                allowed_tool_ids=("probe.read",),
+                max_iterations=2,
+            )
         )
     finally:
         _reset_canonical_execution_context(token, budget_token)

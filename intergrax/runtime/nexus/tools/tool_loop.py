@@ -427,6 +427,7 @@ def append_native_tool_messages(
     tool_calls: Sequence[LLMToolCall],
     outcomes: Sequence[PlannedToolCallOutcome],
 ) -> None:
+    """Legacy compatibility helper — not used on canonical iterative ReAct paths (UE-9D)."""
     append_assistant_tool_call_message(
         messages,
         assistant_content=assistant_content,
@@ -473,9 +474,13 @@ def run_bounded_tool_loop(
     """
     Plan → invoke → observe via injected ``ToolInvocationPattern``.
 
-    ``max_iterations > 1`` without explicit mode preserves TOOL-ENG-6 bounded ReAct.
-    Iterative CE routing is handled by :func:`run_bounded_tool_loop_async`.
+    Single-iteration loops only; multi-round ReAct requires :func:`run_bounded_tool_loop_async`.
     """
+    from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
+        reject_sync_iterative_bounded_tool_loop,
+    )
+
+    reject_sync_iterative_bounded_tool_loop(max_iterations)
     resolved = resolve_tool_invocation_pattern(
         invocation_mode=invocation_mode,
         max_iterations=max_iterations,
@@ -523,10 +528,17 @@ async def run_bounded_tool_loop_async(
     pattern: ToolInvocationPattern | None = None,
     prior_model_visible_references: Sequence[ModelVisibleEvidenceReference] = (),
 ) -> ToolInvocationResult:
-    """Async bounded tool loop — routes iterative feedback through CE when wired."""
+    """Async bounded tool loop — canonical multi-round ReAct routes tool feedback through CE."""
     max_iters = max(1, int(max_iterations))
-    engine = state.context.config.context_engine
-    if max_iters > 1 and engine is not None:
+    from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
+        require_context_engine_for_iterative_bounded_tool_loop,
+    )
+
+    require_context_engine_for_iterative_bounded_tool_loop(
+        max_iterations=max_iters,
+        context_engine=state.context.config.context_engine,
+    )
+    if max_iters > 1:
         if not isinstance(tool_planner, IterativeToolPlannerProtocol):
             raise TypeError(
                 "Bounded iterative tool invocation (max_iterations > 1) requires "
@@ -545,8 +557,6 @@ async def run_bounded_tool_loop_async(
             max_iterations=max_iters,
             prior_model_visible_references=prior_model_visible_references,
         )
-    # TRANSITIONAL (UE-9D): sync fallback via BoundedReactPattern → append_native_tool_messages
-    # when no context_engine is wired. Owner of removal: UE-9D.
     return run_bounded_tool_loop(
         state=state,
         invoker=invoker,

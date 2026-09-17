@@ -25,7 +25,14 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.contracts.execution_identity import RunId, TaskId
-from intergrax.runtime.nexus.tools.tool_loop import execute_planned_tool_calls, run_bounded_tool_loop
+from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
+    wire_default_nexus_context_engine_if_unset,
+)
+from intergrax.runtime.nexus.tools.tool_loop import (
+    execute_planned_tool_calls,
+    run_bounded_tool_loop,
+    run_bounded_tool_loop_async,
+)
 from intergrax.runtime.nexus.tools.native_planner_action_context import (
     PLANNER_ACTION_CONTEXT_TOOL_ID,
     NativePlannerActionContextError,
@@ -59,6 +66,8 @@ _INTEGRATION_RUN_ID = RunId("run_00000000000000000000000000000001")
 
 
 def _invoke_bounded_tool_loop(**kwargs):
+    import asyncio
+
     from intergrax.contracts.execution_identity import require_active_execution_id
     from intergrax.runtime.execution.active_execution_budget import (
         bind_root_execution_budget,
@@ -68,6 +77,7 @@ def _invoke_bounded_tool_loop(**kwargs):
     from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 
     state = kwargs["state"]
+    max_iterations = int(kwargs.get("max_iterations", 1))
     with canonical_execution_identity_scope(state.run_id):
         budget_token = None
         if peek_active_execution_budget() is None:
@@ -76,6 +86,9 @@ def _invoke_bounded_tool_loop(**kwargs):
                 ledger=create_execution_budget_ledger(None),
             )
         try:
+            if max_iterations > 1:
+                wire_default_nexus_context_engine_if_unset(state)
+                return asyncio.run(run_bounded_tool_loop_async(**kwargs))
             return run_bounded_tool_loop(**kwargs)
         finally:
             if budget_token is not None:

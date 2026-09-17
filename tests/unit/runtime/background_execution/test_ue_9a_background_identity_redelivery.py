@@ -56,9 +56,12 @@ from intergrax.runtime.execution.budget.ledger import create_execution_budget_le
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.native_planner_action_context import NativePlannerRound
+from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
+    wire_default_nexus_context_engine_if_unset,
+)
 from intergrax.runtime.nexus.tools.tool_loop import (
     execute_planned_tool_calls,
-    run_bounded_tool_loop,
+    run_bounded_tool_loop_async,
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
@@ -392,15 +395,20 @@ def test_llm_retry_does_not_mint_new_attempt() -> None:
         execution_id=execution_id,
     )
     try:
+        import asyncio
+
         state = _runtime_state(run_id=run_id)
+        wire_default_nexus_context_engine_if_unset(state)
         invoker = _RecordingInvoker()
-        run_bounded_tool_loop(
-            state=state,
-            invoker=invoker,
-            tool_planner=_TwoRoundPlanner(),
-            planner_input=[ChatMessage(role="user", content="iterate")],
-            allowed_tool_ids=("probe.read",),
-            max_iterations=2,
+        asyncio.run(
+            run_bounded_tool_loop_async(
+                state=state,
+                invoker=invoker,
+                tool_planner=_TwoRoundPlanner(),
+                planner_input=[ChatMessage(role="user", content="iterate")],
+                allowed_tool_ids=("probe.read",),
+                max_iterations=2,
+            )
         )
         active_run_id, active_attempt_id = require_active_execution_identity()
         assert active_run_id == run_id

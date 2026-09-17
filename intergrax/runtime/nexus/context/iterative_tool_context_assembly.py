@@ -50,6 +50,9 @@ from intergrax.runtime.nexus.tools.tool_loop import (
 from intergrax.runtime.nexus.tools.tool_planning_policy import (
     native_tool_choice_for_investigation_round,
 )
+from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
+    ContextEngineRequiredForIterativeToolLoopError,
+)
 from intergrax.runtime.nexus.tools.tool_planner_protocol import IterativeToolPlannerProtocol
 
 
@@ -101,7 +104,9 @@ async def run_ce_bounded_tool_loop(
     max_iters = max(1, int(max_iterations))
     engine = state.context.config.context_engine
     if engine is None:
-        raise RuntimeError("context_engine is required for CE bounded tool loop")
+        raise ContextEngineRequiredForIterativeToolLoopError(
+            "context_engine is required for CE bounded tool loop"
+        )
 
     messages = _coerce_messages(planner_input)
     initial_len = len(messages)

@@ -502,3 +502,5 @@ Tier boundaries preserved; MEM-ENT invariants authoritative; aligns with ADR-UCL
 ## Implementation notes
 
 MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normative policy pipeline ordering closure (this revision). Bounded regression: `.tmp/session/MEM-XINT-2-R/pytest.log`. Production code unchanged in MEM-XINT-2-R.
+
+**MEM-XINT-4-R (UE-9D):** MXINT-4 closed for iterative ReAct — multi-round bounded tool loops require `run_bounded_tool_loop_async` with wired `ContextEngine`; sync `BoundedReactPattern` no longer appends native tool messages for model-facing feedback.

@@ -15,7 +15,10 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
 )
 from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 from intergrax.runtime.nexus.tools.investigation_proof import InvestigationProof
-from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop
+from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
+    wire_default_nexus_context_engine_if_unset,
+)
+from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop_async
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -288,15 +291,20 @@ def execute_order_workflow(
     matched_rule_ids: tuple[str, ...] = ()
     loop_result = None
     investigation_proof: InvestigationProof | None = None
+    import asyncio
+
+    wire_default_nexus_context_engine_if_unset(runtime_state)
     try:
-        loop_result = run_bounded_tool_loop(
-            state=runtime_state,
-            invoker=invoker,
-            tool_planner=planner,
-            planner_input=planner_messages,
-            allowed_tool_ids=list(SCENARIO_TOOL_IDS),
-            max_iterations=MAX_ORDER_TOOL_LOOP_ITERATIONS,
-            invocation_mode=ToolInvocationMode.BOUNDED_REACT,
+        loop_result = asyncio.run(
+            run_bounded_tool_loop_async(
+                state=runtime_state,
+                invoker=invoker,
+                tool_planner=planner,
+                planner_input=planner_messages,
+                allowed_tool_ids=list(SCENARIO_TOOL_IDS),
+                max_iterations=MAX_ORDER_TOOL_LOOP_ITERATIONS,
+                invocation_mode=ToolInvocationMode.BOUNDED_REACT,
+            )
         )
         investigation_proof = loop_result.investigation_proof
     except DeclarativePolicyViolationError:
