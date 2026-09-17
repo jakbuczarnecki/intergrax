@@ -61,6 +61,12 @@ The detailed historical audit register remains in
 [`satellites/RAG_implementation_history.md`](satellites/RAG_implementation_history.md).
 It is retained as evidence, not as a second current-state matrix.
 
+### MP-5F-B2 — scoped knowledge reference read boundary (CLOSED)
+
+**Status:** **CLOSED** (contract + default retrieval projection reader). **Next:** MP-5F-B3 (UCL read boundary). **MP-5F** remains **BLOCKED** until B3…B4 + B5 adapter integration.
+
+Knowledge/RAG owns retrieval, ranking, indexing and provider semantics. Public surface: `KnowledgeReferenceReadPort` / `KnowledgeReferenceReadScope` / `KnowledgeChunkCanonicalRef` in `intergrax/knowledge/contracts/knowledge_reference_read.py`. Default reader projects `RetrievalService`-compatible backends without payload hydration; mandatory fail-closed tenant/workspace capability binding. No ContextView types in Knowledge/RAG; no MP-5 adapter in this slice.
+
 ---
 
 <a id="protocol-v2-rag-remediation-2026-08-18"></a>

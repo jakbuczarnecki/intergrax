@@ -78,7 +78,7 @@ Architecture hub additions: tool-result feedback ≠ automatic durable memory; M
 
 ### MP-5F-B1 — scoped reference read boundary (CLOSED)
 
-**Status:** **CLOSED** (contract + hardened default user-profile enumerator). **Next:** MP-5F-B2 (Knowledge/RAG read boundary). **MP-5F** remains **BLOCKED** until B2…B4 + B5 adapter integration.
+**Status:** **CLOSED** (contract + hardened default user-profile enumerator). **Next:** MP-5F-B3 (UCL read boundary). **MP-5F** remains **BLOCKED** until B3…B4 + B5 adapter integration.
 
 Memory owns read/retrieval semantics. Public surface: `MemoryReferenceReadPort` / `MemoryReferenceReadScope` / `MemoryRecordCanonicalRef` in `intergrax/memory/contracts/memory_reference_read.py`. Default user-profile reader: mandatory fail-closed tenant/workspace capability binding; scope/governance enforcement shared with control plane via `memory_scope_authority.py`. No ContextView types in Memory; no MP-5 adapter in this slice.
 
