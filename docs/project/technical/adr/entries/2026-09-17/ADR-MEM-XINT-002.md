@@ -562,3 +562,13 @@ MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normat
 
 **Certified invariants:** Memory recall via `MemoryControlPlane`; model-facing semantic sources through `ContextEngine.assemble`; cross-source policy stages + hard invariant envelope; scope isolation; ReAct one CE assembly per model round; remember→recall→CE path with in-memory vendor.
 
+
+## MEM-XINT-6-R2 typed source boundary closure (2026-09-17)
+
+**Status:** typed source boundary implementation complete; session regression closure; candidate event regression closure; canonical semantic handles = 0 (builtin collectors); clean MEM-XINT commit pending push verification.
+
+**Session regression:** hard canonicalization now keeps `ContextFragment.content_hash` and session metadata `content_hash` aligned via `session_history_content_hash_for_fragment` when content is normalized.
+
+**Candidate events:** `DefaultNexusContextEngine` emits `CONTEXT_CANDIDATE_DROPPED` for policy hard-stage and cross-source exclusions (not only provider failures).
+
+**Audit:** READY FOR INDEPENDENT AUDIT (exact GitHub SHA required before MEM-XINT-6-FINAL).

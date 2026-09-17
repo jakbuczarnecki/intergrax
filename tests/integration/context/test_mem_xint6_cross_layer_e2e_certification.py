@@ -14,6 +14,7 @@ import pytest
 
 from intergrax.context.bootstrap import materialize_context_plugin_registry
 from intergrax.context.contracts import (
+    IterativeToolOutputBlock,
     ContextAssemblyRequest,
     ContextAuthorityClass,
     ContextBudgetSnapshot,
@@ -69,7 +70,14 @@ from intergrax.runtime.nexus.context.canonical_context_composition import (
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.runtime.nexus.context.iterative_tool_context_assembly import run_ce_bounded_tool_loop
 from intergrax.runtime.nexus.context.memory_context_invocation import run_longterm_memory_context
+from intergrax.context.source_inputs import ContextProviderSourceInputs
 from intergrax.runtime.nexus.context.provider_handles import LTM_ENTRIES_METADATA_KEY
+from intergrax.runtime.nexus.context.provider_source_adapters import (
+    memory_inputs_from_rows,
+    rag_inputs_from_rows,
+    tool_inputs_from_rows,
+    web_inputs_from_rows,
+)
 from intergrax.runtime.nexus.context.runtime_state_handle_bridge import (
     merge_provider_metadata_into_request,
 )
@@ -87,7 +95,8 @@ from testing_support.mem_xint6_cross_layer_certification import (
     authority_for_source,
     assert_included_fragments_have_provenance,
     build_certification_engine,
-    build_provider_handles,
+    build_certification_provider_context,
+    build_provider_source_inputs,
     certification_assembly_request,
     inventory_legacy_bypass_symbols,
     session_snapshot_for_cert,
@@ -187,15 +196,20 @@ def _policy_fragment(
     )
 
 
-async def _assemble_with_handles(
+async def _assemble_with_sources(
     *,
-    handles: dict,
+    sources: ContextProviderSourceInputs,
+    runtime_config: RuntimeConfig,
     request: ContextAssemblyRequest | None = None,
     engine: DefaultNexusContextEngine | None = None,
 ):
     engine = engine or build_certification_engine()
     req = request or certification_assembly_request(tenant_id=_TENANT, user_id=_USER)
-    provider_ctx = ContextProviderContext(engine_id=engine.engine_id, handles=handles)
+    provider_ctx = build_certification_provider_context(
+        runtime_config=runtime_config,
+        sources=sources,
+        engine_id=engine.engine_id,
+    )
     return await engine.assemble(req, provider_ctx=provider_ctx)
 
 
@@ -226,11 +240,10 @@ async def test_memory_recall_enters_model_only_through_context_engine() -> None:
 
     adapter = _SmallWindowAdapter()
     runtime_config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
-    handles = build_provider_handles(
-        runtime_config=runtime_config,
-        ltm_entries=state.request.metadata[LTM_ENTRIES_METADATA_KEY],
+    sources = ContextProviderSourceInputs(
+        memory=memory_inputs_from_rows(state.request.metadata[LTM_ENTRIES_METADATA_KEY]),
     )
-    assembled = await _assemble_with_handles(handles=handles)
+    assembled = await _assemble_with_sources(runtime_config=runtime_config, sources=sources)
     joined = "\n".join(m.content or "" for m in assembled.messages)
     assert _LTM_SNIPPET in joined
     memory_frags = [f for f in assembled.fragments_included if f.source is ContextFragmentSource.LONGTERM_MEMORY]
@@ -245,11 +258,10 @@ async def test_rag_evidence_enters_model_only_through_context_engine() -> None:
     chunk_text = "rag-evidence-zeta"
     adapter = _SmallWindowAdapter()
     runtime_config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
-    handles = build_provider_handles(
-        runtime_config=runtime_config,
-        rag_chunks=[{"id": "c1", "text": chunk_text, "score": 0.82}],
+    sources = ContextProviderSourceInputs(
+        rag=rag_inputs_from_rows([{"id": "c1", "text": chunk_text, "score": 0.82}]),
     )
-    assembled = await _assemble_with_handles(handles=handles)
+    assembled = await _assemble_with_sources(runtime_config=runtime_config, sources=sources)
     assert chunk_text in "\n".join(m.content or "" for m in assembled.messages)
     rag_frags = [f for f in assembled.fragments_included if f.source is ContextFragmentSource.RAG]
     assert rag_frags and rag_frags[0].authority_class is ContextAuthorityClass.RAG_EVIDENCE
@@ -291,12 +303,13 @@ async def test_session_episodic_and_canonical_memory_distinct_in_ce() -> None:
         revision_id="rev-1",
         episodic_fact=episodic,
     )
-    handles = build_provider_handles(
-        runtime_config=runtime_config,
-        ltm_entries=[{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}],
+    sources = build_provider_source_inputs(
+        ltm_entries=memory_inputs_from_rows(
+            [{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}]
+        ),
         session_snapshot=snapshot,
     )
-    assembled = await _assemble_with_handles(handles=handles)
+    assembled = await _assemble_with_sources(runtime_config=runtime_config, sources=sources)
     sources = {f.source for f in assembled.fragments_included}
     assert ContextFragmentSource.LONGTERM_MEMORY in sources
     assert ContextFragmentSource.SESSION_HISTORY in sources
@@ -345,12 +358,15 @@ def test_rag_and_tool_duplicate_is_suppressed_before_budget() -> None:
 async def test_mixed_source_full_pipeline_stages_and_provenance_walkthrough() -> None:
     adapter = _SmallWindowAdapter()
     runtime_config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
-    handles = build_provider_handles(
-        runtime_config=runtime_config,
-        ltm_entries=[{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}],
-        rag_chunks=[{"id": "c1", "text": "rag-mixed", "score": 0.7}],
-        tool_blocks=[{"content": "tool-obs", "tool_call_id": "tc-1", "tool_name": "probe"}],
-        web_blocks=["web-hit"],
+    sources = build_provider_source_inputs(
+        ltm_entries=memory_inputs_from_rows(
+            [{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}]
+        ),
+        rag_chunks=rag_inputs_from_rows([{"id": "c1", "text": "rag-mixed", "score": 0.7}]),
+        tool_blocks=tool_inputs_from_rows(
+            [{"content": "tool-obs", "tool_call_id": "tc-1", "tool_name": "probe"}]
+        ),
+        web_blocks=web_inputs_from_rows(["web-hit"]),
         session_snapshot=session_snapshot_for_cert(
             tenant_id=_TENANT,
             session_id="sess-mix",
@@ -358,7 +374,7 @@ async def test_mixed_source_full_pipeline_stages_and_provenance_walkthrough() ->
             episodic_fact="episodic-mix",
         ),
     )
-    assembled = await _assemble_with_handles(handles=handles)
+    assembled = await _assemble_with_sources(runtime_config=runtime_config, sources=sources)
     assert assembled.fragments_included
     assert assembled.policy_decisions
     stages = {d.stage for d in assembled.policy_decisions}
@@ -451,9 +467,8 @@ async def test_remember_recall_roundtrip_reaches_ce_without_manager_bypass() -> 
     adapter = _SmallWindowAdapter()
     runtime_config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
     rows = [{"entry_id": item.entry_id, "content": item.content, "kind": "user_fact"} for item in recall.items]
-    assembled = await _assemble_with_handles(
-        handles=build_provider_handles(runtime_config=runtime_config, ltm_entries=rows),
-    )
+    sources = ContextProviderSourceInputs(memory=memory_inputs_from_rows(rows))
+    assembled = await _assemble_with_sources(runtime_config=runtime_config, sources=sources)
     assert _LTM_SNIPPET in "\n".join(m.content or "" for m in assembled.messages)
 
 
@@ -488,14 +503,15 @@ def test_fail_closed_without_context_engine_when_sources_active() -> None:
 async def test_deterministic_assembly_two_runs_match() -> None:
     adapter = _SmallWindowAdapter()
     runtime_config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
-    handles = build_provider_handles(
-        runtime_config=runtime_config,
-        ltm_entries=[{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}],
-        rag_chunks=[{"id": "c1", "text": "rag-d", "score": 0.5}],
+    sources = build_provider_source_inputs(
+        ltm_entries=memory_inputs_from_rows(
+            [{"entry_id": "e1", "content": _LTM_SNIPPET, "kind": "user_fact"}]
+        ),
+        rag_chunks=rag_inputs_from_rows([{"id": "c1", "text": "rag-d", "score": 0.5}]),
     )
     request = certification_assembly_request()
-    first = await _assemble_with_handles(handles=handles, request=request)
-    second = await _assemble_with_handles(handles=handles, request=request)
+    first = await _assemble_with_sources(runtime_config=runtime_config, sources=sources, request=request)
+    second = await _assemble_with_sources(runtime_config=runtime_config, sources=sources, request=request)
     assert tuple(f.fragment_id for f in first.fragments_included) == tuple(
         f.fragment_id for f in second.fragments_included
     )
@@ -539,12 +555,14 @@ def test_mem_xint6_maintenance_bypass_guard_script() -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_raw_handles_documented_as_legacy_bridge_compatibility() -> None:
-    bridge_path = _REPO / "intergrax" / "context" / "providers" / "legacy_bridge.py"
-    source = bridge_path.read_text(encoding="utf-8")
-    assert "legacy compatibility only" in source
-    assert "ltm_entries" in source
-    assert "ContextProviderContext.handles" in source or "handles``" in source
+def test_typed_sources_documented_on_provider_context() -> None:
+    contracts_path = _REPO / "intergrax" / "context" / "contracts.py"
+    source_inputs_path = _REPO / "intergrax" / "context" / "source_inputs.py"
+    contracts_source = contracts_path.read_text(encoding="utf-8")
+    inputs_source = source_inputs_path.read_text(encoding="utf-8")
+    assert "sources:" in contracts_source
+    assert "class ContextProviderSourceInputs" in inputs_source
+    assert "payloads may be introduced through handles" in contracts_source
 
 
 @pytest.mark.asyncio

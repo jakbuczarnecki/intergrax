@@ -18,6 +18,7 @@ from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScop
 
 if TYPE_CHECKING:
     from intergrax.context.planning import ContextPlan
+    from intergrax.context.source_inputs import ContextProviderSourceInputs
 
 CONTEXT_CONTRACTS_SCHEMA = "context_contracts.v1"
 ASSEMBLED_CONTEXT_SCHEMA = "assembled_context.v1"
@@ -452,18 +453,63 @@ def replace_context_fragment(fragment: ContextFragment, **updates: object) -> Co
     return ContextFragment(**current)  # type: ignore[arg-type]
 
 
+def _default_provider_source_inputs() -> ContextProviderSourceInputs:
+    from intergrax.context.source_inputs import ContextProviderSourceInputs
+
+    return ContextProviderSourceInputs()
+
+
 @dataclass
 class ContextProviderContext:
-    """Runtime handles for provider ``collect`` — not serialized or logged at INFO."""
+    """Runtime context for provider ``collect`` — not serialized or logged at INFO.
+
+    ``sources`` carries canonical typed semantic inputs. ``handles`` is legacy auxiliary
+    runtime compatibility only (config, event bus, workspace files). No semantic source
+    payloads may be introduced through handles on canonical paths.
+    """
 
     engine_id: str = "default"
     plugin_ids: tuple[str, ...] = ()
+    sources: ContextProviderSourceInputs = field(default_factory=_default_provider_source_inputs)
     handles: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self._hydrate_sources_from_legacy_session_handles()
+
+    def _hydrate_sources_from_legacy_session_handles(self) -> None:
+        """Writer-side compatibility: move session snapshot handles into ``sources`` once."""
+        if self.sources.session is not None:
+            return
+        from intergrax.context.session_history import (
+            SESSION_HISTORY_CONTEXT_SCOPE_HANDLE,
+            SESSION_HISTORY_REVISION_HANDLE,
+            SESSION_HISTORY_SNAPSHOT_HANDLE,
+            SessionHistorySnapshot,
+        )
+        from intergrax.context.source_inputs import ContextSessionSourceInput
+
+        raw = self.handles.get(SESSION_HISTORY_SNAPSHOT_HANDLE)
+        if type(raw) is not SessionHistorySnapshot:
+            return
+        scope = self.handles.get(SESSION_HISTORY_CONTEXT_SCOPE_HANDLE)
+        revision = self.handles.get(SESSION_HISTORY_REVISION_HANDLE)
+        if type(scope) is not str or not scope.strip():
+            scope = raw.context_scope_id
+        if type(revision) is not str or not revision.strip():
+            revision = raw.revision_id
+        self.sources = self.sources.with_session(
+            ContextSessionSourceInput(
+                snapshot=raw,
+                binding_context_scope_id=scope.strip(),
+                binding_revision_id=revision.strip(),
+            )
+        )
 
     def __repr__(self) -> str:
         return (
             f"ContextProviderContext(engine_id={self.engine_id!r}, "
-            f"plugin_ids={self.plugin_ids!r}, handle_keys={sorted(self.handles)!r})"
+            f"plugin_ids={self.plugin_ids!r}, sources=({self.sources.summary_repr()}), "
+            f"handle_keys={sorted(self.handles)!r})"
         )
 
 

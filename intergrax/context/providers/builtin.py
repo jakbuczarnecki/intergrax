@@ -16,35 +16,24 @@ from intergrax.context.contracts import (
 )
 from intergrax.context.contracts import BUILTIN_PROVIDER_VERSION
 from intergrax.context.provider_descriptor import build_provider_descriptor
-from intergrax.context.providers.legacy_bridge import (
-    ATTACHMENT_SUMMARIES_HANDLE,
-    LTM_ENTRIES_HANDLE,
-    POLICY_OVERLAY_FRAGMENTS_HANDLE,
-    PRIOR_OUTPUT_RECORDS_HANDLE,
-    RAG_CHUNKS_HANDLE,
-    SESSION_HISTORY_MESSAGES_HANDLE,
-    SHARED_CONTEXT_READS_HANDLE,
-    SYSTEM_INSTRUCTIONS_HANDLE,
-    TOOL_OUTPUT_BLOCKS_HANDLE,
-    WEBSEARCH_BLOCKS_HANDLE,
-    fragments_from_attachment_summaries,
-    fragments_from_ltm_entries,
-    fragments_from_policy_overlay_fragments,
-    fragments_from_prior_output_records,
-    fragments_from_rag_chunks,
-    fragments_from_shared_context_reads,
-    fragments_from_system_instructions,
-    fragments_from_task_message,
-    fragments_from_tool_output_blocks,
-    fragments_from_websearch_blocks,
-)
+from intergrax.context.registry import ContextPluginRegistry
 from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
-    SessionHistorySnapshotRequiredError,
     fragments_from_session_history_snapshot,
-    require_session_history_messages,
 )
-from intergrax.context.registry import ContextPluginRegistry
+from intergrax.context.source_fragments import (
+    fragments_from_attachment_input,
+    fragments_from_graph_prior_input,
+    fragments_from_memory_input,
+    fragments_from_policy_overlay_input,
+    fragments_from_rag_input,
+    fragments_from_shared_context_input,
+    fragments_from_system_input,
+    fragments_from_task_message,
+    fragments_from_tool_input,
+    fragments_from_web_input,
+)
+from intergrax.llm.messages import ChatMessage
 
 _BUILTIN_SPECS: tuple[tuple[str, ContextFragmentSource], ...] = (
     ("builtin.task_message", ContextFragmentSource.TASK_MESSAGE),
@@ -67,25 +56,33 @@ WIRED_BUILTIN_COLLECTOR_IDS: frozenset[str] = frozenset(
 ) | frozenset({"builtin.session_history_semantic"})
 
 
+def _auxiliary_messages(ctx: ContextProviderContext) -> tuple[ChatMessage, ...] | None:
+    messages = ctx.handles.get("messages")
+    if not isinstance(messages, list) or not messages:
+        return None
+    typed: list[ChatMessage] = []
+    for message in messages:
+        if isinstance(message, ChatMessage):
+            typed.append(message)
+    return tuple(typed) if typed else None
+
+
 async def _collect_task_message(
     request: ContextAssemblyRequest,
     ctx: ContextProviderContext,
 ) -> list[ContextFragment]:
-    messages = ctx.handles.get("messages")
-    typed_messages = list(messages) if isinstance(messages, list) else None
-    return fragments_from_task_message(request, messages=typed_messages)
+    return fragments_from_task_message(request, messages=_auxiliary_messages(ctx))
 
 
 async def _collect_graph_prior(
     request: ContextAssemblyRequest,
     ctx: ContextProviderContext,
 ) -> list[ContextFragment]:
-    _ = request
-    records = ctx.handles.get(PRIOR_OUTPUT_RECORDS_HANDLE)
-    if not isinstance(records, list) or not records:
+    records = ctx.sources.graph_prior
+    if not records:
         return []
     max_entries = request.assembly_options.max_prior_entries
-    return fragments_from_prior_output_records(records, max_entries=max_entries)
+    return fragments_from_graph_prior_input(records, max_entries=max_entries)
 
 
 async def _collect_session_history(
@@ -96,14 +93,9 @@ async def _collect_session_history(
         return []
     provider = HandleSessionHistoryProvider()
     snapshot = await provider.load_snapshot(request, ctx)
-    if snapshot is not None:
-        return fragments_from_session_history_snapshot(snapshot)
-
-    raw = ctx.handles.get(SESSION_HISTORY_MESSAGES_HANDLE)
-    messages = require_session_history_messages(raw)
-    if not messages:
+    if snapshot is None:
         return []
-    raise SessionHistorySnapshotRequiredError()
+    return fragments_from_session_history_snapshot(snapshot)
 
 
 async def _collect_rag(
@@ -114,10 +106,10 @@ async def _collect_rag(
         return []
     if not request.decision_profile.prefer_rag_when_enabled:
         return []
-    raw = ctx.handles.get(RAG_CHUNKS_HANDLE)
-    if not isinstance(raw, list) or not raw:
+    chunks = ctx.sources.rag
+    if not chunks:
         return []
-    return fragments_from_rag_chunks(raw)
+    return fragments_from_rag_input(chunks)
 
 
 async def _collect_longterm_memory(
@@ -128,11 +120,11 @@ async def _collect_longterm_memory(
         return []
     if not request.decision_profile.prefer_longterm_memory:
         return []
-    raw = ctx.handles.get(LTM_ENTRIES_HANDLE)
-    if not isinstance(raw, list) or not raw:
+    entries = ctx.sources.memory
+    if not entries:
         return []
     max_entries = request.decision_profile.max_memory_entries_in_context
-    return fragments_from_ltm_entries(raw, max_entries=max_entries)
+    return fragments_from_memory_input(entries, max_entries=max_entries)
 
 
 async def _collect_websearch(
@@ -141,10 +133,10 @@ async def _collect_websearch(
 ) -> list[ContextFragment]:
     if ContextFragmentSource.WEBSEARCH in request.excluded_sources:
         return []
-    raw = ctx.handles.get(WEBSEARCH_BLOCKS_HANDLE)
-    if not isinstance(raw, list) or not raw:
+    blocks = ctx.sources.web
+    if not blocks:
         return []
-    return fragments_from_websearch_blocks(raw)
+    return fragments_from_web_input(blocks)
 
 
 async def _collect_tool_output(
@@ -153,10 +145,10 @@ async def _collect_tool_output(
 ) -> list[ContextFragment]:
     if ContextFragmentSource.TOOL_OUTPUT in request.excluded_sources:
         return []
-    raw = ctx.handles.get(TOOL_OUTPUT_BLOCKS_HANDLE)
-    if not isinstance(raw, list) or not raw:
+    blocks = ctx.sources.tools
+    if not blocks:
         return []
-    return fragments_from_tool_output_blocks(raw)
+    return fragments_from_tool_input(blocks)
 
 
 async def _collect_system_instructions(
@@ -164,10 +156,10 @@ async def _collect_system_instructions(
     ctx: ContextProviderContext,
 ) -> list[ContextFragment]:
     _ = request
-    raw = ctx.handles.get(SYSTEM_INSTRUCTIONS_HANDLE)
-    if not isinstance(raw, str) or not raw.strip():
+    system = ctx.sources.system
+    if system is None:
         return []
-    return fragments_from_system_instructions(raw)
+    return fragments_from_system_input(system)
 
 
 async def _collect_shared_context(
@@ -175,10 +167,10 @@ async def _collect_shared_context(
     ctx: ContextProviderContext,
 ) -> list[ContextFragment]:
     _ = request
-    raw = ctx.handles.get(SHARED_CONTEXT_READS_HANDLE)
-    if not isinstance(raw, dict) or not raw:
+    reads = ctx.sources.shared_context
+    if not reads:
         return []
-    return fragments_from_shared_context_reads(raw)
+    return fragments_from_shared_context_input(reads)
 
 
 async def _collect_attachments(
@@ -187,10 +179,10 @@ async def _collect_attachments(
 ) -> list[ContextFragment]:
     if ContextFragmentSource.ATTACHMENT in request.excluded_sources:
         return []
-    raw = ctx.handles.get(ATTACHMENT_SUMMARIES_HANDLE)
-    if not isinstance(raw, list) or not raw:
+    summaries = ctx.sources.attachments
+    if not summaries:
         return []
-    return fragments_from_attachment_summaries(raw)
+    return fragments_from_attachment_input(summaries)
 
 
 async def _collect_policy_overlay(
@@ -198,10 +190,10 @@ async def _collect_policy_overlay(
     ctx: ContextProviderContext,
 ) -> list[ContextFragment]:
     _ = request
-    raw = ctx.handles.get(POLICY_OVERLAY_FRAGMENTS_HANDLE)
-    if not isinstance(raw, list) or not raw:
+    overlays = ctx.sources.policy_overlay
+    if not overlays:
         return []
-    return fragments_from_policy_overlay_fragments(raw)
+    return fragments_from_policy_overlay_input(overlays)
 
 
 _COLLECT_OVERRIDES: dict[str, Callable[..., list[ContextFragment]]] = {
@@ -275,7 +267,7 @@ def _make_stub_provider(
 
 
 class BuiltinContextPlugin:
-    """Registers all architecture §8.4 builtin providers (live collectors via legacy bridge)."""
+    """Registers all architecture §8.4 builtin providers (typed source collectors)."""
 
     @classmethod
     def plugin_id(cls) -> str:

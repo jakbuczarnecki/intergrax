@@ -354,6 +354,13 @@ class DefaultNexusContextEngine:
             counters = get_context_counters()
             counters.candidate_dropped_total += len(policy_result.excluded)
 
+        _record_fragment_exclusion_drop_events(
+            event_bus,
+            fragments_excluded,
+            engine_id=self._engine_id,
+            event_ctx=event_ctx,
+        )
+
         post_gate = run_pre_context_policy_gate(request, collected=tuple(collected_fragments))
         if not post_gate.allowed:
             get_context_counters().validation_failed_total += 1
@@ -499,6 +506,31 @@ async def _load_session_history_snapshot(
 ) -> SessionHistorySnapshot | None:
     provider = HandleSessionHistoryProvider()
     return await provider.load_snapshot(request, ctx)
+
+
+def _record_fragment_exclusion_drop_events(
+    event_bus: RuntimeEventBus | None,
+    exclusions: list[tuple[ContextFragment, str]],
+    *,
+    engine_id: str,
+    event_ctx: dict[str, str | None],
+) -> None:
+    if event_bus is None or not exclusions:
+        return
+    from intergrax.runtime.events.context_skill_recording import (
+        record_context_candidate_dropped,
+    )
+
+    for fragment, drop_reason in exclusions:
+        provenance = fragment.provider_provenance
+        record_context_candidate_dropped(
+            event_bus,
+            provider_id=provenance.provider_id if provenance is not None else "unknown",
+            provider_version=provenance.provider_version if provenance is not None else "",
+            drop_reason=drop_reason,
+            engine_id=engine_id,
+            **event_ctx,
+        )
 
 
 def _event_bus_from_handles(ctx: ContextProviderContext) -> RuntimeEventBus | None:

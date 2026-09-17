@@ -370,6 +370,40 @@ def build_session_history_snapshot(
     )
 
 
+def session_history_content_hash_for_fragment(fragment: ContextFragment) -> str:
+    """Recompute session message content hash from fragment body + session metadata."""
+    if fragment.source is not ContextFragmentSource.SESSION_HISTORY:
+        raise ValueError("fragment must be session history")
+    metadata = fragment.metadata
+    role = metadata.get("role")
+    if role not in {"system", "user", "assistant", "tool"}:
+        raise ValueError("session history fragment metadata missing role")
+    name = metadata.get("name")
+    if name is not None and (type(name) is not str or not name.strip()):
+        raise ValueError("session history fragment metadata name is invalid")
+    tool_call_id = metadata.get("tool_call_id")
+    if tool_call_id is not None and (type(tool_call_id) is not str or not tool_call_id.strip()):
+        raise ValueError("session history fragment metadata tool_call_id is invalid")
+    raw_tool_calls = metadata.get("tool_calls", [])
+    if raw_tool_calls is None:
+        raw_tool_calls = []
+    if type(raw_tool_calls) is not list:
+        raise ValueError("session history fragment metadata tool_calls must be a list")
+    tool_calls: list[dict[str, Any]] = []
+    for item in raw_tool_calls:
+        if not isinstance(item, dict):
+            raise ValueError("session history fragment metadata tool_calls must be dict rows")
+        tool_calls.append(dict(item))
+    normalized_calls = _normalize_tool_calls(tool_calls)
+    return _message_content_hash(
+        role=role,
+        content=fragment.content,
+        name=name,
+        tool_call_id=tool_call_id,
+        tool_calls=normalized_calls,
+    )
+
+
 def fragments_from_session_history_snapshot(
     snapshot: SessionHistorySnapshot,
 ) -> list[ContextFragment]:
@@ -418,7 +452,10 @@ def session_history_chat_message_from_fragment(
     if fragment.source_id != message_id:
         raise ValueError("session history fragment source_id must match message_id")
     content_hash = metadata.get("content_hash")
-    if not isinstance(content_hash, str) or fragment.content_hash != content_hash:
+    expected_hash = session_history_content_hash_for_fragment(fragment)
+    if not isinstance(content_hash, str) or fragment.content_hash != expected_hash:
+        raise ValueError("session history fragment content_hash mismatch")
+    if content_hash != expected_hash:
         raise ValueError("session history fragment content_hash mismatch")
     sequence = metadata.get("sequence")
     role = metadata.get("role")
@@ -482,24 +519,17 @@ class HandleSessionHistoryProvider:
     ) -> SessionHistorySnapshot | None:
         if not request.decision_profile.include_session_history:
             return None
-        raw = ctx.handles.get(SESSION_HISTORY_SNAPSHOT_HANDLE)
-        if raw is None:
+        session_input = ctx.sources.session
+        if session_input is None:
             return None
-        if not isinstance(raw, SessionHistorySnapshot):
-            raise ValueError(
-                f"handle {SESSION_HISTORY_SNAPSHOT_HANDLE!r} must be SessionHistorySnapshot"
-            )
-        expected_scope = ctx.handles.get(SESSION_HISTORY_CONTEXT_SCOPE_HANDLE)
-        expected_revision = ctx.handles.get(SESSION_HISTORY_REVISION_HANDLE)
-        if type(expected_scope) is not str or not expected_scope.strip():
-            raise SessionHistorySnapshotBindingError()
-        if type(expected_revision) is not str or not expected_revision.strip():
-            raise SessionHistorySnapshotBindingError()
+        raw = session_input.snapshot
+        if type(raw) is not SessionHistorySnapshot:
+            raise ValueError("ctx.sources.session.snapshot must be SessionHistorySnapshot")
         return validate_session_history_snapshot_binding(
             raw,
             expected_tenant_id=request.tenant_id,
-            expected_context_scope_id=expected_scope,
-            expected_revision_id=expected_revision,
+            expected_context_scope_id=session_input.binding_context_scope_id,
+            expected_revision_id=session_input.binding_revision_id,
         )
 
     async def collect(

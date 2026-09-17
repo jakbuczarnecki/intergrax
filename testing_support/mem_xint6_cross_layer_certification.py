@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -18,17 +18,16 @@ from intergrax.context.contracts import (
     ContextFragment,
     ContextFragmentSource,
     ContextProviderContext,
+    IterativeToolOutputBlock,
 )
-from intergrax.context.providers.legacy_bridge import (
-    LTM_ENTRIES_HANDLE,
-    RAG_CHUNKS_HANDLE,
-    TOOL_OUTPUT_BLOCKS_HANDLE,
-    WEBSEARCH_BLOCKS_HANDLE,
+from intergrax.context.source_inputs import (
+    ContextMemoryEntryInput,
+    ContextProviderSourceInputs,
+    ContextRagChunkInput,
+    ContextSessionSourceInput,
+    ContextWebSearchResultInput,
 )
 from intergrax.context.session_history import (
-    SESSION_HISTORY_CONTEXT_SCOPE_HANDLE,
-    SESSION_HISTORY_REVISION_HANDLE,
-    SESSION_HISTORY_SNAPSHOT_HANDLE,
     SessionHistoryMessage,
     SessionHistorySnapshot,
 )
@@ -121,33 +120,54 @@ def certification_assembly_request(
     )
 
 
+def build_provider_source_inputs(
+    *,
+    ltm_entries: tuple[ContextMemoryEntryInput, ...] | None = None,
+    rag_chunks: tuple[ContextRagChunkInput, ...] | None = None,
+    tool_blocks: tuple[IterativeToolOutputBlock, ...] | None = None,
+    web_blocks: tuple[ContextWebSearchResultInput, ...] | None = None,
+    session_snapshot: SessionHistorySnapshot | None = None,
+) -> ContextProviderSourceInputs:
+    session = None
+    if session_snapshot is not None:
+        session = ContextSessionSourceInput(
+            snapshot=session_snapshot,
+            binding_context_scope_id=session_snapshot.context_scope_id,
+            binding_revision_id=session_snapshot.revision_id,
+        )
+    return ContextProviderSourceInputs(
+        memory=ltm_entries or (),
+        rag=rag_chunks or (),
+        tools=tool_blocks or (),
+        web=web_blocks or (),
+        session=session,
+    )
+
+
 def build_provider_handles(
     *,
     runtime_config: RuntimeConfig,
     messages: list[ChatMessage] | None = None,
-    ltm_entries: list[dict[str, Any]] | None = None,
-    rag_chunks: list[dict[str, Any]] | None = None,
-    tool_blocks: list[dict[str, Any]] | None = None,
-    web_blocks: list[str] | None = None,
-    session_snapshot: SessionHistorySnapshot | None = None,
 ) -> dict[str, Any]:
-    handles: dict[str, Any] = {
+    """Auxiliary handles only — semantic payloads must use ``sources``."""
+    return {
         "runtime_config": runtime_config,
         "messages": messages or [ChatMessage(role="user", content="certify")],
     }
-    if ltm_entries is not None:
-        handles[LTM_ENTRIES_HANDLE] = ltm_entries
-    if rag_chunks is not None:
-        handles[RAG_CHUNKS_HANDLE] = rag_chunks
-    if tool_blocks is not None:
-        handles[TOOL_OUTPUT_BLOCKS_HANDLE] = tool_blocks
-    if web_blocks is not None:
-        handles[WEBSEARCH_BLOCKS_HANDLE] = web_blocks
-    if session_snapshot is not None:
-        handles[SESSION_HISTORY_SNAPSHOT_HANDLE] = session_snapshot
-        handles[SESSION_HISTORY_CONTEXT_SCOPE_HANDLE] = session_snapshot.context_scope_id
-        handles[SESSION_HISTORY_REVISION_HANDLE] = session_snapshot.revision_id
-    return handles
+
+
+def build_certification_provider_context(
+    *,
+    runtime_config: RuntimeConfig,
+    messages: list[ChatMessage] | None = None,
+    sources: ContextProviderSourceInputs,
+    engine_id: str = "mem-xint6",
+) -> ContextProviderContext:
+    return ContextProviderContext(
+        engine_id=engine_id,
+        sources=sources,
+        handles=build_provider_handles(runtime_config=runtime_config, messages=messages),
+    )
 
 
 def session_snapshot_for_cert(

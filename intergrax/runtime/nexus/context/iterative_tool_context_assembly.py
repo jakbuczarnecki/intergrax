@@ -16,7 +16,7 @@ from intergrax.context.contracts import (
 )
 from intergrax.context.protocols import ContextEngine
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
-from intergrax.context.providers.legacy_bridge import TOOL_OUTPUT_BLOCKS_HANDLE
+from intergrax.context.source_inputs import ContextProviderSourceInputs
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.budget.budget_ticks import (
     enforce_wall_time_budget,
@@ -83,9 +83,13 @@ async def assemble_iterative_tool_planner_messages(
         "node_id": state.request.metadata.get("graph_node_id") or state.request.agent_id,
         "agent_id": state.request.agent_id,
         "engine_id": engine.engine_id,
-        TOOL_OUTPUT_BLOCKS_HANDLE: list(state.iterative_tool_output_blocks),
     }
-    provider_ctx = ContextProviderContext(engine_id=engine.engine_id, handles=handles)
+    sources = ContextProviderSourceInputs(tools=tuple(state.iterative_tool_output_blocks))
+    provider_ctx = ContextProviderContext(
+        engine_id=engine.engine_id,
+        sources=sources,
+        handles=handles,
+    )
     assembled = await engine.assemble(assembly_request, provider_ctx=provider_ctx)
     return assembled.messages
 

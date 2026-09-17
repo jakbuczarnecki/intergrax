@@ -204,7 +204,7 @@ class ContextManager:
 
         from intergrax.context.contracts import ContextProviderContext
         from intergrax.runtime.nexus.config import RuntimeConfig
-        from intergrax.runtime.nexus.context.provider_handles import build_graph_provider_handles
+        from intergrax.runtime.nexus.context.provider_handles import build_graph_provider_context_bundle
 
         resolved_policy = policy or self.resolve_policy(task)
         shared = self.ensure_shared_context(task)
@@ -222,19 +222,21 @@ class ContextManager:
             budget_policy=self._budget_policy,
         )
         runtime_config = RuntimeConfig(llm_adapter=self._llm_adapter, production_mode=False)
+        handles, sources = build_graph_provider_context_bundle(
+            task,
+            runtime_config=runtime_config,
+            messages=graph_messages_from_text(task.message or ""),
+            event_bus=self._event_bus,
+            node_id=node.node_id,
+            agent_id=node.agent_id,
+            engine_id=engine.engine_id,
+            prior_output_records=prior_records,
+            shared_context_reads=shared_reads,
+        )
         provider_ctx = ContextProviderContext(
             engine_id=engine.engine_id,
-            handles=build_graph_provider_handles(
-                task,
-                runtime_config=runtime_config,
-                messages=graph_messages_from_text(task.message or ""),
-                event_bus=self._event_bus,
-                node_id=node.node_id,
-                agent_id=node.agent_id,
-                engine_id=engine.engine_id,
-                prior_output_records=prior_records,
-                shared_context_reads=shared_reads,
-            ),
+            sources=sources,
+            handles=handles,
         )
         if self._context_orchestrator is not None and engine.engine_id == "codebase":
             assembled = await self._context_orchestrator.assemble_with_hops(
