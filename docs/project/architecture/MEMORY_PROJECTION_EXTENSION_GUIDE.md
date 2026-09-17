@@ -20,7 +20,15 @@ Implement `UserProfileMemoryProjection` (`intergrax/memory/contracts/memory_life
 4. **Failure must surface to lifecycle** — do not swallow errors; coordinator records projection evidence.
 5. **Reconciliation must be supported** — repair from `authoritative_active_entry_ids` and profile snapshot.
 
-Use factory helper `user_profile_memory_projection_context(identity, user_id, …)` from contracts — do not rebuild identity.
+Create projection mutation context with the factory helper from `intergrax/memory/contracts/memory_lifecycle.py` — pass **only** trusted `RequestIdentity`; do not rebuild identity or supply a parallel user authority:
+
+```python
+context = user_profile_memory_projection_context(identity)
+```
+
+`context.user_id` is a **derived convenience property** from `context.identity.user_id`, not a second authority argument.
+
+For `reconcile`, the **lifecycle coordinator** supplies `UserProfileMemoryReconciliationContext` (profile snapshot + `authoritative_active_entry_ids`). Projection authors implement `reconcile(context)`; they do not construct reconciliation context as part of normal extension wiring.
 
 ## Reference implementation
 
@@ -43,14 +51,30 @@ Coordinator is created inside manager when projections are non-empty.
 
 ## New Entity indexer
 
-Implement `EntityMemoryIndexer`:
+| Concern | Contract | Default implementation |
+| ------- | -------- | ---------------------- |
+| Indexer | `EntityMemoryIndexer` — `intergrax/memory/contracts/entity_temporal_memory.py` | `DefaultEntityMemoryIndexer` — `intergrax/memory/entity_memory_indexing.py` |
+
+Implement the **contract** (`EntityMemoryIndexer`):
 
 - `index_memory_entry(identity, scope, entry)`
 - `remove_memory_entry(identity, scope, memory_entry_id)`
 
-**No concrete store assumptions in callers** — inject store behind indexer.
+**No concrete store assumptions in callers** — inject store behind the default or custom indexer.
 
-Preserve `RequestIdentity` on every call; respect `EntityTemporalMemoryCapability` governance boundary for reads.
+Preserve `RequestIdentity` on every call. For governed reads inside reconcile/repair, use `EntityTemporalMemoryCapability` (`get_entity`, `query_relations`, …) — not raw `EntityTemporalMemoryStore` methods as the public extension surface.
+
+## Projection author vs lifecycle coordinator
+
+| Responsibility | Owner |
+| -------------- | ----- |
+| Canonical `UserProfile` mutations | `UserProfileManager` + lifecycle coordinator |
+| Trusted `RequestIdentity` | Host / control plane (never synthesized in projection) |
+| `UserProfileMemoryProjectionContext` | `user_profile_memory_projection_context(identity)` |
+| `UserProfileMemoryReconciliationContext` | Lifecycle coordinator before `reconcile` |
+| Projection evidence / partial disposition | Lifecycle coordinator |
+
+Projection authors **must not**: create trusted identity, write canonical UserProfile, drive the lifecycle coordinator, or bypass projection evidence.
 
 ## Failure and recovery
 

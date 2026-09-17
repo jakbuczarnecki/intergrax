@@ -101,12 +101,12 @@ sequenceDiagram
     participant IDX as EntityMemoryIndexer
 
     RI->>UPM: mutation / lifecycle
-    UPM->>CTX: user_profile_memory_projection_context(identity, user_id)
+    UPM->>CTX: user_profile_memory_projection_context(identity)
     CTX->>AD: upsert / delete / reconcile
     AD->>IDX: index_memory_entry(identity, scope, entry)
 ```
 
-No reconstruction of identity inside projection adapters — they consume typed context only.
+`UserProfileMemoryProjectionContext` carries `identity` only; `context.user_id` is derived from `context.identity.user_id`. No reconstruction of identity inside projection adapters — they consume typed context only.
 
 ### Identity matrix
 
@@ -171,6 +171,8 @@ flowchart LR
     G -->|permit| P --> L --> O
     L -->|projection error| PF --> RC
 ```
+
+*Conceptual flow:* terminal observability (`MemoryDiagnosticEmitter`) is owned by the lifecycle/control boundary (see write path above); this diagram does not depict every internal emission site.
 
 ---
 
@@ -237,12 +239,12 @@ Semantics (not full class dump): `intergrax/memory/contracts/enterprise_memory_r
 
 ## Entity / temporal memory
 
-| Role | Type | Package |
-| ---- | ---- | ------- |
-| Persistence primitive | `EntityTemporalMemoryStore` | `stores/in_memory_entity_temporal_memory_store.py`, plugins |
-| Governed read surface | `EntityTemporalMemoryCapability` | `entity_temporal_memory_service.py` |
-| Indexing port | `EntityMemoryIndexer` | `entity_memory_indexing.py` |
-| Projection bridge | `EntityIndexerUserProfileMemoryProjection` | `applications/_shared/entity_user_profile_memory_projection.py` |
+| Role | Contract | Default implementation | Composition owner |
+| ---- | -------- | ---------------------- | ----------------- |
+| Persistence primitive | `EntityTemporalMemoryStore` — `contracts/entity_temporal_memory.py` | `InMemoryEntityTemporalMemoryStore` — `stores/in_memory_entity_temporal_memory_store.py` (+ plugins) | `entity_graph_wiring` |
+| Governed read surface | `EntityTemporalMemoryCapability` — `contracts/entity_temporal_memory.py` | `EntityTemporalMemoryService` — `entity_temporal_memory_service.py` | `entity_graph_wiring` |
+| Indexing port | `EntityMemoryIndexer` — `contracts/entity_temporal_memory.py` | `DefaultEntityMemoryIndexer` — `entity_memory_indexing.py` | `memory_wiring` |
+| Projection adapter | `UserProfileMemoryProjection` — `contracts/memory_lifecycle.py` | `EntityIndexerUserProfileMemoryProjection` — `applications/_shared/entity_user_profile_memory_projection.py` | `memory_vector_wiring` |
 
 **Store vs capability vs indexer**
 
@@ -473,9 +475,9 @@ LTM tool: `ltm.write_fact` requires trusted `RequestIdentity` via control plane 
 | Mechanism | Contract | Default implementation | Replaceable? | Composition owner |
 | --------- | -------- | ---------------------- | ------------ | ----------------- |
 | UserProfile store | `UserProfileStore` / plugin | In-memory, SQLite bundle | YES | `memory_wiring` |
-| Entity store | `EntityTemporalMemoryStore` | In-memory + plugin | YES | `entity_graph_wiring` |
-| Entity indexer | `EntityMemoryIndexer` | `DefaultEntityMemoryIndexer` | YES | `memory_wiring` |
-| Entity capability | `EntityTemporalMemoryCapability` | service over store | YES | `entity_graph_wiring` |
+| Entity store | `EntityTemporalMemoryStore` (`contracts/entity_temporal_memory.py`) | `InMemoryEntityTemporalMemoryStore` + plugins | YES | `entity_graph_wiring` |
+| Entity indexer | `EntityMemoryIndexer` (`contracts/entity_temporal_memory.py`) | `DefaultEntityMemoryIndexer` (`entity_memory_indexing.py`) | YES | `memory_wiring` |
+| Entity capability | `EntityTemporalMemoryCapability` (`contracts/entity_temporal_memory.py`) | `EntityTemporalMemoryService` (`entity_temporal_memory_service.py`) | YES | `entity_graph_wiring` |
 | Projections | `UserProfileMemoryProjection` | entity + LTM vector | YES | `memory_vector_wiring` |
 | Qualification checks | per-store check modules | bundled suite | YES (plugins) | host runner |
 | Long-horizon | `LongHorizonMemoryStore` | in-memory plugin | YES | wiring + service |
