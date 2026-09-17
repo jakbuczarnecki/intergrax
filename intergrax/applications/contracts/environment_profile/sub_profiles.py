@@ -309,6 +309,10 @@ class ObservabilityProfile(BaseModel):
         default=30.0,
         gt=0.0,
     )
+    bounded_event_delivery_critical_reserved_capacity: int | None = Field(
+        default=None,
+        ge=0,
+    )
     event_subscriptions: list[EventSubscriptionSpec] = Field(default_factory=list)
 
     @field_validator("event_subscriptions")

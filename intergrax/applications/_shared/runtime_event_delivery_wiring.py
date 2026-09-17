@@ -8,8 +8,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.contracts.event_delivery import EventDeliveryPolicy, EventExportSinkPort, EventSinkPort
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
+from intergrax.contracts.event_delivery import (
+    EventDeliveryPolicy,
+    EventExportSinkPort,
+    EventSinkPort,
+)
 from intergrax.contracts.observability_export import (
     ConfigurationError,
     EventExportSinkFactoryPort,
@@ -26,6 +32,9 @@ from intergrax.runtime.observability.event_delivery import (
     BoundedEventSink,
     InternalDeliveryMetrics,
     RuntimeEventExportSink,
+)
+from intergrax.runtime.observability.event_delivery.enterprise_default_event_delivery_admission_policy import (
+    enterprise_default_critical_reserved_slots,
 )
 from intergrax.runtime.observability.event_delivery.logging_post_admission_failure_observer import (
     LoggingEventDeliveryPostAdmissionFailureObserver,
@@ -52,7 +61,9 @@ def _resolve_otlp_export_configuration(
     profile = env.observability_profile
     endpoint = profile.otlp_export_endpoint.strip()
     timeout_seconds = profile.otlp_export_timeout_seconds
-    if settings is not None and isinstance(settings, _ObservabilityOtlpEndpointSettings):
+    if settings is not None and isinstance(
+        settings, _ObservabilityOtlpEndpointSettings
+    ):
         settings_endpoint = settings.observability_otlp_endpoint.strip()
         if settings_endpoint:
             endpoint = settings_endpoint
@@ -92,7 +103,9 @@ def _create_export_transport(
     settings: object | None,
 ) -> OtlpTransportPort | None:
     if export_profile.exporter_kind is ExporterKind.OTLP:
-        from intergrax.runtime.observability.exporters.otlp.otlp_transport import OtlpTransport
+        from intergrax.runtime.observability.exporters.otlp.otlp_transport import (
+            OtlpTransport,
+        )
 
         config = _resolve_otlp_export_configuration(env, settings=settings)
         if config is None:
@@ -171,11 +184,20 @@ def resolve_application_runtime_event_delivery_wiring(
     if not profile.bounded_event_delivery_enabled:
         return ApplicationRuntimeEventDeliveryWiring.disabled()
     export_profile = resolve_observability_export_profile(env)
+    configured_reserve = profile.bounded_event_delivery_critical_reserved_capacity
+    critical_reserved = (
+        configured_reserve
+        if configured_reserve is not None
+        else enterprise_default_critical_reserved_slots(
+            profile.bounded_event_delivery_max_capacity
+        )
+    )
     policy = EventDeliveryPolicy(
         max_capacity=profile.bounded_event_delivery_max_capacity,
         important_wait_timeout_seconds=profile.bounded_event_delivery_important_wait_timeout_seconds,
         critical_completion_timeout_seconds=profile.bounded_event_delivery_critical_completion_timeout_seconds,
         drain_shutdown_timeout_seconds=profile.bounded_event_delivery_drain_shutdown_timeout_seconds,
+        critical_reserved_capacity=critical_reserved,
     )
     exporter_kind_label = export_profile.exporter_kind.value
     metrics = InternalDeliveryMetrics(exporter_kind=exporter_kind_label)

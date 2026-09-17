@@ -974,6 +974,7 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | Execution lineage | `ExecutionLineageReader` | Platform lineage stores | Custom reader |
 | Historical E/K/V/S composition | `HistoricalReconstructionService` | Default composition root | N/A (composition, not second reconstructor) |
 | Event delivery | `EventSinkPort` | `BoundedEventSink` stack | Custom `EventSinkPort` |
+| Delivery admission capacity | `EventDeliveryAdmissionPolicyPort` | `EnterpriseDefaultEventDeliveryAdmissionPolicy` | Custom admission / reserve strategy |
 | Event delivery reaction | `EventSinkDeliveryReactionPort` | `EnterpriseDefaultEventSinkDeliveryReaction` | Custom reaction (non-CRITICAL) |
 | Export transport | `EventExportSinkPort` | OTLP / recording sinks | Vendor adapter |
 | Problem grouping | `ProblemGroupingStrategy` | `DeterministicProblemGroupingStrategy` | Registered strategies |
@@ -998,6 +999,24 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | Reconstruction implementation | no | yes via `ExecutionReconstructionReader` |
 
 Custom implementations **must** honor platform contracts — pluginability is not arbitrary semantics.
+
+### Process-local delivery QoS (Plane B, non-canonical)
+
+Delivery/export is **not** durable execution evidence. Canonical facts remain on `RuntimeEvent` persistence; the bounded sink is a **best-effort transport buffer** only.
+
+| Priority | Obligation (default) | Admission when buffer pressured | Completion |
+| -------- | ------------------- | --------------------------------- | ---------- |
+| `BEST_EFFORT` | `ADMISSION` | `DROPPED` (no wait) | n/a |
+| `IMPORTANT` | `ADMISSION` | bounded wait → `DEFERRED` | n/a |
+| `CRITICAL` | `COMPLETION` (platform floor) | `REJECTED` when no slot; reserved capacity protects admission from lower-priority fill | producer waits until downstream completes or completion timeout → `REJECTED` |
+
+**Capacity:** one FIFO `BoundedEventSink` worker drains a single bounded queue (`max_capacity`). Total process-local retained delivery backlog is **≤ `max_capacity`**. `EventDeliveryPolicy.critical_reserved_capacity` plus `EventDeliveryAdmissionPolicyPort` cap how many slots `BEST_EFFORT` / `IMPORTANT` may occupy; **CRITICAL may use the reserved slots** so lower priorities cannot consume the entire buffer. Enterprise application wiring derives a default reserve when the profile omits an explicit value.
+
+**Scheduling / ordering:** **global FIFO** per sink instance (single consumer). Priority affects **admission and disposition**, not preemptive reordering of already-queued events. **Queued** CRITICAL traffic may therefore wait behind earlier lower-priority items (**queue head-of-line**). A **slow in-flight** `downstream.publish` still blocks the sole worker (**downstream HOL**) — not removed by admission reserve alone.
+
+**Shutdown:** `close()` enqueues a sentinel, joins the worker within `drain_shutdown_timeout_seconds`, then closes downstream — unchanged fail-closed semantics.
+
+Qualification: `tests/unit/runtime/observability/test_obs_delivery_qos_scale.py`.
 
 ### Duplication matrix (forbidden)
 
