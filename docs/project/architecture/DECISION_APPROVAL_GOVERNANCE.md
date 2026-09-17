@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4)
 
-**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — NEXT**
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — CLOSED** · **MP-4D5 — CLOSED** · **MP-4D6 — NEXT**
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (execution/status only):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -740,13 +740,96 @@ uv run pytest tests/integration/collaborative_work/test_postgresql_decision_bind
 
 ---
 
+## Provider & Persistence Qualification Matrix (MP-4D5)
+
+**Purpose:** auditable mapping from **MP-4 integration persistence seams** to **contract**, **implementation**, **durability**, **composition**, **qualification level**, **proof**, and **known limitations**. This answers *which provider is production-qualified under which contract* — not *which invariant is proven* (see **MP-4D4**).
+
+**Enterprise principle (reinforced):**
+
+```text
+semantic owner → platform contract / port → composition root → selected provider
+provider ≠ authority · provider ≠ semantic owner · contract is replaceable
+```
+
+**Durability classes (matrix column *Persistence type*):**
+
+| Class | Meaning |
+| ----- | ------- |
+| **DURABLE** | Provider persists authoritative state across process lifetime with production-intent backing |
+| **NON-DURABLE** | In-process / test-only store; no production durability claim |
+| **EXTERNALLY DURABLE** | Durability simulated or hosted outside the MP-4 seam (e.g. qualification export/restore of Execution-owned state) |
+| **READ-ONLY** | Reader port; durable source owned elsewhere |
+| **STATELESS** | No persistence responsibility on this MP-4 surface |
+
+**Production qualification taxonomy (per implementation row — never per contract alone):**
+
+| Level | Meaning |
+| ----- | ------- |
+| **PRODUCTION QUALIFIED** | Named production implementation exercised by real-provider qualification proof |
+| **CONTRACT QUALIFIED** | Contract behavior proven; not every production provider on the MP-4 path |
+| **TEST / QUALIFICATION ONLY** | Harness, in-memory, or local dev implementation for tests/composition |
+| **ARCHITECTURAL ONLY** | Boundary confirmed statically or by type model; no durable provider proof on MP-4 surface |
+| **NOT QUALIFIED** | Insufficient proof for the claimed scope |
+
+**Replaceability:** domain/integration modules under `intergrax/collaborative_work/` decision-binding paths depend on **`CollaborativeDecisionBindingRepository`** (protocol), not PostgreSQL types. PostgreSQL adapters are selected only in **`open_postgresql_collaborative_work_repositories`** (`intergrax/collaborative_work/persistence.py`). No **ENTERPRISE BOUNDARY VIOLATION** found on MP-4 binding domain seams at D5 close.
+
+### Matrix (MP-4 integration surface)
+
+| Concern | Platform contract | Implementation / provider | Persistence type | Persistence owner | Composition | Qualification | Proof (scope) | Limitation / proof does **not** cover |
+| ------- | ----------------- | ------------------------- | ---------------- | ----------------- | ----------- | ------------- | ------------- | ------------------------------------- |
+| Collaborative decision binding | `CollaborativeDecisionBindingRepository` | `PostgreSQLCollaborativeDecisionBindingRepository` | **DURABLE** | Collaborative Work (association truth) | `open_postgresql_collaborative_work_repositories` · `build_collaborative_decision_binding_application_from_artifacts_bundle` | **PRODUCTION QUALIFIED** | `tests/integration/collaborative_work/test_postgresql_decision_binding_qualification.py` (8 tests): round-trip, tenant/workspace isolation, idempotent replay, idempotency conflict, semantic dedup, concurrent semantic duplicate, concurrent idempotency conflict | Governance, Human Review, execution authorization, continuation, Evidence E2E, Diagnostics; **does not** qualify other repository implementations |
+| Collaborative decision binding (test/default) | `CollaborativeDecisionBindingRepository` | `InMemoryCollaborativeDecisionBindingRepository` | **NON-DURABLE** | Collaborative Work | `open_mp4r7_enterprise_integration_composition` · unit/service tests · `test_decision_binding_service.py` | **TEST / QUALIFICATION ONLY** | `tests/unit/collaborative_work/test_decision_binding_service.py`; MP-4R7 composition | Not a production durability or PostgreSQL substitute |
+| Human Review handoff (canonical port) | `DecisionHumanReviewPort` | `Mp4R7RecordingHumanReviewPort` (qualification) | **NON-DURABLE** | Human Review / HITL (judgment semantics) | `testing_support/mp4r7_enterprise_integration/decision_helpers.py` · `decision_flow` capabilities injection | **TEST / QUALIFICATION ONLY** | MP-4R7 E2E (`test_mp4r7_*`); `test_decision_flow.py` with injected ports | Not a durable human-review store; not host production adapter qualification |
+| Human judgment evidence persistence (adjacent seam) | `HumanDecisionPersistence` | `InMemoryHumanDecisionPersistence` · `SQLiteHumanDecisionStore` | **DURABLE** (SQLite file) / **NON-DURABLE** (in-memory) | Human runtime / tooling (not Governance authorization) | Tooling & integration opens (`open_human_decision_store`, sqlite provider) — **not** MP-4R7 default | **CONTRACT QUALIFIED** (read/deserialize paths) | `test_mp4r6_sqlite_human_decision_store_read_path_does_not_synthesize_approver`; `test_mp4r6_persistence_deserialization_does_not_map_user_id_to_approver` | MP-4R7 does not run full canonical flow on SQLite; **not PRODUCTION QUALIFIED** for MP-4 E2E; distinct from `DecisionHumanReviewPort` handoff |
+| Governance evaluation | `DecisionAuthorizationEvaluator` | Test harness evaluators (`Mp4R7RequireHumanGovernanceEvaluator`, `Mp4R7PostHumanDenyGovernanceEvaluator`, decision-flow test doubles) | **STATELESS** | Governance (outcome semantics) | `decision_flow` / MP-4R7 scenario wiring · governed execution composition (platform) | **CONTRACT QUALIFIED** | `test_decision_flow.py`; `test_mp4r7_human_approve_governance_deny_*`; `test_governance_*` | Evaluator **plugin** implementations beyond harness not exhaustively production-qualified |
+| Execution authorization object | `DecisionExecutionAuthorization` (+ validation helpers) | Minted in-memory value objects | **STATELESS** | Governance-derived authorization (not a store) | `decision_flow` · `intergrax/runtime/decision_authorization.py` | **CONTRACT QUALIFIED** | `test_mp4r7_success_e2e`; `test_mp4r7_stale_current_policy_*`; `test_governance_allow_mints_authorization` | **Not** a durable domain record; no separate authorization database on MP-4 surface |
+| Execution continuation lifecycle | `ExecutionContinuationPort` | Execution Engine continuation service (wired via `wire_execution_engine_continuation_dependencies`) | **NON-DURABLE** (default R7) / **EXTERNALLY DURABLE** (R7 restart path) | **Execution Engine** — Multiplayer **must not** own a second store | `testing_support/mp4r7_enterprise_integration/composition.py` · `intergrax/runtime/execution/continuation/composition.py` | **CONTRACT QUALIFIED** | `test_mp4r7_process_restart_resume` (`durable_continuation=True`); `test_gr5_r5_restart_exact_identity.py`; MP-4R3 architecture gates | Durable backing is **qualification reference** (`ExecutionContinuationDurableBacking`), not a named production DB adapter on MP-4 path; default R7 stack is in-memory |
+| Continuation state store (Execution-owned) | `ExecutionContinuationStateStore` | `InMemoryExecutionContinuationStateStore` · `BackingExecutionContinuationStateStore` / `ReconstructedDurableExecutionContinuationStateStore` over `ExecutionContinuationDurableBacking` | **NON-DURABLE** / **EXTERNALLY DURABLE** | **Execution Engine** | `wire_execution_continuation_state_store` · MP-4R7 composition | **TEST / QUALIFICATION ONLY** (in-memory) · **CONTRACT QUALIFIED** (export/restore restart) | Same as continuation row | **Not** Multiplayer persistence; no MP-owned continuation repository |
+| Operational evidence facts | `FunctionalEvidencePersistence` | `InMemoryFunctionalEvidencePersistence` (R7) · `DocumentStoreFunctionalEvidencePersistence` (platform wiring) | **NON-DURABLE** (R7) / **DURABLE** (document store — platform) | **Evidence Plane** — MP-4 emits via adoption, **no duplicate Evidence store** | `decision_binding_composition` evidence adoption · `functional_evidence_runtime_wiring.py` · MP-4R7 composition | **TEST / QUALIFICATION ONLY** (R7 in-memory) · **CONTRACT QUALIFIED** (document store — diagnostics/platform suites) | `test_mp4r7_success_e2e` (in-memory); `test_decision_binding_application_evidence.py`; platform DIAG functional tests (document store) | R7 E2E does **not** use production document-store provider; association fact gap unchanged (MP-4R5) |
+| Factual reconstruction (read model) | `ExecutionReconstructionReader` | Default: `ExecutionReconstructor` (Evidence Plane) | **READ-ONLY** | Evidence Plane / observability reconstruction | Application diagnostic wiring (`diagnostic_read_wiring.py`) — not Multiplayer | **NOT QUALIFIED** (MP-4-scoped) | *(none on MP-4 qualification path)* | Reconstruction qualified in observability/diagnostics programs — see MP-4D4 row N |
+| Diagnostics interpretation | Diagnostic read strategy + `FunctionalEvidencePersistence` / `ExecutionReconstructionReader` inputs | Central Diagnostics modules | **READ-ONLY** (inputs) | Diagnostics (interpretation only) | Application composition roots | **ARCHITECTURAL ONLY** (MP-4 surface) | `test_collaborative_work_does_not_import_diagnostics`; R7 success path reads diagnostic projection | Does **not** persist execution authorization; does **not** own binding truth |
+
+**Provider qualification does not generalize:** **PRODUCTION QUALIFIED** on `PostgreSQLCollaborativeDecisionBindingRepository` applies **only** to that adapter under `CollaborativeDecisionBindingRepository`, not to Human Review, Governance, continuation, or Evidence providers.
+
+### Primary qualification summary (implementation rows above)
+
+| Qualification | Count |
+| ------------- | ----: |
+| **PRODUCTION QUALIFIED** | 1 |
+| **CONTRACT QUALIFIED** | 5 |
+| **TEST / QUALIFICATION ONLY** | 4 |
+| **ARCHITECTURAL ONLY** | 1 |
+| **NOT QUALIFIED** | 1 |
+| **TOTAL** | 12 |
+
+### Retired / legacy providers (MP-4 matrix scope)
+
+| Item | Status |
+| ---- | ------ |
+| Legacy `DecisionBindingEvidenceRepository` / MP-4B evidence store | **Retired** (MP-4R6) — not a supported MP-4 seam |
+| `SQLiteHumanDecisionStore` legacy disposition tooling | Local/dev and migration tooling — **not** claimed as MP-4 production E2E provider |
+
+### Known Provider / Persistence Qualification Gaps
+
+| Gap | Meaning | Blocking? |
+| --- | ------- | --------: |
+| No MP-4-scoped production proof wiring `DocumentStoreFunctionalEvidencePersistence` through full MP-4R7 success path | Evidence contract qualified in platform/diagnostics suites; MP-4 E2E uses in-memory provider only | NO |
+| No MP-4-scoped `ExecutionReconstructionReader` provider proof | Read-only contract on MP-4 surface; factual reconstruction proof lives under observability | NO |
+| Human review durable store not exercised in MP-4R7 composition | Canonical port qualified in-memory; `HumanDecisionPersistence` SQLite paths partially qualified (MP-4R6) | NO |
+| Continuation restart proof uses qualification durable backing, not a named production persistence adapter in one MP-4 run | Execution-owned; GR5/R7 prove contract restart semantics | NO |
+| Full single-run production E2E across all durable providers | Deferred by design (MP-4 closed program boundary) | NO |
+
+**Relation to MP-4D4:** D4 maps **invariants → proof**; D5 maps **contract → provider → durability → qualification**. Cross-reference D4 **Supporting Proof Types** `PROVIDER QUALIFIED` only for PostgreSQL binding isolation/concurrency claims.
+
+---
+
 ## Known limitations (summary)
 
 | Limitation | Status | Blocking? |
 | ---------- | ------ | --------: |
 | Binding association lacks dedicated Evidence Plane v2 fact | Accepted platform limitation | NO |
 | R7 E2E uses test composition / configured providers | Documented qualification boundary | NO |
-| Full provider coverage matrix | Deferred to **MP-4D5** | NO |
+| Full single-run production E2E on every durable provider | Documented in **MP-4D5** — not claimed | NO |
 | Invariant → exact test matrix | **MP-4D4** (§ E2E Proof & Qualification Matrix) | NO |
 
 ---
@@ -802,8 +885,8 @@ Execution detail and proof commands: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](..
 | **MP-4D2** | **CLOSED** | Consolidate canonical architecture into this entry point |
 | **MP-4D3** | **CLOSED** | Professional visual architecture layer (Mermaid in this SSOT) |
 | **MP-4D4** | **CLOSED** | E2E proof / invariant-to-test matrix |
-| **MP-4D5** | **NEXT** | Provider / persistence qualification matrix |
-| MP-4D6 | NOT STARTED | Enterprise pluginability certification (docs) |
+| **MP-4D5** | **CLOSED** | Provider / persistence qualification matrix |
+| **MP-4D6** | **NEXT** | Enterprise pluginability certification (docs) |
 | MP-4D7 | NOT STARTED | Documentation regression gates |
 | MP-4D8 | NOT STARTED | Final enterprise documentation audit |
 
