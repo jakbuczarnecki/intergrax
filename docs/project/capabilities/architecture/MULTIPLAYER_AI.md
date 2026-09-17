@@ -430,7 +430,7 @@ not replace existing Evidence.
 
 **Delivered:** WorkItem, Assignment, shared-work lifecycle, concurrency, idempotency, and `WorkItemExecutionLink` provenance — contracts (2A) and implementation (2B…2G).
 
-**Next active task:** **Independent MP-3C audit** — MP-3D **NOT STARTED**
+**Next active task:** **MP-3D — NEXT** (independent qualification / audit as scheduled)
 
 ---
 
@@ -450,7 +450,7 @@ not replace existing Evidence.
 
 **New required (implementation):** MP-3A…MP-3H slices per [`COLLABORATIVE_WORK` plan](../../maintainers/plans/COLLABORATIVE_WORK.md) § COLLAB-WORK-3.
 
-**Next active task:** **Independent MP-3C audit** — MP-3D **NOT STARTED**
+**Next active task:** **MP-3D — NEXT** (independent qualification / audit as scheduled)
 
 **Architectural implementation slices:** MP-3A contracts → MP-3B ports/publication port (atomic initial create + publish) → MP-3C service + authority → MP-3D SQLite → MP-3E PostgreSQL → MP-3F content adapters → MP-3G execution/evidence → MP-3H closure. MP-3F follows MP-3E (metadata/content-ref qualification does not require live content provider).
 
