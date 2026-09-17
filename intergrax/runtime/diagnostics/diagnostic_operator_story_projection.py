@@ -128,7 +128,7 @@ def project_operator_story(
             last_good=_unavailable_point("failure_boundary_position_unavailable"),
             first_failed=_unavailable_point("failure_boundary_position_unavailable"),
             transition=None,
-            supporting_evidence=_evidence_refs_for_finding(primary),
+            supporting_evidence=_evidence_refs_for_finding(primary, positioned),
             limitations=tuple(limitations),
             first_failed_scope=None,
         )
@@ -158,7 +158,7 @@ def project_operator_story(
 
     transition = _build_transition(last_good, first_failed, positioned)
     evidence = _dedupe_evidence_refs(
-        _evidence_refs_for_finding(primary)
+        _evidence_refs_for_finding(primary, positioned)
         + _evidence_refs_for_row(last_good_row)
         + _evidence_refs_for_row(failure_row)
     )
@@ -321,30 +321,47 @@ def _build_transition(
 
 def _evidence_refs_for_finding(
     finding: DiagnosticFinding,
+    positioned: tuple[PositionedRuntimeEvent, ...],
 ) -> tuple[DiagnosticOperatorStoryEvidenceRef, ...]:
+    """Map finding provenance to evidence refs using reconstruction as position authority."""
     refs: list[DiagnosticOperatorStoryEvidenceRef] = []
-    position = (
-        max(finding.supporting_positions, key=lambda pos: pos.value)
-        if finding.supporting_positions
-        else None
-    )
     for event_id in finding.supporting_event_ids:
-        refs.append(
-            DiagnosticOperatorStoryEvidenceRef(
-                execution_id=finding.execution_id,
-                event_id=event_id,
-                position=position,
-            )
-        )
+        refs.append(_evidence_ref_for_supporting_event(finding, event_id, positioned))
     for evidence_id in finding.supporting_evidence_ids:
         refs.append(
             DiagnosticOperatorStoryEvidenceRef(
                 execution_id=finding.execution_id,
                 evidence_id=evidence_id,
-                position=position,
+                position=None,
             )
         )
     return tuple(refs)
+
+
+def _evidence_ref_for_supporting_event(
+    finding: DiagnosticFinding,
+    event_id: EventId,
+    positioned: tuple[PositionedRuntimeEvent, ...],
+) -> DiagnosticOperatorStoryEvidenceRef:
+    row = _row_for_event_id(positioned, event_id)
+    if row is None:
+        return DiagnosticOperatorStoryEvidenceRef(
+            execution_id=finding.execution_id,
+            event_id=event_id,
+            position=None,
+        )
+    if (
+        finding.execution_id is not None
+        and row.event.execution_id != finding.execution_id
+    ):
+        raise DiagnosticOperatorStoryIntegrityError(
+            "evidence event execution_id does not match finding execution_id"
+        )
+    return DiagnosticOperatorStoryEvidenceRef(
+        execution_id=row.event.execution_id,
+        event_id=event_id,
+        position=row.position,
+    )
 
 
 def _evidence_refs_for_row(

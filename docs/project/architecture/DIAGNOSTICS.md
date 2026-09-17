@@ -350,6 +350,8 @@ ProblemOccurrences (bounded page)
 
 **DG-003 (operator story):** `DiagnosticInvestigationView.operator_story` is a derived Diagnostics read model (`last_good` → `first_failed` → `supporting_evidence`). It reuses the same request-scoped `ExecutionReconstruction` as assessment and timeline projection — no additional reconstruction per story. `ExecutionEventPosition` determines factual ordering; timestamps are display-only (`observed_at`). `first_failed` is the first failure boundary supported by available evidence — not root cause. Incomplete runtime history surfaces `FIRST_OBSERVED_IN_AVAILABLE_EVIDENCE` scope and explicit limitations.
 
+For every operator-story evidence reference carrying both `event_id` and `ExecutionEventPosition`, the pair must match the canonical `PositionedRuntimeEvent` in `ExecutionReconstruction.positioned_events` (`event_id` ↔ `position` authority). The **failure-anchor position** (`first_failed`) is independent: it is not copied onto every supporting evidence event. External or non-runtime `evidence_id` references without a canonical execution position keep `position` absent — the projector does not synthesize positions from finding metadata or timestamps.
+
 ```text
 ProblemOccurrence
   → DiagnosticReadService.get_investigation

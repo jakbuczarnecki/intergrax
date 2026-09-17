@@ -43,7 +43,15 @@ from intergrax.runtime.diagnostics.diagnostic_operator_investigation_read_models
     DiagnosticOperatorStoryPointStatus,
 )
 from intergrax.runtime.diagnostics.diagnostic_operator_story_projection import (
+    _evidence_refs_for_finding,
     project_operator_story,
+)
+from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticFinding
+from intergrax.runtime.diagnostics.diagnostic_precision import DiagnosticCertainty
+from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyScope
+from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
+from intergrax.runtime.events.payloads.canonical import (
+    ExternalOperationFailurePayloadV1,
 )
 from intergrax.runtime.diagnostics.diagnostic_read_models import (
     DiagnosticOccurrenceReadStatus,
@@ -52,7 +60,9 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
 )
 from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
 from intergrax.runtime.diagnostics.persistence_conformance import sample_problem
-from intergrax.runtime.diagnostics.diagnostic_subject import ApplicationDiagnosticSubjectRef
+from intergrax.runtime.diagnostics.diagnostic_subject import (
+    ApplicationDiagnosticSubjectRef,
+)
 from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingMethod,
     ProblemGroupingSubjectRef,
@@ -158,6 +168,33 @@ def _assess(reconstruction: ExecutionReconstruction):
     return _BUILDER.assess(reconstruction, lifecycle)
 
 
+def _reconstruction_position_by_event_id(
+    reconstruction: ExecutionReconstruction,
+) -> dict[EventId, ExecutionEventPosition]:
+    return {
+        row.event.event_id: row.position for row in reconstruction.positioned_events
+    }
+
+
+def _assert_story_evidence_position_invariant(
+    story,
+    reconstruction: ExecutionReconstruction,
+) -> None:
+    by_event = _reconstruction_position_by_event_id(reconstruction)
+    for ref in story.supporting_evidence:
+        if ref.event_id is None or ref.position is None:
+            continue
+        assert by_event[ref.event_id] == ref.position
+
+
+def _event_evidence_positions(story) -> dict[EventId, int]:
+    result: dict[EventId, int] = {}
+    for ref in story.supporting_evidence:
+        if ref.event_id is not None and ref.position is not None:
+            result[ref.event_id] = ref.position.value
+    return result
+
+
 def _occurrence_view(
     *,
     task_id: TaskId,
@@ -259,6 +296,10 @@ def test_standard_failure_last_good_and_first_failed() -> None:
         is DiagnosticOperatorStoryFirstFailedScope.PROVEN_IN_AVAILABLE_EVIDENCE
     )
     assert story.supporting_evidence
+    _assert_story_evidence_position_invariant(story, reconstruction)
+    failure_event_id = story.first_failed.event_id
+    assert failure_event_id is not None
+    assert _event_evidence_positions(story)[failure_event_id] == 3
 
 
 def test_timestamp_inversion_position_still_authoritative() -> None:
@@ -700,3 +741,328 @@ def test_custom_reader_story_via_reconstruction_pipeline() -> None:
         assessment=assessment,
     )
     assert story.first_failed.status is DiagnosticOperatorStoryPointStatus.AVAILABLE
+    _assert_story_evidence_position_invariant(story, reconstruction)
+
+
+def test_lifecycle_two_event_evidence_positions_and_failure_anchor() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    event_a_id = mint_event_id()
+    event_b_id = mint_event_id()
+    events = (
+        _positioned(
+            _runtime_event(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+                event_type=RuntimeEventType.TASK_CREATED,
+                timestamp=_BASE_TS,
+            ),
+            1,
+        ),
+        _positioned(
+            _runtime_event(
+                event_id=event_a_id,
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+                event_type=RuntimeEventType.TASK_COMPLETED,
+                timestamp=_BASE_TS + timedelta(seconds=1),
+            ),
+            10,
+        ),
+        _positioned(
+            _runtime_event(
+                event_id=event_b_id,
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+                event_type=RuntimeEventType.RETRY_SCHEDULED,
+                timestamp=_BASE_TS + timedelta(seconds=2),
+            ),
+            14,
+        ),
+    )
+    reconstruction = _reconstruction(
+        task_id=task_id, run_id=run_id, positioned_events=events
+    )
+    assessment = _assess(reconstruction)
+    story = project_operator_story(
+        occurrence=_occurrence_view(
+            task_id=task_id, run_id=run_id, assessment=assessment
+        ),
+        reconstruction=reconstruction,
+        assessment=assessment,
+    )
+
+    positions = _event_evidence_positions(story)
+    assert positions[event_a_id] == 10
+    assert positions[event_b_id] == 14
+    assert story.first_failed.position is not None
+    assert story.first_failed.position.value == 14
+    assert story.first_failed.event_id == event_b_id
+    _assert_story_evidence_position_invariant(story, reconstruction)
+
+
+def _external_operation_failed_payload(execution_id: ExecutionId) -> dict[str, object]:
+    return ExternalOperationFailurePayloadV1(
+        execution_id=execution_id,
+        operation_attempt_id="op-1",
+        provider_id="provider-1",
+        operation_type="llm_call",
+        failure_kind=ExternalOperationFailureKind.TIMEOUT,
+    ).to_envelope()
+
+
+def test_external_operation_failed_evidence_canonical_position() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    failure_event_id = mint_event_id()
+    events = (
+        _positioned(
+            _runtime_event(
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+                event_type=RuntimeEventType.STEP_COMPLETED,
+                timestamp=_BASE_TS,
+            ),
+            4,
+        ),
+        _positioned(
+            _runtime_event(
+                event_id=failure_event_id,
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+                event_type=RuntimeEventType.EXTERNAL_OPERATION_FAILED,
+                timestamp=_BASE_TS + timedelta(seconds=1),
+                payload=_external_operation_failed_payload(execution_id),
+            ),
+            7,
+        ),
+    )
+    reconstruction = _reconstruction(
+        task_id=task_id, run_id=run_id, positioned_events=events
+    )
+    assessment = _assess(reconstruction)
+    story = project_operator_story(
+        occurrence=_occurrence_view(
+            task_id=task_id, run_id=run_id, assessment=assessment
+        ),
+        reconstruction=reconstruction,
+        assessment=assessment,
+    )
+    assert story.first_failed.position is not None
+    assert story.first_failed.position.value == 7
+    assert _event_evidence_positions(story)[failure_event_id] == 7
+    _assert_story_evidence_position_invariant(story, reconstruction)
+
+
+def test_event_after_terminal_evidence_positions_match_reconstruction() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    store = InMemoryRuntimeEventStore()
+    for event_type in (
+        RuntimeEventType.TASK_CREATED,
+        RuntimeEventType.TASK_COMPLETED,
+        RuntimeEventType.RETRY_SCHEDULED,
+    ):
+        store.append(
+            sample_runtime_event(
+                tenant_id=_TENANT,
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+            ).model_copy(update={"event_type": event_type}),
+            tenant_id=_TENANT,
+        )
+    reconstruction = ExecutionReconstructor(
+        runtime_events=store,
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    ).reconstruct_execution(_TENANT, task_id, run_id)
+    assessment = _assess(reconstruction)
+    story = project_operator_story(
+        occurrence=_occurrence_view(
+            task_id=task_id, run_id=run_id, assessment=assessment
+        ),
+        reconstruction=reconstruction,
+        assessment=assessment,
+    )
+    terminal_finding = next(
+        f
+        for f in assessment.findings
+        if f.kind is DiagnosticFindingKind.EVENT_AFTER_TERMINAL
+    )
+    assert len(terminal_finding.supporting_event_ids) == 2
+    prior_id, violating_id = terminal_finding.supporting_event_ids
+    by_event = _reconstruction_position_by_event_id(reconstruction)
+    assert _event_evidence_positions(story)[prior_id] == by_event[prior_id].value
+    assert (
+        _event_evidence_positions(story)[violating_id] == by_event[violating_id].value
+    )
+    _assert_story_evidence_position_invariant(story, reconstruction)
+
+
+def test_disallowed_after_failed_evidence_positions_match_reconstruction() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    store = InMemoryRuntimeEventStore()
+    for event_type in (
+        RuntimeEventType.TASK_CREATED,
+        RuntimeEventType.TASK_FAILED,
+        RuntimeEventType.PAUSE_REQUESTED,
+    ):
+        store.append(
+            sample_runtime_event(
+                tenant_id=_TENANT,
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+            ).model_copy(update={"event_type": event_type}),
+            tenant_id=_TENANT,
+        )
+    reconstruction = ExecutionReconstructor(
+        runtime_events=store,
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    ).reconstruct_execution(_TENANT, task_id, run_id)
+    assessment = _assess(reconstruction)
+    story = project_operator_story(
+        occurrence=_occurrence_view(
+            task_id=task_id, run_id=run_id, assessment=assessment
+        ),
+        reconstruction=reconstruction,
+        assessment=assessment,
+    )
+    finding = next(
+        f
+        for f in assessment.findings
+        if f.kind is DiagnosticFindingKind.DISALLOWED_AFTER_FAILED
+    )
+    for event_id in finding.supporting_event_ids:
+        row = next(
+            r for r in reconstruction.positioned_events if r.event.event_id == event_id
+        )
+        assert _event_evidence_positions(story)[event_id] == row.position.value
+    _assert_story_evidence_position_invariant(story, reconstruction)
+
+
+def test_multiple_terminal_outcomes_evidence_positions_match_reconstruction() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    store = InMemoryRuntimeEventStore()
+    for event_type in (
+        RuntimeEventType.TASK_CREATED,
+        RuntimeEventType.TASK_FAILED,
+        RuntimeEventType.TASK_COMPLETED,
+    ):
+        store.append(
+            sample_runtime_event(
+                tenant_id=_TENANT,
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+            ).model_copy(update={"event_type": event_type}),
+            tenant_id=_TENANT,
+        )
+    reconstruction = ExecutionReconstructor(
+        runtime_events=store,
+        causal_evidence=InMemoryCausalEvidencePersistence(),
+    ).reconstruct_execution(_TENANT, task_id, run_id)
+    assessment = _assess(reconstruction)
+    story = project_operator_story(
+        occurrence=_occurrence_view(
+            task_id=task_id, run_id=run_id, assessment=assessment
+        ),
+        reconstruction=reconstruction,
+        assessment=assessment,
+    )
+    finding = next(
+        f
+        for f in assessment.findings
+        if f.kind is DiagnosticFindingKind.MULTIPLE_TERMINAL_OUTCOMES
+    )
+    for event_id in finding.supporting_event_ids:
+        row = next(
+            r for r in reconstruction.positioned_events if r.event.event_id == event_id
+        )
+        assert _event_evidence_positions(story)[event_id] == row.position.value
+    _assert_story_evidence_position_invariant(story, reconstruction)
+
+
+def test_evidence_id_refs_do_not_inherit_failure_position() -> None:
+    evidence_id = mint_event_id()
+    finding = DiagnosticFinding(
+        kind=DiagnosticFindingKind.EXECUTION_FAILED,
+        scope=LifecycleAnomalyScope.ATTEMPT,
+        attempt_id=mint_attempt_id(),
+        certainty=DiagnosticCertainty.PROVEN,
+        claim="test",
+        source_anomaly_kind=None,
+        supporting_event_ids=(),
+        supporting_evidence_ids=(evidence_id,),
+        supporting_positions=(ExecutionEventPosition(99),),
+        execution_id=mint_execution_id(),
+    )
+    refs = _evidence_refs_for_finding(finding, ())
+    assert len(refs) == 1
+    assert refs[0].evidence_id == evidence_id
+    assert refs[0].position is None
+
+
+def test_duplicate_event_evidence_ref_deduped_after_position_fix() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    failure_event_id = mint_event_id()
+    events = (
+        _positioned(
+            _runtime_event(
+                event_id=failure_event_id,
+                task_id=task_id,
+                run_id=run_id,
+                attempt_id=attempt_id,
+                execution_id=execution_id,
+                event_type=RuntimeEventType.EXECUTION_FAILED,
+                timestamp=_BASE_TS,
+                payload=_execution_failed_payload(),
+            ),
+            3,
+        ),
+    )
+    reconstruction = _reconstruction(
+        task_id=task_id, run_id=run_id, positioned_events=events
+    )
+    assessment = _assess(reconstruction)
+    story = project_operator_story(
+        occurrence=_occurrence_view(
+            task_id=task_id, run_id=run_id, assessment=assessment
+        ),
+        reconstruction=reconstruction,
+        assessment=assessment,
+    )
+    event_refs = [
+        ref for ref in story.supporting_evidence if ref.event_id == failure_event_id
+    ]
+    assert len(event_refs) == 1
+    assert event_refs[0].position is not None
+    assert event_refs[0].position.value == 3
