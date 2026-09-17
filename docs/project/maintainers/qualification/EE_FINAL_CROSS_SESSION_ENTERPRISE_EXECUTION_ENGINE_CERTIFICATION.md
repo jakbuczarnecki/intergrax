@@ -40,7 +40,7 @@
 | EE-B4-B | `6baa9b4fa92addfad4e163330b3a7e75100b3629` | PASS | 1 |
 | EE-B4-C | `edd44e2183c8ec78f6ca71697865d630ba221a9e` | PASS | 1 |
 | EE-FINAL-ARCH | `1c1005e2f66447e3f19f9aba8c0020b13c944b72` | PASS | 1 |
-| Current HEAD Platform Revalidation | `fa83a31af179084d91e4a795eafd083721d1486d` | PASS (R13 U5-P0 child import surface) | 1 |
+| Current HEAD Platform Revalidation | `1b130296b883d2f92761c5232b63fb3976ee3e0e` | PASS (R13 U5-P0 child import surface) | 1 |
 
 Ancestor checks: `git merge-base --is-ancestor <SHA> HEAD` → **YES** for all rows on certification HEAD.
 
