@@ -1,5 +1,22 @@
 # SESSION-01 — Session/Checkpoint SSOT (qualification)
 
+**SESSION-01-C1R audit (2026-09-17)**
+
+| Field | SHA / result |
+| ----- | ------------ |
+| START_HEAD | `85e2079e1075a5185868de8356accb40d7f20e65` |
+| START_ORIGIN_DEVELOPMENT | `60ba65bb86e5a74a821f90c8d6a2881e5ea2c83e` |
+| AUDITED_HEAD | `85e2079e1075a5185868de8356accb40d7f20e65` (+ C1R J3 harness commit below) |
+| Qualification command | `uv run pytest tests/qualification/session_01/ -q` |
+| Collection | `uv run pytest tests/qualification/session_01/ --collect-only -q` → **26 tests, 0 errors** |
+| SESSION batch | **26 passed** (includes mapped Q1..Q20 node batch + J3 cross-worker) |
+| J3 root cause | Class-level `_HitlAgent.runs` summed worker A pause + worker B resume in one process; not production identity leak |
+| J3 fix | Reset counter at worker boundary after pause (`test_worker_checkpoint_resume_via_queue_payload`) |
+| Bounded regressions | EE continuation + human projection + GR-1 Q20 + MP4R7 + TR authority closure + J3 → **201 passed** |
+| FULL REPO COLLECTION | **6 errors** (pytest_plugins conftest placement; integration optional/live) — downstream-owned |
+| Working tree | **Contaminated** — unrelated OBS/marketplace/nexus WIP unstaged; blocks operator clean-tree closeout until cleared |
+| C1R verdict | Qualification **green** on SESSION scope; **SESSION-01 final close** pending clean `development` worktree + push audit |
+
 **TASK SHA (audit baseline):** `7b633520a81542ef729aa7f82a74dc100af10c35`  
 **Qualification delta:** harness convergence + HITL grant ordering fix (see git log after commit).
 
@@ -75,7 +92,7 @@ Fix: production-like harness helpers (`establish_canonical_governed_pause_for_hi
 
 | Item | Class | Owner |
 |------|-------|-------|
-| Dedicated `tests/qualification/session_01/` aggregator | FOLLOW-UP | Harness |
+| Dedicated `tests/qualification/session_01/` aggregator | **DONE** (`60ba65bb`, C1R J3 harness) | Harness |
 | Production durable continuation default in all worker profiles | QUALIFY | Execution hosting |
 | Legacy `apply_pause` callers outside tests | CONVERGE | Human/Nexus |
 | Unrelated WIP on `development` worktree | BLOCKER | Operator |

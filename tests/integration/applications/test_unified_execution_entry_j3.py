@@ -228,6 +228,9 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
     token = paused.summary.resume_token
     assert token
     assert paused.state == TaskState.WAITING_FOR_HUMAN
+    assert _HitlAgent.runs == 1
+    # Worker B simulation: class-level counter must not leak worker A step executions.
+    _HitlAgent.runs = 0
 
     app = create_nexus_celery_worker_app(
         app_name="test_nexus_worker_resume_j3",
