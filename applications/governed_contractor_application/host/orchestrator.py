@@ -50,7 +50,10 @@ from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.external_work_provider_capabilities import (
     ExternalWorkProviderCapabilities,
 )
-from intergrax.contracts.governed_execution_result import GovernedExecutionResult
+from intergrax.contracts.governed_execution_result import (
+    GovernedExecutionResult,
+    external_work_provider_operation_for_decision_action,
+)
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
     ProviderInvocationOutcome,
@@ -98,12 +101,6 @@ from governed_contractor_application.host.stores import (
     PolicyBundleArtifactStore,
     ProofReceiptStore,
 )
-
-_ACTION_TO_OPERATION: Mapping[str, str] = {
-    ACTION_CREATE_EXTERNAL_WORK: "create_work",
-    ACTION_ACCEPT_QUOTE: "submit_quote_acceptance",
-    ACTION_CANCEL_EXTERNAL_WORK: "cancel_work",
-}
 
 META_PROVIDER_INVOCATION_ID = "provider_invocation_id"
 
@@ -968,7 +965,9 @@ class GovernedExternalWorkOrchestrator:
         started_at: datetime,
         external_task_id: str | None = None,
     ) -> ProviderInvocation:
-        operation = _ACTION_TO_OPERATION[action]
+        operation = external_work_provider_operation_for_decision_action(action)
+        if operation is None:
+            raise ValueError(f"unsupported_external_work_action:{action}")
         provider_id = str(metadata.get(META_PROVIDER_ID) or "").strip()
         if not provider_id:
             raise ValueError("provider_id_required_for_invocation")

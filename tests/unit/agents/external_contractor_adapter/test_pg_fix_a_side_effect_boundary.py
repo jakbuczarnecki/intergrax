@@ -131,6 +131,7 @@ class _SpyAuthorizationBoundary:
         source_agent_id: str = "platform.meaningful_side_effect",
         source_step_id: str | None = None,
         on_authorization: object | None = None,
+        on_execution_authorized: object | None = None,
     ) -> object:
         _ = task, lifecycle, source_step_id
         authorization = self.authorize(
@@ -140,6 +141,8 @@ class _SpyAuthorizationBoundary:
         if on_authorization is not None:
             on_authorization(authorization)
         if authorization.permitted:
+            if on_execution_authorized is not None:
+                on_execution_authorized()
             return execute()
         return authorization
 
