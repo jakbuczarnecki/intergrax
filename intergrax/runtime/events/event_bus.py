@@ -18,6 +18,7 @@ from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.contracts.runtime_event_history import (
     RuntimeEventHistoryBuffer,
     RuntimeEventHistoryPolicy,
+    RuntimeEventHistoryStrategy,
 )
 from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
 from intergrax.runtime.events.runtime_event_metric_scope import (
@@ -135,6 +136,7 @@ class RuntimeEventBus:
         record_history: bool | None = None,
         history_policy: RuntimeEventHistoryPolicy | None = None,
         history_buffer: RuntimeEventHistoryBuffer | None = None,
+        history_strategy: RuntimeEventHistoryStrategy | None = None,
         event_sink: EventSinkPort | None = None,
         delivery_metrics: InternalDeliveryMetrics | None = None,
         delivery_reaction: EventSinkDeliveryReactionPort | None = None,
@@ -150,6 +152,7 @@ class RuntimeEventBus:
                 record_history=record_history,
                 history_policy=history_policy,
                 history_buffer=history_buffer,
+                history_strategy=history_strategy,
             )
         )
         self._persistence: Optional[EvidencePersistencePort] = (

@@ -17,7 +17,6 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.runtime_event_history import (
     DEFAULT_BOUNDED_RUNTIME_EVENT_HISTORY_CAPACITY,
-    RuntimeEventHistoryBuffer,
     RuntimeEventHistoryPolicy,
     RuntimeEventHistoryRetention,
 )
@@ -87,6 +86,30 @@ def _event(
             "payload": {"label": label},
         },
     )
+
+
+class RecordingHistoryStrategy:
+    __slots__ = ("windows",)
+
+    def __init__(self) -> None:
+        self.windows: list[tuple[RuntimeEvent, ...]] = []
+
+    def on_history_window(self, window: tuple[RuntimeEvent, ...]) -> None:
+        self.windows.append(window)
+
+
+class HoardingHistoryStrategy:
+    __slots__ = ("_vault",)
+
+    def __init__(self) -> None:
+        self._vault: list[RuntimeEvent] = []
+
+    def on_history_window(self, window: tuple[RuntimeEvent, ...]) -> None:
+        self._vault.extend(window)
+
+    @property
+    def vault_size(self) -> int:
+        return len(self._vault)
 
 
 class CustomBoundedHistory:
@@ -301,7 +324,7 @@ def test_conflicting_record_history_and_policy() -> None:
 
 
 def test_conflicting_buffer_and_policy() -> None:
-    with pytest.raises(ValueError, match="history_buffer cannot"):
+    with pytest.raises(ValueError, match="history_buffer custom storage injection"):
         RuntimeEventBus(
             history_buffer=BoundedRuntimeEventHistory(4),
             history_policy=RuntimeEventHistoryPolicy.bounded(4),
@@ -332,21 +355,34 @@ def test_invalid_bounded_runtime_event_history_capacity() -> None:
         BoundedRuntimeEventHistory(True)  # type: ignore[arg-type]
 
 
-def test_custom_bounded_history_buffer_injection() -> None:
-    custom: RuntimeEventHistoryBuffer = CustomBoundedHistory(2)
-    bus = RuntimeEventBus(history_buffer=custom)
+def test_custom_history_strategy_receives_bounded_windows() -> None:
+    strategy = RecordingHistoryStrategy()
+    bus = RuntimeEventBus(
+        history_policy=RuntimeEventHistoryPolicy.bounded(2),
+        history_strategy=strategy,
+    )
     for label in ("1", "2", "3"):
         bus.record(_event(label=label))
     assert [e.payload["label"] for e in bus.history] == ["2", "3"]
     assert isinstance(bus._history_buffer, PlatformOwnedRuntimeEventHistoryBuffer)
+    assert len(strategy.windows[-1]) == 2
 
 
-def test_platform_owned_retention_with_lying_custom_strategy() -> None:
-    bus = RuntimeEventBus(history_buffer=LyingBoundedHistory(2))
+def test_platform_retention_ignores_strategy_side_storage() -> None:
+    strategy = HoardingHistoryStrategy()
+    bus = RuntimeEventBus(
+        history_policy=RuntimeEventHistoryPolicy.bounded(2),
+        history_strategy=strategy,
+    )
     for index in range(100):
         bus.record(_event(label=str(index)))
     assert len(bus.history) == 2
-    assert [e.payload["label"] for e in bus.history] == ["98", "99"]
+    assert strategy.vault_size > 2
+
+
+def test_history_buffer_injection_removed() -> None:
+    with pytest.raises(ValueError, match="history_buffer custom storage injection"):
+        RuntimeEventBus(history_buffer=CustomBoundedHistory(2))
 
 
 def test_platform_retention_bound_two_after_overflow() -> None:
@@ -360,7 +396,7 @@ def test_platform_retention_bound_two_after_overflow() -> None:
 
 
 def test_unsafe_unbounded_history_rejected_at_composition() -> None:
-    with pytest.raises(ValueError, match="declared bounded retention capacity"):
+    with pytest.raises(ValueError, match="history_buffer custom storage injection"):
         RuntimeEventBus(history_buffer=UnsafeUnboundedHistory())
 
 
@@ -477,12 +513,20 @@ def test_task_finisher_does_not_use_history_length_for_runtime_events() -> None:
 def test_nexus_loop_has_no_shared_runtime_event_baseline() -> None:
     source = _NEXUS_LOOP_PATH.read_text(encoding="utf-8")
     assert "_runtime_event_count_baseline" not in source
+    assert "self._runtime_event_metric_scope" not in source
 
 
 def test_platform_owns_retention_envelope_in_history_resolver() -> None:
     source = _HISTORY_IMPL_PATH.read_text(encoding="utf-8")
     assert "class PlatformOwnedRuntimeEventHistoryBuffer" in source
-    assert "wrap_runtime_event_history_strategy" in source
+    assert "on_history_window" in source
+    assert "_sync_strategy" not in source
+
+
+def test_event_bus_history_uses_platform_snapshot_only() -> None:
+    source = _EVENT_BUS_PATH.read_text(encoding="utf-8")
+    assert "return list(self._history_buffer.snapshot())" in source
+    assert "strategy.snapshot" not in source
 
 
 def test_event_bus_has_no_unbounded_list_storage() -> None:

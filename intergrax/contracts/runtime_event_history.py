@@ -38,11 +38,10 @@ class RuntimeEventHistoryRetention:
 
 @runtime_checkable
 class RuntimeEventHistoryBuffer(Protocol):
-    """Custom history strategy operating inside a platform-owned retention bound.
+    """Platform process-local history storage (bounded deque or disabled).
 
-    The bus records events only in the platform retention envelope. Implementations
-    are synchronized with the bounded window via ``append`` / ``clear`` and must not
-    be wired as the sole storage owner for the full event stream.
+    External plugins must not implement this as custom storage; use
+    ``RuntimeEventHistoryStrategy`` instead.
     """
 
     def retention(self) -> RuntimeEventHistoryRetention: ...
@@ -52,6 +51,13 @@ class RuntimeEventHistoryBuffer(Protocol):
     def snapshot(self) -> tuple[RuntimeEvent, ...]: ...
 
     def clear(self) -> None: ...
+
+
+@runtime_checkable
+class RuntimeEventHistoryStrategy(Protocol):
+    """Stateless observer over the platform-owned bounded retention window."""
+
+    def on_history_window(self, window: tuple[RuntimeEvent, ...]) -> None: ...
 
 
 @dataclass(frozen=True, slots=True)

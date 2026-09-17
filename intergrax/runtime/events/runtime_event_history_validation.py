@@ -20,6 +20,7 @@ from intergrax.contracts.runtime_event_history import (
     RuntimeEventHistoryBuffer,
     RuntimeEventHistoryRetention,
 )
+
 _PROBE_NAMESPACE = "history-retention-probe"
 
 

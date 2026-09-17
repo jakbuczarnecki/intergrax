@@ -24,11 +24,15 @@ class _ScopeCounter:
 class _RuntimeEventMetricScopeHandle(RuntimeEventMetricScope):
     _counter: _ScopeCounter
     _release: Callable[[], None]
+    _closed: bool = False
 
     def count(self) -> int:
         return self._counter.count
 
     def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
         self._release()
 
 

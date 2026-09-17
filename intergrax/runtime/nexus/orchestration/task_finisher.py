@@ -205,3 +205,20 @@ def build_nexus_task_result(
     result.metadata[TaskResultMetadataKey.RUN_ARTIFACT_BUNDLE] = bundle_payload
     result.sync_metadata()
     return result
+
+
+def apply_runtime_events_metric_to_task_result(
+    result: TaskResult,
+    runtime_events_count: int,
+) -> TaskResult:
+    """Attach bus-accepted runtime event count to any final ``TaskResult``."""
+    if result.summary.metrics.runtime_events == runtime_events_count:
+        return result
+    metrics = result.summary.metrics.model_copy(
+        update={"runtime_events": runtime_events_count},
+    )
+    summary = result.summary.model_copy(update={"metrics": metrics})
+    return result.model_copy(update={"summary": summary})
+
+
+__all__ = ["apply_runtime_events_metric_to_task_result", "build_nexus_task_result"]

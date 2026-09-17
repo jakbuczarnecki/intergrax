@@ -14,14 +14,15 @@ from intergrax.contracts.runtime_event_history import (
     RuntimeEventHistoryBuffer,
     RuntimeEventHistoryPolicy,
     RuntimeEventHistoryRetention,
+    RuntimeEventHistoryStrategy,
 )
 from intergrax.runtime.events.runtime_event_history_validation import (
-    validate_runtime_event_history_buffer,
+    validate_platform_runtime_event_history_buffer,
 )
 
 
 class PlatformOwnedRuntimeEventHistoryBuffer:
-    """Platform retention envelope; optional custom strategy stays within the window."""
+    """Sole process-local retained-history owner for ``RuntimeEventBus``."""
 
     __slots__ = ("_deque", "_lock", "_mode", "_strategy")
 
@@ -29,7 +30,7 @@ class PlatformOwnedRuntimeEventHistoryBuffer:
         self,
         retention: RuntimeEventHistoryRetention,
         *,
-        strategy: RuntimeEventHistoryBuffer | None = None,
+        strategy: RuntimeEventHistoryStrategy | None = None,
     ) -> None:
         self._mode = retention.mode
         self._strategy = strategy
@@ -51,11 +52,13 @@ class PlatformOwnedRuntimeEventHistoryBuffer:
     def append(self, event: RuntimeEvent) -> None:
         if self._mode == "disabled":
             del event
+            self._notify_strategy(())
             return
         assert self._deque is not None
         with self._lock:
             self._deque.append(event)
-            self._sync_strategy()
+            window = tuple(self._deque)
+        self._notify_strategy(window)
 
     def snapshot(self) -> tuple[RuntimeEvent, ...]:
         if self._mode == "disabled":
@@ -68,17 +71,13 @@ class PlatformOwnedRuntimeEventHistoryBuffer:
         with self._lock:
             if self._deque is not None:
                 self._deque.clear()
-            if self._strategy is not None:
-                self._strategy.clear()
+        self._notify_strategy(())
 
-    def _sync_strategy(self) -> None:
+    def _notify_strategy(self, window: tuple[RuntimeEvent, ...]) -> None:
         strategy = self._strategy
-        if strategy is None or self._deque is None:
+        if strategy is None:
             return
-        window = tuple(self._deque)
-        strategy.clear()
-        for item in window:
-            strategy.append(item)
+        strategy.on_history_window(window)
 
 
 class DisabledRuntimeEventHistory:
@@ -144,48 +143,46 @@ def runtime_event_history_buffer_from_policy(
     return PlatformOwnedRuntimeEventHistoryBuffer(_retention_from_policy(policy))
 
 
-def wrap_runtime_event_history_strategy(
-    strategy: RuntimeEventHistoryBuffer,
-) -> PlatformOwnedRuntimeEventHistoryBuffer:
-    validate_runtime_event_history_buffer(strategy)
-    retention = strategy.retention()
-    if retention.mode == "disabled":
-        raise ValueError("custom history strategy cannot be disabled when injected")
-    return PlatformOwnedRuntimeEventHistoryBuffer(retention, strategy=strategy)
-
-
 def resolve_runtime_event_history_buffer(
     *,
     record_history: bool | None,
     history_policy: RuntimeEventHistoryPolicy | None,
     history_buffer: RuntimeEventHistoryBuffer | None,
+    history_strategy: RuntimeEventHistoryStrategy | None,
 ) -> RuntimeEventHistoryBuffer:
     if history_buffer is not None:
-        if record_history is not None or history_policy is not None:
-            raise ValueError(
-                "history_buffer cannot be combined with record_history or history_policy",
-            )
-        return wrap_runtime_event_history_strategy(history_buffer)
+        raise ValueError(
+            "history_buffer custom storage injection was removed in "
+            "OBS-RUNTIME-HISTORY-BOUNDS-R3; use history_policy and "
+            "optional history_strategy",
+        )
+    strategy = history_strategy
     if record_history is not None and history_policy is not None:
         raise ValueError("record_history and history_policy are mutually exclusive")
     if record_history is False:
-        buffer = PlatformOwnedRuntimeEventHistoryBuffer(
+        buffer: RuntimeEventHistoryBuffer = PlatformOwnedRuntimeEventHistoryBuffer(
             RuntimeEventHistoryRetention(mode="disabled", capacity=None),
+            strategy=strategy,
         )
     elif history_policy is not None:
-        buffer = runtime_event_history_buffer_from_policy(history_policy)
+        buffer = PlatformOwnedRuntimeEventHistoryBuffer(
+            _retention_from_policy(history_policy),
+            strategy=strategy,
+        )
     elif record_history is True:
         buffer = PlatformOwnedRuntimeEventHistoryBuffer(
             RuntimeEventHistoryRetention(
                 mode="bounded",
                 capacity=DEFAULT_BOUNDED_RUNTIME_EVENT_HISTORY_CAPACITY,
             ),
+            strategy=strategy,
         )
     else:
-        buffer = runtime_event_history_buffer_from_policy(
-            RuntimeEventHistoryPolicy.enterprise_default()
+        buffer = PlatformOwnedRuntimeEventHistoryBuffer(
+            _retention_from_policy(RuntimeEventHistoryPolicy.enterprise_default()),
+            strategy=strategy,
         )
-    validate_runtime_event_history_buffer(buffer)
+    validate_platform_runtime_event_history_buffer(buffer)
     return buffer
 
 
@@ -196,5 +193,4 @@ __all__ = [
     "DEFAULT_BOUNDED_RUNTIME_EVENT_HISTORY_CAPACITY",
     "resolve_runtime_event_history_buffer",
     "runtime_event_history_buffer_from_policy",
-    "wrap_runtime_event_history_strategy",
 ]

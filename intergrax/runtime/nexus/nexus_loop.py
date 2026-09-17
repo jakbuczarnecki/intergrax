@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
@@ -89,7 +90,11 @@ from intergrax.runtime.nexus.orchestration.lifecycle_bridge import (
     resolve_nexus_lifecycle,
 )
 from intergrax.runtime.nexus.orchestration.task_events import NexusRuntimeEventPublisher
-from intergrax.runtime.nexus.orchestration.task_finisher import build_nexus_task_result
+from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
+from intergrax.runtime.nexus.orchestration.task_finisher import (
+    apply_runtime_events_metric_to_task_result,
+    build_nexus_task_result,
+)
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -474,7 +479,6 @@ class NexusLoop:
         self._decision_exposure_selection = None
         self._decision_flow_verify_graph_final = False
         self._decision_exposure_session = None
-        self._runtime_event_metric_scope = None
 
     def set_hold_persisted_trace_finalize(self, hold: bool) -> None:
         """When True, graph success defers persisted trace finalize for scenario observability."""
@@ -715,15 +719,26 @@ class NexusLoop:
             task.task_id,
             resolved_run_id,
         )
-        self._runtime_event_metric_scope = metric_scope
         try:
-            return await self._handle_task_impl(task)
+            impl = self._handle_task_impl
+            impl_kwargs: dict[str, RuntimeEventMetricScope] = {}
+            if "runtime_event_metric_scope" in inspect.signature(impl).parameters:
+                impl_kwargs["runtime_event_metric_scope"] = metric_scope
+            result = await impl(task, **impl_kwargs)
+            return apply_runtime_events_metric_to_task_result(
+                result,
+                metric_scope.count(),
+            )
         finally:
-            self._runtime_event_metric_scope = None
             metric_scope.close()
             self._current_task = None
 
-    async def _handle_task_impl(self, task: Task) -> TaskResult:
+    async def _handle_task_impl(
+        self,
+        task: Task,
+        *,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
+    ) -> TaskResult:
         lifecycle, trace_emitter = self._resolve_lifecycle(task)
         self._trace_emitter = trace_emitter
         self._begin_decision_exposure_session()
@@ -732,6 +747,7 @@ class NexusLoop:
                 task,
                 lifecycle=lifecycle,
                 trace_emitter=trace_emitter,
+                runtime_event_metric_scope=runtime_event_metric_scope,
             )
         finally:
             self._clear_decision_exposure_session()
@@ -742,6 +758,7 @@ class NexusLoop:
         *,
         lifecycle: TaskLifecycle,
         trace_emitter: TaskTraceEmitter,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
     ) -> TaskResult:
         intake = await self._intake_runner.run(
             task,
@@ -797,6 +814,7 @@ class NexusLoop:
             plan=phase.plan,
             retry_records=phase.retry_records,
             graph_id=phase.graph.graph_id,
+            runtime_event_metric_scope=runtime_event_metric_scope,
         )
 
     async def _finish_task(
@@ -810,6 +828,7 @@ class NexusLoop:
         plan: Optional[NexusPlan],
         retry_records: List[RetryRecord],
         graph_id: str,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
     ) -> TaskResult:
         try:
             await self._lifecycle_hooks.before(
@@ -838,6 +857,7 @@ class NexusLoop:
                 plan=plan,
                 retry_records=retry_records,
                 graph_id=graph_id,
+                runtime_event_metric_scope=runtime_event_metric_scope,
             )
 
         from intergrax.runtime.policy.pre_output_policy_bridge import (
@@ -860,6 +880,7 @@ class NexusLoop:
             plan=plan,
             retry_records=retry_records,
             graph_id=graph_id,
+            runtime_event_metric_scope=runtime_event_metric_scope,
         )
         try:
             await self._lifecycle_hooks.after(
@@ -947,6 +968,7 @@ class NexusLoop:
         plan: Optional[NexusPlan],
         retry_records: List[RetryRecord],
         graph_id: str,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
     ) -> TaskResult:
         exposure = self._resolve_authoritative_decision_exposure_for_build(task)
         result = build_nexus_task_result(
@@ -964,15 +986,9 @@ class NexusLoop:
             sandbox_manager=self._sandbox_manager,
             run_id=require_active_execution_identity()[0],
             authoritative_decision_exposure=exposure,
-            runtime_events_count=self._resolved_runtime_events_count(),
+            runtime_events_count=runtime_event_metric_scope.count(),
         )
         return result
-
-    def _resolved_runtime_events_count(self) -> int:
-        scope = self._runtime_event_metric_scope
-        if scope is None:
-            return 0
-        return scope.count()
 
     async def _maybe_restore_long_running(self, task: Task) -> None:
         active_run_id, _ = require_active_execution_identity()
