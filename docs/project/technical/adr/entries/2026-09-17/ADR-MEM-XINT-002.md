@@ -503,7 +503,7 @@ Tier boundaries preserved; MEM-ENT invariants authoritative; aligns with ADR-UCL
 
 MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normative policy pipeline ordering closure (this revision). Bounded regression: `.tmp/session/MEM-XINT-2-R/pytest.log`. Production code unchanged in MEM-XINT-2-R.
 
-**MEM-XINT-4-R (UE-9D):** MXINT-4 closed for iterative ReAct � multi-round bounded tool loops require `run_bounded_tool_loop_async` with wired `ContextEngine`; sync `BoundedReactPattern` no longer appends native tool messages for model-facing feedback.
+**MEM-XINT-4-R (UE-9D):** MXINT-4 closed for iterative ReAct — multi-round bounded tool loops require `run_bounded_tool_loop_async` with wired `ContextEngine`; sync `BoundedReactPattern` no longer appends native tool messages for model-facing feedback.
 
 ## MEM-XINT-5 / MEM-XINT-5-R / MEM-XINT-5-R2 implementation status (2026-09-17)
 
@@ -514,9 +514,9 @@ MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normat
 ### Authority
 
 - ContextFragmentSource is **origin only**; CE policy pipeline does **not** infer authority from source.
-- Trusted authority is bound on ContextProviderDescriptor.trusted_authority_class / llowed_authority_classes, populated for shipped builtins via intergrax/context/trusted_provider_bindings.py and uild_provider_descriptor.
-- Collection boundary validation: enforce_provider_authority in intergrax/context/policy/authority.py (fail-closed for privileged self-assignment).
-- Engine hard post-gate: ilter_fragments_by_authority_contract after replaceable pipeline execution.
+- Trusted authority is bound on `ContextProviderDescriptor.trusted_authority_class` / `allowed_authority_classes`, populated for shipped builtins via `intergrax/context/trusted_provider_bindings.py` and `build_provider_descriptor`.
+- Collection boundary validation: `enforce_provider_authority` in `intergrax/context/policy/authority.py` (fail-closed for privileged self-assignment).
+- Engine hard post-gate: `filter_fragments_by_authority_contract` after replaceable pipeline execution.
 
 ### Policy replaceability
 
@@ -530,8 +530,7 @@ MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normat
 
 ### Scope isolation
 
-- Hard gate: isolate_assembly_scope (intergrax/context/policy/scope_isolation.py) enforces tenant match, optional ContextAssemblyRequest.user_id, and execution scope key 
-un_id:task_id.
+- Hard gate: `isolate_assembly_scope` (`intergrax/context/policy/scope_isolation.py`) enforces tenant match, optional `ContextAssemblyRequest.user_id`, and execution scope key `run_id:task_id`.
 
 ### Replaceable vs hard invariants
 
@@ -582,37 +581,50 @@ un_id:task_id.
 
 ### Final architecture (code-aligned)
 
-`	ext
-                    MemoryControlPlane (remember / recall)
-                          │
-                          ▼
-              ContextProviderSourceInputs.memory
-                          │
-Session ──────────────────┐
-RAG ──────────────────────┤
-Tools ────────────────────┼──► ContextProviderSourceInputs (typed DTOs)
-Web / system / attachments┤
-policy / shared / graph ──┘
-                          │
-                          ▼
-              ContextSourceProviders (builtin.* → ctx.sources.*)
-                          │
-                          ▼
-    HARD: scope/authority → canonicalize → exact dedup → invariant snapshot
-                          │
-                          ▼
-    PLUGINABLE: normalize → semantic dedup → conflict → rank → budget
-                          │
-                          ▼
-    HARD: validate_policy_pipeline_result → authority contract → compile
-                          │
-                          ▼
-              AssembledContext.messages → model invocation
-`
+```text
+MemoryControlPlane
+        │
+        ▼
+typed source adapters (composition / Nexus)
+        │
+        ▼
+ContextProviderSourceInputs
+        │
+        ▼
+ContextSourceProviders (builtin.* → ctx.sources.*)
+        │
+        ▼
+HARD: canonicalize → exact dedup → invariant snapshot
+        │
+        ▼
+PLUGINABLE: normalize → semantic dedup → conflict → rank → budget
+        │
+        ▼
+HARD: validate_policy_pipeline_result → authority contract → scope isolation
+        │
+        ▼
+compile
+        │
+        ▼
+AssembledContext.messages
+        │
+        ▼
+model invocation
+```
 
-**Authority:** MemoryControlPlane = sole durable Memory boundary; ContextEngine.assemble = sole final model-context gate. Builtin semantic ctx.handles reads = 0; no legacy_bridge in uiltin.py.
+**Policy order (engine-owned, code-aligned):** collect → scope isolation → canonicalize → exact dedup → invariant snapshot → pluginable policy (`NORMALIZE` → `SEMANTIC_DEDUP` → `CONFLICT` → `RANK` → `BUDGET`) → `validate_policy_pipeline_result` → authority/scope post-gates → compile.
 
-**ReAct:** one CE assembly per model round; tool protocol via typed 	ools source + CE compile.
+**Authority:** `MemoryControlPlane` = sole semantic durable Memory authority (persistence remains provider/vendor abstraction). `ContextEngine.assemble` = sole final model-context composition authority (sources still produce typed evidence). Trusted builtin authority follows trusted provider binding — CE policy does **not** infer authority from `ContextFragmentSource` alone. External providers default to non-privileged authority and cannot self-elevate to `SYSTEM_CONTEXT` or `CANONICAL_MEMORY` without platform-defined trusted binding. Builtin semantic `ctx.handles` reads = 0; no `legacy_bridge` in `builtin.py`.
+
+**Typed source boundary:** Canonical provider-facing semantic contracts contain no `Any`/raw semantic bags; legacy/runtime ingestion adapters may translate older metadata shapes into typed `ContextProviderSourceInputs`.
+
+**Handles:** `ContextProviderContext.handles` may exist for auxiliary dependencies (`runtime_config`, `messages`, `event_bus`, workspace/UCL); canonical semantic source payloads do not transit handles.
+
+**Session compatibility:** Legacy session handles → one-way compatibility hydrate → `sources.session`; canonical runtime session path → `sources.session` (not dual peer ingress).
+
+**ReAct:** one model invocation → one CE assembly; tool feedback enters via typed tool source / CE-owned compile flow.
+
+**Observability:** Policy/hard-stage exclusions emit `CONTEXT_CANDIDATE_DROPPED`. Session fragments preserve session-semantic content hash after canonicalization.
 
 ### Hard gate evidence (summary)
 
@@ -620,12 +632,12 @@ policy / shared / graph ──┘
 | --- | --- | --- |
 | Memory write/recall authority | PASS | E2E remember→recall→CE; memory e2e; mem_xint3 recall plane |
 | CE final authority | PASS | MEM-XINT-4 / 4-R; E2E mixed-source + ReAct |
-| Typed source boundary | PASS | 	est_mem_xint6r_typed_source_boundary.py; typed boundary guard |
+| Typed source boundary | PASS | `tests/integration/context/test_mem_xint6r_typed_source_boundary.py`; typed boundary guard |
 | Provider isolation | PASS | E2E + typed collector tests |
 | Authority / scope / sensitivity / provenance | PASS | MEM-XINT-5 / 5-R / 5-R2 |
-| Hard invariant envelope | PASS | 	est_mem_xint5r2_hard_policy_invariant_envelope.py |
+| Hard invariant envelope | PASS | `tests/integration/context/test_mem_xint5r2_hard_policy_invariant_envelope.py` |
 | Cross-source policy / dedup / conflict / budget | PASS | E2E + cross-source pipeline tests |
-| ReAct / tool protocol | PASS | 	est_mem_xint4r_react_context_authority.py |
+| ReAct / tool protocol | PASS | `tests/integration/context/test_mem_xint4r_react_context_authority.py` |
 | Replaceability / vendor abstraction | PASS | E2E custom strategies; in-memory harness |
 | Determinism / observability | PASS | E2E two-run; candidate-drop + session hash |
 | Architecture guards | PASS | bypass + typed boundary + tier-0 import scripts |
@@ -643,4 +655,12 @@ policy / shared / graph ──┘
 | final aggregate (E2E + typed boundary) | 27 |
 
 **Supersedes:** MEM-XINT-6 PASS WITH CORRECTIONS — MEM-XINT PROGRAM NOT CLOSED (pre–6-R2 typed boundary debt).
+
+## MEM-XINT-6-FINAL-R — Final ADR accuracy closure (2026-09-17)
+
+**Status:** docs-only correction on final certification ADR; **MEM-XINT PROGRAM CLOSED** (technical certification unchanged).
+
+**Supersedes formatting/errors in:** MEM-XINT-6-FINAL section of this ADR (prior docs commit `1b4087d97511b4dd52994875b435f6766058a8fd`).
+
+**Traceability:** MEM-XINT-6-R2 audited baseline: `1bb54885a8df629a8872c8de33f821d9d3836b5f`. Historical checkpoint **PASS WITH CORRECTIONS — MEM-XINT PROGRAM NOT CLOSED** (MEM-XINT-6 / pre–6-R2) retained above; superseded by MEM-XINT-6-FINAL enterprise closure narrative.
 
