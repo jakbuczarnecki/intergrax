@@ -22,7 +22,8 @@ from testing_support.npsc5f_r3_protected_drift import (
 )
 
 # Code-under-test baseline for H1 integrated qualification (immutable; not branch HEAD).
-NPSC5F_R3_H1_QUALIFIED_BASELINE_SHA = "ad1a1e57fc70529aedcbfa27808fffdbfe5fdd14"
+# HARDENING_9_NPSC5F integrated head pin: absorbs V2/V3/V4 qualified OBS + lower-level drift.
+NPSC5F_R3_H1_QUALIFIED_BASELINE_SHA = "62fdceac2122738751a8a1caeffe16c986dfe47d"
 
 # Qualification-record commit (proof artifacts); may trail ``origin/development`` after push.
 NPSC5F_R3_H1_QUALIFICATION_RECORD_SHA = "145bbd74e6d4175a5b868ed71ed1a6353b2c2c3b"
