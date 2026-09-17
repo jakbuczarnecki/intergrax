@@ -58,8 +58,23 @@ def _read_doc(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig")
 
 
+def _normalize_markdown_semantics(text: str) -> str:
+    normalized = text.replace("**", "").replace("__", "")
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
 def _assert_contains_all(text: str, phrases: tuple[str, ...], context: str) -> None:
     missing = [phrase for phrase in phrases if phrase not in text]
+    assert not missing, f"{context}: missing semantic markers: {missing}"
+
+
+def _assert_contains_all_semantic(text: str, phrases: tuple[str, ...], context: str) -> None:
+    normalized = _normalize_markdown_semantics(text)
+    missing = [
+        phrase
+        for phrase in phrases
+        if _normalize_markdown_semantics(phrase) not in normalized
+    ]
     assert not missing, f"{context}: missing semantic markers: {missing}"
 
 
@@ -69,13 +84,13 @@ def _assert_contains_any(text: str, phrases: tuple[str, ...], context: str) -> N
     assert False, f"{context}: expected at least one of {phrases!r}"
 
 
-def _canonical_d7_closed(text: str) -> bool:
+def _d7_closed(text: str) -> bool:
     return "MP-4D7 — CLOSED" in text or bool(
         re.search(r"\*\*MP-4D7\*\*\s*\|\s*\*\*CLOSED\*\*", text)
     )
 
 
-def _canonical_d8_next(text: str) -> bool:
+def _d8_next(text: str) -> bool:
     return "MP-4D8 — NEXT" in text or bool(
         re.search(r"\*\*MP-4D8\*\*\s*\|\s*\*\*NEXT\*\*", text)
     ) or bool(re.search(r"MP-4D8[^|\n]{0,24}\bNEXT\b", text))
@@ -85,10 +100,10 @@ def test_mp4d7_status_documents_are_synchronized() -> None:
     texts = {name: _read_doc(path) for name, path in _STATUS_DOCS.items()}
     canonical = texts["canonical"]
 
-    assert _canonical_d7_closed(canonical), (
+    assert _d7_closed(canonical), (
         "MP-4 status drift: canonical SSOT must mark MP-4D7 CLOSED after D7 close"
     )
-    assert _canonical_d8_next(canonical), (
+    assert _d8_next(canonical), (
         "MP-4 status drift: canonical SSOT must mark MP-4D8 as NEXT active documentation stage"
     )
     _assert_contains_any(
@@ -109,8 +124,11 @@ def test_mp4d7_status_documents_are_synchronized() -> None:
         assert "MP-4D7 — NEXT" not in text and "**MP-4D7** — Documentation regression gates (**NEXT**)" not in text, (
             f"MP-4 status drift: {name} still marks MP-4D7 NEXT while canonical SSOT has D7 CLOSED"
         )
-        assert _canonical_d7_closed(text) or "MP-4D1–D7 CLOSED" in text or "MP-4D1–D6 CLOSED · MP-4D7 CLOSED" in text, (
+        assert _d7_closed(text) or "MP-4D1–D7 CLOSED" in text or "MP-4D1–D6 CLOSED · MP-4D7 CLOSED" in text, (
             f"MP-4 status drift: {name} does not reflect MP-4D7 CLOSED"
+        )
+        assert _d8_next(text), (
+            f"MP-4 status drift: {name} does not mark MP-4D8 NEXT while canonical SSOT does"
         )
         assert "MP-4 implementation IN PROGRESS" not in text and "MP-4 — IN PROGRESS" not in text, (
             f"MP-4 status drift: {name} contradicts formally closed MP-4 implementation"
@@ -145,11 +163,11 @@ def test_mp4d7_canonical_ssot_entry_point_is_preserved() -> None:
 
 def test_mp4d7_canonical_authority_boundaries_are_preserved() -> None:
     canonical = _read_doc(CANONICAL_MP4_DOC)
-    _assert_contains_all(
+    _assert_contains_all_semantic(
         canonical,
         (
             "Decision System owns Decision truth and lifecycle",
-            "does **not** own Decision, Governance, Execution lifecycle",
+            "does not own Decision, Governance, Execution lifecycle",
             "Human APPROVED ≠ Governance ALLOW",
             "post-human Governance re-evaluation",
             "association truth",
@@ -159,14 +177,14 @@ def test_mp4d7_canonical_authority_boundaries_are_preserved() -> None:
             "DENY",
             "REQUIRE_HUMAN",
             "DecisionExecutionAuthorization",
-            "must not** start or resume solely",
+            "must not start or resume solely",
             "ExecutionContinuationPort",
             "Execution Engine owns semantics",
-            "Nexus:** internal orchestration",
-            "not** a public MP-4 integration surface",
-            "Factual reconstruction** rebuilds **facts**",
-            "Diagnostics** **interprets**",
-            "does **not** authorize execution",
+            "Nexus: internal orchestration",
+            "not a public MP-4 integration surface",
+            "Factual reconstruction rebuilds facts",
+            "Diagnostics interprets",
+            "does not authorize execution",
         ),
         "MP-4 authority boundary",
     )
@@ -201,14 +219,20 @@ def test_mp4d7_proof_and_provider_qualification_boundaries_are_preserved() -> No
         canonical,
         (
             "PostgreSQLCollaborativeDecisionBindingRepository",
-            "**does not** qualify governance",
             "R7 test-composition E2E",
-            "Does not claim:** full production-deployment E2E",
             "Invariant → proof",
             "Provider → durability → qualification",
             "Contract boundary → external replacement",
-            "NOT QUALIFIED** (MP-4-scoped)",
-            "**CERTIFIED**",
+        ),
+        "MP-4 qualification boundary",
+    )
+    _assert_contains_all_semantic(
+        canonical,
+        (
+            "does not qualify governance",
+            "Does not claim: full production-deployment E2E",
+            "NOT QUALIFIED (MP-4-scoped)",
+            "CERTIFIED",
         ),
         "MP-4 qualification boundary",
     )
@@ -234,7 +258,13 @@ def test_mp4d7_evidence_reconstruction_diagnostics_separation_is_preserved() -> 
             "Evidence Plane",
             "no duplicate Evidence store",
             "Evidence facts → reconstruction → diagnostics interpretation",
-            "Association truth is **not** reconstructed from Evidence facts as authority",
+        ),
+        "MP-4 evidence / reconstruction / diagnostics separation",
+    )
+    _assert_contains_all_semantic(
+        canonical,
+        (
+            "Association truth is not reconstructed from Evidence facts as authority",
         ),
         "MP-4 evidence / reconstruction / diagnostics separation",
     )
