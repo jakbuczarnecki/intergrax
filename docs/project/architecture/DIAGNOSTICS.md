@@ -338,6 +338,16 @@ Do **not** document `Diagnostics → MongoDB` as production architecture. The en
 
 `DiagnosticReadService` is **not** a separate source of truth. It composes reads over `ProblemPersistence`, `RuntimeEventPersistence`, and causal evidence where applicable.
 
+**DIAG-READ-SCALE (request-scoped reuse):** one operator read request may touch many `ProblemOccurrence` rows that share the same execution scope `(tenant_id, task_id, run_id, execution_as_of)`. `ExecutionReconstructionReadSession` memoizes factual `ExecutionReconstruction` results **only for that request** via `ExecutionReconstructionReader`. This is an optimization, not a second source of truth; reuse ends when the read request completes. Different `AsOfBoundary` values are distinct scopes. No cross-tenant reuse.
+
+```text
+ProblemOccurrences (bounded page)
+  → group by reconstruction scope
+  → ExecutionReconstructionReader (once per unique scope per request)
+  → shared factual ExecutionReconstruction in request session
+  → DiagnosticAssessment / operator projections
+```
+
 ```text
 Problem
   → occurrence
@@ -352,7 +362,7 @@ flowchart TB
     P[Problem record]
     O[ProblemOccurrence]
     S[SubjectRef]
-    ER[ExecutionReconstructor]
+    ER[ExecutionReconstructionReader]
     RE[RuntimeEvents]
     A[DiagnosticAssessment]
 
