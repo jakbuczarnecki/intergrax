@@ -652,7 +652,8 @@ def test_c_r1_identity_collision_source_integrity(field: str, value: object) -> 
     assert exc_info.value.code is RuntimeInspectionErrorCode.SOURCE_INTEGRITY
 
 
-def test_c_r1_missing_tenant_on_custom_record() -> None:
+@pytest.mark.parametrize("tenant_id", ["", "   ", "\t"])
+def test_c_r1_missing_tenant_on_custom_record(tenant_id: str) -> None:
     from intergrax.contracts.runtime_inspection.errors import RuntimeInspectionError
 
     class _BadMemory(MemoryRuntimeOperationReadPort):
@@ -660,13 +661,14 @@ def test_c_r1_missing_tenant_on_custom_record() -> None:
 
         def list_operations(self, scope, *, limit: int):
             return MemoryRuntimeOperationReadResult(
-                records=(_memory_record(tenant_id=""),),
+                records=(_memory_record(tenant_id=tenant_id),),
                 is_truncated=False,
             )
 
     with pytest.raises(RuntimeInspectionError) as exc_info:
         MemoryOperationInspectionAdapter(_BadMemory()).read_memory_operations(_SCOPE)
     assert exc_info.value.code is RuntimeInspectionErrorCode.SOURCE_INTEGRITY
+    assert "missing tenant provenance" in str(exc_info.value)
 
 
 def test_c_r1_custom_canonical_memory_port() -> None:

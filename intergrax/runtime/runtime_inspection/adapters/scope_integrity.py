@@ -22,7 +22,7 @@ def validate_domain_record_scope(
     source_id: str,
     record_label: str,
 ) -> None:
-    if not record.tenant_id:
+    if not record.tenant_id.strip():
         raise RuntimeInspectionError(
             RuntimeInspectionErrorCode.SOURCE_INTEGRITY,
             f"{record_label} missing tenant provenance",
