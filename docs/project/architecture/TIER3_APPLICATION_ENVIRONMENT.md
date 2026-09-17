@@ -470,6 +470,33 @@ NexusLoop
 
 **Honest limit:** not every code path in the monorepo is proven to use `UnifiedTaskRunner` yet; queue composition in Legal/Dispute Sim additionally mutates private `_execution_adapter` (TL-FIX-D). Target: all **supported** intake surfaces converge on the same task semantics.
 
+### Host entry convergence (HOST-01)
+
+Production Tier-3 intake surfaces (HTTP harness routes, FastAPI Core run dispatch, MCP tools, queue workers) are **transport adapters** over one canonical application execution boundary. They must not own alternate orchestration, governance, or model/tool dispatch.
+
+```text
+HTTP / MCP / queue worker / scenario intake
+      ↓
+Host adapter (transport validation + map to Task)
+      ↓
+HostTaskExecutionPort.execute(Task)
+      ↓
+Root execution launch + governance admission
+      ↓
+ExecutionRuntime / Execution facade
+      ↓
+TaskResult (canonical) → host-specific serialization
+```
+
+| Layer | Owner |
+| ----- | ----- |
+| Transport envelope (HTTP status, MCP tool schema, run store payload) | Host adapter (`applications/_shared`, `fastapi_core`, Tier-3 `host/`) |
+| Task semantics + identity mint/resume | Platform (`Task`, `resolve_root_execution_context`) |
+| Governance admission | Platform (`DefaultRootExecutionLauncher`, `RootExecutionAuthorityAdmissionPort`) |
+| Execution engine | Platform (`Execution` → `ExecutionRuntime` → strategy router) |
+
+Qualification: `tests/qualification/host_01/` (HOST-Q1..HOST-Q12). CLI (`intergrax run`) is a process bootstrap only — it does not define a separate execution path. ACP enriches `Task` metadata at composition time; it is not a parallel host server.
+
 ### `HarnessApplication`
 
 Fluent author-facing builder (lab/scaffold flows) producing manifest + `build_harness_host_runtime()` / FastAPI app. Convenience facade - not a second platform.
