@@ -57,7 +57,7 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 
 ### D. Remaining platform gaps (explicit)
 
-- **Governance Evidence Plane correlation (GR-8):** policy/HITL facts not systematically emitted as five-ID RuntimeEvent facts.
+- **Governance Evidence (GR-8):** canonical spine (typed fact + persistence port + default RuntimeEvent adapter) is **CANDIDATE CLOSED** pending independent audit; **evaluation-point adoption** (AGENT_DECISION, INTERRUPT, PRE_MODEL, TOOL*, PRE_OUTPUT, POST_RUN, CONTROL_PLANE_MUTATION, fresh post-human re-evaluation) remains **open** under **GR-10 / GR-13** — not claimed as GR-8 spine closure.
 - **Strategy coverage (GR-10):** INFERENCE / AGENTIC meaningful-side-effect and HITL paths not enterprise-qualified on production entry points.
 - **Control-plane mutation (GR-12):** **GAP** — no shared live enforcement across activation, AHI, ECP, plugins, live task control.
 - **Plugin enterprise certification (GR-11)** and **full proof matrix (GR-13)** open.
@@ -137,7 +137,7 @@ flowchart TB
   GP -->|authorization outcome| EX
   GP -->|may execute once| DE
   EX -->|consequential dispatch intent| RL
-  GP -.->|decision facts partial GR-8| EV
+  GP -.->|spine wired root+MSE GR-8| EV
   EX -.->|execution facts| EV
   RL -.->|reliability facts| EV
   EV --> DIAG
@@ -312,6 +312,8 @@ flowchart TD
 ```
 
 **Governance Evidence spine (GR-8):** typed ``GovernanceDecisionEvidenceFact`` projected through ``GovernanceEvidencePersistencePort`` (default: ``RuntimeEvent`` + ``EvidencePersistencePort`` when five-ID correlation is present). **CANDIDATE CLOSED — awaiting independent GitHub audit.** Evidence does not return or alter ``PolicyDecision``; persistence failure does not flip DENY/REQUIRE_HUMAN into ALLOW.
+
+**Scope honesty:** GR-8 closure applies to **evidence infrastructure** (immutable fact contract, pluginable persistence port, default durable adapter, root admission + meaningful-side-effect emission). **Evaluation-point adoption coverage** across all GEP rows in §G3B is **not** GR-8 — residual wiring and strategy qualification are owned by **GR-10** and **GR-13**.
 
 ```text
 Governance evaluation → PolicyDecision (authority)

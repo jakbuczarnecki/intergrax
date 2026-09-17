@@ -211,11 +211,12 @@ def test_gov_final_3_strategy_matrix_shows_open_gaps() -> None:
     assert "GR-10" in visual or "qualification matrix remains" in visual.lower()
 
 
-def test_gov_final_3_gr8_partial_not_complete() -> None:
+def test_gov_final_3_gr8_spine_vs_gep_adoption_honesty() -> None:
     arch = _read(ARCH_GOVERNED)
     visual = _section_after(arch, "Visual Architecture Layer (GOV-FINAL-3)")
     assert "GR-8" in visual
-    assert "PARTIAL" in visual or "OPEN" in visual
+    assert "CANDIDATE CLOSED" in visual
+    assert "GR-10" in visual or "GR-13" in visual
     assert "five-ID governance emission as complete" not in visual.lower()
 
 

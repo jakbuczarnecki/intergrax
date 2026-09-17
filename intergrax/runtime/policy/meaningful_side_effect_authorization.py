@@ -155,8 +155,8 @@ class MeaningfulSideEffectAuthorizationBoundary:
         )
         recorder.record(fact)
 
-    @staticmethod
     def _inner_enforcement_denied(
+        self,
         request: CollaborativeWorkEnforcementRequest,
         *,
         reason: str,
