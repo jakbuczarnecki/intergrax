@@ -6,7 +6,7 @@ See LICENSE for permitted evaluation, collaboration, and contribution use.
 
 # Decision / Approval / Governance — Multiplayer integration (MP-4)
 
-**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — NEXT**
+**Status:** **MP-4 — FORMALLY CLOSED** · **MP-4R0…MP-4R8 CLOSED** · **MP-4D1 — CLOSED** · **MP-4D2 — CLOSED** · **MP-4D3 — CLOSED** · **MP-4D4 — NEXT**
 **ADR:** [ADR-MP-009](../technical/adr/entries/2026-09-15/ADR-MP-009.md) (authoritative after MP-4R0) · [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) (MP-4A historical; ownership table superseded)
 **Feature coordination:** [`MULTIPLAYER_AI`](../capabilities/architecture/MULTIPLAYER_AI.md) · [`COLLABORATIVE_WORK`](COLLABORATIVE_WORK.md)
 **Plan (execution/status only):** [`plan/DECISION_APPROVAL_GOVERNANCE.md`](../maintainers/plans/DECISION_APPROVAL_GOVERNANCE.md)
@@ -153,6 +153,157 @@ Factual reconstruction — rebuild facts (not interpretation)
         ↓
 Diagnostics — interpret facts (cannot authorize execution)
 ```
+
+---
+
+## Visual architecture layer (MP-4D3)
+
+Diagrams below are a **visual index** of this SSOT only. They do not introduce new lifecycle stages, contracts, or authority. **Platform operates on contracts, not implementations** (see § Pluginability).
+
+### Diagram 1 — Ownership and authority map
+
+**Legend:** *semantic owner* · **authority** (for its concern) · *(reference only)* · *no execution/governance authority*
+
+```mermaid
+flowchart TB
+  subgraph MP["Multiplayer — semantic owner (collaborative scope only)"]
+    CW["Collaborative Work"]
+    CDB["CollaborativeDecisionBinding"]
+  end
+
+  subgraph DS["Decision System — semantic owner · Decision authority (WHAT)"]
+    DEC["Decision identity / lifecycle / resolution"]
+  end
+
+  subgraph HR["Human Review / HITL — judgment evidence only"]
+    HITL["Human decision on exact DecisionProposalRef"]
+  end
+
+  subgraph GOV["Governance — authority: WHETHER operation permitted"]
+    EVA["DecisionAuthorizationEvaluator outcomes"]
+  end
+
+  subgraph EXA["Execution authorization — governance-derived object"]
+    AUTH["DecisionExecutionAuthorization + current-policy validation"]
+  end
+
+  subgraph EXE["Execution Engine — semantic owner · lifecycle authority"]
+    CONT["ExecutionContinuationPort"]
+    ENG["Execution Engine (Nexus internal — not public MP-4 API)"]
+  end
+
+  subgraph OBS["Observability — no execution or governance authority"]
+    EVI["Evidence Plane — operation facts"]
+    REC["Reconstruction — factual rebuild"]
+    DIA["Diagnostics — interpretation only"]
+  end
+
+  CW --> CDB
+  CDB -->|"references only"| DEC
+  DEC --> EVA
+  EVA -.->|"REQUIRE_HUMAN"| HITL
+  HITL -.->|"judgment evidence — re-eval in Diagram 3"| EVA
+  EVA --> AUTH
+  AUTH --> CONT --> ENG --> EVI --> REC --> DIA
+
+  MP_REF["Multiplayer ≠ Decision owner · ≠ Governance authority · ≠ Execution lifecycle owner · ≠ Evidence truth owner · ≠ Diagnostics authority"]
+  MP -.-> MP_REF
+```
+
+Human Review connects to Governance only through **post-human re-evaluation** (Diagram 3); it is not shown as a parallel authority spine on this map.
+
+### Diagram 2 — Canonical success flow
+
+When Governance returns **ALLOW** without **REQUIRE_HUMAN**, Human Review is omitted (straight path).
+
+```mermaid
+flowchart TD
+  A["Collaborative Work"] --> B["CollaborativeDecisionBinding"]
+  B --> C["DecisionProposalRef"]
+  C --> D["Decision System"]
+  D --> E["Governance"]
+  E -->|"ALLOW (no HITL required)"| F["DecisionExecutionAuthorization"]
+  E -->|"REQUIRE_HUMAN"| H["Human Review / HITL"]
+  H --> E2["Governance re-evaluation"]
+  E2 -->|"ALLOW"| F
+  E2 -->|"DENY"| X["BLOCK — fail closed"]
+  F --> G["ExecutionContinuationPort"]
+  G --> I["Execution Engine"]
+  I --> J["Evidence Plane"]
+  J --> K["Reconstruction"]
+  K --> L["Diagnostics"]
+```
+
+### Diagram 3 — Human Review, Governance, and continuation
+
+**Invariant:** human approval records judgment evidence; **Human APPROVED ≠ automatic Governance ALLOW**. No public side-channel resume; Multiplayer does not own pause/resume lifecycle.
+
+```mermaid
+flowchart TD
+  G1["Governance"] -->|"REQUIRE_HUMAN"| WAIT["Execution waiting / paused via ExecutionContinuationPort"]
+  WAIT --> HR["Human Review — DecisionHumanReviewPort"]
+  HR --> RES["Human result (evidence — not execution permission)"]
+  RES --> G2["Governance re-evaluation"]
+  G2 -->|"ALLOW"| MINT["Mint / validate DecisionExecutionAuthorization"]
+  G2 -->|"DENY"| BLOCK["BLOCK execution — fail closed"]
+  G2 -->|"REQUIRE_HUMAN"| WAIT
+  MINT --> RESUME["Resume authorized → resumed (Execution-owned continuation)"]
+  RESUME --> ENG["Execution Engine — Nexus internal orchestration only"]
+
+  NOTE["Human APPROVED does not bypass Governance"]
+  HR -.-> NOTE
+```
+
+### Diagram 4 — Fail-closed paths
+
+**Principle:** uncertainty or invalid authority state → **BLOCK EXECUTION** (no guess, fallback, or bypass).
+
+```mermaid
+flowchart TD
+  START["Governed execution path"] --> CHECK{"Authority and context valid?"}
+  CHECK -->|"Governance DENY"| B1["BLOCK"]
+  CHECK -->|"Missing approver / invalid provenance"| B2["BLOCK"]
+  CHECK -->|"Stale policy vs minted authorization"| B3["BLOCK"]
+  CHECK -->|"Stale proposal / version mismatch"| B4["BLOCK"]
+  CHECK -->|"Cross-tenant / scope mismatch"| B5["BLOCK"]
+  CHECK -->|"Invalid or missing DecisionExecutionAuthorization"| B6["BLOCK"]
+  CHECK -->|"Valid"| OK["Authorized continuation / execution"]
+  B1 --> FC["Fail closed — no implicit fallback"]
+  B2 --> FC
+  B3 --> FC
+  B4 --> FC
+  B5 --> FC
+  B6 --> FC
+```
+
+Explicit typed **LOCAL_DEVELOPMENT** provenance may be used only where contracts already allow it; implicit fallback remains forbidden (see § Fail-closed).
+
+### Diagram 5 — Pluginability and contract boundary
+
+Pattern for every replaceable mechanism (examples are **existing platform contracts** from this SSOT — not new names).
+
+```mermaid
+flowchart TB
+  OWN["Domain semantic owner"] --> PORT["Platform contract / port"]
+  PORT --> ROOT["Composition root selects implementation"]
+  ROOT --> DEF["Default provider"]
+  ROOT --> EXT["External provider"]
+  DEF --> SEAM["Replaceable at composition — provider is not authority"]
+
+  subgraph examples["Confirmed MP-4 contract seams (illustrative)"]
+    direction LR
+    P1["DecisionHumanReviewPort"]
+    P2["DecisionAuthorizationEvaluator"]
+    P3["ExecutionContinuationPort"]
+    P4["CollaborativeDecisionBindingRepository"]
+    P5["FunctionalEvidencePersistence"]
+    P6["ExecutionReconstructionReader"]
+  end
+
+  PORT -.-> examples
+```
+
+Domain and integration code depend on **ports**, not on concrete providers (for example PostgreSQL behind `CollaborativeDecisionBindingRepository`).
 
 ---
 
@@ -560,8 +711,8 @@ Execution detail and proof commands: [`plan/DECISION_APPROVAL_GOVERNANCE.md`](..
 | ----- | ------ | ------- |
 | **MP-4D1** | **CLOSED** | Synchronize documentation state with closed implementation |
 | **MP-4D2** | **CLOSED** | Consolidate canonical architecture into this entry point |
-| **MP-4D3** | **NEXT** | Professional visual architecture layer (Mermaid/SVG) |
-| MP-4D4 | NOT STARTED | E2E proof / invariant-to-test matrix |
+| **MP-4D3** | **CLOSED** | Professional visual architecture layer (Mermaid in this SSOT) |
+| **MP-4D4** | **NEXT** | E2E proof / invariant-to-test matrix |
 | MP-4D5 | NOT STARTED | Provider / persistence qualification matrix |
 | MP-4D6 | NOT STARTED | Enterprise pluginability certification (docs) |
 | MP-4D7 | NOT STARTED | Documentation regression gates |
