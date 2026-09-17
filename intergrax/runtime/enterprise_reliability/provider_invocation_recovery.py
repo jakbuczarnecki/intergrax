@@ -32,6 +32,11 @@ from intergrax.runtime.enterprise_reliability.provider_invocation_reconciliation
     ProviderInvocationReconciliationRun,
     reconcile_durable_provider_invocation_unknown,
 )
+from intergrax.runtime.enterprise_reliability.provider_invocation_recovery_execution_validation import (
+    ProviderInvocationRecoveryExecutionBlockReason,
+    validate_idempotent_repeat_port_result,
+    validate_provider_invocation_recovery_execution,
+)
 
 _MAX_REASON = 512
 
@@ -70,6 +75,7 @@ class ProviderInvocationRecoveryExecutionResult(BaseModel):
     reconciliation: ProviderInvocationReconciliationRun | None = None
     repeat: ProviderInvocationRecoveryRepeatResult | None = None
     hitl: ProviderInvocationRecoveryHitlResult | None = None
+    block_reason: ProviderInvocationRecoveryExecutionBlockReason | None = None
     detail: str = Field(default="", max_length=_MAX_REASON)
 
 
@@ -167,6 +173,19 @@ def execute_provider_invocation_recovery(
         )
 
     if action is ProviderInvocationRecoveryAction.RECONCILE:
+        binding = validate_provider_invocation_recovery_execution(
+            request,
+            decision,
+            expected_action=ProviderInvocationRecoveryAction.RECONCILE,
+        )
+        if not binding.allowed:
+            return ProviderInvocationRecoveryExecutionResult(
+                decision=decision,
+                execution_attempted=True,
+                disposition=ProviderInvocationRecoveryExecutionDisposition.BLOCKED,
+                provider_mutation_count=0,
+                block_reason=binding.block_reason,
+            )
         if ports.gateway is None or reconciliation_request is None:
             return ProviderInvocationRecoveryExecutionResult(
                 decision=decision,
@@ -197,6 +216,19 @@ def execute_provider_invocation_recovery(
         )
 
     if action is ProviderInvocationRecoveryAction.IDEMPOTENT_REPEAT:
+        validation = validate_provider_invocation_recovery_execution(
+            request,
+            decision,
+            expected_action=ProviderInvocationRecoveryAction.IDEMPOTENT_REPEAT,
+        )
+        if not validation.allowed:
+            return ProviderInvocationRecoveryExecutionResult(
+                decision=decision,
+                execution_attempted=True,
+                disposition=ProviderInvocationRecoveryExecutionDisposition.BLOCKED,
+                provider_mutation_count=0,
+                block_reason=validation.block_reason,
+            )
         if ports.repeat is None:
             return ProviderInvocationRecoveryExecutionResult(
                 decision=decision,
@@ -213,7 +245,9 @@ def execute_provider_invocation_recovery(
                 execution_attempted=True,
                 disposition=ProviderInvocationRecoveryExecutionDisposition.BLOCKED,
                 provider_mutation_count=0,
+                block_reason=ProviderInvocationRecoveryExecutionBlockReason.INVOCATION_MISSING,
             )
+        invocation_key = (invocation.idempotency_key or "").strip()
         try:
             repeat_result = ports.repeat.execute_idempotent_repeat(
                 original_invocation=invocation,
@@ -228,15 +262,47 @@ def execute_provider_invocation_recovery(
                 provider_mutation_count=0,
                 detail=str(exc)[:_MAX_REASON],
             )
+        post_validation = validate_idempotent_repeat_port_result(
+            original_invocation_id=invocation.invocation_id,
+            original_idempotency_key=invocation_key,
+            repeat_invocation_id=repeat_result.repeat_invocation_id,
+            repeat_idempotency_key=repeat_result.idempotency_key,
+            provider_mutation_count=repeat_result.provider_mutation_count,
+        )
+        if not post_validation.allowed:
+            return ProviderInvocationRecoveryExecutionResult(
+                decision=decision,
+                execution_attempted=True,
+                disposition=ProviderInvocationRecoveryExecutionDisposition.FAILED,
+                provider_mutation_count=repeat_result.provider_mutation_count,
+                repeat=repeat_result,
+                block_reason=post_validation.block_reason,
+            )
+        disposition = ProviderInvocationRecoveryExecutionDisposition.COMPLETED
+        if repeat_result.provider_mutation_count == 0:
+            disposition = ProviderInvocationRecoveryExecutionDisposition.BLOCKED
         return ProviderInvocationRecoveryExecutionResult(
             decision=decision,
             execution_attempted=True,
-            disposition=ProviderInvocationRecoveryExecutionDisposition.COMPLETED,
+            disposition=disposition,
             provider_mutation_count=repeat_result.provider_mutation_count,
             repeat=repeat_result,
         )
 
     if action is ProviderInvocationRecoveryAction.ESCALATE_HITL:
+        binding = validate_provider_invocation_recovery_execution(
+            request,
+            decision,
+            expected_action=ProviderInvocationRecoveryAction.ESCALATE_HITL,
+        )
+        if not binding.allowed:
+            return ProviderInvocationRecoveryExecutionResult(
+                decision=decision,
+                execution_attempted=True,
+                disposition=ProviderInvocationRecoveryExecutionDisposition.BLOCKED,
+                provider_mutation_count=0,
+                block_reason=binding.block_reason,
+            )
         if ports.hitl is None:
             return ProviderInvocationRecoveryExecutionResult(
                 decision=decision,
@@ -284,6 +350,7 @@ def execute_provider_invocation_recovery(
 
 
 __all__ = [
+    "ProviderInvocationRecoveryExecutionBlockReason",
     "ProviderInvocationRecoveryExecutionDisposition",
     "ProviderInvocationRecoveryExecutionPorts",
     "ProviderInvocationRecoveryExecutionResult",

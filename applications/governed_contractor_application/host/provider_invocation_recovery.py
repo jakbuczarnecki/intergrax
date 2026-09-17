@@ -54,8 +54,11 @@ from applications.governed_contractor_application.host.provider_invocation_recon
 
 _ACTION_FOR_OPERATION = {
     "external_work.create_work": ACTION_CREATE_EXTERNAL_WORK,
+    "create_work": ACTION_CREATE_EXTERNAL_WORK,
     "external_work.accept_quote": ACTION_ACCEPT_QUOTE,
+    "submit_quote_acceptance": ACTION_ACCEPT_QUOTE,
     "external_work.cancel_work": ACTION_CANCEL_EXTERNAL_WORK,
+    "cancel_work": ACTION_CANCEL_EXTERNAL_WORK,
 }
 
 
@@ -86,7 +89,10 @@ class GovernedExternalWorkProviderRecovery:
         action = _ACTION_FOR_OPERATION.get(invocation.operation)
         if action is None:
             raise ValueError(f"unsupported provider operation: {invocation.operation}")
-        return external_work_effect_contract_for_action(action, capabilities)
+        contract = external_work_effect_contract_for_action(action, capabilities)
+        if contract.operation_key != invocation.operation:
+            return contract.model_copy(update={"operation_key": invocation.operation})
+        return contract
 
     def build_recovery_request(
         self,

@@ -41,6 +41,7 @@ from intergrax.runtime.enterprise_reliability.provider_invocation_reconciliation
     reconcile_durable_provider_invocation_unknown,
 )
 from intergrax.runtime.enterprise_reliability.provider_invocation_recovery import (
+    ProviderInvocationRecoveryExecutionBlockReason,
     ProviderInvocationRecoveryExecutionDisposition,
     ProviderInvocationRecoveryExecutionPorts,
     ProviderInvocationRecoveryExecutionResult,
@@ -134,6 +135,7 @@ __all__ = [
     "reconcile_durable_provider_invocation_unknown",
     "DEFAULT_FAIL_CLOSED_PROVIDER_INVOCATION_RECOVERY_POLICY_ID",
     "DefaultFailClosedProviderInvocationRecoveryPolicy",
+    "ProviderInvocationRecoveryExecutionBlockReason",
     "ProviderInvocationRecoveryExecutionDisposition",
     "ProviderInvocationRecoveryExecutionPorts",
     "ProviderInvocationRecoveryExecutionResult",
