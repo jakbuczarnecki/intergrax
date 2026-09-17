@@ -5,11 +5,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
+from intergrax.contracts.agent_execution_result import (
+    AgentExecutionResult,
+    AgentExecutionStatus,
+)
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -27,13 +31,13 @@ from intergrax.contracts.execution_identity import (
     validate_execution_id,
 )
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.execution.active_execution_budget import peek_active_execution_budget
+from intergrax.runtime.execution.active_execution_budget import (
+    peek_active_execution_budget,
+)
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.facade import Execution
 from intergrax.runtime.execution.inference import InferenceExecutor
 from intergrax.runtime.execution.orchestration import (
-    OrchestrationExecutor,
-    TaskBoundOrchestrationDelegate,
     execute_root_task,
     resolve_root_task_identity,
 )
@@ -47,8 +51,9 @@ from intergrax.runtime.execution.runtime import (
     resolve_root_execution_context,
 )
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
-from intergrax.runtime.execution.task_adapter import TaskExecutionInput, execution_request_from_task
-from intergrax.runtime.governance.active_execution_authority import require_active_execution_authority
+from intergrax.runtime.governance.active_execution_authority import (
+    require_active_execution_authority,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -86,17 +91,24 @@ class StructuredProbeAdapter:
 
     def generate_structured(self, messages, output_model, **kwargs):
         self.probe["adapter_run_id"] = kwargs.get("run_id")
-        self.probe["run_id_ctx"], self.probe["attempt_id_ctx"] = require_active_execution_identity()
+        self.probe["run_id_ctx"], self.probe["attempt_id_ctx"] = (
+            require_active_execution_identity()
+        )
         self.probe["execution_id"] = require_active_execution_id()
         self.probe["authority"] = require_active_execution_authority()
         budget = peek_active_execution_budget()
         self.probe["budget"] = budget
         from intergrax.llm_adapters.contracts.llm_adapter import LLMStructuredResult
-        from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-        from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
-        from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+        from intergrax.llm_adapters._shared.adapter_response_builders import (
+            build_adapter_response,
+        )
+        from intergrax.llm_adapters.contracts.structured_result import (
+            LLMStructuredResult,
+        )
 
-        return LLMStructuredResult(parsed=self._parsed, response=build_adapter_response(content=""))
+        return LLMStructuredResult(
+            parsed=self._parsed, response=build_adapter_response(content="")
+        )
 
     def generate_with_tools(self, messages, tools_schema, **kwargs):
         raise AssertionError("generate_with_tools must not be called")
@@ -139,11 +151,13 @@ def _root_context(
     attempt_id: AttemptId | None = None,
     tenant_id: str | None = None,
 ) -> RootExecutionContext:
-    return resolve_root_execution_context(_root_options(
-        run_id=run_id,
-        attempt_id=attempt_id,
-        tenant_id=tenant_id,
-    ))
+    return resolve_root_execution_context(
+        _root_options(
+            run_id=run_id,
+            attempt_id=attempt_id,
+            tenant_id=tenant_id,
+        )
+    )
 
 
 @pytest.mark.asyncio
@@ -243,7 +257,11 @@ async def test_orchestration_root_runtime_nexus_receives_active_context(
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     task = Task(
         task_id=mint_task_id(),
         tenant_id="tenant-1",
@@ -373,7 +391,7 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
-    loop._handle_task_impl = _orch_capture  # type: ignore[method-assign]
+    loop._handle_task_impl = with_runtime_event_metric_scope(_orch_capture)  # type: ignore[method-assign]
     await execute_root_task(
         task,
         nexus_loop=loop,
@@ -390,7 +408,9 @@ async def test_root_lifecycle_shape_identical_across_strategies() -> None:
 
 
 @pytest.mark.asyncio
-async def test_nexus_without_active_identity_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_nexus_without_active_identity_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     loop = NexusLoop(AgentRegistry())
     monkeypatch.setattr(
         loop,
@@ -413,8 +433,14 @@ async def test_nexus_without_active_identity_fails(monkeypatch: pytest.MonkeyPat
 async def test_nexus_without_active_authority_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from intergrax.contracts.execution_identity import bind_active_execution_identity, reset_active_execution_identity
-    from intergrax.runtime.execution.active_execution_budget import bind_root_execution_budget, reset_active_execution_budget
+    from intergrax.contracts.execution_identity import (
+        bind_active_execution_identity,
+        reset_active_execution_identity,
+    )
+    from intergrax.runtime.execution.active_execution_budget import (
+        bind_root_execution_budget,
+        reset_active_execution_budget,
+    )
     from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 
     loop = NexusLoop(AgentRegistry())
@@ -452,8 +478,14 @@ async def test_nexus_without_active_authority_fails(
 async def test_nexus_without_active_budget_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from intergrax.contracts.execution_identity import bind_active_execution_identity, reset_active_execution_identity
-    from intergrax.runtime.governance.active_execution_authority import bind_active_execution_authority, reset_active_execution_authority
+    from intergrax.contracts.execution_identity import (
+        bind_active_execution_identity,
+        reset_active_execution_identity,
+    )
+    from intergrax.runtime.governance.active_execution_authority import (
+        bind_active_execution_authority,
+        reset_active_execution_authority,
+    )
 
     loop = NexusLoop(AgentRegistry())
     monkeypatch.setattr(
@@ -512,7 +544,11 @@ async def test_resume_root_execution_id_matches_identity_through_lifecycle(
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     task = Task(
         task_id=mint_task_id(),
         tenant_id="t1",
@@ -549,9 +585,7 @@ async def test_resume_root_execution_id_matches_identity_through_lifecycle(
     assert task.runtime.orchestration.runtime_checkpoint is not None
     execution_tree = task.runtime.orchestration.runtime_checkpoint.execution_tree
     root_entries = [
-        entry
-        for entry in execution_tree.entries
-        if entry.parent_execution_id is None
+        entry for entry in execution_tree.entries if entry.parent_execution_id is None
     ]
     assert len(root_entries) == 1
     assert root_entries[0].execution_id == identity.execution_id

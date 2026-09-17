@@ -30,7 +30,10 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
     validate_execution_id,
 )
-from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
+from intergrax.runtime.execution.boundary import (
+    ExecutionBoundary,
+    ExecutionIdentityBinding,
+)
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.active_execution_budget import (
@@ -41,9 +44,8 @@ from intergrax.runtime.governance.active_execution_authority import (
     bind_active_execution_authority,
     reset_active_execution_authority,
 )
+from intergrax.runtime.events.runtime_event_metric_scope import RuntimeEventMetricScope
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
-
-_UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
@@ -51,6 +53,8 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
 )
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from echo.echo_agent import EchoAgent
+
+_UNLIMITED_LEDGER = create_execution_budget_ledger(RunBudget())
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -91,13 +95,21 @@ def _reset_upstream_root_context(
 def _fake_impl_factory(
     captured: dict[str, RunId | AttemptId | ExecutionId | None],
 ) -> object:
-    async def _fake_impl(task: Task) -> TaskResult:
+    async def _fake_impl(
+        task: Task,
+        *,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
+    ) -> TaskResult:
         run_id, attempt_id = require_active_execution_identity()
         captured["run_id"] = run_id
         captured["attempt_id"] = attempt_id
         captured["execution_id"] = require_active_execution_id()
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
     return _fake_impl
 
@@ -213,7 +225,11 @@ async def test_handle_task_propagates_exception_without_resetting_upstream(
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
 
-    async def _boom(task: Task) -> TaskResult:
+    async def _boom(
+        task: Task,
+        *,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
+    ) -> TaskResult:
         require_active_execution_id()
         raise RuntimeError("boom")
 
@@ -246,11 +262,19 @@ async def test_sequential_handle_task_invocations_require_separate_upstream_cont
     loop = NexusLoop(AgentRegistry())
     seen: list[ExecutionId] = []
 
-    async def _capture(task: Task) -> TaskResult:
+    async def _capture(
+        task: Task,
+        *,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
+    ) -> TaskResult:
         run_id, _ = require_active_execution_identity()
         seen.append(require_active_execution_id())
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.COMPLETED,
+        )
 
     monkeypatch.setattr(loop, "_handle_task_impl", _capture)
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="seq")
@@ -333,7 +357,9 @@ async def test_execute_scenario_task_reaches_graph_executor_with_execution_id(
 
     adapter = MeteringFakeLLMAdapter()
 
-    def _resolve(env: object, agent_override: object | None = None, **_: object) -> object:
+    def _resolve(
+        env: object, agent_override: object | None = None, **_: object
+    ) -> object:
         del env
         return agent_override or adapter
 
@@ -348,13 +374,19 @@ async def test_execute_scenario_task_reaches_graph_executor_with_execution_id(
 
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id="scenario.platform.5d")
+    environment = ApplicationEnvironmentProfile.lab_defaults(
+        profile_id="scenario.platform.5d"
+    )
     manifest = ApplicationManifest.lab(
         app_id="scenario_platform_5d",
         name="Scenario Platform 5D",
         route_prefix="/v1/scenario_platform_5d",
         env_prefix="SCENARIO_PLATFORM_5D_",
-        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
+        agents=[
+            AgentBinding.mount(
+                EchoAgent, contract_id="echo", capabilities=["echo.basic"]
+            )
+        ],
         environment=environment,
     )
     path = Path(str(tmp_path))

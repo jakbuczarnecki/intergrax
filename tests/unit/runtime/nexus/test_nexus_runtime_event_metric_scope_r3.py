@@ -20,6 +20,7 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.runtime_event_metric_scope import (
+    RuntimeEventMetricScope,
     _RuntimeEventMetricScopeRegistry,
 )
 from intergrax.runtime.governance.active_execution_authority import (
@@ -110,7 +111,7 @@ async def test_deterministic_concurrent_handle_task_metric_isolation() -> None:
     async def _impl(
         task: Task,
         *,
-        runtime_event_metric_scope=None,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
     ) -> TaskResult:
         if task.message == "A":
             bus.record(_event(label="a1", task_id=task.task_id, run_id=run_a))
@@ -210,7 +211,11 @@ async def test_metric_scope_cleaned_up_when_handle_task_raises() -> None:
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
 
-    async def _boom(task: Task, **kwargs: object) -> TaskResult:
+    async def _boom(
+        task: Task,
+        *,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
+    ) -> TaskResult:
         bus.record(_event(label="x", task_id=task.task_id, run_id=run_id))
         raise RuntimeError("boom")
 

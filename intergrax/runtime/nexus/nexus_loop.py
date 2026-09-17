@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import inspect
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
@@ -720,11 +719,10 @@ class NexusLoop:
             resolved_run_id,
         )
         try:
-            impl = self._handle_task_impl
-            impl_kwargs: dict[str, RuntimeEventMetricScope] = {}
-            if "runtime_event_metric_scope" in inspect.signature(impl).parameters:
-                impl_kwargs["runtime_event_metric_scope"] = metric_scope
-            result = await impl(task, **impl_kwargs)
+            result = await self._handle_task_impl(
+                task,
+                runtime_event_metric_scope=metric_scope,
+            )
             return apply_runtime_events_metric_to_task_result(
                 result,
                 metric_scope.count(),

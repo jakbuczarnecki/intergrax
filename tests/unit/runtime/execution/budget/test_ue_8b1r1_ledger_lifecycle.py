@@ -8,8 +8,13 @@ from dataclasses import dataclass
 
 import pytest
 
-from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
+from intergrax.applications._shared.nexus_factory import (
+    build_nexus_loop_from_environment,
+)
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
@@ -23,7 +28,10 @@ from intergrax.runtime.execution.active_execution_budget import (
     require_active_execution_budget,
     reset_active_execution_budget,
 )
-from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
+from intergrax.runtime.execution.boundary import (
+    ExecutionBoundary,
+    ExecutionIdentityBinding,
+)
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.execution.budget.models import BudgetUsageTotals
 from intergrax.runtime.execution.child import ChildExecutionRunner
@@ -72,7 +80,9 @@ async def test_per_run_isolation_on_long_lived_nexus_loop(
     async def _fake_impl(task: Task) -> TaskResult:
         nonlocal call_count
         call_count += 1
-        from intergrax.contracts.execution_identity import require_active_execution_identity
+        from intergrax.contracts.execution_identity import (
+            require_active_execution_identity,
+        )
         from intergrax.runtime.execution.budget.models import (
             ChildBudgetAllocationDecision,
             ExecutionBudgetAllocationMode,
@@ -104,7 +114,11 @@ async def test_per_run_isolation_on_long_lived_nexus_loop(
             state=TaskState.COMPLETED,
         )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="budget")
     from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
@@ -129,8 +143,12 @@ async def test_same_run_children_share_ledger_instance() -> None:
 
     class RootDelegate:
         async def execute(self, request: Ping) -> Pong:
-            await child_runner.execute(request=Ping(value="a"), delegate=ChildDelegate())
-            await child_runner.execute(request=Ping(value="b"), delegate=ChildDelegate())
+            await child_runner.execute(
+                request=Ping(value="a"), delegate=ChildDelegate()
+            )
+            await child_runner.execute(
+                request=Ping(value="b"), delegate=ChildDelegate()
+            )
             return Pong(value="ok")
 
     root_id = mint_execution_id()
@@ -167,7 +185,9 @@ async def test_nested_same_run_reuses_canonical_ledger() -> None:
     class ChildDelegate:
         async def execute(self, request: Ping) -> Pong:
             nested_ledgers.append(require_active_execution_budget().ledger)
-            return await child_runner.execute(request=request, delegate=GrandchildDelegate())
+            return await child_runner.execute(
+                request=request, delegate=GrandchildDelegate()
+            )
 
     class RootDelegate:
         async def execute(self, request: Ping) -> Pong:
@@ -213,7 +233,9 @@ async def test_handle_task_binds_root_execution_budget() -> None:
         state = peek_active_execution_budget()
         assert state is not None
         observed.append(state.ledger.snapshot_root_available().max_total_tokens)
-        from intergrax.contracts.execution_identity import require_active_execution_identity
+        from intergrax.contracts.execution_identity import (
+            require_active_execution_identity,
+        )
 
         run_id, _ = require_active_execution_identity()
         return TaskResult(
@@ -223,7 +245,7 @@ async def test_handle_task_binds_root_execution_budget() -> None:
             state=TaskState.COMPLETED,
         )
 
-    loop._handle_task_impl = _fake_impl  # type: ignore[method-assign]
+    loop._handle_task_impl = with_runtime_event_metric_scope(_fake_impl)  # type: ignore[method-assign]
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="bind")
     runner = UnifiedTaskRunner(loop, run_budget=run_budget)
     await runner.run_task(task)

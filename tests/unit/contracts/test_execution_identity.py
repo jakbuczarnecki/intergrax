@@ -1,16 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 
-import asyncio
 import re
 from pathlib import Path
 
 import pytest
 
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
-    TaskId,
     bind_active_execution_identity,
     mint_attempt_id,
     mint_execution_id,
@@ -49,7 +48,9 @@ def _bind_nexus_handle_task_context(
     execution_id: ExecutionId,
 ) -> tuple[object, object, object]:
     from intergrax.contracts.delegation_authority import ParentExecutionAuthority
-    from intergrax.runtime.execution.active_execution_budget import bind_root_execution_budget
+    from intergrax.runtime.execution.active_execution_budget import (
+        bind_root_execution_budget,
+    )
     from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
     from intergrax.runtime.governance.active_execution_authority import (
         bind_active_execution_authority,
@@ -75,7 +76,9 @@ def _reset_nexus_handle_task_context(
     authority_token: object,
     budget_token: object,
 ) -> None:
-    from intergrax.runtime.execution.active_execution_budget import reset_active_execution_budget
+    from intergrax.runtime.execution.active_execution_budget import (
+        reset_active_execution_budget,
+    )
     from intergrax.runtime.governance.active_execution_authority import (
         reset_active_execution_authority,
     )
@@ -113,7 +116,7 @@ def test_mint_execution_id_returns_canonical_value():
     value = mint_execution_id()
     assert value.startswith("exec_")
     assert _CANONICAL_ID.fullmatch(value)
-    suffix = value[len("exec_"):]
+    suffix = value[len("exec_") :]
     assert len(suffix) == 32
     assert suffix == suffix.lower()
 
@@ -418,7 +421,11 @@ async def test_handle_task_initial_execution_consumes_bound_identity(monkeypatch
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="execute")
     identity_token, authority_token, budget_token = _bind_nexus_handle_task_context(
         run_id=run_id,
@@ -461,7 +468,11 @@ async def test_handle_task_resume_preserves_run_and_attempt_id(monkeypatch):
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume")
     identity_token, authority_token, budget_token = _bind_nexus_handle_task_context(
         run_id=run_id,
@@ -498,7 +509,11 @@ async def test_handle_task_resume_does_not_mint_attempt_id(monkeypatch):
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
-    monkeypatch.setattr(loop, "_handle_task_impl", _fake_impl)
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_fake_impl),
+    )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume")
     identity_token, authority_token, budget_token = _bind_nexus_handle_task_context(
         run_id=run_id,
@@ -544,7 +559,9 @@ def test_multi_agent_evaluation_requires_active_run_id():
 @pytest.mark.gate
 @pytest.mark.asyncio
 async def test_unified_task_runner_resume_uses_checkpoint_identity(monkeypatch):
-    from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
+    from intergrax.runtime.long_running.execution_tree_checkpoint import (
+        minimal_runtime_checkpoint,
+    )
     from intergrax.runtime.long_running.models import TaskCheckpoint
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -765,7 +782,11 @@ def test_transition_retry_preserves_run_id() -> None:
 @pytest.mark.gate
 def test_trace_bridge_rejects_malformed_run_id_without_active_identity() -> None:
     from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
-    from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent, TraceLevel
+    from intergrax.runtime.nexus.tracing.trace_models import (
+        TraceComponent,
+        TraceEvent,
+        TraceLevel,
+    )
 
     task = Task(tenant_id="t1", user_id="u1", message="q")
     trace = TraceEvent(
@@ -787,7 +808,11 @@ def test_trace_bridge_rejects_malformed_run_id_without_active_identity() -> None
 @pytest.mark.gate
 def test_trace_bridge_preserves_active_attempt_id() -> None:
     from intergrax.runtime.events.trace_bridge import trace_event_to_runtime_event
-    from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent, TraceLevel
+    from intergrax.runtime.nexus.tracing.trace_models import (
+        TraceComponent,
+        TraceEvent,
+        TraceLevel,
+    )
 
     task_id = mint_task_id()
     run_id = mint_run_id()
