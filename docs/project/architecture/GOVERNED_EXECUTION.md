@@ -917,3 +917,5 @@ Semantic gates (no snapshot / line-number coupling) in `tests/unit/runtime/archi
 `tests/unit/runtime/architecture/test_gov_final_3_visual_architecture_gates.py` guards the **Visual Architecture Layer** (required sections, Mermaid presence, authority semantics, strategy-gap honesty, no competing visual SSOT file).
 
 **GOV-FINAL-4 (E2E qualification matrix):** enterprise proof catalog and scenario/failure matrices live in [`maintainers/qualification/GOVERNANCE_FINAL_E2E_QUALIFICATION.md`](../maintainers/qualification/GOVERNANCE_FINAL_E2E_QUALIFICATION.md); executable evidence under `tests/qualification/governance/` with doc gates in `test_gov_final_4_documentation_regression_gates.py`. **Full Governance Plane enterprise certification is not claimed.**
+
+**GOVERNANCE-FINAL (enterprise certification decision):** final certification record — [`maintainers/qualification/GOVERNANCE_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/GOVERNANCE_FINAL_ENTERPRISE_CERTIFICATION.md) (audited SHA, test re-run, **NOT CERTIFIED — ENTERPRISE BLOCKERS REMAIN** on latest audit). Does not replace this architecture SSOT.

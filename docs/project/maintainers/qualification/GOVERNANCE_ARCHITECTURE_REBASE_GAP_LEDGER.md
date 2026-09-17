@@ -12,6 +12,8 @@
 
 **Purpose:** Evidence-based gap inventory after platform-wide execution-centric rebase. Supersedes stale maintainer PG-FIX status rows where code truth differs; does not erase historical audit references.
 
+**GOVERNANCE-FINAL certification audit HEAD:** `a4aa388f672a41ccd32be58241db8c05cfe3cfe0` on `development` — record: [`GOVERNANCE_FINAL_ENTERPRISE_CERTIFICATION.md`](GOVERNANCE_FINAL_ENTERPRISE_CERTIFICATION.md). Verdict: **`NOT CERTIFIED — ENTERPRISE BLOCKERS REMAIN`**. Mandatory suite re-run: GR-5-R4 architecture gate **FAIL** (`intake_runner.py` / `HumanPauseCoordinator.is_resumed`); GR-7 host qualification **61/61 PASS** on same SHA. Independent GitHub audit still required.
+
 **GR-5-ADR1 HEAD:** `9336beff5ec72c747b440e63f3fb2dddc0b4bf8d` on `development` — canonical HITL continuation ownership: [ADR-GR-5-001](../../technical/adr/entries/2026-09-15/ADR-GR-5-001.md). Verdict: **`INTRODUCE_CANONICAL_EXECUTION_CONTINUATION_CONTRACT`** (`ExecutionContinuationPort`). Nexus = **internal** Execution Engine orchestration; not external peer layer.
 
 **GR-5-R1 HEAD:** `9979e3b3af64b436708d0e95fac669dc9ef6e3d1` base → commit on `development` — contract module `intergrax/contracts/execution_continuation.py` (two-phase `apply_resolution` / `resume`, CAS `revision`, `RESUME_AUTHORIZED` state). Runtime integration **not** in R1.
@@ -262,11 +264,11 @@ Historical AUDIT-5 findings remain valid context; **enterprise CLOSED** for PG-F
 | GR-5-R2 | Canonical Pause/Resume Integration | **CANDIDATE CLOSED** (await audit) | UER owns transitions via `ExecutionContinuationService`; not root admission on resume; **TRANSITIONAL — NOT GR-5 COMPLETE** (R3/R4/R5) | GR-5-R1 | — | Yes | Lifecycle integration tests |
 | GR-5-R3 | Task / HumanPauseCoordinator projection alignment | CANDIDATE CLOSED | Canonical continuation first; Task/Human replayable materialized view | GR-5-R2, GR-5-R3-R1 | — | Yes | Projection parity + canonical-first tests |
 | GR-5-R3-R1 | Canonical-first resolution & atomic projection commit | DONE | `apply_resolution` before accepted Task projection; projection prepare/commit | GR-5-R3 | — | Yes | `test_gr5_r3_r1_canonical_first_atomic_projection.py` |
-| GR-5-R4 | Execution Engine Internal HITL Orchestration Alignment | **CANDIDATE CLOSED** (await audit) | Internal orchestration via port | GR-5-R2 | — | Yes | Orchestration HITL qual |
+| GR-5-R4 | Execution Engine Internal HITL Orchestration Alignment | **OPEN** (GOVERNANCE-FINAL: `test_gr5_r4_internal_hitl_orchestration_architecture.py` FAIL on `a4aa388f`) | Internal orchestration via port; Category C runners must not use Task projection lifecycle authority | GR-5-R2 | — | Yes | Orchestration HITL qual + architecture gate |
 | GR-5-R5 | Checkpoint restart + exact identity qualification | **CANDIDATE CLOSED** (await audit) | Durable restart → same four IDs + current episode | GR-5-R3, GR-5-R4 | — | Yes | `test_gr5_r5_restart_exact_identity.py` |
 | GR-5 | HITL / Governed Continuation Rebase | **CANDIDATE CLOSED** (await independent R5 audit) | End-to-end same-Execution pause/resume | GR-5-R1…R5 | G5*, PG-FIX-C | Yes | HITL E2E per strategy |
 | GR-6 | Decision → Governance Integration | **IMPLEMENTED** — qualification **OPEN** | `DecisionRequirementPolicy`, canonical action/resource binding, production host composition | GR-1 | GOV-GAP-006 partial | Yes | `test_gr6_*`, architecture gates, governed contractor GR-6 suites |
-| GR-7 | Reliability / External Effect Boundary | **IMPLEMENTED** — qualification **OPEN** | Durable ProviderInvocation; SUCCESS/FAILED/UNKNOWN; repeat/recovery/reconcile; reliability evidence (≠ GR-8) | GR-3, GR-5 | — | Yes | `test_gr7_*`, ERL contracts, governed contractor GR-7 suites |
+| GR-7 | Reliability / External Effect Boundary | **IMPLEMENTED** — qualification **PARTIAL** (host 61/61 + GR-7-A8 unit pass on GOVERNANCE-FINAL SHA; not strategy-wide) | Durable ProviderInvocation; SUCCESS/FAILED/UNKNOWN; repeat/recovery/reconcile; reliability evidence (≠ GR-8) | GR-3, GR-5 | — | Yes | `test_gr7_*`, ERL contracts, governed contractor GR-7 suites |
 | GR-8 | Governance Evidence Integration | PLANNED | Five-ID correlated facts in Evidence Plane | GR-1 | — | Yes | RuntimeEvent correlation tests |
 | GR-9 | Diagnostic Consumption Proof | PLANNED | DIAG reads governance evidence only | GR-8 | — | Mostly tests/docs | DIAG fixtures |
 | GR-10 | Execution Strategy Coverage | PLANNED | Inference/agentic/orchestration matrix | GR-3, GR-5 | G3B | Yes | Strategy qualification suite |
