@@ -192,10 +192,13 @@ flowchart TB
     ENG["Execution Engine (Nexus internal — not public MP-4 API)"]
   end
 
-  subgraph OBS["Observability — no execution or governance authority"]
+  subgraph OBS["Evidence Plane / Observability — factual truth · no execution or governance authority"]
     EVI["Evidence Plane — operation facts"]
     REC["Reconstruction — factual rebuild"]
-    DIA["Diagnostics — interpretation only"]
+  end
+
+  subgraph DGN["Diagnostics — semantic owner · interpretation only · no execution or governance authority"]
+    DIA["Diagnostics — interpretation (evidence truth ≠ diagnostic interpretation)"]
   end
 
   CW --> CDB
