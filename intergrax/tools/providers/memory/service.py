@@ -23,7 +23,14 @@ from intergrax.tools.providers.memory.contracts import (
     MemoryWriteInput,
     MemoryWriteOutput,
 )
-from intergrax.tools.providers.ltm.service import _require_user_profile_manager
+from intergrax.memory.contracts.memory_control import (
+    MemoryControlRecallRequest,
+    user_memory_scope,
+)
+from intergrax.tools.providers.ltm.service import (
+    _assert_tool_user_matches_identity,
+    _require_memory_control_context,
+)
 from intergrax.tools.providers.memory.tool_ids import (
     MEMORY_DELETE_KEY_TOOL_ID,
     MEMORY_LIST_KEYS_TOOL_ID,
@@ -172,27 +179,26 @@ def memory_semantic_search(
     hits: list[MemorySemanticHit] = []
 
     if params.include_ltm:
-        manager = _require_user_profile_manager(ctx)
-        if manager.is_longterm_rag_enabled():
-            result = run_async(
-                manager.search_longterm_memory(
-                    user_id,
-                    query,
-                    top_k=params.top_k,
+        plane, identity = _require_memory_control_context(ctx)
+        _assert_tool_user_matches_identity(user_id, identity)
+        scope = user_memory_scope(identity)
+        recall = run_async(
+            plane.recall(
+                identity,
+                scope,
+                MemoryControlRecallRequest(query=query, top_k=params.top_k),
+            )
+        )
+        for item in recall.items:
+            hits.append(
+                MemorySemanticHit(
+                    source="ltm",
+                    entry_id=item.entry_id,
+                    content=item.content,
+                    kind=item.kind.value,
+                    score=float(item.score or 0.0),
                 )
             )
-            scores = result.get("scores") or []
-            for index, entry in enumerate(result.get("hits") or []):
-                kind = entry.kind.value if hasattr(entry.kind, "value") else str(entry.kind)
-                hits.append(
-                    MemorySemanticHit(
-                        source="ltm",
-                        entry_id=entry.entry_id,
-                        content=entry.content,
-                        kind=kind,
-                        score=float(scores[index]) if index < len(scores) else 0.0,
-                    )
-                )
 
     if params.include_episodic and params.session_id.strip():
         session_manager = _session_manager_from_context(ctx)
