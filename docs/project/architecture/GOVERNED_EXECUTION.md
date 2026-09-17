@@ -216,16 +216,21 @@ Full MP-4 integration: [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOV
 ```mermaid
 flowchart TD
   RH[Governance REQUIRE_HUMAN] --> GCR[GovernedContinuationRequest]
-  GCR --> HR[Human Review]
-  HR --> ECP[ExecutionContinuationPort]
-  ECP --> PAUSE[Execution pause / wait]
-  PAUSE --> HRRES[Human result evidence]
+  GCR --> ECP[ExecutionContinuationPort]
+  ECP --> PAUSE[Canonical PAUSE / WAITING]
+  PAUSE --> HRR[Human Review — request / waiting for human]
+  HRR --> HRRES[Human result evidence]
   HRRES --> FRESH[Fresh Governance evaluation]
-  FRESH -->|ALLOW| RES[Resume scoped work]
-  FRESH -->|DENY| BLOCK[Remain blocked]
+  FRESH -->|ALLOW| RES[Execution resume — scoped continuation]
+  FRESH -->|DENY| BLOCK[Remain blocked — no execution]
   HRRES -.->|Human APPROVED ≠ automatic Governance ALLOW| FRESH
-  ECP -.->|Execution owns pause/resume lifecycle| PAUSE
+  FRESH -.->|Human APPROVED + fresh Governance DENY = no resume| BLOCK
+  ECP -.->|Execution owns pause / wait / resume lifecycle| PAUSE
 ```
+
+Execution establishes and owns canonical pause/wait/resume state. Human Review supplies judgment evidence while the Execution is paused. Human approval never substitutes fresh Governance authorization.
+
+**Canonical lifecycle order:** REQUIRE_HUMAN → GovernedContinuationRequest → ExecutionContinuationPort → PAUSE / WAITING → Human Review → Human result → fresh Governance evaluation → ALLOW/DENY → resume scoped work / remain blocked.
 
 ADR-GR-5-001 defines continuation contracts; Nexus orchestration stays **inside** Execution (not HITL owner).
 

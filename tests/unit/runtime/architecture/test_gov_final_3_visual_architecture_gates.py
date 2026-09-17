@@ -22,6 +22,17 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8-sig")
 
 
+def _hitl_visual_section(arch: str) -> str:
+    pattern = re.compile(r"^### 6\. HITL / continuation ownership \(Diagram #5\)\s*$", re.MULTILINE)
+    match = pattern.search(arch)
+    if not match:
+        return ""
+    start = match.start()
+    next_heading = re.search(r"\n### 7\. ", arch[match.end() :])
+    end = match.end() + next_heading.start() if next_heading else len(arch)
+    return arch[start:end]
+
+
 def _section_after(arch: str, heading: str) -> str:
     pattern = re.compile(rf"^## {re.escape(heading)}\s*$", re.MULTILINE)
     match = pattern.search(arch)
@@ -98,6 +109,65 @@ def test_gov_final_3_authority_semantics_markers() -> None:
     assert "Evidence ≠ authority" in arch or "Evidence is not authority" in norm
     assert "Diagnostics ≠ authority" in arch or "Diagnostics is not authority" in norm
     assert "Nexus — internal orchestration only" in arch or "Nexus is internal" in arch
+
+
+def test_gov_final_3_hitl_visual_lifecycle_order_preserves_execution_ownership() -> None:
+    arch = _read(ARCH_GOVERNED)
+    hitl = _hitl_visual_section(arch)
+    assert hitl, "Diagram #5 HITL section must exist"
+    norm = _normalize(hitl)
+    markers = (
+        "Governance REQUIRE_HUMAN",
+        "GovernedContinuationRequest",
+        "ExecutionContinuationPort",
+        "PAUSE",
+        "WAITING",
+        "Human Review",
+        "Human result",
+        "fresh Governance evaluation",
+        "resume",
+        "remain blocked",
+    )
+    for marker in markers:
+        assert marker.lower() in norm.lower(), f"HITL visual section missing marker: {marker!r}"
+    assert "Execution owns" in hitl or "Execution owns" in norm
+    ecp_idx = norm.lower().find("executioncontinuationport")
+    hr_idx = norm.lower().find("human review")
+    fresh_idx = norm.lower().find("fresh governance evaluation")
+    assert ecp_idx != -1 and hr_idx != -1, "order markers missing for ExecutionContinuationPort / Human Review"
+    assert ecp_idx < hr_idx, "ExecutionContinuationPort must appear before Human Review in HITL section"
+    assert hr_idx < fresh_idx, "Human Review must appear before fresh Governance evaluation"
+    resume_idx = norm.lower().find("resume")
+    assert fresh_idx != -1 and resume_idx != -1
+    assert fresh_idx < resume_idx, "fresh Governance evaluation must precede resume semantics in HITL section"
+    canonical = "Canonical lifecycle order"
+    assert canonical in hitl
+    order_tail = hitl.split(canonical, 1)[1]
+    order_norm = _normalize(order_tail)
+    for step in (
+        "REQUIRE_HUMAN",
+        "GovernedContinuationRequest",
+        "ExecutionContinuationPort",
+        "PAUSE / WAITING",
+        "Human Review",
+        "Human result",
+        "fresh Governance evaluation",
+        "ALLOW/DENY",
+    ):
+        assert step.lower() in order_norm.lower(), f"canonical lifecycle order missing: {step!r}"
+    pos = 0
+    for step in (
+        "REQUIRE_HUMAN",
+        "GovernedContinuationRequest",
+        "ExecutionContinuationPort",
+        "PAUSE / WAITING",
+        "Human Review",
+        "Human result",
+        "fresh Governance evaluation",
+    ):
+        idx = order_norm.lower().find(step.lower(), pos)
+        assert idx != -1, f"canonical order sequence broken at {step!r}"
+        pos = idx
 
 
 def test_gov_final_3_human_approval_not_automatic_allow() -> None:
