@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from intergrax.runtime.diagnostics.diagnostic_assessment import (
+    DiagnosticAssessment,
     DiagnosticAssessmentBuilder,
     DiagnosticAssessmentIntegrityError,
 )
@@ -22,6 +23,7 @@ from intergrax.runtime.diagnostics.diagnostic_read_models import (
 from intergrax.runtime.diagnostics.diagnostic_lineage_projection import (
     project_execution_lineage_view,
 )
+from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.contracts.execution_reconstruction import (
     ExecutionReconstruction,
     ExecutionReconstructionIntegrityError,
@@ -311,6 +313,42 @@ class DiagnosticReadService:
             forecast_risk_signals=forecast_risk_signals,
         )
         return DiagnosticInvestigationResult(investigation=investigation)
+
+    def assess_execution_scope_for_inspection(
+        self,
+        *,
+        tenant_id: str,
+        task_id: TaskId,
+        run_id: RunId,
+    ) -> DiagnosticAssessment | None:
+        """
+        Bounded execution-scope diagnostic assessment for federated runtime inspection.
+
+        Reuses the same reconstruction + lifecycle + assessment path as occurrence reads.
+        """
+        tenant_id = _require_tenant_id(tenant_id)
+        try:
+            reconstruction = self._reconstructor.reconstruct_execution(
+                tenant_id,
+                task_id,
+                run_id,
+            )
+        except ExecutionReconstructionIntegrityError as exc:
+            raise DiagnosticReadIntegrityError(str(exc)) from exc
+        if reconstruction.tenant_id != tenant_id:
+            raise DiagnosticReadIntegrityError(
+                "reconstruction tenant_id does not match lookup tenant scope",
+            )
+        if _is_execution_evidence_unavailable(reconstruction):
+            return None
+        try:
+            lifecycle = self._lifecycle_analyzer.analyze(reconstruction)
+            return self._assessment_builder.assess(reconstruction, lifecycle)
+        except (
+            DiagnosticAssessmentIntegrityError,
+            LifecycleAnalysisIntegrityError,
+        ) as exc:
+            raise DiagnosticReadIntegrityError(str(exc)) from exc
 
 
 def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:
