@@ -57,6 +57,8 @@ WIRED_BUILTIN_COLLECTOR_IDS: frozenset[str] = frozenset(
 
 
 def _auxiliary_messages(ctx: ContextProviderContext) -> tuple[ChatMessage, ...] | None:
+    if ctx.runtime is not None and ctx.runtime.base_messages:
+        return ctx.runtime.base_messages
     messages = ctx.handles.get("messages")
     if not isinstance(messages, list) or not messages:
         return None

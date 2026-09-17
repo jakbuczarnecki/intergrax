@@ -19,6 +19,9 @@ from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScop
 if TYPE_CHECKING:
     from intergrax.context.planning import ContextPlan
     from intergrax.context.source_inputs import ContextProviderSourceInputs
+    from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+        ContextAssemblyRuntimeDependencies,
+    )
 
 CONTEXT_CONTRACTS_SCHEMA = "context_contracts.v1"
 ASSEMBLED_CONTEXT_SCHEMA = "assembled_context.v1"
@@ -463,18 +466,32 @@ def _default_provider_source_inputs() -> ContextProviderSourceInputs:
 class ContextProviderContext:
     """Runtime context for provider ``collect`` — not serialized or logged at INFO.
 
-    ``sources`` carries canonical typed semantic inputs. ``handles`` is legacy auxiliary
-    runtime compatibility only (config, event bus, workspace files). No semantic source
-    payloads may be introduced through handles on canonical paths.
+    ``sources`` carries canonical typed semantic inputs. ``runtime`` carries typed assembly
+    dependencies for ``ContextEngine.assemble``. ``handles`` is legacy auxiliary compatibility
+    only (workspace files, provider pinning, session bridge writers). Canonical engine paths
+    must not read semantic assembly inputs from ``handles``.
     """
 
     engine_id: str = "default"
     plugin_ids: tuple[str, ...] = ()
     sources: ContextProviderSourceInputs = field(default_factory=_default_provider_source_inputs)
+    runtime: ContextAssemblyRuntimeDependencies | None = None
     handles: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self._hydrate_sources_from_legacy_session_handles()
+        self._hydrate_runtime_from_legacy_handles()
+
+    def _hydrate_runtime_from_legacy_handles(self) -> None:
+        if self.runtime is not None:
+            return
+        from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+            try_build_runtime_from_legacy_handles,
+        )
+
+        hydrated = try_build_runtime_from_legacy_handles(self.handles)
+        if hydrated is not None:
+            self.runtime = hydrated
 
     def _hydrate_sources_from_legacy_session_handles(self) -> None:
         """Writer-side compatibility: move session snapshot handles into ``sources`` once."""
@@ -509,6 +526,7 @@ class ContextProviderContext:
         return (
             f"ContextProviderContext(engine_id={self.engine_id!r}, "
             f"plugin_ids={self.plugin_ids!r}, sources=({self.sources.summary_repr()}), "
+            f"runtime={'set' if self.runtime is not None else 'none'}, "
             f"handle_keys={sorted(self.handles)!r})"
         )
 

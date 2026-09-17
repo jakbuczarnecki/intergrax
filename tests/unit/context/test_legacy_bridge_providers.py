@@ -284,7 +284,7 @@ async def test_builtin_collectors_read_provider_handles() -> None:
             source_id="dep-2",
         ),
     )
-    handles, sources = build_graph_provider_context_bundle(
+    runtime, handles, sources = build_graph_provider_context_bundle(
         task,
         runtime_config=runtime_config,
         messages=[ChatMessage(role="user", content="handle task")],
@@ -297,7 +297,7 @@ async def test_builtin_collectors_read_provider_handles() -> None:
             ChatMessage(role="user", content="history turn", entry_id="hist-1"),
         ],
     )
-    ctx = ContextProviderContext(engine_id="default", sources=sources, handles=handles)
+    ctx = ContextProviderContext(engine_id="default", sources=sources, runtime=runtime, handles=handles)
 
     task_frags = await providers["builtin.task_message"].collect(request, ctx)
     prior_frags = await providers["builtin.graph_prior"].collect(request, ctx)
@@ -366,7 +366,7 @@ async def test_builtin_collectors_read_extended_handles() -> None:
             "attachment_summaries": [{"attachment_id": "att-1", "summary": "chart summary"}],
         },
     )
-    handles, sources = build_graph_provider_context_bundle(
+    runtime, handles, sources = build_graph_provider_context_bundle(
         task,
         runtime_config=runtime_config,
         messages=[ChatMessage(role="user", content="handle task")],
@@ -376,7 +376,7 @@ async def test_builtin_collectors_read_extended_handles() -> None:
         engine_id="default",
         shared_context_reads={"dep-x": {"summary": "shared"}},
     )
-    ctx = ContextProviderContext(engine_id="default", sources=sources, handles=handles)
+    ctx = ContextProviderContext(engine_id="default", sources=sources, runtime=runtime, handles=handles)
 
     rag_frags = await providers["builtin.rag"].collect(request, ctx)
     ltm_frags = await providers["builtin.longterm_memory"].collect(request, ctx)

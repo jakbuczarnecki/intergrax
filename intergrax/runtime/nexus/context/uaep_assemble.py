@@ -63,7 +63,7 @@ async def assemble_uaep_session_messages(
     runtime_config = RuntimeConfig(llm_adapter=llm_adapter, production_mode=False)
     base_message = request.message or ""
     engine_id = engine.engine_id
-    handles, sources = build_graph_provider_context_bundle(
+    runtime, handles, sources = build_graph_provider_context_bundle(
         _task_stub_from_request(request),
         runtime_config=runtime_config,
         messages=[ChatMessage(role="user", content=base_message)],
@@ -72,7 +72,12 @@ async def assemble_uaep_session_messages(
         agent_id=agent_id,
         engine_id=engine_id,
     )
-    provider_ctx = ContextProviderContext(engine_id=engine_id, sources=sources, handles=handles)
+    provider_ctx = ContextProviderContext(
+        engine_id=engine_id,
+        sources=sources,
+        runtime=runtime,
+        handles=handles,
+    )
     assembled = await engine.assemble(assembly_request, provider_ctx=provider_ctx)
     return assembled.messages
 

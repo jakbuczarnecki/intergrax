@@ -222,7 +222,7 @@ class ContextManager:
             budget_policy=self._budget_policy,
         )
         runtime_config = RuntimeConfig(llm_adapter=self._llm_adapter, production_mode=False)
-        handles, sources = build_graph_provider_context_bundle(
+        runtime, handles, sources = build_graph_provider_context_bundle(
             task,
             runtime_config=runtime_config,
             messages=graph_messages_from_text(task.message or ""),
@@ -236,6 +236,7 @@ class ContextManager:
         provider_ctx = ContextProviderContext(
             engine_id=engine.engine_id,
             sources=sources,
+            runtime=runtime,
             handles=handles,
         )
         if self._context_orchestrator is not None and engine.engine_id == "codebase":

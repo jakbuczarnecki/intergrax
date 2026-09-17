@@ -64,12 +64,12 @@ from intergrax.runtime.nexus.context.context_compiler_models import (
 )
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
-from intergrax.runtime.wiring.context_runtime_bridge import (
-    CONTEXT_OPTIMIZATION_POLICY_HANDLE,
-    resolve_context_optimization_policy,
+from intergrax.runtime.wiring.context_runtime_bridge import resolve_context_optimization_policy
+from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+    ContextAssemblyRuntimeDependencies,
+    ensure_context_assembly_runtime,
 )
 from intergrax.runtime.nexus.context.ucl_orchestration import (
-    NEXUS_UCL_RUNTIME_HANDLE,
     NexusUCLExecutionError,
     NexusUCLExecutionReason,
     NexusUCLRuntimeDependencies,
@@ -106,12 +106,11 @@ def _compile_preserved_planned_context(
 
 
 def _resolve_optimization_policy(
-    ctx: ContextProviderContext,
-    runtime_config: RuntimeConfig,
+    runtime: ContextAssemblyRuntimeDependencies,
 ) -> ContextOptimizationPolicy | None:
     return resolve_context_optimization_policy(
-        runtime_config,
-        direct_policy=ctx.handles.get(CONTEXT_OPTIMIZATION_POLICY_HANDLE),
+        runtime.runtime_config,
+        direct_policy=runtime.optimization_policy,
     )
 
 
@@ -182,16 +181,21 @@ class DefaultNexusContextEngine:
         *,
         provider_ctx: ContextProviderContext | None = None,
     ) -> AssembledContext:
-        ctx = provider_ctx or ContextProviderContext(engine_id=self._engine_id)
-        runtime_config: RuntimeConfig | None = ctx.handles.get("runtime_config")
-        raw_messages: list[ChatMessage] = list(ctx.handles.get("messages") or [])
-        max_output_tokens = ctx.handles.get("max_output_tokens")
+        ctx = ensure_context_assembly_runtime(
+            provider_ctx or ContextProviderContext(engine_id=self._engine_id)
+        )
+        runtime = ctx.runtime
+        if runtime is None:
+            raise ValueError(
+                "ContextProviderContext.runtime is required for canonical assembly "
+                "(runtime_config and base_messages)"
+            )
+        runtime_config = runtime.runtime_config
+        raw_messages: list[ChatMessage] = list(runtime.base_messages)
+        max_output_tokens = runtime.max_output_tokens
 
-        if runtime_config is None:
-            raise ValueError("ContextProviderContext.handles must include runtime_config")
-
-        event_bus = _event_bus_from_handles(ctx)
-        event_ctx = _assembly_event_context(request, ctx)
+        event_bus = runtime.event_bus if isinstance(runtime.event_bus, RuntimeEventBus) else None
+        event_ctx = _assembly_event_context(request, runtime)
 
         pre_gate = run_pre_context_policy_gate(request)
         if not pre_gate.allowed:
@@ -384,7 +388,7 @@ class DefaultNexusContextEngine:
             max_output_tokens=max_output_tokens,
         )
         session_history = await _load_session_history_snapshot(request, ctx)
-        optimization_policy = _resolve_optimization_policy(ctx, runtime_config)
+        optimization_policy = _resolve_optimization_policy(runtime)
         planner = ContextPlanner(count_tokens=self._compiler.count_tokens)
         context_plan = planner.plan(
             request,
@@ -401,9 +405,9 @@ class DefaultNexusContextEngine:
             ),
         )
 
-        ucl_runtime = ctx.handles.get(NEXUS_UCL_RUNTIME_HANDLE)
+        ucl_runtime = runtime.ucl_runtime
         if ucl_runtime is not None and not isinstance(ucl_runtime, NexusUCLRuntimeDependencies):
-            raise ValueError("nexus_ucl_runtime handle must be NexusUCLRuntimeDependencies")
+            raise ValueError("ContextAssemblyRuntimeDependencies.ucl_runtime must be NexusUCLRuntimeDependencies")
 
         try:
             ucl_resolution = await resolve_ucl_context_plan(
@@ -533,19 +537,12 @@ def _record_fragment_exclusion_drop_events(
         )
 
 
-def _event_bus_from_handles(ctx: ContextProviderContext) -> RuntimeEventBus | None:
-    bus = ctx.handles.get("event_bus")
-    if isinstance(bus, RuntimeEventBus):
-        return bus
-    return None
-
-
 def _assembly_event_context(
     request: ContextAssemblyRequest,
-    ctx: ContextProviderContext,
+    runtime: ContextAssemblyRuntimeDependencies,
 ) -> dict[str, str | None]:
-    node_id = ctx.handles.get("node_id")
-    agent_id = ctx.handles.get("agent_id")
+    node_id = runtime.node_id
+    agent_id = runtime.agent_id
     return {
         "task_id": request.task_id,
         "run_id": request.run_id,

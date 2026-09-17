@@ -20,9 +20,29 @@ from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
 from echo.echo_agent import EchoAgent
+from contextlib import contextmanager
+
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    reset_active_execution_identity,
+)
+from intergrax.runtime.execution.active_execution_budget import (
+    bind_root_execution_budget,
+    reset_active_execution_budget,
+)
+from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+from intergrax.runtime.governance.active_execution_authority import (
+    bind_active_execution_authority,
+    reset_active_execution_authority,
+)
+from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from testing_support.builder import (
     build_runtime_request_for_tests,
     canonical_execution_identity_scope,
+    canonical_run_id_for_tests,
 )
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
@@ -51,6 +71,31 @@ def _reset_context_catalog() -> None:
     reset_context_catalog_bootstrap_for_tests()
     yield
     reset_context_catalog_bootstrap_for_tests()
+
+
+@contextmanager
+def _graph_governed_execution_scope(seed: str):
+    """Identity, authority, and budget required by GraphExecutor child runs."""
+    canonical_run_id = canonical_run_id_for_tests(seed)
+    execution_id = mint_execution_id()
+    identity_token = bind_active_execution_identity(
+        run_id=canonical_run_id,
+        attempt_id=mint_attempt_id(),
+        execution_id=execution_id,
+    )
+    authority_token = bind_active_execution_authority(
+        ParentExecutionAuthority.unrestricted_root(),
+    )
+    budget_token = bind_root_execution_budget(
+        execution_id=execution_id,
+        ledger=create_execution_budget_ledger(RunBudget()),
+    )
+    try:
+        yield canonical_run_id
+    finally:
+        reset_active_execution_budget(budget_token)
+        reset_active_execution_authority(authority_token)
+        reset_active_execution_identity(identity_token)
 
 
 @pytest.mark.asyncio
@@ -83,7 +128,8 @@ async def test_graph_path_emits_context_assembled_with_engine_id() -> None:
         nodes=[ExecutionNode(node_id="n1", agent_id="worker", capability="cap.worker")],
     )
 
-    await executor.execute(graph, task)
+    with _graph_governed_execution_scope("ce-paths-graph"):
+        await executor.execute(graph, task)
 
     assembled = [e for e in bus.history if e.event_type == RuntimeEventType.CONTEXT_ASSEMBLED]
     assert assembled

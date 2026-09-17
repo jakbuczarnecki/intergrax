@@ -37,6 +37,10 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
+from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+    ContextAssemblyRuntimeDependencies,
+    build_context_assembly_runtime_dependencies,
+)
 from intergrax.runtime.nexus.context.iterative_tool_context_assembly import (
     assemble_iterative_tool_planner_messages,
 )
@@ -124,28 +128,88 @@ def test_ce_q1_canonical_context_engine_entry_surfaces() -> None:
     assert "engine" in iterative_sig.parameters
 
 
+class _Q1SpyEngine:
+    engine_id = "spy"
+
+    def __init__(self) -> None:
+        self.calls = 0
+        self.last_request: ContextAssemblyRequest | None = None
+
+    async def assemble(
+        self,
+        request: ContextAssemblyRequest,
+        *,
+        provider_ctx: ContextProviderContext | None = None,
+    ) -> AssembledContext:
+        self.calls += 1
+        self.last_request = request
+        adapter = _SmallWindowAdapter()
+        config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+        runtime = build_context_assembly_runtime_dependencies(
+            runtime_config=config,
+            messages=[ChatMessage(role="user", content="spy")],
+            max_output_tokens=32,
+        )
+        inner = DefaultNexusContextEngine(engine_id="spy")
+        return await inner.assemble(
+            request,
+            provider_ctx=ContextProviderContext(engine_id="spy", runtime=runtime),
+        )
+
+
+@pytest.mark.asyncio
+async def test_ce_q1_behavioral_engine_assemble_on_canonical_surface() -> None:
+    from testing_support.builder import build_runtime_request_for_tests
+
+    spy = _Q1SpyEngine()
+    request = build_runtime_request_for_tests(
+        seed="ce-q1-spy",
+        tenant_id="t",
+        user_id="u",
+        session_id="s",
+        agent_id="a",
+        message="m",
+    )
+    await assemble_uaep_session_messages(
+        request,
+        agent_id="a",
+        engine=spy,
+        llm_adapter=_SmallWindowAdapter(),
+    )
+    assert spy.calls == 1
+    assert spy.last_request is not None
+    assert spy.last_request.assembly_scope == "uaep_turn"
+
+
 @pytest.mark.asyncio
 async def test_ce_q2_typed_context_contracts_are_assembly_abi() -> None:
     request = _assembly_request()
     assert isinstance(request, ContextAssemblyRequest)
     assert request.schema_version == CONTEXT_CONTRACTS_SCHEMA
+    assert "runtime" in ContextProviderContext.__dataclass_fields__
 
     adapter = _SmallWindowAdapter()
     config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
-        handles={
-            "runtime_config": config,
-            "messages": [ChatMessage(role="user", content="hi")],
-            "max_output_tokens": 64,
-        },
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=config,
+        messages=[ChatMessage(role="user", content="hi")],
+        max_output_tokens=64,
     )
+    provider_ctx = ContextProviderContext(engine_id="default", runtime=runtime)
 
     assembled = await engine.assemble(request, provider_ctx=provider_ctx)
     assert isinstance(assembled, AssembledContext)
     assert assembled.schema_version == ASSEMBLED_CONTEXT_SCHEMA
     assert isinstance(assembled.messages, tuple)
+    assert isinstance(runtime, ContextAssemblyRuntimeDependencies)
+
+    engine_source = (_REPO_ROOT / "intergrax" / "runtime" / "nexus" / "context" / "context_engine.py").read_text(
+        encoding="utf-8"
+    )
+    for literal in ("runtime_config", "max_output_tokens", "nexus_ucl_runtime", "context_optimization_policy"):
+        assert f'handles.get("{literal}"' not in engine_source
+    assert 'handles.get("messages"' not in engine_source
 
 
 def test_ce_q3_foreign_tenant_fragment_rejected() -> None:
@@ -245,14 +309,12 @@ async def test_ce_q9_custom_provider_without_engine_core_change() -> None:
     adapter = _SmallWindowAdapter()
     config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine(registry=registry)
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
-        handles={
-            "runtime_config": config,
-            "messages": [ChatMessage(role="user", content="hi")],
-            "max_output_tokens": 64,
-        },
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=config,
+        messages=[ChatMessage(role="user", content="hi")],
+        max_output_tokens=64,
     )
+    provider_ctx = ContextProviderContext(engine_id="default", runtime=runtime)
     base = _assembly_request()
     request = ContextAssemblyRequest(
         trace_id=base.trace_id,
@@ -301,18 +363,24 @@ async def test_ce_q13_assembled_context_carries_provenance_fields() -> None:
     registry = ContextPluginRegistry()
     registry.add_provider(_Ce01CustomProvider())
     engine = DefaultNexusContextEngine(registry=registry)
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
-        handles={
-            "runtime_config": config,
-            "messages": [ChatMessage(role="user", content="hi")],
-            "max_output_tokens": 64,
-        },
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=config,
+        messages=[ChatMessage(role="user", content="hi")],
+        max_output_tokens=64,
     )
+    provider_ctx = ContextProviderContext(engine_id="default", runtime=runtime)
     assembled = await engine.assemble(_assembly_request(), provider_ctx=provider_ctx)
-    assert hasattr(assembled, "provenance")
-    assert isinstance(assembled.provenance, tuple)
-    assert assembled.provider_outcomes is not None
+    assert assembled.fragments_included
+    fragment = assembled.fragments_included[0]
+    assert assembled.provenance
+    record = assembled.provenance[0]
+    assert record.fragment_id == fragment.fragment_id
+    assert record.source_type == fragment.source
+    assert record.source_id == fragment.source_id
+    assert fragment.provider_provenance is not None
+    assert record.provider_id == fragment.provider_provenance.provider_id
+    assert record.provider_version == fragment.provider_provenance.provider_version
+    assert record.content_hash == fragment.content_hash
 
 
 def test_ce_q14_ce_core_forbidden_integration_gate() -> None:
@@ -325,6 +393,16 @@ def test_ce_q14_ce_core_forbidden_integration_gate() -> None:
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+    semantic_script = _REPO_ROOT / "scripts" / "maintenance" / "check_ce_canonical_semantic_handles.py"
+    semantic = subprocess.run(
+        [sys.executable, str(semantic_script)],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert semantic.returncode == 0, semantic.stdout + semantic.stderr
 
     violations: list[str] = []
     for path in _scan_python_files(_CE_CORE_SCAN_ROOTS):

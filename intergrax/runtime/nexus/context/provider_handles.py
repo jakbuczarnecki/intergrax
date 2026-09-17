@@ -8,6 +8,10 @@ from typing import Any
 
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+    ContextAssemblyRuntimeDependencies,
+    build_context_assembly_runtime_dependencies,
+)
 from intergrax.runtime.task.task import Task
 
 from intergrax.context.session_history import SessionHistorySnapshotRequiredError
@@ -197,6 +201,25 @@ def build_graph_provider_sources(
     return sources
 
 
+def build_graph_provider_runtime(
+    task: Task,
+    *,
+    runtime_config: RuntimeConfig,
+    messages: list[Any],
+    event_bus: RuntimeEventBus | None,
+    node_id: str,
+    agent_id: str | None,
+) -> ContextAssemblyRuntimeDependencies:
+    """Typed assembly runtime for graph ``ContextEngine.assemble``."""
+    return build_context_assembly_runtime_dependencies(
+        runtime_config=runtime_config,
+        messages=messages,
+        event_bus=event_bus,
+        node_id=node_id,
+        agent_id=agent_id,
+    )
+
+
 def build_graph_provider_handles(
     task: Task,
     *,
@@ -243,10 +266,18 @@ def build_graph_provider_context_bundle(
     prior_output_records: list[Any] | None = None,
     session_history_messages: list[Any] | None = None,
     shared_context_reads: dict[str, Any] | None = None,
-) -> tuple[dict[str, Any], ContextProviderSourceInputs]:
-    """Auxiliary handles plus typed semantic sources for graph assembly."""
+) -> tuple[ContextAssemblyRuntimeDependencies, dict[str, Any], ContextProviderSourceInputs]:
+    """Typed runtime, legacy auxiliary handles, and semantic sources for graph assembly."""
     from intergrax.context.source_inputs import ContextProviderSourceInputs
 
+    runtime = build_graph_provider_runtime(
+        task,
+        runtime_config=runtime_config,
+        messages=messages,
+        event_bus=event_bus,
+        node_id=node_id,
+        agent_id=agent_id,
+    )
     handles = build_graph_provider_handles(
         task,
         runtime_config=runtime_config,
@@ -265,4 +296,4 @@ def build_graph_provider_context_bundle(
         session_history_messages=session_history_messages,
         shared_context_reads=shared_context_reads,
     )
-    return handles, sources
+    return runtime, handles, sources

@@ -18,6 +18,9 @@ from intergrax.context.protocols import ContextEngine
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.context.source_inputs import ContextProviderSourceInputs
 from intergrax.llm.messages import ChatMessage
+from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+    build_context_assembly_runtime_dependencies,
+)
 from intergrax.runtime.nexus.budget.budget_ticks import (
     enforce_wall_time_budget,
     record_planner_iteration_and_enforce,
@@ -76,19 +79,18 @@ async def assemble_iterative_tool_planner_messages(
         excluded_sources=frozenset({ContextFragmentSource.SESSION_HISTORY}),
     )
     runtime_config = state.context.config
-    handles: dict[str, object] = {
-        "runtime_config": runtime_config,
-        "messages": list(messages),
-        "event_bus": runtime_config.runtime_event_bus,
-        "node_id": state.request.metadata.get("graph_node_id") or state.request.agent_id,
-        "agent_id": state.request.agent_id,
-        "engine_id": engine.engine_id,
-    }
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=runtime_config,
+        messages=list(messages),
+        event_bus=runtime_config.runtime_event_bus,
+        node_id=str(state.request.metadata.get("graph_node_id") or state.request.agent_id),
+        agent_id=state.request.agent_id,
+    )
     sources = ContextProviderSourceInputs(tools=tuple(state.iterative_tool_output_blocks))
     provider_ctx = ContextProviderContext(
         engine_id=engine.engine_id,
         sources=sources,
-        handles=handles,
+        runtime=runtime,
     )
     assembled = await engine.assemble(assembly_request, provider_ctx=provider_ctx)
     return assembled.messages
