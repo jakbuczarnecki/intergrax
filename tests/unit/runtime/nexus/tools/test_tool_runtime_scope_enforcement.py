@@ -9,7 +9,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pydantic import BaseModel
 
+from intergrax.context.bootstrap import materialize_context_plugin_registry
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -73,6 +75,11 @@ def _runtime_state(
     tool_invoker: RuntimeToolInvoker | None = None,
 ) -> RuntimeState:
     run_id = canonical_run_id_for_tests("p0-safety-1c")
+    context_engine = None
+    if enable_rag or enable_websearch:
+        context_engine = DefaultNexusContextEngine(
+            registry=materialize_context_plugin_registry(["intergrax.builtin"]),
+        )
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(),
         production_mode=False,
@@ -80,6 +87,7 @@ def _runtime_state(
         enable_websearch=enable_websearch,
         tool_scope_policy=tool_scope_policy,
         tool_invoker=tool_invoker,
+        context_engine=context_engine,
     )
     ctx = RuntimeContext(
         config=config,

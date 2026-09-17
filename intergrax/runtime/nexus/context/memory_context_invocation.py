@@ -163,7 +163,7 @@ async def populate_request_memory_recall_metadata(
 
 
 async def run_longterm_memory_context(state: RuntimeState) -> None:
-    """Retrieve LTM hits into runtime state for CE bridge + legacy injection."""
+    """Retrieve LTM hits into runtime state for CE provider bridge (no direct message injection)."""
     cfg = state.context.config
     state.used_user_longterm_memory = False
     if not cfg.enable_user_longterm_memory:
@@ -190,19 +190,6 @@ async def run_longterm_memory_context(state: RuntimeState) -> None:
     state.used_user_longterm_memory = used
     if used:
         memory_platform_metrics().record_ltm_hit()
-    context_blocks_count = 0
-    if used and state.context.user_longterm_memory_prompt_builder is not None:
-        hits = result.get("hits") or []
-        bundle = state.context.user_longterm_memory_prompt_builder.build_user_longterm_memory_prompt(
-            hits,
-        )
-        context_blocks_count = len(bundle.context_messages)
-        if bundle.context_messages:
-            from intergrax.runtime.nexus.context.tool_context_helpers import (
-                insert_context_before_last_user,
-            )
-
-            insert_context_before_last_user(state, bundle.context_messages)
 
     state.trace_event(
         component=TraceComponent.ENGINE,
@@ -215,7 +202,7 @@ async def run_longterm_memory_context(state: RuntimeState) -> None:
             reason=str(result.get("debug", {}).get("reason") or ""),
             hits_count=len(result.get("hits") or []),
             top_k=cfg.max_longterm_entries_per_query,
-            context_blocks_count=context_blocks_count,
+            context_blocks_count=0,
             context_preview_chars=0,
             context_preview="",
         ),

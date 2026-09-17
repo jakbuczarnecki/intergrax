@@ -5,16 +5,22 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from dataclasses import replace
+from typing import Any, Optional
 
 from pydantic import BaseModel
 
-from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.context.tool_context_helpers import insert_context_before_last_user
+from intergrax.runtime.nexus.context.context_builder import BuiltContext, RetrievedChunk
+from intergrax.runtime.nexus.context.provider_handles import WEBSEARCH_BLOCKS_METADATA_KEY
+from intergrax.runtime.nexus.context.runtime_state_handle_bridge import (
+    merge_provider_metadata_into_request,
+)
 from intergrax.runtime.nexus.tools.context_injection_output import ContextInjectionOutput
 from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.providers.rag.contracts import RagRetrieveOutput
+from intergrax.tools.providers.websearch.contracts import WebsearchQueryOutput
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 
@@ -25,6 +31,83 @@ def _resolve_invoker(state: RuntimeState) -> ToolInvokerProtocol | None:
     if isinstance(invoker, ToolInvokerProtocol):
         return invoker
     return None
+
+
+def _stage_rag_catalog_output(state: RuntimeState, output: RagRetrieveOutput) -> None:
+    chunks: list[RetrievedChunk] = []
+    for item in output.chunks:
+        chunks.append(
+            RetrievedChunk(
+                id=item.id,
+                text=item.text,
+                metadata=dict(item.metadata or {}),
+                score=float(item.score),
+            )
+        )
+    if not chunks and output.context_text.strip():
+        chunks.append(
+            RetrievedChunk(
+                id="catalog-rag-0",
+                text=output.context_text.strip(),
+                metadata={},
+                score=0.0,
+            )
+        )
+    if not chunks:
+        return
+    prior = state.context_builder_result
+    if prior is None:
+        state.context_builder_result = BuiltContext(
+            history_messages=[],
+            retrieved_chunks=chunks,
+            rag_used=True,
+            rag_reason=output.reason or "catalog",
+        )
+    else:
+        state.context_builder_result = replace(
+            prior,
+            retrieved_chunks=chunks,
+            rag_used=True,
+            rag_reason=output.reason or prior.rag_reason or "catalog",
+        )
+
+
+def _stage_websearch_catalog_output(state: RuntimeState, output: WebsearchQueryOutput) -> None:
+    blocks: list[dict[str, str]] = []
+    for index, item in enumerate(output.results):
+        body = (item.text or item.snippet or item.title or "").strip()
+        if not body:
+            continue
+        blocks.append({"content": body, "source_id": f"web-{index}"})
+    if not blocks and output.context_text.strip():
+        blocks.append({"content": output.context_text.strip(), "source_id": "web-0"})
+    if blocks:
+        state.request.metadata[WEBSEARCH_BLOCKS_METADATA_KEY] = blocks
+
+
+def _stage_catalog_context_for_ce(
+    state: RuntimeState,
+    *,
+    tool_id: str,
+    output: object,
+    context_text: str,
+) -> None:
+    if tool_id == RAG_RETRIEVE_TOOL_ID and isinstance(output, RagRetrieveOutput):
+        _stage_rag_catalog_output(state, output)
+    elif tool_id == WEBSEARCH_QUERY_TOOL_ID and isinstance(output, WebsearchQueryOutput):
+        _stage_websearch_catalog_output(state, output)
+    elif context_text.strip():
+        if tool_id == RAG_RETRIEVE_TOOL_ID:
+            _stage_rag_catalog_output(
+                state,
+                RagRetrieveOutput(used=True, context_text=context_text.strip()),
+            )
+        elif tool_id == WEBSEARCH_QUERY_TOOL_ID:
+            _stage_websearch_catalog_output(
+                state,
+                WebsearchQueryOutput(used=True, context_text=context_text.strip()),
+            )
+    merge_provider_metadata_into_request(state)
 
 
 def invoke_catalog_context_tool(
@@ -65,23 +148,21 @@ def invoke_catalog_context_tool(
     context_text = str(output.context_text or "").strip()
 
     if tool_id == RAG_RETRIEVE_TOOL_ID:
-        state.used_rag = used and bool(context_text)
+        has_chunks = isinstance(output, RagRetrieveOutput) and bool(output.chunks)
+        state.used_rag = used and (bool(context_text) or has_chunks)
     elif tool_id == WEBSEARCH_QUERY_TOOL_ID:
-        state.used_websearch = used and bool(context_text)
+        has_results = isinstance(output, WebsearchQueryOutput) and bool(output.results)
+        state.used_websearch = used and (bool(context_text) or has_results)
 
-    if used and context_text:
-        _inject_context_text(state, tool_id=tool_id, context_text=context_text)
+    if used and (context_text or isinstance(output, (RagRetrieveOutput, WebsearchQueryOutput))):
+        _stage_catalog_context_for_ce(
+            state,
+            tool_id=tool_id,
+            output=output,
+            context_text=context_text,
+        )
 
     return True
-
-
-def _inject_context_text(state: RuntimeState, *, tool_id: str, context_text: str) -> None:
-    label = "RAG CONTEXT" if tool_id == RAG_RETRIEVE_TOOL_ID else "WEB CONTEXT"
-    state.tools_context_parts.append(f"{label}:\n{context_text}")
-    insert_context_before_last_user(
-        state,
-        [ChatMessage(role="system", content=f"{label}:\n{context_text}")],
-    )
 
 
 def build_rag_retrieve_input(state: RuntimeState, *, top_k: Optional[int] = None) -> Any:
