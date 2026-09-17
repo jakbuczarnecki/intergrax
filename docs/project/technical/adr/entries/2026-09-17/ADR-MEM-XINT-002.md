@@ -550,3 +550,15 @@ MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normat
 **Contracts:** `ContextFragmentInvariantSnapshot`, `ContextPolicyInvariantViolationCode`, `ContextPolicyInvariantViolationError`; logic in `intergrax/context/policy/invariants.py`; hard pre-stages in `intergrax/context/policy/hard_stages.py`.
 
 **Replaceable `ContextPolicyPipeline`:** behavioral stages only — cannot skip hard canonicalize/exact dedup (engine runs them before snapshot). No registry override for the invariant validator.
+## MEM-XINT-6 cross-layer E2E certification (2026-09-17)
+
+**Baseline ancestor:** `945c3dee7aa2959378d07d39c383d6b1b037e782` (confirmed on `development`).
+
+**Evidence suite:** `tests/integration/context/test_mem_xint6_cross_layer_e2e_certification.py` (+ `testing_support/mem_xint6_cross_layer_certification.py`).
+
+**Guards:** `scripts/maintenance/check_mem_xint6_canonical_context_bypass.py`; tier-0 import boundary via `scripts/maintenance/check_context_tier0_import_boundary.py`.
+
+**Verdict:** `PASS WITH CORRECTIONS — MEM-XINT PROGRAM NOT CLOSED` — canonical runtime bypass count for legacy direct injection helpers is zero; builtin semantic collection still uses `ContextProviderContext.handles` / `legacy_bridge` (typed source boundary debt documented in `intergrax/context/providers/legacy_bridge.py`).
+
+**Certified invariants:** Memory recall via `MemoryControlPlane`; model-facing semantic sources through `ContextEngine.assemble`; cross-source policy stages + hard invariant envelope; scope isolation; ReAct one CE assembly per model round; remember→recall→CE path with in-memory vendor.
+
