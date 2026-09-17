@@ -117,6 +117,31 @@ def _documentation_certification_closed(text: str) -> bool:
     )
 
 
+_CONFLICTING_D8_ACTIVE_STATUS_RE = re.compile(
+    r"MP-4D8\s*(?:[—:\|]|[-–])\s*(?:NEXT|NOT\s+STARTED|IN\s+PROGRESS)\b",
+    re.IGNORECASE,
+)
+_CONFLICTING_D8_BARE_ACTIVE_STATUS_RE = re.compile(
+    r"MP-4D8\s+(?:NEXT|NOT\s+STARTED|IN\s+PROGRESS)\b",
+    re.IGNORECASE,
+)
+
+
+def _has_conflicting_d8_status(text: str) -> bool:
+    normalized = _status_semantic_text(text)
+    return bool(
+        _CONFLICTING_D8_ACTIVE_STATUS_RE.search(normalized)
+        or _CONFLICTING_D8_BARE_ACTIVE_STATUS_RE.search(normalized)
+    )
+
+
+def _assert_no_conflicting_d8_status(text: str, context: str) -> None:
+    assert not _has_conflicting_d8_status(text), (
+        f"{context}: active MP-4D8 status conflicts with D8 CLOSED "
+        "(NEXT, NOT STARTED, or IN PROGRESS)"
+    )
+
+
 def test_mp4d7_status_documents_are_synchronized() -> None:
     texts = {name: _read_doc(path) for name, path in _STATUS_DOCS.items()}
     canonical = texts["canonical"]
@@ -133,6 +158,7 @@ def test_mp4d7_status_documents_are_synchronized() -> None:
     assert "MP-4D8 — NEXT" not in canonical, (
         "MP-4 status drift: canonical SSOT must not mark MP-4D8 as NEXT after D8 close"
     )
+    _assert_no_conflicting_d8_status(canonical, "canonical")
     _assert_contains_any(
         canonical,
         ("MP-4 — FORMALLY CLOSED", "MP-4 implementation — FORMALLY CLOSED"),
@@ -163,6 +189,7 @@ def test_mp4d7_status_documents_are_synchronized() -> None:
         assert "MP-4D8 — NEXT" not in text and "**MP-4D8** | **NEXT**" not in text, (
             f"MP-4 status drift: {name} still marks MP-4D8 NEXT after D8 close"
         )
+        _assert_no_conflicting_d8_status(text, name)
         assert "MP-4D7 — NEXT" not in text, (
             f"MP-4 status drift: {name} still marks MP-4D7 NEXT"
         )
