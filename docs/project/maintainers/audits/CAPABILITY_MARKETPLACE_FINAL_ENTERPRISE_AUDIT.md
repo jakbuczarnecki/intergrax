@@ -324,6 +324,35 @@ After ME-18-CLOSE documentation pin is on `origin/development`:
 CAPABILITY MARKETPLACE SESSION CLOSED
 ```
 
+## 47. ME-18-FINAL-RQ — independent enterprise requalification
+
+**Task:** ME-18-FINAL-RQ — Capability Marketplace Final Independent Requalification  
+**Requalification date:** 2026-09-17  
+**Baseline pin (DOC-Q1-C2):** `62fdceac2122738751a8a1caeffe16c986dfe47d`  
+**CURRENT_DEVELOPMENT_HEAD:** `046233b10d296950d0fe93bd16a6ada2ba3f26a3`  
+**Marketplace-relevant drift since C2:** none (no changes under `intergrax/marketplace/**`, `intergrax/contracts/marketplace/**`, `intergrax/capability_catalog/**`, marketplace tests, canonical doc, or documentation gates).
+
+**Qualification tests (sequential, local):**
+
+| Command | Result |
+| --- | --- |
+| `uv run pytest tests/unit/docs/test_capability_marketplace_canonical_documentation_gates.py -q` | 9 passed |
+| `uv run pytest tests/unit/marketplace/test_marketplace_architecture_gates.py tests/unit/marketplace/test_me18_final_enterprise_audit_gates.py -q` | 25 passed |
+| `uv run pytest tests/integration/marketplace/test_me18_final_enterprise_audit_qualification.py -q` | 7 passed |
+
+**Skips in qualification set:** none.
+
+**Findings:** P0 = 0, P1 = 0.
+
+**Production changes during FINAL-RQ:** none.
+
+```text
+CAPABILITY MARKETPLACE FINAL ENTERPRISE REQUALIFICATION: PASS
+P0 = 0
+P1 = 0
+READY FOR FINAL SESSION CLOSURE
+```
+
 ---
 
 > **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z GitHuba przed uznaniem zadania za zamknięte.**
