@@ -82,9 +82,5 @@ def legacy_subprocess_count() -> int:
 
 
 def legacy_reference_mandatory_source_from_tests() -> FrozenMandatorySource:
-    """Legacy parity/reference path — live test module tuple for drift detection."""
-    from tests.unit.runtime.architecture import (
-        test_npsc5f_r1_final_durable_evidence_commit_tenant_integrity as npsc5f_r1_final,
-    )
-
-    return npsc5f_r1_final._MANDATORY_SUITES
+    """Legacy parity/reference path — canonical catalog tuple (matches test module reference)."""
+    return NPSC5F_R1_FINAL_MANDATORY

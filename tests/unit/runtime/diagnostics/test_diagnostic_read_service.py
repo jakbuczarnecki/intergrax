@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -49,7 +49,7 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     document_store_occurrence_persistence_for_tests,
     in_memory_document_store_for_problem_tests,
     lifecycle_engine_for_tests,
@@ -412,7 +412,7 @@ def test_get_problem_malformed_occurrence_tenant_mismatch_fails_closed() -> None
     from intergrax.runtime.diagnostics.problem_occurrence_record_codec import (
         encode_problem_occurrence_record,
     )
-    from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+    from testing_support.runtime.diagnostics.problem_persistence_test_support import (
         document_store_lifecycle_stack_for_tests,
     )
 

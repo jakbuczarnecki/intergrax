@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """DIAG-FOUNDATION-4 — consistent identity and diagnostic behavior across entrypoints."""
 
@@ -77,7 +77,7 @@ from tests.unit.applications.scenario_runtime_test_support import (
     build_valid_minimal_lab_scenario_fixture,
     echo_agent_registry,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     build_diagnostic_orchestrator_stack_for_tests,
     query_all_problems_for_tenant,
 )

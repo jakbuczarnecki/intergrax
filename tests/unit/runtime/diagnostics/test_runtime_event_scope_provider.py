@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -63,7 +63,7 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     create_problem_for_tests,
     document_store_occurrence_persistence_for_tests,
     document_store_problem_persistence_for_tests,

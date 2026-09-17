@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """DG-001D R3 — supervisor pre-engine failure HOST-DIAG-3 conformance tests."""
 
@@ -60,7 +60,7 @@ from tests.unit.hosting.engine._fakes import (
     build_process_identity,
     minimal_profile_with_runtime,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     query_all_occurrences_for_problem,
 )
 

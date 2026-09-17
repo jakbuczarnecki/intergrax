@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """DIAG-ENTERPRISE-1-R2 projection reconciliation, telemetry, and cursor-secret proofs."""
 
@@ -33,7 +33,7 @@ from intergrax.runtime.diagnostics.problem_list_query import (
 )
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistenceIntegrityError
 from intergrax.runtime.diagnostics.problem_record_codec import encode_problem_record
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     TEST_DOCUMENT_STORE_CURSOR_SECRET,
     TEST_PROBLEM_LIST_CURSOR_SECRET,
     document_store_problem_persistence_for_tests,

@@ -25,7 +25,7 @@ from testing_support.runtime.execution_failure_evidence_r2_closure_harness impor
     ExecutionFailureEvidenceClosureHarness,
     build_execution_failure_evidence_r2_closure_harness,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     read_service_for_tests,
 )
 

@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """DIAG-ENTERPRISE-2-R6 real Mongo partition-atomic occurrence persistence qualification."""
 
@@ -31,7 +31,7 @@ from tests.integration.applications.architecture.harden_4f_mongo_support import 
     ensure_mongo_running,
     require_docker_for_harden_4f_proof,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     document_store_occurrence_persistence_for_tests,
 )
 

@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """DG-001A — default hosted runner vs canonical HOST-DIAG-3 composition qualification."""
 
@@ -39,7 +39,7 @@ from tests.unit.hosting.engine._fakes import (
     runtime_factory,
 )
 from tests.unit.hosting.test_runner import _RecordingSignalAdapter
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     query_all_occurrences_for_problem,
     query_all_problems_for_tenant,
 )

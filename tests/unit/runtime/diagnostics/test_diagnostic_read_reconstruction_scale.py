@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """DIAG-READ-SCALE: request-scoped execution reconstruction reuse proofs."""
 
@@ -61,7 +61,7 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     read_service_for_tests,
 )
 from tests.unit.runtime.diagnostics.test_diagnostic_read_service import (

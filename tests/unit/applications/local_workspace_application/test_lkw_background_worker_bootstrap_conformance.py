@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """DG-001B R4 — LKW background worker bootstrap diagnostic conformance."""
 
@@ -61,7 +61,7 @@ from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MAN
 from local_workspace_application.workspaces.document_store_factory import (
     resolve_lkw_runtime_document_store,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     build_diagnostic_orchestrator_stack_for_tests,
     query_all_problems_for_tenant,
 )

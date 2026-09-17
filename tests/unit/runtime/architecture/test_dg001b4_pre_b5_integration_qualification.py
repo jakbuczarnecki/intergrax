@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """DG-001B4 — worker pre-B5 HostedBootstrapFailureRecord integration qualification."""
 
@@ -45,7 +45,7 @@ from tests.unit.applications.local_workspace_application.test_lkw_background_wor
     _canonical_document_store,
     _failure_events,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     query_all_problems_for_tenant,
 )
 

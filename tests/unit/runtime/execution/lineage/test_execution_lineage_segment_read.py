@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from intergrax.contracts.execution_lineage import ExecutionLineagePersistence, b
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.execution.lineage.document_store_persistence import DocumentStoreExecutionLineagePersistence
 from intergrax.runtime.execution.lineage.persistence import InMemoryExecutionLineagePersistence
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 
 def _scope() -> object:

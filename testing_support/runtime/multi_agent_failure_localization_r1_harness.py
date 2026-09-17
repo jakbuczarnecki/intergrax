@@ -42,7 +42,7 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 
 _TENANT = "tenant-r3-localization"
 

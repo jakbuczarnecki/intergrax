@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """DIAG R5 qualification matrix — extension SPI (A1–A7)."""
 
@@ -37,7 +37,7 @@ from testing_support.runtime.diagnostic_extension_spi_r5_harness import (
 from testing_support.runtime.execution_failure_evidence_r2_closure_harness import (
     build_execution_failure_evidence_r2_closure_harness,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     read_service_for_tests,
 )
 

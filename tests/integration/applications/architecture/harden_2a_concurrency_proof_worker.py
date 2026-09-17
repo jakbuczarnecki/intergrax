@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """HARDEN-2A/2C subprocess worker — cross-process Problem persistence and lifecycle proofs."""
 
@@ -51,7 +51,7 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemStatus,
 )
 from intergrax.runtime.diagnostics.problem_persistence import (
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import document_store_problem_persistence_for_tests
+from testing_support.runtime.diagnostics.problem_persistence_test_support import document_store_problem_persistence_for_tests
     ProblemPersistence,
     ProblemPersistenceConflictError,
 )

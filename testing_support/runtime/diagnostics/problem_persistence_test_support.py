@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Shared test helpers for diagnostic Problem persistence suites."""
+"""Shared reusable builders for diagnostic Problem persistence harnesses and tests."""
 
 from __future__ import annotations
 

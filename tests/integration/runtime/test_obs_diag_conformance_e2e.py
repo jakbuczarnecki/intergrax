@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """OBS-DIAG-CONFORMANCE — canonical evidence → reconstruction → diagnostics E2E."""
 
@@ -45,14 +45,14 @@ from intergrax.runtime.observability.problem_signal import (
     PlatformProblemSignal,
 )
 from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import read_service_for_tests
+from testing_support.runtime.diagnostics.problem_persistence_test_support import read_service_for_tests
 from tests.unit.runtime.diagnostics.test_diagnostic_orchestrator import (
     _build_orchestrator,
     _request,
     _scope,
     _seed_retry_violation_sequence,
 )
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 from intergrax.contracts.execution_lineage import build_execution_lineage_attempt_scope
 
 pytestmark = [pytest.mark.integration, pytest.mark.obs_diag_conformance]

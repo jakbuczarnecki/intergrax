@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """HOST-DIAG-2 — typed non-execution diagnostic subject orchestration tests."""
 
@@ -28,7 +28,7 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyRegistry,
     problem_grouping_subject_ref_for_application_instance,
 )
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     document_store_occurrence_persistence_for_tests,
     in_memory_document_store_for_problem_tests,
     lifecycle_engine_for_tests,

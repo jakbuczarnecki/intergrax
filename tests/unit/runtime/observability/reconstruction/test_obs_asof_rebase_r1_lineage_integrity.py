@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """OBS-ASOF-REBASE-R1 — E-scoped lineage reconstruction integrity."""
 
@@ -35,7 +35,7 @@ from intergrax.runtime.observability.reconstruction import (
     ExecutionLineageReadStatus,
     ExecutionReconstructor,
 )
-from tests.unit.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
+from testing_support.runtime.execution.lineage.lineage_test_helpers import register_v1_attempt
 from tests.unit.runtime.events.test_asof_projection import _append_sequence
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]

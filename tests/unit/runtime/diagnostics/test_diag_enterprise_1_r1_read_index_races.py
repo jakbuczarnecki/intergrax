@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """DIAG-ENTERPRISE-1-R1 deterministic read-index transition proofs."""
 
@@ -23,7 +23,7 @@ from intergrax.runtime.diagnostics.problem_list_query import (
 )
 from intergrax.runtime.diagnostics.problem_persistence import ProblemPersistenceIntegrityError
 from intergrax.runtime.diagnostics.problem_record_codec import encode_problem_record
-from tests.unit.runtime.diagnostics.problem_persistence_test_support import (
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
     TEST_PROBLEM_LIST_CURSOR_SECRET,
     document_store_problem_persistence_for_tests,
     in_memory_document_store_for_problem_tests,
