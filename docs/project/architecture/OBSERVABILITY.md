@@ -928,7 +928,7 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 
 | ID | Limitation |
 | -- | ---------- |
-| **DG-005** | Cross-topology `RuntimeEvent` persistence / reconstruction **NOT PROVEN** |
+| **DG-005** | Process-isolated writer / reader / diagnostics over shared durable `EvidencePersistencePort` — **PROVEN** (`test_obs_dg005_distributed_topology_qualification.py`; see [DG-005 distributed topology](#dg-005-distributed-topology-qualification)) |
 | **Async spine** | Kafka → worker → execution → diagnostics full single P4 external spine **NOT YET PROVEN** |
 | **HITL / restart** | pause/restart/resume → terminal diagnostics dedicated E2E **NOT YET PROVEN** |
 | **Operator read** | Central diagnostic **write** path qualified; HTTP/dashboard read exposure **varies by PRODUCT host** |
@@ -938,8 +938,22 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | ---- | ----- | --------- |
 | **Architecture (A)** | **A4** | Frozen spine, E/K/V/S model, ownership boundaries coherent |
 | **Implementation (I)** | **I4** | Core evidence, reconstruction, delivery boundary shipped; OECP code not shipped |
-| **Production (P)** | **P2** | SQLite defaults; distributed / cross-topology qualification gaps remain |
+| **Production (P)** | **P2** | SQLite defaults; DG-005 process-isolated topology qualified; multi-region / partition claims **not** certified |
 | **Evidence (E)** | **E3** | Strong unit/gate proof; not universal E4 for every platform path |
+
+### DG-005 distributed topology qualification
+
+**Qualified claim:** independent OS processes (writer, reader, diagnostics) may compose against the **same durable provider-backed evidence store** using **provider-neutral** `EvidencePersistencePort` / `ExecutionReconstructionReader` contracts. The writer may use `RuntimeEventBus(record_history=False)`; reconstruction and diagnostics **must not** depend on process-local `RuntimeEventBus.history`, shared Python store objects, or writer process memory.
+
+**Non-claims:** multi-region replication, network partition tolerance, geo-distributed ordering, HA failover, and cross-datacenter consistency are **not** certified by DG-005.
+
+**Harness:** `testing_support/obs_distributed_topology/` (git-archive exact-SHA child imports + SQLite file backend).
+
+| Role | Authority |
+| ---- | --------- |
+| Writer process | Persists canonical evidence through `EvidencePersistencePort` |
+| Reader process | Reconstructs from durable evidence through platform contracts |
+| Diagnostics process | Consumes `ExecutionReconstructionReader`; no `RuntimeEventBus` sharing |
 
 | Sub-area | Implementation | Evidence |
 | -------- | -------------- | -------- |
