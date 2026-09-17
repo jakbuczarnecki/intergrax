@@ -632,12 +632,12 @@ model invocation
 | --- | --- | --- |
 | Memory write/recall authority | PASS | E2E remember→recall→CE; memory e2e; mem_xint3 recall plane |
 | CE final authority | PASS | MEM-XINT-4 / 4-R; E2E mixed-source + ReAct |
-| Typed source boundary | PASS | `tests/integration/context/test_mem_xint6r_typed_source_boundary.py`; typed boundary guard |
+| Typed source boundary | PASS | `tests/unit/context/test_mem_xint6r_typed_source_boundary.py`; typed boundary guard |
 | Provider isolation | PASS | E2E + typed collector tests |
 | Authority / scope / sensitivity / provenance | PASS | MEM-XINT-5 / 5-R / 5-R2 |
-| Hard invariant envelope | PASS | `tests/integration/context/test_mem_xint5r2_hard_policy_invariant_envelope.py` |
+| Hard invariant envelope | PASS | `tests/unit/context/test_mem_xint5r2_hard_policy_invariant_envelope.py` |
 | Cross-source policy / dedup / conflict / budget | PASS | E2E + cross-source pipeline tests |
-| ReAct / tool protocol | PASS | `tests/integration/context/test_mem_xint4r_react_context_authority.py` |
+| ReAct / tool protocol | PASS | `tests/unit/runtime/nexus/context/test_mem_xint4r_react_context_authority.py` |
 | Replaceability / vendor abstraction | PASS | E2E custom strategies; in-memory harness |
 | Determinism / observability | PASS | E2E two-run; candidate-drop + session hash |
 | Architecture guards | PASS | bypass + typed boundary + tier-0 import scripts |
