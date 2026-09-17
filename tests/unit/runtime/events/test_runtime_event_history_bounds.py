@@ -24,7 +24,10 @@ from intergrax.contracts.runtime_event_history import (
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.events.runtime_event_history import BoundedRuntimeEventHistory
+from intergrax.runtime.events.runtime_event_history import (
+    BoundedRuntimeEventHistory,
+    PlatformOwnedRuntimeEventHistoryBuffer,
+)
 from intergrax.runtime.nexus.orchestration.task_finisher import build_nexus_task_result
 from intergrax.runtime.nexus.response.final_response_composer import (
     FinalResponseComposer,
@@ -52,19 +55,29 @@ _EVENT_BUS_PATH = _REPO / "intergrax" / "runtime" / "events" / "event_bus.py"
 _TASK_FINISHER_PATH = (
     _REPO / "intergrax" / "runtime" / "nexus" / "orchestration" / "task_finisher.py"
 )
+_NEXUS_LOOP_PATH = _REPO / "intergrax" / "runtime" / "nexus" / "nexus_loop.py"
+_HISTORY_IMPL_PATH = (
+    _REPO / "intergrax" / "runtime" / "events" / "runtime_event_history.py"
+)
 
 
-def _event(*, label: str, run_id: str | None = None) -> RuntimeEvent:
+def _event(
+    *,
+    label: str,
+    run_id: str | None = None,
+    task_id: str | None = None,
+) -> RuntimeEvent:
     from intergrax.contracts.execution_identity import (
         mint_attempt_id,
         mint_execution_id,
     )
 
     rid = run_id or mint_run_id()
+    tid = task_id or mint_task_id()
     return RuntimeEvent.model_validate(
         {
             "tenant_id": "tenant-a",
-            "task_id": mint_task_id(),
+            "task_id": tid,
             "run_id": rid,
             "attempt_id": mint_attempt_id(),
             "execution_id": mint_execution_id(),
@@ -98,6 +111,28 @@ class CustomBoundedHistory:
 
     def clear(self) -> None:
         self._items.clear()
+
+
+class LyingBoundedHistory:
+    """Declares bounded retention but keeps a private vault (composition probe passes)."""
+
+    __slots__ = ("_capacity", "_vault")
+
+    def __init__(self, capacity: int) -> None:
+        self._capacity = capacity
+        self._vault: list[RuntimeEvent] = []
+
+    def retention(self) -> RuntimeEventHistoryRetention:
+        return RuntimeEventHistoryRetention(mode="bounded", capacity=self._capacity)
+
+    def append(self, event: RuntimeEvent) -> None:
+        self._vault.append(event)
+
+    def snapshot(self) -> tuple[RuntimeEvent, ...]:
+        return tuple(self._vault[-self._capacity :])
+
+    def clear(self) -> None:
+        self._vault.clear()
 
 
 class UnsafeUnboundedHistory:
@@ -303,6 +338,25 @@ def test_custom_bounded_history_buffer_injection() -> None:
     for label in ("1", "2", "3"):
         bus.record(_event(label=label))
     assert [e.payload["label"] for e in bus.history] == ["2", "3"]
+    assert isinstance(bus._history_buffer, PlatformOwnedRuntimeEventHistoryBuffer)
+
+
+def test_platform_owned_retention_with_lying_custom_strategy() -> None:
+    bus = RuntimeEventBus(history_buffer=LyingBoundedHistory(2))
+    for index in range(100):
+        bus.record(_event(label=str(index)))
+    assert len(bus.history) == 2
+    assert [e.payload["label"] for e in bus.history] == ["98", "99"]
+
+
+def test_platform_retention_bound_two_after_overflow() -> None:
+    bus = RuntimeEventBus(history_policy=RuntimeEventHistoryPolicy.bounded(2))
+    for index in range(100):
+        bus.record(_event(label=str(index)))
+    assert len(bus.history) == 2
+    buffer = bus._history_buffer
+    assert isinstance(buffer, PlatformOwnedRuntimeEventHistoryBuffer)
+    assert len(buffer.snapshot()) == 2
 
 
 def test_unsafe_unbounded_history_rejected_at_composition() -> None:
@@ -312,33 +366,123 @@ def test_unsafe_unbounded_history_rejected_at_composition() -> None:
 
 def test_runtime_events_exceeds_history_capacity_in_task_summary(tmp_path) -> None:
     bus = RuntimeEventBus(history_policy=RuntimeEventHistoryPolicy.bounded(2))
-    for label in ("a", "b", "c", "d", "e"):
-        bus.record(_event(label=label))
-    assert len(bus.history) == 2
-    assert bus.event_count == 5
     seed = "runtime-events-overflow"
     task = build_task_for_tests(seed=seed, tenant_id="t1", user_id="u1", message="m")
     run_id = canonical_run_id_for_tests(seed)
-    result = build_nexus_task_result(
-        task,
-        TaskTraceEmitter(run_id=run_id, attempt_id=mint_attempt_id()),
-        answer="ok",
-        executions=[],
-        validation=ValidationResult(valid=True),
-        plan=None,
-        retry_records=[],
-        graph_id="g1",
-        composer=FinalResponseComposer(),
-        event_bus=bus,
-        shadow_manager=ShadowWorkspaceManager(root=tmp_path / "shadow"),
-        sandbox_manager=SandboxSessionManager(root=tmp_path / "sandbox"),
-    )
+    scope = bus.open_runtime_event_metric_scope(task.task_id, run_id)
+    try:
+        for label in ("a", "b", "c", "d", "e"):
+            bus.record(_event(label=label, task_id=task.task_id, run_id=run_id))
+        assert len(bus.history) == 2
+        assert bus.event_count == 5
+        result = build_nexus_task_result(
+            task,
+            TaskTraceEmitter(run_id=run_id, attempt_id=mint_attempt_id()),
+            answer="ok",
+            executions=[],
+            validation=ValidationResult(valid=True),
+            plan=None,
+            retry_records=[],
+            graph_id="g1",
+            composer=FinalResponseComposer(),
+            event_bus=bus,
+            shadow_manager=ShadowWorkspaceManager(root=tmp_path / "shadow"),
+            sandbox_manager=SandboxSessionManager(root=tmp_path / "sandbox"),
+            runtime_events_count=scope.count(),
+        )
+    finally:
+        scope.close()
     assert result.summary.metrics.runtime_events == 5
+
+
+def test_history_disabled_scoped_metric_still_counts() -> None:
+    bus = RuntimeEventBus(record_history=False)
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    scope = bus.open_runtime_event_metric_scope(task_id, run_id)
+    for label in ("a", "b", "c"):
+        bus.record(
+            _event(label=label, task_id=task_id, run_id=run_id),
+            tenant_id="tenant-a",
+        )
+    assert bus.history == []
+    assert scope.count() == 3
+    scope.close()
+
+
+def test_two_tasks_sequential_scoped_metrics() -> None:
+    bus = RuntimeEventBus(history_policy=RuntimeEventHistoryPolicy.bounded(2))
+    task_a = mint_task_id()
+    run_a = mint_run_id()
+    task_b = mint_task_id()
+    run_b = mint_run_id()
+    scope_a = bus.open_runtime_event_metric_scope(task_a, run_a)
+    for label in ("a1", "a2", "a3"):
+        bus.record(_event(label=label, task_id=task_a, run_id=run_a))
+    count_a = scope_a.count()
+    scope_a.close()
+    scope_b = bus.open_runtime_event_metric_scope(task_b, run_b)
+    for label in ("b1", "b2", "b3", "b4", "b5"):
+        bus.record(_event(label=label, task_id=task_b, run_id=run_b))
+    count_b = scope_b.count()
+    scope_b.close()
+    assert count_a == 3
+    assert count_b == 5
+
+
+def test_two_tasks_concurrent_scoped_metrics() -> None:
+    import threading
+
+    bus = RuntimeEventBus(history_policy=RuntimeEventHistoryPolicy.bounded(2))
+    task_a = mint_task_id()
+    run_a = mint_run_id()
+    task_b = mint_task_id()
+    run_b = mint_run_id()
+    scope_a = bus.open_runtime_event_metric_scope(task_a, run_a)
+    scope_b = bus.open_runtime_event_metric_scope(task_b, run_b)
+
+    def emit(task_id: str, run_id: str, prefix: str, total: int) -> None:
+        for index in range(total):
+            bus.record(_event(label=f"{prefix}{index}", task_id=task_id, run_id=run_id))
+
+    thread_a = threading.Thread(target=emit, args=(task_a, run_a, "A", 4))
+    thread_b = threading.Thread(target=emit, args=(task_b, run_b, "B", 7))
+    thread_a.start()
+    thread_b.start()
+    thread_a.join()
+    thread_b.join()
+    assert scope_a.count() == 4
+    assert scope_b.count() == 7
+    scope_a.close()
+    scope_b.close()
+
+
+def test_scoped_metric_ignores_other_task_run_events() -> None:
+    bus = RuntimeEventBus()
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    scope = bus.open_runtime_event_metric_scope(task_id, run_id)
+    bus.record(_event(label="in", task_id=task_id, run_id=run_id))
+    bus.record(_event(label="out"))
+    assert scope.count() == 1
+    scope.close()
 
 
 def test_task_finisher_does_not_use_history_length_for_runtime_events() -> None:
     source = _TASK_FINISHER_PATH.read_text(encoding="utf-8")
     assert "len(event_bus.history)" not in source
+    assert "event_bus.event_count" not in source
+
+
+def test_nexus_loop_has_no_shared_runtime_event_baseline() -> None:
+    source = _NEXUS_LOOP_PATH.read_text(encoding="utf-8")
+    assert "_runtime_event_count_baseline" not in source
+
+
+def test_platform_owns_retention_envelope_in_history_resolver() -> None:
+    source = _HISTORY_IMPL_PATH.read_text(encoding="utf-8")
+    assert "class PlatformOwnedRuntimeEventHistoryBuffer" in source
+    assert "wrap_runtime_event_history_strategy" in source
 
 
 def test_event_bus_has_no_unbounded_list_storage() -> None:

@@ -38,7 +38,12 @@ class RuntimeEventHistoryRetention:
 
 @runtime_checkable
 class RuntimeEventHistoryBuffer(Protocol):
-    """Append-only process-local history buffer (not durable evidence)."""
+    """Custom history strategy operating inside a platform-owned retention bound.
+
+    The bus records events only in the platform retention envelope. Implementations
+    are synchronized with the bounded window via ``append`` / ``clear`` and must not
+    be wired as the sole storage owner for the full event stream.
+    """
 
     def retention(self) -> RuntimeEventHistoryRetention: ...
 

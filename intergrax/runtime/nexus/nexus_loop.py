@@ -59,7 +59,6 @@ from intergrax.runtime.nexus.tracing.persistence_models import (
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.human.hitl_hooks import (
     HumanApprovalHookCoordinator,
-    HumanApprovalHookError,
 )
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import (
@@ -68,7 +67,7 @@ from intergrax.runtime.hooks.nexus_lifecycle_hooks import (
     publish_nexus_lifecycle_hook_failure,
 )
 from intergrax.runtime.human.escalation import EscalationRouter
-from intergrax.runtime.human.models import HumanResponseVerdict, EscalationTarget
+from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.persistence_contract import HumanDecisionPersistence
 from intergrax.runtime.long_running.notification import NotificationAdapter
 from intergrax.runtime.long_running.persistence_contract import (
@@ -100,7 +99,7 @@ from intergrax.runtime.events.store import resolve_runtime_event_persistence
 from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
 from intergrax.runtime.task_memory.store import resolve_task_memory_persistence
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.task.task import Task, TaskResult, TaskState
+from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import (
     PersistingTaskTraceEmitter,
@@ -160,7 +159,9 @@ from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
 )
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.agents.persistence.declarative_tool_executor import (
+    DeclarativeToolInvoker,
+)
 
 if TYPE_CHECKING:
     from intergrax.contracts.execution_continuation_state_store import (
@@ -171,7 +172,6 @@ if TYPE_CHECKING:
     from intergrax.contracts.agent_execution_result import AgentExecutionResult
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.ledger import (
-        ExecutionBudgetLedger,
         ExecutionBudgetLedgerFactory,
     )
     from intergrax.runtime.execution.budget.policy import (
@@ -241,8 +241,11 @@ class NexusLoop:
         execution_terminal: ExecutionTerminalService | None = None,
         execution_lineage_persistence: "ExecutionLineagePersistence | None" = None,
         execution_continuation: ExecutionContinuationPort | None = None,
-        continuation_lifecycle_driver: ExecutionContinuationLifecycleDriver | None = None,
-        execution_continuation_state_store: Optional["ExecutionContinuationStateStore"] = None,
+        continuation_lifecycle_driver: ExecutionContinuationLifecycleDriver
+        | None = None,
+        execution_continuation_state_store: Optional[
+            "ExecutionContinuationStateStore"
+        ] = None,
         disable_execution_continuation: bool = False,
     ) -> None:
         self._registry = registry
@@ -390,12 +393,18 @@ class NexusLoop:
         )
         if disable_execution_continuation:
             self._hitl_continuation: InternalOrchestrationContinuation | None = None
-        elif execution_continuation is not None and continuation_lifecycle_driver is not None:
+        elif (
+            execution_continuation is not None
+            and continuation_lifecycle_driver is not None
+        ):
             self._hitl_continuation = InternalOrchestrationContinuation(
                 port=execution_continuation,
                 lifecycle_driver=continuation_lifecycle_driver,
             )
-        elif execution_continuation is not None or continuation_lifecycle_driver is not None:
+        elif (
+            execution_continuation is not None
+            or continuation_lifecycle_driver is not None
+        ):
             raise ValueError(
                 "execution_continuation and continuation_lifecycle_driver must be wired together",
             )
@@ -465,7 +474,7 @@ class NexusLoop:
         self._decision_exposure_selection = None
         self._decision_flow_verify_graph_final = False
         self._decision_exposure_session = None
-        self._runtime_event_count_baseline = 0
+        self._runtime_event_metric_scope = None
 
     def set_hold_persisted_trace_finalize(self, hold: bool) -> None:
         """When True, graph success defers persisted trace finalize for scenario observability."""
@@ -702,10 +711,16 @@ class NexusLoop:
                 "active execution budget execution_id mismatch with Nexus handle_task",
             )
         self._current_task = task
-        self._runtime_event_count_baseline = self._event_bus.event_count
+        metric_scope = self._event_bus.open_runtime_event_metric_scope(
+            task.task_id,
+            resolved_run_id,
+        )
+        self._runtime_event_metric_scope = metric_scope
         try:
             return await self._handle_task_impl(task)
         finally:
+            self._runtime_event_metric_scope = None
+            metric_scope.close()
             self._current_task = None
 
     async def _handle_task_impl(self, task: Task) -> TaskResult:
@@ -742,7 +757,9 @@ class NexusLoop:
             trace_emitter=trace_emitter,
         )
         if planning.early_result is not None:
-            return self._with_authoritative_decision_exposure(task, planning.early_result)
+            return self._with_authoritative_decision_exposure(
+                task, planning.early_result
+            )
         plan = planning.plan
         if plan is None:
             raise RuntimeError("planning phase completed without plan or early result")
@@ -947,11 +964,15 @@ class NexusLoop:
             sandbox_manager=self._sandbox_manager,
             run_id=require_active_execution_identity()[0],
             authoritative_decision_exposure=exposure,
-            runtime_events_count=(
-                self._event_bus.event_count - self._runtime_event_count_baseline
-            ),
+            runtime_events_count=self._resolved_runtime_events_count(),
         )
         return result
+
+    def _resolved_runtime_events_count(self) -> int:
+        scope = self._runtime_event_metric_scope
+        if scope is None:
+            return 0
+        return scope.count()
 
     async def _maybe_restore_long_running(self, task: Task) -> None:
         active_run_id, _ = require_active_execution_identity()
@@ -1087,7 +1108,9 @@ class NexusLoop:
     async def _publish_terminal_runtime_event(self, task: Task) -> None:
         await self._publish_terminal_runtime_event_with_active_identity(task)
 
-    async def publish_orchestration_root_terminal_runtime(self, task: Task) -> RuntimeEvent:
+    async def publish_orchestration_root_terminal_runtime(
+        self, task: Task
+    ) -> RuntimeEvent:
         """Publish terminal RuntimeEvent and diagnostics for root orchestration execution."""
         return await self._publish_terminal_runtime_event_with_active_identity(task)
 

@@ -14,9 +14,14 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Awaitable, Callable, DefaultDict, List, Optional, Set, Union
 
+from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.contracts.runtime_event_history import (
     RuntimeEventHistoryBuffer,
     RuntimeEventHistoryPolicy,
+)
+from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
+from intergrax.runtime.events.runtime_event_metric_scope import (
+    _RuntimeEventMetricScopeRegistry,
 )
 from intergrax.runtime.events.runtime_event_history import (
     resolve_runtime_event_history_buffer,
@@ -169,6 +174,7 @@ class RuntimeEventBus:
         self._closed = False
         self._event_count = 0
         self._event_count_lock = threading.Lock()
+        self._metric_scopes = _RuntimeEventMetricScopeRegistry()
 
     def attach_persistence(self, persistence: EvidencePersistencePort) -> None:
         """Wire or replace the persistence adapter after construction."""
@@ -272,6 +278,14 @@ class RuntimeEventBus:
 
     def clear_history(self) -> None:
         self._history_buffer.clear()
+
+    def open_runtime_event_metric_scope(
+        self,
+        task_id: TaskId,
+        run_id: RunId,
+    ) -> RuntimeEventMetricScope:
+        """Count bus-accepted events for ``task_id`` + ``run_id`` until ``close()``."""
+        return self._metric_scopes.open(task_id, run_id)
 
     def record(self, event: RuntimeEvent, *, tenant_id: Optional[str] = None) -> None:
         """Synchronous append for callers that cannot await (e.g. TaskLifecycle)."""
@@ -392,6 +406,7 @@ class RuntimeEventBus:
         self._history_buffer.append(event)
         with self._event_count_lock:
             self._event_count += 1
+        self._metric_scopes.record_accepted(event.task_id, event.run_id)
 
     async def _dispatch_handlers_async(self, event: RuntimeEvent) -> None:
         for sid, _prio, handler in self._collect_handlers(event):
