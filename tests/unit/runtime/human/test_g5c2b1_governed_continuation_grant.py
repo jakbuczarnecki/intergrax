@@ -47,6 +47,7 @@ from tests.unit.runtime.human.test_g5b_hitl_resolution import (
     _patch_hitl_runtime_events,
     _set_human_response,
     bound_hitl_test_execution_identity,
+    establish_canonical_governed_pause_for_hitl_test,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -530,16 +531,6 @@ async def test_intake_runner_approve_creates_grant_before_pause_clear(
         side_effect_scope_id=SCOPE_1,
     )
     task = _task()
-    pause = _apply_governed_pause(task, continuation)
-    _set_human_response(
-        task,
-        response_text="approve",
-        verdict=HumanResponseVerdict.APPROVE,
-        pause_id=pause.pause_id,
-        human_request_id=pause.human_request_id,
-    )
-
-    runner, _published = _build_intake_runner_with_hitl()
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
     with bound_hitl_test_execution_identity(
@@ -547,6 +538,19 @@ async def test_intake_runner_approve_creates_grant_before_pause_clear(
         attempt_id=ATTEMPT_ID,
         execution_id=EXECUTION_ID,
     ):
+        runner, _published = _build_intake_runner_with_hitl()
+        pause = establish_canonical_governed_pause_for_hitl_test(
+            task,
+            continuation,
+            capability=runner.hitl_continuation,
+        )
+        _set_human_response(
+            task,
+            response_text="approve",
+            verdict=HumanResponseVerdict.APPROVE,
+            pause_id=pause.pause_id,
+            human_request_id=pause.human_request_id,
+        )
         await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
 
     grant = task.runtime.governance.governed_continuation_grant
@@ -566,41 +570,44 @@ async def test_intake_runner_reject_clears_grant(
         side_effect_scope_id=SCOPE_1,
     )
     task = _task()
-    pause = _apply_governed_pause(task, continuation)
-    task.runtime.governance.governed_continuation_grant = GovernedContinuationApprovalGrant(
-        grant_id="gcg_stale",
-        continuation_request_id=CONTINUATION_1,
-        side_effect_scope_id=SCOPE_1,
-        side_effect_scope_digest=None,
-        task_id=TASK_ID,
-        run_id=RUN_ID,
-        attempt_id=ATTEMPT_ID,
-        execution_id=EXECUTION_ID,
-        operation_id=OPERATION,
-        resource_scope=RESOURCE,
-        policy_rule_id=POLICY_RULE,
-        policy_bundle_id=BUNDLE_ID,
-        policy_bundle_version=BUNDLE_VERSION,
-        policy_bundle_digest=BUNDLE_DIGEST,
-        pause_id=PAUSE_A,
-        human_request_id=HR_A,
-        approved_at="2026-08-18T00:00:00+00:00",
-    )
-    _set_human_response(
-        task,
-        response_text="reject",
-        verdict=HumanResponseVerdict.REJECT,
-        pause_id=pause.pause_id,
-        human_request_id=pause.human_request_id,
-    )
-
-    runner, _published = _build_intake_runner_with_hitl()
     lifecycle = TaskLifecycle()
     with bound_hitl_test_execution_identity(
         run_id=RUN_ID,
         attempt_id=ATTEMPT_ID,
         execution_id=EXECUTION_ID,
     ):
+        runner, _published = _build_intake_runner_with_hitl()
+        pause = establish_canonical_governed_pause_for_hitl_test(
+            task,
+            continuation,
+            capability=runner.hitl_continuation,
+        )
+        task.runtime.governance.governed_continuation_grant = GovernedContinuationApprovalGrant(
+            grant_id="gcg_stale",
+            continuation_request_id=CONTINUATION_1,
+            side_effect_scope_id=SCOPE_1,
+            side_effect_scope_digest=None,
+            task_id=TASK_ID,
+            run_id=RUN_ID,
+            attempt_id=ATTEMPT_ID,
+            execution_id=EXECUTION_ID,
+            operation_id=OPERATION,
+            resource_scope=RESOURCE,
+            policy_rule_id=POLICY_RULE,
+            policy_bundle_id=BUNDLE_ID,
+            policy_bundle_version=BUNDLE_VERSION,
+            policy_bundle_digest=BUNDLE_DIGEST,
+            pause_id=PAUSE_A,
+            human_request_id=HR_A,
+            approved_at="2026-08-18T00:00:00+00:00",
+        )
+        _set_human_response(
+            task,
+            response_text="reject",
+            verdict=HumanResponseVerdict.REJECT,
+            pause_id=pause.pause_id,
+            human_request_id=pause.human_request_id,
+        )
         outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=AsyncMock())
     assert outcome.early_result is not None
     assert task.runtime.governance.governed_continuation_grant is None

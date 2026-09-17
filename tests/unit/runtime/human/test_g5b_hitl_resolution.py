@@ -10,6 +10,10 @@ import pytest
 from pydantic import ValidationError
 
 from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.contracts.decision_authoritative_exposure import (
+    ExposureUnevaluated,
+    ExposureUnevaluatedReason,
+)
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -30,10 +34,24 @@ from intergrax.contracts.execution_identity import (
 from intergrax.utils import attribute_access
 from intergrax.runtime.execution.active_execution_continuation_store import (
     bind_active_execution_continuation_state_store,
+    peek_active_execution_continuation_state_store,
     reset_active_execution_continuation_state_store,
+)
+from intergrax.contracts.governed_continuation import GovernedContinuationRequest
+from intergrax.contracts.governed_continuation_correlation import (
+    ContinuationReason,
+    GovernedContinuationCorrelation,
+)
+from intergrax.runtime.execution.continuation.composition import (
+    wire_execution_engine_continuation_dependencies,
 )
 from intergrax.runtime.execution.continuation.persistence import (
     default_execution_continuation_state_store,
+)
+from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+    InternalOrchestrationContinuation,
+    establish_canonical_hitl_pause,
+    execution_continuation_identity_for_task,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
@@ -113,12 +131,89 @@ def bound_hitl_test_execution_identity(
         reset_active_execution_identity(token)
 
 
+def build_hitl_test_continuation_capability() -> InternalOrchestrationContinuation:
+    """Production-like continuation wiring; shares active test store when bound."""
+    store = peek_active_execution_continuation_state_store()
+    deps = wire_execution_engine_continuation_dependencies(state_store=store)
+    return InternalOrchestrationContinuation(
+        port=deps.continuation,
+        lifecycle_driver=deps.lifecycle_driver,
+    )
+
+
+def establish_canonical_pause_for_hitl_test(
+    task: Task,
+    *,
+    pause_id: str = "pause-1",
+    human_request_id: str = "hr-1",
+    continuation_id: str | None = None,
+    governed: GovernedContinuationCorrelation | None = None,
+    capability: InternalOrchestrationContinuation | None = None,
+    run_id: str = RUN_ID,
+    attempt_id: str = ATTEMPT_ID,
+    execution_id: str = EXECUTION_ID,
+) -> None:
+    """Register canonical continuation + Task projection (not projection-only pause)."""
+    hitl = capability or build_hitl_test_continuation_capability()
+    resolved_governed = governed
+    if resolved_governed is None:
+        resolved_governed = GovernedContinuationCorrelation(
+            continuation_request_id=continuation_id or f"gcr_hr_{human_request_id}",
+            reason=ContinuationReason.SECURITY,
+            task_id=task.task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            operation_id=f"hitl_test_{human_request_id}",
+        )
+    cid = continuation_id or resolved_governed.continuation_request_id
+    establish_canonical_hitl_pause(
+        task,
+        identity=execution_continuation_identity_for_task(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+        ),
+        continuation_id=cid,
+        reason=resolved_governed.reason,
+        pause_id=pause_id,
+        human_request_id=human_request_id,
+        capability=hitl,
+        governed_correlation=resolved_governed,
+        human_prompt="approve?",
+    )
+
+
+def establish_canonical_governed_pause_for_hitl_test(
+    task: Task,
+    continuation: GovernedContinuationRequest,
+    *,
+    capability: InternalOrchestrationContinuation | None = None,
+) -> TaskPauseRecord:
+    correlation = continuation.to_correlation()
+    establish_canonical_pause_for_hitl_test(
+        task,
+        pause_id=f"pause_{correlation.continuation_request_id}",
+        human_request_id=f"hr_{correlation.continuation_request_id}",
+        continuation_id=correlation.continuation_request_id,
+        governed=correlation,
+        capability=capability,
+        run_id=str(correlation.run_id),
+        attempt_id=str(correlation.attempt_id),
+        execution_id=str(correlation.execution_id),
+    )
+    assert task.runtime.governance.pause_record is not None
+    return task.runtime.governance.pause_record
+
+
 def _active_pause(
     task: Task,
     *,
     pause_id: str = "pause-1",
     human_request_id: str = "hr-1",
 ) -> None:
+    """Legacy projection-only pause; prefer establish_canonical_pause_for_hitl_test for intake."""
     task.runtime.governance.paused = True
     task.runtime.governance.pause_record = TaskPauseRecord(
         pause_id=pause_id,
@@ -195,7 +290,16 @@ def _build_intake_runner_with_hitl(
         published.append(event)
 
     async def finish_task(task: Task, *args: object, **kwargs: object) -> TaskResult:
-        return TaskResult(task_id=task.task_id, state=task.state)
+        exposure = (
+            ExposureUnevaluated(scope=None, reason=ExposureUnevaluatedReason.NO_DECISION_GATE)
+            if task.state in {TaskState.FAILED, TaskState.COMPLETED, TaskState.CANCELLED}
+            else None
+        )
+        return TaskResult(
+            task_id=task.task_id,
+            state=task.state,
+            authoritative_decision_exposure=exposure,
+        )
 
     async def finalize_trace(*args: object, **kwargs: object) -> None:
         return None
@@ -217,6 +321,7 @@ def _build_intake_runner_with_hitl(
         )
 
     execution_identity = ActiveExecutionIdentity()
+    hitl_continuation = build_hitl_test_continuation_capability()
 
     hitl = NexusHitlRunner(
         publish=publish,
@@ -236,6 +341,7 @@ def _build_intake_runner_with_hitl(
         publish=publish,
         restore_long_running=AsyncMock(),
         execution_identity=execution_identity,
+        hitl_continuation=hitl_continuation,
     )
     return runner, published
 
@@ -635,7 +741,14 @@ async def test_intake_runner_reject_preserves_evidence_before_cleanup(
     pause_id = "pause-reject"
     human_request_id = "hr-reject"
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
-    _active_pause(task, pause_id=pause_id, human_request_id=human_request_id)
+    store = InMemoryHumanDecisionPersistence()
+    runner, published = _build_intake_runner_with_hitl(human_store=store)
+    establish_canonical_pause_for_hitl_test(
+        task,
+        pause_id=pause_id,
+        human_request_id=human_request_id,
+        capability=runner.hitl_continuation,
+    )
     _set_human_response(
         task,
         response_text=reject_text,
@@ -643,9 +756,6 @@ async def test_intake_runner_reject_preserves_evidence_before_cleanup(
         pause_id=pause_id,
         human_request_id=human_request_id,
     )
-
-    store = InMemoryHumanDecisionPersistence()
-    runner, published = _build_intake_runner_with_hitl(human_store=store)
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
 
@@ -693,7 +803,14 @@ async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
     pause_id = "pause-escalate"
     human_request_id = "hr-escalate"
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
-    _active_pause(task, pause_id=pause_id, human_request_id=human_request_id)
+    store = InMemoryHumanDecisionPersistence()
+    runner, published = _build_intake_runner_with_hitl(human_store=store)
+    establish_canonical_pause_for_hitl_test(
+        task,
+        pause_id=pause_id,
+        human_request_id=human_request_id,
+        capability=runner.hitl_continuation,
+    )
     _set_human_response(
         task,
         response_text=escalate_text,
@@ -701,9 +818,6 @@ async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
         pause_id=pause_id,
         human_request_id=human_request_id,
     )
-
-    store = InMemoryHumanDecisionPersistence()
-    runner, published = _build_intake_runner_with_hitl(human_store=store)
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
 

@@ -44,6 +44,7 @@ from tests.unit.runtime.human.test_g5b_hitl_resolution import (
     _patch_hitl_runtime_events,
     _set_human_response,
     bound_hitl_test_execution_identity,
+    establish_canonical_governed_pause_for_hitl_test,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -195,34 +196,32 @@ async def test_nexus_intake_governed_approval_without_nexus_ae_forwarding(
     )
     assert continuation is not None
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=TASK_ID)
-    HumanPauseCoordinator.apply_pause(
-        task,
-        bridge_governed_continuation_to_execution_result(continuation),
-    )
-    pause = task.runtime.governance.pause_record
-    assert pause is not None
-    _set_human_response(
-        task,
-        response_text="approve",
-        verdict=HumanResponseVerdict.APPROVE,
-        pause_id=pause.pause_id,
-        human_request_id=pause.human_request_id,
-    )
-
-    runner, _published = _build_intake_runner_with_hitl()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
     with bound_hitl_test_execution_identity(
         run_id=RUN_ID,
         attempt_id=ATTEMPT_ID,
         execution_id=EXECUTION_ID,
     ):
+        runner, _published = _build_intake_runner_with_hitl()
+        pause = establish_canonical_governed_pause_for_hitl_test(
+            task,
+            continuation,
+            capability=runner.hitl_continuation,
+        )
+        _set_human_response(
+            task,
+            response_text="approve",
+            verdict=HumanResponseVerdict.APPROVE,
+            pause_id=pause.pause_id,
+            human_request_id=pause.human_request_id,
+        )
         await runner.run(task, lifecycle=TaskLifecycle(), trace_emitter=trace_emitter)
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None
     assert resolution.attempt_id == ATTEMPT_ID
     assert resolution.execution_id == EXECUTION_ID
-    grant = GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
+    grant = task.runtime.governance.governed_continuation_grant
     assert grant is not None
     assert grant.attempt_id == ATTEMPT_ID
     assert grant.execution_id == EXECUTION_ID
