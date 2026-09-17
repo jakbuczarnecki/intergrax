@@ -38,6 +38,7 @@ Storage
 | Port failure isolation + bus resilience wiring | `3d298f651` … `8fb9c0fb5` |
 | **R1 re-signoff baseline** (historical) | `ed780d47e7bc60e0ac019fb9bee8961dac9493c5` |
 | **R1 re-signoff baseline** (`R1_POST_R2_QUALIFIED_BASELINE_SHA`, HARDENING_9 OBS-CONTRACT-BOUNDARY) | `a2b33ba965c57cd3c812720f7b5f84b40b2b32f1` |
+| **R1 re-signoff baseline** (`R1_POST_R2_QUALIFIED_BASELINE_SHA`, HARDENING_9 NPSC5F protected drift V2) | `22c4793da4ba751fff6c93f780a7f6848650a5d9` |
 | H9 pre-gate event sink delivery (`event_bus.py`, commits `29d6dd660`, `8621ee133`) | **QUALIFIED_COMPATIBLE** — injectable `EventSinkDeliveryReactionPort`; durable commit before sink; no second evidence path |
 
 Post re-signoff, `collect_r1_protected_production_drift(from_sha=R1_POST_R2_QUALIFIED_BASELINE_SHA)` must remain empty unless a new qualified R1 change is recorded.

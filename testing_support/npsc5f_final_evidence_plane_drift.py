@@ -20,8 +20,10 @@ from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 # OBS-ASOF-REBASE-R1: E-scoped lineage port + fail-closed disable of current lineage at historical E.
 # HARDENING_9_NPSC5F: OBS-CONTRACT-BOUNDARY-1 / R1 — contract-owned runtime_event, reconstruction DTOs,
 # positioned evidence boundary; qualified re-freeze @ ``a2b33ba965c57cd3c812720f7b5f84b40b2b32f1``.
+# HARDENING_9_NPSC5F V2: OBS-CONTRACT-BOUNDARY-2, persistence port type graph, runtime history bounds
+# (78f4350c8, 1d2936c4c, 550227883); qualified re-freeze @ ``22c4793da4ba751fff6c93f780a7f6848650a5d9``.
 # Prior OBS-ASOF-REBASE-R1 baseline: ``52b9dc41ed7dd83e5516d852f1ef7295cc0b10af``.
-NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "a2b33ba965c57cd3c812720f7b5f84b40b2b32f1"
+NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "22c4793da4ba751fff6c93f780a7f6848650a5d9"
 
 NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
 NPSC_5F_R1_FINAL_SHA = "455c09f342f995ac0a6fcb03ffef2f4d3e36a447"
