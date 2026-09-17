@@ -28,7 +28,8 @@ _STATUS_DOCS: dict[str, Path] = {
 _REQUIRED_STATUS_MARKERS = (
     "MP-3 — ENTERPRISE CERTIFIED / CLOSED",
     "MP-3A…MP-3H — APPROVED / CLOSED",
-    "MP-5 — NEXT",
+    "MP-5B — NEXT",
+    "MP-5 ownership — FROZEN",
 )
 
 _FORBIDDEN_ACTIVE_DRIFT = (

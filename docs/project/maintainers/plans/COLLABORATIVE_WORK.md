@@ -7,7 +7,7 @@
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004 Accepted; **MP-3A…MP-3H — APPROVED / CLOSED**); **MP-3 architecture decomposition — APPROVED / CLOSED**
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-5 — NEXT** — Principal-scoped ContextView (see [`MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
+**Next task:** **MP-5B — NEXT** — core Principal-scoped ContextView typed contracts (MP-5A **CLOSED** — ADR-MP-006; see [`MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -380,7 +380,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Hard invariants** | `WorkArtifact != UCL OptimizationArtifact`; `WorkArtifactVersion` immutable; current-version pointer CAS-protected; content metadata separated from storage reference |
 | **Reuse-only** | UCL, Memory, Proof Receipts, Execution (`ExecutionProvenanceRef` optional), LKW (consumer) |
 | **Explicit out of scope** | MP-4 Decision encoding, MP-6 Activity projection |
-| **Next step** | **MP-5 — NEXT** (capability plan) |
+| **Next step** | **MP-5B — NEXT** (capability plan) |
 
 ### COLLAB-WORK-3 — MP-3 WorkArtifact (architecture decomposition frozen — ADR-MP-004)
 
@@ -536,7 +536,21 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Explicit out of scope** | MP-5+ implementation |
 | **Acceptance** | All MP-3 acceptance criteria met; ownership ADR compliance; immutable versions; pointer CAS; transactional publication consistency; authority reuse; idempotency; tenant/workspace isolation; backend parity; live production qualification where backend available; no MP-4/MP-6 leakage |
 | **Proof requirements** | Focused regression suite; documentation link integrity; `check_docs_domain_pairs.py`; live qualification evidence when PostgreSQL reachable |
-| **Next step** | **MP-5 — NEXT** — Principal-scoped ContextView |
+| **Next step** | **MP-5A — APPROVED / CLOSED** (ownership gate) |
+
+### MP-5A — ContextView ownership & contract architecture gate
+
+| Field | Value |
+|-------|-------|
+| **ID** | MP-5A |
+| **Status** | **APPROVED / CLOSED** — **MP-5 ownership — FROZEN** |
+| **ADR** | **ADR-MP-006 Accepted** |
+| **Purpose** | Freeze ContextView semantic owner, contract boundary, decomposition, anti-substitution |
+| **Exact scope** | Docs + ADR only; no runtime |
+| **REUSED** | MP-1 authority; UCL / CE / Memory / RAG consumption boundaries |
+| **NEW** | None (contracts in MP-5B) |
+| **Proof** | `test_mp5a_documentation_regression_gates.py`; `check_docs_domain_pairs.py` |
+| **Next step** | **MP-5B — NEXT** |
 
 ### MP-3 architecture decomposition closure (COLLAB-WORK-3 gate)
 
@@ -548,12 +562,13 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | **MP-5 — NEXT** (**MP-3 — ENTERPRISE CERTIFIED / CLOSED**) |
+| **Next step** | **MP-5B — NEXT** (**MP-5A — APPROVED / CLOSED**) |
 
 ---
 
 ## 4. Out of scope (current phase)
 
-- MP-5…MP-6 architecture or implementation rows (except bounded ownership checks when gated — MP-4 ownership **FROZEN** via ADR-MP-005; see [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md))
+- MP-5C+ runtime implementation until MP-5B contracts land
+- MP-6 architecture or implementation rows (MP-5 ownership **FROZEN** via ADR-MP-006; MP-4 via ADR-MP-005 — see [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md))
 - LKW product adoption (MP-7)
 - Runtime Python models beyond contract stubs until the relevant COLLAB-WORK-* row opens

@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/architecture/MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
-**ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../technical/adr/entries/2026-09-07/ADR-MP-004.md) · MP-4 → [DECISION_APPROVAL_GOVERNANCE](DECISION_APPROVAL_GOVERNANCE.md) / [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md)
+**ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../technical/adr/entries/2026-09-07/ADR-MP-004.md) · MP-4 → [DECISION_APPROVAL_GOVERNANCE](DECISION_APPROVAL_GOVERNANCE.md) / [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) · [ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) (MP-5 ContextView)
 
 ---
 
@@ -58,8 +58,10 @@ It does not answer:
 - **WorkspaceMembership** (explicit membership; never inferred from IDs alone),
 - **Delegation** of authority between principals (scoped; non-amplifying),
 - **effective authority** composition semantics,
-- future MP-2…MP-6 collaborative primitives that extend the same work plane:
-  WorkItem, Assignment, WorkArtifact, Decision, Activity collaborative semantics.
+- collaborative primitives on the same work plane: WorkItem, Assignment, WorkArtifact (MP-2…MP-3 **CLOSED**),
+  **Principal-scoped ContextView** policy and composition semantics (MP-5 — **ownership FROZEN**, ADR-MP-006),
+  future Activity collaborative semantics (MP-6).
+- Collaborative Work does **not** own canonical Decision authority (MP-4 reuse only).
 
 ### Policy / runtime enforcement owns (reuse, not storage)
 
@@ -197,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-5 — NEXT** — Principal-scoped ContextView (capability plan; not started here).
+**Next task:** **MP-5B — NEXT** — core Principal-scoped ContextView contracts (**MP-5A — APPROVED / CLOSED**; ADR-MP-006).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -520,10 +522,33 @@ Future Multiplayer phases that belong on the collaborative work plane extend **t
 | MP-2 | WorkItem, Assignment, shared-work lifecycle |
 | MP-3 | WorkArtifact, WorkArtifactVersion collaborative ownership |
 | MP-4 | Decision / Approval / Governance collaborative semantics — [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) |
-| MP-5 | Principal-scoped ContextView boundary (composition with UCL/Memory) |
+| MP-5 | Principal-scoped ContextView — **MP-5A CLOSED**; **MP-5B — NEXT** |
 | MP-6 | Collaborative Activity + provenance linkage |
 
-Architecture and implementation rows for MP-2+ remain in their future gates; this hub establishes the plane boundary only.
+Architecture and implementation rows for MP-6+ remain in their future gates.
+
+---
+
+## Principal-scoped ContextView (MP-5)
+
+**MP-5 ownership — FROZEN** ([ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**). **MP-5A — APPROVED / CLOSED**. **MP-5B — NEXT**.
+
+Collaborative Work owns **who may see which context categories under which collaborative scope** — not how Memory stores data, how RAG retrieves, how UCL persists revisions, or how Context Engineering budgets tokens.
+
+```text
+Effective authority (MP-1)
+  → ContextView policy
+  → ContextView composition (replaceable)
+  → Principal-scoped ContextView (reference-first read projection)
+```
+
+**ContextView** is principal-scoped, policy-governed, composed, read-oriented, and auditable via reused provenance contracts. **`ContextView ≠ storage`**.
+
+**Anti-substitution:** `UCL ≠ Principal-scoped ContextView`; `Memory ≠ Principal-scoped ContextView`; `RAG result ≠ Principal-scoped ContextView`; `Context Engineering ≠ Principal-scoped ContextView`; `SharedContextView` / `DecisionContextView` / LKW conversation context ≠ platform Principal-scoped ContextView.
+
+**Authority:** resolve membership and effective delegation before source retrieval; fail-closed when principal, scope, or policy cannot be established. **Least-context** for operations and external-agent projections (MP-8-ready seam).
+
+Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md) § MP-5.
 
 ---
 
