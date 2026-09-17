@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from intergrax.agents.persistence.skill_host_wiring import HostSkillCatalogWiring
 from intergrax.contracts.runtime_execution_admission import RootExecutionAuthorityAdmissionPort
 from intergrax.runtime.execution.effective_profile_revision_admission import (
     EffectiveProfileRevisionAdmissionPort,
@@ -31,6 +32,7 @@ def build_host_task_execution(
     pipeline_capability_suffix: str = ".pipeline",
     revision_admission: EffectiveProfileRevisionAdmissionPort | None = None,
     root_authority_admission: RootExecutionAuthorityAdmissionPort,
+    skill_host_wiring: HostSkillCatalogWiring | None = None,
 ) -> HostTaskExecution:
     """Internal composition builder: extract canonical execution dependencies from Nexus."""
     return HostTaskExecution(
@@ -53,6 +55,7 @@ def build_host_task_execution(
         _root_authority_admission=root_authority_admission,
         _continuation_state_store=wire_execution_continuation_state_store(),
         _declarative_tool_invoker=nexus_loop.declarative_tool_invoker,
+        _skill_host_wiring=skill_host_wiring,
     )
 
 

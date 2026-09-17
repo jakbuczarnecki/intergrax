@@ -13,6 +13,7 @@ from intergrax.applications._shared.profile_resolution.execution_admission impor
 from intergrax.applications._shared.harness_root_execution_launch_wiring import (
     build_harness_root_execution_authority_admission,
 )
+from intergrax.agents.persistence.skill_host_wiring import HostSkillCatalogWiring
 from intergrax.contracts.runtime_execution_admission import RootExecutionAuthorityAdmissionPort
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_execution import (
@@ -36,6 +37,7 @@ def build_host_task_execution(
     pipeline_capability_suffix: str = ".pipeline",
     revision_admission: object | None = None,
     root_authority_admission: RootExecutionAuthorityAdmissionPort | None = None,
+    skill_host_wiring: HostSkillCatalogWiring | None = None,
 ) -> HostTaskExecution:
     """Composition-root host task execution with mandatory root admission wiring."""
     return _build_nexus_host_task_execution(
@@ -46,6 +48,7 @@ def build_host_task_execution(
         root_authority_admission=(
             root_authority_admission or build_harness_root_execution_authority_admission()
         ),
+        skill_host_wiring=skill_host_wiring,
     )
 
 
@@ -54,6 +57,7 @@ def build_environment_host_task_execution(
     env: ApplicationEnvironmentProfile,
     *,
     pinning_dependencies: EffectiveProfileExecutionPinningDependencies | None = None,
+    skill_host_wiring: HostSkillCatalogWiring | None = None,
 ):
     """Build canonical host task execution from environment orchestration profile."""
     graph_spec = env.graph_spec
@@ -72,4 +76,5 @@ def build_environment_host_task_execution(
         ),
         revision_admission=revision_admission,
         root_authority_admission=build_harness_root_execution_authority_admission(),
+        skill_host_wiring=skill_host_wiring,
     )

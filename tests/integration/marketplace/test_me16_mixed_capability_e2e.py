@@ -63,6 +63,7 @@ from testing_support.canonical_me16_mixed_agent import (
 )
 from testing_support.marketplace_mixed_capability_execution_composition import (
     MarketplaceMixedCapabilityProofStack,
+    MixedCapabilityCompositionNotReadyError,
     me16_agent_listing_v1,
 )
 from testing_support.marketplace_skill_composition import (
@@ -165,7 +166,7 @@ def test_me16_execution_is_blocked_until_all_required_capabilities_are_ready(
 ) -> None:
     stack = MarketplaceMixedCapabilityProofStack.build(tmp_path)
     assert not stack.readiness().execution_allowed
-    with pytest.raises(Exception):
+    with pytest.raises(MixedCapabilityCompositionNotReadyError):
         asyncio.run(stack.try_execute_when_not_ready(tmp_path / "exec-fail"))
 
 

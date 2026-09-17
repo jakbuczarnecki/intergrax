@@ -575,10 +575,13 @@ Common Marketplace (federated catalog: Agent + Tool + Skill listings)
 Agent Distribution  │  Tool acquisition  │  Skill acquisition
     (independent lifecycle authorities — no universal mixed engine)
     ↓ MixedCapabilityCompositionReadiness (read-only gate)
-runtime composition (registry projection + application_tool_registry + skill host wiring)
-    ↓ HarnessHostRuntime.execution.execute(Task)
+application composition (registry projection + application_tool_registry + application_skill_registry)
+    ↓ canonical runtime-owned HostSkillCatalogWiring + Tool invoker injection
+HarnessHostRuntime.execution.execute(Task)   ← Task callers never inject infrastructure Skill wiring manually
 Agent principal consumes bound Skill context + invokes Tool → deterministic mixed output
 ```
+
+**ME-16-C1 (canonical skill wiring):** `application_skill_registry` is sufficient public composition input (parity with `application_tool_registry`). Execution injects `HostSkillCatalogWiring` into runtime request metadata; tests must not attach skill wiring on `Task.metadata`.
 
 **ME-16 hard invariants:** Mixed composition does not collapse lifecycle authorities; Agent, Tool and Skill preserve independent identities; execution begins only after all required capabilities are ready; Skill remains non-executable; Marketplace remains discovery/handoff plane only.
 

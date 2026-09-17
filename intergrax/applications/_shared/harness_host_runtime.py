@@ -37,6 +37,9 @@ from intergrax.applications._shared.decision_wiring import (
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_for_application_host,
 )
+from intergrax.applications._shared.skill_host_execution_wiring import (
+    build_host_skill_catalog_wiring_from_environment,
+)
 from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticWiring
 from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
@@ -137,6 +140,7 @@ from intergrax.applications.contracts.profile_resolution.activation import (
     ActiveEffectiveProfileRevisionStore,
 )
 from intergrax.skills.execution_binding import SkillExecutionPinningStore
+from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.applications.contracts.profile_resolution.execution_binding import (
     EffectiveProfileExecutionPinningStore,
 )
@@ -235,7 +239,7 @@ def build_harness_host_runtime(
     active_store: ActiveEffectiveProfileRevisionStore | None = None,
     llm_adapter: LLMAdapter | None = None,
     application_tool_registry: ToolRegistry | None = None,
-    application_skill_registry: Any | None = None,
+    application_skill_registry: SkillRegistry | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -476,6 +480,7 @@ def build_harness_host_runtime(
             active_store=profile_persistence.active_store,
             scope=revision_scope,
         ),
+        skill_host_wiring=build_host_skill_catalog_wiring_from_environment(env_wiring),
     )
     host_runtime = HarnessHostRuntime(
         manifest=resolved_manifest,
