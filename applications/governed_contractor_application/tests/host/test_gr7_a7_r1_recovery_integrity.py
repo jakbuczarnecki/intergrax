@@ -105,6 +105,7 @@ def _eligible_repeat_request(
         outcome=outcome,
         effect_contract=_CREATE_CONTRACT,
         repeat_eligibility=_repeat_eligibility(inv, outcome),
+        repeat_execution_supported=True,
     )
 
 
@@ -386,14 +387,17 @@ def test_governed_repeat_lifecycle_fresh_authorization_and_durable_ordering() ->
 
     fake._fail_create_with_code.clear()
 
-    def _meta(inv: object) -> dict[str, object]:
-        from intergrax.contracts.provider_invocation import ProviderInvocation
+    from intergrax.contracts.external_work import ExternalWorkCreateRequest
+    from intergrax.contracts.provider_invocation import ProviderInvocation
 
-        assert isinstance(inv, ProviderInvocation)
-        return _create_meta(inv.task_id, inv.run_id, idempotency_key=_FAIL_IDEMP)
+    def _create_request(inv: ProviderInvocation) -> ExternalWorkCreateRequest:
+        return runtime.adapter.build_create_request(
+            task_id=inv.task_id,
+            run_id=inv.run_id,
+            metadata=_create_meta(inv.task_id, inv.run_id, idempotency_key=_FAIL_IDEMP),
+        )
 
     repeat_port = GovernedExternalWorkProviderRecoveryRepeatPort(
-        orchestrator=runtime.orchestrator,
         adapter=runtime.adapter,
         invocation_store=runtime.orchestrator._provider_invocation_store,
         principal_id=_PRINCIPAL,
@@ -401,7 +405,7 @@ def test_governed_repeat_lifecycle_fresh_authorization_and_durable_ordering() ->
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
-        metadata_for_invocation=_meta,
+        create_request_for_invocation=_create_request,
         clock=lambda: _T0,
         host_execution_id="exec-gr7a7r1-repeat",
     )
@@ -414,6 +418,7 @@ def test_governed_repeat_lifecycle_fresh_authorization_and_durable_ordering() ->
         outcome=original_outcome,
         capabilities=quote_first_partner_capability_fixture(provider_id=original_inv.provider_id),
         repeat_policy=_AllowRepeatPolicy(),
+        repeat_port=repeat_port,
     )
     decision = recovery.decide(request)
     assert decision.action is ProviderInvocationRecoveryAction.IDEMPOTENT_REPEAT

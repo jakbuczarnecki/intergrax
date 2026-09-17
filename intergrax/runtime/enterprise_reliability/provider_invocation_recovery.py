@@ -82,6 +82,9 @@ class ProviderInvocationRecoveryExecutionResult(BaseModel):
 class ProviderInvocationRecoveryRepeatPort(Protocol):
     """Host-owned repeat — must use dispatch gate and GR-6 authorization path."""
 
+    def supports_provider_operation(self, operation: str) -> bool:
+        """Whether this executor can perform idempotent repeat for ``operation``."""
+
     def execute_idempotent_repeat(
         self,
         *,
@@ -236,6 +239,14 @@ def execute_provider_invocation_recovery(
                 disposition=ProviderInvocationRecoveryExecutionDisposition.BLOCKED,
                 provider_mutation_count=0,
                 detail="repeat port unavailable",
+            )
+        if not request.repeat_execution_supported:
+            return ProviderInvocationRecoveryExecutionResult(
+                decision=decision,
+                execution_attempted=True,
+                disposition=ProviderInvocationRecoveryExecutionDisposition.BLOCKED,
+                provider_mutation_count=0,
+                block_reason=ProviderInvocationRecoveryExecutionBlockReason.REPEAT_EXECUTION_UNSUPPORTED,
             )
         invocation = request.invocation
         outcome = request.outcome

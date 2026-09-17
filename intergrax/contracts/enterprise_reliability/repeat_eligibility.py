@@ -17,6 +17,9 @@ from intergrax.contracts.enterprise_reliability.effect_contract import (
     contract_declares_idempotency,
     evaluate_unknown_uncertainty_posture,
 )
+from intergrax.contracts.governed_execution_result import (
+    external_work_invocation_operation_matches_effect_contract,
+)
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
     ProviderInvocationOutcome,
@@ -153,7 +156,10 @@ def evaluate_external_effect_repeat_eligibility(
         )
 
     contract = request.effect_contract
-    if contract.operation_key != invocation.operation:
+    if not external_work_invocation_operation_matches_effect_contract(
+        contract_operation_key=contract.operation_key,
+        invocation_operation=invocation.operation,
+    ):
         return _deny(
             invocation,
             ExternalEffectRepeatEligibilityReason.DENIED_INVALID_STATE,

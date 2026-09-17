@@ -12,6 +12,9 @@ from intergrax.contracts.enterprise_reliability.effect_contract import (
     UnknownUncertaintyPosture,
     evaluate_unknown_uncertainty_posture,
 )
+from intergrax.contracts.governed_execution_result import (
+    external_work_invocation_operation_matches_effect_contract,
+)
 from intergrax.contracts.enterprise_reliability.provider_invocation_reconciliation import (
     ProviderInvocationReconciliationVerdict,
 )
@@ -51,6 +54,7 @@ class ProviderInvocationRecoveryExecutionBlockReason(StrEnum):
     REPEAT_RESULT_INVOCATION_UNCHANGED = "repeat_result_invocation_unchanged"
     REPEAT_RESULT_IDEMPOTENCY_MISMATCH = "repeat_result_idempotency_mismatch"
     REPEAT_RESULT_MUTATION_COUNT_INVALID = "repeat_result_mutation_count_invalid"
+    REPEAT_EXECUTION_UNSUPPORTED = "repeat_execution_unsupported"
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,8 +157,17 @@ def validate_provider_invocation_recovery_execution(
                 block_reason=ProviderInvocationRecoveryExecutionBlockReason.RECONCILED_SUCCEEDED,
             )
 
+    if not request.repeat_execution_supported:
+        return ProviderInvocationRecoveryExecutionValidation(
+            allowed=False,
+            block_reason=ProviderInvocationRecoveryExecutionBlockReason.REPEAT_EXECUTION_UNSUPPORTED,
+        )
+
     contract = request.effect_contract
-    if contract.operation_key != invocation.operation:
+    if not external_work_invocation_operation_matches_effect_contract(
+        contract_operation_key=contract.operation_key,
+        invocation_operation=invocation.operation,
+    ):
         return ProviderInvocationRecoveryExecutionValidation(
             allowed=False,
             block_reason=ProviderInvocationRecoveryExecutionBlockReason.CONTRACT_OPERATION_MISMATCH,

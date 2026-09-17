@@ -13,6 +13,9 @@ from intergrax.contracts.enterprise_reliability.effect_contract import (
     ExternalEffectContract,
     contract_declares_reconciliation,
 )
+from intergrax.contracts.governed_execution_result import (
+    external_work_invocation_operation_matches_effect_contract,
+)
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
     ProviderInvocationOutcome,
@@ -131,7 +134,10 @@ def prepare_provider_invocation_reconciliation(
         )
 
     contract = request.effect_contract
-    if contract.operation_key != invocation.operation:
+    if not external_work_invocation_operation_matches_effect_contract(
+        contract_operation_key=contract.operation_key,
+        invocation_operation=invocation.operation,
+    ):
         return ProviderInvocationReconciliationResult(
             verdict=ProviderInvocationReconciliationVerdict.NOT_EXECUTED,
             reason=ProviderInvocationReconciliationReason.DENIED_INVALID_STATE,

@@ -10,10 +10,8 @@ from datetime import datetime
 from external_contractor_adapter.external_effect_contracts import (
     external_work_effect_contract_for_action,
 )
-from external_contractor_adapter.side_effect_actions import (
-    ACTION_ACCEPT_QUOTE,
-    ACTION_CANCEL_EXTERNAL_WORK,
-    ACTION_CREATE_EXTERNAL_WORK,
+from intergrax.contracts.governed_execution_result import (
+    external_work_decision_action_for_provider_operation,
 )
 from intergrax.contracts.enterprise_reliability.provider_invocation_reconciliation import (
     ProviderInvocationReconciliationRequest,
@@ -44,6 +42,7 @@ from intergrax.runtime.enterprise_reliability.default_provider_invocation_recove
 from intergrax.runtime.enterprise_reliability.provider_invocation_recovery import (
     ProviderInvocationRecoveryExecutionPorts,
     ProviderInvocationRecoveryExecutionResult,
+    ProviderInvocationRecoveryRepeatPort,
     decide_provider_invocation_recovery,
     execute_provider_invocation_recovery,
 )
@@ -51,16 +50,6 @@ from intergrax.runtime.enterprise_reliability.provider_invocation_recovery impor
 from applications.governed_contractor_application.host.provider_invocation_reconciliation import (
     GovernedExternalWorkProviderReconciliation,
 )
-
-_ACTION_FOR_OPERATION = {
-    "external_work.create_work": ACTION_CREATE_EXTERNAL_WORK,
-    "create_work": ACTION_CREATE_EXTERNAL_WORK,
-    "external_work.accept_quote": ACTION_ACCEPT_QUOTE,
-    "submit_quote_acceptance": ACTION_ACCEPT_QUOTE,
-    "external_work.cancel_work": ACTION_CANCEL_EXTERNAL_WORK,
-    "cancel_work": ACTION_CANCEL_EXTERNAL_WORK,
-}
-
 
 @dataclass(frozen=True, slots=True)
 class GovernedExternalWorkProviderRecovery:
@@ -85,14 +74,15 @@ class GovernedExternalWorkProviderRecovery:
             ),
         )
 
-    def _contract_for(self, invocation: ProviderInvocation, capabilities: ExternalWorkProviderCapabilities):
-        action = _ACTION_FOR_OPERATION.get(invocation.operation)
+    def _contract_for(
+        self,
+        invocation: ProviderInvocation,
+        capabilities: ExternalWorkProviderCapabilities,
+    ):
+        action = external_work_decision_action_for_provider_operation(invocation.operation)
         if action is None:
             raise ValueError(f"unsupported provider operation: {invocation.operation}")
-        contract = external_work_effect_contract_for_action(action, capabilities)
-        if contract.operation_key != invocation.operation:
-            return contract.model_copy(update={"operation_key": invocation.operation})
-        return contract
+        return external_work_effect_contract_for_action(action, capabilities)
 
     def build_recovery_request(
         self,
@@ -102,6 +92,7 @@ class GovernedExternalWorkProviderRecovery:
         capabilities: ExternalWorkProviderCapabilities,
         repeat_eligibility: ExternalEffectRepeatEligibilityResult | None = None,
         repeat_policy: ExternalEffectRepeatPolicy | None = None,
+        repeat_port: ProviderInvocationRecoveryRepeatPort | None = None,
     ) -> ProviderInvocationRecoveryRequest:
         contract = self._contract_for(invocation, capabilities)
         eligibility = repeat_eligibility
@@ -119,12 +110,18 @@ class GovernedExternalWorkProviderRecovery:
         if outcome is None:
             dispatch_state = ProviderInvocationRecoveryDispatchState.CRASH_AMBIGUITY
 
+        repeat_execution_supported = (
+            repeat_port.supports_provider_operation(invocation.operation)
+            if repeat_port is not None
+            else False
+        )
         return ProviderInvocationRecoveryRequest(
             invocation=invocation,
             outcome=outcome,
             dispatch_state=dispatch_state,
             effect_contract=contract,
             repeat_eligibility=eligibility,
+            repeat_execution_supported=repeat_execution_supported,
         )
 
     def decide(

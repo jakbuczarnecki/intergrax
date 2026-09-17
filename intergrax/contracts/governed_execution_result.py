@@ -47,6 +47,60 @@ _ACTION_TO_OPERATION: Final[dict[str, str]] = {
     _EXTERNAL_WORK_ACTION_CANCEL: "cancel_work",
 }
 
+# ERL ``ExternalEffectContract.operation_key`` → provider integration operation.
+_EFFECT_CONTRACT_OPERATION_KEY_TO_PROVIDER_OPERATION: Final[dict[str, str]] = {
+    "external_work.create_work": "create_work",
+    "external_work.accept_quote": "submit_quote_acceptance",
+    "external_work.cancel_work": "cancel_work",
+}
+
+_PROVIDER_OPERATION_TO_DECISION_ACTION: Final[dict[str, str]] = {
+    "create_work": _EXTERNAL_WORK_ACTION_CREATE,
+    "submit_quote_acceptance": _EXTERNAL_WORK_ACTION_ACCEPT_QUOTE,
+    "cancel_work": _EXTERNAL_WORK_ACTION_CANCEL,
+    "external_work.create_work": _EXTERNAL_WORK_ACTION_CREATE,
+    "external_work.accept_quote": _EXTERNAL_WORK_ACTION_ACCEPT_QUOTE,
+    "external_work.cancel_work": _EXTERNAL_WORK_ACTION_CANCEL,
+}
+
+
+def external_work_provider_operation_for_decision_action(
+    action: str,
+) -> str | None:
+    """Canonical platform action → provider integration operation."""
+    return _ACTION_TO_OPERATION.get(action)
+
+
+def external_work_decision_action_for_provider_operation(
+    operation: str,
+) -> str | None:
+    """Provider integration operation (incl. legacy ERL aliases) → platform action."""
+    return _PROVIDER_OPERATION_TO_DECISION_ACTION.get(operation)
+
+
+def external_work_provider_operation_for_effect_contract_operation_key(
+    operation_key: str,
+) -> str | None:
+    """Canonical ERL effect contract operation_key → provider integration operation."""
+    return _EFFECT_CONTRACT_OPERATION_KEY_TO_PROVIDER_OPERATION.get(operation_key)
+
+
+def external_work_invocation_operation_matches_effect_contract(
+    *,
+    contract_operation_key: str,
+    invocation_operation: str,
+) -> bool:
+    """Fail-closed binding between durable invocation operation and effect contract."""
+    canonical_provider = external_work_provider_operation_for_effect_contract_operation_key(
+        contract_operation_key,
+    )
+    if canonical_provider is None:
+        return contract_operation_key == invocation_operation
+    return invocation_operation in {
+        contract_operation_key,
+        canonical_provider,
+    }
+
 
 class GovernedExecutionResult(BaseModel):
     """Single atomic post-execution result for host attestation / recovery."""

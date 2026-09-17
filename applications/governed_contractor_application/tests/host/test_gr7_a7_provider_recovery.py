@@ -57,6 +57,9 @@ from intergrax.contracts.external_work_provider_capabilities import (
     quote_first_partner_capability_fixture,
 )
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
+from intergrax.contracts.governed_execution_result import (
+    external_work_decision_action_for_provider_operation,
+)
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
     ProviderInvocationOutcome,
@@ -119,6 +122,19 @@ class _SelectIdempotentRepeatRecoveryPolicy:
 class _RecordingRepeatPort:
     calls: int = 0
     last_idempotency_key: str | None = None
+    supported: bool = True
+
+    def supports_provider_operation(self, operation: str) -> bool:
+        if not self.supported:
+            return False
+        from intergrax.contracts.governed_execution_result import (
+            external_work_decision_action_for_provider_operation,
+        )
+
+        return (
+            external_work_decision_action_for_provider_operation(operation)
+            == ACTION_CREATE_EXTERNAL_WORK
+        )
 
     def execute_idempotent_repeat(
         self,
@@ -256,6 +272,7 @@ def test_failed_eligible_policy_repeat_executes_one_mutation() -> None:
         outcome=outcome,
         effect_contract=_CREATE_CONTRACT,
         repeat_eligibility=eligibility,
+        repeat_execution_supported=True,
     )
     decision = decide_provider_invocation_recovery(
         request,
@@ -318,6 +335,7 @@ def test_unknown_still_unknown_eligible_policy_repeat() -> None:
         effect_contract=_CREATE_CONTRACT,
         reconciliation=reconciliation,
         repeat_eligibility=eligibility,
+        repeat_execution_supported=True,
     )
     decision = decide_provider_invocation_recovery(
         request,
@@ -458,6 +476,7 @@ def test_repeat_preserves_idempotency_key() -> None:
         outcome=outcome,
         effect_contract=_CREATE_CONTRACT,
         repeat_eligibility=eligibility,
+        repeat_execution_supported=True,
     )
     decision = decide_provider_invocation_recovery(
         request,
@@ -489,6 +508,7 @@ def test_policy_failure_no_mutation() -> None:
         outcome=outcome,
         effect_contract=_CREATE_CONTRACT,
         repeat_eligibility=_repeat_eligibility(inv, outcome),
+        repeat_execution_supported=True,
     )
     decision = evaluate_provider_invocation_recovery(request, policy=_ExplodingPolicy())
     assert decision.action is ProviderInvocationRecoveryAction.ESCALATE_HITL
@@ -539,6 +559,12 @@ def test_crash_ambiguity_no_automatic_repeat() -> None:
 
 def test_execution_failure_does_not_fallback() -> None:
     class _FailingRepeatPort:
+        def supports_provider_operation(self, operation: str) -> bool:
+            return (
+                external_work_decision_action_for_provider_operation(operation)
+                == ACTION_CREATE_EXTERNAL_WORK
+            )
+
         def execute_idempotent_repeat(self, **kwargs: object) -> ProviderInvocationRecoveryRepeatResult:
             _ = kwargs
             raise RuntimeError("repeat failed")
@@ -550,6 +576,7 @@ def test_execution_failure_does_not_fallback() -> None:
         outcome=outcome,
         effect_contract=_CREATE_CONTRACT,
         repeat_eligibility=_repeat_eligibility(inv, outcome),
+        repeat_execution_supported=True,
     )
     decision = decide_provider_invocation_recovery(
         request,
@@ -572,6 +599,7 @@ def test_repeat_creates_new_physical_invocation_id() -> None:
         outcome=outcome,
         effect_contract=_CREATE_CONTRACT,
         repeat_eligibility=_repeat_eligibility(inv, outcome),
+        repeat_execution_supported=True,
     )
     decision = decide_provider_invocation_recovery(
         request,

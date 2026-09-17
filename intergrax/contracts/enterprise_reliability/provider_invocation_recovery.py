@@ -25,6 +25,9 @@ from intergrax.contracts.enterprise_reliability.repeat_eligibility import (
     ExternalEffectRepeatEligibilityResult,
     ExternalEffectRepeatEligibilityVerdict,
 )
+from intergrax.contracts.governed_execution_result import (
+    external_work_invocation_operation_matches_effect_contract,
+)
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
     ProviderInvocationOutcome,
@@ -122,6 +125,7 @@ class ProviderInvocationRecoveryRequest(BaseModel):
     effect_contract: ExternalEffectContract
     reconciliation: ProviderInvocationReconciliationResult | None = None
     repeat_eligibility: ExternalEffectRepeatEligibilityResult | None = None
+    repeat_execution_supported: bool = False
 
 
 class ProviderInvocationRecoveryDecision(BaseModel):
@@ -210,7 +214,10 @@ def evaluate_provider_invocation_recovery(
         )
 
     contract = request.effect_contract
-    if contract.operation_key != invocation.operation:
+    if not external_work_invocation_operation_matches_effect_contract(
+        contract_operation_key=contract.operation_key,
+        invocation_operation=invocation.operation,
+    ):
         return ProviderInvocationRecoveryDecision(
             action=ProviderInvocationRecoveryAction.ESCALATE_HITL,
             reason=ProviderInvocationRecoveryReason.INVALID_STATE,
@@ -259,6 +266,7 @@ def evaluate_provider_invocation_recovery(
         posture=posture,
         reconciliation=reconciliation,
         repeat_eligibility=repeat_eligibility,
+        repeat_execution_supported=request.repeat_execution_supported,
     )
 
     if len(allowed) == 1:
@@ -329,10 +337,12 @@ def _allowed_recovery_actions(
     posture: UnknownUncertaintyPosture,
     reconciliation: ProviderInvocationReconciliationResult | None,
     repeat_eligibility: ExternalEffectRepeatEligibilityResult | None,
+    repeat_execution_supported: bool,
 ) -> tuple[ProviderInvocationRecoveryAction, ...]:
     repeat_allowed = _repeat_action_allowed(
         posture=posture,
         repeat_eligibility=repeat_eligibility,
+        repeat_execution_supported=repeat_execution_supported,
     )
     reconcile_allowed = _reconcile_action_allowed(
         outcome=outcome,
@@ -376,7 +386,10 @@ def _repeat_action_allowed(
     *,
     posture: UnknownUncertaintyPosture,
     repeat_eligibility: ExternalEffectRepeatEligibilityResult | None,
+    repeat_execution_supported: bool,
 ) -> bool:
+    if not repeat_execution_supported:
+        return False
     if posture is UnknownUncertaintyPosture.RECONCILE_ONLY:
         return False
     if posture is UnknownUncertaintyPosture.ESCALATE_REQUIRED:

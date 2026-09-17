@@ -16,10 +16,8 @@ from external_contractor_adapter.external_work_reconciliation_plugin import (
     ExternalWorkReconciliationPlugin,
     external_task_correlation_from_invocation,
 )
-from external_contractor_adapter.side_effect_actions import (
-    ACTION_ACCEPT_QUOTE,
-    ACTION_CANCEL_EXTERNAL_WORK,
-    ACTION_CREATE_EXTERNAL_WORK,
+from intergrax.contracts.governed_execution_result import (
+    external_work_decision_action_for_provider_operation,
 )
 from intergrax.contracts.enterprise_reliability.plugin_spi import (
     EnterpriseReliabilityPlugin,
@@ -47,13 +45,6 @@ from intergrax.runtime.enterprise_reliability.provider_invocation_reconciliation
     ProviderInvocationReconciliationRun,
     reconcile_durable_provider_invocation_unknown,
 )
-
-_ACTION_FOR_OPERATION = {
-    "external_work.create_work": ACTION_CREATE_EXTERNAL_WORK,
-    "external_work.accept_quote": ACTION_ACCEPT_QUOTE,
-    "external_work.cancel_work": ACTION_CANCEL_EXTERNAL_WORK,
-}
-
 
 @dataclass(frozen=True, slots=True)
 class GovernedExternalWorkProviderReconciliation:
@@ -96,7 +87,7 @@ class GovernedExternalWorkProviderReconciliation:
         tenant_id: str,
         recorded_at: datetime | None = None,
     ) -> ProviderInvocationReconciliationRun:
-        action = _ACTION_FOR_OPERATION.get(invocation.operation)
+        action = external_work_decision_action_for_provider_operation(invocation.operation)
         if action is None:
             raise ValueError(f"unsupported provider operation: {invocation.operation}")
         contract = external_work_effect_contract_for_action(action, capabilities)
