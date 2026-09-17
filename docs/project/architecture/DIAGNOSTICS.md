@@ -348,6 +348,20 @@ ProblemOccurrences (bounded page)
   → DiagnosticAssessment / operator projections
 ```
 
+**DG-003 (operator story):** `DiagnosticInvestigationView.operator_story` is a derived Diagnostics read model (`last_good` → `first_failed` → `supporting_evidence`). It reuses the same request-scoped `ExecutionReconstruction` as assessment and timeline projection — no additional reconstruction per story. `ExecutionEventPosition` determines factual ordering; timestamps are display-only (`observed_at`). `first_failed` is the first failure boundary supported by available evidence — not root cause. Incomplete runtime history surfaces `FIRST_OBSERVED_IN_AVAILABLE_EVIDENCE` scope and explicit limitations.
+
+```text
+ProblemOccurrence
+  → DiagnosticReadService.get_investigation
+  → ExecutionReconstructionReadSession
+  → ExecutionReconstruction
+  → DiagnosticAssessment
+  → DG-003 operator story projection
+  → last_good → first_failed → evidence
+```
+
+DG-003 does not own execution facts, persist story state, or bypass `ExecutionReconstructionReader`.
+
 ```text
 Problem
   → occurrence
