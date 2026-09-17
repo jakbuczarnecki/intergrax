@@ -1,40 +1,32 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Provider-neutral evidence persistence factory seam (OBS-DG005)."""
+"""Backward-compatible re-exports; SQLite lives under ``providers/``."""
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from pathlib import Path
-
-from intergrax.contracts.execution_evidence.persistence_port import (
-    EvidencePersistencePort,
+from testing_support.obs_distributed_topology.provider_composition import (
+    DEFAULT_DG005_EVIDENCE_PROVIDER_RESOLVER,
 )
-from intergrax.runtime.events.evidence_persistence_adapter import (
-    RuntimeEventPersistenceEvidenceAdapter,
-    as_evidence_persistence_port,
+from testing_support.obs_distributed_topology.provider_contract import (
+    EvidenceProviderDescriptor,
+    EvidenceProviderFactory,
+    QualificationEvidenceProviderResolver,
 )
-from intergrax.runtime.events.stores.sqlite_runtime_event_store import (
-    SQLiteRuntimeEventStore,
+from testing_support.obs_distributed_topology.providers.sqlite_file import (
+    SQLITE_FILE_PROVIDER_ID,
+    sqlite_file_descriptor,
+    sqlite_file_evidence_provider_factory,
 )
 
-from testing_support.obs_distributed_topology.models import SqliteEvidenceProviderConfig
+DEFAULT_DG005_EVIDENCE_PROVIDER_FACTORY = sqlite_file_evidence_provider_factory
 
-EvidenceProviderFactory = Callable[
-    [SqliteEvidenceProviderConfig], EvidencePersistencePort
+__all__ = [
+    "DEFAULT_DG005_EVIDENCE_PROVIDER_FACTORY",
+    "DEFAULT_DG005_EVIDENCE_PROVIDER_RESOLVER",
+    "EvidenceProviderDescriptor",
+    "EvidenceProviderFactory",
+    "QualificationEvidenceProviderResolver",
+    "SQLITE_FILE_PROVIDER_ID",
+    "sqlite_file_descriptor",
+    "sqlite_file_evidence_provider_factory",
 ]
-
-
-def sqlite_file_evidence_provider_factory(
-    config: SqliteEvidenceProviderConfig,
-) -> EvidencePersistencePort:
-    store = SQLiteRuntimeEventStore(db_path=Path(config.db_path))
-    port = as_evidence_persistence_port(store)
-    if not isinstance(port, RuntimeEventPersistenceEvidenceAdapter):
-        raise TypeError("expected RuntimeEventPersistenceEvidenceAdapter")
-    return port
-
-
-DEFAULT_DG005_EVIDENCE_PROVIDER_FACTORY: EvidenceProviderFactory = (
-    sqlite_file_evidence_provider_factory
-)

@@ -65,9 +65,11 @@ from testing_support.obs_distributed_topology.models import (
     ReaderWorkerResult,
     WriterWorkerResult,
 )
-from testing_support.obs_distributed_topology.provider_factory import (
-    DEFAULT_DG005_EVIDENCE_PROVIDER_FACTORY,
-    EvidenceProviderFactory,
+from testing_support.obs_distributed_topology.provider_composition import (
+    DEFAULT_DG005_EVIDENCE_PROVIDER_RESOLVER,
+)
+from testing_support.obs_distributed_topology.provider_contract import (
+    QualificationEvidenceProviderResolver,
 )
 
 
@@ -94,9 +96,11 @@ def _planned_to_runtime_event(planned: PlannedRuntimeEvent) -> RuntimeEvent:
 def run_writer_role(
     scenario: Dg005Scenario,
     *,
-    provider_factory: EvidenceProviderFactory = DEFAULT_DG005_EVIDENCE_PROVIDER_FACTORY,
+    provider_resolver: QualificationEvidenceProviderResolver = (
+        DEFAULT_DG005_EVIDENCE_PROVIDER_RESOLVER
+    ),
 ) -> WriterWorkerResult:
-    port = provider_factory(scenario.provider)
+    port = provider_resolver.resolve(scenario.provider)
     bus = RuntimeEventBus(
         persistence=port,
         history_policy=RuntimeEventHistoryPolicy.disabled(),
@@ -141,9 +145,11 @@ def run_writer_role(
 def run_reader_role(
     scenario: Dg005Scenario,
     *,
-    provider_factory: EvidenceProviderFactory = DEFAULT_DG005_EVIDENCE_PROVIDER_FACTORY,
+    provider_resolver: QualificationEvidenceProviderResolver = (
+        DEFAULT_DG005_EVIDENCE_PROVIDER_RESOLVER
+    ),
 ) -> ReaderWorkerResult:
-    port = provider_factory(scenario.provider)
+    port = provider_resolver.resolve(scenario.provider)
     reconstructor = ExecutionReconstructor(
         runtime_events=port,
         causal_evidence=InMemoryCausalEvidencePersistence(),
@@ -246,9 +252,11 @@ def run_reader_role(
 def run_idempotent_retry_role(
     scenario: Dg005Scenario,
     *,
-    provider_factory: EvidenceProviderFactory = DEFAULT_DG005_EVIDENCE_PROVIDER_FACTORY,
+    provider_resolver: QualificationEvidenceProviderResolver = (
+        DEFAULT_DG005_EVIDENCE_PROVIDER_RESOLVER
+    ),
 ) -> IdempotentRetryWorkerResult:
-    port = provider_factory(scenario.provider)
+    port = provider_resolver.resolve(scenario.provider)
     port.append(
         _planned_to_runtime_event(scenario.idempotent_event),
         tenant_id=scenario.idempotent_event.tenant_id,
@@ -269,9 +277,11 @@ def run_idempotent_retry_role(
 def run_diagnostics_role(
     scenario: Dg005Scenario,
     *,
-    provider_factory: EvidenceProviderFactory = DEFAULT_DG005_EVIDENCE_PROVIDER_FACTORY,
+    provider_resolver: QualificationEvidenceProviderResolver = (
+        DEFAULT_DG005_EVIDENCE_PROVIDER_RESOLVER
+    ),
 ) -> DiagnosticsWorkerResult:
-    port = provider_factory(scenario.provider)
+    port = provider_resolver.resolve(scenario.provider)
     reconstructor = ExecutionReconstructor(
         runtime_events=port,
         causal_evidence=InMemoryCausalEvidencePersistence(),

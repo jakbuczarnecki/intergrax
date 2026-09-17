@@ -947,7 +947,7 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 
 **Non-claims:** multi-region replication, network partition tolerance, geo-distributed ordering, HA failover, and cross-datacenter consistency are **not** certified by DG-005.
 
-**Harness:** `testing_support/obs_distributed_topology/` (git-archive exact-SHA child imports + SQLite file backend).
+**Harness:** `testing_support/obs_distributed_topology/` — topology orchestration depends only on qualification provider contracts (`EvidenceProviderDescriptor`, resolver/factory seam, `EvidencePersistencePort`). **SQLite file-backed adapter** (`sqlite-file`) is the **currently qualified** concrete provider; additional providers may bind the same contract without changing writer/reader/diagnostics roles. Child workers use git-archive exact-SHA imports.
 
 | Role | Authority |
 | ---- | --------- |

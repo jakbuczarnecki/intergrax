@@ -5,9 +5,8 @@
 from __future__ import annotations
 
 import json
-from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import cast
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -16,11 +15,14 @@ from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
 )
+from intergrax.knowledge.contracts.validation import JsonObject, JsonValue
 
 from testing_support.obs_distributed_topology.models import (
     Dg005Scenario,
     PlannedRuntimeEvent,
-    SqliteEvidenceProviderConfig,
+)
+from testing_support.obs_distributed_topology.provider_contract import (
+    EvidenceProviderDescriptor,
 )
 
 
@@ -50,10 +52,36 @@ def _planned_from_dict(payload: dict[str, str]) -> PlannedRuntimeEvent:
     )
 
 
-def scenario_to_dict(scenario: Dg005Scenario) -> dict[str, Any]:
+def _provider_to_dict(descriptor: EvidenceProviderDescriptor) -> JsonObject:
     return {
+        "provider_id": descriptor.provider_id,
+        "config": dict(descriptor.config),
+    }
+
+
+def _provider_from_dict(payload: JsonObject) -> EvidenceProviderDescriptor:
+    if "provider_id" not in payload:
+        raise ValueError("scenario provider requires provider_id")
+    provider_id = payload["provider_id"]
+    if not isinstance(provider_id, str) or not provider_id.strip():
+        raise ValueError("scenario provider provider_id must be a non-empty str")
+    if "config" not in payload:
+        raise ValueError("scenario provider requires config")
+    raw_config = payload["config"]
+    if not isinstance(raw_config, dict):
+        raise ValueError("scenario provider config must be a JSON object")
+    config: JsonObject = {}
+    for key, value in raw_config.items():
+        if not isinstance(key, str):
+            raise ValueError("scenario provider config keys must be strings")
+        config[key] = cast(JsonValue, value)
+    return EvidenceProviderDescriptor(provider_id=provider_id, config=config)
+
+
+def scenario_to_dict(scenario: Dg005Scenario) -> JsonObject:
+    payload: JsonObject = {
         "qualification_sha": scenario.qualification_sha,
-        "provider": asdict(scenario.provider),
+        "provider": _provider_to_dict(scenario.provider),
         "primary_tenant": scenario.primary_tenant,
         "foreign_tenant": scenario.foreign_tenant,
         "primary_task_id": str(scenario.primary_task_id),
@@ -62,47 +90,67 @@ def scenario_to_dict(scenario: Dg005Scenario) -> dict[str, Any]:
         "foreign_run_id": str(scenario.foreign_run_id),
         "primary_attempt_id": str(scenario.primary_attempt_id),
         "primary_execution_id": str(scenario.primary_execution_id),
-        "primary_events": [_planned_to_dict(e) for e in scenario.primary_events],
-        "isolated_run_events": [
-            _planned_to_dict(e) for e in scenario.isolated_run_events
-        ],
-        "foreign_tenant_events": [
-            _planned_to_dict(e) for e in scenario.foreign_tenant_events
-        ],
+        "primary_events": cast(
+            JsonValue,
+            [_planned_to_dict(e) for e in scenario.primary_events],
+        ),
+        "isolated_run_events": cast(
+            JsonValue,
+            [_planned_to_dict(e) for e in scenario.isolated_run_events],
+        ),
+        "foreign_tenant_events": cast(
+            JsonValue,
+            [_planned_to_dict(e) for e in scenario.foreign_tenant_events],
+        ),
         "diagnostics_task_id": str(scenario.diagnostics_task_id),
         "diagnostics_run_id": str(scenario.diagnostics_run_id),
         "diagnostics_attempt_id": str(scenario.diagnostics_attempt_id),
-        "idempotent_event": _planned_to_dict(scenario.idempotent_event),
+        "idempotent_event": cast(
+            JsonValue,
+            _planned_to_dict(scenario.idempotent_event),
+        ),
         "reconstruction_initial_limit": scenario.reconstruction_initial_limit,
         "as_of_position_index": scenario.as_of_position_index,
     }
+    return payload
 
 
-def scenario_from_dict(payload: dict[str, Any]) -> Dg005Scenario:
+def scenario_from_dict(payload: JsonObject) -> Dg005Scenario:
     return Dg005Scenario(
-        qualification_sha=payload["qualification_sha"],
-        provider=SqliteEvidenceProviderConfig(**payload["provider"]),
-        primary_tenant=payload["primary_tenant"],
-        foreign_tenant=payload["foreign_tenant"],
-        primary_task_id=TaskId(payload["primary_task_id"]),
-        primary_run_id=RunId(payload["primary_run_id"]),
-        isolated_run_id=RunId(payload["isolated_run_id"]),
-        foreign_run_id=RunId(payload["foreign_run_id"]),
-        primary_attempt_id=AttemptId(payload["primary_attempt_id"]),
-        primary_execution_id=ExecutionId(payload["primary_execution_id"]),
-        primary_events=tuple(_planned_from_dict(e) for e in payload["primary_events"]),
+        qualification_sha=str(payload["qualification_sha"]),
+        provider=_provider_from_dict(cast(JsonObject, payload["provider"])),
+        primary_tenant=str(payload["primary_tenant"]),
+        foreign_tenant=str(payload["foreign_tenant"]),
+        primary_task_id=TaskId(str(payload["primary_task_id"])),
+        primary_run_id=RunId(str(payload["primary_run_id"])),
+        isolated_run_id=RunId(str(payload["isolated_run_id"])),
+        foreign_run_id=RunId(str(payload["foreign_run_id"])),
+        primary_attempt_id=AttemptId(str(payload["primary_attempt_id"])),
+        primary_execution_id=ExecutionId(str(payload["primary_execution_id"])),
+        primary_events=tuple(
+            _planned_from_dict(cast(dict[str, str], e))
+            for e in cast(list[object], payload["primary_events"])
+        ),
         isolated_run_events=tuple(
-            _planned_from_dict(e) for e in payload["isolated_run_events"]
+            _planned_from_dict(cast(dict[str, str], e))
+            for e in cast(list[object], payload["isolated_run_events"])
         ),
         foreign_tenant_events=tuple(
-            _planned_from_dict(e) for e in payload["foreign_tenant_events"]
+            _planned_from_dict(cast(dict[str, str], e))
+            for e in cast(list[object], payload["foreign_tenant_events"])
         ),
-        diagnostics_task_id=TaskId(payload["diagnostics_task_id"]),
-        diagnostics_run_id=RunId(payload["diagnostics_run_id"]),
-        diagnostics_attempt_id=AttemptId(payload["diagnostics_attempt_id"]),
-        idempotent_event=_planned_from_dict(payload["idempotent_event"]),
-        reconstruction_initial_limit=int(payload["reconstruction_initial_limit"]),
-        as_of_position_index=int(payload["as_of_position_index"]),
+        diagnostics_task_id=TaskId(str(payload["diagnostics_task_id"])),
+        diagnostics_run_id=RunId(str(payload["diagnostics_run_id"])),
+        diagnostics_attempt_id=AttemptId(str(payload["diagnostics_attempt_id"])),
+        idempotent_event=_planned_from_dict(
+            cast(dict[str, str], payload["idempotent_event"]),
+        ),
+        reconstruction_initial_limit=int(
+            cast(int | str | float, payload["reconstruction_initial_limit"]),
+        ),
+        as_of_position_index=int(
+            cast(int | str | float, payload["as_of_position_index"]),
+        ),
     )
 
 
@@ -115,5 +163,7 @@ def write_scenario(path: Path, scenario: Dg005Scenario) -> None:
 
 
 def read_scenario(path: Path) -> Dg005Scenario:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    return scenario_from_dict(payload)
+    loaded = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(loaded, dict):
+        raise ValueError("scenario JSON root must be an object")
+    return scenario_from_dict(cast(JsonObject, loaded))

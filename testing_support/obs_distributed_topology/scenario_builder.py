@@ -19,7 +19,9 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 from testing_support.obs_distributed_topology.models import (
     Dg005Scenario,
     PlannedRuntimeEvent,
-    SqliteEvidenceProviderConfig,
+)
+from testing_support.obs_distributed_topology.providers.sqlite_file import (
+    sqlite_file_descriptor,
 )
 
 _PRIMARY_EVENT_COUNT = 12
@@ -115,7 +117,7 @@ def build_dg005_scenario(
 
     return Dg005Scenario(
         qualification_sha=qualification_sha,
-        provider=SqliteEvidenceProviderConfig(db_path=str(sqlite_db_path)),
+        provider=sqlite_file_descriptor(db_path=sqlite_db_path),
         primary_tenant=primary_tenant,
         foreign_tenant=foreign_tenant,
         primary_task_id=primary_task_id,

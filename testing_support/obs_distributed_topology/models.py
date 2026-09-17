@@ -16,11 +16,9 @@ from intergrax.contracts.execution_identity import (
 )
 
 
-@dataclass(frozen=True, slots=True)
-class SqliteEvidenceProviderConfig:
-    """Provider-neutral durable backend descriptor (file-backed SQLite default)."""
-
-    db_path: str
+from testing_support.obs_distributed_topology.provider_contract import (
+    EvidenceProviderDescriptor,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,7 +36,7 @@ class PlannedRuntimeEvent:
 @dataclass(frozen=True, slots=True)
 class Dg005Scenario:
     qualification_sha: str
-    provider: SqliteEvidenceProviderConfig
+    provider: EvidenceProviderDescriptor
     primary_tenant: str
     foreign_tenant: str
     primary_task_id: TaskId
