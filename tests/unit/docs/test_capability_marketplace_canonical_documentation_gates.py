@@ -143,14 +143,17 @@ def test_canonical_doc_describes_lifecycle_handoff_boundary() -> None:
     assert "typed lifecycle handoff" in handoff.lower() or "LIFECYCLE HANDOFF" in handoff
     assert "DOMAIN AUTHORITY" in handoff or "domain authority" in handoff.lower()
     assert re.search(
-        r"HANDOFF_ACCEPTED[`\s]*≠\s*installed\s*≠\s*active",
+        r"HANDOFF_ACCEPTED[`\s]*≠\s*installed\s*≠\s*active\s*≠\s*routable\s*≠\s*executed",
         handoff,
         flags=re.IGNORECASE,
     ) or re.search(
-        r"HANDOFF_ACCEPTED[`\s]*!=\s*installed\s*!=\s*active",
+        r"HANDOFF_ACCEPTED[`\s]*!=\s*installed\s*!=\s*active\s*!=\s*routable\s*!=\s*executed",
         handoff,
         flags=re.IGNORECASE,
-    ), "handoff § must preserve HANDOFF_ACCEPTED ≠ installed ≠ active invariant"
+    ), (
+        "handoff § must preserve HANDOFF_ACCEPTED ≠ installed ≠ active ≠ routable ≠ executed "
+        "invariant (or ASCII != chain)"
+    )
 
 
 def test_canonical_doc_marketplace_is_not_execution_engine() -> None:
