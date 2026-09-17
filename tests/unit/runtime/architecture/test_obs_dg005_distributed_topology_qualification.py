@@ -122,7 +122,9 @@ def test_dg005_process_isolated_topology_qualification(tmp_path_factory: pytest.
 
     assert reader["runtime_history_completeness"] == "complete"
     assert list(reader["event_ids_in_order"]) == expected_run_ids
-    assert reader["positions_in_order"] == tuple(range(1, len(expected_run_ids) + 1))
+    assert list(reader["positions_in_order"]) == list(
+        range(1, len(expected_run_ids) + 1)
+    )
     assert len(reader["as_of_event_ids"]) == scenario.as_of_position_index
     assert reader["foreign_tenant_visible_count"] == 0
     assert set(reader["isolated_run_event_ids"]) == {
