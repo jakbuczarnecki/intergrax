@@ -8,7 +8,7 @@
 | Gate | Value |
 |------|-------|
 | **EAC0_BASELINE_HEAD** | `7163fca0ea086f09b75382efe340a8aa06a90bc2` |
-| **FINAL HEAD** | *(set at commit)* |
+| **FINAL HEAD** | `6350e7e02dcfb45a63c98dde339adbfc16cac69c` |
 | **Branch** | `development` |
 | **HEAD == origin/development @ baseline** | **YES** |
 | **Registry hub** | [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md) |
