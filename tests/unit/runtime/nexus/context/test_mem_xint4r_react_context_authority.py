@@ -407,6 +407,92 @@ async def test_multi_hop_preserves_stop_reason_and_investigation_proof() -> None
     assert len(result.investigation_proof.steps) == 1
 
 
+_POLICY_MODULE = (
+    Path(__file__).resolve().parents[5]
+    / "intergrax"
+    / "runtime"
+    / "nexus"
+    / "context"
+    / "iterative_bounded_tool_loop_policy.py"
+)
+_EVIDENCE_GATHERING = (
+    Path(__file__).resolve().parents[5]
+    / "platform_proofs"
+    / "scenarios"
+    / "ai_incident_investigation"
+    / "application"
+    / "evidence_gathering.py"
+)
+_ORDER_WORKFLOW = (
+    Path(__file__).resolve().parents[5]
+    / "platform_proofs"
+    / "scenarios"
+    / "indirect_prompt_injection"
+    / "application"
+    / "order_workflow.py"
+)
+
+
+def test_iterative_bounded_tool_loop_policy_has_no_runtime_ce_construction() -> None:
+    source = _POLICY_MODULE.read_text(encoding="utf-8")
+    assert "DefaultNexusContextEngine" not in source
+    assert "materialize_context_plugin_registry" not in source
+    assert "context_engine =" not in source
+
+
+def test_platform_proof_react_paths_forbid_asyncio_run_workarounds() -> None:
+    for path in (_EVIDENCE_GATHERING, _ORDER_WORKFLOW):
+        source = path.read_text(encoding="utf-8")
+        assert "asyncio.run" not in source
+        assert "run_until_complete" not in source
+        assert "new_event_loop" not in source
+
+
+def test_apply_context_engine_to_runtime_config_preserves_custom_engine() -> None:
+    from intergrax.applications._shared.context_wiring import apply_context_engine_to_runtime_config
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+    from intergrax.runtime.nexus.config import RuntimeConfig
+    from testing_support.builder import FakeLLMAdapter
+
+    custom = RecordingContextEngine()
+    config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False, context_engine=custom)
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="composition.custom_ce")
+    apply_context_engine_to_runtime_config(config, env)
+    assert config.context_engine is custom
+
+
+def test_apply_context_engine_to_runtime_config_materializes_when_unset() -> None:
+    from intergrax.applications._shared.context_wiring import apply_context_engine_to_runtime_config
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+    from intergrax.runtime.nexus.config import RuntimeConfig
+    from testing_support.builder import FakeLLMAdapter
+
+    config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="composition.default_ce")
+    apply_context_engine_to_runtime_config(config, env)
+    assert config.context_engine is not None
+
+
+@pytest.mark.asyncio
+async def test_run_bounded_tool_loop_async_invokes_context_engine_assemble() -> None:
+    state = build_runtime_state_for_tests(run_id=mint_run_id())
+    engine = _wire_ce(state)
+    token, budget_token = _bind_identity(state)
+    try:
+        await run_bounded_tool_loop_async(
+            state=state,
+            invoker=_invoker(),
+            tool_planner=_TwoToolRoundPlanner(),
+            planner_input=[ChatMessage(role="user", content="u")],
+            allowed_tool_ids=("probe.read",),
+            max_iterations=2,
+        )
+    finally:
+        reset_active_execution_identity(token)
+        reset_active_execution_budget(budget_token)
+    assert engine.assemble_calls >= 2
+
+
 def test_append_native_tool_messages_remains_legacy_helper_only() -> None:
     messages: list[ChatMessage] = [ChatMessage(role="user", content="u")]
     outcome = PlannedToolCallOutcome(

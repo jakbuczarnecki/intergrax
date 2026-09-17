@@ -172,7 +172,7 @@ def test_dg005_empty_backend_sees_no_writer_evidence(
     )
     assert completed.returncode == 0, completed.stderr
     empty_reader = load_json_result(empty_result)
-    assert empty_reader["event_ids_in_order"] == ()
+    assert empty_reader["event_ids_in_order"] in ([], ())
     assert empty_reader["idempotent_run_count"] == 0
     assert len(writer["primary_summaries"]) > 0
 

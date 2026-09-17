@@ -56,9 +56,6 @@ from intergrax.runtime.execution.budget.ledger import create_execution_budget_le
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.native_planner_action_context import NativePlannerRound
-from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
-    wire_default_nexus_context_engine_if_unset,
-)
 from intergrax.runtime.nexus.tools.tool_loop import (
     execute_planned_tool_calls,
     run_bounded_tool_loop_async,
@@ -385,7 +382,8 @@ def _bind_identity(
     )
 
 
-def test_llm_retry_does_not_mint_new_attempt() -> None:
+@pytest.mark.asyncio
+async def test_llm_retry_does_not_mint_new_attempt() -> None:
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
@@ -395,20 +393,20 @@ def test_llm_retry_does_not_mint_new_attempt() -> None:
         execution_id=execution_id,
     )
     try:
-        import asyncio
+        from testing_support.context_engine_test_wiring import (
+            attach_test_context_engine_for_iterative_tool_loop,
+        )
 
         state = _runtime_state(run_id=run_id)
-        wire_default_nexus_context_engine_if_unset(state)
+        attach_test_context_engine_for_iterative_tool_loop(state)
         invoker = _RecordingInvoker()
-        asyncio.run(
-            run_bounded_tool_loop_async(
-                state=state,
-                invoker=invoker,
-                tool_planner=_TwoRoundPlanner(),
-                planner_input=[ChatMessage(role="user", content="iterate")],
-                allowed_tool_ids=("probe.read",),
-                max_iterations=2,
-            )
+        await run_bounded_tool_loop_async(
+            state=state,
+            invoker=invoker,
+            tool_planner=_TwoRoundPlanner(),
+            planner_input=[ChatMessage(role="user", content="iterate")],
+            allowed_tool_ids=("probe.read",),
+            max_iterations=2,
         )
         active_run_id, active_attempt_id = require_active_execution_identity()
         assert active_run_id == run_id

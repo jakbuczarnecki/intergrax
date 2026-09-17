@@ -53,9 +53,6 @@ from intergrax.runtime.nexus.tools.native_planner_action_context import (
     resolve_native_planner_protocol,
 )
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
-from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
-    wire_default_nexus_context_engine_if_unset,
-)
 from intergrax.runtime.nexus.tools.tool_loop import (
     execute_planned_tool_calls,
     run_bounded_tool_loop,
@@ -71,6 +68,7 @@ from testing_support.builder import (
     build_runtime_state_for_tests,
     tools_agent_make_contract,
 )
+from testing_support.context_engine_test_wiring import attach_test_context_engine_for_iterative_tool_loop
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -431,16 +429,14 @@ class ToolLoopExecutionDelegate:
         state = _runtime_state(run_id=request.run_id)
         state.context.config.max_parallel_tool_calls = self._max_parallel_read_only
         if self._max_iterations > 1:
-            wire_default_nexus_context_engine_if_unset(state)
-            asyncio.run(
-                run_bounded_tool_loop_async(
-                    state=state,
-                    invoker=self._invoker,
-                    tool_planner=self._planner,
-                    planner_input=[ChatMessage(role="user", content=request.message)],
-                    allowed_tool_ids=("probe.read",),
-                    max_iterations=self._max_iterations,
-                )
+            attach_test_context_engine_for_iterative_tool_loop(state)
+            await run_bounded_tool_loop_async(
+                state=state,
+                invoker=self._invoker,
+                tool_planner=self._planner,
+                planner_input=[ChatMessage(role="user", content=request.message)],
+                allowed_tool_ids=("probe.read",),
+                max_iterations=self._max_iterations,
             )
         else:
             run_bounded_tool_loop(
@@ -489,24 +485,23 @@ def test_sequential_tool_calls_observe_active_identity() -> None:
         assert observation.execution_id == identity.execution_id
 
 
-def test_bounded_react_iterations_preserve_execution_id() -> None:
+@pytest.mark.asyncio
+async def test_bounded_react_iterations_preserve_execution_id() -> None:
     identity = _identity_binding()
     state = _runtime_state(run_id=identity.run_id)
     invoker = _recording_invoker()
     planner = _TwoRoundPlanner()
 
-    wire_default_nexus_context_engine_if_unset(state)
+    attach_test_context_engine_for_iterative_tool_loop(state)
     token, budget_token = _bind_canonical_execution_context(identity)
     try:
-        result = asyncio.run(
-            run_bounded_tool_loop_async(
-                state=state,
-                invoker=invoker,
-                tool_planner=planner,
-                planner_input=[ChatMessage(role="user", content="iterate")],
-                allowed_tool_ids=("probe.read",),
-                max_iterations=2,
-            )
+        result = await run_bounded_tool_loop_async(
+            state=state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=[ChatMessage(role="user", content="iterate")],
+            allowed_tool_ids=("probe.read",),
+            max_iterations=2,
         )
     finally:
         _reset_canonical_execution_context(token, budget_token)

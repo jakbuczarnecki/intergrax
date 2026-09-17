@@ -18,9 +18,6 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationStopReason
 from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
-from intergrax.runtime.nexus.context.iterative_bounded_tool_loop_policy import (
-    wire_default_nexus_context_engine_if_unset,
-)
 from intergrax.runtime.nexus.tools.tool_loop import run_bounded_tool_loop_async
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
 from intergrax.runtime.nexus.tools.tool_planning_prompts import (
@@ -599,7 +596,7 @@ def _model_visible_references_before_planner_loop(
     return tuple(references)
 
 
-def gather_incident_evidence(
+async def gather_incident_evidence(
     *,
     runtime_state: RuntimeState,
     registry: ToolRegistry,
@@ -671,21 +668,16 @@ def gather_incident_evidence(
         planner_gathered_evidence=planner_gathered_evidence,
         baseline_outputs=baseline_outputs,
     )
-    import asyncio
-
-    wire_default_nexus_context_engine_if_unset(runtime_state)
     try:
-        loop_result = asyncio.run(
-            run_bounded_tool_loop_async(
-                state=runtime_state,
-                invoker=invoker,
-                tool_planner=planner,
-                planner_input=planner_input,
-                allowed_tool_ids=allowed_tool_ids,
-                max_iterations=MAX_INCIDENT_TOOL_LOOP_ITERATIONS,
-                invocation_mode=ToolInvocationMode.BOUNDED_REACT,
-                prior_model_visible_references=prior_model_visible_references,
-            )
+        loop_result = await run_bounded_tool_loop_async(
+            state=runtime_state,
+            invoker=invoker,
+            tool_planner=planner,
+            planner_input=planner_input,
+            allowed_tool_ids=allowed_tool_ids,
+            max_iterations=MAX_INCIDENT_TOOL_LOOP_ITERATIONS,
+            invocation_mode=ToolInvocationMode.BOUNDED_REACT,
+            prior_model_visible_references=prior_model_visible_references,
         )
     except (BudgetExceededError, ExecutionBudgetError):
         raise RuntimeError("incident_evidence_gathering_budget_exceeded") from None

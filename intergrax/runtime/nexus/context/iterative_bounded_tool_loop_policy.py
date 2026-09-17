@@ -4,9 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.context.bootstrap import materialize_context_plugin_registry
 from intergrax.context.protocols import ContextEngine
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
 
 class ContextEngineRequiredForIterativeToolLoopError(RuntimeError):
@@ -39,18 +37,3 @@ def reject_sync_iterative_bounded_tool_loop(max_iterations: int) -> None:
         "Iterative bounded tool loops must use run_bounded_tool_loop_async with a wired "
         "context_engine; sync BoundedReactPattern cannot compose tool feedback."
     )
-
-
-def wire_default_nexus_context_engine_if_unset(state: RuntimeState) -> ContextEngine:
-    config = state.context.config
-    existing = config.context_engine
-    if existing is not None:
-        return existing
-    from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
-
-    engine = DefaultNexusContextEngine(
-        engine_id="default",
-        registry=materialize_context_plugin_registry(["intergrax.builtin"]),
-    )
-    config.context_engine = engine
-    return engine

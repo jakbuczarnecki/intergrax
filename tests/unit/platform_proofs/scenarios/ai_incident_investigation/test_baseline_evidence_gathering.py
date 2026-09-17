@@ -85,7 +85,7 @@ def _patch_planner(monkeypatch: pytest.MonkeyPatch, llm_factory) -> None:
     )
 
 
-def test_baseline_invokes_staffing_schedule_when_planner_omits_it(
+async def test_baseline_invokes_staffing_schedule_when_planner_omits_it(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _omit_staffing_llm():
@@ -98,7 +98,7 @@ def test_baseline_invokes_staffing_schedule_when_planner_omits_it(
     state, execution_id = _build_runtime_state(bundle)
     scope = IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id)
 
-    gathering = gather_incident_evidence(
+    gathering = await gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=scope,
@@ -123,7 +123,7 @@ def test_baseline_invokes_staffing_schedule_when_planner_omits_it(
     assert TOOL_STAFFING_SCHEDULE_READ in payload.selected_tool_ids
 
 
-def test_baseline_does_not_duplicate_planner_gathered_staffing_schedule(
+async def test_baseline_does_not_duplicate_planner_gathered_staffing_schedule(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _includes_staffing_llm():
@@ -140,7 +140,7 @@ def test_baseline_does_not_duplicate_planner_gathered_staffing_schedule(
     state, execution_id = _build_runtime_state(bundle)
     scope = IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id)
 
-    gathering = gather_incident_evidence(
+    gathering = await gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=scope,
@@ -150,7 +150,7 @@ def test_baseline_does_not_duplicate_planner_gathered_staffing_schedule(
     assert gathering.tool_execution_order.count(TOOL_STAFFING_SCHEDULE_READ) == 1
 
 
-def test_baseline_evidence_budget_exhaustion_fails_closed(
+async def test_baseline_evidence_budget_exhaustion_fails_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _minimal_llm():
@@ -166,7 +166,7 @@ def test_baseline_evidence_budget_exhaustion_fails_closed(
     scope = IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id)
 
     with pytest.raises(RuntimeError, match="incident_evidence_gathering_budget_exceeded"):
-        gather_incident_evidence(
+        await gather_incident_evidence(
             runtime_state=state,
             registry=bundle.registry,
             scope=scope,
@@ -192,7 +192,7 @@ class _StaffingScheduleFailingInvoker:
         return self._inner.invoke(state=state, request=request, agent_id=agent_id)
 
 
-def test_staffing_schedule_tool_failure_does_not_fabricate_evidence(
+async def test_staffing_schedule_tool_failure_does_not_fabricate_evidence(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _omit_staffing_llm():
@@ -211,7 +211,7 @@ def test_staffing_schedule_tool_failure_does_not_fabricate_evidence(
     )
     scope = IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id)
 
-    gathering = gather_incident_evidence(
+    gathering = await gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=scope,
@@ -227,7 +227,7 @@ def test_staffing_schedule_tool_failure_does_not_fabricate_evidence(
     assert str(WORKLOAD_EVIDENCE_ID) in evidence_ids
 
 
-def test_baseline_gathering_is_provider_independent(
+async def test_baseline_gathering_is_provider_independent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def _omit_staffing_llm_a():
@@ -239,7 +239,7 @@ def test_baseline_gathering_is_provider_independent(
     bundle = build_runtime_bundle()
     state, execution_id = _build_runtime_state(bundle)
     scope = IncidentScope.from_operational_defaults(station_id=bundle.operational_data.station_id)
-    first_gathering = gather_incident_evidence(
+    first_gathering = await gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=scope,
@@ -254,7 +254,7 @@ def test_baseline_gathering_is_provider_independent(
     _patch_planner(monkeypatch, _omit_staffing_llm_b)
     bundle = build_runtime_bundle()
     state, execution_id = _build_runtime_state(bundle)
-    second_gathering = gather_incident_evidence(
+    second_gathering = await gather_incident_evidence(
         runtime_state=state,
         registry=bundle.registry,
         scope=scope,

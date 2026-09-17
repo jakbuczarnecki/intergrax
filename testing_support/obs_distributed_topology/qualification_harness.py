@@ -61,7 +61,7 @@ def _run_worker(
             str(scenario_path),
             str(result_path),
         ],
-        cwd=repo_root,
+        cwd=resolve_intergrax_import_root(archive_root),
         env=_child_env(archive_root, qualification_sha),
         capture_output=True,
         text=True,

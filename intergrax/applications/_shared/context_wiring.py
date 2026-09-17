@@ -22,6 +22,8 @@ from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
+from intergrax.context.protocols import ContextEngine
+from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.task.task_contract import TaskExecutionOptions
 
@@ -212,6 +214,19 @@ def resolve_context_manager_from_environment(
         context_orchestrator=orchestrator,
         llm_adapter=llm_adapter,  # type: ignore[arg-type]
     )
+
+
+def apply_context_engine_to_runtime_config(
+    config: RuntimeConfig,
+    env: ApplicationEnvironmentProfile,
+    *,
+    context_engine: ContextEngine | None = None,
+) -> RuntimeConfig:
+    """Resolve and inject ``ContextEngine`` at host composition (MEM-XINT-4-R2)."""
+    if config.context_engine is not None:
+        return config
+    config.context_engine = context_engine or resolve_context_engine_from_environment(env)
+    return config
 
 
 def merge_task_context_options_from_environment(

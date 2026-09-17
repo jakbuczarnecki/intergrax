@@ -168,6 +168,9 @@ def materialize_runtime_config(
         idempotency_store=reliability_wiring.idempotency_store,
     )
     apply_context_profiles_from_environment(config, env)
+    from intergrax.applications._shared.context_wiring import apply_context_engine_to_runtime_config
+
+    apply_context_engine_to_runtime_config(config, env)
     if config.context_budget_policy is None and config.llm_adapter is not None:
         from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 
