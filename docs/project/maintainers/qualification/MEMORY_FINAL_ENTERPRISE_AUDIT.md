@@ -749,3 +749,39 @@ Contract-first architecture and replaceability **hold** for canonical mutation, 
 
 > Wynik MEM-FINAL-AUDIT-1 musi zostać niezależnie zweryfikowany na podstawie kodu z GitHuba przed MEM-FINAL-AUDIT-2 (baseline `b4ee4ef6…`).  
 > Wynik MEM-FINAL-AUDIT-2 musi zostać niezależnie zaudytowany na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-3.
+
+---
+
+## MEM-FINAL-AUDIT-2-R — Contract & Layer P1 Closure
+
+**Baseline audited:** `6a88d6fbe75eaa40c4ad16f8c373922c58120c67` (ancestor confirmed on closure branch).
+
+### P1 closure
+
+| P1 | Status |
+| --- | ------ |
+| P1-1 SessionManager recall bypass | **CLOSED** — `SessionManager.search_user_longterm_memory` → injected `MemoryControlPlane.recall` with `RequestIdentity` + `user_memory_scope`; no `UserProfileManager.search_longterm_memory` from SessionManager |
+| P1-2 Core LTM projection materialization | **CLOSED** — `UserProfileManager` accepts only injected `UserProfileMemoryProjection` sequence; `UserProfileLtmVectorProjection` materialized in `applications/_shared/memory_vector_wiring.py` |
+| P1-3 memory → applications import | **CLOSED** — `MemoryStoreMaterializationContext` is Memory-owned (`tenant_id`, `IntegrationProfile`, optional `RagStack`); composition builds context without ApplicationEnvironmentProfile in memory tier |
+
+### Architecture guards (post-R)
+
+| Guard | Result |
+| ----- | ------ |
+| SessionManager → `search_longterm_memory` on manager | **0** |
+| `UserProfileLtmVectorProjection` in `user_profile_manager.py` | **0** |
+| `intergrax.applications` imports under `intergrax/memory/**` | **0** |
+| Canonical runtime recall bypass (SessionManager path) | **0** |
+
+### Layer notes
+
+- **RagStack** on materialization context: **LEGAL_PORT_DEPENDENCY** (composition/bootstrap port into plugin factories; unchanged scope in R).
+- **IntegrationProfile**: **LEGAL_PORT_DEPENDENCY** (platform integration contract).
+
+### Historical AUDIT-2 verdict (unchanged checkpoint)
+
+**PASS WITH CORRECTIONS — MEMORY CONTRACT/LAYER AUDIT NOT CLOSED** (ledger at `56efcc5fc…` / baseline `6a88d6fb…`).
+
+### AUDIT-2 status after R (pending independent GitHub verification)
+
+**MEM-FINAL-AUDIT-2 CLOSED** — subject to external re-audit on exact closure commit SHA before MEM-FINAL-AUDIT-3.

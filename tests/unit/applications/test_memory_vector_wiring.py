@@ -74,3 +74,62 @@ def test_build_user_profile_manager_requires_and_preserves_runtime_tenant() -> N
 
     assert manager is not None
     assert manager._tenant_id == "tenant-explicit"
+
+
+def test_build_user_profile_manager_injects_ltm_vector_projection_from_composition() -> None:
+    from intergrax.memory.user_profile_ltm_vector_projection import UserProfileLtmVectorProjection
+
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.profile.ltm.proj")
+    env.memory_profile = MemoryProfile(
+        enable_user_memory=True,
+        enable_long_term_memory=True,
+    )
+    stack = RagStack(
+        profile=RagProfile(),
+        vectorstore_manager=MagicMock(),
+        embedding_manager=MagicMock(),
+        retriever_manager=MagicMock(),
+        reranker_manager=MagicMock(),
+        retrieval_service=MagicMock(),
+    )
+    manager = build_user_profile_manager(
+        MagicMock(),
+        env,
+        tenant_id="tenant-ltm",
+        rag_stack=stack,
+    )
+    assert manager is not None
+    projections = manager._memory_lifecycle._projections
+    assert len(projections) == 1
+    assert isinstance(projections[0], UserProfileLtmVectorProjection)
+
+
+@pytest.mark.asyncio
+async def test_user_profile_manager_uses_injected_custom_projection_only() -> None:
+    from intergrax.memory.contracts.memory_lifecycle import (
+        MemoryProjectionReconciliationDisposition,
+        MemoryProjectionReconciliationResult,
+        UserProfileMemoryReconciliationContext,
+    )
+    from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
+    from intergrax.memory.user_profile_manager import UserProfileManager
+
+    class _CustomProjection:
+        projection_id = "custom.test"
+
+        async def reconcile(
+            self,
+            context: UserProfileMemoryReconciliationContext,
+        ) -> MemoryProjectionReconciliationResult:
+            return MemoryProjectionReconciliationResult(
+                projection_id=self.projection_id,
+                disposition=MemoryProjectionReconciliationDisposition.CONSISTENT,
+            )
+
+    custom = _CustomProjection()
+    mgr = UserProfileManager(
+        InMemoryUserProfileStore(),
+        tenant_id="tenant-custom",
+        memory_projections=(custom,),
+    )
+    assert mgr._memory_lifecycle._projections == (custom,)

@@ -48,6 +48,7 @@ from intergrax.memory.resolver.discovery import (
 )
 from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
 from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
+from intergrax.applications._shared.memory_control_wiring import build_default_memory_control_plane
 from intergrax.applications._shared.entity_graph_wiring import (
     resolve_entity_temporal_memory_capability,
 )
@@ -249,7 +250,6 @@ def _apply_external_memory_store_overlay(
     catalog = MemoryStorePluginCatalog.from_discovery(discovery)
 
     materialization_ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id=tenant_id,
         integration_profile=profile,
     )
@@ -352,6 +352,12 @@ def build_session_manager_from_environment(
         rag_stack=rag_stack,
     )
 
+    memory_control_plane = (
+        build_default_memory_control_plane(user_profile_manager=user_manager)
+        if user_manager is not None
+        else None
+    )
+
     return SessionManager(
         wiring.session_storage,
         user_profile_manager=user_manager,
@@ -362,4 +368,5 @@ def build_session_manager_from_environment(
         session_index_score_threshold=memory_profile.session_index_score_threshold,
         include_cross_session_episodic=memory_profile.include_cross_session_episodic,
         memory_consolidation_mode=memory_profile.consolidation_mode,
+        memory_control_plane=memory_control_plane,
     )

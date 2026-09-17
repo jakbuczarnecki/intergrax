@@ -55,7 +55,6 @@ def resolve_procedural_memory_store(
     )
     catalog = MemoryStorePluginCatalog.from_discovery(discovery)
     ctx = MemoryStoreMaterializationContext(
-        env=env,
         tenant_id=None,
         integration_profile=env.integration_profile,
         rag_stack=None,

@@ -38,3 +38,16 @@ def test_ltm_service_forbids_manager_semantic_bypass() -> None:
 def test_runtime_ltm_recall_forbids_session_manager_semantic_bypass() -> None:
     source = _MEMORY_CTX.read_text(encoding="utf-8")
     assert "search_user_longterm_memory" not in source
+
+
+def test_user_profile_manager_forbids_ltm_vector_projection_materialization() -> None:
+    source = _MANAGER.read_text(encoding="utf-8")
+    assert "UserProfileLtmVectorProjection" not in source
+
+
+_SESSION_MANAGER = _REPO / "intergrax" / "runtime" / "nexus" / "session" / "session_manager.py"
+
+
+def test_session_manager_forbids_user_profile_manager_ltm_search_bypass() -> None:
+    source = _SESSION_MANAGER.read_text(encoding="utf-8")
+    assert "search_longterm_memory" not in source
