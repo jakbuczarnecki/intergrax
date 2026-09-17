@@ -84,21 +84,36 @@ def _assert_contains_any(text: str, phrases: tuple[str, ...], context: str) -> N
     assert False, f"{context}: expected at least one of {phrases!r}"
 
 
+def _status_semantic_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text.replace("**", "").replace("__", ""))
+
+
 def _d7_closed(text: str) -> bool:
-    return "MP-4D7 — CLOSED" in text or bool(
-        re.search(r"\*\*MP-4D7\*\*\s*\|\s*\*\*CLOSED\*\*", text)
-    )
+    if "MP-4D7 — CLOSED" in text:
+        return True
+    if re.search(r"\*\*MP-4D7\*\*\s*\|\s*\*\*CLOSED\*\*", text):
+        return True
+    normalized = _status_semantic_text(text)
+    return "MP-4D1–D8 CLOSED" in normalized or "MP-4D1–D7 CLOSED" in normalized
 
 
 def _d8_closed(text: str) -> bool:
-    return "MP-4D8 — CLOSED" in text or bool(
-        re.search(r"\*\*MP-4D8\*\*\s*\|\s*\*\*CLOSED\*\*", text)
-    )
+    if "MP-4D8 — CLOSED" in text:
+        return True
+    if re.search(r"\*\*MP-4D8\*\*\s*\|\s*\*\*CLOSED\*\*", text):
+        return True
+    return "MP-4D1–D8 CLOSED" in _status_semantic_text(text)
 
 
 def _documentation_certification_closed(text: str) -> bool:
-    return "MP-4 documentation certification — CLOSED" in text or (
-        "MP-4 documentation certification" in text and "CLOSED" in text and "MP-4D1–D8" in text
+    if "MP-4 documentation certification — CLOSED" in text:
+        return True
+    normalized = _status_semantic_text(text)
+    return bool(
+        re.search(
+            r"MP-4 documentation certification\s*[—:]\s*CLOSED",
+            normalized,
+        )
     )
 
 
@@ -136,13 +151,13 @@ def test_mp4d7_status_documents_are_synchronized() -> None:
         assert "MP-4D7 — NEXT" not in text and "**MP-4D7** — Documentation regression gates (**NEXT**)" not in text, (
             f"MP-4 status drift: {name} still marks MP-4D7 NEXT while canonical SSOT has D7 CLOSED"
         )
-        assert _d7_closed(text) or "MP-4D1–D8" in text or "MP-4D1–D7 CLOSED" in text, (
+        assert _d7_closed(text), (
             f"MP-4 status drift: {name} does not reflect MP-4D7 CLOSED"
         )
-        assert _d8_closed(text) or "MP-4D1–D8" in text, (
+        assert _d8_closed(text), (
             f"MP-4 status drift: {name} does not mark MP-4D8 CLOSED while canonical SSOT does"
         )
-        assert _documentation_certification_closed(text) or "MP-4D1–D8" in text, (
+        assert _documentation_certification_closed(text), (
             f"MP-4 status drift: {name} does not reflect MP-4 documentation certification CLOSED"
         )
         assert "MP-4D8 — NEXT" not in text and "**MP-4D8** | **NEXT**" not in text, (
