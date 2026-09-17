@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Accepted (architecture) |
+| **Status** | Accepted (architecture) · **MEM-XINT PROGRAM CLOSED** (MEM-XINT-6-FINAL, 2026-09-17) |
 | **Date** | 2026-09-17 |
 | **Deciders** | Platform / Memory × Context integration |
 | **Related** | [`MEMORY_ARCHITECTURE.md`](../../../../architecture/MEMORY_ARCHITECTURE.md) · [`CONTEXT_ENGINEERING.md`](../../../../architecture/CONTEXT_ENGINEERING.md) · [`ADR-UCL-001`](../../2026-08-01/ADR-UCL-001.md) · MEM-XINT-1 audit (HEAD `60ba65bb86e5a74a821f90c8d6a2881e5ea2c83e`) · Memory baseline `4e92d14c58f02200518786c59c9128b3068e4bc5` |
@@ -530,7 +530,8 @@ MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normat
 
 ### Scope isolation
 
-- Hard gate: isolate_assembly_scope (intergrax/context/policy/scope_isolation.py) enforces tenant match, optional ContextAssemblyRequest.user_id, and execution scope key un_id:task_id.
+- Hard gate: isolate_assembly_scope (intergrax/context/policy/scope_isolation.py) enforces tenant match, optional ContextAssemblyRequest.user_id, and execution scope key 
+un_id:task_id.
 
 ### Replaceable vs hard invariants
 
@@ -571,4 +572,75 @@ MEM-XINT-2: documentation only. **MEM-XINT-2-R:** typed source boundary + normat
 
 **Candidate events:** `DefaultNexusContextEngine` emits `CONTEXT_CANDIDATE_DROPPED` for policy hard-stage and cross-source exclusions (not only provider failures).
 
-**Audit:** READY FOR INDEPENDENT AUDIT (exact GitHub SHA required before MEM-XINT-6-FINAL).
+**Audit:** PASS — MEM-XINT-6-R2 INDEPENDENTLY AUDIT-CLOSED (baseline 1bb54885a8df629a8872c8de33f821d9d3836b5f).
+
+## MEM-XINT-6-FINAL — Final enterprise certification (2026-09-17)
+
+**Certification HEAD (pre-docs commit):** 1c21eb774e7dd6c24148cf67be98ddc894cbd3c9 on development (baseline ancestor = YES).
+
+**Final verdict:** PASS — MEM-XINT PROGRAM CLOSED (all hard gates green; no production correction required).
+
+### Final architecture (code-aligned)
+
+`	ext
+                    MemoryControlPlane (remember / recall)
+                          │
+                          ▼
+              ContextProviderSourceInputs.memory
+                          │
+Session ──────────────────┐
+RAG ──────────────────────┤
+Tools ────────────────────┼──► ContextProviderSourceInputs (typed DTOs)
+Web / system / attachments┤
+policy / shared / graph ──┘
+                          │
+                          ▼
+              ContextSourceProviders (builtin.* → ctx.sources.*)
+                          │
+                          ▼
+    HARD: scope/authority → canonicalize → exact dedup → invariant snapshot
+                          │
+                          ▼
+    PLUGINABLE: normalize → semantic dedup → conflict → rank → budget
+                          │
+                          ▼
+    HARD: validate_policy_pipeline_result → authority contract → compile
+                          │
+                          ▼
+              AssembledContext.messages → model invocation
+`
+
+**Authority:** MemoryControlPlane = sole durable Memory boundary; ContextEngine.assemble = sole final model-context gate. Builtin semantic ctx.handles reads = 0; no legacy_bridge in uiltin.py.
+
+**ReAct:** one CE assembly per model round; tool protocol via typed 	ools source + CE compile.
+
+### Hard gate evidence (summary)
+
+| Gate | Status | Evidence |
+| --- | --- | --- |
+| Memory write/recall authority | PASS | E2E remember→recall→CE; memory e2e; mem_xint3 recall plane |
+| CE final authority | PASS | MEM-XINT-4 / 4-R; E2E mixed-source + ReAct |
+| Typed source boundary | PASS | 	est_mem_xint6r_typed_source_boundary.py; typed boundary guard |
+| Provider isolation | PASS | E2E + typed collector tests |
+| Authority / scope / sensitivity / provenance | PASS | MEM-XINT-5 / 5-R / 5-R2 |
+| Hard invariant envelope | PASS | 	est_mem_xint5r2_hard_policy_invariant_envelope.py |
+| Cross-source policy / dedup / conflict / budget | PASS | E2E + cross-source pipeline tests |
+| ReAct / tool protocol | PASS | 	est_mem_xint4r_react_context_authority.py |
+| Replaceability / vendor abstraction | PASS | E2E custom strategies; in-memory harness |
+| Determinism / observability | PASS | E2E two-run; candidate-drop + session hash |
+| Architecture guards | PASS | bypass + typed boundary + tier-0 import scripts |
+| Canonical runtime bypass | PASS (0) | inventory_legacy_bypass_symbols() |
+
+### Certification commands (local, sequential)
+
+| Step | passed |
+| --- | ---: |
+| MEM-XINT-6 E2E | 20 |
+| MEM-XINT-6-R2 + 5 + 4 | 80 |
+| unit context + nexus context | 467 |
+| memory integration e2e | 20 |
+| recall plane + tool feedback + contracts | 22 |
+| final aggregate (E2E + typed boundary) | 27 |
+
+**Supersedes:** MEM-XINT-6 PASS WITH CORRECTIONS — MEM-XINT PROGRAM NOT CLOSED (pre–6-R2 typed boundary debt).
+
