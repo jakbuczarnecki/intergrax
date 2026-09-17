@@ -740,7 +740,7 @@ Contract-first architecture and replaceability **hold** for canonical mutation, 
 
 | Field | Value |
 | ----- | ----- |
-| SHA | `b71a265f769a07d4e022551763fb22c1176977f6` |
+| SHA | `56efcc5fc74492214d2b69e1a7910693edbd5afd` |
 | Message | `docs(memory): audit enterprise contracts and layer boundaries` |
 | Files | `docs/project/maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md` |
 | HEAD after | same commit on `development` |
