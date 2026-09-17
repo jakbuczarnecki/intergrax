@@ -66,6 +66,318 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 
 ---
 
+## Visual Architecture Layer (GOV-FINAL-3)
+
+**Purpose:** diffable, contract-first diagrams for the **current** Governance Plane — ownership, ports, fail-closed paths, strategy coverage honesty, and open gaps. **Not** a second SSOT; extends this file only. Decision depth: [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md). Reliability depth: [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md). Gap ledger: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](../maintainers/qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md). HITL continuation: [ADR-GR-5-001](../technical/adr/entries/2026-09-15/ADR-GR-5-001.md).
+
+**Mini-audit rule (per diagram):** every node maps to a contract, port, or documented gap; ownership arrows match code-truth tables in § Governance implementation truth; **TARGET** labels are never drawn as live **COVERED**.
+
+### Status legend (text + diagram labels)
+
+| Status | Meaning |
+| ------ | ------- |
+| **COVERED** | Fail-closed enforcement demonstrated on named production-class paths (not platform-wide enterprise claim). |
+| **PARTIAL** | Mechanism exists; strategy, host, or qualification scope incomplete. |
+| **GAP** | Required capability missing or taxonomy-only. |
+| **TARGET** | Documented future architecture — not current live enforcement. |
+| **NOT_APPLICABLE** | Strategy or evaluation point legitimately out of scope for that row. |
+
+### 1. Governance Plane — visual entry map
+
+| # | Topic | Diagram below |
+| - | ----- | ------------- |
+| 1 | Semantic ownership | §2 Ownership map |
+| 2 | Root admission vs inner governance | §3 |
+| 3 | Meaningful side effects | §4 |
+| 4 | Decision → Governance → Execution | §5 |
+| 5 | HITL / continuation | §6 |
+| 6 | Governance → Reliability handoff | §7 |
+| 7 | Fail-closed negative paths | §8 |
+| 8 | Strategy coverage | §9 |
+| 9 | Evidence / Diagnostics | §10 |
+| 10 | Control-plane mutation | §11 TARGET |
+| 11 | Pluginability (ports) | §12 |
+| 12 | Open gaps (visual index) | §13 |
+
+### 2. Governance ownership map (Diagram #1)
+
+**Question answered:** Who owns which *kind* of truth — without a single “god engine”?
+
+```mermaid
+flowchart TB
+  subgraph DS["Decision System — owns decision truth"]
+    DM[Decision material / approval evidence]
+  end
+  subgraph GP["Governance Plane — owns permission"]
+    GOV[ALLOW / DENY / REQUIRE_HUMAN]
+  end
+  subgraph HR["Human Review / HITL — owns human judgment evidence"]
+    HJ[Human decision / approval record]
+  end
+  subgraph EX["Execution Runtime — owns lifecycle"]
+    LC[pause / wait / resume / terminate]
+    subgraph NEX["Nexus — internal orchestration only"]
+      ORCH[step loop / harness composition]
+    end
+  end
+  subgraph RL["Reliability — owns post-admission uncertainty"]
+    UNK[UNKNOWN / repeat / reconcile / recovery]
+  end
+  subgraph EV["Evidence Plane — records facts"]
+    FACT[RuntimeEvent / correlated facts]
+  end
+  subgraph DG["Diagnostics — interprets evidence"]
+    DIAG[reconstruction / analysis]
+  end
+  subgraph DE["Domain executors — own authorized mutations"]
+    MUT[activation / AHI / plugins / domain state]
+  end
+  DS -->|material when required| GP
+  HR -->|judgment evidence| GP
+  GP -->|authorization outcome| EX
+  GP -->|may execute once| DE
+  EX -->|consequential dispatch intent| RL
+  GP -.->|decision facts partial GR-8| EV
+  EX -.->|execution facts| EV
+  RL -.->|reliability facts| EV
+  EV --> DIAG
+```
+
+No layer above substitutes another: **Governance ≠ Decision truth**; **Evidence ≠ authority**; **Diagnostics ≠ authority**.
+
+### 3. Root admission vs inner governance (Diagram #2)
+
+**Question answered:** How is **ROOT_EXECUTION_ADMISSION** separated from **inner** evaluation?
+
+```mermaid
+flowchart LR
+  REQ[Request] --> ROOT[ROOT_EXECUTION_ADMISSION<br/>RuntimeExecutionPolicyAdmissionPort]
+  ROOT -->|admit| START[Execution starts<br/>active Execution identity]
+  START --> INNER[Inner operation]
+  INNER --> GUARD[CanonicalInnerExecutionGuardPort<br/>inner guard]
+  GUARD --> EVAL[Governance evaluation<br/>at applicable GEP]
+  EVAL --> ACT[Authorized action or effect]
+  ROOT -.->|admission ≠ inner authorization| GUARD
+  START -.->|child execution authority ≠ governance policy| EVAL
+```
+
+**Admission** gates whether a **root** Execution may start. **Inner** points evaluate operations **inside** an already-admitted Execution. Neither replaces the other.
+
+### 4. Meaningful side effect flow (Diagram #3)
+
+**Question answered:** What is the canonical path before a consequential external effect runs?
+
+```mermaid
+flowchart TD
+  ID[Active Execution identity] --> MSR[MeaningfulSideEffectRequest]
+  MSR --> CIG[CanonicalInnerExecutionGuardPort]
+  CIG --> DRP[DecisionRequirementPolicy]
+  DRP -->|required| DMV[Decision material validation]
+  DRP -->|not required| CW
+  DMV --> CW[CollaborativeWorkEnforcementGate / policy composition]
+  CW --> MSE[MeaningfulSideEffectAuthorizationBoundary]
+  MSE --> OUT{Outcome}
+  OUT -->|ALLOW| ONCE[Execute exactly once]
+  OUT -->|DENY| STOP[DENY — stop]
+  OUT -->|REQUIRE_HUMAN| CONT[Continuation path — §6]
+```
+
+Provider / domain dispatch occurs **only** after **ALLOW** (GR-3 / GR-6 composition).
+
+### 5. Decision → Governance → Execution (Diagram #4)
+
+**Question answered:** Why is **Decision accepted ≠ Governance ALLOW**?
+
+```mermaid
+sequenceDiagram
+  participant DS as Decision System
+  participant DG as DecisionGovernedSideEffectCoordinator
+  participant GB as Governance Boundary<br/>MeaningfulSideEffectAuthorizationBoundary
+  participant EX as Execution Runtime
+  participant PD as Provider / Domain
+  DS->>DG: Decision material prepared
+  DG->>GB: authorize_and_execute request
+  GB->>GB: Re-evaluate governance<br/>DecisionRequirementPolicy + policy core
+  alt Governance ALLOW
+    GB->>EX: Authorized to proceed
+    EX->>PD: Dispatch once
+  else Governance DENY or REQUIRE_HUMAN
+    GB-->>EX: No unauthorized dispatch
+  end
+  Note over DS,GB: Decision accepted ≠ Governance ALLOW
+```
+
+Full MP-4 integration: [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md).
+
+### 6. HITL / continuation ownership (Diagram #5)
+
+**Question answered:** Who pauses, who judges, who re-authorizes?
+
+```mermaid
+flowchart TD
+  RH[Governance REQUIRE_HUMAN] --> GCR[GovernedContinuationRequest]
+  GCR --> HR[Human Review]
+  HR --> ECP[ExecutionContinuationPort]
+  ECP --> PAUSE[Execution pause / wait]
+  PAUSE --> HRRES[Human result evidence]
+  HRRES --> FRESH[Fresh Governance evaluation]
+  FRESH -->|ALLOW| RES[Resume scoped work]
+  FRESH -->|DENY| BLOCK[Remain blocked]
+  HRRES -.->|Human APPROVED ≠ automatic Governance ALLOW| FRESH
+  ECP -.->|Execution owns pause/resume lifecycle| PAUSE
+```
+
+ADR-GR-5-001 defines continuation contracts; Nexus orchestration stays **inside** Execution (not HITL owner).
+
+### 7. Governance → Reliability handoff (Diagram #6)
+
+**Question answered:** Where does permission end and outcome uncertainty begin?
+
+```mermaid
+flowchart LR
+  AUTH[Governance ALLOW<br/>MAY IT EXECUTE?] --> INTENT[ProviderInvocation intent]
+  INTENT --> DISP[Provider dispatch]
+  DISP --> OUT[Outcome SUCCESS / FAILED / UNKNOWN]
+  OUT --> RLC[Reliability lifecycle<br/>repeat / reconcile / recovery]
+  AUTH -.->|Governance| Q1[Permission]
+  RLC -.->|Reliability| Q2[WHAT HAPPENED / SAFE NEXT?]
+```
+
+**UNKNOWN** is Reliability semantics — not a Governance evaluation failure. Depth: [`ENTERPRISE_RELIABILITY_LAYER.md`](ENTERPRISE_RELIABILITY_LAYER.md).
+
+### 8. Fail-closed negative paths (Diagram #7)
+
+**Question answered:** Which conditions deny execution without substituting Reliability?
+
+```mermaid
+flowchart TD
+  subgraph FC["Fail-closed — Governance / authorization"]
+    E1[Missing active Execution] --> D1[DENY]
+    E2[Missing required Decision provenance] --> D2[DENY]
+    E3[Policy evaluation failure] --> D3[DENY]
+    E4[Human approval stale / mismatch] --> NX[No execution]
+    E5[Fresh DENY after human approval] --> NX
+    E6[Invalid resource / identity binding] --> NX
+  end
+```
+
+Reliability **UNKNOWN** handling is **out of scope** for this diagram (see §7).
+
+### 9. Strategy coverage (Diagram #8)
+
+**Question answered:** Which strategies are qualified at which governance capabilities?
+
+Aligned with § Strategy coverage matrix (GOV-FINAL-1); statuses are **text** in cells (not color-only).
+
+```mermaid
+flowchart LR
+  subgraph LEG["Legend"]
+    L1[COVERED]
+    L2[PARTIAL]
+    L3[GAP]
+    L4[NOT_APPLICABLE]
+  end
+```
+
+| Capability | INFERENCE | AGENTIC | ORCHESTRATION |
+| ---------- | --------- | ------- | ------------- |
+| Root admission | PARTIAL | PARTIAL | PARTIAL |
+| Inner guard | GAP / host-dependent | PARTIAL | PARTIAL |
+| Meaningful side effect spine | GAP | PARTIAL | PARTIAL |
+| Decision-bound MSE (GR-6) | GAP | PARTIAL | PARTIAL |
+| HITL continuation (GR-5) | GAP | PARTIAL | PARTIAL |
+| Reliability boundary (GR-7) | GAP | PARTIAL | PARTIAL |
+| Control-plane mutation | NOT_APPLICABLE (spine) | NOT_APPLICABLE | NOT_APPLICABLE — live **GAP** GR-12 |
+
+GR-10 qualification matrix remains **open** — this table reflects current code-truth, not enterprise closure.
+
+### 10. Evidence / Diagnostics (Diagram #9)
+
+**Question answered:** How do facts flow without becoming authority?
+
+```mermaid
+flowchart TD
+  GD[Governance decisions — partial emission GR-8] --> EP[Evidence Plane]
+  EF[Execution facts] --> EP
+  RF[Reliability facts GR-7] --> EP
+  EP --> REC[Reconstruction]
+  REC --> DIAG[Diagnostics]
+  EP -.->|Evidence ≠ authority| DIAG
+  DIAG -.->|Diagnostics ≠ authority| X[No ALLOW/DENY substitution]
+```
+
+**Governance Evidence correlation = PARTIAL / OPEN (GR-8)** — do not treat full five-ID governance emission as complete.
+
+### 11. Control-plane mutation — TARGET only (Diagram #10)
+
+**Question answered:** What is the *target* model for platform mutations (not live unified enforcement)?
+
+```mermaid
+flowchart TD
+  SGC[TARGET: shared governance context] --> DA[Domain executor — agent activation / rollback]
+  SGC --> AHI[Domain executor — AHI mutation]
+  SGC --> CAP[Domain executor — capacity mutation]
+  SGC --> PLG[Domain executor — plugin activation]
+  SGC --> LTC[Domain executor — live task control]
+  SGC -.->|no central universal mutation executor| NOGOD[Not a platform god-engine]
+```
+
+**CONTROL_PLANE_MUTATION** status remains **GAP** (GR-12) — not **COVERED**; enterprise qualification not claimed.
+
+### 12. Pluginability — contract → composition → implementation (Diagram #11)
+
+**Question answered:** How may hosts replace governance *mechanisms* without moving semantic ownership?
+
+```mermaid
+flowchart LR
+  OWN[Governance semantic owner] --> PORT[Contract / port]
+  PORT --> COMP[Composition root / wiring]
+  COMP --> DEF[Default platform implementation]
+  COMP --> EXT[External / host implementation]
+```
+
+| Port / policy surface | Owner | Default role |
+| --------------------- | ----- | ------------ |
+| `RuntimeExecutionPolicyAdmissionPort` | Governance plane | Root admission before Execution |
+| `CanonicalInnerExecutionGuardPort` | Governance + Execution composition | Inner operation guard |
+| `DecisionRequirementPolicy` | Governance | Decision provenance requirement |
+| `ExecutionContinuationPort` | Execution Runtime | Pause / resume lifecycle |
+| `ProviderInvocationStore` | Reliability (ERL) | Durable invocation facts |
+| `RuntimePolicyEngine` / catalog evaluators | Governance | Policy evaluation at GEPs |
+| `MeaningfulSideEffectAuthorizationBoundary` | Governance | MSE ALLOW/DENY/REQUIRE_HUMAN |
+
+Concrete providers are **not** platform authority — only ports and composed boundaries are.
+
+### Architecture boundary table (visual companion)
+
+| Boundary | Owner | Contract | Replaceable? | Concrete implementation allowed in core? |
+| -------- | ----- | -------- | -----------: | ---------------------------------------: |
+| Root Execution admission | Governance plane | `RuntimeExecutionPolicyAdmissionPort` | Yes (host wiring) | Yes — gated launcher / MODEL C1 adapters |
+| Inner operation guard | Governance + Execution | `CanonicalInnerExecutionGuardPort` | Yes | Yes — composition modules |
+| Meaningful side effect authorization | Governance | `MeaningfulSideEffectAuthorizationBoundary` | Policy/gate injection | Yes — default boundary in policy runtime |
+| Decision material at MSE | Decision + Governance | `DecisionRequirementPolicy`, `DecisionGovernanceMaterialRef` | Host policies | Coordinator in Execution Engine |
+| HITL continuation | Execution Runtime | `ExecutionContinuationPort`, `GovernedContinuationRequest` | Yes | Yes — UER integration |
+| Live policy evaluation | Governance | `RuntimePolicyEngine`, `DeclarativePolicyEnforcer` | Handlers/plugins via catalog | Yes — core evaluators |
+| Post-admission provider outcomes | Reliability | `ProviderInvocation`, `ProviderInvocationStore` | Store backend | Yes — ERL contracts |
+| Control-plane mutations (GR-12) | Domain executors (target shared context) | Taxonomy extension — live **GAP** | Per domain | Domain-owned executors only |
+| Governance evidence emission | Observability / Evidence | RuntimeEvent five-ID target | Exporters | **PARTIAL** — GR-8 open |
+
+### 13. Current gaps shown in this visual layer
+
+| Gap | Visual status |
+| --- | ------------- |
+| GR-8 Governance Evidence integration | PARTIAL / OPEN in §10 |
+| GR-10 Strategy coverage qualification | Matrix §9 — open |
+| GR-11 Plugin enterprise certification | Pluginability §12 — qual open |
+| GR-12 Control-plane mutation | TARGET §11 — **GAP** live |
+| GR-13 Full proof matrix | Not claimed — see maintainer plan |
+| GR-14 LKW integration | Planned |
+| GR-15 Governance UX / app contract | Planned |
+| GR-16 Enterprise qualification & claims | Planned — no full-plane enterprise claim |
+| Transitional HITL / Task–Nexus bridge coupling | §6 limitation note |
+
+---
+
 ## At a glance
 
 | Concern | What Intergrax provides |
@@ -588,7 +900,7 @@ Do not treat this document as a replacement for domain pair canon or maintainer 
 
 ---
 
-## Documentation regression gates (GOV-FINAL-1)
+## Documentation regression gates (GOV-FINAL-1 / GOV-FINAL-3)
 
 Semantic gates (no snapshot / line-number coupling) in `tests/unit/runtime/architecture/test_gov_final_1_documentation_regression_gates.py` guard:
 
@@ -596,3 +908,5 @@ Semantic gates (no snapshot / line-number coupling) in `tests/unit/runtime/archi
 - maintainer plan + gap ledger do not regress GR-6 / GR-7 to **Planned** when implementation exists;
 - **Reliability ≠ Governance authority** and **Human APPROVED ≠ automatic ALLOW** remain explicit;
 - **CONTROL_PLANE_MUTATION** cannot read as enterprise **CLOSED** without an explicit qualification marker.
+
+`tests/unit/runtime/architecture/test_gov_final_3_visual_architecture_gates.py` guards the **Visual Architecture Layer** (required sections, Mermaid presence, authority semantics, strategy-gap honesty, no competing visual SSOT file).
