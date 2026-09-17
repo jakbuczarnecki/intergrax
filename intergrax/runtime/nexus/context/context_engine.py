@@ -29,6 +29,9 @@ from intergrax.context.provider_lifecycle import (
     validate_required_sources_have_eligible_providers,
 )
 from intergrax.context.budget import global_allocatable_tokens, resolve_authoritative_model_budget
+from intergrax.context.budget.assembly_strategies import snapshot_context_assembly_strategies
+from intergrax.context.budget.compaction_apply import apply_fragment_compaction
+from intergrax.context.budget.mandatory_reserve import estimate_mandatory_reserve_tokens
 from intergrax.context.planner import ContextPlanner
 from intergrax.context.session_history import (
     HandleSessionHistoryProvider,
@@ -327,19 +330,37 @@ class DefaultNexusContextEngine:
 
         invariant_snapshots = build_fragment_invariant_snapshots(collected_fragments)
 
+        strategy_snapshot = snapshot_context_assembly_strategies(
+            self._registry,
+            degradation_policy=self._compiler.degradation_policy,
+        )
+        active_compiler = ContextCompiler(
+            count_tokens=strategy_snapshot.token_counter.count_text,
+            margin_tokens=self._compiler.margin_tokens,
+            degradation_policy=strategy_snapshot.degradation_policy,
+        )
+        mandatory_reserve_tokens = estimate_mandatory_reserve_tokens(
+            base_messages=raw_messages,
+            collected_fragments=collected_fragments,
+            count_text=strategy_snapshot.token_counter.count_text,
+        )
+
         llm_adapter = runtime_config.llm_adapter
         if llm_adapter is None:
             raise ValueError("ContextAssemblyRuntimeDependencies.runtime_config.llm_adapter is required")
         model_capability = snapshot_model_capability(
             llm_adapter,
             max_output_tokens=max_output_tokens,
-            margin_tokens=self._compiler.margin_tokens,
+            margin_tokens=active_compiler.margin_tokens,
         )
         resolved_model_budget = resolve_authoritative_model_budget(
             capability=model_capability,
             request=request,
+            policy=strategy_snapshot.model_budget_policy,
+            mandatory_reserve_tokens=mandatory_reserve_tokens,
         )
         fragment_budget_tokens = global_allocatable_tokens(resolved_model_budget)
+        model_input_budget_tokens = resolved_model_budget.available_input_tokens
 
         policy_strategies = self._resolve_policy_strategies()
         policy_result = self._policy_pipeline.execute(
@@ -356,6 +377,12 @@ class DefaultNexusContextEngine:
         collected_fragments = list(policy_result.fragments)
         fragments_excluded.extend(policy_result.excluded)
         policy_decisions = (*hard_decisions, *policy_result.decisions)
+        collected_fragments, compaction_provenance = apply_fragment_compaction(
+            collected_fragments,
+            strategy=strategy_snapshot.compaction_strategy,
+            count_text=strategy_snapshot.token_counter.count_text,
+            fragment_budget_tokens=fragment_budget_tokens,
+        )
         collected_fragments, authority_excluded = filter_fragments_by_authority_contract(
             collected_fragments,
             descriptors_by_id=descriptors_by_id,
@@ -395,10 +422,10 @@ class DefaultNexusContextEngine:
         else:
             messages_for_compile = merge_fragment_messages(raw_messages, fragment_messages)
 
-        resolved_budget = fragment_budget_tokens
+        resolved_budget = model_input_budget_tokens
         session_history = await _load_session_history_snapshot(request, ctx)
         optimization_policy = _resolve_optimization_policy(runtime)
-        planner = ContextPlanner(count_tokens=self._compiler.count_tokens)
+        planner = ContextPlanner(count_tokens=active_compiler.count_tokens)
         context_plan = planner.plan(
             request,
             messages_for_compile=messages_for_compile,
@@ -428,7 +455,7 @@ class DefaultNexusContextEngine:
                 fragment_messages=fragment_messages,
                 ranked_fragments=ranked_fragments,
                 runtime=ucl_runtime,
-                count_tokens=self._compiler.count_tokens,
+                count_tokens=active_compiler.count_tokens,
             )
         except NexusUCLExecutionError as exc:
             _record_validation_failed(event_bus, event_ctx, (str(exc),), stage="ucl_resolution")
@@ -438,9 +465,9 @@ class DefaultNexusContextEngine:
         compile_result = compile_chat_messages(
             list(ucl_resolution.messages),
             runtime_config,
-            compiler=self._compiler,
+            compiler=active_compiler,
             max_output_tokens=max_output_tokens,
-            input_budget_tokens=fragment_budget_tokens,
+            input_budget_tokens=model_input_budget_tokens,
             run_preflight=False,
         )
         compiled_hash = compute_model_facing_messages_hash(compile_result.messages)
@@ -475,6 +502,11 @@ class DefaultNexusContextEngine:
             policy_decisions=policy_decisions,
             policy_semantic_dedup=policy_result.semantic_dedup_decisions,
             policy_conflicts=policy_result.conflict_decisions,
+            resolved_model_budget=resolved_model_budget,
+            compaction_provenance=compaction_provenance,
+            token_counter_strategy_id=strategy_snapshot.token_counter.strategy_id,
+            compaction_strategy_id=strategy_snapshot.compaction_strategy.strategy_id,
+            degradation_policy_id=strategy_snapshot.degradation_policy.policy_id,
         )
 
         validation = self._validator.validate(
@@ -492,7 +524,7 @@ class DefaultNexusContextEngine:
             list(messages),
             runtime_config.llm_adapter,
             max_output_tokens=max_output_tokens,
-            count_tokens=self._compiler.count_tokens,
+            count_tokens=active_compiler.count_tokens,
         )
 
         if event_bus is not None:

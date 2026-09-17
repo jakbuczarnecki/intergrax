@@ -35,18 +35,19 @@ class DefaultContextBudgetAllocator:
         request: ContextAssemblyRequest,
     ) -> BudgetAllocationResult:
         _ = request
-        if budget_tokens < 1:
-            budget_tokens = 1
+        if budget_tokens < 0:
+            raise ValueError("budget_tokens must be >= 0")
         included: list[ContextFragment] = []
         excluded: list[tuple[ContextFragment, str]] = []
         used = 0
         for fragment in fragments:
             cost = max(fragment.token_estimate, 1)
-            if (
-                fragment.mandatory
-                or fragment.source in self._PROTECTED_SOURCES
-                or used + cost <= budget_tokens
-            ):
+            protected = fragment.mandatory or fragment.source in self._PROTECTED_SOURCES
+            if protected:
+                included.append(fragment)
+                used += cost
+                continue
+            if used + cost <= budget_tokens:
                 included.append(fragment)
                 used += cost
                 continue

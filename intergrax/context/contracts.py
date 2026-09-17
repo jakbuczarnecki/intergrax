@@ -17,6 +17,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
 
 if TYPE_CHECKING:
+    from intergrax.context.budget.compaction import ContextCompactionProvenance
+    from intergrax.context.budget.contracts import ResolvedModelContextBudget
     from intergrax.context.planning import ContextPlan
     from intergrax.context.source_inputs import ContextProviderSourceInputs
     from intergrax.runtime.nexus.context.assembly_runtime_deps import (
@@ -543,4 +545,9 @@ class AssembledContext:
     policy_decisions: tuple[ContextPolicyDecision, ...] = ()
     policy_semantic_dedup: tuple[ContextSemanticDedupDecision, ...] = ()
     policy_conflicts: tuple[ContextConflictDecision, ...] = ()
+    resolved_model_budget: ResolvedModelContextBudget | None = None
+    compaction_provenance: tuple[ContextCompactionProvenance, ...] = ()
+    token_counter_strategy_id: str = ""
+    compaction_strategy_id: str = ""
+    degradation_policy_id: str = ""
     schema_version: str = ASSEMBLED_CONTEXT_SCHEMA

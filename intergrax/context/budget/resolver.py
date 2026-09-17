@@ -23,15 +23,25 @@ def resolve_authoritative_model_budget(
 ) -> ResolvedModelContextBudget:
     """Canonical global budget owner — one resolution per assembly."""
     active = policy or DefaultContextModelBudgetPolicy()
-    return active.resolve_budget(
+    reserve = max(0, mandatory_reserve_tokens)
+    resolved = active.resolve_budget(
         ContextBudgetResolveInput(
             capability=capability,
             request_budget=request.budget_policy,
-            mandatory_reserve_tokens=mandatory_reserve_tokens,
+            mandatory_reserve_tokens=reserve,
         ),
     )
+    if reserve > resolved.available_input_tokens:
+        from intergrax.context.budget.contracts import ContextBudgetUnsatisfiableError
+
+        raise ContextBudgetUnsatisfiableError(
+            detail="mandatory_reserve_exceeds_available_input",
+            mandatory_tokens=reserve,
+            available_tokens=resolved.available_input_tokens,
+        )
+    return resolved
 
 
 def global_allocatable_tokens(resolved: ResolvedModelContextBudget) -> int:
     """Tokens available for ranked fragment allocation (policy pipeline)."""
-    return max(1, resolved.allocatable_tokens or resolved.available_input_tokens)
+    return resolved.allocatable_tokens

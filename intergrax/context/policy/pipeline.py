@@ -97,11 +97,10 @@ class ContextCrossSourcePolicyPipeline:
         fragment_budget_tokens: int | None = None,
     ) -> ContextPolicyPipelineResult:
         active_strategies = strategies or self._strategies
-        allocation_budget = (
-            fragment_budget_tokens
-            if fragment_budget_tokens is not None and fragment_budget_tokens > 0
-            else request.budget_policy.max_tokens_estimate
-        )
+        if fragment_budget_tokens is not None:
+            allocation_budget = fragment_budget_tokens
+        else:
+            allocation_budget = request.budget_policy.max_tokens_estimate
         decisions: list[ContextPolicyDecision] = []
         excluded: list[tuple[ContextFragment, str]] = []
         working = list(fragments)

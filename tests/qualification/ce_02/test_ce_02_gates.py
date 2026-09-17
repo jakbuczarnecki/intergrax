@@ -19,8 +19,17 @@ from intergrax.context.budget import (
     DeterministicTailCompactionStrategy,
     ModelContextCapabilitySnapshot,
     ResolvedModelContextBudget,
+    global_allocatable_tokens,
     resolve_authoritative_model_budget,
 )
+from intergrax.context.budget.assembly_strategies import snapshot_context_assembly_strategies
+from intergrax.context.provider_descriptor import build_provider_descriptor
+from intergrax.context.contracts import ContextProviderContext
+from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+    build_context_assembly_runtime_dependencies,
+)
+from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.context.budget.degradation import DefaultContextDegradationPolicy
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.context.contracts import (
@@ -59,22 +68,69 @@ _FORBIDDEN_VENDOR_PREFIXES = (
 )
 
 
-class _FakeAdapter:
+class _FakeAdapter(LLMAdapter):
     provider = "fake"
     model = "fake-budget"
 
     def __init__(self, window: int = 8192) -> None:
+        super().__init__()
         self._window = window
 
     @property
     def context_window_tokens(self) -> int:
         return self._window
 
+    def generate_messages(self, messages, **kwargs) -> LLMAdapterResponse:
+        _ = messages, kwargs
+        return LLMAdapterResponse(content="ok")
+
     def count_messages_tokens(self, messages: object) -> int:
         total = 0
         for message in messages:
-            total += max(1, len(getattr(message, "content", "") or "") // 4)
+            total += max(1, len(message.content or "") // 4)
         return total
+
+
+class _RagOverflowProvider:
+    provider_id = "test.rag_overflow"
+
+    @property
+    def supported_sources(self) -> frozenset[ContextFragmentSource]:
+        return frozenset({ContextFragmentSource.RAG})
+
+    @property
+    def descriptor(self):
+        return build_provider_descriptor(
+            self.provider_id,
+            provider_version="1.0.0",
+            supported_sources=self.supported_sources,
+            origin="test",
+        )
+
+    async def collect(self, request: ContextAssemblyRequest, ctx: ContextProviderContext) -> list[ContextFragment]:
+        _ = request, ctx
+        return [
+            ContextFragment(
+                fragment_id="rag-big",
+                source=ContextFragmentSource.RAG,
+                source_id="doc-1",
+                content="r" * 800,
+                token_estimate=10,
+                relevance_score=0.95,
+                freshness_score=0.95,
+                confidence_score=0.95,
+                mandatory=False,
+            )
+        ]
+
+
+def _assemble_runtime(adapter: LLMAdapter, content: str, *, max_output: int = 64):
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=RuntimeConfig(llm_adapter=adapter, production_mode=False),
+        messages=[ChatMessage(role="user", content=content)],
+        max_output_tokens=max_output,
+    )
+    return ContextProviderContext(engine_id="ce02", runtime=runtime)
 
 
 def _request(budget_tokens: int = 4000) -> ContextAssemblyRequest:
@@ -127,7 +183,8 @@ def test_ce2_q3_capability_snapshot_no_vendor_types_in_tier0() -> None:
                     assert not node.module.startswith(prefix), node.module
 
 
-def test_ce2_q4_custom_token_counter_injection() -> None:
+@pytest.mark.asyncio
+async def test_ce2_q4_custom_token_counter_injection() -> None:
     registry = ContextPluginRegistry()
 
     class _DoubleCounter(CharEstimateContextTokenCounter):
@@ -139,12 +196,15 @@ def test_ce2_q4_custom_token_counter_injection() -> None:
             return super().count_text(text) * 2
 
     registry.set_token_counter(_DoubleCounter())
-    assert registry.token_counter is not None
-    assert registry.token_counter.strategy_id == "double_char_estimate.v1"
-    assert registry.token_counter.count_text("abcd") == 2
+    adapter = _FakeAdapter(window=4096)
+    engine = DefaultNexusContextEngine(registry=registry)
+    ctx = _assemble_runtime(adapter, "x" * 40)
+    assembled = await engine.assemble(_request(500), provider_ctx=ctx)
+    assert assembled.total_tokens == _DoubleCounter().count_messages(assembled.messages)
 
 
-def test_ce2_q5_custom_model_budget_policy() -> None:
+@pytest.mark.asyncio
+async def test_ce2_q5_custom_model_budget_policy() -> None:
     class _TightPolicy(DefaultContextModelBudgetPolicy):
         @property
         def policy_id(self) -> str:
@@ -164,39 +224,58 @@ def test_ce2_q5_custom_model_budget_policy() -> None:
                 policy_version="test",
             )
 
-    capability = ModelContextCapabilitySnapshot(8000, 1000, 256)
-    resolved = resolve_authoritative_model_budget(
-        capability=capability,
-        request=_request(4000),
-        policy=_TightPolicy(),
+    registry = ContextPluginRegistry()
+    registry.set_model_budget_policy(_TightPolicy())
+    adapter = _FakeAdapter(window=8000)
+    engine = DefaultNexusContextEngine(registry=registry)
+    assembled = await engine.assemble(
+        _request(4000),
+        provider_ctx=_assemble_runtime(adapter, "hi"),
     )
-    assert resolved.policy_id == "tight_test_policy"
-    assert resolved.available_input_tokens == 128
+    assert assembled.resolved_model_budget is not None
+    assert assembled.resolved_model_budget.policy_id == "tight_test_policy"
+    assert assembled.resolved_model_budget.available_input_tokens == 128
 
 
-def test_ce2_q6_custom_compaction_strategy() -> None:
+@pytest.mark.asyncio
+async def test_ce2_q6_custom_compaction_strategy() -> None:
+    class _TightAllocPolicy(DefaultContextModelBudgetPolicy):
+        @property
+        def policy_id(self) -> str:
+            return "tight_alloc_for_compaction"
+
+        def resolve_budget(self, inputs: ContextBudgetResolveInput) -> ResolvedModelContextBudget:
+            base = super().resolve_budget(inputs)
+            return ResolvedModelContextBudget(
+                model_context_window=base.model_context_window,
+                reserved_output_tokens=base.reserved_output_tokens,
+                platform_margin_tokens=base.platform_margin_tokens,
+                available_input_tokens=48,
+                mandatory_reserve_tokens=base.mandatory_reserve_tokens,
+                allocatable_tokens=max(0, 24 - base.mandatory_reserve_tokens),
+                request_cap_tokens=base.request_cap_tokens,
+                policy_id=self.policy_id,
+                policy_version="test",
+            )
+
     registry = ContextPluginRegistry()
     strategy = DeterministicTailCompactionStrategy()
     registry.set_compaction_strategy(strategy)
-    fragment = ContextFragment(
-        fragment_id="f1",
-        source=ContextFragmentSource.RAG,
-        source_id="s1",
-        content="x" * 400,
-        token_estimate=100,
-        relevance_score=0.5,
-        freshness_score=0.5,
-        confidence_score=0.5,
-        mandatory=False,
+    registry.set_model_budget_policy(_TightAllocPolicy())
+    registry.add_provider(_RagOverflowProvider())
+    adapter = _FakeAdapter(window=4096)
+    engine = DefaultNexusContextEngine(registry=registry)
+    assembled = await engine.assemble(
+        _request(48),
+        provider_ctx=_assemble_runtime(adapter, "user question"),
     )
-    result = registry.compaction_strategy.compact(
-        ContextCompactionInput(fragment=fragment, target_token_budget=10),
-    )
-    assert result is not None
-    assert result.provenance.strategy_id == strategy.strategy_id
+    assert assembled.compaction_strategy_id == strategy.strategy_id
+    assert assembled.compaction_provenance
+    assert assembled.compaction_provenance[0].strategy_id == strategy.strategy_id
 
 
-def test_ce2_q7_custom_degradation_policy() -> None:
+@pytest.mark.asyncio
+async def test_ce2_q7_custom_degradation_policy() -> None:
     class _SingleStepPolicy:
         @property
         def policy_id(self) -> str:
@@ -205,8 +284,26 @@ def test_ce2_q7_custom_degradation_policy() -> None:
         def ladder_order(self) -> tuple[DegradationStepKind, ...]:
             return (DegradationStepKind.FULL, DegradationStepKind.DROP_LOWEST_SCORED)
 
-    compiler = ContextCompiler(degradation_policy=_SingleStepPolicy())
-    assert compiler._degradation_policy.policy_id == "single_step_test"
+    registry = ContextPluginRegistry()
+    registry.set_degradation_policy(_SingleStepPolicy())
+    adapter = _FakeAdapter(window=4096)
+    engine = DefaultNexusContextEngine(registry=registry)
+    assembled = await engine.assemble(
+        _request(400),
+        provider_ctx=_assemble_runtime(adapter, "question"),
+    )
+    assert assembled.degradation_policy_id == "single_step_test"
+
+    snapshot = snapshot_context_assembly_strategies(registry)
+    compiler = ContextCompiler(degradation_policy=snapshot.degradation_policy)
+    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    messages = [
+        ChatMessage(role="system", content="core"),
+        ChatMessage(role="system", content="[context:rag:x] " + ("d" * 2000)),
+        ChatMessage(role="user", content="q"),
+    ]
+    result = compiler.compile(messages, config, max_output_tokens=64, input_budget_tokens=40)
+    assert DegradationStepKind.DROP_LOWEST_SCORED.value in result.degradation_steps
 
 
 def test_ce2_q8_mandatory_fragment_preserved() -> None:
@@ -239,14 +336,23 @@ def test_ce2_q8_mandatory_fragment_preserved() -> None:
     assert "o1" not in included_ids
 
 
-def test_ce2_q9_unsatisfiable_mandatory_budget() -> None:
-    err = ContextBudgetUnsatisfiableError(mandatory_tokens=900, available_tokens=100)
-    assert err.reason_code == "budget.unsatisfiable.mandatory_overflow"
+@pytest.mark.asyncio
+async def test_ce2_q9_unsatisfiable_mandatory_budget() -> None:
+    adapter = _FakeAdapter(window=256)
+    engine = DefaultNexusContextEngine()
+    huge_user = "m" * 2000
     with pytest.raises(ContextBudgetUnsatisfiableError):
-        raise err
+        await engine.assemble(
+            _request(200),
+            provider_ctx=_assemble_runtime(adapter, huge_user, max_output=32),
+        )
 
 
 def test_ce2_q10_compaction_preserves_governance_fields() -> None:
+    from intergrax.contracts.data_classification import DataClassification
+    from intergrax.context.contracts import ContextFragmentScopeRef
+
+    scope = ContextFragmentScopeRef(tenant_id="tenant-a", execution_scope_key="task-1")
     fragment = ContextFragment(
         fragment_id="g1",
         source=ContextFragmentSource.RAG,
@@ -258,12 +364,18 @@ def test_ce2_q10_compaction_preserves_governance_fields() -> None:
         confidence_score=0.5,
         mandatory=False,
         authority_class=ContextAuthorityClass.RAG_EVIDENCE,
+        sensitivity=DataClassification.CONFIDENTIAL,
+        scope_ref=scope,
+        provider_provenance=None,
     )
     result = DeterministicTailCompactionStrategy().compact(
         ContextCompactionInput(fragment=fragment, target_token_budget=5),
     )
     assert result is not None
     assert result.fragment.authority_class is ContextAuthorityClass.RAG_EVIDENCE
+    assert result.fragment.scope_ref == scope
+    assert result.fragment.sensitivity is DataClassification.CONFIDENTIAL
+    assert result.fragment.source_id == "src"
 
 
 def test_ce2_q11_compaction_provenance() -> None:
@@ -287,15 +399,17 @@ def test_ce2_q11_compaction_provenance() -> None:
 
 
 def test_ce2_q12_model_window_after_compile() -> None:
-    adapter = _FakeAdapter(window=512)
-    config = RuntimeConfig(llm_adapter=adapter)
+    adapter = _FakeAdapter(window=4096)
+    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
     messages = [
         ChatMessage(role="system", content="s"),
-        ChatMessage(role="user", content="u" * 4000),
+        ChatMessage(role="user", content="short question"),
     ]
     compiler = ContextCompiler()
-    result = compiler.compile(messages, config, max_output_tokens=64)
-    allowed = resolve_input_budget_tokens(adapter, max_output_tokens=64, margin_tokens=compiler._margin_tokens)
+    allowed = resolve_input_budget_tokens(adapter, max_output_tokens=64, margin_tokens=compiler.margin_tokens)
+    result = compiler.compile(messages, config, max_output_tokens=64, input_budget_tokens=allowed)
+    actual = sum(compiler.count_tokens(message.content or "") for message in result.messages)
+    assert result.total_tokens == actual
     assert result.total_tokens <= allowed
 
 
