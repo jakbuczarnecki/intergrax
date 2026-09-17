@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime, build_harness_host_runtime
+from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.host_queue_execution_wiring import (
     resolve_host_queue_execution_dependencies,
 )
@@ -37,10 +37,10 @@ from local_workspace_application.host.background_worker_constructor import (
     BackgroundWorkerConstructor,
     create_default_background_worker,
 )
-from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.workspaces.document_store_factory import (
-    resolve_lkw_runtime_document_store,
+from local_workspace_application.host.host_runtime_composition import (
+    build_local_workspace_harness_host_runtime,
 )
+from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,20 +82,15 @@ def build_local_workspace_background_worker_wiring(
     worker_constructor: BackgroundWorkerConstructor | None = None,
 ) -> LocalWorkspaceBackgroundWorkerWiring:
     resolved_settings = settings or LocalWorkspaceBackendSettings.from_env()
-    environment = manifest.resolved_environment()
-    lkw_document_store = (
-        document_store
-        if document_store is not None
-        else resolve_lkw_runtime_document_store(resolved_settings)
-    )
-    runtime = build_harness_host_runtime(
-        manifest,
-        environment,
+    host_runtime = build_local_workspace_harness_host_runtime(
         settings=resolved_settings,
-        idempotency_db_path=Path(resolved_settings.idempotency_db_path),
-        document_store=lkw_document_store,
         registry_projection=registry_projection,
+        manifest=manifest,
+        document_store=document_store,
+        idempotency_db_path=Path(resolved_settings.idempotency_db_path),
     )
+    runtime = host_runtime.runtime
+    environment = host_runtime.environment
     task_enricher = build_reliability_task_enricher(
         environment,
         agent_checkpoint_store=runtime.agent_checkpoint_store,

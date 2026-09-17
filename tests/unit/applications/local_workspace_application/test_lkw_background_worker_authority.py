@@ -41,6 +41,9 @@ from local_workspace_application.host.background_worker_main import (
     activate_local_workspace_reference_production_authority,
     main,
 )
+from local_workspace_application.host.host_runtime_composition import (
+    build_local_workspace_harness_host_runtime,
+)
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
@@ -178,20 +181,18 @@ def test_authority_assembly_order_before_worker_start(
             ),
         ),
         patch(
-            "local_workspace_application.host.background_worker_main.build_harness_host_runtime",
-            side_effect=lambda *args, **kwargs: _track(
+            "local_workspace_application.host.background_worker_main.build_local_workspace_harness_host_runtime",
+            side_effect=lambda **kwargs: _track(
                 "build_runtime_diag",
-                build_harness_host_runtime,
-                *args,
+                build_local_workspace_harness_host_runtime,
                 **kwargs,
             ),
         ),
         patch(
-            "local_workspace_application.host.background_worker_factory.build_harness_host_runtime",
-            side_effect=lambda *args, **kwargs: _track(
+            "local_workspace_application.host.background_worker_factory.build_local_workspace_harness_host_runtime",
+            side_effect=lambda **kwargs: _track(
                 "build_runtime",
-                build_harness_host_runtime,
-                *args,
+                build_local_workspace_harness_host_runtime,
                 **kwargs,
             ),
         ),

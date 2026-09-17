@@ -10,9 +10,6 @@ from typing import Any, Optional, cast
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 
-from intergrax.applications._shared.agent_certification_wiring import (
-    apply_roster_agent_governance,
-)
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -20,9 +17,6 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
-from intergrax.applications._shared.harness_host_runtime import (
-    build_harness_host_runtime,
-)
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications._shared.interaction_wiring import (
     wire_interaction_intake_service,
@@ -36,10 +30,6 @@ from intergrax.runtime.observability.operator_wiring import (
 from intergrax.applications._shared.harness_host_composition import (
     bootstrap_harness_host_application_plugins,
     bootstrap_harness_host_platform,
-    resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
 )
 from intergrax.applications._shared.harness_host_auxiliary_wiring import (
     wire_harness_host_long_running_scheduler,
@@ -59,18 +49,16 @@ from local_workspace_application.host.lkw_task_enricher import (
 )
 from local_workspace_application.host.readiness import LocalWorkspaceReadinessProvider
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.host.environment_profile import (
-    build_local_workspace_environment_profile,
-)
 from local_workspace_application.host.observability_wiring import (
     build_local_workspace_observability_plugins,
 )
 from local_workspace_application.host.execution_wiring import build_lkw_host_task_execution
+from local_workspace_application.host.host_runtime_composition import (
+    build_local_workspace_harness_host_runtime,
+    build_local_workspace_host_environment,
+)
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
-from local_workspace_application.workspaces.document_store_factory import (
-    resolve_lkw_runtime_document_store,
-)
 from local_workspace_application.workspaces.repository import ManagedWorkspaceRepository
 from local_workspace_application.serving.background_task_proof_routes import (
     mount_local_workspace_background_task_proof_routes,
@@ -90,14 +78,6 @@ from local_workspace_application.serving.sentry_proof_routes import (
 from local_workspace_application.serving.workspace_routes import (
     mount_managed_workspace_routes,
 )
-
-
-def _resolve_lkw_host_tenant_id(settings: LocalWorkspaceBackendSettings) -> str:
-    for identity in settings.api_keys_map.values():
-        tenant_id = identity.tenant_id.strip()
-        if tenant_id:
-            return tenant_id
-    return "default"
 
 
 def create_local_workspace_backend_app(
@@ -130,12 +110,18 @@ def create_local_workspace_backend_app(
         resolved_readiness = host_readiness
 
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
-    env = apply_roster_agent_governance(
-        build_local_workspace_environment_profile(resolved_settings),
-        agents=manifest.agents,
-        app_id=manifest.app_id,
+    env = build_local_workspace_host_environment(resolved_settings)
+    host_runtime = build_local_workspace_harness_host_runtime(
+        settings=resolved_settings,
+        registry_projection=registry_projection,
+        manifest=manifest,
+        environment=env,
+        trace_db_path=trace_db_path,
+        runtime_events_db_path=runtime_events_db_path,
     )
-    lkw_document_store = resolve_lkw_runtime_document_store(resolved_settings)
+    lkw_document_store = host_runtime.document_store
+    host_tenant_id = host_runtime.tenant_binding.tenant_id
+    runtime = host_runtime.runtime
     lkw_managed_workspace_repository = ManagedWorkspaceRepository(lkw_document_store)
     from intergrax.applications._shared.declarative_tool_wiring import (
         build_declarative_invoker_for_application_host,
@@ -150,18 +136,6 @@ def create_local_workspace_backend_app(
     functional_evidence_wiring = wire_functional_evidence_runtime(
         cursor_secret=resolve_problem_list_cursor_secret(),
         document_store=assert_conditional_document_store(lkw_document_store),
-    )
-    host_tenant_id = _resolve_lkw_host_tenant_id(resolved_settings)
-    runtime = build_harness_host_runtime(
-        manifest,
-        env,
-        settings=resolved_settings,
-        tenant_id=host_tenant_id,
-        trace_db_path=trace_db_path,
-        runtime_events_db_path=runtime_events_db_path,
-        idempotency_db_path=Path(resolved_settings.idempotency_db_path),
-        document_store=lkw_document_store,
-        registry_projection=registry_projection,
     )
     runtime.env_wiring.tool_wiring.wiring_context.extras[
         functional_evidence_wiring_extra_key()
