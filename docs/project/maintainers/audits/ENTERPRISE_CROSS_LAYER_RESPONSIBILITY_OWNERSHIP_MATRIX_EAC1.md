@@ -14,8 +14,8 @@
 | **EAC1R1_SESSION_START_HEAD** | `9a6319e0e710029fb7ccfed1f1c2e7588cda4ff0` | Working tree @ start of EAC-1R1 hardening session |
 | **EAC1R1_EVIDENCE_HEAD** | `5563c5921500bc3a57ca8e6d816bfd18f5d76d8b` | Repository state reconciled for EAC-1R1 taxonomy pass |
 | **EAC1R1_HARDENING_COMMIT** | `ab6d578296e7b234a364c8dbb8570d318fe28f62` | Committed EAC-1R1 documentation hardening |
-| **EAC1R2_SESSION_START_HEAD** | `af4d84e370062776d2f051d99cd5a7f74fc6e243` | Working tree @ start of EAC-1R2 (HEAD == `origin/development`) |
-| **EAC1R2_EVIDENCE_HEAD** | `af4d84e370062776d2f051d99cd5a7f74fc6e243` | Repository state reconciled for EAC-1R2 taxonomy (claims through this SHA unless LEGACY/QUAL) |
+| **EAC1R2_SESSION_START_HEAD** | `af4d84e370062776d2f051d99cd5a7f74fc6e243` | Working tree @ agent session open (`HEAD == origin/development`) |
+| **EAC1R2_EVIDENCE_HEAD** | `a98890536ce8d95f68e1778d8c502c76972bf4e1` | Repository state reconciled for EAC-1R2 taxonomy immediately before EAC-1R2 doc commit |
 
 | Gate | Value |
 |------|-------|
@@ -30,6 +30,7 @@
 |--------|------|----------------|
 | `0425caa4e512764fd541fbf25d5b84db8b89d1a6` | Governance GR-10 strategy qualification | **QUALIFICATION ONLY** — GR-10 OPEN → **PARTIAL**; **GOVERNANCE_AUTHORITY** remains **GOVERNED_EXECUTION** |
 | `af4d84e370062776d2f051d99cd5a7f74fc6e243` | Context budgeting / compaction | CE/UCL qualification surface; **no** peer authority owner change |
+| `a98890536ce8d95f68e1778d8c502c76972bf4e1` | RAG scoped knowledge reference read | Aligns with **RETRIEVAL_ORCHESTRATION** vs **MEMORY_REFERENCE_READ** split; **no** owner change |
 
 **Drift watch:** Uncommitted working-tree deltas outside `EAC1R2_EVIDENCE_HEAD` are **out of scope** for this artifact.
 
@@ -560,6 +561,6 @@ No ADR resolved in EAC-1R2.
 
 ---
 
-*EAC-1 artifact reconciled @ **EAC1R2_EVIDENCE_HEAD** `af4d84e370062776d2f051d99cd5a7f74fc6e243`. Prior hardening: **EAC1R1_HARDENING_COMMIT** `ab6d578296e7b234a364c8dbb8570d318fe28f62`.*
+*EAC-1 artifact reconciled @ **EAC1R2_EVIDENCE_HEAD** `a98890536ce8d95f68e1778d8c502c76972bf4e1`. Prior hardening: **EAC1R1_HARDENING_COMMIT** `ab6d578296e7b234a364c8dbb8570d318fe28f62`.*
 
 *Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z GitHuba.*
