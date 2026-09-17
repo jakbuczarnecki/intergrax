@@ -905,7 +905,7 @@ Do not treat this document as a replacement for domain pair canon or maintainer 
 
 ---
 
-## Documentation regression gates (GOV-FINAL-1 / GOV-FINAL-3)
+## Documentation regression gates (GOV-FINAL-1 / GOV-FINAL-3 / GOV-FINAL-4)
 
 Semantic gates (no snapshot / line-number coupling) in `tests/unit/runtime/architecture/test_gov_final_1_documentation_regression_gates.py` guard:
 
@@ -915,3 +915,5 @@ Semantic gates (no snapshot / line-number coupling) in `tests/unit/runtime/archi
 - **CONTROL_PLANE_MUTATION** cannot read as enterprise **CLOSED** without an explicit qualification marker.
 
 `tests/unit/runtime/architecture/test_gov_final_3_visual_architecture_gates.py` guards the **Visual Architecture Layer** (required sections, Mermaid presence, authority semantics, strategy-gap honesty, no competing visual SSOT file).
+
+**GOV-FINAL-4 (E2E qualification matrix):** enterprise proof catalog and scenario/failure matrices live in [`maintainers/qualification/GOVERNANCE_FINAL_E2E_QUALIFICATION.md`](../maintainers/qualification/GOVERNANCE_FINAL_E2E_QUALIFICATION.md); executable evidence under `tests/qualification/governance/` with doc gates in `test_gov_final_4_documentation_regression_gates.py`. **Full Governance Plane enterprise certification is not claimed.**
