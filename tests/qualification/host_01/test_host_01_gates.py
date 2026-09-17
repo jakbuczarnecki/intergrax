@@ -60,6 +60,9 @@ from governed_contractor_application.host.execution_wiring import (
     build_governed_contractor_host_task_execution,
 )
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from tests.qualification.host_01.threaded_adapter_import_detector import (
+    threaded_adapter_import_violations,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -67,8 +70,6 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 _SHARED_HOST = _REPO_ROOT / "intergrax" / "applications" / "_shared"
 _HOST_TASK = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
 _CONTRACTS_EXECUTION_REQUEST = _REPO_ROOT / "intergrax" / "contracts" / "execution_request.py"
-_THREADED_ADAPTER_MODULE = "intergrax.fastapi_core.execution.adapters.threaded_adapter"
-
 _HOST_ADAPTER_FILES = (
     _SHARED_HOST / "mcp_nexus_server.py",
     _SHARED_HOST / "fastapi_mcp.py",
@@ -145,7 +146,8 @@ def _iter_production_composition_python_files() -> list[Path]:
             continue
         for path in root.rglob("*.py"):
             rel = path.relative_to(_REPO_ROOT).as_posix()
-            if "runtime-context" in rel or "/docker/" in rel:
+            # Materialized image build contexts — not live application composition roots.
+            if "runtime-context" in rel:
                 continue
             paths.append(path)
     return paths
@@ -159,21 +161,7 @@ def _collect_threaded_adapter_production_references() -> list[str]:
             tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
         except SyntaxError:
             continue
-            for node in ast.walk(tree):
-                if isinstance(node, ast.Import):
-                    for alias in node.names:
-                        mod = alias.name
-                        if mod == _THREADED_ADAPTER_MODULE or mod.endswith(".threaded_adapter"):
-                            violations.append(f"{rel}: import {mod!r}")
-                if isinstance(node, ast.ImportFrom) and node.module:
-                    mod = node.module
-                    if mod == _THREADED_ADAPTER_MODULE or mod.endswith(".threaded_adapter"):
-                        violations.append(f"{rel}: from {mod!r}")
-                    if any(
-                        isinstance(child, ast.alias) and child.name == "ThreadedExecutionAdapter"
-                        for child in node.names
-                    ):
-                        violations.append(f"{rel}: imports ThreadedExecutionAdapter from {mod!r}")
+        violations.extend(threaded_adapter_import_violations(tree, rel))
     return violations
 
 
