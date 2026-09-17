@@ -30,7 +30,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 
 **B. Implemented slices (capability-specific).** MP-1 **core runtime** is implemented and closed in Collaborative Work (Principal, WorkspaceMembership, Delegation, effective authority, durable persistence, production PostgreSQL qualification). Individual reused platform mechanisms (UCL, HITL, conversation channels, ExternalWork) may already exist; they do **not** make the Multiplayer capability as a whole shipped.
 
-**C. Planned / not started as Multiplayer phases.** MP-3 ownership is **frozen** (ADR-MP-004); MP-3 runtime **IN PROGRESS**. **MP-4 implementation — FORMALLY CLOSED** (**MP-4R0…MP-4R8 CLOSED**); **MP-4 documentation certification — CLOSED** (MP-4D1–D8) — canonical detail in [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). MP-5 through MP-9 remain roadmap.
+**C. Planned / not started as Multiplayer phases.** **MP-3 — ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004; MP-3H). **MP-4 implementation — FORMALLY CLOSED** (**MP-4R0…MP-4R8 CLOSED**); **MP-4 documentation certification — CLOSED** (MP-4D1–D8) — canonical detail in [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md). **MP-2 (Shared Work) is CLOSED** per [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md). **MP-5 — NEXT**; MP-6 through MP-9 remain roadmap.
 
 **D. Proof boundary.** Runtime / public **E2E proof for Multiplayer AI as a product capability is not established**. Architecture and partial MP-1 implementation do not imply end-to-end collaborative product readiness.
 
@@ -48,14 +48,14 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 | **Principal** | MP-1 - Collaborative Work; **CLOSED** |
 | **Membership / delegation** | MP-1 - Collaborative Work; **CLOSED** |
 | **Shared work** | MP-2 - Collaborative Work; **CLOSED** |
-| **Work artifacts** | MP-3 - ownership frozen (ADR-MP-004); decomposition APPROVED / CLOSED; MP-3A closed; runtime IN PROGRESS |
+| **Work artifacts** | MP-3 — **ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004; MP-3A…MP-3H) |
 | **Decision / approval** | **REUSED** canonical Decision System + Governance/HITL + Multiplayer binding/projection (**MP-4R CLOSED**); not Multiplayer-owned authority |
 | **Context view** | MP-5 - principal-scoped; composes UCL/CE/Memory/Knowledge |
 | **Activity / provenance** | MP-6 - planned |
 | **LKW relation** | MP-7 reference consumer - not owner |
 | **HITL relation** | **REUSED** Governance/HITL + `ExecutionContinuationPort` — not Decision owner; Nexus internal orchestration only |
 | **External agent interoperability** | MP-8 - future; AgentDirectory ≠ AgentRegistry |
-| **Current maturity** | Architecture / roadmap stage; MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3A **CLOSED**; MP-3 runtime **IN PROGRESS**; capability-wide proof not established |
+| **Current maturity** | Architecture / roadmap stage; MP-1 **CLOSED**; MP-2 **CLOSED**; MP-3 **ENTERPRISE CERTIFIED / CLOSED**; **MP-5 — NEXT**; capability-wide proof not established |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [§Purpose](#purpose) · [§Strategic position](#strategic-position) · [§Roadmap summary](#roadmap-summary) |
 
 ## Core mental model
@@ -99,11 +99,11 @@ Tier-0/Tier-1 platform Multiplayer primitives
 
 ## Engineering canon
 
-**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**) — **MP-3 — ownership FROZEN / ACCEPTED** (ADR-MP-004 Accepted); **MP-3 architecture decomposition — APPROVED / CLOSED**; MP-3 runtime **IN PROGRESS**
+**Status:** **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS** — **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**) — **MP-3 — ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004 Accepted; **MP-3A…MP-3H — APPROVED / CLOSED**); **MP-3 architecture decomposition — APPROVED / CLOSED**; **MP-5 — NEXT**
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** *(none — MP-4 documentation certification closed)*
+**Current active task:** **MP-5 — NEXT** (Principal-scoped ContextView; not started in this hub).
 **Previous:** **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
@@ -430,13 +430,13 @@ not replace existing Evidence.
 
 **Delivered:** WorkItem, Assignment, shared-work lifecycle, concurrency, idempotency, and `WorkItemExecutionLink` provenance — contracts (2A) and implementation (2B…2G).
 
-**Next capability:** MP-3 (see § MP-3 — active open slice **MP-3H**).
+**Next capability:** **MP-5 — NEXT** (Principal-scoped ContextView).
 
 ---
 
 ### MP-3 - WorkArtifact and WorkArtifactVersion
 
-**Status:** **Ownership FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; MP-3 runtime **IN PROGRESS**.
+**Status:** **ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; **MP-3A…MP-3H — APPROVED / CLOSED**.
 
 **Intent:** Durable collaborative outputs with explicit versioning and provenance, reusable across applications and agents.
 
@@ -459,9 +459,9 @@ not replace existing Evidence.
 | MP-3E | PostgreSQL + qualification | APPROVED / CLOSED |
 | MP-3F | Content storage adapters | APPROVED / CLOSED |
 | MP-3G | Execution/evidence integration | APPROVED / CLOSED |
-| MP-3H | Final independent review | NOT STARTED |
+| MP-3H | Final enterprise certification | APPROVED / CLOSED |
 
-**Next active task:** **MP-3H — NEXT** (**MP-3G — APPROVED / CLOSED**; integration semantics certified).
+**Next active task:** **MP-5 — NEXT** (**MP-3 — ENTERPRISE CERTIFIED / CLOSED**).
 
 **Architectural implementation slices:** MP-3A contracts → MP-3B ports/publication port (atomic initial create + publish) → MP-3C service + authority → MP-3D SQLite → MP-3E PostgreSQL → MP-3F content adapters → MP-3G execution/evidence → MP-3H closure. MP-3F follows MP-3E (metadata/content-ref qualification does not require live content provider).
 
@@ -605,7 +605,7 @@ Each decision is required before the relevant implementation:
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 | **ADR-MP-008** | Workspace platformization / LKW migration |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 ownership **FROZEN**; MP-3 runtime **IN PROGRESS**. **ADR-MP-009 Accepted** — **MP-4R0…MP-4R8 CLOSED**; **MP-4 FORMALLY CLOSED**; **MP-4D** documentation certification **CLOSED** (MP-4D1–D8). ADR-MP-006…008 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 **ENTERPRISE CERTIFIED / CLOSED** (**MP-3H — APPROVED / CLOSED**). **ADR-MP-009 Accepted** — **MP-4R0…MP-4R8 CLOSED**; **MP-4 FORMALLY CLOSED**; **MP-4D** documentation certification **CLOSED** (MP-4D1–D8). **MP-5 — NEXT**. ADR-MP-006…008 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
 
 ---
 

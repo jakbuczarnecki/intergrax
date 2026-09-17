@@ -158,7 +158,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Addressable shared work units assignable to principals and agents |
 | **Acceptance criteria** | WorkItems are durable and independently addressable; WorkItemState is not TaskState; multiple tasks/runs may relate to one WorkItem; stale authoritative mutations fail explicitly; Nexus does not own WorkItem lifecycle |
 | **Expected proof/evidence** | Contract tests; lifecycle tests; assignment authorization tests; concurrency/conflict tests; idempotency tests; provenance linkage to real four-part `ExecutionProvenanceRef` |
-| **Next implementation row** | MP-3 (see § MP-3 — active open slice **MP-3H**) |
+| **Next implementation row** | **MP-5 — NEXT** (MP-3 **ENTERPRISE CERTIFIED / CLOSED**) |
 
 ---
 
@@ -167,7 +167,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P1 |
-| **Status** | **Ownership FROZEN / ACCEPTED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; runtime **IN PROGRESS** |
+| **Status** | **ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; **MP-3A…MP-3H — APPROVED / CLOSED** |
 | **Purpose** | Durable collaborative outputs with versioning and provenance. |
 | **Owning domain plan** | [`COLLABORATIVE_WORK.md`](../../maintainers/plans/COLLABORATIVE_WORK.md) — frozen by ADR-MP-004; full slice rows § COLLAB-WORK-3 |
 | **Reused domain capabilities** | UCL (consumption only); Memory indexing/retrieval; Proof Receipts attestation; MP-1 authority; MP-2 repository/CAS/idempotency patterns; optional `ExecutionProvenanceRef` |
@@ -181,7 +181,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Versioned collaborative artifacts with lineage |
 | **Acceptance criteria** | A WorkArtifactVersion is the authoritative collaborative output; versions remain addressable after executions end; publication preserves principal/work/execution lineage; current-version updates detect stale writes; atomic initial creation and subsequent publication via dedicated port (no dangling `current_version_id`, no orphan initial version) |
 | **Expected proof/evidence** | Contract tests; authorization/isolation tests; version/concurrency tests; idempotent initial create tests; idempotent publication tests; cross-process publication proof (MP-3E); provenance/evidence integration proof (MP-3G) |
-| **Next implementation row** | **MP-3H — NEXT** (**MP-3G — APPROVED / CLOSED**; integration semantics certified) |
+| **Next implementation row** | **MP-5 — NEXT** (**MP-3 — ENTERPRISE CERTIFIED / CLOSED**) |
 
 ### MP-3 architectural implementation slices
 
@@ -196,7 +196,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-3E | PostgreSQL + qualification | APPROVED / CLOSED |
 | MP-3F | Content storage adapters (after 3E) | APPROVED / CLOSED |
 | MP-3G | Execution/evidence integration | APPROVED / CLOSED |
-| MP-3H | Final independent review | NOT STARTED |
+| MP-3H | Final enterprise certification | APPROVED / CLOSED |
 
 ---
 
