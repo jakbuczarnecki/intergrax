@@ -113,6 +113,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     allowed_hosts: FrozenSet[str] = field(default_factory=frozenset)
     openapi_enabled_override: Optional[bool] = None
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
+    host_tenant_id: str = ""
     interaction_execute_default: bool = True
     # Observability export settings (env-driven; disabled by default)
     observability_export_enabled: bool = False
@@ -413,6 +414,11 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
         openapi_override: Optional[bool] = None
         if env.raw("BACKEND_OPENAPI") is not None:
             openapi_override = env.bool("BACKEND_OPENAPI")
+
+        host_tenant_id = env.str(
+            "HOST_TENANT_ID",
+            default=cls._field_default("host_tenant_id"),  # type: ignore[arg-type]
+        )
 
         keys: Mapping[str, ApiKeyIdentity] = {}
         bootstrap_key = env.str("BACKEND_BOOTSTRAP_API_KEY", default="")
@@ -732,6 +738,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
             "allowed_hosts": hosts,
             "openapi_enabled_override": openapi_override,
             "api_keys_map": keys,
+            "host_tenant_id": host_tenant_id,
             "interaction_execute_default": env.bool(
                 "INTERACTION_EXECUTE_DEFAULT",
                 default=cls._field_default("interaction_execute_default"),  # type: ignore[arg-type]

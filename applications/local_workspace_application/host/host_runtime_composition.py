@@ -64,11 +64,7 @@ def build_local_workspace_host_environment(
     )
 
 
-def resolve_local_workspace_host_tenant_binding(
-    settings: LocalWorkspaceBackendSettings,
-    environment: ApplicationEnvironmentProfile,
-) -> LocalWorkspaceHostTenantBinding:
-    """Resolve host-level tenant authority from explicit API key map or environment profile."""
+def _distinct_api_key_tenant_ids(settings: LocalWorkspaceBackendSettings) -> list[str]:
     tenant_ids: list[str] = []
     seen: set[str] = set()
     for identity in settings.api_keys_map.values():
@@ -76,18 +72,27 @@ def resolve_local_workspace_host_tenant_binding(
         if tenant_id and tenant_id not in seen:
             seen.add(tenant_id)
             tenant_ids.append(tenant_id)
+    return tenant_ids
+
+
+def resolve_local_workspace_host_tenant_binding(
+    settings: LocalWorkspaceBackendSettings,
+) -> LocalWorkspaceHostTenantBinding:
+    """Resolve host-level tenant authority from explicit host config or API key map."""
+    configured_tenant = settings.host_tenant_id.strip()
+    if configured_tenant:
+        return LocalWorkspaceHostTenantBinding(tenant_id=configured_tenant)
+
+    tenant_ids = _distinct_api_key_tenant_ids(settings)
     if len(tenant_ids) == 1:
         return LocalWorkspaceHostTenantBinding(tenant_id=tenant_ids[0])
     if len(tenant_ids) > 1:
         raise LocalWorkspaceHostRuntimeAuthorityError(
             "local_workspace_host_tenant_authority_ambiguous"
         )
-    profile_tenant = environment.profile_id.strip()
-    if not profile_tenant:
-        raise LocalWorkspaceHostRuntimeAuthorityError(
-            "local_workspace_host_tenant_authority_missing"
-        )
-    return LocalWorkspaceHostTenantBinding(tenant_id=profile_tenant)
+    raise LocalWorkspaceHostRuntimeAuthorityError(
+        "local_workspace_host_tenant_authority_missing"
+    )
 
 
 def build_local_workspace_harness_host_runtime(
@@ -116,7 +121,6 @@ def build_local_workspace_harness_host_runtime(
     )
     resolved_tenant = tenant_binding or resolve_local_workspace_host_tenant_binding(
         settings,
-        resolved_environment,
     )
     resolved_idempotency = (
         idempotency_db_path

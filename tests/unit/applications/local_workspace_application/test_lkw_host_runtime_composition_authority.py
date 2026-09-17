@@ -74,15 +74,11 @@ def test_tenant_binding_propagates_to_harness_runtime() -> None:
 
 
 def test_cross_tenant_bindings_differ() -> None:
-    env_a = build_local_workspace_host_environment(_settings_with_tenant("tenant-a"))
-    env_b = build_local_workspace_host_environment(_settings_with_tenant("tenant-b"))
     binding_a = resolve_local_workspace_host_tenant_binding(
         _settings_with_tenant("tenant-a"),
-        env_a,
     )
     binding_b = resolve_local_workspace_host_tenant_binding(
         _settings_with_tenant("tenant-b"),
-        env_b,
     )
     assert binding_a.tenant_id != binding_b.tenant_id
 
@@ -143,7 +139,7 @@ def test_ambiguous_api_key_tenants_fail_closed() -> None:
         LocalWorkspaceHostRuntimeAuthorityError,
         match="local_workspace_host_tenant_authority_ambiguous",
     ):
-        resolve_local_workspace_host_tenant_binding(settings, env)
+        resolve_local_workspace_host_tenant_binding(settings)
 
 
 def test_http_and_worker_share_tenant_resolver_semantics() -> None:
@@ -156,7 +152,7 @@ def test_http_and_worker_share_tenant_resolver_semantics() -> None:
     assert "resolve_local_workspace_host_tenant_binding" in worker_main_source
     settings = _settings_with_tenant("tenant-shared")
     env = build_local_workspace_host_environment(settings)
-    assert resolve_local_workspace_host_tenant_binding(settings, env).tenant_id == "tenant-shared"
+    assert resolve_local_workspace_host_tenant_binding(settings).tenant_id == "tenant-shared"
 
 
 def test_explicit_tenant_binding_override() -> None:
@@ -180,3 +176,66 @@ def test_explicit_tenant_binding_override() -> None:
     build_runtime.assert_called_once()
     assert build_runtime.call_args.kwargs["tenant_id"] == "tenant-injected"
     assert composition.tenant_binding.tenant_id == "tenant-injected"
+
+
+def test_configured_host_tenant_without_api_keys() -> None:
+    base = LocalWorkspaceBackendSettings.from_env()
+    settings = replace(
+        base,
+        api_keys_map={},
+        host_tenant_id="tenant-configured",
+    )
+    binding = resolve_local_workspace_host_tenant_binding(settings)
+    assert binding.tenant_id == "tenant-configured"
+
+
+def test_missing_tenant_authority_fails_closed() -> None:
+    base = LocalWorkspaceBackendSettings.from_env()
+    settings = replace(
+        base,
+        api_keys_map={},
+        host_tenant_id="",
+    )
+    with pytest.raises(
+        LocalWorkspaceHostRuntimeAuthorityError,
+        match="local_workspace_host_tenant_authority_missing",
+    ):
+        resolve_local_workspace_host_tenant_binding(settings)
+
+
+def test_blank_host_tenant_config_treated_as_missing() -> None:
+    base = LocalWorkspaceBackendSettings.from_env()
+    settings = replace(
+        base,
+        api_keys_map={},
+        host_tenant_id="   ",
+    )
+    with pytest.raises(
+        LocalWorkspaceHostRuntimeAuthorityError,
+        match="local_workspace_host_tenant_authority_missing",
+    ):
+        resolve_local_workspace_host_tenant_binding(settings)
+
+
+def test_profile_id_is_not_tenant_authority_fallback() -> None:
+    base = LocalWorkspaceBackendSettings.from_env()
+    settings = replace(
+        base,
+        api_keys_map={},
+        host_tenant_id="",
+    )
+    env = build_local_workspace_host_environment(settings)
+    assert env.profile_id.strip()
+    with pytest.raises(
+        LocalWorkspaceHostRuntimeAuthorityError,
+        match="local_workspace_host_tenant_authority_missing",
+    ):
+        resolve_local_workspace_host_tenant_binding(settings)
+
+
+def test_configured_host_tenant_overrides_api_key_tenant() -> None:
+    settings = replace(
+        _settings_with_tenant("tenant-from-keys"),
+        host_tenant_id="tenant-configured",
+    )
+    assert resolve_local_workspace_host_tenant_binding(settings).tenant_id == "tenant-configured"

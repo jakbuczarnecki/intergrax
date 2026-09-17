@@ -165,10 +165,7 @@ def build_local_workspace_worker_bootstrap_diagnostics(
     environment_profile: ApplicationEnvironmentProfile,
     document_store: DocumentStore,
 ) -> LocalWorkspaceWorkerBootstrapDiagnostics:
-    host_tenant_binding = resolve_local_workspace_host_tenant_binding(
-        settings,
-        environment_profile,
-    )
+    host_tenant_binding = resolve_local_workspace_host_tenant_binding(settings)
     tenant_binding = HostedDiagnosticTenantBinding(
         tenant_id=host_tenant_binding.tenant_id,
     )
