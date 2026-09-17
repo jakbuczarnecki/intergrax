@@ -35,6 +35,13 @@ from intergrax.runtime.enterprise_reliability.reconciliation_orchestration impor
     ReconciliationOrchestrationError,
     plan_external_effect_reconciliation,
 )
+from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_evidence import (
+    ProviderInvocationReliabilityEvidenceObserver,
+)
+from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_evidence import (
+    emit_provider_invocation_reliability_fact,
+    project_reconciliation_completed,
+)
 
 
 class ProviderInvocationReconciliationRun(BaseModel):
@@ -52,6 +59,7 @@ def reconcile_durable_provider_invocation_unknown(
     *,
     gateway: EnterpriseReliabilityPluginGateway,
     recorded_at: datetime | None = None,
+    evidence_observer: ProviderInvocationReliabilityEvidenceObserver | None = None,
 ) -> ProviderInvocationReconciliationRun:
     """
     Execute one bounded reconciliation probe for a durable UNKNOWN provider attempt.
@@ -60,12 +68,52 @@ def reconcile_durable_provider_invocation_unknown(
     """
     prepared = prepare_provider_invocation_reconciliation(request)
     if isinstance(prepared, ProviderInvocationReconciliationResult):
-        return ProviderInvocationReconciliationRun(result=prepared)
+        run = ProviderInvocationReconciliationRun(result=prepared)
+        _emit_reconciliation_evidence(
+            request=request,
+            run=run,
+            recorded_at=recorded_at,
+            evidence_observer=evidence_observer,
+        )
+        return run
 
-    return _execute_prepared_reconciliation(
+    run = _execute_prepared_reconciliation(
         prepared,
         gateway=gateway,
         recorded_at=recorded_at,
+    )
+    _emit_reconciliation_evidence(
+        request=request,
+        run=run,
+        recorded_at=recorded_at,
+        evidence_observer=evidence_observer,
+    )
+    return run
+
+
+def _emit_reconciliation_evidence(
+    *,
+    request: ProviderInvocationReconciliationRequest,
+    run: ProviderInvocationReconciliationRun,
+    recorded_at: datetime | None,
+    evidence_observer: ProviderInvocationReliabilityEvidenceObserver | None,
+) -> None:
+    if evidence_observer is None or recorded_at is None:
+        return
+    invocation = request.invocation
+    if invocation is None:
+        return
+    emit_provider_invocation_reliability_fact(
+        project_reconciliation_completed(
+            invocation=invocation,
+            tenant_id=request.tenant_id,
+            effect_contract_id=request.effect_contract.contract_id,
+            result=run.result,
+            probe_run=run.probe_run,
+            plugin_id=request.plugin_id,
+            recorded_at=recorded_at,
+        ),
+        evidence_observer,
     )
 
 

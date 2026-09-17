@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from typing import Protocol
 
@@ -24,6 +25,9 @@ from intergrax.contracts.enterprise_reliability.provider_invocation_recovery imp
     ProviderInvocationRecoveryRequest,
     evaluate_provider_invocation_recovery,
 )
+from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_evidence import (
+    ProviderInvocationReliabilityEvidenceObserver,
+)
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
     ProviderInvocationOutcome,
@@ -36,6 +40,10 @@ from intergrax.runtime.enterprise_reliability.provider_invocation_recovery_execu
     ProviderInvocationRecoveryExecutionBlockReason,
     validate_idempotent_repeat_port_result,
     validate_provider_invocation_recovery_execution,
+)
+from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_evidence import (
+    project_recovery_decision_evidence,
+    project_recovery_execution_evidence,
 )
 
 _MAX_REASON = 512
@@ -114,8 +122,24 @@ def decide_provider_invocation_recovery(
     request: ProviderInvocationRecoveryRequest,
     *,
     policy: ProviderInvocationRecoveryPolicy | None = None,
+    evidence_observer: ProviderInvocationReliabilityEvidenceObserver | None = None,
+    tenant_id: str | None = None,
+    recorded_at: datetime | None = None,
 ) -> ProviderInvocationRecoveryDecision:
-    return evaluate_provider_invocation_recovery(request, policy=policy)
+    decision = evaluate_provider_invocation_recovery(request, policy=policy)
+    if (
+        evidence_observer is not None
+        and tenant_id is not None
+        and recorded_at is not None
+    ):
+        project_recovery_decision_evidence(
+            request=request,
+            tenant_id=tenant_id,
+            decision=decision,
+            recorded_at=recorded_at,
+            observer=evidence_observer,
+        )
+    return decision
 
 
 def build_recovery_escalation_context(
@@ -150,7 +174,7 @@ def build_recovery_escalation_context(
     )
 
 
-def execute_provider_invocation_recovery(
+def _execute_provider_invocation_recovery_body(
     request: ProviderInvocationRecoveryRequest,
     *,
     decision: ProviderInvocationRecoveryDecision,
@@ -378,6 +402,46 @@ def execute_provider_invocation_recovery(
         provider_mutation_count=0,
         detail="unsupported recovery action",
     )
+
+
+def execute_provider_invocation_recovery(
+    request: ProviderInvocationRecoveryRequest,
+    *,
+    decision: ProviderInvocationRecoveryDecision,
+    ports: ProviderInvocationRecoveryExecutionPorts,
+    reconciliation_request: ProviderInvocationReconciliationRequest | None = None,
+    evidence_observer: ProviderInvocationReliabilityEvidenceObserver | None = None,
+    tenant_id: str | None = None,
+    recorded_at: datetime | None = None,
+) -> ProviderInvocationRecoveryExecutionResult:
+    result = _execute_provider_invocation_recovery_body(
+        request,
+        decision=decision,
+        ports=ports,
+        reconciliation_request=reconciliation_request,
+    )
+    invocation = request.invocation
+    if (
+        evidence_observer is not None
+        and tenant_id is not None
+        and recorded_at is not None
+        and invocation is not None
+    ):
+        plugin_id = (
+            reconciliation_request.plugin_id
+            if reconciliation_request is not None
+            else None
+        )
+        project_recovery_execution_evidence(
+            invocation=invocation,
+            tenant_id=tenant_id,
+            effect_contract_id=request.effect_contract.contract_id,
+            execution=result,
+            reconciliation_plugin_id=plugin_id,
+            recorded_at=recorded_at,
+            observer=evidence_observer,
+        )
+    return result
 
 
 __all__ = [

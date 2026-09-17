@@ -138,6 +138,18 @@ Enterprise Reliability Layer
 | **Compensation Handling** | “Undo or offset what already happened.” | Planning (`CompensationPlan`) and bounded execution (`CompensationExecutionRequest` → plugin gateway → `CompensationExecutionResult`) — see [`RECOVERY_AND_COMPENSATION.md`](RECOVERY_AND_COMPENSATION.md#compensation-execution-boundary-erl-foundation). |
 | **External Effect Contracts** | “Declare how safe this operation is.” | Integrations/tools declare idempotency and reconciliation hooks—architecture only until implementation. |
 | **Audit Evidence** | “Prove what we knew and when.” | Emitted on the Observability spine; Reliability/ERL own behavior, Observability owns persistence. |
+| **Provider invocation reliability trace (GR-7-A8)** | “Reconstruct intent → outcome → reconcile → recovery without log archaeology.” | Durable `ProviderInvocation` / `ProviderInvocationOutcome` remain historical truth; `ProviderInvocationReliabilityFact` projections (pluggable `ProviderInvocationReliabilityEvidenceObserver`) record lifecycle phases without altering A2–A7 semantics. |
+
+```text
+Governance authorization
+→ ProviderInvocation (intent)
+→ dispatch / outcome persistence
+→ UNKNOWN / crash ambiguity
+→ repeat eligibility
+→ reconciliation (0 provider mutations)
+→ recovery decision + execution
+→ Evidence/Trace projection (not authority)
+```
 
 ---
 

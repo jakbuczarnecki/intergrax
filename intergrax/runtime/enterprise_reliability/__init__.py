@@ -36,6 +36,11 @@ from intergrax.runtime.enterprise_reliability.reconciliation_orchestration impor
     ReconciliationOrchestrationError,
     plan_external_effect_reconciliation,
 )
+from intergrax.runtime.enterprise_reliability.provider_invocation_reliability_evidence import (
+    emit_provider_invocation_reliability_fact,
+    project_recovery_decision_evidence,
+    project_recovery_execution_evidence,
+)
 from intergrax.runtime.enterprise_reliability.provider_invocation_reconciliation import (
     ProviderInvocationReconciliationRun,
     reconcile_durable_provider_invocation_unknown,
@@ -133,6 +138,9 @@ __all__ = [
     "plan_external_effect_reconciliation",
     "ProviderInvocationReconciliationRun",
     "reconcile_durable_provider_invocation_unknown",
+    "emit_provider_invocation_reliability_fact",
+    "project_recovery_decision_evidence",
+    "project_recovery_execution_evidence",
     "DEFAULT_FAIL_CLOSED_PROVIDER_INVOCATION_RECOVERY_POLICY_ID",
     "DefaultFailClosedProviderInvocationRecoveryPolicy",
     "ProviderInvocationRecoveryExecutionBlockReason",
