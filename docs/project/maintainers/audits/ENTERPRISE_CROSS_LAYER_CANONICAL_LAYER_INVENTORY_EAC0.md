@@ -8,11 +8,14 @@
 | Gate | Value |
 |------|-------|
 | **EAC0_BASELINE_HEAD** | `7163fca0ea086f09b75382efe340a8aa06a90bc2` |
-| **FINAL HEAD** | `6350e7e02dcfb45a63c98dde339adbfc16cac69c` |
+| **EAC0_EVIDENCE_HEAD** | `08b182e948e59756548b1525a7fc56d180409bb1` |
+| **EAC0_INVENTORY_COMMIT** | `6350e7e02dcfb45a63c98dde339adbfc16cac69c` |
 | **Branch** | `development` |
-| **HEAD == origin/development @ baseline** | **YES** |
+| **HEAD == origin/development @ EAC-0R1 baseline** | **YES** |
 | **Registry hub** | [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md) |
 | **Prior rebaseline context** | [`CROSS_LAYER_ARCHITECTURE_REBASE_RB0.md`](CROSS_LAYER_ARCHITECTURE_REBASE_RB0.md) (evidence only) |
+
+**Provenance:** `EAC0_EVIDENCE_HEAD` identifies the repository state used as evidence for inventory conclusions. `EAC0_INVENTORY_COMMIT` identifies the commit that introduced this inventory. The document intentionally does not embed its own final commit SHA.
 
 **Subordinate to:** domain architecture/plan pairs. This inventory **MUST NOT** redefine domain semantics.
 
@@ -71,14 +74,22 @@ From the registry [`Architecture artifact classification register`](../../archit
 | `COLLABORATIVE_WORK` | [`COLLABORATIVE_WORK.md`](../../architecture/COLLABORATIVE_WORK.md) ↔ plan | **DOMAIN** — **ADR-REG-001** registry omission |
 | `BACKGROUND_TASKS` | [`BACKGROUND_TASKS.md`](../../architecture/BACKGROUND_TASKS.md) ↔ plan | **DOMAIN** — **ADR-REG-002** registry omission |
 
-**Separate architecture hub, not a DOMAIN pair:**
+**Canonical `DIAGNOSTICS` DOMAIN — registry/plan topology gap only (**ADR-REG-003**):**
+
+| Plane | Confirmed responsibility |
+|-------|-------------------------|
+| **`DIAGNOSTICS`** | Deterministic interpretation of persisted facts → `Problem` state / operator diagnostic read models (`DIAGNOSTICS.md` SSOT; R1 single-authority architecture frozen) |
+| **`OBSERVABILITY`** | Evidence recording, reconstruction, export — **not** diagnostic Problem semantics |
+
+**Open (documentation/registry only):** canonical [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) ↔ implementation plan slices hosted under [`OBSERVABILITY` plan](../../maintainers/plans/OBSERVABILITY.md) — not duplicate runtime authority; standard 1:1 domain-pair representation remains **ADR-REG-003**.
+
+**Supporting hub (not a DOMAIN):**
 
 | Artifact | Classification | Owner |
 |----------|----------------|-------|
-| [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) | **DOMAIN** (interpretation plane); plan slices in [`OBSERVABILITY` plan](../../maintainers/plans/OBSERVABILITY.md) | Central Diagnostics — **ADR-REG-003** split plan ownership |
 | [`CAPABILITY_MARKETPLACE_ENGINE.md`](../../architecture/CAPABILITY_MARKETPLACE_ENGINE.md) | **SUPPORTING_MODEL** (ME-RB1 frozen hub) | `CAPABILITY_CATALOG_AND_DISCOVERY` (+ vertical lifecycle owners) |
 
-**Counted canonical DOMAIN rows (main table):** **33** (23 non-legacy primary + 8 additional + `COLLABORATIVE_WORK` + `BACKGROUND_TASKS` + `DIAGNOSTICS`).
+**Counted canonical DOMAIN rows (main table §16):** **34** (23 non-legacy primary + 8 additional + `COLLABORATIVE_WORK` + `BACKGROUND_TASKS` + `DIAGNOSTICS`).
 
 ---
 
@@ -150,7 +161,7 @@ From the registry [`Architecture artifact classification register`](../../archit
 | **E4** | Developing — architecture ahead of runtime/E2E proof |
 | **E5** | Legacy / not current authority |
 
-**Distribution @ EAC-0 (33 DOMAIN rows):** E1 **3** · E2 **16** · E3 **10** · E4 **4** · E5 **0** (`CRITIC_VERIFICATION` — §8 only, not a DOMAIN row).
+**Distribution @ EAC-0 (34 DOMAIN rows, §16):** E1 **3** · E2 **16** · E3 **10** · E4 **5** · E5 **0** (`CRITIC_VERIFICATION` — §8 only, not a DOMAIN row).
 
 ---
 
@@ -309,7 +320,7 @@ See **Cross-Layer Risk** column in §16. Program-level hotspots:
 |----|-------|----------------|
 | **ADR-REG-001** | Registry completeness | `COLLABORATIVE_WORK` 1:1 pair exists; absent from registry additional table |
 | **ADR-REG-002** | Registry completeness | `BACKGROUND_TASKS` 1:1 pair exists; absent from registry |
-| **ADR-REG-003** | Diagnostics plan ownership | `DIAGNOSTICS.md` SSOT vs plan slices under `OBSERVABILITY` plan |
+| **ADR-REG-003** | Diagnostics registry / plan-pair topology | Canonical `DIAGNOSTICS` authority **not in question**; open: `DIAGNOSTICS.md` architecture SSOT vs DIAG implementation slices under `OBSERVABILITY` plan (1:1 domain-pair convention) |
 | **ADR-REG-004** | `PROOF_DATA_PACKAGE_DISTRIBUTION` | Architecture file without matching `capabilities/plan` pair |
 | **ADR-GOV-01** | Side-effect authority | CW vs Governed Execution declarative tool auth (RB-5 **F**) |
 | **ADR-CTX-01** | Context authority | Context Engineering vs UCL vs Memory projection boundaries |
@@ -364,6 +375,8 @@ See **Cross-Layer Risk** column in §16. Program-level hotspots:
 | One owner per DOMAIN row | **PASS** |
 | OWNS / MUST NOT OWN per DOMAIN | **PASS** (§16) |
 | Maturity per DOMAIN | **PASS** (§9, §16) |
+| Canonical DOMAIN count matches §16 DOMAIN rows (**34**) | **PASS** |
+| Maturity distribution sums to canonical DOMAIN count | **PASS** (E1–E5 → **34**) |
 | E1 claims have qualification refs | **PASS** (EE, Decision, 5F, partial 5E) |
 | Frozen claims cite freeze docs | **PASS** (§10) |
 | Pluginability references contracts | **PASS** (high-level; EAC-4 deepens) |
