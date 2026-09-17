@@ -183,6 +183,7 @@ async def test_ce_q1_behavioral_engine_assemble_on_canonical_surface() -> None:
 
 @pytest.mark.asyncio
 async def test_ce_q2_typed_context_contracts_are_assembly_abi() -> None:
+    """Typed ContextAssemblyRequest / ContextProvider runtime / AssembledContext ABI."""
     request = _assembly_request()
     assert isinstance(request, ContextAssemblyRequest)
     assert request.schema_version == CONTEXT_CONTRACTS_SCHEMA
@@ -210,6 +211,8 @@ async def test_ce_q2_typed_context_contracts_are_assembly_abi() -> None:
     for literal in ("runtime_config", "max_output_tokens", "nexus_ucl_runtime", "context_optimization_policy"):
         assert f'handles.get("{literal}"' not in engine_source
     assert 'handles.get("messages"' not in engine_source
+    assert "ensure_context_assembly_runtime" not in engine_source
+    assert provider_ctx.runtime is not None
 
 
 def test_ce_q3_foreign_tenant_fragment_rejected() -> None:
@@ -406,7 +409,8 @@ def test_ce_q14_ce_core_forbidden_integration_gate() -> None:
 
     violations: list[str] = []
     for path in _scan_python_files(_CE_CORE_SCAN_ROOTS):
-        if "legacy_bridge" in path.as_posix():
+        posix = path.as_posix()
+        if "legacy_bridge" in posix or "legacy_assembly_runtime_bridge" in posix:
             continue
         rel = path.relative_to(_REPO_ROOT).as_posix()
         text = path.read_text(encoding="utf-8")

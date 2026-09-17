@@ -39,6 +39,9 @@ from intergrax.context.provider_descriptor import build_provider_descriptor
 from intergrax.context.ranker import DefaultContextRanker
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+    build_context_assembly_runtime_dependencies,
+)
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from tests.unit.runtime.nexus.context.test_context_engine import _SmallWindowAdapter
 
@@ -184,8 +187,14 @@ async def test_engine_respects_sentinel_pipeline_result() -> None:
     engine = DefaultNexusContextEngine(policy_pipeline=EmptyPipeline())
     request = _request()
     config = RuntimeConfig(llm_adapter=_SmallWindowAdapter(window=512), production_mode=False)
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=config,
+        messages=[],
+        max_output_tokens=64,
+    )
     provider_ctx = ContextProviderContext(
         engine_id="default",
+        runtime=runtime,
         handles={"runtime_config": config, "messages": [], "max_output_tokens": 64},
     )
     assembled = await engine.assemble(request, provider_ctx=provider_ctx)

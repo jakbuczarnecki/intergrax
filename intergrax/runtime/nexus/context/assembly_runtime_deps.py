@@ -10,11 +10,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
 from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.nexus.context.ucl_orchestration import (
-    NEXUS_UCL_RUNTIME_HANDLE,
-    NexusUCLRuntimeDependencies,
-)
-from intergrax.runtime.wiring.context_runtime_bridge import CONTEXT_OPTIMIZATION_POLICY_HANDLE
+from intergrax.runtime.nexus.context.ucl_orchestration import NexusUCLRuntimeDependencies
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -27,25 +23,6 @@ class ContextEngineRuntimeConfig(Protocol):
     llm_adapter: LLMAdapter | None
     production_mode: bool
     metadata: dict[str, Any]
-
-CANONICAL_SEMANTIC_HANDLE_KEYS: frozenset[str] = frozenset(
-    {
-        "runtime_config",
-        "messages",
-        "max_output_tokens",
-        CONTEXT_OPTIMIZATION_POLICY_HANDLE,
-        NEXUS_UCL_RUNTIME_HANDLE,
-    }
-)
-
-CANONICAL_ASSEMBLY_OBSERVABILITY_HANDLE_KEYS: frozenset[str] = frozenset(
-    {
-        "event_bus",
-        "node_id",
-        "agent_id",
-    }
-)
-
 
 @dataclass(frozen=True, slots=True)
 class ContextAssemblyRuntimeDependencies:
@@ -99,43 +76,3 @@ def build_context_assembly_runtime_dependencies(
         node_id=node_id,
         agent_id=agent_id,
     )
-
-
-def try_build_runtime_from_legacy_handles(
-    handles: dict[str, Any],
-) -> ContextAssemblyRuntimeDependencies | None:
-    """Writer-side compatibility: one-shot mapping from legacy handle keys."""
-    runtime_config = handles.get("runtime_config")
-    if runtime_config is None or not hasattr(runtime_config, "llm_adapter"):
-        return None
-    optimization_policy = handles.get(CONTEXT_OPTIMIZATION_POLICY_HANDLE)
-    if optimization_policy is not None and not isinstance(optimization_policy, ContextOptimizationPolicy):
-        optimization_policy = None
-    ucl_runtime = handles.get(NEXUS_UCL_RUNTIME_HANDLE)
-    if ucl_runtime is not None and not isinstance(ucl_runtime, NexusUCLRuntimeDependencies):
-        ucl_runtime = None
-    event_bus = handles.get("event_bus")
-    if not isinstance(event_bus, RuntimeEventBus):
-        event_bus = None
-    node_id = handles.get("node_id")
-    agent_id = handles.get("agent_id")
-    return ContextAssemblyRuntimeDependencies(
-        runtime_config=runtime_config,
-        base_messages=_coerce_base_messages(handles.get("messages")),
-        max_output_tokens=_coerce_max_output_tokens(handles.get("max_output_tokens")),
-        optimization_policy=optimization_policy,
-        ucl_runtime=ucl_runtime,
-        event_bus=event_bus,
-        node_id=node_id if isinstance(node_id, str) else None,
-        agent_id=agent_id if isinstance(agent_id, str) else None,
-    )
-
-
-def ensure_context_assembly_runtime(ctx: Any) -> Any:
-    """Populate ``ctx.runtime`` from legacy handles when callers still pass handles only."""
-    if getattr(ctx, "runtime", None) is not None:
-        return ctx
-    hydrated = try_build_runtime_from_legacy_handles(getattr(ctx, "handles", {}) or {})
-    if hydrated is not None:
-        ctx.runtime = hydrated
-    return ctx

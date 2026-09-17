@@ -34,6 +34,9 @@ from intergrax.runtime.nexus.context.canonical_context_composition import (
     enforce_context_engine_when_provider_sources_active,
 )
 from intergrax.runtime.nexus.context.context_builder import BuiltContext, RetrievedChunk
+from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+    build_context_assembly_runtime_dependencies,
+)
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.runtime.nexus.context.memory_context_invocation import run_longterm_memory_context
 from intergrax.context.source_inputs import ContextMemoryEntryInput, ContextProviderSourceInputs
@@ -257,11 +260,21 @@ async def test_ltm_fragment_appears_once_in_ce_assembly() -> None:
             ),
         ),
     )
+    messages = [ChatMessage(role="user", content="hello")]
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=runtime_config,
+        messages=messages,
+    )
     handles = {
-        "messages": [ChatMessage(role="user", content="hello")],
+        "messages": messages,
         "runtime_config": runtime_config,
     }
-    provider_ctx = ContextProviderContext(engine_id="default", sources=sources, handles=handles)
+    provider_ctx = ContextProviderContext(
+        engine_id="default",
+        sources=sources,
+        runtime=runtime,
+        handles=handles,
+    )
     assembled = await engine.assemble(request, provider_ctx=provider_ctx)
     joined = "\n".join(m.content or "" for m in assembled.messages)
     assert joined.count(_LTM_SNIPPET) == 1
@@ -424,11 +437,21 @@ async def test_ce_budget_excludes_ltm_when_tight() -> None:
             ),
         ),
     )
+    messages = [ChatMessage(role="user", content="hello")]
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=runtime_config,
+        messages=messages,
+    )
     handles = {
-        "messages": [ChatMessage(role="user", content="hello")],
+        "messages": messages,
         "runtime_config": runtime_config,
     }
-    provider_ctx = ContextProviderContext(engine_id="default", sources=sources, handles=handles)
+    provider_ctx = ContextProviderContext(
+        engine_id="default",
+        sources=sources,
+        runtime=runtime,
+        handles=handles,
+    )
     assembled = await engine.assemble(request, provider_ctx=provider_ctx)
     joined = "\n".join(m.content or "" for m in assembled.messages)
     assert assembled.degradation_steps or len(joined) < 80

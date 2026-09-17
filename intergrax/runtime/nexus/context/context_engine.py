@@ -65,10 +65,7 @@ from intergrax.runtime.nexus.context.context_compiler_models import (
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
 from intergrax.runtime.wiring.context_runtime_bridge import resolve_context_optimization_policy
-from intergrax.runtime.nexus.context.assembly_runtime_deps import (
-    ContextAssemblyRuntimeDependencies,
-    ensure_context_assembly_runtime,
-)
+from intergrax.runtime.nexus.context.assembly_runtime_deps import ContextAssemblyRuntimeDependencies
 from intergrax.runtime.nexus.context.ucl_orchestration import (
     NexusUCLExecutionError,
     NexusUCLExecutionReason,
@@ -181,14 +178,12 @@ class DefaultNexusContextEngine:
         *,
         provider_ctx: ContextProviderContext | None = None,
     ) -> AssembledContext:
-        ctx = ensure_context_assembly_runtime(
-            provider_ctx or ContextProviderContext(engine_id=self._engine_id)
-        )
+        ctx = provider_ctx or ContextProviderContext(engine_id=self._engine_id)
         runtime = ctx.runtime
         if runtime is None:
             raise ValueError(
                 "ContextProviderContext.runtime is required for canonical assembly "
-                "(runtime_config and base_messages)"
+                "(explicit ContextAssemblyRuntimeDependencies; legacy handles are not hydrated)"
             )
         runtime_config = runtime.runtime_config
         raw_messages: list[ChatMessage] = list(runtime.base_messages)

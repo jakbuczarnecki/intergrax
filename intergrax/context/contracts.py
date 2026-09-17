@@ -480,18 +480,6 @@ class ContextProviderContext:
 
     def __post_init__(self) -> None:
         self._hydrate_sources_from_legacy_session_handles()
-        self._hydrate_runtime_from_legacy_handles()
-
-    def _hydrate_runtime_from_legacy_handles(self) -> None:
-        if self.runtime is not None:
-            return
-        from intergrax.runtime.nexus.context.assembly_runtime_deps import (
-            try_build_runtime_from_legacy_handles,
-        )
-
-        hydrated = try_build_runtime_from_legacy_handles(self.handles)
-        if hydrated is not None:
-            self.runtime = hydrated
 
     def _hydrate_sources_from_legacy_session_handles(self) -> None:
         """Writer-side compatibility: move session snapshot handles into ``sources`` once."""
