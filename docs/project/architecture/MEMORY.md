@@ -246,7 +246,7 @@ There is **no** dedicated public proof route in [`docs/project/proofs/`](../proo
 | **Engineering canon** | [Below](#engineering-canon) - stores, lifecycle, write/read paths |
 | **Extended depth** | [`satellites/MEMORY_extended_depth.md`](satellites/MEMORY_extended_depth.md) - compression matrix, strategy selection, authoring guides (§8+) |
 | **Implementation plan** | [`maintainers/plans/MEMORY.md`](../maintainers/plans/MEMORY.md) |
-| **ADRs** | [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) · [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) |
+| **ADRs** | [ADR-MEM-001](../technical/adr/entries/2026-06-08/ADR-MEM-001.md) · [ADR-MEM-002](../technical/adr/entries/2026-06-14/ADR-MEM-002.md) · [ADR-MEM-XINT-002](../technical/adr/entries/2026-09-17/ADR-MEM-XINT-002.md) |
 | **Store plugins** | [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) |
 | **Platform audit** | [`AUDIT_PROTOCOL.md`](../../audit_results/AUDIT_PROTOCOL.md) · [`audit_results/`](../../audit_results/README.md) |
 | **Target architecture** | [`IDEAL_HARNESS_AI_ARCHITECTURE.md`](../technical/guides/IDEAL_HARNESS_AI_ARCHITECTURE.md) |

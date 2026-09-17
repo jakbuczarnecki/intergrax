@@ -121,6 +121,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-OBS-005](entries/2026-09-14/ADR-OBS-005.md) | Runtime event delivery failure contract (`EventSinkPort`) â€” P1B-D1-R2 + P1B-R3-D1 bounded completion semantics | Proposed |
 | [ADR-DECISION-001](entries/2026-09-14/ADR-DECISION-001.md) | Public authoritative decision exposure at execution boundary (SCENARIO-1-P0-B-D1) | Proposed |
 | [ADR-GR-5-001](entries/2026-09-15/ADR-GR-5-001.md) | Canonical Execution HITL continuation ownership (`ExecutionContinuationPort`; Nexus internal) | Accepted (architecture) |
+| [ADR-MEM-XINT-002](entries/2026-09-17/ADR-MEM-XINT-002.md) | Unified information & context authority (Memory × CE × RAG × Tools) | Accepted (architecture) |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0â€¦GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 
