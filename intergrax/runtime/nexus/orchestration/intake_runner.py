@@ -186,10 +186,15 @@ class NexusIntakeRunner:
             if task.runtime.governance.human_request is not None:
                 GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
                 task.sync_metadata()
-            canonical_resume_after_authorization(task, authorized, capability=hitl)
+            resumed_continuation = canonical_resume_after_authorization(
+                task, authorized, capability=hitl
+            )
             if (
                 LongRunningCoordinator.is_long_running(task)
-                and HumanPauseCoordinator.is_resumed(task)
+                and canonical_execution_is_resumed(
+                    hitl,
+                    identity=resumed_continuation.identity,
+                )
                 and task.state in LongRunningCoordinator.paused_states()
             ):
                 task.state = TaskState.CREATED

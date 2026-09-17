@@ -39,6 +39,7 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
     canonical_allows_planning_progress_after_human_gate,
+    canonical_execution_is_resumed,
     establish_canonical_hitl_pause,
     execution_continuation_identity_for_task,
 )
@@ -127,6 +128,81 @@ def bound_identity():
     )
     yield
     reset_active_execution_identity(token)
+
+
+@pytest.mark.asyncio
+async def test_intake_stale_projection_cannot_promote_long_running(
+    bound_identity: None,
+) -> None:
+    cap, task = _seed_waiting()
+    task.options.long_running.enabled = True
+    task.state = TaskState.WAITING_FOR_HUMAN
+    task.runtime.governance.projected_continuation_lifecycle_state = (
+        ExecutionContinuationLifecycleState.RESUMED.value
+    )
+    assert HumanPauseCoordinator.is_resumed(task) is True
+    assert canonical_execution_is_resumed(cap, identity=_identity()) is False
+
+    from intergrax.contracts.execution_identity import ActiveExecutionIdentity
+
+    runner = NexusIntakeRunner(
+        hitl=MagicMock(),
+        human_hooks=MagicMock(),
+        publish=AsyncMock(),
+        restore_long_running=AsyncMock(),
+        execution_identity=ActiveExecutionIdentity(),
+        hitl_continuation=cap,
+    )
+    await runner.run(
+        task,
+        lifecycle=TaskLifecycle(),
+        trace_emitter=TaskTraceEmitter(run_id=_RUN, attempt_id=_ATTEMPT),
+    )
+    assert task.state is TaskState.WAITING_FOR_HUMAN
+
+
+@pytest.mark.asyncio
+async def test_intake_canonical_resume_syncs_long_running_projection(
+    bound_identity: None,
+) -> None:
+    cap, task = _seed_waiting()
+    task.options.long_running.enabled = True
+    task.state = TaskState.WAITING_FOR_HUMAN
+    task.runtime.governance.pause_record = TaskPauseRecord(
+        pause_id=_PAUSE,
+        task_id=_TASK,
+        human_request_id=_HR,
+    )
+    task.options.human.verdict = HumanResponseVerdict.APPROVE.value
+    task.options.human.pause_id = _PAUSE
+    task.options.human.human_request_id = _HR
+    task.options.human.approver = local_development_approver_evidence(
+        actor_id="op", tenant_id="t1"
+    )
+    task.runtime.governance.projected_continuation_lifecycle_state = (
+        ExecutionContinuationLifecycleState.RESUMED.value
+    )
+
+    from intergrax.contracts.execution_identity import ActiveExecutionIdentity
+
+    human_hooks = MagicMock()
+    human_hooks.after_response = AsyncMock()
+    runner = NexusIntakeRunner(
+        hitl=MagicMock(),
+        human_hooks=human_hooks,
+        publish=AsyncMock(),
+        restore_long_running=AsyncMock(),
+        execution_identity=ActiveExecutionIdentity(),
+        hitl_continuation=cap,
+    )
+    await runner.run(
+        task,
+        lifecycle=TaskLifecycle(),
+        trace_emitter=TaskTraceEmitter(run_id=_RUN, attempt_id=_ATTEMPT),
+    )
+    snapshot = cap.port.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION))
+    assert snapshot.lifecycle_state is ExecutionContinuationLifecycleState.RESUMED
+    assert task.state is TaskState.CREATED
 
 
 def test_task_projection_corruption_cannot_resume_planning(bound_identity: None) -> None:
