@@ -17,6 +17,7 @@ from intergrax.contracts.event_delivery import (
     EventDeliveryPolicy,
     EventDeliveryResult,
     EventPriority,
+    EventSinkHealthState,
     EventSinkPort,
     make_deliverable_event,
     make_observability_export_payload,
@@ -278,7 +279,9 @@ def test_default_admission_policy_matches_enterprise_reserve_field() -> None:
     assert admission.max_non_critical_buffered_events(policy) == 17
 
 
-def _blocking_first_downstream() -> tuple[EventSinkPort, threading.Event, threading.Event]:
+def _blocking_first_downstream() -> tuple[
+    EventSinkPort, threading.Event, threading.Event
+]:
     """Block downstream until ``release``; only the first in-flight publish holds the gate."""
     entered = threading.Event()
     release = threading.Event()
@@ -474,9 +477,7 @@ def test_r1_invalid_custom_admission_limit_rejected(
     error_type: type[BaseException],
 ) -> None:
     class _BadPolicy:
-        def max_non_critical_buffered_events(
-            self, policy: EventDeliveryPolicy
-        ) -> int:
+        def max_non_critical_buffered_events(self, policy: EventDeliveryPolicy) -> int:
             return return_value  # type: ignore[return-value]
 
     policy = EventDeliveryPolicy(max_capacity=10, critical_reserved_capacity=2)
@@ -646,3 +647,178 @@ def test_r1_physical_queue_full_blocks_important_despite_quota_headroom() -> Non
     assert result.disposition is EventDeliveryDisposition.DEFERRED
     release.set()
     sink.close()
+
+
+def test_r2_shutdown_wins_when_quota_freed_after_stop() -> None:
+    """Quota release after shutdown must not grant a new non-critical reservation."""
+    policy = EventDeliveryPolicy(
+        max_capacity=4,
+        critical_reserved_capacity=1,
+        important_wait_timeout_seconds=5.0,
+    )
+    downstream, entered, release = _blocking_first_downstream()
+    sink = BoundedEventSink(downstream, policy)
+    non_critical_limit = policy.max_capacity - policy.critical_reserved_capacity
+    _fill_non_critical_buffered(
+        sink,
+        target=non_critical_limit,
+        downstream_entered=entered,
+        label="r2-stop",
+    )
+    results: list[EventDeliveryResult] = []
+    important_done = threading.Event()
+
+    def _important() -> None:
+        results.append(
+            sink.publish(_event("r2-waiting"), priority=EventPriority.IMPORTANT),
+        )
+        important_done.set()
+
+    thread = threading.Thread(target=_important, name="r2-important")
+    thread.start()
+    thread.join(timeout=0.25)
+    assert not important_done.is_set(), "important should block on quota"
+    sink.close()
+    release.set()
+    assert important_done.wait(timeout=_SYNC_TIMEOUT)
+    assert results
+    assert results[0].disposition is EventDeliveryDisposition.REJECTED
+    post = sink.publish(_event("post-close"), priority=EventPriority.IMPORTANT)
+    assert post.disposition is EventDeliveryDisposition.REJECTED
+
+
+def test_r2_admission_wins_before_shutdown_drains() -> None:
+    policy = EventDeliveryPolicy(
+        max_capacity=4,
+        critical_reserved_capacity=1,
+        important_wait_timeout_seconds=5.0,
+    )
+    recorded: list[str] = []
+    record_lock = threading.Lock()
+    entered = threading.Event()
+    release = threading.Event()
+    gate_taken = threading.Event()
+
+    class _RecordingDownstream:
+        def publish(self, event, *, priority, deadline=None) -> EventDeliveryResult:
+            entered.set()
+            if not gate_taken.is_set():
+                gate_taken.set()
+                if not release.wait(timeout=_SYNC_TIMEOUT):
+                    raise TimeoutError("release timed out")
+            with record_lock:
+                recorded.append(event.event_id)
+            return EventDeliveryResult(
+                disposition=EventDeliveryDisposition.ACCEPTED,
+                priority=priority,
+                buffered_depth=0,
+                obligation=EventDeliveryObligation.ADMISSION,
+            )
+
+        def close(self) -> None:
+            release.set()
+
+    sink = BoundedEventSink(_RecordingDownstream(), policy)
+    non_critical_limit = policy.max_capacity - policy.critical_reserved_capacity
+    _fill_non_critical_buffered(
+        sink,
+        target=non_critical_limit,
+        downstream_entered=entered,
+        label="r2-win",
+    )
+    admitted = threading.Event()
+    results: list[EventDeliveryResult] = []
+
+    def _important() -> None:
+        results.append(
+            sink.publish(_event("r2-admitted"), priority=EventPriority.IMPORTANT),
+        )
+        admitted.set()
+
+    thread = threading.Thread(target=_important, name="r2-admit")
+    thread.start()
+    release.set()
+    assert admitted.wait(timeout=_SYNC_TIMEOUT)
+    assert results[0].disposition is EventDeliveryDisposition.ACCEPTED
+    sink.close()
+    assert "r2-admitted" in recorded
+
+
+def test_r2_best_effort_rejected_after_close_linearization() -> None:
+    policy = EventDeliveryPolicy(max_capacity=4, critical_reserved_capacity=0)
+    sink = BoundedEventSink(InMemoryEventSink(), policy)
+    sink.close()
+    result = sink.publish(_event("be-late"), priority=EventPriority.BEST_EFFORT)
+    assert result.disposition is EventDeliveryDisposition.REJECTED
+
+
+def test_r2_critical_rejected_after_close_linearization() -> None:
+    policy = EventDeliveryPolicy(
+        max_capacity=4,
+        critical_reserved_capacity=1,
+        critical_completion_timeout_seconds=5.0,
+    )
+    sink = BoundedEventSink(InMemoryEventSink(), policy)
+    sink.close()
+    result = sink.publish(_event("c-late"), priority=EventPriority.CRITICAL)
+    assert result.disposition is EventDeliveryDisposition.REJECTED
+
+
+def test_r2_worker_death_rejects_quota_waiter() -> None:
+    policy = EventDeliveryPolicy(
+        max_capacity=4,
+        critical_reserved_capacity=1,
+        important_wait_timeout_seconds=5.0,
+    )
+    downstream, entered, release = _blocking_first_downstream()
+    sink = BoundedEventSink(downstream, policy)
+    non_critical_limit = policy.max_capacity - policy.critical_reserved_capacity
+    _fill_non_critical_buffered(
+        sink,
+        target=non_critical_limit,
+        downstream_entered=entered,
+        label="r2-dead",
+    )
+    results: list[EventDeliveryResult] = []
+    waiter_done = threading.Event()
+
+    def _important() -> None:
+        results.append(
+            sink.publish(_event("r2-dead-wait"), priority=EventPriority.IMPORTANT),
+        )
+        waiter_done.set()
+
+    thread = threading.Thread(target=_important, name="r2-dead-wait")
+    thread.start()
+    thread.join(timeout=0.25)
+    assert not waiter_done.is_set()
+    with sink._quota_condition:  # noqa: SLF001 — deterministic lifecycle seam
+        sink._worker = threading.Thread()  # noqa: SLF001 — not started → not alive
+        sink._quota_condition.notify_all()
+    assert waiter_done.wait(timeout=_SYNC_TIMEOUT)
+    assert results
+    assert results[0].disposition is EventDeliveryDisposition.REJECTED
+    assert sink.health_state() is EventSinkHealthState.UNHEALTHY
+    release.set()
+
+
+def test_r2_no_post_close_user_delivery_ids() -> None:
+    downstream = InMemoryEventSink()
+    policy = EventDeliveryPolicy(max_capacity=4, critical_reserved_capacity=0)
+    sink = BoundedEventSink(downstream, policy)
+    pre_ids = {f"pre-{index}" for index in range(3)}
+    for label in sorted(pre_ids):
+        assert (
+            sink.publish(_event(label), priority=EventPriority.BEST_EFFORT).disposition
+            is EventDeliveryDisposition.ACCEPTED
+        )
+    sink.close()
+    assert (
+        sink.publish(
+            _event("must-not-deliver"), priority=EventPriority.BEST_EFFORT
+        ).disposition
+        is EventDeliveryDisposition.REJECTED
+    )
+    delivered = {event.event_id for _, event in downstream.records}
+    assert "must-not-deliver" not in delivered
+    assert pre_ids.issubset(delivered)
