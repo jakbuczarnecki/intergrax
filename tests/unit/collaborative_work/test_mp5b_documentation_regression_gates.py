@@ -40,7 +40,6 @@ _STATUS_DOCS = {
 
 _REQUIRED_MARKERS = (
     "MP-5B — APPROVED / CLOSED",
-    "MP-5C — NEXT",
     "MP-5 ownership — FROZEN",
     "intergrax/contracts/context_view.py",
 )

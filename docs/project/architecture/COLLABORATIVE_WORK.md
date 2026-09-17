@@ -199,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-5C — NEXT** — Principal-scope visibility policy (**MP-5B — APPROVED / CLOSED**; ADR-MP-006).
+**Next task:** **MP-5D — NEXT** — Source composition ports (**MP-5C — APPROVED / CLOSED**; ADR-MP-006).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -522,7 +522,7 @@ Future Multiplayer phases that belong on the collaborative work plane extend **t
 | MP-2 | WorkItem, Assignment, shared-work lifecycle |
 | MP-3 | WorkArtifact, WorkArtifactVersion collaborative ownership |
 | MP-4 | Decision / Approval / Governance collaborative semantics — [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) |
-| MP-5 | Principal-scoped ContextView — **MP-5A CLOSED**; **MP-5B CLOSED**; **MP-5C — NEXT** |
+| MP-5 | Principal-scoped ContextView — **MP-5A CLOSED**; **MP-5B CLOSED**; **MP-5C CLOSED**; **MP-5D — NEXT** |
 | MP-6 | Collaborative Activity + provenance linkage |
 
 Architecture and implementation rows for MP-6+ remain in their future gates.
@@ -531,17 +531,20 @@ Architecture and implementation rows for MP-6+ remain in their future gates.
 
 ## Principal-scoped ContextView (MP-5)
 
-**MP-5 ownership — FROZEN** ([ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**). **MP-5A — APPROVED / CLOSED**. **MP-5B — APPROVED / CLOSED**. **MP-5C — NEXT**.
+**MP-5 ownership — FROZEN** ([ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**). **MP-5A — APPROVED / CLOSED**. **MP-5B — APPROVED / CLOSED**. **MP-5C — APPROVED / CLOSED**. **MP-5D — NEXT**.
 
 Collaborative Work owns **who may see which context categories under which collaborative scope** — not how Memory stores data, how RAG retrieves, how UCL persists revisions, or how Context Engineering budgets tokens.
 
 **Public contracts (MP-5B):** [`intergrax/contracts/context_view.py`](../../../intergrax/contracts/context_view.py) — `ContextViewRequest`, `ContextViewScope`, `ContextViewEntry` + typed `ContextViewEntrySourceRef` variants, immutable `ContextView` result; MP-1 `EffectiveAuthorityRequest` linkage only (no duplicate authority model).
 
+**Visibility policy (MP-5C):** [`intergrax/contracts/context_view_visibility_policy.py`](../../../intergrax/contracts/context_view_visibility_policy.py) — `ContextViewVisibilityPolicy`, `ContextViewVisibilityPolicyInput`, immutable `ContextViewPolicyDecision`; default implementation [`intergrax/collaborative_work/context_view_visibility.py`](../../../intergrax/collaborative_work/context_view_visibility.py) reuses MP-1 `CollaborativeWorkAuthorityResolver` before eligibility (no retrieval / composition).
+
 ```text
-Effective authority (MP-1)
-  → ContextView policy
-  → ContextView composition (replaceable)
-  → Principal-scoped ContextView (reference-first read projection)
+ContextViewRequest
+  → MP-1 effective authority (`CollaborativeWorkAuthorityResolver`)
+  → ContextViewVisibilityPolicy
+  → ContextViewPolicyDecision
+  → MP-5D composition (future)
 ```
 
 **ContextView** is principal-scoped, policy-governed, composed, read-oriented, and auditable via reused provenance contracts. **`ContextView ≠ storage`**.

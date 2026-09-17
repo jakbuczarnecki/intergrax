@@ -7,7 +7,7 @@
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004 Accepted; **MP-3A…MP-3H — APPROVED / CLOSED**); **MP-3 architecture decomposition — APPROVED / CLOSED**
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-5C — NEXT** — Principal-scope visibility policy (MP-5B **CLOSED** — ADR-MP-006; see [`MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
+**Next task:** **MP-5D — NEXT** — Source composition ports (MP-5C **CLOSED** — ADR-MP-006; see [`MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -380,7 +380,7 @@ COLLAB-WORK-0 closes with **0D Done**. Runtime implementation begins at **COLLAB
 | **Hard invariants** | `WorkArtifact != UCL OptimizationArtifact`; `WorkArtifactVersion` immutable; current-version pointer CAS-protected; content metadata separated from storage reference |
 | **Reuse-only** | UCL, Memory, Proof Receipts, Execution (`ExecutionProvenanceRef` optional), LKW (consumer) |
 | **Explicit out of scope** | MP-4 Decision encoding, MP-6 Activity projection |
-| **Next step** | **MP-5C — NEXT** (capability plan) |
+| **Next step** | **MP-5D — NEXT** (capability plan) |
 
 ### COLLAB-WORK-3 — MP-3 WorkArtifact (architecture decomposition frozen — ADR-MP-004)
 
@@ -550,7 +550,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **REUSED** | MP-1 authority; UCL / CE / Memory / RAG consumption boundaries |
 | **NEW** | None (contracts in MP-5B) |
 | **Proof** | `test_mp5a_documentation_regression_gates.py`; `check_docs_domain_pairs.py` |
-| **Next step** | **MP-5C — NEXT** |
+| **Next step** | **MP-5B — APPROVED / CLOSED** |
 
 ### MP-5B — Core ContextView typed contracts
 
@@ -560,7 +560,17 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Status** | **MP-5B — APPROVED / CLOSED** |
 | **Purpose** | Public Principal-scoped ContextView ABI (`ContextViewRequest`, scope, reference-first entries, immutable result) |
 | **Proof** | `intergrax/contracts/context_view.py`; `test_context_view_contracts.py`; `test_context_view_contract_architecture_gates.py`; `test_mp5b_documentation_regression_gates.py` |
-| **Next step** | **MP-5C — NEXT** |
+| **Next step** | **MP-5C — APPROVED / CLOSED** |
+
+### MP-5C — Principal-scope visibility policy
+
+| Field | Value |
+|-------|-------|
+| **ID** | MP-5C |
+| **Status** | **MP-5C — APPROVED / CLOSED** |
+| **Purpose** | Deterministic principal/category/visibility-class eligibility before composition |
+| **Proof** | `intergrax/contracts/context_view_visibility_policy.py`; `intergrax/collaborative_work/context_view_visibility.py`; `test_context_view_visibility_policy.py`; `test_mp5c_documentation_regression_gates.py` |
+| **Next step** | **MP-5D — NEXT** |
 
 | Field | Value |
 |-------|-------|
@@ -570,13 +580,13 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | **MP-5C — NEXT** (**MP-5B — APPROVED / CLOSED**) |
+| **Next step** | **MP-5D — NEXT** (**MP-5C — APPROVED / CLOSED**) |
 
 ---
 
 ## 4. Out of scope (current phase)
 
-- MP-5D+ runtime implementation until MP-5C visibility policy lands
+- MP-5E+ default composition / adapters until MP-5D composition ports land
 - MP-6 architecture or implementation rows (MP-5 ownership **FROZEN** via ADR-MP-006; MP-4 via ADR-MP-005 — see [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md))
 - LKW product adoption (MP-7)
 - Runtime Python models beyond contract stubs until the relevant COLLAB-WORK-* row opens

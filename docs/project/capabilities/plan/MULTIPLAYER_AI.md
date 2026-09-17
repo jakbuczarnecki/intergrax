@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — **MP-3A…MP-3H — APPROVED / CLOSED** — **MP-4 implementation — FORMALLY CLOSED** (MP-4R0…MP-4R8 **CLOSED**; ADR-MP-009) — **MP-4 documentation certification — CLOSED** (MP-4D1–D8) — **MP-5A — APPROVED / CLOSED** — **MP-5B — APPROVED / CLOSED** — **MP-5 ownership — FROZEN**
+**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — **MP-3A…MP-3H — APPROVED / CLOSED** — **MP-4 implementation — FORMALLY CLOSED** (MP-4R0…MP-4R8 **CLOSED**; ADR-MP-009) — **MP-4 documentation certification — CLOSED** (MP-4D1–D8) — **MP-5A — APPROVED / CLOSED** — **MP-5B — APPROVED / CLOSED** — **MP-5C — APPROVED / CLOSED** — **MP-5 ownership — FROZEN**
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-5C — NEXT** (Principal-scope visibility policy)
-**Previous:** **MP-5B — APPROVED / CLOSED** — core Principal-scoped ContextView typed contracts (`intergrax/contracts/context_view.py`)
+**Current active task:** **MP-5D — NEXT** (Source composition ports; MP-5C **`intergrax/contracts/context_view_visibility_policy.py`** — **CLOSED**).
+**Previous:** **MP-5C — APPROVED / CLOSED** — principal visibility policy (`intergrax/contracts/context_view_visibility_policy.py`)
 
 ---
 
@@ -158,7 +158,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Addressable shared work units assignable to principals and agents |
 | **Acceptance criteria** | WorkItems are durable and independently addressable; WorkItemState is not TaskState; multiple tasks/runs may relate to one WorkItem; stale authoritative mutations fail explicitly; Nexus does not own WorkItem lifecycle |
 | **Expected proof/evidence** | Contract tests; lifecycle tests; assignment authorization tests; concurrency/conflict tests; idempotency tests; provenance linkage to real four-part `ExecutionProvenanceRef` |
-| **Next implementation row** | **MP-5C — NEXT** (MP-5B **APPROVED / CLOSED**) |
+| **Next implementation row** | **MP-5D — NEXT** (MP-5C **APPROVED / CLOSED**) |
 
 ---
 
@@ -181,7 +181,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Versioned collaborative artifacts with lineage |
 | **Acceptance criteria** | A WorkArtifactVersion is the authoritative collaborative output; versions remain addressable after executions end; publication preserves principal/work/execution lineage; current-version updates detect stale writes; atomic initial creation and subsequent publication via dedicated port (no dangling `current_version_id`, no orphan initial version) |
 | **Expected proof/evidence** | Contract tests; authorization/isolation tests; version/concurrency tests; idempotent initial create tests; idempotent publication tests; cross-process publication proof (MP-3E); provenance/evidence integration proof (MP-3G) |
-| **Next implementation row** | **MP-5C — NEXT** (**MP-5B — APPROVED / CLOSED**) |
+| **Next implementation row** | **MP-5D — NEXT** (**MP-5C — APPROVED / CLOSED**) |
 
 ### MP-3 architectural implementation slices
 
@@ -266,8 +266,8 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 |-------|---------|--------|
 | MP-5A | Ownership, contracts architecture, ADR, docs sync | **APPROVED / CLOSED** |
 | MP-5B | Core typed Principal-scoped ContextView contracts | **APPROVED / CLOSED** |
-| MP-5C | Principal-scope visibility policy | **NEXT** |
-| MP-5D | Source composition ports | PLANNED |
+| MP-5C | Principal-scope visibility policy | **APPROVED / CLOSED** |
+| MP-5D | Source composition ports | **NEXT** |
 | MP-5E | Default composition implementation | PLANNED |
 | MP-5F | Source adapters / integration | PLANNED |
 | MP-5G | E2E / isolation qualification | PLANNED |
@@ -287,7 +287,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | **Explicit out of scope** | Runtime resolver, adapters, storage, providers, Nexus contract surface |
 | **Architecture/ADR gate** | **ADR-MP-006 Accepted** |
 | **Acceptance criteria** | Single owner; `ContextView ≠ storage`; dependency direction frozen; threat model documented |
-| **Next step** | **MP-5C — NEXT** |
+| **Next step** | **MP-5D — NEXT** |
 
 ### MP-5B — Core ContextView contracts
 
@@ -302,7 +302,20 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | **NEW CAPABILITY REQUIRED** | `intergrax/contracts/context_view.py` — request/scope/entry/ref/result |
 | **Explicit out of scope** | Default composer (MP-5E); source adapters (MP-5F); composition ports (MP-5D) |
 | **Expected proof/evidence** | `test_context_view_contracts.py`; architecture gates; docs regression |
-| **Next step** | **MP-5C — NEXT** |
+| **Next step** | **MP-5C — APPROVED / CLOSED** |
+
+### MP-5C — Principal-scope visibility policy
+
+| Field | Value |
+|-------|-------|
+| **Priority** | P2 |
+| **Status** | **MP-5C — APPROVED / CLOSED** |
+| **Purpose** | Fail-closed principal visibility eligibility (`ContextViewVisibilityPolicy` + `ContextViewPolicyDecision`) |
+| **NEW CAPABILITY REQUIRED** | `intergrax/contracts/context_view_visibility_policy.py`; default `intergrax/collaborative_work/context_view_visibility.py` |
+| **REUSED EXISTING CAPABILITY** | MP-1 `CollaborativeWorkAuthorityResolver` |
+| **Explicit out of scope** | Composition ports (MP-5D); retrieval; source adapters |
+| **Expected proof/evidence** | `test_context_view_visibility_policy.py`; architecture gates; docs regression |
+| **Next step** | **MP-5D — NEXT** |
 
 ---
 
