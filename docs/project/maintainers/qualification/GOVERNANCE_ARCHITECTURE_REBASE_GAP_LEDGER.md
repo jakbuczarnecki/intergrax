@@ -2,6 +2,8 @@
 
 **GOV-FINAL-1 reconciliation HEAD:** `497abad1f4a2520b3ab8ab0d453247e41d751904` on `development` (documentation truth sync; independent code audit still required)
 
+**GOV-FINAL-2 runtime blockers (GR-3 allowlist + GR-4 policy-core Nexus decouple):** session on `development` — `test_gr3_inner_enforcement_architecture_gates.py` + `test_gr4_policy_core_architecture_gates.py` target PASS; independent GitHub audit still required before closure.
+
 **Rebase audit HEAD (session):** `fe2edc8077234437b13345daaf46633867fe8f31` on `development`  
 **H9.2C maintainer/doc reconciliation HEAD:** `1de3b7fca6ca76e015c284ce21b8d543487ef677` on `development`  
 **H9.2C GR-3-R1 doc/code consistency audit HEAD:** `0c810fdeebd6edc85106b88cea6008ce50682c09` on `development` (GR-3-R1 production: `a7fbfb7e6`)  

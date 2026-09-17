@@ -15,10 +15,11 @@ PRODUCTION_SCAN_ROOTS: tuple[Path, ...] = (
     REPO_ROOT / "platform_proofs",
 )
 
-# Definition site + sole certified production caller (External Work adapter).
+# Definition site + certified production adapters (delegate to canonical boundary only).
 AUTHORIZE_AND_EXECUTE_CALL_ALLOWLIST: frozenset[str] = frozenset(
     {
         "intergrax/runtime/policy/meaningful_side_effect_authorization.py",
+        "intergrax/runtime/execution/decision_governed_side_effect.py",
         "agents/external_contractor_adapter/external_work_adapter.py",
     }
 )

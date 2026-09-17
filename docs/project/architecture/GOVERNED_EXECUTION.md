@@ -29,6 +29,12 @@ Primary audience: Principal / Staff engineers, architects, CTOs, security and go
 
 Read this section before the historical G-stage narrative. **Target architecture ≠ current coverage.**
 
+### GOV-FINAL-2 runtime blockers (GR-3 / GR-4 architecture gates)
+
+- **GR-3:** `authorize_and_execute` production adapters are allowlist-gated; `DecisionGovernedSideEffectCoordinator` (`decision_governed_side_effect.py`) validates Decision provenance then delegates to `MeaningfulSideEffectAuthorizationBoundary` only (no alternate governance semantics).
+- **GR-4:** `MeaningfulSideEffectAuthorizationBoundary` policy core has no Nexus import; HITL pause wiring uses `apply_governed_continuation_pause` (Execution continuation composition / active store), not `InternalOrchestrationContinuation` in the policy module.
+- **Not closed by this slice:** GR-8 evidence, GR-10 strategy matrix, GR-12 control-plane mutation, full GR-13 enterprise qualification.
+
 ### A. Enterprise architecture target
 
 Unchanged platform intent: contract-first evaluation at named **Governance Evaluation Points**; **Governance** answers permission; **Execution Runtime** owns lifecycle; **Reliability** owns post-admission uncertainty; **Decision System** owns decision truth (integration via GR-6 material, not governance substitution). **CONTROL_PLANE_MUTATION** remains a required taxonomy extension with **GAP** live coverage until domain executors share one authority context. Full target invariants: UEA-INV-021, ADR-GOVERNED-EXECUTION-001/002, Protocol v2.2 / control-plane sections below.

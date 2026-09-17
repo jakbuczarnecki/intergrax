@@ -272,24 +272,11 @@ def test_require_human_produces_canonical_pause_composition(gr3_active_execution
     lifecycle.transition(task, TaskState.CLASSIFIED)
     lifecycle.transition(task, TaskState.PLANNED)
 
-    from intergrax.runtime.execution.continuation.composition import (
-        wire_execution_engine_continuation_dependencies,
-    )
-    from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
-        InternalOrchestrationContinuation,
-    )
-
-    _continuation_deps = wire_execution_engine_continuation_dependencies()
-    hitl_continuation = InternalOrchestrationContinuation(
-        port=_continuation_deps.continuation,
-        lifecycle_driver=_continuation_deps.lifecycle_driver,
-    )
     result = boundary.authorize_and_execute(
         _enforcement_request(membership),
         lambda: executed.append("side-effect"),
         task=task,
         lifecycle=lifecycle,
-        hitl_continuation=hitl_continuation,
     )
     assert isinstance(result, MeaningfulSideEffectAuthorizationResult)
     assert result.permitted is False

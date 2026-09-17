@@ -15,6 +15,8 @@ Governed Execution mechanisms already exist in the platform (policy evaluation, 
 
 **GOV-FINAL-1 (2026-09-17):** Maintainer status synchronized to `development` code truth. **Architecture authority:** [`architecture/GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md) only — this plan is roadmap/status, not a second SSOT. Gap ledger: [`qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](../qualification/GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md).
 
+**GOV-FINAL-2 (session):** GR-3 `authorize_and_execute` allowlist includes Decision-bound Execution adapter; GR-4 removes undocumented Nexus import from `meaningful_side_effect_authorization.py` (pause via governed-continuation bridge). Enterprise qualification matrix still open (GR-8/10/13).
+
 **PG-FIX legacy map (final reconciliation — auditable):**
 
 | Block | Original problem | Superseding GR-* | Status after GOV-FINAL-1 | Remaining gap |
