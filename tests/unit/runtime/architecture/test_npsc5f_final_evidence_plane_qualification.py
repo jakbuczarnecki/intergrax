@@ -107,7 +107,7 @@ def test_npsc5f_final_frozen_predecessor_shas_recorded() -> None:
     assert NPSC_5F_R2_FINAL_SHA == "76c92847f67da22d97943b55896a88c814d7e39d"
     assert NPSC_5F_R3_FINAL_SHA == "aa3b43456a530e1e2f50b81cab486874fe06e3b1"
     assert NPSC_5F_R4_FINAL_SHA == "37fb051c7f164d705f628760436b8ea10ee0289f"
-    assert NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA == "33576b80521dda7dfc0e5895c943f91dfebffa94"
+    assert NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA == "1c21eb774e7dd6c24148cf67be98ddc894cbd3c9"
 
 
 def test_npsc5f_final_predecessor_drift_sentinels_empty() -> None:

@@ -26,7 +26,9 @@ from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 # Prior OBS-ASOF-REBASE-R1 baseline: ``52b9dc41ed7dd83e5516d852f1ef7295cc0b10af``.
 # HARDENING_9_NPSC5F V4: OBS-RUNTIME-HISTORY-BOUNDS-R3 (``39265e263``) + platform-owned validation
 # (``82d7989bf``); Nexus metric-scope wiring classified unrelated (``intergrax/runtime/nexus/``).
-NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "33576b80521dda7dfc0e5895c943f91dfebffa94"
+# HARDENING_9_NPSC5F: OBS-DELIVERY-QOS-SCALE (``97503fd39``, ``b84eb1c2b``) — admission port,
+# CRITICAL reserved capacity, atomic non-critical admission; qualified re-freeze @ ``1c21eb774…``.
+NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "1c21eb774e7dd6c24148cf67be98ddc894cbd3c9"
 
 NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
 NPSC_5F_R1_FINAL_SHA = "455c09f342f995ac0a6fcb03ffef2f4d3e36a447"
