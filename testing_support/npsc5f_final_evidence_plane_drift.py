@@ -28,7 +28,9 @@ from testing_support.npsc5f_r1_protected_drift import git_changed_paths
 # (``82d7989bf``); Nexus metric-scope wiring classified unrelated (``intergrax/runtime/nexus/``).
 # HARDENING_9_NPSC5F: OBS-DELIVERY-QOS-SCALE (``97503fd39``, ``b84eb1c2b``) — admission port,
 # CRITICAL reserved capacity, atomic non-critical admission; qualified re-freeze @ ``1c21eb774…``.
-NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "1c21eb774e7dd6c24148cf67be98ddc894cbd3c9"
+# HARDENING_9_NPSC5F_EVENT_DELIVERY_QOS_R2_R3: R2 shutdown linearization (``f6b4b542b``),
+# R3 fail-closed pending enqueue drain timeout (``eba9f6bff``); qualified re-freeze @ ``eba9f6bff…``.
+NPSC5F_FINAL_EVIDENCE_PLANE_BASELINE_SHA = "eba9f6bff1e19c14e9590ff22fb6312e27463450"
 
 NPSC_5E_FINAL_SHA = "fabdcfe931dfd3a0b22d35cbf06ac94b2b0176f7"
 NPSC_5F_R1_FINAL_SHA = "455c09f342f995ac0a6fcb03ffef2f4d3e36a447"
