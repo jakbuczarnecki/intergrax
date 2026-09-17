@@ -449,11 +449,33 @@ class BoundedEventSink:
             self._quota_condition.notify_all()
 
     def _wait_pending_physical_enqueue_drain(self) -> None:
+        """Block until in-flight physical enqueues finish or the shutdown deadline expires.
+
+        Returns only when ``_pending_physical_enqueue`` reaches zero. If the deadline
+        expires while reservations remain, marks the sink unhealthy and raises
+        ``EventDeliveryBoundaryError`` (fail-closed — no shutdown sentinel).
+        """
         deadline = time.monotonic() + self._policy.drain_shutdown_timeout_seconds
         while self._pending_physical_enqueue > 0:
+            if (
+                not self._worker.is_alive()
+                and not self._worker_drained_normally.is_set()
+            ):
+                self._health.mark_unhealthy()
+                raise EventDeliveryBoundaryError(
+                    kind=EventDeliveryBoundaryFailureKind.SINK_UNAVAILABLE,
+                    message="bounded event drain worker is not alive",
+                )
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                return
+                self._health.mark_unhealthy()
+                raise EventDeliveryBoundaryError(
+                    kind=EventDeliveryBoundaryFailureKind.INTERNAL_ERROR,
+                    message=(
+                        "pending physical delivery enqueue did not drain "
+                        "before shutdown deadline"
+                    ),
+                )
             self._quota_condition.wait(timeout=remaining)
 
     def _reserve_non_critical_slot(self, admission_deadline: float | None) -> bool:
