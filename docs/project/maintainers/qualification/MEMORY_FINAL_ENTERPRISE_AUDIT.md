@@ -1400,3 +1400,28 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5D AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5C-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5D.
+
+## MEM-FINAL-AUDIT-5D — Qdrant SessionTurnIndex real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Path | `SessionTurnIndexStore` → `VectorSessionTurnIndexStore` → vector ports → Qdrant provider |
+| Memory provider ID | `vector.session_turn_index` |
+| Backend | `qdrant` (`intergrax/integrations/providers/vector_store/qdrant/`) |
+| Real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` |
+| Composite binding tests | `tests/unit/applications/test_mem_final_audit_5d_composite_identity_binding.py` |
+| Markers | `external_proof`, `qualification`, `no_ci` |
+| Durability proof kind | `REAL_VENDOR_RECONNECT` (client recreation; Qdrant service restart not executed) |
+| Evidence source | `qdrant_session_turn_index_real_vendor_qualification` |
+| Canonical authority | STI remains **derived** episodic index (not Memory authority) |
+| V-level | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (Qdrant backing) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-02 (Qdrant STI reconnect) | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector / Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.

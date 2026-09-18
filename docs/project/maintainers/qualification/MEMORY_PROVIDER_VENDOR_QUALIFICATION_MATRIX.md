@@ -200,12 +200,12 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | ID | Capability | Provider | Missing proof | Sev | Target |
 | -- | ---------- | -------- | ------------- | --- | ------ |
 | GAP-4-01 | UserProfile | product + PostgreSQL preset | Durable Memory backend wiring / fail-closed | **CLOSED (5A)** | `memory_provider_admission` + `test_mem_audit5a_production_provider_admission.py` |
-| GAP-4-02 | SessionTurnIndex | `VectorSessionTurnIndexStore` + any vector backend | write → restart/reconnect → recall | P2 | AUDIT-5 P0 candidate |
+| GAP-4-02 | SessionTurnIndex | `VectorSessionTurnIndexStore` + Qdrant | write → reconnect → recall | **CLOSED (5D, Qdrant only)** | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` |
 | GAP-4-03 | Entity / Procedural / LH | in-memory only | durable vendor + restart | P2 | AUDIT-5 |
 | GAP-4-04 | UserProfile | Mongo DocumentStore | real-vendor qual execution | **CLOSED (5C)** | `test_mem_final_audit_5c_mongo_user_profile_real_vendor.py` |
 | GAP-4-05 | Organization | Mongo path | durable org store (uses InMemory org on mongo LTM path) | P2 | AUDIT-6 |
 | GAP-4-06 | Task memory | SQLite | restart/failure vendor suite | P2 | AUDIT-5 |
-| GAP-4-07 | All vector backends | Qdrant/pgvector/Chroma | Memory-scoped E2E | P2 | AUDIT-5 |
+| GAP-4-07 | Vector backends | Qdrant **CLOSED (5D)**; pgvector / Chroma **OPEN** | Memory-scoped STI E2E | P2 | AUDIT-5 |
 | GAP-4-08 | PostgreSQL | Memory bundle | implementation | P3 | post-RFC |
 
 **P0:** NONE  
@@ -270,6 +270,29 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | PRODUCT persistent + InMemory | `MemoryProviderAdmissionError` |
 | SQLite PRODUCT | Requires trusted `USER_PROFILE_STORE` evidence (`QUALIFIED`); self-declared qual ignored |
 | DocumentStore UserProfile (Mongo path) | Requires trusted behavioral + durability evidence for composite identity (`document_store.user_profile` + `mongodb`; proof `real_vendor_reconnect`) |
+
+## MEM-FINAL-AUDIT-5D — Qdrant SessionTurnIndex real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Adapter | `VectorSessionTurnIndexStore` → RAG vector ports → Qdrant integration (`qdrant`) |
+| Memory provider ID | `vector.session_turn_index` (`SESSION_TURN_INDEX_STORE`) |
+| Backend vendor ID | `qdrant` (`QDRANT_VECTOR_STORE_PROVIDER_ID`) |
+| Infrastructure | Local Qdrant (`INTERGRAX_QDRANT_*`, Docker `infra/docker/qdrant`) |
+| Behavioral qual | `MemoryProviderQualificationRunner` on real Qdrant-backed store |
+| Durability proof | Client/provider reconnect (`REAL_VENDOR_RECONNECT`); service restart **not executed** |
+| Evidence source | `qdrant_session_turn_index_real_vendor_qualification` |
+| STI production admission | **Not in scope** — qualification-only certification (no STI admission gate yet) |
+| Application E2E | `SessionManager` episodic recall after Qdrant client reconnect |
+| Scope enforcement | Tenant-bound STI + Qdrant metadata filters (`tenant_id`, `session_id`, …) |
+| Verdict | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (Qdrant backing only) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-02 (Qdrant) | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | OPEN |
+| GAP-4-07 (Chroma) | OPEN |
 
 ## MEM-FINAL-AUDIT-5C — Mongo UserProfile real-vendor qualification
 
