@@ -4,16 +4,19 @@
 
 from __future__ import annotations
 
+import threading
 from collections.abc import Sequence
-from dataclasses import replace
+from dataclasses import dataclass, field, replace
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
     NexusToolInvocationPattern,
     ToolInvocationResult,
 )
+from intergrax.runtime.nexus.tools.tool_loop import invoke_prepared_tool_execution_request
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.tools.core.tool_plan import ToolCallPlan
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
@@ -26,15 +29,44 @@ from intergrax.tools.invocation_pattern.contracts import (
 )
 
 
+@dataclass
+class _PublicPatternInvocationEvidenceRecorder:
+    """Per-bridge-execution, thread-safe canonical trace collector."""
+
+    _lock: threading.Lock = field(default_factory=threading.Lock)
+    _next_order: int = 0
+    _ordered_traces: list[tuple[int, ToolCallTrace]] = field(default_factory=list)
+
+    def next_invocation_order(self) -> int:
+        with self._lock:
+            order = self._next_order
+            self._next_order += 1
+            return order
+
+    def record_trace(self, order: int, trace: ToolCallTrace) -> None:
+        with self._lock:
+            self._ordered_traces.append((order, trace))
+
+    def canonical_traces(self) -> list[ToolCallTrace]:
+        with self._lock:
+            return [trace for _, trace in sorted(self._ordered_traces, key=lambda item: item[0])]
+
+    @property
+    def synchronization_lock(self) -> threading.Lock:
+        return self._lock
+
+
 class _RuntimeToolInvocationInvokerPort:
     def __init__(
         self,
         *,
         state: RuntimeState,
         invoker: RuntimeToolInvoker,
+        evidence: _PublicPatternInvocationEvidenceRecorder,
     ) -> None:
         self._state = state
         self._invoker = invoker
+        self._evidence = evidence
 
     def invoke_tool(
         self,
@@ -42,11 +74,17 @@ class _RuntimeToolInvocationInvokerPort:
         agent_id: str,
         request: ToolExecutionRequest,
     ) -> ToolExecutionResult:
-        return self._invoker.invoke(
+        _ = agent_id
+        order = self._evidence.next_invocation_order()
+        result, outcome = invoke_prepared_tool_execution_request(
             state=self._state,
-            agent_id=agent_id,
+            invoker=self._invoker,
             request=request,
+            request_index=order,
+            invoke_lock=self._evidence.synchronization_lock,
         )
+        self._evidence.record_trace(order, outcome.trace)
+        return result
 
 
 class _RuntimeToolInvocationPlannerPort:
@@ -82,14 +120,23 @@ def _context_from_state(state: RuntimeState) -> ToolInvocationPatternContext:
     )
 
 
-def _to_nexus_result(result: ToolInvocationPatternResult) -> ToolInvocationResult:
+def _to_nexus_result(
+    result: ToolInvocationPatternResult,
+    *,
+    tool_traces: list[ToolCallTrace],
+) -> ToolInvocationResult:
+    aggregate = (
+        ToolInvocationAggregate.from_traces(tool_traces) if tool_traces else None
+    )
     return ToolInvocationResult(
+        tool_traces=list(tool_traces),
         loop_iterations=result.loop_iterations,
         stop_reason=result.stop_reason,
         pattern_id=result.pattern_id,
         appended_messages=list(result.appended_messages),
         used_native_tool_messages=result.used_native_tool_messages,
         used_ce_tool_feedback=result.used_ce_tool_feedback,
+        aggregate=aggregate,
     )
 
 
@@ -114,16 +161,24 @@ class PublicToolInvocationPatternBridge:
         max_iterations: int,
         planner_input: str | list[ChatMessage],
     ) -> ToolInvocationResult:
+        evidence = _PublicPatternInvocationEvidenceRecorder()
         public_result = self._pattern.execute(
             context=_context_from_state(state),
-            invoker=_RuntimeToolInvocationInvokerPort(state=state, invoker=invoker),
+            invoker=_RuntimeToolInvocationInvokerPort(
+                state=state,
+                invoker=invoker,
+                evidence=evidence,
+            ),
             planner=_RuntimeToolInvocationPlannerPort(planner),
             plan=plan,
             allowed_tool_ids=allowed_tool_ids,
             max_iterations=max_iterations,
             planner_input=planner_input,
         )
-        nexus_result = _to_nexus_result(public_result)
+        nexus_result = _to_nexus_result(
+            public_result,
+            tool_traces=evidence.canonical_traces(),
+        )
         if not nexus_result.pattern_id:
             return replace(nexus_result, pattern_id=self.pattern_id)
         return nexus_result
