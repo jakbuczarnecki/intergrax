@@ -1169,3 +1169,61 @@ All **canonical USER Memory** hard invariants **PASS** (identity, scope, governa
 **Readiness:** READY FOR MEM-FINAL-AUDIT-4 AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-3-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-4.
+
+---
+
+# MEM-FINAL-AUDIT-4 — Provider & Vendor Qualification Matrix
+
+**Stage:** provider inventory · evidence mapping · production reachability — **NOT** real-vendor execution (AUDIT-5).
+**Baseline ancestor:** `a8d750b0bd48c902e10d487cf201aa1e762b01de` → **YES**
+**Audit execution HEAD (before commit):** `0ba1a514c60af1c319bd35fc714268de9640bcbd` · branch `development` · clean working tree
+**Matrix artifact (detail):** [`MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md)
+
+## AUDIT-4 — Repo state
+
+| Field | Value |
+| ----- | ----- |
+| HEAD before | `0ba1a514c60af1c319bd35fc714268de9640bcbd` |
+| Branch | `development` |
+| Baseline ancestor | YES |
+| Working tree | clean at audit start |
+| Foreign WIP | none touched |
+| Conflicts | none |
+
+## AUDIT-4 — Qualification model
+
+- **Source of truth (runtime):** `MemoryProviderQualificationStatus` + `MemoryProviderQualificationRunner` (`intergrax/memory/provider_qualification/`).
+- **Audit ladder V0–V8:** semantic overlay documented in matrix § Qualification ladder; **not** a parallel certification gate.
+- **Inflation rule enforced:** adapter existence ≠ vendor qual; mock/in-memory qual ≠ V6; plugin resolver ≠ durability.
+
+## AUDIT-4 — Outcomes (summary)
+
+| Area | Result |
+| ---- | ------ |
+| Runtime-reachable providers | Inventoried in matrix (all store contracts + parallel task/org + legacy conversational) |
+| Contract-first wiring | Providers implement platform Protocols; resolver validates `isinstance` — **no** `memory→applications` imports |
+| Plugin discovery | `intergrax.memory_stores` EP; materialize paths in `resolver.py`; external replaceability proven (`test_mem_ent15_plugin_replaceability.py`) |
+| SQLite UserProfile | V5 — runner QUALIFIED + durable reopen/delete + MEM-ENT-15 composition restart |
+| DocumentStore UserProfile | Adapter V2/V3; backend qual separated; InMemory DocumentStore **not** production durable |
+| STI / vector | `VectorSessionTurnIndexStore` exists; **no** Qdrant/pgvector/Chroma Memory restart E2E |
+| Mongo / Postgres Memory | Mongo = generic DocumentStore path only; Postgres = RFC V0 only |
+| Production profiles | `product_defaults` uses PostgreSQL relational preset — Memory durable path requires sqlite slug or mongo document_store; otherwise **explicit InMemory fallback** (P1 GAP-4-01) |
+| Silent `except` → InMemory | **0** in memory core |
+| Vendor SDK in memory core | **0** (guard tests) |
+| Bounded qual regression | **86 passed** (see matrix § Qualification test command) |
+
+## AUDIT-4 — P0 / P1 / P2
+
+| Priority | Item |
+| -------- | ---- |
+| **P0** | NONE |
+| **P1** | GAP-4-01 — production profile can reach InMemory UserProfile when user/LTM flags enabled without sqlite/mongo Memory binding (no fail-closed) |
+| **P2** | Real-vendor STI (GAP-4-02), durable entity/procedural/LH vendors, Mongo durable UserProfile execution, task/org restart suites — **AUDIT-5** |
+
+## AUDIT-4 — Final verdict
+
+**PASS — MEM-FINAL-AUDIT-4 PROVIDER/VENDOR MATRIX CERTIFIED** (pending independent GitHub SHA verification before AUDIT-5).
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5 AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-4 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5.
