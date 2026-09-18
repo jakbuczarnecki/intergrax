@@ -272,6 +272,7 @@ class ContextViewCandidateOrderingStrategy(Protocol):
         candidates: tuple[ContextViewCompositionValidatedCandidate, ...],
     ) -> tuple[ContextViewCompositionValidatedCandidate, ...]:
         """Return candidates in stable composition order."""
+        ...
 
 
 @runtime_checkable
@@ -285,6 +286,7 @@ class ContextViewEntryIdentityStrategy(Protocol):
         composition_request: ContextViewCompositionRequest,
     ) -> str:
         """Produce a non-empty entry_id for one admitted candidate."""
+        ...
 
 
 @runtime_checkable
@@ -298,6 +300,7 @@ class ContextViewIdentityStrategy(Protocol):
         entry_ids: tuple[str, ...],
     ) -> str:
         """Produce a non-empty view_id for the composed result."""
+        ...
 
 
 @runtime_checkable
@@ -306,3 +309,4 @@ class ContextViewComposer(Protocol):
 
     def compose(self, composition_request: ContextViewCompositionRequest) -> ContextView:
         """Compose a reference-first ContextView from an approved policy decision and source ports."""
+        ...

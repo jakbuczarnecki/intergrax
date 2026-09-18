@@ -179,6 +179,7 @@ class ContextViewScopeCompatibilityPolicy(Protocol):
         candidate_scope: ContextViewScope,
     ) -> bool:
         """Return True when candidate may be admitted without scope fabrication."""
+        ...
 
 
 class DefaultContextViewScopeCompatibilityPolicy:

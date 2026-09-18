@@ -204,11 +204,11 @@ MP-6 — NEXT
 
 Historical certification above audited revision **`d0aee066837a5521b6b8e8b87c5ee172a2d38ba7`**. Final B4 hardening landed after that baseline (`38c5baf83`, `094ccecdd`).
 
-**Current enterprise baseline:** see [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md) for the independent delta recertification record and **new certified SHA** on `development`.
+**Current enterprise baseline:** see [`MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md`](MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md) for **`CERTIFIED_CODE_BASELINE`** and full Pyright closure. D1 behavioral delta: [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md).
 
 ```text
 MP-5H — CLOSED / FINAL CERTIFICATION PASSED (historical at d0aee066)
-MP-5H-D1 — CLOSED / CERTIFIED (post-B4 baseline — see D1 doc)
-MP-5 — ENTERPRISE CERTIFIED / CLOSED
+MP-5H-D1 — CONDITIONAL → closed by MP-5H-D1-R1
+MP-5 — ENTERPRISE CERTIFIED / CLOSED (R1 certified code baseline)
 MP-6 — NEXT
 ```

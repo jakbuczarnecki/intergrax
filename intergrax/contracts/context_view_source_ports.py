@@ -447,6 +447,7 @@ class MemoryContextSourcePort(Protocol):
         request: ContextViewMemorySourceRequest,
     ) -> ContextViewMemorySourceCandidatesResult:
         """Return zero or more memory locator candidates for the approved scope."""
+        ...
 
 
 class KnowledgeContextSourcePort(Protocol):
@@ -457,6 +458,7 @@ class KnowledgeContextSourcePort(Protocol):
         request: ContextViewKnowledgeSourceRequest,
     ) -> ContextViewKnowledgeSourceCandidatesResult:
         """Return zero or more knowledge locator candidates for the approved scope."""
+        ...
 
 
 class UclContextSourcePort(Protocol):
@@ -467,6 +469,7 @@ class UclContextSourcePort(Protocol):
         request: ContextViewUclSourceRequest,
     ) -> ContextViewUclSourceCandidatesResult:
         """Return zero or more UCL locator candidates for the approved scope."""
+        ...
 
 
 class CollaborativeWorkContextSourcePort(Protocol):
@@ -477,3 +480,4 @@ class CollaborativeWorkContextSourcePort(Protocol):
         request: ContextViewCollaborativeWorkSourceRequest,
     ) -> ContextViewCollaborativeWorkSourceCandidatesResult:
         """Return zero or more collaborative-work locator candidates for the approved scope."""
+        ...

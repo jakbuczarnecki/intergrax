@@ -125,7 +125,7 @@ Unchanged MP-5H truth table: sources prove only owned dimensions; Model B compat
 
 ## 14. Isolation
 
-MP-5G E2E + B4/B5/C1 tests: tenant, workspace, work-item (CW), resource (Knowledge/UCL), principal/category boundaries **PASS** (229 tests in D1 regression bundle).
+MP-5G E2E + B4/B5/C1 tests: tenant, workspace, work-item (CW), resource (Knowledge/UCL), principal/category boundaries **PASS** (**230** tests in regression bundle — reconciled in MP-5H-D1-R1).
 
 ## 15. Pluginability matrix
 
@@ -160,15 +160,13 @@ All effectively-public retrieval remains canonical: consumer ports → adapters 
 
 ## 18. Static typing
 
-Command:
+Full MP-5 certification surface (no exclusions):
 
 ```powershell
-uv run pyright intergrax/contracts/context_view.py intergrax/collaborative_work/context_view_source_adapters.py intergrax/collaborative_work/context_view_source_wiring.py intergrax/collaborative_work/default_collaborative_work_reference_reader.py intergrax/collaborative_work/context_view_visibility.py
+uv run pyright intergrax/contracts/context_view.py intergrax/contracts/context_view_composition.py intergrax/contracts/context_view_source_ports.py intergrax/contracts/context_view_visibility_policy.py intergrax/contracts/context_view_scope_compatibility.py intergrax/collaborative_work/context_view_composition.py intergrax/collaborative_work/context_view_source_adapters.py intergrax/collaborative_work/context_view_source_wiring.py intergrax/collaborative_work/context_view_visibility.py intergrax/collaborative_work/default_collaborative_work_reference_reader.py
 ```
 
-Result: **0 errors, 0 warnings** on implementation + core `context_view` contract module.
-
-**Documented exclusion (pre-existing, unchanged by B4):** `Protocol` methods using `...` in `intergrax/contracts/context_view_composition.py`, `context_view_source_ports.py`, `context_view_visibility_policy.py`, and union-narrowing in `intergrax/collaborative_work/context_view_composition.py` produce Pyright `reportReturnType` / `reportAssignmentType` when those contract files are included. MP-5H original validation was behavioral; no production typing change in D1.
+Result after **MP-5H-D1-R1:** **0 errors, 0 warnings** on the full surface above. Prior D1 `Protocol` / union-narrowing debt is closed in R1 (see [`MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md`](MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md)).
 
 ## 19. Escape-hatch audit (B4 qualification surface)
 
@@ -189,7 +187,7 @@ uv run pytest tests/unit/collaborative_work/test_cw_mp5f_b4_collaborative_work_r
 | Memory B1 | included |
 | Knowledge B2 | included |
 | UCL B3/B3b | included |
-| **Total** | **230 passed** (after SSOT marker fix in same commit) |
+| **Total** | **230 passed** |
 
 Principal `ORG_SYSTEM`: still **no dedicated MP-5 behavioral proof** (non-blocking gap, unchanged from MP-5H).
 
@@ -206,17 +204,31 @@ Principal `ORG_SYSTEM`: still **no dedicated MP-5 behavioral proof** (non-blocki
 ## 22. Final verdict
 
 ```text
-MP-5H-D1 — CLOSED / CERTIFIED
-MP-5 — ENTERPRISE CERTIFIED / CLOSED (baseline updated)
+MP-5H-D1 — CONDITIONAL (behavioral delta certified; static typing debt closed in MP-5H-D1-R1)
+MP-5 — ENTERPRISE CERTIFIED / CLOSED (via MP-5H-D1-R1 certified code baseline)
 ```
 
 ```text
-BLOCKING FINDINGS: NONE
+BLOCKING FINDINGS: NONE (post-R1)
 ```
 
-## 23. New certification baseline SHA
+## 23. Certification baseline model (reconciled in R1)
 
-**`MP5H_D1_CERTIFIED_BASELINE`:** `8e8b8025f242d658c8b6c93390a87060ec635442` (`docs(context-view): recertify MP-5 after final B4 hardening`). Parent: `bd18fc39d12b3e014cb4313d30d98f2967c54548`. Historical MP-5H baseline remains `d0aee066`; B4 anchors `38c5baf83` + `094ccecdd` are contained in the certified ancestry.
+Do **not** treat D1 landing commit and baseline-record follow-up as competing “baselines”. After R1:
+
+| Role | SHA | Meaning |
+| --- | --- | --- |
+| `CERTIFIED_CODE_BASELINE` | *(R1 doc — commit whose code passed full Pyright + regression)* | Exact code state enterprise-certified |
+| `CERTIFICATION_RECORD_COMMIT` | *(R1 doc — qualification record on `development`)* | Git commit that records certified baseline + closes typing debt |
+
+Historical anchors (provenance only, not alternate baselines):
+
+| Label | SHA |
+| --- | --- |
+| D1 main (behavioral recertification land) | `8e8b8025f242d658c8b6c93390a87060ec635442` |
+| D1 baseline-record follow-up | `fa5f1d611706af4f9571e255b5f2291ff16f75a7` |
+
+Authoritative post-R1 values: [`MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md`](MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md) §13–§14.
 
 ---
 

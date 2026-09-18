@@ -186,6 +186,8 @@ class ContextViewVisibilityPolicy(Protocol):
     @property
     def policy_id(self) -> str:
         """Stable policy identity for audit."""
+        ...
 
     def evaluate(self, policy_input: ContextViewVisibilityPolicyInput) -> ContextViewPolicyDecision:
         """Determine category and visibility-class eligibility under resolved authority."""
+        ...
