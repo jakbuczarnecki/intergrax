@@ -8,6 +8,8 @@ import os
 import uuid
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
+
+import numpy as np
 from langchain_core.documents import Document
 from numpy.typing import NDArray
 

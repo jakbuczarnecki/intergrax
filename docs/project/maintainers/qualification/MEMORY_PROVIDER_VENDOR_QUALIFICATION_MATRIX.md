@@ -57,7 +57,7 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | Entity indexer | `DefaultEntityMemoryIndexer` | derived | n/a | **CONTRACT QUALIFIED** (service) |
 | Procedural | `intergrax.in_memory_procedural` | **NONE** | **NO** | **NOT QUALIFIED** durable |
 | Long-horizon | `intergrax.in_memory_long_horizon` | **NONE** | **NO** | **NOT QUALIFIED** durable |
-| SessionTurnIndex | `InMemorySessionTurnIndexStore` | `VectorSessionTurnIndexStore` (ephemeral vector ports) | **NO** | **NOT QUALIFIED** |
+| SessionTurnIndex | `InMemorySessionTurnIndexStore` | `VectorSessionTurnIndexStore` + Qdrant backing | **YES (Qdrant STI only)** | **V6 Qdrant reconnect qualified**; pgvector/Chroma open |
 | Task memory | `InMemoryTaskMemoryStore` | `SQLiteTaskMemoryStore` | **NO** | **CONDITIONALLY** — env/db path |
 | Organization profile | `InMemoryOrganizationProfileStore` | `SQLiteOrganizationProfileStore` | **NO** | **CONDITIONALLY** — sqlite bundle only |
 | Conversational | `InMemoryConversationalMemoryStore` | `SQLiteConversationalMemoryStore` | **NO** | **LEGACY** — not canonical plane |
@@ -81,7 +81,7 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | Procedural | `InMemoryProceduralMemoryStore` | in-proc | `ProcedureMemoryStore` | `intergrax.in_memory_procedural` | NO | NO | qual runner | NO | profile flag | V2 | REFERENCE ONLY |
 | Long-horizon | `InMemoryLongHorizonMemoryStore` | in-proc | `LongHorizonMemoryStore` | `intergrax.in_memory_long_horizon` | NO | NO | qual runner | NO | profile flag | V2 | REFERENCE ONLY |
 | SessionTurnIndex | `InMemorySessionTurnIndexStore` | in-proc | `SessionTurnIndexStore` | classifiable | NO | NO | qual runner | NO | qual / tests | V2 | REFERENCE ONLY |
-| SessionTurnIndex | `VectorSessionTurnIndexStore` | vector adapter | `SessionTurnIndexStore` | STI EP optional | via RAG | **NO proof** | unit scope | **NO** | `enable_session_vector_index` + RAG | V1–V2 | **NOT REAL-VENDOR QUALIFIED** |
+| SessionTurnIndex | `VectorSessionTurnIndexStore` | vector adapter | `SessionTurnIndexStore` | STI EP optional | Qdrant reconnect proved | client reconnect | unit + 5D E2E | **YES (Qdrant)** | `enable_session_vector_index` + RAG | V6 | **REAL-VENDOR RECONNECT QUALIFIED (Qdrant)** |
 | Task memory | `InMemoryTaskMemoryStore` | in-proc | `TaskMemoryPersistence` | NO | NO | NO | unit | NO | tests | V2 | REFERENCE ONLY |
 | Task memory | `SQLiteTaskMemoryStore` | sqlite file | `TaskMemoryPersistence` | sqlite opens | YES | partial integ | unit | NO | env `INTERGRAX_TASK_MEMORY_DB` / lab | V4–V5 | DURABILITY QUALIFIED (platform semantics) |
 | Organization | `InMemoryOrganizationProfileStore` | in-proc | `OrganizationProfileStore` | NO | NO | NO | unit | NO | mongo path + org flag | V1 | NOT QUALIFIED durable |
@@ -92,7 +92,8 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | Observability | `RecordingMemoryObservabilitySink` | test | `MemoryObservabilitySink` | inject | n/a | n/a | n/a | NO | tests MEM-ENT-12 | V2 | CONTRACT QUALIFIED |
 | PostgreSQL Memory | `PostgresMemoryBackendConfig` spike | RFC | n/a | NO | n/a | n/a | n/a | NO | **not wired** | V0 | PLANNED ONLY |
 | MongoDB Memory | *(none)* | generic `DocumentStore` only | via adapter | NO | if mongo backend | NO | fake factory tests | NOT_EXECUTED | document_store slug | V0–V2 | **NOT MEMORY-QUALIFIED** as vendor |
-| Qdrant / pgvector / Chroma | RAG `vectorstore_manager` | integration layer | STI ports | NO Memory EP | unknown | **NO** | RAG tests only | **NO Memory STI E2E** | vector flags | V1 | **UNPROVEN CAPABILITY MAPPING** for Memory |
+| Qdrant (STI) | `VectorSessionTurnIndexStore` + `qdrant` | integration backing | STI ports | NO Memory EP | reconnect proved (5D) | client reconnect | 5D suite | **YES** | vector flags + Qdrant | V6 | **MEMORY STI QUALIFIED (Qdrant only)** |
+| pgvector / Chroma (STI) | same adapter pattern | integration layer | STI ports | NO Memory EP | **NO** | RAG tests only | **NO Memory STI E2E** | vector flags | V1 | **OPEN (5E/5F)** |
 
 ---
 
@@ -179,9 +180,9 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | **SQLite** | Yes (UserProfile, Task, Org, Conversational, Session) | MEM-ENT-13C durable harness + MEM-FINAL-AUDIT-5B reference certification | **UserProfile: REFERENCE DURABLE / RESTART QUALIFIED (V5)** — behavioral + durability evidence feed; not external V6 |
 | **MongoDB** | UserProfile via DocumentStore only | wiring unit test with factory | **NOT MEMORY-VENDOR QUALIFIED** |
 | **PostgreSQL** | RFC spike only | `postgres_memory_backend_rfc.py` | **PLANNED ONLY (V0)** |
-| **Qdrant** | None for Memory; RAG vector integration may use Qdrant elsewhere | **zero** Memory STI tests naming qdrant | **< V6** |
-| **pgvector** | same as Qdrant pattern | none Memory | **< V6** |
-| **Chroma** | same | none Memory | **< V6** |
+| **Qdrant** | `VectorSessionTurnIndexStore` backing via RAG ports | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` | **V6 STI reconnect qualified** |
+| **pgvector** | same adapter pattern | none Memory STI | **< V6 (OPEN)** |
+| **Chroma** | same | none Memory STI | **< V6 (OPEN)** |
 
 ---
 
