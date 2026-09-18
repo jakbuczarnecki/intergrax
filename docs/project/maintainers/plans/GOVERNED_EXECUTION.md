@@ -189,6 +189,7 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-10-R2-C1 | PRE_MODEL public contract revision | **CANDIDATE CLOSED** — `principal_id` required on `evaluate_pre_llm`; independent GitHub audit before CLOSED |
 | GR-10-R2-R1 | PRE_MODEL runtime identity conformance | **CANDIDATE CLOSED — RUNTIME IDENTITY CONFORMANCE COMPLETE** — independent GitHub audit before CLOSED |
 | GR-10-R2 | INFERENCE PRE_MODEL runtime conformance | **CANDIDATE CLOSED** — [ADR-GR-10-001](../../technical/adr/entries/2026-09-18/ADR-GR-10-001.md); independent audit after **GR-10-R2-R1** |
+| GR-10-R4 | INFERENCE root admission enterprise qualification | **CANDIDATE CLOSED — INFERENCE ROOT ADMISSION NOT_APPLICABLE BY ARCHITECTURE** — no independent production root; `tests/qualification/governance/strategy/test_gr10_r4_inference_root_admission_qualification.py`; independent GitHub audit required |
 | GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** |
 | GR-12 | Control-Plane Governance | **GAP** / **OPEN** |
 | GR-13 | Full Governance Proof Matrix | **OPEN** |

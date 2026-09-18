@@ -129,3 +129,4 @@ def gr10_assert_current_docs_inference_ssot() -> None:
         if row.applicability is Gr10Applicability.NOT_APPLICABLE
     }
     assert "HITL" in na_caps and "Reliability" in na_caps and "MSE" in na_caps
+    assert "Root admission" in na_caps

@@ -73,7 +73,7 @@ On current `development`, GR-1…GR-7 **implementation slices are present** (ide
 
 | Root type | Production entry | Governance admission | Canonical intake | ExecutionRuntime | Bypass possible |
 | --- | --- | --- | --- | --- | --- |
-| INFERENCE | `HostTaskExecution.execute` → `build_host_task_strategy_router` → `StrategyExecutionRouter` → `InferenceExecutor` | None on host path | Skipped (`resolve_root_parent_execution_authority(task.execution_authority)`) | `Execution` → `ExecutionRuntime.execute` | **YES** |
+| INFERENCE | **No Tier-3 production root** (GR-10-R4) — `InferenceExecutor` only as composition-wired `StrategyExecutionRouter` delegate; `HostTaskExecution` resolves AGENT/ORCHESTRATION only | N/A at strategy root (no independent INFERENCE root entry) | N/A | Internal `Execution` facade / composition stacks only (MODEL C1 — not legal production root) | **NO** independent public INFERENCE root (historical row superseded by GR-10-R4) |
 | AGENTIC | Same host path → `AgentExecutor` | None on host path | Skipped | Same | **YES** |
 | ORCHESTRATION | Host path → orchestration delegate; alternate AW `WorkerExecutionDispatchService` → `RootExecutionAuthorityAdmissionPort` → `CanonicalExecutionIntakePort` | AW dispatch only (not used by `HostTaskExecution` / harness / lab) | AW dispatch only | Both reach `ExecutionRuntime` | **YES** (host + direct `Execution`/`ExecutionRuntime` composition) |
 

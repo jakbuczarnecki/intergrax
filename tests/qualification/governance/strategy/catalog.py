@@ -84,10 +84,13 @@ _GR10_GATES = "tests/qualification/governance/strategy/test_gr10_gates.py"
 GR10_INFERENCE_CAPABILITY_SEMANTICS: tuple[Gr10InferenceCapabilitySemantics, ...] = (
     Gr10InferenceCapabilitySemantics(
         "Root admission",
-        Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.WIRED_NOT_QUALIFIED,
-        "DefaultRootExecutionLauncher + ExecutionRuntime; no Tier-3 host INFERENCE entry; "
-        "launcher DENY/ALLOW qualified; full enterprise proof open.",
+        Gr10Applicability.NOT_APPLICABLE,
+        None,
+        "GR-10-R4: no independent production root for INFERENCE — HostTaskExecution resolves "
+        "AGENT/ORCHESTRATION only; InferenceExecutor is an internal StrategyExecutionRouter "
+        "delegate wired in composition stacks (Execution facade is not a legal production root; "
+        "MODEL C1 gates). ROOT_INFERENCE operation exists for strategy-neutral launcher/policy "
+        "mapping only; Tier-3 hosts never dispatch INFERENCE strategy at root.",
     ),
     Gr10InferenceCapabilitySemantics(
         "Inner Governance",
@@ -160,9 +163,9 @@ def gr10_matrix_inference_status(capability: str) -> Gr10CoverageStatus:
 GR10_PRODUCTION_INVENTORY: tuple[Gr10ProductionEntry, ...] = (
     Gr10ProductionEntry(
         "INFERENCE",
-        "ExecutionRuntime + StrategyExecutionRouter + InferenceExecutor "
-        "(internal facade — not Tier-3 host task entry)",
-        "InferenceExecutor.execute with active execution identity",
+        "No Tier-3/public production root — internal only: composition-wired "
+        "ExecutionRuntime → StrategyExecutionRouter → InferenceExecutor (MODEL C1 non-root)",
+        "InferenceExecutor.execute with active execution identity (delegate, not root authority)",
         "NOT_APPLICABLE — structured inference is not classified MSE spine",
         "NOT_APPLICABLE — no REQUIRE_HUMAN on inference-only ExecutionRequest",
         "NOT_APPLICABLE — no provider mutation on InferenceExecutor structured path",
@@ -192,7 +195,7 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("Root admission"),
         Gr10CoverageStatus.QUALIFIED,
         Gr10CoverageStatus.QUALIFIED,
-        "INFERENCE: launcher op qualified; Tier-3 host resolves AGENT/ORCH only.",
+        "INFERENCE: root admission N/A (GR-10-R4); Tier-3 host resolves AGENT/ORCH only.",
     ),
     Gr10CapabilityCell(
         "Inner Governance",
@@ -259,19 +262,29 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
     Gr10ScenarioEvidence(
         "INF-A",
         "INFERENCE",
-        "root ALLOW → inference executes once",
+        "internal delegate executes under active identity (not a production root)",
         (
             _nid(_FACADE, "test_facade_mints_platform_execution_id_not_supplied_by_caller"),
             _nid(_INFERENCE_EXEC, "test_direct_structured_request_executes_full_path"),
+            _nid(
+                "tests/qualification/governance/strategy/"
+                "test_gr10_r4_inference_root_admission_qualification.py",
+                "test_gr10_r4_execution_facade_is_not_legal_production_root",
+            ),
         ),
-        Gr10CoverageStatus.WIRED_NOT_QUALIFIED,
+        Gr10CoverageStatus.QUALIFIED,
     ),
     Gr10ScenarioEvidence(
         "INF-B",
         "INFERENCE",
-        "root DENY → zero inference",
+        "launcher ROOT_INFERENCE op DENY → zero intake (platform contract; not INFERENCE strategy root)",
         (
             _nid(_GR2_LAUNCHER, "test_launcher_deny_skips_intake[root.execution.inference]"),
+            _nid(
+                "tests/qualification/governance/strategy/"
+                "test_gr10_r4_inference_root_admission_qualification.py",
+                "test_gr10_r4_root_inference_launcher_deny_zero_intake",
+            ),
         ),
         Gr10CoverageStatus.QUALIFIED,
     ),
