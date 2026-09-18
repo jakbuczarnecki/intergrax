@@ -219,7 +219,7 @@ Do **not** treat D1 landing commit and baseline-record follow-up as competing â€
 | Role | SHA | Meaning |
 | --- | --- | --- |
 | `CERTIFIED_CODE_BASELINE` | `310b09feaed05e24b6d55c041baba27a9a4699cb` | R1 code land â€” full Pyright + regression on certified surface |
-| `CERTIFICATION_RECORD_COMMIT` | `c21f26cb3a80e7d418c1b7d67defe85f77d31123` | R1 SHA record (docs-only; parent `310b09fe`) |
+| `CERTIFICATION_RECORD_COMMIT` | `5f9cbf6d2b5863b552f8cf61d189edcaa6937e8b` | Final R1 qualification record (docs) |
 
 Historical anchors (provenance only, not alternate baselines):
 
