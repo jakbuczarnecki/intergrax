@@ -43,6 +43,11 @@ from intergrax.runtime.execution.runtime import (
     RootExecutionOptions,
 )
 from intergrax.runtime.execution.inference import InferenceExecutor
+from intergrax.runtime.execution.inference_profile import (
+    InferenceProfileCatalog,
+    InferenceProfileId,
+    InferenceProfileNotFoundError,
+)
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.governance.governance_evidence_composition import (
@@ -731,19 +736,221 @@ def _inference_executor_execute_function(tree: ast.Module) -> ast.AsyncFunctionD
   )
 
 
+def _select_adapter_assignment_name(execute_fn: ast.AsyncFunctionDef | ast.FunctionDef) -> str | None:
+  for node in execute_fn.body:
+    if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+      continue
+    target = node.targets[0]
+    if not isinstance(target, ast.Name):
+      continue
+    if not isinstance(node.value, ast.Call):
+      continue
+    call = node.value
+    if isinstance(call.func, ast.Attribute) and call.func.attr == "_select_adapter":
+      return target.id
+  return None
+
+
+def _enforce_pre_model_uses_adapter_name(
+  execute_fn: ast.AsyncFunctionDef | ast.FunctionDef,
+  adapter_name: str,
+) -> bool:
+  for node in execute_fn.body:
+    if not isinstance(node, ast.Expr) or not isinstance(node.value, ast.Call):
+      continue
+    call = node.value
+    if not isinstance(call.func, ast.Name):
+      continue
+    if call.func.id != "enforce_pre_model_before_structured_inference":
+      continue
+    for keyword in call.keywords:
+      if keyword.arg == "adapter" and isinstance(keyword.value, ast.Name):
+        return keyword.value.id == adapter_name
+  return False
+
+
+def _invoke_uses_adapter_generate_structured(
+  execute_fn: ast.AsyncFunctionDef | ast.FunctionDef,
+  adapter_name: str,
+) -> bool:
+  for node in execute_fn.body:
+    if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or node.name != "_invoke":
+      continue
+    for inner in ast.walk(node):
+      if not isinstance(inner, ast.Call):
+        continue
+      func = inner.func
+      if (
+        isinstance(func, ast.Attribute)
+        and func.attr == "generate_structured"
+        and isinstance(func.value, ast.Name)
+        and func.value.id == adapter_name
+      ):
+        return True
+  return False
+
+
 def test_inference_executor_pre_model_before_generate_structured_ast_gate() -> None:
   source = Path("intergrax/runtime/execution/inference.py").read_text(encoding="utf-8")
   tree = ast.parse(source)
   execute_fn = _inference_executor_execute_function(tree)
-  policy_line = None
-  provider_line = None
-  for index, node in enumerate(execute_fn.body):
-    if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
-      func = node.value.func
-      if isinstance(func, ast.Name) and func.id == "enforce_pre_model_before_structured_inference":
-        policy_line = index
-    if isinstance(node, ast.FunctionDef) and node.name == "_invoke":
-      provider_line = index
-  assert policy_line is not None
-  assert provider_line is not None
-  assert policy_line < provider_line
+  adapter_name = _select_adapter_assignment_name(execute_fn)
+  assert adapter_name is not None
+  assert _enforce_pre_model_uses_adapter_name(execute_fn, adapter_name)
+  assert _invoke_uses_adapter_generate_structured(execute_fn, adapter_name)
+
+
+class _ProfileSelectedAdapter(StructuredTestAdapter):
+  """Adapter with a distinct model marker for profile-resolution proofs."""
+
+  def __init__(self, marker_model: str, parsed_output: RiskAssessment) -> None:
+    super().__init__(parsed_output=parsed_output)
+    self.model = marker_model
+    self.provider = f"provider-{marker_model}"
+
+
+class _SingleAdapterProfileResolver:
+  def __init__(self, adapter: LLMAdapter) -> None:
+    self._adapter = adapter
+    self.resolve_calls = 0
+
+  def resolve(self, profile_id: InferenceProfileId) -> LLMAdapter:
+    self.resolve_calls += 1
+    return self._adapter
+
+
+class _DenyWhenModelRuntime(RuntimePolicyEngine):
+  def __init__(self, blocked_model_id: str) -> None:
+    super().__init__()
+    self._blocked_model_id = blocked_model_id
+    self.evaluate_calls = 0
+    self.last_model_id: str | None = None
+
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
+    self.evaluate_calls += 1
+    if context is not None:
+      self.last_model_id = context.model_id
+    if context is not None and context.model_id == self._blocked_model_id:
+      return PolicyDecision(
+        action=PolicyAction.DENY,
+        reason="blocked_profile_model",
+        policy_rule_id="test.blocked_profile_model",
+      )
+    return PolicyDecision(
+      action=PolicyAction.ALLOW,
+      reason="allow",
+      policy_rule_id="test.allow",
+    )
+
+
+@pytest.mark.asyncio
+async def test_inference_custom_resolver_pre_model_allow_invokes_selected_adapter_only() -> None:
+  default_adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  profile_marker = "profile-selected-adapter-x"
+  selected_adapter = _ProfileSelectedAdapter(
+    profile_marker,
+    parsed_output=RiskAssessment(risk="profile"),
+  )
+  resolver = _SingleAdapterProfileResolver(selected_adapter)
+  runtime = _DenyWhenModelRuntime(blocked_model_id="never-this-model")
+  executor = governed_inference_executor(
+    default_adapter,
+    policy_engine=PolicyEngine(runtime=runtime),
+    profile_resolver=resolver,
+  )
+  router = StrategyExecutionRouter[
+    tuple[ChatMessage, ...],
+    RiskAssessment,
+    ExecutionResult[RiskAssessment],
+  ](inference_executor=executor)
+  runtime_exec = ExecutionRuntime[
+    ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
+    ExecutionResult[RiskAssessment],
+  ](router)
+  request = ExecutionRequest(
+    input=(ChatMessage(role="user", content="x"),),
+    output_type=RiskAssessment,
+    inference_profile_id=InferenceProfileId("custom"),
+  )
+  options = _root_options()
+  result = await Execution(runtime_exec).execute(request, options=options)
+  assert result.status is ExecutionStatus.COMPLETED
+  assert resolver.resolve_calls == 1
+  assert runtime.evaluate_calls == 1
+  assert runtime.last_model_id == profile_marker
+  assert selected_adapter.generate_structured_calls == 1
+  assert default_adapter.generate_structured_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_inference_custom_resolver_pre_model_deny_blocks_selected_adapter() -> None:
+  default_adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  profile_marker = "profile-selected-adapter-deny"
+  selected_adapter = _ProfileSelectedAdapter(
+    profile_marker,
+    parsed_output=RiskAssessment(risk="profile"),
+  )
+  resolver = _SingleAdapterProfileResolver(selected_adapter)
+  runtime = _DenyWhenModelRuntime(blocked_model_id=profile_marker)
+  executor = governed_inference_executor(
+    default_adapter,
+    policy_engine=PolicyEngine(runtime=runtime),
+    profile_resolver=resolver,
+  )
+  router = StrategyExecutionRouter[
+    tuple[ChatMessage, ...],
+    RiskAssessment,
+    ExecutionResult[RiskAssessment],
+  ](inference_executor=executor)
+  runtime_exec = ExecutionRuntime[
+    ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
+    ExecutionResult[RiskAssessment],
+  ](router)
+  request = ExecutionRequest(
+    input=(ChatMessage(role="user", content="x"),),
+    output_type=RiskAssessment,
+    inference_profile_id=InferenceProfileId("custom"),
+  )
+  execution = Execution(runtime_exec)
+  options = _root_options()
+  with pytest.raises(PreModelPolicyBlockedError):
+    await execution.execute(request, options=options)
+  assert resolver.resolve_calls == 1
+  assert runtime.evaluate_calls == 1
+  assert runtime.last_model_id == profile_marker
+  assert selected_adapter.generate_structured_calls == 0
+  assert default_adapter.generate_structured_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_inference_profile_resolution_failure_skips_pre_model_and_provider() -> None:
+  default_adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  runtime = _RecordingPreModelRuntime()
+  catalog = InferenceProfileCatalog((("primary", default_adapter),))
+  executor = governed_inference_executor(
+    default_adapter,
+    policy_engine=PolicyEngine(runtime=runtime),
+    profile_resolver=catalog,
+  )
+  router = StrategyExecutionRouter[
+    tuple[ChatMessage, ...],
+    RiskAssessment,
+    ExecutionResult[RiskAssessment],
+  ](inference_executor=executor)
+  runtime_exec = ExecutionRuntime[
+    ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
+    ExecutionResult[RiskAssessment],
+  ](router)
+  request = ExecutionRequest(
+    input=(ChatMessage(role="user", content="x"),),
+    output_type=RiskAssessment,
+    inference_profile_id=InferenceProfileId("missing"),
+  )
+  execution = Execution(runtime_exec)
+  options = _root_options()
+  with pytest.raises(InferenceProfileNotFoundError):
+    await execution.execute(request, options=options)
+  assert runtime.calls == 0
+  assert default_adapter.generate_structured_calls == 0

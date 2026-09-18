@@ -55,6 +55,11 @@ from intergrax.runtime.execution.single_model_deliberation import (
 )
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
+from testing_support.inference_governance_wiring import (
+    bind_test_inference_governance_identity,
+    governed_inference_executor,
+    reset_test_inference_governance_identity,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -264,7 +269,7 @@ async def test_single_model_profile_selects_adapter_through_execution_path(
     assert StrategyResolver().resolve(request) is ExecutionStrategy.INFERENCE
 
     default_adapter = FakeAdapterA() if unused_adapter_provider == "fake-a" else FakeAdapterB()
-    executor = InferenceExecutor[SampleDecisionPayload](
+    executor = governed_inference_executor(
         default_adapter,
         profile_resolver=_profile_catalog(),
     )
@@ -279,9 +284,11 @@ async def test_single_model_profile_selects_adapter_through_execution_path(
         attempt_id=mint_attempt_id(),
         execution_id=mint_execution_id(),
     )
+    governance_token = bind_test_inference_governance_identity()
     try:
         result = await router.execute(request)
     finally:
+        reset_test_inference_governance_identity(governance_token)
         reset_active_execution_identity(token)
 
     assert result.output.recommendation == expected_recommendation
@@ -356,7 +363,7 @@ async def test_absent_profile_uses_host_default_adapter() -> None:
         input=(ChatMessage(role="user", content="x"),),
         output_type=SampleDecisionPayload,
     )
-    executor = InferenceExecutor[SampleDecisionPayload](
+    executor = governed_inference_executor(
         default_adapter,
         profile_resolver=_profile_catalog(),
     )
@@ -371,9 +378,11 @@ async def test_absent_profile_uses_host_default_adapter() -> None:
         attempt_id=mint_attempt_id(),
         execution_id=mint_execution_id(),
     )
+    governance_token = bind_test_inference_governance_identity()
     try:
         result = await router.execute(request)
     finally:
+        reset_test_inference_governance_identity(governance_token)
         reset_active_execution_identity(token)
 
     assert result.output.recommendation == "adapter-a"

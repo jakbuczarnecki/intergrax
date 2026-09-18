@@ -336,7 +336,7 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
             _nid(
                 "tests/qualification/governance/strategy/"
                 "test_gr10_r5_inference_inner_governance_qualification.py",
-                "test_gr10_r5_inference_executor_provider_only_after_pre_model_ast",
+                "test_gr10_r5_inference_executor_same_local_adapter_ast_gate",
             ),
         ),
         Gr10CoverageStatus.QUALIFIED,
