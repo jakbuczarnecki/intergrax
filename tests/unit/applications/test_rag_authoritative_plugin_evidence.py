@@ -13,6 +13,8 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.applications.contracts.platform_plugin_evidence import (
+    PLATFORM_PLUGIN_DOMAIN_RAG_CHUNKERS,
+    PLATFORM_PLUGIN_DOMAIN_RAG_RERANKERS,
     PLATFORM_PLUGIN_DOMAIN_RAG_RETRIEVERS,
 )
 from intergrax.core.plugins.discovery import EP_RAG_RETRIEVERS, reset_entry_point_spec_cache_for_tests
@@ -176,4 +178,124 @@ def test_wire_application_environment_rag_factory_invoked_once(
         conformance_check=False,
     )
 
+    assert _CountingRetrieverPlugin.factory_calls == 1
+
+
+def _rag_enabled_lab_env(profile_id: str) -> ApplicationEnvironmentProfile:
+    settings = LabApplicationSettings.from_env()
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id=profile_id)
+    return env.model_copy(
+        update={
+            "context_profile": env.context_profile.model_copy(update={"enable_rag": True}),
+        },
+    )
+
+
+def _install_counting_retriever_ep(monkeypatch: pytest.MonkeyPatch) -> None:
+    entries = _EntryPoints(
+        [
+            _EntryPoint(
+                "counting",
+                f"{__name__}:_CountingRetrieverPlugin",
+                EP_RAG_RETRIEVERS,
+            ),
+        ]
+    )
+    monkeypatch.setattr(importlib.metadata, "entry_points", lambda: entries)
+    monkeypatch.setattr(
+        "intergrax.rag.bootstrap.rag_stack_bootstrap.discover_plugins_enabled",
+        lambda: True,
+    )
+    monkeypatch.setattr(
+        "intergrax.rag.retrievers.bootstrap.retriever_bootstrap.discover_plugins_enabled",
+        lambda: True,
+    )
+
+
+@pytest.mark.no_ci
+def test_wire_application_environment_lazy_host_does_not_materialize_rag_plugins(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_counting_retriever_ep(monkeypatch)
+    env = _rag_enabled_lab_env("rag.evidence.lazy-host")
+    settings = LabApplicationSettings.from_env()
+    wiring = wire_application_environment(
+        build_lab_manifest(settings),
+        env,
+        tenant_id=None,
+        conformance_check=False,
+    )
+
+    assert _CountingRetrieverPlugin.factory_calls == 0
+    assert wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_RAG_CHUNKERS) is None
+    assert wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_RAG_RETRIEVERS) is None
+    assert wiring.platform_plugin_evidence.report_for(PLATFORM_PLUGIN_DOMAIN_RAG_RERANKERS) is None
+
+
+@pytest.mark.no_ci
+def test_wire_application_environment_lazy_host_skips_synthetic_vectorstore_for_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _forbidden(*args: object, **kwargs: object) -> object:
+        raise AssertionError("vectorstore must not be created for lazy-host RAG evidence")
+
+    monkeypatch.setattr(
+        "intergrax.rag.vectorstore.bootstrap.integration_vectorstore.create_vectorstore_manager",
+        _forbidden,
+    )
+    env = _rag_enabled_lab_env("rag.evidence.lazy-host.no-vectorstore")
+    settings = LabApplicationSettings.from_env()
+    wire_application_environment(
+        build_lab_manifest(settings),
+        env,
+        tenant_id=None,
+        conformance_check=False,
+    )
+
+
+@pytest.mark.no_ci
+def test_wire_application_environment_lazy_host_does_not_call_host_rag_evidence_bootstrap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _forbidden(**kwargs: object) -> object:
+        raise AssertionError("host RAG evidence bootstrap must not run without tenant RAG stack")
+
+    monkeypatch.setattr(
+        entry_point_load_module,
+        "bootstrap_rag_plugin_load_evidence_for_host_context",
+        _forbidden,
+    )
+    env = _rag_enabled_lab_env("rag.evidence.lazy-host.no-host-bootstrap")
+    settings = LabApplicationSettings.from_env()
+    wire_application_environment(
+        build_lab_manifest(settings),
+        env,
+        tenant_id=None,
+        conformance_check=False,
+    )
+
+
+@pytest.mark.no_ci
+def test_wire_application_environment_two_phase_lazy_host_then_tenant_materializes_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_counting_retriever_ep(monkeypatch)
+    env = _rag_enabled_lab_env("rag.evidence.two-phase")
+    settings = LabApplicationSettings.from_env()
+    manifest = build_lab_manifest(settings)
+
+    wire_application_environment(
+        manifest,
+        env,
+        tenant_id=None,
+        conformance_check=False,
+    )
+    assert _CountingRetrieverPlugin.factory_calls == 0
+
+    wire_application_environment(
+        manifest,
+        env,
+        tenant_id="tenant-two-phase",
+        conformance_check=False,
+    )
     assert _CountingRetrieverPlugin.factory_calls == 1

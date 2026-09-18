@@ -114,14 +114,6 @@ from intergrax.applications.contracts.platform_plugin_evidence import (
     ApplicationPlatformPluginEvidence,
     build_application_platform_plugin_evidence,
 )
-from intergrax.rag.bootstrap.entry_point_load import (
-    bootstrap_rag_plugin_load_evidence_for_host_context,
-)
-from intergrax.rag.vectorstore.bootstrap.integration_vectorstore import (
-    create_vectorstore_manager,
-)
-
-_HOST_RAG_PLUGIN_BOOTSTRAP_TENANT = "__host_rag_plugin_bootstrap__"
 from intergrax.core.catalog_bootstrap import bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.core.plugins.admission import DomainPluginLoadReport
@@ -556,42 +548,8 @@ def wire_application_environment(
         )
 
     rag_plugin_load_evidence = None
-    if env.context_profile.enable_rag:
-        discover_rag_plugins = discover_plugins_enabled()
-        if rag_stack is not None and rag_stack.plugin_load_evidence is not None:
-            rag_plugin_load_evidence = rag_stack.plugin_load_evidence
-        else:
-            embedding_for_evidence = (
-                rag_stack.embedding_manager
-                if rag_stack is not None
-                else host_embedding_manager or create_default_embedding_manager()
-            )
-            evidence_tenant_id = (
-                tenant_id if tenant_id is not None else _HOST_RAG_PLUGIN_BOOTSTRAP_TENANT
-            )
-            vectorstore_for_evidence = (
-                rag_stack.vectorstore_manager
-                if rag_stack is not None
-                else create_vectorstore_manager(
-                    profile=resolved_integration,
-                    tenant_id=evidence_tenant_id,
-                )
-            )
-            rag_llm_for_evidence = llm_adapter
-            if rag_llm_for_evidence is None and tenant_id is not None:
-                rag_llm_for_evidence = rag_llm_adapter
-            rag_plugin_load_evidence = bootstrap_rag_plugin_load_evidence_for_host_context(
-                discover_entry_points=discover_rag_plugins,
-                embedding_manager=embedding_for_evidence,
-                vector_store=vectorstore_for_evidence,
-                toc_vector_store=(
-                    rag_stack.toc_vectorstore_manager if rag_stack is not None else None
-                ),
-                graph_store=rag_stack.graph_store if rag_stack is not None else None,
-                profile=host_rag_profile
-                or (rag_stack.profile if rag_stack is not None else None),
-                llm_for_query_expansion=rag_llm_for_evidence,
-            )
+    if rag_stack is not None and rag_stack.plugin_load_evidence is not None:
+        rag_plugin_load_evidence = rag_stack.plugin_load_evidence
 
     platform_plugin_evidence = build_application_platform_plugin_evidence(
         memory_report=memory_wiring.memory_store_plugin_load_report,

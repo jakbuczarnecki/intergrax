@@ -56,7 +56,7 @@ def test_q4_rag_surfaces_at_least_d3_in_matrix() -> None:
 
 
 @pytest.mark.no_ci
-def test_application_evidence_includes_integrations_and_rag_when_enabled() -> None:
+def test_application_evidence_includes_integrations_without_lazy_host_rag_runtime() -> None:
     from intergrax.applications._shared.environment_wiring import wire_application_environment
     from intergrax.applications.contracts.environment_profile import (
         ApplicationEnvironmentProfile,
@@ -81,6 +81,37 @@ def test_application_evidence_includes_integrations_and_rag_when_enabled() -> No
     integrations = evidence.report_for(PLATFORM_PLUGIN_DOMAIN_INTEGRATIONS)
     assert integrations is not None
     assert integrations.group == EP_INTEGRATIONS
+
+    assert evidence.report_for(PLATFORM_PLUGIN_DOMAIN_RAG_CHUNKERS) is None
+    assert evidence.report_for(PLATFORM_PLUGIN_DOMAIN_RAG_RETRIEVERS) is None
+    assert evidence.report_for(PLATFORM_PLUGIN_DOMAIN_RAG_RERANKERS) is None
+
+
+@pytest.mark.no_ci
+def test_application_evidence_includes_rag_after_tenant_runtime_bootstrap() -> None:
+    from intergrax.applications._shared.environment_wiring import wire_application_environment
+    from intergrax.applications.contracts.environment_profile import (
+        ApplicationEnvironmentProfile,
+    )
+    from lab_application.host.settings import LabApplicationSettings
+    from lab_application.manifest import build_lab_manifest
+    from testing_support.builder import FakeLLMAdapter
+
+    settings = LabApplicationSettings.from_env()
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="plug04.evidence.tenant")
+    env = env.model_copy(
+        update={
+            "context_profile": env.context_profile.model_copy(update={"enable_rag": True}),
+        },
+    )
+    wiring = wire_application_environment(
+        build_lab_manifest(settings),
+        env,
+        tenant_id="plug04-tenant",
+        llm_adapter=FakeLLMAdapter(),
+        conformance_check=False,
+    )
+    evidence = wiring.platform_plugin_evidence
 
     chunkers = evidence.report_for(PLATFORM_PLUGIN_DOMAIN_RAG_CHUNKERS)
     retrievers = evidence.report_for(PLATFORM_PLUGIN_DOMAIN_RAG_RETRIEVERS)
