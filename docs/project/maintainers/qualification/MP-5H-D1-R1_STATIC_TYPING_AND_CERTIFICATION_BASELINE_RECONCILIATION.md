@@ -15,7 +15,7 @@ Static typing closeout on the full MP-5 enterprise certification surface; certif
 | `MP5H_D1_R1_EVIDENCE_HEAD` | `5099138bee8870667efed0ec862792584005b313` (pre-R1 land; `HEAD == origin/development`) |
 | Branch | `development` |
 | `CERTIFIED_CODE_BASELINE` | `310b09feaed05e24b6d55c041baba27a9a4699cb` — see §13 |
-| `CERTIFICATION_RECORD_COMMIT` | `310b09feaed05e24b6d55c041baba27a9a4699cb` — see §14 |
+| `CERTIFICATION_RECORD_COMMIT` | `c21f26cb3a80e7d418c1b7d67defe85f77d31123` — see §14 |
 
 ## 3. Original certification gaps
 
@@ -100,10 +100,10 @@ The commit whose tree passed full Pyright (§10) and behavioral regression (§11
 ## 14. Certification record commit
 
 ```text
-CERTIFICATION_RECORD_COMMIT = 310b09feaed05e24b6d55c041baba27a9a4699cb
+CERTIFICATION_RECORD_COMMIT = c21f26cb3a80e7d418c1b7d67defe85f77d31123
 ```
 
-This qualification artifact and reconciled D1 baseline model land on the same R1 landing commit as §13 (record + certified code co-deployed).
+Docs-only follow-up on `development` recording authoritative baseline SHAs (parent: `310b09feaed05e24b6d55c041baba27a9a4699cb`).
 
 Relationship:
 
