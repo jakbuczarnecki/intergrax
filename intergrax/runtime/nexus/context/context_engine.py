@@ -13,6 +13,7 @@ from intergrax.context.contracts import (
     ContextAssemblyRequest,
     ContextFragment,
     ContextProviderContext,
+    provider_fragment_identity_map_from_pairs,
 )
 from intergrax.context.errors import (
     ContextProviderContractViolationError,
@@ -484,6 +485,10 @@ class DefaultNexusContextEngine:
         )
 
         planned_hash = compute_model_facing_messages_hash(canonical_messages)
+        provider_fragment_identity = provider_fragment_identity_map_from_pairs(
+            fragment_messages,
+            ranked_fragments,
+        )
         compile_result = compile_chat_messages(
             canonical_messages,
             runtime_config,
@@ -491,6 +496,7 @@ class DefaultNexusContextEngine:
             max_output_tokens=max_output_tokens,
             input_budget_tokens=model_input_budget_tokens,
             run_preflight=False,
+            provider_fragment_identity=provider_fragment_identity,
         )
         compiled_hash = compute_model_facing_messages_hash(compile_result.messages)
         if not _compile_preserved_planned_context(

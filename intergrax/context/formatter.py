@@ -38,6 +38,7 @@ class DefaultContextFormatter:
                         ChatMessage(
                             role="tool",
                             content=fragment.content,
+                            entry_id=fragment.fragment_id,
                             tool_call_id=tool_call_id.strip(),
                             name=tool_name.strip() if isinstance(tool_name, str) and tool_name.strip() else None,
                         )
@@ -46,6 +47,7 @@ class DefaultContextFormatter:
             formatted.append(
                 ChatMessage(
                     role="system",
+                    entry_id=fragment.fragment_id,
                     content=f"[context:{fragment.source.value}:{fragment.source_id}] {fragment.content}",
                 )
             )

@@ -50,17 +50,40 @@ def test_classify_candidates_marks_injections() -> None:
     assert candidates[-1].mandatory is True
 
 
-def test_classify_candidates_uses_ce_context_tags() -> None:
+def test_classify_candidates_uses_typed_provider_identity_not_content_tags() -> None:
+    from intergrax.context.contracts import (
+        ContextFragment,
+        ContextFragmentSource,
+        ProviderFragmentIdentityMap,
+        ProviderFragmentIdentityEntry,
+    )
+
+    rag_message = ChatMessage(
+        role="system",
+        entry_id="rag-doc-1",
+        content="[context:rag:doc-1] Retrieved policy paragraph.",
+    )
     messages = [
         ChatMessage(role="system", content="Core instructions"),
-        ChatMessage(
-            role="system",
-            content="[context:rag:doc-1] Retrieved policy paragraph.",
-        ),
+        rag_message,
         ChatMessage(role="user", content="question"),
     ]
-    candidates = classify_candidates(messages, count_tokens=lambda t: len(t) // 4)
+    identity = ProviderFragmentIdentityMap(
+        entries=(
+            ProviderFragmentIdentityEntry(
+                entry_id=rag_message.entry_id,
+                source=ContextFragmentSource.RAG,
+                mandatory=False,
+            ),
+        )
+    )
+    candidates = classify_candidates(
+        messages,
+        count_tokens=lambda t: len(t) // 4,
+        provider_fragment_identity=identity,
+    )
     assert candidates[1].source == ContextCandidateSource.RAG
+    assert candidates[1].mandatory is False
 
 
 def test_context_compiler_trims_oversized_context() -> None:

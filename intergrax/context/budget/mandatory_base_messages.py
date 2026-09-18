@@ -55,7 +55,11 @@ def _tool_call_group_complete(
     return set(received.keys()) == expected
 
 
-def mandatory_base_message_indices(messages: Sequence[ChatMessage]) -> frozenset[int]:
+def mandatory_base_message_indices(
+    messages: Sequence[ChatMessage],
+    *,
+    provider_fragment_entry_ids: frozenset[str] = frozenset(),
+) -> frozenset[int]:
     """Message indices reserved as mandatory base context (planner-aligned, fail-closed)."""
     if not messages:
         return frozenset()
@@ -82,7 +86,8 @@ def mandatory_base_message_indices(messages: Sequence[ChatMessage]) -> frozenset
             continue
 
         if message.role == "system":
-            mandatory.add(index)
+            if message.entry_id not in provider_fragment_entry_ids:
+                mandatory.add(index)
         elif message.role == "user" and index == last_user:
             mandatory.add(index)
 
@@ -95,9 +100,13 @@ def estimate_mandatory_base_message_tokens(
     messages: Sequence[ChatMessage],
     *,
     count_text: Callable[[str], int],
+    provider_fragment_entry_ids: frozenset[str] = frozenset(),
 ) -> int:
     """Token reserve for mandatory base messages only (no fragments)."""
-    indices = mandatory_base_message_indices(messages)
+    indices = mandatory_base_message_indices(
+        messages,
+        provider_fragment_entry_ids=provider_fragment_entry_ids,
+    )
     total = 0
     for index in sorted(indices):
         total += max(0, count_text(messages[index].content or ""))

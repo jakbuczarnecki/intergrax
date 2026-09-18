@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Optional
 
+from intergrax.context.contracts import ProviderFragmentIdentityMap
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
 from intergrax.runtime.nexus.context.context_compiler_models import ContextCompileResult
@@ -23,6 +24,7 @@ def compile_chat_messages(
     max_output_tokens: Optional[int] = None,
     input_budget_tokens: Optional[int] = None,
     run_preflight: bool = True,
+    provider_fragment_identity: ProviderFragmentIdentityMap | None = None,
 ) -> ContextCompileResult:
     """Apply global budget compiler + optional preflight on a message list."""
     active_compiler = compiler or ContextCompiler()
@@ -31,6 +33,7 @@ def compile_chat_messages(
         config,
         max_output_tokens=max_output_tokens,
         input_budget_tokens=input_budget_tokens,
+        provider_fragment_identity=provider_fragment_identity,
     )
     if run_preflight:
         verify_context_preflight(

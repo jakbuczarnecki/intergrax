@@ -9,6 +9,7 @@ import hashlib
 import math
 from dataclasses import dataclass, field
 from enum import Enum
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Literal, Self
 
 from intergrax.contracts.context_assembly import ContextSummaryTier, TaskContextAssemblyOptions
@@ -327,6 +328,62 @@ class ContextFragment:
                 "semantic_fingerprint",
                 hashlib.sha256(fingerprint_source.encode("utf-8")).hexdigest(),
             )
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderFragmentIdentityEntry:
+    """Typed bridge identity for one provider fragment model-facing message."""
+
+    entry_id: str
+    source: ContextFragmentSource
+    mandatory: bool
+
+    def __post_init__(self) -> None:
+        normalized = self.entry_id.strip()
+        if not normalized:
+            raise ValueError("entry_id must be non-empty")
+        object.__setattr__(self, "entry_id", normalized)
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderFragmentIdentityMap:
+    """Canonical provider-origin semantics keyed by ``ChatMessage.entry_id``."""
+
+    entries: tuple[ProviderFragmentIdentityEntry, ...] = ()
+
+    def entry_ids(self) -> frozenset[str]:
+        return frozenset(entry.entry_id for entry in self.entries)
+
+    def mandatory_entry_ids(self) -> frozenset[str]:
+        return frozenset(entry.entry_id for entry in self.entries if entry.mandatory)
+
+    def lookup(self, entry_id: str) -> ProviderFragmentIdentityEntry | None:
+        normalized = entry_id.strip()
+        if not normalized:
+            return None
+        for entry in self.entries:
+            if entry.entry_id == normalized:
+                return entry
+        return None
+
+
+def provider_fragment_identity_map_from_pairs(
+    fragment_messages: Sequence[ChatMessage],
+    ranked_fragments: Sequence[ContextFragment],
+) -> ProviderFragmentIdentityMap:
+    """Build typed provider identity from formatter output aligned with ranked fragments."""
+    if len(fragment_messages) != len(ranked_fragments):
+        raise ValueError("fragment_message_mapping_mismatch")
+    entries: list[ProviderFragmentIdentityEntry] = []
+    for fragment_message, fragment in zip(fragment_messages, ranked_fragments, strict=True):
+        entries.append(
+            ProviderFragmentIdentityEntry(
+                entry_id=fragment_message.entry_id,
+                source=fragment.source,
+                mandatory=fragment.mandatory,
+            )
+        )
+    return ProviderFragmentIdentityMap(entries=tuple(entries))
 
 
 @dataclass(frozen=True, slots=True)
