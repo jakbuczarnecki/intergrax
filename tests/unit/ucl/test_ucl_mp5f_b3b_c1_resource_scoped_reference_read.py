@@ -35,6 +35,7 @@ from intergrax.runtime.context_lifecycle.default_ucl_reference_reader import (
 )
 from intergrax.runtime.context_lifecycle.repository import (
     OptimizationArtifactReference,
+    OptimizationArtifactScopedReferenceCatalog,
     OptimizationArtifactScopedReferenceQuery,
     ScopedOptimizationArtifactListing,
 )
@@ -61,22 +62,28 @@ def _identity(tenant_id: str = "tenant-a") -> RequestIdentity:
     )
 
 
-def _lookup_key(**overrides: object) -> ArtifactLookupKey:
-    defaults: dict[str, object] = {
-        "tenant_id": "tenant-a",
-        "context_scope_id": "ctx-x",
-        "artifact_type": OptimizationArtifactType.MESSAGE_SEQUENCE,
-        "source_content_hash": "hash-abc",
-        "strategy_id": "strategy.summarize",
-        "strategy_version": "1.0.0",
-        "policy_version": "policy-v1",
-        "validation_contract_version": "validation-v1",
-        "compression_target": ArtifactCompressionTarget(target_tokens=1000),
-        "lossiness_profile": "lossy_summary",
-        "source_refs": ("msg-1", "msg-2"),
-    }
-    defaults.update(overrides)
-    return ArtifactLookupKey(**defaults)  # type: ignore[arg-type]
+def _lookup_key(
+    *,
+    tenant_id: str = "tenant-a",
+    context_scope_id: str = "ctx-x",
+    source_content_hash: str = "hash-abc",
+    source_refs: tuple[str, ...] = ("msg-1", "msg-2"),
+    source_range: ArtifactSourceRange | None = None,
+) -> ArtifactLookupKey:
+    return ArtifactLookupKey(
+        tenant_id=tenant_id,
+        context_scope_id=context_scope_id,
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash=source_content_hash,
+        strategy_id="strategy.summarize",
+        strategy_version="1.0.0",
+        policy_version="policy-v1",
+        validation_contract_version="validation-v1",
+        compression_target=ArtifactCompressionTarget(target_tokens=1000),
+        lossiness_profile="lossy_summary",
+        source_refs=source_refs,
+        source_range=source_range,
+    )
 
 
 def _stored(
@@ -89,14 +96,12 @@ def _stored(
     source_content_hash: str | None = None,
     ownership_kind: UclArtifactOwnershipKind = UclArtifactOwnershipKind.WORKSPACE,
 ) -> StoredOptimizationArtifact:
-    key_overrides: dict[str, object] = {
-        "tenant_id": tenant_id,
-        "context_scope_id": context_scope_id,
-        "source_refs": source_refs,
-    }
-    if source_content_hash is not None:
-        key_overrides["source_content_hash"] = source_content_hash
-    key = _lookup_key(**key_overrides)
+    key = _lookup_key(
+        tenant_id=tenant_id,
+        context_scope_id=context_scope_id,
+        source_refs=source_refs,
+        source_content_hash=source_content_hash if source_content_hash is not None else "hash-abc",
+    )
     if ownership_kind is UclArtifactOwnershipKind.WORKSPACE:
         ownership = UclArtifactOwnership.for_workspace(
             UclArtifactOwnershipScope(tenant_id=tenant_id, workspace_id=workspace_id),
@@ -376,8 +381,9 @@ class _RecordingCatalog:
 
 @pytest.mark.asyncio
 async def test_custom_catalog_receives_full_scoped_query() -> None:
+    catalog: OptimizationArtifactScopedReferenceCatalog = _RecordingCatalog()
     reader = DefaultUclReferenceReader(
-        catalog=_RecordingCatalog(),
+        catalog=catalog,
         capability_binding=UclReferenceReadCapabilityBinding(
             tenant_id="tenant-a",
             workspace_id="ws-custom",
