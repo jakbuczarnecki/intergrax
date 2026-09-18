@@ -25,12 +25,14 @@ def evaluate_pre_model_policy(
     policy_engine: PolicyEngine,
     *,
     tenant_id: str,
-    agent_id: str,
+    principal_id: str,
+    agent_id: str | None = None,
     message_count: int = 1,
     context: PreModelPolicyContext | None = None,
 ) -> PolicyDecision:
     return policy_engine.evaluate_pre_llm(
         tenant_id=tenant_id,
+        principal_id=principal_id,
         agent_id=agent_id,
         message_count=message_count,
         context=context,
@@ -44,6 +46,7 @@ class PolicyEnforcingLLMRouter:
     _inner: StepLLMRouter
     _policy_engine: PolicyEngine
     _tenant_id: str
+    _principal_id: str
     _agent_id: str
     _message_count_provider: Callable[[], int] | None = None
 
@@ -66,6 +69,7 @@ class PolicyEnforcingLLMRouter:
         decision = evaluate_pre_model_policy(
             self._policy_engine,
             tenant_id=self._tenant_id,
+            principal_id=self._principal_id,
             agent_id=self._agent_id,
             message_count=message_count,
             context=PreModelPolicyContext(
@@ -83,6 +87,7 @@ def wrap_policy_enforcing_llm_router(
     *,
     policy_engine: PolicyEngine,
     tenant_id: str,
+    principal_id: str,
     agent_id: str,
     message_count_provider: Callable[[], int] | None = None,
 ) -> PolicyEnforcingLLMRouter:
@@ -90,6 +95,7 @@ def wrap_policy_enforcing_llm_router(
         _inner=router,
         _policy_engine=policy_engine,
         _tenant_id=tenant_id,
+        _principal_id=principal_id,
         _agent_id=agent_id,
         _message_count_provider=message_count_provider,
     )

@@ -558,11 +558,42 @@ class RuntimePolicyEngine:
         self,
         *,
         tenant_id: str,
-        agent_id: str,
+        principal_id: str,
+        agent_id: str | None = None,
         message_count: int,
         context: PreModelPolicyContext | None = None,
     ) -> PolicyDecision:
+        """PRE_MODEL permission evaluation (strategy-neutral).
+
+        ``principal_id`` is the governance permission subject (required, non-empty).
+        ``agent_id`` is an optional agent roster / definition identity — not a principal.
+        """
         ctx = context or PreModelPolicyContext()
+        if not tenant_id.strip():
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="pre_model_tenant_missing",
+                policy_rule_id="default.pre_model_tenant",
+            )
+        if not principal_id.strip():
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="pre_model_principal_missing",
+                policy_rule_id="default.pre_model_principal",
+            )
+        if agent_id is not None and not agent_id.strip():
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="pre_model_agent_id_empty",
+                policy_rule_id="default.pre_model_agent_id",
+            )
+        roster_agent_id = agent_id.strip() if agent_id is not None else None
+        if ctx.phase is PreModelPhase.AGENT_STEP and not roster_agent_id:
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="pre_model_agent_step_agent_missing",
+                policy_rule_id="default.pre_model_agent_step",
+            )
         if message_count < 1:
             return PolicyDecision(
                 action=PolicyAction.DENY,
@@ -582,7 +613,7 @@ class RuntimePolicyEngine:
                         "planner_model_id": planner_model_id,
                     },
                 )
-        if ctx.phase is PreModelPhase.AGENT_STEP:
+        if ctx.phase is PreModelPhase.AGENT_STEP and roster_agent_id:
             model_id = ctx.model_id.strip()
             denied = {item.strip() for item in ctx.denied_model_ids if item.strip()}
             if model_id and model_id in denied:
@@ -592,7 +623,8 @@ class RuntimePolicyEngine:
                     policy_rule_id="runtime.agent_model_denied",
                     audit_payload={
                         "tenant_id": tenant_id,
-                        "agent_id": agent_id,
+                        "principal_id": principal_id,
+                        "agent_id": roster_agent_id,
                         "model_id": model_id,
                     },
                 )
@@ -600,7 +632,11 @@ class RuntimePolicyEngine:
             action=PolicyAction.ALLOW,
             reason="pre_llm_default_allow",
             policy_rule_id="default.pre_llm_allow",
-            audit_payload={"tenant_id": tenant_id, "agent_id": agent_id},
+            audit_payload={
+                "tenant_id": tenant_id,
+                "principal_id": principal_id,
+                "agent_id": roster_agent_id,
+            },
         )
 
     def evaluate_pre_output(

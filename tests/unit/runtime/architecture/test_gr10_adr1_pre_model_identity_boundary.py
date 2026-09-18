@@ -12,6 +12,9 @@ import pytest
 
 from intergrax.contracts.execution_intake import CanonicalExecutionIntakeRequest
 from intergrax.contracts.runtime_policy_context import PreModelPhase
+from intergrax.runtime.policy.policy_engine import PolicyEngine
+from intergrax.runtime.policy.pre_model_policy_bridge import evaluate_pre_model_policy
+from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
 REPO_ROOT = Path(__file__).resolve().parents[4]
 ADR_PATH = (
@@ -55,13 +58,13 @@ def test_gr10_adr1_intake_requires_governance_scope_fields() -> None:
     assert "principal_id must be non-empty" in source
 
 
-def test_gr10_adr1_evaluate_pre_llm_lacks_principal_until_c1() -> None:
-    from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
-
-    sig = inspect.signature(RuntimePolicyEngine.evaluate_pre_llm)
-    assert "principal_id" not in sig.parameters, (
-        "once GR-10-R2-C1 lands, update this gate to require principal_id"
-    )
+def test_gr10_adr1_evaluate_pre_llm_requires_principal_after_c1() -> None:
+    for target in (RuntimePolicyEngine, PolicyEngine):
+        sig = inspect.signature(target.evaluate_pre_llm)
+        assert "principal_id" in sig.parameters
+        assert sig.parameters["principal_id"].default is inspect.Parameter.empty
+    bridge_sig = inspect.signature(evaluate_pre_model_policy)
+    assert "principal_id" in bridge_sig.parameters
 
 
 def test_gr10_adr1_pre_model_eval_does_not_derive_principal_from_evidence() -> None:
@@ -86,16 +89,6 @@ def test_gr10_adr1_phase_none_valid_per_adr() -> None:
     assert PreModelPhase.AGENT_STEP.value == "agent_step"
 
 
-def test_gr10_adr1_known_inference_empty_agent_id_pending_r2_r1() -> None:
-    """Documents GR-10-R2-R1 remediation target; must be removed after contract+wiring fix."""
-    text = _read(PRE_MODEL_EVAL_PATH)
-    assert 'agent_id=""' in text or "agent_id=''" in text
-
-
-@pytest.mark.xfail(
-    reason="GR-10-R2-R1: INFERENCE PRE_MODEL must not pass empty agent_id after C1 (architecture PASS; runtime conformance PENDING)",
-    strict=True,
-)
 def test_gr10_adr1_gate_no_empty_agent_id_on_inference_path() -> None:
     text = _read(PRE_MODEL_EVAL_PATH)
     assert 'agent_id=""' not in text and "agent_id=''" not in text

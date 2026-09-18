@@ -125,11 +125,14 @@ async def test_pre_model_policy_blocks_provider_before_complete() -> None:
         inner,
         policy_engine=PolicyEngine(),
         tenant_id="tenant_1",
+        principal_id="principal_1",
         agent_id="agent_1",
     )
 
     class _DenyAgentModelEngine(RuntimePolicyEngine):
-        def evaluate_pre_llm(self, *, tenant_id, agent_id, message_count, context=None):
+        def evaluate_pre_llm(
+            self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+        ):
             ctx = context or PreModelPolicyContext()
             if ctx.phase is PreModelPhase.AGENT_STEP and ctx.model_id == "balanced":
                 return PolicyDecision(
@@ -139,6 +142,7 @@ async def test_pre_model_policy_blocks_provider_before_complete() -> None:
                 )
             return super().evaluate_pre_llm(
                 tenant_id=tenant_id,
+                principal_id=principal_id,
                 agent_id=agent_id,
                 message_count=message_count,
                 context=context,
@@ -171,6 +175,7 @@ async def test_pre_model_policy_allows_provider_on_allow() -> None:
         inner,
         policy_engine=PolicyEngine(),
         tenant_id="tenant_1",
+        principal_id="principal_1",
         agent_id="agent_1",
     )
     result = await router.complete("hello")

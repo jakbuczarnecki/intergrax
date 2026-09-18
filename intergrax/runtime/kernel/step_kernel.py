@@ -86,6 +86,7 @@ class StepKernelContext:
     """Harness-owned execution context for one agent session loop."""
 
     agent_id: str
+    principal_id: str = ""
     run_id: str = ""
     task_id: str = ""
     tenant_id: str = "default"
@@ -627,6 +628,7 @@ class HarnessKernel:
             )
         return kernel_ctx.policy_engine.evaluate_pre_llm(
             tenant_id=kernel_ctx.tenant_id,
+            principal_id=kernel_ctx.principal_id,
             agent_id=kernel_ctx.agent_id,
             message_count=1,
         )

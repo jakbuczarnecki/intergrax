@@ -70,6 +70,7 @@ async def test_kernel_policy_pre_deny() -> None:
             agent_id="demo",
             task_id=task_id,
             run_id=run_id,
+            principal_id="principal-1",
             policy_engine=PolicyEngine(),
         )
         outcome = StepOutcome.continue_with({"phase": "plan"})
@@ -168,6 +169,7 @@ async def test_kernel_merges_state_and_appends_trace() -> None:
             agent_id="demo",
             task_id=task_id,
             run_id=run_id,
+            principal_id="principal-1",
             policy_engine=PolicyEngine(),
             state_root={"acp.state.v1": {"schema_version": "acp.state.v1", "_version": 0}},
         )
@@ -214,6 +216,7 @@ async def test_kernel_org_policy_denies_channel() -> None:
             agent_id="demo",
             task_id=task_id,
             run_id=run_id,
+            principal_id="principal-1",
             policy_engine=PolicyEngine(),
             organizational=org,
         )
@@ -240,6 +243,7 @@ async def test_kernel_org_policy_allows_happy_path_channel() -> None:
             agent_id="demo",
             task_id=task_id,
             run_id=run_id,
+            principal_id="principal-1",
             policy_engine=PolicyEngine(),
             organizational=org,
         )
@@ -268,6 +272,7 @@ async def test_kernel_rejects_mutating_tool_without_idempotency_key() -> None:
             task_id=task_id,
             run_id=run_id,
             side_effect_mode=SideEffectMode.DECLARATIVE,
+            principal_id="principal-1",
             policy_engine=PolicyEngine(),
             tool_profiles=build_profile_map([_MUTATING_TOOL]),
         )
@@ -309,6 +314,7 @@ async def test_kernel_executes_declarative_actions_and_commits_ledger() -> None:
             task_id=task_id,
             run_id=run_id,
             side_effect_mode=SideEffectMode.DECLARATIVE,
+            principal_id="principal-1",
             policy_engine=PolicyEngine(),
             tool_profiles=build_profile_map([_MUTATING_TOOL]),
             side_effect_ledger=ledger,
@@ -367,6 +373,7 @@ async def test_kernel_replay_skips_declarative_invoke_on_resume() -> None:
             task_id=task_id,
             run_id=run_id,
             side_effect_mode=SideEffectMode.DECLARATIVE,
+            principal_id="principal-1",
             policy_engine=PolicyEngine(),
             tool_profiles=build_profile_map([_MUTATING_TOOL]),
             side_effect_ledger=ledger,
@@ -429,6 +436,7 @@ async def test_kernel_compensates_after_policy_post_denies_committed_tools() -> 
             task_id=task_id,
             run_id=run_id,
             side_effect_mode=SideEffectMode.DECLARATIVE,
+            principal_id="principal-1",
             policy_engine=PolicyEngine(),
             tool_profiles=profiles,
             side_effect_ledger=ledger,
@@ -462,6 +470,7 @@ async def test_kernel_policy_post_denies_empty_terminal_output() -> None:
             agent_id="demo",
             task_id=task_id,
             run_id=run_id,
+            principal_id="principal-1",
             policy_engine=PolicyEngine(),
         )
         outcome = StepOutcome.complete("", terminal_reason=TerminalReason.GOAL_MET)
@@ -482,6 +491,7 @@ async def test_kernel_emits_single_step_completed_per_step() -> None:
             agent_id="demo",
             task_id=task_id,
             run_id=run_id,
+            principal_id="principal-1",
             policy_engine=PolicyEngine(),
         )
         outcome = StepOutcome.continue_with({"phase": "execute"})

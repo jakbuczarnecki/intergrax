@@ -522,7 +522,9 @@ def _reset_direct_executor_context(identity_token: object, governance_token: obj
 
 
 class _DenyPreModelRuntime(RuntimePolicyEngine):
-  def evaluate_pre_llm(self, *, tenant_id, agent_id, message_count, context=None):
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
     return PolicyDecision(
       action=PolicyAction.DENY,
       reason="inference_pre_model_denied",
@@ -531,7 +533,9 @@ class _DenyPreModelRuntime(RuntimePolicyEngine):
 
 
 class _RequireHumanPreModelRuntime(RuntimePolicyEngine):
-  def evaluate_pre_llm(self, *, tenant_id, agent_id, message_count, context=None):
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
     return PolicyDecision(
       action=PolicyAction.REQUIRE_HUMAN,
       reason="inference_pre_model_require_human",
@@ -540,7 +544,9 @@ class _RequireHumanPreModelRuntime(RuntimePolicyEngine):
 
 
 class _ExplodingPreModelRuntime(RuntimePolicyEngine):
-  def evaluate_pre_llm(self, *, tenant_id, agent_id, message_count, context=None):
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
     raise RuntimeError("policy_engine_failure")
 
 
@@ -552,9 +558,13 @@ class _RecordingPreModelRuntime(RuntimePolicyEngine):
     self.last_message_count: int | None = None
     self.last_model_id: str | None = None
 
-  def evaluate_pre_llm(self, *, tenant_id, agent_id, message_count, context=None):
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
     self.calls += 1
     self.last_tenant_id = tenant_id
+    self.last_principal_id = principal_id
+    self.last_agent_id = agent_id
     self.last_message_count = message_count
     if context is not None:
       self.last_model_id = context.model_id
@@ -647,6 +657,8 @@ async def test_inference_pre_model_evaluator_receives_context() -> None:
   messages = _risk_request().input
   await execution.execute(_risk_request(), options=options)
   assert runtime.last_tenant_id == TEST_INFERENCE_TENANT_ID
+  assert runtime.last_principal_id == TEST_INFERENCE_PRINCIPAL_ID
+  assert runtime.last_agent_id is None
   assert runtime.last_message_count == len(messages)
   assert runtime.last_model_id == adapter.model
 

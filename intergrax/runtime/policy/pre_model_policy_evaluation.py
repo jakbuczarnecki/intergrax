@@ -174,7 +174,8 @@ def enforce_pre_model_before_structured_inference(
     decision = evaluate_pre_model_policy(
         policy_engine,
         tenant_id=tenant_id,
-        agent_id="",
+        principal_id=principal_id,
+        agent_id=None,
         message_count=message_count,
         context=context,
     )

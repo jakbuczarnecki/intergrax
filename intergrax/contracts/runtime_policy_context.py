@@ -26,7 +26,11 @@ class AgentDecisionPolicyContext:
 
 @dataclass(frozen=True, slots=True)
 class PreModelPolicyContext:
-    """Context for ``evaluate_pre_llm`` (PRE_MODEL) live policy evaluation."""
+    """Context for ``evaluate_pre_llm`` (PRE_MODEL) live policy evaluation.
+
+    Governance permission subject is ``principal_id`` on the evaluate call.
+    ``agent_id`` on the evaluate call is optional agent roster identity for agent-step rules.
+    """
 
     phase: PreModelPhase | None = None
     planner_model_id: str = ""

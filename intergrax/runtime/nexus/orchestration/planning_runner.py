@@ -39,6 +39,7 @@ from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.runtime_policy_context import PreModelPhase, PreModelPolicyContext
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.policy.policy_engine import PolicyEngine
+from intergrax.runtime.policy.pre_model_principal import principal_id_for_orchestration_task
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -190,7 +191,8 @@ class NexusPlanningRunner:
         if self.policy_engine is not None:
             policy_decision = self.policy_engine.evaluate_pre_llm(
                 tenant_id=task.tenant_id,
-                agent_id=task.agent_id or "",
+                principal_id=principal_id_for_orchestration_task(task),
+                agent_id=task.agent_id,
                 message_count=1,
                 context=PreModelPolicyContext(
                     phase=PreModelPhase.NEXUS_PLANNING,

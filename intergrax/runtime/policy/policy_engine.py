@@ -93,12 +93,14 @@ class PolicyEngine:
         self,
         *,
         tenant_id: str,
-        agent_id: str,
+        principal_id: str,
+        agent_id: str | None = None,
         message_count: int,
         context: PreModelPolicyContext | None = None,
     ) -> RuntimePolicyDecision:
         return self.runtime.evaluate_pre_llm(
             tenant_id=tenant_id,
+            principal_id=principal_id,
             agent_id=agent_id,
             message_count=message_count,
             context=context,

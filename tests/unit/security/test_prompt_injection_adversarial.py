@@ -22,6 +22,7 @@ def test_adversarial_prompts_reach_pre_llm_policy_hook(prompt: str) -> None:
     engine = PolicyEngine()
     decision = engine.evaluate_pre_llm(
         tenant_id="tenant-test",
+        principal_id="principal-test",
         agent_id="echo",
         message_count=1,
     )
