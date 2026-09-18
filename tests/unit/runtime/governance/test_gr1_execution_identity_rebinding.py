@@ -6,17 +6,12 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.contracts.agent_decision import HumanRequest
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
     mint_task_id,
-)
-from intergrax.contracts.governed_continuation import (
-    ContinuationReason,
-    GovernedContinuationRequest,
 )
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
@@ -39,6 +34,9 @@ from intergrax.runtime.task.task import Task
 from intergrax.contracts.runtime_policy import PolicyDecision
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
+from testing_support.runtime_event_metric_scope_for_tests import (
+    open_runtime_event_metric_scope_for_tests,
+)
 from tests.unit.runtime.human.test_g5b_hitl_resolution import (
     _build_intake_runner_with_hitl,
     _patch_hitl_runtime_events,
@@ -137,8 +135,12 @@ def test_full_typed_identity_chain_to_grant() -> None:
 
 
 def test_child_execution_id_does_not_match_parent_grant() -> None:
-    from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
-    from intergrax.runtime.human.governed_continuation_grant import matches_current_requirement
+    from intergrax.contracts.governed_continuation_grant import (
+        GovernedContinuationApprovalGrant,
+    )
+    from intergrax.runtime.human.governed_continuation_grant import (
+        matches_current_requirement,
+    )
 
     grant = GovernedContinuationApprovalGrant(
         grant_id="gcg_parent",
@@ -215,7 +217,19 @@ async def test_nexus_intake_governed_approval_without_nexus_ae_forwarding(
             pause_id=pause.pause_id,
             human_request_id=pause.human_request_id,
         )
-        await runner.run(task, lifecycle=TaskLifecycle(), trace_emitter=trace_emitter)
+        metric_scope = open_runtime_event_metric_scope_for_tests(
+            task_id=TASK_ID,
+            run_id=RUN_ID,
+        )
+        try:
+            await runner.run(
+                task,
+                lifecycle=TaskLifecycle(),
+                trace_emitter=trace_emitter,
+                runtime_event_metric_scope=metric_scope,
+            )
+        finally:
+            metric_scope.close()
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None

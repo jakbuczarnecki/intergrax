@@ -31,18 +31,22 @@ from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.execution_identity import (
     ActiveExecutionIdentity,
-    bind_active_execution_identity,
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
     mint_task_id,
-    reset_active_execution_identity,
 )
-from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_policy import (
+    EnforcementLevel,
+    PolicyAction,
+    PolicyDecision,
+)
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
-from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
+from intergrax.runtime.long_running.execution_tree_checkpoint import (
+    minimal_runtime_checkpoint,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.integrations.contracts.identity_provider import IdentityUser
 from intergrax.runtime.events.runtime_event import RuntimeEventType
@@ -58,17 +62,33 @@ from intergrax.runtime.human.models import (
     HumanResponseVerdict,
     build_human_decision_record,
 )
-from intergrax.runtime.human.pause import HumanApprovalResolutionError, HumanPauseCoordinator
-from intergrax.runtime.human.persistence_contract import InMemoryHumanDecisionPersistence
+from intergrax.runtime.human.pause import (
+    HumanApprovalResolutionError,
+    HumanPauseCoordinator,
+)
+from intergrax.runtime.human.persistence_contract import (
+    InMemoryHumanDecisionPersistence,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
 from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
 from intergrax.runtime.task.task import Task, TaskState
-from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
+from intergrax.runtime.task.task_contract import (
+    HumanApprovalResolution,
+    TaskPauseRecord,
+)
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
+from testing_support.runtime_event_metric_scope_for_tests import (
+    open_runtime_event_metric_scope_for_tests,
+)
+from tests.unit.runtime.human.test_g5b_hitl_resolution import (
+    bound_hitl_test_execution_identity,
+    build_hitl_test_continuation_capability,
+    establish_canonical_pause_for_hitl_test,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -86,7 +106,9 @@ _ROOT_EXECUTION_ID = mint_execution_id()
 _MUTATION_ID = "mut-resume-idt-c"
 
 
-def _identity_user_approver(*, tenant_id: str = TENANT_A, user_id: str = APPROVER_ID) -> HumanApproverEvidence:
+def _identity_user_approver(
+    *, tenant_id: str = TENANT_A, user_id: str = APPROVER_ID
+) -> HumanApproverEvidence:
     principal = HarnessAuthenticatedPrincipal(
         tenant_id=tenant_id,
         user_id=user_id,
@@ -123,7 +145,9 @@ def _paused_task(*, tenant_id: str = TENANT_A, user_id: str = TASK_OWNER) -> Tas
     return task
 
 
-def _checkpoint_with_pause(*, tenant_id: str = TENANT_A, user_id: str = TASK_OWNER) -> TaskCheckpoint:
+def _checkpoint_with_pause(
+    *, tenant_id: str = TENANT_A, user_id: str = TASK_OWNER
+) -> TaskCheckpoint:
     task = _paused_task(tenant_id=tenant_id, user_id=user_id)
     return TaskCheckpoint(
         checkpoint_id="chk-1",
@@ -170,7 +194,9 @@ class _FakeCheckpointStore:
     def __init__(self, checkpoint: TaskCheckpoint) -> None:
         self._checkpoint = checkpoint
 
-    def get_by_token(self, task_id: str, tenant_id: str, resume_token: str) -> TaskCheckpoint | None:
+    def get_by_token(
+        self, task_id: str, tenant_id: str, resume_token: str
+    ) -> TaskCheckpoint | None:
         if (
             task_id == self._checkpoint.task_id
             and tenant_id == self._checkpoint.tenant_id
@@ -313,7 +339,9 @@ def test_hitl_resume_no_verdict_does_not_require_approver() -> None:
 def test_hitl_resume_explicit_local_dev_approver_is_allowed() -> None:
     checkpoint = _checkpoint_with_pause()
     task = Task(tenant_id=TENANT_A, user_id=TASK_OWNER, message="x", task_id=TASK_ID)
-    approver = local_development_approver_evidence(tenant_id=TENANT_A, actor_id="dev-operator")
+    approver = local_development_approver_evidence(
+        tenant_id=TENANT_A, actor_id="dev-operator"
+    )
     _materialize_hitl_resume_input(
         task,
         checkpoint=checkpoint,
@@ -321,7 +349,9 @@ def test_hitl_resume_explicit_local_dev_approver_is_allowed() -> None:
         approver=approver,
     )
     assert task.options.human.approver == approver
-    assert task.options.human.approver.auth_mode is HumanApproverAuthMode.LOCAL_DEVELOPMENT
+    assert (
+        task.options.human.approver.auth_mode is HumanApproverAuthMode.LOCAL_DEVELOPMENT
+    )
 
 
 @pytest.mark.asyncio
@@ -333,7 +363,9 @@ async def test_governed_resume_missing_approver_fails_before_runner() -> None:
         "intergrax.applications._shared.task_control._resume_task_with_token",
         new_callable=AsyncMock,
     ) as resume_call:
-        with pytest.raises(HitlResumeValidationError, match="approver evidence required"):
+        with pytest.raises(
+            HitlResumeValidationError, match="approver evidence required"
+        ):
             await governed_resume_checkpoint_task(
                 runner,
                 task_id=TASK_ID,
@@ -371,7 +403,9 @@ async def test_governed_resume_host_missing_approver_fails_before_execute() -> N
 
 
 def test_c6_missing_pause_record_fails_closed() -> None:
-    bare_task = Task(tenant_id=TENANT_A, user_id=TASK_OWNER, message="x", task_id=TASK_ID)
+    bare_task = Task(
+        tenant_id=TENANT_A, user_id=TASK_OWNER, message="x", task_id=TASK_ID
+    )
     checkpoint = TaskCheckpoint(
         checkpoint_id="chk-2",
         task_id=TASK_ID,
@@ -395,7 +429,9 @@ def test_c6_missing_pause_record_fails_closed() -> None:
 def test_c7_wrong_tenant_approver_fails_closed() -> None:
     task = _paused_task(tenant_id=TENANT_B)
     approver = _identity_user_approver(tenant_id=TENANT_A)
-    with pytest.raises(HumanApprovalResolutionError, match="approver tenant_id mismatch"):
+    with pytest.raises(
+        HumanApprovalResolutionError, match="approver tenant_id mismatch"
+    ):
         _resolve_with_approver(task, HumanResponseVerdict.APPROVE, approver)
 
 
@@ -487,20 +523,45 @@ async def test_c13_event_evidence_contains_safe_approver() -> None:
         persist_human_decision=MagicMock(),
         execution_identity=ActiveExecutionIdentity(),
     )
+    execution_id = mint_execution_id()
+    hitl_continuation = build_hitl_test_continuation_capability()
     runner = NexusIntakeRunner(
         hitl=hitl,
         human_hooks=HumanApprovalHookCoordinator(MiddlewarePipeline()),
         publish=publish,
         restore_long_running=AsyncMock(),
         execution_identity=ActiveExecutionIdentity(),
+        hitl_continuation=hitl_continuation,
+    )
+    establish_canonical_pause_for_hitl_test(
+        task,
+        pause_id=PAUSE_ID,
+        human_request_id=HUMAN_REQUEST_ID,
+        capability=hitl_continuation,
+        run_id=RUN_ID,
+        attempt_id=ATTEMPT_ID,
+        execution_id=execution_id,
     )
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-    token = bind_active_execution_identity(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
+    metric_scope = open_runtime_event_metric_scope_for_tests(
+        task_id=TASK_ID,
+        run_id=RUN_ID,
+    )
     try:
-        await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+        with bound_hitl_test_execution_identity(
+            run_id=RUN_ID,
+            attempt_id=ATTEMPT_ID,
+            execution_id=execution_id,
+        ):
+            await runner.run(
+                task,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+                runtime_event_metric_scope=metric_scope,
+            )
     finally:
-        reset_active_execution_identity(token)
+        metric_scope.close()
 
     approval_events = [
         event
@@ -531,7 +592,11 @@ class _RecordingEvaluatorForIdt:
         self.calls: list[object] = []
 
     def evaluate(self, request: object) -> object:
-        from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+        from intergrax.contracts.runtime_policy import (
+            EnforcementLevel,
+            PolicyAction,
+            PolicyDecision,
+        )
 
         self.calls.append(request)
         return PolicyDecision(

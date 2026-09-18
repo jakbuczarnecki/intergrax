@@ -16,7 +16,10 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     reset_active_execution_identity,
 )
-from intergrax.contracts.execution_terminal import ExecutionTerminalOutcome, ExecutionTerminalRecord
+from intergrax.contracts.execution_terminal import (
+    ExecutionTerminalOutcome,
+    ExecutionTerminalRecord,
+)
 from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.cancellation.resume_admission import (
     TERMINALLY_CANCELLED_RESUME_MSG,
@@ -32,15 +35,31 @@ from intergrax.runtime.execution.execution_terminal.persistence import (
     CheckpointStoreExecutionTerminalStore,
 )
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
-from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
+from intergrax.runtime.long_running.execution_tree_checkpoint import (
+    minimal_runtime_checkpoint,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.scheduler import LongRunningScheduler, UnifiedTaskResumeExecutor
+from intergrax.runtime.long_running.scheduler import (
+    LongRunningScheduler,
+    UnifiedTaskResumeExecutor,
+)
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
-from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
-from intergrax.runtime.execution.attempt_lifecycle import AttemptLifecycleService, InMemoryAttemptLifecycleStore
+from testing_support.runtime_event_metric_scope_for_tests import (
+    open_runtime_event_metric_scope_for_tests,
+)
+from intergrax.runtime.nexus.response.final_response_composer import (
+    FinalResponseComposer,
+)
+from intergrax.runtime.execution.attempt_lifecycle import (
+    AttemptLifecycleService,
+    InMemoryAttemptLifecycleStore,
+)
 from intergrax.runtime.task.task import Task, TaskState
-from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
+from intergrax.runtime.task.task_contract import (
+    TaskExecutionOptions,
+    TaskLongRunningOptions,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -85,7 +104,9 @@ def test_terminal_cancellation_blocks_stale_checkpoint_resume() -> None:
         reason="operator_cancel",
     )
     assert is_checkpoint_resumable(checkpoint, execution_terminal=terminal) is False
-    with pytest.raises(CheckpointNotResumableError, match=TERMINALLY_CANCELLED_RESUME_MSG):
+    with pytest.raises(
+        CheckpointNotResumableError, match=TERMINALLY_CANCELLED_RESUME_MSG
+    ):
         assert_checkpoint_resumable(checkpoint, execution_terminal=terminal)
 
 
@@ -126,8 +147,12 @@ def test_terminal_cancellation_survives_process_restart(tmp_path) -> None:
     )
 
     restarted_store = SQLiteTaskCheckpointStore(db_path=db_path)
-    terminal_b = ExecutionTerminalService(CheckpointStoreExecutionTerminalStore(restarted_store))
-    loaded = restarted_store.get_by_token(task.task_id, _TENANT, checkpoint.resume_token)
+    terminal_b = ExecutionTerminalService(
+        CheckpointStoreExecutionTerminalStore(restarted_store)
+    )
+    loaded = restarted_store.get_by_token(
+        task.task_id, _TENANT, checkpoint.resume_token
+    )
     assert loaded is not None
     assert is_checkpoint_resumable(loaded, execution_terminal=terminal_b) is False
 
@@ -135,8 +160,12 @@ def test_terminal_cancellation_survives_process_restart(tmp_path) -> None:
 def test_idempotent_terminal_cancellation() -> None:
     task_id = str(mint_task_id())
     terminal = ExecutionTerminalService(InMemoryExecutionTerminalStore())
-    first = terminal.record_cancellation(tenant_id=_TENANT, task_id=task_id, reason="one")
-    second = terminal.record_cancellation(tenant_id=_TENANT, task_id=task_id, reason="two")
+    first = terminal.record_cancellation(
+        tenant_id=_TENANT, task_id=task_id, reason="one"
+    )
+    second = terminal.record_cancellation(
+        tenant_id=_TENANT, task_id=task_id, reason="two"
+    )
     assert first.outcome is ExecutionTerminalOutcome.CANCELLED
     assert second.outcome is ExecutionTerminalOutcome.CANCELLED
     assert second.reason == first.reason
@@ -162,7 +191,9 @@ def test_corrupt_terminal_record_fails_closed() -> None:
     checkpoint = _paused_checkpoint()
 
     class _CorruptTerminalStore(InMemoryExecutionTerminalStore):
-        def load_record(self, *, tenant_id: str, task_id: str) -> ExecutionTerminalRecord | None:
+        def load_record(
+            self, *, tenant_id: str, task_id: str
+        ) -> ExecutionTerminalRecord | None:
             return ExecutionTerminalRecord(
                 tenant_id=tenant_id,
                 task_id=task_id,
@@ -177,7 +208,12 @@ def test_corrupt_terminal_record_fails_closed() -> None:
 
 @pytest.mark.asyncio
 async def test_graph_runner_persists_terminal_cancellation_before_cleanup() -> None:
-    task = Task(task_id=str(mint_task_id()), tenant_id=_TENANT, user_id="user", message="cancel me")
+    task = Task(
+        task_id=str(mint_task_id()),
+        tenant_id=_TENANT,
+        user_id="user",
+        message="cancel me",
+    )
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     token = bind_active_execution_identity(
@@ -201,6 +237,10 @@ async def test_graph_runner_persists_terminal_cancellation_before_cleanup() -> N
     )
     runner.events.publish_from_task_state = AsyncMock()
     CancellationCoordinator.request(task, reason="operator_cancel")
+    metric_scope = open_runtime_event_metric_scope_for_tests(
+        task_id=task.task_id,
+        run_id=run_id,
+    )
     try:
         await runner._handle_cancellation(
             task,
@@ -210,8 +250,10 @@ async def test_graph_runner_persists_terminal_cancellation_before_cleanup() -> N
             retry_records=[],
             lifecycle=MagicMock(),
             trace_emitter=MagicMock(),
+            runtime_event_metric_scope=metric_scope,
         )
     finally:
+        metric_scope.close()
         reset_active_execution_identity(token)
 
     record = terminal.get_terminal_record(tenant_id=_TENANT, task_id=task.task_id)
@@ -248,7 +290,11 @@ async def test_scheduler_skips_resume_after_terminal_cancellation(tmp_path) -> N
         run_at_utc="2000-01-01T00:00:00+00:00",
     )
     store.schedule(entry)
-    processed = await scheduler.tick(now=__import__("datetime").datetime(2026, 1, 1, tzinfo=__import__("datetime").timezone.utc))
+    processed = await scheduler.tick(
+        now=__import__("datetime").datetime(
+            2026, 1, 1, tzinfo=__import__("datetime").timezone.utc
+        )
+    )
     assert processed == 0
     runner.run_task.assert_not_called()
 
@@ -257,11 +303,17 @@ async def test_scheduler_skips_resume_after_terminal_cancellation(tmp_path) -> N
 async def test_governed_resume_denies_cancelled_checkpoint() -> None:
     from dataclasses import dataclass, field
 
-    from intergrax.applications._shared.task_control import governed_resume_checkpoint_task
+    from intergrax.applications._shared.task_control import (
+        governed_resume_checkpoint_task,
+    )
     from intergrax.contracts.agent_run import RequestIdentity
     from intergrax.contracts.agent_run_enums import PrincipalType
     from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
-    from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+    from intergrax.contracts.runtime_policy import (
+        EnforcementLevel,
+        PolicyAction,
+        PolicyDecision,
+    )
     from intergrax.runtime.governance.control_plane_mutation_authorization import (
         ControlPlaneMutationAuthorizationBoundary,
     )

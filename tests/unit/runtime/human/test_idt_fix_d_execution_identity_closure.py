@@ -24,30 +24,52 @@ from intergrax.contracts.human_approver import local_development_approver_eviden
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.human.escalation import EscalationRouter
-from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator, human_approval_hook_context
+from intergrax.runtime.human.hitl_hooks import (
+    HumanApprovalHookCoordinator,
+    human_approval_hook_context,
+)
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
-from intergrax.runtime.human.persistence_contract import InMemoryHumanDecisionPersistence
-from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
+from intergrax.runtime.human.persistence_contract import (
+    InMemoryHumanDecisionPersistence,
+)
+from intergrax.runtime.long_running.execution_tree_checkpoint import (
+    minimal_runtime_checkpoint,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.human_response import persist_human_decision
 from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.contracts.decision_authoritative_exposure import (
+    ExposureUnevaluated,
+    ExposureUnevaluatedReason,
+)
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
-from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
+from intergrax.runtime.task.task_contract import (
+    HumanApprovalResolution,
+    TaskPauseRecord,
+)
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
+from testing_support.runtime_event_metric_scope_for_tests import (
+    open_runtime_event_metric_scope_for_tests,
+)
+from tests.unit.runtime.human.test_g5b_hitl_resolution import (
+    bound_hitl_test_execution_identity,
+    build_hitl_test_continuation_capability,
+    establish_canonical_pause_for_hitl_test,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 TASK_ID = mint_task_id()
 RUN_ID = mint_run_id()
 ATTEMPT_ID = mint_attempt_id()
+EXECUTION_ID = mint_execution_id()
 PAUSE_ID = "pause-distinct"
 HUMAN_REQUEST_ID = "hr-distinct"
 TENANT = "tenant-hitl"
@@ -113,7 +135,19 @@ def _build_intake_runner(
         published.append(event)
 
     async def finish_task(task: Task, *args: object, **kwargs: object) -> TaskResult:
-        return TaskResult(task_id=task.task_id, state=task.state)
+        exposure = (
+            ExposureUnevaluated(
+                scope=None, reason=ExposureUnevaluatedReason.NO_DECISION_GATE
+            )
+            if task.state
+            in {TaskState.FAILED, TaskState.COMPLETED, TaskState.CANCELLED}
+            else None
+        )
+        return TaskResult(
+            task_id=task.task_id,
+            state=task.state,
+            authoritative_decision_exposure=exposure,
+        )
 
     def persist_decision(
         task: Task,
@@ -140,17 +174,21 @@ def _build_intake_runner(
         persist_human_decision=persist_decision,
         execution_identity=execution_identity,
     )
+    hitl_continuation = build_hitl_test_continuation_capability()
     runner = NexusIntakeRunner(
         hitl=hitl,
         human_hooks=human_hooks,
         publish=publish,
         restore_long_running=AsyncMock(),
         execution_identity=execution_identity,
+        hitl_continuation=hitl_continuation,
     )
     return runner, published, hitl
 
 
-def _set_human_response(task: Task, *, verdict: HumanResponseVerdict, response_text: str) -> None:
+def _set_human_response(
+    task: Task, *, verdict: HumanResponseVerdict, response_text: str
+) -> None:
     task.options.human.response_text = response_text
     task.options.human.verdict = verdict.value
     task.options.human.pause_id = PAUSE_ID
@@ -186,22 +224,38 @@ def test_d2_approve_resolution_run_id() -> None:
 @pytest.mark.asyncio
 async def test_d3_reject_resolution_and_event_run_id() -> None:
     task = _paused_task()
-    _set_human_response(task, verdict=HumanResponseVerdict.REJECT, response_text="reject")
+    _set_human_response(
+        task, verdict=HumanResponseVerdict.REJECT, response_text="reject"
+    )
     store = InMemoryHumanDecisionPersistence()
     runner, published, _ = _build_intake_runner(human_store=store)
-    token = bind_active_execution_identity(
+    establish_canonical_pause_for_hitl_test(
+        task,
+        pause_id=PAUSE_ID,
+        human_request_id=HUMAN_REQUEST_ID,
+        capability=runner.hitl_continuation,
         run_id=RUN_ID,
         attempt_id=ATTEMPT_ID,
-        execution_id=mint_execution_id(),
+        execution_id=EXECUTION_ID,
+    )
+    metric_scope = open_runtime_event_metric_scope_for_tests(
+        task_id=TASK_ID,
+        run_id=RUN_ID,
     )
     try:
-        await runner.run(
-            task,
-            lifecycle=TaskLifecycle(),
-            trace_emitter=TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID),
-        )
+        with bound_hitl_test_execution_identity(
+            run_id=RUN_ID,
+            attempt_id=ATTEMPT_ID,
+            execution_id=EXECUTION_ID,
+        ):
+            await runner.run(
+                task,
+                lifecycle=TaskLifecycle(),
+                trace_emitter=TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID),
+                runtime_event_metric_scope=metric_scope,
+            )
     finally:
-        reset_active_execution_identity(token)
+        metric_scope.close()
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None
@@ -224,22 +278,38 @@ async def test_d3_reject_resolution_and_event_run_id() -> None:
 @pytest.mark.asyncio
 async def test_d4_escalate_resolution_and_event_run_id() -> None:
     task = _paused_task()
-    _set_human_response(task, verdict=HumanResponseVerdict.ESCALATE, response_text="escalate")
+    _set_human_response(
+        task, verdict=HumanResponseVerdict.ESCALATE, response_text="escalate"
+    )
     store = InMemoryHumanDecisionPersistence()
     runner, published, _ = _build_intake_runner(human_store=store)
-    token = bind_active_execution_identity(
+    establish_canonical_pause_for_hitl_test(
+        task,
+        pause_id=PAUSE_ID,
+        human_request_id=HUMAN_REQUEST_ID,
+        capability=runner.hitl_continuation,
         run_id=RUN_ID,
         attempt_id=ATTEMPT_ID,
-        execution_id=mint_execution_id(),
+        execution_id=EXECUTION_ID,
+    )
+    metric_scope = open_runtime_event_metric_scope_for_tests(
+        task_id=TASK_ID,
+        run_id=RUN_ID,
     )
     try:
-        await runner.run(
-            task,
-            lifecycle=TaskLifecycle(),
-            trace_emitter=TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID),
-        )
+        with bound_hitl_test_execution_identity(
+            run_id=RUN_ID,
+            attempt_id=ATTEMPT_ID,
+            execution_id=EXECUTION_ID,
+        ):
+            await runner.run(
+                task,
+                lifecycle=TaskLifecycle(),
+                trace_emitter=TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID),
+                runtime_event_metric_scope=metric_scope,
+            )
     finally:
-        reset_active_execution_identity(token)
+        metric_scope.close()
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None
@@ -261,22 +331,38 @@ async def test_d4_escalate_resolution_and_event_run_id() -> None:
 @pytest.mark.asyncio
 async def test_d5_human_approval_received_three_way_identity() -> None:
     task = _paused_task()
-    _set_human_response(task, verdict=HumanResponseVerdict.APPROVE, response_text="approve")
+    _set_human_response(
+        task, verdict=HumanResponseVerdict.APPROVE, response_text="approve"
+    )
 
     runner, published, _ = _build_intake_runner()
-    token = bind_active_execution_identity(
+    establish_canonical_pause_for_hitl_test(
+        task,
+        pause_id=PAUSE_ID,
+        human_request_id=HUMAN_REQUEST_ID,
+        capability=runner.hitl_continuation,
         run_id=RUN_ID,
         attempt_id=ATTEMPT_ID,
-        execution_id=mint_execution_id(),
+        execution_id=EXECUTION_ID,
+    )
+    metric_scope = open_runtime_event_metric_scope_for_tests(
+        task_id=TASK_ID,
+        run_id=RUN_ID,
     )
     try:
-        await runner.run(
-            task,
-            lifecycle=TaskLifecycle(),
-            trace_emitter=TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID),
-        )
+        with bound_hitl_test_execution_identity(
+            run_id=RUN_ID,
+            attempt_id=ATTEMPT_ID,
+            execution_id=EXECUTION_ID,
+        ):
+            await runner.run(
+                task,
+                lifecycle=TaskLifecycle(),
+                trace_emitter=TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID),
+                runtime_event_metric_scope=metric_scope,
+            )
     finally:
-        reset_active_execution_identity(token)
+        metric_scope.close()
 
     events = [
         event
@@ -293,7 +379,9 @@ async def test_d5_human_approval_received_three_way_identity() -> None:
 
 
 @pytest.mark.asyncio
-async def test_d6_checkpoint_resume_preserves_execution_identity(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_d6_checkpoint_resume_preserves_execution_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     paused = _paused_task()
     checkpoint = TaskCheckpoint(
         checkpoint_id="chk-idt-d",
@@ -327,11 +415,21 @@ async def test_d6_checkpoint_resume_preserves_execution_identity(monkeypatch: py
         captured["attempt_id"] = attempt_id
         captured["task_id"] = task.task_id
         return TaskResult(
-            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id or RUN_ID, state=TaskState.COMPLETED)
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=run_id or RUN_ID,
+            state=TaskState.COMPLETED,
+        )
 
     class _FakeCheckpointStore:
-        def get_by_token(self, task_id: str, tenant_id: str, resume_token: str) -> TaskCheckpoint | None:
-            if task_id == TASK_ID and tenant_id == TENANT and resume_token == checkpoint.resume_token:
+        def get_by_token(
+            self, task_id: str, tenant_id: str, resume_token: str
+        ) -> TaskCheckpoint | None:
+            if (
+                task_id == TASK_ID
+                and tenant_id == TENANT
+                and resume_token == checkpoint.resume_token
+            ):
                 return checkpoint
             return None
 
@@ -385,7 +483,9 @@ def test_d8b_human_approval_hook_context_uses_active_run_id() -> None:
         execution_id=mint_execution_id(),
     )
     try:
-        ctx = human_approval_hook_context(task, verdict=HumanResponseVerdict.APPROVE.value)
+        ctx = human_approval_hook_context(
+            task, verdict=HumanResponseVerdict.APPROVE.value
+        )
     finally:
         reset_active_execution_identity(token)
     assert ctx.task_id == TASK_ID
