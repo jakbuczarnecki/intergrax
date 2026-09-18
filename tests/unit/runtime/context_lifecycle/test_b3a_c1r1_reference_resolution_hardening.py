@@ -66,21 +66,49 @@ def _publish_in_workspace(
     )
 
 
-def _forged_reference(
+def _with_workspace(
     reference: OptimizationArtifactReference,
-    **overrides: object,
+    workspace_id: str,
 ) -> OptimizationArtifactReference:
-    fields = {
-        "tenant_id": reference.tenant_id,
-        "artifact_id": reference.artifact_id,
-        "artifact_lookup_key_hash": reference.artifact_lookup_key_hash,
-        "artifact_content_hash": reference.artifact_content_hash,
-        "artifact_type": reference.artifact_type,
-        "context_scope_id": reference.context_scope_id,
-        "workspace_id": reference.workspace_id,
-    }
-    fields.update(overrides)
-    return OptimizationArtifactReference(**fields)  # type: ignore[arg-type]
+    return OptimizationArtifactReference(
+        tenant_id=reference.tenant_id,
+        artifact_id=reference.artifact_id,
+        artifact_lookup_key_hash=reference.artifact_lookup_key_hash,
+        artifact_content_hash=reference.artifact_content_hash,
+        artifact_type=reference.artifact_type,
+        context_scope_id=reference.context_scope_id,
+        workspace_id=workspace_id,
+    )
+
+
+def _with_tenant(
+    reference: OptimizationArtifactReference,
+    tenant_id: str,
+) -> OptimizationArtifactReference:
+    return OptimizationArtifactReference(
+        tenant_id=tenant_id,
+        artifact_id=reference.artifact_id,
+        artifact_lookup_key_hash=reference.artifact_lookup_key_hash,
+        artifact_content_hash=reference.artifact_content_hash,
+        artifact_type=reference.artifact_type,
+        context_scope_id=reference.context_scope_id,
+        workspace_id=reference.workspace_id,
+    )
+
+
+def _with_context_scope(
+    reference: OptimizationArtifactReference,
+    context_scope_id: str,
+) -> OptimizationArtifactReference:
+    return OptimizationArtifactReference(
+        tenant_id=reference.tenant_id,
+        artifact_id=reference.artifact_id,
+        artifact_lookup_key_hash=reference.artifact_lookup_key_hash,
+        artifact_content_hash=reference.artifact_content_hash,
+        artifact_type=reference.artifact_type,
+        context_scope_id=context_scope_id,
+        workspace_id=reference.workspace_id,
+    )
 
 
 def test_valid_resolve_returns_artifact(reference_repository: OptimizationArtifactRepository) -> None:
@@ -95,7 +123,7 @@ def test_forged_workspace_resolve_returns_none(
     reference_repository: OptimizationArtifactRepository,
 ) -> None:
     reference = _publish_in_workspace(reference_repository, workspace_id="workspace-a")
-    forged = _forged_reference(reference, workspace_id="workspace-b")
+    forged = _with_workspace(reference, "workspace-b")
     assert reference_repository.resolve(forged) is None
     assert reference_repository.resolve(reference) is not None
 
@@ -104,7 +132,7 @@ def test_forged_tenant_resolve_returns_none(
     reference_repository: OptimizationArtifactRepository,
 ) -> None:
     reference = _publish_in_workspace(reference_repository, workspace_id="workspace-a")
-    forged = _forged_reference(reference, tenant_id="tenant-2")
+    forged = _with_tenant(reference, "tenant-2")
     assert reference_repository.resolve(forged) is None
 
 
@@ -112,7 +140,7 @@ def test_forged_context_scope_resolve_returns_none(
     reference_repository: OptimizationArtifactRepository,
 ) -> None:
     reference = _publish_in_workspace(reference_repository, workspace_id="workspace-a")
-    forged = _forged_reference(reference, context_scope_id="other-scope")
+    forged = _with_context_scope(reference, "other-scope")
     assert reference_repository.resolve(forged) is None
 
 
@@ -127,7 +155,22 @@ def test_wrong_workspace_invalidate_no_mutation(
     reference_repository: OptimizationArtifactRepository,
 ) -> None:
     reference = _publish_in_workspace(reference_repository, workspace_id="workspace-a")
-    forged = _forged_reference(reference, workspace_id="workspace-b")
+    forged = _with_workspace(reference, "workspace-b")
+    assert reference_repository.invalidate_artifact(forged, reason="stale") is None
+    resolved = reference_repository.resolve(reference)
+    assert resolved is not None
+    assert resolved.metadata.status is ReusableArtifactStatus.VALIDATED
+
+
+def test_wrong_tenant_invalidate_no_mutation(
+    reference_repository: OptimizationArtifactRepository,
+) -> None:
+    reference = _publish_in_workspace(
+        reference_repository,
+        workspace_id="workspace-a",
+        tenant_id="tenant-1",
+    )
+    forged = _with_tenant(reference, "tenant-2")
     assert reference_repository.invalidate_artifact(forged, reason="stale") is None
     resolved = reference_repository.resolve(reference)
     assert resolved is not None
@@ -145,7 +188,22 @@ def test_wrong_workspace_retire_no_mutation(
     reference_repository: OptimizationArtifactRepository,
 ) -> None:
     reference = _publish_in_workspace(reference_repository, workspace_id="workspace-a")
-    forged = _forged_reference(reference, workspace_id="workspace-b")
+    forged = _with_workspace(reference, "workspace-b")
+    assert reference_repository.retire_artifact(forged, reason="retired") is None
+    resolved = reference_repository.resolve(reference)
+    assert resolved is not None
+    assert resolved.metadata.status is ReusableArtifactStatus.VALIDATED
+
+
+def test_wrong_tenant_retire_no_mutation(
+    reference_repository: OptimizationArtifactRepository,
+) -> None:
+    reference = _publish_in_workspace(
+        reference_repository,
+        workspace_id="workspace-a",
+        tenant_id="tenant-1",
+    )
+    forged = _with_tenant(reference, "tenant-2")
     assert reference_repository.retire_artifact(forged, reason="retired") is None
     resolved = reference_repository.resolve(reference)
     assert resolved is not None
