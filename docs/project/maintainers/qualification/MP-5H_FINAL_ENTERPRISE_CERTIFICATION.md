@@ -197,3 +197,18 @@ MP-6 — NEXT
 ---
 
 > Końcowa certyfikacja MP-5H musi zostać niezależnie zweryfikowana na podstawie rzeczywistego kodu z GitHuba, pełnego przepływu `principal identity → authority → visibility policy → effective scope → MP-5D source ports → MP-5F adapters → public source-domain read boundaries → truthful candidates → ContextViewScopeCompatibilityPolicy → deterministic composer → final ContextView`, ownership boundaries, pluginability wszystkich semantycznie zmiennych mechanizmów, tenant/workspace/principal/resource isolation, fail-closed behavior, reference-only semantics, deterministyczności, architecture gates, dokumentacji oraz pełnego commitu. Sam raport Cursor AI nie jest podstawą do uznania MP-5H ani całego MP-5 za finalnie enterprise-certified.
+
+---
+
+## Post-B4 Delta Recertification (MP-5H-D1)
+
+Historical certification above audited revision **`d0aee066837a5521b6b8e8b87c5ee172a2d38ba7`**. Final B4 hardening landed after that baseline (`38c5baf83`, `094ccecdd`).
+
+**Current enterprise baseline:** see [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md) for the independent delta recertification record and **new certified SHA** on `development`.
+
+```text
+MP-5H — CLOSED / FINAL CERTIFICATION PASSED (historical at d0aee066)
+MP-5H-D1 — CLOSED / CERTIFIED (post-B4 baseline — see D1 doc)
+MP-5 — ENTERPRISE CERTIFIED / CLOSED
+MP-6 — NEXT
+```
