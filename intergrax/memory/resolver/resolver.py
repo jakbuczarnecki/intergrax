@@ -19,7 +19,7 @@ from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemo
 from intergrax.memory.contracts.long_horizon_memory import LongHorizonMemoryStore
 from intergrax.memory.contracts.procedural_memory import ProcedureMemoryStore
 from intergrax.memory.user_profile_store import UserProfileStore
-from intergrax.runtime.nexus.session.session_storage import SessionStorage
+from intergrax.memory.contracts.session_storage import SessionStorage
 
 
 def _user_profile_factory_kwargs(ctx: MemoryStoreMaterializationContext) -> dict[str, object]:

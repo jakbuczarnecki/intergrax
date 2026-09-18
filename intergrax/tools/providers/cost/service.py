@@ -10,7 +10,7 @@ from intergrax.runtime.architecture.cost_quota import (
     QuotaUsageRequest,
     evaluate_quota_enforcement,
 )
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.run_budget import RunBudget
 from intergrax.tools.providers.cost.contracts import (
     CostAnomalyOutput,
     CostCheckQuotaInput,

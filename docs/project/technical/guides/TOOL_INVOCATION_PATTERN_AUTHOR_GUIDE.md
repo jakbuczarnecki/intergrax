@@ -49,7 +49,7 @@ Shipped patterns (no EP required): `single_pass`, `bounded_react`, `parallel_bat
 
 ## 2. Public contract
 
-Import from `intergrax.runtime.nexus.tools.tool_invocation_pattern`:
+Import from `intergrax.tools.invocation_pattern` (Tools-domain public ABI; do **not** import Nexus execution types):
 
 ### `ToolInvocationPattern` protocol
 
@@ -62,19 +62,19 @@ class ToolInvocationPattern(Protocol):
     def execute(
         self,
         *,
-        state: RuntimeState,
-        invoker: RuntimeToolInvoker,
-        planner: ToolPlannerProtocol,
+        context: ToolInvocationPatternContext,
+        invoker: ToolInvocationInvokerPort,
+        planner: ToolInvocationPlannerPort,
         plan: ToolCallPlan | None,
         allowed_tool_ids: Sequence[str] | None,
         max_iterations: int,
         planner_input: str | list[ChatMessage],
-    ) -> ToolInvocationResult: ...
+    ) -> ToolInvocationPatternResult: ...
 ```
 
-### `ToolInvocationResult`
+### `ToolInvocationPatternResult`
 
-Dataclass with `tool_traces`, `loop_iterations`, `stop_reason`, `pattern_id`, `appended_messages`, `used_native_tool_messages`, optional `aggregate`.
+Dataclass with `loop_iterations`, `stop_reason`, `pattern_id`, `appended_messages`, `used_native_tool_messages`, `used_ce_tool_feedback`. Nexus maps this into internal execution telemetry after `execute` returns.
 
 `ToolInvocationStopReason` literals include `empty_tool_calls`, `max_iterations`, `budget_exceeded`, `planner_final_answer`, `legacy_single_pass`.
 

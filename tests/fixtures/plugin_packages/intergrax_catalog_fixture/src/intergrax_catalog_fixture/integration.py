@@ -11,8 +11,11 @@ from intergrax.integrations.contracts.key_value_cache import KeyValueCache
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.examples.custom_memory_kv.adapter import InProcessKeyValueCache
 
+from intergrax_catalog_fixture.integration_contract import CONTRACT_SPECS
+
 
 class FixtureKvIntegrationPlugin:
+    CONTRACT_SPECS = CONTRACT_SPECS
     """Distinct slug from ``custom_memory_kv`` for entry-point-only registration tests."""
 
     @classmethod

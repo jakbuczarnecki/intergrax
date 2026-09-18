@@ -6,8 +6,8 @@ from typing import Any
 
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.user_profile_store import UserProfileStore
+from intergrax.memory.contracts.session_storage import SessionStorage
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_storage import SessionStorage
 
 
 class FixtureExternalUserProfileStore(InMemoryUserProfileStore):

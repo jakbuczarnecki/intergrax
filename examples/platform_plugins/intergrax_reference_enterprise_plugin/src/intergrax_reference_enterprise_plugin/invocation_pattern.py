@@ -6,11 +6,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationResult
-from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.tools.core.tool_plan import ToolCallPlan
+from intergrax.tools.invocation_pattern.contracts import (
+    ToolInvocationInvokerPort,
+    ToolInvocationPatternContext,
+    ToolInvocationPatternResult,
+    ToolInvocationPlannerPort,
+)
 
 
 class ReferenceEnterpriseSinglePassPattern:
@@ -23,16 +25,16 @@ class ReferenceEnterpriseSinglePassPattern:
     def execute(
         self,
         *,
-        state: RuntimeState,
-        invoker: RuntimeToolInvoker,
-        planner: ToolPlannerProtocol,
+        context: ToolInvocationPatternContext,
+        invoker: ToolInvocationInvokerPort,
+        planner: ToolInvocationPlannerPort,
         plan: ToolCallPlan | None,
         allowed_tool_ids: Sequence[str] | None,
         max_iterations: int,
         planner_input: str | list[object],
-    ) -> ToolInvocationResult:
-        _ = state, invoker, planner, plan, allowed_tool_ids, max_iterations, planner_input
-        return ToolInvocationResult(
+    ) -> ToolInvocationPatternResult:
+        _ = context, invoker, planner, plan, allowed_tool_ids, max_iterations, planner_input
+        return ToolInvocationPatternResult(
             pattern_id="reference_enterprise_single_pass",
             stop_reason="empty_tool_calls",
         )

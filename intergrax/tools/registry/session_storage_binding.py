@@ -11,7 +11,7 @@ import inspect
 from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 
-from intergrax.runtime.nexus.session.session_storage import SessionStorage
+from intergrax.memory.contracts.session_storage import SessionStorage
 from intergrax.tools.registry.runtime_bindings import SessionStorageBinding
 
 

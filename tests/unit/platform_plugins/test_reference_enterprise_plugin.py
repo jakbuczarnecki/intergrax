@@ -118,11 +118,14 @@ def test_context_catalog_discovers_reference_enterprise_plugin() -> None:
 
 
 def test_tool_invocation_pattern_loads_offline() -> None:
-    pattern = load_tool_invocation_pattern("reference_enterprise_single_pass")
+    from intergrax.tools.invocation_pattern.contracts import ToolInvocationPatternContext
+    from intergrax.tools.invocation_pattern.registry import load_tool_invocation_pattern as load_public_pattern
+
+    pattern = load_public_pattern("reference_enterprise_single_pass")
     assert pattern is not None
     assert pattern.pattern_id == "reference_enterprise_single_pass"
     result = pattern.execute(
-        state=object(),  # type: ignore[arg-type]
+        context=ToolInvocationPatternContext(run_id="offline-run"),
         invoker=object(),  # type: ignore[arg-type]
         planner=object(),  # type: ignore[arg-type]
         plan=None,
