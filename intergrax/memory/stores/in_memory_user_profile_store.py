@@ -20,6 +20,13 @@ class InMemoryUserProfileStore(UserProfileStore):
       - experiments and notebooks.
 
     This implementation does NOT provide durability or cross-process sharing.
+
+    Concurrency (reference / test provider):
+    - Not thread-safe.
+    - Not safe under overlapping async mutations; concurrent mutation MUST be
+      serialized by the caller.
+    - Not process-safe.
+    - No lock, CAS, or transaction mechanism.
     """
 
     def __init__(self) -> None:

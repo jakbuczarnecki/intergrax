@@ -23,6 +23,12 @@ class UserProfileStore(Protocol):
     - implement LLM prompt logic,
     - perform RAG operations,
     - decide how profile is injected into prompts.
+
+    Concurrency:
+    - Implementations MUST document whether they are thread-safe, safe under
+      overlapping async mutations, and process-safe.
+    - Callers MUST serialize concurrent mutations unless the implementation
+      explicitly documents a stronger guarantee.
     """
 
     async def get_profile(

@@ -12,6 +12,13 @@ from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersist
 
 
 class InMemoryTaskMemoryStore(TaskMemoryPersistence):
+    """
+    Reference in-memory backend for tests and local lab.
+
+    Concurrency: not thread-safe; not safe under overlapping mutations;
+    caller MUST serialize concurrent access. Not process-safe.
+    """
+
     def __init__(self) -> None:
         self._records: Dict[Tuple[str, str, str, str], TaskMemoryRecord] = {}
 

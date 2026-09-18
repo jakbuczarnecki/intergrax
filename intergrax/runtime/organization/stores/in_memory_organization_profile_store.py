@@ -20,6 +20,12 @@ class InMemoryOrganizationProfileStore(OrganizationProfileStore):
       - experiments and notebooks.
 
     This implementation does NOT provide durability or cross-process sharing.
+
+    Concurrency (reference / test provider):
+    - Not thread-safe.
+    - Not safe under overlapping async mutations; concurrent mutation MUST be
+      serialized by the caller.
+    - Not process-safe.
     """
 
     def __init__(self) -> None:

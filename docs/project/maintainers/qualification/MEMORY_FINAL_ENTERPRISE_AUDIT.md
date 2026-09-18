@@ -1013,3 +1013,159 @@ See security/lifecycle matrices above. **Episodic** remains **GAP** (placeholder
 **Readiness:** READY FOR MEM-FINAL-AUDIT-4 AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-3 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-4.
+
+---
+
+# MEM-FINAL-AUDIT-3-R — Concurrency Semantics & Parallel-Domain Evidence Closure
+
+**Independent audit correction** (baseline audited SHA `5b4586cd004c4bcc2a04518682e4abae7ee77f4e`).
+
+**AUDIT-3-R execution HEAD (before commit):** `828364c6a34f6259b5aa09294ac97978ffd1cd97` · branch `development` · baseline ancestor **YES** · working tree clean.
+
+## AUDIT-3-R — Baseline gaps closed
+
+| Gap | Resolution |
+| --- | --- |
+| R3-1 InMemoryUserProfileStore concurrency overstated | Explicit caller-serialized contract on `UserProfileStore` + `InMemoryUserProfileStore`; doc/proof tests |
+| R3-2 Task Memory resilience evidence | Store-level scope/lifecycle/idempotency/failure proofs + existing MemoryView policy tests |
+| R3-3 Organization Memory resilience evidence | Org isolation + failure semantics + revision N/A + caller-serialized contract |
+
+Historical **AUDIT-3** verdict above remains on record; **R** supersedes concurrency matrix rows and parallel-domain certification precision.
+
+## AUDIT-3-R — InMemoryUserProfileStore contract analysis
+
+| Question | Answer |
+| -------- | ------ |
+| Promises concurrent-safe mutations? | **NO** (reference provider) |
+| Caller must serialize? | **YES** for overlapping mutations |
+| Semantics provider-defined? | **YES** — protocol requires each implementation to document its concurrency model |
+
+**Final classification:** **REFERENCE STORE — CALLER-SERIALIZED CONCURRENCY CONTRACT**
+
+## AUDIT-3-R — Caller analysis (InMemoryUserProfileStore)
+
+Supported product/lab paths materialize **SQLite** or plugin-backed durable stores (`memory_wiring`, MEM-ENT-13). **InMemoryUserProfileStore** is used for unit/integration harnesses and explicit in-memory profiles — not as the default production durability path. Overlapping mutations are possible in tests/dev; contract + composition expect caller serialization for the reference store.
+
+## AUDIT-3-R — Task Memory evidence
+
+**Surfaces:** `TaskMemoryPersistence` · `InMemoryTaskMemoryStore` · `SQLiteTaskMemoryStore` · `TaskMemoryCoordinator` · `PolicyScopedMemoryView` / `MemoryAccessPolicy` · `task_memory_wiring`.
+
+### Security matrix — Task
+
+| Gate | Result | Evidence |
+| ---- | ------ | -------- |
+| tenant isolation | **PASS** | `test_task_memory_store_tenant_isolation_at_persistence_layer` · ENT-1R MemoryView tenant conflict |
+| task isolation | **PASS** | persistence layer + `test_task_scope_uses_execution_context_task_id_only` |
+| policy enforced | **PASS** | `test_mem_ent_1r_memory_view_canonical_scope.py` |
+| failed mutation no false success | **PASS** | `FailingTaskMemoryStore` AUDIT-3-R tests |
+| concurrency semantics explicit | **PASS** | contract docstrings + `test_in_memory_task_store_documents_caller_serialized_concurrency` |
+
+### Lifecycle matrix — Task
+
+| Operation | Semantics | Idempotent? | Failure behavior |
+| --------- | --------- | ----------- | ---------------- |
+| write (coordinator) | REPLACE by tenant/task/namespace/key; preserves `record_id` on update | duplicate write replaces value (same key) | `ValueError` on limits before store; store errors propagate |
+| read | keyed lookup | yes | typed `RuntimeError` from failing store surfaces |
+| delete | removes slot; returns `bool` | second delete on missing key → `False` | failure before delete leaves row |
+| clear_task | drops all rows for task | no | store contract |
+
+**Task final verdict:** **SECURITY/LIFECYCLE/RESILIENCE CERTIFIED** (parallel domain; in-memory reference store concurrency = caller-serialized, not concurrent-safe)
+
+## AUDIT-3-R — Organization Memory evidence
+
+**Surfaces:** `OrganizationProfileStore` · `InMemoryOrganizationProfileStore` · `SQLiteOrganizationProfileStore` · `OrganizationProfileManager` · `memory_wiring`.
+
+### Security matrix — Organization
+
+| Gate | Result | Evidence |
+| ---- | ------ | -------- |
+| tenant isolation | **N/A** | scope authority is `organization_id` at store contract (parallel domain) |
+| org isolation | **PASS** | `test_organization_profiles_isolated_by_organization_id` |
+| manager/store ownership | **PASS** | manager delegates to store; failure tests via manager |
+| failed mutation no false success | **PASS** | `FailingOrganizationProfileStore` |
+| concurrency semantics explicit | **PASS** | protocol + in-memory docstring tests |
+
+### Lifecycle matrix — Organization
+
+| Operation | Semantics | Idempotent? | Failure behavior |
+| --------- | --------- | ----------- | ---------------- |
+| get | default aggregate if missing | yes | exception propagates |
+| save | full aggregate overwrite | yes | no persist on failure |
+| delete | remove; get recreates default | delete unknown id tolerated | exception propagates |
+| revision / stale update | **N/A** | — | contract does not expose optimistic revision semantics |
+
+**Organization final verdict:** **SECURITY/LIFECYCLE/RESILIENCE CERTIFIED** (parallel domain; tenant N/A at store; revision N/A)
+
+## AUDIT-3-R — Concurrency certification matrix (corrected)
+
+| Store | Thread-safe | Async concurrent-safe | Process-safe | Mechanism | Caller responsibility |
+| ----- | ----------- | --------------------- | ------------ | --------- | --------------------- |
+| InMemoryUserProfileStore | NO | NO (caller-serialized) | NO | none | serialize overlapping mutations |
+| SQLite user profile | YES (DB) | executor-bound | file-scoped | SQLite TX/lock | follow provider connection rules |
+| InMemoryEntityTemporal | YES (ENT-14) | sync barrier tests | NO | revision compare | per ENT-14 |
+| InMemoryProcedural | YES (ENT-14) | sync | NO | revision | per ENT-14 |
+| InMemoryLongHorizon | YES (ENT-14) | sync | NO | revision | per ENT-14 |
+| InMemoryTaskMemoryStore | NO | NO (caller-serialized) | NO | none | serialize overlapping mutations |
+| SQLiteTaskMemoryStore | YES (DB) | connection per op | file-scoped | SQLite TX | lab/product wiring |
+| InMemoryOrganizationProfileStore | NO | NO (caller-serialized) | NO | none | serialize overlapping mutations |
+| SQLiteOrganizationProfileStore | YES (DB) | async methods; sync sqlite3 | file-scoped | SQLite TX | lab/product wiring |
+| InMemorySessionTurnIndex | NO | NO (caller-serialized) | NO | none | serialize (unchanged) |
+
+## AUDIT-3-R — Changes to prior AUDIT-3 classifications
+
+| Surface | Old | New | Reason |
+| ------- | --- | --- | ------ |
+| InMemoryUserProfileStore async-safe | yes (async API) | **NO — caller-serialized** | R3-1 contract closure |
+| InMemoryTaskMemoryStore concurrency | CERTIFIED | **caller-serialized reference** | no lock/CAS proof |
+| Task Memory overall | CERTIFIED (thin) | **CERTIFIED with bounded R proofs** | failure + persistence scope tests added |
+| Organization Memory overall | CERTIFIED (thin) | **CERTIFIED with bounded R proofs** | failure + isolation tests added |
+| Hard invariants banner | All hard invariants PASS | **All canonical USER Memory hard invariants PASS; parallel domains certified separately per matrices** | precision |
+
+**Unchanged:** Episodic **GAP** · STI **READY BUT NOT FULLY PROVEN** · Conversational **LEGACY**
+
+## AUDIT-3-R — Hard invariants (precise wording)
+
+All **canonical USER Memory** hard invariants **PASS** (identity, scope, governance order, canonical authority, projection isolation, revision integrity for governed stores, lineage, reconciliation scope).
+
+**Parallel domains** (Task, Organization) certified separately per matrices above; org store does not participate in user canonical plane by design.
+
+## AUDIT-3-R — Test execution
+
+| Suite | Result |
+| ----- | ------ |
+| `test_mem_audit3r_concurrency_semantics.py` + parallel-domain R tests + AUDIT-3 guards | **22 passed** |
+| `tests/unit/memory/**` + `tests/integration/memory/**` | **615 passed** |
+| `tests/unit/runtime/task_memory/**` + org unit + org integration | **53 passed** |
+| MEM-XINT-6 / known MEM-XINT set | **PRE_EXISTING / PROVEN_UNRELATED** (not re-run in R scope) |
+
+**New regressions:** NONE
+
+## AUDIT-3-R — Changes made
+
+| File | Purpose |
+| ---- | ------- |
+| `intergrax/memory/user_profile_store.py` | Provider concurrency documentation requirement |
+| `intergrax/memory/stores/in_memory_user_profile_store.py` | Caller-serialized reference semantics |
+| `intergrax/runtime/task_memory/persistence_contract.py` | Task store concurrency note |
+| `intergrax/runtime/task_memory/stores/memory_task_memory_store.py` | In-memory task reference semantics |
+| `intergrax/runtime/organization/organization_profile_store.py` | Org concurrency + scope note |
+| `intergrax/runtime/organization/stores/in_memory_organization_profile_store.py` | Caller-serialized reference semantics |
+| `tests/unit/memory/test_mem_audit3r_concurrency_semantics.py` | R3-1 contract proofs |
+| `tests/unit/runtime/task_memory/test_mem_audit3r_parallel_domain_evidence.py` | R3-2 evidence |
+| `tests/unit/runtime/organization/test_mem_audit3r_parallel_domain_evidence.py` | R3-3 evidence |
+
+## AUDIT-3-R — P0 / P1 / P2
+
+| Priority | Item |
+| -------- | ---- |
+| **P0** | NONE |
+| **P1** | NONE within AUDIT-3 scope |
+| **P2** | Real-vendor process concurrency deferred to AUDIT-5 · ambiguous remote commit deferred · in-memory aggregate in-place mutation before failed save is caller-visible (documented overwrite model) |
+
+## AUDIT-3-R — Final verdict
+
+**PASS — MEM-FINAL-AUDIT-3 FULLY CLOSED** (pending independent GitHub SHA verification of this R commit before AUDIT-4).
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-4 AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-3-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-4.

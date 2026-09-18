@@ -17,6 +17,11 @@ class TaskMemoryPersistence(ABC):
 
     Implementations: in-memory (tests), SQLite (lab). Nexus and future
     ``MemoryView`` (I.2) depend on this contract — not on a vendor backend.
+
+    Concurrency:
+    - Implementations MUST document thread/async/process safety.
+    - ``InMemoryTaskMemoryStore`` is caller-serialized (reference provider).
+    - ``SQLiteTaskMemoryStore`` relies on SQLite connection locking/transactions.
     """
 
     @abstractmethod

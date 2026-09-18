@@ -25,6 +25,11 @@ class OrganizationProfileStore(Protocol):
     - implement LLM prompt logic,
     - perform RAG operations,
     - decide how the profile is injected into prompts.
+
+    Concurrency:
+    - Implementations MUST document thread/async/process safety.
+    - Scope authority is ``organization_id`` (parallel domain; not tenant-keyed
+      at this store contract).
     """
 
     async def get_profile(self, organization_id: str) -> OrganizationProfile:
