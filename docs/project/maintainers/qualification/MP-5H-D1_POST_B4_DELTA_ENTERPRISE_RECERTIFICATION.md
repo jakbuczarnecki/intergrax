@@ -216,7 +216,7 @@ BLOCKING FINDINGS: NONE
 
 ## 23. New certification baseline SHA
 
-Certification applies to **`development` HEAD at D1 commit** (recorded in git after this document lands). Historical MP-5H baseline remains `d0aee066`; B4 anchors `38c5baf83` + `094ccecdd` are contained in the certified ancestry.
+**`MP5H_D1_CERTIFIED_BASELINE`:** `8e8b8025f242d658c8b6c93390a87060ec635442` (`docs(context-view): recertify MP-5 after final B4 hardening`). Parent: `bd18fc39d12b3e014cb4313d30d98f2967c54548`. Historical MP-5H baseline remains `d0aee066`; B4 anchors `38c5baf83` + `094ccecdd` are contained in the certified ancestry.
 
 ---
 
