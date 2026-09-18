@@ -206,20 +206,30 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-08 | PostgreSQL | Memory bundle | implementation | P3 | post-RFC |
 
 **P0:** NONE  
-**P1:** NONE (GAP-4-01 closed in MEM-FINAL-AUDIT-5A — production persistent USER/LTM fails closed on reference/unknown/non-qualified providers)
+**P1:** NONE after MEM-FINAL-AUDIT-5A-R (GAP-5A-01 self-certification closed — admission uses trusted evidence registry)
 
 ## MEM-FINAL-AUDIT-5A — Production admission
 
 | Check | Result |
 | ----- | ------ |
 | Admission owner | `applications/_shared/memory_provider_admission.py` (not MemoryControlPlane) |
-| Policy inputs | `MemoryStoreProviderMetadata` + `MemoryProviderQualificationStatus` (no class-name / vendor switches) |
+| Policy inputs | `MemoryStoreProviderMetadata` durability/reference + **trusted** `MemoryProviderQualificationEvidence` (declared qual **not** trusted) |
 | Overlay ordering | Admission after external plugin overlay on final `user_profile_store` |
 | LAB reference InMemory | Allowed when `ApplicationProfile.LAB` |
 | PRODUCT memory disabled | InMemory baseline allowed (store not admission-gated) |
 | PRODUCT persistent + InMemory | `MemoryProviderAdmissionError` |
-| SQLite qualified | Admitted when metadata `QUALIFIED` + `DURABLE` |
-| DocumentStore UserProfile (Mongo path) | Durable metadata but `NOT_QUALIFIED` until AUDIT-5C — **fail-closed** when persistent flags on |
+| SQLite PRODUCT | Requires trusted `USER_PROFILE_STORE` evidence (`QUALIFIED`); self-declared qual ignored |
+| DocumentStore UserProfile (Mongo path) | **fail-closed** without trusted evidence until AUDIT-5C |
+
+## MEM-FINAL-AUDIT-5A-R — Trusted qualification evidence
+
+| Check | Result |
+| ----- | ------ |
+| Evidence contract | `intergrax/memory/contracts/provider_qualification_evidence.py` |
+| Runner → evidence | `qualification_evidence_from_result` |
+| Registry | `MemoryProviderQualificationEvidenceRegistry` (+ `InMemoryMemoryProviderQualificationEvidenceRegistry`) |
+| Composition injection | `qualification_evidence_registry` on `resolve_memory_platform_wiring` |
+| Spoof test | Self-declared `QUALIFIED` without registry → `qualification_evidence_missing` |
 
 ---
 

@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Host-owned memory provider admission (MEM-FINAL-AUDIT-5A)."""
+"""Host-owned memory provider admission (MEM-FINAL-AUDIT-5A / 5A-R)."""
 
 from __future__ import annotations
 
@@ -15,9 +15,28 @@ from intergrax.memory.contracts.provider_admission import (
     MemoryProviderDurability,
     UserProfileStoreProviderClassification,
     classify_user_profile_store_provider,
+    evaluate_production_persistent_user_profile_admission,
+    lookup_trusted_user_profile_qualification_evidence,
 )
-from intergrax.memory.contracts.provider_qualification import MemoryProviderQualificationStatus
+from intergrax.memory.contracts.provider_qualification_evidence import (
+    MemoryProviderQualificationEvidenceLookup,
+    MemoryProviderQualificationEvidenceRegistry,
+    MemoryProviderQualificationEvidenceResolveStatus,
+)
 from intergrax.memory.user_profile_store import UserProfileStore
+
+
+class _EmptyQualificationEvidenceRegistry:
+    def resolve(self, provider_id: str, capability: object, provider_version: str | None = None):
+        from intergrax.memory.contracts.provider_qualification_evidence import (
+            MemoryProviderQualificationEvidenceLookup,
+            MemoryProviderQualificationEvidenceResolveStatus,
+        )
+
+        _ = (provider_id, capability, provider_version)
+        return MemoryProviderQualificationEvidenceLookup(
+            resolve_status=MemoryProviderQualificationEvidenceResolveStatus.MISSING,
+        )
 
 
 def persistent_canonical_user_profile_memory_required(
@@ -36,7 +55,7 @@ class MemoryProviderAdmissionDecision:
 
 
 class MemoryProviderAdmissionPolicy(Protocol):
-    """Replaceable admission strategy; hard invariant enforced by default product policy."""
+    """Replaceable admission strategy for non-product paths (LAB / harness)."""
 
     def evaluate_user_profile_store(
         self,
@@ -46,7 +65,7 @@ class MemoryProviderAdmissionPolicy(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class DefaultProductionMemoryProviderAdmissionPolicy:
-    """Production persistent USER/LTM requires durable, non-reference, qualified provider."""
+    """LAB harness: admission not enforced when ``admission_enforced`` is false."""
 
     admission_enforced: bool
 
@@ -65,22 +84,17 @@ class DefaultProductionMemoryProviderAdmissionPolicy:
     ) -> MemoryProviderAdmissionDecision:
         if not self.admission_enforced:
             return MemoryProviderAdmissionDecision(admitted=True, reason_code=None)
-        if classification.reference_only:
-            return MemoryProviderAdmissionDecision(
-                admitted=False,
-                reason_code=MemoryProviderAdmissionReasonCode.REFERENCE_PROVIDER_NOT_ADMISSIBLE,
-            )
-        if classification.durability is not MemoryProviderDurability.DURABLE:
-            return MemoryProviderAdmissionDecision(
-                admitted=False,
-                reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_NOT_DURABLE,
-            )
-        if classification.qualification_status is not MemoryProviderQualificationStatus.QUALIFIED:
-            return MemoryProviderAdmissionDecision(
-                admitted=False,
-                reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_NOT_QUALIFIED,
-            )
-        return MemoryProviderAdmissionDecision(admitted=True, reason_code=None)
+        missing = MemoryProviderQualificationEvidenceLookup(
+            resolve_status=MemoryProviderQualificationEvidenceResolveStatus.MISSING,
+        )
+        evaluation = evaluate_production_persistent_user_profile_admission(
+            classification,
+            missing,
+        )
+        return MemoryProviderAdmissionDecision(
+            admitted=evaluation.admitted,
+            reason_code=evaluation.reason_code,
+        )
 
 
 def validate_memory_platform_wiring_admission(
@@ -88,14 +102,43 @@ def validate_memory_platform_wiring_admission(
     user_profile_store: UserProfileStore,
     *,
     policy: MemoryProviderAdmissionPolicy | None = None,
+    qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
 ) -> None:
     """Pure admission gate on final user profile store; no provider mutation."""
     if not persistent_canonical_user_profile_memory_required(env):
         return
+
+    classification = classify_user_profile_store_provider(user_profile_store)
+    registry = qualification_evidence_registry or _EmptyQualificationEvidenceRegistry()
+
+    if env.application_profile is ApplicationProfile.PRODUCT:
+        evidence_lookup = lookup_trusted_user_profile_qualification_evidence(
+            registry,
+            classification,
+        )
+        evaluation = evaluate_production_persistent_user_profile_admission(
+            classification,
+            evidence_lookup,
+        )
+        if not evaluation.admitted:
+            reason = evaluation.reason_code or MemoryProviderAdmissionReasonCode.PROVIDER_MISSING
+            raise MemoryProviderAdmissionError(
+                capability=classification.capability,
+                execution_mode=env.execution_mode.value,
+                application_profile=env.application_profile.value,
+                reason_code=reason,
+                provider_id=classification.provider_id,
+                durability=classification.durability,
+                declared_qualification_status=classification.declared_qualification_status,
+                trusted_qualification_status=evaluation.trusted_qualification_status,
+                reference_only=classification.reference_only,
+                qualification_run_id=evaluation.qualification_run_id,
+            )
+        return
+
     resolved_policy = policy or DefaultProductionMemoryProviderAdmissionPolicy.for_environment(
         env,
     )
-    classification = classify_user_profile_store_provider(user_profile_store)
     decision = resolved_policy.evaluate_user_profile_store(classification)
     if decision.admitted:
         return
@@ -107,6 +150,7 @@ def validate_memory_platform_wiring_admission(
         reason_code=reason,
         provider_id=classification.provider_id,
         durability=classification.durability,
-        qualification_status=classification.qualification_status,
+        declared_qualification_status=classification.declared_qualification_status,
+        trusted_qualification_status=None,
         reference_only=classification.reference_only,
     )

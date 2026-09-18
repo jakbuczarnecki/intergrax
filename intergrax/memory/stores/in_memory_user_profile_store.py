@@ -48,8 +48,12 @@ class InMemoryUserProfileStore(UserProfileStore):
         return True
 
     @property
-    def memory_provider_qualification_status(self) -> MemoryProviderQualificationStatus:
+    def memory_provider_declared_qualification_status(self) -> MemoryProviderQualificationStatus:
         return MemoryProviderQualificationStatus.NOT_QUALIFIED
+
+    @property
+    def memory_provider_version(self) -> str | None:
+        return None
 
     async def get_profile(
         self,

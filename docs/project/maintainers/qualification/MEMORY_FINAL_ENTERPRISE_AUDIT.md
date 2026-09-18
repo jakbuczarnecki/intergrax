@@ -1259,6 +1259,44 @@ LAB / disabled-memory production paths unchanged.
 
 `tests/unit/applications/test_mem_audit5a_production_provider_admission.py` + existing memory wiring / resolver / qual suites.
 
-**Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
+**Verdict (independent audit):** PASS WITH CORRECTIONS — MEM-FINAL-AUDIT-5A NOT CLOSED (provider self-certified `QUALIFIED` trusted at admission).
+
+**Readiness:** superseded by MEM-FINAL-AUDIT-5A-R below.
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.
+
+# MEM-FINAL-AUDIT-5A-R — Trusted Qualification Evidence Admission
+
+## Correction scope
+
+Close **GAP-5A-01** (provider self-certified qualification at production admission). Runtime PRODUCT persistent USER/LTM admission consumes **platform-owned** `MemoryProviderQualificationEvidence` via injectable `MemoryProviderQualificationEvidenceRegistry`; provider `memory_provider_declared_qualification_status` is never trusted for admission.
+
+## Mechanism
+
+| Layer | Artifact |
+| ----- | -------- |
+| Provider claims | `MemoryStoreProviderMetadata` (`memory_provider_id`, durability, `reference_only`, **declared** qualification only) |
+| Trusted proof | `MemoryProviderQualificationEvidence` + `qualification_evidence_from_result(MemoryProviderQualificationResult)` |
+| Registry contract | `MemoryProviderQualificationEvidenceRegistry.resolve(provider_id, capability, version?)` |
+| Reference registry | `InMemoryMemoryProviderQualificationEvidenceRegistry` (composition / tests) |
+| Admission | `evaluate_production_persistent_user_profile_admission` + `validate_memory_platform_wiring_admission(..., qualification_evidence_registry=...)` |
+| Wiring | `resolve_memory_platform_wiring` / `build_session_manager_from_environment` pass registry from host boundary |
+
+## Hard invariant
+
+`PRODUCT` + persistent USER/LTM → durable + non-reference + **trusted evidence `QUALIFIED` for `USER_PROFILE_STORE`**; missing / ambiguous / mismatched evidence → fail-closed (`qualification_evidence_missing`, `qualification_evidence_mismatch`, `provider_not_qualified`).
+
+## GAP status
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-01 | CLOSED (5A fail-closed) |
+| GAP-5A-01 | CLOSED (5A-R trusted evidence) |
+
+## Regression
+
+`tests/unit/applications/test_mem_audit5a_production_provider_admission.py` (5A + 5A-R matrix, runner → evidence → admission chain).
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.

@@ -37,8 +37,12 @@ class SQLiteUserProfileStore(UserProfileStore):
         return False
 
     @property
-    def memory_provider_qualification_status(self) -> MemoryProviderQualificationStatus:
-        return MemoryProviderQualificationStatus.QUALIFIED
+    def memory_provider_declared_qualification_status(self) -> MemoryProviderQualificationStatus:
+        return MemoryProviderQualificationStatus.NOT_QUALIFIED
+
+    @property
+    def memory_provider_version(self) -> str | None:
+        return None
 
     def close(self) -> None:
         if self._closed:
