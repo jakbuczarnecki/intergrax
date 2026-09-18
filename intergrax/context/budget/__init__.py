@@ -20,7 +20,6 @@ from intergrax.context.budget.default_model_budget_policy import DefaultContextM
 from intergrax.context.budget.degradation import (
     ContextDegradationPolicy,
     DefaultContextDegradationPolicy,
-    apply_degradation_ladder,
 )
 from intergrax.context.budget.model_budget_policy import ContextModelBudgetPolicy
 from intergrax.context.budget.resolver import global_allocatable_tokens, resolve_authoritative_model_budget
@@ -43,7 +42,6 @@ __all__ = [
     "ModelContextCapabilitySnapshot",
     "NoOpContextCompactionStrategy",
     "ResolvedModelContextBudget",
-    "apply_degradation_ladder",
     "global_allocatable_tokens",
     "resolve_authoritative_model_budget",
 ]

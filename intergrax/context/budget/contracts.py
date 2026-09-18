@@ -19,6 +19,16 @@ class DegradationStepKind(str, Enum):
     DROP_LOWEST_SCORED = "drop_lowest_scored"
     TOKENIZER_HARD_TRIM = "tokenizer_hard_trim"
 
+
+DEFAULT_CONTEXT_DEGRADATION_LADDER_ORDER: tuple[DegradationStepKind, ...] = (
+    DegradationStepKind.FULL,
+    DegradationStepKind.DROP_OPTIONAL_INJECTIONS,
+    DegradationStepKind.REDUCE_INJECTION_BLOCKS,
+    DegradationStepKind.TRUNCATE_OLDEST_HISTORY,
+    DegradationStepKind.DROP_LOWEST_SCORED,
+    DegradationStepKind.TOKENIZER_HARD_TRIM,
+)
+
 if TYPE_CHECKING:
     from intergrax.context.contracts import ContextAssemblyRequest, ContextBudgetSnapshot
 

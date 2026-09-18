@@ -4,21 +4,12 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence
 
-from intergrax.context.budget.degradation import (
-    ContextDegradationPolicy,
-    DegradationStepKind,
-    DefaultContextDegradationPolicy,
-)
+from intergrax.context.budget.contracts import DegradationStepKind
+from intergrax.context.budget.degradation import ContextDegradationPolicy, DefaultContextDegradationPolicy
 from intergrax.context.contracts import ContextFragmentSource
 from intergrax.context.planning import ContextSourceGroup
-
-_CE_CONTEXT_TAG = re.compile(
-    r"^\[context:(?P<source>[a-z_]+):[^\]]+\]\s",
-    re.IGNORECASE,
-)
 
 _OPTIONAL_INJECTION_SOURCES = frozenset(
     {
@@ -29,17 +20,6 @@ _OPTIONAL_INJECTION_SOURCES = frozenset(
         ContextFragmentSource.RAG,
     }
 )
-
-
-def detect_optional_injection_source(content: str) -> ContextFragmentSource | None:
-    """Optional injection source from explicit ``DefaultContextFormatter`` context tag only."""
-    match = _CE_CONTEXT_TAG.match(content or "")
-    if not match:
-        return None
-    try:
-        return ContextFragmentSource(match.group("source"))
-    except ValueError:
-        return None
 
 
 def _total_selected_tokens(

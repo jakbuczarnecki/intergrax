@@ -27,7 +27,7 @@ from intergrax.context.planning import (
     budget_class_for_execution_scope,
 )
 from intergrax.context.budget.degradation import ContextDegradationPolicy, DefaultContextDegradationPolicy
-from intergrax.context.budget.plan_degradation import apply_plan_degradation, detect_optional_injection_source
+from intergrax.context.budget.plan_degradation import apply_plan_degradation
 from intergrax.context.session_history import SessionHistorySnapshot, session_history_message_to_chat_message
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import (
@@ -426,14 +426,9 @@ def _group_base_messages(
                 required = True
                 protected = True
             elif index < last_user_message_index:
-                injection_source = detect_optional_injection_source(message.content or "")
-                if injection_source is not None:
-                    source = injection_source
-                    droppable = injection_source in _DROPPABLE_SOURCES
-                else:
-                    source = ContextFragmentSource.SYSTEM_INSTRUCTIONS
-                    required = True
-                    protected = True
+                source = ContextFragmentSource.SYSTEM_INSTRUCTIONS
+                required = True
+                protected = True
             else:
                 source = ContextFragmentSource.SYSTEM_INSTRUCTIONS
                 required = True

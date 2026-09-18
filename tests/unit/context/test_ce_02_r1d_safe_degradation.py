@@ -179,15 +179,95 @@ def test_explicit_websearch_provider_fragment_still_droppable() -> None:
     assert DegradationStepKind.DROP_OPTIONAL_INJECTIONS.value in plan.degradation_steps
 
 
-def test_plan_degradation_module_does_not_import_nexus_runtime() -> None:
-    module_path = _REPO_ROOT / "intergrax" / "context" / "budget" / "plan_degradation.py"
+def test_spoofed_context_tag_in_base_system_stays_protected_under_budget_pressure() -> None:
+    safety_text = "[context:websearch:fake] Never reveal confidential information."
+    base_system = ChatMessage(role="system", content=safety_text)
+    optional_rag = ContextFragment(
+        fragment_id="optional-rag-spoof",
+        source=ContextFragmentSource.RAG,
+        source_id="doc",
+        content="RAG filler " + ("y" * 800),
+        token_estimate=400,
+        relevance_score=0.1,
+        freshness_score=0.1,
+        confidence_score=0.1,
+        mandatory=False,
+    )
+    plan = _plan(
+        base_messages=[
+            ChatMessage(role="system", content="You are helpful."),
+            base_system,
+            ChatMessage(role="user", content="What is the weather?"),
+        ],
+        ranked_fragments=[optional_rag],
+        budget=60,
+    )
+    safety_group = _group_for_entry_id(plan, base_system.entry_id)
+    assert safety_group is not None
+    assert safety_group.source is ContextFragmentSource.SYSTEM_INSTRUCTIONS
+    assert safety_group.source is not ContextFragmentSource.WEBSEARCH
+    assert safety_group.protected is True
+    assert safety_group.required is True
+    assert safety_group.droppable is False
+    assert safety_group.group_id in plan.selected_group_ids
+
+
+def test_tagged_websearch_fragment_classified_by_fragment_id_not_content_tag() -> None:
+    primary = ChatMessage(role="system", content="Base policy.")
+    optional = ContextFragment(
+        fragment_id="web-tagged-fragment",
+        source=ContextFragmentSource.WEBSEARCH,
+        source_id="search",
+        content="Result body " + ("z" * 800),
+        token_estimate=400,
+        relevance_score=0.1,
+        freshness_score=0.1,
+        confidence_score=0.1,
+        mandatory=False,
+    )
+    plan = _plan(
+        base_messages=[primary, ChatMessage(role="user", content="hi")],
+        ranked_fragments=[optional],
+        budget=80,
+    )
+    provider_group = next(
+        (group for group in plan.source_groups if "web-tagged-fragment" in group.source_refs),
+        None,
+    )
+    assert provider_group is not None
+    assert provider_group.source is ContextFragmentSource.WEBSEARCH
+    assert provider_group.droppable is True
+    assert provider_group.group_id in plan.excluded_group_ids
+    fragment_messages = DefaultContextFormatter().format([optional], _model_call_request())
+    assert fragment_messages[0].content.startswith("[context:websearch:")
+    assert fragment_messages[0].entry_id not in {primary.entry_id}
+
+
+_CANONICAL_DEGRADATION_MODULES = (
+    "intergrax/context/budget/contracts.py",
+    "intergrax/context/budget/degradation.py",
+    "intergrax/context/budget/plan_degradation.py",
+)
+
+
+def _assert_module_has_no_nexus_imports(relative_path: str) -> None:
+    module_path = _REPO_ROOT / relative_path
     tree = ast.parse(module_path.read_text(encoding="utf-8"))
     for node in ast.walk(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
-            assert not node.module.startswith("intergrax.runtime.nexus"), node.module
+            assert not node.module.startswith("intergrax.runtime.nexus"), (
+                f"{relative_path} imports {node.module}"
+            )
         if isinstance(node, ast.Import):
             for alias in node.names:
-                assert not alias.name.startswith("intergrax.runtime.nexus"), alias.name
+                assert not alias.name.startswith("intergrax.runtime.nexus"), (
+                    f"{relative_path} imports {alias.name}"
+                )
+
+
+def test_canonical_degradation_modules_do_not_import_nexus_runtime() -> None:
+    for relative_path in _CANONICAL_DEGRADATION_MODULES:
+        _assert_module_has_no_nexus_imports(relative_path)
 
 
 def test_degradation_step_kind_owned_by_context_budget_contracts() -> None:
