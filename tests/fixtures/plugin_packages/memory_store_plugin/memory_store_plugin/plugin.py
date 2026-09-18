@@ -7,14 +7,11 @@ from typing import Any
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.memory.contracts.session_storage import SessionStorage
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+
+from .fixture_session_storage import FixtureExternalSessionStorage
 
 
 class FixtureExternalUserProfileStore(InMemoryUserProfileStore):
-    """Fixture marker store for integration tests."""
-
-
-class FixtureExternalSessionStorage(InMemorySessionStorage):
     """Fixture marker store for integration tests."""
 
 
