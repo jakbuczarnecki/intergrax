@@ -51,6 +51,9 @@ from intergrax.runtime.execution.execution_work_port import (
     child_execution_work_port,
 )
 from intergrax.runtime.execution.facade import Execution
+from intergrax.runtime.governance.governance_evidence_composition import (
+    build_in_memory_governance_evidence_persistence,
+)
 from testing_support.inference_governance_wiring import (
     governed_inference_executor,
     governed_root_execution_options,
@@ -267,6 +270,7 @@ def build_qualification_composition(
     inference_executor = governed_inference_executor(
         environment.producer_adapter,
         profile_resolver=catalog,
+        governance_evidence_persistence=build_in_memory_governance_evidence_persistence(),
     )
     router = StrategyExecutionRouter[
         tuple[ChatMessage, ...],

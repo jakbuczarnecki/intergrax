@@ -60,6 +60,9 @@ from intergrax.runtime.policy.pre_model_policy_evaluation import PreModelPolicyC
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.contracts.governed_execution_governance_evidence import (
     GovernedExecutionEvaluationPoint,
+    GovernanceDecisionEvidenceFact,
+    GovernanceEvidencePersistenceOutcome,
+    GovernanceEvidencePersistencePort,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from testing_support.inference_governance_wiring import (
@@ -284,6 +287,7 @@ def _inference_stack(
   admission_hooks: tuple[ExecutionAdmissionHook, ...] = (),
   policy_engine: PolicyEngine | None = None,
   governance_evidence_recorder=None,
+  wire_default_governance_evidence: bool = True,
 ) -> tuple[
     Execution[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
@@ -291,6 +295,9 @@ def _inference_stack(
     ],
     RootExecutionOptions,
 ]:
+  if governance_evidence_recorder is None and wire_default_governance_evidence:
+    store = build_in_memory_governance_evidence_persistence()
+    governance_evidence_recorder = build_governance_evidence_recorder(persistence=store)
   executor = governed_inference_executor(
     adapter,
     policy_engine=policy_engine,
@@ -597,6 +604,15 @@ async def test_inference_pre_model_allow_invokes_provider_once() -> None:
   assert fact.evaluation_point is GovernedExecutionEvaluationPoint.PRE_MODEL
   assert fact.decision is PolicyAction.ALLOW
   assert fact.tenant_id == TEST_INFERENCE_TENANT_ID
+  assert fact.workspace_id == TEST_INFERENCE_WORKSPACE_ID
+  assert fact.principal_id == TEST_INFERENCE_PRINCIPAL_ID
+  assert fact.run_id is not None
+  assert fact.attempt_id is not None
+  assert fact.execution_id is not None
+  assert fact.action == "structured_inference.model_invoke"
+  assert fact.resource_type == "llm_model"
+  assert fact.resource_scope == adapter.model
+  assert fact.evaluation_point is not GovernedExecutionEvaluationPoint.ROOT_EXECUTION_ADMISSION
 
 
 @pytest.mark.asyncio
@@ -615,6 +631,101 @@ async def test_inference_pre_model_deny_blocks_provider() -> None:
   assert adapter.generate_structured_calls == 0
   assert len(store.facts) == 1
   assert store.facts[0].decision is PolicyAction.DENY
+  assert store.facts[0].evaluation_point is GovernedExecutionEvaluationPoint.PRE_MODEL
+
+
+class _CapturingGovernanceEvidencePersistence(GovernanceEvidencePersistencePort):
+  def __init__(self) -> None:
+    self.captured: list[GovernanceDecisionEvidenceFact] = []
+
+  def persist(self, fact: GovernanceDecisionEvidenceFact) -> GovernanceEvidencePersistenceOutcome:
+    self.captured.append(fact)
+    return GovernanceEvidencePersistenceOutcome(persisted=True, evidence_id=fact.evidence_id)
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_custom_persistence_port_records_typed_fact() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  port = _CapturingGovernanceEvidencePersistence()
+  recorder = build_governance_evidence_recorder(persistence=port)
+  execution, options = _inference_stack(
+    adapter,
+    governance_evidence_recorder=recorder,
+  )
+  await execution.execute(_risk_request(), options=options)
+  assert len(port.captured) == 1
+  assert isinstance(port.captured[0], GovernanceDecisionEvidenceFact)
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_deny_evidence_failure_still_denies_zero_provider() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  store.fail_on_persist = True
+  recorder = build_governance_evidence_recorder(persistence=store)
+  execution, options = _inference_stack(
+    adapter,
+    policy_engine=PolicyEngine(runtime=_DenyPreModelRuntime()),
+    governance_evidence_recorder=recorder,
+  )
+  with pytest.raises(PreModelPolicyBlockedError):
+    await execution.execute(_risk_request(), options=options)
+  assert adapter.generate_structured_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_require_human_emits_fact_before_fail_closed() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  recorder = build_governance_evidence_recorder(persistence=store)
+  execution, options = _inference_stack(
+    adapter,
+    policy_engine=PolicyEngine(runtime=_RequireHumanPreModelRuntime()),
+    governance_evidence_recorder=recorder,
+  )
+  with pytest.raises(PreModelPolicyBlockedError) as exc_info:
+    await execution.execute(_risk_request(), options=options)
+  assert len(store.facts) == 1
+  assert store.facts[0].decision is PolicyAction.REQUIRE_HUMAN
+  assert exc_info.value.decision.action is PolicyAction.DENY
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_no_recorder_emits_no_fact() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  execution, options = _inference_stack(
+    adapter,
+    wire_default_governance_evidence=False,
+  )
+  await execution.execute(_risk_request(), options=options)
+  assert adapter.generate_structured_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_distinct_executions_distinct_correlation() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  recorder = build_governance_evidence_recorder(persistence=store)
+  execution, options_a = _inference_stack(
+    adapter,
+    governance_evidence_recorder=recorder,
+  )
+  await execution.execute(_risk_request(content="first"), options=options_a)
+  options_b = governed_root_execution_options(
+    run_id=mint_run_id(),
+    attempt_id=mint_attempt_id(),
+  )
+  two_messages = ExecutionRequest(
+    input=(
+      ChatMessage(role="user", content="first"),
+      ChatMessage(role="user", content="second"),
+    ),
+    output_type=RiskAssessment,
+  )
+  await execution.execute(two_messages, options=options_b)
+  assert len(store.facts) == 2
+  assert store.facts[0].execution_id != store.facts[1].execution_id
+  assert store.facts[0].request_digest != store.facts[1].request_digest
 
 
 @pytest.mark.asyncio

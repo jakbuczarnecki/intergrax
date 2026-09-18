@@ -147,9 +147,10 @@ GR10_INFERENCE_CAPABILITY_SEMANTICS: tuple[Gr10InferenceCapabilitySemantics, ...
     Gr10InferenceCapabilitySemantics(
         "Governance Evidence",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "ROOT_EXECUTION_ADMISSION wired on launcher path; PRE_MODEL evidence emitted from "
-        "InferenceExecutor on structured inference path (full enterprise matrix still open).",
+        Gr10CoverageStatus.QUALIFIED,
+        "PRE_MODEL emits typed GovernanceDecisionEvidenceFact through GovernanceEvidencePersistencePort "
+        "when composition wires recorder/persistence; authority unchanged on persistence failure. "
+        "Canonical MODEL C1 / decision-e2e composition wires persistence via inference_composition.",
     ),
 )
 
@@ -261,7 +262,7 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("Governance Evidence"),
         Gr10CoverageStatus.PARTIAL,
         Gr10CoverageStatus.PARTIAL,
-        "GR-8 spine on root admission + MSE; not all GEPs per strategy.",
+        "INFERENCE: PRE_MODEL typed evidence qualified (GR-10-R6). AGENT/ORCH: GR-8 spine partial per GEP.",
     ),
 )
 
@@ -353,11 +354,15 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
     Gr10ScenarioEvidence(
         "INF-E",
         "INFERENCE",
-        "Governance evidence on wired GEP",
+        "PRE_MODEL governance evidence — typed fact, port persistence, authority-safe failure",
         (
-            _nid(_GR8, "test_root_allow_emits_exactly_one_governance_fact"),
+            _nid(_INFERENCE_EXEC, "test_inference_pre_model_allow_invokes_provider_once"),
+            _nid(_INFERENCE_EXEC, "test_inference_pre_model_deny_blocks_provider"),
+            _nid(_INFERENCE_EXEC, "test_inference_pre_model_custom_persistence_port_records_typed_fact"),
+            _nid(_INFERENCE_EXEC, "test_inference_pre_model_deny_evidence_failure_still_denies_zero_provider"),
+            _nid(_INFERENCE_EXEC, "test_inference_pre_model_evidence_failure_still_allows_provider"),
         ),
-        Gr10CoverageStatus.WIRED_NOT_QUALIFIED,
+        Gr10CoverageStatus.QUALIFIED,
     ),
     Gr10ScenarioEvidence(
         "AGT-ROOT",

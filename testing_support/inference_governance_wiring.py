@@ -9,7 +9,11 @@ from contextvars import Token
 from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernanceEvidencePersistencePort,
+)
 from intergrax.runtime.execution.inference import InferenceExecutor
+from intergrax.runtime.execution.inference_composition import build_governed_inference_executor
 from intergrax.runtime.execution.inference_profile import InferenceProfileResolver
 from intergrax.runtime.execution.runtime import RootExecutionOptions
 from intergrax.runtime.governance.active_execution_governance_identity import (
@@ -30,13 +34,15 @@ def governed_inference_executor(
     *,
     policy_engine: PolicyEngine | None = None,
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
+    governance_evidence_persistence: GovernanceEvidencePersistencePort | None = None,
     profile_resolver: InferenceProfileResolver | None = None,
 ) -> InferenceExecutor[object]:
-    return InferenceExecutor(
+    return build_governed_inference_executor(
         adapter,
         profile_resolver=profile_resolver,
-        policy_engine=policy_engine if policy_engine is not None else PolicyEngine(),
+        policy_engine=policy_engine,
         governance_evidence_recorder=governance_evidence_recorder,
+        governance_evidence_persistence=governance_evidence_persistence,
     )
 
 
