@@ -159,7 +159,7 @@ class _ContractFakeCollaborativeActivityAppendStore:
             provenance_refs=publication.provenance_refs,
             correlation=publication.correlation,
             caused_by_activity_id=publication.caused_by_activity_id,
-            durability_class=publication.durability_class,
+            durability_class=publication.requested_durability_class,
         )
         self._by_key[activity_id] = materialized
         return materialized

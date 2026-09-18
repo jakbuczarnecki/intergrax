@@ -580,7 +580,7 @@ Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULT
 
 ## Collaborative Activity & Provenance (MP-6)
 
-**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** / **MP-6A-C1-R1** atomic append ownership). **MP-6B — NEXT**.
+**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** / **MP-6A-C1-R1** atomic append ownership). **MP-6B — CLOSED** (runtime contract hardening; subject to independent audit). **MP-6C — NEXT**.
 
 **Capability statement:** Collaborative Activity is an immutable, typed semantic record of meaningful collaborative actions on the work plane — who acted, on what object, under which scope and authority, with what outcome, and which canonical evidence references enable reconstruction. MP-6 does **not** store WorkArtifact/Memory/UCL/prompt bodies, replace observability traces, duplicate proof receipts, or authorize mutations.
 
@@ -608,6 +608,22 @@ Authorized Consumer
 
 **MP-6A-C1 — CLOSED / RECERTIFIED** (activity identity, extensibility, timeline semantics hardening; subject to independent audit). **MP-6A-C1-R1 — CLOSED** (atomic append position and materialization boundary; subject to independent audit).
 
+**MP-6B — CLOSED** (core DTO/runtime invariants; subject to independent audit):
+
+| Area | DTO / seam | Structural (contract) | Semantic (MP-6C+ policy) |
+|------|------------|----------------------|----------------------------|
+| Identity | `ActivityIdempotencyKey`, `mint_collaborative_activity_id` | scoped key, golden `activity-id/v1` hash | namespace emit authorization |
+| Actor | `CollaborativeActivityActorRef` | tenant alignment, delegation pairing | principal legitimacy |
+| Scope / target | `CollaborativeActivityScope`, `CollaborativeActivityTargetRef` | tenant/workspace/work_item alignment | type-target policy |
+| Provenance | `CollaborativeActivityProvenanceRef` | reference-only, dedupe + canonical sort | legitimacy / fetch |
+| Durability | publication `requested_durability_class` vs materialized `durability_class` | wire separation | effective class (no downgrade of audit-critical) |
+| Publication vs record | `CollaborativeActivityPublication` vs `CollaborativeActivity` | no `recorded_at` / `append_position`; JSON roundtrip without wire `activity_type` | ingestion policy |
+| Read | `CollaborativeActivityQuery`, `CollaborativeActivityPage` | time bounds, cursor scope semantics | authorization (MP-6E) |
+
+**Serialization:** public wire DTOs are `frozen=True`, `extra="forbid"`, schema-versioned where independently transported; `CollaborativeActivityPublication.model_dump_json()` roundtrips without accepting foreign `activity_type` authority.
+
+**Correction:** `platform.activity.correction` requires `caused_by_activity_id` or typed `collaborative_activity` target (`CollaborativeActivityRecordTargetRef`).
+
 **Idempotency:** `ActivityIdempotencyKey(tenant_id, workspace_id, source, source_stable_id, activity_type)` with namespaced `CollaborativeActivitySourceId` and `CollaborativeActivityTypeId`; `activity_id = mint_collaborative_activity_id(...)` over versioned length-prefixed hash material (`activity-id/v1`, SHA-256 truncated to 32 hex); at-least-once delivery with deterministic deduplication; publication scope must match key tenant/workspace.
 
 **Activity type extensibility:** namespaced plugin types via `CollaborativeActivityTypeId.for_extension(...)`; platform built-ins via `CollaborativeActivityBuiltinType`; reserved `platform` / `intergrax` namespaces — extension producers cannot claim without policy (MP-6C+).
@@ -626,7 +642,7 @@ Authorized Consumer
 | Persistence providers | `CollaborativeActivityAppendStore` | collaborative semantics |
 | Application / UI (MP-9) | `CollaborativeActivityReadPort` | store internals |
 
-**Roadmap:** MP-6B core DTO hardening → MP-6C publication boundary → MP-6D store → MP-6E scoped read → MP-6F source integrations → MP-6G qualification → MP-6H certification.
+**Roadmap:** MP-6C publication boundary → MP-6D store → MP-6E scoped read → MP-6F source integrations → MP-6G qualification → MP-6H certification.
 
 Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md) § MP-6.
 

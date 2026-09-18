@@ -18,6 +18,8 @@ identifiers, and event-time vs append-pagination ordering semantics.
 MP-6A-C1-R1 assigns ``append_position`` and ``recorded_at`` only on materialized
 ``CollaborativeActivity`` at the atomic ``CollaborativeActivityAppendStore`` boundary
 (producers never supply sequencing or materialization timestamps).
+MP-6B freezes runtime DTO invariants (structural validation, wire symmetry, golden
+identity, reference-only provenance, policy-owned effective durability).
 Persistence ships in MP-6D+.
 """
 
@@ -29,7 +31,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Final, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.collaborative_work import (
     PrincipalKind,
@@ -54,6 +56,56 @@ SCHEMA_COLLABORATIVE_ACTIVITY_PAGE_CURSOR_V1: Final = (
 )
 SCHEMA_COLLABORATIVE_ACTIVITY_TYPE_ID_V1: Final = "collaborative_activity_type_id.v1"
 SCHEMA_COLLABORATIVE_ACTIVITY_SOURCE_ID_V1: Final = "collaborative_activity_source_id.v1"
+SCHEMA_COLLABORATIVE_ACTIVITY_CORRELATION_V1: Final = "collaborative_activity_correlation.v1"
+SCHEMA_COLLABORATIVE_ACTIVITY_PAGE_V1: Final = "collaborative_activity_page.v1"
+SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_WORK_ITEM_V1: Final = (
+    "collaborative_activity_target.work_item.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_ASSIGNMENT_V1: Final = (
+    "collaborative_activity_target.assignment.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_WORK_ARTIFACT_V1: Final = (
+    "collaborative_activity_target.work_artifact.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_WORK_ARTIFACT_VERSION_V1: Final = (
+    "collaborative_activity_target.work_artifact_version.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_DECISION_V1: Final = (
+    "collaborative_activity_target.decision.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_APPROVAL_V1: Final = (
+    "collaborative_activity_target.approval.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_CONTEXT_VIEW_V1: Final = (
+    "collaborative_activity_target.context_view.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_COLLABORATIVE_DECISION_BINDING_V1: Final = (
+    "collaborative_activity_target.collaborative_decision_binding.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_COLLABORATIVE_ACTIVITY_V1: Final = (
+    "collaborative_activity_target.collaborative_activity.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_EXECUTION_V1: Final = (
+    "collaborative_activity_provenance.execution.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_GOVERNANCE_EVIDENCE_V1: Final = (
+    "collaborative_activity_provenance.governance_evidence.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_PROOF_RECEIPT_V1: Final = (
+    "collaborative_activity_provenance.proof_receipt.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_CONTEXT_VIEW_V1: Final = (
+    "collaborative_activity_provenance.context_view.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_DECISION_V1: Final = (
+    "collaborative_activity_provenance.decision.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_APPROVAL_V1: Final = (
+    "collaborative_activity_provenance.approval.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_ARTIFACT_VERSION_V1: Final = (
+    "collaborative_activity_provenance.artifact_version.v1"
+)
 
 _ACTIVITY_ID_PREFIX: Final = "cact_"
 _ACTIVITY_ID_HASH_SCHEME: Final = "activity-id/v1"
@@ -193,7 +245,13 @@ class CollaborativeActivityOutcomeStatus(StrEnum):
 
 
 class CollaborativeActivityDurabilityClass(StrEnum):
-    """Recording posture — policy binding in MP-6C+ integrations."""
+    """Recording posture for persistence/failure policy.
+
+    Producers may **request** a class on ``CollaborativeActivityPublication``
+    (``requested_durability_class``). The effective ``durability_class`` on
+    materialized ``CollaborativeActivity`` is owned by MP-6C policy (may upgrade,
+    never downgrade below platform minimum for the activity type).
+    """
 
     AUDIT_CRITICAL = "audit_critical"
     COLLABORATIVE = "collaborative"
@@ -285,6 +343,21 @@ def _validate_target_scope_alignment(
         raise ValueError("target work_item_id must match scope work_item_id")
 
 
+def _require_timezone_aware(value: datetime, *, label: str) -> datetime:
+    if value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
+        raise ValueError(f"{label} must be timezone-aware")
+    return value
+
+
+def _validate_collaborative_activity_id_value(value: str, *, label: str) -> str:
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{label} must be non-empty")
+    if not normalized.startswith(_ACTIVITY_ID_PREFIX):
+        raise ValueError(f"{label} must use {_ACTIVITY_ID_PREFIX} prefix")
+    return normalized
+
+
 class CollaborativeActivityActorRef(BaseModel):
     """Canonical collaborative actor — not a display name or log label."""
 
@@ -344,6 +417,9 @@ class CollaborativeActivityScope(BaseModel):
 class WorkItemActivityTargetRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_target.work_item.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_WORK_ITEM_V1
+    )
     kind: Literal["work_item"] = "work_item"
     work_item_id: str = _NON_EMPTY
 
@@ -359,6 +435,9 @@ class WorkItemActivityTargetRef(BaseModel):
 class AssignmentActivityTargetRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_target.assignment.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_ASSIGNMENT_V1
+    )
     kind: Literal["assignment"] = "assignment"
     assignment_id: str = _NON_EMPTY
     work_item_id: str = _NON_EMPTY
@@ -375,6 +454,9 @@ class AssignmentActivityTargetRef(BaseModel):
 class WorkArtifactActivityTargetRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_target.work_artifact.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_WORK_ARTIFACT_V1
+    )
     kind: Literal["work_artifact"] = "work_artifact"
     work_artifact_id: str = _NON_EMPTY
     work_item_id: str = _NON_EMPTY
@@ -391,6 +473,9 @@ class WorkArtifactActivityTargetRef(BaseModel):
 class WorkArtifactVersionActivityTargetRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_target.work_artifact_version.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_WORK_ARTIFACT_VERSION_V1
+    )
     kind: Literal["work_artifact_version"] = "work_artifact_version"
     version_ref: WorkArtifactVersionRef
 
@@ -403,6 +488,9 @@ class WorkArtifactVersionActivityTargetRef(BaseModel):
 class DecisionActivityTargetRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_target.decision.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_DECISION_V1
+    )
     kind: Literal["decision"] = "decision"
     decision_id: str = _NON_EMPTY
 
@@ -418,6 +506,9 @@ class DecisionActivityTargetRef(BaseModel):
 class ApprovalActivityTargetRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_target.approval.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_APPROVAL_V1
+    )
     kind: Literal["approval"] = "approval"
     approval_id: str = _NON_EMPTY
 
@@ -433,6 +524,9 @@ class ApprovalActivityTargetRef(BaseModel):
 class ContextViewActivityTargetRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_target.context_view.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_CONTEXT_VIEW_V1
+    )
     kind: Literal["context_view"] = "context_view"
     view_id: str = _NON_EMPTY
 
@@ -448,6 +542,9 @@ class ContextViewActivityTargetRef(BaseModel):
 class CollaborativeDecisionBindingActivityTargetRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal[
+        "collaborative_activity_target.collaborative_decision_binding.v1"
+    ] = SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_COLLABORATIVE_DECISION_BINDING_V1
     kind: Literal["collaborative_decision_binding"] = "collaborative_decision_binding"
     binding_id: str = _NON_EMPTY
 
@@ -460,6 +557,23 @@ class CollaborativeDecisionBindingActivityTargetRef(BaseModel):
         return normalized
 
 
+class CollaborativeActivityRecordTargetRef(BaseModel):
+    """Typed target for supersession/correction of an existing activity record."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["collaborative_activity_target.collaborative_activity.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_TARGET_COLLABORATIVE_ACTIVITY_V1
+    )
+    kind: Literal["collaborative_activity"] = "collaborative_activity"
+    activity_id: str = _NON_EMPTY
+
+    @field_validator("activity_id")
+    @classmethod
+    def _validate_activity_id(cls, value: str) -> str:
+        return _validate_collaborative_activity_id_value(value, label="activity_id")
+
+
 CollaborativeActivityTargetRef = Annotated[
     WorkItemActivityTargetRef
     | AssignmentActivityTargetRef
@@ -468,7 +582,8 @@ CollaborativeActivityTargetRef = Annotated[
     | DecisionActivityTargetRef
     | ApprovalActivityTargetRef
     | ContextViewActivityTargetRef
-    | CollaborativeDecisionBindingActivityTargetRef,
+    | CollaborativeDecisionBindingActivityTargetRef
+    | CollaborativeActivityRecordTargetRef,
     Field(discriminator="kind"),
 ]
 
@@ -476,6 +591,9 @@ CollaborativeActivityTargetRef = Annotated[
 class ExecutionActivityProvenanceRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_provenance.execution.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_EXECUTION_V1
+    )
     kind: Literal["execution"] = "execution"
     execution: ExecutionProvenanceRef
 
@@ -483,6 +601,9 @@ class ExecutionActivityProvenanceRef(BaseModel):
 class GovernanceEvidenceActivityProvenanceRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_provenance.governance_evidence.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_GOVERNANCE_EVIDENCE_V1
+    )
     kind: Literal["governance_evidence"] = "governance_evidence"
     evidence: GovernanceEvidenceRef
 
@@ -490,6 +611,9 @@ class GovernanceEvidenceActivityProvenanceRef(BaseModel):
 class ProofReceiptActivityProvenanceRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_provenance.proof_receipt.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_PROOF_RECEIPT_V1
+    )
     kind: Literal["proof_receipt"] = "proof_receipt"
     proof_id: str = _NON_EMPTY
 
@@ -505,6 +629,9 @@ class ProofReceiptActivityProvenanceRef(BaseModel):
 class ContextViewActivityProvenanceRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_provenance.context_view.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_CONTEXT_VIEW_V1
+    )
     kind: Literal["context_view"] = "context_view"
     view_id: str = _NON_EMPTY
 
@@ -520,6 +647,9 @@ class ContextViewActivityProvenanceRef(BaseModel):
 class DecisionActivityProvenanceRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_provenance.decision.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_DECISION_V1
+    )
     kind: Literal["decision"] = "decision"
     decision_id: str = _NON_EMPTY
 
@@ -535,6 +665,9 @@ class DecisionActivityProvenanceRef(BaseModel):
 class ApprovalActivityProvenanceRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_provenance.approval.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_APPROVAL_V1
+    )
     kind: Literal["approval"] = "approval"
     approval_id: str = _NON_EMPTY
 
@@ -550,6 +683,9 @@ class ApprovalActivityProvenanceRef(BaseModel):
 class ArtifactVersionActivityProvenanceRef(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_provenance.artifact_version.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_PROVENANCE_ARTIFACT_VERSION_V1
+    )
     kind: Literal["artifact_version"] = "artifact_version"
     version_ref: WorkArtifactVersionRef
 
@@ -566,11 +702,60 @@ CollaborativeActivityProvenanceRef = Annotated[
 ]
 
 
+def _canonical_provenance_refs(
+    refs: tuple[CollaborativeActivityProvenanceRef, ...],
+) -> tuple[CollaborativeActivityProvenanceRef, ...]:
+    """Deterministic dedupe — provenance order has no semantic chain meaning."""
+    by_key: dict[str, CollaborativeActivityProvenanceRef] = {}
+    for ref in refs:
+        by_key[ref.model_dump_json()] = ref
+    return tuple(by_key[key] for key in sorted(by_key))
+
+
+def _validate_provenance_scope_alignment(
+    *,
+    scope: CollaborativeActivityScope,
+    provenance_refs: tuple[CollaborativeActivityProvenanceRef, ...],
+) -> None:
+    for ref in provenance_refs:
+        if isinstance(ref, ArtifactVersionActivityProvenanceRef):
+            version_ref = ref.version_ref
+            if version_ref.tenant_id != scope.tenant_id:
+                raise ValueError("provenance artifact version tenant_id must match scope tenant_id")
+            if version_ref.workspace_id != scope.workspace_id:
+                raise ValueError(
+                    "provenance artifact version workspace_id must match scope workspace_id"
+                )
+            if scope.work_item_id is not None and version_ref.work_item_id != scope.work_item_id:
+                raise ValueError(
+                    "provenance artifact version work_item_id must match scope work_item_id"
+                )
+
+
+def _validate_correction_semantics(
+    *,
+    activity_type: CollaborativeActivityTypeId,
+    target: CollaborativeActivityTargetRef,
+    caused_by_activity_id: str | None,
+) -> None:
+    if activity_type != CollaborativeActivityBuiltinType.ACTIVITY_CORRECTION:
+        return
+    has_causal = caused_by_activity_id is not None
+    has_activity_target = isinstance(target, CollaborativeActivityRecordTargetRef)
+    if not has_causal and not has_activity_target:
+        raise ValueError(
+            "activity.correction requires caused_by_activity_id or collaborative_activity target"
+        )
+
+
 class CollaborativeActivityCorrelation(BaseModel):
     """Optional cross-surface correlation — none are required on every activity."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_correlation.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_CORRELATION_V1
+    )
     run_id: str | None = None
     step_id: str | None = None
     operation_id: str | None = None
@@ -632,17 +817,35 @@ class CollaborativeActivity(BaseModel):
     provenance_refs: tuple[CollaborativeActivityProvenanceRef, ...] = ()
     correlation: CollaborativeActivityCorrelation | None = None
     caused_by_activity_id: str | None = None
-    durability_class: CollaborativeActivityDurabilityClass = (
-        CollaborativeActivityDurabilityClass.COLLABORATIVE
+    durability_class: CollaborativeActivityDurabilityClass = Field(
+        default=CollaborativeActivityDurabilityClass.COLLABORATIVE,
+        description="Effective durability assigned by MP-6C policy at materialization",
     )
 
-    @field_validator("activity_id", "caused_by_activity_id")
+    @field_validator("activity_id")
     @classmethod
-    def _strip_optional_ids(cls, value: str | None) -> str | None:
+    def _validate_activity_id(cls, value: str) -> str:
+        return _validate_collaborative_activity_id_value(value, label="activity_id")
+
+    @field_validator("caused_by_activity_id")
+    @classmethod
+    def _validate_caused_by(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        normalized = value.strip()
-        return normalized or None
+        return _validate_collaborative_activity_id_value(value, label="caused_by_activity_id")
+
+    @field_validator("occurred_at", "recorded_at")
+    @classmethod
+    def _validate_datetimes(cls, value: datetime, info) -> datetime:
+        return _require_timezone_aware(value, label=str(info.field_name))
+
+    @field_validator("provenance_refs", mode="after")
+    @classmethod
+    def _canonicalize_provenance(
+        cls,
+        value: tuple[CollaborativeActivityProvenanceRef, ...],
+    ) -> tuple[CollaborativeActivityProvenanceRef, ...]:
+        return _canonical_provenance_refs(value)
 
     @model_validator(mode="after")
     def _alignment_invariants(self) -> CollaborativeActivity:
@@ -655,6 +858,17 @@ class CollaborativeActivity(BaseModel):
         if self.activity_id != expected_id:
             raise ValueError("activity_id must equal mint_collaborative_activity_id(idempotency_key)")
         _validate_target_scope_alignment(scope=self.scope, target=self.target)
+        _validate_provenance_scope_alignment(scope=self.scope, provenance_refs=self.provenance_refs)
+        _validate_correction_semantics(
+            activity_type=self.idempotency_key.activity_type,
+            target=self.target,
+            caused_by_activity_id=self.caused_by_activity_id,
+        )
+        if (
+            self.caused_by_activity_id is not None
+            and self.caused_by_activity_id == self.activity_id
+        ):
+            raise ValueError("caused_by_activity_id must not equal activity_id")
         return self
 
 
@@ -675,11 +889,11 @@ class CollaborativeActivityPublication(BaseModel):
     provenance_refs: tuple[CollaborativeActivityProvenanceRef, ...] = ()
     correlation: CollaborativeActivityCorrelation | None = None
     caused_by_activity_id: str | None = None
-    durability_class: CollaborativeActivityDurabilityClass = (
-        CollaborativeActivityDurabilityClass.COLLABORATIVE
+    requested_durability_class: CollaborativeActivityDurabilityClass = Field(
+        default=CollaborativeActivityDurabilityClass.COLLABORATIVE,
+        description="Producer suggestion only — effective durability is policy-owned (MP-6C)",
     )
 
-    @computed_field  # type: ignore[prop-decorator]
     @property
     def activity_type(self) -> CollaborativeActivityTypeId:
         """Semantic activity kind — authoritative copy lives on the idempotency key."""
@@ -687,11 +901,23 @@ class CollaborativeActivityPublication(BaseModel):
 
     @field_validator("caused_by_activity_id")
     @classmethod
-    def _strip_optional_ids(cls, value: str | None) -> str | None:
+    def _validate_caused_by(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        normalized = value.strip()
-        return normalized or None
+        return _validate_collaborative_activity_id_value(value, label="caused_by_activity_id")
+
+    @field_validator("occurred_at")
+    @classmethod
+    def _validate_occurred_at(cls, value: datetime) -> datetime:
+        return _require_timezone_aware(value, label="occurred_at")
+
+    @field_validator("provenance_refs", mode="after")
+    @classmethod
+    def _canonicalize_provenance(
+        cls,
+        value: tuple[CollaborativeActivityProvenanceRef, ...],
+    ) -> tuple[CollaborativeActivityProvenanceRef, ...]:
+        return _canonical_provenance_refs(value)
 
     @model_validator(mode="after")
     def _alignment_invariants(self) -> CollaborativeActivityPublication:
@@ -699,6 +925,12 @@ class CollaborativeActivityPublication(BaseModel):
             raise ValueError("actor tenant_id must match scope tenant_id")
         _scope_matches_idempotency_key(scope=self.scope, idempotency_key=self.idempotency_key)
         _validate_target_scope_alignment(scope=self.scope, target=self.target)
+        _validate_provenance_scope_alignment(scope=self.scope, provenance_refs=self.provenance_refs)
+        _validate_correction_semantics(
+            activity_type=self.idempotency_key.activity_type,
+            target=self.target,
+            caused_by_activity_id=self.caused_by_activity_id,
+        )
         return self
 
 
@@ -722,7 +954,11 @@ class CollaborativeActivityPageCursor(BaseModel):
 
 
 class CollaborativeActivityQuery(BaseModel):
-    """Read intent shape — caller/service must supply authority-validated scope (MP-6E)."""
+    """Read intent shape — caller/service must supply authority-validated scope (MP-6E).
+
+    ``cursor`` is valid only for the same canonical filter scope (tenant, workspace,
+    filters, and sort contract) that produced it — not reusable across different queries.
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -749,10 +985,48 @@ class CollaborativeActivityQuery(BaseModel):
             raise ValueError("must be non-empty when provided")
         return normalized
 
+    @field_validator("occurred_after", "occurred_before")
+    @classmethod
+    def _validate_bounds(cls, value: datetime | None) -> datetime | None:
+        if value is None:
+            return None
+        return _require_timezone_aware(value, label="occurred bound")
+
+    @field_validator("activity_types", mode="after")
+    @classmethod
+    def _dedupe_activity_types(
+        cls,
+        value: tuple[CollaborativeActivityTypeId, ...],
+    ) -> tuple[CollaborativeActivityTypeId, ...]:
+        if not value:
+            return value
+        seen: set[str] = set()
+        deduped: list[CollaborativeActivityTypeId] = []
+        for activity_type in value:
+            qualified = activity_type.qualified_id
+            if qualified in seen:
+                continue
+            seen.add(qualified)
+            deduped.append(activity_type)
+        return tuple(deduped)
+
+    @model_validator(mode="after")
+    def _query_invariants(self) -> CollaborativeActivityQuery:
+        if (
+            self.occurred_after is not None
+            and self.occurred_before is not None
+            and self.occurred_after > self.occurred_before
+        ):
+            raise ValueError("occurred_after must be <= occurred_before")
+        return self
+
 
 class CollaborativeActivityPage(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
+    schema_version: Literal["collaborative_activity_page.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_PAGE_V1
+    )
     activities: tuple[CollaborativeActivity, ...] = ()
     next_cursor: CollaborativeActivityPageCursor | None = None
 
