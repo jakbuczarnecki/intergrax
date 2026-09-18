@@ -103,7 +103,7 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-5G — NEXT** (E2E qualification). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters: `context_view_source_adapters.py`). MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**.
+**Current active task:** **MP-6 — NEXT**. **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED**). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters: `context_view_source_adapters.py`). MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**.
 **Previous:** **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
@@ -538,7 +538,9 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 | MP-5E | Default composition implementation | **CLOSED** |
 | MP-5F | Source adapters / integration | **CLOSED** |
 | MP-5G | E2E / isolation qualification | **CLOSED** (MP-5G-C1 Model B + four-source E2E; MP-5G-C1-R1 runtime `ContextViewScopeCompatibilityPolicy` DI on composer) |
-| MP-5H | Final MP-5 enterprise certification | **NEXT** |
+| MP-5H | Final MP-5 enterprise certification | **CLOSED / FINAL CERTIFICATION PASSED** |
+| MP-5 | Principal-scoped ContextView capability | **ENTERPRISE CERTIFIED / CLOSED** |
+| MP-6 | Collaborative Activity + provenance | **NEXT** |
 
 **Threat model (fail-closed):** cross-tenant leak → deny/omit; cross-workspace leak → deny/omit; delegation amplification → deny; private memory leak → omit without explicit promotion; external agent over-sharing → least-context projection; unscoped RAG → scope gate before retrieve; application bypass → contracts only via Tier-0/Tier-1; policy missing → deny/omit.
 
