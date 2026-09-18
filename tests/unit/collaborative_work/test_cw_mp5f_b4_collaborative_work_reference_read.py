@@ -14,7 +14,6 @@ import pytest
 from intergrax.collaborative_work.contracts.collaborative_work_reference_read import (
     COLLABORATIVE_WORK_REFERENCE_READ_MAX_LIMIT,
     CollaborativeWorkArtifactCanonicalRef,
-    CollaborativeWorkArtifactVersionCanonicalRef,
     CollaborativeWorkItemCanonicalRef,
     CollaborativeWorkReferenceEntityKind,
     CollaborativeWorkReferenceReadOutcome,
@@ -48,7 +47,11 @@ from intergrax.collaborative_work.repository_backed_reference_catalog import (
     RepositoryBackedCollaborativeWorkReferenceCatalog,
 )
 from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
-from intergrax.contracts.collaborative_work import ArtifactContentRef, WorkItemState
+from intergrax.contracts.collaborative_work import (
+    ArtifactContentRef,
+    WorkArtifactVersionRef,
+    WorkItemState,
+)
 
 pytestmark = pytest.mark.gate
 
@@ -374,7 +377,7 @@ def test_valid_artifact_and_version_returned() -> None:
     assert result.outcome is CollaborativeWorkReferenceReadOutcome.OK
     kinds = {type(ref) for ref in result.references}
     assert CollaborativeWorkArtifactCanonicalRef in kinds
-    assert CollaborativeWorkArtifactVersionCanonicalRef in kinds
+    assert WorkArtifactVersionRef in kinds
 
 
 def test_forged_artifact_parent_excludes_version() -> None:
@@ -458,7 +461,7 @@ def test_current_only_hides_historical_versions() -> None:
     assert current.outcome is CollaborativeWorkReferenceReadOutcome.OK
     assert len(current.references) == 1
     version_ref = current.references[0]
-    assert isinstance(version_ref, CollaborativeWorkArtifactVersionCanonicalRef)
+    assert isinstance(version_ref, WorkArtifactVersionRef)
     assert version_ref.work_artifact_version_id == "ver-2"
 
     historical = reader.read_references(
@@ -508,6 +511,254 @@ class _OutOfScopeCatalog:
                 work_item_state=WorkItemState.OPEN,
             ),
         )
+
+
+class _WrongEntityKindCatalog:
+    def list_scoped_references(
+        self,
+        query: CollaborativeWorkScopedReferenceQuery,
+    ) -> tuple[CollaborativeWorkScopedReferenceListing, ...]:
+        return (
+            CollaborativeWorkScopedReferenceListing(
+                entity_kind="work_item",
+                tenant_id=query.tenant_id,
+                workspace_id=query.workspace_id,
+                work_item_id="wi-1",
+                work_item_state=WorkItemState.OPEN,
+            ),
+        )
+
+
+def test_provider_wrong_entity_kind_fail_closed() -> None:
+    reader = DefaultCollaborativeWorkReferenceReader(
+        catalog=_WrongEntityKindCatalog(),
+        capability_binding=CollaborativeWorkReferenceReadCapabilityBinding(
+            tenant_id=_TENANT_A,
+            workspace_id=_WS_A,
+        ),
+    )
+    result = reader.read_references(
+        _identity(),
+        CollaborativeWorkReferenceReadRequest(
+            scope=_scope(),
+            query=_query(
+                entity_kinds=frozenset(
+                    {CollaborativeWorkReferenceEntityKind.WORK_ARTIFACT_VERSION}
+                ),
+            ),
+        ),
+    )
+    assert result.outcome is CollaborativeWorkReferenceReadOutcome.UNAVAILABLE
+    assert result.reason == "catalog_contract_violation"
+
+
+class _LimitOverflowCatalog:
+    def list_scoped_references(
+        self,
+        query: CollaborativeWorkScopedReferenceQuery,
+    ) -> tuple[CollaborativeWorkScopedReferenceListing, ...]:
+        row = CollaborativeWorkScopedReferenceListing(
+            entity_kind="work_item",
+            tenant_id=query.tenant_id,
+            workspace_id=query.workspace_id,
+            work_item_id="wi-a",
+            work_item_state=WorkItemState.OPEN,
+        )
+        row_b = CollaborativeWorkScopedReferenceListing(
+            entity_kind="work_item",
+            tenant_id=query.tenant_id,
+            workspace_id=query.workspace_id,
+            work_item_id="wi-b",
+            work_item_state=WorkItemState.OPEN,
+        )
+        return (row, row_b)
+
+
+def test_provider_limit_overflow_fail_closed() -> None:
+    reader = DefaultCollaborativeWorkReferenceReader(
+        catalog=_LimitOverflowCatalog(),
+        capability_binding=CollaborativeWorkReferenceReadCapabilityBinding(
+            tenant_id=_TENANT_A,
+            workspace_id=_WS_A,
+        ),
+    )
+    result = reader.read_references(
+        _identity(),
+        CollaborativeWorkReferenceReadRequest(
+            scope=_scope(),
+            query=_query(limit=1),
+        ),
+    )
+    assert result.outcome is CollaborativeWorkReferenceReadOutcome.UNAVAILABLE
+    assert result.reason == "catalog_contract_violation"
+
+
+class _WrongArtifactFilterCatalog:
+    def list_scoped_references(
+        self,
+        query: CollaborativeWorkScopedReferenceQuery,
+    ) -> tuple[CollaborativeWorkScopedReferenceListing, ...]:
+        return (
+            CollaborativeWorkScopedReferenceListing(
+                entity_kind="work_artifact_version",
+                tenant_id=query.tenant_id,
+                workspace_id=query.workspace_id,
+                work_item_id="wi-1",
+                work_artifact_id="art-b",
+                work_artifact_version_id="ver-1",
+            ),
+        )
+
+
+def test_provider_wrong_artifact_filter_fail_closed() -> None:
+    reader = DefaultCollaborativeWorkReferenceReader(
+        catalog=_WrongArtifactFilterCatalog(),
+        capability_binding=CollaborativeWorkReferenceReadCapabilityBinding(
+            tenant_id=_TENANT_A,
+            workspace_id=_WS_A,
+        ),
+    )
+    result = reader.read_references(
+        _identity(),
+        CollaborativeWorkReferenceReadRequest(
+            scope=_scope(work_item_id="wi-1", work_artifact_id="art-a"),
+            query=_query(
+                entity_kinds=frozenset(
+                    {CollaborativeWorkReferenceEntityKind.WORK_ARTIFACT_VERSION}
+                ),
+            ),
+        ),
+    )
+    assert result.outcome is CollaborativeWorkReferenceReadOutcome.UNAVAILABLE
+    assert result.reason == "catalog_contract_violation"
+
+
+class _WrongVersionFilterCatalog:
+    def list_scoped_references(
+        self,
+        query: CollaborativeWorkScopedReferenceQuery,
+    ) -> tuple[CollaborativeWorkScopedReferenceListing, ...]:
+        return (
+            CollaborativeWorkScopedReferenceListing(
+                entity_kind="work_artifact_version",
+                tenant_id=query.tenant_id,
+                workspace_id=query.workspace_id,
+                work_item_id="wi-1",
+                work_artifact_id="art-1",
+                work_artifact_version_id="ver-2",
+            ),
+        )
+
+
+def test_provider_wrong_version_filter_fail_closed() -> None:
+    reader = DefaultCollaborativeWorkReferenceReader(
+        catalog=_WrongVersionFilterCatalog(),
+        capability_binding=CollaborativeWorkReferenceReadCapabilityBinding(
+            tenant_id=_TENANT_A,
+            workspace_id=_WS_A,
+        ),
+    )
+    result = reader.read_references(
+        _identity(),
+        CollaborativeWorkReferenceReadRequest(
+            scope=_scope(
+                work_item_id="wi-1",
+                work_artifact_id="art-1",
+                work_artifact_version_id="ver-1",
+            ),
+            query=_query(
+                entity_kinds=frozenset(
+                    {CollaborativeWorkReferenceEntityKind.WORK_ARTIFACT_VERSION}
+                ),
+            ),
+        ),
+    )
+    assert result.outcome is CollaborativeWorkReferenceReadOutcome.UNAVAILABLE
+    assert result.reason == "catalog_contract_violation"
+
+
+class _InconsistentParentCatalog:
+    def list_scoped_references(
+        self,
+        query: CollaborativeWorkScopedReferenceQuery,
+    ) -> tuple[CollaborativeWorkScopedReferenceListing, ...]:
+        return (
+            CollaborativeWorkScopedReferenceListing(
+                entity_kind="work_artifact_version",
+                tenant_id=query.tenant_id,
+                workspace_id=query.workspace_id,
+                work_item_id="wi-other",
+                work_artifact_id="art-1",
+                work_artifact_version_id="ver-1",
+            ),
+        )
+
+
+def test_provider_inconsistent_parent_chain_fail_closed() -> None:
+    reader = DefaultCollaborativeWorkReferenceReader(
+        catalog=_InconsistentParentCatalog(),
+        capability_binding=CollaborativeWorkReferenceReadCapabilityBinding(
+            tenant_id=_TENANT_A,
+            workspace_id=_WS_A,
+        ),
+    )
+    result = reader.read_references(
+        _identity(),
+        CollaborativeWorkReferenceReadRequest(
+            scope=_scope(work_item_id="wi-1", work_artifact_id="art-1"),
+            query=_query(
+                entity_kinds=frozenset(
+                    {CollaborativeWorkReferenceEntityKind.WORK_ARTIFACT_VERSION}
+                ),
+            ),
+        ),
+    )
+    assert result.outcome is CollaborativeWorkReferenceReadOutcome.UNAVAILABLE
+    assert result.reason == "catalog_contract_violation"
+
+
+class _IgnoresHistoricalCatalog:
+    def list_scoped_references(
+        self,
+        query: CollaborativeWorkScopedReferenceQuery,
+    ) -> tuple[CollaborativeWorkScopedReferenceListing, ...]:
+        if query.include_historical:
+            return ()
+        return (
+            CollaborativeWorkScopedReferenceListing(
+                entity_kind="work_artifact_version",
+                tenant_id=query.tenant_id,
+                workspace_id=query.workspace_id,
+                work_item_id="wi-1",
+                work_artifact_id="art-1",
+                work_artifact_version_id="ver-historical",
+            ),
+        )
+
+
+def test_custom_catalog_version_selection_is_catalog_contract() -> None:
+    """Reader cannot prove CURRENT_ONLY without aggregate pointer evidence."""
+    reader = DefaultCollaborativeWorkReferenceReader(
+        catalog=_IgnoresHistoricalCatalog(),
+        capability_binding=CollaborativeWorkReferenceReadCapabilityBinding(
+            tenant_id=_TENANT_A,
+            workspace_id=_WS_A,
+        ),
+    )
+    result = reader.read_references(
+        _identity(),
+        CollaborativeWorkReferenceReadRequest(
+            scope=_scope(work_item_id="wi-1", work_artifact_id="art-1"),
+            query=_query(
+                entity_kinds=frozenset(
+                    {CollaborativeWorkReferenceEntityKind.WORK_ARTIFACT_VERSION}
+                ),
+                version_selection=CollaborativeWorkVersionSelection.CURRENT_ONLY,
+            ),
+        ),
+    )
+    assert result.outcome is CollaborativeWorkReferenceReadOutcome.OK
+    assert len(result.references) == 1
 
 
 def test_plugin_out_of_scope_listing_fail_closed() -> None:

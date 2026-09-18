@@ -27,7 +27,6 @@ from intergrax.collaborative_work.context_view_source_mapping import (
 from intergrax.collaborative_work.context_view_source_wiring import wire_default_context_view_composer
 from intergrax.collaborative_work.contracts.collaborative_work_reference_read import (
     CollaborativeWorkArtifactCanonicalRef,
-    CollaborativeWorkArtifactVersionCanonicalRef,
     CollaborativeWorkItemCanonicalRef,
     CollaborativeWorkReferenceReadOutcome,
     CollaborativeWorkReferenceReadPort,
@@ -35,7 +34,7 @@ from intergrax.collaborative_work.contracts.collaborative_work_reference_read im
     CollaborativeWorkReferenceReadResult,
 )
 from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
-from intergrax.contracts.collaborative_work import WorkItemState
+from intergrax.contracts.collaborative_work import WorkArtifactVersionRef, WorkItemState
 from intergrax.contracts.context_view import (
     ContextViewCollaborativeWorkSourceRef,
     ContextViewKnowledgeSourceRef,
@@ -193,7 +192,7 @@ def test_cw_artifact_current_version_mapping() -> None:
 
 
 def test_cw_version_mapping() -> None:
-    ref = CollaborativeWorkArtifactVersionCanonicalRef(
+    ref = WorkArtifactVersionRef(
         tenant_id="tenant-a",
         workspace_id="ws-1",
         work_item_id="wi-1",

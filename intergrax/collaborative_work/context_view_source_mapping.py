@@ -8,7 +8,6 @@ from enum import Enum
 
 from intergrax.collaborative_work.contracts.collaborative_work_reference_read import (
     CollaborativeWorkArtifactCanonicalRef,
-    CollaborativeWorkArtifactVersionCanonicalRef,
     CollaborativeWorkItemCanonicalRef,
     CollaborativeWorkReferenceEntityKind,
     CollaborativeWorkReferenceReadQuery,
@@ -406,18 +405,12 @@ def map_collaborative_work_artifact_ref(
 
 
 def map_collaborative_work_version_ref(
-    ref: CollaborativeWorkArtifactVersionCanonicalRef,
+    ref: WorkArtifactVersionRef,
 ) -> ContextViewCollaborativeWorkSourceRef:
     return ContextViewCollaborativeWorkSourceRef(
         tenant_id=ref.tenant_id,
         workspace_id=ref.workspace_id,
-        work_artifact_version=WorkArtifactVersionRef(
-            tenant_id=ref.tenant_id,
-            workspace_id=ref.workspace_id,
-            work_item_id=ref.work_item_id,
-            work_artifact_id=ref.work_artifact_id,
-            work_artifact_version_id=ref.work_artifact_version_id,
-        ),
+        work_artifact_version=ref,
     )
 
 
@@ -425,7 +418,7 @@ def _collaborative_work_item_id(
     ref: (
         CollaborativeWorkItemCanonicalRef
         | CollaborativeWorkArtifactCanonicalRef
-        | CollaborativeWorkArtifactVersionCanonicalRef
+        | WorkArtifactVersionRef
     ),
 ) -> str:
     if isinstance(ref, CollaborativeWorkItemCanonicalRef):
@@ -438,7 +431,7 @@ def collaborative_work_ref_within_request_scope(
     ref: (
         CollaborativeWorkItemCanonicalRef
         | CollaborativeWorkArtifactCanonicalRef
-        | CollaborativeWorkArtifactVersionCanonicalRef
+        | WorkArtifactVersionRef
     ),
     request: ContextViewCollaborativeWorkSourceRequest,
 ) -> bool:
@@ -458,7 +451,7 @@ def candidate_scope_for_collaborative_work_ref(
     ref: (
         CollaborativeWorkItemCanonicalRef
         | CollaborativeWorkArtifactCanonicalRef
-        | CollaborativeWorkArtifactVersionCanonicalRef
+        | WorkArtifactVersionRef
     ),
     request_scope: ContextViewScope,
 ) -> ContextViewScope:

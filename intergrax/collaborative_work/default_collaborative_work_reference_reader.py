@@ -8,7 +8,6 @@ from dataclasses import dataclass
 
 from intergrax.collaborative_work.contracts.collaborative_work_reference_read import (
     CollaborativeWorkArtifactCanonicalRef,
-    CollaborativeWorkArtifactVersionCanonicalRef,
     CollaborativeWorkCanonicalRef,
     CollaborativeWorkItemCanonicalRef,
     CollaborativeWorkReferenceEntityKind,
@@ -18,6 +17,7 @@ from intergrax.collaborative_work.contracts.collaborative_work_reference_read im
     CollaborativeWorkVersionSelection,
     validate_collaborative_work_reference_read_request,
 )
+from intergrax.contracts.collaborative_work import WorkArtifactVersionRef
 from intergrax.collaborative_work.repository import (
     CollaborativeWorkScopedReferenceCatalog,
     CollaborativeWorkScopedReferenceListing,
@@ -36,6 +36,10 @@ _KIND_BY_ENTITY = {
     CollaborativeWorkReferenceEntityKind.WORK_ARTIFACT: "work_artifact",
     CollaborativeWorkReferenceEntityKind.WORK_ARTIFACT_VERSION: "work_artifact_version",
 }
+
+_KIND_WORK_ITEM = "work_item"
+_KIND_WORK_ARTIFACT = "work_artifact"
+_KIND_WORK_ARTIFACT_VERSION = "work_artifact_version"
 
 
 class CollaborativeWorkReferenceReadConfigurationError(ValueError):
@@ -98,18 +102,23 @@ def _listing_within_query_scope(
     listing: CollaborativeWorkScopedReferenceListing,
     query: CollaborativeWorkScopedReferenceQuery,
 ) -> bool:
+    """Reader-owned query/listing relationship — fail closed on any mismatch."""
     if listing.tenant_id != query.tenant_id:
         return False
     if listing.workspace_id != query.workspace_id:
         return False
+    if listing.entity_kind not in query.entity_kinds:
+        return False
     if query.work_item_id is not None and listing.work_item_id != query.work_item_id:
         return False
-    if query.work_artifact_id is not None and listing.work_artifact_id is not None:
-        if listing.work_artifact_id != query.work_artifact_id:
-            return False
-    if query.work_artifact_version_id is not None and listing.work_artifact_version_id is not None:
-        if listing.work_artifact_version_id != query.work_artifact_version_id:
-            return False
+    if query.work_artifact_id is not None:
+        if listing.entity_kind in (_KIND_WORK_ARTIFACT, _KIND_WORK_ARTIFACT_VERSION):
+            if listing.work_artifact_id != query.work_artifact_id:
+                return False
+    if query.work_artifact_version_id is not None:
+        if listing.entity_kind == _KIND_WORK_ARTIFACT_VERSION:
+            if listing.work_artifact_version_id != query.work_artifact_version_id:
+                return False
     return True
 
 
@@ -143,12 +152,12 @@ def _to_canonical_ref(
         raise CollaborativeWorkReferenceReadConfigurationError(
             "work_artifact_version listing requires artifact and version ids"
         )
-    return CollaborativeWorkArtifactVersionCanonicalRef(
+    return WorkArtifactVersionRef(
         tenant_id=listing.tenant_id,
         workspace_id=listing.workspace_id,
         work_item_id=listing.work_item_id,
-        work_artifact_id=listing.work_artifact_id,
-        work_artifact_version_id=listing.work_artifact_version_id,
+        work_artifact_id=listing.work_artifact_id or "",
+        work_artifact_version_id=listing.work_artifact_version_id or "",
     )
 
 
@@ -157,11 +166,15 @@ def _reference_sort_key(ref: CollaborativeWorkCanonicalRef) -> tuple[str, str, s
         return ("work_item", ref.work_item_id, "", "")
     if isinstance(ref, CollaborativeWorkArtifactCanonicalRef):
         return ("work_artifact", ref.work_item_id, ref.work_artifact_id, "")
-    return (
-        "work_artifact_version",
-        ref.work_item_id,
-        ref.work_artifact_id,
-        ref.work_artifact_version_id,
+    if isinstance(ref, WorkArtifactVersionRef):
+        return (
+            "work_artifact_version",
+            ref.work_item_id,
+            ref.work_artifact_id,
+            ref.work_artifact_version_id,
+        )
+    raise CollaborativeWorkReferenceReadConfigurationError(
+        "unsupported canonical reference type"
     )
 
 
@@ -213,6 +226,12 @@ class DefaultCollaborativeWorkReferenceReader:
             return CollaborativeWorkReferenceReadResult(
                 outcome=CollaborativeWorkReferenceReadOutcome.UNAVAILABLE,
                 reason="backend_error",
+            )
+
+        if len(listings) > scoped_query.limit:
+            return CollaborativeWorkReferenceReadResult(
+                outcome=CollaborativeWorkReferenceReadOutcome.UNAVAILABLE,
+                reason="catalog_contract_violation",
             )
 
         refs: list[CollaborativeWorkCanonicalRef] = []

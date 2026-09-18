@@ -14,13 +14,12 @@ from enum import Enum, StrEnum
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.agent_run import RequestIdentity
-from intergrax.contracts.collaborative_work import WorkItemState
+from intergrax.contracts.collaborative_work import WorkArtifactVersionRef, WorkItemState
 
 __all__ = [
     "COLLABORATIVE_WORK_REFERENCE_READ_DEFAULT_LIMIT",
     "COLLABORATIVE_WORK_REFERENCE_READ_MAX_LIMIT",
     "CollaborativeWorkArtifactCanonicalRef",
-    "CollaborativeWorkArtifactVersionCanonicalRef",
     "CollaborativeWorkCanonicalRef",
     "CollaborativeWorkItemCanonicalRef",
     "CollaborativeWorkReferenceEntityKind",
@@ -93,6 +92,14 @@ class CollaborativeWorkReferenceReadScope:
 
 @dataclass(frozen=True, slots=True)
 class CollaborativeWorkReferenceReadQuery:
+    """Public read query.
+
+    ``version_selection`` (CURRENT_ONLY vs INCLUDE_HISTORICAL) is enforced by the
+    scoped reference catalog — the catalog owns aggregate current-pointer semantics.
+    The default reader defensively validates scope, entity kinds, limit, and
+    listing/query alignment; it cannot prove CURRENT_ONLY without catalog evidence.
+    """
+
     entity_kinds: frozenset[CollaborativeWorkReferenceEntityKind]
     limit: int = COLLABORATIVE_WORK_REFERENCE_READ_DEFAULT_LIMIT
     version_selection: CollaborativeWorkVersionSelection = (
@@ -190,43 +197,10 @@ class CollaborativeWorkArtifactCanonicalRef:
         object.__setattr__(self, "current_version_id", current)
 
 
-@dataclass(frozen=True, slots=True)
-class CollaborativeWorkArtifactVersionCanonicalRef:
-    tenant_id: str
-    workspace_id: str
-    work_item_id: str
-    work_artifact_id: str
-    work_artifact_version_id: str
-
-    def __post_init__(self) -> None:
-        tenant = (self.tenant_id or "").strip()
-        workspace = (self.workspace_id or "").strip()
-        work_item = (self.work_item_id or "").strip()
-        artifact = (self.work_artifact_id or "").strip()
-        version = (self.work_artifact_version_id or "").strip()
-        if not tenant:
-            raise CollaborativeWorkReferenceReadScopeError("tenant_id must be non-empty")
-        if not workspace:
-            raise CollaborativeWorkReferenceReadScopeError("workspace_id must be non-empty")
-        if not work_item:
-            raise CollaborativeWorkReferenceReadScopeError("work_item_id must be non-empty")
-        if not artifact:
-            raise CollaborativeWorkReferenceReadScopeError("work_artifact_id must be non-empty")
-        if not version:
-            raise CollaborativeWorkReferenceReadScopeError(
-                "work_artifact_version_id must be non-empty"
-            )
-        object.__setattr__(self, "tenant_id", tenant)
-        object.__setattr__(self, "workspace_id", workspace)
-        object.__setattr__(self, "work_item_id", work_item)
-        object.__setattr__(self, "work_artifact_id", artifact)
-        object.__setattr__(self, "work_artifact_version_id", version)
-
-
 CollaborativeWorkCanonicalRef = (
     CollaborativeWorkItemCanonicalRef
     | CollaborativeWorkArtifactCanonicalRef
-    | CollaborativeWorkArtifactVersionCanonicalRef
+    | WorkArtifactVersionRef
 )
 
 

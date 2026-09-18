@@ -1563,7 +1563,20 @@ def _strip_optional_scope(value: str | None) -> str | None:
 
 @runtime_checkable
 class CollaborativeWorkScopedReferenceCatalog(Protocol):
-    """Provider-neutral scoped reference catalog for Collaborative Work entities."""
+    """Provider-neutral scoped reference catalog for Collaborative Work entities.
+
+    Implementations MUST:
+    - apply tenant, workspace, and optional work_item / artifact / version filters;
+    - honor ``entity_kinds`` (return only requested kinds);
+    - honor ``include_historical`` for version projection (CURRENT_ONLY uses the
+      aggregate ``current_version_id`` pointer, not timestamps or insertion order);
+    - return structurally valid ``CollaborativeWorkScopedReferenceListing`` rows;
+    - sort by ``(entity_kind, work_item_id, work_artifact_id, work_artifact_version_id)``;
+    - apply ``limit`` only after full scope and kind filtering.
+
+    The default reference reader defensively re-validates scope, kinds, and limit but
+    relies on the catalog for version-selection semantics.
+    """
 
     def list_scoped_references(
         self,

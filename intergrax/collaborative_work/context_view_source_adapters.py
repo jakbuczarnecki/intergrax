@@ -37,10 +37,10 @@ from intergrax.collaborative_work.context_view_source_mapping import (
 )
 from intergrax.collaborative_work.contracts.collaborative_work_reference_read import (
     CollaborativeWorkArtifactCanonicalRef,
-    CollaborativeWorkArtifactVersionCanonicalRef,
     CollaborativeWorkItemCanonicalRef,
     CollaborativeWorkReferenceReadPort,
 )
+from intergrax.contracts.collaborative_work import WorkArtifactVersionRef
 from intergrax.contracts.context_view_source_ports import (
     ContextViewCollaborativeWorkSourceCandidate,
     ContextViewCollaborativeWorkSourceCandidatesResult,
@@ -294,7 +294,7 @@ class DefaultCollaborativeWorkContextSource:
                 source_ref = map_collaborative_work_item_ref(ref)
             elif isinstance(ref, CollaborativeWorkArtifactCanonicalRef):
                 source_ref = map_collaborative_work_artifact_ref(ref)
-            elif isinstance(ref, CollaborativeWorkArtifactVersionCanonicalRef):
+            elif isinstance(ref, WorkArtifactVersionRef):
                 source_ref = map_collaborative_work_version_ref(ref)
             else:
                 return ContextViewCollaborativeWorkSourceCandidatesResult(
