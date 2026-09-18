@@ -62,6 +62,10 @@ Authoritative row list and pytest node IDs: `GOV_FINAL_4_SCENARIO_CATALOG` in `c
 
 ## Strategy qualification matrix
 
+### Historical snapshot (GOV-FINAL-4 baseline run)
+
+Preserved audit record from the 2026-09-17 qualification session — **not** current GR-10 INFERENCE applicability (superseded by GR-10-R1).
+
 | Capability | INFERENCE | AGENTIC | ORCHESTRATION |
 | ---------- | --------- | ------- | ------------- |
 | Root admission | PARTIAL | PARTIAL | PARTIAL |
@@ -71,7 +75,11 @@ Authoritative row list and pytest node IDs: `GOV_FINAL_4_SCENARIO_CATALOG` in `c
 | HITL | GAP | QUALIFIED (MP-4R7 + GR-5) | PARTIAL |
 | Reliability handoff | GAP | PARTIAL (GR-7 host) | PARTIAL |
 
-Honesty rule: **GAP** remains where no legal production entry point exists (see GOV-FINAL-3 § strategy coverage).
+### Current INFERENCE strategy semantics (GR-10-R1 SSOT)
+
+Authoritative applicability vs coverage: `GR10_INFERENCE_CAPABILITY_SEMANTICS` in `tests/qualification/governance/strategy/catalog.py` and architecture §9 matrix in `GOVERNED_EXECUTION.md`. **Active INFERENCE blocker:** PRE_MODEL identity/public contract + compliant wiring (GR-10-R2 **BLOCKED**). HITL, Reliability, MSE, Continuation, and Decision-bound effect are **NOT_APPLICABLE** on the inference strategy path — not open gaps.
+
+Honesty rule: **GAP** remains where no legal production entry point exists for **applicable** capabilities (see GOV-FINAL-3 § strategy coverage).
 
 ## Failure matrix
 

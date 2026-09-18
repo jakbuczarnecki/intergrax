@@ -93,7 +93,7 @@ def test_gr10_adr1_known_inference_empty_agent_id_pending_r2_r1() -> None:
 
 
 @pytest.mark.xfail(
-    reason="GR-10-R2-R1: INFERENCE PRE_MODEL must not pass empty agent_id after C1",
+    reason="GR-10-R2-R1: INFERENCE PRE_MODEL must not pass empty agent_id after C1 (architecture PASS; runtime conformance PENDING)",
     strict=True,
 )
 def test_gr10_adr1_gate_no_empty_agent_id_on_inference_path() -> None:

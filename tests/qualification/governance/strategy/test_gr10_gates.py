@@ -15,6 +15,12 @@ from intergrax.runtime.execution.root_execution_operation_mapping import (
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, execution_strategy_from_capabilities
+from tests.qualification.governance.strategy.gr10_inference_current_doc_ssot import (
+    gr10_assert_current_docs_inference_ssot,
+    gr10_architecture_remaining_gaps_slice,
+    gr10_forbidden_inference_gap_hits,
+    gr10_maintainer_roadmap_slice,
+)
 from tests.qualification.governance.strategy.catalog import (
     GR10_FINAL_CAPABILITY_MATRIX,
     GR10_INFERENCE_CAPABILITY_SEMANTICS,
@@ -265,3 +271,32 @@ def test_gr10_current_doc_status_gr8_closed_gr10_partial() -> None:
     assert "GR-8" in section and "CLOSED" in section
     assert "GR-10" in section and "PARTIAL" in section
     assert "GR-8 | OPEN" not in section
+
+
+def test_gr10_r2_adr1_r1_current_docs_inference_ssot_semantic_gate() -> None:
+    """GR10_INFERENCE_CAPABILITY_SEMANTICS → current-status governance docs."""
+    gr10_assert_current_docs_inference_ssot()
+
+
+def test_gr10_r2_adr1_r1_current_docs_do_not_list_inference_hitl_as_gap() -> None:
+    for label, body in (
+        ("roadmap", gr10_maintainer_roadmap_slice()),
+        ("arch_gaps", gr10_architecture_remaining_gaps_slice()),
+    ):
+        assert "INFERENCE HITL/Reliability" not in body, label
+        assert "INFERENCE HITL residual" not in body.lower(), label
+        assert not gr10_forbidden_inference_gap_hits(body), label
+
+
+def test_gr10_r2_adr1_r1_current_docs_do_not_list_inference_reliability_as_gap() -> None:
+    roadmap = gr10_maintainer_roadmap_slice()
+    assert "INFERENCE Reliability" not in roadmap
+    assert "HITL/Reliability residual" not in roadmap
+
+
+def test_gr10_r2_adr1_r1_current_docs_mark_inference_pre_model_as_real_blocker() -> None:
+    arch = gr10_architecture_remaining_gaps_slice()
+    plan = gr10_maintainer_roadmap_slice()
+    assert "PRE_MODEL" in arch and "GR-10-R2" in arch
+    assert "GR-10-R2" in plan and "PRE_MODEL" in plan
+    assert "BLOCKED" in plan

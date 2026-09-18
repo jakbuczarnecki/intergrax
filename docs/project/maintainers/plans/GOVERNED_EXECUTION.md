@@ -180,8 +180,10 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-7 | External Effect / Reliability Boundary | **IMPLEMENTED** — qualification **OPEN** (ERL path; Reliability ≠ Governance) |
 | GR-8 | Governance Evidence Integration | **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** — [ADR-GR-8-001](../../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); independent final audit pending |
 | GR-9 | Diagnostic Consumption Proof | **OPEN** |
-| GR-10 | Execution Strategy Coverage | **PARTIAL** — qualification suite + matrix; INFERENCE HITL/Reliability residuals |
-| GR-10-R2 | INFERENCE PRE_MODEL wiring | **BLOCKED** — [ADR-GR-10-001](../../technical/adr/entries/2026-09-18/ADR-GR-10-001.md) (**GR-10-R2-ADR1** **CLOSED**); next **GR-10-R2-C1** then **GR-10-R2-R1** |
+| GR-10 | Execution Strategy Coverage | **PARTIAL** — qualification suite + matrix; INFERENCE PRE_MODEL contract/wiring blocked on GR-10-R2-C1/R1; HITL/Reliability/MSE/Continuation **NOT_APPLICABLE** on inference path (not blockers) |
+| GR-10-R2-ADR1 | PRE_MODEL identity + intake boundary (ADR) | **CANDIDATE CLOSED** — [ADR-GR-10-001](../../technical/adr/entries/2026-09-18/ADR-GR-10-001.md) accepted; independent GitHub audit before CLOSED |
+| GR-10-R2-ADR1-R1 | PRE_MODEL identity SSOT reconciliation | **CANDIDATE CLOSED** — current docs reconciled to GR-10-R1 semantics; independent GitHub audit before CLOSED |
+| GR-10-R2 | INFERENCE PRE_MODEL wiring | **BLOCKED** — CONTRACT REVISION REQUIRED — [ADR-GR-10-001](../../technical/adr/entries/2026-09-18/ADR-GR-10-001.md); runtime slice present; architecture compliance pending **GR-10-R2-C1** then **GR-10-R2-R1** |
 | GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** |
 | GR-12 | Control-Plane Governance | **GAP** / **OPEN** |
 | GR-13 | Full Governance Proof Matrix | **OPEN** |
