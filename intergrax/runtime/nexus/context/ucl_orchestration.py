@@ -299,6 +299,11 @@ async def resolve_ucl_context_plan(
         runtime.strategy_versions,
     )
 
+    if artifact_ownership is None:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
+    if artifact_ownership.tenant_id != lookup_inputs.tenant_id:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
+
     prepared_materialization = _prepare_artifact_materialization(
         context_plan=context_plan,
         requirement=requirement,
@@ -316,8 +321,6 @@ async def resolve_ucl_context_plan(
     lookup_key_kwargs["validation_contract_version"] = optimization_policy.validation_contract_version
     lookup_key = ArtifactLookupKey(**lookup_key_kwargs)  # type: ignore[arg-type]
     lookup_hash = compute_artifact_lookup_key_hash(lookup_key)
-    if artifact_ownership is None:
-        raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
     if artifact_ownership.tenant_id != lookup_key.tenant_id:
         raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
 

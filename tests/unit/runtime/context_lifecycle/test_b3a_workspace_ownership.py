@@ -4,11 +4,14 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from intergrax.runtime.context_lifecycle.contracts import (
     UclArtifactOwnership,
     UclArtifactOwnershipKind,
+    UclArtifactOwnershipScope,
 )
 from intergrax.runtime.context_lifecycle.serialization import (
     ucl_artifact_ownership_from_canonical_dict,
@@ -16,6 +19,8 @@ from intergrax.runtime.context_lifecycle.serialization import (
 )
 from intergrax.runtime.context_lifecycle import (
     InMemoryOptimizationArtifactRepository,
+    OptimizationArtifactRepository,
+    SQLiteOptimizationArtifactRepository,
     compute_artifact_lookup_key_hash,
 )
 from tests.unit.runtime.context_lifecycle.test_repository_contracts import (
@@ -28,14 +33,30 @@ from tests.unit.runtime.context_lifecycle.test_repository_contracts import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
+@pytest.fixture(params=("memory", "sqlite"))
+def ownership_repository(
+    request: pytest.FixtureRequest, tmp_path: Path
+) -> OptimizationArtifactRepository:
+    if request.param == "memory":
+        repo: OptimizationArtifactRepository = InMemoryOptimizationArtifactRepository()
+    else:
+        repo = SQLiteOptimizationArtifactRepository(str(tmp_path / "b3a-ownership.sqlite"))
+    yield repo
+    repo.close()
+
+
 def _publish(
-    repository: InMemoryOptimizationArtifactRepository,
+    repository: OptimizationArtifactRepository,
     key,
     *,
     workspace_id: str,
     artifact_id: str,
+    tenant_id: str | None = None,
 ) -> None:
-    ownership = _ownership_scope(key, workspace_id=workspace_id)
+    if tenant_id is None:
+        ownership = _ownership_scope(key, workspace_id=workspace_id)
+    else:
+        ownership = UclArtifactOwnershipScope(tenant_id=tenant_id, workspace_id=workspace_id)
     metadata_overrides = {
         "artifact_id": artifact_id,
         "lookup_key": key,
@@ -64,8 +85,10 @@ def test_workspace_ownership_serialization_round_trip() -> None:
     assert restored.scope.workspace_id == "workspace-1"
 
 
-def test_same_context_scope_different_workspace_isolated() -> None:
-    repository = InMemoryOptimizationArtifactRepository()
+def test_same_context_scope_different_workspace_isolated(
+    ownership_repository: OptimizationArtifactRepository,
+) -> None:
+    repository = ownership_repository
     key = _lookup_key(context_scope_id="ctx-shared")
     _publish(repository, key, workspace_id="workspace-a", artifact_id="artifact-a")
     _publish(repository, key, workspace_id="workspace-b", artifact_id="artifact-b")
@@ -78,11 +101,56 @@ def test_same_context_scope_different_workspace_isolated() -> None:
     assert found_b.metadata.artifact_id == "artifact-b"
     assert found_a.metadata.workspace_id == "workspace-a"
     assert found_b.metadata.workspace_id == "workspace-b"
-    repository.close()
 
 
-def test_cross_workspace_reservation_isolated() -> None:
-    repository = InMemoryOptimizationArtifactRepository()
+def test_cross_workspace_lookup_miss_with_same_key(
+    ownership_repository: OptimizationArtifactRepository,
+) -> None:
+    repository = ownership_repository
+    key = _lookup_key(context_scope_id="ctx-shared")
+    _publish(repository, key, workspace_id="workspace-a", artifact_id="artifact-a")
+    miss = repository.lookup(key, ownership=_ownership_scope(key, workspace_id="workspace-b"))
+    assert miss is None
+
+
+def test_cross_tenant_same_workspace_string_isolated(
+    ownership_repository: OptimizationArtifactRepository,
+) -> None:
+    repository = ownership_repository
+    key_a = _lookup_key(tenant_id="tenant-a", context_scope_id="ctx-shared")
+    key_b = _lookup_key(tenant_id="tenant-b", context_scope_id="ctx-shared")
+    _publish(
+        repository,
+        key_a,
+        workspace_id="workspace-x",
+        artifact_id="artifact-a",
+        tenant_id="tenant-a",
+    )
+    cross = repository.lookup(
+        key_b,
+        ownership=UclArtifactOwnershipScope(tenant_id="tenant-b", workspace_id="workspace-x"),
+    )
+    assert cross is None
+
+
+def test_same_workspace_reuse_allowed(
+    ownership_repository: OptimizationArtifactRepository,
+) -> None:
+    repository = ownership_repository
+    key = _lookup_key(context_scope_id="ctx-1")
+    _publish(repository, key, workspace_id="workspace-a", artifact_id="artifact-a")
+    ownership = _ownership_scope(key, workspace_id="workspace-a")
+    first = repository.lookup(key, ownership=ownership)
+    second = repository.lookup(key, ownership=ownership)
+    assert first is not None
+    assert second is not None
+    assert first.metadata.artifact_id == second.metadata.artifact_id == "artifact-a"
+
+
+def test_cross_workspace_reservation_isolated(
+    ownership_repository: OptimizationArtifactRepository,
+) -> None:
+    repository = ownership_repository
     key = _lookup_key(context_scope_id="ctx-shared")
     result_a = repository.try_acquire_creation_reservation(
         key,
@@ -101,11 +169,12 @@ def test_cross_workspace_reservation_isolated() -> None:
     assert result_a.reservation is not None
     assert result_b.reservation is not None
     assert result_a.reservation.reservation_id != result_b.reservation.reservation_id
-    repository.close()
 
 
-def test_context_scope_may_differ_from_workspace() -> None:
-    repository = InMemoryOptimizationArtifactRepository()
+def test_context_scope_may_differ_from_workspace(
+    ownership_repository: OptimizationArtifactRepository,
+) -> None:
+    repository = ownership_repository
     key = _lookup_key(context_scope_id="ctx-1")
     ownership = _ownership_scope(key, workspace_id="workspace-not-ctx")
     assert ownership.workspace_id != key.context_scope_id
@@ -125,7 +194,6 @@ def test_context_scope_may_differ_from_workspace() -> None:
     )
     assert reference.workspace_id == "workspace-not-ctx"
     assert reference.context_scope_id == "ctx-1"
-    repository.close()
 
 
 def test_lookup_hash_unchanged_when_workspace_differs() -> None:
