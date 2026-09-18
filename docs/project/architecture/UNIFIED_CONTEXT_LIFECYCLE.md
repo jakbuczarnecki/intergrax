@@ -974,7 +974,7 @@ Metadata-only reusable artifact record: `artifact_id`, `lookup_key`, `artifact_c
 
 **`context_scope_id` ≠ `workspace_id` ≠ artifact compatibility identity:** `context_scope_id` remains the UCL lifecycle / compatibility scope on `ArtifactLookupKey`. `workspace_id` is a separate Collaborative Work resource dimension. `artifact_lookup_key_hash` is unchanged by workspace ownership; repository **partitioning** uses `(tenant_id, workspace_id, lookup_key_hash)` for active slots and creation reservations.
 
-**MP-5F-B3A (CLOSED):** typed `UclArtifactOwnershipScope`, persistence (in-memory + SQLite), serialization round-trip, cross-workspace active-slot and reservation isolation, supersession ownership guard. Legacy rows without workspace ownership deserialize as `LEGACY_UNKNOWN` and are fail-closed for workspace-scoped lookup.
+**MP-5F-B3A (CLOSED / RECERTIFIED):** typed `UclArtifactOwnershipScope`, persistence (in-memory + SQLite), serialization round-trip, cross-workspace active-slot and reservation isolation, supersession ownership guard. **MP-5F-B3A-C2:** typed `workspace_id` propagates through all production `ContextAssemblyRequest` builders (`RuntimeExecutionContext` / `AgentStepContext` / intake contracts); metadata and `context_scope_id` are not workspace authority sources.
 
 **MP-5F-B3 status:** reference-read boundary remains **BLOCKED** for enterprise workspace certification until **MP-5F-B3B** wires canonical ownership into scoped catalog/read (`DefaultUclReferenceReader` still rejects `workspace_id` with `ucl_workspace_ownership_unavailable`).
 

@@ -1,6 +1,8 @@
 # MP-5F-B3A-C0 — Canonical workspace authority propagation
 
-**Status:** design certified · contract transport hardened (C1 wiring separate).
+**Status:** design certified · C2 production propagation certified (see `test_b3a_c2_workspace_authority_propagation.py`).
+
+Workspace authority propagates through typed runtime/step/assembly contracts (`RuntimeExecutionContext.workspace_id`, `AgentStepContext.workspace_id`, `ContextAssemblyRequest.workspace_id`). Metadata is not an authority source.
 
 ## Canonical semantic owner
 
@@ -20,6 +22,7 @@ Transport does not transfer ownership: CE and UCL consume `workspace_id`; Collab
 Collaborative Work (workspace truth)
   → admission / launch (RootExecutionLaunchRequest, CanonicalExecutionIntakeRequest)
   → TaskEnvelope.workspace_id / RuntimeRequest.workspace_id / AgentRunRequest.workspace_id
+  → RuntimeExecutionContext.workspace_id / AgentStepContext.workspace_id
   → ContextAssemblyRequest.workspace_id
   → ContextEngine.assemble
   → (C1) UclArtifactOwnershipScope from request fields only

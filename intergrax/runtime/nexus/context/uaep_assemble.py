@@ -30,14 +30,12 @@ def build_uaep_assembly_request(
     options = assembly_options or TaskContextAssemblyOptions()
     run_id = str(request.metadata.get("run_id") or request.run_id)
     task_id = str(request.metadata.get("task_id") or request.task_id)
-    workspace_raw = request.workspace_id
-    workspace_id = workspace_raw.strip() if isinstance(workspace_raw, str) and workspace_raw.strip() else None
     return ContextAssemblyRequest(
         trace_id=run_id,
         run_id=run_id,
         task_id=task_id,
         tenant_id=str(request.tenant_id or request.metadata.get("tenant_id") or "default"),
-        workspace_id=workspace_id,
+        workspace_id=request.workspace_id,
         assembly_scope="uaep_turn",
         objective=request.message or "",
         decision_profile=ContextDecisionSnapshot(),

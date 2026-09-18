@@ -91,6 +91,7 @@ class RuntimeExecutionContext(BaseModel):
     node_id: Optional[str] = None
     agent_id: str
     correlation_id: str = ""
+    workspace_id: str | None = None
     phase: ExecutionPhase = ExecutionPhase.STEP_EXECUTION
     contract: Optional[AgentContract] = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
@@ -117,6 +118,16 @@ class RuntimeExecutionContext(BaseModel):
     @classmethod
     def _validate_execution_id_field(cls, value: object) -> ExecutionId:
         return validate_execution_id(value)
+
+    @field_validator("workspace_id")
+    @classmethod
+    def _workspace_id_non_empty_when_set(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("workspace_id must be non-empty when provided")
+        return stripped
 
     tool_gateway: Optional[Any] = Field(default=None, exclude=True)
     event_emitter: Optional[Any] = Field(default=None, exclude=True)

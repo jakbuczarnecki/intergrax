@@ -240,6 +240,7 @@ class UAEPExecutor:
             node_id=str(node_id) if node_id else None,
             agent_id=contract.id,
             correlation_id=task_id,
+            workspace_id=request.workspace_id,
             phase=ExecutionPhase.CONTEXT_BUILDING,
             contract=contract,
             request=request,
