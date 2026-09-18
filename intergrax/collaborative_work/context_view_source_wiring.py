@@ -80,10 +80,7 @@ def wire_default_context_view_composer(
         else None
     )
     knowledge_source = (
-        DefaultKnowledgeContextSource(
-            reader=knowledge_reader,
-            reference_read_query_text=knowledge_reference_read_query_text,
-        )
+        DefaultKnowledgeContextSource(reader=knowledge_reader)
         if knowledge_reader is not None
         else None
     )
@@ -97,10 +94,15 @@ def wire_default_context_view_composer(
         if collaborative_work_reader is not None
         else None
     )
+    composer_config = config
+    if composer_config is None:
+        composer_config = DefaultContextViewComposerConfig(
+            knowledge_reference_read_query_text=knowledge_reference_read_query_text,
+        )
     return DefaultContextViewComposer(
         memory_source=memory_source,
         knowledge_source=knowledge_source,
         ucl_source=ucl_source,
         collaborative_work_source=collaborative_work_source,
-        config=config,
+        config=composer_config,
     )

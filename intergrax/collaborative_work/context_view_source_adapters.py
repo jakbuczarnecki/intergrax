@@ -12,13 +12,14 @@ from intergrax.collaborative_work.context_view_async_reference_read import (
 from intergrax.collaborative_work.context_view_source_mapping import (
     ContextViewSourceAdapterConfigurationError,
     candidate_scope_for_collaborative_work_ref,
-    candidate_scope_for_knowledge_ref,
-    candidate_scope_for_memory_ref,
     candidate_scope_for_ucl_ref,
+    candidate_scope_from_knowledge_evaluated,
+    candidate_scope_from_memory_evaluated,
     collaborative_work_read_request_from_context_view,
     collaborative_work_ref_within_request_scope,
+    knowledge_evaluated_scope_within_request,
     knowledge_read_request_from_context_view,
-    knowledge_ref_within_request_scope,
+    knowledge_ref_within_evaluated_scope,
     map_collaborative_work_artifact_ref,
     map_collaborative_work_item_ref,
     map_collaborative_work_version_ref,
@@ -26,8 +27,9 @@ from intergrax.collaborative_work.context_view_source_mapping import (
     map_knowledge_chunk_to_context_view_ref,
     map_memory_record_to_context_view_ref,
     map_ucl_ref_to_context_view_ref,
+    memory_evaluated_scope_within_request,
     memory_read_request_from_context_view,
-    memory_ref_within_request_scope,
+    memory_ref_within_evaluated_scope,
     request_identity_from_source_request,
     suggested_visibility_from_request,
     ucl_read_request_from_context_view,
@@ -86,7 +88,7 @@ class DefaultMemoryContextSource:
         request: ContextViewMemorySourceRequest,
     ) -> ContextViewMemorySourceCandidatesResult:
         identity = request_identity_from_source_request(request)
-        read_request = memory_read_request_from_context_view(request)
+        read_request = memory_read_request_from_context_view(request, identity=identity)
         try:
             result = self.async_runner.run(
                 self.reader.read_references(identity, read_request),
@@ -98,20 +100,30 @@ class DefaultMemoryContextSource:
         outcome = map_domain_read_outcome_to_context_view(result.outcome)
         if outcome is not ContextViewSourceOutcome.OK:
             return ContextViewMemorySourceCandidatesResult(outcome=outcome)
+        evaluated_scope = result.evaluated_scope
+        if evaluated_scope is None:
+            return ContextViewMemorySourceCandidatesResult(
+                outcome=ContextViewSourceOutcome.SCOPE_REJECTED,
+            )
+        if not memory_evaluated_scope_within_request(
+            request=request,
+            evaluated_scope=evaluated_scope,
+        ):
+            return ContextViewMemorySourceCandidatesResult(
+                outcome=ContextViewSourceOutcome.SCOPE_REJECTED,
+            )
         visibility = suggested_visibility_from_request(request)
+        candidate_scope = candidate_scope_from_memory_evaluated(evaluated_scope)
         candidates: list[ContextViewMemorySourceCandidate] = []
         for ref in result.references:
-            if not memory_ref_within_request_scope(ref=ref, request=request):
+            if not memory_ref_within_evaluated_scope(ref=ref, evaluated_scope=evaluated_scope):
                 return ContextViewMemorySourceCandidatesResult(
                     outcome=ContextViewSourceOutcome.SCOPE_REJECTED,
                 )
             candidates.append(
                 ContextViewMemorySourceCandidate(
                     source_ref=map_memory_record_to_context_view_ref(ref),
-                    candidate_scope=candidate_scope_for_memory_ref(
-                        ref=ref,
-                        request_scope=request.scope,
-                    ),
+                    candidate_scope=candidate_scope,
                     suggested_visibility=visibility,
                 )
             )
@@ -126,27 +138,17 @@ class DefaultKnowledgeContextSource:
     """MP-5D Knowledge port — translates ``KnowledgeReferenceReadPort`` results only."""
 
     reader: KnowledgeReferenceReadPort
-    reference_read_query_text: str
 
     def __post_init__(self) -> None:
         if self.reader is None:
             raise ContextViewSourceAdapterConfigurationError("knowledge reader is required")
-        text = (self.reference_read_query_text or "").strip()
-        if not text:
-            raise ContextViewSourceAdapterConfigurationError(
-                "reference_read_query_text must be non-empty"
-            )
-        object.__setattr__(self, "reference_read_query_text", text)
 
     def list_candidates(
         self,
         request: ContextViewKnowledgeSourceRequest,
     ) -> ContextViewKnowledgeSourceCandidatesResult:
         identity = request_identity_from_source_request(request)
-        read_request = knowledge_read_request_from_context_view(
-            request,
-            query_text=self.reference_read_query_text,
-        )
+        read_request = knowledge_read_request_from_context_view(request)
         try:
             result = self.reader.read_references(identity, read_request)
         except Exception:
@@ -156,20 +158,36 @@ class DefaultKnowledgeContextSource:
         outcome = map_domain_read_outcome_to_context_view(result.outcome)
         if outcome is not ContextViewSourceOutcome.OK:
             return ContextViewKnowledgeSourceCandidatesResult(outcome=outcome)
+        evaluated_scope = result.evaluated_scope
+        if evaluated_scope is None:
+            return ContextViewKnowledgeSourceCandidatesResult(
+                outcome=ContextViewSourceOutcome.SCOPE_REJECTED,
+            )
+        if not knowledge_evaluated_scope_within_request(
+            request=request,
+            evaluated_scope=evaluated_scope,
+        ):
+            return ContextViewKnowledgeSourceCandidatesResult(
+                outcome=ContextViewSourceOutcome.SCOPE_REJECTED,
+            )
         visibility = suggested_visibility_from_request(request)
+        candidate_scope = candidate_scope_from_knowledge_evaluated(
+            evaluated_scope,
+            request_scope=request.scope,
+        )
         candidates: list[ContextViewKnowledgeSourceCandidate] = []
         for ref in result.references:
-            if not knowledge_ref_within_request_scope(ref=ref, request=request):
+            if not knowledge_ref_within_evaluated_scope(
+                ref=ref,
+                evaluated_scope=evaluated_scope,
+            ):
                 return ContextViewKnowledgeSourceCandidatesResult(
                     outcome=ContextViewSourceOutcome.SCOPE_REJECTED,
                 )
             candidates.append(
                 ContextViewKnowledgeSourceCandidate(
                     source_ref=map_knowledge_chunk_to_context_view_ref(ref),
-                    candidate_scope=candidate_scope_for_knowledge_ref(
-                        ref=ref,
-                        request_scope=request.scope,
-                    ),
+                    candidate_scope=candidate_scope,
                     suggested_visibility=visibility,
                 )
             )

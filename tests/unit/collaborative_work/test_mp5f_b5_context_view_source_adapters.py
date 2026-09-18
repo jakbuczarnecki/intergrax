@@ -60,6 +60,7 @@ from intergrax.knowledge.contracts.knowledge_reference_read import (
     KnowledgeReferenceReadPort,
     KnowledgeReferenceReadRequest,
     KnowledgeReferenceReadResult,
+    KnowledgeReferenceReadScope,
 )
 from intergrax.memory.contracts.memory_reference_read import (
     MemoryRecordCanonicalRef,
@@ -67,6 +68,8 @@ from intergrax.memory.contracts.memory_reference_read import (
     MemoryReferenceReadPort,
     MemoryReferenceReadRequest,
     MemoryReferenceReadResult,
+    MemoryReferenceReadScope,
+    MemoryScopedResourceRef,
 )
 from intergrax.ucl.contracts.ucl_reference_read import (
     UclOptimizationArtifactCanonicalRef,
@@ -91,10 +94,35 @@ def _scope(**overrides: object) -> ContextViewScope:
     return ContextViewScope(**payload)
 
 
+def _principal_identity(
+    *,
+    tenant_id: str = "tenant-a",
+    principal_id: str = "principal-1",
+    principal_type: PrincipalType = PrincipalType.USER,
+    auth_subject: str | None = None,
+    user_id: str | None = None,
+) -> RequestIdentity:
+    subject = auth_subject if auth_subject is not None else principal_id
+    uid = user_id if user_id is not None else principal_id
+    return RequestIdentity(
+        tenant_id=tenant_id,
+        user_id=uid,
+        principal_type=principal_type,
+        auth_subject=subject,
+    )
+
+
+def _memory_evaluated_scope(**overrides: object) -> MemoryReferenceReadScope:
+    payload = {"tenant_id": "tenant-a", "workspace_id": "ws-1", "user_id": "principal-1"}
+    payload.update(overrides)
+    return MemoryReferenceReadScope(**payload)
+
+
 def _memory_request(**overrides: object) -> ContextViewMemorySourceRequest:
     payload = {
         "scope": _scope(),
         "acting_principal_id": "principal-1",
+        "principal_identity": _principal_identity(),
         "eligible_visibility_classes": (ContextViewVisibilityClass.WORKSPACE_SHARED,),
     }
     payload.update(overrides)
@@ -194,7 +222,11 @@ def test_memory_adapter_success_and_empty() -> None:
     ref = MemoryRecordCanonicalRef(tenant_id="tenant-a", memory_id="m1", revision=1)
     adapter = DefaultMemoryContextSource(
         reader=_FakeMemoryReader(
-            MemoryReferenceReadResult(outcome=MemoryReferenceReadOutcome.OK, references=(ref,)),
+            MemoryReferenceReadResult(
+                outcome=MemoryReferenceReadOutcome.OK,
+                references=(ref,),
+                evaluated_scope=_memory_evaluated_scope(),
+            ),
         ),
         async_runner=_ImmediateAsyncRunner(),
     )
@@ -205,7 +237,11 @@ def test_memory_adapter_success_and_empty() -> None:
 
     adapter_empty = DefaultMemoryContextSource(
         reader=_FakeMemoryReader(
-            MemoryReferenceReadResult(outcome=MemoryReferenceReadOutcome.OK, references=()),
+            MemoryReferenceReadResult(
+                outcome=MemoryReferenceReadOutcome.OK,
+                references=(),
+                evaluated_scope=_memory_evaluated_scope(),
+            ),
         ),
         async_runner=_ImmediateAsyncRunner(),
     )
@@ -216,7 +252,11 @@ def test_memory_cross_tenant_fail_closed() -> None:
     ref = MemoryRecordCanonicalRef(tenant_id="tenant-b", memory_id="m1", revision=1)
     adapter = DefaultMemoryContextSource(
         reader=_FakeMemoryReader(
-            MemoryReferenceReadResult(outcome=MemoryReferenceReadOutcome.OK, references=(ref,)),
+            MemoryReferenceReadResult(
+                outcome=MemoryReferenceReadOutcome.OK,
+                references=(ref,),
+                evaluated_scope=_memory_evaluated_scope(tenant_id="tenant-b"),
+            ),
         ),
         async_runner=_ImmediateAsyncRunner(),
     )
@@ -255,12 +295,13 @@ def test_knowledge_scope_rejected_propagated() -> None:
         reader=_FakeKnowledgeReader(
             KnowledgeReferenceReadResult(outcome=KnowledgeReferenceReadOutcome.SCOPE_REJECTED),
         ),
-        reference_read_query_text="context-view-enumeration",
     )
     req = ContextViewKnowledgeSourceRequest(
         scope=_scope(),
         acting_principal_id="p1",
+        principal_identity=_principal_identity(principal_id="p1"),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORKSPACE_SHARED,),
+        reference_read_query_text="context-view-enumeration",
     )
     assert adapter.list_candidates(req).outcome is ContextViewSourceOutcome.SCOPE_REJECTED
 
@@ -285,6 +326,7 @@ def test_ucl_invalid_without_context_scope() -> None:
     req = ContextViewUclSourceRequest(
         scope=_scope(),
         acting_principal_id="p1",
+        principal_identity=_principal_identity(principal_id="p1"),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORKSPACE_SHARED,),
     )
     assert adapter.list_candidates(req).outcome is ContextViewSourceOutcome.INVALID_REQUEST
@@ -315,6 +357,7 @@ def test_ucl_wrong_context_scope_in_result_fail_closed() -> None:
             ),
         ),
         acting_principal_id="p1",
+        principal_identity=_principal_identity(principal_id="p1"),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORKSPACE_SHARED,),
     )
     assert adapter.list_candidates(req).outcome is ContextViewSourceOutcome.SCOPE_REJECTED
@@ -350,6 +393,7 @@ def test_cw_cross_workspace_fail_closed() -> None:
     req = ContextViewCollaborativeWorkSourceRequest(
         scope=_scope(),
         acting_principal_id="p1",
+        principal_identity=_principal_identity(principal_id="p1"),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORK_ITEM,),
     )
     assert adapter.list_candidates(req).outcome is ContextViewSourceOutcome.SCOPE_REJECTED
@@ -370,9 +414,20 @@ def test_composer_accepts_custom_mp5d_port_without_default_adapter_modules() -> 
 
 def test_default_wiring_injects_all_four_adapters() -> None:
     composer = wire_default_context_view_composer(
-        memory_reader=_FakeMemoryReader(MemoryReferenceReadResult(outcome=MemoryReferenceReadOutcome.OK)),
+        memory_reader=_FakeMemoryReader(
+            MemoryReferenceReadResult(
+                outcome=MemoryReferenceReadOutcome.OK,
+                evaluated_scope=_memory_evaluated_scope(),
+            ),
+        ),
         knowledge_reader=_FakeKnowledgeReader(
-            KnowledgeReferenceReadResult(outcome=KnowledgeReferenceReadOutcome.OK),
+            KnowledgeReferenceReadResult(
+                outcome=KnowledgeReferenceReadOutcome.OK,
+                evaluated_scope=KnowledgeReferenceReadScope(
+                    tenant_id="tenant-a",
+                    workspace_id="ws-1",
+                ),
+            ),
         ),
         ucl_reader=_FakeUclReader(UclReferenceReadResult(outcome=UclReferenceReadOutcome.OK)),
         collaborative_work_reader=_FakeCwReader(

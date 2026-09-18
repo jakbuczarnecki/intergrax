@@ -150,6 +150,11 @@ def test_result_reference_only_no_payload_fields() -> None:
         assert token not in serialized
 
 
+def test_ok_result_requires_evaluated_scope() -> None:
+    with pytest.raises(KnowledgeReferenceReadScopeError, match="evaluated_scope"):
+        KnowledgeReferenceReadResult(outcome=KnowledgeReferenceReadOutcome.OK)
+
+
 def test_non_ok_result_cannot_carry_references() -> None:
     ref = KnowledgeChunkCanonicalRef(
         tenant_id="t",
@@ -374,6 +379,7 @@ class _CustomKnowledgeReferenceReader:
         return KnowledgeReferenceReadResult(
             outcome=KnowledgeReferenceReadOutcome.OK,
             references=(ref,),
+            evaluated_scope=request.scope,
         )
 
 

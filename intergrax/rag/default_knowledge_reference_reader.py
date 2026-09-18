@@ -285,5 +285,6 @@ class DefaultKnowledgeReferenceReader:
         return KnowledgeReferenceReadResult(
             outcome=KnowledgeReferenceReadOutcome.OK,
             references=tuple(refs),
+            evaluated_scope=request.scope,
             reason="ok" if refs or result.used else result.reason or "ok",
         )

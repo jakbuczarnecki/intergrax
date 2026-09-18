@@ -191,12 +191,22 @@ class KnowledgeChunkCanonicalRef:
 class KnowledgeReferenceReadResult:
     outcome: KnowledgeReferenceReadOutcome
     references: tuple[KnowledgeChunkCanonicalRef, ...] = ()
+    evaluated_scope: KnowledgeReferenceReadScope | None = None
     reason: str = ""
 
     def __post_init__(self) -> None:
         if self.outcome is not KnowledgeReferenceReadOutcome.OK and self.references:
             raise KnowledgeReferenceReadScopeError(
                 "non-OK outcomes must not carry references"
+            )
+        if self.outcome is KnowledgeReferenceReadOutcome.OK:
+            if self.evaluated_scope is None:
+                raise KnowledgeReferenceReadScopeError(
+                    "OK outcome requires authoritative evaluated_scope"
+                )
+        elif self.evaluated_scope is not None:
+            raise KnowledgeReferenceReadScopeError(
+                "evaluated_scope must be omitted when outcome is not OK"
             )
 
 

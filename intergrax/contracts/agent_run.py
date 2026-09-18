@@ -39,6 +39,17 @@ class RequestIdentity(BaseModel):
         return value
 
 
+def canonical_principal_id_from_request_identity(identity: RequestIdentity) -> str:
+    """Non-empty principal id for scope alignment — auth_subject precedes user_id."""
+    auth_subject = (identity.auth_subject or "").strip()
+    if auth_subject:
+        return auth_subject
+    user_id = (identity.user_id or "").strip()
+    if user_id:
+        return user_id
+    raise ValueError("principal identity requires auth_subject or user_id")
+
+
 class AgentEnvironmentOverrides(BaseModel):
     """Per-run narrow of host profile slices (architecture §30.3)."""
 

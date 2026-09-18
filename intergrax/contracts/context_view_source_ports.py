@@ -9,10 +9,11 @@ No retrieval, storage, hydration, or composer implementation in this module.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Final, Literal, Protocol
+from typing import Final, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.agent_run import RequestIdentity, canonical_principal_id_from_request_identity
 from intergrax.contracts.context_view import (
     ContextViewCategory,
     ContextViewCollaborativeWorkSourceRef,
@@ -62,6 +63,16 @@ class ContextViewSourceOutcome(StrEnum):
     INVALID_REQUEST = "invalid_request"
 
 
+@runtime_checkable
+class ContextViewSourceRequestIdentityView(Protocol):
+    """Structural contract for shared MP-5D source request identity fields."""
+
+    scope: ContextViewScope
+    acting_principal_id: str
+    principal_identity: RequestIdentity
+    eligible_visibility_classes: tuple[ContextViewVisibilityClass, ...]
+
+
 class _ContextViewSourceRequestBase(BaseModel):
     """Shared tenant-scoped source query input — not a policy decision carrier."""
 
@@ -69,6 +80,7 @@ class _ContextViewSourceRequestBase(BaseModel):
 
     scope: ContextViewScope
     acting_principal_id: str = _NON_EMPTY
+    principal_identity: RequestIdentity
     eligible_visibility_classes: tuple[ContextViewVisibilityClass, ...] = Field(min_length=1)
 
     @field_validator("acting_principal_id")
@@ -78,6 +90,15 @@ class _ContextViewSourceRequestBase(BaseModel):
         if not normalized:
             raise ValueError("must be non-empty")
         return normalized
+
+    @model_validator(mode="after")
+    def _align_principal_identity(self) -> _ContextViewSourceRequestBase:
+        if self.principal_identity.tenant_id != self.scope.tenant_id:
+            raise ValueError("principal_identity tenant_id must match scope tenant_id")
+        canonical_id = canonical_principal_id_from_request_identity(self.principal_identity)
+        if canonical_id != self.acting_principal_id:
+            raise ValueError("acting_principal_id must match principal_identity")
+        return self
 
 
 class ContextViewMemorySourceRequest(_ContextViewSourceRequestBase):
@@ -96,6 +117,15 @@ class ContextViewKnowledgeSourceRequest(_ContextViewSourceRequestBase):
         SCHEMA_CONTEXT_VIEW_KNOWLEDGE_SOURCE_REQUEST_V1
     )
     category: Literal[ContextViewCategory.KNOWLEDGE] = ContextViewCategory.KNOWLEDGE
+    reference_read_query_text: str = _NON_EMPTY
+
+    @field_validator("reference_read_query_text")
+    @classmethod
+    def _strip_query_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
 
 
 class ContextViewUclSourceRequest(_ContextViewSourceRequestBase):

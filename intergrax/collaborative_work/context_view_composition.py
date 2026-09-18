@@ -261,12 +261,21 @@ class DefaultContextViewComposer:
         base = {
             "scope": decision.effective_scope,
             "acting_principal_id": request.acting_principal_id,
+            "principal_identity": composition_request.principal_identity,
             "eligible_visibility_classes": decision.eligible_visibility_classes,
         }
         if category is ContextViewCategory.MEMORY:
             return ContextViewMemorySourceRequest(**base)
         if category is ContextViewCategory.KNOWLEDGE:
-            return ContextViewKnowledgeSourceRequest(**base)
+            query_text = self._config.knowledge_reference_read_query_text
+            if not query_text:
+                raise ContextViewCompositionInvariantError(
+                    "knowledge_reference_read_query_text is required for KNOWLEDGE composition",
+                )
+            return ContextViewKnowledgeSourceRequest(
+                **base,
+                reference_read_query_text=query_text,
+            )
         if category is ContextViewCategory.UCL_CONTEXT_LIFECYCLE:
             return ContextViewUclSourceRequest(**base)
         if category is ContextViewCategory.COLLABORATIVE_WORK:

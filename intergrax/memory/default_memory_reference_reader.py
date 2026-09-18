@@ -220,5 +220,6 @@ class DefaultMemoryReferenceReader:
         return MemoryReferenceReadResult(
             outcome=MemoryReferenceReadOutcome.OK,
             references=tuple(refs),
+            evaluated_scope=request.scope,
             reason="ok",
         )

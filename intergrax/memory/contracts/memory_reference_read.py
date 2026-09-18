@@ -142,12 +142,22 @@ class MemoryRecordCanonicalRef:
 class MemoryReferenceReadResult:
     outcome: MemoryReferenceReadOutcome
     references: tuple[MemoryRecordCanonicalRef, ...] = ()
+    evaluated_scope: MemoryReferenceReadScope | None = None
     reason: str = ""
 
     def __post_init__(self) -> None:
         if self.outcome is not MemoryReferenceReadOutcome.OK and self.references:
             raise MemoryReferenceReadScopeError(
                 "non-OK outcomes must not carry references"
+            )
+        if self.outcome is MemoryReferenceReadOutcome.OK:
+            if self.evaluated_scope is None:
+                raise MemoryReferenceReadScopeError(
+                    "OK outcome requires authoritative evaluated_scope"
+                )
+        elif self.evaluated_scope is not None:
+            raise MemoryReferenceReadScopeError(
+                "evaluated_scope must be omitted when outcome is not OK"
             )
 
 

@@ -15,7 +15,7 @@ from intergrax.collaborative_work.contracts.collaborative_work_reference_read im
     CollaborativeWorkReferenceReadRequest,
     CollaborativeWorkReferenceReadScope,
 )
-from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
+from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.collaborative_work import WorkArtifactVersionRef
 from intergrax.contracts.context_view import (
     ContextViewCollaborativeWorkSourceRef,
@@ -31,8 +31,11 @@ from intergrax.contracts.context_view_source_ports import (
     ContextViewKnowledgeSourceRequest,
     ContextViewMemorySourceRequest,
     ContextViewSourceOutcome,
+    ContextViewSourceRequestIdentityView,
     ContextViewUclSourceRequest,
-    _ContextViewSourceRequestBase,
+)
+from intergrax.contracts.context_view_visibility_policy import (
+    suggested_context_view_source_visibility,
 )
 from intergrax.knowledge.contracts.knowledge_reference_read import (
     KnowledgeChunkCanonicalRef,
@@ -65,21 +68,15 @@ class ContextViewSourceAdapterConfigurationError(ValueError):
 
 
 def suggested_visibility_from_request(
-    request: _ContextViewSourceRequestBase,
+    request: ContextViewSourceRequestIdentityView,
 ) -> ContextViewVisibilityClass:
-    return request.eligible_visibility_classes[0]
+    return suggested_context_view_source_visibility(request.eligible_visibility_classes)
 
 
 def request_identity_from_source_request(
-    request: _ContextViewSourceRequestBase,
+    request: ContextViewSourceRequestIdentityView,
 ) -> RequestIdentity:
-    principal = request.acting_principal_id
-    return RequestIdentity(
-        tenant_id=request.scope.tenant_id,
-        user_id=principal,
-        principal_type=PrincipalType.USER,
-        auth_subject=principal,
-    )
+    return request.principal_identity
 
 
 def map_domain_read_outcome_to_context_view(outcome: Enum) -> ContextViewSourceOutcome:
@@ -136,8 +133,17 @@ def map_memory_record_to_context_view_ref(
     )
 
 
+def _memory_scope_user_id(identity: RequestIdentity) -> str | None:
+    user_id = (identity.user_id or "").strip()
+    if user_id:
+        return user_id
+    return None
+
+
 def memory_read_request_from_context_view(
     request: ContextViewMemorySourceRequest,
+    *,
+    identity: RequestIdentity,
 ) -> MemoryReferenceReadRequest:
     scope = request.scope
     resource: MemoryScopedResourceRef | None = None
@@ -150,38 +156,58 @@ def memory_read_request_from_context_view(
         scope=MemoryReferenceReadScope(
             tenant_id=scope.tenant_id,
             workspace_id=scope.workspace_id,
-            user_id=request.acting_principal_id,
+            user_id=_memory_scope_user_id(identity),
             resource=resource,
         ),
         query=MemoryReferenceReadQuery(),
     )
 
 
-def candidate_scope_for_memory_ref(
-    *,
-    ref: MemoryRecordCanonicalRef,
-    request_scope: ContextViewScope,
+def candidate_scope_from_memory_evaluated(
+    evaluated_scope: MemoryReferenceReadScope,
 ) -> ContextViewScope:
+    work_item_id: str | None = None
+    resource = evaluated_scope.resource
+    if resource is not None and resource.resource_kind == "work_item":
+        work_item_id = resource.resource_id
     return ContextViewScope(
-        tenant_id=ref.tenant_id,
-        workspace_id=request_scope.workspace_id,
-        work_item_id=request_scope.work_item_id,
-        operation_scope=request_scope.operation_scope,
+        tenant_id=evaluated_scope.tenant_id,
+        workspace_id=evaluated_scope.workspace_id,
+        work_item_id=work_item_id,
     )
 
 
-def memory_ref_within_request_scope(
+def memory_evaluated_scope_within_request(
+    *,
+    request: ContextViewMemorySourceRequest,
+    evaluated_scope: MemoryReferenceReadScope,
+) -> bool:
+    scope = request.scope
+    if evaluated_scope.tenant_id != scope.tenant_id:
+        return False
+    if evaluated_scope.workspace_id != scope.workspace_id:
+        return False
+    if scope.work_item_id is not None:
+        resource = evaluated_scope.resource
+        if resource is None:
+            return False
+        if resource.resource_kind != "work_item":
+            return False
+        if resource.resource_id != scope.work_item_id:
+            return False
+    return True
+
+
+def memory_ref_within_evaluated_scope(
     *,
     ref: MemoryRecordCanonicalRef,
-    request: ContextViewMemorySourceRequest,
+    evaluated_scope: MemoryReferenceReadScope,
 ) -> bool:
-    return ref.tenant_id == request.scope.tenant_id
+    return ref.tenant_id == evaluated_scope.tenant_id
 
 
 def knowledge_read_request_from_context_view(
     request: ContextViewKnowledgeSourceRequest,
-    *,
-    query_text: str,
 ) -> KnowledgeReferenceReadRequest:
     scope = request.scope
     resource: KnowledgeScopedResourceRef | None = None
@@ -195,7 +221,7 @@ def knowledge_read_request_from_context_view(
             workspace_id=scope.workspace_id,
             resource=resource,
         ),
-        query=KnowledgeReferenceReadQuery(query_text=query_text),
+        query=KnowledgeReferenceReadQuery(query_text=request.reference_read_query_text),
     )
 
 
@@ -208,25 +234,64 @@ def map_knowledge_chunk_to_context_view_ref(
     )
 
 
-def knowledge_ref_within_request_scope(
+def candidate_scope_from_knowledge_evaluated(
+    evaluated_scope: KnowledgeReferenceReadScope,
     *,
-    ref: KnowledgeChunkCanonicalRef,
-    request: ContextViewKnowledgeSourceRequest,
-) -> bool:
-    return ref.tenant_id == request.scope.tenant_id
-
-
-def candidate_scope_for_knowledge_ref(
-    *,
-    ref: KnowledgeChunkCanonicalRef,
     request_scope: ContextViewScope,
 ) -> ContextViewScope:
+    operation_scope: ContextViewOperationScope | None = None
+    resource = evaluated_scope.resource
+    if resource is not None and resource.document_id is not None:
+        request_operation = request_scope.operation_scope
+        operation_id = (
+            request_operation.operation_id
+            if request_operation is not None
+            else "knowledge.document"
+        )
+        operation_scope = ContextViewOperationScope(
+            operation_id=operation_id,
+            resource_scope=resource.document_id,
+        )
     return ContextViewScope(
-        tenant_id=ref.tenant_id,
-        workspace_id=request_scope.workspace_id,
-        work_item_id=request_scope.work_item_id,
-        operation_scope=request_scope.operation_scope,
+        tenant_id=evaluated_scope.tenant_id,
+        workspace_id=evaluated_scope.workspace_id,
+        operation_scope=operation_scope,
     )
+
+
+def knowledge_evaluated_scope_within_request(
+    *,
+    request: ContextViewKnowledgeSourceRequest,
+    evaluated_scope: KnowledgeReferenceReadScope,
+) -> bool:
+    scope = request.scope
+    if evaluated_scope.tenant_id != scope.tenant_id:
+        return False
+    if evaluated_scope.workspace_id != scope.workspace_id:
+        return False
+    request_resource = scope.operation_scope.resource_scope if scope.operation_scope else None
+    if request_resource is not None:
+        evaluated_resource = evaluated_scope.resource
+        if evaluated_resource is None or evaluated_resource.document_id != request_resource:
+            return False
+    return True
+
+
+def knowledge_ref_within_evaluated_scope(
+    *,
+    ref: KnowledgeChunkCanonicalRef,
+    evaluated_scope: KnowledgeReferenceReadScope,
+) -> bool:
+    if ref.tenant_id != evaluated_scope.tenant_id:
+        return False
+    resource = evaluated_scope.resource
+    if resource is None:
+        return True
+    if resource.document_id is not None and ref.document_id != resource.document_id:
+        return False
+    if resource.source_id is not None and ref.source_id != resource.source_id:
+        return False
+    return True
 
 
 def ucl_read_scope_from_context_view(
@@ -282,8 +347,6 @@ def ucl_ref_within_request_scope(
         return False
     if ref.context_scope_id != operation.resource_scope:
         return False
-    if scope.work_item_id is not None and ref.tenant_id != scope.tenant_id:
-        return False
     return True
 
 
@@ -302,7 +365,6 @@ def candidate_scope_for_ucl_ref(
     return ContextViewScope(
         tenant_id=ref.tenant_id,
         workspace_id=ref.workspace_id,
-        work_item_id=request_scope.work_item_id,
         operation_scope=narrowed_operation,
     )
 
@@ -371,6 +433,18 @@ def map_collaborative_work_version_ref(
     )
 
 
+def _collaborative_work_item_id(
+    ref: (
+        CollaborativeWorkItemCanonicalRef
+        | CollaborativeWorkArtifactCanonicalRef
+        | CollaborativeWorkArtifactVersionCanonicalRef
+    ),
+) -> str:
+    if isinstance(ref, CollaborativeWorkItemCanonicalRef):
+        return ref.work_item_id
+    return ref.work_item_id
+
+
 def collaborative_work_ref_within_request_scope(
     *,
     ref: (
@@ -386,8 +460,7 @@ def collaborative_work_ref_within_request_scope(
     if ref.workspace_id != scope.workspace_id:
         return False
     if scope.work_item_id is not None:
-        work_item = getattr(ref, "work_item_id", None)
-        if work_item != scope.work_item_id:
+        if _collaborative_work_item_id(ref) != scope.work_item_id:
             return False
     return True
 
@@ -401,13 +474,7 @@ def candidate_scope_for_collaborative_work_ref(
     ),
     request_scope: ContextViewScope,
 ) -> ContextViewScope:
-    work_item_id = request_scope.work_item_id
-    if isinstance(ref, CollaborativeWorkItemCanonicalRef):
-        work_item_id = ref.work_item_id
-    elif isinstance(ref, CollaborativeWorkArtifactCanonicalRef):
-        work_item_id = ref.work_item_id
-    else:
-        work_item_id = ref.work_item_id
+    work_item_id = _collaborative_work_item_id(ref)
     return ContextViewScope(
         tenant_id=ref.tenant_id,
         workspace_id=ref.workspace_id,

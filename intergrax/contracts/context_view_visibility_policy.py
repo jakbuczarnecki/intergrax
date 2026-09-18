@@ -35,6 +35,15 @@ DEFAULT_CONTEXT_VIEW_VISIBILITY_POLICY_ID: Final = (
     "collaborative_work.context_view.visibility.default"
 )
 
+
+def suggested_context_view_source_visibility(
+    eligible_visibility_classes: tuple[ContextViewVisibilityClass, ...],
+) -> ContextViewVisibilityClass:
+    """Default source-suggested visibility — first MP-5C canonical eligibility priority entry."""
+    if not eligible_visibility_classes:
+        raise ValueError("eligible_visibility_classes must be non-empty")
+    return eligible_visibility_classes[0]
+
 _NON_EMPTY = Field(min_length=1)
 
 
