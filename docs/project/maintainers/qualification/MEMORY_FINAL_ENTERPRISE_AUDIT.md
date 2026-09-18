@@ -1504,3 +1504,32 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D-R3 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.
+
+## MEM-FINAL-AUDIT-5E — pgvector SessionTurnIndex real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Path | `SessionTurnIndexStore` → `VectorSessionTurnIndexStore` → vector ports → pgvector provider |
+| Memory provider ID | `vector.session_turn_index` |
+| Backend | `pgvector` (`intergrax/integrations/providers/vector_store/pgvector/`) |
+| Real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py` |
+| Harness | `tests/integration/memory/e2e/pgvector_session_turn_index_real_vendor_support.py` |
+| Infrastructure | Docker `infra/docker/postgresql` service `pgvector` (`INTERGRAX_PGVECTOR_DSN`, `INTERGRAX_PGVECTOR_DIMENSION`) |
+| Markers | `external_proof`, `qualification`, `no_ci`, `docker` |
+| Durability proof kind | `REAL_VENDOR_RECONNECT` (new client/provider/store; PostgreSQL service restart **not executed**) |
+| Evidence source | `pgvector_session_turn_index_real_vendor_qualification` |
+| Scope SQL | Backend `tenant_id` / namespace / workspace + JSONB metadata filters (cosine `<=>`) |
+| STI production admission | Reuses generic 5D-R admission (pgvector-specific trusted evidence required) |
+| Canonical authority | STI remains **derived** episodic index |
+| V-level | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (pgvector backing) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5E-01 (pgvector STI lacked Memory-scoped real-vendor qualification) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** (unchanged) |
+| GAP-4-07 (Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5F AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5E muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5F.
