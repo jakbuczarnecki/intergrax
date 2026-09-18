@@ -82,10 +82,16 @@ class _StaticAdmission(RootExecutionAuthorityAdmissionPort):
 def _launch_request() -> object:
     from intergrax.contracts.root_execution_launch import RootExecutionLaunchRequest
 
+    from intergrax.contracts.admitted_root_governance_identity import (
+        AdmittedRootGovernanceIdentity,
+    )
+
     return RootExecutionLaunchRequest(
-        tenant_id="tenant-gov-final-4",
-        workspace_id="workspace-gov-final-4",
-        principal_id="principal-gov-final-4",
+        admitted_governance_identity=AdmittedRootGovernanceIdentity(
+            tenant_id="tenant-gov-final-4",
+            workspace_id="workspace-gov-final-4",
+            principal_id="principal-gov-final-4",
+        ),
         root_execution_operation=RootExecutionOperation.ROOT_AGENT,
         collaborative_authority_scopes=("workspace.read",),
         effective_authority_decision=EffectiveAuthorityDecision(

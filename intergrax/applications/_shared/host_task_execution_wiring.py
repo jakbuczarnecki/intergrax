@@ -10,6 +10,9 @@ from intergrax.applications._shared.profile_resolution.execution_admission impor
     EffectiveProfileExecutionPinningDependencies,
     build_effective_profile_revision_admission,
 )
+from intergrax.applications._shared.harness_admitted_root_governance_identity import (
+    admit_harness_root_governance_identity,
+)
 from intergrax.applications._shared.harness_root_execution_launch_wiring import (
     build_harness_root_execution_authority_admission,
 )
@@ -48,6 +51,7 @@ def build_host_task_execution(
         root_authority_admission=(
             root_authority_admission or build_harness_root_execution_authority_admission()
         ),
+        admit_root_governance_identity=admit_harness_root_governance_identity,
         skill_host_wiring=skill_host_wiring,
     )
 

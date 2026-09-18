@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from typing import Protocol
 
+from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -62,10 +64,8 @@ from intergrax.runtime.execution.host_root_execution_intake import (
     HostRootExecutionIntakePayload,
 )
 from intergrax.runtime.execution.host_root_launch_evidence import (
-    host_principal_id,
     host_upstream_collaborative_scopes,
     host_upstream_effective_authority_decision,
-    host_workspace_id,
 )
 from intergrax.runtime.execution.root_execution_operation_mapping import (
     root_execution_operation_from_request,
@@ -327,6 +327,7 @@ class HostTaskExecution:
     _ledger_factory: ExecutionBudgetLedgerFactory | None
     _run_budget: RunBudget | None
     _root_authority_admission: RootExecutionAuthorityAdmissionPort
+    _admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity]
     _terminal_publisher: HostTaskTerminalPublisher | None = None
     _revision_admission: EffectiveProfileRevisionAdmissionPort | None = None
     _execution_lineage_persistence: ExecutionLineagePersistence | None = None
@@ -509,11 +510,21 @@ class HostTaskExecution:
         await ActiveTaskRegistry.register(task, identity.run_id)
         try:
             if restore_existing_execution:
+                try:
+                    continuation_admitted = self._admit_root_governance_identity(task)
+                except ValueError as exc:
+                    return TaskResult(
+                        task_id=task.task_id,
+                        run_id=identity.run_id,
+                        state=TaskState.FAILED,
+                        answer=f"root governance identity admission failed: {exc}",
+                        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+                    )
                 continuation_options = RootExecutionOptions(
                     authority=resolve_root_parent_execution_authority(
                         task.execution_authority
                     ),
-                    tenant_id=task.tenant_id,
+                    governance_identity=continuation_admitted,
                     run_id=identity.run_id,
                     attempt_id=identity.attempt_id,
                     execution_id=identity.execution_id,
@@ -531,15 +542,23 @@ class HostTaskExecution:
                     options=continuation_options,
                     held_root_capacity_permit=held_root_capacity,
                 )
+            try:
+                admitted_identity = self._admit_root_governance_identity(task)
+            except ValueError as exc:
+                return TaskResult(
+                    task_id=task.task_id,
+                    run_id=identity.run_id,
+                    state=TaskState.FAILED,
+                    answer=f"root governance identity admission failed: {exc}",
+                    authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+                )
             launcher = self._launcher_for_task(
                 task,
                 execution_capacity_admission=runtime_capacity,
             )
             launch_result = await launcher.launch(
                 RootExecutionLaunchRequest(
-                    tenant_id=task.tenant_id,
-                    workspace_id=host_workspace_id(task),
-                    principal_id=host_principal_id(task),
+                    admitted_governance_identity=admitted_identity,
                     root_execution_operation=root_execution_operation_from_request(
                         request
                     ),

@@ -51,11 +51,9 @@ def test_gr10_adr1_adr_forbids_empty_and_fake_subjects() -> None:
 
 def test_gr10_adr1_intake_requires_governance_scope_fields() -> None:
     names = {f.name for f in fields(CanonicalExecutionIntakeRequest)}
-    for required in ("tenant_id", "workspace_id", "principal_id"):
-        assert required in names
+    assert "admitted_governance_identity" in names
     source = _read(REPO_ROOT / "intergrax/contracts/execution_intake.py")
-    assert "workspace_id must be non-empty" in source
-    assert "principal_id must be non-empty" in source
+    assert "admitted_governance_identity must be AdmittedRootGovernanceIdentity" in source
 
 
 def test_gr10_adr1_evaluate_pre_llm_requires_principal_after_c1() -> None:

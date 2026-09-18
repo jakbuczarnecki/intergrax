@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
+from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -51,26 +52,32 @@ class CanonicalExecutionIntakeRequest(Generic[PayloadT]):
 
     payload: PayloadT
     trusted_parent_execution_authority: ParentExecutionAuthority
-    tenant_id: str
-    workspace_id: str
-    principal_id: str
+    admitted_governance_identity: AdmittedRootGovernanceIdentity
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
     execution_id: ExecutionId | None = None
     task_id: TaskId | None = None
     segment_predecessor_root_execution_id: ExecutionId | None = None
 
+    @property
+    def tenant_id(self) -> str:
+        return self.admitted_governance_identity.tenant_id
+
+    @property
+    def workspace_id(self) -> str:
+        return self.admitted_governance_identity.workspace_id
+
+    @property
+    def principal_id(self) -> str:
+        return self.admitted_governance_identity.principal_id
+
     def __post_init__(self) -> None:
         if type(self.trusted_parent_execution_authority) is not ParentExecutionAuthority:
             raise TypeError(
                 "trusted_parent_execution_authority must be ParentExecutionAuthority"
             )
-        if not self.tenant_id.strip():
-            raise ValueError("tenant_id must be non-empty")
-        if not self.workspace_id.strip():
-            raise ValueError("workspace_id must be non-empty")
-        if not self.principal_id.strip():
-            raise ValueError("principal_id must be non-empty")
+        if type(self.admitted_governance_identity) is not AdmittedRootGovernanceIdentity:
+            raise TypeError("admitted_governance_identity must be AdmittedRootGovernanceIdentity")
         if self.run_id is not None:
             validate_run_id(self.run_id)
         if self.attempt_id is not None:

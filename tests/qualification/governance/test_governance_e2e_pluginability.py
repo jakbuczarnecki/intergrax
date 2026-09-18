@@ -79,10 +79,16 @@ class _CustomDenyAdmission(RuntimeExecutionPolicyAdmissionPort):
 
 
 def _launch_request() -> RootExecutionLaunchRequest[_Payload]:
+    from intergrax.contracts.admitted_root_governance_identity import (
+        AdmittedRootGovernanceIdentity,
+    )
+
     return RootExecutionLaunchRequest(
-        tenant_id="tenant-plugin",
-        workspace_id="workspace-plugin",
-        principal_id="principal-plugin",
+        admitted_governance_identity=AdmittedRootGovernanceIdentity(
+            tenant_id="tenant-plugin",
+            workspace_id="workspace-plugin",
+            principal_id="principal-plugin",
+        ),
         root_execution_operation=RootExecutionOperation.ROOT_AGENT,
         collaborative_authority_scopes=("workspace.read",),
         effective_authority_decision=EffectiveAuthorityDecision(

@@ -24,6 +24,9 @@ from intergrax.contracts.execution_identity import (
     mint_task_id,
     validate_execution_id,
 )
+from intergrax.applications._shared.harness_admitted_root_governance_identity import (
+    admit_harness_root_governance_identity,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.host_task_terminal_publisher import HostTaskTerminalPublisher
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -73,6 +76,7 @@ def _build_host_task_execution(
         _run_budget=execution._run_budget,
         _terminal_publisher=terminal_publisher,
         _root_authority_admission=execution._root_authority_admission,
+        _admit_root_governance_identity=admit_harness_root_governance_identity,
     )
 
 

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Generic, Protocol, TypeVar, runtime_checkable
 
+from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.autonomous_work.execution_authority import validate_authority_scopes
 from intergrax.contracts.collaborative_work import EffectiveAuthorityDecision
 from intergrax.contracts.execution_identity import (
@@ -45,9 +46,7 @@ class RootExecutionLaunchDisposition(StrEnum):
 class RootExecutionLaunchRequest(Generic[PayloadT]):
     """Trusted launch inputs — caller must not supply admission-provenanced authority."""
 
-    tenant_id: str
-    workspace_id: str
-    principal_id: str
+    admitted_governance_identity: AdmittedRootGovernanceIdentity
     root_execution_operation: RootExecutionOperation
     collaborative_authority_scopes: tuple[str, ...]
     effective_authority_decision: EffectiveAuthorityDecision
@@ -58,13 +57,21 @@ class RootExecutionLaunchRequest(Generic[PayloadT]):
     task_id: TaskId | None = None
     segment_predecessor_root_execution_id: ExecutionId | None = None
 
+    @property
+    def tenant_id(self) -> str:
+        return self.admitted_governance_identity.tenant_id
+
+    @property
+    def workspace_id(self) -> str:
+        return self.admitted_governance_identity.workspace_id
+
+    @property
+    def principal_id(self) -> str:
+        return self.admitted_governance_identity.principal_id
+
     def __post_init__(self) -> None:
-        if not self.tenant_id.strip():
-            raise ValueError("tenant_id must be non-empty")
-        if not self.workspace_id.strip():
-            raise ValueError("workspace_id must be non-empty")
-        if not self.principal_id.strip():
-            raise ValueError("principal_id must be non-empty")
+        if type(self.admitted_governance_identity) is not AdmittedRootGovernanceIdentity:
+            raise TypeError("admitted_governance_identity must be AdmittedRootGovernanceIdentity")
         if type(self.root_execution_operation) is not RootExecutionOperation:
             raise TypeError("root_execution_operation must be RootExecutionOperation")
         normalize_root_execution_policy_operation(self.root_execution_operation)

@@ -14,6 +14,7 @@ from tests.unit.runtime.architecture.gr2_r3_model_c1_ast import (
     collect_forbidden_authority_resolution_calls,
     collect_forbidden_execution_facade_imports,
     collect_forbidden_execution_runtime_imports,
+    collect_forbidden_host_evidence_governance_calls,
     collect_forbidden_legacy_execute_root_task_imports,
     collect_forbidden_root_construction_calls,
     collect_forbidden_root_engine_execute_calls,
@@ -85,6 +86,14 @@ def test_production_has_no_unauthorized_root_construction() -> None:
     violations = _scan_production(
         collect_forbidden_root_construction_calls,
         INTERNAL_ROOT_ENGINE_ALLOWLIST,
+    )
+    assert violations == []
+
+
+def test_production_has_no_host_evidence_helpers_on_governance_authority_path() -> None:
+    violations = _scan_production(
+        collect_forbidden_host_evidence_governance_calls,
+        frozenset(),
     )
     assert violations == []
 
@@ -235,7 +244,7 @@ def test_gate_detects_root_execution_options_construction() -> None:
 def test_gate_detects_direct_intake_construction() -> None:
     source = (
         "def bypass():\n"
-        "    CanonicalExecutionIntakeRequest(payload=object(), trusted_parent_execution_authority=object(), tenant_id='t', workspace_id='w', principal_id='p')\n"
+        "    CanonicalExecutionIntakeRequest(payload=object(), trusted_parent_execution_authority=object(), admitted_governance_identity=object())\n"
     )
     _, tree, rel = _parse_fixture(source)
     violations = collect_forbidden_root_construction_calls(tree, rel_path=rel)

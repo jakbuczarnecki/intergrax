@@ -28,6 +28,7 @@ from intergrax.runtime.governance.default_root_execution_launcher import Default
 from intergrax.runtime.governance.execution_admission_composition import (
     build_root_execution_authority_admission,
 )
+from testing_support.root_execution_launch_fixtures import sample_admitted_root_governance_identity
 from intergrax.runtime.governance.runtime_execution_policy_admission import (
     AllowingRuntimeExecutionPolicyAdmission,
     DenyingRuntimeExecutionPolicyAdmission,
@@ -88,9 +89,7 @@ def _launch_request(
     from intergrax.contracts.root_execution_launch import RootExecutionLaunchRequest
 
     return RootExecutionLaunchRequest(
-        tenant_id="tenant-a",
-        workspace_id="workspace-x",
-        principal_id="principal-1",
+        admitted_governance_identity=sample_admitted_root_governance_identity(),
         root_execution_operation=operation,
         collaborative_authority_scopes=(_READ,),
         effective_authority_decision=EffectiveAuthorityDecision(

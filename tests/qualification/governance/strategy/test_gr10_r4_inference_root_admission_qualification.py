@@ -58,6 +58,23 @@ _HOST_TASK_PY = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.
 _READ = "workspace.read"
 
 
+def _admitted(
+    *,
+    tenant_id: str = "tenant-a",
+    workspace_id: str = "workspace-x",
+    principal_id: str = "principal-1",
+) -> object:
+    from intergrax.contracts.admitted_root_governance_identity import (
+        AdmittedRootGovernanceIdentity,
+    )
+
+    return AdmittedRootGovernanceIdentity(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        principal_id=principal_id,
+    )
+
+
 @dataclass(frozen=True)
 class _Payload:
     value: str
@@ -204,9 +221,7 @@ async def test_gr10_r4_root_inference_launcher_deny_zero_intake() -> None:
     )
     result = await launcher.launch(
         RootExecutionLaunchRequest(
-            tenant_id="tenant-a",
-            workspace_id="workspace-x",
-            principal_id="principal-1",
+            admitted_governance_identity=_admitted(),
             root_execution_operation=RootExecutionOperation.ROOT_INFERENCE,
             collaborative_authority_scopes=(_READ,),
             effective_authority_decision=EffectiveAuthorityDecision(
@@ -249,9 +264,7 @@ async def test_gr10_r4_root_inference_launcher_allow_exactly_one_intake() -> Non
     )
     result = await launcher.launch(
         RootExecutionLaunchRequest(
-            tenant_id="tenant-a",
-            workspace_id="workspace-x",
-            principal_id="principal-1",
+            admitted_governance_identity=_admitted(),
             root_execution_operation=RootExecutionOperation.ROOT_INFERENCE,
             collaborative_authority_scopes=(_READ,),
             effective_authority_decision=EffectiveAuthorityDecision(
@@ -277,9 +290,10 @@ async def test_gr10_r4_custom_runtime_policy_admission_blocks_root_inference() -
     )
     result = await launcher.launch(
         RootExecutionLaunchRequest(
-            tenant_id="tenant-a",
-            workspace_id="workspace-w",
-            principal_id="principal-p",
+            admitted_governance_identity=_admitted(
+                workspace_id="workspace-w",
+                principal_id="principal-p",
+            ),
             root_execution_operation=RootExecutionOperation.ROOT_INFERENCE,
             collaborative_authority_scopes=(_READ,),
             effective_authority_decision=EffectiveAuthorityDecision(
@@ -311,9 +325,7 @@ async def test_gr10_r4_root_deny_skips_inference_delegate_dispatch() -> None:
     )
     result = await launcher.launch(
         RootExecutionLaunchRequest(
-            tenant_id="tenant-a",
-            workspace_id="workspace-x",
-            principal_id="principal-1",
+            admitted_governance_identity=_admitted(),
             root_execution_operation=RootExecutionOperation.ROOT_INFERENCE,
             collaborative_authority_scopes=(_READ,),
             effective_authority_decision=EffectiveAuthorityDecision(

@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from intergrax.agents.persistence.skill_host_wiring import HostSkillCatalogWiring
+from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.runtime_execution_admission import RootExecutionAuthorityAdmissionPort
 from intergrax.runtime.execution.effective_profile_revision_admission import (
     EffectiveProfileRevisionAdmissionPort,
@@ -16,6 +19,9 @@ from intergrax.runtime.execution.failure_evidence.runtime_event_recorder import 
 from intergrax.runtime.execution.continuation.persistence import (
     wire_execution_continuation_state_store,
 )
+from intergrax.runtime.execution.certified_internal_harness_governance_identity import (
+    admit_certified_internal_harness_root_governance_identity,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_task_terminal import (
     build_nexus_host_task_terminal_publisher,
@@ -23,6 +29,7 @@ from intergrax.runtime.execution.nexus_host_task_terminal import (
 from intergrax.runtime.execution.orchestration import OrchestrationExecutor
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.task.task import Task
 
 
 def build_host_task_execution(
@@ -32,9 +39,14 @@ def build_host_task_execution(
     pipeline_capability_suffix: str = ".pipeline",
     revision_admission: EffectiveProfileRevisionAdmissionPort | None = None,
     root_authority_admission: RootExecutionAuthorityAdmissionPort,
+    admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity] | None = None,
     skill_host_wiring: HostSkillCatalogWiring | None = None,
 ) -> HostTaskExecution:
     """Internal composition builder: extract canonical execution dependencies from Nexus."""
+    resolved_admit = (
+        admit_root_governance_identity
+        or admit_certified_internal_harness_root_governance_identity
+    )
     return HostTaskExecution(
         _agent_engine=nexus_loop.agent_engine,
         _agent_router=AgentRouter(
@@ -56,6 +68,7 @@ def build_host_task_execution(
         _continuation_state_store=wire_execution_continuation_state_store(),
         _declarative_tool_invoker=nexus_loop.declarative_tool_invoker,
         _skill_host_wiring=skill_host_wiring,
+        _admit_root_governance_identity=resolved_admit,
     )
 
 

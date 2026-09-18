@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from contextvars import Token
 
+from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.execution.inference import InferenceExecutor
@@ -42,9 +43,11 @@ def governed_inference_executor(
 def governed_root_execution_options(**overrides: object) -> RootExecutionOptions:
     base = {
         "authority": ParentExecutionAuthority.unrestricted_root(),
-        "tenant_id": TEST_INFERENCE_TENANT_ID,
-        "workspace_id": TEST_INFERENCE_WORKSPACE_ID,
-        "principal_id": TEST_INFERENCE_PRINCIPAL_ID,
+        "governance_identity": AdmittedRootGovernanceIdentity(
+            tenant_id=TEST_INFERENCE_TENANT_ID,
+            workspace_id=TEST_INFERENCE_WORKSPACE_ID,
+            principal_id=TEST_INFERENCE_PRINCIPAL_ID,
+        ),
     }
     base.update(overrides)
     return RootExecutionOptions(**base)

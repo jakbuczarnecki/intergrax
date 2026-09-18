@@ -239,10 +239,16 @@ async def execute_uaep_step_via_kernel(
 
 
 def _runtime_request_identity(request: RuntimeRequest) -> RequestIdentity:
+    """Request/run identity projection only — not governance authority."""
     if request.canonical_identity is not None:
         return request.canonical_identity
-    tenant = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
-    return RequestIdentity(tenant_id=tenant, user_id=request.user_id)
+    tenant = request.tenant_id
+    if tenant is None:
+        meta_tenant = request.metadata.get("tenant_id")
+        tenant = meta_tenant if isinstance(meta_tenant, str) else None
+    if tenant is None or not str(tenant).strip():
+        raise ValueError("runtime request identity projection requires tenant_id")
+    return RequestIdentity(tenant_id=str(tenant).strip(), user_id=request.user_id)
 
 
 def build_kernel_session(
