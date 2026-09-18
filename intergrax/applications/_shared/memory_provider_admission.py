@@ -16,6 +16,8 @@ from intergrax.memory.contracts.provider_admission import (
     UserProfileStoreProviderClassification,
     classify_user_profile_store_provider,
     evaluate_production_persistent_user_profile_admission,
+    evaluate_production_session_turn_index_store_admission,
+    lookup_trusted_memory_provider_qualification_evidence,
     lookup_trusted_user_profile_durability_evidence,
     lookup_trusted_user_profile_qualification_evidence,
 )
@@ -28,6 +30,10 @@ from intergrax.memory.contracts.provider_durability_evidence import (
     MemoryProviderDurabilityEvidenceResolveStatus,
 )
 from intergrax.memory.contracts.provider_identity import MemoryProviderIdentity
+from intergrax.memory.contracts.provider_qualification import (
+    MemoryProviderCapabilityKind,
+    MemoryProviderQualificationStatus,
+)
 from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidenceLookup,
     MemoryProviderQualificationEvidenceRegistry,
@@ -37,21 +43,47 @@ from intergrax.memory.user_profile_store import UserProfileStore
 
 
 class _EmptyDurabilityEvidenceRegistry:
-    def resolve(self, provider_id: str, capability: object, provider_version: str | None = None):
-        _ = (provider_id, capability, provider_version)
+    def resolve(
+        self,
+        provider_id: str,
+        capability: object,
+        provider_version: str | None = None,
+        backing_provider_id: str | None = None,
+        backing_provider_version: str | None = None,
+    ):
+        _ = (
+            provider_id,
+            capability,
+            provider_version,
+            backing_provider_id,
+            backing_provider_version,
+        )
         return MemoryProviderDurabilityEvidenceLookup(
             resolve_status=MemoryProviderDurabilityEvidenceResolveStatus.MISSING,
         )
 
 
 class _EmptyQualificationEvidenceRegistry:
-    def resolve(self, provider_id: str, capability: object, provider_version: str | None = None):
+    def resolve(
+        self,
+        provider_id: str,
+        capability: object,
+        provider_version: str | None = None,
+        backing_provider_id: str | None = None,
+        backing_provider_version: str | None = None,
+    ):
         from intergrax.memory.contracts.provider_qualification_evidence import (
             MemoryProviderQualificationEvidenceLookup,
             MemoryProviderQualificationEvidenceResolveStatus,
         )
 
-        _ = (provider_id, capability, provider_version)
+        _ = (
+            provider_id,
+            capability,
+            provider_version,
+            backing_provider_id,
+            backing_provider_version,
+        )
         return MemoryProviderQualificationEvidenceLookup(
             resolve_status=MemoryProviderQualificationEvidenceResolveStatus.MISSING,
         )
@@ -64,6 +96,12 @@ def persistent_canonical_user_profile_memory_required(
     return (
         memory_profile.enable_user_memory or memory_profile.enable_long_term_memory
     )
+
+
+def session_turn_index_vector_memory_required(
+    env: ApplicationEnvironmentProfile,
+) -> bool:
+    return env.memory_profile.enable_session_vector_index
 
 
 @dataclass(frozen=True, slots=True)
@@ -210,4 +248,62 @@ def validate_memory_platform_wiring_admission(
         declared_qualification_status=classification.declared_qualification_status,
         trusted_qualification_status=None,
         reference_only=classification.reference_only,
+    )
+
+
+def validate_session_turn_index_store_admission(
+    env: ApplicationEnvironmentProfile,
+    *,
+    provider_identity: MemoryProviderIdentity | None,
+    qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
+    admission_evidence: MemoryProviderAdmissionEvidenceContext | None = None,
+) -> None:
+    """Fail closed on PRODUCT when episodic STI is enabled without trusted qualification."""
+    if not session_turn_index_vector_memory_required(env):
+        return
+    if env.application_profile is not ApplicationProfile.PRODUCT:
+        return
+
+    if admission_evidence is not None:
+        registry = admission_evidence.qualification_registry
+    else:
+        registry = qualification_evidence_registry or _EmptyQualificationEvidenceRegistry()
+
+    if provider_identity is None:
+        evidence_lookup = MemoryProviderQualificationEvidenceLookup(
+            resolve_status=MemoryProviderQualificationEvidenceResolveStatus.MISSING,
+        )
+    else:
+        evidence_lookup = lookup_trusted_memory_provider_qualification_evidence(
+            registry,
+            provider_identity,
+        )
+
+    evaluation = evaluate_production_session_turn_index_store_admission(
+        provider_identity,
+        evidence_lookup,
+    )
+    if evaluation.admitted:
+        return
+
+    reason = evaluation.reason_code or MemoryProviderAdmissionReasonCode.PROVIDER_MISSING
+    evidence = evidence_lookup.evidence
+    raise MemoryProviderAdmissionError(
+        capability=MemoryProviderCapabilityKind.SESSION_TURN_INDEX_STORE,
+        execution_mode=env.execution_mode.value,
+        application_profile=env.application_profile.value,
+        reason_code=reason,
+        provider_id=evaluation.provider_id,
+        durability=MemoryProviderDurability.UNKNOWN,
+        declared_qualification_status=MemoryProviderQualificationStatus.NOT_QUALIFIED,
+        trusted_qualification_status=evaluation.trusted_qualification_status,
+        reference_only=False,
+        qualification_run_id=evaluation.qualification_run_id,
+        trusted_provider_id=(
+            provider_identity.provider_id if provider_identity is not None else None
+        ),
+        trusted_backing_provider_id=evaluation.backing_provider_id,
+        evidence_backing_provider_id=(
+            evidence.backing_provider_id if evidence is not None else None
+        ),
     )

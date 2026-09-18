@@ -57,7 +57,7 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | Entity indexer | `DefaultEntityMemoryIndexer` | derived | n/a | **CONTRACT QUALIFIED** (service) |
 | Procedural | `intergrax.in_memory_procedural` | **NONE** | **NO** | **NOT QUALIFIED** durable |
 | Long-horizon | `intergrax.in_memory_long_horizon` | **NONE** | **NO** | **NOT QUALIFIED** durable |
-| SessionTurnIndex | `InMemorySessionTurnIndexStore` | `VectorSessionTurnIndexStore` (ephemeral vector ports) | **NO** | **NOT QUALIFIED** |
+| SessionTurnIndex | `InMemorySessionTurnIndexStore` | `VectorSessionTurnIndexStore` + Qdrant/pgvector backing | **YES (Qdrant + pgvector STI)** | **V6 Qdrant + pgvector reconnect qualified**; Chroma open |
 | Task memory | `InMemoryTaskMemoryStore` | `SQLiteTaskMemoryStore` | **NO** | **CONDITIONALLY** — env/db path |
 | Organization profile | `InMemoryOrganizationProfileStore` | `SQLiteOrganizationProfileStore` | **NO** | **CONDITIONALLY** — sqlite bundle only |
 | Conversational | `InMemoryConversationalMemoryStore` | `SQLiteConversationalMemoryStore` | **NO** | **LEGACY** — not canonical plane |
@@ -81,7 +81,7 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | Procedural | `InMemoryProceduralMemoryStore` | in-proc | `ProcedureMemoryStore` | `intergrax.in_memory_procedural` | NO | NO | qual runner | NO | profile flag | V2 | REFERENCE ONLY |
 | Long-horizon | `InMemoryLongHorizonMemoryStore` | in-proc | `LongHorizonMemoryStore` | `intergrax.in_memory_long_horizon` | NO | NO | qual runner | NO | profile flag | V2 | REFERENCE ONLY |
 | SessionTurnIndex | `InMemorySessionTurnIndexStore` | in-proc | `SessionTurnIndexStore` | classifiable | NO | NO | qual runner | NO | qual / tests | V2 | REFERENCE ONLY |
-| SessionTurnIndex | `VectorSessionTurnIndexStore` | vector adapter | `SessionTurnIndexStore` | STI EP optional | via RAG | **NO proof** | unit scope | **NO** | `enable_session_vector_index` + RAG | V1–V2 | **NOT REAL-VENDOR QUALIFIED** |
+| SessionTurnIndex | `VectorSessionTurnIndexStore` | vector adapter | `SessionTurnIndexStore` | STI EP optional | Qdrant + pgvector reconnect proved | client reconnect | unit + 5D/5E E2E | **YES (Qdrant, pgvector)** | `enable_session_vector_index` + RAG | V6 | **REAL-VENDOR RECONNECT QUALIFIED (Qdrant, pgvector)** |
 | Task memory | `InMemoryTaskMemoryStore` | in-proc | `TaskMemoryPersistence` | NO | NO | NO | unit | NO | tests | V2 | REFERENCE ONLY |
 | Task memory | `SQLiteTaskMemoryStore` | sqlite file | `TaskMemoryPersistence` | sqlite opens | YES | partial integ | unit | NO | env `INTERGRAX_TASK_MEMORY_DB` / lab | V4–V5 | DURABILITY QUALIFIED (platform semantics) |
 | Organization | `InMemoryOrganizationProfileStore` | in-proc | `OrganizationProfileStore` | NO | NO | NO | unit | NO | mongo path + org flag | V1 | NOT QUALIFIED durable |
@@ -92,7 +92,9 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | Observability | `RecordingMemoryObservabilitySink` | test | `MemoryObservabilitySink` | inject | n/a | n/a | n/a | NO | tests MEM-ENT-12 | V2 | CONTRACT QUALIFIED |
 | PostgreSQL Memory | `PostgresMemoryBackendConfig` spike | RFC | n/a | NO | n/a | n/a | n/a | NO | **not wired** | V0 | PLANNED ONLY |
 | MongoDB Memory | *(none)* | generic `DocumentStore` only | via adapter | NO | if mongo backend | NO | fake factory tests | NOT_EXECUTED | document_store slug | V0–V2 | **NOT MEMORY-QUALIFIED** as vendor |
-| Qdrant / pgvector / Chroma | RAG `vectorstore_manager` | integration layer | STI ports | NO Memory EP | unknown | **NO** | RAG tests only | **NO Memory STI E2E** | vector flags | V1 | **UNPROVEN CAPABILITY MAPPING** for Memory |
+| Qdrant (STI) | `VectorSessionTurnIndexStore` + `qdrant` | integration backing | STI ports | NO Memory EP | reconnect proved (5D) | client reconnect | 5D suite | **YES** | vector flags + Qdrant | V6 | **MEMORY STI QUALIFIED (Qdrant)** |
+| pgvector (STI) | `VectorSessionTurnIndexStore` + `pgvector` | integration backing | STI ports | NO Memory EP | reconnect proved (5E) | client reconnect | 5E suite | **YES** | vector flags + pgvector | V6 | **MEMORY STI QUALIFIED (pgvector)** |
+| Chroma (STI) | same adapter pattern | integration layer | STI ports | NO Memory EP | **NO** | RAG tests only | **NO Memory STI E2E** | vector flags | V1 | **OPEN (5F)** |
 
 ---
 
@@ -179,9 +181,9 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | **SQLite** | Yes (UserProfile, Task, Org, Conversational, Session) | MEM-ENT-13C durable harness + MEM-FINAL-AUDIT-5B reference certification | **UserProfile: REFERENCE DURABLE / RESTART QUALIFIED (V5)** — behavioral + durability evidence feed; not external V6 |
 | **MongoDB** | UserProfile via DocumentStore only | wiring unit test with factory | **NOT MEMORY-VENDOR QUALIFIED** |
 | **PostgreSQL** | RFC spike only | `postgres_memory_backend_rfc.py` | **PLANNED ONLY (V0)** |
-| **Qdrant** | None for Memory; RAG vector integration may use Qdrant elsewhere | **zero** Memory STI tests naming qdrant | **< V6** |
-| **pgvector** | same as Qdrant pattern | none Memory | **< V6** |
-| **Chroma** | same | none Memory | **< V6** |
+| **Qdrant** | `VectorSessionTurnIndexStore` backing via RAG ports | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` | **V6 STI reconnect qualified** |
+| **pgvector** | same adapter pattern | pgvector STI E2E (5E) | **V6 RECONNECT QUALIFIED** |
+| **Chroma** | same | none Memory STI | **< V6 (OPEN)** |
 
 ---
 
@@ -200,12 +202,12 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | ID | Capability | Provider | Missing proof | Sev | Target |
 | -- | ---------- | -------- | ------------- | --- | ------ |
 | GAP-4-01 | UserProfile | product + PostgreSQL preset | Durable Memory backend wiring / fail-closed | **CLOSED (5A)** | `memory_provider_admission` + `test_mem_audit5a_production_provider_admission.py` |
-| GAP-4-02 | SessionTurnIndex | `VectorSessionTurnIndexStore` + any vector backend | write → restart/reconnect → recall | P2 | AUDIT-5 P0 candidate |
+| GAP-4-02 | SessionTurnIndex | `VectorSessionTurnIndexStore` + Qdrant | write → reconnect → recall | **CLOSED (5D, Qdrant only)** | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` |
 | GAP-4-03 | Entity / Procedural / LH | in-memory only | durable vendor + restart | P2 | AUDIT-5 |
 | GAP-4-04 | UserProfile | Mongo DocumentStore | real-vendor qual execution | **CLOSED (5C)** | `test_mem_final_audit_5c_mongo_user_profile_real_vendor.py` |
 | GAP-4-05 | Organization | Mongo path | durable org store (uses InMemory org on mongo LTM path) | P2 | AUDIT-6 |
 | GAP-4-06 | Task memory | SQLite | restart/failure vendor suite | P2 | AUDIT-5 |
-| GAP-4-07 | All vector backends | Qdrant/pgvector/Chroma | Memory-scoped E2E | P2 | AUDIT-5 |
+| GAP-4-07 | Vector backends | Qdrant **CLOSED (5D)**; pgvector **CLOSED (5E)**; Chroma **OPEN** | Memory-scoped STI E2E | P2 | AUDIT-5 |
 | GAP-4-08 | PostgreSQL | Memory bundle | implementation | P3 | post-RFC |
 
 **P0:** NONE  
@@ -269,7 +271,134 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | PRODUCT memory disabled | InMemory baseline allowed (store not admission-gated) |
 | PRODUCT persistent + InMemory | `MemoryProviderAdmissionError` |
 | SQLite PRODUCT | Requires trusted `USER_PROFILE_STORE` evidence (`QUALIFIED`); self-declared qual ignored |
-| DocumentStore UserProfile (Mongo path) | Requires trusted behavioral + durability evidence (`document_store.user_profile`; proof `real_vendor_reconnect`) |
+| DocumentStore UserProfile (Mongo path) | Requires trusted behavioral + durability evidence for composite identity (`document_store.user_profile` + `mongodb`; proof `real_vendor_reconnect`) |
+
+## MEM-FINAL-AUDIT-5D — Qdrant SessionTurnIndex real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Adapter | `VectorSessionTurnIndexStore` → RAG vector ports → Qdrant integration (`qdrant`) |
+| Memory provider ID | `vector.session_turn_index` (`SESSION_TURN_INDEX_STORE`) |
+| Backend vendor ID | `qdrant` (`QDRANT_VECTOR_STORE_PROVIDER_ID`) |
+| Infrastructure | Local Qdrant (`INTERGRAX_QDRANT_*`, Docker `infra/docker/qdrant`) |
+| Behavioral qual | `MemoryProviderQualificationRunner` on real Qdrant-backed store |
+| Durability proof | Client/provider reconnect (`REAL_VENDOR_RECONNECT`); service restart **not executed** |
+| Evidence source | `qdrant_session_turn_index_real_vendor_qualification` |
+| STI production admission | **Enforced (5D-R)** — PRODUCT requires trusted qualification evidence for composite STI identity |
+| Application E2E | `SessionManager` episodic recall after Qdrant client reconnect |
+| Scope enforcement | Tenant-bound STI + Qdrant metadata filters (`tenant_id`, `session_id`, …) |
+| Verdict | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (Qdrant backing only) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-02 (Qdrant) | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | OPEN |
+| GAP-4-07 (Chroma) | OPEN |
+| GAP-5D-01 | **CLOSED (5D-R)** |
+
+## MEM-FINAL-AUDIT-5E — pgvector SessionTurnIndex real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Adapter | `VectorSessionTurnIndexStore` → RAG vector ports → pgvector integration (`pgvector`) |
+| Memory provider ID | `vector.session_turn_index` (`SESSION_TURN_INDEX_STORE`) |
+| Backend vendor ID | `pgvector` (`PGVECTOR_VECTOR_STORE_PROVIDER_ID`) |
+| Infrastructure | PostgreSQL 16 + pgvector extension (`infra/docker/postgresql` service `pgvector`; `INTERGRAX_PGVECTOR_*`) |
+| Behavioral qual | `MemoryProviderQualificationRunner` on real pgvector-backed store |
+| Durability proof | Client/provider reconnect (`REAL_VENDOR_RECONNECT`); PostgreSQL service restart **not executed** |
+| Evidence source | `pgvector_session_turn_index_real_vendor_qualification` |
+| Scope enforcement | SQL `tenant_id` / namespace / workspace + JSONB metadata filters; cosine distance |
+| Cross-vendor admission | Qdrant evidence cannot admit pgvector runtime; adapter-only evidence fails |
+| Application E2E | PRODUCT `SessionManager` episodic recall after pgvector client reconnect |
+| Verdict | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (pgvector backing) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5E-01 (pgvector STI lacked Memory-scoped real-vendor qualification) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** (unchanged) |
+| GAP-4-07 (Chroma) | OPEN |
+
+## MEM-FINAL-AUDIT-5E-R — Qdrant + pgvector Real-Vendor Regression Verification
+
+| Check | Result |
+| ----- | ------ |
+| Verified SHA | `a640c98f6fee7cb313f371efc102faf8fc0aa8e6` |
+| Qdrant suite @ SHA | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` — **PASS (13)** |
+| pgvector suite @ SHA | `test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py` — **PASS (19)** |
+| Same-SHA proof | **YES** — both suites executed on identical HEAD |
+| Qdrant infra | `intergrax-qdrant` Docker, `localhost:6333` (`INTERGRAX_QDRANT_HOST` default) |
+| pgvector infra | PostgreSQL **16.10**, pgvector extension **0.8.0**, psycopg **3.3.4**, DSN target `localhost:5433/intergrax_pgvector` (password omitted) |
+| Cross-vendor isolation | `provider_id` + `capability` + `backing_provider_id` + `backing_provider_version`; reverse mismatch covered (5D-R + 5E E2E) |
+| Production changes | **NONE** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5E-01 | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Chroma) | OPEN |
+
+## MEM-FINAL-AUDIT-5E-R2 — Current-HEAD Real-Vendor Verification
+
+| Check | Result |
+| ----- | ------ |
+| Previous same-SHA verification (5E-R) | `a640c98f6fee7cb313f371efc102faf8fc0aa8e6` |
+| **Current-head re-verification** | **`9acff5d0925e962e09bca6c525343ff227980bc8`** |
+| Qdrant suite @ SHA | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` — **PASS (13)** |
+| pgvector suite @ SHA | `test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py` — **PASS (19)**, DSN required |
+| Same-SHA proof | **YES** |
+| Qdrant infra | `intergrax-qdrant` Docker, `localhost:6333` |
+| pgvector infra | PostgreSQL **16.10**, pgvector **0.8.0**, psycopg **3.3.4**, `127.0.0.1:5433/intergrax_pgvector` |
+| Production changes | **NONE** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5E-01 | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Chroma) | OPEN |
+
+## MEM-FINAL-AUDIT-5D-R — SessionTurnIndex trusted production admission
+
+| Check | Result |
+| ----- | ------ |
+| Generic admission | `evaluate_production_session_turn_index_store_admission` |
+| Backing resolver | `vector_store_backing_provider_id(IntegrationProfile)` |
+| Enforcement | `validate_session_turn_index_store_admission` in Tier-3 vector wiring |
+| Tests | `test_mem_final_audit_5d_r_session_turn_index_production_admission.py` |
+| Qdrant PRODUCT E2E | Trusted evidence required; mismatch/missing fail closed |
+
+## MEM-FINAL-AUDIT-5D-R2 — SessionTurnIndex plugin identity hardening
+
+| Check | Result |
+| ----- | ------ |
+| Plugin path | Classified `SessionTurnIndexStorePlugin` only; identity from classifier `plugin_id` |
+| Builtin path | `vector.session_turn_index` + integration-profile vector backing when no plugin |
+| Forbidden | Builtin Qdrant evidence admitting external plugin; reflection-based `plugin_id` |
+| Selection | Multiple STI plugins without explicit policy → fail closed |
+| Tests | `test_mem_final_audit_5d_r2_session_turn_index_plugin_identity_hardening.py` |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5D-02 | **CLOSED** |
+| GAP-5D-01 | **CLOSED (5D-R)** |
+
+## MEM-FINAL-AUDIT-5D-R3 — SessionTurnIndex provider identity override elimination
+
+| Check | Result |
+| ----- | ------ |
+| API | `build_session_turn_index_store` — removed caller `provider_identity`; platform-owned derivation only |
+| Attack surface | External plugin cannot be admitted under builtin Qdrant identity via caller override |
+| Direct injection | Separate `session_turn_index_store` + `session_turn_index_store_identity` on `build_session_manager_from_environment` |
+| Tests | `test_mem_final_audit_5d_r3_session_turn_index_identity_override_elimination.py` |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5D-03 | **CLOSED** |
+| GAP-5D-02 | **CLOSED** |
+| GAP-5D-01 | **CLOSED (5D-R)** |
 
 ## MEM-FINAL-AUDIT-5C — Mongo UserProfile real-vendor qualification
 
@@ -285,11 +414,23 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | PRODUCT admission | Behavioral + durability evidence, matching `qualification_run_id` |
 | Application E2E | MemoryControlPlane remember/recall/forget after Mongo client reconnect |
 | Write semantics | `replace_one` + `upsert=True` on `(partition_key, row_key)` unique index |
-| Verdict | **REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** |
+| Verdict (execution) | Real Mongo behavioral + reconnect durability proved |
+| Identity binding (pre-5C-R) | Evidence keyed on adapter ID only — **GAP-5C-01** |
+
+## MEM-FINAL-AUDIT-5C-R — Composite adapter/backend identity binding
+
+| Check | Result |
+| ----- | ------ |
+| Composite trusted identity | `provider_id` + `backing_provider_id` on `MemoryProviderIdentity` |
+| Evidence / registry | Qualification + durability records and `resolve()` discriminate backing |
+| Mongo qualification descriptor | `backing_provider_id=mongodb` |
+| Substitution attack | Mongo evidence + `InMemoryDocumentStore` adapter wiring → **FAIL CLOSED** |
+| Verdict | **REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (`document_store.user_profile` + `mongodb`) |
 
 | Gap | Status |
 | --- | ------ |
-| GAP-4-04 | **CLOSED** |
+| GAP-5C-01 | **CLOSED** (Mongo evidence cannot qualify non-Mongo DocumentStore backend) |
+| GAP-4-04 | **FULLY CLOSED** |
 
 ## MEM-FINAL-AUDIT-5A-R — Trusted qualification evidence
 

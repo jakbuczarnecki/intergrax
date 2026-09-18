@@ -18,6 +18,7 @@ from intergrax.contracts.context_view import (
     ContextViewEntry,
     ContextViewKnowledgeSourceRef,
     ContextViewMemorySourceRef,
+    ContextViewScope,
     ContextViewUclSourceRef,
 )
 from intergrax.contracts.context_view_composition import (
@@ -36,6 +37,10 @@ from intergrax.contracts.context_view_composition import (
     validate_context_view_matches_composition_request,
 )
 from intergrax.contracts.context_view_composition import DefaultContextViewComposerConfig
+from intergrax.contracts.context_view_scope_compatibility import (
+    ContextViewScopeCompatibilityPolicy,
+    DefaultContextViewScopeCompatibilityPolicy,
+)
 from intergrax.contracts.context_view_source_ports import (
     CollaborativeWorkContextSourcePort,
     ContextViewCollaborativeWorkSourceCandidate,
@@ -140,6 +145,7 @@ class DefaultContextViewComposer:
         ordering_strategy: ContextViewCandidateOrderingStrategy | None = None,
         entry_identity_strategy: ContextViewEntryIdentityStrategy | None = None,
         view_identity_strategy: ContextViewIdentityStrategy | None = None,
+        scope_compatibility_policy: ContextViewScopeCompatibilityPolicy | None = None,
     ) -> None:
         self._memory_source = memory_source
         self._knowledge_source = knowledge_source
@@ -151,6 +157,9 @@ class DefaultContextViewComposer:
             entry_identity_strategy or Sha256ContextViewEntryIdentityStrategy()
         )
         self._view_identity_strategy = view_identity_strategy or Sha256ContextViewIdentityStrategy()
+        self._scope_compatibility_policy = (
+            scope_compatibility_policy or DefaultContextViewScopeCompatibilityPolicy()
+        )
 
     def compose(self, composition_request: ContextViewCompositionRequest) -> ContextView:
         decision = composition_request.policy_decision
@@ -204,7 +213,10 @@ class DefaultContextViewComposer:
                 category=category,
                 composition_request=composition_request,
             )
-            result = self._invoke_port(category=category, port=port, source_request=source_request)
+            result = self._list_candidates_for_category(
+                category=category,
+                source_request=source_request,
+            )
             self._raise_on_source_failure(category=category, outcome=result.outcome)
             for candidate in result.candidates:
                 self._validate_candidate_isolation(
@@ -261,28 +273,31 @@ class DefaultContextViewComposer:
         base = {
             "scope": decision.effective_scope,
             "acting_principal_id": request.acting_principal_id,
+            "principal_identity": composition_request.principal_identity,
             "eligible_visibility_classes": decision.eligible_visibility_classes,
         }
         if category is ContextViewCategory.MEMORY:
             return ContextViewMemorySourceRequest(**base)
         if category is ContextViewCategory.KNOWLEDGE:
-            return ContextViewKnowledgeSourceRequest(**base)
+            query_text = self._config.knowledge_reference_read_query_text
+            if not query_text:
+                raise ContextViewCompositionInvariantError(
+                    "knowledge_reference_read_query_text is required for KNOWLEDGE composition",
+                )
+            return ContextViewKnowledgeSourceRequest(
+                **base,
+                reference_read_query_text=query_text,
+            )
         if category is ContextViewCategory.UCL_CONTEXT_LIFECYCLE:
             return ContextViewUclSourceRequest(**base)
         if category is ContextViewCategory.COLLABORATIVE_WORK:
             return ContextViewCollaborativeWorkSourceRequest(**base)
         raise ContextViewCompositionInvariantError(f"unsupported category {category.value}")
 
-    def _invoke_port(
+    def _list_candidates_for_category(
         self,
         *,
         category: ContextViewCategory,
-        port: (
-            MemoryContextSourcePort
-            | KnowledgeContextSourcePort
-            | UclContextSourcePort
-            | CollaborativeWorkContextSourcePort
-        ),
         source_request: (
             ContextViewMemorySourceRequest
             | ContextViewKnowledgeSourceRequest
@@ -296,21 +311,43 @@ class DefaultContextViewComposer:
         | ContextViewCollaborativeWorkSourceCandidatesResult
     ):
         if category is ContextViewCategory.MEMORY:
-            memory_port: MemoryContextSourcePort = port
-            memory_request: ContextViewMemorySourceRequest = source_request
-            return memory_port.list_candidates(memory_request)
+            memory_port = self._memory_source
+            if memory_port is None:
+                raise ContextViewCompositionSourceFailureError(
+                    f"missing source port for eligible category {category.value}",
+                )
+            if not isinstance(source_request, ContextViewMemorySourceRequest):
+                raise ContextViewCompositionInvariantError("memory source request type mismatch")
+            return memory_port.list_candidates(source_request)
         if category is ContextViewCategory.KNOWLEDGE:
-            knowledge_port: KnowledgeContextSourcePort = port
-            knowledge_request: ContextViewKnowledgeSourceRequest = source_request
-            return knowledge_port.list_candidates(knowledge_request)
+            knowledge_port = self._knowledge_source
+            if knowledge_port is None:
+                raise ContextViewCompositionSourceFailureError(
+                    f"missing source port for eligible category {category.value}",
+                )
+            if not isinstance(source_request, ContextViewKnowledgeSourceRequest):
+                raise ContextViewCompositionInvariantError("knowledge source request type mismatch")
+            return knowledge_port.list_candidates(source_request)
         if category is ContextViewCategory.UCL_CONTEXT_LIFECYCLE:
-            ucl_port: UclContextSourcePort = port
-            ucl_request: ContextViewUclSourceRequest = source_request
-            return ucl_port.list_candidates(ucl_request)
+            ucl_port = self._ucl_source
+            if ucl_port is None:
+                raise ContextViewCompositionSourceFailureError(
+                    f"missing source port for eligible category {category.value}",
+                )
+            if not isinstance(source_request, ContextViewUclSourceRequest):
+                raise ContextViewCompositionInvariantError("ucl source request type mismatch")
+            return ucl_port.list_candidates(source_request)
         if category is ContextViewCategory.COLLABORATIVE_WORK:
-            collaborative_port: CollaborativeWorkContextSourcePort = port
-            collaborative_request: ContextViewCollaborativeWorkSourceRequest = source_request
-            return collaborative_port.list_candidates(collaborative_request)
+            collaborative_port = self._collaborative_work_source
+            if collaborative_port is None:
+                raise ContextViewCompositionSourceFailureError(
+                    f"missing source port for eligible category {category.value}",
+                )
+            if not isinstance(source_request, ContextViewCollaborativeWorkSourceRequest):
+                raise ContextViewCompositionInvariantError(
+                    "collaborative work source request type mismatch",
+                )
+            return collaborative_port.list_candidates(source_request)
         raise ContextViewCompositionInvariantError(f"unsupported category {category.value}")
 
     @staticmethod
@@ -329,32 +366,89 @@ class DefaultContextViewComposer:
         self,
         *,
         category: ContextViewCategory,
-        source_request: object,
-        candidate: object,
+        source_request: (
+            ContextViewMemorySourceRequest
+            | ContextViewKnowledgeSourceRequest
+            | ContextViewUclSourceRequest
+            | ContextViewCollaborativeWorkSourceRequest
+        ),
+        candidate: (
+            ContextViewMemorySourceCandidate
+            | ContextViewKnowledgeSourceCandidate
+            | ContextViewUclSourceCandidate
+            | ContextViewCollaborativeWorkSourceCandidate
+        ),
     ) -> None:
         try:
             if category is ContextViewCategory.MEMORY:
+                if not isinstance(source_request, ContextViewMemorySourceRequest):
+                    raise ContextViewCompositionInvariantError("memory source request type mismatch")
+                if not isinstance(candidate, ContextViewMemorySourceCandidate):
+                    raise ContextViewCompositionInvariantError("memory candidate type mismatch")
                 validate_memory_source_candidate_isolation(
-                    request=source_request,  # type: ignore[arg-type]
-                    candidate=candidate,  # type: ignore[arg-type]
+                    request=source_request,
+                    candidate=candidate,
                 )
             elif category is ContextViewCategory.KNOWLEDGE:
+                if not isinstance(source_request, ContextViewKnowledgeSourceRequest):
+                    raise ContextViewCompositionInvariantError("knowledge source request type mismatch")
+                if not isinstance(candidate, ContextViewKnowledgeSourceCandidate):
+                    raise ContextViewCompositionInvariantError("knowledge candidate type mismatch")
                 validate_knowledge_source_candidate_isolation(
-                    request=source_request,  # type: ignore[arg-type]
-                    candidate=candidate,  # type: ignore[arg-type]
+                    request=source_request,
+                    candidate=candidate,
                 )
             elif category is ContextViewCategory.UCL_CONTEXT_LIFECYCLE:
+                if not isinstance(source_request, ContextViewUclSourceRequest):
+                    raise ContextViewCompositionInvariantError("ucl source request type mismatch")
+                if not isinstance(candidate, ContextViewUclSourceCandidate):
+                    raise ContextViewCompositionInvariantError("ucl candidate type mismatch")
                 validate_ucl_source_candidate_isolation(
-                    request=source_request,  # type: ignore[arg-type]
-                    candidate=candidate,  # type: ignore[arg-type]
+                    request=source_request,
+                    candidate=candidate,
                 )
             elif category is ContextViewCategory.COLLABORATIVE_WORK:
+                if not isinstance(source_request, ContextViewCollaborativeWorkSourceRequest):
+                    raise ContextViewCompositionInvariantError(
+                        "collaborative work source request type mismatch",
+                    )
+                if not isinstance(candidate, ContextViewCollaborativeWorkSourceCandidate):
+                    raise ContextViewCompositionInvariantError(
+                        "collaborative work candidate type mismatch",
+                    )
                 validate_collaborative_work_source_candidate_isolation(
-                    request=source_request,  # type: ignore[arg-type]
-                    candidate=candidate,  # type: ignore[arg-type]
+                    request=source_request,
+                    candidate=candidate,
                 )
         except ValueError as exc:
             raise ContextViewCompositionCandidateIsolationError(str(exc)) from exc
+        self._assert_candidate_scope_compatible(
+            category=category,
+            request_scope=source_request.scope,
+            candidate_scope=candidate.candidate_scope,
+        )
+
+    def _assert_candidate_scope_compatible(
+        self,
+        *,
+        category: ContextViewCategory,
+        request_scope: ContextViewScope,
+        candidate_scope: ContextViewScope,
+    ) -> None:
+        try:
+            compatible = self._scope_compatibility_policy.candidate_scope_compatible(
+                category=category,
+                request_scope=request_scope,
+                candidate_scope=candidate_scope,
+            )
+        except Exception as exc:
+            raise ContextViewCompositionCandidateIsolationError(
+                "scope compatibility policy failed",
+            ) from exc
+        if not compatible:
+            raise ContextViewCompositionCandidateIsolationError(
+                "candidate scope is not compatible with request scope",
+            )
 
     @staticmethod
     def _to_validated_candidate(

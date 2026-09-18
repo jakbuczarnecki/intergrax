@@ -14,6 +14,9 @@ from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.document_store.mongodb.adapter import _MongoDBDocumentStore
 from intergrax.integrations.providers.document_store.mongodb.bundle import create_mongodb_document_store
+from intergrax.integrations.providers.document_store.mongodb.integration import (
+    MONGODB_DOCUMENT_STORE_PROVIDER_ID,
+)
 from intergrax.memory.contracts.memory_control import (
     MemoryControlForgetRequest,
     MemoryControlRecallRequest,
@@ -140,6 +143,7 @@ async def _run_mongo_durable_qualification(
         descriptor=MemoryProviderDescriptor(
             provider_id=BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID,
             capabilities=(MemoryProviderCapabilityKind.USER_PROFILE_STORE,),
+            backing_provider_id=MONGODB_DOCUMENT_STORE_PROVIDER_ID,
         ),
         context=_context(run_id),
         request=user_profile_qualification_request(),
@@ -197,6 +201,8 @@ async def test_mongo_user_profile_durable_harness_produces_trusted_bundle(
     dur = bundle.admission_evidence.durability_registry.resolve(
         BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID,
         MemoryProviderCapabilityKind.USER_PROFILE_STORE,
+        None,
+        MONGODB_DOCUMENT_STORE_PROVIDER_ID,
     )
     assert dur.evidence is not None
     assert dur.evidence.proof_kind is _PROOF_KIND
@@ -410,6 +416,8 @@ async def test_product_mongo_admission_passes_with_real_evidence(
     )
     assert isinstance(wiring.user_profile_store, DocumentStoreUserProfileStore)
     assert wiring.user_profile_store.memory_provider_id == BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID
+    assert wiring.user_profile_store_identity is not None
+    assert wiring.user_profile_store_identity.backing_provider_id == MONGODB_DOCUMENT_STORE_PROVIDER_ID
     close_mongo_wiring(wiring)
 
 
@@ -424,7 +432,10 @@ def test_product_mongo_without_durability_evidence_fails(
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
         resolve_product_mongo_wiring(
             application,
-            qualification_evidence_registry=_evidence_for_provider(BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID),
+            qualification_evidence_registry=_evidence_for_provider(
+                BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID,
+                backing_provider_id=MONGODB_DOCUMENT_STORE_PROVIDER_ID,
+            ),
         )
     assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISSING
 
@@ -673,6 +684,7 @@ async def test_admission_evaluation_pass_with_trusted_evidence(
         provider_id=BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID,
         capability=MemoryProviderCapabilityKind.USER_PROFILE_STORE,
         source=MemoryProviderIdentitySource.BUILT_IN,
+        backing_provider_id=MONGODB_DOCUMENT_STORE_PROVIDER_ID,
     )
     qual_lookup = lookup_trusted_user_profile_qualification_evidence(
         bundle.admission_evidence.qualification_registry,

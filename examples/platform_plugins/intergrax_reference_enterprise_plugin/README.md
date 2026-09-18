@@ -38,12 +38,12 @@ bootstrap_catalogs(discover_entry_points=True)
 Tool invocation patterns load lazily by id:
 
 ```python
-from intergrax.runtime.nexus.tools.tool_invocation_registry import load_tool_invocation_pattern
+from intergrax.tools.invocation_pattern.registry import load_tool_invocation_pattern
 
 pattern = load_tool_invocation_pattern("reference_enterprise_single_pass")
 ```
 
-Set `RuntimeConfig.tool_invocation_pattern_plugin_id` or pass a `RuntimeConfig.tool_invocation_pattern` instance override in the host.
+Set `RuntimeConfig.tool_invocation_pattern_id` (or host override) so Nexus resolves the public pattern internally.
 
 ## Qualification
 

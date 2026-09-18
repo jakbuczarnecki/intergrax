@@ -1375,8 +1375,222 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | Markers | `external_proof`, `qualification`, `docker`, `no_ci` |
 | Durability proof kind | `REAL_VENDOR_RECONNECT` (client/provider recreation; not Mongo service restart) |
 | Evidence source | `mongo_real_vendor_qualification` |
-| GAP-4-04 | **CLOSED** when suite executes green on real Mongo |
+| Independent audit (pre-5C-R) | **PASS WITH CORRECTIONS** — trusted evidence bound to adapter ID only (see GAP-5C-01) |
+| GAP-4-04 | Execution proved on real Mongo; **FULLY CLOSED** after MEM-FINAL-AUDIT-5C-R |
+
+> Historical 5C execution remains valid; closure required composite adapter+backend identity binding (5C-R).
+
+## MEM-FINAL-AUDIT-5C-R — Composite adapter/backend qualification identity binding
+
+| Check | Result |
+| ----- | ------ |
+| Trusted identity | `MemoryProviderIdentity.provider_id` + optional `backing_provider_id` / `backing_provider_version` |
+| Adapter ID | `document_store.user_profile` (unchanged) |
+| Mongo backing ID | Integration `document_store` manifest slug (`mongodb`; canonical `MONGODB_DOCUMENT_STORE_PROVIDER_ID`) |
+| Composition source | `applications/_shared/memory_wiring.py` (`_document_store_backing_provider_id`) |
+| Descriptor / evidence | `MemoryProviderDescriptor`, qualification + durability evidence preserve backing fields |
+| Registry lookup | Composite key includes backing identity (distinct from adapter-only evidence) |
+| Admission | `PROVIDER_BACKING_IDENTITY_MISMATCH` on backing mismatch; fail-closed on missing/wrong backing |
+| Attack regression | Mongo evidence cannot admit `DocumentStoreUserProfileStore` over alternate `DocumentStore` backend |
+| Suite | `tests/unit/applications/test_mem_final_audit_5c_r_composite_identity_binding.py` + green 5C real-vendor suite |
+| GAP-5C-01 | **CLOSED** |
+| GAP-4-04 | **FULLY CLOSED** |
+| V6 | **REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** for `document_store.user_profile` backed by `mongodb` (not service-restart qualified) |
 
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5D AFTER INDEPENDENT GITHUB AUDIT
 
-> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5C muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5D.
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5C-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5D.
+
+## MEM-FINAL-AUDIT-5D — Qdrant SessionTurnIndex real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Path | `SessionTurnIndexStore` → `VectorSessionTurnIndexStore` → vector ports → Qdrant provider |
+| Memory provider ID | `vector.session_turn_index` |
+| Backend | `qdrant` (`intergrax/integrations/providers/vector_store/qdrant/`) |
+| Real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` |
+| Composite binding tests | `tests/unit/applications/test_mem_final_audit_5d_composite_identity_binding.py` |
+| Markers | `external_proof`, `qualification`, `no_ci` |
+| Durability proof kind | `REAL_VENDOR_RECONNECT` (client recreation; Qdrant service restart not executed) |
+| Evidence source | `qdrant_session_turn_index_real_vendor_qualification` |
+| Canonical authority | STI remains **derived** episodic index (not Memory authority) |
+| V-level | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (Qdrant backing) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-02 (Qdrant STI reconnect) | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector / Chroma) | OPEN |
+| GAP-5D-01 (qualified STI not enforced at runtime) | **CLOSED (5D-R)** |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.
+
+## MEM-FINAL-AUDIT-5D-R — SessionTurnIndex trusted production admission
+
+| Check | Result |
+| ----- | ------ |
+| Admission contract | `evaluate_production_session_turn_index_store_admission` + `MemoryCapabilityProviderAdmissionEvaluation` |
+| Evidence lookup | `lookup_trusted_memory_provider_qualification_evidence` (composite identity) |
+| STI provider ID | `vector.session_turn_index` (`SESSION_TURN_INDEX_STORE`) |
+| Backing identity | `IntegrationProfile.vector_store` → `resolved_slug()` (e.g. `qdrant`) |
+| Enforcement path | `build_session_turn_index_store` → `validate_session_turn_index_store_admission` before materialization |
+| PRODUCT gate | Trusted `QUALIFIED` evidence required when `enable_session_vector_index=True` |
+| LAB | Admission not enforced; reference/in-memory STI remains legal |
+| Unit matrix | `tests/unit/applications/test_mem_final_audit_5d_r_session_turn_index_production_admission.py` |
+| Application E2E | PRODUCT `SessionManager` with matching Qdrant evidence (5D suite extension) |
+| V6 label | **REAL-VENDOR DURABILITY/RECONNECT QUALIFIED + PRODUCTION ADMISSION ENFORCED** (Qdrant) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5D-01 | **CLOSED** |
+| GAP-4-02 (Qdrant STI) | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **FULLY CLOSED** |
+| GAP-4-07 (pgvector / Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.
+
+## MEM-FINAL-AUDIT-5D-R2 — SessionTurnIndex Plugin Identity Hardening
+
+| Check | Result |
+| ----- | ------ |
+| Plugin contract | `SessionTurnIndexStorePlugin` (`plugin_id`, `create_session_turn_index`) |
+| Classifier | `classify_memory_store_plugin_record` + `MemoryStorePluginKind.SESSION_TURN_INDEX` |
+| Plugin identity | `resolve_plugin_session_turn_index_provider_identity` — no vector backing unless evidence declares it |
+| Builtin identity | `resolve_builtin_session_turn_index_provider_identity` — separate path only when no plugin selected |
+| Invariant | Admitted plugin identity must match materialized plugin; no fallback to `vector.session_turn_index` |
+| Reflection | No `getattr` / `hasattr` on plugin identity path |
+| Ambiguity | Multiple explicit/discovered STI plugins → `MemoryStorePluginResolutionError` |
+| Duplicate IDs | `index_classified_memory_store_plugins` fail-closed |
+| Direct injection typing | `SessionTurnIndexStore \| None` on `build_session_manager_from_environment` |
+| Tests | `tests/unit/applications/test_mem_final_audit_5d_r2_session_turn_index_plugin_identity_hardening.py` |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5D-02 (external STI plugin could fall back to builtin qualified identity) | **CLOSED** |
+| GAP-5D-01 | **CLOSED** |
+| GAP-4-02 (Qdrant STI) | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **FULLY CLOSED** |
+| GAP-4-07 (pgvector / Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.
+
+## MEM-FINAL-AUDIT-5D-R3 — SessionTurnIndex Provider Identity Override Elimination
+
+| Check | Result |
+| ----- | ------ |
+| Canonical builder | `build_session_turn_index_store` — no `provider_identity` parameter; platform derives identity only |
+| Plugin path | `resolve_plugin_session_turn_index_provider_identity(selected_plugin)` before admission and factory |
+| Builtin path | `resolve_builtin_session_turn_index_provider_identity(integration_profile)` when no plugin selected |
+| Forbidden | Caller cannot supply authoritative STI identity on canonical materialization path |
+| Direct injection | `build_session_manager_from_environment(session_turn_index_store=…, session_turn_index_store_identity=…)` unchanged (host-owned atomic binding) |
+| Invariant | Admitted identity == materialized provider (no admit-B / materialize-A) |
+| Tests | `tests/unit/applications/test_mem_final_audit_5d_r3_session_turn_index_identity_override_elimination.py` |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5D-03 (caller could override platform-derived STI provider identity) | **CLOSED** |
+| GAP-5D-02 | **CLOSED** |
+| GAP-5D-01 | **CLOSED** |
+| GAP-4-02 (Qdrant STI) | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **FULLY CLOSED** |
+| GAP-4-07 (pgvector / Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D-R3 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.
+
+## MEM-FINAL-AUDIT-5E — pgvector SessionTurnIndex real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Path | `SessionTurnIndexStore` → `VectorSessionTurnIndexStore` → vector ports → pgvector provider |
+| Memory provider ID | `vector.session_turn_index` |
+| Backend | `pgvector` (`intergrax/integrations/providers/vector_store/pgvector/`) |
+| Real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py` |
+| Harness | `tests/integration/memory/e2e/pgvector_session_turn_index_real_vendor_support.py` |
+| Infrastructure | Docker `infra/docker/postgresql` service `pgvector` (`INTERGRAX_PGVECTOR_DSN`, `INTERGRAX_PGVECTOR_DIMENSION`) |
+| Markers | `external_proof`, `qualification`, `no_ci`, `docker` |
+| Durability proof kind | `REAL_VENDOR_RECONNECT` (new client/provider/store; PostgreSQL service restart **not executed**) |
+| Evidence source | `pgvector_session_turn_index_real_vendor_qualification` |
+| Scope SQL | Backend `tenant_id` / namespace / workspace + JSONB metadata filters (cosine `<=>`) |
+| STI production admission | Reuses generic 5D-R admission (pgvector-specific trusted evidence required) |
+| Canonical authority | STI remains **derived** episodic index |
+| V-level | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (pgvector backing) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5E-01 (pgvector STI lacked Memory-scoped real-vendor qualification) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** (unchanged) |
+| GAP-4-07 (Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5F AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5E muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5F.
+
+## MEM-FINAL-AUDIT-5E-R — Qdrant + pgvector Real-Vendor Regression Verification
+
+| Check | Result |
+| ----- | ------ |
+| Purpose | Same-codebase regression proof: pgvector qualification did not regress Qdrant STI |
+| Verified SHA | `a640c98f6fee7cb313f371efc102faf8fc0aa8e6` (Qdrant + pgvector suites on identical HEAD) |
+| Audited 5E baseline | `4b5f148b6f04ffed7482039822f5a889908cf260` — ancestor of verified SHA (**YES**) |
+| Production code changes | **NONE** |
+| Qdrant real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` — **13 passed** |
+| pgvector real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py` — **19 passed** |
+| STI admission / identity (R/R2/R3 + composite) | **36 passed** (`test_mem_final_audit_5d_*` unit set) |
+| Cross-vendor admission | Qdrant↔pgvector evidence/runtime mismatch **FAIL as expected** (5D-R unit + 5E E2E reverse) |
+| Full Memory regression | `tests/unit/memory` + `tests/integration/memory` — **675 passed**, 1 skipped (Windows chmod) |
+| Application wiring regression | memory vector/wiring + SessionManager LTM recall plane — **18 passed** |
+| Durability evidence | Behavioral + `REAL_VENDOR_RECONNECT` per vendor; durability registry entries test-constructed from verified run context (unchanged policy) |
+| Service restart | Qdrant / PostgreSQL service restart **not executed** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5E-01 | **FULLY CLOSED** (pgvector STI + same-SHA Qdrant regression) |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5F AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5E-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5F.
+
+## MEM-FINAL-AUDIT-5E-R2 — Current-HEAD Real-Vendor Verification
+
+| Check | Result |
+| ----- | ------ |
+| Purpose | Re-verify Qdrant + pgvector STI real-vendor gates on **current** `development` HEAD after commits following 5E-R |
+| Previous same-SHA verification (5E-R) | `a640c98f6fee7cb313f371efc102faf8fc0aa8e6` |
+| Audited docs baseline | `d231457932528269fb11f7b63811acbc9be7b865` — ancestor of verified SHA (**YES**) |
+| **Current-head re-verification** | **`9acff5d0925e962e09bca6c525343ff227980bc8`** |
+| Same-SHA proof | **YES** — Qdrant (13) + pgvector (19) on identical HEAD; HEAD unchanged between suites |
+| Working tree @ verification | **clean** — exact-SHA proof valid |
+| pgvector DSN | Required (`INTERGRAX_PGVECTOR_DSN` + `INTERGRAX_PGVECTOR_DIMENSION=4`); run without DSN is **not** certification |
+| Qdrant real-vendor suite | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` — **13 passed** |
+| pgvector real-vendor suite | `test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py` — **19 passed**, **0** required skips |
+| Qdrant infra | Docker `intergrax-qdrant`, `localhost:6333` (default `INTERGRAX_QDRANT_HOST` / port **6333**) |
+| pgvector infra | PostgreSQL **16.10**, pgvector **0.8.0**, psycopg **3.3.4**, `127.0.0.1:5433` / `intergrax_pgvector` (password omitted); `pg_extension.extname = vector` confirmed in suite |
+| STI admission / identity (R/R2/R3 + composite) | **36 passed** |
+| Full Memory + application/session regression | Single batch: STI R/R2/R3 + `tests/unit/memory` + `tests/integration/memory` + memory vector/wiring + SessionManager LTM — **722 passed**, 1 skipped (Windows chmod) |
+| Cross-vendor admission | Qdrant↔pgvector evidence/runtime mismatch **FAIL as expected**; adapter-only + missing evidence **FAIL** |
+| Vendor leakage (`intergrax/memory/**`) | **0** production vendor imports |
+| Production code changes | **NONE** |
+| Service restart | Qdrant / PostgreSQL service restart **not executed** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5E-01 | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5F AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5E-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5F.

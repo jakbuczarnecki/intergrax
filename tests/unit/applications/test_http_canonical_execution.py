@@ -8,7 +8,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from intergrax.applications._shared.host_task_execution_wiring import build_environment_host_task_execution
+from intergrax.applications._shared.harness_host_task_execution_wiring import (
+    build_harness_environment_host_task_execution,
+)
 from intergrax.contracts.execution_identity import (
     mint_execution_id,
     mint_run_id,
@@ -50,7 +52,7 @@ class _HttpExecutionCase:
 
 def _build_dispute_service(nexus_loop: NexusLoop) -> DisputeSimRunService:
     env = build_dispute_sim_environment_profile(DisputeSimBackendSettings.from_env())
-    host_execution = build_environment_host_task_execution(nexus_loop, env)
+    host_execution = build_harness_environment_host_task_execution(nexus_loop, env)
     return DisputeSimRunService.from_host_execution(
         host_execution,
         default_agent_id="echo",
@@ -66,7 +68,7 @@ async def _invoke_dispute(service: object) -> object:
 
 def _build_research_service(nexus_loop: NexusLoop) -> ResearchRunService:
     env = build_research_environment_profile(ResearchBackendSettings.from_env())
-    host_execution = build_environment_host_task_execution(nexus_loop, env)
+    host_execution = build_harness_environment_host_task_execution(nexus_loop, env)
     return ResearchRunService.from_host_execution(host_execution)
 
 
@@ -272,7 +274,7 @@ async def test_http_and_mcp_dispute_capability_resolve_to_same_strategy() -> Non
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry)
     env = build_dispute_sim_environment_profile(DisputeSimBackendSettings.from_env())
-    build_environment_host_task_execution(nexus_loop, env)
+    build_harness_environment_host_task_execution(nexus_loop, env)
     capability = "dispute.intake"
     http_task = Task(
         task_id=mint_task_id(),

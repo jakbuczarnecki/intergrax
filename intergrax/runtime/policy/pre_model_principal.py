@@ -15,7 +15,7 @@ from intergrax.runtime.governance.governance_identity_projection import (
     GovernanceIdentityProjectionMismatchError,
     validate_governance_identity_projection,
 )
-from intergrax.runtime.policy.pre_model_policy_evaluation import PreModelPolicyConfigurationError
+from intergrax.runtime.policy.pre_model_policy_errors import PreModelPolicyConfigurationError
 from intergrax.runtime.task.task import Task
 
 
@@ -84,21 +84,8 @@ def resolve_agentic_pre_model_scope(
         except GovernanceIdentityProjectionMismatchError as exc:
             raise _projection_mismatch_error(exc) from exc
         return active
-    if production_mode:
-        raise PreModelPolicyConfigurationError(
-            "pre_model governance identity unavailable",
-        )
-    principal = (request_principal_id or "").strip()
-    tenant = (tenant_id or "").strip()
-    workspace = (workspace_id or "").strip()
-    if not tenant or not workspace or not principal:
-        raise PreModelPolicyConfigurationError(
-            "pre_model governance identity unavailable",
-        )
-    return ActiveExecutionGovernanceIdentity(
-        tenant_id=tenant,
-        workspace_id=workspace,
-        principal_id=principal,
+    raise PreModelPolicyConfigurationError(
+        "pre_model governance identity unavailable",
     )
 
 

@@ -16,7 +16,9 @@ from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.fastapi_core.runs.models import CreateRunRequest, RunStatus
 from tests.unit.api.fastapi_core.budget.test_budget_required import AllowAllAuthProvider
 from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
-from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+from testing_support.nexus_host_task_execution import (
+    build_certified_internal_test_host_task_execution,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
@@ -30,7 +32,7 @@ def _build_run_service() -> DefaultRunService:
     registry = AgentRegistry()
     registry.register(EchoAgent())
     nexus_loop = NexusLoop(registry)
-    host_execution = build_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
+    host_execution = build_certified_internal_test_host_task_execution(nexus_loop)
     adapter = HostTaskExecutionRunAdapter(host_execution)
     store = InMemoryRunStore()
     service = DefaultRunService(store, adapter)

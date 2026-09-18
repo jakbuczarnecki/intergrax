@@ -131,6 +131,11 @@ def test_non_ok_result_cannot_carry_references() -> None:
         )
 
 
+def test_ok_result_requires_evaluated_scope() -> None:
+    with pytest.raises(MemoryReferenceReadScopeError, match="evaluated_scope"):
+        MemoryReferenceReadResult(outcome=MemoryReferenceReadOutcome.OK)
+
+
 def _configured_reader(
     capability: UserProfileManagerMemoryCapability,
     *,
@@ -316,6 +321,7 @@ class _CustomMemoryReferenceReader:
         return MemoryReferenceReadResult(
             outcome=MemoryReferenceReadOutcome.OK,
             references=(ref,),
+            evaluated_scope=request.scope,
         )
 
 

@@ -14,6 +14,7 @@ from intergrax.collaborative_work.context_view_composition import (
     Sha256ContextViewEntryIdentityStrategy,
     Sha256ContextViewIdentityStrategy,
 )
+from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
 from intergrax.contracts.context_view import (
     ContextView,
     ContextViewCategory,
@@ -60,6 +61,26 @@ def _scope(**overrides: object) -> ContextViewScope:
     payload = {"tenant_id": "tenant-a", "workspace_id": "ws-1"}
     payload.update(overrides)
     return ContextViewScope(**payload)
+
+
+def _principal_identity(request: ContextViewRequest) -> RequestIdentity:
+    return RequestIdentity(
+        tenant_id=request.scope.tenant_id,
+        user_id=request.acting_principal_id,
+        principal_type=PrincipalType.USER,
+        auth_subject=request.acting_principal_id,
+    )
+
+
+def _composition_request(
+    request: ContextViewRequest,
+    policy_decision: ContextViewPolicyDecision,
+) -> ContextViewCompositionRequest:
+    return ContextViewCompositionRequest(
+        request=request,
+        policy_decision=policy_decision,
+        principal_identity=_principal_identity(request),
+    )
 
 
 def _request(**overrides: object) -> ContextViewRequest:
@@ -197,7 +218,7 @@ def test_deny_invokes_zero_source_ports() -> None:
     )
     composer = DefaultContextViewComposer(memory_source=memory, knowledge_source=knowledge)
     with pytest.raises(ContextViewCompositionPolicyDeniedError):
-        composer.compose(ContextViewCompositionRequest(request=request, policy_decision=deny))
+        composer.compose(_composition_request(request, deny))
     assert memory.calls == []
     assert knowledge.calls == []
 
@@ -210,7 +231,7 @@ def test_only_eligible_category_port_invoked() -> None:
     )
     decision = _allow_decision(request, eligible_categories=(ContextViewCategory.MEMORY,))
     DefaultContextViewComposer(memory_source=memory, knowledge_source=knowledge).compose(
-        ContextViewCompositionRequest(request=request, policy_decision=decision),
+        _composition_request(request, decision),
     )
     assert len(memory.calls) == 1
     assert knowledge.calls == []
@@ -234,7 +255,7 @@ def test_source_request_uses_policy_effective_scope() -> None:
     )
     decision = _allow_decision(request, effective_scope=narrowed)
     DefaultContextViewComposer(memory_source=memory).compose(
-        ContextViewCompositionRequest(request=request, policy_decision=decision),
+        _composition_request(request, decision),
     )
     assert memory.calls[0].scope == narrowed
 
@@ -249,7 +270,7 @@ def test_source_unavailable_fail_closed() -> None:
     decision = _allow_decision(request)
     composer = DefaultContextViewComposer(memory_source=memory)
     with pytest.raises(ContextViewCompositionSourceFailureError, match="source_unavailable"):
-        composer.compose(ContextViewCompositionRequest(request=request, policy_decision=decision))
+        composer.compose(_composition_request(request, decision))
 
 
 def test_ok_empty_candidates_produces_empty_view() -> None:
@@ -257,11 +278,11 @@ def test_ok_empty_candidates_produces_empty_view() -> None:
     request = _request()
     decision = _allow_decision(request)
     view = DefaultContextViewComposer(memory_source=memory).compose(
-        ContextViewCompositionRequest(request=request, policy_decision=decision),
+        _composition_request(request, decision),
     )
     assert view.entries == ()
     assert view.scope == decision.effective_scope
-    validate_context_view_matches_composition_request(view=view, composition_request=ContextViewCompositionRequest(request=request, policy_decision=decision))
+    validate_context_view_matches_composition_request(view=view, composition_request=_composition_request(request, decision))
 
 
 def test_missing_port_for_eligible_category_fail_closed() -> None:
@@ -269,7 +290,7 @@ def test_missing_port_for_eligible_category_fail_closed() -> None:
     decision = _allow_decision(request)
     composer = DefaultContextViewComposer(memory_source=None)
     with pytest.raises(ContextViewCompositionSourceFailureError, match="missing source port"):
-        composer.compose(ContextViewCompositionRequest(request=request, policy_decision=decision))
+        composer.compose(_composition_request(request, decision))
 
 
 def test_malicious_cross_tenant_candidate_fails() -> None:
@@ -288,7 +309,7 @@ def test_malicious_cross_tenant_candidate_fails() -> None:
     decision = _allow_decision(request)
     with pytest.raises(ContextViewCompositionCandidateIsolationError):
         DefaultContextViewComposer(memory_source=memory).compose(
-            ContextViewCompositionRequest(request=request, policy_decision=decision),
+            _composition_request(request, decision),
         )
 
 
@@ -306,7 +327,7 @@ def test_dedupe_same_source_ref() -> None:
         memory_source=memory,
         entry_identity_strategy=_FixedEntryIdStrategy("entry-fixed"),
         view_identity_strategy=_FixedViewIdStrategy("view-fixed"),
-    ).compose(ContextViewCompositionRequest(request=request, policy_decision=decision))
+    ).compose(_composition_request(request, decision))
     assert len(view.entries) == 1
 
 
@@ -321,8 +342,8 @@ def test_deterministic_composition() -> None:
     request = _request()
     decision = _allow_decision(request)
     composer = DefaultContextViewComposer(memory_source=memory)
-    first = composer.compose(ContextViewCompositionRequest(request=request, policy_decision=decision))
-    second = composer.compose(ContextViewCompositionRequest(request=request, policy_decision=decision))
+    first = composer.compose(_composition_request(request, decision))
+    second = composer.compose(_composition_request(request, decision))
     assert first == second
 
 
@@ -346,7 +367,7 @@ def test_custom_ordering_strategy() -> None:
         ordering_strategy=_ReverseOrderingStrategy(),
         entry_identity_strategy=Sha256ContextViewEntryIdentityStrategy(),
         view_identity_strategy=_FixedViewIdStrategy("view-fixed"),
-    ).compose(ContextViewCompositionRequest(request=request, policy_decision=decision))
+    ).compose(_composition_request(request, decision))
     refs = [entry.source_ref.record_ref for entry in view.entries]
     assert refs == ["mem-b", "mem-a"]
 
@@ -354,7 +375,7 @@ def test_custom_ordering_strategy() -> None:
 def test_composer_protocol_structural_substitution() -> None:
     request = _request()
     decision = _allow_decision(request)
-    view = _StubComposer().compose(ContextViewCompositionRequest(request=request, policy_decision=decision))
+    view = _StubComposer().compose(_composition_request(request, decision))
     assert isinstance(view, ContextView)
     assert isinstance(_StubComposer(), ContextViewComposer)
 
@@ -378,7 +399,7 @@ def _compose_with_effective_scope(
     request = _request_for_scope(request_scope)
     decision = _allow_decision(request, effective_scope=effective_scope)
     DefaultContextViewComposer(memory_source=memory).compose(
-        ContextViewCompositionRequest(request=request, policy_decision=decision),
+        _composition_request(request, decision),
     )
 
 
@@ -392,7 +413,7 @@ def _compose_with_effective_scope_expect_alignment_error(
     decision = _allow_decision(request, effective_scope=effective_scope)
     with pytest.raises(ContextViewCompositionRequestAlignmentError):
         DefaultContextViewComposer(memory_source=memory).compose(
-            ContextViewCompositionRequest(request=request, policy_decision=decision),
+            _composition_request(request, decision),
         )
     assert memory.calls == []
 
@@ -410,7 +431,7 @@ def test_work_item_narrowing_passes_source_gets_narrowed_work_item() -> None:
     request = _request(scope=_scope())
     decision = _allow_decision(request, effective_scope=narrowed)
     DefaultContextViewComposer(memory_source=memory).compose(
-        ContextViewCompositionRequest(request=request, policy_decision=decision),
+        _composition_request(request, decision),
     )
     assert memory.calls[0].scope.work_item_id == "wi-1"
 

@@ -24,7 +24,6 @@ from intergrax.core.plugins.discovery import (
     EP_TOOLS,
     ConflictPolicy,
     EntryPointSpec,
-    register_plugins,
     register_plugins_with_report,
 )
 from intergrax.integrations.core.plugin import (
@@ -57,6 +56,7 @@ class CatalogBootstrapResult:
     tool_plugins: int
     skill_plugins: int
     integration_preset: str
+    integration_plugin_load_report: DomainPluginLoadReport
     tool_plugin_load_report: DomainPluginLoadReport
     skill_plugin_load_report: DomainPluginLoadReport
 
@@ -118,6 +118,68 @@ def bootstrap_catalogs(
         if discover_skill_entry_points is not None
         else discover_entry_points
     )
+
+    def _register_integration_entry_point(
+        plugin_type: type,
+        spec: EntryPointSpec,
+    ) -> tuple[bool, PluginAdmissionRejection | None]:
+        if not isinstance(plugin_type, type):
+            message = f"Integration entry point {spec.name!r} does not implement IntegrationPlugin"
+            return False, PluginAdmissionRejection(
+                spec=spec,
+                reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
+                reason=message,
+                fail_closed=True,
+            )
+        try:
+            manifest = integration_manifest_for_plugin(plugin_type)
+        except (TypeError, AttributeError) as exc:
+            message = (
+                f"Integration entry point {spec.name!r} does not implement IntegrationPlugin: {exc}"
+            )
+            return False, PluginAdmissionRejection(
+                spec=spec,
+                reason_code=PluginAdmissionReasonCode.INVALID_TARGET_TYPE,
+                reason=message,
+                fail_closed=True,
+            )
+        slug = manifest.slug.strip().lower()
+        slug_registered = slug in integration_catalog_snapshot()
+        if should_skip_catalog_registration(slug_registered=slug_registered, on_conflict=on_conflict):
+            return False, PluginAdmissionRejection(
+                spec=spec,
+                reason_code=PluginAdmissionReasonCode.PLUGIN_ID_SKIPPED,
+                reason=f"Integration {slug!r} already registered; skipping",
+                plugin_id=slug,
+                fail_closed=False,
+            )
+        try:
+            override = catalog_registration_override(
+                slug=slug,
+                slug_registered=slug_registered,
+                on_conflict=on_conflict,
+                catalog_kind="integration",
+                plugin_type=plugin_type,
+            )
+        except ValueError as exc:
+            return False, PluginAdmissionRejection(
+                spec=spec,
+                reason_code=PluginAdmissionReasonCode.PLUGIN_ID_COLLISION,
+                reason=str(exc),
+                plugin_id=slug,
+                fail_closed=True,
+            )
+        try:
+            register_integration_plugin(plugin_type, override=override)
+        except ValueError as exc:
+            return False, PluginAdmissionRejection(
+                spec=spec,
+                reason_code=PluginAdmissionReasonCode.MANIFEST_INVALID,
+                reason=str(exc),
+                plugin_id=slug,
+                fail_closed=True,
+            )
+        return True, None
 
     def _register_integration(plugin_type: type[IntegrationPlugin]) -> bool:
         manifest = integration_manifest_for_plugin(plugin_type)
@@ -273,13 +335,17 @@ def bootstrap_catalogs(
         register_skill_plugin(plugin_type, override=override)
         return True, None
 
-    integration_count = register_plugins(
+    integration_explicit_count = 0
+    for plugin_type in integration_plugins:
+        if _register_integration(plugin_type):
+            integration_explicit_count += 1
+    integration_report = register_plugins_with_report(
         EP_INTEGRATIONS,
-        _register_integration,
-        explicit=integration_plugins,
+        _register_integration_entry_point,
         discover_entry_points=discover_entry_points,
         on_conflict=ep_policy,
     )
+    integration_count = integration_explicit_count + integration_report.registered_count
     tool_explicit_count = 0
     for plugin_type in tool_plugins:
         if _register_tool(plugin_type):
@@ -307,6 +373,7 @@ def bootstrap_catalogs(
         tool_plugins=tool_count,
         skill_plugins=skill_count,
         integration_preset=integration_preset,
+        integration_plugin_load_report=integration_report,
         tool_plugin_load_report=tool_report,
         skill_plugin_load_report=skill_report,
     )

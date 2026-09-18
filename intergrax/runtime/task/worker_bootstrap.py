@@ -5,7 +5,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Tuple
+from collections.abc import Callable
+from typing import Optional, Tuple
 
 from celery import Celery
 
@@ -17,14 +18,23 @@ from intergrax.queueing.worker.rate_limit_event import RateLimitEvent
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.queueing.worker.retry_event import RetryEvent
 from intergrax.queueing.worker.retry_policy import RetryPolicy
-from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.admitted_root_governance_identity import (
+    AdmittedRootGovernanceIdentity,
+)
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import (
     NexusWorkerRuntime,
     register_nexus_task_worker,
 )
+from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.worker_payload import NEXUS_TASK_V2_LOGICAL_NAME
 from intergrax.runtime.background_execution.admission_wiring import (
     wire_background_execution_admission_dependencies,
@@ -39,6 +49,9 @@ from intergrax.runtime.observability.causal_evidence_persistence import (
 def build_nexus_task_execution_registry(
     registry: AgentRegistry,
     *,
+    host_execution: HostTaskExecutionPort | None = None,
+    admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity]
+    | None = None,
     checkpoint_store: Optional[TaskCheckpointPersistence] = None,
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     lifecycle=None,
@@ -54,18 +67,32 @@ def build_nexus_task_execution_registry(
     if kv_store is not None:
         run_budget_persistence = wire_run_budget_persistence(kv_store=kv_store)
     worker_registry = TaskExecutionRegistry()
-    runtime = NexusWorkerRuntime.from_registry(
-        registry,
-        checkpoint_store=checkpoint_store,
-        execution_continuation_state_store=execution_continuation_state_store,
-        lifecycle=lifecycle,
-        run_budget=run_budget,
-        run_budget_persistence=run_budget_persistence,
-        execution_terminal=execution_terminal,
-        orchestration_triggers=orchestration_triggers,
-        pipeline_capability_suffix=pipeline_capability_suffix,
-        task_enricher=task_enricher,
-    )
+    if host_execution is not None:
+        runtime = NexusWorkerRuntime(
+            host_execution,
+            checkpoint_store=checkpoint_store,
+            lifecycle=lifecycle,
+            task_enricher=task_enricher,
+        )
+    elif admit_root_governance_identity is not None:
+        runtime = NexusWorkerRuntime.from_registry(
+            registry,
+            checkpoint_store=checkpoint_store,
+            execution_continuation_state_store=execution_continuation_state_store,
+            lifecycle=lifecycle,
+            run_budget=run_budget,
+            run_budget_persistence=run_budget_persistence,
+            execution_terminal=execution_terminal,
+            orchestration_triggers=orchestration_triggers,
+            pipeline_capability_suffix=pipeline_capability_suffix,
+            task_enricher=task_enricher,
+            admit_root_governance_identity=admit_root_governance_identity,
+        )
+    else:
+        raise ValueError(
+            "build_nexus_task_execution_registry requires host_execution or "
+            "admit_root_governance_identity for governed worker admission",
+        )
     register_nexus_task_worker(worker_registry, runtime)
     return worker_registry
 
@@ -76,6 +103,9 @@ def create_nexus_celery_worker_app(
     broker_url: str,
     backend_url: Optional[str],
     agent_registry: AgentRegistry,
+    host_execution: HostTaskExecutionPort | None = None,
+    admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity]
+    | None = None,
     idempotency_store: Optional[IdempotencyStore] = None,
     retry_policy: Optional[RetryPolicy] = None,
     lock_ttl_seconds: Optional[int] = None,
@@ -108,6 +138,8 @@ def create_nexus_celery_worker_app(
 
     worker_registry = build_nexus_task_execution_registry(
         agent_registry,
+        host_execution=host_execution,
+        admit_root_governance_identity=admit_root_governance_identity,
         checkpoint_store=checkpoint_store,
         execution_continuation_state_store=execution_continuation_state_store,
         lifecycle=lifecycle,

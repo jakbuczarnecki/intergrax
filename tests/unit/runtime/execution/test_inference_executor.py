@@ -43,6 +43,11 @@ from intergrax.runtime.execution.runtime import (
     RootExecutionOptions,
 )
 from intergrax.runtime.execution.inference import InferenceExecutor
+from intergrax.runtime.execution.inference_profile import (
+    InferenceProfileCatalog,
+    InferenceProfileId,
+    InferenceProfileNotFoundError,
+)
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.governance.governance_evidence_composition import (
@@ -55,6 +60,9 @@ from intergrax.runtime.policy.pre_model_policy_evaluation import PreModelPolicyC
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.contracts.governed_execution_governance_evidence import (
     GovernedExecutionEvaluationPoint,
+    GovernanceDecisionEvidenceFact,
+    GovernanceEvidencePersistenceOutcome,
+    GovernanceEvidencePersistencePort,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from testing_support.inference_governance_wiring import (
@@ -62,6 +70,8 @@ from testing_support.inference_governance_wiring import (
     TEST_INFERENCE_TENANT_ID,
     TEST_INFERENCE_WORKSPACE_ID,
     bind_test_inference_governance_identity,
+    build_test_inference_executor_without_evidence,
+    default_test_inference_evidence_persistence,
     governed_inference_executor,
     governed_root_execution_options,
     reset_test_inference_governance_identity,
@@ -278,7 +288,8 @@ def _inference_stack(
   options: RootExecutionOptions | None = None,
   admission_hooks: tuple[ExecutionAdmissionHook, ...] = (),
   policy_engine: PolicyEngine | None = None,
-  governance_evidence_recorder=None,
+  governance_evidence_persistence: GovernanceEvidencePersistencePort | None = None,
+  wire_default_governance_evidence: bool = True,
 ) -> tuple[
     Execution[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
@@ -286,11 +297,20 @@ def _inference_stack(
     ],
     RootExecutionOptions,
 ]:
-  executor = governed_inference_executor(
-    adapter,
-    policy_engine=policy_engine,
-    governance_evidence_recorder=governance_evidence_recorder,
-  )
+  persistence = governance_evidence_persistence
+  if persistence is None and wire_default_governance_evidence:
+    persistence = build_in_memory_governance_evidence_persistence()
+  if persistence is not None:
+    executor = governed_inference_executor(
+      adapter,
+      policy_engine=policy_engine,
+      governance_evidence_persistence=persistence,
+    )
+  else:
+    executor = build_test_inference_executor_without_evidence(
+      adapter,
+      policy_engine=policy_engine,
+    )
   router = StrategyExecutionRouter[
     tuple[ChatMessage, ...],
     RiskAssessment,
@@ -431,7 +451,10 @@ async def test_streaming_request_fails_explicitly() -> None:
 @pytest.mark.asyncio
 async def test_inference_executor_requires_active_execution_identity() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
-  executor = governed_inference_executor(adapter)
+  executor = governed_inference_executor(
+    adapter,
+    governance_evidence_persistence=default_test_inference_evidence_persistence(),
+  )
 
   with pytest.raises(RuntimeError, match="active execution identity required"):
     await executor.execute(_risk_request())
@@ -444,7 +467,10 @@ async def test_inference_executor_requires_active_execution_id() -> None:
   attempt_id = mint_attempt_id()
   token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
   try:
-    executor = governed_inference_executor(adapter)
+    executor = governed_inference_executor(
+    adapter,
+    governance_evidence_persistence=default_test_inference_evidence_persistence(),
+  )
     with pytest.raises(RuntimeError, match="active ExecutionId required"):
       await executor.execute(_risk_request())
   finally:
@@ -543,6 +569,28 @@ class _RequireHumanPreModelRuntime(RuntimePolicyEngine):
     )
 
 
+class _EscalatePreModelRuntime(RuntimePolicyEngine):
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
+    return PolicyDecision(
+      action=PolicyAction.ESCALATE,
+      reason="inference_pre_model_escalate",
+      policy_rule_id="test.inference_pre_model_escalate",
+    )
+
+
+class _ModifyPreModelRuntime(RuntimePolicyEngine):
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
+    return PolicyDecision(
+      action=PolicyAction.MODIFY,
+      reason="inference_pre_model_modify",
+      policy_rule_id="test.inference_pre_model_modify",
+    )
+
+
 class _ExplodingPreModelRuntime(RuntimePolicyEngine):
   def evaluate_pre_llm(
     self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
@@ -582,7 +630,7 @@ async def test_inference_pre_model_allow_invokes_provider_once() -> None:
   recorder = build_governance_evidence_recorder(persistence=store)
   execution, options = _inference_stack(
     adapter,
-    governance_evidence_recorder=recorder,
+    governance_evidence_persistence=store,
   )
   result = await execution.execute(_risk_request(), options=options)
   assert result.status is ExecutionStatus.COMPLETED
@@ -592,6 +640,15 @@ async def test_inference_pre_model_allow_invokes_provider_once() -> None:
   assert fact.evaluation_point is GovernedExecutionEvaluationPoint.PRE_MODEL
   assert fact.decision is PolicyAction.ALLOW
   assert fact.tenant_id == TEST_INFERENCE_TENANT_ID
+  assert fact.workspace_id == TEST_INFERENCE_WORKSPACE_ID
+  assert fact.principal_id == TEST_INFERENCE_PRINCIPAL_ID
+  assert fact.run_id is not None
+  assert fact.attempt_id is not None
+  assert fact.execution_id is not None
+  assert fact.action == "structured_inference.model_invoke"
+  assert fact.resource_type == "llm_model"
+  assert fact.resource_scope == adapter.model
+  assert fact.evaluation_point is not GovernedExecutionEvaluationPoint.ROOT_EXECUTION_ADMISSION
 
 
 @pytest.mark.asyncio
@@ -603,13 +660,139 @@ async def test_inference_pre_model_deny_blocks_provider() -> None:
   execution, options = _inference_stack(
     adapter,
     policy_engine=engine,
-    governance_evidence_recorder=recorder,
+    governance_evidence_persistence=store,
   )
   with pytest.raises(PreModelPolicyBlockedError):
     await execution.execute(_risk_request(), options=options)
   assert adapter.generate_structured_calls == 0
   assert len(store.facts) == 1
   assert store.facts[0].decision is PolicyAction.DENY
+  assert store.facts[0].evaluation_point is GovernedExecutionEvaluationPoint.PRE_MODEL
+
+
+class _CapturingGovernanceEvidencePersistence(GovernanceEvidencePersistencePort):
+  def __init__(self) -> None:
+    self.captured: list[GovernanceDecisionEvidenceFact] = []
+
+  def persist(self, fact: GovernanceDecisionEvidenceFact) -> GovernanceEvidencePersistenceOutcome:
+    self.captured.append(fact)
+    return GovernanceEvidencePersistenceOutcome(persisted=True, evidence_id=fact.evidence_id)
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_custom_persistence_port_records_typed_fact() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  port = _CapturingGovernanceEvidencePersistence()
+  execution, options = _inference_stack(
+    adapter,
+    governance_evidence_persistence=port,
+  )
+  await execution.execute(_risk_request(), options=options)
+  assert len(port.captured) == 1
+  assert isinstance(port.captured[0], GovernanceDecisionEvidenceFact)
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_deny_evidence_failure_still_denies_zero_provider() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  store.fail_on_persist = True
+  recorder = build_governance_evidence_recorder(persistence=store)
+  execution, options = _inference_stack(
+    adapter,
+    policy_engine=PolicyEngine(runtime=_DenyPreModelRuntime()),
+    governance_evidence_persistence=store,
+  )
+  with pytest.raises(PreModelPolicyBlockedError):
+    await execution.execute(_risk_request(), options=options)
+  assert adapter.generate_structured_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_require_human_emits_fact_before_fail_closed() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  recorder = build_governance_evidence_recorder(persistence=store)
+  execution, options = _inference_stack(
+    adapter,
+    policy_engine=PolicyEngine(runtime=_RequireHumanPreModelRuntime()),
+    governance_evidence_persistence=store,
+  )
+  with pytest.raises(PreModelPolicyBlockedError) as exc_info:
+    await execution.execute(_risk_request(), options=options)
+  assert len(store.facts) == 1
+  assert store.facts[0].decision is PolicyAction.REQUIRE_HUMAN
+  assert exc_info.value.decision.action is PolicyAction.DENY
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_no_recorder_emits_no_fact() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  execution, options = _inference_stack(
+    adapter,
+    wire_default_governance_evidence=False,
+  )
+  await execution.execute(_risk_request(), options=options)
+  assert adapter.generate_structured_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_distinct_executions_distinct_correlation() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  recorder = build_governance_evidence_recorder(persistence=store)
+  execution, options_a = _inference_stack(
+    adapter,
+    governance_evidence_persistence=store,
+  )
+  await execution.execute(_risk_request(content="first"), options=options_a)
+  options_b = governed_root_execution_options(
+    run_id=mint_run_id(),
+    attempt_id=mint_attempt_id(),
+  )
+  two_messages = ExecutionRequest(
+    input=(
+      ChatMessage(role="user", content="first"),
+      ChatMessage(role="user", content="second"),
+    ),
+    output_type=RiskAssessment,
+  )
+  await execution.execute(two_messages, options=options_b)
+  assert len(store.facts) == 2
+  assert store.facts[0].execution_id != store.facts[1].execution_id
+  assert store.facts[0].request_digest != store.facts[1].request_digest
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_escalate_no_fact_fail_closed() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  execution, options = _inference_stack(
+    adapter,
+    policy_engine=PolicyEngine(runtime=_EscalatePreModelRuntime()),
+    governance_evidence_persistence=store,
+  )
+  with pytest.raises(PreModelPolicyBlockedError) as exc_info:
+    await execution.execute(_risk_request(), options=options)
+  assert len(store.facts) == 0
+  assert exc_info.value.decision.action is PolicyAction.DENY
+  assert adapter.generate_structured_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_modify_no_fact_fail_closed() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  execution, options = _inference_stack(
+    adapter,
+    policy_engine=PolicyEngine(runtime=_ModifyPreModelRuntime()),
+    governance_evidence_persistence=store,
+  )
+  with pytest.raises(PreModelPolicyBlockedError) as exc_info:
+    await execution.execute(_risk_request(), options=options)
+  assert len(store.facts) == 0
+  assert exc_info.value.decision.action is PolicyAction.DENY
+  assert adapter.generate_structured_calls == 0
 
 
 @pytest.mark.asyncio
@@ -694,7 +877,7 @@ async def test_inference_pre_model_evidence_failure_still_allows_provider() -> N
   recorder = build_governance_evidence_recorder(persistence=store)
   execution, options = _inference_stack(
     adapter,
-    governance_evidence_recorder=recorder,
+    governance_evidence_persistence=store,
   )
   result = await execution.execute(_risk_request(), options=options)
   assert result.status is ExecutionStatus.COMPLETED
@@ -713,7 +896,7 @@ async def test_inference_pre_model_evidence_has_no_raw_prompt() -> None:
   )
   execution, options = _inference_stack(
     adapter,
-    governance_evidence_recorder=recorder,
+    governance_evidence_persistence=store,
   )
   await execution.execute(request, options=options)
   serialized = repr(store.facts[0].model_dump())
@@ -731,19 +914,224 @@ def _inference_executor_execute_function(tree: ast.Module) -> ast.AsyncFunctionD
   )
 
 
+def _select_adapter_assignment_name(execute_fn: ast.AsyncFunctionDef | ast.FunctionDef) -> str | None:
+  for node in execute_fn.body:
+    if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+      continue
+    target = node.targets[0]
+    if not isinstance(target, ast.Name):
+      continue
+    if not isinstance(node.value, ast.Call):
+      continue
+    call = node.value
+    if isinstance(call.func, ast.Attribute) and call.func.attr == "_select_adapter":
+      return target.id
+  return None
+
+
+def _enforce_pre_model_uses_adapter_name(
+  execute_fn: ast.AsyncFunctionDef | ast.FunctionDef,
+  adapter_name: str,
+) -> bool:
+  for node in execute_fn.body:
+    if not isinstance(node, ast.Expr) or not isinstance(node.value, ast.Call):
+      continue
+    call = node.value
+    if not isinstance(call.func, ast.Name):
+      continue
+    if call.func.id != "enforce_pre_model_before_structured_inference":
+      continue
+    for keyword in call.keywords:
+      if keyword.arg == "adapter" and isinstance(keyword.value, ast.Name):
+        return keyword.value.id == adapter_name
+  return False
+
+
+def _invoke_uses_adapter_generate_structured(
+  execute_fn: ast.AsyncFunctionDef | ast.FunctionDef,
+  adapter_name: str,
+) -> bool:
+  for node in execute_fn.body:
+    if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) or node.name != "_invoke":
+      continue
+    for inner in ast.walk(node):
+      if not isinstance(inner, ast.Call):
+        continue
+      func = inner.func
+      if (
+        isinstance(func, ast.Attribute)
+        and func.attr == "generate_structured"
+        and isinstance(func.value, ast.Name)
+        and func.value.id == adapter_name
+      ):
+        return True
+  return False
+
+
 def test_inference_executor_pre_model_before_generate_structured_ast_gate() -> None:
   source = Path("intergrax/runtime/execution/inference.py").read_text(encoding="utf-8")
   tree = ast.parse(source)
   execute_fn = _inference_executor_execute_function(tree)
-  policy_line = None
-  provider_line = None
-  for index, node in enumerate(execute_fn.body):
-    if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
-      func = node.value.func
-      if isinstance(func, ast.Name) and func.id == "enforce_pre_model_before_structured_inference":
-        policy_line = index
-    if isinstance(node, ast.FunctionDef) and node.name == "_invoke":
-      provider_line = index
-  assert policy_line is not None
-  assert provider_line is not None
-  assert policy_line < provider_line
+  adapter_name = _select_adapter_assignment_name(execute_fn)
+  assert adapter_name is not None
+  assert _enforce_pre_model_uses_adapter_name(execute_fn, adapter_name)
+  assert _invoke_uses_adapter_generate_structured(execute_fn, adapter_name)
+
+
+class _ProfileSelectedAdapter(StructuredTestAdapter):
+  """Adapter with a distinct model marker for profile-resolution proofs."""
+
+  def __init__(self, marker_model: str, parsed_output: RiskAssessment) -> None:
+    super().__init__(parsed_output=parsed_output)
+    self.model = marker_model
+    self.provider = f"provider-{marker_model}"
+
+
+class _SingleAdapterProfileResolver:
+  def __init__(self, adapter: LLMAdapter) -> None:
+    self._adapter = adapter
+    self.resolve_calls = 0
+
+  def resolve(self, profile_id: InferenceProfileId) -> LLMAdapter:
+    self.resolve_calls += 1
+    return self._adapter
+
+
+class _DenyWhenModelRuntime(RuntimePolicyEngine):
+  def __init__(self, blocked_model_id: str) -> None:
+    super().__init__()
+    self._blocked_model_id = blocked_model_id
+    self.evaluate_calls = 0
+    self.last_model_id: str | None = None
+
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
+    self.evaluate_calls += 1
+    if context is not None:
+      self.last_model_id = context.model_id
+    if context is not None and context.model_id == self._blocked_model_id:
+      return PolicyDecision(
+        action=PolicyAction.DENY,
+        reason="blocked_profile_model",
+        policy_rule_id="test.blocked_profile_model",
+      )
+    return PolicyDecision(
+      action=PolicyAction.ALLOW,
+      reason="allow",
+      policy_rule_id="test.allow",
+    )
+
+
+@pytest.mark.asyncio
+async def test_inference_custom_resolver_pre_model_allow_invokes_selected_adapter_only() -> None:
+  default_adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  profile_marker = "profile-selected-adapter-x"
+  selected_adapter = _ProfileSelectedAdapter(
+    profile_marker,
+    parsed_output=RiskAssessment(risk="profile"),
+  )
+  resolver = _SingleAdapterProfileResolver(selected_adapter)
+  runtime = _DenyWhenModelRuntime(blocked_model_id="never-this-model")
+  executor = governed_inference_executor(
+    default_adapter,
+    policy_engine=PolicyEngine(runtime=runtime),
+    profile_resolver=resolver,
+    governance_evidence_persistence=default_test_inference_evidence_persistence(),
+  )
+  router = StrategyExecutionRouter[
+    tuple[ChatMessage, ...],
+    RiskAssessment,
+    ExecutionResult[RiskAssessment],
+  ](inference_executor=executor)
+  runtime_exec = ExecutionRuntime[
+    ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
+    ExecutionResult[RiskAssessment],
+  ](router)
+  request = ExecutionRequest(
+    input=(ChatMessage(role="user", content="x"),),
+    output_type=RiskAssessment,
+    inference_profile_id=InferenceProfileId("custom"),
+  )
+  options = _root_options()
+  result = await Execution(runtime_exec).execute(request, options=options)
+  assert result.status is ExecutionStatus.COMPLETED
+  assert resolver.resolve_calls == 1
+  assert runtime.evaluate_calls == 1
+  assert runtime.last_model_id == profile_marker
+  assert selected_adapter.generate_structured_calls == 1
+  assert default_adapter.generate_structured_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_inference_custom_resolver_pre_model_deny_blocks_selected_adapter() -> None:
+  default_adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  profile_marker = "profile-selected-adapter-deny"
+  selected_adapter = _ProfileSelectedAdapter(
+    profile_marker,
+    parsed_output=RiskAssessment(risk="profile"),
+  )
+  resolver = _SingleAdapterProfileResolver(selected_adapter)
+  runtime = _DenyWhenModelRuntime(blocked_model_id=profile_marker)
+  executor = governed_inference_executor(
+    default_adapter,
+    policy_engine=PolicyEngine(runtime=runtime),
+    profile_resolver=resolver,
+    governance_evidence_persistence=default_test_inference_evidence_persistence(),
+  )
+  router = StrategyExecutionRouter[
+    tuple[ChatMessage, ...],
+    RiskAssessment,
+    ExecutionResult[RiskAssessment],
+  ](inference_executor=executor)
+  runtime_exec = ExecutionRuntime[
+    ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
+    ExecutionResult[RiskAssessment],
+  ](router)
+  request = ExecutionRequest(
+    input=(ChatMessage(role="user", content="x"),),
+    output_type=RiskAssessment,
+    inference_profile_id=InferenceProfileId("custom"),
+  )
+  execution = Execution(runtime_exec)
+  options = _root_options()
+  with pytest.raises(PreModelPolicyBlockedError):
+    await execution.execute(request, options=options)
+  assert resolver.resolve_calls == 1
+  assert runtime.evaluate_calls == 1
+  assert runtime.last_model_id == profile_marker
+  assert selected_adapter.generate_structured_calls == 0
+  assert default_adapter.generate_structured_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_inference_profile_resolution_failure_skips_pre_model_and_provider() -> None:
+  default_adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  runtime = _RecordingPreModelRuntime()
+  catalog = InferenceProfileCatalog((("primary", default_adapter),))
+  executor = governed_inference_executor(
+    default_adapter,
+    policy_engine=PolicyEngine(runtime=runtime),
+    profile_resolver=catalog,
+    governance_evidence_persistence=default_test_inference_evidence_persistence(),
+  )
+  router = StrategyExecutionRouter[
+    tuple[ChatMessage, ...],
+    RiskAssessment,
+    ExecutionResult[RiskAssessment],
+  ](inference_executor=executor)
+  runtime_exec = ExecutionRuntime[
+    ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
+    ExecutionResult[RiskAssessment],
+  ](router)
+  request = ExecutionRequest(
+    input=(ChatMessage(role="user", content="x"),),
+    output_type=RiskAssessment,
+    inference_profile_id=InferenceProfileId("missing"),
+  )
+  execution = Execution(runtime_exec)
+  options = _root_options()
+  with pytest.raises(InferenceProfileNotFoundError):
+    await execution.execute(request, options=options)
+  assert runtime.calls == 0
+  assert default_adapter.generate_structured_calls == 0

@@ -9,9 +9,9 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.run_budget import RunBudget
 from intergrax.runtime.architecture.cost_budget import BudgetEnvelope
 from intergrax.runtime.architecture.cost_quota import ResourceQuota
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.sandbox.contracts import SandboxExecCapable
 from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
 from intergrax.tools.invocation_wiring_requirements import ToolInvocationWiringRequirements

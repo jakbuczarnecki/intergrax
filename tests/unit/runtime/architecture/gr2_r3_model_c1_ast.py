@@ -356,6 +356,39 @@ def collect_forbidden_root_construction_calls(
     return violations
 
 
+_HOST_EVIDENCE_AUTHORITY_FORBIDDEN_PATHS: frozenset[str] = frozenset(
+    {
+        "intergrax/runtime/execution/host_task.py",
+        "intergrax/runtime/execution/orchestration.py",
+    }
+)
+
+
+def collect_forbidden_host_evidence_governance_calls(
+    tree: ast.AST,
+    *,
+    rel_path: str,
+) -> list[ArchitectureViolation]:
+    if rel_path not in _HOST_EVIDENCE_AUTHORITY_FORBIDDEN_PATHS:
+        return []
+    violations: list[ArchitectureViolation] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _call_symbol_name(node.func)
+        if name not in {"host_workspace_id", "host_principal_id"}:
+            continue
+        violations.append(
+            ArchitectureViolation(
+                path=rel_path,
+                line=node.lineno,
+                rule="FORBIDDEN_HOST_EVIDENCE_GOVERNANCE",
+                symbol=f"{name}()",
+            )
+        )
+    return violations
+
+
 def collect_forbidden_authority_resolution_calls(
     tree: ast.AST,
     *,

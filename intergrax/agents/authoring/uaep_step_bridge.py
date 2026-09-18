@@ -6,15 +6,20 @@ from __future__ import annotations
 
 from typing import Any
 
-from intergrax.agents.authoring.diagnostic_serialization import aggregate_step_diagnostics
+from intergrax.agents.authoring.diagnostic_serialization import (
+    aggregate_step_diagnostics,
+)
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.contracts.acp_metadata_keys import AcpRunContextKey
 from intergrax.agents.uaep_protocol import UAEPAgent, UAEPAgentWithDecide
 from intergrax.contracts.acp_state import ACP_STATE_KEY, ACP_STATE_SCHEMA_VERSION
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
-from intergrax.contracts.agent_run import AgentRunError
+from intergrax.contracts.agent_run import AgentRunError, RequestIdentity
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode, TerminalReason
 from intergrax.contracts.agent_run_trace import AgentRunTrace
+from intergrax.agents.authoring.uaep_kernel_step_execution import (
+    UaepKernelStepExecution,
+)
 from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
@@ -23,6 +28,13 @@ from intergrax.contracts.uaep_bridge_keys import UaepStateDeltaKey
 from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_engine import PolicyEngine
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    peek_active_execution_governance_identity,
+)
+from intergrax.runtime.policy.pre_model_principal import (
+    principal_id_from_request_identity,
+    resolve_agentic_pre_model_scope,
+)
 
 
 def initial_kernel_state_from_request(request: RuntimeRequest) -> dict[str, Any]:
@@ -95,15 +107,17 @@ def agent_decision_to_step_outcome(
         )
 
     if decision.type == AgentDecisionType.REQUEST_HUMAN:
-        return StepOutcome.pause_hitl(decision.reason or "human_required", state_delta=state_delta)
+        return StepOutcome.pause_hitl(
+            decision.reason or "human_required", state_delta=state_delta
+        )
 
     if decision.type == AgentDecisionType.MODIFY_PLAN:
         diagnostics: dict[str, Any] = {"uaep_decision": decision.type.value}
         if decision.handoff is not None:
             diagnostics["handoff"] = decision.handoff.model_dump(mode="json")
         if decision.suggested_plan_delta is not None:
-            diagnostics["suggested_plan_delta"] = decision.suggested_plan_delta.model_dump(
-                mode="json"
+            diagnostics["suggested_plan_delta"] = (
+                decision.suggested_plan_delta.model_dump(mode="json")
             )
         return StepOutcome.replan(state_delta, diagnostics=diagnostics)
 
@@ -134,7 +148,10 @@ def agent_decision_to_step_outcome(
     if decision.type == AgentDecisionType.RETRY:
         return StepOutcome.continue_with(
             state_delta,
-            diagnostics={"uaep_decision": decision.type.value, "retry_reason": decision.reason},
+            diagnostics={
+                "uaep_decision": decision.type.value,
+                "retry_reason": decision.reason,
+            },
         )
 
     if decision.type in {AgentDecisionType.INTERRUPT, AgentDecisionType.ESCALATE}:
@@ -186,7 +203,9 @@ def decide_after_uaep_step(
 def kernel_policy_denied_decision(record: StepExecutionRecord) -> AgentDecision:
     code = record.error_code or AgentRunErrorCode.POLICY_DENIED
     if code == AgentRunErrorCode.POLICY_DENIED:
-        return AgentDecision(type=AgentDecisionType.FAIL, reason=TerminalReason.POLICY_DENIED.value)
+        return AgentDecision(
+            type=AgentDecisionType.FAIL, reason=TerminalReason.POLICY_DENIED.value
+        )
     return AgentDecision(type=AgentDecisionType.FAIL, reason=code.value)
 
 
@@ -195,7 +214,7 @@ async def execute_uaep_step_via_kernel(
     step: AgentStep,
     exec_ctx: RuntimeExecutionContext,
     kernel_ctx: StepKernelContext,
-) -> StepExecutionResult:
+) -> UaepKernelStepExecution:
     """Run one UAEP step through HarnessKernel for policy, merge, and Plane B trace."""
     output = await agent.run_step(step, exec_ctx)
     decision = decide_after_uaep_step(agent, step, output, exec_ctx)
@@ -210,7 +229,26 @@ async def execute_uaep_step_via_kernel(
         decision = kernel_policy_denied_decision(record)
 
     exec_ctx.metadata["uaep_last_kernel_record"] = record.model_dump(mode="json")
-    return StepExecutionResult(output=output, decision=decision)
+    return UaepKernelStepExecution(
+        step_result=StepExecutionResult(
+            output=output,
+            decision=decision,
+        ),
+        kernel_record=record,
+    )
+
+
+def _runtime_request_identity(request: RuntimeRequest) -> RequestIdentity:
+    """Request/run identity projection only — not governance authority."""
+    if request.canonical_identity is not None:
+        return request.canonical_identity
+    tenant = request.tenant_id
+    if tenant is None:
+        meta_tenant = request.metadata.get("tenant_id")
+        tenant = meta_tenant if isinstance(meta_tenant, str) else None
+    if tenant is None or not str(tenant).strip():
+        raise ValueError("runtime request identity projection requires tenant_id")
+    return RequestIdentity(tenant_id=str(tenant).strip(), user_id=request.user_id)
 
 
 def build_kernel_session(
@@ -222,14 +260,29 @@ def build_kernel_session(
     max_steps: int | None,
     policy_engine: PolicyEngine,
     request: RuntimeRequest,
+    production_mode: bool = False,
 ) -> StepKernelContext:
+    request_identity = _runtime_request_identity(request)
+    request_principal_id = principal_id_from_request_identity(request_identity)
+    if peek_active_execution_governance_identity() is not None or production_mode:
+        agentic_scope = resolve_agentic_pre_model_scope(
+            tenant_id=tenant_id,
+            workspace_id=request.workspace_id,
+            request_principal_id=request_principal_id,
+            production_mode=production_mode,
+        )
+        resolved_principal_id = agentic_scope.principal_id
+    else:
+        resolved_principal_id = request_principal_id
     return StepKernelContext(
         agent_id=agent_id,
+        principal_id=resolved_principal_id,
         run_id=run_id,
         task_id=task_id,
         tenant_id=tenant_id,
         max_steps=max_steps,
         policy_engine=policy_engine,
+        production_mode=production_mode,
         state_root=initial_kernel_state_from_request(request),
         run_trace=AgentRunTrace(run_id=run_id),
     )

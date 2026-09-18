@@ -65,6 +65,8 @@ def build_user_profile_admission_evidence_from_durable_qualification(
         reopen_passed=bool(reopen_passed),
         delete_reopen_passed=delete_reopen_passed,
         provider_version=canonical.descriptor.provider_version,
+        backing_provider_id=canonical.descriptor.backing_provider_id,
+        backing_provider_version=canonical.descriptor.backing_provider_version,
         evidence_source=durability_evidence_source,
         proof_kind=proof_kind,
     )

@@ -20,8 +20,12 @@ from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
-from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
-from intergrax.runtime.task.queued_host_task_execution_adapter import QueuedHostTaskExecutionAdapter
+from intergrax.runtime.task.host_task_execution_run_adapter import (
+    HostTaskExecutionRunAdapter,
+)
+from intergrax.runtime.task.queued_host_task_execution_adapter import (
+    QueuedHostTaskExecutionAdapter,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,6 +87,7 @@ def wire_optional_queue_execution(
         broker_url="memory://",
         backend_url="cache+memory://",
         agent_registry=registry,
+        host_execution=host_execution,
         task_always_eager=True,
         kv_store=kv_store,
         causal_evidence_persistence=causal_evidence_persistence,

@@ -1079,6 +1079,23 @@ class InMemoryWorkItemRepository:
                 return None
             return record
 
+    def list_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> tuple[WorkItem, ...]:
+        normalized_tenant = tenant_id.strip()
+        normalized_workspace = workspace_id.strip()
+        with self._lock:
+            matches = [
+                record
+                for record in self._records.values()
+                if record.tenant_id == normalized_tenant
+                and record.workspace_id == normalized_workspace
+            ]
+        return tuple(sorted(matches, key=lambda item: item.work_item_id))
+
     def update(self, command: UpdateWorkItemCommand) -> WorkItem:
         key = self._work_item_key(
             command.scope.tenant_id,
@@ -1638,6 +1655,26 @@ class InMemoryWorkArtifactRepository:
             if not self._scope_matches(record, tenant_id=tenant_id, workspace_id=workspace_id):
                 return None
             return record
+
+    def list_for_work_item(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> tuple[WorkArtifact, ...]:
+        normalized_tenant = tenant_id.strip()
+        normalized_workspace = workspace_id.strip()
+        normalized_work_item = work_item_id.strip()
+        with self._store._lock:
+            matches = [
+                record
+                for record in self._store._artifacts.values()
+                if record.tenant_id == normalized_tenant
+                and record.workspace_id == normalized_workspace
+                and record.work_item_id == normalized_work_item
+            ]
+        return tuple(sorted(matches, key=lambda item: item.work_artifact_id))
 
     @staticmethod
     def _artifact_key(tenant_id: str, workspace_id: str, work_artifact_id: str) -> WorkArtifactKey:

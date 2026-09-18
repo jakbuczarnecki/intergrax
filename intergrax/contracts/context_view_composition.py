@@ -10,8 +10,9 @@ from __future__ import annotations
 
 from typing import Final, Literal, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.agent_run import RequestIdentity, canonical_principal_id_from_request_identity
 from intergrax.contracts.context_view import (
     ContextView,
     ContextViewCategory,
@@ -72,6 +73,18 @@ class ContextViewCompositionRequest(BaseModel):
     )
     request: ContextViewRequest
     policy_decision: ContextViewPolicyDecision
+    principal_identity: RequestIdentity
+
+    @model_validator(mode="after")
+    def _align_principal_identity(self) -> ContextViewCompositionRequest:
+        request = self.request
+        identity = self.principal_identity
+        if identity.tenant_id != request.scope.tenant_id:
+            raise ValueError("principal_identity tenant_id must match request scope tenant_id")
+        canonical_id = canonical_principal_id_from_request_identity(identity)
+        if canonical_id != request.acting_principal_id:
+            raise ValueError("principal_identity must match request acting_principal_id")
+        return self
 
 
 class DefaultContextViewComposerConfig(BaseModel):
@@ -83,6 +96,15 @@ class DefaultContextViewComposerConfig(BaseModel):
         SCHEMA_DEFAULT_CONTEXT_VIEW_COMPOSER_CONFIG_V1
     )
     composer_id: str = Field(default=DEFAULT_CONTEXT_VIEW_COMPOSER_ID, min_length=1)
+    knowledge_reference_read_query_text: str | None = None
+
+    @field_validator("knowledge_reference_read_query_text")
+    @classmethod
+    def _strip_knowledge_query(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
 
 
 class ContextViewCompositionValidatedCandidate(BaseModel):
@@ -250,6 +272,7 @@ class ContextViewCandidateOrderingStrategy(Protocol):
         candidates: tuple[ContextViewCompositionValidatedCandidate, ...],
     ) -> tuple[ContextViewCompositionValidatedCandidate, ...]:
         """Return candidates in stable composition order."""
+        ...
 
 
 @runtime_checkable
@@ -263,6 +286,7 @@ class ContextViewEntryIdentityStrategy(Protocol):
         composition_request: ContextViewCompositionRequest,
     ) -> str:
         """Produce a non-empty entry_id for one admitted candidate."""
+        ...
 
 
 @runtime_checkable
@@ -276,6 +300,7 @@ class ContextViewIdentityStrategy(Protocol):
         entry_ids: tuple[str, ...],
     ) -> str:
         """Produce a non-empty view_id for the composed result."""
+        ...
 
 
 @runtime_checkable
@@ -284,3 +309,4 @@ class ContextViewComposer(Protocol):
 
     def compose(self, composition_request: ContextViewCompositionRequest) -> ContextView:
         """Compose a reference-first ContextView from an approved policy decision and source ports."""
+        ...

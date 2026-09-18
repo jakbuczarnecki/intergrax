@@ -14,6 +14,7 @@ from intergrax.memory.contracts.provider_qualification import (
     SessionTurnIndexStoreQualificationCheck,
 )
 from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
+from intergrax.memory.memory_vector_errors import MemoryTenantScopeViolationError
 from intergrax.memory.provider_qualification.checks._helpers import failed, passed
 from intergrax.memory.provider_qualification.checks._suite import validate_canonical_check_suite
 
@@ -21,11 +22,12 @@ _CAPABILITY = MemoryProviderCapabilityKind.SESSION_TURN_INDEX_STORE
 _REQUIRED = MemoryProviderCheckSeverity.REQUIRED
 
 
-def _tenant_a(context: MemoryProviderQualificationContext) -> str:
-    return f"{context.tenant_qualification_id}-a"
+def _bound_tenant(context: MemoryProviderQualificationContext) -> str:
+    """Primary tenant for bound vector adapters and reference stores."""
+    return context.tenant_qualification_id
 
 
-def _tenant_b(context: MemoryProviderQualificationContext) -> str:
+def _other_tenant(context: MemoryProviderQualificationContext) -> str:
     return f"{context.tenant_qualification_id}-b"
 
 
@@ -50,17 +52,20 @@ class SessionTurnIndexTenantIsolationCheck:
         marker = f"tenant-marker-{context.qualification_run_id}"
         message = ChatMessage(role="user", content=marker, entry_id=f"entry-tenant-{context.qualification_run_id}")
         await store.upsert_turn(
-            tenant_id=_tenant_a(context),
+            tenant_id=_bound_tenant(context),
             session_id=f"session-{context.qualification_run_id}",
             user_id=context.user_qualification_id,
             message=message,
         )
-        hits = await store.search_turns(
-            query=marker,
-            tenant_id=_tenant_b(context),
-            session_id=f"session-{context.qualification_run_id}",
-            user_id=context.user_qualification_id,
-        )
+        try:
+            hits = await store.search_turns(
+                query=marker,
+                tenant_id=_other_tenant(context),
+                session_id=f"session-{context.qualification_run_id}",
+                user_id=context.user_qualification_id,
+            )
+        except MemoryTenantScopeViolationError:
+            hits = []
         if hits:
             return failed(
                 check_id=self.check_id,
@@ -98,14 +103,14 @@ class SessionTurnIndexSessionIsolationCheck:
         session_a = f"session-a-{context.qualification_run_id}"
         session_b = f"session-b-{context.qualification_run_id}"
         await store.upsert_turn(
-            tenant_id=_tenant_a(context),
+            tenant_id=_bound_tenant(context),
             session_id=session_a,
             user_id=context.user_qualification_id,
             message=message,
         )
         hits = await store.search_turns(
             query=marker,
-            tenant_id=_tenant_a(context),
+            tenant_id=_bound_tenant(context),
             session_id=session_b,
             user_id=context.user_qualification_id,
         )
@@ -141,14 +146,14 @@ class SessionTurnIndexUpsertSearchCheck:
         entry_id = f"entry-search-{context.qualification_run_id}"
         session_id = f"session-search-{context.qualification_run_id}"
         await store.upsert_turn(
-            tenant_id=_tenant_a(context),
+            tenant_id=_bound_tenant(context),
             session_id=session_id,
             user_id=context.user_qualification_id,
             message=ChatMessage(role="assistant", content=content, entry_id=entry_id),
         )
         hits = await store.search_turns(
             query=content,
-            tenant_id=_tenant_a(context),
+            tenant_id=_bound_tenant(context),
             session_id=session_id,
             user_id=context.user_qualification_id,
         )
@@ -184,7 +189,7 @@ class SessionTurnIndexTombstoneCheck:
         entry_id = f"entry-tomb-{context.qualification_run_id}"
         session_id = f"session-tomb-{context.qualification_run_id}"
         await store.upsert_turn(
-            tenant_id=_tenant_a(context),
+            tenant_id=_bound_tenant(context),
             session_id=session_id,
             user_id=context.user_qualification_id,
             message=ChatMessage(role="user", content=content, entry_id=entry_id),
@@ -192,7 +197,7 @@ class SessionTurnIndexTombstoneCheck:
         await store.tombstone_turn(entry_id)
         hits = await store.search_turns(
             query=content,
-            tenant_id=_tenant_a(context),
+            tenant_id=_bound_tenant(context),
             session_id=session_id,
             user_id=context.user_qualification_id,
         )
@@ -229,14 +234,14 @@ class SessionTurnIndexUserIsolationCheck:
         session_id = f"session-user-{context.qualification_run_id}"
         other_user = f"{context.user_qualification_id}-other"
         await store.upsert_turn(
-            tenant_id=_tenant_a(context),
+            tenant_id=_bound_tenant(context),
             session_id=session_id,
             user_id=context.user_qualification_id,
             message=ChatMessage(role="user", content=marker, entry_id=entry_id),
         )
         hits = await store.search_turns(
             query=marker,
-            tenant_id=_tenant_a(context),
+            tenant_id=_bound_tenant(context),
             session_id=session_id,
             user_id=other_user,
         )
@@ -271,7 +276,7 @@ class SessionTurnIndexSearchResultFidelityCheck:
         content = f"fidelity-{context.qualification_run_id}"
         entry_id = f"entry-fidelity-{context.qualification_run_id}"
         session_id = f"session-fidelity-{context.qualification_run_id}"
-        tenant_id = _tenant_a(context)
+        tenant_id = _bound_tenant(context)
         message = ChatMessage(role="assistant", content=content, entry_id=entry_id)
         await store.upsert_turn(
             tenant_id=tenant_id,

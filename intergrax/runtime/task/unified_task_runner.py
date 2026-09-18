@@ -6,6 +6,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Optional
 
+from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
+
 from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.llm_adapters.tracking.context import llm_tenant_scope
 from intergrax.runtime.execution.orchestration import (
@@ -38,11 +40,15 @@ class UnifiedTaskRunner:
         nexus_loop: NexusLoop,
         *,
         task_enricher: Callable[[Task], Task] | None = None,
+        admitted_governance_identity_for_task: (
+            Callable[[Task], AdmittedRootGovernanceIdentity] | None
+        ) = None,
         execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
         run_budget: RunBudget | None = None,
     ) -> None:
         self._nexus_loop = nexus_loop
         self._task_enricher = task_enricher
+        self._admitted_governance_identity_for_task = admitted_governance_identity_for_task
         self._ledger_factory = (
             execution_budget_ledger_factory
             or nexus_loop.execution_budget_ledger_factory
@@ -71,10 +77,14 @@ class UnifiedTaskRunner:
         await ActiveTaskRegistry.register(task, identity.run_id)
         try:
             with llm_tenant_scope(task.tenant_id):
+                admitted = None
+                if self._admitted_governance_identity_for_task is not None:
+                    admitted = self._admitted_governance_identity_for_task(task)
                 return await execute_root_task(
                     task,
                     nexus_loop=self._nexus_loop,
                     identity=identity,
+                    admitted_governance_identity=admitted,
                     resume_checkpoint=resume_checkpoint,
                     ledger_factory=self._ledger_factory,
                     run_budget=self._run_budget,

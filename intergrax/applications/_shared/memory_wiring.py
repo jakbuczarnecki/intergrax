@@ -50,6 +50,7 @@ from intergrax.runtime.organization.organization_profile_manager import Organiza
 from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
 from intergrax.applications._shared.memory_control_wiring import build_default_memory_control_plane
 from intergrax.memory.contracts.memory_control import MemoryControlPlane
+from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
 from intergrax.applications._shared.entity_graph_wiring import (
     resolve_entity_temporal_memory_capability,
 )
@@ -71,6 +72,7 @@ from intergrax.applications._shared.memory_security_governance_wiring import (
 )
 from intergrax.applications._shared.memory_provider_admission import (
     validate_memory_platform_wiring_admission,
+    validate_session_turn_index_store_admission,
 )
 from intergrax.memory.contracts.provider_identity import (
     BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID,
@@ -165,6 +167,13 @@ def _mongodb_integration_overrides(profile: IntegrationProfile) -> dict[str, obj
     return {}
 
 
+def _document_store_backing_provider_id(profile: IntegrationProfile) -> str | None:
+    binding = profile.document_store
+    if binding is None:
+        return None
+    return binding.resolved_slug()
+
+
 def _resolve_baseline_memory_platform_wiring(
     env: ApplicationEnvironmentProfile,
     profile: IntegrationProfile,
@@ -216,6 +225,7 @@ def _resolve_baseline_memory_platform_wiring(
     if _mongodb_enabled(profile):
         mongo_bundle = create_mongodb_integration(**_mongodb_integration_overrides(profile))
         document_store: DocumentStore = mongo_bundle.document_store.as_document_store()
+        document_store_backing = _document_store_backing_provider_id(profile)
         org_store = None
         if env.memory_profile.enable_org_memory:
             from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (
@@ -228,6 +238,7 @@ def _resolve_baseline_memory_platform_wiring(
             user_profile_store=DocumentStoreUserProfileStore(document_store),
             user_profile_store_identity=builtin_user_profile_store_identity(
                 BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID,
+                backing_provider_id=document_store_backing,
             ),
             organization_profile_store=org_store,
             sqlite_bundle=None,
@@ -362,6 +373,8 @@ def build_session_manager_from_environment(
     memory_control_plane: MemoryControlPlane | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
     durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
+    session_turn_index_store: SessionTurnIndexStore | None = None,
+    session_turn_index_store_identity: MemoryProviderIdentity | None = None,
 ) -> SessionManager:
     """Construct ``SessionManager`` with profile managers driven by ``MemoryProfile``."""
     wiring = memory_wiring or resolve_memory_platform_wiring(
@@ -400,11 +413,22 @@ def build_session_manager_from_environment(
         _ = ORG_MEMORY_SCOPES  # org memory 2.5 scope catalog (AUDIT-IDEAL-15.1)
         org_manager = OrganizationProfileManager(wiring.organization_profile_store)
 
-    session_turn_index = build_session_turn_index_store(
-        env,
-        tenant_id=tenant_id,
-        rag_stack=rag_stack,
-    )
+    resolved_integration = integration_profile or env.integration_profile
+    if session_turn_index_store is not None:
+        validate_session_turn_index_store_admission(
+            env,
+            provider_identity=session_turn_index_store_identity,
+            qualification_evidence_registry=qualification_evidence_registry,
+        )
+        session_turn_index = session_turn_index_store
+    else:
+        session_turn_index = build_session_turn_index_store(
+            env,
+            tenant_id=tenant_id,
+            rag_stack=rag_stack,
+            integration_profile=resolved_integration,
+            qualification_evidence_registry=qualification_evidence_registry,
+        )
 
     resolved_memory_control_plane = memory_control_plane
     if resolved_memory_control_plane is None and user_manager is not None:

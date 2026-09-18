@@ -86,9 +86,7 @@ class DefaultRootExecutionLauncher(
             CanonicalExecutionIntakeRequest(
                 payload=request.payload,
                 trusted_parent_execution_authority=admission.trusted_parent_execution_authority,
-                tenant_id=request.tenant_id,
-                workspace_id=request.workspace_id,
-                principal_id=request.principal_id,
+                admitted_governance_identity=request.admitted_governance_identity,
                 run_id=request.run_id,
                 attempt_id=request.attempt_id,
                 execution_id=request.execution_id,

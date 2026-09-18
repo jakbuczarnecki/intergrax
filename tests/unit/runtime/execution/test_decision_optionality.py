@@ -46,6 +46,7 @@ from intergrax.runtime.execution import (
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.facade import Execution
 from testing_support.inference_governance_wiring import (
+    default_test_inference_evidence_persistence,
     governed_inference_executor,
     governed_root_execution_options,
 )
@@ -191,7 +192,12 @@ def _inference_execution_stack(
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=governed_inference_executor(adapter))
+    ](
+        inference_executor=governed_inference_executor(
+            adapter,
+            governance_evidence_persistence=default_test_inference_evidence_persistence(),
+        )
+    )
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
         ExecutionResult[RiskAssessment],

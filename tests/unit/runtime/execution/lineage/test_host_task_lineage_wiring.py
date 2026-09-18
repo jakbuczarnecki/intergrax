@@ -15,9 +15,8 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
 )
 from intergrax.contracts.execution_lineage import build_execution_lineage_attempt_scope
-from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
-from intergrax.runtime.governance.execution_admission_composition import (
-    build_reference_allowing_root_execution_authority_admission,
+from testing_support.nexus_host_task_execution import (
+    build_certified_internal_test_host_task_execution,
 )
 from intergrax.runtime.execution.lineage.persistence import (
     InMemoryExecutionLineagePersistence,
@@ -31,11 +30,7 @@ from intergrax.runtime.task.task import Task, TaskContext, TaskState
 async def test_build_host_task_execution_wires_lineage_persistence() -> None:
     persistence = InMemoryExecutionLineagePersistence()
     nexus_loop = NexusLoop(AgentRegistry(), execution_lineage_persistence=persistence)
-    host_execution = build_host_task_execution(
-        nexus_loop,
-        orchestration_triggers=frozenset(),
-        root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
-    )
+    host_execution = build_certified_internal_test_host_task_execution(nexus_loop)
     assert host_execution._execution_lineage_persistence is persistence
 
 
@@ -44,11 +39,7 @@ async def test_host_task_root_admission_exists_before_delegate() -> None:
     persistence = InMemoryExecutionLineagePersistence()
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
-    host_execution = build_host_task_execution(
-        nexus_loop,
-        orchestration_triggers=frozenset(),
-        root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
-    )
+    host_execution = build_certified_internal_test_host_task_execution(nexus_loop)
     task_id = mint_task_id()
     task = Task(
         task_id=task_id,

@@ -88,6 +88,8 @@ class MemoryProviderDescriptor:
     provider_id: str
     capabilities: tuple[MemoryProviderCapabilityKind, ...]
     provider_version: str | None = None
+    backing_provider_id: str | None = None
+    backing_provider_version: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

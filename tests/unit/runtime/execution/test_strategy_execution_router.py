@@ -29,6 +29,7 @@ from intergrax.runtime.execution import ExecutionCapability, ExecutionRequest, E
 from intergrax.runtime.execution.agentic import AgentExecutor
 from testing_support.inference_governance_wiring import (
     bind_test_inference_governance_identity,
+    default_test_inference_evidence_persistence,
     governed_inference_executor,
     reset_test_inference_governance_identity,
 )
@@ -135,7 +136,10 @@ def _reset_agent_engine_calls() -> None:
 @pytest.mark.asyncio
 async def test_inference_router_delegates_only_to_inference_executor() -> None:
     adapter = StructuredInferenceAdapter()
-    inference = governed_inference_executor(adapter)
+    inference = governed_inference_executor(
+        adapter,
+        governance_evidence_persistence=default_test_inference_evidence_persistence(),
+    )
     agent = AgentExecutor(RecordingAgentEngine())
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock()
@@ -183,7 +187,10 @@ async def test_inference_router_delegates_only_to_inference_executor() -> None:
 @pytest.mark.asyncio
 async def test_agentic_router_delegates_only_to_agent_executor() -> None:
     adapter = StructuredInferenceAdapter()
-    inference = governed_inference_executor(adapter)
+    inference = governed_inference_executor(
+        adapter,
+        governance_evidence_persistence=default_test_inference_evidence_persistence(),
+    )
     agent = AgentExecutor(RecordingAgentEngine())
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock()
@@ -242,7 +249,10 @@ async def test_agentic_router_delegates_only_to_agent_executor() -> None:
 @pytest.mark.asyncio
 async def test_orchestration_router_delegates_only_to_orchestration_executor() -> None:
     adapter = StructuredInferenceAdapter()
-    inference = governed_inference_executor(adapter)
+    inference = governed_inference_executor(
+        adapter,
+        governance_evidence_persistence=default_test_inference_evidence_persistence(),
+    )
     agent = AgentExecutor(RecordingAgentEngine())
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock(

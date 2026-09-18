@@ -466,6 +466,9 @@ async def test_ce2_q8_mandatory_fragment_preserved() -> None:
     assert "ce2-q8-mandatory" in included_ids
     excluded_ids = {fragment.fragment_id for fragment, _reason in assembled.fragments_excluded}
     assert "ce2-q8-optional" in excluded_ids
+    provenance_fragment_ids = {item.fragment_id for item in assembled.provenance}
+    assert "ce2-q8-mandatory" in provenance_fragment_ids
+    assert "ce2-q8-optional" not in provenance_fragment_ids
 
 
 @pytest.mark.asyncio
@@ -578,8 +581,14 @@ async def test_ce2_q14_deterministic_budget_replay() -> None:
     assert tuple(fragment.fragment_id for fragment in first.fragments_included) == tuple(
         fragment.fragment_id for fragment in second.fragments_included
     )
+    excluded_key = lambda assembled: tuple(
+        (fragment.fragment_id, reason) for fragment, reason in assembled.fragments_excluded
+    )
+    assert excluded_key(first) == excluded_key(second)
     assert first.compaction_provenance == second.compaction_provenance
     assert first.degradation_steps == second.degradation_steps
+    assert first.budget_tokens == second.budget_tokens
+    assert first.total_tokens == second.total_tokens
     assert compute_model_facing_messages_hash(first.messages) == compute_model_facing_messages_hash(
         second.messages
     )

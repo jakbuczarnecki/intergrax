@@ -41,7 +41,7 @@ _STATUS_DOCS = {
 _REQUIRED_MARKERS = (
     "MP-5D — APPROVED / CLOSED",
     "MP-5E — APPROVED / CLOSED",
-    "MP-5F — NEXT",
+    "MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED",
     "intergrax/contracts/context_view_source_ports.py",
     "ContextViewPolicyDecision",
     "source composition ports",

@@ -11,18 +11,18 @@ import pytest
 
 from intergrax.core.plugins.discovery import reset_entry_point_spec_cache_for_tests
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.tool_invocation_pattern import (
-    ToolInvocationResult,
-    resolve_invocation_pattern,
+from intergrax.runtime.nexus.tools.tool_invocation_pattern import resolve_invocation_pattern
+from intergrax.tools.core.tool_plan import ToolCallPlan
+from intergrax.tools.invocation_pattern.contracts import (
+    ToolInvocationInvokerPort,
+    ToolInvocationPatternContext,
+    ToolInvocationPatternResult,
+    ToolInvocationPlannerPort,
 )
 from intergrax.runtime.nexus.tools.tool_invocation_registry import (
     list_tool_invocation_pattern_ids,
     load_tool_invocation_pattern,
 )
-from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
-from intergrax.tools.core.tool_plan import ToolCallPlan
 
 pytestmark = pytest.mark.unit
 
@@ -57,16 +57,19 @@ class _CustomPattern:
     def execute(
         self,
         *,
-        state: RuntimeState,
-        invoker: RuntimeToolInvoker,
-        planner: ToolPlannerProtocol,
+        context: ToolInvocationPatternContext,
+        invoker: ToolInvocationInvokerPort,
+        planner: ToolInvocationPlannerPort,
         plan: ToolCallPlan | None,
         allowed_tool_ids: Sequence[str] | None,
         max_iterations: int,
         planner_input: object,
-    ) -> ToolInvocationResult:
-        _ = state, invoker, planner, plan, allowed_tool_ids, max_iterations, planner_input
-        return ToolInvocationResult(pattern_id="custom_pattern", stop_reason="empty_tool_calls")
+    ) -> ToolInvocationPatternResult:
+        _ = context, invoker, planner, plan, allowed_tool_ids, max_iterations, planner_input
+        return ToolInvocationPatternResult(
+            pattern_id="custom_pattern",
+            stop_reason="empty_tool_calls",
+        )
 
 
 def _patch_entry_points(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -126,7 +129,7 @@ def test_load_tool_invocation_pattern_lazy_lookup_skips_unrelated_entry_points(
         return load_entry_point_value(value)
 
     monkeypatch.setattr(
-        "intergrax.runtime.nexus.tools.tool_invocation_registry.load_entry_point_value",
+        "intergrax.tools.invocation_pattern.registry.load_entry_point_value",
         _tracking_load,
     )
 
@@ -176,3 +179,28 @@ def test_load_tool_invocation_pattern_unknown_id_unchanged(
 ) -> None:
     _patch_entry_points(monkeypatch)
     assert load_tool_invocation_pattern("missing_pattern") is None
+
+
+def test_resolve_invocation_pattern_explicit_missing_id_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_entry_points(monkeypatch)
+    from intergrax.tools.invocation_pattern.errors import ToolInvocationPatternResolutionError
+
+    with pytest.raises(ToolInvocationPatternResolutionError, match="missing.custom.pattern"):
+        resolve_invocation_pattern(
+            mode=ToolInvocationMode.SINGLE_PASS,
+            max_iterations=1,
+            entry_point_pattern_id="missing.custom.pattern",
+        )
+
+
+def test_resolve_invocation_pattern_none_id_still_uses_mode_default() -> None:
+    from intergrax.runtime.nexus.tools.patterns.single_pass import SinglePassPattern
+
+    resolved = resolve_invocation_pattern(
+        mode=ToolInvocationMode.SINGLE_PASS,
+        max_iterations=1,
+        entry_point_pattern_id=None,
+    )
+    assert isinstance(resolved, SinglePassPattern)

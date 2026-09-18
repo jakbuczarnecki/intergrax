@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Sequence
 
 from intergrax.contracts.host_profile_slices import ContextDecisionProfile
@@ -24,7 +23,11 @@ from intergrax.context.budget.contracts import ContextBudgetUnsatisfiableError
 from intergrax.context.budget.mandatory_base_messages import (
     last_user_message_index,
     mandatory_base_message_indices,
+    mandatory_protected_message_indices,
+    estimate_mandatory_base_message_tokens,
+    estimate_mandatory_protected_message_tokens,
 )
+from intergrax.context.contracts import ProviderFragmentIdentityMap
 from intergrax.context.budget.degradation import ContextDegradationPolicy, DefaultContextDegradationPolicy
 from intergrax.runtime.nexus.context.degradation_ladder import apply_degradation_step
 
@@ -40,69 +43,56 @@ def _resolve_decision_profile(config: "RuntimeConfig") -> ContextDecisionProfile
     return ContextDecisionProfile()
 
 
-_CE_CONTEXT_TAG = re.compile(
-    r"^\[context:(?P<source>[a-z_]+):[^\]]+\]\s",
-    re.IGNORECASE,
-)
-
-
-def _detect_injection_source(content: str) -> ContextCandidateSource:
-    """Prefer CE-FMT-1 ``[context:source:id]`` tags over legacy string heuristics (CE-10.3)."""
-    match = _CE_CONTEXT_TAG.match(content or "")
-    if match:
-        from intergrax.context.contracts import ContextFragmentSource
-        from intergrax.runtime.nexus.context.fragment_bridge import candidate_source_from_fragment
-
-        try:
-            fragment_source = ContextFragmentSource(match.group("source"))
-            return candidate_source_from_fragment(fragment_source)
-        except ValueError:
-            pass
-    lowered = content.lower()
-    if "long-term memory" in lowered or "user memory" in lowered or "ltm:" in lowered:
-        return ContextCandidateSource.LONGTERM_MEMORY
-    if "rag context" in lowered or "retrieved documents" in lowered:
-        return ContextCandidateSource.RAG
-    if "web search" in lowered or "websearch" in lowered:
-        return ContextCandidateSource.WEBSEARCH
-    if "attachments" in lowered or "session attachments" in lowered:
-        return ContextCandidateSource.ATTACHMENTS
-    if "tool" in lowered and "context" in lowered:
-        return ContextCandidateSource.TOOLS
-    return ContextCandidateSource.OTHER
-
-
 def classify_candidates(
     messages: Sequence[ChatMessage],
     *,
     count_tokens: Callable[[str], int],
+    provider_fragment_identity: ProviderFragmentIdentityMap | None = None,
 ) -> List[ContextCandidate]:
     if not messages:
         return []
 
+    from intergrax.runtime.nexus.context.fragment_bridge import candidate_source_from_fragment
+
     last_user = last_user_message_index(messages)
-    mandatory_indices = mandatory_base_message_indices(messages)
+    provider_entry_ids = (
+        provider_fragment_identity.entry_ids()
+        if provider_fragment_identity is not None
+        else frozenset()
+    )
+    mandatory_indices = mandatory_base_message_indices(
+        messages,
+        provider_fragment_entry_ids=provider_entry_ids,
+    )
     candidates: List[ContextCandidate] = []
 
     for index, message in enumerate(messages):
         content = message.content or ""
         token_estimate = count_tokens(content)
-        mandatory = index in mandatory_indices
-
-        if index == last_user:
+        provider_entry = (
+            provider_fragment_identity.lookup(message.entry_id)
+            if provider_fragment_identity is not None
+            else None
+        )
+        if provider_entry is not None:
+            source = candidate_source_from_fragment(provider_entry.source)
+            mandatory = provider_entry.mandatory
+            score = 1.0 if mandatory else 0.75
+        elif index == last_user:
             source = ContextCandidateSource.USER_TURN
+            mandatory = index in mandatory_indices
             score = 1.0
-        elif index == 0 and message.role == "system":
+        elif message.role == "system":
             source = ContextCandidateSource.SYSTEM_INSTRUCTIONS
+            mandatory = index in mandatory_indices
             score = 1.0
-        elif message.role == "system" and index < last_user:
-            source = _detect_injection_source(content)
-            score = 0.75
         elif message.role in {"user", "assistant"}:
             source = ContextCandidateSource.SESSION_HISTORY
+            mandatory = index in mandatory_indices
             score = 0.65
         else:
             source = ContextCandidateSource.OTHER
+            mandatory = index in mandatory_indices
             score = 0.5
 
         candidates.append(
@@ -167,6 +157,7 @@ class ContextCompiler:
       *,
       max_output_tokens: Optional[int] = None,
       input_budget_tokens: Optional[int] = None,
+      provider_fragment_identity: ProviderFragmentIdentityMap | None = None,
   ) -> ContextCompileResult:
       decision = _resolve_decision_profile(config)
 
@@ -191,7 +182,11 @@ class ContextCompiler:
               max_output_tokens=max_output_tokens,
           )
 
-      candidates = classify_candidates(working, count_tokens=self._count_tokens)
+      candidates = classify_candidates(
+          working,
+          count_tokens=self._count_tokens,
+          provider_fragment_identity=provider_fragment_identity,
+      )
       total_tokens = sum(candidate.token_estimate for candidate in candidates)
 
       if total_tokens <= budget_tokens:
@@ -213,7 +208,11 @@ class ContextCompiler:
           if step == DegradationStepKind.REDUCE_INJECTION_BLOCKS:
               step = DegradationStepKind.DROP_LOWEST_SCORED
 
-          candidates = classify_candidates(working, count_tokens=self._count_tokens)
+          candidates = classify_candidates(
+              working,
+              count_tokens=self._count_tokens,
+              provider_fragment_identity=provider_fragment_identity,
+          )
           if sum(c.token_estimate for c in candidates) <= budget_tokens:
               break
 
@@ -233,12 +232,24 @@ class ContextCompiler:
           applied_steps.append(result.step.value)
           bytes_removed += result.bytes_removed
           trimmed = True
-          candidates = classify_candidates(working, count_tokens=self._count_tokens)
+          candidates = classify_candidates(
+              working,
+              count_tokens=self._count_tokens,
+              provider_fragment_identity=provider_fragment_identity,
+          )
           if sum(c.token_estimate for c in candidates) <= budget_tokens:
               break
 
-      working = self._enforce_hard_budget(working, budget_tokens)
-      final_candidates = classify_candidates(working, count_tokens=self._count_tokens)
+      working = self._enforce_hard_budget(
+          working,
+          budget_tokens,
+          provider_fragment_identity=provider_fragment_identity,
+      )
+      final_candidates = classify_candidates(
+          working,
+          count_tokens=self._count_tokens,
+          provider_fragment_identity=provider_fragment_identity,
+      )
       final_tokens = sum(candidate.token_estimate for candidate in final_candidates)
 
       if final_tokens > budget_tokens:
@@ -264,6 +275,8 @@ class ContextCompiler:
       self,
       messages: List[ChatMessage],
       budget_tokens: int,
+      *,
+      provider_fragment_identity: ProviderFragmentIdentityMap | None = None,
   ) -> List[ChatMessage]:
       """Last-resort trim until estimated tokens fit budget."""
       from intergrax.runtime.nexus.context.context_budget import (
@@ -277,11 +290,17 @@ class ContextCompiler:
       if total(messages) <= budget_tokens:
           return messages
 
-      from intergrax.context.budget.mandatory_base_messages import (
-          estimate_mandatory_base_message_tokens,
-      )
-
       last_user = last_user_message_index(messages)
+      provider_entry_ids = (
+          provider_fragment_identity.entry_ids()
+          if provider_fragment_identity is not None
+          else frozenset()
+      )
+      mandatory_provider_entry_ids = (
+          provider_fragment_identity.mandatory_entry_ids()
+          if provider_fragment_identity is not None
+          else frozenset()
+      )
       last_user_tokens = self._count_tokens(messages[last_user].content or "")
       if last_user_tokens > budget_tokens:
           raise ContextBudgetUnsatisfiableError(
@@ -289,39 +308,72 @@ class ContextCompiler:
               mandatory_tokens=last_user_tokens,
               available_tokens=budget_tokens,
           )
-      mandatory_base_tokens = estimate_mandatory_base_message_tokens(
+      mandatory_reserve_tokens = estimate_mandatory_protected_message_tokens(
           messages,
           count_text=self._count_tokens,
+          provider_fragment_entry_ids=provider_entry_ids,
+          mandatory_provider_entry_ids=mandatory_provider_entry_ids,
       )
-      if mandatory_base_tokens > budget_tokens:
+      if mandatory_reserve_tokens > budget_tokens:
           raise ContextBudgetUnsatisfiableError(
               detail="mandatory_system_instructions_exceed_budget",
-              mandatory_tokens=mandatory_base_tokens,
+              mandatory_tokens=mandatory_reserve_tokens,
               available_tokens=budget_tokens,
           )
 
+      mandatory_indices = mandatory_protected_message_indices(
+          messages,
+          provider_fragment_entry_ids=provider_entry_ids,
+          mandatory_provider_entry_ids=mandatory_provider_entry_ids,
+      )
       policy = ContextBudgetPolicy(
           max_chars=budget_tokens * 4,
           max_tokens_estimate=budget_tokens,
       )
-      trimmed: List[ChatMessage] = []
+      working: List[ChatMessage] = []
       for index, message in enumerate(messages):
-          if index == last_user:
-              trimmed.append(message)
+          if index in mandatory_indices:
+              working.append(message)
               continue
-          result = trim_message_to_budget_tokenizer_aware(
+          trim_result = trim_message_to_budget_tokenizer_aware(
               message.content or "",
               policy,
               count_tokens=self._count_tokens,
           )
-          trimmed.append(
-              ChatMessage(role=message.role, content=result.message, metadata=message.metadata)
+          working.append(
+              ChatMessage(
+                  role=message.role,
+                  content=trim_result.message,
+                  entry_id=message.entry_id,
+                  tool_calls=message.tool_calls,
+                  tool_call_id=message.tool_call_id,
+                  metadata=message.metadata,
+              )
           )
 
-      while total(trimmed) > budget_tokens and len(trimmed) > 1:
-          drop_index = 1 if trimmed[0].role == "system" else 0
-          if drop_index >= len(trimmed) - 1:
-              break
-          trimmed.pop(drop_index)
+      while total(working) > budget_tokens:
+          mandatory_now = mandatory_protected_message_indices(
+              working,
+              provider_fragment_entry_ids=provider_entry_ids,
+              mandatory_provider_entry_ids=mandatory_provider_entry_ids,
+          )
+          drop_index: int | None = None
+          for index in range(len(working) - 1, -1, -1):
+              if index not in mandatory_now:
+                  drop_index = index
+                  break
+          if drop_index is None:
+              mandatory_tokens = estimate_mandatory_protected_message_tokens(
+                  working,
+                  count_text=self._count_tokens,
+                  provider_fragment_entry_ids=provider_entry_ids,
+                  mandatory_provider_entry_ids=mandatory_provider_entry_ids,
+              )
+              raise ContextBudgetUnsatisfiableError(
+                  detail="compiled_context_exceeds_budget",
+                  mandatory_tokens=mandatory_tokens,
+                  available_tokens=budget_tokens,
+              )
+          working.pop(drop_index)
 
-      return trimmed
+      return working

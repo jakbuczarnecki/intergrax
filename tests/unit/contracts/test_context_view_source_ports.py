@@ -7,6 +7,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
+from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
 from intergrax.contracts.collaborative_work import WorkArtifactVersionRef
 from intergrax.contracts.context_view import (
     ContextViewCategory,
@@ -17,6 +18,9 @@ from intergrax.contracts.context_view import (
     ContextViewScope,
     ContextViewUclSourceRef,
     ContextViewVisibilityClass,
+)
+from intergrax.contracts.context_view_scope_compatibility import (
+    DefaultContextViewScopeCompatibilityPolicy,
 )
 from intergrax.contracts.context_view_source_ports import (
     CollaborativeWorkContextSourcePort,
@@ -44,6 +48,8 @@ from intergrax.contracts.context_view_source_ports import (
 
 pytestmark = pytest.mark.unit
 
+_DEFAULT_SCOPE_POLICY = DefaultContextViewScopeCompatibilityPolicy()
+
 
 def _scope(**overrides: object) -> ContextViewScope:
     payload = {"tenant_id": "tenant-a", "workspace_id": "ws-1"}
@@ -51,10 +57,25 @@ def _scope(**overrides: object) -> ContextViewScope:
     return ContextViewScope(**payload)
 
 
+def _principal_identity(
+    *,
+    tenant_id: str = "tenant-a",
+    principal_id: str = "principal-1",
+    principal_type: PrincipalType = PrincipalType.USER,
+) -> RequestIdentity:
+    return RequestIdentity(
+        tenant_id=tenant_id,
+        user_id=principal_id,
+        principal_type=principal_type,
+        auth_subject=principal_id,
+    )
+
+
 def _memory_request(**overrides: object) -> ContextViewMemorySourceRequest:
     payload = {
         "scope": _scope(),
         "acting_principal_id": "principal-1",
+        "principal_identity": _principal_identity(),
         "eligible_visibility_classes": (ContextViewVisibilityClass.WORKSPACE_SHARED,),
     }
     payload.update(overrides)
@@ -133,6 +154,7 @@ def test_cross_workspace_collaborative_candidate_rejected() -> None:
     request = ContextViewCollaborativeWorkSourceRequest(
         scope=_scope(),
         acting_principal_id="principal-1",
+        principal_identity=_principal_identity(),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORK_ITEM,),
     )
     candidate = ContextViewCollaborativeWorkSourceCandidate(
@@ -167,6 +189,7 @@ def _collaborative_request(**scope_overrides: object) -> ContextViewCollaborativ
     return ContextViewCollaborativeWorkSourceRequest(
         scope=_scope(**scope_overrides),
         acting_principal_id="principal-1",
+        principal_identity=_principal_identity(),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORK_ITEM,),
     )
 
@@ -228,6 +251,7 @@ def test_workspace_level_collaborative_candidate_with_nested_artifact_passes() -
     request = ContextViewCollaborativeWorkSourceRequest(
         scope=_scope(),
         acting_principal_id="principal-1",
+        principal_identity=_principal_identity(),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORKSPACE_SHARED,),
     )
     candidate = ContextViewCollaborativeWorkSourceCandidate(
@@ -246,6 +270,7 @@ def test_work_item_mismatch_rejected() -> None:
     request = ContextViewCollaborativeWorkSourceRequest(
         scope=_scope(work_item_id="wi-1"),
         acting_principal_id="principal-1",
+        principal_identity=_principal_identity(),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORK_ITEM,),
     )
     candidate = ContextViewCollaborativeWorkSourceCandidate(
@@ -284,8 +309,27 @@ def test_operation_scope_mismatch_rejected() -> None:
         ),
         suggested_visibility=ContextViewVisibilityClass.WORKSPACE_SHARED,
     )
-    with pytest.raises(ValueError, match="scope"):
-        validate_memory_source_candidate_isolation(request=request, candidate=candidate)
+    compatible = _DEFAULT_SCOPE_POLICY.candidate_scope_compatible(
+        category=ContextViewCategory.MEMORY,
+        request_scope=request.scope,
+        candidate_scope=candidate.candidate_scope,
+    )
+    assert not compatible
+
+
+def test_memory_workspace_candidate_admitted_in_work_item_scoped_request() -> None:
+    op_scope = ContextViewOperationScope(operation_id="op-1", resource_scope="res-a")
+    request = _memory_request(scope=_scope(work_item_id="wi-1", operation_scope=op_scope))
+    candidate = ContextViewMemorySourceCandidate(
+        source_ref=ContextViewMemorySourceRef(tenant_id="tenant-a", record_ref="mem-1"),
+        candidate_scope=_scope(),
+        suggested_visibility=ContextViewVisibilityClass.WORKSPACE_SHARED,
+    )
+    assert _DEFAULT_SCOPE_POLICY.candidate_scope_compatible(
+        category=ContextViewCategory.MEMORY,
+        request_scope=request.scope,
+        candidate_scope=candidate.candidate_scope,
+    )
 
 
 class _CustomMemorySource:
@@ -364,7 +408,9 @@ def test_pluginability_custom_knowledge_source() -> None:
     request = ContextViewKnowledgeSourceRequest(
         scope=_scope(),
         acting_principal_id="p",
+        principal_identity=_principal_identity(principal_id="p"),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORKSPACE_SHARED,),
+        reference_read_query_text="enumerate",
     )
     assert port.list_candidates(request).outcome is ContextViewSourceOutcome.OK
 
@@ -374,6 +420,7 @@ def test_pluginability_custom_ucl_source() -> None:
     request = ContextViewUclSourceRequest(
         scope=_scope(),
         acting_principal_id="p",
+        principal_identity=_principal_identity(principal_id="p"),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORKSPACE_SHARED,),
     )
     assert port.list_candidates(request).outcome is ContextViewSourceOutcome.OK
@@ -384,6 +431,7 @@ def test_pluginability_custom_collaborative_work_source() -> None:
     request = ContextViewCollaborativeWorkSourceRequest(
         scope=_scope(work_item_id="wi-1"),
         acting_principal_id="p",
+        principal_identity=_principal_identity(principal_id="p"),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORK_ITEM,),
     )
     assert port.list_candidates(request).candidates
@@ -393,7 +441,9 @@ def test_knowledge_and_ucl_isolation_helpers() -> None:
     knowledge_request = ContextViewKnowledgeSourceRequest(
         scope=_scope(),
         acting_principal_id="p",
+        principal_identity=_principal_identity(principal_id="p"),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORKSPACE_SHARED,),
+        reference_read_query_text="enumerate",
     )
     knowledge_candidate = ContextViewKnowledgeSourceCandidate(
         source_ref=ContextViewKnowledgeSourceRef(tenant_id="tenant-a", knowledge_ref="k-1"),
@@ -408,6 +458,7 @@ def test_knowledge_and_ucl_isolation_helpers() -> None:
     ucl_request = ContextViewUclSourceRequest(
         scope=_scope(),
         acting_principal_id="p",
+        principal_identity=_principal_identity(principal_id="p"),
         eligible_visibility_classes=(ContextViewVisibilityClass.WORKSPACE_SHARED,),
     )
     ucl_candidate = ContextViewUclSourceCandidate(

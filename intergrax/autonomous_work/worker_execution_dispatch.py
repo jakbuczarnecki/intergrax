@@ -52,6 +52,7 @@ from intergrax.contracts.autonomous_work.goal import WorkerGoalStatus
 from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
 from intergrax.contracts.autonomous_work.responsibility import ResponsibilityStatus
 from intergrax.contracts.execution_intake import CanonicalExecutionInvocationFailed
+from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.root_execution_launch import (
     RootExecutionLaunchDisposition,
     RootExecutionLaunchPort,
@@ -192,12 +193,15 @@ class WorkerExecutionDispatchService(Generic[InputT, OutputT]):
             )
 
         principal = authority_context.resolved_principal
+        admitted_identity = AdmittedRootGovernanceIdentity(
+            tenant_id=principal.tenant_id,
+            workspace_id=principal.workspace_id,
+            principal_id=principal.principal_id,
+        )
         try:
             launch_result = await self._root_execution_launcher.launch(
                 RootExecutionLaunchRequest(
-                    tenant_id=principal.tenant_id,
-                    workspace_id=principal.workspace_id,
-                    principal_id=principal.principal_id,
+                    admitted_governance_identity=admitted_identity,
                     root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,
                     collaborative_authority_scopes=authority_context.collaborative_authority_scopes,
                     effective_authority_decision=authority_context.effective_authority_decision,

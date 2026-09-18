@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from typing import Protocol, TypeVar
 
+from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.delegation_authority import (
     resolve_root_parent_execution_authority,
 )
@@ -170,6 +171,7 @@ async def execute_root_task(
     *,
     nexus_loop: NexusLoop,
     identity: RootTaskIdentity,
+    admitted_governance_identity: AdmittedRootGovernanceIdentity | None = None,
     resume_checkpoint: TaskCheckpoint | None = None,
     ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     run_budget: RunBudget | None = None,
@@ -247,12 +249,23 @@ async def execute_root_task(
         execution_lineage_persistence=nexus_loop.execution_lineage_persistence,
         failure_evidence_recorder=failure_recorder,
     )
+    governance_identity = admitted_governance_identity
+    tenant_id = task.tenant_id
+    if governance_identity is not None:
+        tenant_id = governance_identity.tenant_id
     root_context = RootExecutionContext(
         run_id=identity.run_id,
         attempt_id=identity.attempt_id,
         execution_id=identity.execution_id,
         authority=resolve_root_parent_execution_authority(task.execution_authority),
-        tenant_id=task.tenant_id,
+        governance_identity=governance_identity,
+        tenant_id=tenant_id,
+        workspace_id=(
+            governance_identity.workspace_id if governance_identity is not None else None
+        ),
+        principal_id=(
+            governance_identity.principal_id if governance_identity is not None else None
+        ),
         task_id=task.task_id,
         segment_predecessor_root_execution_id=segment_predecessor_root_execution_id,
     )

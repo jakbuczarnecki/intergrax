@@ -11,6 +11,7 @@ from typing import Any, List, Optional
 from uuid import uuid4
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.authoring.uaep_kernel_step_execution import UaepExecutorStepOutcome
 from intergrax.agents.authoring.uaep_step_bridge import (
     build_kernel_session,
     execute_uaep_step_via_kernel,
@@ -46,6 +47,9 @@ from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventTyp
 from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.governance.kernel_step_governance_resolution import (
+    governance_resolution_from_kernel_step_record,
+)
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler, GovernanceResolution
 from intergrax.runtime.policy.agent_decision_enforcement import (
     agent_decision_failure_from_resolution,
@@ -423,7 +427,9 @@ class UAEPExecutor:
                         approval=uaep_resume_approval,
                     ):
                         last_output = StepOutput.model_validate(runtime_ckpt.last_step_output.model_dump())
-                        step_result = StepExecutionResult(output=last_output)
+                        step_outcome = UaepExecutorStepOutcome(
+                            step_result=StepExecutionResult(output=last_output),
+                        )
                     elif should_resume_uaep_step(
                         step_index=index,
                         step_id=step.step_id,
@@ -432,14 +438,14 @@ class UAEPExecutor:
                     ):
                         assert runtime_ckpt is not None
                         exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(runtime_ckpt.uaep_step_cursor.values)
-                        step_result = await self._execute_step_with_resume(
+                        step_outcome = await self._execute_step_with_resume(
                             agent,
                             step,
                             exec_ctx,
                             runtime_ckpt.uaep_step_cursor.values if runtime_ckpt.uaep_step_cursor else {},
                         )
                     else:
-                        step_result = await self.execute_step(agent, step, exec_ctx)
+                        step_outcome = await self.execute_step(agent, step, exec_ctx)
                 except Exception as exc:
                     from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
                         DeclarativePolicyHitlPauseRequired,
@@ -466,6 +472,7 @@ class UAEPExecutor:
                     answer = self._build_answer(exec_ctx, last_output, run_id)
                     validation = ValidationResult(valid=False, errors=["awaiting human input"])
                     return answer, validation, governance
+                step_result = step_outcome.step_result
                 step_result.duration_ms = int((time.perf_counter() - started) * 1000)
     
                 await self._guard_hook(
@@ -529,20 +536,27 @@ class UAEPExecutor:
                 replan_policy = request.metadata.get("replan_policy.v1")
                 if isinstance(replan_policy, dict):
                     replan_context.update(replan_policy)
-                resolution = self._interrupt_handler.resolve_decision(
-                    decision,
-                    task_id=task_id,
-                    run_id=run_id,
-                    agent_id=contract.id,
-                    step_id=step.step_id,
-                    context=replan_context or None,
-                    decision_policy_context=AgentDecisionPolicyContext(
-                        require_human_on_critical=task_options.governance.require_human_on_critical,
-                        has_unresolved_critical_interrupt=bool(
-                            exec_ctx.metadata.get("has_unresolved_critical_interrupt", False)
-                        ),
-                    ),
+                kernel_record = step_outcome.kernel_record
+                resolution = (
+                    governance_resolution_from_kernel_step_record(kernel_record, decision)
+                    if kernel_record is not None
+                    else None
                 )
+                if resolution is None:
+                    resolution = self._interrupt_handler.resolve_decision(
+                        decision,
+                        task_id=task_id,
+                        run_id=run_id,
+                        agent_id=contract.id,
+                        step_id=step.step_id,
+                        context=replan_context or None,
+                        decision_policy_context=AgentDecisionPolicyContext(
+                            require_human_on_critical=task_options.governance.require_human_on_critical,
+                            has_unresolved_critical_interrupt=bool(
+                                exec_ctx.metadata.get("has_unresolved_critical_interrupt", False)
+                            ),
+                        ),
+                    )
                 if resolution.interrupt is not None:
                     interrupt_ctx = hook_context_for_task(
                         task_id=task_id,
@@ -882,15 +896,15 @@ class UAEPExecutor:
         step: AgentStep,
         ctx: RuntimeExecutionContext,
         cursor: dict[str, Any],
-    ) -> StepExecutionResult:
+    ) -> UaepExecutorStepOutcome:
         if isinstance(agent, UAEPAgentWithResume):
             output = await agent.resume_step(step, ctx, cursor)
-            return StepExecutionResult(output=output)
+            return UaepExecutorStepOutcome(step_result=StepExecutionResult(output=output))
         uaep_agent = agent if isinstance(agent, UAEPAgent) else None
         if uaep_agent is None:
             raise TypeError(f"{type(agent).__name__} is not a UAEPAgent")
         output = await uaep_agent.run_step(step, ctx)
-        return StepExecutionResult(output=output)
+        return UaepExecutorStepOutcome(step_result=StepExecutionResult(output=output))
 
     async def _emit_governance(
         self,
@@ -935,16 +949,17 @@ class UAEPExecutor:
         agent: Agent,
         step: AgentStep,
         ctx: RuntimeExecutionContext,
-    ) -> StepExecutionResult:
+    ) -> UaepExecutorStepOutcome:
         if not isinstance(agent, UAEPAgent):
             raise TypeError(
                 f"execute_step requires UAEPAgent, got {type(agent).__name__}"
             )
         kernel_ctx = ctx.metadata.get(UaepBridgeMetadataKey.KERNEL_SESSION)
         if kernel_ctx is not None:
-            return await execute_uaep_step_via_kernel(agent, step, ctx, kernel_ctx)
+            kernel_execution = await execute_uaep_step_via_kernel(agent, step, ctx, kernel_ctx)
+            return UaepExecutorStepOutcome.from_kernel_execution(kernel_execution)
         output = await agent.run_step(step, ctx)
-        return StepExecutionResult(output=output)
+        return UaepExecutorStepOutcome(step_result=StepExecutionResult(output=output))
 
     @staticmethod
     def _resolve_steps(

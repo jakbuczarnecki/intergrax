@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Tool invocation orchestration plugin contract (TOOL-ENG-16 · ADR-TOOL-003)."""
+"""Nexus-internal tool invocation orchestration (shipped patterns · TOOL-ENG-16)."""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ ToolInvocationStopReason = Literal[
 
 @dataclass(slots=True)
 class ToolInvocationResult:
-    """Canonical batch orchestration result (Plane 3 — orchestration 2a)."""
+    """Canonical batch orchestration result (Nexus execution plane)."""
 
     tool_traces: list[ToolCallTrace] = field(default_factory=list)
     loop_iterations: int = 0
@@ -41,12 +41,11 @@ class ToolInvocationResult:
 
 
 @runtime_checkable
-class ToolInvocationPattern(Protocol):
-    """Orchestrates multi-call tool plans before atomic invoke (2b unchanged)."""
+class NexusToolInvocationPattern(Protocol):
+    """Nexus execution orchestration contract (not a public plugin ABI)."""
 
     @property
     def pattern_id(self) -> str:
-        """Stable identifier for trace and config (e.g. ``single_pass``)."""
         ...
 
     def execute(
@@ -63,7 +62,11 @@ class ToolInvocationPattern(Protocol):
         ...
 
 
-def pattern_for_mode(mode: ToolInvocationMode) -> ToolInvocationPattern:
+# Internal alias retained for in-tree Nexus modules during migration.
+ToolInvocationPattern = NexusToolInvocationPattern
+
+
+def pattern_for_mode(mode: ToolInvocationMode) -> NexusToolInvocationPattern:
     """Resolve shipped invocation pattern from runtime config."""
     from intergrax.runtime.nexus.tools.patterns.bounded_react import BoundedReactPattern
     from intergrax.runtime.nexus.tools.patterns.single_pass import SinglePassPattern
@@ -93,9 +96,9 @@ def resolve_invocation_pattern(
     *,
     mode: ToolInvocationMode | None,
     max_iterations: int,
-    pattern_override: ToolInvocationPattern | None = None,
+    pattern_override: NexusToolInvocationPattern | None = None,
     entry_point_pattern_id: str | None = None,
-) -> ToolInvocationPattern:
+) -> NexusToolInvocationPattern:
     """Resolve pattern from override, entry point, mode, or iteration default."""
     if pattern_override is not None:
         return pattern_override
@@ -103,10 +106,12 @@ def resolve_invocation_pattern(
         from intergrax.runtime.nexus.tools.tool_invocation_registry import (
             load_tool_invocation_pattern,
         )
+        from intergrax.tools.invocation_pattern.errors import ToolInvocationPatternResolutionError
 
         loaded = load_tool_invocation_pattern(entry_point_pattern_id)
         if loaded is not None:
             return loaded
+        raise ToolInvocationPatternResolutionError(entry_point_pattern_id)
     if mode is not None:
         return pattern_for_mode(mode)
     if max_iterations > 1:

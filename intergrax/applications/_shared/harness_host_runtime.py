@@ -111,8 +111,8 @@ from intergrax.applications._shared.harness_host_composition import (
     HarnessHostInternalComposition,
     build_harness_host_internal_composition,
 )
-from intergrax.applications._shared.host_task_execution_wiring import (
-    build_environment_host_task_execution,
+from intergrax.applications._shared.harness_host_task_execution_wiring import (
+    build_harness_environment_host_task_execution,
 )
 from intergrax.applications._shared.profile_resolution import (
     materialize_effective_profile_revision,
@@ -471,7 +471,7 @@ def build_harness_host_runtime(
             expected_active_revision_id=activation_baseline_revision_id,
         ),
     )
-    execution = build_environment_host_task_execution(
+    execution = build_harness_environment_host_task_execution(
         nexus_loop,
         effective_environment,
         pinning_dependencies=EffectiveProfileExecutionPinningDependencies(

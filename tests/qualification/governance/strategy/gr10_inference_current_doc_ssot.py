@@ -52,6 +52,10 @@ _PRE_MODEL_ACTIVE_BLOCKER = re.compile(
     r"Active INFERENCE blocker:.*PRE_MODEL",
     re.IGNORECASE,
 )
+_FORBIDDEN_INFERENCE_INNER_GOVERNANCE_BLOCKER = re.compile(
+    r"INFERENCE\s+Inner\s+Governance\s+(PARTIAL|GAP|blocker)",
+    re.IGNORECASE,
+)
 
 
 def _read(path: Path) -> str:
@@ -122,6 +126,9 @@ def gr10_assert_current_docs_inference_ssot() -> None:
         assert not _PRE_MODEL_ACTIVE_BLOCKER.search(body), (
             f"{name} must not list PRE_MODEL as an active INFERENCE blocker"
         )
+        assert not _FORBIDDEN_INFERENCE_INNER_GOVERNANCE_BLOCKER.search(body), (
+            f"{name} must not list INFERENCE Inner Governance as an active blocker (GR-10-R5)"
+        )
 
     na_caps = {
         row.capability
@@ -129,3 +136,5 @@ def gr10_assert_current_docs_inference_ssot() -> None:
         if row.applicability is Gr10Applicability.NOT_APPLICABLE
     }
     assert "HITL" in na_caps and "Reliability" in na_caps and "MSE" in na_caps
+    assert "Root admission" in na_caps
+    assert "Inner Governance" in na_caps

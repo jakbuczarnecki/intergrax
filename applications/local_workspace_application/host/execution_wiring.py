@@ -5,6 +5,12 @@
 from __future__ import annotations
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications._shared.harness_admitted_root_governance_identity import (
+    admit_harness_root_governance_identity,
+)
+from intergrax.applications._shared.harness_root_execution_launch_wiring import (
+    build_harness_root_execution_authority_admission,
+)
 from intergrax.applications._shared.host_task_execution_wiring import build_host_task_execution
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -24,4 +30,6 @@ def build_lkw_host_task_execution(
         pipeline_capability_suffix=(
             graph_spec.pipeline_capability_suffix if graph_spec is not None else ".pipeline"
         ),
+        root_authority_admission=build_harness_root_execution_authority_admission(),
+        admit_root_governance_identity=admit_harness_root_governance_identity,
     )

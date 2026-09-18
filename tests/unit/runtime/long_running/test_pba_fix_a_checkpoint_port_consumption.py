@@ -263,7 +263,15 @@ def test_a4_build_task_checkpoint_is_provider_neutral() -> None:
 
 def test_a5_worker_runtime_accepts_fake_port() -> None:
     fake = _FakeCheckpointStore()
-    runtime = NexusWorkerRuntime.from_registry(AgentRegistry(), checkpoint_store=fake)
+    from testing_support.admitted_root_governance_identity import (
+        lab_admitted_root_governance_identity_for_task,
+    )
+
+    runtime = NexusWorkerRuntime.from_registry(
+        AgentRegistry(),
+        checkpoint_store=fake,
+        admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+    )
     assert runtime.host_execution is not None
 
 
@@ -275,6 +283,9 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
 
     celery = pytest.importorskip("celery", reason="celery optional for runtime bootstrap proof")
     del celery
+    from testing_support.admitted_root_governance_identity import (
+        lab_admitted_root_governance_identity_for_task,
+    )
     from intergrax.runtime.task.worker_bootstrap import (
         build_nexus_task_execution_registry,
         create_nexus_celery_worker_app,
@@ -284,6 +295,7 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
     registry = build_nexus_task_execution_registry(
         AgentRegistry(),
         checkpoint_store=fake,
+        admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
     )
     assert registry is not None
     from intergrax.runtime.observability.memory_causal_evidence_persistence import (
@@ -297,6 +309,7 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
         backend_url=None,
         agent_registry=AgentRegistry(),
         checkpoint_store=fake,
+        admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
         task_always_eager=True,
         kv_store=DispatcherTestKVStore(),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),

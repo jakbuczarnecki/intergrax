@@ -12,7 +12,10 @@ from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderCapabilityKind,
     MemoryProviderQualificationStatus,
 )
-from intergrax.memory.contracts.provider_identity import MemoryProviderIdentity
+from intergrax.memory.contracts.provider_identity import (
+    MemoryProviderIdentity,
+    memory_provider_backing_identity_mismatch,
+)
 from intergrax.memory.contracts.provider_durability_evidence import (
     MemoryProviderDurabilityEvidence,
     MemoryProviderDurabilityEvidenceLookup,
@@ -35,8 +38,11 @@ __all__ = [
     "UserProfileStoreProductionAdmissionEvaluation",
     "classify_user_profile_store_provider",
     "evaluate_production_persistent_user_profile_admission",
+    "lookup_trusted_memory_provider_qualification_evidence",
     "lookup_trusted_user_profile_durability_evidence",
     "lookup_trusted_user_profile_qualification_evidence",
+    "MemoryCapabilityProviderAdmissionEvaluation",
+    "evaluate_production_session_turn_index_store_admission",
 ]
 
 
@@ -57,6 +63,7 @@ class MemoryProviderAdmissionReasonCode(StrEnum):
     DURABILITY_EVIDENCE_MISMATCH = "durability_evidence_mismatch"
     PROVIDER_IDENTITY_MISSING = "provider_identity_missing"
     PROVIDER_IDENTITY_MISMATCH = "provider_identity_mismatch"
+    PROVIDER_BACKING_IDENTITY_MISMATCH = "provider_backing_identity_mismatch"
 
 
 @runtime_checkable
@@ -125,7 +132,7 @@ def classify_user_profile_store_provider(
     )
 
 
-def lookup_trusted_user_profile_qualification_evidence(
+def lookup_trusted_memory_provider_qualification_evidence(
     registry: MemoryProviderQualificationEvidenceRegistry,
     trusted_identity: MemoryProviderIdentity,
 ) -> MemoryProviderQualificationEvidenceLookup:
@@ -133,6 +140,18 @@ def lookup_trusted_user_profile_qualification_evidence(
         trusted_identity.provider_id,
         trusted_identity.capability,
         trusted_identity.provider_version,
+        trusted_identity.backing_provider_id,
+        trusted_identity.backing_provider_version,
+    )
+
+
+def lookup_trusted_user_profile_qualification_evidence(
+    registry: MemoryProviderQualificationEvidenceRegistry,
+    trusted_identity: MemoryProviderIdentity,
+) -> MemoryProviderQualificationEvidenceLookup:
+    return lookup_trusted_memory_provider_qualification_evidence(
+        registry,
+        trusted_identity,
     )
 
 
@@ -144,6 +163,8 @@ def lookup_trusted_user_profile_durability_evidence(
         trusted_identity.provider_id,
         trusted_identity.capability,
         trusted_identity.provider_version,
+        trusted_identity.backing_provider_id,
+        trusted_identity.backing_provider_version,
     )
 
 
@@ -171,6 +192,28 @@ def _provider_version_binding_mismatch_durability(
     if identity_version is None or evidence_version is None:
         return True
     return identity_version != evidence_version
+
+
+def _provider_backing_binding_mismatch_qualification(
+    trusted_identity: MemoryProviderIdentity,
+    evidence: MemoryProviderQualificationEvidence,
+) -> bool:
+    return memory_provider_backing_identity_mismatch(
+        trusted_identity,
+        backing_provider_id=evidence.backing_provider_id,
+        backing_provider_version=evidence.backing_provider_version,
+    )
+
+
+def _provider_backing_binding_mismatch_durability(
+    trusted_identity: MemoryProviderIdentity,
+    evidence: MemoryProviderDurabilityEvidence,
+) -> bool:
+    return memory_provider_backing_identity_mismatch(
+        trusted_identity,
+        backing_provider_id=evidence.backing_provider_id,
+        backing_provider_version=evidence.backing_provider_version,
+    )
 
 
 def evaluate_production_persistent_user_profile_admission(
@@ -271,6 +314,15 @@ def evaluate_production_persistent_user_profile_admission(
             trusted_qualification_status=evidence.status,
             qualification_run_id=evidence.qualification_run_id,
         )
+    if _provider_backing_binding_mismatch_qualification(trusted_identity, evidence):
+        return UserProfileStoreProductionAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_BACKING_IDENTITY_MISMATCH,
+            provider_id=trusted_provider_id,
+            declared_qualification_status=classification.declared_qualification_status,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
     if _provider_version_binding_mismatch_qualification(trusted_identity, evidence):
         return UserProfileStoreProductionAdmissionEvaluation(
             admitted=False,
@@ -348,6 +400,17 @@ def evaluate_production_persistent_user_profile_admission(
             trusted_durability_status=durability_evidence.durability_status,
             durability_run_id=durability_evidence.qualification_run_id,
         )
+    if _provider_backing_binding_mismatch_durability(trusted_identity, durability_evidence):
+        return UserProfileStoreProductionAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_BACKING_IDENTITY_MISMATCH,
+            provider_id=trusted_provider_id,
+            declared_qualification_status=classification.declared_qualification_status,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+            trusted_durability_status=durability_evidence.durability_status,
+            durability_run_id=durability_evidence.qualification_run_id,
+        )
     if _provider_version_binding_mismatch_durability(trusted_identity, durability_evidence):
         return UserProfileStoreProductionAdmissionEvaluation(
             admitted=False,
@@ -396,6 +459,138 @@ def evaluate_production_persistent_user_profile_admission(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class MemoryCapabilityProviderAdmissionEvaluation:
+    admitted: bool
+    reason_code: MemoryProviderAdmissionReasonCode | None
+    provider_id: str
+    capability: MemoryProviderCapabilityKind
+    backing_provider_id: str | None
+    trusted_qualification_status: MemoryProviderQualificationStatus | None
+    qualification_run_id: str | None
+
+
+def evaluate_production_session_turn_index_store_admission(
+    trusted_identity: MemoryProviderIdentity | None,
+    evidence_lookup: MemoryProviderQualificationEvidenceLookup,
+) -> MemoryCapabilityProviderAdmissionEvaluation:
+    """PRODUCT STI gate: trusted identity + qualification evidence only (no durability)."""
+    capability = MemoryProviderCapabilityKind.SESSION_TURN_INDEX_STORE
+    if trusted_identity is None:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_IDENTITY_MISSING,
+            provider_id="none",
+            capability=capability,
+            backing_provider_id=None,
+            trusted_qualification_status=None,
+            qualification_run_id=None,
+        )
+    if trusted_identity.capability is not capability:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_IDENTITY_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=None,
+            qualification_run_id=None,
+        )
+    if evidence_lookup.resolve_status is MemoryProviderQualificationEvidenceResolveStatus.MISSING:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=None,
+            qualification_run_id=None,
+        )
+    if evidence_lookup.resolve_status in {
+        MemoryProviderQualificationEvidenceResolveStatus.AMBIGUOUS,
+        MemoryProviderQualificationEvidenceResolveStatus.MISMATCH,
+    }:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=None,
+            qualification_run_id=None,
+        )
+    evidence = evidence_lookup.evidence
+    if evidence is None:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=None,
+            qualification_run_id=None,
+        )
+    if evidence.capability is not capability:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
+    if evidence.provider_id != trusted_identity.provider_id:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
+    if _provider_backing_binding_mismatch_qualification(trusted_identity, evidence):
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_BACKING_IDENTITY_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
+    if _provider_version_binding_mismatch_qualification(trusted_identity, evidence):
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
+    if evidence.status is not MemoryProviderQualificationStatus.QUALIFIED:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_NOT_QUALIFIED,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
+    return MemoryCapabilityProviderAdmissionEvaluation(
+        admitted=True,
+        reason_code=None,
+        provider_id=trusted_identity.provider_id,
+        capability=capability,
+        backing_provider_id=trusted_identity.backing_provider_id,
+        trusted_qualification_status=evidence.status,
+        qualification_run_id=evidence.qualification_run_id,
+    )
+
+
 class MemoryProviderAdmissionError(RuntimeError):
     """Fail-closed admission error for persistent production USER/LTM memory."""
 
@@ -414,6 +609,8 @@ class MemoryProviderAdmissionError(RuntimeError):
         qualification_run_id: str | None = None,
         declared_provider_id: str | None = None,
         trusted_provider_id: str | None = None,
+        trusted_backing_provider_id: str | None = None,
+        evidence_backing_provider_id: str | None = None,
         trusted_durability_status: MemoryProviderTrustedDurabilityStatus | None = None,
         durability_run_id: str | None = None,
     ) -> None:
@@ -429,6 +626,8 @@ class MemoryProviderAdmissionError(RuntimeError):
         self.qualification_run_id = qualification_run_id
         self.declared_provider_id = declared_provider_id
         self.trusted_provider_id = trusted_provider_id
+        self.trusted_backing_provider_id = trusted_backing_provider_id
+        self.evidence_backing_provider_id = evidence_backing_provider_id
         self.trusted_durability_status = trusted_durability_status
         self.durability_run_id = durability_run_id
         super().__init__(
@@ -440,6 +639,8 @@ class MemoryProviderAdmissionError(RuntimeError):
             f"provider_id={provider_id}; "
             f"declared_provider_id={declared_provider_id or provider_id}; "
             f"trusted_provider_id={trusted_provider_id or 'none'}; "
+            f"backing_provider_id={trusted_backing_provider_id or 'none'}; "
+            f"evidence_backing_provider_id={evidence_backing_provider_id or 'none'}; "
             f"declared_durability={durability.value}; "
             f"declared_qualification_status={declared_qualification_status.value}; "
             f"trusted_durability_status="

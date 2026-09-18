@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -29,7 +30,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 @pytest.fixture(params=("memory", "sqlite"))
 def reference_repository(
     request: pytest.FixtureRequest, tmp_path: Path
-) -> OptimizationArtifactRepository:
+) -> Iterator[OptimizationArtifactRepository]:
     if request.param == "memory":
         repo: OptimizationArtifactRepository = InMemoryOptimizationArtifactRepository()
     else:

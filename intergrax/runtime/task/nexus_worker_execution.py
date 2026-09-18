@@ -15,17 +15,25 @@ from pydantic import BaseModel, Field
 from intergrax.contracts.execution_identity import AttemptId, TaskId
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
+from intergrax.runtime.long_running.resume_planner import (
+    execution_identity_from_checkpoint,
+)
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
 from intergrax.runtime.background_execution.identity_admission import (
     assert_handler_run_id_matches_identity,
     assert_payload_run_id_consistent,
 )
+from intergrax.contracts.admitted_root_governance_identity import (
+    AdmittedRootGovernanceIdentity,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
-from intergrax.runtime.governance.execution_admission_composition import build_reference_allowing_root_execution_authority_admission
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
-from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -70,7 +78,9 @@ class WorkerRunLifecycle(Protocol):
 
     def mark_running(self, run_id: str) -> None: ...
 
-    def mark_completed(self, run_id: str, result_payload: Optional[dict] = None) -> None: ...
+    def mark_completed(
+        self, run_id: str, result_payload: Optional[dict] = None
+    ) -> None: ...
 
     def mark_failed(self, run_id: str, error_type: str, error_message: str) -> None: ...
 
@@ -105,7 +115,11 @@ class NexusWorkerRuntime:
         orchestration_triggers: frozenset[str] = frozenset(),
         pipeline_capability_suffix: str = ".pipeline",
         task_enricher: TaskEnricher | None = None,
-        execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+        execution_continuation_state_store: ExecutionContinuationStateStore
+        | None = None,
+        admit_root_governance_identity: Callable[
+            [Task], AdmittedRootGovernanceIdentity
+        ],
     ) -> NexusWorkerRuntime:
         resolved_factory = execution_budget_ledger_factory
         if resolved_factory is None and run_budget_persistence is not None:
@@ -130,6 +144,7 @@ class NexusWorkerRuntime:
             orchestration_triggers=orchestration_triggers,
             pipeline_capability_suffix=pipeline_capability_suffix,
             root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
+            admit_root_governance_identity=admit_root_governance_identity,
         )
         return cls(
             host_execution,
@@ -226,7 +241,9 @@ class NexusWorkerRuntime:
             )
             result_payload = task_result_to_payload(result)
             if self._lifecycle is not None:
-                self._lifecycle.mark_completed(str(resolved_run_id), result_payload=result_payload)
+                self._lifecycle.mark_completed(
+                    str(resolved_run_id), result_payload=result_payload
+                )
             return result_payload
         except Exception as exc:
             if self._lifecycle is not None:

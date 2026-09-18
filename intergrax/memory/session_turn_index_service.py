@@ -187,10 +187,14 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
             "index_domain": EPISODIC_INDEX_DOMAIN,
             "collection_name": self._collection_name,
         }
-        if not include_cross_session and session_id:
-            where["session_id"] = session_id
-        elif include_cross_session and user_id:
-            where["user_id"] = user_id
+        if include_cross_session:
+            if user_id:
+                where["user_id"] = user_id
+        else:
+            if session_id:
+                where["session_id"] = session_id
+            if user_id:
+                where["user_id"] = user_id
 
         q_emb = self._embedding_port.embed_texts([q])
         embedding = tuple(float(x) for x in q_emb[0])

@@ -180,14 +180,19 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-7 | External Effect / Reliability Boundary | **IMPLEMENTED** — qualification **OPEN** (ERL path; Reliability ≠ Governance) |
 | GR-8 | Governance Evidence Integration | **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** — [ADR-GR-8-001](../../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); independent final audit pending |
 | GR-9 | Diagnostic Consumption Proof | **OPEN** |
-| GR-10 | Execution Strategy Coverage | **PARTIAL** — **GR-10-FINAL** requalification; INFERENCE PRE_MODEL **QUALIFIED**; matrix partial rows remain; **GR-10-R3** UAEP AGENT_DECISION authority semantics |
+| GR-10 | Execution Strategy Coverage | **PARTIAL** — **GR-10-FINAL** requalification; INFERENCE PRE_MODEL **QUALIFIED**; matrix partial rows remain |
 | GR-10-FINAL | Strategy governance requalification | **CLOSED (qualification artifact)** — independent GitHub audit before GR-10 slice CLOSED |
-| GR-10-R3 | UAEP AGENT_DECISION authority on kernel path | **OPEN** — G3B `test_uaep_agent_decision_deny_blocks_subsequent_protected_step` fails: step blocked but `PolicyDecision` ALLOW |
+| GR-10-R3-R1 | UAEP kernel authority internal carrier | **CANDIDATE CLOSED — PUBLIC AGENT BOUNDARY RESTORED** — `UaepKernelStepExecution` adapter carrier; independent GitHub audit required |
+| GR-10-R3 | UAEP AGENT_DECISION authority on kernel path | **CANDIDATE CLOSED — FUNCTIONAL + ARCHITECTURAL CONFORMANCE COMPLETE** — kernel `policy_pre` via internal carrier → `GovernanceResolution`; G3B deny proof green; independent GitHub audit required |
 | GR-10-R2-ADR1 | PRE_MODEL identity + intake boundary (ADR) | **CANDIDATE CLOSED** — [ADR-GR-10-001](../../technical/adr/entries/2026-09-18/ADR-GR-10-001.md) accepted; independent GitHub audit before CLOSED |
 | GR-10-R2-ADR1-R1 | PRE_MODEL identity SSOT reconciliation | **CANDIDATE CLOSED** — current docs reconciled to GR-10-R1 semantics; independent GitHub audit before CLOSED |
 | GR-10-R2-C1 | PRE_MODEL public contract revision | **CANDIDATE CLOSED** — `principal_id` required on `evaluate_pre_llm`; independent GitHub audit before CLOSED |
 | GR-10-R2-R1 | PRE_MODEL runtime identity conformance | **CANDIDATE CLOSED — RUNTIME IDENTITY CONFORMANCE COMPLETE** — independent GitHub audit before CLOSED |
 | GR-10-R2 | INFERENCE PRE_MODEL runtime conformance | **CANDIDATE CLOSED** — [ADR-GR-10-001](../../technical/adr/entries/2026-09-18/ADR-GR-10-001.md); independent audit after **GR-10-R2-R1** |
+| GR-10-R4 | INFERENCE root admission enterprise qualification | **CANDIDATE CLOSED — INFERENCE ROOT ADMISSION NOT_APPLICABLE BY ARCHITECTURE** — no independent production root; `tests/qualification/governance/strategy/test_gr10_r4_inference_root_admission_qualification.py`; independent GitHub audit required |
+| GR-10-R5 | INFERENCE Inner Governance enterprise qualification | **CANDIDATE CLOSED — INFERENCE INNER GOVERNANCE NOT_APPLICABLE BY ARCHITECTURE** — GR-3/MSE spine row distinct from PRE_MODEL Policy evaluation; `test_gr10_r5_inference_inner_governance_qualification.py`; independent GitHub audit required |
+| GR-10-R6 / R6-R1 | INFERENCE Governance Evidence | **CANDIDATE CLOSED** — mandatory composition + PRE_MODEL verdict semantics; independent GitHub audit required |
+| GR-10-R7 | AGENTIC & ORCHESTRATION residual strategy requalification | **CANDIDATE CLOSED — MATRIX REQUALIFIED** — `GR10_AGENTIC/ORCHESTRATION_CAPABILITY_SEMANTICS` + `test_gr10_r7_agentic_orchestration_residual_requalification.py`; next bounded remediation **GR-10-R8** (ORCHESTRATION Inner Governance); independent GitHub audit required |
 | GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** |
 | GR-12 | Control-Plane Governance | **GAP** / **OPEN** |
 | GR-13 | Full Governance Proof Matrix | **OPEN** |

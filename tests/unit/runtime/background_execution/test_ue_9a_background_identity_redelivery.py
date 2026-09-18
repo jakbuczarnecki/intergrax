@@ -62,6 +62,9 @@ from intergrax.runtime.nexus.tools.tool_loop import (
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
+from testing_support.admitted_root_governance_identity import (
+    lab_admitted_root_governance_identity_for_task,
+)
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
 from intergrax.runtime.task.worker_payload import encode_execution_request
@@ -247,7 +250,10 @@ def _run_nexus_worker_attempt(
     )
     agent_registry = AgentRegistry()
     agent_registry.register(EchoAgent())
-    runtime = NexusWorkerRuntime.from_registry(agent_registry)
+    runtime = NexusWorkerRuntime.from_registry(
+        agent_registry,
+        admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+    )
     task = Task(
         task_id=str(identity.task_id),
         tenant_id=identity.tenant_id,
@@ -581,7 +587,10 @@ def test_inconsistent_payload_run_id_fails_closed() -> None:
     )
     agent_registry = AgentRegistry()
     agent_registry.register(EchoAgent())
-    runtime = NexusWorkerRuntime.from_registry(agent_registry)
+    runtime = NexusWorkerRuntime.from_registry(
+        agent_registry,
+        admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+    )
     conflicting_run = mint_run_id()
     task = Task(
         task_id=str(identity.task_id),
@@ -675,7 +684,10 @@ def test_queue_correlation_run_id_is_not_treated_as_canonical_conflict() -> None
     )
     agent_registry = AgentRegistry()
     agent_registry.register(EchoAgent())
-    runtime = NexusWorkerRuntime.from_registry(agent_registry)
+    runtime = NexusWorkerRuntime.from_registry(
+        agent_registry,
+        admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+    )
     task = Task(
         task_id=str(identity.task_id),
         tenant_id=identity.tenant_id,

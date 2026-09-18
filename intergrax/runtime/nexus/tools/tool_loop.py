@@ -121,6 +121,91 @@ def _build_planned_request(
     )
 
 
+def _finish_canonical_tool_invocation(
+    *,
+    state: RuntimeState,
+    invoker: RuntimeToolInvoker,
+    call: PlannedToolCall,
+    request: ToolExecutionRequest[BaseModel],
+    index: int,
+    idempotency_prefix: str,
+    invoke_lock: threading.Lock | None = None,
+) -> tuple[ToolExecutionResult[BaseModel], PlannedToolCallOutcome]:
+    _require_canonical_tool_execution_scope(state)
+    record_tool_call_and_enforce(state)
+    try:
+        result = invoker.invoke(
+            state=state,
+            request=request,
+            agent_id=state.request.agent_id,
+        )
+    except DeclarativePolicyHitlRequiredError as exc:
+        raise_hitl_pause_from_tool_invocation(
+            exc,
+            state=state,
+            request=request,
+            agent_id=state.request.agent_id,
+        )
+    trace = _trace_from_result(call, result)
+    run_post_tool_verify(state=state, invoker=invoker, trace=trace)
+    if invoke_lock is not None:
+        with invoke_lock:
+            state.tool_traces.append(trace)
+            enforce_tool_call_budget(state)
+    else:
+        state.tool_traces.append(trace)
+        enforce_tool_call_budget(state)
+    step_id = call.step_id or f"tool-{index}"
+    scoped_step = f"{idempotency_prefix}:{step_id}"
+    outcome = PlannedToolCallOutcome(
+        trace=trace,
+        model_observation=_model_observation_with_evidence_reference(
+            result,
+            contract=invoker.registry.get(call.tool_id).contract,
+            tool_id=call.tool_id,
+            step_id=scoped_step,
+        ),
+    )
+    return result, outcome
+
+
+def invoke_prepared_tool_execution_request(
+    *,
+    state: RuntimeState,
+    invoker: RuntimeToolInvoker,
+    request: ToolExecutionRequest[BaseModel],
+    request_index: int,
+    invoke_lock: threading.Lock | None = None,
+) -> tuple[ToolExecutionResult[BaseModel], PlannedToolCallOutcome]:
+    """
+    Canonical invoke for a runtime-built :class:`ToolExecutionRequest`.
+
+    Used by the public invocation-pattern bridge so external plugins observe
+    the same budget, policy, and trace minting as shipped patterns.
+    """
+    call = PlannedToolCall(
+        step_id=request.step_id,
+        tool_id=request.tool_id,
+        input=request.input,
+    )
+    prepared = maybe_assign_declarative_hitl_scope(
+        request,
+        state=state,
+        assignment_state=None,
+        unique_candidate=None,
+        request_index=request_index,
+    )
+    return _finish_canonical_tool_invocation(
+        state=state,
+        invoker=invoker,
+        call=call,
+        request=prepared,
+        index=request_index,
+        idempotency_prefix=state.run_id,
+        invoke_lock=invoke_lock,
+    )
+
+
 def _invoke_planned_call(
     *,
     state: RuntimeState,
@@ -145,37 +230,16 @@ def _invoke_planned_call(
         unique_candidate=unique_candidate,
         request_index=index,
     )
-    _require_canonical_tool_execution_scope(state)
-    record_tool_call_and_enforce(state)
-    try:
-        result = invoker.invoke(state=state, request=req, agent_id=state.request.agent_id)
-    except DeclarativePolicyHitlRequiredError as exc:
-        raise_hitl_pause_from_tool_invocation(
-            exc,
-            state=state,
-            request=req,
-            agent_id=state.request.agent_id,
-        )
-    trace = _trace_from_result(call, result)
-    run_post_tool_verify(state=state, invoker=invoker, trace=trace)
-    if invoke_lock is not None:
-        with invoke_lock:
-            state.tool_traces.append(trace)
-            enforce_tool_call_budget(state)
-    else:
-        state.tool_traces.append(trace)
-        enforce_tool_call_budget(state)
-    step_id = call.step_id or f"tool-{index}"
-    scoped_step = f"{idempotency_prefix}:{step_id}"
-    return PlannedToolCallOutcome(
-        trace=trace,
-        model_observation=_model_observation_with_evidence_reference(
-            result,
-            contract=invoker.registry.get(call.tool_id).contract,
-            tool_id=call.tool_id,
-            step_id=scoped_step,
-        ),
+    _, outcome = _finish_canonical_tool_invocation(
+        state=state,
+        invoker=invoker,
+        call=call,
+        request=req,
+        index=index,
+        idempotency_prefix=idempotency_prefix,
+        invoke_lock=invoke_lock,
     )
+    return outcome
 
 
 def _model_observation_with_evidence_reference(

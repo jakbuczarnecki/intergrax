@@ -11,6 +11,7 @@ from types import MappingProxyType
 
 from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.core.plugins.discovery import EP_MEMORY_STORES
+from intergrax.rag.bootstrap.entry_point_load import RagPluginLoadEvidence
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 
 PLATFORM_PLUGIN_DOMAIN_MEMORY = "memory"
@@ -19,6 +20,10 @@ PLATFORM_PLUGIN_DOMAIN_POLICY = "policy"
 PLATFORM_PLUGIN_DOMAIN_SECURITY = "security"
 PLATFORM_PLUGIN_DOMAIN_TOOLS = "tools"
 PLATFORM_PLUGIN_DOMAIN_SKILLS = "skills"
+PLATFORM_PLUGIN_DOMAIN_INTEGRATIONS = "integrations"
+PLATFORM_PLUGIN_DOMAIN_RAG_CHUNKERS = "rag_chunkers"
+PLATFORM_PLUGIN_DOMAIN_RAG_RETRIEVERS = "rag_retrievers"
+PLATFORM_PLUGIN_DOMAIN_RAG_RERANKERS = "rag_rerankers"
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +64,8 @@ def build_application_platform_plugin_evidence(
     tools_report: DomainPluginLoadReport,
     skills_report: DomainPluginLoadReport,
     policy_bundle: RuntimePolicyBundle,
+    integrations_report: DomainPluginLoadReport,
+    rag_plugin_load_evidence: RagPluginLoadEvidence | None = None,
 ) -> ApplicationPlatformPluginEvidence:
     """Compose application evidence from the same domain wiring invocations."""
     reports: dict[str, DomainPluginLoadReport] = {
@@ -67,7 +74,18 @@ def build_application_platform_plugin_evidence(
         PLATFORM_PLUGIN_DOMAIN_SECURITY: security_report,
         PLATFORM_PLUGIN_DOMAIN_TOOLS: tools_report,
         PLATFORM_PLUGIN_DOMAIN_SKILLS: skills_report,
+        PLATFORM_PLUGIN_DOMAIN_INTEGRATIONS: integrations_report,
     }
+    if rag_plugin_load_evidence is not None:
+        reports[PLATFORM_PLUGIN_DOMAIN_RAG_CHUNKERS] = (
+            rag_plugin_load_evidence.chunker_report
+        )
+        reports[PLATFORM_PLUGIN_DOMAIN_RAG_RETRIEVERS] = (
+            rag_plugin_load_evidence.retriever_report
+        )
+        reports[PLATFORM_PLUGIN_DOMAIN_RAG_RERANKERS] = (
+            rag_plugin_load_evidence.reranker_report
+        )
     declarative_runtime = policy_bundle.declarative_policy_runtime
     if declarative_runtime is not None:
         reports[PLATFORM_PLUGIN_DOMAIN_POLICY] = declarative_runtime.load_report

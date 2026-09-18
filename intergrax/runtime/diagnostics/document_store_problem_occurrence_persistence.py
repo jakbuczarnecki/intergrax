@@ -235,19 +235,17 @@ class DocumentStoreProblemOccurrencePersistence(ProblemOccurrencePersistence):
             row_key_upper_bound=row_key_upper_bound,
         )
         items: list[ProblemOccurrence] = []
-        last_row_key: str | None = None
         for document in page.documents:
-            last_row_key = document.row_key
             items.append(decode_problem_occurrence_record(dict(document.data)))
 
         has_more = page.next_cursor is not None
         next_cursor: str | None = None
-        if has_more and last_row_key is not None:
-            next_store_cursor = self._document_query_cursor_codec.encode(
-                partition_key=partition_key,
-                row_key_prefix=_OCCURRENCE_ROW_PREFIX,
-                last_row_key=last_row_key,
-            )
+        if has_more:
+            next_store_cursor = page.next_cursor
+            if next_store_cursor is None:
+                raise ProblemOccurrencePersistenceIntegrityError(
+                    "document store reported more pages but omitted continuation cursor",
+                )
             next_cursor = self._occurrence_cursor_codec.encode(
                 tenant_id=tenant_id,
                 problem_id=problem_id,

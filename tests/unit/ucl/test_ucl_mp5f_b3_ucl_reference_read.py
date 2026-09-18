@@ -106,22 +106,32 @@ def _scope(
     )
 
 
-def _lookup_key(**overrides: object) -> ArtifactLookupKey:
-    defaults: dict[str, object] = {
-        "tenant_id": "tenant-a",
-        "context_scope_id": "ctx-a",
-        "artifact_type": OptimizationArtifactType.MESSAGE_SEQUENCE,
-        "source_content_hash": "hash-abc",
-        "strategy_id": "strategy.summarize",
-        "strategy_version": "1.0.0",
-        "policy_version": "policy-v1",
-        "validation_contract_version": "validation-v1",
-        "compression_target": ArtifactCompressionTarget(target_tokens=1000),
-        "lossiness_profile": "lossy_summary",
-        "source_refs": ("msg-1", "msg-2"),
-    }
-    defaults.update(overrides)
-    return ArtifactLookupKey(**defaults)  # type: ignore[arg-type]
+def _lookup_key(
+    *,
+    tenant_id: str = "tenant-a",
+    context_scope_id: str = "ctx-a",
+    source_content_hash: str = "hash-abc",
+    source_refs: tuple[str, ...] = ("msg-1", "msg-2"),
+    artifact_type: OptimizationArtifactType = OptimizationArtifactType.MESSAGE_SEQUENCE,
+    strategy_id: str = "strategy.summarize",
+    strategy_version: str = "1.0.0",
+    policy_version: str = "policy-v1",
+    validation_contract_version: str = "validation-v1",
+    lossiness_profile: str = "lossy_summary",
+) -> ArtifactLookupKey:
+    return ArtifactLookupKey(
+        tenant_id=tenant_id,
+        context_scope_id=context_scope_id,
+        artifact_type=artifact_type,
+        source_content_hash=source_content_hash,
+        strategy_id=strategy_id,
+        strategy_version=strategy_version,
+        policy_version=policy_version,
+        validation_contract_version=validation_contract_version,
+        compression_target=ArtifactCompressionTarget(target_tokens=1000),
+        lossiness_profile=lossiness_profile,
+        source_refs=source_refs,
+    )
 
 
 def _stored(

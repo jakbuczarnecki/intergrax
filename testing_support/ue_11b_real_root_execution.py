@@ -73,6 +73,7 @@ from intergrax.runtime.execution.budget.ledger import (
 from intergrax.runtime.execution.budget.models import BudgetUsageTotals
 from intergrax.runtime.execution.facade import Execution
 from testing_support.inference_governance_wiring import (
+    default_test_inference_evidence_persistence,
     governed_inference_executor,
     governed_root_execution_options,
 )
@@ -249,7 +250,12 @@ def build_inference_stack() -> Ue11bInferenceStack:
         tuple[ChatMessage, ...],
         TextCategoryClassification,
         ExecutionResult[TextCategoryClassification],
-    ](inference_executor=governed_inference_executor(adapter))
+    ](
+        inference_executor=governed_inference_executor(
+            adapter,
+            governance_evidence_persistence=default_test_inference_evidence_persistence(),
+        )
+    )
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], TextCategoryClassification],
         ExecutionResult[TextCategoryClassification],

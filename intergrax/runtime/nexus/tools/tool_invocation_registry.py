@@ -1,18 +1,20 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Entry-point registry for custom ``ToolInvocationPattern`` plugins (TOOL-ENG-24)."""
+"""Entry-point registry bridge for custom invocation patterns (TOOL-ENG-24)."""
 
 from __future__ import annotations
 
-from intergrax.core.plugins.discovery import (
-    EP_TOOL_INVOCATION_PATTERNS,
-    get_entry_point_spec,
-    instantiate_entry_point_target,
-    iter_entry_point_specs,
-    load_entry_point_value,
-)
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
-from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationPattern
+from intergrax.runtime.nexus.tools.public_tool_invocation_pattern_bridge import (
+    bridge_public_tool_invocation_pattern,
+)
+from intergrax.runtime.nexus.tools.tool_invocation_pattern import NexusToolInvocationPattern
+from intergrax.tools.invocation_pattern.registry import (
+    list_tool_invocation_pattern_ids as _list_public_pattern_ids,
+)
+from intergrax.tools.invocation_pattern.registry import (
+    load_tool_invocation_pattern as _load_public_pattern,
+)
 
 
 def shipped_pattern_ids() -> frozenset[str]:
@@ -20,20 +22,14 @@ def shipped_pattern_ids() -> frozenset[str]:
     return frozenset(mode.value for mode in ToolInvocationMode)
 
 
-def load_tool_invocation_pattern(pattern_id: str) -> ToolInvocationPattern | None:
-    """Load a pattern by entry-point name from ``intergrax.tool_invocation_patterns``."""
-    spec = get_entry_point_spec(EP_TOOL_INVOCATION_PATTERNS, pattern_id)
-    if spec is None:
+def load_tool_invocation_pattern(pattern_id: str) -> NexusToolInvocationPattern | None:
+    """Load a public EP pattern and adapt it for Nexus execution."""
+    public = _load_public_pattern(pattern_id)
+    if public is None:
         return None
-    loaded = load_entry_point_value(spec.value)
-    instance = instantiate_entry_point_target(loaded)
-    if not isinstance(instance, ToolInvocationPattern):
-        raise TypeError(
-            f"Tool invocation entry point {spec.name!r} must return ToolInvocationPattern"
-        )
-    return instance
+    return bridge_public_tool_invocation_pattern(public)
 
 
 def list_tool_invocation_pattern_ids() -> tuple[str, ...]:
     """Return registered entry-point pattern ids (sorted)."""
-    return tuple(spec.name for spec in iter_entry_point_specs(EP_TOOL_INVOCATION_PATTERNS))
+    return _list_public_pattern_ids()

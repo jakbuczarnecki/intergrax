@@ -40,6 +40,7 @@ from intergrax.runtime.execution.execution_work_port import (
 )
 from testing_support.inference_governance_wiring import (
     governed_inference_executor,
+    default_test_inference_evidence_persistence,
     governed_root_execution_options,
 )
 from intergrax.runtime.execution.orchestration import OrchestrationExecutor
@@ -362,7 +363,12 @@ async def test_inference_child_work_does_not_require_orchestration_backend() -> 
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=governed_inference_executor(adapter))
+    ](
+        inference_executor=governed_inference_executor(
+            adapter,
+            governance_evidence_persistence=default_test_inference_evidence_persistence(),
+        )
+    )
     work_port = child_execution_work_port(router, ledger=_UNLIMITED_LEDGER)
     work_port_binding = ActiveExecutionWorkPortBinding.for_port(work_port)
 

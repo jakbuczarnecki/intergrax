@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from intergrax.core.plugin_env import discover_plugins_enabled
-from intergrax.core.plugins.discovery import EP_RAG_CHUNKERS, register_plugins
+from intergrax.rag.bootstrap.entry_point_load import register_rag_chunker_entry_points
 from intergrax.rag.document_splitters.contracts.base_documents_splitter import BaseDocumentsSplitter
 from intergrax.rag.document_splitters.contracts.base_chunking_strategy import BaseChunkingStrategy
 from intergrax.rag.document_splitters.documents_splitter import DocumentsSplitter
@@ -55,16 +55,8 @@ def create_default_chunking_engine(
 
     apply_chunking_strategy_plugins(registry)
 
-    def _register_entry_point(plugin_type: type) -> None:
-        if not issubclass(plugin_type, BaseChunkingStrategy):
-            raise TypeError(
-                f"RAG chunker plugin must subclass BaseChunkingStrategy: {plugin_type!r}"
-            )
-        registry.register(plugin_type())
-
-    register_plugins(
-        EP_RAG_CHUNKERS,
-        _register_entry_point,
+    register_rag_chunker_entry_points(
+        registry,
         discover_entry_points=discover_entry_points,
     )
 

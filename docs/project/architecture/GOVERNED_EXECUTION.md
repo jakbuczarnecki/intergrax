@@ -58,7 +58,7 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 ### D. Remaining platform gaps (explicit)
 
 - **Governance Evidence (GR-8):** public contract **frozen** — [ADR-GR-8-001](../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); spine **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** (independent final audit before CLOSED); **evaluation-point adoption** (AGENT_DECISION, INTERRUPT, PRE_MODEL, TOOL*, PRE_OUTPUT, POST_RUN, CONTROL_PLANE_MUTATION, fresh post-human re-evaluation) remains **open** under **GR-10 / GR-13**.
-- **Strategy coverage (GR-10):** **GR-10-FINAL** requalification on current production code — status **PARTIAL** (typed matrix §9 + `tests/qualification/governance/strategy/`). **INFERENCE:** PRE_MODEL **QUALIFIED** on `InferenceExecutor` structured path (**GR-10-R2-C1/R1** — [ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md)); root admission **WIRED_NOT_QUALIFIED** (launcher qualified, no Tier-3 host inference entry). MSE, Decision-bound effect, HITL, Continuation, and Reliability **NOT_APPLICABLE** (GR-10-R1). **AGENTIC:** **GR-10-R3** open — UAEP+kernel path can terminate steps without `PolicyAction.DENY` on the returned `GovernanceResolution` (G3B proof drift). **ORCHESTRATION:** residual PARTIAL rows per §9.
+- **Strategy coverage (GR-10):** **GR-10-FINAL** requalification on current production code — status **PARTIAL** (typed matrix §9 + `tests/qualification/governance/strategy/`). **INFERENCE:** PRE_MODEL **QUALIFIED** on `InferenceExecutor` structured path (**GR-10-R2-C1/R1** — [ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md)); root admission **NOT_APPLICABLE** (**GR-10-R4**); Inner Governance **NOT_APPLICABLE** (**GR-10-R5**); Governance Evidence **QUALIFIED** (**GR-10-R6 / R6-R1**); remaining INFERENCE blockers **NONE**. **AGENTIC / ORCHESTRATION:** **GR-10-R7** requalified via `GR10_AGENTIC_CAPABILITY_SEMANTICS` / `GR10_ORCHESTRATION_CAPABILITY_SEMANTICS` — residual **PARTIAL** rows documented with precise gaps; **GR-10-R3** kernel `policy_pre`→`GovernanceResolution` **CANDIDATE CLOSED** (not an active AGENTIC Policy evaluation blocker). **Next bounded remediation:** **GR-10-R8** — ORCHESTRATION Inner Governance production GEP coverage.
 - **Control-plane mutation (GR-12):** **GAP** — no shared live enforcement across activation, AHI, ECP, plugins, live task control.
 - **Plugin enterprise certification (GR-11)** and **full proof matrix (GR-13)** open.
 - **Transitional Task/Nexus coupling** on some pause bridges — Execution owns lifecycle target; port integration incomplete on non-orchestration strategies.
@@ -286,15 +286,15 @@ flowchart LR
 
 | Capability | INFERENCE | AGENTIC | ORCHESTRATION |
 | ---------- | --------- | ------- | ------------- |
-| Root admission | WIRED_NOT_QUALIFIED | QUALIFIED | QUALIFIED |
-| Inner guard | PARTIAL | PARTIAL | PARTIAL |
+| Root admission | NOT_APPLICABLE | QUALIFIED | QUALIFIED |
+| Inner guard | NOT_APPLICABLE | PARTIAL | PARTIAL |
 | Policy evaluation (GEP) | QUALIFIED | PARTIAL | QUALIFIED |
 | Meaningful side effect spine | NOT_APPLICABLE | PARTIAL | PARTIAL |
 | Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | HITL continuation (GR-5) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Continuation (GR-5 port) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Reliability boundary (GR-7) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
-| Governance Evidence (GR-8) | WIRED_NOT_QUALIFIED | PARTIAL | PARTIAL |
+| Governance Evidence (GR-8) | QUALIFIED | PARTIAL | PARTIAL |
 | Control-plane mutation | NOT_APPLICABLE (spine) | NOT_APPLICABLE | NOT_APPLICABLE — live **GAP** GR-12 |
 
 GR-10 qualification suite (`tests/qualification/governance/strategy/`) encodes this matrix; status **PARTIAL** — independent audit required before CLOSED.
@@ -315,6 +315,8 @@ flowchart TD
 ```
 
 **Governance Evidence spine (GR-8):** typed ``GovernanceDecisionEvidenceFact`` projected through ``GovernanceEvidencePersistencePort`` (default: ``RuntimeEvent`` + ``EvidencePersistencePort`` when five-ID correlation is present). **CANDIDATE CLOSED — awaiting independent GitHub audit.** Evidence does not return or alter ``PolicyDecision``; persistence failure does not flip DENY/REQUIRE_HUMAN into ALLOW.
+
+**INFERENCE PRE_MODEL (GR-10-R6 / R6-R1):** legal governed structured inference is composed via ``build_governed_inference_executor`` with a **required** replaceable ``GovernanceEvidencePersistencePort`` (``InferenceExecutor`` itself stays evidence-neutral). ``GovernanceDecisionEvidenceFact.decision`` records the **source** ``PolicyDecision`` from ``PolicyEngine.evaluate_pre_llm``; effective fail-closed runtime may synthesize DENY for unsupported PRE_MODEL actions (REQUIRE_HUMAN, ESCALATE, MODIFY) without rewriting the fact. ESCALATE/MODIFY emit **no** GR-8 fact (frozen fact builder accepts ALLOW/DENY/REQUIRE_HUMAN only).
 
 **Scope honesty:** GR-8 closure applies to **evidence infrastructure** (immutable fact contract, pluginable persistence port, default durable adapter, root admission + meaningful-side-effect emission). **Evaluation-point adoption coverage** across all GEP rows in §G3B is **not** GR-8 — residual wiring and strategy qualification are owned by **GR-10** and **GR-13**.
 
@@ -648,8 +650,8 @@ Status vocabulary: **COVERED** (wired enforcement on demonstrated production-cla
 
 | Governance capability | INFERENCE | AGENTIC | ORCHESTRATION |
 | --------------------- | --------- | ------- | ------------- |
-| Root admission (GR-2) | WIRED_NOT_QUALIFIED (launcher + internal runtime; no Tier-3 host INFERENCE entry) | QUALIFIED (`HostTaskExecution` + launcher) | QUALIFIED (same host path) |
-| Inner guard / MSE spine (GR-3) | PARTIAL (identity on `InferenceExecutor`) | PARTIAL | PARTIAL (primary proofs) |
+| Root admission (GR-2) | NOT_APPLICABLE (GR-10-R4 — no independent production root; internal `StrategyExecutionRouter` delegate only) | QUALIFIED (`HostTaskExecution` + launcher) | QUALIFIED (same host path) |
+| Inner guard / MSE spine (GR-3) | NOT_APPLICABLE (GR-10-R5 — no MSE/tool inner spine; PRE_MODEL is Policy evaluation row) | PARTIAL | PARTIAL (primary proofs) |
 | Tool invoke policy | NOT_APPLICABLE | COVERED | COVERED |
 | Decision-required MSE (GR-6) | NOT_APPLICABLE | QUALIFIED (MP-4R7 / governed contractor) | PARTIAL (External Work host) |
 | HITL continuation port (GR-5) | NOT_APPLICABLE (no strategy-path REQUIRE_HUMAN) | QUALIFIED (MP-4R7) | PARTIAL (orchestration HITL slices) |

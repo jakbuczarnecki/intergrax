@@ -1,14 +1,19 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Test composition helpers for governed structured inference (GR-10-R2)."""
+"""Test composition helpers for governed structured inference (GR-10-R2 / R6-R1)."""
 
 from __future__ import annotations
 
 from contextvars import Token
 
+from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernanceEvidencePersistencePort,
+)
 from intergrax.runtime.execution.inference import InferenceExecutor
+from intergrax.runtime.execution.inference_composition import build_governed_inference_executor
 from intergrax.runtime.execution.inference_profile import InferenceProfileResolver
 from intergrax.runtime.execution.runtime import RootExecutionOptions
 from intergrax.runtime.governance.active_execution_governance_identity import (
@@ -16,7 +21,9 @@ from intergrax.runtime.governance.active_execution_governance_identity import (
     bind_active_execution_governance_identity,
     reset_active_execution_governance_identity,
 )
-from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
+from intergrax.runtime.governance.governance_evidence_composition import (
+    build_in_memory_governance_evidence_persistence,
+)
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 
 TEST_INFERENCE_TENANT_ID = "tenant_inference_governance"
@@ -24,27 +31,49 @@ TEST_INFERENCE_WORKSPACE_ID = "workspace_inference_governance"
 TEST_INFERENCE_PRINCIPAL_ID = "principal_inference_governance"
 
 
+def default_test_inference_evidence_persistence() -> GovernanceEvidencePersistencePort:
+    """Explicit test composition choice — in-memory GR-8 port (not production default)."""
+    return build_in_memory_governance_evidence_persistence()
+
+
 def governed_inference_executor(
     adapter: LLMAdapter,
     *,
+    governance_evidence_persistence: GovernanceEvidencePersistencePort,
     policy_engine: PolicyEngine | None = None,
-    governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
     profile_resolver: InferenceProfileResolver | None = None,
 ) -> InferenceExecutor[object]:
+    return build_governed_inference_executor(
+        adapter,
+        profile_resolver=profile_resolver,
+        policy_engine=policy_engine,
+        governance_evidence_persistence=governance_evidence_persistence,
+    )
+
+
+def build_test_inference_executor_without_evidence(
+    adapter: LLMAdapter,
+    *,
+    policy_engine: PolicyEngine | None = None,
+    profile_resolver: InferenceProfileResolver | None = None,
+) -> InferenceExecutor[object]:
+    """Test-only executor without Governance Evidence wiring (not production-qualified)."""
     return InferenceExecutor(
         adapter,
         profile_resolver=profile_resolver,
         policy_engine=policy_engine if policy_engine is not None else PolicyEngine(),
-        governance_evidence_recorder=governance_evidence_recorder,
+        governance_evidence_recorder=None,
     )
 
 
 def governed_root_execution_options(**overrides: object) -> RootExecutionOptions:
     base = {
         "authority": ParentExecutionAuthority.unrestricted_root(),
-        "tenant_id": TEST_INFERENCE_TENANT_ID,
-        "workspace_id": TEST_INFERENCE_WORKSPACE_ID,
-        "principal_id": TEST_INFERENCE_PRINCIPAL_ID,
+        "governance_identity": AdmittedRootGovernanceIdentity(
+            tenant_id=TEST_INFERENCE_TENANT_ID,
+            workspace_id=TEST_INFERENCE_WORKSPACE_ID,
+            principal_id=TEST_INFERENCE_PRINCIPAL_ID,
+        ),
     }
     base.update(overrides)
     return RootExecutionOptions(**base)

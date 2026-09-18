@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Protocol
 
 import pytest
 
@@ -35,6 +37,7 @@ from intergrax.runtime.context_lifecycle.default_ucl_reference_reader import (
 )
 from intergrax.runtime.context_lifecycle.repository import (
     OptimizationArtifactReference,
+    OptimizationArtifactScopedReferenceCatalog,
     OptimizationArtifactScopedReferenceQuery,
     ScopedOptimizationArtifactListing,
 )
@@ -49,6 +52,15 @@ from intergrax.ucl.contracts.ucl_reference_read import (
 
 pytestmark = pytest.mark.gate
 
+
+class _RepositoryWithScopedCatalog(
+    OptimizationArtifactRepository,
+    OptimizationArtifactScopedReferenceCatalog,
+    Protocol,
+):
+    """Test-local intersection: mutable repository + scoped catalog enumeration."""
+
+
 _BASE_TIME = datetime(2026, 9, 18, 12, 0, 0, tzinfo=UTC)
 
 
@@ -61,22 +73,28 @@ def _identity(tenant_id: str = "tenant-a") -> RequestIdentity:
     )
 
 
-def _lookup_key(**overrides: object) -> ArtifactLookupKey:
-    defaults: dict[str, object] = {
-        "tenant_id": "tenant-a",
-        "context_scope_id": "ctx-x",
-        "artifact_type": OptimizationArtifactType.MESSAGE_SEQUENCE,
-        "source_content_hash": "hash-abc",
-        "strategy_id": "strategy.summarize",
-        "strategy_version": "1.0.0",
-        "policy_version": "policy-v1",
-        "validation_contract_version": "validation-v1",
-        "compression_target": ArtifactCompressionTarget(target_tokens=1000),
-        "lossiness_profile": "lossy_summary",
-        "source_refs": ("msg-1", "msg-2"),
-    }
-    defaults.update(overrides)
-    return ArtifactLookupKey(**defaults)  # type: ignore[arg-type]
+def _lookup_key(
+    *,
+    tenant_id: str = "tenant-a",
+    context_scope_id: str = "ctx-x",
+    source_content_hash: str = "hash-abc",
+    source_refs: tuple[str, ...] = ("msg-1", "msg-2"),
+    source_range: ArtifactSourceRange | None = None,
+) -> ArtifactLookupKey:
+    return ArtifactLookupKey(
+        tenant_id=tenant_id,
+        context_scope_id=context_scope_id,
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash=source_content_hash,
+        strategy_id="strategy.summarize",
+        strategy_version="1.0.0",
+        policy_version="policy-v1",
+        validation_contract_version="validation-v1",
+        compression_target=ArtifactCompressionTarget(target_tokens=1000),
+        lossiness_profile="lossy_summary",
+        source_refs=source_refs,
+        source_range=source_range,
+    )
 
 
 def _stored(
@@ -89,14 +107,12 @@ def _stored(
     source_content_hash: str | None = None,
     ownership_kind: UclArtifactOwnershipKind = UclArtifactOwnershipKind.WORKSPACE,
 ) -> StoredOptimizationArtifact:
-    key_overrides: dict[str, object] = {
-        "tenant_id": tenant_id,
-        "context_scope_id": context_scope_id,
-        "source_refs": source_refs,
-    }
-    if source_content_hash is not None:
-        key_overrides["source_content_hash"] = source_content_hash
-    key = _lookup_key(**key_overrides)
+    key = _lookup_key(
+        tenant_id=tenant_id,
+        context_scope_id=context_scope_id,
+        source_refs=source_refs,
+        source_content_hash=source_content_hash if source_content_hash is not None else "hash-abc",
+    )
     if ownership_kind is UclArtifactOwnershipKind.WORKSPACE:
         ownership = UclArtifactOwnership.for_workspace(
             UclArtifactOwnershipScope(tenant_id=tenant_id, workspace_id=workspace_id),
@@ -144,7 +160,7 @@ def _publish(repository: OptimizationArtifactRepository, artifact: StoredOptimiz
 
 
 def _reader(
-    catalog: OptimizationArtifactRepository,
+    catalog: OptimizationArtifactScopedReferenceCatalog,
     *,
     tenant_id: str = "tenant-a",
     workspace_id: str = "ws-a",
@@ -161,9 +177,12 @@ def _reader(
 
 
 @pytest.fixture(params=("memory", "sqlite"))
-def catalog_repository(request: pytest.FixtureRequest, tmp_path: Path) -> OptimizationArtifactRepository:
+def catalog_repository(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+) -> Iterator[_RepositoryWithScopedCatalog]:
     if request.param == "memory":
-        repo: OptimizationArtifactRepository = InMemoryOptimizationArtifactRepository()
+        repo: _RepositoryWithScopedCatalog = InMemoryOptimizationArtifactRepository()
     else:
         repo = SQLiteOptimizationArtifactRepository(str(tmp_path / "b3b-c1-read.sqlite"))
     yield repo
@@ -172,7 +191,7 @@ def catalog_repository(request: pytest.FixtureRequest, tmp_path: Path) -> Optimi
 
 @pytest.mark.asyncio
 async def test_resource_scope_before_limit_blocker_regression(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     for index in range(50):
         _publish(
@@ -214,7 +233,7 @@ async def test_resource_scope_before_limit_blocker_regression(
 
 @pytest.mark.asyncio
 async def test_matching_rows_after_nonmatching_still_returned_up_to_limit(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(
         catalog_repository,
@@ -266,7 +285,7 @@ async def test_matching_rows_after_nonmatching_still_returned_up_to_limit(
 
 @pytest.mark.asyncio
 async def test_no_resource_preserves_workspace_context_behavior(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(catalog_repository, _stored(artifact_id="artifact-a", workspace_id="ws-a"))
     reader = _reader(catalog_repository)
@@ -286,7 +305,7 @@ async def test_no_resource_preserves_workspace_context_behavior(
 
 @pytest.mark.asyncio
 async def test_cross_scope_source_ref_excluded(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(
         catalog_repository,
@@ -325,7 +344,7 @@ async def test_cross_scope_source_ref_excluded(
 
 @pytest.mark.asyncio
 async def test_historical_read_respects_source_ref(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     active = _stored(
         artifact_id="active-wanted",
@@ -376,8 +395,9 @@ class _RecordingCatalog:
 
 @pytest.mark.asyncio
 async def test_custom_catalog_receives_full_scoped_query() -> None:
+    catalog: OptimizationArtifactScopedReferenceCatalog = _RecordingCatalog()
     reader = DefaultUclReferenceReader(
-        catalog=_RecordingCatalog(),
+        catalog=catalog,
         capability_binding=UclReferenceReadCapabilityBinding(
             tenant_id="tenant-a",
             workspace_id="ws-custom",

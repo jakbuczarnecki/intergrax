@@ -42,6 +42,8 @@ class MemoryProviderQualificationEvidence:
     reference_time_iso: str
     evidence_source: str
     provider_version: str | None = None
+    backing_provider_id: str | None = None
+    backing_provider_version: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +62,8 @@ class MemoryProviderQualificationEvidenceRegistry(Protocol):
         provider_id: str,
         capability: MemoryProviderCapabilityKind,
         provider_version: str | None = None,
+        backing_provider_id: str | None = None,
+        backing_provider_version: str | None = None,
     ) -> MemoryProviderQualificationEvidenceLookup: ...
 
 
@@ -87,6 +91,8 @@ class TrustedMemoryProviderQualificationEvidence:
             reference_time_iso=result.reference_time_iso,
             evidence_source=evidence_source,
             provider_version=result.descriptor.provider_version,
+            backing_provider_id=result.descriptor.backing_provider_id,
+            backing_provider_version=result.descriptor.backing_provider_version,
         )
 
 

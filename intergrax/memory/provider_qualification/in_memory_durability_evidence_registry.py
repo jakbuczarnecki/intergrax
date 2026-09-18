@@ -28,11 +28,16 @@ class InMemoryMemoryProviderDurabilityEvidenceRegistry:
         provider_id: str,
         capability: MemoryProviderCapabilityKind,
         provider_version: str | None = None,
+        backing_provider_id: str | None = None,
+        backing_provider_version: str | None = None,
     ) -> MemoryProviderDurabilityEvidenceLookup:
         matches = [
             item
             for item in self._records
-            if item.provider_id == provider_id and item.capability is capability
+            if item.provider_id == provider_id
+            and item.capability is capability
+            and item.backing_provider_id == backing_provider_id
+            and item.backing_provider_version == backing_provider_version
         ]
         if not matches:
             return MemoryProviderDurabilityEvidenceLookup(

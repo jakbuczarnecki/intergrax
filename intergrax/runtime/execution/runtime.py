@@ -9,6 +9,7 @@ from contextvars import Token
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
+from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_capacity_admission import (
     ExecutionCapacityAdmissionPort,
@@ -113,6 +114,7 @@ class RootExecutionContext:
     attempt_id: AttemptId
     execution_id: ExecutionId
     authority: ParentExecutionAuthority
+    governance_identity: AdmittedRootGovernanceIdentity | None = None
     tenant_id: str | None = None
     workspace_id: str | None = None
     principal_id: str | None = None
@@ -128,9 +130,8 @@ class RootExecutionOptions:
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
     execution_id: ExecutionId | None = None
+    governance_identity: AdmittedRootGovernanceIdentity | None = None
     tenant_id: str | None = None
-    workspace_id: str | None = None
-    principal_id: str | None = None
     task_id: TaskId | None = None
     segment_predecessor_root_execution_id: ExecutionId | None = None
     resume_checkpoint: TaskCheckpoint | None = None
@@ -191,14 +192,25 @@ def resolve_root_execution_context(
         execution_id=options.execution_id,
         resume_checkpoint=options.resume_checkpoint,
     )
+    governance_identity = options.governance_identity
+    tenant_id = options.tenant_id
+    if governance_identity is not None:
+        tenant_id = governance_identity.tenant_id
+    workspace_id = (
+        governance_identity.workspace_id if governance_identity is not None else None
+    )
+    principal_id = (
+        governance_identity.principal_id if governance_identity is not None else None
+    )
     return RootExecutionContext(
         run_id=identity.run_id,
         attempt_id=identity.attempt_id,
         execution_id=identity.execution_id,
         authority=options.authority,
-        tenant_id=options.tenant_id,
-        workspace_id=options.workspace_id,
-        principal_id=options.principal_id,
+        governance_identity=governance_identity,
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        principal_id=principal_id,
         task_id=options.task_id,
         segment_predecessor_root_execution_id=options.segment_predecessor_root_execution_id,
     )
@@ -367,16 +379,13 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         work_port_token = None
         evidence_token = None
         governance_identity_token = None
-        if (
-            root_context.tenant_id is not None
-            and root_context.workspace_id is not None
-            and root_context.principal_id is not None
-        ):
+        admitted = root_context.governance_identity
+        if admitted is not None:
             governance_identity_token = bind_active_execution_governance_identity(
                 ActiveExecutionGovernanceIdentity(
-                    tenant_id=root_context.tenant_id,
-                    workspace_id=root_context.workspace_id,
-                    principal_id=root_context.principal_id,
+                    tenant_id=admitted.tenant_id,
+                    workspace_id=admitted.workspace_id,
+                    principal_id=admitted.principal_id,
                 ),
             )
         if self._failure_evidence_recorder is not None:
