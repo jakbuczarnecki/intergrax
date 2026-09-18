@@ -197,27 +197,42 @@ class SQLiteOptimizationArtifactRepository:
         tenant_id = query.tenant_id
         workspace_id = query.workspace_id
         context_scope_id = query.context_scope_id
+        source_ref = query.source_ref
         limit = query.limit
         include_historical = query.include_historical
+
+        source_ref_sql = ""
+        source_ref_params: tuple[object, ...] = ()
+        if source_ref is not None:
+            source_ref_sql = """
+                      AND EXISTS (
+                        SELECT 1
+                        FROM json_each(json_extract(lookup_key_json, '$.source_refs'))
+                        WHERE json_each.value = ?
+                      )
+            """
+            source_ref_params = (source_ref,)
 
         with self._lock:
             self._ensure_open()
             if include_historical:
-                sql = """
+                sql = f"""
                     SELECT * FROM optimization_artifacts
                     WHERE tenant_id = ?
                       AND ownership_kind = ?
                       AND workspace_id = ?
                       AND json_extract(lookup_key_json, '$.context_scope_id') = ?
+                      {source_ref_sql}
+                    ORDER BY artifact_id, lookup_key_hash
                 """
                 params: tuple[object, ...] = (
                     tenant_id,
                     UclArtifactOwnershipKind.WORKSPACE.value,
                     workspace_id,
                     context_scope_id,
-                )
+                ) + source_ref_params
             else:
-                sql = """
+                sql = f"""
                     SELECT * FROM optimization_artifacts
                     WHERE tenant_id = ?
                       AND ownership_kind = ?
@@ -225,6 +240,8 @@ class SQLiteOptimizationArtifactRepository:
                       AND json_extract(lookup_key_json, '$.context_scope_id') = ?
                       AND status = ?
                       AND validation_status = ?
+                      {source_ref_sql}
+                    ORDER BY artifact_id, lookup_key_hash
                 """
                 params = (
                     tenant_id,
@@ -233,16 +250,12 @@ class SQLiteOptimizationArtifactRepository:
                     context_scope_id,
                     ReusableArtifactStatus.VALIDATED.value,
                     ArtifactValidationStatus.PASSED.value,
-                )
+                ) + source_ref_params
             rows = self._connection.execute(sql, params).fetchall()
 
-        rows_sorted = sorted(
-            rows,
-            key=lambda row: (str(row[1]), str(row[2])),
-        )
         listings: list[ScopedOptimizationArtifactListing] = []
         seen: set[tuple[str, str]] = set()
-        for row in rows_sorted:
+        for row in rows:
             stored = self._row_to_artifact(row)
             metadata = stored.metadata
             lookup_key = metadata.lookup_key

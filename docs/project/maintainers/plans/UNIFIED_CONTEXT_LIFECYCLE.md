@@ -281,7 +281,7 @@ TOKEN-10E-CLOSEOUT-1 → ready for review
 
 **Status:** **CLOSED** (B3A ownership + B3B workspace-scoped read). UCL workspace-scoped read uses persisted `UclArtifactOwnership`; `context_scope_id` is independent; legacy unknown ownership is excluded.
 
-**Flow:** request scope → capability binding → scoped catalog query → repository ownership filter → canonical refs.
+**Flow:** request scope → capability binding → scoped catalog query (tenant, workspace, context_scope, optional `source_ref`) → repository full-scope filter → deterministic order → limit → validated canonical refs. Resource scope is applied before limit.
 
 **Next:** **MP-5F-B4** Collaborative Work read boundary. **MP-5F** stays **BLOCKED** until B4/B5.
 

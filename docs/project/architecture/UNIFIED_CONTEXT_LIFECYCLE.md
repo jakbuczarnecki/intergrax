@@ -976,7 +976,7 @@ Metadata-only reusable artifact record: `artifact_id`, `lookup_key`, `artifact_c
 
 **MP-5F-B3A (CLOSED / RECERTIFIED):** typed `UclArtifactOwnershipScope`, persistence (in-memory + SQLite), serialization round-trip, cross-workspace active-slot and reservation isolation, supersession ownership guard. **MP-5F-B3A-C2:** typed `workspace_id` propagates through all production `ContextAssemblyRequest` builders (`RuntimeExecutionContext` / `AgentStepContext` / intake contracts); metadata and `context_scope_id` are not workspace authority sources.
 
-**MP-5F-B3 / B3B (CLOSED):** workspace-scoped read is enforced from persisted artifact ownership. Flow: request scope → `UclReferenceReadCapabilityBinding` → `OptimizationArtifactScopedReferenceQuery` (tenant, workspace, context_scope) → repository ownership filter → canonical refs (reference-only). `context_scope_id` is independent; `LEGACY_UNKNOWN` ownership is excluded from workspace-scoped results.
+**MP-5F-B3 / B3B (CLOSED; B3B-C1 resource scope):** workspace-scoped read is enforced from persisted artifact ownership. Flow: request scope → binding → `OptimizationArtifactScopedReferenceQuery` (tenant, workspace, context_scope, optional `source_ref`) → repository applies the full scope before limit → deterministic order → validated canonical projection (reference-only). `resource` / `source_ref` is part of the catalog scope, not a post-limit reader filter. `context_scope_id` is independent; `LEGACY_UNKNOWN` ownership is excluded from workspace-scoped results.
 
 **Anti-substitution:** ContextView ≠ UCL artifact. ContextView does not replace UCL lifecycle. MP-5 does not determine active revision.
 

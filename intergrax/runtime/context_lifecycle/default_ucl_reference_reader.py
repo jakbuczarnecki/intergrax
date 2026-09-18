@@ -69,6 +69,22 @@ def _binding_rejects_request(
     return binding.context_scope_id != request.scope.context_scope_id
 
 
+def _listing_within_query_scope(
+    listing: ScopedOptimizationArtifactListing,
+    query: OptimizationArtifactScopedReferenceQuery,
+) -> bool:
+    reference = listing.reference
+    if reference.tenant_id != query.tenant_id:
+        return False
+    if reference.workspace_id != query.workspace_id:
+        return False
+    if listing.context_scope_id != query.context_scope_id:
+        return False
+    if query.source_ref is not None and query.source_ref not in listing.source_refs:
+        return False
+    return True
+
+
 def _to_canonical_ref(listing: ScopedOptimizationArtifactListing) -> UclOptimizationArtifactCanonicalRef:
     reference = listing.reference
     workspace_id = reference.workspace_id
@@ -140,16 +156,19 @@ class DefaultUclReferenceReader:
             request.query.lifecycle_selection
             is UclReferenceLifecycleSelection.INCLUDE_HISTORICAL
         )
+        source_ref: str | None = None
+        if resource is not None:
+            source_ref = resource.resource_id
+        scoped_query = OptimizationArtifactScopedReferenceQuery(
+            tenant_id=request.scope.tenant_id,
+            workspace_id=request.scope.workspace_id,
+            context_scope_id=request.scope.context_scope_id,
+            limit=request.query.limit,
+            include_historical=include_historical,
+            source_ref=source_ref,
+        )
         try:
-            listings = self.catalog.list_scoped_artifact_references(
-                OptimizationArtifactScopedReferenceQuery(
-                    tenant_id=request.scope.tenant_id,
-                    workspace_id=request.scope.workspace_id,
-                    context_scope_id=request.scope.context_scope_id,
-                    limit=request.query.limit,
-                    include_historical=include_historical,
-                )
-            )
+            listings = self.catalog.list_scoped_artifact_references(scoped_query)
         except Exception:
             return UclReferenceReadResult(
                 outcome=UclReferenceReadOutcome.UNAVAILABLE,
@@ -158,15 +177,24 @@ class DefaultUclReferenceReader:
 
         refs: list[UclOptimizationArtifactCanonicalRef] = []
         for listing in listings:
-            if resource is not None and resource.resource_id not in listing.source_refs:
-                continue
-            refs.append(_to_canonical_ref(listing))
+            if not _listing_within_query_scope(listing, scoped_query):
+                return UclReferenceReadResult(
+                    outcome=UclReferenceReadOutcome.UNAVAILABLE,
+                    reason="catalog_contract_violation",
+                )
+            try:
+                refs.append(_to_canonical_ref(listing))
+            except UclReferenceReadConfigurationError:
+                return UclReferenceReadResult(
+                    outcome=UclReferenceReadOutcome.UNAVAILABLE,
+                    reason="catalog_contract_violation",
+                )
 
         refs.sort(
             key=lambda item: (item.artifact_id, item.artifact_lookup_key_hash),
         )
         return UclReferenceReadResult(
             outcome=UclReferenceReadOutcome.OK,
-            references=tuple(refs[: request.query.limit]),
+            references=tuple(refs),
             reason="ok",
         )

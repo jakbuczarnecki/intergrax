@@ -166,6 +166,7 @@ class InMemoryOptimizationArtifactRepository:
         tenant_id = query.tenant_id
         workspace_id = query.workspace_id
         context_scope_id = query.context_scope_id
+        source_ref = query.source_ref
         limit = query.limit
         include_historical = query.include_historical
 
@@ -195,6 +196,8 @@ class InMemoryOptimizationArtifactRepository:
                 if lookup_key.tenant_id != tenant_id:
                     continue
                 if lookup_key.context_scope_id != context_scope_id:
+                    continue
+                if source_ref is not None and source_ref not in lookup_key.source_refs:
                     continue
                 if not include_historical:
                     if metadata.status is not ReusableArtifactStatus.VALIDATED:

@@ -420,13 +420,18 @@ class ArtifactCreationCoordinationResult:
 
 @dataclass(frozen=True, slots=True)
 class OptimizationArtifactScopedReferenceQuery:
-    """Least-context catalog query for scoped reference enumeration (MP-5F-B3)."""
+    """Least-context catalog query for scoped reference enumeration (MP-5F-B3).
+
+    Full scope (tenant, workspace, context_scope, optional source_ref) is applied
+    before ``limit``. Ordering is ``artifact_id`` then ``artifact_lookup_key_hash``.
+    """
 
     tenant_id: str
     workspace_id: str
     context_scope_id: str
     limit: int
     include_historical: bool = False
+    source_ref: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "tenant_id", _require_non_empty(self.tenant_id, "tenant_id"))
@@ -449,6 +454,11 @@ class OptimizationArtifactScopedReferenceQuery:
             "include_historical",
             _require_bool(self.include_historical, "include_historical"),
         )
+        if self.source_ref is not None:
+            source_ref = (self.source_ref or "").strip()
+            if not source_ref:
+                raise ValueError("source_ref must be non-empty when provided")
+            object.__setattr__(self, "source_ref", source_ref)
 
 
 @dataclass(frozen=True, slots=True)
