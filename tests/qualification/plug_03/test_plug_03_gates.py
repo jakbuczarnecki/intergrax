@@ -28,6 +28,8 @@ from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import resolve_invocation_pattern
 from intergrax.tools.invocation_pattern.errors import ToolInvocationPatternResolutionError
+from intergrax.skills.registry.bootstrap import reset_default_skills_for_tests
+from intergrax.skills.registry.catalog import clear_skill_catalog
 from intergrax.tools.registry.bootstrap import reset_default_tools_bootstrap
 from intergrax.tools.registry.catalog import clear_tool_catalog
 from intergrax.tools.registry.factory import build_registry_from_profile
@@ -77,15 +79,19 @@ def _iter_public_plugin_python_files() -> Iterator[Path]:
 @pytest.fixture(autouse=True)
 def _reset_catalog_state() -> Iterator[None]:
     clear_catalog()
+    clear_skill_catalog()
     clear_tool_catalog()
     reset_default_integrations_state()
+    reset_default_skills_for_tests()
     reset_default_tools_bootstrap()
     reset_tier0_catalog_bootstrap_for_tests()
     reset_entry_point_spec_cache_for_tests()
     yield
     clear_catalog()
+    clear_skill_catalog()
     clear_tool_catalog()
     reset_default_integrations_state()
+    reset_default_skills_for_tests()
     reset_default_tools_bootstrap()
     reset_tier0_catalog_bootstrap_for_tests()
     reset_entry_point_spec_cache_for_tests()
@@ -358,55 +364,47 @@ class _Plug03ExternalPolicyHandler:
         return PolicyRuleAction.ALLOW
 
 
-@pytest.mark.asyncio
-async def test_plug03_custom_skill_enables_canonical_tool_execution() -> None:
+def _plug03_skill_gateway_fixture(
+    *,
+    include_skill: bool,
+) -> tuple[AgentContract, object, object]:
     from intergrax.runtime.nexus.config import RuntimeConfig
     from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-    from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-    from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
     from intergrax.runtime.registry.agent_registry import AgentRegistry
     from intergrax.skills.registry.factory import build_registry_from_profile as build_skill_registry
     from intergrax.skills.registry.plugin_register import register_skill_plugin
     from intergrax.skills.registry.profile import SkillProfile
     from intergrax.tools.examples.custom_echo import CustomEchoToolPlugin
-    from intergrax.tools.examples.custom_echo.plugin import CUSTOM_ECHO_TOOL_ID, CustomEchoInput
-    from intergrax.tools.execution_models import ToolExecutionRequest
     from intergrax.tools.registry.factory import build_registry_from_profile as build_tool_registry
     from intergrax.tools.registry.plugin_register import register_tool_plugin
     from intergrax.tools.registry.profile import ToolProfile
     from intergrax.tools.registry.wiring import ToolWiringContext
-    from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, canonical_execution_identity_scope
+    from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
     register_skill_plugin(CustomPackSkillPlugin)
     register_tool_plugin(CustomEchoToolPlugin)
-    skill_registry = build_skill_registry(SkillProfile(enabled_bundles=["custom_pack"]))
+    skill_bundles = ["custom_pack"] if include_skill else []
+    skill_registry = build_skill_registry(SkillProfile(enabled_bundles=skill_bundles))
     tool_registry = build_tool_registry(
         ToolProfile(enabled_bundles=["custom_echo"]),
         ctx=ToolWiringContext(),
     )
     agent_registry = AgentRegistry()
     agent_registry.register(
-        _Plug03PackAgent(include_skill=True),
+        _Plug03PackAgent(include_skill=include_skill),
         skill_registry=skill_registry,
         tool_registry=tool_registry,
     )
     contract = agent_registry.get_contract("plug03_pack_stub")
-    assert CUSTOM_ECHO_TOOL_ID in contract.allowed_tools
 
-    assert tool_registry.has(CUSTOM_ECHO_TOOL_ID)
-
-    invoker = RuntimeToolInvoker(
-        registry=tool_registry,
-        executor=RegistryToolExecutor(tool_registry),
-    )
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(),
         production_mode=False,
         enable_rag=False,
         enable_websearch=False,
-        tool_invoker=invoker,
+        tool_registry=tool_registry,
     )
     ctx = RuntimeContext.build(
         config=config,
@@ -426,58 +424,107 @@ async def test_plug03_custom_skill_enables_canonical_tool_execution() -> None:
         run_id="run_00000000000000000000000000000001",
         tool_traces=[],
     )
-    request = ToolExecutionRequest(
-        run_id=state.run_id,
-        tool_id=CUSTOM_ECHO_TOOL_ID,
-        step_id="1",
-        input=CustomEchoInput(message="plug03-skill-proof"),
-    )
-    with canonical_execution_identity_scope(state.run_id):
-        outcome = invoker.invoke(state=state, agent_id="plug03_pack_stub", request=request)
-    assert outcome.output.message == "plug03-skill-proof"
+    return contract, tool_registry, state
 
 
-@pytest.mark.asyncio
-async def test_plug03_without_custom_skill_tool_not_allowed() -> None:
-    from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
-    from intergrax.runtime.registry.agent_registry import AgentRegistry
-    from intergrax.skills.registry.factory import build_registry_from_profile as build_skill_registry
-    from intergrax.skills.registry.profile import SkillProfile
-    from intergrax.tools.examples.custom_echo import CustomEchoToolPlugin
-    from intergrax.tools.examples.custom_echo.plugin import CUSTOM_ECHO_TOOL_ID
-    from intergrax.tools.registry.factory import build_registry_from_profile as build_tool_registry
-    from intergrax.tools.registry.plugin_register import register_tool_plugin
-    from intergrax.tools.registry.profile import ToolProfile
-    from intergrax.tools.registry.wiring import ToolWiringContext
+def _plug03_gateway_invoke_scope(run_id: str):
+    from contextlib import contextmanager
+
     from intergrax.contracts.execution_identity import (
         bind_active_execution_identity,
         mint_attempt_id,
         mint_execution_id,
         reset_active_execution_identity,
     )
-    from intergrax.runtime.nexus.config import RuntimeConfig
-    from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-    from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-    from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-    from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
-    from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+    from intergrax.dev_support.execution_identity_scope import canonical_run_id_for_tests
+    from intergrax.runtime.execution.active_execution_budget import (
+        ActiveExecutionBudgetState,
+        bind_active_execution_budget,
+        reset_active_execution_budget,
+    )
+    from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+    from intergrax.runtime.execution.budget.models import ExecutionBudgetAllocationMode
 
-    register_tool_plugin(CustomEchoToolPlugin)
-    skill_registry = build_skill_registry(SkillProfile(enabled_bundles=[]))
-    tool_registry = build_tool_registry(
-        ToolProfile(enabled_bundles=["custom_echo"]),
-        ctx=ToolWiringContext(),
-    )
-    agent_registry = AgentRegistry()
-    agent_registry.register(
-        _Plug03PackAgent(include_skill=False),
-        skill_registry=skill_registry,
-        tool_registry=tool_registry,
-    )
-    contract = agent_registry.get_contract("plug03_pack_stub")
+    @contextmanager
+    def _scope():
+        canonical_run_id = canonical_run_id_for_tests(run_id)
+        execution_id = mint_execution_id()
+        ledger = create_execution_budget_ledger(None)
+        budget_token = bind_active_execution_budget(
+            ActiveExecutionBudgetState(
+                execution_id=execution_id,
+                mode=ExecutionBudgetAllocationMode.SHARED,
+                ledger=ledger,
+            ),
+        )
+        identity_token = bind_active_execution_identity(
+            run_id=canonical_run_id,
+            attempt_id=mint_attempt_id(),
+            execution_id=execution_id,
+        )
+        try:
+            yield
+        finally:
+            reset_active_execution_identity(identity_token)
+            reset_active_execution_budget(budget_token)
+
+    return _scope()
+
+
+@pytest.mark.asyncio
+async def test_plug03_custom_skill_enables_canonical_tool_execution() -> None:
+    from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
+    from intergrax.runtime.nexus.tools.tool_gateway import RuntimeToolGateway
+    from intergrax.tools.examples.custom_echo.plugin import CUSTOM_ECHO_TOOL_ID
+
+    contract, tool_registry, state = _plug03_skill_gateway_fixture(include_skill=True)
+    assert CUSTOM_ECHO_TOOL_ID in contract.allowed_tools
+    assert tool_registry.has(CUSTOM_ECHO_TOOL_ID)
+
+    gateway = RuntimeToolGateway.for_state(state, allowed_tools=contract.allowed_tools)
+    with _plug03_gateway_invoke_scope(state.run_id):
+        response = await gateway.invoke(
+            ToolRequest(
+                request_id="plug03-skill-positive",
+                tool_name=CUSTOM_ECHO_TOOL_ID,
+                agent_id="plug03_pack_stub",
+                step_id="1",
+                input={"message": "plug03-skill-proof"},
+            )
+        )
+    assert response.status == ToolResponseStatus.SUCCESS
+    assert response.output is not None
+    assert response.output["message"] == "plug03-skill-proof"
+    assert state.used_tools is True
+
+
+@pytest.mark.asyncio
+async def test_plug03_without_custom_skill_tool_not_allowed() -> None:
+    from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
+    from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
+    from intergrax.runtime.nexus.tools.tool_gateway import RuntimeToolGateway
+    from intergrax.tools.examples.custom_echo.plugin import CUSTOM_ECHO_TOOL_ID
+
+    contract, tool_registry, state = _plug03_skill_gateway_fixture(include_skill=False)
     assert CUSTOM_ECHO_TOOL_ID not in contract.allowed_tools
+    assert tool_registry.has(CUSTOM_ECHO_TOOL_ID)
     assert not ToolAccessPolicy.is_tool_allowed(CUSTOM_ECHO_TOOL_ID, contract.allowed_tools)
+
+    gateway = RuntimeToolGateway.for_state(state, allowed_tools=contract.allowed_tools)
+    with _plug03_gateway_invoke_scope(state.run_id):
+        response = await gateway.invoke(
+            ToolRequest(
+                request_id="plug03-skill-negative",
+                tool_name=CUSTOM_ECHO_TOOL_ID,
+                agent_id="plug03_pack_stub",
+                step_id="1",
+                input={"message": "plug03-skill-proof"},
+            )
+        )
+    assert response.status == ToolResponseStatus.DENIED
+    assert response.error == f"tool_not_allowed:{CUSTOM_ECHO_TOOL_ID}"
+    assert state.used_tools is False
+    assert state.tool_traces == []
 
 
 from intergrax.runtime.hooks.hook_point import HookPoint

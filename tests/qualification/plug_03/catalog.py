@@ -130,12 +130,15 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
             _ref(
                 _gate("test_plug03_custom_skill_enables_canonical_tool_execution"),
                 "CANONICAL_CONSUMPTION",
-                "DEFAULT_BYPASS",
             ),
             _ref(
                 _gate("test_plug03_without_custom_skill_tool_not_allowed"),
                 "DEFAULT_BYPASS",
             ),
+        ),
+        notes=(
+            "SkillPlugin augments AgentContract.allowed_tools (capability grant); "
+            "DEFAULT_BYPASS: tool registered but denied at RuntimeToolGateway when skill not selected."
         ),
     ),
     Plug03SurfaceEvidence(
