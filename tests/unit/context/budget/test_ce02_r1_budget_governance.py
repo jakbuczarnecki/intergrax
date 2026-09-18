@@ -14,7 +14,16 @@ from intergrax.context.budget import (
     global_allocatable_tokens,
     resolve_authoritative_model_budget,
 )
-from intergrax.context.contracts import ContextBudgetSnapshot
+from intergrax.context.contracts import (
+    ContextAssemblyRequest,
+    ContextBudgetSnapshot,
+    ContextDecisionSnapshot,
+    ContextFragment,
+    ContextFragmentSource,
+)
+from intergrax.context.policy.budget_allocator import DefaultContextBudgetAllocator
+from intergrax.context.policy.pipeline import ContextCrossSourcePolicyPipeline
+from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
@@ -40,6 +49,68 @@ class _Adapter(LLMAdapter):
     def generate_messages(self, messages, **kwargs) -> LLMAdapterResponse:
         _ = messages, kwargs
         return LLMAdapterResponse(content="ok")
+
+
+def _assembly_request(max_tokens: int) -> ContextAssemblyRequest:
+    return ContextAssemblyRequest(
+        trace_id="trace-ce02r1a",
+        run_id="run-ce02r1a",
+        task_id="task-ce02r1a",
+        tenant_id="tenant-a",
+        assembly_scope="graph_node",
+        objective="mandatory budget accounting",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=max_tokens),
+        assembly_options=TaskContextAssemblyOptions(),
+        step_kind="model_call",
+    )
+
+
+def test_mandatory_fragments_do_not_consume_allocatable_budget() -> None:
+    """Regression: allocatable_tokens is optional-only (CE-02-R1A audit)."""
+    mandatory = ContextFragment(
+        fragment_id="mandatory-300",
+        source=ContextFragmentSource.SYSTEM_INSTRUCTIONS,
+        source_id="sys",
+        content="required",
+        token_estimate=300,
+        relevance_score=1.0,
+        freshness_score=1.0,
+        confidence_score=1.0,
+        mandatory=True,
+    )
+    optional_fragments = [
+        ContextFragment(
+            fragment_id=f"opt-{index}",
+            source=ContextFragmentSource.RAG,
+            source_id=f"doc-{index}",
+            content=f"optional-{index}",
+            token_estimate=200,
+            relevance_score=0.95,
+            freshness_score=0.9,
+            confidence_score=0.9,
+            mandatory=False,
+        )
+        for index in range(3)
+    ]
+    allocatable = 600
+    pipeline = ContextCrossSourcePolicyPipeline()
+    result = pipeline.execute(
+        [mandatory, *optional_fragments],
+        _assembly_request(1000),
+        fragment_budget_tokens=allocatable,
+    )
+    included_ids = {fragment.fragment_id for fragment in result.fragments}
+    assert "mandatory-300" in included_ids
+    assert included_ids >= {"opt-0", "opt-1", "opt-2"}
+
+    allocator_only = DefaultContextBudgetAllocator().allocate(
+        [mandatory, *optional_fragments],
+        allocatable,
+        _assembly_request(1000),
+    )
+    allocator_ids = {fragment.fragment_id for fragment in allocator_only.included}
+    assert allocator_ids >= {"opt-0", "opt-1", "opt-2"}
 
 
 def test_global_allocatable_tokens_preserves_zero() -> None:

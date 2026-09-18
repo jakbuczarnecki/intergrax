@@ -22,7 +22,6 @@ from intergrax.context.budget import (
     global_allocatable_tokens,
     resolve_authoritative_model_budget,
 )
-from intergrax.context.budget.assembly_strategies import snapshot_context_assembly_strategies
 from intergrax.context.provider_descriptor import build_provider_descriptor
 from intergrax.context.contracts import ContextProviderContext
 from intergrax.runtime.nexus.context.assembly_runtime_deps import (
@@ -40,9 +39,8 @@ from intergrax.context.contracts import (
     ContextFragment,
     ContextFragmentSource,
 )
-from intergrax.context.policy.budget_allocator import DefaultContextBudgetAllocator
 from intergrax.context.registry import ContextPluginRegistry
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_budget import resolve_input_budget_tokens
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
@@ -52,7 +50,6 @@ from intergrax.runtime.nexus.context.context_engine import (
     _compile_preserved_planned_context,
 )
 from intergrax.runtime.nexus.context.model_capability import snapshot_model_capability
-
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -89,6 +86,55 @@ class _FakeAdapter(LLMAdapter):
         for message in messages:
             total += max(1, len(message.content or "") // 4)
         return total
+
+
+class _MandatoryOptionalProvider:
+    provider_id = "test.mandatory_optional"
+
+    @property
+    def supported_sources(self) -> frozenset[ContextFragmentSource]:
+        return frozenset(
+            {
+                ContextFragmentSource.SYSTEM_INSTRUCTIONS,
+                ContextFragmentSource.RAG,
+            }
+        )
+
+    @property
+    def descriptor(self):
+        return build_provider_descriptor(
+            self.provider_id,
+            provider_version="1.0.0",
+            supported_sources=self.supported_sources,
+            origin="test",
+        )
+
+    async def collect(self, request: ContextAssemblyRequest, ctx: ContextProviderContext) -> list[ContextFragment]:
+        _ = request, ctx
+        return [
+            ContextFragment(
+                fragment_id="ce2-q8-mandatory",
+                source=ContextFragmentSource.SYSTEM_INSTRUCTIONS,
+                source_id="policy",
+                content="CE2-Q8-MANDATORY-MARKER",
+                token_estimate=80,
+                relevance_score=1.0,
+                freshness_score=1.0,
+                confidence_score=1.0,
+                mandatory=True,
+            ),
+            ContextFragment(
+                fragment_id="ce2-q8-optional",
+                source=ContextFragmentSource.RAG,
+                source_id="doc-opt",
+                content="CE2-Q8-OPTIONAL-MARKER " + ("o" * 1200),
+                token_estimate=700,
+                relevance_score=0.2,
+                freshness_score=0.2,
+                confidence_score=0.2,
+                mandatory=False,
+            ),
+        ]
 
 
 class _RagOverflowProvider:
@@ -276,64 +322,112 @@ async def test_ce2_q6_custom_compaction_strategy() -> None:
 
 @pytest.mark.asyncio
 async def test_ce2_q7_custom_degradation_policy() -> None:
-    class _SingleStepPolicy:
+    class _CustomDegradationPolicy(DefaultContextDegradationPolicy):
         @property
         def policy_id(self) -> str:
             return "single_step_test"
 
         def ladder_order(self) -> tuple[DegradationStepKind, ...]:
-            return (DegradationStepKind.FULL, DegradationStepKind.DROP_LOWEST_SCORED)
+            return (
+                DegradationStepKind.FULL,
+                DegradationStepKind.DROP_OPTIONAL_INJECTIONS,
+                DegradationStepKind.DROP_LOWEST_SCORED,
+            )
+
+    class _TightPolicy(DefaultContextModelBudgetPolicy):
+        @property
+        def policy_id(self) -> str:
+            return "tight_for_degradation"
+
+        def resolve_budget(self, inputs: ContextBudgetResolveInput) -> ResolvedModelContextBudget:
+            base = super().resolve_budget(inputs)
+            return ResolvedModelContextBudget(
+                model_context_window=base.model_context_window,
+                reserved_output_tokens=base.reserved_output_tokens,
+                platform_margin_tokens=base.platform_margin_tokens,
+                available_input_tokens=306,
+                mandatory_reserve_tokens=base.mandatory_reserve_tokens,
+                allocatable_tokens=max(0, 300 - base.mandatory_reserve_tokens),
+                request_cap_tokens=base.request_cap_tokens,
+                policy_id=self.policy_id,
+                policy_version="test",
+            )
 
     registry = ContextPluginRegistry()
-    registry.set_degradation_policy(_SingleStepPolicy())
+    registry.set_degradation_policy(_CustomDegradationPolicy())
+    registry.set_model_budget_policy(_TightPolicy())
+    adapter = _FakeAdapter(window=4096)
+    engine = DefaultNexusContextEngine(registry=registry)
+    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    optional_injection = "x" * 1200
+    messages = [
+        ChatMessage(role="system", content="Instructions"),
+        ChatMessage(role="system", content=f"WEBSEARCH:\n{optional_injection}"),
+        ChatMessage(role="user", content="hi"),
+    ]
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=config,
+        messages=messages,
+        max_output_tokens=64,
+    )
+    request = ContextAssemblyRequest(
+        trace_id="trace-budget",
+        run_id="r-budget",
+        task_id="t-budget",
+        tenant_id="tenant-a",
+        assembly_scope="acp_step",
+        objective="ce-02 gate",
+        decision_profile=ContextDecisionSnapshot(),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=4000),
+        assembly_options=TaskContextAssemblyOptions(),
+        step_kind="model_call",
+    )
+    assembled = await engine.assemble(
+        request,
+        provider_ctx=ContextProviderContext(engine_id="ce02-q7", runtime=runtime),
+    )
+    assert assembled.degradation_policy_id == "single_step_test"
+    assert assembled.total_tokens <= assembled.budget_tokens
+    assert DegradationStepKind.FULL.value in assembled.degradation_steps
+
+
+@pytest.mark.asyncio
+async def test_ce2_q8_mandatory_fragment_preserved() -> None:
+    class _TightPolicy(DefaultContextModelBudgetPolicy):
+        @property
+        def policy_id(self) -> str:
+            return "tight_for_mandatory_e2e"
+
+        def resolve_budget(self, inputs: ContextBudgetResolveInput) -> ResolvedModelContextBudget:
+            base = super().resolve_budget(inputs)
+            return ResolvedModelContextBudget(
+                model_context_window=base.model_context_window,
+                reserved_output_tokens=base.reserved_output_tokens,
+                platform_margin_tokens=base.platform_margin_tokens,
+                available_input_tokens=160,
+                mandatory_reserve_tokens=base.mandatory_reserve_tokens,
+                allocatable_tokens=max(0, 60 - base.mandatory_reserve_tokens),
+                request_cap_tokens=base.request_cap_tokens,
+                policy_id=self.policy_id,
+                policy_version="test",
+            )
+
+    registry = ContextPluginRegistry()
+    registry.set_model_budget_policy(_TightPolicy())
+    registry.add_provider(_MandatoryOptionalProvider())
     adapter = _FakeAdapter(window=4096)
     engine = DefaultNexusContextEngine(registry=registry)
     assembled = await engine.assemble(
-        _request(400),
-        provider_ctx=_assemble_runtime(adapter, "question"),
+        _request(160),
+        provider_ctx=_assemble_runtime(adapter, "short user turn"),
     )
-    assert assembled.degradation_policy_id == "single_step_test"
-
-    snapshot = snapshot_context_assembly_strategies(registry)
-    compiler = ContextCompiler(degradation_policy=snapshot.degradation_policy)
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
-    messages = [
-        ChatMessage(role="system", content="core"),
-        ChatMessage(role="system", content="[context:rag:x] " + ("d" * 2000)),
-        ChatMessage(role="user", content="q"),
-    ]
-    result = compiler.compile(messages, config, max_output_tokens=64, input_budget_tokens=40)
-    assert DegradationStepKind.DROP_LOWEST_SCORED.value in result.degradation_steps
-
-
-def test_ce2_q8_mandatory_fragment_preserved() -> None:
-    allocator = DefaultContextBudgetAllocator()
-    mandatory = ContextFragment(
-        fragment_id="m1",
-        source=ContextFragmentSource.SYSTEM_INSTRUCTIONS,
-        source_id="sys",
-        content="required system",
-        token_estimate=500,
-        relevance_score=1.0,
-        freshness_score=1.0,
-        confidence_score=1.0,
-        mandatory=True,
-    )
-    optional = ContextFragment(
-        fragment_id="o1",
-        source=ContextFragmentSource.RAG,
-        source_id="r1",
-        content="optional rag",
-        token_estimate=500,
-        relevance_score=0.1,
-        freshness_score=0.1,
-        confidence_score=0.1,
-        mandatory=False,
-    )
-    result = allocator.allocate([mandatory, optional], 550, _request())
-    included_ids = {f.fragment_id for f in result.included}
-    assert "m1" in included_ids
-    assert "o1" not in included_ids
+    model_facing_text = "\n".join(message.content or "" for message in assembled.messages)
+    assert "CE2-Q8-MANDATORY-MARKER" in model_facing_text
+    assert "CE2-Q8-OPTIONAL-MARKER" not in model_facing_text
+    included_ids = {fragment.fragment_id for fragment in assembled.fragments_included}
+    assert "ce2-q8-mandatory" in included_ids
+    excluded_ids = {fragment.fragment_id for fragment, _reason in assembled.fragments_excluded}
+    assert "ce2-q8-optional" in excluded_ids
 
 
 @pytest.mark.asyncio
@@ -432,12 +526,25 @@ def test_ce2_q13_compile_plan_invariant_guard_present() -> None:
     assert "FINAL_COMPILE_MUTATED_PLAN" in engine_source
 
 
-def test_ce2_q14_deterministic_budget_replay() -> None:
-    capability = ModelContextCapabilitySnapshot(12000, 1500, 256)
-    request = _request(3500)
-    first = resolve_authoritative_model_budget(capability=capability, request=request)
-    second = resolve_authoritative_model_budget(capability=capability, request=request)
-    assert first == second
+@pytest.mark.asyncio
+async def test_ce2_q14_deterministic_budget_replay() -> None:
+    registry = ContextPluginRegistry()
+    registry.add_provider(_RagOverflowProvider())
+    adapter = _FakeAdapter(window=4096)
+    engine = DefaultNexusContextEngine(registry=registry)
+    request = _request(400)
+    provider_ctx = _assemble_runtime(adapter, "deterministic-user-turn")
+    first = await engine.assemble(request, provider_ctx=provider_ctx)
+    second = await engine.assemble(request, provider_ctx=provider_ctx)
+
+    assert tuple(fragment.fragment_id for fragment in first.fragments_included) == tuple(
+        fragment.fragment_id for fragment in second.fragments_included
+    )
+    assert first.compaction_provenance == second.compaction_provenance
+    assert first.degradation_steps == second.degradation_steps
+    assert compute_model_facing_messages_hash(first.messages) == compute_model_facing_messages_hash(
+        second.messages
+    )
 
 
 def test_ce2_q15_hidden_truncation_gate() -> None:
