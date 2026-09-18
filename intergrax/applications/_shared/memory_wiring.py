@@ -50,6 +50,7 @@ from intergrax.runtime.organization.organization_profile_manager import Organiza
 from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
 from intergrax.applications._shared.memory_control_wiring import build_default_memory_control_plane
 from intergrax.memory.contracts.memory_control import MemoryControlPlane
+from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
 from intergrax.applications._shared.entity_graph_wiring import (
     resolve_entity_temporal_memory_capability,
 )
@@ -372,7 +373,7 @@ def build_session_manager_from_environment(
     memory_control_plane: MemoryControlPlane | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
     durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
-    session_turn_index_store: object | None = None,
+    session_turn_index_store: SessionTurnIndexStore | None = None,
     session_turn_index_store_identity: MemoryProviderIdentity | None = None,
 ) -> SessionManager:
     """Construct ``SessionManager`` with profile managers driven by ``MemoryProfile``."""

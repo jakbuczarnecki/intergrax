@@ -1452,3 +1452,30 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.
+
+## MEM-FINAL-AUDIT-5D-R2 — SessionTurnIndex Plugin Identity Hardening
+
+| Check | Result |
+| ----- | ------ |
+| Plugin contract | `SessionTurnIndexStorePlugin` (`plugin_id`, `create_session_turn_index`) |
+| Classifier | `classify_memory_store_plugin_record` + `MemoryStorePluginKind.SESSION_TURN_INDEX` |
+| Plugin identity | `resolve_plugin_session_turn_index_provider_identity` — no vector backing unless evidence declares it |
+| Builtin identity | `resolve_builtin_session_turn_index_provider_identity` — separate path only when no plugin selected |
+| Invariant | Admitted plugin identity must match materialized plugin; no fallback to `vector.session_turn_index` |
+| Reflection | No `getattr` / `hasattr` on plugin identity path |
+| Ambiguity | Multiple explicit/discovered STI plugins → `MemoryStorePluginResolutionError` |
+| Duplicate IDs | `index_classified_memory_store_plugins` fail-closed |
+| Direct injection typing | `SessionTurnIndexStore \| None` on `build_session_manager_from_environment` |
+| Tests | `tests/unit/applications/test_mem_final_audit_5d_r2_session_turn_index_plugin_identity_hardening.py` |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5D-02 (external STI plugin could fall back to builtin qualified identity) | **CLOSED** |
+| GAP-5D-01 | **CLOSED** |
+| GAP-4-02 (Qdrant STI) | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **FULLY CLOSED** |
+| GAP-4-07 (pgvector / Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.

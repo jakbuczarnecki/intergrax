@@ -306,6 +306,21 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | Tests | `test_mem_final_audit_5d_r_session_turn_index_production_admission.py` |
 | Qdrant PRODUCT E2E | Trusted evidence required; mismatch/missing fail closed |
 
+## MEM-FINAL-AUDIT-5D-R2 — SessionTurnIndex plugin identity hardening
+
+| Check | Result |
+| ----- | ------ |
+| Plugin path | Classified `SessionTurnIndexStorePlugin` only; identity from classifier `plugin_id` |
+| Builtin path | `vector.session_turn_index` + integration-profile vector backing when no plugin |
+| Forbidden | Builtin Qdrant evidence admitting external plugin; reflection-based `plugin_id` |
+| Selection | Multiple STI plugins without explicit policy → fail closed |
+| Tests | `test_mem_final_audit_5d_r2_session_turn_index_plugin_identity_hardening.py` |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5D-02 | **CLOSED** |
+| GAP-5D-01 | **CLOSED (5D-R)** |
+
 ## MEM-FINAL-AUDIT-5C — Mongo UserProfile real-vendor qualification
 
 | Check | Result |

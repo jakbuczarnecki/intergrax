@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import (
@@ -24,7 +24,17 @@ from intergrax.memory.contracts.provider_identity import (
     builtin_session_turn_index_store_identity,
     plugin_session_turn_index_store_identity,
 )
-from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
+from intergrax.memory.contracts.session_turn_index import (
+    SessionTurnIndexStore,
+    SessionTurnIndexStorePlugin,
+)
+from intergrax.memory.resolver.classifier import (
+    ClassifiedMemoryStorePlugin,
+    MemoryStorePluginKind,
+    classify_memory_store_plugin_record,
+)
+from intergrax.memory.resolver.discovery import index_classified_memory_store_plugins
+from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_ltm_vector_projection import UserProfileLtmVectorProjection
@@ -42,7 +52,6 @@ if TYPE_CHECKING:
     from intergrax.memory.contracts.provider_qualification_evidence import (
         MemoryProviderQualificationEvidenceRegistry,
     )
-    from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
     from intergrax.integrations.registry.profile import IntegrationProfile
     from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack
 
@@ -62,20 +71,70 @@ def vector_store_backing_provider_id(profile: IntegrationProfile | None) -> str 
     return binding.resolved_slug()
 
 
-def resolve_session_turn_index_provider_identity(
+def resolve_builtin_session_turn_index_provider_identity(
     integration_profile: IntegrationProfile | None,
-    *,
-    plugin_type: type | None = None,
 ) -> MemoryProviderIdentity:
-    if plugin_type is not None:
-        plugin_id_resolver = getattr(plugin_type, "plugin_id", None)
-        if callable(plugin_id_resolver):
-            return plugin_session_turn_index_store_identity(plugin_id_resolver())
     backing = vector_store_backing_provider_id(integration_profile)
     return builtin_session_turn_index_store_identity(
         BUILTIN_VECTOR_SESSION_TURN_INDEX_ID,
         backing_provider_id=backing,
     )
+
+
+def resolve_plugin_session_turn_index_provider_identity(
+    plugin: ClassifiedMemoryStorePlugin,
+) -> MemoryProviderIdentity:
+    if plugin.kind is not MemoryStorePluginKind.SESSION_TURN_INDEX:
+        raise MemoryStorePluginResolutionError(
+            f"Session turn index plugin expected, got {plugin.kind!r} for {plugin.plugin_id!r}"
+        )
+    return plugin_session_turn_index_store_identity(plugin.plugin_id)
+
+
+def resolve_session_turn_index_provider_identity(
+    integration_profile: IntegrationProfile | None,
+) -> MemoryProviderIdentity:
+    """Resolve builtin vector ``SessionTurnIndexStore`` provider identity only."""
+    return resolve_builtin_session_turn_index_provider_identity(integration_profile)
+
+
+def _classify_session_turn_index_plugin_type(plugin_type: type) -> ClassifiedMemoryStorePlugin:
+    record = classify_memory_store_plugin_record(plugin_type)
+    if record is None or record.kind is not MemoryStorePluginKind.SESSION_TURN_INDEX:
+        raise MemoryStorePluginResolutionError(
+            f"Invalid session turn index plugin type {plugin_type!r}: "
+            "must implement SessionTurnIndexStorePlugin with a non-empty plugin_id"
+        )
+    return record
+
+
+def _select_session_turn_index_plugin(
+    plugin_types: Sequence[type],
+) -> ClassifiedMemoryStorePlugin | None:
+    if not plugin_types:
+        return None
+    records = [_classify_session_turn_index_plugin_type(plugin_type) for plugin_type in plugin_types]
+    index_classified_memory_store_plugins(records)
+    if len(records) > 1:
+        plugin_ids = ", ".join(sorted(record.plugin_id for record in records))
+        raise MemoryStorePluginResolutionError(
+            f"Ambiguous session turn index plugin selection: {plugin_ids}"
+        )
+    return records[0]
+
+
+def _discover_classified_session_turn_index_plugins() -> tuple[ClassifiedMemoryStorePlugin, ...]:
+    from intergrax.memory.resolver.discovery import discover_classified_memory_store_plugins
+
+    discovery = discover_classified_memory_store_plugins(discover_entry_points=True)
+    records = [
+        item
+        for item in discovery.plugins
+        if item.kind is MemoryStorePluginKind.SESSION_TURN_INDEX
+    ]
+    if records:
+        index_classified_memory_store_plugins(records)
+    return tuple(records)
 
 
 def _require_runtime_tenant(tenant_id: str | None) -> str:
@@ -198,14 +257,12 @@ def build_session_turn_index_store(
     tenant_id: str | None = None,
     rag_stack: RagStack | None = None,
     integration_profile: IntegrationProfile | None = None,
-    session_turn_index_plugins: Sequence[type] = (),
+    session_turn_index_plugins: Sequence[type[SessionTurnIndexStorePlugin]] = (),
     provider_identity: MemoryProviderIdentity | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
     admission_evidence: MemoryProviderAdmissionEvidenceContext | None = None,
 ) -> SessionTurnIndexStore | None:
     """Construct episodic index when ``enable_session_vector_index`` is true."""
-    from intergrax.core.memory_bootstrap import discover_session_turn_index_plugin_types
-
     profile = env.memory_profile
     if not profile.enable_session_vector_index:
         return None
@@ -233,11 +290,17 @@ def build_session_turn_index_store(
         vector_index_namespace=profile.vector_index_namespace,
     )
 
-    plugin_types = list(session_turn_index_plugins) or discover_session_turn_index_plugin_types()
-    for plugin_type in plugin_types:
-        resolved_identity = provider_identity or resolve_session_turn_index_provider_identity(
-            resolved_integration,
-            plugin_type=plugin_type,
+    if session_turn_index_plugins:
+        selected_plugin = _select_session_turn_index_plugin(session_turn_index_plugins)
+    else:
+        discovered = _discover_classified_session_turn_index_plugins()
+        selected_plugin = _select_session_turn_index_plugin(
+            tuple(record.plugin_type for record in discovered),
+        )
+
+    if selected_plugin is not None:
+        resolved_identity = provider_identity or resolve_plugin_session_turn_index_provider_identity(
+            selected_plugin,
         )
         validate_session_turn_index_store_admission(
             env,
@@ -245,9 +308,10 @@ def build_session_turn_index_store(
             qualification_evidence_registry=qualification_evidence_registry,
             admission_evidence=admission_evidence,
         )
+        plugin_type = cast(type[SessionTurnIndexStorePlugin], selected_plugin.plugin_type)
         return plugin_type.create_session_turn_index(creation_context)
 
-    resolved_identity = provider_identity or resolve_session_turn_index_provider_identity(
+    resolved_identity = provider_identity or resolve_builtin_session_turn_index_provider_identity(
         resolved_integration,
     )
     validate_session_turn_index_store_admission(
