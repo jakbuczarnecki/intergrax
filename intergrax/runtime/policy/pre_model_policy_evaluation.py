@@ -33,7 +33,8 @@ from intergrax.runtime.governance.active_execution_governance_identity import (
 )
 from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
 from intergrax.runtime.policy.policy_engine import PolicyEngine
-from intergrax.runtime.policy.pre_model_policy_bridge import (
+from intergrax.runtime.policy.pre_model_policy_errors import PreModelPolicyConfigurationError
+from intergrax.runtime.policy.pre_model_policy_evaluate import (
     PreModelPolicyBlockedError,
     evaluate_pre_model_policy,
 )
@@ -47,10 +48,6 @@ _PRE_MODEL_BLOCKED_ACTIONS = frozenset(
         PolicyAction.MODIFY,
     },
 )
-
-
-class PreModelPolicyConfigurationError(RuntimeError):
-    """PRE_MODEL cannot run — missing policy dependency or governance identity."""
 
 
 def _require_pre_model_governance_identity() -> ActiveExecutionGovernanceIdentity:

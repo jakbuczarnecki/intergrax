@@ -209,9 +209,10 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("Policy evaluation"),
         Gr10CoverageStatus.PARTIAL,
         Gr10CoverageStatus.QUALIFIED,
-        "INFERENCE: InferenceExecutor PRE_MODEL qualified. AGENTIC: GR-3/ACP paths qualified; "
-        "UAEP+kernel AGENT_DECISION can block steps while ``PolicyDecision`` stays ALLOW "
-        "(GR-10-R3 authority semantics).",
+        "INFERENCE: InferenceExecutor PRE_MODEL qualified. AGENTIC: GR-3/ACP PRE_MODEL and root "
+        "paths qualified; kernel policy_pre DENY → final GovernanceResolution DENY (GR-10-R3 closed). "
+        "Residual AGENTIC PARTIAL: not all strategy GEP/production policy paths enterprise-qualified "
+        "(e.g. optional POST_RUN wiring; GR-8 per-GEP adoption — not the historical R3 defect).",
     ),
     Gr10CapabilityCell(
         "MSE",

@@ -15,7 +15,7 @@ from intergrax.runtime.governance.governance_identity_projection import (
     GovernanceIdentityProjectionMismatchError,
     validate_governance_identity_projection,
 )
-from intergrax.runtime.policy.pre_model_policy_evaluation import PreModelPolicyConfigurationError
+from intergrax.runtime.policy.pre_model_policy_errors import PreModelPolicyConfigurationError
 from intergrax.runtime.task.task import Task
 
 

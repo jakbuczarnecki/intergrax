@@ -21,9 +21,9 @@ ADR_PATH = (
     REPO_ROOT
     / "docs/project/technical/adr/entries/2026-09-18/ADR-GR-10-001.md"
 )
-PRE_MODEL_EVAL_PATH = (
-    REPO_ROOT / "intergrax/runtime/policy/pre_model_policy_evaluation.py"
-)
+PRE_MODEL_EVAL_PATH = REPO_ROOT / "intergrax/runtime/policy/pre_model_policy_evaluation.py"
+PRE_MODEL_PRINCIPAL_PATH = REPO_ROOT / "intergrax/runtime/policy/pre_model_principal.py"
+PRE_MODEL_EVALUATE_PATH = REPO_ROOT / "intergrax/runtime/policy/pre_model_policy_evaluate.py"
 GOVERNANCE_DIR = REPO_ROOT / "intergrax/runtime/governance"
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -82,6 +82,13 @@ def test_gr10_adr1_phase_none_valid_per_adr() -> None:
     assert "phase=None" in adr
     assert PreModelPhase.NEXUS_PLANNING.value == "nexus_planning"
     assert PreModelPhase.AGENT_STEP.value == "agent_step"
+
+
+def test_gr10_r4_r1_pre_model_core_modules_do_not_import_agents_authoring() -> None:
+    """Policy PRE_MODEL core must not depend on agents.authoring (GR-10-R4-R1 collectability)."""
+    for path in (PRE_MODEL_EVAL_PATH, PRE_MODEL_PRINCIPAL_PATH, PRE_MODEL_EVALUATE_PATH):
+        text = _read(path)
+        assert "intergrax.agents.authoring" not in text, f"{path.name} must not import agents.authoring"
 
 
 def test_gr10_adr1_gate_no_empty_agent_id_on_inference_path() -> None:
