@@ -218,8 +218,8 @@ Do **not** treat D1 landing commit and baseline-record follow-up as competing �
 
 | Role | SHA | Meaning |
 | --- | --- | --- |
-| `CERTIFIED_CODE_BASELINE` | *(R1 doc — commit whose code passed full Pyright + regression)* | Exact code state enterprise-certified |
-| `CERTIFICATION_RECORD_COMMIT` | *(R1 doc — qualification record on `development`)* | Git commit that records certified baseline + closes typing debt |
+| `CERTIFIED_CODE_BASELINE` | `310b09feaed05e24b6d55c041baba27a9a4699cb` | R1 landing — full Pyright + regression on certified surface |
+| `CERTIFICATION_RECORD_COMMIT` | `310b09feaed05e24b6d55c041baba27a9a4699cb` | Same commit (record + certified code co-deployed) |
 
 Historical anchors (provenance only, not alternate baselines):
 
