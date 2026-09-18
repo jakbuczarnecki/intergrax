@@ -94,9 +94,14 @@ GR10_INFERENCE_CAPABILITY_SEMANTICS: tuple[Gr10InferenceCapabilitySemantics, ...
     ),
     Gr10InferenceCapabilitySemantics(
         "Inner Governance",
-        Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "InferenceExecutor binds active execution identity; no UAEP inner guard on direct path.",
+        Gr10Applicability.NOT_APPLICABLE,
+        None,
+        "GR-10-R5: matrix row is GR-3 CanonicalInnerExecutionGuardPort + meaningful-side-effect "
+        "spine — distinct from Policy evaluation (inner GEPs). INFERENCE has no applicable "
+        "protected inner action on that spine (MSE/tool/agent-decision N/A); sole permission "
+        "boundary for model invocation is PRE_MODEL (Policy evaluation QUALIFIED). "
+        "require_active_execution_identity on InferenceExecutor is execution lifecycle context, "
+        "not a second governance authority; UAEP parity is not required.",
     ),
     Gr10InferenceCapabilitySemantics(
         "Policy evaluation",
@@ -165,7 +170,8 @@ GR10_PRODUCTION_INVENTORY: tuple[Gr10ProductionEntry, ...] = (
         "INFERENCE",
         "No Tier-3/public production root — internal only: composition-wired "
         "ExecutionRuntime → StrategyExecutionRouter → InferenceExecutor (MODEL C1 non-root)",
-        "InferenceExecutor.execute with active execution identity (delegate, not root authority)",
+        "NOT_APPLICABLE — no GR-3 inner-guard/MSE spine on canonical structured inference path; "
+        "PRE_MODEL permission is Policy evaluation row (QUALIFIED)",
         "NOT_APPLICABLE — structured inference is not classified MSE spine",
         "NOT_APPLICABLE — no REQUIRE_HUMAN on inference-only ExecutionRequest",
         "NOT_APPLICABLE — no provider mutation on InferenceExecutor structured path",
@@ -202,7 +208,8 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("Inner Governance"),
         Gr10CoverageStatus.PARTIAL,
         Gr10CoverageStatus.PARTIAL,
-        "Identity binding on inference; UAEP/graph for agentic/orchestration.",
+        "INFERENCE: GR-10-R5 N/A (no GR-3/MSE inner spine). AGENTIC/ORCH: residual inner GEP + "
+        "MSE/tool paths PARTIAL (not UAEP parity for inference).",
     ),
     Gr10CapabilityCell(
         "Policy evaluation",
@@ -313,6 +320,24 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
         "PRE_MODEL DENY on InferenceExecutor blocks provider",
         (
             _nid(_INFERENCE_EXEC, "test_inference_pre_model_deny_blocks_provider"),
+        ),
+        Gr10CoverageStatus.QUALIFIED,
+    ),
+    Gr10ScenarioEvidence(
+        "INF-R5-INNER",
+        "INFERENCE",
+        "Inner Governance (GR-3/MSE spine) not applicable — PRE_MODEL is Policy evaluation row",
+        (
+            _nid(
+                "tests/qualification/governance/strategy/"
+                "test_gr10_r5_inference_inner_governance_qualification.py",
+                "test_gr10_r5_inference_inner_governance_semantics_not_applicable",
+            ),
+            _nid(
+                "tests/qualification/governance/strategy/"
+                "test_gr10_r5_inference_inner_governance_qualification.py",
+                "test_gr10_r5_inference_executor_provider_only_after_pre_model_ast",
+            ),
         ),
         Gr10CoverageStatus.QUALIFIED,
     ),
