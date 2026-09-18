@@ -19,9 +19,6 @@ from intergrax.runtime.execution.failure_evidence.runtime_event_recorder import 
 from intergrax.runtime.execution.continuation.persistence import (
     wire_execution_continuation_state_store,
 )
-from intergrax.runtime.execution.certified_internal_harness_governance_identity import (
-    admit_certified_internal_harness_root_governance_identity,
-)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_task_terminal import (
     build_nexus_host_task_terminal_publisher,
@@ -36,17 +33,13 @@ def build_host_task_execution(
     nexus_loop: NexusLoop,
     *,
     orchestration_triggers: frozenset[str],
+    root_authority_admission: RootExecutionAuthorityAdmissionPort,
+    admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity],
     pipeline_capability_suffix: str = ".pipeline",
     revision_admission: EffectiveProfileRevisionAdmissionPort | None = None,
-    root_authority_admission: RootExecutionAuthorityAdmissionPort,
-    admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity] | None = None,
     skill_host_wiring: HostSkillCatalogWiring | None = None,
 ) -> HostTaskExecution:
     """Internal composition builder: extract canonical execution dependencies from Nexus."""
-    resolved_admit = (
-        admit_root_governance_identity
-        or admit_certified_internal_harness_root_governance_identity
-    )
     return HostTaskExecution(
         _agent_engine=nexus_loop.agent_engine,
         _agent_router=AgentRouter(
@@ -68,7 +61,7 @@ def build_host_task_execution(
         _continuation_state_store=wire_execution_continuation_state_store(),
         _declarative_tool_invoker=nexus_loop.declarative_tool_invoker,
         _skill_host_wiring=skill_host_wiring,
-        _admit_root_governance_identity=resolved_admit,
+        _admit_root_governance_identity=admit_root_governance_identity,
     )
 
 

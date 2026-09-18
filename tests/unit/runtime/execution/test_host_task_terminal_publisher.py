@@ -11,8 +11,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
+from intergrax.applications._shared.harness_host_task_execution_wiring import (
+    build_harness_host_task_execution,
+)
 from intergrax.applications._shared.host_task_execution_wiring import (
-    build_host_task_execution,
     build_nexus_host_task_terminal_publisher,
 )
 from intergrax.contracts.execution_identity import (
@@ -63,7 +65,7 @@ def _build_host_task_execution(
 ) -> HostTaskExecution:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry)
-    execution = build_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
+    execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     if terminal_publisher is None:
         return execution
     return HostTaskExecution(
@@ -224,7 +226,7 @@ async def test_missing_terminal_publisher_executes_without_error() -> None:
 async def test_nexus_adapter_delegates_terminal_publication() -> None:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry)
-    execution = build_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
+    execution = build_harness_host_task_execution(nexus_loop, orchestration_triggers=frozenset())
     task = _sample_task()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()

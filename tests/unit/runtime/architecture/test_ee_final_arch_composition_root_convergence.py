@@ -37,7 +37,7 @@ def test_ee_final_arch_host_task_and_scenario_reference_execution_runtime() -> N
     assert "ExecutionRuntime" in host
     assert (
         "HostTaskExecutionPort" in scenario
-        or "build_environment_host_task_execution" in scenario
+        or "build_harness_environment_host_task_execution" in scenario
     )
 
 

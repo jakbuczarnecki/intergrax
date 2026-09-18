@@ -13,7 +13,9 @@ from intergrax.contracts.execution_identity import (
     validate_execution_id,
 )
 from intergrax.runtime.execution.facade import Execution as ExecutionFacade
-from intergrax.applications._shared.host_task_execution_wiring import build_host_task_execution
+from intergrax.applications._shared.harness_host_task_execution_wiring import (
+    build_harness_host_task_execution,
+)
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
@@ -43,7 +45,7 @@ def _build_governed_contractor_host_execution(nexus_loop: NexusLoop):
 
 
 def _build_research_host_execution(nexus_loop: NexusLoop):
-    return build_host_task_execution(
+    return build_harness_host_task_execution(
         nexus_loop,
         orchestration_triggers=frozenset(),
         pipeline_capability_suffix=".pipeline",

@@ -22,7 +22,9 @@ from intergrax.runtime.background_execution.identity_admission import (
     assert_payload_run_id_consistent,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
-from intergrax.runtime.governance.execution_admission_composition import build_reference_allowing_root_execution_authority_admission
+from intergrax.runtime.execution.certified_internal_harness_governance_identity import (
+    admit_certified_internal_harness_root_governance_identity,
+)
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
@@ -130,6 +132,7 @@ class NexusWorkerRuntime:
             orchestration_triggers=orchestration_triggers,
             pipeline_capability_suffix=pipeline_capability_suffix,
             root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
+            admit_root_governance_identity=admit_certified_internal_harness_root_governance_identity,
         )
         return cls(
             host_execution,

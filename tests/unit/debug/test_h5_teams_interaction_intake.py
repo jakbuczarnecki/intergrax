@@ -109,9 +109,8 @@ def test_debug_interaction_intake_with_teams_verifier():
     token = "teams_test_security_token"
     verifier = TeamsSignatureVerifier(security_token=token, enabled=True)
     from intergrax.debug.interaction_service import DebugInteractionIntakeService
-    from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
-    from intergrax.runtime.governance.execution_admission_composition import (
-        build_reference_allowing_root_execution_authority_admission,
+    from testing_support.nexus_host_task_execution import (
+        build_certified_internal_test_host_task_execution,
     )
     from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -119,11 +118,7 @@ def test_debug_interaction_intake_with_teams_verifier():
     loop = NexusLoop(registry)
     service = DebugInteractionIntakeService(
         task_executor=HostTaskExecutionExecutor(
-            build_host_task_execution(
-                loop,
-                orchestration_triggers=frozenset(),
-                root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
-            )
+            build_certified_internal_test_host_task_execution(loop)
         ),
         verifier=verifier,
     )

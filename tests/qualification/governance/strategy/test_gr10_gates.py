@@ -121,13 +121,16 @@ def test_gr10_nexus_host_execution_requires_root_admission_parameter() -> None:
     )
     kwonly = [arg.arg for arg in fn.args.kwonlyargs]
     assert "root_authority_admission" in kwonly
+    assert "admit_root_governance_identity" in kwonly
     assert "root_authority_admission=root_authority_admission" in source
+    assert "admit_certified_internal_harness_root_governance_identity" not in source
 
 
-def test_gr10_host_wiring_injects_root_admission_composition() -> None:
+def test_gr10_host_wiring_requires_explicit_root_admission_parameters() -> None:
     source = _HOST_WIRING.read_text(encoding="utf-8-sig")
-    assert "build_harness_root_execution_authority_admission" in source
     assert "RootExecutionAuthorityAdmissionPort" in source
+    assert "admit_root_governance_identity" in source
+    assert "admit_harness_root_governance_identity" not in source
 
 
 def test_gr10_strategy_operation_mapping_for_all_strategies() -> None:

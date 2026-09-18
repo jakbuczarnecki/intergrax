@@ -23,7 +23,7 @@ _SHARED_HOST_WIRING = (
 
 _CANONICAL_FACTORY_RESOLVERS = frozenset(
     {
-        "build_environment_host_task_execution",
+        "build_harness_environment_host_task_execution",
         "build_harness_host_runtime",
         "build_lkw_host_task_execution",
         "build_governed_contractor_host_task_execution",
@@ -88,10 +88,10 @@ def _imports_unified_task_runner(path: Path) -> bool:
 
 
 def test_u1_ep02_scenario_task_uses_environment_host_execution() -> None:
-    """EP-02: execute_scenario_task → build_environment_host_task_execution → host_execution.execute."""
+    """EP-02: execute_scenario_task → harness environment host execution → host_execution.execute."""
     source = _SCENARIO_BASELINE.read_text(encoding="utf-8")
     assert "async def execute_scenario_task" in source
-    assert "build_environment_host_task_execution" in source
+    assert "build_harness_environment_host_task_execution" in source
     assert "host_execution.execute" in source
 
 
@@ -139,7 +139,7 @@ def test_u1_application_execution_wiring_delegates_to_shared_host_task_execution
 def test_u1_harness_host_runtime_uses_environment_host_task_execution() -> None:
     """Harness host runtime (lab and harness apps) must not construct a parallel execution engine."""
     source = _HARNESS_HOST_RUNTIME.read_text(encoding="utf-8")
-    assert "build_environment_host_task_execution" in source
+    assert "build_harness_environment_host_task_execution" in source
     shared = _SHARED_HOST_WIRING.read_text(encoding="utf-8")
     assert "def build_environment_host_task_execution" in shared
     assert "build_host_task_execution" in shared

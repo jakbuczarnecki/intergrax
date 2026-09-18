@@ -86,6 +86,9 @@ def create_debug_app(
             from intergrax.runtime.governance.execution_admission_composition import (
                 build_reference_allowing_root_execution_authority_admission,
             )
+            from intergrax.runtime.execution.certified_internal_harness_governance_identity import (
+                admit_certified_internal_harness_root_governance_identity,
+            )
             from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 
             resolved_hitl = DebugHitlResumeService(
@@ -93,6 +96,7 @@ def create_debug_app(
                     resolved_loop,
                     orchestration_triggers=frozenset(),
                     root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
+                    admit_root_governance_identity=admit_certified_internal_harness_root_governance_identity,
                 ),
                 checkpoint_store=resolved_checkpoint_store,
             )
@@ -108,6 +112,9 @@ def create_debug_app(
             from intergrax.runtime.governance.execution_admission_composition import (
                 build_reference_allowing_root_execution_authority_admission,
             )
+            from intergrax.runtime.execution.certified_internal_harness_governance_identity import (
+                admit_certified_internal_harness_root_governance_identity,
+            )
             from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 
             resolved_interaction = DebugInteractionIntakeService(
@@ -116,6 +123,7 @@ def create_debug_app(
                         resolved_loop,
                         orchestration_triggers=frozenset(),
                         root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
+                        admit_root_governance_identity=admit_certified_internal_harness_root_governance_identity,
                     )
                 ),
                 verifier=create_inbound_verifier(),

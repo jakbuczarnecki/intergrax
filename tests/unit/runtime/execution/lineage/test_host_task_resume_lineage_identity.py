@@ -27,9 +27,8 @@ from intergrax.runtime.execution.active_execution_resume import (
 from intergrax.runtime.execution.lineage.persistence import (
     InMemoryExecutionLineagePersistence,
 )
-from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
-from intergrax.runtime.governance.execution_admission_composition import (
-    build_reference_allowing_root_execution_authority_admission,
+from testing_support.nexus_host_task_execution import (
+    build_certified_internal_test_host_task_execution,
 )
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
     minimal_runtime_checkpoint,
@@ -157,11 +156,7 @@ def _build_host_execution(
         ),
     )
     nexus_loop = NexusLoop(registry, execution_lineage_persistence=persistence)
-    return build_host_task_execution(
-        nexus_loop,
-        orchestration_triggers=frozenset(),
-        root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
-    )
+    return build_certified_internal_test_host_task_execution(nexus_loop)
 
 
 @pytest.mark.asyncio

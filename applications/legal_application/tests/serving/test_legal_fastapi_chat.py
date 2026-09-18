@@ -12,7 +12,9 @@ from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.applications._shared.host_task_execution_wiring import build_host_task_execution
+from intergrax.applications._shared.harness_host_task_execution_wiring import (
+    build_harness_host_task_execution,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import TaskResult, TaskState
@@ -41,7 +43,7 @@ def client() -> TestClient:
     agent = _DummyAgent()
     registry = bootstrap_agent_registry_from_agents({"legal-test": agent})
     nexus = NexusLoop(registry)
-    host_execution = build_host_task_execution(nexus, orchestration_triggers=frozenset())
+    host_execution = build_harness_host_task_execution(nexus, orchestration_triggers=frozenset())
     mount_legal_agent_routes(
         app,
         registry=registry,
