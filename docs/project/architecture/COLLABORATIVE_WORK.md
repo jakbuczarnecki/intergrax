@@ -4,7 +4,7 @@
 **Plan (1:1):** [`plan/COLLABORATIVE_WORK.md`](../maintainers/plans/COLLABORATIVE_WORK.md)
 **Feature coordination:** [`capabilities/architecture/MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md)
 **Architecture governance:** [`INTERGRAX_ARCHITECTURE_PRINCIPLES.md`](INTERGRAX_ARCHITECTURE_PRINCIPLES.md)
-**ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../technical/adr/entries/2026-09-07/ADR-MP-004.md) · MP-4 → [DECISION_APPROVAL_GOVERNANCE](DECISION_APPROVAL_GOVERNANCE.md) / [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) · [ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) (MP-5 ContextView)
+**ADR:** [ADR-MP-001](../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../technical/adr/entries/2026-09-07/ADR-MP-004.md) · MP-4 → [DECISION_APPROVAL_GOVERNANCE](DECISION_APPROVAL_GOVERNANCE.md) / [ADR-MP-005](../technical/adr/entries/2026-09-08/ADR-MP-005.md) · [ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) (MP-5 ContextView) · [ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) (MP-6 Activity)
 
 ---
 
@@ -60,7 +60,7 @@ It does not answer:
 - **effective authority** composition semantics,
 - collaborative primitives on the same work plane: WorkItem, Assignment, WorkArtifact (MP-2…MP-3 **CLOSED**),
   **Principal-scoped ContextView** policy and composition semantics (MP-5 — **ownership FROZEN**, ADR-MP-006),
-  future Activity collaborative semantics (MP-6).
+  **Collaborative Activity & Provenance** semantics (MP-6 — **ownership FROZEN**, ADR-MP-007).
 - Collaborative Work does **not** own canonical Decision authority (MP-4 reuse only).
 
 ### Policy / runtime enforcement owns (reuse, not storage)
@@ -199,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-6 — NEXT**. **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED**; qualification: [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
+**Next task:** **MP-6B — NEXT**. **MP-6A — APPROVED / CLOSED**. **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED**; qualification: [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -522,8 +522,8 @@ Future Multiplayer phases that belong on the collaborative work plane extend **t
 | MP-2 | WorkItem, Assignment, shared-work lifecycle |
 | MP-3 | WorkArtifact, WorkArtifactVersion collaborative ownership |
 | MP-4 | Decision / Approval / Governance collaborative semantics — [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) |
-| MP-5 | Principal-scoped ContextView — **MP-5A CLOSED**; **MP-5B CLOSED**; **MP-5C CLOSED**; **MP-5D CLOSED**; **MP-5E CLOSED**; **MP-5F — NEXT** |
-| MP-6 | Collaborative Activity + provenance linkage |
+| MP-5 | Principal-scoped ContextView — **ENTERPRISE CERTIFIED / CLOSED** (MP-5A…MP-5H) |
+| MP-6 | Collaborative Activity + provenance linkage — **MP-6A CLOSED**; **MP-6B — NEXT** |
 
 Architecture and implementation rows for MP-6+ remain in their future gates.
 
@@ -531,7 +531,7 @@ Architecture and implementation rows for MP-6+ remain in their future gates.
 
 ## Principal-scoped ContextView (MP-5)
 
-**MP-5 ownership — FROZEN** ([ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**). **MP-5A — APPROVED / CLOSED**. **MP-5B — APPROVED / CLOSED**. **MP-5C — APPROVED / CLOSED**. **MP-5D — APPROVED / CLOSED**. **MP-5E — APPROVED / CLOSED**. **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED**. **MP-5G — ENTERPRISE E2E / ISOLATION QUALIFICATION CERTIFIED / CLOSED**. **MP-5H — CLOSED / FINAL CERTIFICATION PASSED**. **MP-5 — ENTERPRISE CERTIFIED / CLOSED**. **MP-6 — NEXT**.
+**MP-5 ownership — FROZEN** ([ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**). **MP-5A — APPROVED / CLOSED**. **MP-5B — APPROVED / CLOSED**. **MP-5C — APPROVED / CLOSED**. **MP-5D — APPROVED / CLOSED**. **MP-5E — APPROVED / CLOSED**. **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED**. **MP-5G — ENTERPRISE E2E / ISOLATION QUALIFICATION CERTIFIED / CLOSED**. **MP-5H — CLOSED / FINAL CERTIFICATION PASSED**. **MP-5 — ENTERPRISE CERTIFIED / CLOSED**.
 
 **Capability statement:** ContextView is a principal-scoped, reference-first, policy-governed projection over source-domain canonical references. MP-5 does **not** hydrate payloads, manage storage, run RAG ranking, own UCL lifecycle, select CW current version, or assemble CE tokens.
 
@@ -575,6 +575,55 @@ ContextViewRequest
 **Authority:** resolve membership and effective delegation before source retrieval; fail-closed when principal, scope, or policy cannot be established. **Least-context** for operations and external-agent projections (MP-8-ready seam).
 
 Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md) § MP-5.
+
+---
+
+## Collaborative Activity & Provenance (MP-6)
+
+**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — APPROVED / CLOSED**. **MP-6B — NEXT**.
+
+**Capability statement:** Collaborative Activity is an immutable, typed semantic record of meaningful collaborative actions on the work plane — who acted, on what object, under which scope and authority, with what outcome, and which canonical evidence references enable reconstruction. MP-6 does **not** store WorkArtifact/Memory/UCL/prompt bodies, replace observability traces, duplicate proof receipts, or authorize mutations.
+
+**Anti-substitution:** `Collaborative Activity != Runtime Trace`; Activity ≠ observability telemetry (retries, latency, tokens, HTTP); Activity ≠ `ProofReceipt` storage; Activity ≠ Decision/Approval authority (MP-4); Activity ≠ ContextView payload (MP-5 references `view_id` + scope only).
+
+**Architecture flow:**
+
+```text
+Source Domain (authoritative mutation)
+  → CollaborativeActivityPublication (neutral contract)
+  → CollaborativeActivityPublicationPort / ingestion boundary
+  → MP-6 Activity service
+  → CollaborativeActivityAppendStore (replaceable)
+  → configured provider
+
+Read:
+Authorized Consumer
+  → CollaborativeActivityReadPort (+ authority-resolved scope)
+  → store / projection
+  → typed CollaborativeActivity refs
+```
+
+**Public contracts (MP-6A gate):** [`intergrax/contracts/collaborative_activity.py`](../../../intergrax/contracts/collaborative_activity.py) — `CollaborativeActivity`, `CollaborativeActivityType`, `CollaborativeActivityActorRef`, `CollaborativeActivityTargetRef`, `CollaborativeActivityProvenanceRef`, `CollaborativeActivityOutcome`, `ActivityIdempotencyKey`, `CollaborativeActivityPublication`, `CollaborativeActivityQuery`; ports `CollaborativeActivityPublicationPort`, `CollaborativeActivityWritePort`, `CollaborativeActivityReadPort`, `CollaborativeActivityAppendStore`.
+
+**Idempotency:** `ActivityIdempotencyKey(source_domain, source_stable_id, activity_type)`; `activity_id = mint_collaborative_activity_id(...)`; at-least-once delivery with deterministic deduplication.
+
+**Ordering:** no global total order; per-workspace cursor timeline sorted by `(occurred_at, activity_id)`; optional `caused_by_activity_id`; append-only (`ACTIVITY_CORRECTION` supersession — no in-place history rewrite).
+
+**Referential integrity:** validation at ingestion via public contracts and policy (`trust canonical producer` default for MP-6A; strict cross-domain checks via injected validators in MP-6C+ — no hardcoded repository imports in core).
+
+**Threat model (fail-closed):** actor spoofing → publication boundary requires authoritative actor refs tied to resolved principal; tenant/workspace leakage → scope on every record + authorized query; duplicate ingestion → idempotency key; forged provenance → typed refs only, validation seam; payload leakage → reference-only provenance union.
+
+| Layer | May depend on | Must not depend on |
+|-------|---------------|-------------------|
+| Source domains | `intergrax/contracts/collaborative_activity.py` | MP-6 store implementations, vendors |
+| MP-6 contracts | other `intergrax/contracts/*` refs | `agents/`, `applications/` |
+| MP-6 implementation | contracts, MP-1 authority for validation | direct source repositories |
+| Persistence providers | `CollaborativeActivityAppendStore` | collaborative semantics |
+| Application / UI (MP-9) | `CollaborativeActivityReadPort` | store internals |
+
+**Roadmap:** MP-6B core DTO hardening → MP-6C publication boundary → MP-6D store → MP-6E scoped read → MP-6F source integrations → MP-6G qualification → MP-6H certification.
+
+Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md) § MP-6.
 
 ---
 

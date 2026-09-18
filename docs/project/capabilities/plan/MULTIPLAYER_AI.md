@@ -10,7 +10,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-6 — NEXT**. **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-5G — ENTERPRISE E2E / ISOLATION QUALIFICATION CERTIFIED / CLOSED** (`tests/unit/collaborative_work/test_mp5g_context_view_e2e_qualification.py`, `mp5g_e2e_harness.py`). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (**MP-5F-B1…B4 — CLOSED**; **MP-5F-B5 — CLOSED** — `intergrax/collaborative_work/context_view_source_adapters.py`, `context_view_source_wiring.py`). MP-5E **`ContextViewComposer`** / **`DefaultContextViewComposer`** — **APPROVED / CLOSED** (`intergrax/contracts/context_view_composition.py`).
+**Current active task:** **MP-6B — NEXT**. **MP-6A — APPROVED / CLOSED** (**MP-6 ownership — FROZEN**, ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-5G — ENTERPRISE E2E / ISOLATION QUALIFICATION CERTIFIED / CLOSED** (`tests/unit/collaborative_work/test_mp5g_context_view_e2e_qualification.py`, `mp5g_e2e_harness.py`). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (**MP-5F-B1…B4 — CLOSED**; **MP-5F-B5 — CLOSED** — `intergrax/collaborative_work/context_view_source_adapters.py`, `context_view_source_wiring.py`). MP-5E **`ContextViewComposer`** / **`DefaultContextViewComposer`** — **APPROVED / CLOSED** (`intergrax/contracts/context_view_composition.py`).
 **Previous:** **MP-5C — APPROVED / CLOSED** — principal visibility policy (`intergrax/contracts/context_view_visibility_policy.py`)
 
 ---
@@ -273,7 +273,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-5G | E2E / isolation qualification | **CLOSED** |
 | MP-5H | Final MP-5 enterprise certification | **CLOSED / FINAL CERTIFICATION PASSED** |
 | MP-5 | Principal-scoped ContextView capability | **ENTERPRISE CERTIFIED / CLOSED** |
-| MP-6 | Collaborative Activity + provenance | **NEXT** |
+| MP-6 | Collaborative Activity + provenance | **MP-6A CLOSED**; **MP-6B — NEXT** |
 
 ### MP-5A — ContextView ownership & contract architecture gate
 
@@ -338,19 +338,25 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | PLANNED / NOT STARTED |
+| **Status** | **MP-6A — APPROVED / CLOSED**; **MP-6B — NEXT** |
 | **Purpose** | Collaborative activity stream linked to provenance and evidence. |
-| **Likely owning domain plans** | `OBSERVABILITY.md`, `PROOF_RECEIPTS.md`, `UNIFIED_EXECUTION_RUNTIME.md` - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
-| **Dependencies** | MP-2, MP-3, MP-4 recommended |
-| **Exact scope** | Collaborative Activity projection and stable linkage to runtime Trace/Evidence without authority transfer |
-| **REUSED EXISTING CAPABILITY** | Traces, receipts, attempt ledger, existing provenance fields |
-| **NEW CAPABILITY REQUIRED** | Activity model with collaborative semantics and evidence linkage |
-| **Explicit out of scope** | Activity feeds, indexes, or projections as permission, decision, artifact, or lifecycle authorities |
-| **Architecture/ADR gate** | Activity/Runtime Trace separation and evidence lineage accepted; relevant ADR register decisions completed |
-| **Pre-implementation domain-sync gate** | Bounded ownership check → domain architecture/plan sync with MP-6 rows |
+| **Owning domain** | **COLLABORATIVE_WORK** — **MP-6 ownership — FROZEN** ([ADR-MP-007](../../technical/adr/entries/2026-09-18/ADR-MP-007.md)) |
+| **Dependencies** | MP-2, MP-3, MP-4, MP-5 recommended |
+| **Exact scope** | Typed collaborative activity records + reference-only provenance; no authority transfer |
+| **REUSED EXISTING CAPABILITY** | `ExecutionProvenanceRef`, observability run/step IDs, `GovernanceEvidenceRef`, `ProofReceipt` IDs, Decision/Approval IDs |
+| **NEW CAPABILITY REQUIRED** | `intergrax/contracts/collaborative_activity.py`; MP-6B+ runtime |
+| **Explicit out of scope** | Activity feeds/UI (MP-9); persistence (MP-6D until scheduled); repository inference |
+| **Architecture/ADR gate** | **CLOSED** (MP-6A / ADR-MP-007) |
 | **User-visible outcome** | Auditable collaborative activity tied to evidence |
-| **Acceptance criteria** | Activity is product-facing and linked to runtime evidence; runtime Trace/Evidence remains execution truth; projections cannot authorize or mutate authoritative state; lineage remains queryable through real execution identities |
-| **Expected proof/evidence** | Contract tests; projection non-authority tests; provenance/evidence integration proof; authorization/isolation tests; consistency/rebuild proof |
+| **Expected proof/evidence** | `test_mp6a_*`; MP-6G qualification (future) |
+
+### MP-6A — ownership / contract architecture gate
+
+| Field | Value |
+|-------|-------|
+| **Status** | **APPROVED / CLOSED** |
+| **Proof** | ADR-MP-007; `test_mp6a_collaborative_activity_architecture_gates.py`; `test_mp6a_documentation_regression_gates.py` |
+| **Next step** | **MP-6B — NEXT** |
 
 ---
 
