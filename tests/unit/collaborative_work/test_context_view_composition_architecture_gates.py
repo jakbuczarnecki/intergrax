@@ -35,6 +35,14 @@ _FORBIDDEN_ADAPTER_NAMES = (
     "DefaultCollaborativeWorkContextSource",
 )
 _FORBIDDEN_RETRIEVAL_SYMBOLS = ("hydrate", "retrieve_candidates", "MemoryRecord")
+_FORBIDDEN_SCOPE_COMPATIBILITY_HELPERS = (
+    "memory_source_candidate_scope_compatible",
+    "knowledge_source_candidate_scope_compatible",
+    "ucl_source_candidate_scope_compatible",
+    "collaborative_work_source_candidate_scope_compatible",
+    "source_candidate_scope_compatible",
+)
+_SOURCE_PORTS = _REPO_ROOT / "intergrax" / "contracts" / "context_view_source_ports.py"
 
 
 def _collect_imports(path: Path) -> list[tuple[int, str]]:
@@ -107,3 +115,30 @@ def test_mp5e_no_retrieval_symbols_in_composer_modules() -> None:
         text = path.read_text(encoding="utf-8")
         for symbol in _FORBIDDEN_RETRIEVAL_SYMBOLS:
             assert symbol not in text, f"{path.name} references {symbol}"
+
+
+def _collect_forbidden_call_names(path: Path, names: tuple[str, ...]) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    forbidden = frozenset(names)
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id in forbidden:
+                violations.append(f"{path.name}:{node.lineno} calls {node.func.id}")
+    return violations
+
+
+def test_mp5g_c1_r1_composer_does_not_call_category_scope_helpers() -> None:
+    violations = _collect_forbidden_call_names(
+        _DEFAULT_COMPOSER,
+        _FORBIDDEN_SCOPE_COMPATIBILITY_HELPERS,
+    )
+    assert not violations, "\n".join(violations)
+
+
+def test_mp5g_c1_r1_source_port_validators_do_not_call_category_scope_helpers() -> None:
+    violations = _collect_forbidden_call_names(
+        _SOURCE_PORTS,
+        _FORBIDDEN_SCOPE_COMPATIBILITY_HELPERS,
+    )
+    assert not violations, "\n".join(violations)

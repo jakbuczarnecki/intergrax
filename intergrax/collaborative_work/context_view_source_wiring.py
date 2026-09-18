@@ -23,6 +23,7 @@ from intergrax.collaborative_work.contracts.collaborative_work_reference_read im
     CollaborativeWorkReferenceReadPort,
 )
 from intergrax.contracts.context_view_composition import DefaultContextViewComposerConfig
+from intergrax.contracts.context_view_scope_compatibility import ContextViewScopeCompatibilityPolicy
 from intergrax.knowledge.contracts.knowledge_reference_read import KnowledgeReferenceReadPort
 from intergrax.memory.contracts.memory_reference_read import MemoryReferenceReadPort
 from intergrax.ucl.contracts.ucl_reference_read import UclReferenceReadPort
@@ -71,6 +72,7 @@ def wire_default_context_view_composer(
     knowledge_reference_read_query_text: str,
     async_runner: ContextViewAsyncReferenceReadRunner | None = None,
     config: DefaultContextViewComposerConfig | None = None,
+    scope_compatibility_policy: ContextViewScopeCompatibilityPolicy | None = None,
 ) -> DefaultContextViewComposer:
     """Instantiate default adapters and inject them as MP-5D ports into the composer."""
     runner = async_runner or DefaultContextViewAsyncReferenceReadRunner()
@@ -105,4 +107,5 @@ def wire_default_context_view_composer(
         ucl_source=ucl_source,
         collaborative_work_source=collaborative_work_source,
         config=composer_config,
+        scope_compatibility_policy=scope_compatibility_policy,
     )

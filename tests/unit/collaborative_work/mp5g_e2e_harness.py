@@ -68,6 +68,7 @@ from intergrax.contracts.context_view_composition import (
     ContextViewCompositionSourceFailureError,
     DefaultContextViewComposerConfig,
 )
+from intergrax.contracts.context_view_scope_compatibility import ContextViewScopeCompatibilityPolicy
 from intergrax.contracts.context_view_source_ports import (
     CollaborativeWorkContextSourcePort,
     ContextViewCollaborativeWorkSourceCandidatesResult,
@@ -615,7 +616,10 @@ def _seed_ucl_reader(
     return reader, repo
 
 
-def build_mp5g_harness() -> Mp5gHarness:
+def build_mp5g_harness(
+    *,
+    scope_compatibility_policy: ContextViewScopeCompatibilityPolicy | None = None,
+) -> Mp5gHarness:
     membership_repo = InMemoryWorkspaceMembershipRepository()
     authority_repo = InMemoryPrincipalAuthorityRepository()
     delegation_repo = InMemoryAuthorityDelegationRepository()
@@ -827,6 +831,7 @@ def build_mp5g_harness() -> Mp5gHarness:
         config=DefaultContextViewComposerConfig(
             knowledge_reference_read_query_text=KNOWLEDGE_QUERY,
         ),
+        scope_compatibility_policy=scope_compatibility_policy,
     )
 
     evaluator = ContextViewVisibilityEvaluator(

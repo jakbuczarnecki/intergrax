@@ -549,7 +549,7 @@ Collaborative Work owns **who may see which context categories under which colla
 
 **Source adapters (MP-5F-B5):** replaceable MP-5D ports in [`intergrax/collaborative_work/context_view_source_adapters.py`](../../../intergrax/collaborative_work/context_view_source_adapters.py) translate only — source domains remain semantic owners. Composition root: [`wire_default_context_view_composer`](../../../intergrax/collaborative_work/context_view_source_wiring.py) (explicit DI: source read ports → default adapters → `DefaultContextViewComposer`). **Pluginability:** replace the MP-5D port implementation and/or the source-domain `*ReferenceReadPort` implementation independently. **MP-5F-B5-C1 invariants:** ContextView source adapters receive and preserve canonical `RequestIdentity` on MP-5D source requests — they never infer or fabricate `PrincipalType`. `candidate_scope` is derived only from authoritative source-domain `evaluated_scope` / ref provenance, never from unverified request fields. Custom `*ReferenceReadPort` implementations must return scope-consistent typed results; adapters validate before projection.
 
-**MP-5G-C1 scope compatibility:** ContextView never projects source-unproven scope dimensions onto a candidate or entry. Typed admission lives in [`intergrax/contracts/context_view_scope_compatibility.py`](../../../intergrax/contracts/context_view_scope_compatibility.py) (`ContextViewScopeCompatibilityPolicy` / `DefaultContextViewScopeCompatibilityPolicy`). **Collaborative Work** candidates still require exact proven work-item and operation dimensions. **Memory**, **Knowledge**, and **UCL** candidates may omit `work_item_id` when their domain did not prove work-item ownership; **Memory** also omits `operation_scope` unless Memory authority proves it. View `effective_scope` may remain work-item- and operation-scoped for admission while per-entry `entry_scope` stays source-truthful.
+**MP-5G-C1 scope compatibility:** ContextView never projects source-unproven scope dimensions onto a candidate or entry. Scope compatibility semantics are replaceable through [`ContextViewScopeCompatibilityPolicy`](../../../intergrax/contracts/context_view_scope_compatibility.py); `DefaultContextViewScopeCompatibilityPolicy` implements Model B. `DefaultContextViewComposer` injects the policy contract (constructor DI; optional override at `wire_default_context_view_composer`) and does not own category-specific compatibility rules. **Collaborative Work** candidates still require exact proven work-item and operation dimensions. **Memory**, **Knowledge**, and **UCL** candidates may omit `work_item_id` when their domain did not prove work-item ownership; **Memory** also omits `operation_scope` unless Memory authority proves it. View `effective_scope` may remain work-item- and operation-scoped for admission while per-entry `entry_scope` stays source-truthful.
 
 ```text
 ContextViewRequest
@@ -559,7 +559,9 @@ ContextViewRequest
   → DefaultContextViewComposer (MP-5E)
       → injected MP-5D consumer-owned source port (replaceable adapter)
       → source-domain public *ReferenceReadPort → canonical refs (reference-only)
-      → MP-5D candidate isolation validators
+      → truthful source candidate
+      → ContextViewScopeCompatibilityPolicy (admission)
+      → MP-5D structural isolation validators (category, tenant, visibility, ref integrity)
       → dedupe / order / entry + view identity strategies
   → ContextView
 ```

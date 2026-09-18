@@ -537,7 +537,7 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 | MP-5D | Source composition ports | **APPROVED / CLOSED** |
 | MP-5E | Default composition implementation | **CLOSED** |
 | MP-5F | Source adapters / integration | **CLOSED** |
-| MP-5G | E2E / isolation qualification | **CLOSED** (MP-5G-C1 memory scope compatibility + work-item four-source E2E) |
+| MP-5G | E2E / isolation qualification | **CLOSED** (MP-5G-C1 Model B + four-source E2E; MP-5G-C1-R1 runtime `ContextViewScopeCompatibilityPolicy` DI on composer) |
 | MP-5H | Final MP-5 enterprise certification | **NEXT** |
 
 **Threat model (fail-closed):** cross-tenant leak → deny/omit; cross-workspace leak → deny/omit; delegation amplification → deny; private memory leak → omit without explicit promotion; external agent over-sharing → least-context projection; unscoped RAG → scope gate before retrieve; application bypass → contracts only via Tier-0/Tier-1; policy missing → deny/omit.

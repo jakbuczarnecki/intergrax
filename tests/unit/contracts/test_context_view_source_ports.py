@@ -19,6 +19,9 @@ from intergrax.contracts.context_view import (
     ContextViewUclSourceRef,
     ContextViewVisibilityClass,
 )
+from intergrax.contracts.context_view_scope_compatibility import (
+    DefaultContextViewScopeCompatibilityPolicy,
+)
 from intergrax.contracts.context_view_source_ports import (
     CollaborativeWorkContextSourcePort,
     ContextViewCollaborativeWorkSourceCandidate,
@@ -44,6 +47,8 @@ from intergrax.contracts.context_view_source_ports import (
 )
 
 pytestmark = pytest.mark.unit
+
+_DEFAULT_SCOPE_POLICY = DefaultContextViewScopeCompatibilityPolicy()
 
 
 def _scope(**overrides: object) -> ContextViewScope:
@@ -304,8 +309,12 @@ def test_operation_scope_mismatch_rejected() -> None:
         ),
         suggested_visibility=ContextViewVisibilityClass.WORKSPACE_SHARED,
     )
-    with pytest.raises(ValueError, match="scope"):
-        validate_memory_source_candidate_isolation(request=request, candidate=candidate)
+    compatible = _DEFAULT_SCOPE_POLICY.candidate_scope_compatible(
+        category=ContextViewCategory.MEMORY,
+        request_scope=request.scope,
+        candidate_scope=candidate.candidate_scope,
+    )
+    assert not compatible
 
 
 def test_memory_workspace_candidate_admitted_in_work_item_scoped_request() -> None:
@@ -316,7 +325,11 @@ def test_memory_workspace_candidate_admitted_in_work_item_scoped_request() -> No
         candidate_scope=_scope(),
         suggested_visibility=ContextViewVisibilityClass.WORKSPACE_SHARED,
     )
-    validate_memory_source_candidate_isolation(request=request, candidate=candidate)
+    assert _DEFAULT_SCOPE_POLICY.candidate_scope_compatible(
+        category=ContextViewCategory.MEMORY,
+        request_scope=request.scope,
+        candidate_scope=candidate.candidate_scope,
+    )
 
 
 class _CustomMemorySource:

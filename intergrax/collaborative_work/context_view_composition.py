@@ -18,6 +18,7 @@ from intergrax.contracts.context_view import (
     ContextViewEntry,
     ContextViewKnowledgeSourceRef,
     ContextViewMemorySourceRef,
+    ContextViewScope,
     ContextViewUclSourceRef,
 )
 from intergrax.contracts.context_view_composition import (
@@ -36,6 +37,10 @@ from intergrax.contracts.context_view_composition import (
     validate_context_view_matches_composition_request,
 )
 from intergrax.contracts.context_view_composition import DefaultContextViewComposerConfig
+from intergrax.contracts.context_view_scope_compatibility import (
+    ContextViewScopeCompatibilityPolicy,
+    DefaultContextViewScopeCompatibilityPolicy,
+)
 from intergrax.contracts.context_view_source_ports import (
     CollaborativeWorkContextSourcePort,
     ContextViewCollaborativeWorkSourceCandidate,
@@ -140,6 +145,7 @@ class DefaultContextViewComposer:
         ordering_strategy: ContextViewCandidateOrderingStrategy | None = None,
         entry_identity_strategy: ContextViewEntryIdentityStrategy | None = None,
         view_identity_strategy: ContextViewIdentityStrategy | None = None,
+        scope_compatibility_policy: ContextViewScopeCompatibilityPolicy | None = None,
     ) -> None:
         self._memory_source = memory_source
         self._knowledge_source = knowledge_source
@@ -151,6 +157,9 @@ class DefaultContextViewComposer:
             entry_identity_strategy or Sha256ContextViewEntryIdentityStrategy()
         )
         self._view_identity_strategy = view_identity_strategy or Sha256ContextViewIdentityStrategy()
+        self._scope_compatibility_policy = (
+            scope_compatibility_policy or DefaultContextViewScopeCompatibilityPolicy()
+        )
 
     def compose(self, composition_request: ContextViewCompositionRequest) -> ContextView:
         decision = composition_request.policy_decision
@@ -338,32 +347,69 @@ class DefaultContextViewComposer:
         self,
         *,
         category: ContextViewCategory,
-        source_request: object,
-        candidate: object,
+        source_request: (
+            ContextViewMemorySourceRequest
+            | ContextViewKnowledgeSourceRequest
+            | ContextViewUclSourceRequest
+            | ContextViewCollaborativeWorkSourceRequest
+        ),
+        candidate: (
+            ContextViewMemorySourceCandidate
+            | ContextViewKnowledgeSourceCandidate
+            | ContextViewUclSourceCandidate
+            | ContextViewCollaborativeWorkSourceCandidate
+        ),
     ) -> None:
         try:
             if category is ContextViewCategory.MEMORY:
                 validate_memory_source_candidate_isolation(
-                    request=source_request,  # type: ignore[arg-type]
-                    candidate=candidate,  # type: ignore[arg-type]
+                    request=source_request,
+                    candidate=candidate,
                 )
             elif category is ContextViewCategory.KNOWLEDGE:
                 validate_knowledge_source_candidate_isolation(
-                    request=source_request,  # type: ignore[arg-type]
-                    candidate=candidate,  # type: ignore[arg-type]
+                    request=source_request,
+                    candidate=candidate,
                 )
             elif category is ContextViewCategory.UCL_CONTEXT_LIFECYCLE:
                 validate_ucl_source_candidate_isolation(
-                    request=source_request,  # type: ignore[arg-type]
-                    candidate=candidate,  # type: ignore[arg-type]
+                    request=source_request,
+                    candidate=candidate,
                 )
             elif category is ContextViewCategory.COLLABORATIVE_WORK:
                 validate_collaborative_work_source_candidate_isolation(
-                    request=source_request,  # type: ignore[arg-type]
-                    candidate=candidate,  # type: ignore[arg-type]
+                    request=source_request,
+                    candidate=candidate,
                 )
         except ValueError as exc:
             raise ContextViewCompositionCandidateIsolationError(str(exc)) from exc
+        self._assert_candidate_scope_compatible(
+            category=category,
+            request_scope=source_request.scope,
+            candidate_scope=candidate.candidate_scope,
+        )
+
+    def _assert_candidate_scope_compatible(
+        self,
+        *,
+        category: ContextViewCategory,
+        request_scope: ContextViewScope,
+        candidate_scope: ContextViewScope,
+    ) -> None:
+        try:
+            compatible = self._scope_compatibility_policy.candidate_scope_compatible(
+                category=category,
+                request_scope=request_scope,
+                candidate_scope=candidate_scope,
+            )
+        except Exception as exc:
+            raise ContextViewCompositionCandidateIsolationError(
+                "scope compatibility policy failed",
+            ) from exc
+        if not compatible:
+            raise ContextViewCompositionCandidateIsolationError(
+                "candidate scope is not compatible with request scope",
+            )
 
     @staticmethod
     def _to_validated_candidate(

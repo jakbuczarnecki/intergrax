@@ -14,12 +14,6 @@ from typing import Final, Literal, Protocol, runtime_checkable
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.agent_run import RequestIdentity, canonical_principal_id_from_request_identity
-from intergrax.contracts.context_view_scope_compatibility import (
-    collaborative_work_source_candidate_scope_compatible,
-    knowledge_source_candidate_scope_compatible,
-    memory_source_candidate_scope_compatible,
-    ucl_source_candidate_scope_compatible,
-)
 from intergrax.contracts.context_view import (
     ContextViewCategory,
     ContextViewCollaborativeWorkSourceRef,
@@ -380,11 +374,6 @@ def validate_memory_source_candidate_isolation(
         raise ValueError("memory candidate category must match request category")
     if candidate.source_ref.tenant_id != request.scope.tenant_id:
         raise ValueError("memory source_ref tenant_id must match request scope tenant_id")
-    if not memory_source_candidate_scope_compatible(
-        request.scope,
-        candidate.candidate_scope,
-    ):
-        raise ValueError("memory candidate scope is not compatible with request scope")
     if not _visibility_allowed(
         eligible=request.eligible_visibility_classes,
         suggested=candidate.suggested_visibility,
@@ -399,11 +388,6 @@ def validate_knowledge_source_candidate_isolation(
 ) -> None:
     if candidate.category != request.category:
         raise ValueError("knowledge candidate category must match request category")
-    if not knowledge_source_candidate_scope_compatible(
-        request.scope,
-        candidate.candidate_scope,
-    ):
-        raise ValueError("knowledge candidate scope is not compatible with request scope")
     if candidate.source_ref.tenant_id != request.scope.tenant_id:
         raise ValueError("knowledge source_ref tenant_id must match request scope tenant_id")
     if not _visibility_allowed(
@@ -420,11 +404,6 @@ def validate_ucl_source_candidate_isolation(
 ) -> None:
     if candidate.category != request.category:
         raise ValueError("ucl candidate category must match request category")
-    if not ucl_source_candidate_scope_compatible(
-        request.scope,
-        candidate.candidate_scope,
-    ):
-        raise ValueError("ucl candidate scope is not compatible with request scope")
     if candidate.source_ref.tenant_id != request.scope.tenant_id:
         raise ValueError("ucl source_ref tenant_id must match request scope tenant_id")
     if not _visibility_allowed(
@@ -451,11 +430,6 @@ def validate_collaborative_work_source_candidate_isolation(
         expected_work_item_id=request.scope.work_item_id,
         scope_mismatch_message="collaborative source_ref work_item_id must match request work_item_id",
     )
-    if not collaborative_work_source_candidate_scope_compatible(
-        request.scope,
-        candidate.candidate_scope,
-    ):
-        raise ValueError("collaborative candidate scope is not compatible with request scope")
     if not _visibility_allowed(
         eligible=request.eligible_visibility_classes,
         suggested=candidate.suggested_visibility,
