@@ -358,7 +358,13 @@ def register_plugins_with_report(
             failed.append(EntryPointLoadResult(spec=result.spec, error=exc))
             continue
 
-        registered, rejection = register_entry_point(plugin_type, result.spec)
+        try:
+            registered, rejection = register_entry_point(plugin_type, result.spec)
+        except Exception as exc:
+            if on_load_failure == "fail_fast":
+                raise
+            failed.append(EntryPointLoadResult(spec=result.spec, error=exc))
+            continue
         if registered:
             if rejection is not None:
                 raise ValueError(_callback_contract_error)

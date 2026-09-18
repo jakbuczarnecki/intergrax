@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.rag.bootstrap.entry_point_load import register_rag_retriever_entry_points
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
@@ -43,11 +44,11 @@ def _register_entry_point_retrievers(
     profile: RagProfile | None,
     llm_for_query_expansion: LLMAdapter | None,
     discover_entry_points: bool | None,
-) -> None:
+) -> DomainPluginLoadReport:
     if discover_entry_points is None:
         discover_entry_points = discover_plugins_enabled()
 
-    register_rag_retriever_entry_points(
+    return register_rag_retriever_entry_points(
         registry,
         vector_store=vector_store,
         embedding_manager=embedding_manager,
@@ -298,3 +299,53 @@ def create_default_retriever_manager(
     return RetrieverManager(
         pipeline=pipeline,        
     )
+
+
+def create_default_retriever_manager_with_load_report(
+    *,
+    vector_store: BaseVectorstoreManager | None = None,
+    embedding_manager: BaseEmbeddingManager | None = None,
+    registry: RetrieverRegistry | None = None,
+    graph_store: GraphStore | None = None,
+    profile: RagProfile | None = None,
+    llm_for_query_expansion: LLMAdapter | None = None,
+    toc_vector_store: BaseVectorstoreManager | None = None,
+    discover_entry_points: bool | None = None,
+) -> tuple[BaseRetrieverManager, DomainPluginLoadReport]:
+    """Compose retriever manager and capture entry-point load evidence in one pass."""
+    if discover_entry_points is None:
+        discover_entry_points = discover_plugins_enabled()
+
+    if vector_store is None:
+        vector_store = create_default_vectorstore_manager()
+
+    if embedding_manager is None:
+        embedding_manager = create_default_embedding_manager()
+
+    if registry is None:
+        registry = create_default_retriever_registry(
+            vector_store=vector_store,
+            embedding_manager=embedding_manager,
+            graph_store=graph_store,
+            profile=profile,
+            llm_for_query_expansion=llm_for_query_expansion,
+            toc_vector_store=toc_vector_store,
+            discover_entry_points=False,
+        )
+
+    load_report = _register_entry_point_retrievers(
+        registry,
+        vector_store=vector_store,
+        embedding_manager=embedding_manager,
+        toc_vector_store=toc_vector_store,
+        graph_store=graph_store,
+        profile=profile,
+        llm_for_query_expansion=llm_for_query_expansion,
+        discover_entry_points=discover_entry_points,
+    )
+
+    pipeline = RetrieverPipeline(
+        engine=RetrieverEngine(registry=registry),
+        embedding_manager=embedding_manager,
+    )
+    return RetrieverManager(pipeline=pipeline), load_report

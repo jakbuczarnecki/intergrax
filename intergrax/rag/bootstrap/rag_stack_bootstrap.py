@@ -20,7 +20,16 @@ from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddi
 from intergrax.rag.profiles.rag_profile import RagProfile, rag_profile_from_env
 from intergrax.rag.profiles.rag_profile_validator import assert_rag_profile_wiring
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
-from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
+from intergrax.rag.bootstrap.entry_point_load import (
+    bootstrap_rag_chunker_plugin_load_report,
+    compose_rag_plugin_load_evidence,
+    empty_rag_plugin_load_evidence,
+    RagPluginLoadEvidence,
+)
+from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import (
+    create_default_retriever_manager_with_load_report,
+)
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.rerankers.bootstrap.reranker_bootstrap import (
     create_default_reranker_engine,
@@ -43,6 +52,7 @@ class RagStack:
     contextual_enricher: Optional[ContextualChunkEnricher] = None
     graph_store: Optional[GraphStore] = None
     toc_vectorstore_manager: Optional[BaseVectorstoreManager] = None
+    plugin_load_evidence: Optional[RagPluginLoadEvidence] = None
 
 
 def create_default_rag_stack(
@@ -93,23 +103,41 @@ def create_default_rag_stack(
         chunks_store=vectorstore_manager,
     )
 
-    retriever_manager = create_default_retriever_manager(
-        vector_store=vectorstore_manager,
-        embedding_manager=embedding_manager,
-        graph_store=graph_store,
-        profile=profile,
-        llm_for_query_expansion=llm_for_contextual,
-        toc_vector_store=toc_vectorstore_manager,
+    discover_entry_points = discover_plugins_enabled()
+    retriever_manager, retriever_load_report = (
+        create_default_retriever_manager_with_load_report(
+            vector_store=vectorstore_manager,
+            embedding_manager=embedding_manager,
+            graph_store=graph_store,
+            profile=profile,
+            llm_for_query_expansion=llm_for_contextual,
+            toc_vector_store=toc_vectorstore_manager,
+            discover_entry_points=discover_entry_points,
+        )
     )
-    registry = create_default_reranker_registry(
+    registry, reranker_load_report = create_default_reranker_registry(
         embedding_manager=embedding_manager,
         integration_profile=integration_profile,
+        discover_entry_points=discover_entry_points,
     )
     reranker_manager = ReRankerManager(
         engine=create_default_reranker_engine(
             embedding_manager=embedding_manager,
             registry=registry,
+            discover_entry_points=False,
         )
+    )
+    chunker_load_report = bootstrap_rag_chunker_plugin_load_report(
+        discover_entry_points=discover_entry_points,
+    )
+    plugin_load_evidence = (
+        compose_rag_plugin_load_evidence(
+            chunker_report=chunker_load_report,
+            retriever_report=retriever_load_report,
+            reranker_report=reranker_load_report,
+        )
+        if discover_entry_points
+        else empty_rag_plugin_load_evidence()
     )
 
     contextual: Optional[ContextualChunkEnricher] = None
@@ -133,4 +161,5 @@ def create_default_rag_stack(
         contextual_enricher=contextual,
         graph_store=graph_store,
         toc_vectorstore_manager=toc_vectorstore_manager,
+        plugin_load_evidence=plugin_load_evidence,
     )

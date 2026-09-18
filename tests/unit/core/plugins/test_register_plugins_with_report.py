@@ -148,3 +148,47 @@ def test_register_plugins_with_report_invalid_contradictory_disposition(
             _register,
             discover_entry_points=True,
         )
+
+
+def test_register_plugins_with_report_callback_exception_isolated_as_failed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_eps(monkeypatch)
+
+    def _register(
+        plugin_type: type,
+        spec: EntryPointSpec,
+    ) -> tuple[bool, PluginAdmissionRejection | None]:
+        raise RuntimeError("materialization boom")
+
+    report = register_plugins_with_report(
+        _GROUP,
+        _register,
+        discover_entry_points=True,
+        on_load_failure="isolate",
+    )
+
+    assert report.registered_count == 0
+    assert report.rejected == ()
+    assert len(report.failed) == 1
+    assert isinstance(report.failed[0].error, RuntimeError)
+
+
+def test_register_plugins_with_report_callback_exception_fail_fast_propagates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _install_eps(monkeypatch)
+
+    def _register(
+        plugin_type: type,
+        spec: EntryPointSpec,
+    ) -> tuple[bool, PluginAdmissionRejection | None]:
+        raise RuntimeError("materialization boom")
+
+    with pytest.raises(RuntimeError, match="materialization boom"):
+        register_plugins_with_report(
+            _GROUP,
+            _register,
+            discover_entry_points=True,
+            on_load_failure="fail_fast",
+        )
