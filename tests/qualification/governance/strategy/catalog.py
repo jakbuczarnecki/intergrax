@@ -167,6 +167,309 @@ def gr10_matrix_inference_status(capability: str) -> Gr10CoverageStatus:
     raise KeyError(f"unknown GR-10 capability for INFERENCE semantics: {capability!r}")
 
 
+@dataclass(frozen=True, slots=True)
+class Gr10ResidualStrategyCapabilitySemantics:
+    capability: str
+    applicability: Gr10Applicability
+    coverage: Gr10CoverageStatus | None
+    reason: str
+
+
+def _residual_matrix_status(
+    semantics: tuple[Gr10ResidualStrategyCapabilitySemantics, ...],
+    capability: str,
+    strategy: str,
+) -> Gr10CoverageStatus:
+    for row in semantics:
+        if row.capability == capability:
+            if row.applicability is Gr10Applicability.NOT_APPLICABLE:
+                return Gr10CoverageStatus.NOT_APPLICABLE
+            assert row.coverage is not None
+            return row.coverage
+    raise KeyError(f"unknown GR-10 capability for {strategy} semantics: {capability!r}")
+
+
+# SSOT for AGENTIC applicability vs coverage (GR-10-R7 requalification).
+GR10_AGENTIC_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySemantics, ...] = (
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Root admission",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "HostTaskExecution → DefaultRootExecutionLauncher → RuntimeExecutionPolicyAdmissionPort; "
+        "GR-2 launcher + e2e authorization proofs (AGT-ROOT).",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Inner Governance",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "Primary HostTaskExecution→TaskBoundAgenticDelegate→UAEP path: GR-3 four-id inner guard proofs. "
+        "Residual: not every legal agent delegate/tool phase wires CanonicalInnerExecutionGuardPort on "
+        "all inner GEPs (TOOL_PLAN_OR_ACCESS, TOOL_INVOCATION_POLICY, PRE_OUTPUT, INTERRUPT) with "
+        "enterprise adoption — UAEP coverage ≠ strategy-wide inner spine.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Policy evaluation",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "GR-10-R3 closed: kernel policy_pre DENY → GovernanceResolution.DENY on UAEP path (not the "
+        "historical R3 defect). Residual: optional POST_RUN when governance_service unset; PRE_OUTPUT "
+        "and other per-GEP policy rows lack enterprise qualification on all production delegates.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "MSE",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "MeaningfulSideEffectAuthorizationBoundary qualified on governed contractor / MP-4R7 host; "
+        "not all agent tool/host compositions route consequential effects through the canonical boundary.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Decision-bound effect",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "DecisionRequirementPolicy + DecisionGovernedSideEffectCoordinator on MP-4R7 / governed contractor "
+        "production proofs.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "HITL",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "GovernedContinuationRequest → ExecutionContinuationPort; fresh post-human governance reevaluation "
+        "proven (MP-4R7 human-approve + governance-deny).",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Continuation",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "ExecutionContinuationPort authority on MP-4R7 host; not Task registry / Nexus state.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Reliability",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "ProviderInvocation boundary on governed contractor GR-7 host (AGT-REL).",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Governance Evidence",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "GR-8 spine + root/MSE emission on qualified hosts; mandatory typed facts not enterprise-adopted "
+        "for all applicable GEPs (TOOL_*, INTERRUPT, POST_RUN, PRE_OUTPUT, fresh post-human) on every "
+        "production agent path.",
+    ),
+)
+
+
+# SSOT for ORCHESTRATION applicability vs coverage (GR-10-R7 requalification).
+GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySemantics, ...] = (
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Root admission",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "HostTaskExecution orchestration capability → same DefaultRootExecutionLauncher / GR-2 proofs "
+        "(ORCH-ROOT).",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Inner Governance",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "PlanningRunner PRE_MODEL qualified; graph/tool production uses RuntimeToolInvoker + declarative/MSE "
+        "gates but lacks enterprise-qualified CanonicalInnerExecutionGuardPort adoption on every inner GEP "
+        "(graph step AGENT_DECISION, TOOL_PLAN_OR_ACCESS, TOOL_INVOCATION_AUTHORIZATION) — Nexus is internal "
+        "orchestration, not a public governance authority.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Policy evaluation",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "NEXUS_PLANNING / PlanningRunner PRE_MODEL with active governance identity; orchestration root "
+        "policy admission same as host GR-2 path.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "MSE",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "require_meaningful_side_effect_authorization on consequential RuntimeToolInvoker paths; not all "
+        "orchestration external-work / graph side-effect seams enterprise-qualified.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Decision-bound effect",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "External Work host slices prove GR-6 wiring; not all orchestration consequential paths bind "
+        "DecisionRequirementPolicy before effect.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "HITL",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "GR-5 orchestration slices (ORCH-HITL); HumanPauseCoordinator Task projection remains transitional — "
+        "human judgment evidence ≠ Governance ALLOW; fresh governance + continuation port not enterprise-closed "
+        "on all orchestration pause/resume paths.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Continuation",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "ExecutionContinuationPort wired in GR-5-R4 proofs; residual Task-shaped projection in "
+        "internal_continuation_orchestration — not continuation authority.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Reliability",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "GR-7 on External Work compositions; not all orchestration provider/external-effect paths adopt "
+        "ProviderInvocation enterprise boundary.",
+    ),
+    Gr10ResidualStrategyCapabilitySemantics(
+        "Governance Evidence",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.PARTIAL,
+        "Some orchestration GEP emission via Nexus/governance bridges; mandatory GR-8 typed facts not "
+        "qualified per GEP on production orchestration paths (POST_RUN optional service; planning evidence "
+        "partial).",
+    ),
+)
+
+
+def gr10_matrix_agentic_status(capability: str) -> Gr10CoverageStatus:
+    return _residual_matrix_status(GR10_AGENTIC_CAPABILITY_SEMANTICS, capability, "AGENTIC")
+
+
+def gr10_matrix_orchestration_status(capability: str) -> Gr10CoverageStatus:
+    return _residual_matrix_status(GR10_ORCHESTRATION_CAPABILITY_SEMANTICS, capability, "ORCHESTRATION")
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10GepCoverageRow:
+    gep: str
+    agentic_applicable: bool
+    agentic_coverage: Gr10CoverageStatus
+    agentic_gap: str
+    orchestration_applicable: bool
+    orchestration_coverage: Gr10CoverageStatus
+    orchestration_gap: str
+
+
+GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
+    Gr10GepCoverageRow(
+        "ROOT_EXECUTION_ADMISSION",
+        True,
+        Gr10CoverageStatus.QUALIFIED,
+        "",
+        True,
+        Gr10CoverageStatus.QUALIFIED,
+        "",
+    ),
+    Gr10GepCoverageRow(
+        "PRE_MODEL",
+        True,
+        Gr10CoverageStatus.QUALIFIED,
+        "Agentic LLM router / ACP proofs; not every delegate.",
+        True,
+        Gr10CoverageStatus.QUALIFIED,
+        "",
+    ),
+    Gr10GepCoverageRow(
+        "AGENT_DECISION",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "UAEP kernel path qualified (GR-10-R3); other agent delegates partial.",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Graph step decisions not uniformly inner-guard qualified.",
+    ),
+    Gr10GepCoverageRow(
+        "INTERRUPT",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Not all agent interrupt paths emit enterprise inner guard + evidence.",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Orchestration interrupt bridges partial.",
+    ),
+    Gr10GepCoverageRow(
+        "TOOL_PLAN_OR_ACCESS",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "UAEP tool plan paths primary; harness/kernel gaps remain.",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Planner/tool-loop declarative policy ≠ full GR-3 inner guard adoption.",
+    ),
+    Gr10GepCoverageRow(
+        "TOOL_INVOCATION_AUTHORIZATION",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Tool invoke on UAEP qualified slices; not universal.",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "RuntimeToolInvoker MSE/declarative partial substitute.",
+    ),
+    Gr10GepCoverageRow(
+        "TOOL_INVOCATION_POLICY",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Policy engine on tool paths partial per host composition.",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Declarative enforcer coverage incomplete vs enterprise matrix.",
+    ),
+    Gr10GepCoverageRow(
+        "MEANINGFUL_SIDE_EFFECT",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "MP-4R7 / contractor host qualified.",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Not all graph/tool external effects.",
+    ),
+    Gr10GepCoverageRow(
+        "PRE_OUTPUT",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Optional wiring on some agent outputs.",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Orchestration output gates partial.",
+    ),
+    Gr10GepCoverageRow(
+        "POST_RUN",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "invoke_post_run_governance optional when service None.",
+        True,
+        Gr10CoverageStatus.PARTIAL,
+        "Nexus finish_task POST_RUN wired; qualification harness drift; optional service.",
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10R7NextRemediation:
+    task_name: str
+    strategy: str
+    capability: str
+    exact_blocker: str
+    why_highest: str
+
+
+GR10_R7_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R8 — ORCHESTRATION Inner Governance Production GEP Coverage Remediation",
+    strategy="ORCHESTRATION",
+    capability="Inner Governance",
+    exact_blocker=(
+        "Production Nexus orchestration (graph runners, RuntimeToolInvoker tool loop) does not "
+        "enterprise-qualify CanonicalInnerExecutionGuardPort on every applicable inner GEP — "
+        "declarative/MSE substitutes cover tool invoke only; AGENT_DECISION and TOOL_PLAN_OR_ACCESS "
+        "lack uniform fail-closed inner spine proofs on all consequential orchestration paths."
+    ),
+    why_highest=(
+        "P1 applicable production gap on external side-effect orchestration surface (above continuation/"
+        "evidence polish); no P0 authority inversion or cross-layer contract change required for bounded fix."
+    ),
+)
+
+
 GR10_PRODUCTION_INVENTORY: tuple[Gr10ProductionEntry, ...] = (
     Gr10ProductionEntry(
         "INFERENCE",
@@ -201,69 +504,65 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
     Gr10CapabilityCell(
         "Root admission",
         gr10_matrix_inference_status("Root admission"),
-        Gr10CoverageStatus.QUALIFIED,
-        Gr10CoverageStatus.QUALIFIED,
-        "INFERENCE: root admission N/A (GR-10-R4); Tier-3 host resolves AGENT/ORCH only.",
+        gr10_matrix_agentic_status("Root admission"),
+        gr10_matrix_orchestration_status("Root admission"),
+        "INFERENCE: GR-10-R4 N/A. AGENTIC/ORCH: GR-10-R7 SSOT semantics.",
     ),
     Gr10CapabilityCell(
         "Inner Governance",
         gr10_matrix_inference_status("Inner Governance"),
-        Gr10CoverageStatus.PARTIAL,
-        Gr10CoverageStatus.PARTIAL,
-        "INFERENCE: GR-10-R5 N/A (no GR-3/MSE inner spine). AGENTIC/ORCH: residual inner GEP + "
-        "MSE/tool paths PARTIAL (not UAEP parity for inference).",
+        gr10_matrix_agentic_status("Inner Governance"),
+        gr10_matrix_orchestration_status("Inner Governance"),
+        "GR-10-R7: see GR10_AGENTIC/ORCHESTRATION_CAPABILITY_SEMANTICS.",
     ),
     Gr10CapabilityCell(
         "Policy evaluation",
         gr10_matrix_inference_status("Policy evaluation"),
-        Gr10CoverageStatus.PARTIAL,
-        Gr10CoverageStatus.QUALIFIED,
-        "INFERENCE: InferenceExecutor PRE_MODEL qualified. AGENTIC: GR-3/ACP PRE_MODEL and root "
-        "paths qualified; kernel policy_pre DENY → final GovernanceResolution DENY (GR-10-R3 closed). "
-        "Residual AGENTIC PARTIAL: not all strategy GEP/production policy paths enterprise-qualified "
-        "(e.g. optional POST_RUN wiring; GR-8 per-GEP adoption — not the historical R3 defect).",
+        gr10_matrix_agentic_status("Policy evaluation"),
+        gr10_matrix_orchestration_status("Policy evaluation"),
+        "GR-10-R3 closed on UAEP kernel DENY; AGENTIC residual per-GEP (not R3 defect).",
     ),
     Gr10CapabilityCell(
         "MSE",
         gr10_matrix_inference_status("MSE"),
-        Gr10CoverageStatus.PARTIAL,
-        Gr10CoverageStatus.PARTIAL,
-        "INFERENCE: no meaningful external side effect on canonical inference seam.",
+        gr10_matrix_agentic_status("MSE"),
+        gr10_matrix_orchestration_status("MSE"),
+        "INFERENCE N/A; residual host coverage per GR-10-R7.",
     ),
     Gr10CapabilityCell(
         "Decision-bound effect",
         gr10_matrix_inference_status("Decision-bound effect"),
-        Gr10CoverageStatus.QUALIFIED,
-        Gr10CoverageStatus.PARTIAL,
-        "MP-4R7 agentic; orchestration via External Work host slices.",
+        gr10_matrix_agentic_status("Decision-bound effect"),
+        gr10_matrix_orchestration_status("Decision-bound effect"),
+        "MP-4R7 agentic qualified; orchestration External Work partial.",
     ),
     Gr10CapabilityCell(
         "HITL",
         gr10_matrix_inference_status("HITL"),
-        Gr10CoverageStatus.QUALIFIED,
-        Gr10CoverageStatus.PARTIAL,
-        "INFERENCE: no strategy-path REQUIRE_HUMAN (N/A). Agentic/orch GR-5 proofs.",
+        gr10_matrix_agentic_status("HITL"),
+        gr10_matrix_orchestration_status("HITL"),
+        "Agentic MP-4R7 qualified; orchestration GR-5 slices partial.",
     ),
     Gr10CapabilityCell(
         "Continuation",
         gr10_matrix_inference_status("Continuation"),
-        Gr10CoverageStatus.QUALIFIED,
-        Gr10CoverageStatus.PARTIAL,
-        "GR-5 port; orchestration transitional Task projection in places.",
+        gr10_matrix_agentic_status("Continuation"),
+        gr10_matrix_orchestration_status("Continuation"),
+        "ExecutionContinuationPort; orch Task projection transitional.",
     ),
     Gr10CapabilityCell(
         "Reliability",
         gr10_matrix_inference_status("Reliability"),
-        Gr10CoverageStatus.QUALIFIED,
-        Gr10CoverageStatus.PARTIAL,
-        "INFERENCE: outside GR-7 external-effect boundary. GR-7 on governed contractor host.",
+        gr10_matrix_agentic_status("Reliability"),
+        gr10_matrix_orchestration_status("Reliability"),
+        "INFERENCE N/A; GR-7 host-qualified paths per strategy.",
     ),
     Gr10CapabilityCell(
         "Governance Evidence",
         gr10_matrix_inference_status("Governance Evidence"),
-        Gr10CoverageStatus.QUALIFIED,
-        Gr10CoverageStatus.PARTIAL,
-        "INFERENCE: PRE_MODEL typed evidence qualified (GR-10-R6 / R6-R1 mandatory composition). AGENT/ORCH: GR-8 spine partial per GEP.",
+        gr10_matrix_agentic_status("Governance Evidence"),
+        gr10_matrix_orchestration_status("Governance Evidence"),
+        "GR-8 per-GEP adoption partial for AGENTIC/ORCH (INFERENCE PRE_MODEL qualified R6).",
     ),
 )
 

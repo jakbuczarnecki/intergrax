@@ -280,6 +280,11 @@ async def test_nexus_finish_task_post_run_uses_active_run_id_not_task_id() -> No
         attempt_id=attempt_id,
         execution_id=mint_execution_id(),
     )
+    from testing_support.runtime_event_metric_scope_for_tests import (
+        open_runtime_event_metric_scope_for_tests,
+    )
+
+    metric_scope = open_runtime_event_metric_scope_for_tests(task_id=task_id, run_id=run_id)
     try:
         await loop._finish_task(  # noqa: SLF001
             task,
@@ -290,8 +295,10 @@ async def test_nexus_finish_task_post_run_uses_active_run_id_not_task_id() -> No
             plan=None,
             retry_records=[],
             graph_id="graph_1",
+            runtime_event_metric_scope=metric_scope,
         )
     finally:
+        metric_scope.close()
         reset_active_execution_identity(token)
 
     assert len(service.calls) == 1

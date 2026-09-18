@@ -22,13 +22,17 @@ from tests.qualification.governance.strategy.gr10_inference_current_doc_ssot imp
     gr10_maintainer_roadmap_slice,
 )
 from tests.qualification.governance.strategy.catalog import (
+    GR10_AGENTIC_CAPABILITY_SEMANTICS,
     GR10_FINAL_CAPABILITY_MATRIX,
     GR10_INFERENCE_CAPABILITY_SEMANTICS,
+    GR10_ORCHESTRATION_CAPABILITY_SEMANTICS,
     GR10_PRODUCTION_INVENTORY,
     GR10_SCENARIO_CATALOG,
     Gr10Applicability,
     Gr10CoverageStatus,
+    gr10_matrix_agentic_status,
     gr10_matrix_inference_status,
+    gr10_matrix_orchestration_status,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -175,6 +179,20 @@ def test_gr10_host_execution_wiring_no_service_locator() -> None:
         source = path.read_text(encoding="utf-8-sig")
         for forbidden in _FORBIDDEN_SERVICE_LOCATOR_NAMES:
             assert forbidden not in source
+
+
+def test_gr10_agentic_inventory_and_matrix_semantics_are_consistent() -> None:
+    matrix_by_cap = {row.capability: row.agentic for row in GR10_FINAL_CAPABILITY_MATRIX}
+    assert {row.capability for row in GR10_AGENTIC_CAPABILITY_SEMANTICS} == matrix_by_cap.keys()
+    for row in GR10_AGENTIC_CAPABILITY_SEMANTICS:
+        assert matrix_by_cap[row.capability] is gr10_matrix_agentic_status(row.capability)
+
+
+def test_gr10_orchestration_inventory_and_matrix_semantics_are_consistent() -> None:
+    matrix_by_cap = {row.capability: row.orchestration for row in GR10_FINAL_CAPABILITY_MATRIX}
+    assert {row.capability for row in GR10_ORCHESTRATION_CAPABILITY_SEMANTICS} == matrix_by_cap.keys()
+    for row in GR10_ORCHESTRATION_CAPABILITY_SEMANTICS:
+        assert matrix_by_cap[row.capability] is gr10_matrix_orchestration_status(row.capability)
 
 
 def test_gr10_inference_inventory_and_matrix_semantics_are_consistent() -> None:

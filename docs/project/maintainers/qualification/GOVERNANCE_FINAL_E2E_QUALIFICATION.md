@@ -77,7 +77,7 @@ Preserved audit record from the 2026-09-17 qualification session — **not** cur
 
 ### Current INFERENCE strategy semantics (GR-10-R1 SSOT)
 
-Authoritative applicability vs coverage: `GR10_INFERENCE_CAPABILITY_SEMANTICS` in `tests/qualification/governance/strategy/catalog.py` and architecture §9 matrix in `GOVERNED_EXECUTION.md`. **GR-10-FINAL (2026-09-18):** INFERENCE PRE_MODEL **QUALIFIED** on production `InferenceExecutor` path; **GR-10-R4 (2026-09-18):** INFERENCE root admission **NOT_APPLICABLE** (no independent production root — internal `StrategyExecutionRouter` delegate only); **GR-10-R5 (2026-09-18):** INFERENCE Inner Governance matrix row **NOT_APPLICABLE** (GR-3 `CanonicalInnerExecutionGuardPort` / MSE spine — distinct from Policy evaluation; model invocation permission is PRE_MODEL only); **GR-10-R6 / R6-R1 (2026-09-18):** INFERENCE Governance Evidence **QUALIFIED** — mandatory `GovernanceEvidencePersistencePort` on `build_governed_inference_executor`, source-decision facts, explicit unsupported-action semantics. Strategy-wide blockers: residual **AGENTIC** / **ORCHESTRATION** inner GEP + MSE rows **PARTIAL** beyond **GR-10-R3** (UAEP kernel policy authority **CANDIDATE CLOSED** — G3B deny proof). HITL, Reliability, MSE, Continuation, Decision-bound effect, root admission, and Inner Governance (GR-3 spine) are **NOT_APPLICABLE** on the inference strategy path — not open gaps.
+Authoritative applicability vs coverage: `GR10_INFERENCE_CAPABILITY_SEMANTICS`, `GR10_AGENTIC_CAPABILITY_SEMANTICS`, and `GR10_ORCHESTRATION_CAPABILITY_SEMANTICS` in `tests/qualification/governance/strategy/catalog.py` (architecture §9 matrix must match). **INFERENCE:** PRE_MODEL **QUALIFIED**; root admission **NOT_APPLICABLE** (**GR-10-R4**); Inner Governance **NOT_APPLICABLE** (**GR-10-R5**); Governance Evidence **QUALIFIED** (**GR-10-R6 / R6-R1**); **remaining INFERENCE blockers: NONE**. **GR-10-R7 (2026-09-18):** full **AGENTIC** / **ORCHESTRATION** matrix re-audited — see typed SSOT; **GR-10-R3** kernel `policy_pre`→`GovernanceResolution` **CANDIDATE CLOSED** (not an active Policy evaluation defect). **Next bounded remediation:** **GR-10-R8** — ORCHESTRATION Inner Governance production GEP coverage (`GR10_R7_NEXT_REMEDIATION` in catalog).
 
 Honesty rule: **GAP** remains where no legal production entry point exists for **applicable** capabilities (see GOV-FINAL-3 § strategy coverage).
 
@@ -115,7 +115,7 @@ Substitution rule: **contract + composition only** (no monkeypatch of private au
 | Slice | Status | Notes |
 | ----- | ------ | ----- |
 | GR-8 | **CLOSED** | Public contract frozen — ADR-GR-8-001; spine CANDIDATE CLOSED after GR-8-R1 independent audit |
-| GR-10 | **PARTIAL** | **GR-10-FINAL** — typed matrix + qualification suite; INFERENCE PRE_MODEL qualified; GR-10-R3 UAEP policy authority **CANDIDATE CLOSED**; other AGENTIC rows **PARTIAL**; no strategy-wide CLOSED |
+| GR-10 | **PARTIAL** | **GR-10-FINAL** + **GR-10-R7** residual AGENTIC/ORCH requalification; INFERENCE closed; next **GR-10-R8** (ORCH Inner Governance); no strategy-wide CLOSED |
 
 ## Remaining gaps
 
