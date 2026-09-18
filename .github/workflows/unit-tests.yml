@@ -5,6 +5,7 @@
 #   pull_request, push (main) - ci_smoke unit tests + Platform Plugin gates (Linux + Windows wheel E2E)
 #   schedule (nightly 03:00 UTC), workflow_dispatch (full) - full gate + governance + closeout
 #   workflow_dispatch (smoke) - same as PR (debug)
+#   workflow_dispatch (diagnostics_full) - one exact-SHA full tests/unit/runtime/diagnostics qualification
 #
 # Feature-branch pushes do not trigger CI (avoids duplicate runs when a PR is open).
 # Full regression: `uv run pytest tests/unit -m "gate and not no_ci"` locally or nightly CI.
@@ -24,16 +25,24 @@ on:
   workflow_dispatch:
     inputs:
       profile:
-        description: "smoke (PR default) or full (nightly parity)"
+        description: "smoke (PR default), full (nightly parity), or diagnostics_full (exact-SHA DIAG qualification)"
         type: choice
         options:
           - smoke
           - full
+          - diagnostics_full
         default: smoke
+      qualification_sha:
+        description: "40-char Git commit SHA (required when profile is diagnostics_full)"
+        type: string
+        required: false
 
 concurrency:
-  group: regression-gate-${{ github.event_name }}-${{ github.ref }}-${{ github.event.inputs.profile || 'smoke' }}
-  cancel-in-progress: true
+  group: >-
+    ${{ github.event.inputs.profile == 'diagnostics_full'
+        && format('diagnostics-full-qualification-{0}', github.event.inputs.qualification_sha)
+        || format('regression-gate-{0}-{1}-{2}', github.event_name, github.ref, github.event.inputs.profile || 'smoke') }}
+  cancel-in-progress: ${{ github.event.inputs.profile != 'diagnostics_full' }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -143,7 +152,10 @@ jobs:
     if: >-
       github.event_name == 'pull_request' ||
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      github.event_name == 'workflow_dispatch'
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.event.inputs.profile != 'diagnostics_full'
+      )
     runs-on: windows-latest
     timeout-minutes: 10
 
@@ -506,3 +518,124 @@ jobs:
           root = ET.parse('build/harden-4f-external-proof.xml').getroot();
           skipped = sum(int(ts.get('skipped', 0)) for ts in root.findall('testsuite'));
           sys.exit(f'HARDEN-4F skipped ({skipped}) - infrastructure/proof failure' if skipped else 0)"
+
+  diagnostics-full-qualification:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.event.inputs.profile == 'diagnostics_full'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    env:
+      QUALIFICATION_SHA: ${{ github.event.inputs.qualification_sha }}
+
+    steps:
+      - name: Validate qualification SHA (fail closed)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${QUALIFICATION_SHA}" ]; then
+            echo "qualification_sha is required for profile diagnostics_full"
+            exit 1
+          fi
+          if ! [[ "${QUALIFICATION_SHA}" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "qualification_sha must be exactly 40 hexadecimal characters"
+            exit 1
+          fi
+
+      - name: Checkout exact qualification SHA
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.qualification_sha }}
+          fetch-depth: 0
+
+      - name: Verify commit exists and HEAD matches qualification SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          git cat-file -e "${QUALIFICATION_SHA}^{commit}"
+          EXPECTED_SHA="$(echo "${QUALIFICATION_SHA}" | tr '[:upper:]' '[:lower:]')"
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          if [ "${ACTUAL_SHA}" != "${EXPECTED_SHA}" ]; then
+            echo "FAIL QUALIFICATION BEFORE PYTEST: HEAD (${ACTUAL_SHA}) != qualification_sha (${EXPECTED_SHA})"
+            exit 1
+          fi
+
+      - name: Verify R0A/R0B ancestry on qualification SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 613336125b9975074323f83e63a8fd10e49b99db HEAD
+          git merge-base --is-ancestor 50a2e99fe266ac4430fb527226847d7339ef0a8f HEAD
+
+      - name: Verify durable qualification workflow present at SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'diagnostics-full-qualification:' .github/workflows/unit-tests.yml
+          grep -q 'diagnostics_full' .github/workflows/unit-tests.yml
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: "3.12"
+
+      - name: Install dependencies (CI minimal + unit cert)
+        run: uv sync --extra dev-ci --extra dev-unit-cert --frozen
+
+      - name: Environment conformance (CI profile)
+        run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
+
+      - name: Full diagnostics qualification (single pytest invocation)
+        id: diagnostics_full_pytest
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p build/qualification
+          START_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          START_EPOCH="$(date -u +%s)"
+          PYTEST_CMD=".venv/bin/python -m pytest tests/unit/runtime/diagnostics -q --durations=40 --junitxml=build/qualification/diagnostics-full.xml"
+          set -o pipefail
+          ${PYTEST_CMD} 2>&1 | tee build/qualification/full-diag.log
+          PYTEST_EXIT=${PIPESTATUS[0]}
+          END_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          END_EPOCH="$(date -u +%s)"
+          WALL_SEC=$((END_EPOCH - START_EPOCH))
+          ACTUAL_SHA="$(git rev-parse HEAD)"
+          {
+            echo "qualification_sha=${QUALIFICATION_SHA}"
+            echo "actual_head_sha=${ACTUAL_SHA}"
+            echo "github_run_id=${{ github.run_id }}"
+            echo "github_run_attempt=${{ github.run_attempt }}"
+            echo "runner_os=${RUNNER_OS}"
+            echo "python_version=$(.venv/bin/python -V 2>&1)"
+            echo "start_timestamp=${START_TS}"
+            echo "end_timestamp=${END_TS}"
+            echo "wall_clock_seconds=${WALL_SEC}"
+            echo "pytest_exit_code=${PYTEST_EXIT}"
+            echo "command=${PYTEST_CMD}"
+          } > build/qualification/meta.txt
+          echo "${PYTEST_EXIT}" > build/qualification/pytest.exit
+          exit "${PYTEST_EXIT}"
+
+      - name: Upload qualification artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostics-full-qualification-${{ github.event.inputs.qualification_sha }}
+          path: build/qualification/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Qualification pytest exit status
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f build/qualification/pytest.exit ]; then
+            echo "Missing pytest exit file — qualification aborted before pytest completed"
+            exit 1
+          fi
+          exit "$(cat build/qualification/pytest.exit)"
