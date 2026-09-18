@@ -238,7 +238,7 @@ def test_version_binding_semantics(
             provider_id="versioned.provider",
             capability=MemoryProviderCapabilityKind.USER_PROFILE_STORE,
             durability_status=MemoryProviderTrustedDurabilityStatus.DURABLE,
-            qualification_run_id="run-dur-version",
+            qualification_run_id="run-version" if expected_admitted else "run-dur-version",
             reference_time_iso="2025-01-01T00:00:00+00:00",
             evidence_source="test",
             proof_kind=MemoryProviderDurabilityProofKind.RESTART_REOPEN,

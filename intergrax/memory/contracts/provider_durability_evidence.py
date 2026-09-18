@@ -90,7 +90,7 @@ class TrustedMemoryProviderDurabilityEvidence:
             MemoryProviderDurabilityProofKind.RESTART_REOPEN
         ),
     ) -> MemoryProviderDurabilityEvidence:
-        if reopen_passed and delete_reopen_passed is not False:
+        if reopen_passed and delete_reopen_passed is True:
             status = MemoryProviderTrustedDurabilityStatus.DURABLE
         elif reopen_passed is False or delete_reopen_passed is False:
             status = MemoryProviderTrustedDurabilityStatus.NOT_DURABLE

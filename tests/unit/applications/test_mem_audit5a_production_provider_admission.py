@@ -157,7 +157,7 @@ def _durability_for_provider(
     *,
     status: MemoryProviderTrustedDurabilityStatus = MemoryProviderTrustedDurabilityStatus.DURABLE,
     provider_version: str | None = None,
-    run_id: str = "dur-run-test",
+    run_id: str = "run-test",
 ) -> InMemoryMemoryProviderDurabilityEvidenceRegistry:
     registry = InMemoryMemoryProviderDurabilityEvidenceRegistry()
     registry.register(

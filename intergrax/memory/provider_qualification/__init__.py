@@ -11,6 +11,10 @@ from intergrax.memory.provider_qualification.in_memory_evidence_registry import 
     InMemoryMemoryProviderQualificationEvidenceRegistry,
 )
 from intergrax.memory.provider_qualification.runner import MemoryProviderQualificationRunner
+from intergrax.memory.provider_qualification.user_profile_admission_evidence import (
+    UserProfileDurableQualificationAdmissionBundle,
+    build_user_profile_admission_evidence_from_durable_qualification,
+)
 
 __all__ = [
     "InMemoryMemoryProviderDurabilityEvidenceRegistry",
@@ -18,4 +22,6 @@ __all__ = [
     "MemoryProviderCapabilityFactories",
     "MemoryProviderInstanceFactory",
     "MemoryProviderQualificationRunner",
+    "UserProfileDurableQualificationAdmissionBundle",
+    "build_user_profile_admission_evidence_from_durable_qualification",
 ]

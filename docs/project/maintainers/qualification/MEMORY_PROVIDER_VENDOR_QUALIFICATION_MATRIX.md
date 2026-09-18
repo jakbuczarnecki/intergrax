@@ -122,6 +122,9 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | Unit contract qual (UserProfile in-mem) | `tests/unit/memory/test_mem_ent13_provider_qualification.py::test_reference_in_memory_user_profile_qualifies` |
 | SQLite qual + runner | `test_mem_ent13_provider_qualification.py::test_sqlite_user_profile_qualifies` |
 | SQLite durable reopen/delete | `tests/unit/memory/test_mem_ent13c_durable_provider_qualification.py::test_sqlite_durable_production_qualification_reopen_and_delete` |
+| SQLite durable reference E2E (5B) | `tests/unit/memory/test_mem_final_audit_5b_sqlite_durable_reference.py` |
+| SQLite PRODUCT admission + restart E2E (5B) | `tests/unit/applications/test_mem_final_audit_5b_sqlite_production_restart_e2e.py` |
+| Trusted admission evidence bundle | `intergrax/memory/provider_qualification/user_profile_admission_evidence.py` |
 | DocumentStore adapter not production durable | `test_mem_ent13c_durable_provider_qualification.py::test_document_store_in_memory_backend_is_not_production_durable` |
 | External plugin materialization | `test_mem_ent13c_durable_provider_qualification.py::test_external_plugin_materialization_canonical_qualification` |
 | STI reference qual | `tests/unit/memory/test_mem_ent13_behavioral_coverage.py::test_session_turn_index_reference_qualifies` |
@@ -173,7 +176,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 
 | Vendor | Memory-specific adapter | Evidence | Memory verdict |
 | ------ | ------------------------ | -------- | -------------- |
-| **SQLite** | Yes (UserProfile, Task, Org, Conversational, Session) | file-backed tests + MEM-ENT-15 restart | **DURABILITY/RESTART** per store; not external V6 |
+| **SQLite** | Yes (UserProfile, Task, Org, Conversational, Session) | MEM-ENT-13C durable harness + MEM-FINAL-AUDIT-5B reference certification | **UserProfile: REFERENCE DURABLE / RESTART QUALIFIED (V5)** — behavioral + durability evidence feed; not external V6 |
 | **MongoDB** | UserProfile via DocumentStore only | wiring unit test with factory | **NOT MEMORY-VENDOR QUALIFIED** |
 | **PostgreSQL** | RFC spike only | `postgres_memory_backend_rfc.py` | **PLANNED ONLY (V0)** |
 | **Qdrant** | None for Memory; RAG vector integration may use Qdrant elsewhere | **zero** Memory STI tests naming qdrant | **< V6** |
@@ -216,12 +219,28 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | Declared durability | `memory_provider_durability` on stores — claim only; **not** admission authority |
 | Admission authority | `MemoryProviderDurabilityEvidenceRegistry` + trusted identity binding |
 | Behavioral qual alone | Insufficient for PRODUCT persistent (`DURABILITY_EVIDENCE_MISSING`) |
-| MEM-ENT-13C reopen proof | Mapped via `durability_evidence_from_reopen_proof` (test/composition; 5B extends production feed) |
+| MEM-ENT-13C reopen proof | `build_user_profile_admission_evidence_from_durable_qualification` + `durability_evidence_from_reopen_proof` (requires `delete_reopen_passed=True`) |
 | Attack: RAM + claims DURABLE + behavioral QUALIFIED | Fail without platform durability evidence |
 
 | Gap | Status |
 | --- | ------ |
 | GAP-5A-03 | CLOSED |
+
+## MEM-FINAL-AUDIT-5B — SQLite durable reference E2E
+
+| Check | Result |
+| ----- | ------ |
+| Provider ID | `sqlite.user_profile` / `USER_PROFILE_STORE` / `provider_version=None` |
+| Cross-instance reopen + delete durability | `run_durable_user_profile_production_qualification` |
+| `production_durable_qualified` | Requires `reopen_passed=True` **and** `delete_reopen_passed=True` |
+| Trusted evidence feed | `build_user_profile_admission_evidence_from_durable_qualification` |
+| PRODUCT admission | Behavioral + durability evidence, matching `qualification_run_id` |
+| Application restart E2E | SessionManager + MemoryControlPlane recall/forget after SQLite reopen |
+| Verdict | **REFERENCE DURABLE / RESTART QUALIFIED** (not REAL_VENDOR_RESTART) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5B-01 | **CLOSED** — SQLite UserProfile durable reference production feed |
 
 ## MEM-FINAL-AUDIT-5A-R2 — Trusted provider identity binding
 

@@ -60,7 +60,7 @@ class DurableUserProfileQualificationEvidence:
             return False
         if self.reopen_passed is not True:
             return False
-        if self.delete_reopen_passed is False:
+        if self.delete_reopen_passed is not True:
             return False
         return True
 

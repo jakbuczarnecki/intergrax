@@ -50,6 +50,10 @@ class SQLiteUserProfileStore(UserProfileStore):
         self._connection.close()
         self._closed = True
 
+    def _ensure_open(self) -> None:
+        if self._closed:
+            raise RuntimeError("SQLiteUserProfileStore is closed")
+
     def _create_connection(self, db_path: str) -> sqlite3.Connection:
         path = Path(db_path)
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -78,6 +82,7 @@ class SQLiteUserProfileStore(UserProfileStore):
         tenant_id: str,
         user_id: str,
     ) -> UserProfile:
+        self._ensure_open()
         cursor = self._connection.cursor()
         cursor.execute(
             """
@@ -100,6 +105,7 @@ class SQLiteUserProfileStore(UserProfileStore):
         tenant_id: str,
         profile: UserProfile,
     ) -> None:
+        self._ensure_open()
         cursor = self._connection.cursor()
         cursor.execute(
             """
@@ -126,6 +132,7 @@ class SQLiteUserProfileStore(UserProfileStore):
         tenant_id: str,
         user_id: str,
     ) -> None:
+        self._ensure_open()
         cursor = self._connection.cursor()
         cursor.execute(
             """

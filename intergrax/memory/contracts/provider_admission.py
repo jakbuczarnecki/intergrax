@@ -373,6 +373,17 @@ def evaluate_production_persistent_user_profile_admission(
             trusted_durability_status=durability_evidence.durability_status,
             durability_run_id=durability_evidence.qualification_run_id,
         )
+    if durability_evidence.qualification_run_id != evidence.qualification_run_id:
+        return UserProfileStoreProductionAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISMATCH,
+            provider_id=trusted_provider_id,
+            declared_qualification_status=classification.declared_qualification_status,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+            trusted_durability_status=durability_evidence.durability_status,
+            durability_run_id=durability_evidence.qualification_run_id,
+        )
     return UserProfileStoreProductionAdmissionEvaluation(
         admitted=True,
         reason_code=None,
