@@ -9,8 +9,14 @@ Close the last public trust-boundary gap after MP-5F-B4-R1: malformed or semanti
 | Field | Value |
 | --- | --- |
 | `MP5F_B4_R2_SESSION_START_HEAD` | `8774a27ab057defda903e09b4d67d23aa82a2408` |
+| Parallel branch drift before R2 commit | **yes** |
+| `MP5F_B4_R2_PRE_PARALLEL_EVIDENCE_HEAD` | `8774a27ab057defda903e09b4d67d23aa82a2408` (session marker; **not** direct parent of R2) |
+| `MP5F_B4_R2_ACTUAL_TASK_PARENT` | `d0aee0668` |
+| `MP5F_B4_R2_FINAL_TASK_HEAD` | `38c5baf83` |
 | Branch | `development` |
-| Session start `HEAD == origin/development` | **yes** |
+| Session start `HEAD == origin/development` | **yes** (at R2 session) |
+
+Qualification cleanup: **MP-5F-B4-R2-R1** (`MP-5F-B4-R2-R1_IMMUTABLE_PROVIDER_QUALIFICATION_CLEANUP.md`).
 
 ## 3. Original failure mode
 
@@ -47,11 +53,11 @@ Any provider listing contract violation in the batch → `outcome=UNAVAILABLE`, 
 
 ## 9. Malformed work-item state proof
 
-`test_provider_malformed_work_item_state_fail_closed` — catalog mutates `work_item_state` to `"open"` after construction → `catalog_contract_violation`, no escape.
+**Superseded by MP-5F-B4-R2-R1.** Original gate used forbidden `object.__setattr__` on frozen listings. Legal proof: DTO `__post_init__` rejects non-`WorkItemState` values (`test_listing_work_item_missing_work_item_state_rejected_at_construction`); raw `str` states are statically unconstructible in qualification without bypass.
 
 ## 10. Structural malformed listing proof
 
-`test_provider_malformed_work_artifact_listing_fail_closed` — catalog clears `current_version_id` on `work_artifact` row → `catalog_contract_violation`.
+**Superseded by MP-5F-B4-R2-R1.** `work_artifact` rows without `current_version_id` are rejected at DTO construction (`test_listing_work_artifact_missing_current_version_id_rejected_at_construction`). Immutable DTOs are **not** mutated in qualification tests.
 
 ## 11. Existing R1 protections
 
@@ -98,4 +104,4 @@ uv run pytest \
 
 ## 18. Final B4 verdict
 
-All known provider-listing contract violations fail closed at the public reader — B4 eligible for **CLOSED / CERTIFIED** pending independent audit.
+Production R2 hardening stands. B4 **CLOSED / CERTIFIED** after **MP-5F-B4-R2-R1** removes qualification bypasses; pending independent audit.
