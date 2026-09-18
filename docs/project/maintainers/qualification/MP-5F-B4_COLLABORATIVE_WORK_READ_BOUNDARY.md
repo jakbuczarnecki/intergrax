@@ -145,7 +145,7 @@ Default reader sorts by `(entity_kind, work_item_id, work_artifact_id, work_arti
 
 ## 20. Provider contract violation handling
 
-If catalog returns listings outside query scope, **`DefaultCollaborativeWorkReferenceReader`** returns **`UNAVAILABLE`** with reason **`catalog_contract_violation`** (fail-closed, explicit — not silent drop). Proven: `test_plugin_out_of_scope_listing_fail_closed`.
+If catalog returns listings outside query scope, structurally/semantically invalid rows (including invalid `WorkItemState` runtime values), or listings that fail canonical projection, **`DefaultCollaborativeWorkReferenceReader`** returns **`UNAVAILABLE`** with reason **`catalog_contract_violation`** (fail-closed, explicit — not silent drop; no exception escape). Proven: B4 gate + **MP-5F-B4-R2** (`test_plugin_out_of_scope_listing_fail_closed`, malformed provider listing tests).
 
 ## 21. Backend parity
 

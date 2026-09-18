@@ -777,6 +777,82 @@ def test_plugin_out_of_scope_listing_fail_closed() -> None:
     assert result.reason == "catalog_contract_violation"
 
 
+class _MalformedWorkItemStateCatalog:
+    """Simulates a buggy provider that mutates listing fields after construction."""
+
+    def list_scoped_references(
+        self,
+        query: CollaborativeWorkScopedReferenceQuery,
+    ) -> tuple[CollaborativeWorkScopedReferenceListing, ...]:
+        listing = CollaborativeWorkScopedReferenceListing(
+            entity_kind="work_item",
+            tenant_id=query.tenant_id,
+            workspace_id=query.workspace_id,
+            work_item_id="wi-1",
+            work_item_state=WorkItemState.OPEN,
+        )
+        object.__setattr__(listing, "work_item_state", "open")
+        return (listing,)
+
+
+def test_provider_malformed_work_item_state_fail_closed() -> None:
+    reader = DefaultCollaborativeWorkReferenceReader(
+        catalog=_MalformedWorkItemStateCatalog(),
+        capability_binding=CollaborativeWorkReferenceReadCapabilityBinding(
+            tenant_id=_TENANT_A,
+            workspace_id=_WS_A,
+        ),
+    )
+    result = reader.read_references(
+        _identity(),
+        CollaborativeWorkReferenceReadRequest(scope=_scope(), query=_query()),
+    )
+    assert result.outcome is CollaborativeWorkReferenceReadOutcome.UNAVAILABLE
+    assert result.reason == "catalog_contract_violation"
+    assert result.references == ()
+
+
+class _MalformedWorkArtifactShapeCatalog:
+    def list_scoped_references(
+        self,
+        query: CollaborativeWorkScopedReferenceQuery,
+    ) -> tuple[CollaborativeWorkScopedReferenceListing, ...]:
+        listing = CollaborativeWorkScopedReferenceListing(
+            entity_kind="work_artifact",
+            tenant_id=query.tenant_id,
+            workspace_id=query.workspace_id,
+            work_item_id="wi-1",
+            work_artifact_id="art-1",
+            current_version_id="ver-1",
+        )
+        object.__setattr__(listing, "current_version_id", None)
+        return (listing,)
+
+
+def test_provider_malformed_work_artifact_listing_fail_closed() -> None:
+    reader = DefaultCollaborativeWorkReferenceReader(
+        catalog=_MalformedWorkArtifactShapeCatalog(),
+        capability_binding=CollaborativeWorkReferenceReadCapabilityBinding(
+            tenant_id=_TENANT_A,
+            workspace_id=_WS_A,
+        ),
+    )
+    result = reader.read_references(
+        _identity(),
+        CollaborativeWorkReferenceReadRequest(
+            scope=_scope(work_item_id="wi-1"),
+            query=_query(
+                entity_kinds=frozenset(
+                    {CollaborativeWorkReferenceEntityKind.WORK_ARTIFACT}
+                ),
+            ),
+        ),
+    )
+    assert result.outcome is CollaborativeWorkReferenceReadOutcome.UNAVAILABLE
+    assert result.reason == "catalog_contract_violation"
+    assert result.references == ()
+
+
 class _CustomCollaborativeWorkReferenceReader:
     def read_references(
         self,

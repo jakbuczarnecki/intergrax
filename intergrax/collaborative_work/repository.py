@@ -1543,6 +1543,8 @@ class CollaborativeWorkScopedReferenceListing:
         if kind == _KIND_WORK_ITEM:
             if artifact is not None or version is not None or current is not None:
                 raise ValueError("work_item listing must not carry artifact/version ids")
+            if not isinstance(self.work_item_state, WorkItemState):
+                raise ValueError("work_item listing requires WorkItemState work_item_state")
         elif kind == _KIND_WORK_ARTIFACT:
             if artifact is None or current is None or version is not None:
                 raise ValueError("work_artifact listing requires artifact and current_version ids")

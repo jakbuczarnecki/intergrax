@@ -14,10 +14,11 @@ from intergrax.collaborative_work.contracts.collaborative_work_reference_read im
     CollaborativeWorkReferenceReadOutcome,
     CollaborativeWorkReferenceReadRequest,
     CollaborativeWorkReferenceReadResult,
+    CollaborativeWorkReferenceReadScopeError,
     CollaborativeWorkVersionSelection,
     validate_collaborative_work_reference_read_request,
 )
-from intergrax.contracts.collaborative_work import WorkArtifactVersionRef
+from intergrax.contracts.collaborative_work import WorkArtifactVersionRef, WorkItemState
 from intergrax.collaborative_work.repository import (
     CollaborativeWorkScopedReferenceCatalog,
     CollaborativeWorkScopedReferenceListing,
@@ -66,6 +67,14 @@ class CollaborativeWorkReferenceReadCapabilityBinding:
             )
         object.__setattr__(self, "tenant_id", tenant)
         object.__setattr__(self, "workspace_id", workspace)
+
+
+_PROVIDER_LISTING_CONTRACT_ERRORS: tuple[type[BaseException], ...] = (
+    CollaborativeWorkReferenceReadConfigurationError,
+    CollaborativeWorkReferenceReadScopeError,
+    ValueError,
+    TypeError,
+)
 
 
 def _binding_rejects_request(
@@ -120,6 +129,22 @@ def _listing_within_query_scope(
             if listing.work_artifact_version_id != query.work_artifact_version_id:
                 return False
     return True
+
+
+def _validate_provider_listing_semantics(
+    listing: CollaborativeWorkScopedReferenceListing,
+) -> None:
+    """Reader-side runtime semantics for provider-supplied listings (post-catalog)."""
+    if listing.entity_kind == _KIND_WORK_ITEM:
+        if not isinstance(listing.work_item_state, WorkItemState):
+            raise ValueError("work_item listing requires WorkItemState work_item_state")
+
+
+def _project_provider_listing(
+    listing: CollaborativeWorkScopedReferenceListing,
+) -> CollaborativeWorkCanonicalRef:
+    _validate_provider_listing_semantics(listing)
+    return _to_canonical_ref(listing)
 
 
 def _to_canonical_ref(
@@ -242,8 +267,8 @@ class DefaultCollaborativeWorkReferenceReader:
                     reason="catalog_contract_violation",
                 )
             try:
-                refs.append(_to_canonical_ref(listing))
-            except CollaborativeWorkReferenceReadConfigurationError:
+                refs.append(_project_provider_listing(listing))
+            except _PROVIDER_LISTING_CONTRACT_ERRORS:
                 return CollaborativeWorkReferenceReadResult(
                     outcome=CollaborativeWorkReferenceReadOutcome.UNAVAILABLE,
                     reason="catalog_contract_violation",
