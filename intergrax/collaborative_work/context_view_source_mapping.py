@@ -146,18 +146,12 @@ def memory_read_request_from_context_view(
     identity: RequestIdentity,
 ) -> MemoryReferenceReadRequest:
     scope = request.scope
-    resource: MemoryScopedResourceRef | None = None
-    if scope.work_item_id is not None:
-        resource = MemoryScopedResourceRef(
-            resource_kind="work_item",
-            resource_id=scope.work_item_id,
-        )
     return MemoryReferenceReadRequest(
         scope=MemoryReferenceReadScope(
             tenant_id=scope.tenant_id,
             workspace_id=scope.workspace_id,
             user_id=_memory_scope_user_id(identity),
-            resource=resource,
+            resource=None,
         ),
         query=MemoryReferenceReadQuery(),
     )
@@ -165,21 +159,16 @@ def memory_read_request_from_context_view(
 
 def candidate_scope_from_memory_evaluated(
     evaluated_scope: MemoryReferenceReadScope,
-    *,
-    request_scope: ContextViewScope | None = None,
 ) -> ContextViewScope:
     work_item_id: str | None = None
     resource = evaluated_scope.resource
     if resource is not None and resource.resource_kind == "work_item":
         work_item_id = resource.resource_id
-    elif request_scope is not None and request_scope.work_item_id is not None:
-        work_item_id = request_scope.work_item_id
-    operation_scope = request_scope.operation_scope if request_scope is not None else None
     return ContextViewScope(
         tenant_id=evaluated_scope.tenant_id,
         workspace_id=evaluated_scope.workspace_id,
         work_item_id=work_item_id,
-        operation_scope=operation_scope,
+        operation_scope=None,
     )
 
 
@@ -195,12 +184,11 @@ def memory_evaluated_scope_within_request(
         return False
     if scope.work_item_id is not None:
         resource = evaluated_scope.resource
-        if resource is None:
-            return False
-        if resource.resource_kind != "work_item":
-            return False
-        if resource.resource_id != scope.work_item_id:
-            return False
+        if resource is not None:
+            if resource.resource_kind != "work_item":
+                return False
+            if resource.resource_id != scope.work_item_id:
+                return False
     return True
 
 
@@ -306,17 +294,11 @@ def ucl_read_scope_from_context_view(
     operation = scope.operation_scope
     if operation is None or operation.resource_scope is None:
         return None
-    resource: UclScopedResourceRef | None = None
-    if scope.work_item_id is not None:
-        resource = UclScopedResourceRef(
-            resource_kind="work_item",
-            resource_id=scope.work_item_id,
-        )
     return UclReferenceReadScope(
         tenant_id=scope.tenant_id,
         workspace_id=scope.workspace_id,
         context_scope_id=operation.resource_scope,
-        resource=resource,
+        resource=None,
     )
 
 

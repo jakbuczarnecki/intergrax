@@ -15,6 +15,9 @@ from intergrax.collaborative_work.context_view_source_adapters import (
     DefaultKnowledgeContextSource,
     DefaultMemoryContextSource,
 )
+from intergrax.collaborative_work.context_view_source_mapping import (
+    candidate_scope_from_memory_evaluated,
+)
 from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
 from intergrax.contracts.context_view import (
     ContextViewOperationScope,
@@ -305,3 +308,43 @@ def test_no_reflection_in_adapter_boundary() -> None:
 def test_no_private_contract_import_in_mapping() -> None:
     text = _MAPPING.read_text(encoding="utf-8")
     assert "_ContextViewSourceRequestBase" not in text
+
+
+def test_memory_candidate_mapping_never_fabricates_from_request_scope() -> None:
+    tree = ast.parse(_MAPPING.read_text(encoding="utf-8"), filename=str(_MAPPING))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        if node.name != "candidate_scope_from_memory_evaluated":
+            continue
+        segment = ast.get_source_segment(_MAPPING.read_text(encoding="utf-8"), node) or ""
+        assert "request_scope" not in segment
+        return
+    raise AssertionError("candidate_scope_from_memory_evaluated not found")
+
+
+def test_memory_candidate_scope_does_not_claim_unproven_work_item_or_operation() -> None:
+    evaluated = MemoryReferenceReadScope(tenant_id="tenant-a", workspace_id="ws-1")
+    request = _scope(
+        work_item_id="work-item-a1",
+        operation_scope=ContextViewOperationScope(
+            operation_id="op-compose",
+            resource_scope="context-a",
+        ),
+    )
+    candidate = candidate_scope_from_memory_evaluated(evaluated)
+    assert candidate.work_item_id is None
+    assert candidate.operation_scope is None
+    ref = MemoryRecordCanonicalRef(tenant_id="tenant-a", memory_id="m1", revision=1)
+    reader = _RecordingMemoryReader(
+        MemoryReferenceReadResult(
+            outcome=MemoryReferenceReadOutcome.OK,
+            references=(ref,),
+            evaluated_scope=evaluated,
+        ),
+    )
+    adapter = DefaultMemoryContextSource(reader=reader, async_runner=_ImmediateAsyncRunner())
+    result = adapter.list_candidates(_memory_request(scope=request))
+    assert result.outcome is ContextViewSourceOutcome.OK
+    assert result.candidates[0].candidate_scope.work_item_id is None
+    assert result.candidates[0].candidate_scope.operation_scope is None

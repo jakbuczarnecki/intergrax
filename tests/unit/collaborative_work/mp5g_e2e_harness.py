@@ -112,8 +112,21 @@ from intergrax.rag.default_knowledge_reference_reader import (
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
 from intergrax.runtime.context_lifecycle import (
+    ArtifactCompressionTarget,
+    ArtifactLookupKey,
+    ArtifactValidationStatus,
+    ArtifactValidationSummary,
     InMemoryOptimizationArtifactRepository,
+    OptimizationArtifactRepository,
     OptimizationArtifactScopedReferenceCatalog,
+    OptimizationArtifactType,
+    ReusableArtifactStatus,
+    ReusableOptimizationArtifact,
+    StoredOptimizationArtifact,
+    UclArtifactOwnership,
+    UclArtifactOwnershipKind,
+    UclArtifactOwnershipScope,
+    compute_artifact_content_hash,
 )
 from intergrax.runtime.context_lifecycle.default_ucl_reference_reader import (
     DefaultUclReferenceReader,
@@ -123,13 +136,6 @@ from intergrax.ucl.contracts.ucl_reference_read import (
     UclReferenceReadPort,
     UclReferenceReadRequest,
     UclReferenceReadResult,
-)
-
-from tests.unit.ucl.test_ucl_mp5f_b3b_workspace_scoped_reference_read import (
-    _publish as ucl_publish_artifact,
-)
-from tests.unit.ucl.test_ucl_mp5f_b3b_workspace_scoped_reference_read import (
-    _stored as ucl_stored_artifact,
 )
 
 TENANT_A = "tenant-a"
@@ -270,6 +276,82 @@ class WorkspaceRoutedUclReader:
 
             return UclReferenceReadResult(outcome=UclReferenceReadOutcome.UNAVAILABLE)
         return await reader.read_references(identity, request)
+
+
+def _ucl_lookup_key(
+    *,
+    tenant_id: str = TENANT_A,
+    context_scope_id: str = CTX_A,
+    source_content_hash: str = "hash-abc",
+    source_refs: tuple[str, ...] = ("msg-1", "msg-2"),
+) -> ArtifactLookupKey:
+    return ArtifactLookupKey(
+        tenant_id=tenant_id,
+        context_scope_id=context_scope_id,
+        artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        source_content_hash=source_content_hash,
+        strategy_id="strategy.summarize",
+        strategy_version="1.0.0",
+        policy_version="policy-v1",
+        validation_contract_version="validation-v1",
+        compression_target=ArtifactCompressionTarget(target_tokens=1000),
+        lossiness_profile="lossy_summary",
+        source_refs=source_refs,
+    )
+
+
+def _ucl_stored_artifact(
+    *,
+    artifact_id: str,
+    workspace_id: str,
+    context_scope_id: str,
+    tenant_id: str = TENANT_A,
+) -> StoredOptimizationArtifact:
+    key = _ucl_lookup_key(tenant_id=tenant_id, context_scope_id=context_scope_id)
+    ownership = UclArtifactOwnership.for_workspace(
+        UclArtifactOwnershipScope(tenant_id=tenant_id, workspace_id=workspace_id),
+    )
+    payload = f"payload-{artifact_id}".encode()
+    metadata = ReusableOptimizationArtifact(
+        artifact_id=artifact_id,
+        lookup_key=key,
+        ownership=ownership,
+        artifact_content_hash=compute_artifact_content_hash(payload),
+        created_at=_NOW,
+        created_by_executor="executor.message_sequence",
+        validation=ArtifactValidationSummary(
+            status=ArtifactValidationStatus.PASSED,
+            validation_contract_version="validation-v1",
+            validated_at=_NOW,
+        ),
+        status=ReusableArtifactStatus.VALIDATED,
+    )
+    return StoredOptimizationArtifact(
+        metadata=metadata,
+        payload=payload,
+        media_type="application/octet-stream",
+    )
+
+
+def _ucl_publish_artifact(
+    repository: OptimizationArtifactRepository,
+    artifact: StoredOptimizationArtifact,
+) -> None:
+    key = artifact.metadata.lookup_key
+    scope = artifact.metadata.ownership.scope
+    if scope is None:
+        raise AssertionError("workspace publish requires WORKSPACE ownership")
+    reservation = repository.try_acquire_creation_reservation(
+        key,
+        ownership=scope,
+        owner_operation_id="op-mp5g",
+        lease_seconds=60,
+    )
+    assert reservation.reservation is not None
+    repository.store_validated_artifact(
+        reservation=reservation.reservation,
+        artifact=artifact,
+    )
 
 
 def _knowledge_chunk(
@@ -515,13 +597,13 @@ def _seed_ucl_reader(
     artifact_id: str,
 ) -> tuple[DefaultUclReferenceReader, InMemoryOptimizationArtifactRepository]:
     repo: OptimizationArtifactScopedReferenceCatalog = InMemoryOptimizationArtifactRepository()
-    artifact = ucl_stored_artifact(
+    artifact = _ucl_stored_artifact(
         artifact_id=artifact_id,
         workspace_id=workspace_id,
         context_scope_id=context_scope_id,
         tenant_id=tenant_id,
     )
-    ucl_publish_artifact(repo, artifact)
+    _ucl_publish_artifact(repo, artifact)
     reader = DefaultUclReferenceReader(
         catalog=repo,
         capability_binding=UclReferenceReadCapabilityBinding(
@@ -614,7 +696,11 @@ def build_mp5g_harness() -> Mp5gHarness:
         WS_A: _seed_knowledge_reader(
             tenant_id=TENANT_A,
             workspace_id=WS_A,
-            documents=((DOC_A1, "vec-a1"), (DOC_A2, "vec-a2")),
+            documents=(
+                (DOC_A1, "vec-a1"),
+                (DOC_A2, "vec-a2"),
+                (CTX_A, "vec-ctx-a"),
+            ),
         ),
         WS_B: _seed_knowledge_reader(
             tenant_id=TENANT_A,

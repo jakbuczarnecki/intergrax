@@ -308,6 +308,17 @@ def test_operation_scope_mismatch_rejected() -> None:
         validate_memory_source_candidate_isolation(request=request, candidate=candidate)
 
 
+def test_memory_workspace_candidate_admitted_in_work_item_scoped_request() -> None:
+    op_scope = ContextViewOperationScope(operation_id="op-1", resource_scope="res-a")
+    request = _memory_request(scope=_scope(work_item_id="wi-1", operation_scope=op_scope))
+    candidate = ContextViewMemorySourceCandidate(
+        source_ref=ContextViewMemorySourceRef(tenant_id="tenant-a", record_ref="mem-1"),
+        candidate_scope=_scope(),
+        suggested_visibility=ContextViewVisibilityClass.WORKSPACE_SHARED,
+    )
+    validate_memory_source_candidate_isolation(request=request, candidate=candidate)
+
+
 class _CustomMemorySource:
     def list_candidates(
         self,

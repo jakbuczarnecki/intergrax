@@ -114,7 +114,7 @@ _ALL_CATEGORIES = (
 )
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def mp5g_harness() -> Mp5gHarness:
     return build_mp5g_harness()
 
@@ -149,6 +149,48 @@ def _scope_knowledge_document(
         operation_id=OP_COMPOSE,
         resource_scope=document_id,
     )
+
+
+def test_mp5g_c1_full_work_item_scoped_four_source_e2e(mp5g_harness: Mp5gHarness) -> None:
+    scope = _scope_ucl_context(work_item_id=WI_A1)
+    request = context_view_request(
+        scope=scope,
+        acting_principal_id=PRINCIPAL_A,
+        categories=_ALL_CATEGORIES,
+    )
+    identity = principal_identity(tenant_id=TENANT_A, principal_id=PRINCIPAL_A)
+    decision, view = run_qualified_flow(mp5g_harness, request=request, identity=identity)
+
+    assert decision.outcome is ContextViewPolicyOutcome.ALLOW
+    assert view.scope.work_item_id == WI_A1
+
+    def _entry_category(entry: object) -> ContextViewCategory:
+        ref = entry.source_ref  # type: ignore[attr-defined]
+        if isinstance(ref, ContextViewMemorySourceRef):
+            return ContextViewCategory.MEMORY
+        if isinstance(ref, ContextViewKnowledgeSourceRef):
+            return ContextViewCategory.KNOWLEDGE
+        if isinstance(ref, ContextViewUclSourceRef):
+            return ContextViewCategory.UCL_CONTEXT_LIFECYCLE
+        return ContextViewCategory.COLLABORATIVE_WORK
+
+    categories_present = {_entry_category(entry) for entry in view.entries}
+    assert categories_present == set(_ALL_CATEGORIES)
+
+    assert len(mp5g_harness.memory_port.calls) == 1
+    assert len(mp5g_harness.knowledge_port.calls) == 1
+    assert len(mp5g_harness.ucl_port.calls) == 1
+    assert len(mp5g_harness.collaborative_work_port.calls) == 1
+
+    for entry in view.entries:
+        assert entry.entry_scope.tenant_id == TENANT_A
+        assert entry.entry_scope.workspace_id == WS_A
+        if isinstance(entry.source_ref, ContextViewMemorySourceRef):
+            assert entry.entry_scope.work_item_id is None
+            assert entry.entry_scope.operation_scope is None
+        if isinstance(entry.source_ref, ContextViewCollaborativeWorkSourceRef):
+            assert entry.entry_scope.work_item_id == WI_A1
+            assert WI_A2 not in str(entry.source_ref)
 
 
 def test_mp5g_e2e_happy_path_authority_policy_composer_four_categories(
