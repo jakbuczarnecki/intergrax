@@ -1479,3 +1479,28 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.
+
+## MEM-FINAL-AUDIT-5D-R3 — SessionTurnIndex Provider Identity Override Elimination
+
+| Check | Result |
+| ----- | ------ |
+| Canonical builder | `build_session_turn_index_store` — no `provider_identity` parameter; platform derives identity only |
+| Plugin path | `resolve_plugin_session_turn_index_provider_identity(selected_plugin)` before admission and factory |
+| Builtin path | `resolve_builtin_session_turn_index_provider_identity(integration_profile)` when no plugin selected |
+| Forbidden | Caller cannot supply authoritative STI identity on canonical materialization path |
+| Direct injection | `build_session_manager_from_environment(session_turn_index_store=…, session_turn_index_store_identity=…)` unchanged (host-owned atomic binding) |
+| Invariant | Admitted identity == materialized provider (no admit-B / materialize-A) |
+| Tests | `tests/unit/applications/test_mem_final_audit_5d_r3_session_turn_index_identity_override_elimination.py` |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5D-03 (caller could override platform-derived STI provider identity) | **CLOSED** |
+| GAP-5D-02 | **CLOSED** |
+| GAP-5D-01 | **CLOSED** |
+| GAP-4-02 (Qdrant STI) | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **FULLY CLOSED** |
+| GAP-4-07 (pgvector / Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D-R3 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.

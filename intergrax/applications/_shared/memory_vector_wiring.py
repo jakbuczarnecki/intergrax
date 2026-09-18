@@ -258,7 +258,6 @@ def build_session_turn_index_store(
     rag_stack: RagStack | None = None,
     integration_profile: IntegrationProfile | None = None,
     session_turn_index_plugins: Sequence[type[SessionTurnIndexStorePlugin]] = (),
-    provider_identity: MemoryProviderIdentity | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
     admission_evidence: MemoryProviderAdmissionEvidenceContext | None = None,
 ) -> SessionTurnIndexStore | None:
@@ -299,7 +298,7 @@ def build_session_turn_index_store(
         )
 
     if selected_plugin is not None:
-        resolved_identity = provider_identity or resolve_plugin_session_turn_index_provider_identity(
+        resolved_identity = resolve_plugin_session_turn_index_provider_identity(
             selected_plugin,
         )
         validate_session_turn_index_store_admission(
@@ -311,7 +310,7 @@ def build_session_turn_index_store(
         plugin_type = cast(type[SessionTurnIndexStorePlugin], selected_plugin.plugin_type)
         return plugin_type.create_session_turn_index(creation_context)
 
-    resolved_identity = provider_identity or resolve_builtin_session_turn_index_provider_identity(
+    resolved_identity = resolve_builtin_session_turn_index_provider_identity(
         resolved_integration,
     )
     validate_session_turn_index_store_admission(

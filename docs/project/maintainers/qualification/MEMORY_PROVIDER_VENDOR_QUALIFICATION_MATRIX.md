@@ -321,6 +321,21 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-5D-02 | **CLOSED** |
 | GAP-5D-01 | **CLOSED (5D-R)** |
 
+## MEM-FINAL-AUDIT-5D-R3 — SessionTurnIndex provider identity override elimination
+
+| Check | Result |
+| ----- | ------ |
+| API | `build_session_turn_index_store` — removed caller `provider_identity`; platform-owned derivation only |
+| Attack surface | External plugin cannot be admitted under builtin Qdrant identity via caller override |
+| Direct injection | Separate `session_turn_index_store` + `session_turn_index_store_identity` on `build_session_manager_from_environment` |
+| Tests | `test_mem_final_audit_5d_r3_session_turn_index_identity_override_elimination.py` |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5D-03 | **CLOSED** |
+| GAP-5D-02 | **CLOSED** |
+| GAP-5D-01 | **CLOSED (5D-R)** |
+
 ## MEM-FINAL-AUDIT-5C — Mongo UserProfile real-vendor qualification
 
 | Check | Result |
