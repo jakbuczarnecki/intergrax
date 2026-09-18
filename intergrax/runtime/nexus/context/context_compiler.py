@@ -300,28 +300,49 @@ class ContextCompiler:
               available_tokens=budget_tokens,
           )
 
+      mandatory_indices = mandatory_base_message_indices(messages)
       policy = ContextBudgetPolicy(
           max_chars=budget_tokens * 4,
           max_tokens_estimate=budget_tokens,
       )
-      trimmed: List[ChatMessage] = []
+      working: List[ChatMessage] = []
       for index, message in enumerate(messages):
-          if index == last_user:
-              trimmed.append(message)
+          if index in mandatory_indices:
+              working.append(message)
               continue
-          result = trim_message_to_budget_tokenizer_aware(
+          trim_result = trim_message_to_budget_tokenizer_aware(
               message.content or "",
               policy,
               count_tokens=self._count_tokens,
           )
-          trimmed.append(
-              ChatMessage(role=message.role, content=result.message, metadata=message.metadata)
+          working.append(
+              ChatMessage(
+                  role=message.role,
+                  content=trim_result.message,
+                  entry_id=message.entry_id,
+                  tool_calls=message.tool_calls,
+                  tool_call_id=message.tool_call_id,
+                  metadata=message.metadata,
+              )
           )
 
-      while total(trimmed) > budget_tokens and len(trimmed) > 1:
-          drop_index = 1 if trimmed[0].role == "system" else 0
-          if drop_index >= len(trimmed) - 1:
-              break
-          trimmed.pop(drop_index)
+      while total(working) > budget_tokens:
+          mandatory_now = mandatory_base_message_indices(working)
+          drop_index: int | None = None
+          for index in range(len(working) - 1, -1, -1):
+              if index not in mandatory_now:
+                  drop_index = index
+                  break
+          if drop_index is None:
+              mandatory_tokens = estimate_mandatory_base_message_tokens(
+                  working,
+                  count_text=self._count_tokens,
+              )
+              raise ContextBudgetUnsatisfiableError(
+                  detail="compiled_context_exceeds_budget",
+                  mandatory_tokens=mandatory_tokens,
+                  available_tokens=budget_tokens,
+              )
+          working.pop(drop_index)
 
-      return trimmed
+      return working
