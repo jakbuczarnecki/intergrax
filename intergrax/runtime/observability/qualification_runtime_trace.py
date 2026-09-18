@@ -19,7 +19,9 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.nexus.tracing.execution.evaluator_model_attempt import (
     EvaluatorModelAttemptDiagV1,
 )
-from intergrax.runtime.diagnostics.completion_alignment_diag import CompletionAlignmentDiagV1
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
+    CompletionAlignmentDiagV1,
+)
 from intergrax.runtime.nexus.tracing.execution.reconciliation_phase import (
     ReconciliationPhaseDiagV1,
     ReconciliationPhaseValue,
@@ -29,7 +31,10 @@ from intergrax.runtime.nexus.tracing.trace_models import (
     TraceLevel,
 )
 from intergrax.runtime.task.task import Task
-from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter, TaskTraceEmitter
+from intergrax.runtime.task.task_trace import (
+    PersistingTaskTraceEmitter,
+    TaskTraceEmitter,
+)
 
 EVALUATOR_MODEL_ATTEMPT_STEP = "evaluator_loop.model_attempt"
 RECONCILIATION_PHASE_STEP = "completion.reconciliation_phase"

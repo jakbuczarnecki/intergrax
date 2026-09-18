@@ -51,7 +51,7 @@ def semantic_source_groups_for_r4r4() -> dict[str, tuple[str, ...]]:
             "intergrax/runtime/nexus/tracing/execution/reconciliation_phase.py",
         ),
         "O2": (
-            "intergrax/runtime/diagnostics/completion_alignment_diag.py",
+            "intergrax/runtime/nexus/tracing/execution/completion_alignment.py",
             "intergrax/runtime/observability/qualification_runtime_trace.py",
             "platform_proofs/scenarios/ai_incident_investigation/application/completion_alignment_telemetry.py",
             "platform_proofs/scenarios/ai_incident_investigation/application/investigator_agent.py",

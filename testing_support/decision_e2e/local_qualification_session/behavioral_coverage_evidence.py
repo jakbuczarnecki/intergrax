@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
-from intergrax.runtime.diagnostics.completion_alignment_diag import (
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
     AlignmentDirection,
     AlignmentStatus,
     CompletionAlignmentDiagV1,

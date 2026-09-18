@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.diagnostics.completion_alignment_diag import (
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
     CompletionAlignmentDiagV1,
     decode_completion_alignment_diag_v1,
 )

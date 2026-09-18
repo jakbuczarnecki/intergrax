@@ -22,7 +22,7 @@ from testing_support.decision_e2e.local_qualification_session.contracts import (
     QualificationRuntimeIdentity,
     QualificationSpec,
 )
-from intergrax.runtime.diagnostics.completion_alignment_diag import (
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
     AlignmentDirection,
     AlignmentStatus,
 )

@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
-from intergrax.runtime.diagnostics.completion_alignment_diag import (
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
     AlignmentDirection,
     AlignmentStatus,
 )

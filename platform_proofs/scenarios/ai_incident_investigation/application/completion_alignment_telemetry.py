@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from intergrax.contracts.execution_identity import RunId, validate_run_id
-from intergrax.runtime.diagnostics.completion_alignment_diag import (
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
     AlignmentDirection,
     AlignmentStatus,
     CompletionAlignmentDiagV1,
@@ -50,7 +50,10 @@ def alignment_direction_for_assessment(
     reason = assessment.mismatch_reason
     if reason is CompletionAlignmentMismatchReason.UNRESOLVED_WITH_SUPPORTED_DIAGNOSIS:
         return AlignmentDirection.FORWARD
-    if reason is CompletionAlignmentMismatchReason.SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE:
+    if (
+        reason
+        is CompletionAlignmentMismatchReason.SUPPORTED_DIAGNOSIS_WITHOUT_SUPPORTED_STATE
+    ):
         return AlignmentDirection.REVERSE
     return AlignmentDirection.UNKNOWN
 
