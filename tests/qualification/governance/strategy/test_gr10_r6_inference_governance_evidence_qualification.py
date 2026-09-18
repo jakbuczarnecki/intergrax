@@ -76,6 +76,8 @@ def test_gr10_r6_inf_e_scenario_points_at_pre_model_evidence_proofs() -> None:
     assert "test_inference_pre_model_allow_invokes_provider_once" in joined
     assert "test_inference_pre_model_deny_blocks_provider" in joined
     assert "test_inference_pre_model_custom_persistence_port_records_typed_fact" in joined
+    assert "test_inference_pre_model_require_human_emits_fact_before_fail_closed" in joined
+    assert "test_build_governed_inference_executor_requires_persistence_port_signature" in joined
     assert "root_allow_emits_exactly_one_governance_fact" not in joined
 
 
@@ -103,9 +105,18 @@ def test_gr10_r6_pre_model_evidence_path_uses_public_contract_ast() -> None:
 
 
 def test_gr10_r6_canonical_composition_wires_evidence_persistence() -> None:
+    import inspect
+
+    from intergrax.runtime.execution.inference_composition import build_governed_inference_executor
+
     source = _INFERENCE_COMPOSITION.read_text(encoding="utf-8-sig")
     assert "build_governed_inference_executor" in source
     assert "build_governance_evidence_recorder" in source
+    assert "build_in_memory_governance_evidence_persistence" not in source
+    param = inspect.signature(build_governed_inference_executor).parameters[
+        "governance_evidence_persistence"
+    ]
+    assert param.default is inspect.Parameter.empty
     decision_e2e = _DECISION_E2E_COMPOSITION.read_text(encoding="utf-8-sig")
     assert "governance_evidence_persistence=build_in_memory_governance_evidence_persistence()" in decision_e2e
 

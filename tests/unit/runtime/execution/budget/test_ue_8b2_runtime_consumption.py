@@ -393,13 +393,17 @@ async def test_direct_inference_usage_reaches_ledger() -> None:
         )
         from testing_support.inference_governance_wiring import (
             bind_test_inference_governance_identity,
+            default_test_inference_evidence_persistence,
             governed_inference_executor,
             reset_test_inference_governance_identity,
         )
 
         governance_token = bind_test_inference_governance_identity()
         try:
-            result = await governed_inference_executor(StructuredAdapter()).execute(request)
+            result = await governed_inference_executor(
+                StructuredAdapter(),
+                governance_evidence_persistence=default_test_inference_evidence_persistence(),
+            ).execute(request)
         finally:
             reset_test_inference_governance_identity(governance_token)
         assert result.status is ExecutionStatus.COMPLETED

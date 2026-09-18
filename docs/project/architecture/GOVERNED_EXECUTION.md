@@ -294,7 +294,7 @@ flowchart LR
 | HITL continuation (GR-5) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Continuation (GR-5 port) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Reliability boundary (GR-7) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
-| Governance Evidence (GR-8) | WIRED_NOT_QUALIFIED | PARTIAL | PARTIAL |
+| Governance Evidence (GR-8) | QUALIFIED | PARTIAL | PARTIAL |
 | Control-plane mutation | NOT_APPLICABLE (spine) | NOT_APPLICABLE | NOT_APPLICABLE — live **GAP** GR-12 |
 
 GR-10 qualification suite (`tests/qualification/governance/strategy/`) encodes this matrix; status **PARTIAL** — independent audit required before CLOSED.
@@ -315,6 +315,8 @@ flowchart TD
 ```
 
 **Governance Evidence spine (GR-8):** typed ``GovernanceDecisionEvidenceFact`` projected through ``GovernanceEvidencePersistencePort`` (default: ``RuntimeEvent`` + ``EvidencePersistencePort`` when five-ID correlation is present). **CANDIDATE CLOSED — awaiting independent GitHub audit.** Evidence does not return or alter ``PolicyDecision``; persistence failure does not flip DENY/REQUIRE_HUMAN into ALLOW.
+
+**INFERENCE PRE_MODEL (GR-10-R6 / R6-R1):** legal governed structured inference is composed via ``build_governed_inference_executor`` with a **required** replaceable ``GovernanceEvidencePersistencePort`` (``InferenceExecutor`` itself stays evidence-neutral). ``GovernanceDecisionEvidenceFact.decision`` records the **source** ``PolicyDecision`` from ``PolicyEngine.evaluate_pre_llm``; effective fail-closed runtime may synthesize DENY for unsupported PRE_MODEL actions (REQUIRE_HUMAN, ESCALATE, MODIFY) without rewriting the fact. ESCALATE/MODIFY emit **no** GR-8 fact (frozen fact builder accepts ALLOW/DENY/REQUIRE_HUMAN only).
 
 **Scope honesty:** GR-8 closure applies to **evidence infrastructure** (immutable fact contract, pluginable persistence port, default durable adapter, root admission + meaningful-side-effect emission). **Evaluation-point adoption coverage** across all GEP rows in §G3B is **not** GR-8 — residual wiring and strategy qualification are owned by **GR-10** and **GR-13**.
 

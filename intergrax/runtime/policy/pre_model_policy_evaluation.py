@@ -1,7 +1,22 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Neutral PRE_MODEL policy evaluation and evidence for structured inference (GR-10-R2)."""
+"""Neutral PRE_MODEL policy evaluation and evidence for structured inference (GR-10-R2).
+
+Authority chain::
+
+    PolicyEngine → source ``PolicyDecision`` → PRE_MODEL interpretation → effective execution
+
+Evidence chain (GR-8 frozen contract)::
+
+    source ``PolicyDecision`` → ``GovernanceDecisionEvidenceFact.decision`` (source truth only)
+
+``GovernanceDecisionEvidenceFact`` never records the synthetic fail-closed ``PolicyDecision``
+raised for unsupported PRE_MODEL actions; it records the source decision when GR-8 projection
+applies (ALLOW, DENY, REQUIRE_HUMAN). ESCALATE and MODIFY are unsupported on structured
+inference PRE_MODEL: fail closed with provider calls = 0 and **no** GR-8 fact (contract helper
+ rejects those actions).
+"""
 
 from __future__ import annotations
 
@@ -39,11 +54,24 @@ from intergrax.runtime.policy.pre_model_policy_evaluate import (
     evaluate_pre_model_policy,
 )
 
-_PRE_MODEL_ALLOWED_ACTIONS = frozenset({PolicyAction.ALLOW})
-_PRE_MODEL_BLOCKED_ACTIONS = frozenset(
+_PRE_MODEL_EFFECTIVE_ALLOW_ACTIONS = frozenset({PolicyAction.ALLOW})
+_PRE_MODEL_EFFECTIVE_BLOCKED_ACTIONS = frozenset(
     {
         PolicyAction.DENY,
         PolicyAction.REQUIRE_HUMAN,
+        PolicyAction.ESCALATE,
+        PolicyAction.MODIFY,
+    },
+)
+_PRE_MODEL_EVIDENCE_FACT_ACTIONS = frozenset(
+    {
+        PolicyAction.ALLOW,
+        PolicyAction.DENY,
+        PolicyAction.REQUIRE_HUMAN,
+    },
+)
+_PRE_MODEL_NO_EVIDENCE_FACT_ACTIONS = frozenset(
+    {
         PolicyAction.ESCALATE,
         PolicyAction.MODIFY,
     },
@@ -86,11 +114,9 @@ def _record_pre_model_evidence(
 ) -> None:
     if recorder is None or recorder.persistence is None:
         return
-    if decision.action not in (
-        PolicyAction.ALLOW,
-        PolicyAction.DENY,
-        PolicyAction.REQUIRE_HUMAN,
-    ):
+    if decision.action in _PRE_MODEL_NO_EVIDENCE_FACT_ACTIONS:
+        return
+    if decision.action not in _PRE_MODEL_EVIDENCE_FACT_ACTIONS:
         return
     task_id, run_id, attempt_id, execution_id = _execution_correlation()
     resource_scope = model_scope
@@ -184,9 +210,9 @@ def enforce_pre_model_before_structured_inference(
         inference_profile_id=inference_profile_id,
     )
 
-    if decision.action in _PRE_MODEL_BLOCKED_ACTIONS:
+    if decision.action in _PRE_MODEL_EFFECTIVE_BLOCKED_ACTIONS:
         _fail_closed_decision(decision)
-    if decision.action not in _PRE_MODEL_ALLOWED_ACTIONS:
+    if decision.action not in _PRE_MODEL_EFFECTIVE_ALLOW_ACTIONS:
         _fail_closed_decision(decision)
 
 

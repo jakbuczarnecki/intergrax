@@ -29,6 +29,7 @@ from intergrax.runtime.execution import (
 from intergrax.runtime.execution.active_execution_budget import peek_active_execution_budget
 from intergrax.runtime.execution.boundary import ExecutionBoundary
 from testing_support.inference_governance_wiring import (
+    default_test_inference_evidence_persistence,
     governed_inference_executor,
     governed_root_execution_options,
 )
@@ -269,7 +270,10 @@ async def test_facade_mints_platform_execution_id_not_supplied_by_caller() -> No
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=governed_inference_executor(adapter))
+    ](inference_executor=governed_inference_executor(
+        adapter,
+        governance_evidence_persistence=default_test_inference_evidence_persistence(),
+    ))
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
         ExecutionResult[RiskAssessment],
@@ -301,7 +305,10 @@ async def test_facade_two_invocations_same_run_attempt_get_distinct_execution_id
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=governed_inference_executor(capturing_adapter))
+    ](inference_executor=governed_inference_executor(
+        capturing_adapter,
+        governance_evidence_persistence=default_test_inference_evidence_persistence(),
+    ))
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
         ExecutionResult[RiskAssessment],
@@ -334,7 +341,10 @@ async def test_facade_root_budget_and_authority_visible_before_strategy() -> Non
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=governed_inference_executor(adapter))
+    ](inference_executor=governed_inference_executor(
+        adapter,
+        governance_evidence_persistence=default_test_inference_evidence_persistence(),
+    ))
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
         ExecutionResult[RiskAssessment],

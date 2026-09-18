@@ -57,6 +57,7 @@ from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyReso
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from testing_support.inference_governance_wiring import (
     bind_test_inference_governance_identity,
+    default_test_inference_evidence_persistence,
     governed_inference_executor,
     reset_test_inference_governance_identity,
 )
@@ -272,6 +273,7 @@ async def test_single_model_profile_selects_adapter_through_execution_path(
     executor = governed_inference_executor(
         default_adapter,
         profile_resolver=_profile_catalog(),
+        governance_evidence_persistence=default_test_inference_evidence_persistence(),
     )
     router = StrategyExecutionRouter[
         tuple[ChatMessage, ...],
@@ -366,6 +368,7 @@ async def test_absent_profile_uses_host_default_adapter() -> None:
     executor = governed_inference_executor(
         default_adapter,
         profile_resolver=_profile_catalog(),
+        governance_evidence_persistence=default_test_inference_evidence_persistence(),
     )
     router = StrategyExecutionRouter[
         tuple[ChatMessage, ...],

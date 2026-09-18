@@ -148,9 +148,10 @@ GR10_INFERENCE_CAPABILITY_SEMANTICS: tuple[Gr10InferenceCapabilitySemantics, ...
         "Governance Evidence",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "PRE_MODEL emits typed GovernanceDecisionEvidenceFact through GovernanceEvidencePersistencePort "
-        "when composition wires recorder/persistence; authority unchanged on persistence failure. "
-        "Canonical MODEL C1 / decision-e2e composition wires persistence via inference_composition.",
+        "PRE_MODEL emits typed GovernanceDecisionEvidenceFact (source PolicyDecision only) through "
+        "mandatory GovernanceEvidencePersistencePort on build_governed_inference_executor; "
+        "unsupported PRE_MODEL actions fail closed without GR-8 fact; authority unchanged on "
+        "persistence failure. Canonical MODEL C1 / decision-e2e explicitly wires in-memory port.",
     ),
 )
 
@@ -260,9 +261,9 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
     Gr10CapabilityCell(
         "Governance Evidence",
         gr10_matrix_inference_status("Governance Evidence"),
+        Gr10CoverageStatus.QUALIFIED,
         Gr10CoverageStatus.PARTIAL,
-        Gr10CoverageStatus.PARTIAL,
-        "INFERENCE: PRE_MODEL typed evidence qualified (GR-10-R6). AGENT/ORCH: GR-8 spine partial per GEP.",
+        "INFERENCE: PRE_MODEL typed evidence qualified (GR-10-R6 / R6-R1 mandatory composition). AGENT/ORCH: GR-8 spine partial per GEP.",
     ),
 )
 
@@ -354,13 +355,24 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
     Gr10ScenarioEvidence(
         "INF-E",
         "INFERENCE",
-        "PRE_MODEL governance evidence — typed fact, port persistence, authority-safe failure",
+        "PRE_MODEL governance evidence — mandatory composition, typed fact, verdict semantics",
         (
             _nid(_INFERENCE_EXEC, "test_inference_pre_model_allow_invokes_provider_once"),
             _nid(_INFERENCE_EXEC, "test_inference_pre_model_deny_blocks_provider"),
             _nid(_INFERENCE_EXEC, "test_inference_pre_model_custom_persistence_port_records_typed_fact"),
             _nid(_INFERENCE_EXEC, "test_inference_pre_model_deny_evidence_failure_still_denies_zero_provider"),
             _nid(_INFERENCE_EXEC, "test_inference_pre_model_evidence_failure_still_allows_provider"),
+            _nid(_INFERENCE_EXEC, "test_inference_pre_model_require_human_emits_fact_before_fail_closed"),
+            _nid(_INFERENCE_EXEC, "test_inference_pre_model_escalate_no_fact_fail_closed"),
+            _nid(_INFERENCE_EXEC, "test_inference_pre_model_modify_no_fact_fail_closed"),
+            _nid(
+                "tests/unit/runtime/execution/test_inference_composition.py",
+                "test_build_governed_inference_executor_requires_persistence_port_signature",
+            ),
+            _nid(
+                "tests/unit/runtime/execution/test_inference_composition.py",
+                "test_governed_inference_executor_wires_custom_port",
+            ),
         ),
         Gr10CoverageStatus.QUALIFIED,
     ),
