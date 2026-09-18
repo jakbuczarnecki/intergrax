@@ -196,7 +196,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 
 | ID | Capability | Provider | Missing proof | Sev | Target |
 | -- | ---------- | -------- | ------------- | --- | ------ |
-| GAP-4-01 | UserProfile | product + PostgreSQL preset | Durable Memory backend wiring / fail-closed | P1 | AUDIT-5 design + wiring |
+| GAP-4-01 | UserProfile | product + PostgreSQL preset | Durable Memory backend wiring / fail-closed | **CLOSED (5A)** | `memory_provider_admission` + `test_mem_audit5a_production_provider_admission.py` |
 | GAP-4-02 | SessionTurnIndex | `VectorSessionTurnIndexStore` + any vector backend | write → restart/reconnect → recall | P2 | AUDIT-5 P0 candidate |
 | GAP-4-03 | Entity / Procedural / LH | in-memory only | durable vendor + restart | P2 | AUDIT-5 |
 | GAP-4-04 | UserProfile | Mongo DocumentStore | real-vendor qual execution | P2 | AUDIT-5 |
@@ -206,7 +206,20 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-08 | PostgreSQL | Memory bundle | implementation | P3 | post-RFC |
 
 **P0:** NONE  
-**P1:** GAP-4-01 (production-reachable non-durable UserProfile when memory flags on without sqlite/mongo — documented, not silent `except`)
+**P1:** NONE (GAP-4-01 closed in MEM-FINAL-AUDIT-5A — production persistent USER/LTM fails closed on reference/unknown/non-qualified providers)
+
+## MEM-FINAL-AUDIT-5A — Production admission
+
+| Check | Result |
+| ----- | ------ |
+| Admission owner | `applications/_shared/memory_provider_admission.py` (not MemoryControlPlane) |
+| Policy inputs | `MemoryStoreProviderMetadata` + `MemoryProviderQualificationStatus` (no class-name / vendor switches) |
+| Overlay ordering | Admission after external plugin overlay on final `user_profile_store` |
+| LAB reference InMemory | Allowed when `ApplicationProfile.LAB` |
+| PRODUCT memory disabled | InMemory baseline allowed (store not admission-gated) |
+| PRODUCT persistent + InMemory | `MemoryProviderAdmissionError` |
+| SQLite qualified | Admitted when metadata `QUALIFIED` + `DURABLE` |
+| DocumentStore UserProfile (Mongo path) | Durable metadata but `NOT_QUALIFIED` until AUDIT-5C — **fail-closed** when persistent flags on |
 
 ---
 

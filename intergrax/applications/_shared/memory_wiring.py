@@ -69,6 +69,9 @@ from intergrax.applications._shared.memory_observability_wiring import (
 from intergrax.applications._shared.memory_security_governance_wiring import (
     resolve_memory_security_governance_service,
 )
+from intergrax.applications._shared.memory_provider_admission import (
+    validate_memory_platform_wiring_admission,
+)
 
 
 @dataclass(frozen=True)
@@ -301,7 +304,7 @@ def resolve_memory_platform_wiring(
         memory_diagnostic_emitter=memory_diagnostic_emitter,
     )
     discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
-    return _apply_external_memory_store_overlay(
+    wiring = _apply_external_memory_store_overlay(
         wiring,
         env,
         profile,
@@ -309,6 +312,8 @@ def resolve_memory_platform_wiring(
         discover_entry_points=discover,
         explicit_memory_plugins=explicit_memory_plugins,
     )
+    validate_memory_platform_wiring_admission(env, wiring.user_profile_store)
+    return wiring
 
 
 def build_session_manager_from_environment(
@@ -326,6 +331,7 @@ def build_session_manager_from_environment(
         integration_profile=integration_profile,
         tenant_id=tenant_id,
     )
+    validate_memory_platform_wiring_admission(env, wiring.user_profile_store)
     memory_profile = env.memory_profile
 
     user_manager = wiring.user_profile_manager

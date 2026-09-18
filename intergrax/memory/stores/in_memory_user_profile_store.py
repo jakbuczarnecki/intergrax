@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Dict, Tuple
 
+from intergrax.memory.contracts.provider_admission import MemoryProviderDurability
+from intergrax.memory.contracts.provider_qualification import MemoryProviderQualificationStatus
 from intergrax.memory.user_profile_memory import UserProfile, UserIdentity, UserPreferences
 from intergrax.memory.user_profile_store import UserProfileStore
 
@@ -32,6 +34,22 @@ class InMemoryUserProfileStore(UserProfileStore):
     def __init__(self) -> None:
         # user_id -> UserProfile
         self._profiles: Dict[Tuple[str, str], UserProfile] = {}
+
+    @property
+    def memory_provider_id(self) -> str:
+        return "reference.in_memory.user_profile"
+
+    @property
+    def memory_provider_durability(self) -> MemoryProviderDurability:
+        return MemoryProviderDurability.EPHEMERAL
+
+    @property
+    def memory_provider_reference_only(self) -> bool:
+        return True
+
+    @property
+    def memory_provider_qualification_status(self) -> MemoryProviderQualificationStatus:
+        return MemoryProviderQualificationStatus.NOT_QUALIFIED
 
     async def get_profile(
         self,

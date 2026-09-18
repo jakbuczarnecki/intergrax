@@ -1227,3 +1227,38 @@ All **canonical USER Memory** hard invariants **PASS** (identity, scope, governa
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5 AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-4 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5.
+
+# MEM-FINAL-AUDIT-5A — Production Memory Provider Admission & Fail-Closed
+
+## Scope
+
+Close **GAP-4-01**: production host with `enable_user_memory` or `enable_long_term_memory` cannot silently compose canonical `UserProfileStore` on reference/in-memory providers.
+
+## Mechanism
+
+| Layer | Artifact |
+| ----- | -------- |
+| Provider metadata | `MemoryStoreProviderMetadata` on materialized stores (`memory_provider_id`, durability, `reference_only`, qualification status) |
+| Classification | `classify_user_profile_store_provider` — protocol-based; unknown metadata → fail-closed |
+| Host admission | `validate_memory_platform_wiring_admission` in `applications/_shared/memory_provider_admission.py` |
+| Wiring sequence | baseline → plugin overlay → admission → downstream managers |
+| Production detection | `ApplicationProfile.PRODUCT` (not profile_id prefix; not vendor slug) |
+| Persistent trigger | `enable_user_memory` **or** `enable_long_term_memory` |
+
+## Hard invariant
+
+`PRODUCT` + persistent USER/LTM + non-admitted provider → `MemoryProviderAdmissionError` (typed reason codes: `reference_provider_not_admissible`, `provider_not_durable`, `provider_not_qualified`).
+
+LAB / disabled-memory production paths unchanged.
+
+## GAP-4-01
+
+**CLOSED** (pending independent GitHub SHA verification).
+
+## Regression
+
+`tests/unit/applications/test_mem_audit5a_production_provider_admission.py` + existing memory wiring / resolver / qual suites.
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.

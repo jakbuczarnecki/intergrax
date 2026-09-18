@@ -7,6 +7,8 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
+from intergrax.memory.contracts.provider_admission import MemoryProviderDurability
+from intergrax.memory.contracts.provider_qualification import MemoryProviderQualificationStatus
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
 from intergrax.memory.user_profile_serialization import user_profile_from_json, user_profile_to_json
 from intergrax.memory.user_profile_store import UserProfileStore
@@ -21,6 +23,22 @@ class SQLiteUserProfileStore(UserProfileStore):
         self._closed = False
         self._connection = self._create_connection(db_path)
         self._initialize_schema()
+
+    @property
+    def memory_provider_id(self) -> str:
+        return "sqlite.user_profile"
+
+    @property
+    def memory_provider_durability(self) -> MemoryProviderDurability:
+        return MemoryProviderDurability.DURABLE
+
+    @property
+    def memory_provider_reference_only(self) -> bool:
+        return False
+
+    @property
+    def memory_provider_qualification_status(self) -> MemoryProviderQualificationStatus:
+        return MemoryProviderQualificationStatus.QUALIFIED
 
     def close(self) -> None:
         if self._closed:
