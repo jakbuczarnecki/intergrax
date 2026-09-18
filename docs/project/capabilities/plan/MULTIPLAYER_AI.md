@@ -10,7 +10,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-5G — NEXT** (E2E / isolation qualification). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (**MP-5F-B1…B4 — CLOSED**; **MP-5F-B5 — CLOSED** — `intergrax/collaborative_work/context_view_source_adapters.py`, `context_view_source_wiring.py`). MP-5E **`ContextViewComposer`** / **`DefaultContextViewComposer`** — **APPROVED / CLOSED** (`intergrax/contracts/context_view_composition.py`).
+**Current active task:** **MP-5H — NEXT** (final enterprise certification). **MP-5G — ENTERPRISE E2E / ISOLATION QUALIFICATION CERTIFIED / CLOSED** (`tests/unit/collaborative_work/test_mp5g_context_view_e2e_qualification.py`, `mp5g_e2e_harness.py`). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (**MP-5F-B1…B4 — CLOSED**; **MP-5F-B5 — CLOSED** — `intergrax/collaborative_work/context_view_source_adapters.py`, `context_view_source_wiring.py`). MP-5E **`ContextViewComposer`** / **`DefaultContextViewComposer`** — **APPROVED / CLOSED** (`intergrax/contracts/context_view_composition.py`).
 **Previous:** **MP-5C — APPROVED / CLOSED** — principal visibility policy (`intergrax/contracts/context_view_visibility_policy.py`)
 
 ---
@@ -270,7 +270,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-5D | Source composition ports | **APPROVED / CLOSED** |
 | MP-5E | Default composition implementation | **CLOSED** |
 | MP-5F | Source adapters / integration | **NEXT** |
-| MP-5G | E2E / isolation qualification | PLANNED |
+| MP-5G | E2E / isolation qualification | CLOSED |
 | MP-5H | Final MP-5 enterprise certification | PLANNED |
 
 ### MP-5A — ContextView ownership & contract architecture gate

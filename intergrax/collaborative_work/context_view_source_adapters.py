@@ -113,7 +113,10 @@ class DefaultMemoryContextSource:
                 outcome=ContextViewSourceOutcome.SCOPE_REJECTED,
             )
         visibility = suggested_visibility_from_request(request)
-        candidate_scope = candidate_scope_from_memory_evaluated(evaluated_scope)
+        candidate_scope = candidate_scope_from_memory_evaluated(
+            evaluated_scope,
+            request_scope=request.scope,
+        )
         candidates: list[ContextViewMemorySourceCandidate] = []
         for ref in result.references:
             if not memory_ref_within_evaluated_scope(ref=ref, evaluated_scope=evaluated_scope):

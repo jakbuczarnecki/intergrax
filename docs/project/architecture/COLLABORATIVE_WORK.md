@@ -199,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-5G — NEXT** (E2E qualification). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (**MP-5F-B5 adapters — CLOSED**). **MP-5E — APPROVED / CLOSED** (ADR-MP-006).
+**Next task:** **MP-5H — NEXT** (final certification). **MP-5G — CLOSED** (E2E / isolation qualification). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (**MP-5F-B5 adapters — CLOSED**). **MP-5E — APPROVED / CLOSED** (ADR-MP-006).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -531,7 +531,9 @@ Architecture and implementation rows for MP-6+ remain in their future gates.
 
 ## Principal-scoped ContextView (MP-5)
 
-**MP-5 ownership — FROZEN** ([ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**). **MP-5A — APPROVED / CLOSED**. **MP-5B — APPROVED / CLOSED**. **MP-5C — APPROVED / CLOSED**. **MP-5D — APPROVED / CLOSED**. **MP-5E — APPROVED / CLOSED**. **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED**. **MP-5G — NEXT**.
+**MP-5 ownership — FROZEN** ([ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**). **MP-5A — APPROVED / CLOSED**. **MP-5B — APPROVED / CLOSED**. **MP-5C — APPROVED / CLOSED**. **MP-5D — APPROVED / CLOSED**. **MP-5E — APPROVED / CLOSED**. **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED**. **MP-5G — ENTERPRISE E2E / ISOLATION QUALIFICATION CERTIFIED / CLOSED**. **MP-5H — NEXT** (final certification; MP-5 not finally certified until MP-5H).
+
+**MP-5G qualification:** integrates the real canonical principal identity → effective authority → MP-5C visibility policy → MP-5E composer → MP-5D ports → MP-5F adapters → public Memory / Knowledge / UCL / Collaborative Work read boundaries → final `ContextView` pipeline (`tests/unit/collaborative_work/test_mp5g_context_view_e2e_qualification.py`). **Qualified dimensions:** tenant, workspace, work item, operation/resource, principal identity, category eligibility. **MP-5G does not qualify** CE token assembly, Nexus orchestration, or application UX. **Pluginability:** replaceable MP-5D port and replaceable source `*ReferenceReadPort` (harness + qualification tests).
 
 Collaborative Work owns **who may see which context categories under which collaborative scope** — not how Memory stores data, how RAG retrieves, how UCL persists revisions, or how Context Engineering budgets tokens.
 

@@ -165,15 +165,21 @@ def memory_read_request_from_context_view(
 
 def candidate_scope_from_memory_evaluated(
     evaluated_scope: MemoryReferenceReadScope,
+    *,
+    request_scope: ContextViewScope | None = None,
 ) -> ContextViewScope:
     work_item_id: str | None = None
     resource = evaluated_scope.resource
     if resource is not None and resource.resource_kind == "work_item":
         work_item_id = resource.resource_id
+    elif request_scope is not None and request_scope.work_item_id is not None:
+        work_item_id = request_scope.work_item_id
+    operation_scope = request_scope.operation_scope if request_scope is not None else None
     return ContextViewScope(
         tenant_id=evaluated_scope.tenant_id,
         workspace_id=evaluated_scope.workspace_id,
         work_item_id=work_item_id,
+        operation_scope=operation_scope,
     )
 
 
