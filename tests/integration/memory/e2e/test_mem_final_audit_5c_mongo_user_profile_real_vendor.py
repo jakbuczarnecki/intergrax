@@ -496,6 +496,93 @@ async def test_product_session_recall_after_mongo_client_reconnect(
     close_mongo_wiring(wiring_b)
 
 
+@pytest.mark.asyncio
+async def test_product_forget_survives_mongo_client_reconnect(
+    mongo_qualification_env: MongoUserProfileQualificationEnv,
+) -> None:
+    run_id = mongo_qualification_env.qualification_run_id
+    evidence = await _run_mongo_durable_qualification(mongo_qualification_env, run_id)
+    bundle = build_user_profile_admission_evidence_from_durable_qualification(
+        canonical=evidence.canonical,
+        reopen_passed=evidence.reopen_passed,
+        delete_reopen_passed=evidence.delete_reopen_passed,
+        production_durable_qualified=evidence.production_durable_qualified,
+        durability_evidence_source=_EVIDENCE_SOURCE,
+        proof_kind=_PROOF_KIND,
+    )
+    application = product_mongo_environment(profile_id="mem.5c.forget", env=mongo_qualification_env)
+    tenant_id = "tenant-forget"
+
+    wiring_a = resolve_product_mongo_wiring(
+        application,
+        qualification_evidence_registry=bundle.admission_evidence.qualification_registry,
+        durability_evidence_registry=bundle.admission_evidence.durability_registry,
+    )
+    session_a = build_session_manager_from_environment(
+        application,
+        memory_wiring=wiring_a,
+        tenant_id=tenant_id,
+        qualification_evidence_registry=bundle.admission_evidence.qualification_registry,
+        durability_evidence_registry=bundle.admission_evidence.durability_registry,
+    )
+    plane_a = session_a.memory_control_plane
+    assert plane_a is not None
+    identity = RequestIdentity(
+        tenant_id=tenant_id,
+        user_id="user-forget",
+        principal_type=PrincipalType.USER,
+        auth_subject="user-forget",
+    )
+    scope = user_memory_scope(identity)
+    remembered = await plane_a.remember(
+        identity,
+        scope,
+        MemoryControlRememberRequest(content="to-be-forgotten-5c"),
+    )
+    entry_id = remembered.entry_id
+    assert entry_id is not None
+    close_mongo_wiring(wiring_a)
+
+    wiring_b = resolve_product_mongo_wiring(
+        application,
+        qualification_evidence_registry=bundle.admission_evidence.qualification_registry,
+        durability_evidence_registry=bundle.admission_evidence.durability_registry,
+    )
+    session_b = build_session_manager_from_environment(
+        application,
+        memory_wiring=wiring_b,
+        tenant_id=tenant_id,
+        qualification_evidence_registry=bundle.admission_evidence.qualification_registry,
+        durability_evidence_registry=bundle.admission_evidence.durability_registry,
+    )
+    plane_b = session_b.memory_control_plane
+    assert plane_b is not None
+    await plane_b.forget(identity, scope, MemoryControlForgetRequest(entry_id=entry_id))
+    close_mongo_wiring(wiring_b)
+
+    wiring_c = resolve_product_mongo_wiring(
+        application,
+        qualification_evidence_registry=bundle.admission_evidence.qualification_registry,
+        durability_evidence_registry=bundle.admission_evidence.durability_registry,
+    )
+    session_c = build_session_manager_from_environment(
+        application,
+        memory_wiring=wiring_c,
+        tenant_id=tenant_id,
+        qualification_evidence_registry=bundle.admission_evidence.qualification_registry,
+        durability_evidence_registry=bundle.admission_evidence.durability_registry,
+    )
+    plane_c = session_c.memory_control_plane
+    assert plane_c is not None
+    recall = await plane_c.recall(
+        identity,
+        scope,
+        MemoryControlRecallRequest(query="forgotten", top_k=10),
+    )
+    assert not any(item.content == "to-be-forgotten-5c" for item in recall.items)
+    close_mongo_wiring(wiring_c)
+
+
 async def test_cross_tenant_e2e_recall_isolation(
     mongo_qualification_env: MongoUserProfileQualificationEnv,
 ) -> None:
