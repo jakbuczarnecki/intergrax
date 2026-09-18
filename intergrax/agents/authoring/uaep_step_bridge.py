@@ -15,6 +15,7 @@ from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_run import AgentRunError
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode, TerminalReason
 from intergrax.contracts.agent_run_trace import AgentRunTrace
+from intergrax.agents.authoring.uaep_kernel_step_execution import UaepKernelStepExecution
 from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
@@ -195,7 +196,7 @@ async def execute_uaep_step_via_kernel(
     step: AgentStep,
     exec_ctx: RuntimeExecutionContext,
     kernel_ctx: StepKernelContext,
-) -> StepExecutionResult:
+) -> UaepKernelStepExecution:
     """Run one UAEP step through HarnessKernel for policy, merge, and Plane B trace."""
     output = await agent.run_step(step, exec_ctx)
     decision = decide_after_uaep_step(agent, step, output, exec_ctx)
@@ -210,10 +211,12 @@ async def execute_uaep_step_via_kernel(
         decision = kernel_policy_denied_decision(record)
 
     exec_ctx.metadata["uaep_last_kernel_record"] = record.model_dump(mode="json")
-    return StepExecutionResult(
-        output=output,
-        decision=decision,
-        kernel_step_record=record,
+    return UaepKernelStepExecution(
+        step_result=StepExecutionResult(
+            output=output,
+            decision=decision,
+        ),
+        kernel_record=record,
     )
 
 

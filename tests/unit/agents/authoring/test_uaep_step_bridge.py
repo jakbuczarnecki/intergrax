@@ -2,6 +2,7 @@
 
 import pytest
 
+from intergrax.agents.authoring.uaep_kernel_step_execution import UaepKernelStepExecution
 from intergrax.agents.authoring.uaep_step_bridge import (
     agent_decision_to_step_outcome,
     build_kernel_session,
@@ -13,7 +14,7 @@ from intergrax.contracts.acp_metadata_keys import AcpRunContextKey, AcpStructure
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.agent_run_enums import StepNextAction, TerminalReason
-from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.agents.authoring.step_outcome import StepOutcome
@@ -245,3 +246,56 @@ async def test_uaep_kernel_bridge_propagates_last_outcome_diagnostics() -> None:
     assert isinstance(step_diagnostics, dict)
     assert "lkw.index_summary.v1" in step_diagnostics
     assert step_diagnostics["lkw.index_summary.v1"]["accepted_count"] == 1
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+async def test_execute_uaep_step_via_kernel_returns_typed_carrier_without_public_kernel_field() -> None:
+    class _Gateway:
+        async def invoke(self, request: ToolRequest) -> ToolResponse:
+            return ToolResponse(
+                request_id=request.request_id,
+                status=ToolResponseStatus.SUCCESS,
+                output={"used": True, "num_chunks": 1},
+                duration_ms=5,
+            )
+
+    seed = "uaep-kernel-carrier-boundary"
+    request = build_runtime_request_for_tests(
+        seed=seed,
+        agent_id="local_indexer",
+        tenant_id="t1",
+        user_id="u1",
+        session_id="s1",
+        message="index",
+        metadata={},
+    )
+    kernel_ctx = build_kernel_session(
+        agent_id="local_indexer",
+        run_id=request.run_id,
+        task_id=request.task_id,
+        tenant_id="t1",
+        max_steps=1,
+        policy_engine=PolicyEngine(),
+        request=request,
+    )
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed=seed,
+        agent_id="local_indexer",
+        tool_gateway=_Gateway(),
+    )
+    step = AgentStep(
+        step_id="local_indexer_step",
+        step_name="local_indexer_step",
+        step_index=0,
+    )
+
+    with canonical_governed_execution_scope(seed):
+        execution = await execute_uaep_step_via_kernel(
+            _CatalogToolUAEPAgent(), step, exec_ctx, kernel_ctx
+        )
+
+    assert isinstance(execution, UaepKernelStepExecution)
+    assert execution.kernel_record is not None
+    assert execution.step_result.output is not None
+    assert "kernel_step_record" not in StepExecutionResult.model_fields

@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_decision import AgentDecision
-from intergrax.contracts.step_execution import StepExecutionRecord
 
 
 class AgentStep(BaseModel):
@@ -38,4 +37,3 @@ class StepExecutionResult(BaseModel):
     output: Optional[StepOutput] = None
     decision: Optional[AgentDecision] = None
     duration_ms: Optional[int] = None
-    kernel_step_record: Optional[StepExecutionRecord] = None

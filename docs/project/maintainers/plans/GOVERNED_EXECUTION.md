@@ -182,7 +182,8 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-9 | Diagnostic Consumption Proof | **OPEN** |
 | GR-10 | Execution Strategy Coverage | **PARTIAL** — **GR-10-FINAL** requalification; INFERENCE PRE_MODEL **QUALIFIED**; matrix partial rows remain |
 | GR-10-FINAL | Strategy governance requalification | **CLOSED (qualification artifact)** — independent GitHub audit before GR-10 slice CLOSED |
-| GR-10-R3 | UAEP AGENT_DECISION authority on kernel path | **CANDIDATE CLOSED — UAEP POLICY AUTHORITY PRESERVED** — kernel `policy_pre` carried on `StepExecutionResult.kernel_step_record`; G3B deny proof green; independent GitHub audit required |
+| GR-10-R3-R1 | UAEP kernel authority internal carrier | **CANDIDATE CLOSED — PUBLIC AGENT BOUNDARY RESTORED** — `UaepKernelStepExecution` adapter carrier; independent GitHub audit required |
+| GR-10-R3 | UAEP AGENT_DECISION authority on kernel path | **CANDIDATE CLOSED — FUNCTIONAL + ARCHITECTURAL CONFORMANCE COMPLETE** — kernel `policy_pre` via internal carrier → `GovernanceResolution`; G3B deny proof green; independent GitHub audit required |
 | GR-10-R2-ADR1 | PRE_MODEL identity + intake boundary (ADR) | **CANDIDATE CLOSED** — [ADR-GR-10-001](../../technical/adr/entries/2026-09-18/ADR-GR-10-001.md) accepted; independent GitHub audit before CLOSED |
 | GR-10-R2-ADR1-R1 | PRE_MODEL identity SSOT reconciliation | **CANDIDATE CLOSED** — current docs reconciled to GR-10-R1 semantics; independent GitHub audit before CLOSED |
 | GR-10-R2-C1 | PRE_MODEL public contract revision | **CANDIDATE CLOSED** — `principal_id` required on `evaluate_pre_llm`; independent GitHub audit before CLOSED |
