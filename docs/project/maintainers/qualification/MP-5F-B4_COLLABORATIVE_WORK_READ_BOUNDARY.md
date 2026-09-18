@@ -15,7 +15,7 @@ Out of scope: B5 adapter redesign, MP-5G harness changes, new ContextView ports,
 | Session start `HEAD == origin/development` | **yes** |
 | Implementation commit (prior) | `9b8b82681` — `feat(collaborative-work): add scoped reference read boundary` |
 | `MP5F_B4_EVIDENCE_HEAD` (pre-closeout) | `7d71bae234a826176fa3015cbd29cecbe333a497` |
-| Closeout commit | *(task certification commit on `development`)* |
+| Closeout commit | `db222ec4f6b27d1e239668da572330d2d000e404` |
 
 ## 3. Current-head reconnaissance
 
