@@ -28,6 +28,10 @@ from intergrax.runtime.execution.runtime import (
     RootExecutionContext,
     resolve_root_task_identity,
 )
+from intergrax.runtime.execution.host_root_launch_evidence import (
+    host_principal_id,
+    host_workspace_id,
+)
 from intergrax.runtime.execution.identity_authority import RootTaskIdentity
 from intergrax.runtime.execution.decision_lifecycle_host import (
     CanonicalDecisionLifecycleHost,
@@ -253,6 +257,8 @@ async def execute_root_task(
         execution_id=identity.execution_id,
         authority=resolve_root_parent_execution_authority(task.execution_authority),
         tenant_id=task.tenant_id,
+        workspace_id=host_workspace_id(task),
+        principal_id=host_principal_id(task),
         task_id=task.task_id,
         segment_predecessor_root_execution_id=segment_predecessor_root_execution_id,
     )
