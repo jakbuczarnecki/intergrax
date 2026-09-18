@@ -1,22 +1,27 @@
 # EAC-2 — Enterprise Cross-Layer Contract Inventory
 
 **Program:** Enterprise Architecture Cross-Layer Audit (EAC)  
-**Task:** EAC-2 — Cross-Layer Contract Inventory  
+**Task:** EAC-2 — Cross-Layer Contract Inventory · **EAC-2R1** — Contract Ownership Normalization & Family Split  
 **Type:** Read-only contract / boundary audit (no remediation)  
 **Authority:** EAC-0 R1 + EAC-1R3 (`ENTERPRISE_CROSS_LAYER_RESPONSIBILITY_OWNERSHIP_MATRIX_EAC1.md`)
+
+**EAC-2R1 rule:** one **EAC-CON** family → exactly one **Semantic Owner** (domain ID) or explicit `OWNER UNRESOLVED — ADR-*`. Consumers, implementers, and handoff participants are **not** co-owners.
 
 ### Provenance
 
 | Field | SHA | Meaning |
 |-------|-----|---------|
 | **EAC1_CLOSE_COMMIT** (independent EAC-1 close @ operator pin) | `588180053c908c5960d5bca099b14e7b217849bb` | Last EAC-1 matrix close referenced for drift gate |
-| **EAC2_SESSION_START_HEAD** | `e1cdaa77e0b1bf7608573001b23a42ebf870507f` | Session open (`HEAD == origin/development`) |
-| **EAC2_EVIDENCE_HEAD** | `e1cdaa77e0b1bf7608573001b23a42ebf870507f` | Repository state reconciled immediately before EAC-2 documentation commit |
+| **EAC2_INDEPENDENT_AUDIT_HEAD** (last EAC-2 @ operator pin) | `cffd71062d9145a7b52c00dff1f02dcdfec2e262` | Pre–EAC-2R1 inventory baseline |
+| **EAC2_SESSION_START_HEAD** | `e1cdaa77e0b1bf7608573001b23a42ebf870507f` | Original EAC-2 documentation session |
+| **EAC2R1_SESSION_START_HEAD** | `8552029bdd07a747157639d6e13b51c3856123d9` | EAC-2R1 session open (`HEAD == origin/development`) |
+| **EAC2_EVIDENCE_HEAD** | `e1cdaa77e0b1bf7608573001b23a42ebf870507f` | Repository state @ original EAC-2 commit |
+| **EAC2R1_EVIDENCE_HEAD** | `8552029bdd07a747157639d6e13b51c3856123d9` | Repository state reconciled immediately before EAC-2R1 commit (code evidence; doc commit follows) |
 
 | Gate | Value |
 |------|-------|
 | **Branch** | `development` |
-| **HEAD == origin/development @ session** | **YES** (`e1cdaa77e0b1bf7608573001b23a42ebf870507f`) |
+| **HEAD == origin/development @ EAC-2R1 session** | **YES** (`8552029bdd07a747157639d6e13b51c3856123d9`) |
 | **EAC-1 ancestor contained** | **YES** (`588180053…` ⊆ HEAD) |
 | **Upstream** | [`ENTERPRISE_CROSS_LAYER_CANONICAL_LAYER_INVENTORY_EAC0.md`](ENTERPRISE_CROSS_LAYER_CANONICAL_LAYER_INVENTORY_EAC0.md), [`ENTERPRISE_CROSS_LAYER_RESPONSIBILITY_OWNERSHIP_MATRIX_EAC1.md`](ENTERPRISE_CROSS_LAYER_RESPONSIBILITY_OWNERSHIP_MATRIX_EAC1.md) |
 
@@ -29,7 +34,17 @@
 | `0ba1a514c` | Governance pre-model policy | GE admission path evidence refresh |
 | `e1cdaa77e` | Memory provider qualification docs | Qualification only; contracts unchanged |
 
-**Out of scope:** uncommitted working-tree deltas (`intergrax/context/policy/budget_allocator.py`, CE-02 tests) — **not** evidence for this artifact.
+**Drift since `EAC2_INDEPENDENT_AUDIT_HEAD` (`cffd71062…`) — inspected @ EAC2R1_SESSION_START_HEAD (ownership-relevant only):**
+
+| Commit | Area | EAC-2R1 effect |
+|--------|------|----------------|
+| `38b243d18` | CE-02 mandatory budget accounting | Supports **EAC-CON-072** vs **099** budget split (CE vs EE) |
+| `470804d5c` | Governance pre-model identity | GE admission evidence unchanged; no new public family |
+| `d2b138a0c` | Memory production provider admission | MEMORY provider SPI unchanged |
+| `29bdecd15` | CE degradation ownership | CE contracts unchanged |
+| `8552029bd` | UCL artifact workspace ownership | UCL scope note only |
+
+**Out of scope:** uncommitted working-tree deltas — **not** evidence for this artifact.
 
 **Method:** grep/import sampling @ `EAC2_EVIDENCE_HEAD`, `intergrax/contracts/` module census (**601** Python modules), EAC-1 §11 contract baseline, targeted reads of execution/orchestration, agent surface, memory/RAG/UCL reference ports, Tier-3/hosting manifests.
 
@@ -91,9 +106,9 @@ Dimensions (each rated **PASS** / **PARTIAL** / **FAIL** / **N/A** in inventory 
 | EAC-CON-011 | Governance admission / policy | DOMAIN_CONTRACT | GOVERNED_EXECUTION | `runtime_execution_policy_admission.py`, `agent_runtime_governance.py` | EE, Tools, Agents | Policy engine | Public | Policy plugins | PARTIAL | CANONICAL | **CL-EAC1-004** duplicate WHETHER |
 | EAC-CON-012 | Governance evidence persistence | PORT | GOVERNED_EXECUTION | `governed_execution_governance_evidence.py` | Observability | GE | Public | Yes | PARTIAL | CANONICAL | — |
 | EAC-CON-013 | CW workspace / ContextView | DOMAIN_CONTRACT | COLLABORATIVE_WORK | `collaborative_work.py`, CW apps contracts | CE, Agents | CW stores | Public | PARTIAL | PARTIAL | CANONICAL | **ADR-GOV-01** overlap with EAC-CON-011 |
-| EAC-CON-014 | Multi-agent / physical delegation governance | DOMAIN_CONTRACT | GOVERNED_EXECUTION + CW | `multi_agent_coordination_governance.py`, `physical_delegation_governance.py` | EE, CW | Evaluators | Public | Yes | PARTIAL | CANONICAL | **CONTRACT-DUPLICATE** candidate vs EAC-CON-011 |
+| EAC-CON-014 | Physical delegation / workspace delegation governance | DOMAIN_CONTRACT | COLLABORATIVE_WORK | `physical_delegation_governance.py` | EE, GE (read) | CW evaluators | Public | Yes | PARTIAL | CANONICAL | **ADR-GOV-01** overlap with EAC-CON-011 (facts vs WHETHER) |
 | EAC-CON-015 | Tool invocation spine | DOMAIN_CONTRACT | TOOLS | `intergrax/contracts/tools*` | Agents, Nexus (internal), Integrations | Tool drivers | Public | Provider SPI | PARTIAL | CANONICAL | — |
-| EAC-CON-016 | Provider invocation dispatch / reliability | PORT | TOOLS + ERL | `provider_invocation_dispatch.py`, ERL runtime ports | ERL, Integrations | Providers | Public | Yes | PARTIAL | CANONICAL | — |
+| EAC-CON-016 | Provider invocation dispatch | PORT | TOOLS | `provider_invocation_dispatch.py` | ERL, Integrations | Providers | Public | Yes | PARTIAL | CANONICAL | ERL consumes; does not own dispatch |
 | EAC-CON-017 | Agent contract & step loop | DOMAIN_CONTRACT | AGENT_CONTRACTS_AND_ASSEMBLY | `agent_contract.py`, `contracts/agent_*` | EE, Nexus | Agent impls | Public | Yes | PARTIAL | CANONICAL | **INTERNAL-LEAK** via Nexus types EAC2-F-002 |
 | EAC-CON-018 | UAEP protocol | DOMAIN_CONTRACT | AGENT_CONTRACTS_AND_ASSEMBLY | `uaep_protocol.py`, `contracts/uaep*` | EE, harness | Agents | Public | Yes | PARTIAL | CANONICAL | Imports `RuntimeContext` in executor |
 | EAC-CON-019 | Runtime execution context (contract) | DOMAIN_CONTRACT | UNIFIED_EXECUTION_RUNTIME | `runtime_execution_context.py` | Agents, UAEP | EE | Public | N/A | PARTIAL | CANONICAL | Preferred over Nexus `RuntimeContext` |
@@ -117,8 +132,8 @@ Dimensions (each rated **PASS** / **PARTIAL** / **FAIL** / **N/A** in inventory 
 | EAC-CON-037 | ERL plugin SPI | STRATEGY_SPI | ENTERPRISE_RELIABILITY_LAYER | `enterprise_reliability/plugin_spi.py` | ERL host | Plugins | Public | Yes | PARTIAL | CANONICAL | ≠ platform GE authority |
 | EAC-CON-038 | Capability catalog read | DOMAIN_CONTRACT | CAPABILITY_CATALOG_AND_DISCOVERY | `contracts/capability_catalog/*` | Marketplace, T3 | Domain sources | Public | Yes | PARTIAL | CANONICAL | Read-only |
 | EAC-CON-039 | Agent distribution / RuntimeRevision | DOMAIN_CONTRACT | AGENT_DISTRIBUTION | `contracts/agent_distribution/*` | Catalog, EE | Installer | Public | PARTIAL | PARTIAL | CANONICAL | — |
-| EAC-CON-040 | Marketplace listing / acquisition | DOMAIN_CONTRACT | CAPABILITY_CATALOG (discovery) + product | `contracts/marketplace/*` | Distribution handoff | Marketplace | Public | PARTIAL | PARTIAL | CANONICAL | ADR-MKT-01 aligned |
-| EAC-CON-041 | Tool/skill marketplace handoff ports | PORT | TOOLS / SKILLS | `tools/marketplace_lifecycle_handoff.py`, `skills/...` | Distribution | Marketplace | Public | Yes | PARTIAL | CANONICAL | — |
+| EAC-CON-040 | Marketplace listing / acquisition (catalog semantics) | DOMAIN_CONTRACT | CAPABILITY_CATALOG_AND_DISCOVERY | `contracts/marketplace/*` | Distribution, Marketplace (consumer) | Catalog federator | Public | PARTIAL | PARTIAL | CANONICAL | ADR-MKT-01 aligned; Distribution not co-owner |
+| EAC-CON-041 | Tool marketplace lifecycle handoff | PORT | TOOLS | `tools/marketplace_lifecycle_handoff.py` | Distribution, Marketplace | Tool hosts | Public | Yes | PARTIAL | CANONICAL | — |
 | EAC-CON-042 | Platform plugin lifecycle | DOMAIN_CONTRACT | PLATFORM_PLUGINS | `core/plugins/*` | All domains | EP loader | Public | Yes | PARTIAL | CANONICAL | EP not semantic owner |
 | EAC-CON-043 | Tier-3 application manifest | COMPOSITION_CONTRACT | TIER3_APPLICATION_ENVIRONMENT | `applications/contracts/manifest.py` | Hosting, EE wiring | T3 apps | Public | PARTIAL | PARTIAL | CANONICAL | **CL-EAC1-005** |
 | EAC-CON-044 | Application environment profile | COMPOSITION_CONTRACT | TIER3_APPLICATION_ENVIRONMENT | `applications/contracts/environment_profile/*` | Hosting | T3 | Public | PARTIAL | PARTIAL | CANONICAL | — |
@@ -135,25 +150,25 @@ Dimensions (each rated **PASS** / **PARTIAL** / **FAIL** / **N/A** in inventory 
 | EAC-CON-055 | CodeCraft workspace | DOMAIN_CONTRACT | CODE_CRAFT | codecraft contracts | Agents | CC services | Internal/Public | PARTIAL | PARTIAL | CANONICAL | — |
 | EAC-CON-056 | Proof receipts | DOMAIN_CONTRACT | PROOF_RECEIPTS | proof contracts | CI | Gates | Public | N/A | PARTIAL | CANONICAL | DX only |
 | EAC-CON-057 | AHI research hooks | LEGACY_CONTRACT | ADAPTIVE_HARNESS_INTELLIGENCE | immature AHI modules | Research | — | Internal | No | N/A | LEGACY | Non-prod |
-| EAC-CON-058 | Self-healing / preventive (platform extension) | DOMAIN_CONTRACT | RELIABILITY + GE adjunct | `contracts/self_healing/*`, `preventive/*` | EE | Plugins | Public | Yes | PARTIAL | CANONICAL | Scoped to healing, not GE root |
-| EAC-CON-059 | Runtime inspection read ports | PORT | OBSERVABILITY + domains | `tool_runtime_read.py`, `model_runtime_read.py` | DIAG, operators | Runtime | Public | Yes | PARTIAL | CANONICAL | — |
+| EAC-CON-058 | Self-healing / preventive (platform extension) | DOMAIN_CONTRACT | RELIABILITY_FAILURE_AND_HITL | `contracts/self_healing/*`, `preventive/*` | EE, GE (consequential remediation via EAC-CON-011) | Reliability plugins | Public | Yes | PARTIAL | CANONICAL | Healing policy owner; GE admission separate |
+| EAC-CON-059 | Tool runtime read port (inspection) | PORT | TOOLS | `tool_runtime_read.py` | DIAG, OBS (aggregate) | Tool runtime | Public | Yes | PARTIAL | CANONICAL | Obs may aggregate; does not own tool state |
 | EAC-CON-060 | Causal / platform evidence | EVENT_CONTRACT | OBSERVABILITY | `platform_causal_evidence.py` | DIAG, ERL | EE | Public | PARTIAL | PARTIAL | CANONICAL | — |
 | EAC-CON-061 | Execution failure evidence | EVENT_CONTRACT | UNIFIED_EXECUTION_RUNTIME | `execution_failure_evidence.py` | Observability | EE | Public | Yes | PARTIAL | CANONICAL | — |
-| EAC-CON-062 | Sandbox / isolation authority | DOMAIN_CONTRACT | GOVERNED_EXECUTION + EE | `runtime_sandbox_isolation_authority.py` | UAEP, Tools | EE | Public | PARTIAL | PARTIAL | CANONICAL | — |
+| EAC-CON-062 | Sandbox isolation policy / admission authority | DOMAIN_CONTRACT | GOVERNED_EXECUTION | `runtime_sandbox_isolation_authority.py` (policy surface) | UAEP, Tools, EE | GE evaluators | Public | PARTIAL | PARTIAL | CANONICAL | EE enforces via EAC-CON-097 |
 | EAC-CON-063 | Session persistence (Nexus) | INTERNAL_CONTRACT | NEXUS_EXECUTION_FLOW | `runtime/nexus/session/*` | Nexus, **T3 memory_wiring** | SessionStorage impls | **Internal** | Yes | N/A | **BYPASS** | **CL-EAC1-002** |
 | EAC-CON-064 | Nexus runtime request/answer | INTERNAL_CONTRACT | NEXUS_EXECUTION_FLOW | `responses/response_schema.py` | Agents (**leak**) | Nexus | **Internal** | No | N/A | **BYPASS** | **CL-EAC1-001** |
 | EAC-CON-065 | Nexus runtime context | INTERNAL_CONTRACT | NEXUS_EXECUTION_FLOW | `engine/runtime_context.py` | Agents (**leak**) | Nexus | **Internal** | No | N/A | **BYPASS** | **CL-EAC1-001** |
 | EAC-CON-066 | Diagnostic payload (trace) | INTERNAL_CONTRACT | NEXUS_EXECUTION_FLOW | `tracing/trace_models.py` | Agents diagnostics | Nexus | **Internal** | No | N/A | LEGACY_SHIM | Prefer contract diagnostics |
 | EAC-CON-067 | Tier-3 memory wiring composition | COMPOSITION_CONTRACT | TIER3_APPLICATION_ENVIRONMENT | `applications/_shared/memory_wiring.py` | T3 hosts | Memory plugins + **SessionManager** | Public wiring | PARTIAL | N/A | **PARTIAL** | **CONCRETE-COUPLING** EAC2-F-003 |
-| EAC-CON-068 | Distributed KV (supporting) | PROVIDER_SPI | PLATFORM_FOUNDATION adjunct | `distributed/contracts/kv_store.py` | Multiple | Redis/SQLite | Public | Yes | PARTIAL | CANONICAL | — |
-| EAC-CON-069 | External work / operations | COMMAND_CONTRACT | INTEGRATIONS + TOOLS | `external_work.py`, `external_operations/*` | ERL, Tools | Providers | Public | Yes | PARTIAL | CANONICAL | — |
+| EAC-CON-068 | Distributed KV (supporting) | PROVIDER_SPI | PLATFORM_FOUNDATION | `distributed/contracts/kv_store.py` | Multiple | Redis/SQLite | Public | Yes | PARTIAL | CANONICAL | Supporting SPI; not a composite owner label |
+| EAC-CON-069 | External operations (integration provider commands) | COMMAND_CONTRACT | INTEGRATIONS | `external_operations/*` | ERL, Tools | Integration providers | Public | Yes | PARTIAL | CANONICAL | Tool invocation semantics: EAC-CON-098 |
 | EAC-CON-070 | Delegated execution family | PORT | UNIFIED_EXECUTION_RUNTIME | `delegated_execution_*.py` | AW, providers | EE | Public | Yes | PARTIAL | CANONICAL | — |
 | EAC-CON-071 | Step LLM router port | PORT | AGENT_CONTRACTS_AND_ASSEMBLY | `step_llm_router_port.py` | ACP authoring | LLM adapters | Public | Yes | PARTIAL | CANONICAL | — |
-| EAC-CON-072 | Budget / agent budget slice | DOMAIN_CONTRACT | CONTEXT_ENGINEERING + EE | `agent_budget.py`, CE budget | Agents, T3 | EE ledger | Public | Hook SPI | PARTIAL | CANONICAL | CE-02 qualification |
+| EAC-CON-072 | Context / token budget (CE accounting) | DOMAIN_CONTRACT | CONTEXT_ENGINEERING | CE budget modules (`intergrax/context/` policy) | Agents, T3 | CE composers | Public | Hook SPI | PARTIAL | CANONICAL | CE-02 qualification; EE slice → EAC-CON-099 |
 | EAC-CON-073 | Runtime invariant rules | STRATEGY_SPI | PLATFORM_FOUNDATION | `runtime_invariants.py` | EE | Rule packs | Public | Yes | PARTIAL | CANONICAL | — |
-| EAC-CON-074 | Forecast / predictive analyzers | STRATEGY_SPI | DIAGNOSTICS adjunct | `predictive*.py`, `statistical_forecast_analyzer.py` | DIAG | Plugins | Public | Yes | PARTIAL | CANONICAL | — |
-| EAC-CON-075 | Semantic verification judges | STRATEGY_SPI | DECISION_SYSTEM adjunct | `semantic_verification.py` | Decision qual | Judges | Public | Yes | PARTIAL | CANONICAL | — |
-| EAC-CON-076 | Execution environment isolation view | STATE_REFERENCE_CONTRACT | TIER3 + EE | `execution_environment_isolation.py` | EE, sandbox | T3 profiles | Public | PARTIAL | PARTIAL | CANONICAL | — |
+| EAC-CON-074 | Forecast / predictive analyzers | STRATEGY_SPI | DIAGNOSTICS | `predictive*.py`, `statistical_forecast_analyzer.py` | DIAG | Plugins | Public | Yes | PARTIAL | CANONICAL | Strategy SPI under DIAGNOSTICS authority |
+| EAC-CON-075 | Semantic verification judges | STRATEGY_SPI | DECISION_SYSTEM | `semantic_verification.py` | Decision qual | Judges | Public | Yes | PARTIAL | CANONICAL | Strategy SPI under DECISION_SYSTEM authority |
+| EAC-CON-076 | Execution environment isolation view (T3 profile) | STATE_REFERENCE_CONTRACT | TIER3_APPLICATION_ENVIRONMENT | `execution_environment_isolation.py` | EE, GE (EAC-CON-062 read) | T3 profiles | Public | PARTIAL | PARTIAL | CANONICAL | T3-owned view; EE enforces admission |
 | EAC-CON-077 | Compensation side-effect execution | COMMAND_CONTRACT | GOVERNED_EXECUTION | `compensation_side_effect_execution.py` | ERL, Tools | Tools | Public | Yes | PARTIAL | CANONICAL | — |
 | EAC-CON-078 | Control plane mutation policy | DOMAIN_CONTRACT | GOVERNED_EXECUTION | `control_plane_mutation.py` | Ops automation | GE | Public | Yes | PARTIAL | CANONICAL | — |
 | EAC-CON-079 | Marketplace query context | RESULT_CONTRACT | CAPABILITY_CATALOG | `marketplace/query_context.py` | Marketplace UI | Catalog | Public | N/A | PARTIAL | CANONICAL | — |
@@ -168,21 +183,39 @@ Dimensions (each rated **PASS** / **PARTIAL** / **FAIL** / **N/A** in inventory 
 | EAC-CON-088 | Governed continuation | COMMAND_CONTRACT | GOVERNED_EXECUTION | `governed_continuation.py` | EE | GE | Public | PARTIAL | PARTIAL | CANONICAL | — |
 | EAC-CON-089 | Retry budget port | PORT | RELIABILITY_FAILURE_AND_HITL | `retry_budget.py` | Tools, providers | Reliability | Public | Yes | PARTIAL | CANONICAL | — |
 | EAC-CON-090 | Execution reconstruction reader | PORT | OBSERVABILITY | `execution_reconstruction.py` | DIAG, operators | Obs | Public | Yes | PARTIAL | CANONICAL | — |
-| EAC-CON-091 | Plugin memory store discovery | PORT | PLATFORM_PLUGINS → MEMORY | `core/plugins`, `memory/resolver` | T3 | Plugins | Public | Yes | PARTIAL | CANONICAL | — |
+| EAC-CON-091 | Plugin memory store discovery / resolution port | PORT | PLATFORM_PLUGINS | `core/plugins`, `memory/resolver` | T3, MEMORY (store SPI) | Plugin registry, memory backends | Public | Yes | PARTIAL | CANONICAL | MEMORY implements stores; does not own discovery port |
 | EAC-CON-092 | Hosting service registry | COMPOSITION_CONTRACT | APPLICATION_HOSTING | `hosting/services.py` | T3 host apps | Hosting | Public | PARTIAL | PARTIAL | CANONICAL | **CL-EAC1-005** |
+| EAC-CON-093 | Multi-agent coordination governance (delegation auth eval) | DOMAIN_CONTRACT | GOVERNED_EXECUTION | `multi_agent_coordination_governance.py` | EE, CW | GE evaluators | Public | Yes | PARTIAL | CANONICAL | **CONTRACT-DUPLICATE** vs EAC-CON-011; **ADR-GOV-01** open |
+| EAC-CON-094 | Provider effect uncertainty / reconciliation ports | PORT | ENTERPRISE_RELIABILITY_LAYER | ERL `provider_*` / runtime reconciliation ports | EE, Tools | ERL orchestrator | Public | Yes | PARTIAL | CANONICAL | Split from EAC-CON-016; dispatch remains TOOLS |
+| EAC-CON-095 | Skill marketplace lifecycle handoff | PORT | SKILLS | `skills/.../marketplace_lifecycle_handoff.py` | Distribution, Marketplace | Skill hosts | Public | Yes | PARTIAL | CANONICAL | Split from EAC-CON-041 |
+| EAC-CON-096 | Model runtime read port (inspection) | PORT | LLM_ADAPTERS | `model_runtime_read.py` | DIAG, OBS (aggregate) | LLM runtime | Public | Yes | PARTIAL | CANONICAL | Split from EAC-CON-059 |
+| EAC-CON-097 | Sandbox execution environment enforcement | DOMAIN_CONTRACT | UNIFIED_EXECUTION_RUNTIME | `runtime_sandbox_isolation_authority.py` (enforcement surface) | UAEP, Tools | EE runtime | Public | PARTIAL | PARTIAL | CANONICAL | Split from EAC-CON-062; policy owner GE |
+| EAC-CON-098 | External work dispatch (tool semantic) | COMMAND_CONTRACT | TOOLS | `external_work.py` | ERL, Integrations | Tool drivers | Public | Yes | PARTIAL | CANONICAL | Split from EAC-CON-069 |
+| EAC-CON-099 | Agent execution / resource budget slice | DOMAIN_CONTRACT | UNIFIED_EXECUTION_RUNTIME | `agent_budget.py` | Agents, T3 | EE ledger | Public | Hook SPI | PARTIAL | CANONICAL | Split from EAC-CON-072; CE token budget separate |
 
-**Inventory metrics (@ grouped families):**
+**Inventory metrics (@ grouped families, post–EAC-2R1 splits):**
 
 | Metric | Count |
 |--------|------:|
-| Total contract families (EAC-CON rows) | **92** |
-| Public cross-layer contracts | **68** |
+| Total contract families (EAC-CON rows) | **99** |
+| Public cross-layer contracts | **75** |
 | Internal-only / subordinate contracts | **14** |
 | Strategy SPI families | **12** |
 | Provider SPI families | **18** |
 | Event contract families | **6** |
 | Legacy contract families | **3** |
 | Documented bypass / leak paths | **8** |
+
+**Ownership metrics (EAC-2R1):**
+
+| Metric | Count |
+|--------|------:|
+| Public canonical contract families | **75** |
+| Families with exactly one semantic owner (incl. internal/legacy rows) | **99** |
+| Families `OWNER UNRESOLVED` / explicit ADR-required owner cell | **0** |
+| Families with multi-owner semantic owner cells | **0** |
+
+ADR-GOV-01 and related conflicts remain **open** in Findings columns — not resolved via composite owner wording.
 
 ---
 
@@ -193,24 +226,24 @@ Compact register — all **34** domains audited. Empty **Owned** is acceptable.
 | Domain | Public contracts owned (IDs) | Key consumed contracts | Ports provided | Ports consumed | Known bypasses |
 |--------|------------------------------|------------------------|----------------|----------------|----------------|
 | PLATFORM_FOUNDATION | EAC-CON-073 | All (meta) | — | — | — |
-| UNIFIED_EXECUTION_RUNTIME | EAC-CON-001…005, 019, 061, 070 | EAC-CON-011, 006, 029 | Admission, continuation | Governance, Obs | — |
+| UNIFIED_EXECUTION_RUNTIME | EAC-CON-001…005, 019, 061, 070, 097, 099 | EAC-CON-011, 006, 029, 076 | Admission, continuation, sandbox enforcement | Governance, Obs, T3 isolation view | — |
 | ORCHESTRATION | EAC-CON-006 | EAC-CON-003, 007 | Topology ports | EE admission | — |
 | NEXUS_EXECUTION_FLOW | EAC-CON-007, 008, 063…066, 085 | EE context, tool/agent contracts | **None public** | Tools, Agents (internal) | **008, 063–066** |
 | DECISION_SYSTEM | EAC-CON-009, 010, 075 | EAC-CON-029, 054 | Decision SPI | EE host | EAC-CON-082 legacy |
-| GOVERNED_EXECUTION | EAC-CON-011, 012, 014, 062, 077, 078, 088 | EAC-CON-001, 015 | Policy evaluators | EE, Tools | **CL-EAC1-004** |
+| GOVERNED_EXECUTION | EAC-CON-011, 012, 062, 077, 078, 088, 093 | EAC-CON-001, 015, 014 (CW facts) | Policy evaluators | EE, Tools, CW | **CL-EAC1-004** |
 | REASONING_AND_COGNITION | EAC-CON-054 | EAC-CON-024, 047 | Reasoning SPI | LLM | — |
 | AGENT_CONTRACTS_AND_ASSEMBLY | EAC-CON-017, 018, 071, 083 | EAC-CON-011, 024, 015, **064–065** | Agent SPI | **Nexus leak** | **001, 083** |
 | AGENT_DISTRIBUTION | EAC-CON-039, 080 | EAC-CON-038, 002 | Install ports | Catalog | — |
-| LLM_ADAPTERS | EAC-CON-047 | — | LLM backends | Vendor APIs | — |
-| TOOLS | EAC-CON-015, 041 | EAC-CON-011, 016 | Tool drivers | GE, Integrations | — |
-| SKILLS | EAC-CON-049, 041 | EAC-CON-015 | Skill hosts | Tools | — |
-| INTEGRATIONS | EAC-CON-048, 069 | EAC-CON-015 | Provider backends | Credentials | — |
+| LLM_ADAPTERS | EAC-CON-047, 096 | — | LLM backends, runtime read | Vendor APIs, DIAG | — |
+| TOOLS | EAC-CON-015, 016, 041, 059, 098 | EAC-CON-011, 094 | Tool drivers, dispatch | GE, ERL, Integrations | — |
+| SKILLS | EAC-CON-049, 095 | EAC-CON-015 | Skill hosts | Tools | — |
+| INTEGRATIONS | EAC-CON-048, 069 | EAC-CON-015, 098 | Provider backends | Credentials, Tools | — |
 | RAG | EAC-CON-023 | EAC-CON-021, 048 | Retrieval | Memory refs | — |
-| MEMORY | EAC-CON-020, 021, 022 | EAC-CON-091 | Store plugins | Obs (audit) | **067 wiring** |
-| CONTEXT_ENGINEERING | EAC-CON-024, 025, 026, 072 | EAC-CON-021, 023, 028, 013 | Composers | Memory/RAG/UCL/CW | **085 impl locus** |
+| MEMORY | EAC-CON-020, 021, 022 | EAC-CON-091 (consumer) | Store plugins | Obs (audit), Plugins | **067 wiring** |
+| CONTEXT_ENGINEERING | EAC-CON-024, 025, 026, 072 | EAC-CON-021, 023, 028, 013, 099 (read) | Composers | Memory/RAG/UCL/CW/EE | **085 impl locus** |
 | UNIFIED_CONTEXT_LIFECYCLE | EAC-CON-027, 028 | EAC-CON-024 | Optimizer | CE bundles | Scope gap B3 |
 | MODALITY | EAC-CON-053 | EAC-CON-024 | Adapters | CE | — |
-| OBSERVABILITY | EAC-CON-029, 030, 059, 060, 081, 090 | EAC-CON-061 | Export sinks | EE events | — |
+| OBSERVABILITY | EAC-CON-029, 030, 060, 081, 090 | EAC-CON-061, 059, 096 (aggregate reads) | Export sinks | EE events, domain read ports | — |
 | DIAGNOSTICS | EAC-CON-031, 032, 033, 074, 086 | EAC-CON-029, 090 | Detectors | Obs evidence | — |
 | RELIABILITY_FAILURE_AND_HITL | EAC-CON-034, 035, 058, 089 | EAC-CON-004, 011 | Recovery/HITL | EE lifecycle | — |
 | ADAPTIVE_HARNESS_INTELLIGENCE | EAC-CON-057 | Research telemetry | — | — | — |
@@ -220,12 +253,12 @@ Compact register — all **34** domains audited. Empty **Owned** is acceptable.
 | APPLICATION_HOSTING | EAC-CON-045, 046, 092 | EAC-CON-043, 002 | Host lifecycle | T3 manifest | **005** |
 | CODE_CRAFT | EAC-CON-055 | CW, Tools | — | — | — |
 | AUTONOMOUS_WORK | EAC-CON-050 | EAC-CON-002, 070 | Worker dispatch | EE | — |
-| COLLABORATIVE_WORK | EAC-CON-013 | EAC-CON-011, 009 | CW stores | GE (**overlap**) | **004** |
+| COLLABORATIVE_WORK | EAC-CON-013, 014 | EAC-CON-011, 009, 093 | CW stores | GE (**overlap**) | **004** |
 | BACKGROUND_TASKS | EAC-CON-051 | EAC-CON-002 | Queues | EE | — |
-| CAPABILITY_CATALOG_AND_DISCOVERY | EAC-CON-038, 079 | Domain descriptors | Catalog read | Distribution | — |
+| CAPABILITY_CATALOG_AND_DISCOVERY | EAC-CON-038, 040, 079 | Domain descriptors | Catalog read, marketplace listing | Distribution, Marketplace | — |
 | PROOF_RECEIPTS | EAC-CON-056 | — | — | — | — |
-| PLATFORM_PLUGINS | EAC-CON-042, 091 | Domain validation | Plugin registry | Domains | Registry ≠ owner |
-| ENTERPRISE_RELIABILITY_LAYER | EAC-CON-036, 037, 087 | EAC-CON-011, 004, 029 | Reconciliation SPI | GE, EE | — |
+| PLATFORM_PLUGINS | EAC-CON-042, 091 | Domain validation, MEMORY wiring | Plugin registry | Domains, MEMORY | Registry ≠ domain semantic owner |
+| ENTERPRISE_RELIABILITY_LAYER | EAC-CON-036, 037, 087, 094 | EAC-CON-011, 004, 016, 029 | Reconciliation SPI | GE, EE, Tools | — |
 
 ---
 
@@ -246,7 +279,8 @@ Compact register — all **34** domains audited. Empty **Owned** is acceptable.
 | Mechanism | Contract ID | Owner | Replaceable? | Finding |
 |-----------|-------------|-------|--------------|---------|
 | DecisionStrategy | EAC-CON-009 | DECISION_SYSTEM | Yes | PASS |
-| Memory store plugin | EAC-CON-020, 091 | MEMORY | Yes | PASS |
+| Memory store plugin | EAC-CON-020 | MEMORY | Yes | PASS |
+| Plugin memory discovery port | EAC-CON-091 | PLATFORM_PLUGINS | Yes | PASS (MEMORY implements store) |
 | Tool driver | EAC-CON-015 | TOOLS | Yes | PASS |
 | GE policy plugin | EAC-CON-011 | GOVERNED_EXECUTION | Partial | QUAL-EAC1-001 |
 | ERL GovernanceStrategy | EAC-CON-037 | ERL | Yes | ≠ GE authority |
@@ -268,7 +302,7 @@ Compact register — all **34** domains audited. Empty **Owned** is acceptable.
 | EAC2-F-001 | INTERNAL-LEAK | **HIGH** | EAC-CON-064, 065 | NEXUS internal | Tier-2 `agents/*`, `intergrax/agents/agent_contract.py` import Nexus types | **MISPLACED** |
 | EAC2-F-002 | CONTRACT-NOT-PLUGINABLE | **HIGH** | EAC-CON-017, 018 | AGENT_CONTRACTS | External agent cannot implement without Nexus imports | **FAIL** replaceability |
 | EAC2-F-003 | CONCRETE-COUPLING | **MEDIUM** | EAC-CON-067 | MEMORY + T3 composition | `memory_wiring.py` constructs `SessionManager` + Nexus storage | **BYPASS** vs EAC-CON-021 |
-| EAC2-F-004 | CONTRACT-DUPLICATE | **HIGH** | EAC-CON-011 vs 013 vs 014 | GOVERNED_EXECUTION | Parallel WHETHER for tools/workspace/delegation | **ADR** CL-EAC1-004 |
+| EAC2-F-004 | CONTRACT-DUPLICATE | **HIGH** | EAC-CON-011 vs 013 vs 014/093 | GE; CW (separate owner per ID) | Parallel WHETHER for tools/workspace/delegation | **ADR** CL-EAC1-004 |
 | EAC2-F-005 | CONTRACT-SCOPE-GAP | **MEDIUM** | EAC-CON-028 | UCL | Workspace-bound UCL reads fail closed; not fully modeled | **PARTIAL** |
 | EAC2-F-006 | CONTRACT-VERSIONING-GAP | **LOW** | Multiple `contracts/*` | Domain owners | Few explicit schema versions; frozen IDs compensate | **PARTIAL** |
 | EAC2-F-007 | CONTRACT-LEGACY | **MEDIUM** | EAC-CON-082 | DECISION_SYSTEM | Critic runtime still wired | LEGACY-EAC1-001 |
@@ -320,7 +354,7 @@ Compact register — all **34** domains audited. Empty **Owned** is acceptable.
 
 | Role | Families | Verdict |
 |------|----------|---------|
-| Authorization WHETHER | EAC-CON-011 (GE), EAC-CON-013 (CW policy), EAC-CON-014 (delegation) | **Duplicate semantic** — ADR-GOV-01 |
+| Authorization WHETHER | EAC-CON-011 (GE), EAC-CON-013 (CW policy), EAC-CON-093 (delegation eval); EAC-CON-014 (CW delegation facts) | **Duplicate semantic** — ADR-GOV-01 |
 | Execution request envelope | EAC-CON-019 vs EAC-CON-064 | **Version evolution missing** — internal type acts as public |
 | Context source | EAC-CON-025 ports vs ad-hoc Nexus context assembly | **Adapter** — CL-EAC1-003 |
 | Decision outcome | EAC-CON-009 vs EAC-CON-082 critic | **Legacy** |
@@ -370,7 +404,7 @@ Nexus `runtime/nexus/context/*` (EAC-CON-085) is **implementation locus** for CE
 
 ### CL-EAC1-004 — GE ↔ CW authority (**ADR REQUIRED / HIGH**)
 
-**Mapped contracts:** EAC-CON-011 (`AgentRuntimePolicyProvider`, `CapabilityGrantResolverPort`), EAC-CON-013 (workspace/tool policy declarations), EAC-CON-014 (delegation evaluators). **Duplicate WHETHER** for tool side-effects — **do not resolve in EAC-2**.
+**Mapped contracts:** EAC-CON-011 (`AgentRuntimePolicyProvider`, `CapabilityGrantResolverPort`), EAC-CON-013 (workspace/tool policy declarations), EAC-CON-014 (CW delegation facts), EAC-CON-093 (multi-agent delegation evaluators). **Duplicate WHETHER** for tool side-effects — **do not resolve in EAC-2 / EAC-2R1** (ownership normalized; ADR remains open).
 
 ### CL-EAC1-005 — Tier-3 ↔ Hosting (**OPEN / MEDIUM**)
 
@@ -378,7 +412,38 @@ Nexus `runtime/nexus/context/*` (EAC-CON-085) is **implementation locus** for CE
 
 ---
 
-## 15. EAC-3 dependency inputs (Phase 21)
+## 15. EAC-3 dependency inputs (Phase 21 · hardened @ EAC-2R1)
+
+**Edge rule:** `consumer domain → semantic contract owner domain` (one owner per **EAC-CON** row).
+
+| Consumer → owner (semantic) | Canonical contract(s) | EAC-3 action |
+|-----------------------------|-------------------------|--------------|
+| Agents → UNIFIED_EXECUTION_RUNTIME | EAC-CON-002, 019 (not Nexus 064/065) | Prove no upward Nexus leak |
+| Agents → GOVERNED_EXECUTION | EAC-CON-011 | Policy direction |
+| Agents → TOOLS | EAC-CON-015 | Invocation |
+| Agents → CONTEXT_ENGINEERING | EAC-CON-024, 072 | Context budget |
+| Agents → UNIFIED_EXECUTION_RUNTIME | EAC-CON-099 | Execution budget |
+| CE → MEMORY | EAC-CON-021 | Reference read |
+| CE → RAG | EAC-CON-023 | Reference read |
+| CE → UNIFIED_CONTEXT_LIFECYCLE | EAC-CON-028 | Reference read |
+| Reliability → UNIFIED_EXECUTION_RUNTIME | EAC-CON-004 | Continuation (consumer) |
+| Reliability → RELIABILITY_FAILURE_AND_HITL | EAC-CON-035 | Recovery admission |
+| ERL → UNIFIED_EXECUTION_RUNTIME | EAC-CON-036 | Reconciliation intent |
+| ERL → UNIFIED_EXECUTION_RUNTIME | EAC-CON-004 | Checkpoint read (consumer) |
+| ERL → GOVERNED_EXECUTION | EAC-CON-087 | Consequential continue material |
+| ERL → GOVERNED_EXECUTION | EAC-CON-011 | Governed continue (consumer) |
+| ERL → TOOLS | EAC-CON-016 | Dispatch consumption |
+| Tools → ENTERPRISE_RELIABILITY_LAYER | EAC-CON-094 | Effect uncertainty / reconciliation |
+| Marketplace → CAPABILITY_CATALOG_AND_DISCOVERY | EAC-CON-040, 079 | Listings |
+| Marketplace → AGENT_DISTRIBUTION | EAC-CON-080 | Agent handoff |
+| Marketplace → TOOLS | EAC-CON-041 | Tool lifecycle handoff |
+| Marketplace → SKILLS | EAC-CON-095 | Skill lifecycle handoff |
+| Tier3 → APPLICATION_HOSTING | EAC-CON-043 → 045 | Deploy/host |
+| Tier3 → PLATFORM_PLUGINS | EAC-CON-091 | Plugin discovery |
+| Diagnostics → OBSERVABILITY | EAC-CON-029, 090 | Evidence read |
+| Diagnostics → TOOLS | EAC-CON-059 | Tool runtime inspection read |
+| Diagnostics → LLM_ADAPTERS | EAC-CON-096 | Model runtime inspection read |
+| GE → COLLABORATIVE_WORK | EAC-CON-014 (read facts) | CW not co-owner of WHETHER |
 
 | Pattern | Example | EAC-3 action |
 |---------|---------|--------------|
@@ -394,7 +459,7 @@ Nexus `runtime/nexus/context/*` (EAC-CON-085) is **implementation locus** for CE
 
 | ADR | Contract evidence | Status |
 |-----|-------------------|--------|
-| ADR-GOV-01 | EAC-CON-011 vs 013/014 | **Open** |
+| ADR-GOV-01 | EAC-CON-011 vs 013/014/093 | **Open** |
 | ADR-CTX-01 | EAC-CON-024/027/025 | **Open** |
 | ADR-MKT-01 | EAC-CON-038/040/080 | Canon aligned |
 
@@ -412,25 +477,41 @@ Inherited from EAC-1 §14; no new **ID** from EAC-2 (contract defects are **CL**
 |-----------------|----------------------|----------|-------------------|----------------|------------------|---------------------|-------------|---------|
 | Execution | Orchestration | Strategy dispatch | EAC-CON-006 | ORCHESTRATION | `orchestration_topology` | No | Yes | — |
 | Orchestration | Nexus | Graph run | EAC-CON-007 | NEXUS (internal) | `NexusLoop` (EE only) | Internal OK | Injected | — |
-| Agents | Execution | Lifecycle/admission | EAC-CON-002, 019 | EE | Mixed — often skips to Nexus | **Yes** | Partial | EAC2-F-001 |
+| Agents | Execution | Lifecycle/admission | EAC-CON-002, 019 | UNIFIED_EXECUTION_RUNTIME | Mixed — often skips to Nexus | **Yes** | Partial | EAC2-F-001 |
 | Agents | Nexus | Step/session | EAC-CON-064, 065 (**illegal public**) | NEXUS | `runtime.nexus.*` | **Yes** | **No** | CL-EAC1-001 |
 | Decision | Execution | Host run | EAC-CON-009 | DECISION_SYSTEM | `decision_*` contracts | No | Yes | — |
-| Execution | Governance | WHETHER | EAC-CON-011 | GE | `agent_runtime_governance` | No | Partial | CL-EAC1-004 |
-| Governance | Tools | Invocation policy | EAC-CON-015 + 011 | TOOLS + GE | tool contracts | No | Yes | — |
-| CW | Governance | Tool/workspace auth | EAC-CON-013 + 011 | CW + GE | `collaborative_work` | Doc conflict | Partial | CL-EAC1-004 |
+| Execution | Governance | WHETHER | EAC-CON-011 | GOVERNED_EXECUTION | `agent_runtime_governance` | No | Partial | CL-EAC1-004 |
+| Governance | Tools | Tool invocation policy | EAC-CON-011 | GOVERNED_EXECUTION | `agent_runtime_governance` | No | Partial | CL-EAC1-004 |
+| Tools | Governance | Tool admission (consumer) | EAC-CON-015 | TOOLS | tool contracts | No | Yes | — |
+| CW | Governance | Workspace/tool policy surface | EAC-CON-013 | COLLABORATIVE_WORK | `collaborative_work` | Doc conflict | Partial | CL-EAC1-004 |
+| CW | Governance | Platform WHETHER | EAC-CON-011 | GOVERNED_EXECUTION | GE evaluators | Overlap | Partial | CL-EAC1-004 |
+| CW | Governance | Delegation facts | EAC-CON-014 | COLLABORATIVE_WORK | `physical_delegation_governance` | No | Partial | ADR-GOV-01 |
+| GE | CW | Delegation facts (read) | EAC-CON-014 | COLLABORATIVE_WORK | CW stores | No | Partial | ADR-GOV-01 |
 | CE | Memory | Memory refs | EAC-CON-021 | MEMORY | `memory_reference_read` | No | Yes | — |
 | CE | RAG | Knowledge refs | EAC-CON-023 | RAG | `knowledge_reference_read` | No | Yes | — |
 | CE | UCL | Lifecycle refs | EAC-CON-028 | UCL | `ucl_reference_read` | No | Yes | EAC2-F-005 |
 | Diagnostics | Observability | Evidence | EAC-CON-029, 090 | OBSERVABILITY | diagnostic ports | Adapter only | Yes | — |
-| Reliability | Execution | Continue/pause signals | EAC-CON-004, 035 | EE + Reliability | continuation ports | No | Yes | — |
-| ERL | Execution | Lifecycle intent (not mutate) | EAC-CON-036, 004 | ERL + EE | ERL contracts | No* | Yes | *canon |
-| ERL | Governance | Consequential continue | EAC-CON-087, 011 | ERL + GE | `governance_decision` | No | Yes | — |
+| Reliability | Execution | Continue/pause signals | EAC-CON-004 | UNIFIED_EXECUTION_RUNTIME | continuation ports | No | Yes | — |
+| Reliability | Execution | Recovery admission | EAC-CON-035 | RELIABILITY_FAILURE_AND_HITL | `recovery_admission` | No | Yes | — |
+| ERL | Execution | Lifecycle intent (not mutate) | EAC-CON-036 | ENTERPRISE_RELIABILITY_LAYER | ERL contracts | No* | Yes | *canon |
+| ERL | Execution | Checkpoint read (consumer) | EAC-CON-004 | UNIFIED_EXECUTION_RUNTIME | continuation ports | No* | Yes | *canon |
+| ERL | Governance | Consequential continue material | EAC-CON-087 | ENTERPRISE_RELIABILITY_LAYER | `governance_decision` | No | Yes | — |
+| ERL | Governance | Governed continue (consumer) | EAC-CON-011 | GOVERNED_EXECUTION | GE admission | No | Yes | — |
+| ERL | Tools | Provider dispatch (consumer) | EAC-CON-016 | TOOLS | `provider_invocation_dispatch` | No | Yes | — |
 | ERL | Observability | Reliability facts | EAC-CON-029 | OBSERVABILITY | events | No | Yes | — |
-| Catalog | Distribution | Discovery handoff | EAC-CON-038, 080 | Catalog + AD | read/handoff ports | No | Yes | — |
-| Marketplace | Catalog | Listings | EAC-CON-040, 079 | Catalog | marketplace contracts | No | Yes | — |
-| Marketplace | Distribution | Acquire | EAC-CON-080 | AD | handoff | No | Yes | — |
-| Tier3 | Hosting | Deploy/host | EAC-CON-043 → 045 | T3 + Hosting | manifest + lifecycle | Partial | Partial | CL-EAC1-005 |
-| Plugins | Domain owners | Semantic validation | EAC-CON-042 + domain ports | DOMAIN | plugin SPI | No | Yes | — |
+| Catalog | Distribution | Discovery handoff | EAC-CON-038 | CAPABILITY_CATALOG_AND_DISCOVERY | catalog read | No | Yes | — |
+| Distribution | Catalog | Discovery (consumer) | EAC-CON-080 | AGENT_DISTRIBUTION | handoff port | No | Yes | — |
+| Marketplace | Catalog | Listings | EAC-CON-040, 079 | CAPABILITY_CATALOG_AND_DISCOVERY | marketplace contracts | No | Yes | — |
+| Marketplace | Distribution | Acquire | EAC-CON-080 | AGENT_DISTRIBUTION | handoff | No | Yes | — |
+| Marketplace | Tools | Tool listing handoff | EAC-CON-041 | TOOLS | marketplace handoff | No | Yes | — |
+| Marketplace | Skills | Skill listing handoff | EAC-CON-095 | SKILLS | marketplace handoff | No | Yes | — |
+| Tier3 | Hosting | Deploy/host manifest | EAC-CON-043 | TIER3_APPLICATION_ENVIRONMENT | manifest | Partial | Partial | CL-EAC1-005 |
+| Tier3 | Hosting | Hosted lifecycle | EAC-CON-045 | APPLICATION_HOSTING | lifecycle | Partial | Partial | CL-EAC1-005 |
+| Plugins | Domain owners | Semantic validation | EAC-CON-042 | PLATFORM_PLUGINS | plugin SPI | No | Yes | — |
+| Plugins | Memory | Store discovery handoff | EAC-CON-091 | PLATFORM_PLUGINS | resolver | No | Yes | — |
+| EE | T3 | Isolation view (consumer) | EAC-CON-076 | TIER3_APPLICATION_ENVIRONMENT | isolation profile | No | Partial | — |
+| EE | GE | Sandbox policy (consumer) | EAC-CON-062 | GOVERNED_EXECUTION | isolation authority | No | Partial | — |
+| EE | EE | Sandbox enforcement | EAC-CON-097 | UNIFIED_EXECUTION_RUNTIME | runtime enforcement | No | Partial | — |
 
 ---
 
@@ -459,10 +540,27 @@ Inherited from EAC-1 §14; no new **ID** from EAC-2 (contract defects are **CL**
 | Capability catalog | CAPABILITY_CATALOG_AND_DISCOVERY | `intergrax/contracts/capability_catalog/` | Marketplace | Federator | **CORRECT** |
 | Agent distribution | AGENT_DISTRIBUTION | `intergrax/contracts/agent_distribution/` | Catalog | Installer | **CORRECT** |
 | Legacy critic | DECISION_SYSTEM | `intergrax/runtime/critic/` | EE legacy | Critic | **LEGACY** |
+| `physical_delegation_governance` | COLLABORATIVE_WORK | `intergrax/contracts/` | EE, GE | CW | **CONFLICT** ADR-GOV-01 |
+| `multi_agent_coordination_governance` | GOVERNED_EXECUTION | `intergrax/contracts/` | EE, CW | GE evaluators | **CONFLICT** ADR-GOV-01 |
+| `provider_invocation_dispatch` | TOOLS | `intergrax/contracts/` | ERL, Integrations | Providers | **CORRECT** |
+| ERL provider reconciliation ports | ENTERPRISE_RELIABILITY_LAYER | `intergrax/contracts/enterprise_reliability/` | EE, Tools | ERL | **CORRECT** |
+| Marketplace listing (catalog) | CAPABILITY_CATALOG_AND_DISCOVERY | `intergrax/contracts/marketplace/` | Marketplace | Catalog | **CORRECT** |
+| Tool marketplace handoff | TOOLS | `tools/marketplace_lifecycle_handoff.py` | Distribution | Tool hosts | **CORRECT** |
+| Skill marketplace handoff | SKILLS | `skills/.../marketplace_lifecycle_handoff.py` | Distribution | Skill hosts | **CORRECT** |
+| `tool_runtime_read` | TOOLS | `intergrax/contracts/` | DIAG, OBS | Tool runtime | **CORRECT** |
+| `model_runtime_read` | LLM_ADAPTERS | `intergrax/contracts/` | DIAG, OBS | LLM runtime | **CORRECT** |
+| Sandbox isolation policy | GOVERNED_EXECUTION | `runtime_sandbox_isolation_authority.py` | UAEP, Tools, EE | GE evaluators | **CORRECT** |
+| Sandbox execution enforcement | UNIFIED_EXECUTION_RUNTIME | `runtime_sandbox_isolation_authority.py` | UAEP, Tools | EE runtime | **CORRECT** |
+| CE context/token budget | CONTEXT_ENGINEERING | `intergrax/context/` | Agents, T3 | CE composers | **CORRECT** |
+| Agent execution budget | UNIFIED_EXECUTION_RUNTIME | `agent_budget.py` | Agents, T3 | EE ledger | **CORRECT** |
+| T3 isolation view | TIER3_APPLICATION_ENVIRONMENT | `execution_environment_isolation.py` | EE, GE | T3 profiles | **CORRECT** |
+| Plugin memory discovery | PLATFORM_PLUGINS | `core/plugins/` | T3, MEMORY | Plugins | **CORRECT** |
 
 ---
 
 ## 20. Quality metrics summary
+
+**Finding counts are NON-EXCLUSIVE.** One contract family may appear in multiple finding classes (e.g. **INTERNAL_LEAK** and **BYPASS**). These counts do **not** sum to total family count (**99**) and are not an arithmetic partition of the inventory.
 
 | Verdict / finding class | Count |
 |-------------------------|------:|
@@ -499,25 +597,27 @@ Inherited from EAC-1 §14; no new **ID** from EAC-2 (contract defects are **CL**
 
 ---
 
-## 22. Validation checklist (Phase 29)
+## 22. Validation checklist (Phase 29 · EAC-2R1 gates)
 
 | Gate | Result |
 |------|--------|
-| V1 — All 34 domains audited | **PASS** (§5) |
-| V2 — Public cross-layer contract has semantic owner | **PASS** (§4, §19) |
-| V3 — Owners map to EAC-1 authorities | **PASS** |
-| V4 — Major boundaries have contract or CONTRACT-MISSING | **PASS** (§18) |
-| V5 — External private types recorded | **PASS** (§9–10) |
-| V6 — CL-EAC1-001…005 mapped | **PASS** (§14) |
-| V7 — Plugin mechanisms inventoried | **PASS** (§7) |
-| V8 — Vendor leakage inspected | **PASS** (integrations walled) |
-| V9 — Versioning baseline | **PASS** (§11) |
-| V10 — No production code changed in EAC-2 session | **PASS** (documentation only) |
-| V11 — No ADR resolved | **PASS** |
-| V12 — Sufficient for EAC-3 | **PASS** (§15) |
+| V1 — All contract families inventoried | **PASS** (§4 — **99** rows) |
+| V2 — Each canonical public family: one semantic owner or explicit ADR/UNRESOLVED cell | **PASS** |
+| V3 — Multi-owner semantic owner cells | **PASS** (**0**) |
+| V4 — Consumers/providers not encoded as owner | **PASS** |
+| V5 — Composite families split where required | **PASS** (EAC-CON-093…099) |
+| V6 — ADR-GOV-01 remains unresolved and visible | **PASS** (§14, §16) |
+| V7 — CL-EAC1-001…005 correctly mapped | **PASS** (§14) |
+| V8 — Finding metrics marked non-exclusive | **PASS** (§20) |
+| V9 — Inventory counts recomputed | **PASS** (§4 metrics) |
+| V10 — EAC-3 dependency inputs unambiguous | **PASS** (§15) |
+| V11 — No production code changed | **PASS** (documentation only) |
+| V12 — No runtime contract / canonical authority changed | **PASS** |
+| V13 — All 34 domains audited (EAC-2 baseline) | **PASS** (§5) |
+| V14 — No ADR resolved | **PASS** |
 
 ---
 
-*EAC-2 artifact reconciled @ **EAC2_EVIDENCE_HEAD** `e1cdaa77e0b1bf7608573001b23a42ebf870507f`. Upstream: **EAC1_CLOSE_COMMIT** `588180053c908c5960d5bca099b14e7b217849bb`.*
+*EAC-2 artifact @ **EAC2_EVIDENCE_HEAD** `e1cdaa77e0b1bf7608573001b23a42ebf870507f` · **EAC-2R1** ownership normalization @ **EAC2R1_EVIDENCE_HEAD** (see commit). Upstream: **EAC1_CLOSE_COMMIT** `588180053c908c5960d5bca099b14e7b217849bb` · baseline **EAC2_INDEPENDENT_AUDIT_HEAD** `cffd71062d9145a7b52c00dff1f02dcdfec2e262`.*
 
 *Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z GitHuba.*
