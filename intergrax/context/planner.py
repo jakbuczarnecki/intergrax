@@ -26,6 +26,8 @@ from intergrax.context.planning import (
     ContextSourceGroup,
     budget_class_for_execution_scope,
 )
+from intergrax.context.budget.degradation import ContextDegradationPolicy, DefaultContextDegradationPolicy
+from intergrax.context.budget.plan_degradation import apply_plan_degradation, detect_optional_injection_source
 from intergrax.context.session_history import SessionHistorySnapshot, session_history_message_to_chat_message
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import (
@@ -327,22 +329,23 @@ def group_session_history_snapshot(
     return tuple(groups)
 
 
+def _last_user_message_index(messages_for_compile: Sequence[ChatMessage]) -> int:
+    for index in range(len(messages_for_compile) - 1, -1, -1):
+        if messages_for_compile[index].role == "user":
+            return index
+    return max(0, len(messages_for_compile) - 1)
+
+
 def _group_base_messages(
     messages_for_compile: Sequence[ChatMessage],
     fragment_entry_ids: set[str],
     *,
     count_tokens: Callable[[str], int],
+    last_user_message_index: int,
 ) -> tuple[list[ContextSourceGroup], set[int], dict[int, str]]:
     groups: list[ContextSourceGroup] = []
     assigned_indices: set[int] = set()
     base_group_id_by_message_index: dict[int, str] = {}
-    last_base_user_index = -1
-    for index, message in enumerate(messages_for_compile):
-        if message.entry_id in fragment_entry_ids:
-            continue
-        if message.role == "user":
-            last_base_user_index = index
-
     index = 0
     while index < len(messages_for_compile):
         message = messages_for_compile[index]
@@ -418,10 +421,22 @@ def _group_base_messages(
         compressible = False
         droppable = False
         if message.role == "system":
-            source = ContextFragmentSource.SYSTEM_INSTRUCTIONS
-            required = True
-            protected = True
-        elif message.role == "user" and index == last_base_user_index:
+            if index == 0:
+                source = ContextFragmentSource.SYSTEM_INSTRUCTIONS
+                required = True
+                protected = True
+            elif index < last_user_message_index:
+                injection_source = detect_optional_injection_source(message.content or "")
+                if injection_source is not None:
+                    source = injection_source
+                    droppable = injection_source in _DROPPABLE_SOURCES
+                else:
+                    source = ContextFragmentSource.SYSTEM_INSTRUCTIONS
+            else:
+                source = ContextFragmentSource.SYSTEM_INSTRUCTIONS
+                required = True
+                protected = True
+        elif message.role == "user" and index == last_user_message_index:
             source = ContextFragmentSource.TASK_MESSAGE
             required = True
             protected = True
@@ -558,6 +573,9 @@ class ContextPlanner:
         optimization_policy: ContextOptimizationPolicy | None = None,
         model_family: str | None = None,
         locale: str | None = None,
+        degradation_policy: ContextDegradationPolicy | None = None,
+        prefer_longterm_memory: bool = True,
+        prefer_rag_when_enabled: bool = True,
     ) -> ContextPlan:
         if len(fragment_messages) != len(ranked_fragments):
             raise ContextPlanningError("fragment_message_mapping_mismatch")
@@ -575,6 +593,7 @@ class ContextPlanner:
 
         group_id_by_message_index: dict[int, str] = {}
         groups_by_id: dict[str, ContextSourceGroup] = {}
+        group_scores: dict[str, float] = {}
 
         session_groups_raw: list[ContextSourceGroup] = []
         canonical_snapshot_group_ids: set[str] = set()
@@ -650,6 +669,7 @@ class ContextPlanner:
                 trim_safe=False,
             )
             group_id_by_message_index[message_index] = group_id
+            group_scores[group_id] = float(fragment.relevance_score)
 
         for group in session_groups_raw:
             present_refs = present_snapshot_refs_by_group_id[group.group_id]
@@ -672,10 +692,12 @@ class ContextPlanner:
                 trim_safe=group.trim_safe,
             )
 
+        last_user_index = _last_user_message_index(messages_for_compile)
         base_groups, base_assigned, base_group_id_by_message_index = _group_base_messages(
             messages_for_compile,
             fragment_entry_ids,
             count_tokens=self._count_tokens,
+            last_user_message_index=last_user_index,
         )
         if set(base_group_id_by_message_index) & set(group_id_by_message_index):
             raise ContextPlanningError("incomplete_model_input_plan")
@@ -683,6 +705,15 @@ class ContextPlanner:
             group_id_by_message_index[message_index] = group_id
         for group in base_groups:
             groups_by_id[group.group_id] = group
+            if group.group_id not in group_scores:
+                if group.source is ContextFragmentSource.TASK_MESSAGE:
+                    group_scores[group.group_id] = 1.0
+                elif group.source is ContextFragmentSource.SYSTEM_INSTRUCTIONS:
+                    group_scores[group.group_id] = 1.0
+                elif group.droppable:
+                    group_scores[group.group_id] = 0.75
+                else:
+                    group_scores[group.group_id] = 0.65
 
         if len(group_id_by_message_index) != len(messages_for_compile):
             raise ContextPlanningError("incomplete_model_input_plan")
@@ -729,8 +760,6 @@ class ContextPlanner:
         ]
         groups_by_id = {group.group_id: group for group in all_groups}
 
-        selected_set = {group.group_id for group in all_groups}
-        excluded_set: set[str] = set()
         required_ids = tuple(group.group_id for group in all_groups if group.required)
         protected_ids = tuple(group.group_id for group in all_groups if group.protected)
         compressible_ids = tuple(group.group_id for group in all_groups if group.compressible)
@@ -744,9 +773,19 @@ class ContextPlanner:
         if mandatory_tokens > resolved_global_budget_tokens:
             raise ContextPlanningError(MANDATORY_CONTEXT_EXCEEDS_MODEL_LIMIT)
 
-        if estimated_total_tokens <= resolved_global_budget_tokens:
-            selected_ids = tuple(group.group_id for group in all_groups if group.group_id in selected_set)
-            excluded_ids = tuple(group.group_id for group in all_groups if group.group_id in excluded_set)
+        active_degradation_policy = degradation_policy or DefaultContextDegradationPolicy()
+        selected_ids, excluded_ids, degradation_steps = apply_plan_degradation(
+            ordered_group_ids=tuple(ordered_group_ids),
+            groups_by_id=groups_by_id,
+            group_scores=group_scores,
+            budget_tokens=resolved_global_budget_tokens,
+            prefer_longterm_memory=prefer_longterm_memory,
+            prefer_rag_when_enabled=prefer_rag_when_enabled,
+            policy=active_degradation_policy,
+        )
+        if _total_tokens(selected_ids, groups_by_id) > resolved_global_budget_tokens:
+            selected_set = set(selected_ids)
+        else:
             if not set(selected_ids).isdisjoint(excluded_ids):
                 raise ContextPlanningError("incomplete_model_input_plan")
             if set(selected_ids) | set(excluded_ids) != set(groups_by_id):
@@ -767,42 +806,10 @@ class ContextPlanner:
                 optimization_required=False,
                 artifact_requirement=None,
                 groups_by_id=groups_by_id,
+                degradation_steps=degradation_steps,
             )
 
-        droppable_ordered = tuple(group.group_id for group in all_groups if group.droppable)
-        for group_id in droppable_ordered:
-            selected_set.remove(group_id)
-            excluded_set.add(group_id)
-            post_drop_total = _total_tokens(tuple(selected_set), groups_by_id)
-            if post_drop_total <= resolved_global_budget_tokens:
-                selected_ids = tuple(
-                    group.group_id for group in all_groups if group.group_id in selected_set
-                )
-                excluded_ids = tuple(
-                    group.group_id for group in all_groups if group.group_id in excluded_set
-                )
-                if not set(selected_ids).isdisjoint(excluded_ids):
-                    raise ContextPlanningError("incomplete_model_input_plan")
-                if set(selected_ids) | set(excluded_ids) != set(groups_by_id):
-                    raise ContextPlanningError("incomplete_model_input_plan")
-                return self._build_plan(
-                    request=request,
-                    execution_scope=execution_scope,
-                    resolved_global_budget_tokens=resolved_global_budget_tokens,
-                    estimated_total_tokens=estimated_total_tokens,
-                    all_groups=all_groups,
-                    selected_ids=selected_ids,
-                    excluded_ids=excluded_ids,
-                    required_ids=required_ids,
-                    protected_ids=protected_ids,
-                    compressible_ids=compressible_ids,
-                    droppable_ids=droppable_ids,
-                    trim_safe_ids=trim_safe_ids,
-                    optimization_required=False,
-                    artifact_requirement=None,
-                    groups_by_id=groups_by_id,
-                )
-
+        selected_set = set(selected_ids)
         target_groups: list[ContextSourceGroup] = []
         started = False
         for group in all_groups:
@@ -885,6 +892,7 @@ class ContextPlanner:
             minimum_preservation=preservation,
         )
 
+        excluded_set = set(excluded_ids)
         selected_ids = tuple(group.group_id for group in all_groups if group.group_id in selected_set)
         excluded_ids = tuple(group.group_id for group in all_groups if group.group_id in excluded_set)
         if not set(selected_ids).isdisjoint(excluded_ids):
@@ -908,6 +916,7 @@ class ContextPlanner:
             optimization_required=True,
             artifact_requirement=artifact_requirement,
             groups_by_id=groups_by_id,
+            degradation_steps=degradation_steps,
         )
 
     def _build_plan(
@@ -928,6 +937,7 @@ class ContextPlanner:
         optimization_required: bool,
         artifact_requirement: ContextArtifactRequirement | None,
         groups_by_id: dict[str, ContextSourceGroup],
+        degradation_steps: tuple[str, ...] = (),
     ) -> ContextPlan:
         _ = request
         return ContextPlan(
@@ -947,4 +957,5 @@ class ContextPlanner:
             optimization_required=optimization_required,
             artifact_requirement=artifact_requirement,
             final_validation_requirements=_FINAL_VALIDATION_REQUIREMENTS,
+            degradation_steps=degradation_steps,
         )

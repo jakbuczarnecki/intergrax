@@ -88,6 +88,55 @@ class _FakeAdapter(LLMAdapter):
         return total
 
 
+class _MandatoryWebsearchOptionalProvider:
+    provider_id = "test.mandatory_websearch_optional"
+
+    @property
+    def supported_sources(self) -> frozenset[ContextFragmentSource]:
+        return frozenset(
+            {
+                ContextFragmentSource.SYSTEM_INSTRUCTIONS,
+                ContextFragmentSource.WEBSEARCH,
+            }
+        )
+
+    @property
+    def descriptor(self):
+        return build_provider_descriptor(
+            self.provider_id,
+            provider_version="1.0.0",
+            supported_sources=self.supported_sources,
+            origin="test",
+        )
+
+    async def collect(self, request: ContextAssemblyRequest, ctx: ContextProviderContext) -> list[ContextFragment]:
+        _ = request, ctx
+        return [
+            ContextFragment(
+                fragment_id="ce2-q7-mandatory",
+                source=ContextFragmentSource.SYSTEM_INSTRUCTIONS,
+                source_id="policy",
+                content="CE2-Q7-MANDATORY-MARKER",
+                token_estimate=40,
+                relevance_score=1.0,
+                freshness_score=1.0,
+                confidence_score=1.0,
+                mandatory=True,
+            ),
+            ContextFragment(
+                fragment_id="ce2-q7-optional-websearch",
+                source=ContextFragmentSource.WEBSEARCH,
+                source_id="web-opt",
+                content="WEBSEARCH:\n" + ("w" * 1200),
+                token_estimate=10,
+                relevance_score=0.95,
+                freshness_score=0.95,
+                confidence_score=0.95,
+                mandatory=False,
+            ),
+        ]
+
+
 class _MandatoryOptionalProvider:
     provider_id = "test.mandatory_optional"
 
@@ -356,44 +405,28 @@ async def test_ce2_q7_custom_degradation_policy() -> None:
     registry = ContextPluginRegistry()
     registry.set_degradation_policy(_CustomDegradationPolicy())
     registry.set_model_budget_policy(_TightPolicy())
+    registry.add_provider(_MandatoryWebsearchOptionalProvider())
     adapter = _FakeAdapter(window=4096)
     engine = DefaultNexusContextEngine(registry=registry)
-    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
-    optional_injection = "x" * 1200
-    messages = [
-        ChatMessage(role="system", content="Instructions"),
-        ChatMessage(role="system", content=f"WEBSEARCH:\n{optional_injection}"),
-        ChatMessage(role="user", content="hi"),
-    ]
-    runtime = build_context_assembly_runtime_dependencies(
-        runtime_config=config,
-        messages=messages,
-        max_output_tokens=64,
-    )
-    request = ContextAssemblyRequest(
-        trace_id="trace-budget",
-        run_id="r-budget",
-        task_id="t-budget",
-        tenant_id="tenant-a",
-        assembly_scope="acp_step",
-        objective="ce-02 gate",
-        decision_profile=ContextDecisionSnapshot(),
-        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=4000),
-        assembly_options=TaskContextAssemblyOptions(),
-        step_kind="model_call",
-    )
     assembled = await engine.assemble(
-        request,
-        provider_ctx=ContextProviderContext(engine_id="ce02-q7", runtime=runtime),
+        _request(280),
+        provider_ctx=_assemble_runtime(adapter, "hi"),
     )
     assert assembled.degradation_policy_id == "single_step_test"
     assert assembled.total_tokens <= assembled.budget_tokens
     assert DegradationStepKind.DROP_OPTIONAL_INJECTIONS.value in assembled.degradation_steps
     assert DegradationStepKind.FULL.value not in assembled.degradation_steps
-    message_contents = [message.content or "" for message in assembled.messages]
-    assert any("Instructions" in content for content in message_contents)
-    assert any(content.strip() == "hi" for content in message_contents)
-    assert not any("WEBSEARCH" in content for content in message_contents)
+    included_ids = {fragment.fragment_id for fragment in assembled.fragments_included}
+    excluded_ids = {fragment.fragment_id for fragment, _reason in assembled.fragments_excluded}
+    provenance_fragment_ids = {item.fragment_id for item in assembled.provenance}
+    assert "ce2-q7-mandatory" in included_ids
+    assert "ce2-q7-optional-websearch" in excluded_ids
+    assert "ce2-q7-optional-websearch" not in included_ids
+    assert "ce2-q7-optional-websearch" not in provenance_fragment_ids
+    model_facing_text = "\n".join(message.content or "" for message in assembled.messages)
+    assert "CE2-Q7-MANDATORY-MARKER" in model_facing_text
+    assert "ce2-q7-optional-websearch" not in model_facing_text
+    assert "WEBSEARCH" not in model_facing_text
 
 
 @pytest.mark.asyncio
