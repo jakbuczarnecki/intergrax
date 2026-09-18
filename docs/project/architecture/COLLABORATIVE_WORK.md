@@ -199,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-6 — NEXT** (active slice **MP-6B — NEXT**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** at `d0aee066` — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md), [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
+**Next task:** **MP-6 — NEXT** (active slice **MP-6C — NEXT**; **MP-6B — CLOSED**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** at `d0aee066` — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md), [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 

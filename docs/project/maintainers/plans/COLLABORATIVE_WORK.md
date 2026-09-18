@@ -6,7 +6,7 @@
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../../technical/adr/entries/2026-09-07/ADR-MP-004.md)
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004 Accepted; **MP-3A…MP-3H — APPROVED / CLOSED**); **MP-3 architecture decomposition — APPROVED / CLOSED**; **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED**; **MP-5 — ENTERPRISE CERTIFIED / CLOSED**
-**Current active task:** **MP-6C — NEXT**.
+**Current active task:** **MP-6C — Publication / Ingestion Boundary — NEXT**.
 **Next task:** **MP-6 — NEXT** (active slice **MP-6C — NEXT**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**) (**MP-6 ownership — FROZEN** via ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md), [`MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
 **First consumer:** `applications/local_workspace_application` (LKW)
 
