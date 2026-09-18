@@ -1,7 +1,7 @@
 # EAC-1 — Enterprise Cross-Layer Responsibility & Ownership Matrix
 
 **Program:** Enterprise Architecture Cross-Layer Audit (EAC)  
-**Task:** EAC-1 — Responsibility & Ownership Matrix (**EAC-1R2** strict authority uniqueness & role separation applied)  
+**Task:** EAC-1 — Responsibility & Ownership Matrix (**EAC-1R3** ERL authority boundary correction applied; **EAC-1R2** strict uniqueness retained)  
 **Type:** Read-only architecture audit (no remediation)  
 **Authority:** EAC-0 R1 inventory + canonical domain pairs on `development`
 
@@ -16,11 +16,15 @@
 | **EAC1R1_HARDENING_COMMIT** | `ab6d578296e7b234a364c8dbb8570d318fe28f62` | Committed EAC-1R1 documentation hardening |
 | **EAC1R2_SESSION_START_HEAD** | `af4d84e370062776d2f051d99cd5a7f74fc6e243` | Working tree @ agent session open (`HEAD == origin/development`) |
 | **EAC1R2_EVIDENCE_HEAD** | `a98890536ce8d95f68e1778d8c502c76972bf4e1` | Repository state reconciled for EAC-1R2 taxonomy immediately before EAC-1R2 doc commit |
+| **EAC1R2_HARDENING_COMMIT** | `05f38bf7ccdff9d167f810b0742bb6b765365014` | Committed EAC-1R2 documentation hardening |
+| **EAC1R2_PROVENANCE_COMMIT** | `64a78ed891660267b086e9885daf5a3217d25ef3` | EAC-1R2 provenance normalization |
+| **EAC1R3_SESSION_START_HEAD** | `4403f1b5d52bcab47cfe9cbe32aa0358af6c95d2` | Working tree @ EAC-1R3 session open (`HEAD == origin/development`) |
+| **EAC1R3_EVIDENCE_HEAD** | `4403f1b5d52bcab47cfe9cbe32aa0358af6c95d2` | Repository state reconciled for EAC-1R3 before documentation commit |
 
 | Gate | Value |
 |------|-------|
 | **Branch** | `development` |
-| **HEAD == origin/development @ EAC-1R2 session** | **YES** (`af4d84e370062776d2f051d99cd5a7f74fc6e243`) |
+| **HEAD == origin/development @ EAC-1R3 session** | **YES** (`4403f1b5d52bcab47cfe9cbe32aa0358af6c95d2`) |
 | **Upstream inventory** | [`ENTERPRISE_CROSS_LAYER_CANONICAL_LAYER_INVENTORY_EAC0.md`](ENTERPRISE_CROSS_LAYER_CANONICAL_LAYER_INVENTORY_EAC0.md) |
 | **Registry hub** | [`intergrax_runtime_architecture.md`](../../architecture/intergrax_runtime_architecture.md) |
 
@@ -32,9 +36,31 @@
 | `af4d84e370062776d2f051d99cd5a7f74fc6e243` | Context budgeting / compaction | CE/UCL qualification surface; **no** peer authority owner change |
 | `a98890536ce8d95f68e1778d8c502c76972bf4e1` | RAG scoped knowledge reference read | Aligns with **RETRIEVAL_ORCHESTRATION** vs **MEMORY_REFERENCE_READ** split; **no** owner change |
 
-**Drift watch:** Uncommitted working-tree deltas outside `EAC1R2_EVIDENCE_HEAD` are **out of scope** for this artifact.
+**EAC-1R2 → EAC-1R3 drift (commits after `EAC1R2_PROVENANCE_COMMIT`, inspected for ERL / Reliability / recovery ownership semantics):**
+
+| Commit | Area | EAC-1R3 effect |
+|--------|------|----------------|
+| `bdd0e1a6d` | Context / CE budget | CE qualification; **no** ERL/Reliability peer authority owner change |
+| `828364c6a` | RAG knowledge identity | RAG qualification; **no** ERL/Reliability owner change |
+| `a8d750b0b` | Memory concurrency tests | Qualification; **no** owner change |
+| `4403f1b5d` | UCL reference read | UCL boundary; **no** ERL/Reliability owner change |
+
+**Drift watch:** Uncommitted working-tree deltas outside `EAC1R3_EVIDENCE_HEAD` are **out of scope** for this artifact.
 
 **Subordinate to:** per-domain architecture/plan pairs. This matrix **MUST NOT** redefine domain semantics.
+
+**EAC-1R3 enterprise rule (Reliability ↔ ERL — peer domains, not parent/child):**
+
+```text
+failure known → RELIABILITY_FAILURE_AND_HITL (classification + bounded recovery policy + HITL)
+external result UNKNOWN → ENTERPRISE_RELIABILITY_LAYER (uncertainty admission + reconciliation + effect safety)
+ERL resolves external truth → recovery intent / decision (downstream contracts)
+consequential continue / compensate → GOVERNANCE_AUTHORITY (GOVERNED_EXECUTION) where canon requires
+lifecycle mutation (pause/resume/terminal) → EXECUTION_LIFECYCLE_AUTHORITY (UNIFIED_EXECUTION_RUNTIME)
+ERL emits reliability facts → EVIDENCE_AUTHORITY (OBSERVABILITY) persists journal
+RECOVERY_POLICY_AUTHORITY ≠ external-effect reconciliation authority
+ERL GovernanceStrategy plugins ≠ transfer of platform GOVERNANCE_AUTHORITY
+```
 
 **EAC-1R2 enterprise rule (authority vs role):**
 
@@ -134,6 +160,8 @@ Authority means: *final canonical semantic ownership over a decision, lifecycle,
 | **FAILURE_CLASSIFICATION_AUTHORITY** | RELIABILITY_FAILURE_AND_HITL | Failure taxonomy / classification |
 | **RECOVERY_POLICY_AUTHORITY** | RELIABILITY_FAILURE_AND_HITL | Bounded retry/degrade/compensate **policy selection** |
 | **HITL_INTERACTION_AUTHORITY** | RELIABILITY_FAILURE_AND_HITL | Human escalation, interrupt interaction, HITL decision records |
+| **EXTERNAL_EFFECT_UNCERTAINTY_AUTHORITY** | ENTERPRISE_RELIABILITY_LAYER | UNKNOWN admission, external-effect truth uncertainty semantics |
+| **EFFECT_RECONCILIATION_AUTHORITY** | ENTERPRISE_RELIABILITY_LAYER | Reconciliation orchestration, external truth verification, effect-safety gates |
 | **LLM_PROVIDER_CONTRACT_AUTHORITY** | LLM_ADAPTERS | LLM provider abstraction & model call contracts |
 
 **Deprecated authority labels (EAC-1R2 — do not use as peer types):** generic `LIFECYCLE_AUTHORITY`, `ORCHESTRATION_AUTHORITY`, `CONTEXT_AUTHORITY`, `DISTRIBUTION_AUTHORITY`, `RETRIEVAL_AUTHORITY`, `COMPOSITION_AUTHORITY`, `SCALE_COORDINATION`, `PERSISTENCE_AUTHORITY`, `PROVIDER_ABSTRACTION`, `DEVELOPMENT_ONLY`, `DISCOVERY_AUTHORITY` (use scoped types above).
@@ -158,11 +186,12 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | Subordinate Authority Type | Internal Owner | Parent peer authority | Validity boundary |
 |----------------------------|----------------|----------------------|-------------------|
 | **INTERNAL_ORCHESTRATION_SCHEDULING_AUTHORITY** | NEXUS_EXECUTION_FLOW | ORCHESTRATION_STRATEGY_AUTHORITY + EE admission/lifecycle | Private graph/step scheduling under strategy; **no** public root API |
-| **EFFECT_RECONCILIATION_AUTHORITY** | ENTERPRISE_RELIABILITY_LAYER | RECOVERY_POLICY_AUTHORITY (platform resilience plane) | External effect reliability / reconciliation composition slice only |
+
+**EAC-1R3:** ERL peer authorities (**EXTERNAL_EFFECT_UNCERTAINTY**, **EFFECT_RECONCILIATION**) live in §4.A — **not** subordinate to **RECOVERY_POLICY_AUTHORITY**.
 
 ---
 
-## 4.1 Strict peer authority register (EAC-1R2 gate)
+## 4.1 Strict peer authority register (EAC-1R2 / EAC-1R3 gate)
 
 | Authority Type | Canonical Owner | Scope | Subordinate Authority | Competing Peer Owner | Verdict |
 |----------------|-----------------|-------|------------------------|----------------------|---------|
@@ -189,8 +218,10 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | EVIDENCE_AUTHORITY | OBSERVABILITY | RuntimeEvent journal | — | NONE | PASS |
 | DIAGNOSTIC_AUTHORITY | DIAGNOSTICS | Problem store | — | NONE | PASS |
 | FAILURE_CLASSIFICATION_AUTHORITY | RELIABILITY_FAILURE_AND_HITL | Taxonomy | — | NONE | PASS |
-| RECOVERY_POLICY_AUTHORITY | RELIABILITY_FAILURE_AND_HITL | Policy selection | EFFECT_RECONCILIATION → ERL | NONE | PASS |
+| RECOVERY_POLICY_AUTHORITY | RELIABILITY_FAILURE_AND_HITL | Bounded retry/degrade/compensate policy selection (not external-effect truth) | — | NONE | PASS |
 | HITL_INTERACTION_AUTHORITY | RELIABILITY_FAILURE_AND_HITL | HITL records | — | NONE | PASS |
+| EXTERNAL_EFFECT_UNCERTAINTY_AUTHORITY | ENTERPRISE_RELIABILITY_LAYER | UNKNOWN / external truth uncertainty | — | NONE | PASS |
+| EFFECT_RECONCILIATION_AUTHORITY | ENTERPRISE_RELIABILITY_LAYER | Reconciliation orchestration & verification | — | NONE | PASS |
 | HOST_DEPLOYMENT_LIFECYCLE_AUTHORITY | APPLICATION_HOSTING | Host deploy lifecycle | — | NONE | PASS |
 | WORKER_INSTANCE_STATE_AUTHORITY | AUTONOMOUS_WORK | Worker instances | — | NONE | PASS |
 | LLM_PROVIDER_CONTRACT_AUTHORITY | LLM_ADAPTERS | LLM contracts | — | NONE | PASS |
@@ -204,7 +235,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 ∀ peer AUTHORITY_TYPE: canonical_owner_count == 1
 ```
 
-**EAC-1R2:** **29** peer authority types in §4.A; **2** subordinate authority types in §4.C; **0** peer types with dual canonical owners.
+**EAC-1R3:** **31** peer authority types in §4.A; **1** subordinate authority type in §4.C; **0** peer types with dual canonical owners.
 
 ---
 
@@ -234,7 +265,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | EAC-DOM-018 | MODALITY | Multimodal ingestion contracts | Execution, memory truth | Adapters | Media sources | Normalized modality payloads | Media artifact refs | Transcode caches | Modality contracts | Adapter internals | **NONE** | PROVIDER_ABSTRACTION_ROLE | UNKNOWN | MEDIUM |
 | EAC-DOM-019 | OBSERVABILITY | RuntimeEvent recording, reconstruction, export | Problem semantics, execution control admission | Export sinks | Lifecycle facts from EE | Evidence journal, reconstructions | **RuntimeEvent** journal (canonical evidence) | Export/read models | `intergrax.contracts.observability*` | Indexer internals | EVIDENCE_AUTHORITY | PERSISTENCE_PARTICIPANT_ROLE | PROVEN | LOW |
 | EAC-DOM-020 | DIAGNOSTICS | Deterministic interpretation → **Problem** state, operator read models | Evidence minting, retry/lifecycle control, execution identity | Detector plugins | RuntimeEvent/reconstruction | Problem records, assessments | **Problem** lifecycle store | Grouping hypotheses | `intergrax.contracts.diagnostics` | Detector pipelines | DIAGNOSTIC_AUTHORITY | PERSISTENCE_PARTICIPANT_ROLE | STRONG | MEDIUM |
-| EAC-DOM-021 | RELIABILITY_FAILURE_AND_HITL | Failure classification, recovery policy selection, bounded retry/degrade/compensate **recommendation**, HITL escalation & interaction records | Governance ALLOW/DENY, **canonical** pause/resume / execution lifecycle (EE), Problem truth | Human decision stores, EE for lifecycle consequences | EE lifecycle facts, checkpoints | Interrupt/resume **signals** (EE applies lifecycle); HITL decision records | HITL decision records (bounded); resilience policy artifacts | Attempt ledger projections (derived) | HITL contracts | Policy classifiers | FAILURE_CLASSIFICATION_AUTHORITY, RECOVERY_POLICY_AUTHORITY, HITL_INTERACTION_AUTHORITY | — | PARTIAL | MEDIUM |
+| EAC-DOM-021 | RELIABILITY_FAILURE_AND_HITL | Failure classification, recovery policy selection, bounded retry/degrade/compensate **recommendation**, HITL escalation & interaction records | Governance ALLOW/DENY, **canonical** pause/resume / execution lifecycle (EE), Problem truth, **final external-effect truth**, UNKNOWN admission/reconciliation (ERL) | Human decision stores, EE for lifecycle consequences | EE lifecycle facts, checkpoints | Interrupt/resume **signals** (EE applies lifecycle); HITL decision records | HITL decision records (bounded); resilience policy artifacts | Attempt ledger projections (derived) | HITL contracts | Policy classifiers | FAILURE_CLASSIFICATION_AUTHORITY, RECOVERY_POLICY_AUTHORITY, HITL_INTERACTION_AUTHORITY | — | PARTIAL | MEDIUM |
 | EAC-DOM-022 | ADAPTIVE_HARNESS_INTELLIGENCE | Harness intelligence, design-search hooks (non-prod authority) | Production governance authority | Research runtimes | Telemetry | Research artifacts | Research state | Experiments | AHI contracts (immature) | Search internals | **NONE** | DEVELOPMENT_SUPPORT_ROLE | PARTIAL | LOW |
 | EAC-DOM-023 | ELASTIC_CAPACITY_AND_SCALING | Capacity admission, scale coordination leases | EE identity/recovery semantics | Workers/runtime | Capacity signals | Admission decisions | Lease metadata | Metrics rollups | Capacity contracts | Scheduler internals | CAPACITY_COORDINATION_AUTHORITY | — | PARTIAL | MEDIUM |
 | EAC-DOM-024 | EXPERIMENTATION_AND_DEVELOPER_EXPERIENCE | Dev workflows, harness DX, qualification tooling boundaries | Runtime semantic ownership | Local proofs | Docs/tooling | DX artifacts | None production | Local caches | N/A (guides) | Cursor rules, scripts | **NONE** | DEVELOPMENT_SUPPORT_ROLE | STRONG | NONE |
@@ -247,7 +278,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | EAC-DOM-031 | CAPABILITY_CATALOG_AND_DISCOVERY | Federated catalog read, rank, govern discovery rows | Vertical lifecycle, execution, Nexus | Domain registries | Domain sources | Catalog snapshots | Catalog index (read model) | Rank caches | Catalog contracts | Federator internals | CAPABILITY_DISCOVERY_AUTHORITY | — | STRONG | MEDIUM |
 | EAC-DOM-032 | PROOF_RECEIPTS | Qualification receipt semantics | Runtime execution truth | CI/proof runners | Proof outputs | Receipt records | Receipt store | Verification views | Proof contracts | Gate scripts | **NONE** | DEVELOPMENT_SUPPORT_ROLE | STRONG | NONE |
 | EAC-DOM-033 | PLATFORM_PLUGINS | Extension discovery, enablement, trust vocabulary | Domain semantic ownership, **agent package distribution** | Domain validation | Packaged extensions | Plugin enablement state | Enablement registry | Discovery cache | EP contracts | Loader internals | PLUGIN_LIFECYCLE_AUTHORITY | EXTENSION_PROVIDER_ROLE | STRONG | LOW |
-| EAC-DOM-034 | ENTERPRISE_RELIABILITY_LAYER | External effect reliability, UNKNOWN handling, reconciliation **composition** | Governance ALLOW/DENY (GE), canonical execution lifecycle | Provider invocations | Tool effects, observability | ERL assessment artifacts | ProviderInvocation state (emerging) | Reconciliation projections | ERL contracts (emerging) | Submodule hubs | **EFFECT_RECONCILIATION_AUTHORITY** (subordinate) | — | PARTIAL | MEDIUM |
+| EAC-DOM-034 | ENTERPRISE_RELIABILITY_LAYER | UNKNOWN / external-effect uncertainty semantics, reconciliation orchestration, external truth verification, effect-safety coordination, recovery coordination after external truth is resolved | Generic failure classification, generic retry taxonomy, Governance WHETHER (GE), **canonical** Run/Attempt pause/resume / execution lifecycle (EE), Decision WHAT, Observability journal, Problem truth | Reconciliation / governance strategy plugins (replaceable); GE for consequential continue/compensate | Provider outcomes, effect contracts, execution identity/context, governance decisions where required, tool effects (read), observability (facts emit) | Uncertainty cases, reconciliation results, recovery intent/decision, reliability facts for journal | ReliabilityCase / uncertainty-case lifecycle; reconciliation state; external-effect resolution state (**not** Run/Attempt tree) | Reconciliation projections | ERL contracts (emerging) | Submodule hubs; ERL GovernanceStrategy (**not** platform **GOVERNANCE_AUTHORITY**) | EXTERNAL_EFFECT_UNCERTAINTY_AUTHORITY, EFFECT_RECONCILIATION_AUTHORITY | — | PARTIAL | MEDIUM |
 
 ### 5.1 Ownership confidence & risk (aggregate)
 
@@ -267,14 +298,14 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | HIGH | 2 |
 | CRITICAL | 0 |
 
-### 5.2 Peer authority coverage (EAC-1R2)
+### 5.2 Peer authority coverage (EAC-1R3)
 
 | Metric | Value |
 |--------|------:|
-| Peer authority types (§4.A) | 29 |
+| Peer authority types (§4.A) | 31 |
 | Domain role types (§4.B) | 6 |
-| Subordinate authority types (§4.C) | 2 |
-| Peer types with exactly one canonical owner | 29 |
+| Subordinate authority types (§4.C) | 1 |
+| Peer types with exactly one canonical owner | 31 |
 | Peer types with competing canonical owners | 0 |
 | Architecture conflicts (ADR / CL register) | GE↔CW (**CL-EAC1-004**); not taxonomy duplicates |
 
@@ -285,7 +316,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | Domain | PUBLIC (legal consumers) | INTERNAL (must not escape) | Boundary findings |
 |--------|--------------------------|----------------------------|-------------------|
 | UNIFIED_EXECUTION_RUNTIME | `intergrax.contracts.execution*`, admission APIs | Private engine graph | — |
-| NEXUS_EXECUTION_FLOW | **No public root** — only via EE/ORCHESTRATION | `NexusLoop`, `GraphExecutor`, `intergrax/runtime/nexus/context/*` | **CL-BOUNDARY-VIOLATION-EAC1-001** — Tier-2 `agents/*` import `RuntimeContext`, `SessionManager`, notebooks import `NexusLoop` (grep @ `EAC1R2_EVIDENCE_HEAD`) |
+| NEXUS_EXECUTION_FLOW | **No public root** — only via EE/ORCHESTRATION | `NexusLoop`, `GraphExecutor`, `intergrax/runtime/nexus/context/*` | **CL-BOUNDARY-VIOLATION-EAC1-001** — Tier-2 `agents/*` import `RuntimeContext`, `SessionManager`, notebooks import `NexusLoop` (grep @ `EAC1R3_EVIDENCE_HEAD`) |
 | DECISION_SYSTEM | `intergrax.contracts.decision*` | Strategy impl | — |
 | GOVERNED_EXECUTION | `intergrax.contracts.governance*` | Policy engine private | QUAL: enterprise cert NOT CERTIFIED; GR-10 **PARTIAL** @ `0425caa4` (qualification only) |
 | OBSERVABILITY | Observability contracts, reconstruction APIs | Journal writers private | — |
@@ -319,8 +350,10 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | Capacity leases | ELASTIC_CAPACITY_AND_SCALING | Workers | Metrics rollups | Lease store | **NO CONFLICT** with BG delivery |
 | Continuation / checkpoint payload | UNIFIED_EXECUTION_RUNTIME (coordination) | Recovery providers | Reliability projections | Checkpoint ports (NPSC-5E) | **DERIVED ONLY** for Reliability Attempt Ledger |
 | HITL interrupt decision | RELIABILITY_FAILURE_AND_HITL | EE (consequences) | — | Decision store | **NO CONFLICT** if EE owns pause/resume lifecycle |
-
----
+| External effect UNKNOWN state | ENTERPRISE_RELIABILITY_LAYER | Reliability (policy input only), EE (lifecycle mechanics), Observability | — | ERL uncertainty-case state (emerging) | **NO CONFLICT** if Reliability does not own UNKNOWN truth |
+| Reconciliation result | ENTERPRISE_RELIABILITY_LAYER | EE, Reliability, GE (authorization) | — | ERL reconciliation state | **NO CONFLICT** — distinct from **RECOVERY_POLICY_AUTHORITY** |
+| Recovery policy decision (bounded retry/degrade) | RELIABILITY_FAILURE_AND_HITL | EE, ERL (after external truth) | Attempt ledger (derived) | Policy artifacts | **NO CONFLICT** |
+| Execution lifecycle transition | UNIFIED_EXECUTION_RUNTIME | All domains (read/signal) | Task/queue projections | EE Run/Attempt tree | **NO CONFLICT** — ERL requests via Execution-owned contracts only |
 
 ## 8. Delegation semantics (cross-layer)
 
@@ -334,8 +367,10 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | Problem detection | Diagnostics job | Diagnostics rules | Detector plugins | Problem store | Diagnostics |
 | Catalog handoff | Catalog | N/A (read) | N/A | Domain lifecycle owner on acquire | Distribution domain |
 | Agent activate | Distribution | GE/EE admission | EE | RuntimeRevision | Distribution + EE |
+| External effect UNKNOWN | ERL | Reliability (failure path only), GE (consequential) | ERL orchestration | ERL case state; EE applies lifecycle | ERL + Reliability (disjoint) |
+| Reconciliation complete | ERL | EE (continue), Reliability (policy), GE (WHETHER) | Reconciliation plugins | Recovery intent → EE contract | ERL vs Reliability policy |
 
-**Rule:** delegation MUST NOT silently transfer authority — CW/GE tool auth requires ADR resolution (§15).
+**Rule:** delegation MUST NOT silently transfer authority — CW/GE tool auth requires ADR resolution (§15). **RECOVERY_POLICY_AUTHORITY** does **not** subsume **EFFECT_RECONCILIATION_AUTHORITY**.
 
 ---
 
@@ -364,6 +399,8 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | application composition | TIER3 | HOSTING | T3 manifest vs deploy lifecycle | EAC-0 §16 | Partial | CL-EAC1-005 |
 | skill vs tool | SKILLS | TOOLS | Composition over invocation | SKILLS.md | No | — |
 | scale vs background | ELASTIC_CAPACITY_AND_SCALING | BACKGROUND_TASKS | Separate coordination vs delivery | EAC-1R2 §4.A | No | EAC1R2-TAX-001 |
+| external effect UNKNOWN / reconciliation | ENTERPRISE_RELIABILITY_LAYER | RELIABILITY_FAILURE_AND_HITL | Peer domains; Reliability = failure/bounded recovery; ERL = UNKNOWN/truth | `ENTERPRISE_RELIABILITY_LAYER.md`, `RELIABILITY_FAILURE_AND_HITL.md` | No | DOC-EAC1-ERL-001 **CLOSED BY EAC-1R3** |
+| recovery policy vs reconciliation | RELIABILITY_FAILURE_AND_HITL | ENTERPRISE_RELIABILITY_LAYER | **RECOVERY_POLICY_AUTHORITY** ≠ **EFFECT_RECONCILIATION_AUTHORITY** | EAC-1R3 §4.A | No | — |
 
 ### 9.1 Critical pair verdicts (explicit)
 
@@ -376,6 +413,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | **Catalog ↔ Marketplace ↔ Distribution** | **ALIGNED (canon)** | **CAPABILITY_DISCOVERY** vs **AGENT_DISTRIBUTION** handoff. |
 | **Observability ↔ Diagnostics** | **ALIGNED** | **EVIDENCE_AUTHORITY** vs **DIAGNOSTIC_AUTHORITY**. |
 | **Reliability/HITL ↔ Continuation ↔ Recovery** | **ALIGNED** | EE **EXECUTION_LIFECYCLE**; Reliability policy/HITL authorities. |
+| **Reliability ↔ ERL** | **ALIGNED** | Reliability = failure classification + bounded recovery policy + HITL; ERL = UNKNOWN + reconciliation + external truth (**peer**, not subordinate). |
 | **Hosting ↔ Tier-3** | **PARTIAL** | **APPLICATION_COMPOSITION** vs **HOST_DEPLOYMENT_LIFECYCLE** — CL-EAC1-005. |
 | **Skills ↔ Tools** | **ALIGNED** | **SKILL_COMPOSITION** vs **TOOL_INVOCATION**. |
 | **RAG ↔ Memory** | **ALIGNED (canon)** | **RETRIEVAL_ORCHESTRATION** ≠ **MEMORY_RECORD** / **MEMORY_REFERENCE_READ**. |
@@ -463,7 +501,11 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | context bundle | CE | CE (ephemeral) | CE/UCL | Agent | UCL |
 | retrieval result | RAG | RAG (derived) | RAG index jobs | CE | — |
 | tool invocation | TOOLS | TOOLS (+ GE) | Tool runtime | Observability | — |
-| external effect record | TOOLS / ERL | ERL (emerging) | ERL | DIAG | — |
+| external effect record | TOOLS / ERL | ERL (**EXTERNAL_EFFECT_UNCERTAINTY** / **EFFECT_RECONCILIATION**) | ERL | DIAG, Reliability (read) | Obs journal |
+| external effect UNKNOWN admission | Providers / ERL admission | ENTERPRISE_RELIABILITY_LAYER | ERL | Reliability, EE | Obs |
+| reconciliation result | ERL orchestration | ENTERPRISE_RELIABILITY_LAYER | ERL | EE, Reliability, GE | Obs |
+| recovery policy decision | Reliability classifiers | RELIABILITY_FAILURE_AND_HITL | Reliability policy engine | EE, ERL | — |
+| execution lifecycle transition | EE (apply) | UNIFIED_EXECUTION_RUNTIME | EE | All | Reliability/ERL signals only |
 | RuntimeEvent | EE (emit) / Obs (persist) | OBSERVABILITY | Observability | DIAG | Export |
 | Problem | DIAGNOSTICS | DIAGNOSTICS | DIAG lifecycle | Operators | — |
 | capability descriptor | Domain sources | Domain | Domain lifecycle | Catalog | Catalog |
@@ -488,7 +530,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 
 ## 15. Architecture conflict classification (findings register)
 
-| Finding ID | Status @ EAC-1R2 | Class | Severity | Notes |
+| Finding ID | Status @ EAC-1R3 | Class | Severity | Notes |
 |------------|------------------|-------|----------|-------|
 | CL-EAC1-001 | **OPEN** | CL | HIGH | Nexus imports from Tier-2 — unchanged |
 | CL-EAC1-002 | **NARROWED** | CL | MEDIUM | Read port closed; wiring/persistence risk remains |
@@ -497,6 +539,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | CL-EAC1-005 | **OPEN** | CL | MEDIUM | T3 vs Hosting handoff |
 | DOC-EAC1-001 | DOC | LOW | DIAGNOSTICS, OBSERVABILITY | ADR-REG-003 plan topology |
 | DOC-EAC1-002 | DOC | LOW | REGISTRY | ADR-REG-001..004 |
+| DOC-EAC1-ERL-001 | **CLOSED BY EAC-1R3** | DOC | LOW | ERL modeled as subordinate to **RECOVERY_POLICY_AUTHORITY** in EAC-1R2 — corrected to peer **EXTERNAL_EFFECT_UNCERTAINTY** + **EFFECT_RECONCILIATION** (taxonomy only; canon unchanged) |
 | QUAL-EAC1-001 | QUAL | MEDIUM | GOVERNED_EXECUTION | GOV-FINAL NOT CERTIFIED; GR-10 **PARTIAL** @ `0425caa4` |
 | QUAL-EAC1-002 | QUAL | MEDIUM | OBSERVABILITY | DG-005 |
 | QUAL-EAC1-003 | QUAL | MEDIUM | ENTERPRISE_RELIABILITY_LAYER | Plan NEXT |
@@ -506,7 +549,8 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 |------------------------|-------|----------|
 | EAC1R2-TAX-001 | TAXONOMY_FIXED | — | Split distribution / retrieval / composition / scale vs background |
 | EAC1R2-TAX-002 | ROLE_ONLY | — | PROVIDER_ABSTRACTION, DEVELOPMENT_ONLY demoted to domain roles |
-| EAC1R2-TAX-003 | SUBORDINATE_CONFIRMED | — | Nexus scheduling; ERL effect reconciliation |
+| EAC1R2-TAX-003 | SUPERSEDED (ERL) | — | Nexus scheduling subordinate confirmed; **ERL subordination removed @ EAC-1R3** |
+| EAC1R3-TAX-001 | PEER_PROMOTED | — | **EXTERNAL_EFFECT_UNCERTAINTY_AUTHORITY** + **EFFECT_RECONCILIATION_AUTHORITY** → ENTERPRISE_RELIABILITY_LAYER §4.A |
 
 ---
 
@@ -518,7 +562,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | ADR-CTX-01 | CE vs UCL vs Memory | Open |
 | ADR-MKT-01 | Marketplace vs Catalog vs Distribution | Canon aligned |
 
-No ADR resolved in EAC-1R2.
+No ADR resolved in EAC-1R2 or EAC-1R3.
 
 ---
 
@@ -559,8 +603,25 @@ No ADR resolved in EAC-1R2.
 | V11 — GE/CW conflict visible (CL-EAC1-004) | **PASS** |
 | V12 — No production code changed in EAC-1R2 session | **PASS** (documentation only) |
 
+### EAC-1R3 (ERL authority boundary)
+
+| Check | Result |
+|-------|--------|
+| V1 — ERL not in §4.C subordinate table | **PASS** |
+| V2 — **EXTERNAL_EFFECT_UNCERTAINTY_AUTHORITY** peer → ERL | **PASS** |
+| V3 — **EFFECT_RECONCILIATION_AUTHORITY** peer → ERL | **PASS** |
+| V4 — **RECOVERY_POLICY_AUTHORITY** → Reliability | **PASS** |
+| V5 — Reliability does not own external-effect truth | **PASS** (EAC-DOM-021 MUST NOT OWN) |
+| V6 — ERL does not own Execution lifecycle | **PASS** (EAC-DOM-034 MUST NOT OWN) |
+| V7 — ERL does not own platform **GOVERNANCE_AUTHORITY** | **PASS** |
+| V8 — **EVIDENCE_AUTHORITY** → Observability | **PASS** |
+| V9 — Each peer authority → exactly one owner (31 types) | **PASS** |
+| V10 — 34 DOMAIN rows in §5 | **PASS** |
+| V11 — No production code changed in EAC-1R3 session | **PASS** (documentation only) |
+| V12 — No ADR resolved | **PASS** |
+
 ---
 
-*EAC-1 artifact reconciled @ **EAC1R2_EVIDENCE_HEAD** `a98890536ce8d95f68e1778d8c502c76972bf4e1`. Prior hardening: **EAC1R1_HARDENING_COMMIT** `ab6d578296e7b234a364c8dbb8570d318fe28f62`.*
+*EAC-1 artifact reconciled @ **EAC1R3_EVIDENCE_HEAD** `4403f1b5d52bcab47cfe9cbe32aa0358af6c95d2`. Prior hardening: **EAC1R2_HARDENING_COMMIT** `05f38bf7ccdff9d167f810b0742bb6b765365014`; **EAC1R1_HARDENING_COMMIT** `ab6d578296e7b234a364c8dbb8570d318fe28f62`.*
 
 *Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z GitHuba.*
