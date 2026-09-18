@@ -32,6 +32,7 @@ from intergrax.collaborative_work.default_collaborative_work_reference_reader im
     DefaultCollaborativeWorkReferenceReader,
 )
 from intergrax.collaborative_work.in_memory_repository import (
+    InMemoryArtifactRepositories,
     InMemoryWorkItemRepository,
     open_in_memory_artifact_repositories,
 )
@@ -109,18 +110,37 @@ def _identity(
     )
 
 
-def _scope(**overrides: object) -> CollaborativeWorkReferenceReadScope:
-    payload = {"tenant_id": _TENANT_A, "workspace_id": _WS_A}
-    payload.update(overrides)
-    return CollaborativeWorkReferenceReadScope(**payload)  # type: ignore[arg-type]
+def _scope(
+    *,
+    tenant_id: str = _TENANT_A,
+    workspace_id: str = _WS_A,
+    work_item_id: str | None = None,
+    work_artifact_id: str | None = None,
+    work_artifact_version_id: str | None = None,
+) -> CollaborativeWorkReferenceReadScope:
+    return CollaborativeWorkReferenceReadScope(
+        tenant_id=tenant_id,
+        workspace_id=workspace_id,
+        work_item_id=work_item_id,
+        work_artifact_id=work_artifact_id,
+        work_artifact_version_id=work_artifact_version_id,
+    )
 
 
-def _query(**overrides: object) -> CollaborativeWorkReferenceReadQuery:
-    payload: dict[str, object] = {
-        "entity_kinds": frozenset({CollaborativeWorkReferenceEntityKind.WORK_ITEM}),
-    }
-    payload.update(overrides)
-    return CollaborativeWorkReferenceReadQuery(**payload)  # type: ignore[arg-type]
+def _query(
+    *,
+    entity_kinds: frozenset[CollaborativeWorkReferenceEntityKind] | None = None,
+    limit: int = 50,
+    version_selection: CollaborativeWorkVersionSelection = (
+        CollaborativeWorkVersionSelection.CURRENT_ONLY
+    ),
+) -> CollaborativeWorkReferenceReadQuery:
+    kinds = entity_kinds or frozenset({CollaborativeWorkReferenceEntityKind.WORK_ITEM})
+    return CollaborativeWorkReferenceReadQuery(
+        entity_kinds=kinds,
+        limit=limit,
+        version_selection=version_selection,
+    )
 
 
 def _content_ref() -> ArtifactContentRef:
@@ -159,7 +179,7 @@ def _seed_artifact(
     version_id: str,
     tenant_id: str = _TENANT_A,
     workspace_id: str = _WS_A,
-) -> None:
+) -> InMemoryArtifactRepositories:
     bundle = open_in_memory_artifact_repositories()
     bundle.publication.create_artifact_with_initial_version(
         CreateArtifactWithInitialVersionCommand(
@@ -184,7 +204,7 @@ def _seed_artifact(
 def _reader(
     *,
     work_item_repo: InMemoryWorkItemRepository | None = None,
-    artifact_bundle=None,
+    artifact_bundle: InMemoryArtifactRepositories | None = None,
     tenant_id: str = _TENANT_A,
     workspace_id: str = _WS_A,
 ) -> DefaultCollaborativeWorkReferenceReader:
