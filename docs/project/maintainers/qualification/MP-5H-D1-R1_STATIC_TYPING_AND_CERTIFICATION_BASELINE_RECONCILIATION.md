@@ -5,7 +5,7 @@
 
 ## 1. Scope
 
-Static typing closeout on the full MP-5 enterprise certification surface; certification record reconciliation (`CERTIFIED_CODE_BASELINE` vs `CERTIFICATION_RECORD_COMMIT`); D1 test-count consistency. No MP-6 implementation, no B4/B5/MP-5G redesign, no new authority owners.
+Static typing closeout on the full MP-5 enterprise certification surface; stable certification model (`CERTIFIED_CODE_BASELINE` + named `CERTIFICATION_RECORD` artifact); D1 test-count consistency. No MP-6 implementation, no B4/B5/MP-5G redesign, no new authority owners. Record commit-pointer model superseded in MP-5H-D1-R2.
 
 ## 2. Git provenance
 
@@ -15,7 +15,7 @@ Static typing closeout on the full MP-5 enterprise certification surface; certif
 | `MP5H_D1_R1_EVIDENCE_HEAD` | `5099138bee8870667efed0ec862792584005b313` (pre-R1 land; `HEAD == origin/development`) |
 | Branch | `development` |
 | `CERTIFIED_CODE_BASELINE` | `310b09feaed05e24b6d55c041baba27a9a4699cb` — see §13 |
-| `CERTIFICATION_RECORD_COMMIT` | `5f9cbf6d2b5863b552f8cf61d189edcaa6937e8b` — see §14 |
+| `CERTIFICATION_RECORD` | `MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md` — see §14 |
 
 ## 3. Original certification gaps
 
@@ -97,19 +97,27 @@ CERTIFIED_CODE_BASELINE = 310b09feaed05e24b6d55c041baba27a9a4699cb
 
 The commit whose tree passed full Pyright (§10) and behavioral regression (§11), including production typing fixes in §6–§7. Parent: `5099138bee8870667efed0ec862792584005b313` (`MP5H_D1_R1_EVIDENCE_HEAD`).
 
-## 14. Certification record commit
+## 14. Canonical certification record
 
 ```text
-CERTIFICATION_RECORD_COMMIT = 5f9cbf6d2b5863b552f8cf61d189edcaa6937e8b
+CERTIFICATION_RECORD =
+docs/project/maintainers/qualification/
+MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md
 ```
 
-Final qualification record on `development` (baseline model + SHA fields). Certified code remains at §13; intermediate doc commits `c21f26cb3` also on ancestry.
+This artifact is the canonical certification record; its exact Git revision is obtained from repository history.
 
-Relationship:
+The certification artifact intentionally does not embed the SHA of the commit containing its current revision. The exact commit containing a given certification-record revision is resolved from Git history. This prevents self-referential commit-hash recursion.
 
-- `8e8b8025` — D1 behavioral recertification land (historical)
-- `fa5f1d611` — D1 baseline-record follow-up (historical; not a competing enterprise code baseline)
-- **`CERTIFIED_CODE_BASELINE`** — R1 landing commit only
+### Historical provenance
+
+| Label | SHA |
+| --- | --- |
+| D1 behavioral recertification land | `8e8b8025f242d658c8b6c93390a87060ec635442` |
+| D1 baseline-record follow-up | `fa5f1d611706af4f9571e255b5f2291ff16f75a7` |
+| Superseded self-referential record-pointer doc commits | `c21f26cb3a80e7d418c1b7d67defe85f77d31123`, `5f9cbf6d2b5863b552f8cf61d189edcaa6937e8b`, `1b62b27f4e49f5a8fdcb42dae5f294768038324f` |
+
+**`CERTIFIED_CODE_BASELINE`** (§13) remains the sole authoritative MP-5 code commit; historical SHAs above are not competing baselines.
 
 ## 15. D1 document reconciliation
 

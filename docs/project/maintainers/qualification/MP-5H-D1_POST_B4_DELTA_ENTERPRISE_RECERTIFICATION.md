@@ -212,23 +212,33 @@ MP-5 — ENTERPRISE CERTIFIED / CLOSED (via MP-5H-D1-R1 certified code baseline)
 BLOCKING FINDINGS: NONE (post-R1)
 ```
 
-## 23. Certification baseline model (reconciled in R1)
+## 23. Certification baseline model (final authority in R1; record model in R2)
 
-Do **not** treat D1 landing commit and baseline-record follow-up as competing “baselines”. After R1:
+D1 behavioral recertification is historical evidence. Do **not** treat D1 landing commit or baseline-record follow-up as competing enterprise code baselines.
 
-| Role | SHA | Meaning |
-| --- | --- | --- |
-| `CERTIFIED_CODE_BASELINE` | `310b09feaed05e24b6d55c041baba27a9a4699cb` | R1 code land — full Pyright + regression on certified surface |
-| `CERTIFICATION_RECORD_COMMIT` | `5f9cbf6d2b5863b552f8cf61d189edcaa6937e8b` | Final R1 qualification record (docs) |
+Final enterprise code baseline (MP-5H-D1-R1):
 
-Historical anchors (provenance only, not alternate baselines):
+```text
+CERTIFIED_CODE_BASELINE = 310b09feaed05e24b6d55c041baba27a9a4699cb
+```
+
+Canonical certification record:
+
+```text
+CERTIFICATION_RECORD =
+MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md
+```
+
+Record revision provenance comes from Git history; the qualification artifact does not embed the SHA of the commit containing its current revision (MP-5H-D1-R2).
+
+### Historical provenance
 
 | Label | SHA |
 | --- | --- |
 | D1 main (behavioral recertification land) | `8e8b8025f242d658c8b6c93390a87060ec635442` |
 | D1 baseline-record follow-up | `fa5f1d611706af4f9571e255b5f2291ff16f75a7` |
 
-Authoritative post-R1 values: [`MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md`](MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md) §13–§14.
+Authoritative semantics: [`MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md`](MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md) §13–§14; record-model closeout: [`MP-5H-D1-R2_CERTIFICATION_RECORD_MODEL_FINALIZATION.md`](MP-5H-D1-R2_CERTIFICATION_RECORD_MODEL_FINALIZATION.md).
 
 ---
 

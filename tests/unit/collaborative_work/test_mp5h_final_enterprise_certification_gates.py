@@ -14,13 +14,17 @@ pytestmark = pytest.mark.unit
 
 _REPO = Path(__file__).resolve().parents[3]
 
-_QUALIFICATION = (
-    _REPO
-    / "docs"
-    / "project"
-    / "maintainers"
-    / "qualification"
-    / "MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md"
+_QUAL_DIR = _REPO / "docs" / "project" / "maintainers" / "qualification"
+_QUALIFICATION = _QUAL_DIR / "MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md"
+_MP5H_ACTIVE_QUALIFICATION_DOCS = (
+    _QUAL_DIR / "MP-5H-D1-R1_STATIC_TYPING_AND_CERTIFICATION_BASELINE_RECONCILIATION.md",
+    _QUAL_DIR / "MP-5H-D1-R2_CERTIFICATION_RECORD_MODEL_FINALIZATION.md",
+    _QUAL_DIR / "MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md",
+    _QUALIFICATION,
+)
+_FORBIDDEN_SELF_REF_RECORD_COMMIT = re.compile(
+    r"^\s*CERTIFICATION_RECORD_COMMIT\s*=",
+    re.MULTILINE,
 )
 _COLLAB_ARCH = _REPO / "docs" / "project" / "architecture" / "COLLABORATIVE_WORK.md"
 _COLLAB_PLAN = _REPO / "docs" / "project" / "maintainers" / "plans" / "COLLABORATIVE_WORK.md"
@@ -73,6 +77,13 @@ def test_mp5h_qualification_record_exists_and_passed() -> None:
     assert "MP-5H — FINAL ENTERPRISE CERTIFICATION PASSED" in text
     assert "MP-5 — ENTERPRISE CERTIFIED / CLOSED" in text
     assert "BLOCKING FINDINGS: NONE" in text
+
+
+def test_mp5h_qualification_docs_forbid_self_referential_record_commit_field() -> None:
+    for path in _MP5H_ACTIVE_QUALIFICATION_DOCS:
+        text = _read(path)
+        match = _FORBIDDEN_SELF_REF_RECORD_COMMIT.search(text)
+        assert match is None, f"{path.name}: forbidden active field {match.group(0)!r}"
 
 
 def test_mp5h_closure_markers_present_in_ssot_docs() -> None:
