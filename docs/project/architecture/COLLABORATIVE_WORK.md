@@ -199,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-6B — NEXT**. **MP-6A — APPROVED / CLOSED**. **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED**; qualification: [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
+**Next task:** **MP-6B — NEXT**. **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED**; qualification: [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -523,7 +523,7 @@ Future Multiplayer phases that belong on the collaborative work plane extend **t
 | MP-3 | WorkArtifact, WorkArtifactVersion collaborative ownership |
 | MP-4 | Decision / Approval / Governance collaborative semantics — [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) |
 | MP-5 | Principal-scoped ContextView — **ENTERPRISE CERTIFIED / CLOSED** (MP-5A…MP-5H) |
-| MP-6 | Collaborative Activity + provenance linkage — **MP-6A CLOSED**; **MP-6B — NEXT** |
+| MP-6 | Collaborative Activity + provenance linkage — **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — NEXT** |
 
 Architecture and implementation rows for MP-6+ remain in their future gates.
 
@@ -580,7 +580,7 @@ Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULT
 
 ## Collaborative Activity & Provenance (MP-6)
 
-**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — APPROVED / CLOSED**. **MP-6B — NEXT**.
+**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**). **MP-6B — NEXT**.
 
 **Capability statement:** Collaborative Activity is an immutable, typed semantic record of meaningful collaborative actions on the work plane — who acted, on what object, under which scope and authority, with what outcome, and which canonical evidence references enable reconstruction. MP-6 does **not** store WorkArtifact/Memory/UCL/prompt bodies, replace observability traces, duplicate proof receipts, or authorize mutations.
 
@@ -603,15 +603,19 @@ Authorized Consumer
   → typed CollaborativeActivity refs
 ```
 
-**Public contracts (MP-6A gate):** [`intergrax/contracts/collaborative_activity.py`](../../../intergrax/contracts/collaborative_activity.py) — `CollaborativeActivity`, `CollaborativeActivityType`, `CollaborativeActivityActorRef`, `CollaborativeActivityTargetRef`, `CollaborativeActivityProvenanceRef`, `CollaborativeActivityOutcome`, `ActivityIdempotencyKey`, `CollaborativeActivityPublication`, `CollaborativeActivityQuery`; ports `CollaborativeActivityPublicationPort`, `CollaborativeActivityWritePort`, `CollaborativeActivityReadPort`, `CollaborativeActivityAppendStore`.
+**Public contracts (MP-6A / MP-6A-C1 gate):** [`intergrax/contracts/collaborative_activity.py`](../../../intergrax/contracts/collaborative_activity.py) — `CollaborativeActivity`, `CollaborativeActivityTypeId`, `CollaborativeActivityBuiltinType`, `CollaborativeActivitySourceId`, `CollaborativeActivityActorRef`, `CollaborativeActivityTargetRef`, `CollaborativeActivityProvenanceRef`, `CollaborativeActivityOutcome`, `ActivityIdempotencyKey`, `CollaborativeActivityPublication`, `CollaborativeActivityQuery`, `CollaborativeActivityPageCursor`; ports `CollaborativeActivityPublicationPort`, `CollaborativeActivityWritePort`, `CollaborativeActivityReadPort`, `CollaborativeActivityAppendStore`.
 
-**Idempotency:** `ActivityIdempotencyKey(source_domain, source_stable_id, activity_type)`; `activity_id = mint_collaborative_activity_id(...)`; at-least-once delivery with deterministic deduplication.
+**MP-6A-C1 — CLOSED / RECERTIFIED** (activity identity, extensibility, timeline semantics hardening; subject to independent audit).
 
-**Ordering:** no global total order; per-workspace cursor timeline sorted by `(occurred_at, activity_id)`; optional `caused_by_activity_id`; append-only (`ACTIVITY_CORRECTION` supersession — no in-place history rewrite).
+**Idempotency:** `ActivityIdempotencyKey(tenant_id, workspace_id, source, source_stable_id, activity_type)` with namespaced `CollaborativeActivitySourceId` and `CollaborativeActivityTypeId`; `activity_id = mint_collaborative_activity_id(...)` over versioned length-prefixed hash material (`activity-id/v1`, SHA-256 truncated to 32 hex); at-least-once delivery with deterministic deduplication; publication scope must match key tenant/workspace.
 
-**Referential integrity:** validation at ingestion via public contracts and policy (`trust canonical producer` default for MP-6A; strict cross-domain checks via injected validators in MP-6C+ — no hardcoded repository imports in core).
+**Activity type extensibility:** namespaced plugin types via `CollaborativeActivityTypeId.for_extension(...)`; platform built-ins via `CollaborativeActivityBuiltinType`; reserved `platform` / `intergrax` namespaces — extension producers cannot claim without policy (MP-6C+).
 
-**Threat model (fail-closed):** actor spoofing → publication boundary requires authoritative actor refs tied to resolved principal; tenant/workspace leakage → scope on every record + authorized query; duplicate ingestion → idempotency key; forged provenance → typed refs only, validation seam; payload leakage → reference-only provenance union.
+**Ordering:** no global total order; **event-time presentation** may sort by `(occurred_at, activity_id)` for display; **forward pagination continuation** uses opaque `CollaborativeActivityPageCursor` (append/snapshot position — provider-neutral, not `occurred_at` watermark); materialized records carry monotonic `append_position` (MP-6-assigned); `recorded_at` is ingestion/materialization time (producer does not set on publication); optional `caused_by_activity_id`; append-only (`platform.activity.correction` supersession — no in-place history rewrite). Late-arriving events (earlier `occurred_at`, later `recorded_at`) remain reachable when continuing from a cursor.
+
+**Referential integrity:** validation at ingestion via public contracts and policy (`trust canonical producer` default for MP-6A; strict cross-domain checks via injected validators in MP-6C+ — no hardcoded repository imports in core). `caused_by_activity_id` must not cross tenant/workspace (MP-6C ingestion invariant).
+
+**Threat model (fail-closed):** actor spoofing → publication boundary requires authoritative actor refs tied to resolved principal; tenant/workspace leakage → scope on every record + authorized query; **cross-tenant idempotency collision** → scoped key; **cross-plugin source collision** → namespaced `CollaborativeActivitySourceId` (no generic plugin bucket); **cursor late-arrival loss** → opaque append continuation vs event-time filters; **type spoofing / namespace squatting** → reserved namespaces + MP-6C policy seam; duplicate ingestion → idempotency key; forged provenance → typed refs only, validation seam; payload leakage → reference-only provenance union.
 
 | Layer | May depend on | Must not depend on |
 |-------|---------------|-------------------|

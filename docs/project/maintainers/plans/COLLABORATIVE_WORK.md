@@ -7,7 +7,7 @@
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004 Accepted; **MP-3A…MP-3H — APPROVED / CLOSED**); **MP-3 architecture decomposition — APPROVED / CLOSED**; **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED**; **MP-5 — ENTERPRISE CERTIFIED / CLOSED**
 **Current active task:** **MP-6B — NEXT**.
-**Next task:** **MP-6B — NEXT**. **MP-6A — APPROVED / CLOSED** (**MP-6 ownership — FROZEN** via ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — see [`MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
+**Next task:** **MP-6B — NEXT**. **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**) (**MP-6 ownership — FROZEN** via ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — see [`MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -610,18 +610,25 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | **MP-6B — NEXT** (**MP-6A — APPROVED / CLOSED**) |
+| **Next step** | **MP-6B — NEXT** (**MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**)) |
 
 ### MP-6A — Activity & Provenance ownership / contract architecture gate
 
 | Field | Value |
 |-------|-------|
-| **Status** | **MP-6A — APPROVED / CLOSED** |
+| **Status** | **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**) |
 | **Purpose** | Freeze MP-6 ownership, typed activity/provenance contracts (gate), ADR-MP-007, docs sync, architecture gates |
 | **NEW CAPABILITY REQUIRED** | `intergrax/contracts/collaborative_activity.py` (architecture gate module) |
 | **Explicit out of scope** | Persistence, ingestion runtime, source integrations, activity feed UI, MP-9 notifications |
-| **Proof** | `test_mp6a_collaborative_activity_architecture_gates.py`; `test_mp6a_documentation_regression_gates.py`; ADR-MP-007 |
+| **Proof** | `test_mp6a_collaborative_activity_architecture_gates.py`; `test_mp6a_documentation_regression_gates.py`; `test_mp6a_c1_identity_extensibility_ordering_gates.py`; ADR-MP-007 |
 | **Next step** | **MP-6B — NEXT** |
+
+### MP-6A-C1 — Activity identity, extensibility & timeline semantics
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED** (subject to independent audit) |
+| **Purpose** | Scoped idempotency; `CollaborativeActivityTypeId` / `CollaborativeActivitySourceId`; opaque pagination cursor vs event-time ordering |
 
 ---
 

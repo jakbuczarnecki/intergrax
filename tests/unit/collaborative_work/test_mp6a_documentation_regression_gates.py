@@ -51,10 +51,13 @@ _ADR_MP007 = (
 )
 
 _REQUIRED_MARKERS = (
-    "MP-6A — APPROVED / CLOSED",
+    "MP-6A — CLOSED / RECERTIFIED",
+    "MP-6A-C1",
     "MP-6 ownership — FROZEN",
     "ADR-MP-007",
     "intergrax/contracts/collaborative_activity.py",
+    "CollaborativeActivityTypeId",
+    "opaque",
 )
 
 _ANTI_SUBSTITUTION = (
@@ -64,6 +67,11 @@ _ANTI_SUBSTITUTION = (
 
 _FORBIDDEN = (
     re.compile(r"OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION", re.I),
+)
+
+_FORBIDDEN_MP6_ORDERING = re.compile(
+    r"cursor timeline sorted by `\s*\(occurred_at,\s*activity_id\)`",
+    re.I,
 )
 
 
@@ -88,6 +96,14 @@ def test_mp6a_anti_substitution_in_multiplayer_architecture() -> None:
     text = _read(_STATUS_DOCS["multiplayer_architecture"])
     missing = [m for m in _ANTI_SUBSTITUTION if m not in text]
     assert not missing, f"multiplayer_architecture: missing anti-substitution: {missing}"
+
+
+def test_mp6a_c1_no_occurred_at_only_pagination_claim_in_collaborative_work() -> None:
+    text = _read(_STATUS_DOCS["collaborative_work_architecture"])
+    mp6_start = text.find("## Collaborative Activity & Provenance")
+    assert mp6_start >= 0
+    mp6_block = text[mp6_start : mp6_start + 6000]
+    assert _FORBIDDEN_MP6_ORDERING.search(mp6_block) is None
 
 
 def test_mp6a_no_forbidden_ownership_drift_in_mp6_section() -> None:

@@ -103,7 +103,7 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-6B — NEXT**. **MP-6A — APPROVED / CLOSED** (**MP-6 ownership — FROZEN**, ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED**). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters: `context_view_source_adapters.py`). MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**.
+**Current active task:** **MP-6B — NEXT**. **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening) (**MP-6 ownership — FROZEN**, ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H — CLOSED / FINAL CERTIFICATION PASSED**). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters: `context_view_source_adapters.py`). MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**.
 **Previous:** **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
@@ -550,17 +550,20 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 
 **Intent:** Observable collaborative activity stream linked to provenance and evidence for audit, debugging, and governance.
 
-**Owner:** **COLLABORATIVE_WORK** (MP-6) — **MP-6 ownership — FROZEN** ([ADR-MP-007](../../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — APPROVED / CLOSED**. **MP-6B — NEXT**.
+**Owner:** **COLLABORATIVE_WORK** (MP-6) — **MP-6 ownership — FROZEN** ([ADR-MP-007](../../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening). **MP-6B — NEXT**.
 
 **Reused (not owners):** `RuntimeEvent` / `AgentRunTrace` (OBSERVABILITY), `ProofReceipt` (PROOF_RECEIPTS), `ExecutionProvenanceRef`, `GovernanceEvidenceRef`, Decision/Approval IDs (MP-4 / governance).
 
-**New required:** Typed `CollaborativeActivity` + publication/read/store ports — [`intergrax/contracts/collaborative_activity.py`](../../../intergrax/contracts/collaborative_activity.py).
+**New required:** Typed `CollaborativeActivity`, `CollaborativeActivityTypeId`, `CollaborativeActivitySourceId`, and publication/read/store ports — [`intergrax/contracts/collaborative_activity.py`](../../../intergrax/contracts/collaborative_activity.py).
 
 **Anti-substitution:** `Collaborative Activity != Runtime Trace`; Activity ≠ observability telemetry; Activity ≠ proof receipt storage.
 
+**MP-6A-C1:** scoped idempotency identity; namespaced plugin activity types and source producers; opaque pagination cursor (append continuation) vs `occurred_at` event-time presentation.
+
 | Slice | Purpose | Status |
 |-------|---------|--------|
-| MP-6A | Ownership, contracts architecture, ADR, docs sync | **APPROVED / CLOSED** |
+| MP-6A | Ownership, contracts architecture, ADR, docs sync | **CLOSED / RECERTIFIED** |
+| MP-6A-C1 | Identity, extensibility, timeline semantics | **CLOSED** |
 | MP-6B | Core activity/provenance contracts (runtime hardening) | **NEXT** |
 | MP-6C | Publication / ingestion boundary | PLANNED |
 | MP-6D | Append store + default persistence | PLANNED |

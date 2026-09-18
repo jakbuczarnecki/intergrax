@@ -13,17 +13,20 @@ Distinct from:
 - ``GovernanceAuditEvent`` — governance audit channel.
 - ``DecisionRecord`` (UAEP) — step-level rationale artifacts.
 
-MP-6A freezes ownership and contract shapes; persistence ships in MP-6D+.
+MP-6A-C1 hardens scoped idempotency identity, namespaced extensible type/source
+identifiers, and event-time vs append-pagination ordering semantics.
+Persistence ships in MP-6D+.
 """
 
 from __future__ import annotations
 
 import hashlib
+import re
 from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, Final, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 from intergrax.contracts.collaborative_work import (
     PrincipalKind,
@@ -46,43 +49,137 @@ SCHEMA_COLLABORATIVE_ACTIVITY_QUERY_V1: Final = "collaborative_activity_query.v1
 SCHEMA_COLLABORATIVE_ACTIVITY_PAGE_CURSOR_V1: Final = (
     "collaborative_activity_page_cursor.v1"
 )
+SCHEMA_COLLABORATIVE_ACTIVITY_TYPE_ID_V1: Final = "collaborative_activity_type_id.v1"
+SCHEMA_COLLABORATIVE_ACTIVITY_SOURCE_ID_V1: Final = "collaborative_activity_source_id.v1"
 
 _ACTIVITY_ID_PREFIX: Final = "cact_"
+_ACTIVITY_ID_HASH_SCHEME: Final = "activity-id/v1"
+"""SHA-256 digest truncated to 32 hex chars — matches platform id conventions (RAG, CW bindings)."""
+
+_RESERVED_ACTIVITY_TYPE_NAMESPACES: Final = frozenset({"intergrax", "platform"})
+_RESERVED_ACTIVITY_SOURCE_NAMESPACES: Final = frozenset({"intergrax", "platform"})
+_IDENTIFIER_SEGMENT_RE: Final = re.compile(r"^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])?$")
 
 _NON_EMPTY = Field(min_length=1)
 
 
-class CollaborativeActivitySourceDomain(StrEnum):
-    """Authoritative producer domain for idempotency — not transport labels."""
+def _normalize_identifier_segment(value: str, *, label: str) -> str:
+    if type(value) is not str:
+        raise TypeError(f"{label} must be str")
+    normalized = value.strip().lower()
+    if not normalized:
+        raise ValueError(f"{label} must be non-empty")
+    if normalized != value.strip().lower() or value != value.strip():
+        raise ValueError(f"{label} must not contain leading or trailing whitespace")
+    if not _IDENTIFIER_SEGMENT_RE.fullmatch(normalized):
+        raise ValueError(f"{label} must be a lowercase namespaced token segment")
+    return normalized
 
-    COLLABORATIVE_WORK = "collaborative_work"
-    CONTEXT_VIEW = "context_view"
-    COLLABORATIVE_DECISION_BINDING = "collaborative_decision_binding"
-    DECISION_SYSTEM = "decision_system"
-    GOVERNANCE_HITL = "governance_hitl"
-    PLUGIN = "plugin"
+
+class CollaborativeActivityTypeId(BaseModel):
+    """Namespaced, plugin-extensible activity type identity — not a closed enum."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["collaborative_activity_type_id.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_TYPE_ID_V1
+    )
+    namespace: str = _NON_EMPTY
+    name: str = _NON_EMPTY
+
+    @field_validator("namespace", "name")
+    @classmethod
+    def _normalize_segments(cls, value: str, info) -> str:
+        label = "namespace" if info.field_name == "namespace" else "name"
+        return _normalize_identifier_segment(value, label=label)
+
+    @property
+    def qualified_id(self) -> str:
+        return f"{self.namespace}.{self.name}"
+
+    @classmethod
+    def platform(cls, name: str) -> CollaborativeActivityTypeId:
+        """Built-in platform taxonomy entry (reserved ``platform`` namespace)."""
+        return cls(namespace="platform", name=_normalize_identifier_segment(name, label="name"))
+
+    @classmethod
+    def for_extension(cls, namespace: str, name: str) -> CollaborativeActivityTypeId:
+        """Plugin-defined type — reserved platform namespaces are rejected at contract boundary."""
+        ns = _normalize_identifier_segment(namespace, label="namespace")
+        if ns in _RESERVED_ACTIVITY_TYPE_NAMESPACES:
+            raise ValueError("extension activity types cannot use reserved namespaces")
+        return cls(namespace=ns, name=_normalize_identifier_segment(name, label="name"))
 
 
-class CollaborativeActivityType(StrEnum):
-    """Frozen MP-6A taxonomy — extend only with real source capabilities."""
+class CollaborativeActivitySourceId(BaseModel):
+    """Namespaced producer identity for idempotency — isolates plugins and built-ins."""
 
-    WORK_ITEM_CREATED = "work_item_created"
-    WORK_ITEM_UPDATED = "work_item_updated"
-    WORK_ITEM_STATE_CHANGED = "work_item_state_changed"
-    ASSIGNMENT_CREATED = "assignment_created"
-    ASSIGNMENT_STATE_CHANGED = "assignment_state_changed"
-    WORK_ARTIFACT_CREATED = "work_artifact_created"
-    WORK_ARTIFACT_VERSION_PUBLISHED = "work_artifact_version_published"
-    WORK_ITEM_EXECUTION_LINKED = "work_item_execution_linked"
-    COLLABORATIVE_DECISION_BINDING_CREATED = "collaborative_decision_binding_created"
-    DECISION_RECORDED = "decision_recorded"
-    APPROVAL_REQUESTED = "approval_requested"
-    APPROVAL_RESOLVED = "approval_resolved"
-    CONTEXT_VIEW_COMPOSED = "context_view_composed"
-    CONTEXT_VIEW_CONSUMED = "context_view_consumed"
-    DELEGATION_USED = "delegation_used"
-    AUTHORITY_RELEVANT_ACTION = "authority_relevant_action"
-    ACTIVITY_CORRECTION = "activity_correction"
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["collaborative_activity_source_id.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_SOURCE_ID_V1
+    )
+    namespace: str = _NON_EMPTY
+    name: str = _NON_EMPTY
+
+    @field_validator("namespace", "name")
+    @classmethod
+    def _normalize_segments(cls, value: str, info) -> str:
+        label = "namespace" if info.field_name == "namespace" else "name"
+        return _normalize_identifier_segment(value, label=label)
+
+    @property
+    def qualified_id(self) -> str:
+        return f"{self.namespace}.{self.name}"
+
+    @classmethod
+    def platform(cls, name: str) -> CollaborativeActivitySourceId:
+        return cls(namespace="platform", name=_normalize_identifier_segment(name, label="name"))
+
+    @classmethod
+    def for_extension(cls, namespace: str, name: str) -> CollaborativeActivitySourceId:
+        ns = _normalize_identifier_segment(namespace, label="namespace")
+        if ns in _RESERVED_ACTIVITY_SOURCE_NAMESPACES:
+            raise ValueError("extension activity sources cannot use reserved namespaces")
+        return cls(namespace=ns, name=_normalize_identifier_segment(name, label="name"))
+
+
+class CollaborativeActivityBuiltinType:
+    """Canonical platform activity types — stable qualified IDs for integrations."""
+
+    WORK_ITEM_CREATED = CollaborativeActivityTypeId.platform("work_item.created")
+    WORK_ITEM_UPDATED = CollaborativeActivityTypeId.platform("work_item.updated")
+    WORK_ITEM_STATE_CHANGED = CollaborativeActivityTypeId.platform("work_item.state_changed")
+    ASSIGNMENT_CREATED = CollaborativeActivityTypeId.platform("assignment.created")
+    ASSIGNMENT_STATE_CHANGED = CollaborativeActivityTypeId.platform("assignment.state_changed")
+    WORK_ARTIFACT_CREATED = CollaborativeActivityTypeId.platform("work_artifact.created")
+    WORK_ARTIFACT_VERSION_PUBLISHED = CollaborativeActivityTypeId.platform(
+        "work_artifact.version_published"
+    )
+    WORK_ITEM_EXECUTION_LINKED = CollaborativeActivityTypeId.platform("work_item.execution_linked")
+    COLLABORATIVE_DECISION_BINDING_CREATED = CollaborativeActivityTypeId.platform(
+        "collaborative_decision_binding.created"
+    )
+    DECISION_RECORDED = CollaborativeActivityTypeId.platform("decision.recorded")
+    APPROVAL_REQUESTED = CollaborativeActivityTypeId.platform("approval.requested")
+    APPROVAL_RESOLVED = CollaborativeActivityTypeId.platform("approval.resolved")
+    CONTEXT_VIEW_COMPOSED = CollaborativeActivityTypeId.platform("context_view.composed")
+    CONTEXT_VIEW_CONSUMED = CollaborativeActivityTypeId.platform("context_view.consumed")
+    DELEGATION_USED = CollaborativeActivityTypeId.platform("delegation.used")
+    AUTHORITY_RELEVANT_ACTION = CollaborativeActivityTypeId.platform("authority.relevant_action")
+    ACTIVITY_CORRECTION = CollaborativeActivityTypeId.platform("activity.correction")
+
+
+class CollaborativeActivityBuiltinSource:
+    """Canonical platform producer identities."""
+
+    COLLABORATIVE_WORK = CollaborativeActivitySourceId.platform("collaborative_work")
+    CONTEXT_VIEW = CollaborativeActivitySourceId.platform("context_view")
+    COLLABORATIVE_DECISION_BINDING = CollaborativeActivitySourceId.platform(
+        "collaborative_decision_binding"
+    )
+    DECISION_SYSTEM = CollaborativeActivitySourceId.platform("decision_system")
+    GOVERNANCE_HITL = CollaborativeActivitySourceId.platform("governance_hitl")
 
 
 class CollaborativeActivityOutcomeStatus(StrEnum):
@@ -101,18 +198,20 @@ class CollaborativeActivityDurabilityClass(StrEnum):
 
 
 class ActivityIdempotencyKey(BaseModel):
-    """Canonical duplicate-delivery key — never derived from arbitrary payloads."""
+    """Canonical duplicate-delivery key — tenant/workspace scoped; never payload-derived."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     schema_version: Literal["collaborative_activity_idempotency_key.v1"] = (
         SCHEMA_COLLABORATIVE_ACTIVITY_IDEMPOTENCY_KEY_V1
     )
-    source_domain: CollaborativeActivitySourceDomain
+    tenant_id: str = _NON_EMPTY
+    workspace_id: str = _NON_EMPTY
+    source: CollaborativeActivitySourceId
     source_stable_id: str = _NON_EMPTY
-    activity_type: CollaborativeActivityType
+    activity_type: CollaborativeActivityTypeId
 
-    @field_validator("source_stable_id")
+    @field_validator("tenant_id", "workspace_id", "source_stable_id")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()
@@ -121,15 +220,66 @@ class ActivityIdempotencyKey(BaseModel):
         return normalized
 
 
-def mint_collaborative_activity_id(*, idempotency_key: ActivityIdempotencyKey) -> str:
-    """Deterministic activity identity from canonical idempotency key."""
-    material = (
-        f"{idempotency_key.source_domain.value}:"
-        f"{idempotency_key.source_stable_id}:"
-        f"{idempotency_key.activity_type.value}"
+def _activity_id_length_prefixed_segment(value: str) -> str:
+    return f"{len(value)}:{value}"
+
+
+def _activity_id_hash_material(*, idempotency_key: ActivityIdempotencyKey) -> str:
+    segments = (
+        _ACTIVITY_ID_HASH_SCHEME,
+        _activity_id_length_prefixed_segment(idempotency_key.tenant_id),
+        _activity_id_length_prefixed_segment(idempotency_key.workspace_id),
+        _activity_id_length_prefixed_segment(idempotency_key.source.qualified_id),
+        _activity_id_length_prefixed_segment(idempotency_key.source_stable_id),
+        _activity_id_length_prefixed_segment(idempotency_key.activity_type.qualified_id),
     )
-    digest = hashlib.sha256(material.encode()).hexdigest()[:32]
+    return "|".join(segments)
+
+
+def mint_collaborative_activity_id(*, idempotency_key: ActivityIdempotencyKey) -> str:
+    """Deterministic activity identity from canonical scoped idempotency key."""
+    material = _activity_id_hash_material(idempotency_key=idempotency_key)
+    digest = hashlib.sha256(material.encode("utf-8")).hexdigest()[:32]
     return f"{_ACTIVITY_ID_PREFIX}{digest}"
+
+
+def _scope_matches_idempotency_key(
+    *,
+    scope: CollaborativeActivityScope,
+    idempotency_key: ActivityIdempotencyKey,
+) -> None:
+    if idempotency_key.tenant_id != scope.tenant_id:
+        raise ValueError("idempotency_key tenant_id must match scope tenant_id")
+    if idempotency_key.workspace_id != scope.workspace_id:
+        raise ValueError("idempotency_key workspace_id must match scope workspace_id")
+
+
+def _validate_target_scope_alignment(
+    *,
+    scope: CollaborativeActivityScope,
+    target: CollaborativeActivityTargetRef,
+) -> None:
+    work_item_from_target: str | None = None
+    if isinstance(target, WorkItemActivityTargetRef):
+        work_item_from_target = target.work_item_id
+    elif isinstance(target, AssignmentActivityTargetRef):
+        work_item_from_target = target.work_item_id
+    elif isinstance(target, WorkArtifactActivityTargetRef):
+        work_item_from_target = target.work_item_id
+    elif isinstance(target, WorkArtifactVersionActivityTargetRef):
+        ref = target.version_ref
+        if ref.tenant_id != scope.tenant_id:
+            raise ValueError("artifact version target tenant_id must match scope tenant_id")
+        if ref.workspace_id != scope.workspace_id:
+            raise ValueError("artifact version target workspace_id must match scope workspace_id")
+        work_item_from_target = ref.work_item_id
+
+    if work_item_from_target is None:
+        return
+    if scope.work_item_id is None:
+        raise ValueError("scope.work_item_id required when target references a work item")
+    if scope.work_item_id != work_item_from_target:
+        raise ValueError("target work_item_id must match scope work_item_id")
 
 
 class CollaborativeActivityActorRef(BaseModel):
@@ -158,8 +308,10 @@ class CollaborativeActivityActorRef(BaseModel):
 
     @model_validator(mode="after")
     def _delegation_fields_paired(self) -> CollaborativeActivityActorRef:
-        if self.delegation_id is not None and self.delegator_principal_id is None:
-            raise ValueError("delegator_principal_id required when delegation_id is set")
+        has_delegation = self.delegation_id is not None
+        has_delegator = self.delegator_principal_id is not None
+        if has_delegation != has_delegator:
+            raise ValueError("delegation_id and delegator_principal_id must be set together")
         return self
 
 
@@ -457,22 +609,22 @@ class CollaborativeActivity(BaseModel):
     schema_version: Literal["collaborative_activity.v1"] = SCHEMA_COLLABORATIVE_ACTIVITY_V1
     activity_id: str = _NON_EMPTY
     idempotency_key: ActivityIdempotencyKey
-    activity_type: CollaborativeActivityType
+    activity_type: CollaborativeActivityTypeId
     actor: CollaborativeActivityActorRef
     scope: CollaborativeActivityScope
     target: CollaborativeActivityTargetRef
     outcome: CollaborativeActivityOutcome
     occurred_at: datetime
     recorded_at: datetime
+    append_position: int = Field(ge=1, description="Monotonic workspace append order — MP-6 assigns")
     provenance_refs: tuple[CollaborativeActivityProvenanceRef, ...] = ()
     correlation: CollaborativeActivityCorrelation | None = None
     caused_by_activity_id: str | None = None
     durability_class: CollaborativeActivityDurabilityClass = (
         CollaborativeActivityDurabilityClass.COLLABORATIVE
     )
-    authority_delegation_id: str | None = None
 
-    @field_validator("activity_id", "caused_by_activity_id", "authority_delegation_id")
+    @field_validator("activity_id", "caused_by_activity_id")
     @classmethod
     def _strip_optional_ids(cls, value: str | None) -> str | None:
         if value is None:
@@ -481,9 +633,16 @@ class CollaborativeActivity(BaseModel):
         return normalized or None
 
     @model_validator(mode="after")
-    def _actor_tenant_matches_scope(self) -> CollaborativeActivity:
+    def _alignment_invariants(self) -> CollaborativeActivity:
         if self.actor.tenant_id != self.scope.tenant_id:
             raise ValueError("actor tenant_id must match scope tenant_id")
+        _scope_matches_idempotency_key(scope=self.scope, idempotency_key=self.idempotency_key)
+        if self.idempotency_key.activity_type != self.activity_type:
+            raise ValueError("activity_type must match idempotency_key.activity_type")
+        expected_id = mint_collaborative_activity_id(idempotency_key=self.idempotency_key)
+        if self.activity_id != expected_id:
+            raise ValueError("activity_id must equal mint_collaborative_activity_id(idempotency_key)")
+        _validate_target_scope_alignment(scope=self.scope, target=self.target)
         return self
 
 
@@ -496,7 +655,6 @@ class CollaborativeActivityPublication(BaseModel):
         SCHEMA_COLLABORATIVE_ACTIVITY_PUBLICATION_V1
     )
     idempotency_key: ActivityIdempotencyKey
-    activity_type: CollaborativeActivityType
     actor: CollaborativeActivityActorRef
     scope: CollaborativeActivityScope
     target: CollaborativeActivityTargetRef
@@ -508,9 +666,14 @@ class CollaborativeActivityPublication(BaseModel):
     durability_class: CollaborativeActivityDurabilityClass = (
         CollaborativeActivityDurabilityClass.COLLABORATIVE
     )
-    authority_delegation_id: str | None = None
 
-    @field_validator("caused_by_activity_id", "authority_delegation_id")
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def activity_type(self) -> CollaborativeActivityTypeId:
+        """Semantic activity kind — authoritative copy lives on the idempotency key."""
+        return self.idempotency_key.activity_type
+
+    @field_validator("caused_by_activity_id")
     @classmethod
     def _strip_optional_ids(cls, value: str | None) -> str | None:
         if value is None:
@@ -518,9 +681,17 @@ class CollaborativeActivityPublication(BaseModel):
         normalized = value.strip()
         return normalized or None
 
+    @model_validator(mode="after")
+    def _alignment_invariants(self) -> CollaborativeActivityPublication:
+        if self.actor.tenant_id != self.scope.tenant_id:
+            raise ValueError("actor tenant_id must match scope tenant_id")
+        _scope_matches_idempotency_key(scope=self.scope, idempotency_key=self.idempotency_key)
+        _validate_target_scope_alignment(scope=self.scope, target=self.target)
+        return self
+
 
 class CollaborativeActivityPageCursor(BaseModel):
-    """Opaque provider-neutral pagination cursor."""
+    """Opaque provider-neutral continuation token (append/snapshot position — not event time)."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -539,7 +710,7 @@ class CollaborativeActivityPageCursor(BaseModel):
 
 
 class CollaborativeActivityQuery(BaseModel):
-    """Authorized read intent — enforcement outside the store."""
+    """Read intent shape — caller/service must supply authority-validated scope (MP-6E)."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -550,7 +721,7 @@ class CollaborativeActivityQuery(BaseModel):
     workspace_id: str = _NON_EMPTY
     work_item_id: str | None = None
     actor_principal_id: str | None = None
-    activity_types: tuple[CollaborativeActivityType, ...] = ()
+    activity_types: tuple[CollaborativeActivityTypeId, ...] = ()
     limit: int = Field(default=50, ge=1, le=500)
     cursor: CollaborativeActivityPageCursor | None = None
     occurred_after: datetime | None = None
@@ -575,20 +746,20 @@ class CollaborativeActivityPage(BaseModel):
 
 
 class CollaborativeActivityPublicationPort(Protocol):
-    """Source-domain facing publication seam — implemented by MP-6 ingestion."""
+    """Producer-facing ingress — source domains publish; MP-6 ingestion implements."""
 
     def publish(self, publication: CollaborativeActivityPublication) -> CollaborativeActivity:
         """Record activity idempotently; duplicate keys return the existing record."""
 
 
 class CollaborativeActivityWritePort(Protocol):
-    """Domain-owned append boundary (service layer)."""
+    """Internal MP-6 service append boundary after policy validation (MP-6C)."""
 
     def append(self, publication: CollaborativeActivityPublication) -> CollaborativeActivity: ...
 
 
 class CollaborativeActivityReadPort(Protocol):
-    """Authorized timeline query — not generic CRUD."""
+    """Timeline query port — authority resolution is caller/service responsibility (MP-6E)."""
 
     def query(self, query: CollaborativeActivityQuery) -> CollaborativeActivityPage: ...
 

@@ -65,6 +65,8 @@ def test_mp6a_core_models_are_frozen() -> None:
         "CollaborativeActivityActorRef",
         "ActivityIdempotencyKey",
         "CollaborativeActivityScope",
+        "CollaborativeActivityTypeId",
+        "CollaborativeActivitySourceId",
     }
     found: set[str] = set()
     for node in tree.body:
