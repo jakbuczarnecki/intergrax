@@ -1774,6 +1774,34 @@ class SQLiteWorkItemRepository(_IdempotencyMixin):
                 work_item_id=work_item_id,
             )
 
+    def list_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> tuple[WorkItem, ...]:
+        with self._store._lock:
+            self._store._ensure_open()
+            rows = self._store.transaction().execute(
+                """
+                SELECT record_json FROM work_items
+                WHERE tenant_id = ? AND workspace_id = ?
+                ORDER BY work_item_id ASC
+                """,
+                (tenant_id.strip(), workspace_id.strip()),
+            ).fetchall()
+        records = [work_item_from_json(row["record_json"]) for row in rows]
+        return tuple(
+            record
+            for record in records
+            if _scope_matches_tenant_workspace(
+                record.tenant_id,
+                record.workspace_id,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+        )
+
     def update(self, command: UpdateWorkItemCommand) -> WorkItem:
         with self._store._lock:
             self._store._ensure_open()
@@ -2328,6 +2356,40 @@ class SQLiteWorkArtifactRepository:
         if record.work_artifact_id.strip() != work_artifact_id.strip():
             return None
         return record
+
+    def list_for_work_item(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> tuple[WorkArtifact, ...]:
+        with self._store._lock:
+            self._store._ensure_open()
+            rows = self._store.transaction().execute(
+                """
+                SELECT record_json FROM work_artifacts
+                WHERE tenant_id = ? AND workspace_id = ? AND work_item_id = ?
+                ORDER BY work_artifact_id ASC
+                """,
+                (
+                    tenant_id.strip(),
+                    workspace_id.strip(),
+                    work_item_id.strip(),
+                ),
+            ).fetchall()
+        records = [work_artifact_from_json(row["record_json"]) for row in rows]
+        return tuple(
+            record
+            for record in records
+            if record.work_item_id.strip() == work_item_id.strip()
+            and _scope_matches_tenant_workspace(
+                record.tenant_id,
+                record.workspace_id,
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+            )
+        )
 
 
 class SQLiteWorkArtifactVersionRepository:

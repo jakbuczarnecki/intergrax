@@ -199,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-5F — BLOCKED** (B1 Memory **CLOSED**; B2 Knowledge **CLOSED**; **MP-5F-B3A UCL workspace ownership CLOSED**; **MP-5F-B3 read boundary CLOSED** (B3B workspace-scoped read from persisted ownership); **MP-5F-B4 — WAITING**). **MP-5E — APPROVED / CLOSED** (ADR-MP-006).
+**Next task:** **MP-5F — BLOCKED** (B1 Memory **CLOSED**; B2 Knowledge **CLOSED**; **MP-5F-B3 read boundary CLOSED**; **MP-5F-B4 reference read boundary CLOSED**; **MP-5F-B5 — NEXT**). **MP-5E — APPROVED / CLOSED** (ADR-MP-006).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -542,6 +542,8 @@ Collaborative Work owns **who may see which context categories under which colla
 **Source composition ports (MP-5D):** [`intergrax/contracts/context_view_source_ports.py`](../../../intergrax/contracts/context_view_source_ports.py) — consumer-owned `MemoryContextSourcePort`, `KnowledgeContextSourcePort`, `UclContextSourcePort`, `CollaborativeWorkContextSourcePort`; typed per-domain requests/results and reference-first `ContextViewSourceCandidate` variants reusing MP-5B `ContextViewEntrySourceRef` locators (no retrieval, hydration, or adapters).
 
 **Default composition (MP-5E):** [`intergrax/contracts/context_view_composition.py`](../../../intergrax/contracts/context_view_composition.py) — `ContextViewComposer`, `ContextViewCompositionRequest`, replaceable ordering/identity strategies; default [`intergrax/collaborative_work/context_view_composition.py`](../../../intergrax/collaborative_work/context_view_composition.py) (`DefaultContextViewComposer`) consumes an approved `ContextViewPolicyDecision`, invokes injected MP-5D ports for eligible categories only, validates every candidate, dedupes/orders deterministically, and materializes reference-first `ContextView` with `effective_scope` (least-context).
+
+**Reference-read boundary (MP-5F-B4):** Collaborative Work owns WorkItem, WorkArtifact and WorkArtifactVersion identity, lifecycle and canonical ownership relationships. The public reference-read boundary exposes scoped canonical references only (`CollaborativeWorkReferenceReadPort` in [`intergrax/collaborative_work/contracts/collaborative_work_reference_read.py`](../../../intergrax/collaborative_work/contracts/collaborative_work_reference_read.py)); default scoped catalog projection (no payload hydration): [`DefaultCollaborativeWorkReferenceReader`](../../../intergrax/collaborative_work/default_collaborative_work_reference_reader.py) over [`CollaborativeWorkScopedReferenceCatalog`](../../../intergrax/collaborative_work/repository.py). MP-5 adapters consume those references but do not own Collaborative Work semantics. **Anti-substitution:** `ContextView ≠ WorkItem`; `ContextView ≠ WorkArtifact`; MP-5 does not choose WorkArtifact current version — CW aggregate `current_version_id` is authoritative.
 
 ```text
 ContextViewRequest

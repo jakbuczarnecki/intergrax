@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol, Self, runtime_checkable
 
@@ -908,6 +909,14 @@ class WorkItemRepository(Protocol):
     ) -> WorkItem | None:
         """Return WorkItem for the scoped identity or ``None``."""
 
+    def list_for_workspace(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+    ) -> tuple[WorkItem, ...]:
+        """Return WorkItems for one workspace ordered by ``work_item_id``."""
+
     def update(self, command: UpdateWorkItemCommand) -> WorkItem:
         """Replace WorkItem semantics under optimistic concurrency."""
 
@@ -1288,6 +1297,15 @@ class WorkArtifactRepository(Protocol):
     ) -> WorkArtifact | None:
         """Return WorkArtifact for the scoped identity or ``None``."""
 
+    def list_for_work_item(
+        self,
+        *,
+        tenant_id: str,
+        workspace_id: str,
+        work_item_id: str,
+    ) -> tuple[WorkArtifact, ...]:
+        """Return artifacts for one WorkItem ordered by ``work_artifact_id``."""
+
 
 @runtime_checkable
 class WorkArtifactVersionRepository(Protocol):
@@ -1429,3 +1447,126 @@ class CollaborativeDecisionBindingRepository(Protocol):
         decision_proposal: DecisionProposalRef,
     ) -> tuple[CollaborativeDecisionBinding, ...]:
         """Return bindings referencing one exact Decision proposal."""
+
+
+_KIND_WORK_ITEM = "work_item"
+_KIND_WORK_ARTIFACT = "work_artifact"
+_KIND_WORK_ARTIFACT_VERSION = "work_artifact_version"
+
+
+@dataclass(frozen=True, slots=True)
+class CollaborativeWorkScopedReferenceQuery:
+    """Least-context catalog query for scoped reference enumeration (MP-5F-B4).
+
+    Full scope (tenant, workspace, optional work_item/artifact/version ids) and
+    entity-kind selection are applied before ``limit``. Ordering is
+    ``(entity_kind, work_item_id, work_artifact_id, work_artifact_version_id)``.
+    """
+
+    tenant_id: str
+    workspace_id: str
+    limit: int
+    entity_kinds: frozenset[str]
+    include_historical: bool = False
+    work_item_id: str | None = None
+    work_artifact_id: str | None = None
+    work_artifact_version_id: str | None = None
+
+    def __post_init__(self) -> None:
+        tenant = (self.tenant_id or "").strip()
+        workspace = (self.workspace_id or "").strip()
+        if not tenant:
+            raise ValueError("tenant_id must be non-empty")
+        if not workspace:
+            raise ValueError("workspace_id must be non-empty")
+        if self.limit <= 0:
+            raise ValueError("limit must be > 0")
+        kinds = frozenset(self.entity_kinds)
+        if not kinds:
+            raise ValueError("entity_kinds must be non-empty")
+        allowed = {_KIND_WORK_ITEM, _KIND_WORK_ARTIFACT, _KIND_WORK_ARTIFACT_VERSION}
+        if not kinds.issubset(allowed):
+            raise ValueError("entity_kinds contains unsupported values")
+        object.__setattr__(self, "tenant_id", tenant)
+        object.__setattr__(self, "workspace_id", workspace)
+        object.__setattr__(self, "entity_kinds", kinds)
+        object.__setattr__(
+            self,
+            "work_item_id",
+            _strip_optional_scope(self.work_item_id),
+        )
+        object.__setattr__(
+            self,
+            "work_artifact_id",
+            _strip_optional_scope(self.work_artifact_id),
+        )
+        object.__setattr__(
+            self,
+            "work_artifact_version_id",
+            _strip_optional_scope(self.work_artifact_version_id),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class CollaborativeWorkScopedReferenceListing:
+    """Reference metadata row — no artifact payload or content bodies."""
+
+    entity_kind: str
+    tenant_id: str
+    workspace_id: str
+    work_item_id: str
+    work_artifact_id: str | None = None
+    work_artifact_version_id: str | None = None
+    work_item_state: WorkItemState | None = None
+    current_version_id: str | None = None
+
+    def __post_init__(self) -> None:
+        kind = (self.entity_kind or "").strip()
+        if kind not in {
+            _KIND_WORK_ITEM,
+            _KIND_WORK_ARTIFACT,
+            _KIND_WORK_ARTIFACT_VERSION,
+        }:
+            raise ValueError("entity_kind is not a supported collaborative reference kind")
+        tenant = (self.tenant_id or "").strip()
+        workspace = (self.workspace_id or "").strip()
+        work_item = (self.work_item_id or "").strip()
+        if not tenant or not workspace or not work_item:
+            raise ValueError("tenant_id, workspace_id and work_item_id are required")
+        object.__setattr__(self, "entity_kind", kind)
+        object.__setattr__(self, "tenant_id", tenant)
+        object.__setattr__(self, "workspace_id", workspace)
+        object.__setattr__(self, "work_item_id", work_item)
+        artifact = _strip_optional_scope(self.work_artifact_id)
+        version = _strip_optional_scope(self.work_artifact_version_id)
+        current = _strip_optional_scope(self.current_version_id)
+        if kind == _KIND_WORK_ITEM:
+            if artifact is not None or version is not None or current is not None:
+                raise ValueError("work_item listing must not carry artifact/version ids")
+        elif kind == _KIND_WORK_ARTIFACT:
+            if artifact is None or current is None or version is not None:
+                raise ValueError("work_artifact listing requires artifact and current_version ids")
+        elif kind == _KIND_WORK_ARTIFACT_VERSION:
+            if artifact is None or version is None:
+                raise ValueError("work_artifact_version listing requires artifact and version ids")
+        object.__setattr__(self, "work_artifact_id", artifact)
+        object.__setattr__(self, "work_artifact_version_id", version)
+        object.__setattr__(self, "current_version_id", current)
+
+
+def _strip_optional_scope(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    return normalized if normalized else None
+
+
+@runtime_checkable
+class CollaborativeWorkScopedReferenceCatalog(Protocol):
+    """Provider-neutral scoped reference catalog for Collaborative Work entities."""
+
+    def list_scoped_references(
+        self,
+        query: CollaborativeWorkScopedReferenceQuery,
+    ) -> tuple[CollaborativeWorkScopedReferenceListing, ...]:
+        """Return deterministic reference rows for the requested scope and selection."""
