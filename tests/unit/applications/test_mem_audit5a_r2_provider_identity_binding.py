@@ -321,6 +321,7 @@ def test_overlay_replaces_store_and_identity_together(tmp_path: Path) -> None:
     assert wiring.user_profile_store_identity is not None
     assert wiring.user_profile_store_identity.provider_id == "test.durable_qualified_user_profile"
     assert wiring.user_profile_store_identity.source is MemoryProviderIdentitySource.PLUGIN
+    assert wiring.user_profile_store_identity.backing_provider_id is None
 
 
 def test_sqlite_wiring_identity_matches_runner_descriptor(tmp_path: Path) -> None:

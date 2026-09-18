@@ -136,6 +136,8 @@ def _evidence_for_provider(
     *,
     status: MemoryProviderQualificationStatus = MemoryProviderQualificationStatus.QUALIFIED,
     provider_version: str | None = None,
+    backing_provider_id: str | None = None,
+    backing_provider_version: str | None = None,
 ) -> InMemoryMemoryProviderQualificationEvidenceRegistry:
     registry = InMemoryMemoryProviderQualificationEvidenceRegistry()
     registry.register(
@@ -147,6 +149,8 @@ def _evidence_for_provider(
             reference_time_iso="2025-01-01T00:00:00+00:00",
             evidence_source="test_registry",
             provider_version=provider_version,
+            backing_provider_id=backing_provider_id,
+            backing_provider_version=backing_provider_version,
         ),
     )
     return registry
@@ -157,6 +161,8 @@ def _durability_for_provider(
     *,
     status: MemoryProviderTrustedDurabilityStatus = MemoryProviderTrustedDurabilityStatus.DURABLE,
     provider_version: str | None = None,
+    backing_provider_id: str | None = None,
+    backing_provider_version: str | None = None,
     run_id: str = "run-test",
 ) -> InMemoryMemoryProviderDurabilityEvidenceRegistry:
     registry = InMemoryMemoryProviderDurabilityEvidenceRegistry()
@@ -170,6 +176,8 @@ def _durability_for_provider(
             evidence_source="test_durability_registry",
             proof_kind=MemoryProviderDurabilityProofKind.RESTART_REOPEN,
             provider_version=provider_version,
+            backing_provider_id=backing_provider_id,
+            backing_provider_version=backing_provider_version,
         ),
     )
     return registry

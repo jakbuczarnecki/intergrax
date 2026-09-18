@@ -1375,8 +1375,28 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | Markers | `external_proof`, `qualification`, `docker`, `no_ci` |
 | Durability proof kind | `REAL_VENDOR_RECONNECT` (client/provider recreation; not Mongo service restart) |
 | Evidence source | `mongo_real_vendor_qualification` |
-| GAP-4-04 | **CLOSED** when suite executes green on real Mongo |
+| Independent audit (pre-5C-R) | **PASS WITH CORRECTIONS** — trusted evidence bound to adapter ID only (see GAP-5C-01) |
+| GAP-4-04 | Execution proved on real Mongo; **FULLY CLOSED** after MEM-FINAL-AUDIT-5C-R |
+
+> Historical 5C execution remains valid; closure required composite adapter+backend identity binding (5C-R).
+
+## MEM-FINAL-AUDIT-5C-R — Composite adapter/backend qualification identity binding
+
+| Check | Result |
+| ----- | ------ |
+| Trusted identity | `MemoryProviderIdentity.provider_id` + optional `backing_provider_id` / `backing_provider_version` |
+| Adapter ID | `document_store.user_profile` (unchanged) |
+| Mongo backing ID | Integration `document_store` manifest slug (`mongodb`; canonical `MONGODB_DOCUMENT_STORE_PROVIDER_ID`) |
+| Composition source | `applications/_shared/memory_wiring.py` (`_document_store_backing_provider_id`) |
+| Descriptor / evidence | `MemoryProviderDescriptor`, qualification + durability evidence preserve backing fields |
+| Registry lookup | Composite key includes backing identity (distinct from adapter-only evidence) |
+| Admission | `PROVIDER_BACKING_IDENTITY_MISMATCH` on backing mismatch; fail-closed on missing/wrong backing |
+| Attack regression | Mongo evidence cannot admit `DocumentStoreUserProfileStore` over alternate `DocumentStore` backend |
+| Suite | `tests/unit/applications/test_mem_final_audit_5c_r_composite_identity_binding.py` + green 5C real-vendor suite |
+| GAP-5C-01 | **CLOSED** |
+| GAP-4-04 | **FULLY CLOSED** |
+| V6 | **REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** for `document_store.user_profile` backed by `mongodb` (not service-restart qualified) |
 
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5D AFTER INDEPENDENT GITHUB AUDIT
 
-> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5C muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5D.
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5C-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5D.

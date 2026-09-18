@@ -165,6 +165,13 @@ def _mongodb_integration_overrides(profile: IntegrationProfile) -> dict[str, obj
     return {}
 
 
+def _document_store_backing_provider_id(profile: IntegrationProfile) -> str | None:
+    binding = profile.document_store
+    if binding is None:
+        return None
+    return binding.resolved_slug()
+
+
 def _resolve_baseline_memory_platform_wiring(
     env: ApplicationEnvironmentProfile,
     profile: IntegrationProfile,
@@ -216,6 +223,7 @@ def _resolve_baseline_memory_platform_wiring(
     if _mongodb_enabled(profile):
         mongo_bundle = create_mongodb_integration(**_mongodb_integration_overrides(profile))
         document_store: DocumentStore = mongo_bundle.document_store.as_document_store()
+        document_store_backing = _document_store_backing_provider_id(profile)
         org_store = None
         if env.memory_profile.enable_org_memory:
             from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (
@@ -228,6 +236,7 @@ def _resolve_baseline_memory_platform_wiring(
             user_profile_store=DocumentStoreUserProfileStore(document_store),
             user_profile_store_identity=builtin_user_profile_store_identity(
                 BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID,
+                backing_provider_id=document_store_backing,
             ),
             organization_profile_store=org_store,
             sqlite_bundle=None,

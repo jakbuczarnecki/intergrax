@@ -269,7 +269,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | PRODUCT memory disabled | InMemory baseline allowed (store not admission-gated) |
 | PRODUCT persistent + InMemory | `MemoryProviderAdmissionError` |
 | SQLite PRODUCT | Requires trusted `USER_PROFILE_STORE` evidence (`QUALIFIED`); self-declared qual ignored |
-| DocumentStore UserProfile (Mongo path) | Requires trusted behavioral + durability evidence (`document_store.user_profile`; proof `real_vendor_reconnect`) |
+| DocumentStore UserProfile (Mongo path) | Requires trusted behavioral + durability evidence for composite identity (`document_store.user_profile` + `mongodb`; proof `real_vendor_reconnect`) |
 
 ## MEM-FINAL-AUDIT-5C — Mongo UserProfile real-vendor qualification
 
@@ -285,11 +285,23 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | PRODUCT admission | Behavioral + durability evidence, matching `qualification_run_id` |
 | Application E2E | MemoryControlPlane remember/recall/forget after Mongo client reconnect |
 | Write semantics | `replace_one` + `upsert=True` on `(partition_key, row_key)` unique index |
-| Verdict | **REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** |
+| Verdict (execution) | Real Mongo behavioral + reconnect durability proved |
+| Identity binding (pre-5C-R) | Evidence keyed on adapter ID only — **GAP-5C-01** |
+
+## MEM-FINAL-AUDIT-5C-R — Composite adapter/backend identity binding
+
+| Check | Result |
+| ----- | ------ |
+| Composite trusted identity | `provider_id` + `backing_provider_id` on `MemoryProviderIdentity` |
+| Evidence / registry | Qualification + durability records and `resolve()` discriminate backing |
+| Mongo qualification descriptor | `backing_provider_id=mongodb` |
+| Substitution attack | Mongo evidence + `InMemoryDocumentStore` adapter wiring → **FAIL CLOSED** |
+| Verdict | **REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (`document_store.user_profile` + `mongodb`) |
 
 | Gap | Status |
 | --- | ------ |
-| GAP-4-04 | **CLOSED** |
+| GAP-5C-01 | **CLOSED** (Mongo evidence cannot qualify non-Mongo DocumentStore backend) |
+| GAP-4-04 | **FULLY CLOSED** |
 
 ## MEM-FINAL-AUDIT-5A-R — Trusted qualification evidence
 

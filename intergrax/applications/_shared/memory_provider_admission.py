@@ -37,21 +37,47 @@ from intergrax.memory.user_profile_store import UserProfileStore
 
 
 class _EmptyDurabilityEvidenceRegistry:
-    def resolve(self, provider_id: str, capability: object, provider_version: str | None = None):
-        _ = (provider_id, capability, provider_version)
+    def resolve(
+        self,
+        provider_id: str,
+        capability: object,
+        provider_version: str | None = None,
+        backing_provider_id: str | None = None,
+        backing_provider_version: str | None = None,
+    ):
+        _ = (
+            provider_id,
+            capability,
+            provider_version,
+            backing_provider_id,
+            backing_provider_version,
+        )
         return MemoryProviderDurabilityEvidenceLookup(
             resolve_status=MemoryProviderDurabilityEvidenceResolveStatus.MISSING,
         )
 
 
 class _EmptyQualificationEvidenceRegistry:
-    def resolve(self, provider_id: str, capability: object, provider_version: str | None = None):
+    def resolve(
+        self,
+        provider_id: str,
+        capability: object,
+        provider_version: str | None = None,
+        backing_provider_id: str | None = None,
+        backing_provider_version: str | None = None,
+    ):
         from intergrax.memory.contracts.provider_qualification_evidence import (
             MemoryProviderQualificationEvidenceLookup,
             MemoryProviderQualificationEvidenceResolveStatus,
         )
 
-        _ = (provider_id, capability, provider_version)
+        _ = (
+            provider_id,
+            capability,
+            provider_version,
+            backing_provider_id,
+            backing_provider_version,
+        )
         return MemoryProviderQualificationEvidenceLookup(
             resolve_status=MemoryProviderQualificationEvidenceResolveStatus.MISSING,
         )

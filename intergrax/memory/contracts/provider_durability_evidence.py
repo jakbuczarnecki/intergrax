@@ -54,6 +54,8 @@ class MemoryProviderDurabilityEvidence:
     evidence_source: str
     proof_kind: MemoryProviderDurabilityProofKind
     provider_version: str | None = None
+    backing_provider_id: str | None = None
+    backing_provider_version: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +72,8 @@ class MemoryProviderDurabilityEvidenceRegistry(Protocol):
         provider_id: str,
         capability: MemoryProviderCapabilityKind,
         provider_version: str | None = None,
+        backing_provider_id: str | None = None,
+        backing_provider_version: str | None = None,
     ) -> MemoryProviderDurabilityEvidenceLookup: ...
 
 
@@ -86,6 +90,8 @@ class TrustedMemoryProviderDurabilityEvidence:
         reopen_passed: bool,
         delete_reopen_passed: bool | None,
         provider_version: str | None = None,
+        backing_provider_id: str | None = None,
+        backing_provider_version: str | None = None,
         evidence_source: str = "user_profile_reopen_qualification",
         proof_kind: MemoryProviderDurabilityProofKind = (
             MemoryProviderDurabilityProofKind.RESTART_REOPEN
@@ -106,6 +112,8 @@ class TrustedMemoryProviderDurabilityEvidence:
             evidence_source=evidence_source,
             proof_kind=proof_kind,
             provider_version=provider_version,
+            backing_provider_id=backing_provider_id,
+            backing_provider_version=backing_provider_version,
         )
 
 
@@ -118,6 +126,8 @@ def durability_evidence_from_reopen_proof(
     reopen_passed: bool,
     delete_reopen_passed: bool | None,
     provider_version: str | None = None,
+    backing_provider_id: str | None = None,
+    backing_provider_version: str | None = None,
     evidence_source: str = "user_profile_reopen_qualification",
     proof_kind: MemoryProviderDurabilityProofKind = MemoryProviderDurabilityProofKind.RESTART_REOPEN,
 ) -> MemoryProviderDurabilityEvidence:
@@ -129,6 +139,8 @@ def durability_evidence_from_reopen_proof(
         reopen_passed=reopen_passed,
         delete_reopen_passed=delete_reopen_passed,
         provider_version=provider_version,
+        backing_provider_id=backing_provider_id,
+        backing_provider_version=backing_provider_version,
         evidence_source=evidence_source,
         proof_kind=proof_kind,
     )
