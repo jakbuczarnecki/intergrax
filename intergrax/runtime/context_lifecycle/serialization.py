@@ -26,6 +26,9 @@ from intergrax.runtime.context_lifecycle.contracts import (
     OptimizationArtifactType,
     OptimizationExecutionGuard,
     ReusableOptimizationArtifact,
+    UclArtifactOwnership,
+    UclArtifactOwnershipKind,
+    UclArtifactOwnershipScope,
 )
 from intergrax.runtime.context_lifecycle.repository import (
     ArtifactCreationCoordinationResult,
@@ -478,7 +481,40 @@ def artifact_creation_reservation_to_safe_dict(
         "owner_operation_id": reservation.owner_operation_id,
         "raw_content_included": _RAW_CONTENT_INCLUDED,
         "reservation_id": reservation.reservation_id,
+        "workspace_id": reservation.workspace_id,
     }
+
+
+def ucl_artifact_ownership_scope_to_canonical_dict(
+    scope: UclArtifactOwnershipScope,
+) -> dict[str, str]:
+    return {
+        "tenant_id": scope.tenant_id,
+        "workspace_id": scope.workspace_id,
+    }
+
+
+def ucl_artifact_ownership_to_canonical_dict(
+    ownership: UclArtifactOwnership,
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {"kind": ownership.kind.value}
+    if ownership.scope is not None:
+        payload["scope"] = ucl_artifact_ownership_scope_to_canonical_dict(ownership.scope)
+    return payload
+
+
+def ucl_artifact_ownership_from_canonical_dict(payload: Mapping[str, Any]) -> UclArtifactOwnership:
+    kind = UclArtifactOwnershipKind(str(payload["kind"]))
+    if kind is UclArtifactOwnershipKind.WORKSPACE:
+        scope_payload = payload.get("scope")
+        if not isinstance(scope_payload, Mapping):
+            raise ValueError("WORKSPACE ownership requires scope mapping")
+        scope = UclArtifactOwnershipScope(
+            tenant_id=str(scope_payload["tenant_id"]),
+            workspace_id=str(scope_payload["workspace_id"]),
+        )
+        return UclArtifactOwnership.for_workspace(scope)
+    return UclArtifactOwnership.legacy_unknown()
 
 
 def reusable_optimization_artifact_to_safe_dict(
@@ -489,6 +525,7 @@ def reusable_optimization_artifact_to_safe_dict(
     return {
         "artifact_content_hash": artifact.artifact_content_hash,
         "artifact_id": artifact.artifact_id,
+        "ownership": ucl_artifact_ownership_to_canonical_dict(artifact.ownership),
         "created_at": _datetime_to_iso(artifact.created_at),
         "created_by_executor": artifact.created_by_executor,
         "invalidation_reason": artifact.invalidation_reason,
@@ -544,13 +581,17 @@ def optimization_artifact_reference_to_safe_dict(
     reference: OptimizationArtifactReference,
 ) -> dict[str, Any]:
     """Return telemetry-safe artifact reference serialization."""
-    return {
+    payload: dict[str, Any] = {
         "artifact_content_hash": reference.artifact_content_hash,
         "artifact_id": reference.artifact_id,
         "artifact_lookup_key_hash": reference.artifact_lookup_key_hash,
         "artifact_type": reference.artifact_type.value,
+        "context_scope_id": reference.context_scope_id,
         "raw_content_included": _RAW_CONTENT_INCLUDED,
     }
+    if reference.workspace_id is not None:
+        payload["workspace_id"] = reference.workspace_id
+    return payload
 
 
 def stored_optimization_artifact_to_safe_dict(

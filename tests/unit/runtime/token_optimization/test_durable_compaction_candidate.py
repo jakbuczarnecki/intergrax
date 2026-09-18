@@ -32,6 +32,7 @@ from intergrax.runtime.context_lifecycle import (
     OptimizationArtifactType,
     OptimizationExecutionGuard,
     InMemoryOptimizationArtifactRepository,
+    UclArtifactOwnershipScope,
     compute_artifact_lookup_key_hash,
     assess_durable_compaction_eligibility,
 )
@@ -181,6 +182,10 @@ def _request(
         eligibility=eligibility,
         snapshot=snapshot,
         execution_guard=guard,
+        artifact_ownership=UclArtifactOwnershipScope(
+            tenant_id=snapshot.source_identity.tenant_id,
+            workspace_id="workspace-1",
+        ),
     )
 
 
@@ -197,16 +202,17 @@ class _SpyRepository(InMemoryOptimizationArtifactRepository):
         self.coordination: ArtifactCreationCoordinationResult | None = None
         self.store_error = False
 
-    def lookup(self, key: ArtifactLookupKey) -> Any:
+    def lookup(self, key: ArtifactLookupKey, *, ownership: UclArtifactOwnershipScope) -> Any:
         self.lookup_calls += 1
         if self.lookup_sequence:
             return self.lookup_sequence.pop(0)
-        return super().lookup(key)
+        return super().lookup(key, ownership=ownership)
 
     def try_acquire_creation_reservation(
         self,
         key: ArtifactLookupKey,
         *,
+        ownership: UclArtifactOwnershipScope,
         owner_operation_id: str,
         lease_seconds: int,
     ) -> ArtifactCreationCoordinationResult:
@@ -215,6 +221,7 @@ class _SpyRepository(InMemoryOptimizationArtifactRepository):
             return self.coordination
         return super().try_acquire_creation_reservation(
             key,
+            ownership=ownership,
             owner_operation_id=owner_operation_id,
             lease_seconds=lease_seconds,
         )
@@ -223,12 +230,14 @@ class _SpyRepository(InMemoryOptimizationArtifactRepository):
         self,
         key: ArtifactLookupKey,
         *,
+        ownership: UclArtifactOwnershipScope,
         observed_state_version: int,
         timeout_seconds: float,
     ) -> bool:
         self.wait_calls += 1
         return super().wait_for_artifact_or_reservation_change(
             key,
+            ownership=ownership,
             observed_state_version=observed_state_version,
             timeout_seconds=timeout_seconds,
         )
@@ -320,6 +329,7 @@ def _reservation(
         reservation_id=reservation_id,
         artifact_lookup_key_hash=key_hash,
         tenant_id="tenant-1",
+        workspace_id=request.artifact_ownership.workspace_id,
         owner_operation_id=request.operation_id,
         acquired_at=_NOW,
         lease_deadline=_NOW + timedelta(seconds=60),
@@ -450,6 +460,7 @@ def test_request_requires_eligible_primary_depth_zero_and_matching_hashes() -> N
             ),
             snapshot=snapshot,
             execution_guard=_request().execution_guard,
+            artifact_ownership=_request().artifact_ownership,
         )
     object.__setattr__(decision, "target_identity_hash", "0" * 64)
     with pytest.raises(ValueError, match="hash"):
@@ -459,6 +470,7 @@ def test_request_requires_eligible_primary_depth_zero_and_matching_hashes() -> N
             eligibility=decision,
             snapshot=snapshot,
             execution_guard=_request().execution_guard,
+            artifact_ownership=_request().artifact_ownership,
         )
 
 

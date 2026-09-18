@@ -27,6 +27,7 @@ from intergrax.runtime.context_lifecycle import (
     OptimizationArtifactType,
     OptimizationExecutionGuard,
     SQLiteOptimizationArtifactRepository,
+    UclArtifactOwnershipScope,
     assess_durable_compaction_eligibility,
 )
 from intergrax.runtime.nexus.session.context_revision import (
@@ -176,6 +177,10 @@ def _request() -> CompactionRequest:
             operation_id="operation-1",
             parent_operation_id=None,
             optimization_depth=0,
+        ),
+        artifact_ownership=UclArtifactOwnershipScope(
+            tenant_id=identity.tenant_id,
+            workspace_id="workspace-1",
         ),
     )
 

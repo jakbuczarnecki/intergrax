@@ -36,6 +36,8 @@ from intergrax.runtime.context_lifecycle.contracts import (
     ModelCallExecutionScope,
     OptimizationExecutionGuard,
     ReusableOptimizationArtifact,
+    UclArtifactOwnership,
+    UclArtifactOwnershipScope,
 )
 from intergrax.runtime.context_lifecycle.repository import (
     OptimizationArtifactReference,
@@ -241,6 +243,7 @@ async def resolve_ucl_context_plan(
     ranked_fragments: Sequence[ContextFragment],
     runtime: NexusUCLRuntimeDependencies | None,
     count_tokens: Callable[[str], int],
+    artifact_ownership: UclArtifactOwnershipScope | None = None,
 ) -> NexusUCLResolution:
     if request.execution_scope is not ModelCallExecutionScope.PRIMARY_MODEL_CALL:
         raise NexusUCLExecutionError(NexusUCLExecutionReason.PRIMARY_SCOPE_REQUIRED)
@@ -313,9 +316,17 @@ async def resolve_ucl_context_plan(
     lookup_key_kwargs["validation_contract_version"] = optimization_policy.validation_contract_version
     lookup_key = ArtifactLookupKey(**lookup_key_kwargs)  # type: ignore[arg-type]
     lookup_hash = compute_artifact_lookup_key_hash(lookup_key)
+    if artifact_ownership is None:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
+    if artifact_ownership.tenant_id != lookup_key.tenant_id:
+        raise NexusUCLExecutionError(NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED)
 
     repository = runtime.repository
-    stored_artifact = await asyncio.to_thread(repository.lookup, lookup_key)
+    stored_artifact = await asyncio.to_thread(
+        repository.lookup,
+        lookup_key,
+        ownership=artifact_ownership,
+    )
     if stored_artifact is not None:
         summary, artifact_content_hash = _validate_stored_artifact_payload(
             stored_artifact,
@@ -348,12 +359,17 @@ async def resolve_ucl_context_plan(
     coordination = await asyncio.to_thread(
         repository.try_acquire_creation_reservation,
         lookup_key,
+        ownership=artifact_ownership,
         owner_operation_id=parent_guard.operation_id,
         lease_seconds=optimization_policy.reservation_lease_seconds,
     )
 
     if coordination.status is ArtifactCreationCoordinationStatus.ARTIFACT_AVAILABLE:
-        stored_artifact = await asyncio.to_thread(repository.lookup, lookup_key)
+        stored_artifact = await asyncio.to_thread(
+            repository.lookup,
+            lookup_key,
+            ownership=artifact_ownership,
+        )
         if stored_artifact is None:
             raise NexusUCLExecutionError(
                 ContextOptimizationReasonCode.ARTIFACT_CREATION_RESERVATION_CONFLICT.value
@@ -390,10 +406,15 @@ async def resolve_ucl_context_plan(
         await asyncio.to_thread(
             repository.wait_for_artifact_or_reservation_change,
             lookup_key,
+            ownership=artifact_ownership,
             observed_state_version=coordination.state_version,
             timeout_seconds=runtime.wait_timeout_seconds,
         )
-        stored_artifact = await asyncio.to_thread(repository.lookup, lookup_key)
+        stored_artifact = await asyncio.to_thread(
+            repository.lookup,
+            lookup_key,
+            ownership=artifact_ownership,
+        )
         if stored_artifact is None:
             raise NexusUCLExecutionError(
                 ContextOptimizationReasonCode.ARTIFACT_CREATION_IN_PROGRESS.value
@@ -475,6 +496,7 @@ async def resolve_ucl_context_plan(
             metadata = ReusableOptimizationArtifact(
                 artifact_id=artifact_id,
                 lookup_key=lookup_key,
+                ownership=UclArtifactOwnership.for_workspace(artifact_ownership),
                 artifact_content_hash=execution_result.artifact_content_hash,
                 created_at=execution_result.receipt.created_at,
                 created_by_executor="message_sequence_artifact_executor.v1",

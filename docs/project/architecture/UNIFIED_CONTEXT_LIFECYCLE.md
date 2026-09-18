@@ -968,19 +968,19 @@ Canonical artifact compatibility identity: `tenant_id`, `context_scope_id`, `art
 
 Metadata-only reusable artifact record: `artifact_id`, `lookup_key`, `artifact_content_hash`, `created_at`, `created_by_executor`, `validation` (`ArtifactValidationSummary`), `status`, `invalidation_reason`, `supersedes_artifact_id`, `receipt_ref`, `safe_metadata`. No raw payload. Persisted by Memory/Session catalog (**CTX-UCL-2**); created by Token Optimization only on `CREATE_ARTIFACT`.
 
-### 9.10a MP-5F-B3 — scoped lifecycle reference read (**BLOCKED** — workspace ownership)
+### 9.10a MP-5F-B3 — scoped lifecycle reference read (**BLOCKED** — workspace-scoped read certification)
 
-**Ownership:** UCL owns artifact lifecycle, revisions, validity and durability. UCL owns lifecycle scope and artifact ownership metadata on `ArtifactLookupKey` (`tenant_id`, `context_scope_id`, …). Workspace authorization must be validated from canonical UCL workspace ownership on artifacts, not inferred from `context_scope_id`.
+**Ownership:** UCL owns artifact lifecycle, revisions, validity and durability. **Canonical workspace ownership** lives on `UclArtifactOwnership` / `UclArtifactOwnershipScope` attached to `ReusableOptimizationArtifact` (not on `ArtifactLookupKey`). Workspace authorization must use persisted ownership, not `context_scope_id`.
 
-**`context_scope_id` ≠ `workspace_id`:** `context_scope_id` is the canonical UCL lifecycle / compatibility scope on optimization artifacts. Collaborative `workspace_id` is a separate Multiplayer resource dimension. The platform does not equate them unless a future typed contract adds explicit workspace ownership on UCL artifacts and repository queries.
+**`context_scope_id` ≠ `workspace_id` ≠ artifact compatibility identity:** `context_scope_id` remains the UCL lifecycle / compatibility scope on `ArtifactLookupKey`. `workspace_id` is a separate Collaborative Work resource dimension. `artifact_lookup_key_hash` is unchanged by workspace ownership; repository **partitioning** uses `(tenant_id, workspace_id, lookup_key_hash)` for active slots and creation reservations.
 
-**Status:** Public reference-read contract and tenant + `context_scope_id` scoped catalog are implemented. **Enterprise workspace isolation for MP-5F-B3 is BLOCKED** until UCL artifacts carry canonical `workspace_id` (or typed owner scope resolving to workspace) and scoped catalog queries enforce it. Requests with `workspace_id` set fail closed (`SCOPE_REJECTED` / `ucl_workspace_ownership_unavailable`).
+**MP-5F-B3A (CLOSED):** typed `UclArtifactOwnershipScope`, persistence (in-memory + SQLite), serialization round-trip, cross-workspace active-slot and reservation isolation, supersession ownership guard. Legacy rows without workspace ownership deserialize as `LEGACY_UNKNOWN` and are fail-closed for workspace-scoped lookup.
+
+**MP-5F-B3 status:** reference-read boundary remains **BLOCKED** for enterprise workspace certification until **MP-5F-B3B** wires canonical ownership into scoped catalog/read (`DefaultUclReferenceReader` still rejects `workspace_id` with `ucl_workspace_ownership_unavailable`).
 
 **Anti-substitution:** ContextView ≠ UCL artifact. ContextView does not replace UCL lifecycle. MP-5 does not determine active revision.
 
 **Public surface:** `UclReferenceReadPort` / `UclReferenceReadScope` / `UclOptimizationArtifactCanonicalRef` in `intergrax/ucl/contracts/ucl_reference_read.py`. Default scoped catalog projection (no payload hydration): `DefaultUclReferenceReader` over `OptimizationArtifactScopedReferenceCatalog`. **MP-5D source ports are sync; UCL B3 reference-read is async — B5 requires explicit integration.**
-
-**Unblock slice (out of B3 correction scope):** add canonical workspace ownership to `ArtifactLookupKey` / `ReusableOptimizationArtifact` metadata (or typed `UclArtifactOwnershipScope`), persist without breaking lookup identity hashes, extend `OptimizationArtifactScopedReferenceQuery` + repository listing, then wire `UclReferenceReadCapabilityBinding` workspace authority from composition — not caller-assumed `context_scope_id`.
 
 ### 9.11 `ModelCallExecutionScope`
 

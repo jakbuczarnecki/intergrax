@@ -27,6 +27,8 @@ from intergrax.runtime.context_lifecycle import (
     ModelCallExecutionScope,
     ReusableArtifactStatus,
     ReusableOptimizationArtifact,
+    UclArtifactOwnership,
+    UclArtifactOwnershipScope,
     artifact_compatibility_result_to_safe_dict,
     artifact_creation_reservation_to_safe_dict,
     artifact_lookup_key_to_canonical_dict,
@@ -64,6 +66,9 @@ def _artifact() -> ReusableOptimizationArtifact:
     return ReusableOptimizationArtifact(
         artifact_id="artifact-1",
         lookup_key=lookup_key,
+        ownership=UclArtifactOwnership.for_workspace(
+            UclArtifactOwnershipScope(tenant_id=lookup_key.tenant_id, workspace_id="workspace-1")
+        ),
         artifact_content_hash="content-hash",
         created_at=datetime(2026, 8, 2, 12, 0, 0, tzinfo=UTC),
         created_by_executor="executor.message_sequence",
@@ -180,6 +185,7 @@ def test_safe_serialization_sets_raw_content_included_false() -> None:
         reservation_id="res-1",
         artifact_lookup_key_hash="hash-1",
         tenant_id="tenant-1",
+        workspace_id="workspace-1",
         owner_operation_id="op-1",
         acquired_at=datetime(2026, 8, 2, 12, 0, 0, tzinfo=UTC),
         lease_deadline=datetime(2026, 8, 2, 12, 1, 0, tzinfo=UTC),
@@ -204,10 +210,12 @@ def test_safe_serialization_does_not_expose_sensitive_identity_fields() -> None:
     payload = reusable_optimization_artifact_to_safe_dict(artifact)
     serialized = json.dumps(payload)
 
-    assert "tenant-1" not in serialized
-    assert "scope-1" not in serialized
-    assert "msg-1" not in serialized
-    assert "msg-2" not in serialized
+    lookup_serialized = json.dumps(payload["lookup_key"])
+    assert "tenant-1" not in lookup_serialized
+    assert "scope-1" not in lookup_serialized
+    assert "msg-1" not in lookup_serialized
+    assert "msg-2" not in lookup_serialized
+    assert payload["ownership"]["scope"]["workspace_id"] == "workspace-1"
     assert "tenant_id" not in payload["lookup_key"]
     assert "context_scope_id" not in payload["lookup_key"]
     assert "source_refs" not in payload["lookup_key"]
@@ -215,9 +223,13 @@ def test_safe_serialization_does_not_expose_sensitive_identity_fields() -> None:
 
 
 def test_safe_serialization_does_not_expose_prompt_content_values() -> None:
+    lookup_key = _lookup_key()
     artifact = ReusableOptimizationArtifact(
         artifact_id="artifact-1",
-        lookup_key=_lookup_key(),
+        lookup_key=lookup_key,
+        ownership=UclArtifactOwnership.for_workspace(
+            UclArtifactOwnershipScope(tenant_id=lookup_key.tenant_id, workspace_id="workspace-1")
+        ),
         artifact_content_hash="content-hash",
         created_at=datetime(2026, 8, 2, 12, 0, 0, tzinfo=UTC),
         created_by_executor="executor.message_sequence",

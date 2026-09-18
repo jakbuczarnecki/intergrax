@@ -27,6 +27,8 @@ from intergrax.runtime.context_lifecycle.contracts import (
     OptimizationArtifactType,
     OptimizationExecutionGuard,
     ReusableOptimizationArtifact,
+    UclArtifactOwnership,
+    UclArtifactOwnershipScope,
     ReusableArtifactStatus,
     assess_durable_compaction_eligibility,
 )
@@ -303,9 +305,12 @@ class CompactionRequest:
     eligibility: DurableCompactionEligibilityDecision
     snapshot: CompactionInputSnapshot
     execution_guard: OptimizationExecutionGuard
+    artifact_ownership: UclArtifactOwnershipScope
 
     def __post_init__(self) -> None:
         _require_non_empty_text(self.operation_id, "operation_id")
+        if type(self.artifact_ownership) is not UclArtifactOwnershipScope:
+            raise ValueError("artifact_ownership must be UclArtifactOwnershipScope")
         if type(self.policy) is not ContextOptimizationPolicy:
             raise ValueError("policy must be ContextOptimizationPolicy")
         if type(self.eligibility) is not DurableCompactionEligibilityDecision:
@@ -507,7 +512,7 @@ class DurableCompactionCandidateBuilder:
 
         lookup_key = request.snapshot.source_identity.artifact_lookup_key
         lookup_hash = compute_artifact_lookup_key_hash(lookup_key)
-        stored = self._safe_lookup(lookup_key)
+        stored = self._safe_lookup(lookup_key, request.artifact_ownership)
         if stored is not None:
             return self._reused_result(request, stored, coordination_status=None)
 
@@ -575,7 +580,7 @@ class DurableCompactionCandidateBuilder:
 
         self._validate_coordination_identity(coordination, request, lookup_hash)
         if status is ArtifactCreationCoordinationStatus.ARTIFACT_AVAILABLE:
-            stored = self._safe_lookup(lookup_key)
+            stored = self._safe_lookup(lookup_key, request.artifact_ownership)
             if stored is None:
                 raise DurableCompactionCandidateError(
                     DurableCompactionCandidateReason.ARTIFACT_AVAILABLE_WITHOUT_ARTIFACT
@@ -594,6 +599,7 @@ class DurableCompactionCandidateBuilder:
             try:
                 self._repository.wait_for_artifact_or_reservation_change(
                     lookup_key,
+                    ownership=request.artifact_ownership,
                     observed_state_version=coordination.state_version,
                     timeout_seconds=self._wait_timeout_seconds,
                 )
@@ -605,7 +611,7 @@ class DurableCompactionCandidateBuilder:
                     coordination_status=status,
                     candidate=None,
                 )
-            stored = self._safe_lookup(lookup_key)
+            stored = self._safe_lookup(lookup_key, request.artifact_ownership)
             if stored is not None:
                 return self._reused_result(request, stored, coordination_status=status)
             return CompactionResult(
@@ -635,9 +641,13 @@ class DurableCompactionCandidateBuilder:
             raise ValueError("request must be CompactionRequest")
         request.__post_init__()
 
-    def _safe_lookup(self, lookup_key: Any) -> StoredOptimizationArtifact | None:
+    def _safe_lookup(
+        self,
+        lookup_key: Any,
+        ownership: UclArtifactOwnershipScope,
+    ) -> StoredOptimizationArtifact | None:
         try:
-            stored = self._repository.lookup(lookup_key)
+            stored = self._repository.lookup(lookup_key, ownership=ownership)
         except Exception:
             raise DurableCompactionCandidateError(
                 DurableCompactionCandidateReason.ARTIFACT_CREATION_FAILED
@@ -659,6 +669,7 @@ class DurableCompactionCandidateBuilder:
         try:
             coordination = self._repository.try_acquire_creation_reservation(
                 lookup_key,
+                ownership=request.artifact_ownership,
                 owner_operation_id=request.operation_id,
                 lease_seconds=request.policy.reservation_lease_seconds,
             )
@@ -769,6 +780,7 @@ class DurableCompactionCandidateBuilder:
             metadata = ReusableOptimizationArtifact(
                 artifact_id=artifact_id,
                 lookup_key=lookup_key,
+                ownership=UclArtifactOwnership.for_workspace(request.artifact_ownership),
                 artifact_content_hash=result.artifact_content_hash,
                 created_at=result.receipt.created_at,
                 created_by_executor="message_sequence_artifact_executor.v1",

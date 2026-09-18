@@ -27,6 +27,9 @@ from intergrax.runtime.context_lifecycle.contracts import (
     ReusableArtifactStatus,
     ReusableOptimizationArtifact,
     ArtifactValidationSummary,
+    UclArtifactOwnership,
+    UclArtifactOwnershipKind,
+    UclArtifactOwnershipScope,
 )
 from intergrax.runtime.context_lifecycle.repository import (
     ArtifactCreationCoordinationResult,
@@ -34,6 +37,11 @@ from intergrax.runtime.context_lifecycle.repository import (
     OptimizationArtifactRepositoryCapabilities,
     StoredOptimizationArtifact,
     build_optimization_artifact_reference,
+    compute_repository_partition_key_from_reservation,
+    partition_key_for_artifact_metadata,
+    partition_key_for_ownership_scope,
+    require_workspace_ownership_scope,
+    validate_supersession_ownership,
 )
 from intergrax.runtime.context_lifecycle.serialization import (
     artifact_lookup_key_to_canonical_dict,
@@ -177,20 +185,30 @@ class SQLiteOptimizationArtifactRepository:
             reference_only=False,
         )
 
-    def lookup(self, key: ArtifactLookupKey) -> StoredOptimizationArtifact | None:
+    def lookup(
+        self,
+        key: ArtifactLookupKey,
+        *,
+        ownership: UclArtifactOwnershipScope,
+    ) -> StoredOptimizationArtifact | None:
         lookup_key = self._require_lookup_key(key)
+        if not isinstance(ownership, UclArtifactOwnershipScope):
+            raise ValueError("ownership must be UclArtifactOwnershipScope")
+        if ownership.tenant_id != lookup_key.tenant_id:
+            raise ValueError("ownership.tenant_id must match lookup_key.tenant_id")
         key_hash = compute_artifact_lookup_key_hash(lookup_key)
         with self._lock:
             self._ensure_open()
             row = self._connection.execute(
                 """
                 SELECT * FROM optimization_artifacts
-                WHERE tenant_id = ? AND lookup_key_hash = ?
+                WHERE tenant_id = ? AND lookup_key_hash = ? AND workspace_id = ?
                   AND status = ? AND validation_status = ?
                 """,
                 (
                     lookup_key.tenant_id,
                     key_hash,
+                    ownership.workspace_id,
                     ReusableArtifactStatus.VALIDATED.value,
                     ArtifactValidationStatus.PASSED.value,
                 ),
@@ -233,19 +251,29 @@ class SQLiteOptimizationArtifactRepository:
         self,
         key: ArtifactLookupKey,
         *,
+        ownership: UclArtifactOwnershipScope,
         owner_operation_id: str,
         lease_seconds: int,
     ) -> ArtifactCreationCoordinationResult:
         lookup_key = self._require_lookup_key(key)
+        if not isinstance(ownership, UclArtifactOwnershipScope):
+            raise ValueError("ownership must be UclArtifactOwnershipScope")
+        if ownership.tenant_id != lookup_key.tenant_id:
+            raise ValueError("ownership.tenant_id must match lookup_key.tenant_id")
         owner = _require_non_empty(owner_operation_id, "owner_operation_id")
         lease = _require_positive_int(lease_seconds, "lease_seconds")
         key_hash = compute_artifact_lookup_key_hash(lookup_key)
+        workspace_id = ownership.workspace_id
         with self._lock:
             self._ensure_open()
             self._begin()
             try:
-                state_version = self._next_state_version(lookup_key.tenant_id, key_hash)
-                artifact = self._lookup_in_transaction(lookup_key, key_hash)
+                state_version = self._next_state_version(
+                    lookup_key.tenant_id,
+                    key_hash,
+                    workspace_id,
+                )
+                artifact = self._lookup_in_transaction(lookup_key, key_hash, workspace_id)
                 if artifact is not None:
                     reference = build_optimization_artifact_reference(artifact)
                     self._commit()
@@ -256,7 +284,7 @@ class SQLiteOptimizationArtifactRepository:
                         artifact_reference=reference,
                     )
 
-                row = self._active_reservation_row(lookup_key.tenant_id, key_hash)
+                row = self._active_reservation_row(lookup_key.tenant_id, key_hash, workspace_id)
                 if row is not None:
                     reservation = self._reservation_from_row(row)
                     if reservation.lease_deadline <= self._now():
@@ -298,6 +326,7 @@ class SQLiteOptimizationArtifactRepository:
                     reservation_id=self._new_reservation_id(),
                     artifact_lookup_key_hash=key_hash,
                     tenant_id=lookup_key.tenant_id,
+                    workspace_id=workspace_id,
                     owner_operation_id=owner,
                     acquired_at=now,
                     lease_deadline=now + timedelta(seconds=lease),
@@ -307,8 +336,9 @@ class SQLiteOptimizationArtifactRepository:
                     """
                     INSERT INTO optimization_artifact_reservations (
                         reservation_id, tenant_id, lookup_key_hash, owner_operation_id,
-                        acquired_at, lease_deadline, state, state_version, reason_code
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL)
+                        acquired_at, lease_deadline, state, state_version, reason_code,
+                        workspace_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)
                     """,
                     (
                         reservation.reservation_id,
@@ -319,6 +349,7 @@ class SQLiteOptimizationArtifactRepository:
                         reservation.lease_deadline.isoformat(),
                         _ACTIVE_RESERVATION,
                         next_version,
+                        reservation.workspace_id,
                     ),
                 )
                 self._commit()
@@ -349,10 +380,16 @@ class SQLiteOptimizationArtifactRepository:
             raise ValueError("artifact validation.status must be PASSED")
         lookup_key = metadata.lookup_key
         key_hash = compute_artifact_lookup_key_hash(lookup_key)
+        if metadata.ownership.kind is not UclArtifactOwnershipKind.WORKSPACE:
+            raise ValueError("validated artifact store requires WORKSPACE ownership")
+        ownership_scope = require_workspace_ownership_scope(metadata)
         if reservation.tenant_id != lookup_key.tenant_id:
             raise ValueError("reservation tenant_id must match artifact lookup_key tenant_id")
         if reservation.artifact_lookup_key_hash != key_hash:
             raise ValueError("reservation artifact_lookup_key_hash must match lookup key hash")
+        if reservation.workspace_id != ownership_scope.workspace_id:
+            raise ValueError("reservation workspace_id must match artifact ownership workspace_id")
+        workspace_id = ownership_scope.workspace_id
 
         with self._lock:
             self._ensure_open()
@@ -361,6 +398,7 @@ class SQLiteOptimizationArtifactRepository:
                 current = self._active_reservation_row(
                     reservation.tenant_id,
                     reservation.artifact_lookup_key_hash,
+                    workspace_id,
                 )
                 if current is None:
                     existing = self._artifact_by_id(
@@ -382,6 +420,7 @@ class SQLiteOptimizationArtifactRepository:
                     next_version = self._next_state_version(
                         lookup_key.tenant_id,
                         key_hash,
+                        workspace_id,
                     ) + 1
                     self._connection.execute(
                         """
@@ -401,10 +440,14 @@ class SQLiteOptimizationArtifactRepository:
                         ContextOptimizationReasonCode.ARTIFACT_CREATION_LEASE_EXPIRED.value
                     )
 
-                existing_active = self._lookup_in_transaction(lookup_key, key_hash)
+                existing_active = self._lookup_in_transaction(lookup_key, key_hash, workspace_id)
                 if existing_active is not None:
                     if self._same_artifact(existing_active, artifact, key_hash):
-                        next_version = self._next_state_version(lookup_key.tenant_id, key_hash) + 1
+                        next_version = self._next_state_version(
+                            lookup_key.tenant_id,
+                            key_hash,
+                            workspace_id,
+                        ) + 1
                         self._mark_reservation_stored(reservation.reservation_id, next_version)
                         self._commit()
                         return build_optimization_artifact_reference(existing_active)
@@ -412,7 +455,16 @@ class SQLiteOptimizationArtifactRepository:
                         ContextOptimizationReasonCode.ARTIFACT_CREATION_RESERVATION_CONFLICT.value
                     )
 
-                state_version = self._next_state_version(lookup_key.tenant_id, key_hash) + 1
+                if metadata.supersedes_artifact_id is not None:
+                    prior = self._artifact_by_id(lookup_key.tenant_id, metadata.supersedes_artifact_id)
+                    if prior is not None:
+                        validate_supersession_ownership(prior.metadata, metadata)
+
+                state_version = self._next_state_version(
+                    lookup_key.tenant_id,
+                    key_hash,
+                    workspace_id,
+                ) + 1
                 self._connection.execute(
                     """
                     INSERT INTO optimization_artifacts (
@@ -421,8 +473,9 @@ class SQLiteOptimizationArtifactRepository:
                         validation_status, validation_contract_version, validated_at,
                         validation_reason_codes_json, validation_safe_metadata_json,
                         created_at, created_by_executor, invalidation_reason,
-                        supersedes_artifact_id, receipt_ref, safe_metadata_json, state_version
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        supersedes_artifact_id, receipt_ref, safe_metadata_json, state_version,
+                        ownership_kind, workspace_id
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     self._artifact_values(artifact, key_hash, state_version),
                 )
@@ -471,6 +524,7 @@ class SQLiteOptimizationArtifactRepository:
                 next_version = self._next_state_version(
                     reservation.tenant_id,
                     reservation.artifact_lookup_key_hash,
+                    reservation.workspace_id,
                 ) + 1
                 self._connection.execute(
                     """
@@ -495,20 +549,27 @@ class SQLiteOptimizationArtifactRepository:
         self,
         key: ArtifactLookupKey,
         *,
+        ownership: UclArtifactOwnershipScope,
         observed_state_version: int,
         timeout_seconds: float,
     ) -> bool:
         lookup_key = self._require_lookup_key(key)
+        if not isinstance(ownership, UclArtifactOwnershipScope):
+            raise ValueError("ownership must be UclArtifactOwnershipScope")
+        if ownership.tenant_id != lookup_key.tenant_id:
+            raise ValueError("ownership.tenant_id must match lookup_key.tenant_id")
         observed = _require_non_negative_int(observed_state_version, "observed_state_version")
         timeout = _require_timeout(timeout_seconds)
+        key_hash = compute_artifact_lookup_key_hash(lookup_key)
         started = self._monotonic_now()
         while True:
-            self._expire_if_needed(lookup_key)
+            self._expire_if_needed(lookup_key, ownership.workspace_id)
             with self._lock:
                 self._ensure_open()
                 changed = self._state_version(
                     lookup_key.tenant_id,
-                    compute_artifact_lookup_key_hash(lookup_key),
+                    key_hash,
+                    ownership.workspace_id,
                 ) > observed
             if changed:
                 return True
@@ -567,11 +628,16 @@ class SQLiteOptimizationArtifactRepository:
                     receipt_ref TEXT,
                     safe_metadata_json TEXT NOT NULL,
                     state_version INTEGER NOT NULL,
+                    ownership_kind TEXT NOT NULL DEFAULT 'legacy_unknown',
+                    workspace_id TEXT,
                     PRIMARY KEY (tenant_id, artifact_id)
                 );
-                CREATE UNIQUE INDEX IF NOT EXISTS uq_optimization_artifact_active_lookup
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_optimization_artifact_active_lookup_legacy
                     ON optimization_artifacts (tenant_id, lookup_key_hash)
-                    WHERE status = 'validated';
+                    WHERE status = 'validated' AND workspace_id IS NULL;
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_optimization_artifact_active_lookup_workspace
+                    ON optimization_artifacts (tenant_id, workspace_id, lookup_key_hash)
+                    WHERE status = 'validated' AND workspace_id IS NOT NULL;
                 CREATE TABLE IF NOT EXISTS optimization_artifact_reservations (
                     reservation_id TEXT PRIMARY KEY,
                     tenant_id TEXT NOT NULL,
@@ -581,14 +647,58 @@ class SQLiteOptimizationArtifactRepository:
                     lease_deadline TEXT NOT NULL,
                     state TEXT NOT NULL,
                     state_version INTEGER NOT NULL,
-                    reason_code TEXT
+                    reason_code TEXT,
+                    workspace_id TEXT
                 );
-                CREATE UNIQUE INDEX IF NOT EXISTS uq_optimization_artifact_active_reservation
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_optimization_artifact_active_reservation_legacy
                     ON optimization_artifact_reservations (tenant_id, lookup_key_hash)
-                    WHERE state = 'active';
+                    WHERE state = 'active' AND workspace_id IS NULL;
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_optimization_artifact_active_reservation_workspace
+                    ON optimization_artifact_reservations (tenant_id, workspace_id, lookup_key_hash)
+                    WHERE state = 'active' AND workspace_id IS NOT NULL;
                 """
             )
+            self._apply_ownership_migrations()
             self._connection.commit()
+
+    def _apply_ownership_migrations(self) -> None:
+        artifact_columns = {
+            str(row[1])
+            for row in self._connection.execute("PRAGMA table_info(optimization_artifacts)")
+        }
+        if "ownership_kind" not in artifact_columns:
+            self._connection.execute(
+                "ALTER TABLE optimization_artifacts "
+                "ADD COLUMN ownership_kind TEXT NOT NULL DEFAULT 'legacy_unknown'"
+            )
+        if "workspace_id" not in artifact_columns:
+            self._connection.execute("ALTER TABLE optimization_artifacts ADD COLUMN workspace_id TEXT")
+        reservation_columns = {
+            str(row[1])
+            for row in self._connection.execute("PRAGMA table_info(optimization_artifact_reservations)")
+        }
+        if "workspace_id" not in reservation_columns:
+            self._connection.execute(
+                "ALTER TABLE optimization_artifact_reservations ADD COLUMN workspace_id TEXT"
+            )
+        self._connection.executescript(
+            """
+            DROP INDEX IF EXISTS uq_optimization_artifact_active_lookup;
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_optimization_artifact_active_lookup_legacy
+                ON optimization_artifacts (tenant_id, lookup_key_hash)
+                WHERE status = 'validated' AND workspace_id IS NULL;
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_optimization_artifact_active_lookup_workspace
+                ON optimization_artifacts (tenant_id, workspace_id, lookup_key_hash)
+                WHERE status = 'validated' AND workspace_id IS NOT NULL;
+            DROP INDEX IF EXISTS uq_optimization_artifact_active_reservation;
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_optimization_artifact_active_reservation_legacy
+                ON optimization_artifact_reservations (tenant_id, lookup_key_hash)
+                WHERE state = 'active' AND workspace_id IS NULL;
+            CREATE UNIQUE INDEX IF NOT EXISTS uq_optimization_artifact_active_reservation_workspace
+                ON optimization_artifact_reservations (tenant_id, workspace_id, lookup_key_hash)
+                WHERE state = 'active' AND workspace_id IS NOT NULL;
+            """
+        )
 
     def _initialize_transaction(self) -> None:
         self._connection.execute("BEGIN IMMEDIATE")
@@ -627,47 +737,54 @@ class SQLiteOptimizationArtifactRepository:
         value = _require_non_empty(self._reservation_id_factory(), "reservation_id_factory")
         return value
 
-    def _state_version(self, tenant_id: str, key_hash: str) -> int:
+    def _state_version(self, tenant_id: str, key_hash: str, workspace_id: str) -> int:
         row = self._connection.execute(
             """
             SELECT MAX(state_version) FROM (
                 SELECT state_version FROM optimization_artifacts
-                WHERE tenant_id = ? AND lookup_key_hash = ?
+                WHERE tenant_id = ? AND lookup_key_hash = ? AND workspace_id = ?
                 UNION ALL
                 SELECT state_version FROM optimization_artifact_reservations
-                WHERE tenant_id = ? AND lookup_key_hash = ?
+                WHERE tenant_id = ? AND lookup_key_hash = ? AND workspace_id = ?
             )
             """,
-            (tenant_id, key_hash, tenant_id, key_hash),
+            (tenant_id, key_hash, workspace_id, tenant_id, key_hash, workspace_id),
         ).fetchone()
         return int(row[0] or 0)
 
-    def _next_state_version(self, tenant_id: str, key_hash: str) -> int:
-        return self._state_version(tenant_id, key_hash)
+    def _next_state_version(self, tenant_id: str, key_hash: str, workspace_id: str) -> int:
+        return self._state_version(tenant_id, key_hash, workspace_id)
 
-    def _active_reservation_row(self, tenant_id: str, key_hash: str) -> tuple[Any, ...] | None:
+    def _active_reservation_row(
+        self,
+        tenant_id: str,
+        key_hash: str,
+        workspace_id: str,
+    ) -> tuple[Any, ...] | None:
         return self._connection.execute(
             """
             SELECT * FROM optimization_artifact_reservations
-            WHERE tenant_id = ? AND lookup_key_hash = ? AND state = ?
+            WHERE tenant_id = ? AND lookup_key_hash = ? AND workspace_id = ? AND state = ?
             """,
-            (tenant_id, key_hash, _ACTIVE_RESERVATION),
+            (tenant_id, key_hash, workspace_id, _ACTIVE_RESERVATION),
         ).fetchone()
 
     def _lookup_in_transaction(
         self,
         key: ArtifactLookupKey,
         key_hash: str,
+        workspace_id: str,
     ) -> StoredOptimizationArtifact | None:
         row = self._connection.execute(
             """
             SELECT * FROM optimization_artifacts
-            WHERE tenant_id = ? AND lookup_key_hash = ?
+            WHERE tenant_id = ? AND lookup_key_hash = ? AND workspace_id = ?
               AND status = ? AND validation_status = ?
             """,
             (
                 key.tenant_id,
                 key_hash,
+                workspace_id,
                 ReusableArtifactStatus.VALIDATED.value,
                 ArtifactValidationStatus.PASSED.value,
             ),
@@ -716,13 +833,13 @@ class SQLiteOptimizationArtifactRepository:
             (_STORED_RESERVATION, state_version, reservation_id, _ACTIVE_RESERVATION),
         )
 
-    def _expire_if_needed(self, key: ArtifactLookupKey) -> None:
+    def _expire_if_needed(self, key: ArtifactLookupKey, workspace_id: str) -> None:
         key_hash = compute_artifact_lookup_key_hash(key)
         with self._lock:
             self._ensure_open()
             self._begin()
             try:
-                row = self._active_reservation_row(key.tenant_id, key_hash)
+                row = self._active_reservation_row(key.tenant_id, key_hash, workspace_id)
                 if row is None:
                     self._commit()
                     return
@@ -730,7 +847,7 @@ class SQLiteOptimizationArtifactRepository:
                 if reservation.lease_deadline > self._now():
                     self._commit()
                     return
-                next_version = self._next_state_version(key.tenant_id, key_hash) + 1
+                next_version = self._next_state_version(key.tenant_id, key_hash, workspace_id) + 1
                 self._connection.execute(
                     """
                     UPDATE optimization_artifact_reservations
@@ -774,9 +891,11 @@ class SQLiteOptimizationArtifactRepository:
                 ):
                     self._commit()
                     return None
+                workspace_id = reference.workspace_id or ""
                 state_version = self._next_state_version(
                     reference.tenant_id,
                     reference.artifact_lookup_key_hash,
+                    workspace_id,
                 ) + 1
                 self._connection.execute(
                     """
@@ -807,6 +926,9 @@ class SQLiteOptimizationArtifactRepository:
     ) -> tuple[Any, ...]:
         metadata = artifact.metadata
         validation = metadata.validation
+        ownership = metadata.ownership
+        ownership_kind = ownership.kind.value
+        workspace_id = metadata.workspace_id
         return (
             metadata.lookup_key.tenant_id,
             metadata.artifact_id,
@@ -834,6 +956,8 @@ class SQLiteOptimizationArtifactRepository:
             metadata.receipt_ref,
             json.dumps(_json_safe(metadata.safe_metadata), sort_keys=True),
             state_version,
+            ownership_kind,
+            workspace_id,
         )
 
     def _row_to_artifact(self, row: tuple[Any, ...]) -> StoredOptimizationArtifact:
@@ -845,9 +969,25 @@ class SQLiteOptimizationArtifactRepository:
             reason_codes=tuple(json.loads(str(row[12]))),
             safe_metadata=json.loads(str(row[13])),
         )
+        ownership_kind = UclArtifactOwnershipKind(
+            str(row[21]) if len(row) > 21 else UclArtifactOwnershipKind.LEGACY_UNKNOWN.value
+        )
+        workspace_value = str(row[22]) if len(row) > 22 and row[22] is not None else None
+        if ownership_kind is UclArtifactOwnershipKind.WORKSPACE:
+            if workspace_value is None:
+                raise ValueError("WORKSPACE ownership row requires workspace_id")
+            ownership = UclArtifactOwnership.for_workspace(
+                UclArtifactOwnershipScope(
+                    tenant_id=str(row[0]),
+                    workspace_id=workspace_value,
+                )
+            )
+        else:
+            ownership = UclArtifactOwnership.legacy_unknown()
         metadata = ReusableOptimizationArtifact(
             artifact_id=str(row[1]),
             lookup_key=lookup_key,
+            ownership=ownership,
             artifact_content_hash=str(row[4]),
             created_at=datetime.fromisoformat(str(row[14])),
             created_by_executor=str(row[15]),
@@ -867,10 +1007,14 @@ class SQLiteOptimizationArtifactRepository:
 
     @staticmethod
     def _reservation_from_row(row: tuple[Any, ...]) -> ArtifactCreationReservation:
+        workspace_id = str(row[9]) if len(row) > 9 and row[9] is not None else ""
+        if not workspace_id:
+            raise ValueError("active reservation requires workspace_id")
         return ArtifactCreationReservation(
             reservation_id=str(row[0]),
             tenant_id=str(row[1]),
             artifact_lookup_key_hash=str(row[2]),
+            workspace_id=workspace_id,
             owner_operation_id=str(row[3]),
             acquired_at=datetime.fromisoformat(str(row[4])),
             lease_deadline=datetime.fromisoformat(str(row[5])),

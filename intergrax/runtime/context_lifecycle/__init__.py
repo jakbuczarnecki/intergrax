@@ -34,6 +34,9 @@ from intergrax.runtime.context_lifecycle.contracts import (
     OptimizationExecutionGuard,
     ReusableArtifactStatus,
     ReusableOptimizationArtifact,
+    UclArtifactOwnership,
+    UclArtifactOwnershipKind,
+    UclArtifactOwnershipScope,
 )
 from intergrax.runtime.context_lifecycle.in_memory_repository import (
     InMemoryOptimizationArtifactRepository,
@@ -49,6 +52,9 @@ from intergrax.runtime.context_lifecycle.repository import (
     StoredOptimizationArtifact,
     build_optimization_artifact_reference,
     compute_artifact_content_hash,
+    compute_repository_partition_key,
+    partition_key_for_ownership_scope,
+    require_workspace_ownership_scope,
 )
 from intergrax.runtime.context_lifecycle.serialization import (
     artifact_compatibility_result_to_safe_dict,
@@ -71,6 +77,8 @@ from intergrax.runtime.context_lifecycle.serialization import (
     optimization_execution_guard_to_safe_dict,
     reusable_optimization_artifact_to_safe_dict,
     stored_optimization_artifact_to_safe_dict,
+    ucl_artifact_ownership_from_canonical_dict,
+    ucl_artifact_ownership_to_canonical_dict,
 )
 
 __all__ = [
@@ -110,6 +118,12 @@ __all__ = [
     "ReusableArtifactStatus",
     "ReusableOptimizationArtifact",
     "StoredOptimizationArtifact",
+    "UclArtifactOwnership",
+    "UclArtifactOwnershipKind",
+    "UclArtifactOwnershipScope",
+    "compute_repository_partition_key",
+    "partition_key_for_ownership_scope",
+    "require_workspace_ownership_scope",
     "artifact_compatibility_result_to_safe_dict",
     "artifact_creation_coordination_result_to_safe_dict",
     "artifact_creation_reservation_to_safe_dict",
@@ -132,4 +146,6 @@ __all__ = [
     "optimization_execution_guard_to_safe_dict",
     "reusable_optimization_artifact_to_safe_dict",
     "stored_optimization_artifact_to_safe_dict",
+    "ucl_artifact_ownership_from_canonical_dict",
+    "ucl_artifact_ownership_to_canonical_dict",
 ]

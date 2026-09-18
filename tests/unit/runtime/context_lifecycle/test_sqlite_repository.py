@@ -19,6 +19,7 @@ from intergrax.runtime.context_lifecycle import (
 )
 from tests.unit.runtime.context_lifecycle.test_repository_contracts import (
     _lookup_key,
+    _ownership_scope,
     _stored_artifact,
 )
 
@@ -49,6 +50,7 @@ def repository(request: pytest.FixtureRequest, tmp_path: Path):
 def _publish(repository: object, key: ArtifactLookupKey, *, artifact_id: str = "artifact-1") -> object:
     result = repository.try_acquire_creation_reservation(  # type: ignore[attr-defined]
         key,
+        ownership=_ownership_scope(key),
         owner_operation_id="operation-1",
         lease_seconds=60,
     )
@@ -63,7 +65,7 @@ def test_contract_surface_and_tenant_scoped_resolution(repository: object) -> No
     assert isinstance(repository, OptimizationArtifactRepository)
     key = _lookup_key()
     reference = _publish(repository, key)
-    assert repository.lookup(key) is not None  # type: ignore[attr-defined]
+    assert repository.lookup(key, ownership=_ownership_scope(key)) is not None  # type: ignore[attr-defined]
     assert repository.resolve(reference) is not None  # type: ignore[attr-defined]
     assert repository.resolve(  # type: ignore[attr-defined]
         reference.__class__(
@@ -72,6 +74,8 @@ def test_contract_surface_and_tenant_scoped_resolution(repository: object) -> No
             artifact_lookup_key_hash=reference.artifact_lookup_key_hash,
             artifact_content_hash=reference.artifact_content_hash,
             artifact_type=reference.artifact_type,
+            context_scope_id=reference.context_scope_id,
+            workspace_id=reference.workspace_id,
         )
     ) is None
 
@@ -80,9 +84,7 @@ def test_sqlite_restart_reopens_artifact_and_reservation(tmp_path: Path) -> None
     db_path = str(tmp_path / "restart.sqlite")
     first = SQLiteOptimizationArtifactRepository(db_path)
     key = _lookup_key()
-    reservation_result = first.try_acquire_creation_reservation(
-        key,
-        owner_operation_id="operation-1",
+    reservation_result = first.try_acquire_creation_reservation(key, ownership=_ownership_scope(key), owner_operation_id="operation-1",
         lease_seconds=60,
     )
     assert reservation_result.reservation is not None
@@ -92,26 +94,20 @@ def test_sqlite_restart_reopens_artifact_and_reservation(tmp_path: Path) -> None
         artifact=stored,
     )
     reservation_key = _lookup_key(source_refs=("reservation-after-restart",))
-    persistent_reservation = first.try_acquire_creation_reservation(
-        reservation_key,
-        owner_operation_id="operation-reservation",
+    persistent_reservation = first.try_acquire_creation_reservation(reservation_key, ownership=_ownership_scope(reservation_key), owner_operation_id="operation-reservation",
         lease_seconds=60,
     )
     assert persistent_reservation.reservation is not None
     first.close()
 
     second = SQLiteOptimizationArtifactRepository(db_path)
-    assert second.lookup(key) == stored
+    assert second.lookup(key, ownership=_ownership_scope(key)) == stored
     assert second.resolve(reference) == stored
-    available = second.try_acquire_creation_reservation(
-        key,
-        owner_operation_id="operation-2",
+    available = second.try_acquire_creation_reservation(key, ownership=_ownership_scope(key), owner_operation_id="operation-2",
         lease_seconds=60,
     )
     assert available.status is ArtifactCreationCoordinationStatus.ARTIFACT_AVAILABLE
-    in_progress = second.try_acquire_creation_reservation(
-        reservation_key,
-        owner_operation_id="operation-other",
+    in_progress = second.try_acquire_creation_reservation(reservation_key, ownership=_ownership_scope(reservation_key), owner_operation_id="operation-other",
         lease_seconds=60,
     )
     assert in_progress.status is ArtifactCreationCoordinationStatus.ALREADY_IN_PROGRESS
@@ -129,9 +125,7 @@ def test_sqlite_reservation_is_atomic_across_repository_instances(tmp_path: Path
 
     def acquire(repository: SQLiteOptimizationArtifactRepository, owner: str) -> None:
         barrier.wait()
-        result = repository.try_acquire_creation_reservation(
-            key,
-            owner_operation_id=owner,
+        result = repository.try_acquire_creation_reservation(key, ownership=_ownership_scope(key), owner_operation_id=owner,
             lease_seconds=60,
         )
         results.append(result.status)
@@ -153,9 +147,7 @@ def test_sqlite_lease_expiry_and_owner_scoped_release(tmp_path: Path) -> None:
     db_path = str(tmp_path / "lease.sqlite")
     repository = SQLiteOptimizationArtifactRepository(db_path, clock=clock.now)
     key = _lookup_key()
-    acquired = repository.try_acquire_creation_reservation(
-        key,
-        owner_operation_id="operation-1",
+    acquired = repository.try_acquire_creation_reservation(key, ownership=_ownership_scope(key), owner_operation_id="operation-1",
         lease_seconds=10,
     )
     assert acquired.reservation is not None
@@ -163,21 +155,18 @@ def test_sqlite_lease_expiry_and_owner_scoped_release(tmp_path: Path) -> None:
         reservation_id=acquired.reservation.reservation_id,
         tenant_id=acquired.reservation.tenant_id,
         artifact_lookup_key_hash=acquired.reservation.artifact_lookup_key_hash,
+        workspace_id=acquired.reservation.workspace_id,
         owner_operation_id="operation-2",
         acquired_at=acquired.reservation.acquired_at,
         lease_deadline=acquired.reservation.lease_deadline,
     )
     assert not repository.release_creation_reservation(reservation=wrong_owner)
     clock.advance(11)
-    expired = repository.try_acquire_creation_reservation(
-        key,
-        owner_operation_id="operation-2",
+    expired = repository.try_acquire_creation_reservation(key, ownership=_ownership_scope(key), owner_operation_id="operation-2",
         lease_seconds=60,
     )
     assert expired.status is ArtifactCreationCoordinationStatus.RESERVATION_EXPIRED
-    reacquired = repository.try_acquire_creation_reservation(
-        key,
-        owner_operation_id="operation-2",
+    reacquired = repository.try_acquire_creation_reservation(key, ownership=_ownership_scope(key), owner_operation_id="operation-2",
         lease_seconds=60,
     )
     assert reacquired.status is ArtifactCreationCoordinationStatus.ACQUIRED
@@ -188,9 +177,7 @@ def test_sqlite_lease_expiry_and_owner_scoped_release(tmp_path: Path) -> None:
 def test_sqlite_store_requires_matching_reservation_and_preserves_lifecycle(tmp_path: Path) -> None:
     repository = SQLiteOptimizationArtifactRepository(str(tmp_path / "lifecycle.sqlite"))
     key = _lookup_key()
-    acquired = repository.try_acquire_creation_reservation(
-        key,
-        owner_operation_id="operation-1",
+    acquired = repository.try_acquire_creation_reservation(key, ownership=_ownership_scope(key), owner_operation_id="operation-1",
         lease_seconds=60,
     )
     assert acquired.reservation is not None
@@ -201,6 +188,7 @@ def test_sqlite_store_requires_matching_reservation_and_preserves_lifecycle(tmp_
                 reservation_id=acquired.reservation.reservation_id,
                 tenant_id="tenant-2",
                 artifact_lookup_key_hash=acquired.reservation.artifact_lookup_key_hash,
+                workspace_id=acquired.reservation.workspace_id,
                 owner_operation_id=acquired.reservation.owner_operation_id,
                 acquired_at=acquired.reservation.acquired_at,
                 lease_deadline=acquired.reservation.lease_deadline,
@@ -217,11 +205,12 @@ def test_sqlite_store_requires_matching_reservation_and_preserves_lifecycle(tmp_
     ) == reference
     invalidated = repository.invalidate_artifact(reference, reason="test")
     assert invalidated is not None
-    assert repository.lookup(key) is None
+    assert repository.lookup(key, ownership=_ownership_scope(key)) is None
     assert repository.resolve(reference) is not None
     assert repository.retire_artifact(reference, reason="retire") is not None
     assert not repository.wait_for_artifact_or_reservation_change(
         key,
+        ownership=_ownership_scope(key),
         observed_state_version=10,
         timeout_seconds=0,
     )

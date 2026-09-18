@@ -17,6 +17,9 @@ from intergrax.runtime.context_lifecycle.contracts import (
     OptimizationArtifactType,
     ReusableArtifactStatus,
     ReusableOptimizationArtifact,
+    UclArtifactOwnership,
+    UclArtifactOwnershipKind,
+    UclArtifactOwnershipScope,
 )
 
 
@@ -49,6 +52,77 @@ def _require_instance(value: object, expected_type: type, field_name: str) -> ob
     if not isinstance(value, expected_type):
         raise ValueError(f"{field_name} must be {expected_type.__name__}")
     return value
+
+
+RepositoryPartitionKey = tuple[str, str, str]
+
+
+def compute_repository_partition_key(
+    *,
+    tenant_id: str,
+    workspace_id: str | None,
+    artifact_lookup_key_hash: str,
+) -> RepositoryPartitionKey:
+    """Return storage partition key: tenant, workspace partition, compatibility hash."""
+    tenant = _require_non_empty(tenant_id, "tenant_id")
+    key_hash = _require_non_empty(artifact_lookup_key_hash, "artifact_lookup_key_hash")
+    if workspace_id is None:
+        return (tenant, "", key_hash)
+    return (tenant, _require_non_empty(workspace_id, "workspace_id"), key_hash)
+
+
+def partition_key_for_ownership_scope(
+    ownership: UclArtifactOwnershipScope,
+    artifact_lookup_key_hash: str,
+) -> RepositoryPartitionKey:
+    return compute_repository_partition_key(
+        tenant_id=ownership.tenant_id,
+        workspace_id=ownership.workspace_id,
+        artifact_lookup_key_hash=artifact_lookup_key_hash,
+    )
+
+
+def validate_supersession_ownership(
+    prior: ReusableOptimizationArtifact,
+    successor: ReusableOptimizationArtifact,
+) -> None:
+    if prior.ownership != successor.ownership:
+        raise ValueError("supersession requires identical canonical ownership")
+
+
+def compute_repository_partition_key_from_reservation(
+    reservation: ArtifactCreationReservation,
+) -> RepositoryPartitionKey:
+    return compute_repository_partition_key(
+        tenant_id=reservation.tenant_id,
+        workspace_id=reservation.workspace_id,
+        artifact_lookup_key_hash=reservation.artifact_lookup_key_hash,
+    )
+
+
+def partition_key_for_artifact_metadata(
+    metadata: ReusableOptimizationArtifact,
+    artifact_lookup_key_hash: str,
+) -> RepositoryPartitionKey:
+    ownership = metadata.ownership
+    if ownership.kind is UclArtifactOwnershipKind.WORKSPACE:
+        if ownership.scope is None:
+            raise ValueError("WORKSPACE ownership requires scope")
+        return partition_key_for_ownership_scope(ownership.scope, artifact_lookup_key_hash)
+    return compute_repository_partition_key(
+        tenant_id=metadata.lookup_key.tenant_id,
+        workspace_id=None,
+        artifact_lookup_key_hash=artifact_lookup_key_hash,
+    )
+
+
+def require_workspace_ownership_scope(
+    metadata: ReusableOptimizationArtifact,
+) -> UclArtifactOwnershipScope:
+    ownership = metadata.ownership
+    if ownership.kind is not UclArtifactOwnershipKind.WORKSPACE or ownership.scope is None:
+        raise ValueError("artifact requires canonical WORKSPACE ownership")
+    return ownership.scope
 
 
 def compute_artifact_content_hash(payload: bytes) -> str:
@@ -138,10 +212,23 @@ class OptimizationArtifactReference:
     artifact_lookup_key_hash: str
     artifact_content_hash: str
     artifact_type: OptimizationArtifactType
+    context_scope_id: str
+    workspace_id: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "tenant_id", _require_non_empty(self.tenant_id, "tenant_id"))
         object.__setattr__(self, "artifact_id", _require_non_empty(self.artifact_id, "artifact_id"))
+        object.__setattr__(
+            self,
+            "context_scope_id",
+            _require_non_empty(self.context_scope_id, "context_scope_id"),
+        )
+        if self.workspace_id is not None:
+            object.__setattr__(
+                self,
+                "workspace_id",
+                _require_non_empty(self.workspace_id, "workspace_id"),
+            )
         object.__setattr__(
             self,
             "artifact_lookup_key_hash",
@@ -173,6 +260,8 @@ def build_optimization_artifact_reference(
         artifact_lookup_key_hash=lookup_hash,
         artifact_content_hash=metadata.artifact_content_hash,
         artifact_type=metadata.lookup_key.artifact_type,
+        context_scope_id=metadata.lookup_key.context_scope_id,
+        workspace_id=metadata.workspace_id,
     )
 
 
@@ -359,7 +448,12 @@ class OptimizationArtifactRepository(Protocol):
     def capabilities(self) -> OptimizationArtifactRepositoryCapabilities:
         """Return declared repository backend capabilities."""
 
-    def lookup(self, key: ArtifactLookupKey) -> StoredOptimizationArtifact | None:
+    def lookup(
+        self,
+        key: ArtifactLookupKey,
+        *,
+        ownership: UclArtifactOwnershipScope,
+    ) -> StoredOptimizationArtifact | None:
         """Return an eligible validated artifact for an exact lookup key or None."""
 
     def resolve(self, reference: OptimizationArtifactReference) -> StoredOptimizationArtifact | None:
@@ -369,6 +463,7 @@ class OptimizationArtifactRepository(Protocol):
         self,
         key: ArtifactLookupKey,
         *,
+        ownership: UclArtifactOwnershipScope,
         owner_operation_id: str,
         lease_seconds: int,
     ) -> ArtifactCreationCoordinationResult:
@@ -394,6 +489,7 @@ class OptimizationArtifactRepository(Protocol):
         self,
         key: ArtifactLookupKey,
         *,
+        ownership: UclArtifactOwnershipScope,
         observed_state_version: int,
         timeout_seconds: float,
     ) -> bool:

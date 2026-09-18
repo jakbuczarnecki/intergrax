@@ -277,13 +277,13 @@ TOKEN-10E-CLOSEOUT-1 → ready for review
 
 ---
 
-### MP-5F-B3 — scoped UCL lifecycle reference read boundary (**BLOCKED** — canonical workspace ownership)
+### MP-5F-B3 — scoped UCL lifecycle reference read boundary (**BLOCKED** — workspace-scoped read)
 
-**Status:** **BLOCKED** for enterprise certification. Tenant + `context_scope_id` lifecycle read boundary exists; **canonical workspace ownership on UCL optimization artifacts does not** (`ArtifactLookupKey` has no `workspace_id`). Do not treat `context_scope_id` as workspace. Workspace-bound reads fail closed until a dedicated ownership slice lands.
+**Status:** **BLOCKED** for enterprise certification until **MP-5F-B3B** enforces canonical ownership in scoped read/catalog. **MP-5F-B3A — CLOSED:** `UclArtifactOwnershipScope` on `ReusableOptimizationArtifact`, repository partition `(tenant_id, workspace_id, lookup_key_hash)`, reservations + active-slot isolation; `artifact_lookup_key_hash` unchanged.
 
-**Delivered in correction:** removed `workspace_id == context_scope_id` ABI; default reader rejects `workspace_id` requests without UCL workspace authority; no assert-based security guard.
+**Invariant:** `context_scope_id` ≠ `workspace_id`; never infer workspace from lifecycle scope.
 
-**Next after unblock:** canonical workspace field + scoped catalog enforcement, then re-certify B3. **MP-5F-B4** remains waiting. **MP-5F** stays **BLOCKED**.
+**Next:** **MP-5F-B3B** wire ownership into `DefaultUclReferenceReader` / scoped queries. **MP-5F-B4** waiting. **MP-5F** stays **BLOCKED**.
 
 ---
 
