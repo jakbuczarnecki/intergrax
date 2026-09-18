@@ -294,9 +294,9 @@ def test_gr10_r2_adr1_r1_current_docs_do_not_list_inference_reliability_as_gap()
     assert "HITL/Reliability residual" not in roadmap
 
 
-def test_gr10_r2_adr1_r1_current_docs_mark_inference_pre_model_as_real_blocker() -> None:
+def test_gr10_final_current_docs_record_inference_pre_model_qualified() -> None:
     arch = gr10_architecture_remaining_gaps_slice()
     plan = gr10_maintainer_roadmap_slice()
-    assert "PRE_MODEL" in arch and "GR-10-R2" in arch
-    assert "GR-10-R2-R1" in plan and "PRE_MODEL" in plan
-    assert "CANDIDATE CLOSED" in plan
+    assert "PRE_MODEL" in arch and "QUALIFIED" in arch
+    assert "GR-10-FINAL" in arch or "GR-10-R2" in arch
+    assert "GR-10-FINAL" in plan or "GR-10-R3" in plan

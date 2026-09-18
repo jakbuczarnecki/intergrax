@@ -58,7 +58,7 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 ### D. Remaining platform gaps (explicit)
 
 - **Governance Evidence (GR-8):** public contract **frozen** — [ADR-GR-8-001](../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); spine **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** (independent final audit before CLOSED); **evaluation-point adoption** (AGENT_DECISION, INTERRUPT, PRE_MODEL, TOOL*, PRE_OUTPUT, POST_RUN, CONTROL_PLANE_MUTATION, fresh post-human re-evaluation) remains **open** under **GR-10 / GR-13**.
-- **Strategy coverage (GR-10):** **INFERENCE:** PRE_MODEL **public contract** revised (**GR-10-R2-C1** — `principal_id` required); **runtime identity conformance** **GR-10-R2-R1** candidate closed — `ActiveExecutionGovernanceIdentity` is the sole live authority ([ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md)); independent audit pending. MSE, Decision-bound effect, HITL, Continuation, and Reliability are **NOT_APPLICABLE** on the inference strategy path (GR-10-R1). **AGENTIC / ORCHESTRATION:** PRE_MODEL identity wiring aligned to the same carrier; residual capability qualification per §9 matrix.
+- **Strategy coverage (GR-10):** **GR-10-FINAL** requalification on current production code — status **PARTIAL** (typed matrix §9 + `tests/qualification/governance/strategy/`). **INFERENCE:** PRE_MODEL **QUALIFIED** on `InferenceExecutor` structured path (**GR-10-R2-C1/R1** — [ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md)); root admission **WIRED_NOT_QUALIFIED** (launcher qualified, no Tier-3 host inference entry). MSE, Decision-bound effect, HITL, Continuation, and Reliability **NOT_APPLICABLE** (GR-10-R1). **AGENTIC:** **GR-10-R3** open — UAEP+kernel path can terminate steps without `PolicyAction.DENY` on the returned `GovernanceResolution` (G3B proof drift). **ORCHESTRATION:** residual PARTIAL rows per §9.
 - **Control-plane mutation (GR-12):** **GAP** — no shared live enforcement across activation, AHI, ECP, plugins, live task control.
 - **Plugin enterprise certification (GR-11)** and **full proof matrix (GR-13)** open.
 - **Transitional Task/Nexus coupling** on some pause bridges — Execution owns lifecycle target; port integration incomplete on non-orchestration strategies.
@@ -288,7 +288,7 @@ flowchart LR
 | ---------- | --------- | ------- | ------------- |
 | Root admission | WIRED_NOT_QUALIFIED | QUALIFIED | QUALIFIED |
 | Inner guard | PARTIAL | PARTIAL | PARTIAL |
-| Policy evaluation (GEP) | PARTIAL | QUALIFIED | QUALIFIED |
+| Policy evaluation (GEP) | QUALIFIED | PARTIAL | QUALIFIED |
 | Meaningful side effect spine | NOT_APPLICABLE | PARTIAL | PARTIAL |
 | Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | HITL continuation (GR-5) | NOT_APPLICABLE | QUALIFIED | PARTIAL |

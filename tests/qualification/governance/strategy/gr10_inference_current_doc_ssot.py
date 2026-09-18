@@ -44,9 +44,13 @@ _FORBIDDEN_INFERENCE_GAP_PHRASES: tuple[re.Pattern[str], ...] = (
     ),
 )
 
-_PRE_MODEL_BLOCKER = re.compile(
-    r"PRE_MODEL.*(BLOCKED|GR-10-R2|REVISION_REQUIRED|C1/R1)",
+_PRE_MODEL_INFERENCE_QUALIFIED = re.compile(
+    r"PRE_MODEL.*(QUALIFIED|GR-10-R2-R1|GR-10-FINAL)",
     re.IGNORECASE | re.DOTALL,
+)
+_PRE_MODEL_ACTIVE_BLOCKER = re.compile(
+    r"Active INFERENCE blocker:.*PRE_MODEL",
+    re.IGNORECASE,
 )
 
 
@@ -110,10 +114,13 @@ def gr10_assert_current_docs_inference_ssot() -> None:
     for name, body in (
         ("architecture_remaining_gaps", slices["architecture_remaining_gaps"]),
         ("maintainer_roadmap", slices["maintainer_roadmap"]),
-        ("gov_gap_008", slices["gov_gap_008"]),
+        ("qualification_current_inference", slices["qualification_current_inference"]),
     ):
-        assert _PRE_MODEL_BLOCKER.search(body), (
-            f"{name} must name PRE_MODEL as the INFERENCE blocker"
+        assert _PRE_MODEL_INFERENCE_QUALIFIED.search(body), (
+            f"{name} must record INFERENCE PRE_MODEL qualification (GR-10-FINAL / R2)"
+        )
+        assert not _PRE_MODEL_ACTIVE_BLOCKER.search(body), (
+            f"{name} must not list PRE_MODEL as an active INFERENCE blocker"
         )
 
     na_caps = {

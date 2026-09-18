@@ -204,9 +204,11 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
     Gr10CapabilityCell(
         "Policy evaluation",
         gr10_matrix_inference_status("Policy evaluation"),
+        Gr10CoverageStatus.PARTIAL,
         Gr10CoverageStatus.QUALIFIED,
-        Gr10CoverageStatus.QUALIFIED,
-        "PRE_MODEL on agentic router and InferenceExecutor structured path.",
+        "INFERENCE: InferenceExecutor PRE_MODEL qualified. AGENTIC: GR-3/ACP paths qualified; "
+        "UAEP+kernel AGENT_DECISION can block steps while ``PolicyDecision`` stays ALLOW "
+        "(GR-10-R3 authority semantics).",
     ),
     Gr10CapabilityCell(
         "MSE",
