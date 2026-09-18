@@ -38,8 +38,11 @@ __all__ = [
     "UserProfileStoreProductionAdmissionEvaluation",
     "classify_user_profile_store_provider",
     "evaluate_production_persistent_user_profile_admission",
+    "lookup_trusted_memory_provider_qualification_evidence",
     "lookup_trusted_user_profile_durability_evidence",
     "lookup_trusted_user_profile_qualification_evidence",
+    "MemoryCapabilityProviderAdmissionEvaluation",
+    "evaluate_production_session_turn_index_store_admission",
 ]
 
 
@@ -129,7 +132,7 @@ def classify_user_profile_store_provider(
     )
 
 
-def lookup_trusted_user_profile_qualification_evidence(
+def lookup_trusted_memory_provider_qualification_evidence(
     registry: MemoryProviderQualificationEvidenceRegistry,
     trusted_identity: MemoryProviderIdentity,
 ) -> MemoryProviderQualificationEvidenceLookup:
@@ -139,6 +142,16 @@ def lookup_trusted_user_profile_qualification_evidence(
         trusted_identity.provider_version,
         trusted_identity.backing_provider_id,
         trusted_identity.backing_provider_version,
+    )
+
+
+def lookup_trusted_user_profile_qualification_evidence(
+    registry: MemoryProviderQualificationEvidenceRegistry,
+    trusted_identity: MemoryProviderIdentity,
+) -> MemoryProviderQualificationEvidenceLookup:
+    return lookup_trusted_memory_provider_qualification_evidence(
+        registry,
+        trusted_identity,
     )
 
 
@@ -443,6 +456,138 @@ def evaluate_production_persistent_user_profile_admission(
         qualification_run_id=evidence.qualification_run_id,
         trusted_durability_status=durability_evidence.durability_status,
         durability_run_id=durability_evidence.qualification_run_id,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryCapabilityProviderAdmissionEvaluation:
+    admitted: bool
+    reason_code: MemoryProviderAdmissionReasonCode | None
+    provider_id: str
+    capability: MemoryProviderCapabilityKind
+    backing_provider_id: str | None
+    trusted_qualification_status: MemoryProviderQualificationStatus | None
+    qualification_run_id: str | None
+
+
+def evaluate_production_session_turn_index_store_admission(
+    trusted_identity: MemoryProviderIdentity | None,
+    evidence_lookup: MemoryProviderQualificationEvidenceLookup,
+) -> MemoryCapabilityProviderAdmissionEvaluation:
+    """PRODUCT STI gate: trusted identity + qualification evidence only (no durability)."""
+    capability = MemoryProviderCapabilityKind.SESSION_TURN_INDEX_STORE
+    if trusted_identity is None:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_IDENTITY_MISSING,
+            provider_id="none",
+            capability=capability,
+            backing_provider_id=None,
+            trusted_qualification_status=None,
+            qualification_run_id=None,
+        )
+    if trusted_identity.capability is not capability:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_IDENTITY_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=None,
+            qualification_run_id=None,
+        )
+    if evidence_lookup.resolve_status is MemoryProviderQualificationEvidenceResolveStatus.MISSING:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=None,
+            qualification_run_id=None,
+        )
+    if evidence_lookup.resolve_status in {
+        MemoryProviderQualificationEvidenceResolveStatus.AMBIGUOUS,
+        MemoryProviderQualificationEvidenceResolveStatus.MISMATCH,
+    }:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=None,
+            qualification_run_id=None,
+        )
+    evidence = evidence_lookup.evidence
+    if evidence is None:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=None,
+            qualification_run_id=None,
+        )
+    if evidence.capability is not capability:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
+    if evidence.provider_id != trusted_identity.provider_id:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
+    if _provider_backing_binding_mismatch_qualification(trusted_identity, evidence):
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_BACKING_IDENTITY_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
+    if _provider_version_binding_mismatch_qualification(trusted_identity, evidence):
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
+    if evidence.status is not MemoryProviderQualificationStatus.QUALIFIED:
+        return MemoryCapabilityProviderAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_NOT_QUALIFIED,
+            provider_id=trusted_identity.provider_id,
+            capability=capability,
+            backing_provider_id=trusted_identity.backing_provider_id,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+        )
+    return MemoryCapabilityProviderAdmissionEvaluation(
+        admitted=True,
+        reason_code=None,
+        provider_id=trusted_identity.provider_id,
+        capability=capability,
+        backing_provider_id=trusted_identity.backing_provider_id,
+        trusted_qualification_status=evidence.status,
+        qualification_run_id=evidence.qualification_run_id,
     )
 
 

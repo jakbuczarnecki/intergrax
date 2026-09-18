@@ -337,6 +337,138 @@ async def test_qdrant_backend_unavailable_fails_explicitly() -> None:
 
 
 @pytest.mark.asyncio
+def _sti_qualification_registry(
+    run_id: str,
+) -> InMemoryMemoryProviderQualificationEvidenceRegistry:
+    from intergrax.memory.provider_qualification.in_memory_evidence_registry import (
+        InMemoryMemoryProviderQualificationEvidenceRegistry,
+    )
+
+    registry = InMemoryMemoryProviderQualificationEvidenceRegistry()
+    registry.register(
+        MemoryProviderQualificationEvidence(
+            provider_id=BUILTIN_VECTOR_SESSION_TURN_INDEX_ID,
+            capability=MemoryProviderCapabilityKind.SESSION_TURN_INDEX_STORE,
+            status=MemoryProviderQualificationStatus.QUALIFIED,
+            qualification_run_id=run_id,
+            reference_time_iso="2025-01-01T00:00:00+00:00",
+            evidence_source=_EVIDENCE_SOURCE,
+            backing_provider_id=QDRANT_VECTOR_STORE_PROVIDER_ID,
+        ),
+    )
+    return registry
+
+
+def test_product_session_manager_requires_trusted_sti_evidence(
+    qdrant_sti_env: QdrantSessionTurnIndexQualificationEnv,
+) -> None:
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+    from intergrax.integrations.registry.catalog_manifests import QDRANT
+    from intergrax.integrations.registry.profile import IntegrationProfile
+    from intergrax.memory.contracts.provider_admission import (
+        MemoryProviderAdmissionError,
+        MemoryProviderAdmissionReasonCode,
+    )
+
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.5dr.product.gate")
+    env.memory_profile = MemoryProfile(
+        enable_user_memory=False,
+        enable_long_term_memory=False,
+        enable_session_vector_index=True,
+    )
+    tenant_id = qdrant_sti_env.tenant_id
+    stack, integration = build_qdrant_memory_rag_stack(qdrant_sti_env, tenant_id=tenant_id)
+    wiring = MemoryPlatformWiring(
+        session_storage=InMemorySessionStorage(),
+        user_profile_store=InMemoryUserProfileStore(),
+        organization_profile_store=None,
+    )
+    try:
+        with pytest.raises(MemoryProviderAdmissionError) as exc_info:
+            build_session_manager_from_environment(
+                env,
+                tenant_id=tenant_id,
+                memory_wiring=wiring,
+                rag_stack=stack,
+                integration_profile=IntegrationProfile(vector_store=QDRANT),
+            )
+        assert (
+            exc_info.value.reason_code
+            is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING
+        )
+    finally:
+        close_qdrant_integration(integration)
+
+
+@pytest.mark.asyncio
+async def test_product_episodic_recall_with_trusted_sti_evidence(
+    qdrant_sti_env: QdrantSessionTurnIndexQualificationEnv,
+) -> None:
+    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+    from intergrax.integrations.registry.catalog_manifests import QDRANT
+    from intergrax.integrations.registry.profile import IntegrationProfile
+
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.5dr.product.e2e")
+    env.memory_profile = MemoryProfile(
+        enable_user_memory=False,
+        enable_long_term_memory=False,
+        enable_session_vector_index=True,
+    )
+    tenant_id = qdrant_sti_env.tenant_id
+    turn_text = f"product-e2e-{qdrant_sti_env.qualification_run_id}"
+    registry = _sti_qualification_registry(qdrant_sti_env.qualification_run_id)
+    integration_profile = IntegrationProfile(vector_store=QDRANT)
+    wiring = MemoryPlatformWiring(
+        session_storage=InMemorySessionStorage(),
+        user_profile_store=InMemoryUserProfileStore(),
+        organization_profile_store=None,
+    )
+
+    stack_a, integration_a = build_qdrant_memory_rag_stack(qdrant_sti_env, tenant_id=tenant_id)
+    session_a = build_session_manager_from_environment(
+        env,
+        tenant_id=tenant_id,
+        memory_wiring=wiring,
+        rag_stack=stack_a,
+        integration_profile=integration_profile,
+        qualification_evidence_registry=registry,
+    )
+    assert isinstance(session_a._session_turn_index_store, VectorSessionTurnIndexStore)
+    await session_a.create_session(
+        tenant_id=tenant_id,
+        session_id="sess-product-e2e",
+        user_id="qual-user",
+        workspace_id="default",
+    )
+    await session_a.append_message(
+        tenant_id=tenant_id,
+        session_id="sess-product-e2e",
+        message=ChatMessage(role="user", content=turn_text),
+    )
+    close_qdrant_integration(integration_a)
+
+    stack_b, integration_b = build_qdrant_memory_rag_stack(qdrant_sti_env, tenant_id=tenant_id)
+    session_b = build_session_manager_from_environment(
+        env,
+        tenant_id=tenant_id,
+        memory_wiring=wiring,
+        rag_stack=stack_b,
+        integration_profile=integration_profile,
+        qualification_evidence_registry=registry,
+    )
+    try:
+        hits = await session_b.search_session_semantic_recall(
+            tenant_id=tenant_id,
+            session_id="sess-product-e2e",
+            user_id="qual-user",
+            query=turn_text,
+        )
+        assert hits
+        assert turn_text in hits[0]["text"]
+    finally:
+        close_qdrant_integration(integration_b)
+
+
 async def test_application_episodic_recall_after_qdrant_reconnect(
     qdrant_sti_env: QdrantSessionTurnIndexQualificationEnv,
 ) -> None:

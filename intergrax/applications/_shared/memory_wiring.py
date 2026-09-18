@@ -71,6 +71,7 @@ from intergrax.applications._shared.memory_security_governance_wiring import (
 )
 from intergrax.applications._shared.memory_provider_admission import (
     validate_memory_platform_wiring_admission,
+    validate_session_turn_index_store_admission,
 )
 from intergrax.memory.contracts.provider_identity import (
     BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID,
@@ -371,6 +372,8 @@ def build_session_manager_from_environment(
     memory_control_plane: MemoryControlPlane | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
     durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
+    session_turn_index_store: object | None = None,
+    session_turn_index_store_identity: MemoryProviderIdentity | None = None,
 ) -> SessionManager:
     """Construct ``SessionManager`` with profile managers driven by ``MemoryProfile``."""
     wiring = memory_wiring or resolve_memory_platform_wiring(
@@ -409,11 +412,22 @@ def build_session_manager_from_environment(
         _ = ORG_MEMORY_SCOPES  # org memory 2.5 scope catalog (AUDIT-IDEAL-15.1)
         org_manager = OrganizationProfileManager(wiring.organization_profile_store)
 
-    session_turn_index = build_session_turn_index_store(
-        env,
-        tenant_id=tenant_id,
-        rag_stack=rag_stack,
-    )
+    resolved_integration = integration_profile or env.integration_profile
+    if session_turn_index_store is not None:
+        validate_session_turn_index_store_admission(
+            env,
+            provider_identity=session_turn_index_store_identity,
+            qualification_evidence_registry=qualification_evidence_registry,
+        )
+        session_turn_index = session_turn_index_store
+    else:
+        session_turn_index = build_session_turn_index_store(
+            env,
+            tenant_id=tenant_id,
+            rag_stack=rag_stack,
+            integration_profile=resolved_integration,
+            qualification_evidence_registry=qualification_evidence_registry,
+        )
 
     resolved_memory_control_plane = memory_control_plane
     if resolved_memory_control_plane is None and user_manager is not None:

@@ -283,7 +283,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | Behavioral qual | `MemoryProviderQualificationRunner` on real Qdrant-backed store |
 | Durability proof | Client/provider reconnect (`REAL_VENDOR_RECONNECT`); service restart **not executed** |
 | Evidence source | `qdrant_session_turn_index_real_vendor_qualification` |
-| STI production admission | **Not in scope** — qualification-only certification (no STI admission gate yet) |
+| STI production admission | **Enforced (5D-R)** — PRODUCT requires trusted qualification evidence for composite STI identity |
 | Application E2E | `SessionManager` episodic recall after Qdrant client reconnect |
 | Scope enforcement | Tenant-bound STI + Qdrant metadata filters (`tenant_id`, `session_id`, …) |
 | Verdict | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (Qdrant backing only) |
@@ -294,6 +294,17 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-07 (Qdrant) | **CLOSED** |
 | GAP-4-07 (pgvector) | OPEN |
 | GAP-4-07 (Chroma) | OPEN |
+| GAP-5D-01 | **CLOSED (5D-R)** |
+
+## MEM-FINAL-AUDIT-5D-R — SessionTurnIndex trusted production admission
+
+| Check | Result |
+| ----- | ------ |
+| Generic admission | `evaluate_production_session_turn_index_store_admission` |
+| Backing resolver | `vector_store_backing_provider_id(IntegrationProfile)` |
+| Enforcement | `validate_session_turn_index_store_admission` in Tier-3 vector wiring |
+| Tests | `test_mem_final_audit_5d_r_session_turn_index_production_admission.py` |
+| Qdrant PRODUCT E2E | Trusted evidence required; mismatch/missing fail closed |
 
 ## MEM-FINAL-AUDIT-5C — Mongo UserProfile real-vendor qualification
 

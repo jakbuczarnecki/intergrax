@@ -15,6 +15,7 @@ __all__ = [
     "builtin_user_profile_store_identity",
     "builtin_session_turn_index_store_identity",
     "plugin_user_profile_store_identity",
+    "plugin_session_turn_index_store_identity",
     "BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID",
     "BUILTIN_IN_MEMORY_USER_PROFILE_ID",
     "BUILTIN_SQLITE_USER_PROFILE_ID",
@@ -106,4 +107,21 @@ def plugin_user_profile_store_identity(
         capability=MemoryProviderCapabilityKind.USER_PROFILE_STORE,
         source=MemoryProviderIdentitySource.PLUGIN,
         provider_version=provider_version,
+    )
+
+
+def plugin_session_turn_index_store_identity(
+    plugin_id: str,
+    *,
+    provider_version: str | None = None,
+    backing_provider_id: str | None = None,
+    backing_provider_version: str | None = None,
+) -> MemoryProviderIdentity:
+    return MemoryProviderIdentity(
+        provider_id=plugin_id,
+        capability=MemoryProviderCapabilityKind.SESSION_TURN_INDEX_STORE,
+        source=MemoryProviderIdentitySource.PLUGIN,
+        provider_version=provider_version,
+        backing_provider_id=backing_provider_id,
+        backing_provider_version=backing_provider_version,
     )

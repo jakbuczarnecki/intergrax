@@ -7,12 +7,22 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
+from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
+)
+from intergrax.applications._shared.memory_provider_admission import (
+    validate_session_turn_index_store_admission,
 )
 from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
 from intergrax.applications._shared.session_turn_index_rag_adapters import (
     build_session_turn_index_creation_context,
+)
+from intergrax.memory.contracts.provider_identity import (
+    BUILTIN_VECTOR_SESSION_TURN_INDEX_ID,
+    MemoryProviderIdentity,
+    builtin_session_turn_index_store_identity,
+    plugin_session_turn_index_store_identity,
 )
 from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
@@ -26,7 +36,14 @@ if TYPE_CHECKING:
         EntityTemporalMemoryCapability,
     )
     from intergrax.memory.contracts.memory_lifecycle import UserProfileMemoryProjection
+    from intergrax.memory.contracts.provider_admission_evidence import (
+        MemoryProviderAdmissionEvidenceContext,
+    )
+    from intergrax.memory.contracts.provider_qualification_evidence import (
+        MemoryProviderQualificationEvidenceRegistry,
+    )
     from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
+    from intergrax.integrations.registry.profile import IntegrationProfile
     from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack
 
 
@@ -35,10 +52,43 @@ def memory_vector_flags_require_backend(env: ApplicationEnvironmentProfile) -> b
     return bool(profile.enable_long_term_memory or profile.enable_session_vector_index)
 
 
+def vector_store_backing_provider_id(profile: IntegrationProfile | None) -> str | None:
+    """Platform-owned vector backend slug from integration profile binding."""
+    if profile is None:
+        return None
+    binding = profile.vector_store
+    if binding is None:
+        return None
+    return binding.resolved_slug()
+
+
+def resolve_session_turn_index_provider_identity(
+    integration_profile: IntegrationProfile | None,
+    *,
+    plugin_type: type | None = None,
+) -> MemoryProviderIdentity:
+    if plugin_type is not None:
+        plugin_id_resolver = getattr(plugin_type, "plugin_id", None)
+        if callable(plugin_id_resolver):
+            return plugin_session_turn_index_store_identity(plugin_id_resolver())
+    backing = vector_store_backing_provider_id(integration_profile)
+    return builtin_session_turn_index_store_identity(
+        BUILTIN_VECTOR_SESSION_TURN_INDEX_ID,
+        backing_provider_id=backing,
+    )
+
+
 def _require_runtime_tenant(tenant_id: str | None) -> str:
     if not isinstance(tenant_id, str) or not tenant_id.strip():
         raise MemoryVectorBackendUnavailableError(reason="tenant_required")
     return tenant_id.strip()
+
+
+def _product_session_turn_index_enabled(env: ApplicationEnvironmentProfile) -> bool:
+    return (
+        env.application_profile is ApplicationProfile.PRODUCT
+        and env.memory_profile.enable_session_vector_index
+    )
 
 
 def resolve_rag_stack_for_memory_wiring(
@@ -147,7 +197,11 @@ def build_session_turn_index_store(
     *,
     tenant_id: str | None = None,
     rag_stack: RagStack | None = None,
+    integration_profile: IntegrationProfile | None = None,
     session_turn_index_plugins: Sequence[type] = (),
+    provider_identity: MemoryProviderIdentity | None = None,
+    qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
+    admission_evidence: MemoryProviderAdmissionEvidenceContext | None = None,
 ) -> SessionTurnIndexStore | None:
     """Construct episodic index when ``enable_session_vector_index`` is true."""
     from intergrax.core.memory_bootstrap import discover_session_turn_index_plugin_types
@@ -156,10 +210,19 @@ def build_session_turn_index_store(
     if not profile.enable_session_vector_index:
         return None
     resolved_tenant_id = _require_runtime_tenant(tenant_id)
+    resolved_integration = integration_profile
+
+    if _product_session_turn_index_enabled(env):
+        assert_memory_vector_backend_available(env, rag_stack)
+
     if rag_stack is None:
+        if _product_session_turn_index_enabled(env):
+            raise MemoryVectorBackendUnavailableError(reason="vector_backend_unavailable")
         return None
 
     if rag_stack.embedding_manager is None or rag_stack.vectorstore_manager is None:
+        if _product_session_turn_index_enabled(env):
+            raise MemoryVectorBackendUnavailableError(reason="vector_backend_unavailable")
         return None
 
     creation_context = build_session_turn_index_creation_context(
@@ -172,7 +235,27 @@ def build_session_turn_index_store(
 
     plugin_types = list(session_turn_index_plugins) or discover_session_turn_index_plugin_types()
     for plugin_type in plugin_types:
+        resolved_identity = provider_identity or resolve_session_turn_index_provider_identity(
+            resolved_integration,
+            plugin_type=plugin_type,
+        )
+        validate_session_turn_index_store_admission(
+            env,
+            provider_identity=resolved_identity,
+            qualification_evidence_registry=qualification_evidence_registry,
+            admission_evidence=admission_evidence,
+        )
         return plugin_type.create_session_turn_index(creation_context)
+
+    resolved_identity = provider_identity or resolve_session_turn_index_provider_identity(
+        resolved_integration,
+    )
+    validate_session_turn_index_store_admission(
+        env,
+        provider_identity=resolved_identity,
+        qualification_evidence_registry=qualification_evidence_registry,
+        admission_evidence=admission_evidence,
+    )
 
     return VectorSessionTurnIndexStore(
         embedding_port=creation_context.embedding_manager,

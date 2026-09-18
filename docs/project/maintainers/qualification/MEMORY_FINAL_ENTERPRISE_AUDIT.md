@@ -1421,7 +1421,34 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | GAP-4-02 (Qdrant STI reconnect) | **CLOSED** |
 | GAP-4-07 (Qdrant) | **CLOSED** |
 | GAP-4-07 (pgvector / Chroma) | OPEN |
+| GAP-5D-01 (qualified STI not enforced at runtime) | **CLOSED (5D-R)** |
 
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.
+
+## MEM-FINAL-AUDIT-5D-R — SessionTurnIndex trusted production admission
+
+| Check | Result |
+| ----- | ------ |
+| Admission contract | `evaluate_production_session_turn_index_store_admission` + `MemoryCapabilityProviderAdmissionEvaluation` |
+| Evidence lookup | `lookup_trusted_memory_provider_qualification_evidence` (composite identity) |
+| STI provider ID | `vector.session_turn_index` (`SESSION_TURN_INDEX_STORE`) |
+| Backing identity | `IntegrationProfile.vector_store` → `resolved_slug()` (e.g. `qdrant`) |
+| Enforcement path | `build_session_turn_index_store` → `validate_session_turn_index_store_admission` before materialization |
+| PRODUCT gate | Trusted `QUALIFIED` evidence required when `enable_session_vector_index=True` |
+| LAB | Admission not enforced; reference/in-memory STI remains legal |
+| Unit matrix | `tests/unit/applications/test_mem_final_audit_5d_r_session_turn_index_production_admission.py` |
+| Application E2E | PRODUCT `SessionManager` with matching Qdrant evidence (5D suite extension) |
+| V6 label | **REAL-VENDOR DURABILITY/RECONNECT QUALIFIED + PRODUCTION ADMISSION ENFORCED** (Qdrant) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5D-01 | **CLOSED** |
+| GAP-4-02 (Qdrant STI) | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **FULLY CLOSED** |
+| GAP-4-07 (pgvector / Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5E AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5D-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5E.
