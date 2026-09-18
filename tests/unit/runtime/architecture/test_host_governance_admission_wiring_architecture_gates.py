@@ -41,8 +41,11 @@ _IMPORT_ALLOWLIST_REL = frozenset(
         "intergrax/applications/_shared/harness_admitted_root_governance_identity.py",
         "intergrax/applications/_shared/harness_host_task_execution_wiring.py",
         "intergrax/runtime/execution/certified_internal_harness_governance_identity.py",
-        "intergrax/runtime/task/nexus_worker_execution.py",
     },
+)
+
+_NEXUS_WORKER_EXECUTION = (
+    _REPO_ROOT / "intergrax" / "runtime" / "task" / "nexus_worker_execution.py"
 )
 
 
@@ -97,6 +100,23 @@ def test_harness_host_wiring_injects_explicit_harness_identity_admission() -> No
     source = _HARNESS_HOST_WIRING.read_text(encoding="utf-8-sig")
     assert "admit_harness_root_governance_identity" in source
     assert "build_harness_root_execution_authority_admission" in source
+
+
+def test_nexus_worker_execution_does_not_import_harness_identity_admission() -> None:
+    source = _NEXUS_WORKER_EXECUTION.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(_NEXUS_WORKER_EXECUTION))
+    assert _imported_harness_identity_symbols(tree) == set()
+    assert "admit_certified_internal_harness_root_governance_identity" not in source
+
+
+def test_nexus_worker_from_registry_requires_explicit_governance_admission() -> None:
+    import inspect
+
+    from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
+
+    signature = inspect.signature(NexusWorkerRuntime.from_registry)
+    param = signature.parameters["admit_root_governance_identity"]
+    assert param.default is inspect.Parameter.empty
 
 
 def test_runtime_and_shared_apps_do_not_import_harness_identity_admission() -> None:

@@ -52,6 +52,9 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
+from testing_support.admitted_root_governance_identity import (
+    lab_admitted_root_governance_identity_for_task,
+)
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
 from intergrax.runtime.task.worker_payload import encode_execution_request
@@ -248,6 +251,7 @@ def _run_worker_delivery(
         agent_registry,
         run_budget=_RUN_BUDGET,
         run_budget_persistence=KvRunBudgetPersistence(kv),
+        admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
     )
     task = Task(
         task_id=str(identity.task_id),

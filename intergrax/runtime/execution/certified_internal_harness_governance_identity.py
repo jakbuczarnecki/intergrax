@@ -3,7 +3,7 @@
 
 """CERTIFIED INTERNAL harness admission — not production Host/Admission auth.
 
-Used only by certified internal composition (nexus worker, debug, unit tests)
+Used only by certified internal composition (debug, lab, unit tests)
 that call :func:`build_host_task_execution` without Tier-3 host wiring.
 Production application hosts must inject real admission via applications wiring.
 """

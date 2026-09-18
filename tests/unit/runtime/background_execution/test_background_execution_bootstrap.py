@@ -344,13 +344,19 @@ def test_nexus_worker_preserves_bootstrap_identity_end_to_end() -> None:
     from intergrax.fastapi_core.execution.models import ExecutionRequest
     from intergrax.runtime.registry.agent_registry import AgentRegistry
     from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
+    from testing_support.admitted_root_governance_identity import (
+        lab_admitted_root_governance_identity_for_task,
+    )
     from intergrax.runtime.task.task import Task, TaskContext
     from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
     from intergrax.runtime.task.worker_payload import encode_execution_request
 
     agent_registry = AgentRegistry()
     agent_registry.register(EchoAgent())
-    runtime = NexusWorkerRuntime.from_registry(agent_registry)
+    runtime = NexusWorkerRuntime.from_registry(
+        agent_registry,
+        admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+    )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",
         task_id=TaskId("task_" + "d" * 32),
