@@ -31,11 +31,13 @@ def build_graph_assembly_request(
 ) -> ContextAssemblyRequest:
     """Build a CE assembly request for one execution-graph node."""
     active_run_id, _ = require_active_execution_identity()
+    workspace_id = task.to_envelope().workspace_id
     return ContextAssemblyRequest(
         trace_id=trace_id or task.task_id,
         run_id=active_run_id,
         task_id=task.task_id,
         tenant_id=task.tenant_id,
+        workspace_id=workspace_id,
         assembly_scope="graph_node",
         objective=task.message,
         decision_profile=ContextDecisionSnapshot(),

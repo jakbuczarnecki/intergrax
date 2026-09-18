@@ -51,6 +51,7 @@ from intergrax.runtime.context_lifecycle.contracts import (
     EphemeralArtifactPersistencePolicy,
     ModelCallExecutionScope,
     OptimizationArtifactType,
+    UclArtifactOwnershipScope,
 )
 from intergrax.runtime.context_lifecycle.in_memory_repository import InMemoryOptimizationArtifactRepository
 from intergrax.runtime.context_lifecycle.repository import (
@@ -101,12 +102,21 @@ def _optimization_policy(
     )
 
 
-def _request(*, run_id: str = "run-1") -> ContextAssemblyRequest:
+_MISSING_ARTIFACT_OWNERSHIP = object()
+
+
+def _default_artifact_ownership(request: ContextAssemblyRequest) -> UclArtifactOwnershipScope:
+    workspace_id = request.workspace_id or "workspace-1"
+    return UclArtifactOwnershipScope(tenant_id=request.tenant_id, workspace_id=workspace_id)
+
+
+def _request(*, run_id: str = "run-1", workspace_id: str | None = "workspace-1") -> ContextAssemblyRequest:
     return ContextAssemblyRequest(
         trace_id="trace-1",
         run_id=run_id,
         task_id="task-1",
-        tenant_id="tenant-1",
+        tenant_id="tenant",
+        workspace_id=workspace_id,
         assembly_scope="acp_step",
         objective="test",
         decision_profile=ContextDecisionSnapshot(),
@@ -215,7 +225,13 @@ def _resolve_kwargs(
     optimization_policy: ContextOptimizationPolicy | None,
     runtime: NexusUCLRuntimeDependencies | None,
     count_tokens: Callable[[str], int] | None = None,
+    artifact_ownership: UclArtifactOwnershipScope | None | object = _MISSING_ARTIFACT_OWNERSHIP,
 ) -> dict[str, Any]:
+    resolved_ownership = (
+        _default_artifact_ownership(request)
+        if artifact_ownership is _MISSING_ARTIFACT_OWNERSHIP
+        else artifact_ownership
+    )
     return {
         "request": request,
         "context_plan": context_plan,
@@ -226,6 +242,7 @@ def _resolve_kwargs(
         "ranked_fragments": fragments,
         "runtime": runtime,
         "count_tokens": count_tokens or _count_tokens,
+        "artifact_ownership": resolved_ownership,
     }
 
 
@@ -339,6 +356,41 @@ async def test_select_only_without_runtime() -> None:
 
 
 @pytest.mark.asyncio
+async def test_missing_artifact_ownership_fails_before_repository() -> None:
+    long_history = ["history block " * 30]
+    (
+        request,
+        context_plan,
+        snapshot,
+        messages_for_compile,
+        fragment_messages,
+        fragments,
+        policy,
+    ) = _plan_fixture(
+        history_contents=long_history,
+        resolved_budget=20,
+        optimization_policy=_optimization_policy(),
+    )
+    runtime, model_calls, _ = _runtime()
+    with pytest.raises(NexusUCLExecutionError) as exc_info:
+        await resolve_ucl_context_plan(
+            **_resolve_kwargs(
+                request=request,
+                context_plan=context_plan,
+                snapshot=snapshot,
+                messages_for_compile=messages_for_compile,
+                fragment_messages=fragment_messages,
+                fragments=fragments,
+                optimization_policy=policy,
+                runtime=runtime,
+                artifact_ownership=None,
+            )
+        )
+    assert exc_info.value.reason == NexusUCLExecutionReason.PLAN_MATERIALIZATION_FAILED.value
+    assert model_calls[0] == 0
+
+
+@pytest.mark.asyncio
 async def test_lookup_hit_reuses_without_executor() -> None:
     long_history = ["history block " * 30]
     (
@@ -434,7 +486,7 @@ async def test_create_and_store_persists_artifact() -> None:
         policy_version=policy.policy_version,
         validation_contract_version=policy.validation_contract_version,
     )
-    assert repo.lookup(lookup_key) is not None
+    assert repo.lookup(lookup_key, ownership=_default_artifact_ownership(request)) is not None
 
 
 @pytest.mark.asyncio
@@ -580,6 +632,7 @@ async def test_already_in_progress_timeout_errors() -> None:
     )
     repo.try_acquire_creation_reservation(
         lookup_key,
+        ownership=_default_artifact_ownership(request),
         owner_operation_id="other-owner",
         lease_seconds=60,
     )
@@ -706,7 +759,7 @@ async def test_non_persist_policy_releases_reservation() -> None:
         policy_version=policy.policy_version,
         validation_contract_version=policy.validation_contract_version,
     )
-    assert repo.lookup(lookup_key) is None
+    assert repo.lookup(lookup_key, ownership=_default_artifact_ownership(request)) is None
 
 
 def _dummy_reservation() -> ArtifactCreationReservation:
@@ -715,6 +768,7 @@ def _dummy_reservation() -> ArtifactCreationReservation:
         reservation_id="res-1",
         artifact_lookup_key_hash="hash",
         tenant_id="tenant",
+        workspace_id="workspace-1",
         owner_operation_id="owner",
         acquired_at=acquired_at,
         lease_deadline=acquired_at + timedelta(seconds=60),
@@ -784,17 +838,23 @@ class _SpyOptimizationArtifactRepository(InMemoryOptimizationArtifactRepository)
     def configure_release(self, result: bool | None) -> None:
         self._release_result = result
 
-    def lookup(self, key: ArtifactLookupKey) -> StoredOptimizationArtifact | None:
+    def lookup(
+        self,
+        key: ArtifactLookupKey,
+        *,
+        ownership: UclArtifactOwnershipScope,
+    ) -> StoredOptimizationArtifact | None:
         self.lookup_calls += 1
         if self._lookup_results:
             index = min(self.lookup_calls - 1, len(self._lookup_results) - 1)
             return self._lookup_results[index]
-        return super().lookup(key)
+        return super().lookup(key, ownership=ownership)
 
     def try_acquire_creation_reservation(
         self,
         key: ArtifactLookupKey,
         *,
+        ownership: UclArtifactOwnershipScope,
         owner_operation_id: str,
         lease_seconds: int,
     ) -> ArtifactCreationCoordinationResult:
@@ -803,6 +863,7 @@ class _SpyOptimizationArtifactRepository(InMemoryOptimizationArtifactRepository)
             return self._coordination_result
         return super().try_acquire_creation_reservation(
             key,
+            ownership=ownership,
             owner_operation_id=owner_operation_id,
             lease_seconds=lease_seconds,
         )
@@ -811,12 +872,14 @@ class _SpyOptimizationArtifactRepository(InMemoryOptimizationArtifactRepository)
         self,
         key: ArtifactLookupKey,
         *,
+        ownership: UclArtifactOwnershipScope,
         observed_state_version: int,
         timeout_seconds: float,
     ) -> None:
         self.wait_calls += 1
         return super().wait_for_artifact_or_reservation_change(
             key,
+            ownership=ownership,
             observed_state_version=observed_state_version,
             timeout_seconds=timeout_seconds,
         )
@@ -889,7 +952,7 @@ async def _create_valid_stored_artifact() -> tuple[Any, ...]:
         policy_version=policy.policy_version,
         validation_contract_version=policy.validation_contract_version,
     )
-    stored = repo.lookup(lookup_key)
+    stored = repo.lookup(lookup_key, ownership=_default_artifact_ownership(request))
     assert stored is not None
     return (
         request,
@@ -1419,7 +1482,7 @@ async def test_non_persist_flow_has_no_persistent_artifact_identity(
         policy_version=policy.policy_version,
         validation_contract_version=policy.validation_contract_version,
     )
-    assert repo.lookup(lookup_key) is None
+    assert repo.lookup(lookup_key, ownership=_default_artifact_ownership(request)) is None
 
 
 @pytest.mark.asyncio

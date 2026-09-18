@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.decision_system.completion_eligibility import CompletionEligibilityStatus
-from intergrax.runtime.diagnostics.completion_alignment_diag import CompletionAlignmentDiagV1
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import CompletionAlignmentDiagV1
 from platform_proofs.scenarios.ai_incident_investigation.application.evidence_completion_gate import (
     evaluate_ai_incident_completion_eligibility,
 )
@@ -103,7 +103,7 @@ async def run_completion_alignment_producer_reachability_probe(
 def assert_canonical_match_alignment_event(
     event: CompletionAlignmentDiagV1,
 ) -> None:
-    from intergrax.runtime.diagnostics.completion_alignment_diag import (
+    from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
         AlignmentDirection,
         AlignmentStatus,
     )
@@ -116,7 +116,7 @@ def assert_canonical_match_alignment_event(
 def assert_reverse_mismatch_alignment_event(
     event: CompletionAlignmentDiagV1,
 ) -> None:
-    from intergrax.runtime.diagnostics.completion_alignment_diag import (
+    from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
         AlignmentDirection,
         AlignmentStatus,
     )

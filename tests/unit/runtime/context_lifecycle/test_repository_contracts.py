@@ -22,6 +22,8 @@ from intergrax.runtime.context_lifecycle import (
     OptimizationArtifactType,
     ReusableOptimizationArtifact,
     StoredOptimizationArtifact,
+    UclArtifactOwnership,
+    UclArtifactOwnershipScope,
     build_optimization_artifact_reference,
     compute_artifact_content_hash,
     optimization_artifact_reference_to_safe_dict,
@@ -30,6 +32,23 @@ from intergrax.runtime.context_lifecycle import (
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+def _ownership_scope(
+    key: ArtifactLookupKey | None = None,
+    *,
+    workspace_id: str = "workspace-1",
+) -> UclArtifactOwnershipScope:
+    lookup = key or _lookup_key()
+    return UclArtifactOwnershipScope(tenant_id=lookup.tenant_id, workspace_id=workspace_id)
+
+
+def _artifact_ownership(
+    key: ArtifactLookupKey | None = None,
+    *,
+    workspace_id: str = "workspace-1",
+) -> UclArtifactOwnership:
+    return UclArtifactOwnership.for_workspace(_ownership_scope(key, workspace_id=workspace_id))
 
 
 def _lookup_key(**overrides: object) -> ArtifactLookupKey:
@@ -64,6 +83,7 @@ def _reusable_artifact(**overrides: object) -> ReusableOptimizationArtifact:
     defaults: dict[str, object] = {
         "artifact_id": "artifact-1",
         "lookup_key": _lookup_key(),
+        "ownership": _artifact_ownership(),
         "artifact_content_hash": compute_artifact_content_hash(b"payload-bytes"),
         "created_at": datetime(2026, 8, 2, 12, 0, 0, tzinfo=UTC),
         "created_by_executor": "executor.message_sequence",
@@ -75,9 +95,13 @@ def _reusable_artifact(**overrides: object) -> ReusableOptimizationArtifact:
 
 def _stored_artifact(payload: bytes = b"payload-bytes", **overrides: object) -> StoredOptimizationArtifact:
     metadata_overrides = overrides.pop("metadata", None)
+    combined: dict[str, object] = {}
+    if metadata_overrides:
+        combined.update(metadata_overrides)  # type: ignore[arg-type]
+    combined.update(overrides)
     metadata = _reusable_artifact(
         artifact_content_hash=compute_artifact_content_hash(payload),
-        **(metadata_overrides or {}),
+        **combined,
     )
     return StoredOptimizationArtifact(
         metadata=metadata,

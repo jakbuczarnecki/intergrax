@@ -762,6 +762,7 @@ class NexusLoop:
             task,
             lifecycle=lifecycle,
             trace_emitter=trace_emitter,
+            runtime_event_metric_scope=runtime_event_metric_scope,
         )
         if intake.early_result is not None:
             return self._with_authoritative_decision_exposure(task, intake.early_result)
@@ -770,6 +771,7 @@ class NexusLoop:
             task,
             lifecycle=lifecycle,
             trace_emitter=trace_emitter,
+            runtime_event_metric_scope=runtime_event_metric_scope,
         )
         if planning.early_result is not None:
             return self._with_authoritative_decision_exposure(
@@ -790,6 +792,7 @@ class NexusLoop:
             lifecycle=lifecycle,
             trace_emitter=trace_emitter,
             hold_persisted_trace_finalize=self._hold_persisted_trace_finalize,
+            runtime_event_metric_scope=runtime_event_metric_scope,
         )
         if phase.deferred_persisted_trace_finalize is not None:
             self._pending_deferred_persisted_trace_finalize = (

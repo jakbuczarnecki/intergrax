@@ -45,6 +45,27 @@ from intergrax.runtime.execution.runtime import (
 from intergrax.runtime.execution.inference import InferenceExecutor
 from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
+from intergrax.runtime.governance.governance_evidence_composition import (
+    build_governance_evidence_recorder,
+    build_in_memory_governance_evidence_persistence,
+)
+from intergrax.runtime.policy.policy_engine import PolicyEngine
+from intergrax.runtime.policy.pre_model_policy_bridge import PreModelPolicyBlockedError
+from intergrax.runtime.policy.pre_model_policy_evaluation import PreModelPolicyConfigurationError
+from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernedExecutionEvaluationPoint,
+)
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from testing_support.inference_governance_wiring import (
+    TEST_INFERENCE_PRINCIPAL_ID,
+    TEST_INFERENCE_TENANT_ID,
+    TEST_INFERENCE_WORKSPACE_ID,
+    bind_test_inference_governance_identity,
+    governed_inference_executor,
+    governed_root_execution_options,
+    reset_test_inference_governance_identity,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -245,8 +266,7 @@ def _root_options(
     run_id: RunId | None = None,
     attempt_id: AttemptId | None = None,
 ) -> RootExecutionOptions:
-    return RootExecutionOptions(
-        authority=ParentExecutionAuthority.unrestricted_root(),
+    return governed_root_execution_options(
         run_id=run_id,
         attempt_id=attempt_id,
     )
@@ -257,6 +277,8 @@ def _inference_stack(
   *,
   options: RootExecutionOptions | None = None,
   admission_hooks: tuple[ExecutionAdmissionHook, ...] = (),
+  policy_engine: PolicyEngine | None = None,
+  governance_evidence_recorder=None,
 ) -> tuple[
     Execution[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
@@ -264,7 +286,11 @@ def _inference_stack(
     ],
     RootExecutionOptions,
 ]:
-  executor = InferenceExecutor[RiskAssessment](adapter)
+  executor = governed_inference_executor(
+    adapter,
+    policy_engine=policy_engine,
+    governance_evidence_recorder=governance_evidence_recorder,
+  )
   router = StrategyExecutionRouter[
     tuple[ChatMessage, ...],
     RiskAssessment,
@@ -405,7 +431,7 @@ async def test_streaming_request_fails_explicitly() -> None:
 @pytest.mark.asyncio
 async def test_inference_executor_requires_active_execution_identity() -> None:
   adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
-  executor = InferenceExecutor(adapter)
+  executor = governed_inference_executor(adapter)
 
   with pytest.raises(RuntimeError, match="active execution identity required"):
     await executor.execute(_risk_request())
@@ -418,7 +444,7 @@ async def test_inference_executor_requires_active_execution_id() -> None:
   attempt_id = mint_attempt_id()
   token = bind_active_execution_identity(run_id=run_id, attempt_id=attempt_id)
   try:
-    executor = InferenceExecutor(adapter)
+    executor = governed_inference_executor(adapter)
     with pytest.raises(RuntimeError, match="active ExecutionId required"):
       await executor.execute(_risk_request())
   finally:
@@ -478,3 +504,246 @@ def test_inference_executor_does_not_bind_or_reset_identity() -> None:
   assert "mint_execution_id" not in source
   assert "mint_run_id" not in source
   assert "mint_attempt_id" not in source
+
+
+def _bind_direct_executor_context() -> tuple[object, object]:
+  identity_token = bind_active_execution_identity(
+    run_id=mint_run_id(),
+    attempt_id=mint_attempt_id(),
+    execution_id=mint_execution_id(),
+  )
+  governance_token = bind_test_inference_governance_identity()
+  return identity_token, governance_token
+
+
+def _reset_direct_executor_context(identity_token: object, governance_token: object) -> None:
+  reset_test_inference_governance_identity(governance_token)
+  reset_active_execution_identity(identity_token)
+
+
+class _DenyPreModelRuntime(RuntimePolicyEngine):
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
+    return PolicyDecision(
+      action=PolicyAction.DENY,
+      reason="inference_pre_model_denied",
+      policy_rule_id="test.inference_pre_model_denied",
+    )
+
+
+class _RequireHumanPreModelRuntime(RuntimePolicyEngine):
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
+    return PolicyDecision(
+      action=PolicyAction.REQUIRE_HUMAN,
+      reason="inference_pre_model_require_human",
+      policy_rule_id="test.inference_pre_model_require_human",
+    )
+
+
+class _ExplodingPreModelRuntime(RuntimePolicyEngine):
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
+    raise RuntimeError("policy_engine_failure")
+
+
+class _RecordingPreModelRuntime(RuntimePolicyEngine):
+  def __init__(self) -> None:
+    super().__init__()
+    self.calls = 0
+    self.last_tenant_id: str | None = None
+    self.last_message_count: int | None = None
+    self.last_model_id: str | None = None
+
+  def evaluate_pre_llm(
+    self, *, tenant_id, principal_id, agent_id=None, message_count, context=None
+  ):
+    self.calls += 1
+    self.last_tenant_id = tenant_id
+    self.last_principal_id = principal_id
+    self.last_agent_id = agent_id
+    self.last_message_count = message_count
+    if context is not None:
+      self.last_model_id = context.model_id
+    return PolicyDecision(
+      action=PolicyAction.ALLOW,
+      reason="allow",
+      policy_rule_id="test.allow",
+    )
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_allow_invokes_provider_once() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  recorder = build_governance_evidence_recorder(persistence=store)
+  execution, options = _inference_stack(
+    adapter,
+    governance_evidence_recorder=recorder,
+  )
+  result = await execution.execute(_risk_request(), options=options)
+  assert result.status is ExecutionStatus.COMPLETED
+  assert adapter.generate_structured_calls == 1
+  assert len(store.facts) == 1
+  fact = store.facts[0]
+  assert fact.evaluation_point is GovernedExecutionEvaluationPoint.PRE_MODEL
+  assert fact.decision is PolicyAction.ALLOW
+  assert fact.tenant_id == TEST_INFERENCE_TENANT_ID
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_deny_blocks_provider() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  engine = PolicyEngine(runtime=_DenyPreModelRuntime())
+  store = build_in_memory_governance_evidence_persistence()
+  recorder = build_governance_evidence_recorder(persistence=store)
+  execution, options = _inference_stack(
+    adapter,
+    policy_engine=engine,
+    governance_evidence_recorder=recorder,
+  )
+  with pytest.raises(PreModelPolicyBlockedError):
+    await execution.execute(_risk_request(), options=options)
+  assert adapter.generate_structured_calls == 0
+  assert len(store.facts) == 1
+  assert store.facts[0].decision is PolicyAction.DENY
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_policy_exception_blocks_provider() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  execution, options = _inference_stack(
+    adapter,
+    policy_engine=PolicyEngine(runtime=_ExplodingPreModelRuntime()),
+  )
+  with pytest.raises(RuntimeError, match="policy_engine_failure"):
+    await execution.execute(_risk_request(), options=options)
+  assert adapter.generate_structured_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_missing_policy_dependency_blocks_provider() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  identity_token, governance_token = _bind_direct_executor_context()
+  try:
+    executor = InferenceExecutor(adapter, policy_engine=None)
+    with pytest.raises(PreModelPolicyConfigurationError, match="policy engine required"):
+      await executor.execute(_risk_request())
+  finally:
+    _reset_direct_executor_context(identity_token, governance_token)
+  assert adapter.generate_structured_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_unsupported_action_blocks_provider() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  execution, options = _inference_stack(
+    adapter,
+    policy_engine=PolicyEngine(runtime=_RequireHumanPreModelRuntime()),
+  )
+  with pytest.raises(PreModelPolicyBlockedError):
+    await execution.execute(_risk_request(), options=options)
+  assert adapter.generate_structured_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_evaluator_receives_context() -> None:
+  runtime = _RecordingPreModelRuntime()
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  execution, options = _inference_stack(adapter, policy_engine=PolicyEngine(runtime=runtime))
+  messages = _risk_request().input
+  await execution.execute(_risk_request(), options=options)
+  assert runtime.last_tenant_id == TEST_INFERENCE_TENANT_ID
+  assert runtime.last_principal_id == TEST_INFERENCE_PRINCIPAL_ID
+  assert runtime.last_agent_id is None
+  assert runtime.last_message_count == len(messages)
+  assert runtime.last_model_id == adapter.model
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_runs_before_provider_invocation() -> None:
+  call_order: list[str] = []
+  runtime = _RecordingPreModelRuntime()
+
+  class OrderedAdapter(StructuredTestAdapter):
+    def generate_structured(self, messages, output_model, **kwargs):
+      call_order.append("provider")
+      return super().generate_structured(messages, output_model, **kwargs)
+
+  original_evaluate = runtime.evaluate_pre_llm
+
+  def _ordered_evaluate(**kwargs):
+    call_order.append("policy")
+    return original_evaluate(**kwargs)
+
+  runtime.evaluate_pre_llm = _ordered_evaluate  # type: ignore[method-assign]
+  adapter = OrderedAdapter(parsed_output=RiskAssessment(risk="low"))
+  execution, options = _inference_stack(adapter, policy_engine=PolicyEngine(runtime=runtime))
+  await execution.execute(_risk_request(), options=options)
+  assert call_order == ["policy", "provider"]
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_evidence_failure_still_allows_provider() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  store.fail_on_persist = True
+  recorder = build_governance_evidence_recorder(persistence=store)
+  execution, options = _inference_stack(
+    adapter,
+    governance_evidence_recorder=recorder,
+  )
+  result = await execution.execute(_risk_request(), options=options)
+  assert result.status is ExecutionStatus.COMPLETED
+  assert adapter.generate_structured_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_inference_pre_model_evidence_has_no_raw_prompt() -> None:
+  adapter = StructuredTestAdapter(parsed_output=RiskAssessment(risk="low"))
+  store = build_in_memory_governance_evidence_persistence()
+  recorder = build_governance_evidence_recorder(persistence=store)
+  secret = "super-secret-prompt-token"
+  request = ExecutionRequest(
+    input=(ChatMessage(role="user", content=secret),),
+    output_type=RiskAssessment,
+  )
+  execution, options = _inference_stack(
+    adapter,
+    governance_evidence_recorder=recorder,
+  )
+  await execution.execute(request, options=options)
+  serialized = repr(store.facts[0].model_dump())
+  assert secret not in serialized
+
+
+def _inference_executor_execute_function(tree: ast.Module) -> ast.AsyncFunctionDef | ast.FunctionDef:
+  executor_class = next(
+    node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "InferenceExecutor"
+  )
+  return next(
+    node
+    for node in executor_class.body
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "execute"
+  )
+
+
+def test_inference_executor_pre_model_before_generate_structured_ast_gate() -> None:
+  source = Path("intergrax/runtime/execution/inference.py").read_text(encoding="utf-8")
+  tree = ast.parse(source)
+  execute_fn = _inference_executor_execute_function(tree)
+  policy_line = None
+  provider_line = None
+  for index, node in enumerate(execute_fn.body):
+    if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+      func = node.value.func
+      if isinstance(func, ast.Name) and func.id == "enforce_pre_model_before_structured_inference":
+        policy_line = index
+    if isinstance(node, ast.FunctionDef) and node.name == "_invoke":
+      provider_line = index
+  assert policy_line is not None
+  assert provider_line is not None
+  assert policy_line < provider_line

@@ -95,7 +95,9 @@ def test_subtask_contract_safer_defaults() -> None:
 
 def test_policy_pre_llm_and_pre_output_hooks() -> None:
     engine = PolicyEngine()
-    pre_llm = engine.evaluate_pre_llm(tenant_id="t1", agent_id="echo", message_count=2)
+    pre_llm = engine.evaluate_pre_llm(
+        tenant_id="t1", principal_id="p1", agent_id="echo", message_count=2
+    )
     pre_out = engine.evaluate_pre_output(tenant_id="t1", agent_id="echo", output_chars=12)
     assert pre_llm.action.value == "allow"
     assert pre_out.action.value == "allow"

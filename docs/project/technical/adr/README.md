@@ -123,6 +123,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-GR-5-001](entries/2026-09-15/ADR-GR-5-001.md) | Canonical Execution HITL continuation ownership (`ExecutionContinuationPort`; Nexus internal) | Accepted (architecture) |
 | [ADR-MEM-XINT-002](entries/2026-09-17/ADR-MEM-XINT-002.md) | Unified information & context authority (Memory × CE × RAG × Tools) | Accepted (architecture) |
 | [ADR-GR-8-001](entries/2026-09-17/ADR-GR-8-001.md) | Canonical Governance Evidence public contract and persistence boundary (GR-8 spine freeze) | Accepted |
+| [ADR-GR-10-001](entries/2026-09-18/ADR-GR-10-001.md) | PRE_MODEL subject identity and execution governance context boundary (GR-10-R2-ADR1) | Accepted |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0â€¦GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 

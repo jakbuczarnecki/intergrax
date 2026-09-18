@@ -157,6 +157,9 @@ def build_uaep_step_context(
     return AgentStepContext(
         step_index=step.step_index,
         run_id=exec_ctx.run_id,
+        task_id=exec_ctx.task_id,
+        tenant_id=kernel_ctx.tenant_id,
+        workspace_id=exec_ctx.workspace_id,
         agent_id=exec_ctx.agent_id,
         contract_id=exec_ctx.contract.id if exec_ctx.contract else exec_ctx.agent_id,
         state_snapshot=dict(kernel_ctx.state_root),

@@ -7,6 +7,8 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
+from intergrax.memory.contracts.provider_admission import MemoryProviderDurability
+from intergrax.memory.contracts.provider_qualification import MemoryProviderQualificationStatus
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
 from intergrax.memory.user_profile_serialization import user_profile_from_json, user_profile_to_json
 from intergrax.memory.user_profile_store import UserProfileStore
@@ -22,11 +24,35 @@ class SQLiteUserProfileStore(UserProfileStore):
         self._connection = self._create_connection(db_path)
         self._initialize_schema()
 
+    @property
+    def memory_provider_id(self) -> str:
+        return "sqlite.user_profile"
+
+    @property
+    def memory_provider_durability(self) -> MemoryProviderDurability:
+        return MemoryProviderDurability.DURABLE
+
+    @property
+    def memory_provider_reference_only(self) -> bool:
+        return False
+
+    @property
+    def memory_provider_declared_qualification_status(self) -> MemoryProviderQualificationStatus:
+        return MemoryProviderQualificationStatus.NOT_QUALIFIED
+
+    @property
+    def memory_provider_version(self) -> str | None:
+        return None
+
     def close(self) -> None:
         if self._closed:
             return
         self._connection.close()
         self._closed = True
+
+    def _ensure_open(self) -> None:
+        if self._closed:
+            raise RuntimeError("SQLiteUserProfileStore is closed")
 
     def _create_connection(self, db_path: str) -> sqlite3.Connection:
         path = Path(db_path)
@@ -56,6 +82,7 @@ class SQLiteUserProfileStore(UserProfileStore):
         tenant_id: str,
         user_id: str,
     ) -> UserProfile:
+        self._ensure_open()
         cursor = self._connection.cursor()
         cursor.execute(
             """
@@ -78,6 +105,7 @@ class SQLiteUserProfileStore(UserProfileStore):
         tenant_id: str,
         profile: UserProfile,
     ) -> None:
+        self._ensure_open()
         cursor = self._connection.cursor()
         cursor.execute(
             """
@@ -104,6 +132,7 @@ class SQLiteUserProfileStore(UserProfileStore):
         tenant_id: str,
         user_id: str,
     ) -> None:
+        self._ensure_open()
         cursor = self._connection.cursor()
         cursor.execute(
             """

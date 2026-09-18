@@ -83,6 +83,9 @@ from intergrax.runtime.task.task_contract import (
 )
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
+from testing_support.runtime_event_metric_scope_for_tests import (
+    open_runtime_event_metric_scope_for_tests,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -291,8 +294,11 @@ def _build_intake_runner_with_hitl(
 
     async def finish_task(task: Task, *args: object, **kwargs: object) -> TaskResult:
         exposure = (
-            ExposureUnevaluated(scope=None, reason=ExposureUnevaluatedReason.NO_DECISION_GATE)
-            if task.state in {TaskState.FAILED, TaskState.COMPLETED, TaskState.CANCELLED}
+            ExposureUnevaluated(
+                scope=None, reason=ExposureUnevaluatedReason.NO_DECISION_GATE
+            )
+            if task.state
+            in {TaskState.FAILED, TaskState.COMPLETED, TaskState.CANCELLED}
             else None
         )
         return TaskResult(
@@ -624,10 +630,20 @@ async def test_intake_runner_passes_explicit_pause_identity() -> None:
     )
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-    with bound_hitl_test_execution_identity():
-        outcome = await runner.run(
-            task, lifecycle=lifecycle, trace_emitter=trace_emitter
-        )
+    metric_scope = open_runtime_event_metric_scope_for_tests(
+        task_id=TASK_ID,
+        run_id=RUN_ID,
+    )
+    try:
+        with bound_hitl_test_execution_identity():
+            outcome = await runner.run(
+                task,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+                runtime_event_metric_scope=metric_scope,
+            )
+    finally:
+        metric_scope.close()
 
     assert outcome.early_result is None
     resolution = task.runtime.governance.hitl_resolution
@@ -758,11 +774,20 @@ async def test_intake_runner_reject_preserves_evidence_before_cleanup(
     )
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-
-    with bound_hitl_test_execution_identity():
-        outcome = await runner.run(
-            task, lifecycle=lifecycle, trace_emitter=trace_emitter
-        )
+    metric_scope = open_runtime_event_metric_scope_for_tests(
+        task_id=TASK_ID,
+        run_id=RUN_ID,
+    )
+    try:
+        with bound_hitl_test_execution_identity():
+            outcome = await runner.run(
+                task,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+                runtime_event_metric_scope=metric_scope,
+            )
+    finally:
+        metric_scope.close()
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None
@@ -820,11 +845,20 @@ async def test_intake_runner_escalate_preserves_evidence_before_cleanup(
     )
     lifecycle = TaskLifecycle()
     trace_emitter = TaskTraceEmitter(run_id=RUN_ID, attempt_id=ATTEMPT_ID)
-
-    with bound_hitl_test_execution_identity():
-        outcome = await runner.run(
-            task, lifecycle=lifecycle, trace_emitter=trace_emitter
-        )
+    metric_scope = open_runtime_event_metric_scope_for_tests(
+        task_id=TASK_ID,
+        run_id=RUN_ID,
+    )
+    try:
+        with bound_hitl_test_execution_identity():
+            outcome = await runner.run(
+                task,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+                runtime_event_metric_scope=metric_scope,
+            )
+    finally:
+        metric_scope.close()
 
     resolution = task.runtime.governance.hitl_resolution
     assert resolution is not None

@@ -860,3 +860,523 @@ Contract-first architecture and replaceability **hold** for canonical mutation, 
 **PASS — MEM-FINAL-AUDIT-2 FULLY CLOSED** (pending independent GitHub SHA verification before AUDIT-3).
 
 > Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-3.
+
+---
+
+# MEM-FINAL-AUDIT-3 — Security, Lifecycle & Resilience Certification
+
+**Stage:** security · scope isolation · governance order · lifecycle · partial failure · reconciliation · concurrency semantics · observability (not real-vendor E2E, not behavioral evals).
+**Baseline AUDIT-2 closed SHA (ancestor required):** `9a6319e0e710029fb7ccfed1f1c2e7588cda4ff0`
+**AUDIT-3 execution HEAD (before commit):** `05f38bf7ccdff9d167f810b0742bb6b765365014` · branch `development`.
+
+## AUDIT-3 — Repo state (execution)
+
+| Field | Value |
+| ----- | ----- |
+| HEAD (before) | `05f38bf7ccdff9d167f810b0742bb6b765365014` |
+| Branch | `development` |
+| AUDIT-2 ancestor | YES |
+| Working tree (before) | foreign governance WIP unstaged (excluded from AUDIT-3 commit) |
+| Foreign WIP | governance qualification/docs (not staged) |
+| Conflicts | none |
+
+**Audited surfaces:** MemoryControlPlane · UserProfile + lifecycle · entity temporal · procedural · long-horizon · SessionTurnIndex (reference) · episodic (readiness only) · task memory · organization memory · conversational legacy · governance · identity propagation · supersession · reconciliation · projection lifecycle · observability · retry/idempotency · concurrency · partial failure.
+
+## AUDIT-3 — Identity architecture
+
+- **Spine:** `RequestIdentity` from `intergrax.contracts.agent_run`; recall uses `verified_request_identity_for_memory_recall` (`memory_context_invocation.py`, tools LTM, consolidation → `plane.remember/recall/forget/reconcile`).
+- **Synthetic identity in memory core:** `RequestIdentity(` occurrences under `intergrax/memory/**` = **0** (guard: `test_memory_core_forbids_synthetic_request_identity_construction`).
+- **Propagation proofs:** MEM-ENT-15-R identity E2E · MEM-ENT-15-R2 trusted identity unit · MEM-XINT-3 runtime recall plane · session consolidation integration · LTM tool fail-closed (`test_ltm_trusted_identity`).
+
+## AUDIT-3 — Hard invariants
+
+| Invariant | Status |
+| --------- | ------ |
+| identity integrity | **PASS** |
+| scope integrity | **PASS** |
+| governance order (validate → govern → canonical → projection) | **PASS** |
+| canonical authority | **PASS** |
+| projection isolation (projection ≠ truth) | **PASS** |
+| revision integrity | **PASS** (entity/procedural/LH ENT-14 concurrency; user profile via store contract) |
+| lineage integrity | **PASS** (ENT-15 core lifecycle supersession) |
+| reconciliation scope | **PASS** |
+
+**P0:** NONE
+**P1 (AUDIT-3 scope):** NONE
+
+**P2/P3 deferred:** episodic enterprise completeness (AUDIT-1 P1 placeholder) · STI real-vendor E2E (AUDIT-5) · ambiguous vendor timeout without idempotency key (documented ENT-15 ambiguous commit + reconcile path) · org-not-on-plane by design.
+
+## AUDIT-3 — Security matrix (summary)
+
+| Surface | Identity | Tenant | User | Governance | Attack tests | Verdict |
+| ------- | -------- | ------ | ---- | ---------- | ------------ | ------- |
+| MemoryControlPlane | YES | YES | YES | YES | cross-tenant/user scope ENT-3 · ENT-15 | **SECURITY/LIFECYCLE CERTIFIED** |
+| UserProfile / lifecycle | YES | YES | YES | YES | lifecycle + reconcile ENT-2/14 | **CERTIFIED** |
+| Entity temporal | YES | YES | YES | YES | ENT-10B deny · ENT-14 isolation | **CERTIFIED** |
+| Procedural | YES | YES | YES | YES | ENT-8/10B | **CERTIFIED** |
+| Long-horizon | YES | YES | YES | YES | ENT-9 source authority | **CERTIFIED** |
+| SessionTurnIndex | YES | YES | N/A session | host | tenant scope unit | **READY BUT NOT FULLY PROVEN** (vendor E2E = AUDIT-5) |
+| Episodic | partial | YES | YES | partial | placeholder | **GAP** (known AUDIT-1) |
+| Task memory | YES | YES | task scope | host flag | ENT-1R2 · runtime unit | **CERTIFIED** (parallel domain) |
+| Organization | YES | YES | org | manager | in-mem store unit | **CERTIFIED** (parallel domain) |
+| Conversational legacy | session | YES | session | n/a | cross-tenant in-mem | **LEGACY** safe isolation |
+| CE recall / tools LTM | trusted only | YES | YES | recall filter | MEM-XINT-3 fail-closed | **CERTIFIED** |
+
+## AUDIT-3 — Lifecycle matrix (summary)
+
+| Surface | Create | Update | Delete | Supersede | Revision | Reconcile | Verdict |
+| ------- | ------ | ------ | ------ | --------- | -------- | --------- | ------- |
+| Control plane USER | remember | remember/supersede | forget | supersede | profile entries | reconcile | **CERTIFIED** |
+| Projections | upsert | upsert | remove | sync | n/a | repair | **CERTIFIED** |
+| Entity temporal | index | revision CAS | delete | lineage | monotonic | service reconcile | **CERTIFIED** |
+| Procedural | remember | version | deactivate | supersede | monotonic | N/A | **CERTIFIED** |
+| Long-horizon | persist | compact | delete | tree | monotonic | rebuild | **CERTIFIED** |
+| STI | upsert | upsert | delete | n/a | n/a | host | **READY BUT NOT FULLY PROVEN** |
+
+## AUDIT-3 — Resilience matrix (summary)
+
+| Surface | Primary failure | Partial projection | Retry | Idempotency | Recovery | Verdict |
+| ------- | --------------- | ------------------ | ----- | ----------- | -------- | ------- |
+| USER plane | no false success ENT-15 | PARTIAL + diagnostic ENT-15/14 | classified ENT-14 | reconcile×2 ENT-14 · forget retry NOT_FOUND AUDIT-3 | reconcile repairs ENT-15 | **CERTIFIED** |
+| SQLite profile | reopen isolation ENT-14 | coordinator partial ENT-2 | ENT-14 | store-level | reconcile | **CERTIFIED** |
+| Entity/proc/LH in-mem | fail before write | N/A single store | ENT-14 | revision reject stale | deterministic | **CERTIFIED** |
+
+## AUDIT-3 — Concurrency matrix (mutable reference stores)
+
+| Store | Thread-safe | Async-safe | Process-safe | Lock/TX/CAS | Verdict |
+| ----- | ----------- | ---------- | ------------ | ----------- | ------- |
+| InMemoryUserProfileStore | caller-serialized | yes (async API) | no | none | **explicit reference** |
+| SQLite user profile | DB lock | executor-bound | file lock | TX | **CERTIFIED** |
+| InMemoryEntityTemporal | ENT-14 barrier tests | sync | no | revision compare | **CERTIFIED** |
+| InMemoryProcedural | ENT-14 | sync | no | revision | **CERTIFIED** |
+| InMemoryLongHorizon | ENT-14 | sync | no | revision | **CERTIFIED** |
+| InMemoryTaskMemoryStore | unit isolation | async | no | REPLACE policy | **CERTIFIED** |
+| InMemorySessionTurnIndex | tenant scope tests | async | no | upsert | **caller-serialized** |
+
+## AUDIT-3 — Security attack matrix
+
+| Attack | Expected | Result |
+| ------ | -------- | ------ |
+| tenant mismatch | DENY | **PASS** (`test_cross_tenant_scope_rejected`, ENT-15 isolation) |
+| user mismatch | DENY | **PASS** (`test_cross_user_scope_rejected`) |
+| forged scope | DENY | **PASS** scope ref vs identity |
+| projection writes canonical | impossible | **PASS** architecture |
+| governance deny then retry | still deny | **PASS** ENT-15 governance |
+| stale revision | conflict/reject | **PASS** ENT-14 entity/proc/LH |
+| supersede foreign entry | DENY | **PASS** scope + governance |
+| reconcile foreign scope | DENY | **PASS** LTM reconcile tenant test |
+| deleted memory recall | absent | **PASS** forget lifecycle ENT-3 |
+| malformed lineage | reject | **PASS** ENT-15 core lifecycle |
+
+## AUDIT-3 — Required proofs (test mapping)
+
+| Requirement | Evidence |
+| ----------- | -------- |
+| governance before mutation | `default_memory_control_plane._enforce_governance` before `_remember_user`; ENT-10/10B |
+| governance denial unchanged stores | `test_governance_deny_zero_canonical_and_projection_writes` |
+| governance exception fail-closed | `test_fail_closed_on_policy_exception` (ENT-10) |
+| primary OK + projection fail | `test_partial_projection_failure_then_reconcile_repairs_recall` |
+| reconcile idempotent | `test_reconcile_idempotent_second_pass_consistent` (ENT-14/2) |
+| concurrent canonical write | ENT-14 barrier writers |
+| STI derived ≠ canonical loss | architecture + host session store separate (AUDIT-1 M-067) |
+
+## AUDIT-3 — Test doubles (contract-based)
+
+`RecordingMemoryProjection` · `RecoveryProjection` (`resilience/recovery_projection.py`) · `FailAfterCommitOnceUserProfileStore` · `MemoryControlPlaneTestStub` · `RecordingRecallPlane` · interleaving/overlap barrier stores (ENT-14) · `_deny_governance` fixture.
+
+## AUDIT-3 — Test execution
+
+| Suite | Result |
+| ----- | ------ |
+| Targeted AUDIT-3 (ENT-3/10/14/15 e2e security) | **76 passed** |
+| `tests/unit/memory/**` + `tests/integration/memory/**` | **612 passed** (3 deprecation warnings) |
+| Runtime/tools memory related | **55 passed** after UAEP LTM flag fix (2 fixes: task-memory UAEP tests unrelated to plane) |
+| MEM-XINT-6 CE assembly | **unchanged PRE_EXISTING_FAILURE set** per AUDIT-2-R2 (not AUDIT-3 regression) |
+
+**New regressions:** NONE (UAEP integration tests updated for fail-closed LTM recall when plane absent — aligns with MEM-XINT-3).
+
+## AUDIT-3 — Changes made
+
+| File | Purpose |
+| ---- | ------- |
+| `tests/unit/memory/test_mem_audit3_security_lifecycle_certification.py` | AUDIT-3 guards + forget retry semantics |
+| `tests/integration/runtime/test_uaep_memory_view.py` | Disable LTM on task-memory UAEP harness (plane not configured) |
+
+## AUDIT-3 — Certification verdict per surface
+
+See security/lifecycle matrices above. **Episodic** remains **GAP** (placeholder). **STI** **READY BUT NOT FULLY PROVEN** until AUDIT-5.
+
+## AUDIT-3 — Final verdict
+
+**PASS — MEM-FINAL-AUDIT-3 SECURITY/LIFECYCLE/RESILIENCE CERTIFIED** (pending independent GitHub SHA verification before AUDIT-4).
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-4 AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-3 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-4.
+
+---
+
+# MEM-FINAL-AUDIT-3-R — Concurrency Semantics & Parallel-Domain Evidence Closure
+
+**Independent audit correction** (baseline audited SHA `5b4586cd004c4bcc2a04518682e4abae7ee77f4e`).
+
+**AUDIT-3-R execution HEAD (before commit):** `828364c6a34f6259b5aa09294ac97978ffd1cd97` · branch `development` · baseline ancestor **YES** · working tree clean.
+
+## AUDIT-3-R — Baseline gaps closed
+
+| Gap | Resolution |
+| --- | --- |
+| R3-1 InMemoryUserProfileStore concurrency overstated | Explicit caller-serialized contract on `UserProfileStore` + `InMemoryUserProfileStore`; doc/proof tests |
+| R3-2 Task Memory resilience evidence | Store-level scope/lifecycle/idempotency/failure proofs + existing MemoryView policy tests |
+| R3-3 Organization Memory resilience evidence | Org isolation + failure semantics + revision N/A + caller-serialized contract |
+
+Historical **AUDIT-3** verdict above remains on record; **R** supersedes concurrency matrix rows and parallel-domain certification precision.
+
+## AUDIT-3-R — InMemoryUserProfileStore contract analysis
+
+| Question | Answer |
+| -------- | ------ |
+| Promises concurrent-safe mutations? | **NO** (reference provider) |
+| Caller must serialize? | **YES** for overlapping mutations |
+| Semantics provider-defined? | **YES** — protocol requires each implementation to document its concurrency model |
+
+**Final classification:** **REFERENCE STORE — CALLER-SERIALIZED CONCURRENCY CONTRACT**
+
+## AUDIT-3-R — Caller analysis (InMemoryUserProfileStore)
+
+Supported product/lab paths materialize **SQLite** or plugin-backed durable stores (`memory_wiring`, MEM-ENT-13). **InMemoryUserProfileStore** is used for unit/integration harnesses and explicit in-memory profiles — not as the default production durability path. Overlapping mutations are possible in tests/dev; contract + composition expect caller serialization for the reference store.
+
+## AUDIT-3-R — Task Memory evidence
+
+**Surfaces:** `TaskMemoryPersistence` · `InMemoryTaskMemoryStore` · `SQLiteTaskMemoryStore` · `TaskMemoryCoordinator` · `PolicyScopedMemoryView` / `MemoryAccessPolicy` · `task_memory_wiring`.
+
+### Security matrix — Task
+
+| Gate | Result | Evidence |
+| ---- | ------ | -------- |
+| tenant isolation | **PASS** | `test_task_memory_store_tenant_isolation_at_persistence_layer` · ENT-1R MemoryView tenant conflict |
+| task isolation | **PASS** | persistence layer + `test_task_scope_uses_execution_context_task_id_only` |
+| policy enforced | **PASS** | `test_mem_ent_1r_memory_view_canonical_scope.py` |
+| failed mutation no false success | **PASS** | `FailingTaskMemoryStore` AUDIT-3-R tests |
+| concurrency semantics explicit | **PASS** | contract docstrings + `test_in_memory_task_store_documents_caller_serialized_concurrency` |
+
+### Lifecycle matrix — Task
+
+| Operation | Semantics | Idempotent? | Failure behavior |
+| --------- | --------- | ----------- | ---------------- |
+| write (coordinator) | REPLACE by tenant/task/namespace/key; preserves `record_id` on update | duplicate write replaces value (same key) | `ValueError` on limits before store; store errors propagate |
+| read | keyed lookup | yes | typed `RuntimeError` from failing store surfaces |
+| delete | removes slot; returns `bool` | second delete on missing key → `False` | failure before delete leaves row |
+| clear_task | drops all rows for task | no | store contract |
+
+**Task final verdict:** **SECURITY/LIFECYCLE/RESILIENCE CERTIFIED** (parallel domain; in-memory reference store concurrency = caller-serialized, not concurrent-safe)
+
+## AUDIT-3-R — Organization Memory evidence
+
+**Surfaces:** `OrganizationProfileStore` · `InMemoryOrganizationProfileStore` · `SQLiteOrganizationProfileStore` · `OrganizationProfileManager` · `memory_wiring`.
+
+### Security matrix — Organization
+
+| Gate | Result | Evidence |
+| ---- | ------ | -------- |
+| tenant isolation | **N/A** | scope authority is `organization_id` at store contract (parallel domain) |
+| org isolation | **PASS** | `test_organization_profiles_isolated_by_organization_id` |
+| manager/store ownership | **PASS** | manager delegates to store; failure tests via manager |
+| failed mutation no false success | **PASS** | `FailingOrganizationProfileStore` |
+| concurrency semantics explicit | **PASS** | protocol + in-memory docstring tests |
+
+### Lifecycle matrix — Organization
+
+| Operation | Semantics | Idempotent? | Failure behavior |
+| --------- | --------- | ----------- | ---------------- |
+| get | default aggregate if missing | yes | exception propagates |
+| save | full aggregate overwrite | yes | no persist on failure |
+| delete | remove; get recreates default | delete unknown id tolerated | exception propagates |
+| revision / stale update | **N/A** | — | contract does not expose optimistic revision semantics |
+
+**Organization final verdict:** **SECURITY/LIFECYCLE/RESILIENCE CERTIFIED** (parallel domain; tenant N/A at store; revision N/A)
+
+## AUDIT-3-R — Concurrency certification matrix (corrected)
+
+| Store | Thread-safe | Async concurrent-safe | Process-safe | Mechanism | Caller responsibility |
+| ----- | ----------- | --------------------- | ------------ | --------- | --------------------- |
+| InMemoryUserProfileStore | NO | NO (caller-serialized) | NO | none | serialize overlapping mutations |
+| SQLite user profile | YES (DB) | executor-bound | file-scoped | SQLite TX/lock | follow provider connection rules |
+| InMemoryEntityTemporal | YES (ENT-14) | sync barrier tests | NO | revision compare | per ENT-14 |
+| InMemoryProcedural | YES (ENT-14) | sync | NO | revision | per ENT-14 |
+| InMemoryLongHorizon | YES (ENT-14) | sync | NO | revision | per ENT-14 |
+| InMemoryTaskMemoryStore | NO | NO (caller-serialized) | NO | none | serialize overlapping mutations |
+| SQLiteTaskMemoryStore | YES (DB) | connection per op | file-scoped | SQLite TX | lab/product wiring |
+| InMemoryOrganizationProfileStore | NO | NO (caller-serialized) | NO | none | serialize overlapping mutations |
+| SQLiteOrganizationProfileStore | YES (DB) | async methods; sync sqlite3 | file-scoped | SQLite TX | lab/product wiring |
+| InMemorySessionTurnIndex | NO | NO (caller-serialized) | NO | none | serialize (unchanged) |
+
+## AUDIT-3-R — Changes to prior AUDIT-3 classifications
+
+| Surface | Old | New | Reason |
+| ------- | --- | --- | ------ |
+| InMemoryUserProfileStore async-safe | yes (async API) | **NO — caller-serialized** | R3-1 contract closure |
+| InMemoryTaskMemoryStore concurrency | CERTIFIED | **caller-serialized reference** | no lock/CAS proof |
+| Task Memory overall | CERTIFIED (thin) | **CERTIFIED with bounded R proofs** | failure + persistence scope tests added |
+| Organization Memory overall | CERTIFIED (thin) | **CERTIFIED with bounded R proofs** | failure + isolation tests added |
+| Hard invariants banner | All hard invariants PASS | **All canonical USER Memory hard invariants PASS; parallel domains certified separately per matrices** | precision |
+
+**Unchanged:** Episodic **GAP** · STI **READY BUT NOT FULLY PROVEN** · Conversational **LEGACY**
+
+## AUDIT-3-R — Hard invariants (precise wording)
+
+All **canonical USER Memory** hard invariants **PASS** (identity, scope, governance order, canonical authority, projection isolation, revision integrity for governed stores, lineage, reconciliation scope).
+
+**Parallel domains** (Task, Organization) certified separately per matrices above; org store does not participate in user canonical plane by design.
+
+## AUDIT-3-R — Test execution
+
+| Suite | Result |
+| ----- | ------ |
+| `test_mem_audit3r_concurrency_semantics.py` + parallel-domain R tests + AUDIT-3 guards | **22 passed** |
+| `tests/unit/memory/**` + `tests/integration/memory/**` | **615 passed** |
+| `tests/unit/runtime/task_memory/**` + org unit + org integration | **53 passed** |
+| MEM-XINT-6 / known MEM-XINT set | **PRE_EXISTING / PROVEN_UNRELATED** (not re-run in R scope) |
+
+**New regressions:** NONE
+
+## AUDIT-3-R — Changes made
+
+| File | Purpose |
+| ---- | ------- |
+| `intergrax/memory/user_profile_store.py` | Provider concurrency documentation requirement |
+| `intergrax/memory/stores/in_memory_user_profile_store.py` | Caller-serialized reference semantics |
+| `intergrax/runtime/task_memory/persistence_contract.py` | Task store concurrency note |
+| `intergrax/runtime/task_memory/stores/memory_task_memory_store.py` | In-memory task reference semantics |
+| `intergrax/runtime/organization/organization_profile_store.py` | Org concurrency + scope note |
+| `intergrax/runtime/organization/stores/in_memory_organization_profile_store.py` | Caller-serialized reference semantics |
+| `tests/unit/memory/test_mem_audit3r_concurrency_semantics.py` | R3-1 contract proofs |
+| `tests/unit/runtime/task_memory/test_mem_audit3r_parallel_domain_evidence.py` | R3-2 evidence |
+| `tests/unit/runtime/organization/test_mem_audit3r_parallel_domain_evidence.py` | R3-3 evidence |
+
+## AUDIT-3-R — P0 / P1 / P2
+
+| Priority | Item |
+| -------- | ---- |
+| **P0** | NONE |
+| **P1** | NONE within AUDIT-3 scope |
+| **P2** | Real-vendor process concurrency deferred to AUDIT-5 · ambiguous remote commit deferred · in-memory aggregate in-place mutation before failed save is caller-visible (documented overwrite model) |
+
+## AUDIT-3-R — Final verdict
+
+**PASS — MEM-FINAL-AUDIT-3 FULLY CLOSED** (pending independent GitHub SHA verification of this R commit before AUDIT-4).
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-4 AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-3-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-4.
+
+---
+
+# MEM-FINAL-AUDIT-4 — Provider & Vendor Qualification Matrix
+
+**Stage:** provider inventory · evidence mapping · production reachability — **NOT** real-vendor execution (AUDIT-5).
+**Baseline ancestor:** `a8d750b0bd48c902e10d487cf201aa1e762b01de` → **YES**
+**Audit execution HEAD (before commit):** `0ba1a514c60af1c319bd35fc714268de9640bcbd` · branch `development` · clean working tree
+**Matrix artifact (detail):** [`MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md)
+
+## AUDIT-4 — Repo state
+
+| Field | Value |
+| ----- | ----- |
+| HEAD before | `0ba1a514c60af1c319bd35fc714268de9640bcbd` |
+| Branch | `development` |
+| Baseline ancestor | YES |
+| Working tree | clean at audit start |
+| Foreign WIP | none touched |
+| Conflicts | none |
+
+## AUDIT-4 — Qualification model
+
+- **Source of truth (runtime):** `MemoryProviderQualificationStatus` + `MemoryProviderQualificationRunner` (`intergrax/memory/provider_qualification/`).
+- **Audit ladder V0–V8:** semantic overlay documented in matrix § Qualification ladder; **not** a parallel certification gate.
+- **Inflation rule enforced:** adapter existence ≠ vendor qual; mock/in-memory qual ≠ V6; plugin resolver ≠ durability.
+
+## AUDIT-4 — Outcomes (summary)
+
+| Area | Result |
+| ---- | ------ |
+| Runtime-reachable providers | Inventoried in matrix (all store contracts + parallel task/org + legacy conversational) |
+| Contract-first wiring | Providers implement platform Protocols; resolver validates `isinstance` — **no** `memory→applications` imports |
+| Plugin discovery | `intergrax.memory_stores` EP; materialize paths in `resolver.py`; external replaceability proven (`test_mem_ent15_plugin_replaceability.py`) |
+| SQLite UserProfile | V5 — runner QUALIFIED + durable reopen/delete + MEM-ENT-15 composition restart |
+| DocumentStore UserProfile | Adapter V2/V3; backend qual separated; InMemory DocumentStore **not** production durable |
+| STI / vector | `VectorSessionTurnIndexStore` exists; **no** Qdrant/pgvector/Chroma Memory restart E2E |
+| Mongo / Postgres Memory | Mongo = generic DocumentStore path only; Postgres = RFC V0 only |
+| Production profiles | `product_defaults` uses PostgreSQL relational preset — Memory durable path requires sqlite slug or mongo document_store; otherwise **explicit InMemory fallback** (P1 GAP-4-01) |
+| Silent `except` → InMemory | **0** in memory core |
+| Vendor SDK in memory core | **0** (guard tests) |
+| Bounded qual regression | **86 passed** (see matrix § Qualification test command) |
+
+## AUDIT-4 — P0 / P1 / P2
+
+| Priority | Item |
+| -------- | ---- |
+| **P0** | NONE |
+| **P1** | GAP-4-01 — production profile can reach InMemory UserProfile when user/LTM flags enabled without sqlite/mongo Memory binding (no fail-closed) |
+| **P2** | Real-vendor STI (GAP-4-02), durable entity/procedural/LH vendors, Mongo durable UserProfile execution, task/org restart suites — **AUDIT-5** |
+
+## AUDIT-4 — Final verdict
+
+**PASS — MEM-FINAL-AUDIT-4 PROVIDER/VENDOR MATRIX CERTIFIED** (pending independent GitHub SHA verification before AUDIT-5).
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5 AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-4 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5.
+
+# MEM-FINAL-AUDIT-5A — Production Memory Provider Admission & Fail-Closed
+
+## Scope
+
+Close **GAP-4-01**: production host with `enable_user_memory` or `enable_long_term_memory` cannot silently compose canonical `UserProfileStore` on reference/in-memory providers.
+
+## Mechanism
+
+| Layer | Artifact |
+| ----- | -------- |
+| Provider metadata | `MemoryStoreProviderMetadata` on materialized stores (`memory_provider_id`, durability, `reference_only`, qualification status) |
+| Classification | `classify_user_profile_store_provider` — protocol-based; unknown metadata → fail-closed |
+| Host admission | `validate_memory_platform_wiring_admission` in `applications/_shared/memory_provider_admission.py` |
+| Wiring sequence | baseline → plugin overlay → admission → downstream managers |
+| Production detection | `ApplicationProfile.PRODUCT` (not profile_id prefix; not vendor slug) |
+| Persistent trigger | `enable_user_memory` **or** `enable_long_term_memory` |
+
+## Hard invariant
+
+`PRODUCT` + persistent USER/LTM + non-admitted provider → `MemoryProviderAdmissionError` (typed reason codes: `reference_provider_not_admissible`, `provider_not_durable`, `provider_not_qualified`).
+
+LAB / disabled-memory production paths unchanged.
+
+## GAP-4-01
+
+**CLOSED** (pending independent GitHub SHA verification).
+
+## Regression
+
+`tests/unit/applications/test_mem_audit5a_production_provider_admission.py` + existing memory wiring / resolver / qual suites.
+
+**Verdict (independent audit):** PASS WITH CORRECTIONS — MEM-FINAL-AUDIT-5A NOT CLOSED (provider self-certified `QUALIFIED` trusted at admission).
+
+**Readiness:** superseded by MEM-FINAL-AUDIT-5A-R below.
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.
+
+# MEM-FINAL-AUDIT-5A-R — Trusted Qualification Evidence Admission
+
+## Correction scope
+
+Close **GAP-5A-01** (provider self-certified qualification at production admission). Runtime PRODUCT persistent USER/LTM admission consumes **platform-owned** `MemoryProviderQualificationEvidence` via injectable `MemoryProviderQualificationEvidenceRegistry`; provider `memory_provider_declared_qualification_status` is never trusted for admission.
+
+## Mechanism
+
+| Layer | Artifact |
+| ----- | -------- |
+| Provider claims | `MemoryStoreProviderMetadata` (`memory_provider_id`, durability, `reference_only`, **declared** qualification only) |
+| Trusted proof | `MemoryProviderQualificationEvidence` + `qualification_evidence_from_result(MemoryProviderQualificationResult)` |
+| Registry contract | `MemoryProviderQualificationEvidenceRegistry.resolve(provider_id, capability, version?)` |
+| Reference registry | `InMemoryMemoryProviderQualificationEvidenceRegistry` (composition / tests) |
+| Admission | `evaluate_production_persistent_user_profile_admission` + `validate_memory_platform_wiring_admission(..., qualification_evidence_registry=...)` |
+| Wiring | `resolve_memory_platform_wiring` / `build_session_manager_from_environment` pass registry from host boundary |
+
+## Hard invariant
+
+`PRODUCT` + persistent USER/LTM → durable + non-reference + **trusted evidence `QUALIFIED` for `USER_PROFILE_STORE`**; missing / ambiguous / mismatched evidence → fail-closed (`qualification_evidence_missing`, `qualification_evidence_mismatch`, `provider_not_qualified`).
+
+## GAP status
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-01 | CLOSED (5A fail-closed) |
+| GAP-5A-01 | CLOSED (5A-R trusted evidence) |
+
+## Regression
+
+`tests/unit/applications/test_mem_audit5a_production_provider_admission.py` (5A + 5A-R matrix, runner → evidence → admission chain).
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.
+
+---
+
+# MEM-FINAL-AUDIT-5A-R2 — Trusted Provider Identity Binding
+
+**Verdict (implementation):** closes **GAP-5A-02** — qualification evidence lookup uses **platform-resolved** `MemoryProviderIdentity`, not provider-declared `memory_provider_id`.
+
+## Hard invariant
+
+`MemoryPlatformWiring.user_profile_store_identity` (platform composition) is the authority for `MemoryProviderQualificationEvidenceRegistry.resolve(...)`. Store-declared `memory_provider_id` is diagnostic only; mismatch with trusted identity → `provider_identity_mismatch` (fail-closed).
+
+## GAP status
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-01 | CLOSED |
+| GAP-5A-01 | CLOSED |
+| GAP-5A-02 | CLOSED (5A-R2 trusted identity binding) |
+
+## Regression
+
+- `tests/unit/applications/test_mem_audit5a_production_provider_admission.py`
+- `tests/unit/applications/test_mem_audit5a_r2_provider_identity_binding.py`
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.
+
+---
+
+# MEM-FINAL-AUDIT-5A-R3 — Trusted Durability Evidence Admission
+
+**Verdict (implementation):** closes **GAP-5A-03** — production admission requires **platform-owned** `MemoryProviderDurabilityEvidence` bound to trusted `MemoryProviderIdentity`; `memory_provider_durability` on stores is a **self-declared claim** only (diagnostic).
+
+## Hard invariant
+
+PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidence + **trusted durability evidence** (`MemoryProviderTrustedDurabilityStatus.DURABLE`). Behavioral `QUALIFIED` alone is insufficient. Missing / `NOT_DURABLE` / `UNKNOWN` durability evidence → fail-closed.
+
+## Contracts
+
+- `intergrax/memory/contracts/provider_durability_evidence.py`
+- `MemoryProviderDurabilityEvidenceRegistry` (+ `InMemoryMemoryProviderDurabilityEvidenceRegistry` for tests/composition)
+- Adapter: `durability_evidence_from_reopen_proof` (MEM-ENT-13C durable harness → evidence record; not a substitute for 5B production certification wiring)
+
+## GAP status
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-01 | CLOSED |
+| GAP-5A-01 | CLOSED |
+| GAP-5A-02 | CLOSED |
+| GAP-5A-03 | CLOSED (5A-R3 trusted durability evidence) |
+
+## Regression
+
+- `tests/unit/applications/test_mem_audit5a_production_provider_admission.py`
+- `tests/unit/applications/test_mem_audit5a_r2_provider_identity_binding.py`
+- `tests/unit/applications/test_mem_audit5a_r3_durability_evidence_admission.py`
+- `tests/unit/memory/test_mem_ent13c_durable_provider_qualification.py` (existing durable proof; admission consumes mapped evidence in R3 tests)
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A-R3 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.
+
+## MEM-FINAL-AUDIT-5C — Mongo UserProfile real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Path | `UserProfileStore` → `DocumentStoreUserProfileStore` → `DocumentStore` → `mongodb` provider → Docker Mongo |
+| Memory provider ID | `document_store.user_profile` |
+| Backend | `mongodb` (`intergrax/integrations/providers/document_store/mongodb/`) |
+| Real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5c_mongo_user_profile_real_vendor.py` |
+| Markers | `external_proof`, `qualification`, `docker`, `no_ci` |
+| Durability proof kind | `REAL_VENDOR_RECONNECT` (client/provider recreation; not Mongo service restart) |
+| Evidence source | `mongo_real_vendor_qualification` |
+| GAP-4-04 | **CLOSED** when suite executes green on real Mongo |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5D AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5C muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5D.

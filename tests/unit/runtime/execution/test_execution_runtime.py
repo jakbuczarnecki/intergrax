@@ -36,7 +36,10 @@ from intergrax.runtime.execution.active_execution_budget import (
 )
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.facade import Execution
-from intergrax.runtime.execution.inference import InferenceExecutor
+from testing_support.inference_governance_wiring import (
+    governed_inference_executor,
+    governed_root_execution_options,
+)
 from intergrax.runtime.execution.orchestration import (
     execute_root_task,
     resolve_root_task_identity,
@@ -168,13 +171,13 @@ async def test_inference_root_runtime_binds_identity_authority_budget() -> None:
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=InferenceExecutor(adapter))
+    ](inference_executor=governed_inference_executor(adapter))
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
         ExecutionResult[RiskAssessment],
     ](router, run_budget=RunBudget(max_total_tokens=99))
     execution = Execution(runtime)
-    options = _root_options(tenant_id="tenant-1")
+    options = governed_root_execution_options(tenant_id="tenant-1")
     request = ExecutionRequest(
         input=(ChatMessage(role="user", content="probe"),),
         output_type=RiskAssessment,

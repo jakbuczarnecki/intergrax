@@ -69,6 +69,23 @@ from intergrax.applications._shared.memory_observability_wiring import (
 from intergrax.applications._shared.memory_security_governance_wiring import (
     resolve_memory_security_governance_service,
 )
+from intergrax.applications._shared.memory_provider_admission import (
+    validate_memory_platform_wiring_admission,
+)
+from intergrax.memory.contracts.provider_identity import (
+    BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID,
+    BUILTIN_IN_MEMORY_USER_PROFILE_ID,
+    BUILTIN_SQLITE_USER_PROFILE_ID,
+    MemoryProviderIdentity,
+    builtin_user_profile_store_identity,
+    plugin_user_profile_store_identity,
+)
+from intergrax.memory.contracts.provider_durability_evidence import (
+    MemoryProviderDurabilityEvidenceRegistry,
+)
+from intergrax.memory.contracts.provider_qualification_evidence import (
+    MemoryProviderQualificationEvidenceRegistry,
+)
 
 
 @dataclass(frozen=True)
@@ -78,6 +95,7 @@ class MemoryPlatformWiring:
     session_storage: SessionStorage
     user_profile_store: UserProfileStore
     organization_profile_store: OrganizationProfileStore | None
+    user_profile_store_identity: MemoryProviderIdentity | None = None
     user_profile_manager: UserProfileManager | None = None
     sqlite_bundle: SQLiteIntegrationBundle | None = None
     mongodb_bundle: MongoDBIntegrationBundle | None = None
@@ -185,6 +203,9 @@ def _resolve_baseline_memory_platform_wiring(
         return MemoryPlatformWiring(
             session_storage=bundle.session_storage,
             user_profile_store=bundle.user_profile_store,
+            user_profile_store_identity=builtin_user_profile_store_identity(
+                BUILTIN_SQLITE_USER_PROFILE_ID,
+            ),
             organization_profile_store=bundle.organization_profile_store,
             sqlite_bundle=bundle,
             mongodb_bundle=None,
@@ -194,7 +215,7 @@ def _resolve_baseline_memory_platform_wiring(
 
     if _mongodb_enabled(profile):
         mongo_bundle = create_mongodb_integration(**_mongodb_integration_overrides(profile))
-        document_store: DocumentStore = mongo_bundle.document_store
+        document_store: DocumentStore = mongo_bundle.document_store.as_document_store()
         org_store = None
         if env.memory_profile.enable_org_memory:
             from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (
@@ -205,6 +226,9 @@ def _resolve_baseline_memory_platform_wiring(
         return MemoryPlatformWiring(
             session_storage=DocumentStoreSessionStorage(document_store),
             user_profile_store=DocumentStoreUserProfileStore(document_store),
+            user_profile_store_identity=builtin_user_profile_store_identity(
+                BUILTIN_DOCUMENT_STORE_USER_PROFILE_ID,
+            ),
             organization_profile_store=org_store,
             sqlite_bundle=None,
             mongodb_bundle=mongo_bundle,
@@ -215,6 +239,9 @@ def _resolve_baseline_memory_platform_wiring(
     return MemoryPlatformWiring(
         session_storage=InMemorySessionStorage(),
         user_profile_store=InMemoryUserProfileStore(),
+        user_profile_store_identity=builtin_user_profile_store_identity(
+            BUILTIN_IN_MEMORY_USER_PROFILE_ID,
+        ),
         organization_profile_store=None,
         sqlite_bundle=None,
         mongodb_bundle=None,
@@ -261,7 +288,11 @@ def _apply_external_memory_store_overlay(
             materialization_ctx,
             catalog=catalog,
         )
-        updated = replace(updated, user_profile_store=user_profile_store)
+        updated = replace(
+            updated,
+            user_profile_store=user_profile_store,
+            user_profile_store_identity=plugin_user_profile_store_identity(user_plugin_id),
+        )
     if session_plugin_id is not None:
         session_storage = materialize_session_storage(
             session_plugin_id,
@@ -282,6 +313,8 @@ def resolve_memory_platform_wiring(
     security_governance: MemorySecurityGovernanceService | None = None,
     memory_observability_sink: MemoryObservabilitySink | None = None,
     memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
+    qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
+    durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
 ) -> MemoryPlatformWiring:
     """
     Resolve durable memory backends from the integration profile.
@@ -301,7 +334,7 @@ def resolve_memory_platform_wiring(
         memory_diagnostic_emitter=memory_diagnostic_emitter,
     )
     discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
-    return _apply_external_memory_store_overlay(
+    wiring = _apply_external_memory_store_overlay(
         wiring,
         env,
         profile,
@@ -309,6 +342,14 @@ def resolve_memory_platform_wiring(
         discover_entry_points=discover,
         explicit_memory_plugins=explicit_memory_plugins,
     )
+    validate_memory_platform_wiring_admission(
+        env,
+        wiring.user_profile_store,
+        user_profile_store_identity=wiring.user_profile_store_identity,
+        qualification_evidence_registry=qualification_evidence_registry,
+        durability_evidence_registry=durability_evidence_registry,
+    )
+    return wiring
 
 
 def build_session_manager_from_environment(
@@ -319,12 +360,23 @@ def build_session_manager_from_environment(
     memory_wiring: MemoryPlatformWiring | None = None,
     rag_stack: RagStack | None = None,
     memory_control_plane: MemoryControlPlane | None = None,
+    qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
+    durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
 ) -> SessionManager:
     """Construct ``SessionManager`` with profile managers driven by ``MemoryProfile``."""
     wiring = memory_wiring or resolve_memory_platform_wiring(
         env,
         integration_profile=integration_profile,
         tenant_id=tenant_id,
+        qualification_evidence_registry=qualification_evidence_registry,
+        durability_evidence_registry=durability_evidence_registry,
+    )
+    validate_memory_platform_wiring_admission(
+        env,
+        wiring.user_profile_store,
+        user_profile_store_identity=wiring.user_profile_store_identity,
+        qualification_evidence_registry=qualification_evidence_registry,
+        durability_evidence_registry=durability_evidence_registry,
     )
     memory_profile = env.memory_profile
 

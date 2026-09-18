@@ -424,7 +424,8 @@ async def test_ce_budget_excludes_ltm_when_tight() -> None:
             prefer_longterm_memory=True,
             max_memory_entries_in_context=4,
         ),
-        budget_policy=ContextBudgetSnapshot(max_chars=12, max_tokens_estimate=3),
+        # Tight fragment budget (CE-02 global cap) but enough for mandatory user turn.
+        budget_policy=ContextBudgetSnapshot(max_chars=12, max_tokens_estimate=24),
         assembly_options=TaskContextAssemblyOptions(),
     )
     runtime_config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)

@@ -391,7 +391,17 @@ async def test_direct_inference_usage_reaches_ledger() -> None:
             input=(ChatMessage(role="user", content="hi"),),
             output_type=Out,
         )
-        result = await InferenceExecutor(StructuredAdapter()).execute(request)
+        from testing_support.inference_governance_wiring import (
+            bind_test_inference_governance_identity,
+            governed_inference_executor,
+            reset_test_inference_governance_identity,
+        )
+
+        governance_token = bind_test_inference_governance_identity()
+        try:
+            result = await governed_inference_executor(StructuredAdapter()).execute(request)
+        finally:
+            reset_test_inference_governance_identity(governance_token)
         assert result.status is ExecutionStatus.COMPLETED
     finally:
         _reset_budget(*tokens)

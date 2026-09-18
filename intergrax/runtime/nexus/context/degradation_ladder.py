@@ -12,10 +12,13 @@ from intergrax.runtime.nexus.context.context_budget import (
     ContextBudgetPolicy,
     trim_message_to_budget_tokenizer_aware,
 )
+from intergrax.context.budget.contracts import (
+    DEFAULT_CONTEXT_DEGRADATION_LADDER_ORDER,
+    DegradationStepKind,
+)
 from intergrax.runtime.nexus.context.context_compiler_models import (
     ContextCandidate,
     ContextCandidateSource,
-    DegradationStepKind,
 )
 
 
@@ -170,11 +173,51 @@ def apply_degradation_step(
     return None
 
 
-LADDER_ORDER: tuple[DegradationStepKind, ...] = (
-    DegradationStepKind.FULL,
-    DegradationStepKind.DROP_OPTIONAL_INJECTIONS,
-    DegradationStepKind.REDUCE_INJECTION_BLOCKS,
-    DegradationStepKind.TRUNCATE_OLDEST_HISTORY,
-    DegradationStepKind.DROP_LOWEST_SCORED,
-    DegradationStepKind.TOKENIZER_HARD_TRIM,
-)
+LADDER_ORDER: tuple[DegradationStepKind, ...] = DEFAULT_CONTEXT_DEGRADATION_LADDER_ORDER
+
+
+def apply_degradation_ladder(
+    *,
+    messages: list[ChatMessage],
+    candidates: Sequence[ContextCandidate],
+    budget_tokens: int,
+    prefer_longterm_memory: bool,
+    prefer_rag_when_enabled: bool,
+    count_tokens: Callable[[str], int],
+    policy_ladder_order: tuple[DegradationStepKind, ...],
+) -> tuple[list[ChatMessage], tuple[str, ...]]:
+    """Run compiler degradation steps until within budget or ladder exhausted."""
+    from intergrax.runtime.nexus.context.context_compiler import classify_candidates
+
+    working = list(messages)
+    applied: list[str] = []
+
+    for step in policy_ladder_order:
+        if step == DegradationStepKind.FULL:
+            continue
+        effective_step = step
+        if step == DegradationStepKind.REDUCE_INJECTION_BLOCKS:
+            effective_step = DegradationStepKind.DROP_LOWEST_SCORED
+
+        candidates = classify_candidates(working, count_tokens=count_tokens)
+        if _sum_tokens(candidates) <= budget_tokens:
+            break
+
+        result = apply_degradation_step(
+            messages=working,
+            candidates=candidates,
+            step=effective_step,
+            budget_tokens=budget_tokens,
+            prefer_longterm_memory=prefer_longterm_memory,
+            prefer_rag_when_enabled=prefer_rag_when_enabled,
+            count_tokens=count_tokens,
+        )
+        if result is None:
+            continue
+        working = result.messages
+        applied.append(result.step.value)
+        candidates = classify_candidates(working, count_tokens=count_tokens)
+        if _sum_tokens(candidates) <= budget_tokens:
+            break
+
+    return working, tuple(applied)

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Mapping
 
-from intergrax.runtime.diagnostics.completion_alignment_diag import CompletionAlignmentDiagV1
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import CompletionAlignmentDiagV1
 from intergrax.runtime.nexus.tracing.execution.evaluator_model_attempt import (
     EvaluatorModelAttemptDiagV1,
 )

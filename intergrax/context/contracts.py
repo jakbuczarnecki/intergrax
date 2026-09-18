@@ -17,6 +17,8 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
 
 if TYPE_CHECKING:
+    from intergrax.context.budget.compaction import ContextCompactionProvenance
+    from intergrax.context.budget.contracts import ResolvedModelContextBudget
     from intergrax.context.planning import ContextPlan
     from intergrax.context.source_inputs import ContextProviderSourceInputs
     from intergrax.runtime.nexus.context.assembly_runtime_deps import (
@@ -354,6 +356,7 @@ class ContextAssemblyRequest:
     decision_profile: ContextDecisionSnapshot
     budget_policy: ContextBudgetSnapshot
     assembly_options: TaskContextAssemblyOptions
+    workspace_id: str | None = None
     step_index: int | None = None
     graph_node_id: str | None = None
     step_kind: str | None = None
@@ -366,6 +369,12 @@ class ContextAssemblyRequest:
     def __post_init__(self) -> None:
         if not isinstance(self.execution_scope, ModelCallExecutionScope):
             raise ValueError("execution_scope must be ModelCallExecutionScope")
+        if self.workspace_id is not None:
+            stripped = self.workspace_id.strip()
+            if not stripped:
+                raise ValueError("workspace_id must be non-empty when provided")
+            if stripped != self.workspace_id:
+                object.__setattr__(self, "workspace_id", stripped)
 
     def __repr__(self) -> str:
         return (
@@ -543,4 +552,9 @@ class AssembledContext:
     policy_decisions: tuple[ContextPolicyDecision, ...] = ()
     policy_semantic_dedup: tuple[ContextSemanticDedupDecision, ...] = ()
     policy_conflicts: tuple[ContextConflictDecision, ...] = ()
+    resolved_model_budget: ResolvedModelContextBudget | None = None
+    compaction_provenance: tuple[ContextCompactionProvenance, ...] = ()
+    token_counter_strategy_id: str = ""
+    compaction_strategy_id: str = ""
+    degradation_policy_id: str = ""
     schema_version: str = ASSEMBLED_CONTEXT_SCHEMA

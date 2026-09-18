@@ -86,6 +86,7 @@ class StepKernelContext:
     """Harness-owned execution context for one agent session loop."""
 
     agent_id: str
+    principal_id: str = ""
     run_id: str = ""
     task_id: str = ""
     tenant_id: str = "default"
@@ -119,6 +120,16 @@ class StepKernelContext:
     routing_rule_evaluations: list[dict[str, Any]] = field(default_factory=list)
     execution_boundary_export: ExecutionBoundaryExportRuntimeSettings | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
+
+
+def _missing_principal_decision(kernel_ctx: StepKernelContext) -> PolicyDecision | None:
+    if kernel_ctx.production_mode and not (kernel_ctx.principal_id or "").strip():
+        return PolicyDecision(
+            action=PolicyAction.DENY,
+            reason="missing_principal_id",
+            policy_rule_id="kernel.missing_principal_id",
+        )
+    return None
 
 
 def _missing_policy_engine_decision(kernel_ctx: StepKernelContext) -> PolicyDecision:
@@ -604,6 +615,9 @@ class HarnessKernel:
         step_ctx: AgentStepContext,
         kernel_ctx: StepKernelContext,
     ) -> PolicyDecision:
+        missing_principal = _missing_principal_decision(kernel_ctx)
+        if missing_principal is not None:
+            return missing_principal
         if kernel_ctx.policy_engine is None:
             return _missing_policy_engine_decision(kernel_ctx)
         if step_ctx.metadata.get("policy_pre_deny"):
@@ -627,6 +641,7 @@ class HarnessKernel:
             )
         return kernel_ctx.policy_engine.evaluate_pre_llm(
             tenant_id=kernel_ctx.tenant_id,
+            principal_id=kernel_ctx.principal_id,
             agent_id=kernel_ctx.agent_id,
             message_count=1,
         )

@@ -51,7 +51,10 @@ from intergrax.runtime.execution.execution_work_port import (
     child_execution_work_port,
 )
 from intergrax.runtime.execution.facade import Execution
-from intergrax.runtime.execution.inference import InferenceExecutor
+from testing_support.inference_governance_wiring import (
+    governed_inference_executor,
+    governed_root_execution_options,
+)
 from intergrax.runtime.execution.inference_profile import (
     InferenceProfileCatalog,
     InferenceProfileId,
@@ -261,7 +264,7 @@ def build_qualification_composition(
     persistence: QualificationPersistenceBundle | None = None,
 ) -> QualificationComposition:
     catalog = build_profile_catalog(environment)
-    inference_executor = InferenceExecutor(
+    inference_executor = governed_inference_executor(
         environment.producer_adapter,
         profile_resolver=catalog,
     )
@@ -363,8 +366,7 @@ async def run_single_model_producer(
     calls_before = composition.work_port.invocation_count
     result = await composition.execution.execute(
         request,
-        options=RootExecutionOptions(
-            authority=ParentExecutionAuthority.unrestricted_root(),
+        options=governed_root_execution_options(
             tenant_id=identity.tenant_id,
             run_id=identity.execution.run_id,
             attempt_id=identity.execution.attempt_id,

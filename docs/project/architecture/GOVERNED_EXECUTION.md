@@ -58,7 +58,7 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 ### D. Remaining platform gaps (explicit)
 
 - **Governance Evidence (GR-8):** public contract **frozen** — [ADR-GR-8-001](../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); spine **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** (independent final audit before CLOSED); **evaluation-point adoption** (AGENT_DECISION, INTERRUPT, PRE_MODEL, TOOL*, PRE_OUTPUT, POST_RUN, CONTROL_PLANE_MUTATION, fresh post-human re-evaluation) remains **open** under **GR-10 / GR-13**.
-- **Strategy coverage (GR-10):** INFERENCE / AGENTIC meaningful-side-effect and HITL paths not enterprise-qualified on production entry points.
+- **Strategy coverage (GR-10):** **GR-10-FINAL** requalification on current production code — status **PARTIAL** (typed matrix §9 + `tests/qualification/governance/strategy/`). **INFERENCE:** PRE_MODEL **QUALIFIED** on `InferenceExecutor` structured path (**GR-10-R2-C1/R1** — [ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md)); root admission **WIRED_NOT_QUALIFIED** (launcher qualified, no Tier-3 host inference entry). MSE, Decision-bound effect, HITL, Continuation, and Reliability **NOT_APPLICABLE** (GR-10-R1). **AGENTIC:** **GR-10-R3** open — UAEP+kernel path can terminate steps without `PolicyAction.DENY` on the returned `GovernanceResolution` (G3B proof drift). **ORCHESTRATION:** residual PARTIAL rows per §9.
 - **Control-plane mutation (GR-12):** **GAP** — no shared live enforcement across activation, AHI, ECP, plugins, live task control.
 - **Plugin enterprise certification (GR-11)** and **full proof matrix (GR-13)** open.
 - **Transitional Task/Nexus coupling** on some pause bridges — Execution owns lifecycle target; port integration incomplete on non-orchestration strategies.
@@ -288,12 +288,12 @@ flowchart LR
 | ---------- | --------- | ------- | ------------- |
 | Root admission | WIRED_NOT_QUALIFIED | QUALIFIED | QUALIFIED |
 | Inner guard | PARTIAL | PARTIAL | PARTIAL |
-| Policy evaluation (GEP) | PARTIAL | QUALIFIED | QUALIFIED |
+| Policy evaluation (GEP) | QUALIFIED | PARTIAL | QUALIFIED |
 | Meaningful side effect spine | NOT_APPLICABLE | PARTIAL | PARTIAL |
 | Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
-| HITL continuation (GR-5) | GAP | QUALIFIED | PARTIAL |
+| HITL continuation (GR-5) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Continuation (GR-5 port) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
-| Reliability boundary (GR-7) | GAP | QUALIFIED | PARTIAL |
+| Reliability boundary (GR-7) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Governance Evidence (GR-8) | WIRED_NOT_QUALIFIED | PARTIAL | PARTIAL |
 | Control-plane mutation | NOT_APPLICABLE (spine) | NOT_APPLICABLE | NOT_APPLICABLE — live **GAP** GR-12 |
 
@@ -635,7 +635,7 @@ Status vocabulary: **COVERED** (wired enforcement on demonstrated production-cla
 | **ROOT_EXECUTION_ADMISSION** | **PARTIAL** | Governance plane | `RuntimeExecutionPolicyAdmissionPort` | Root launcher + MODEL C1 AST gates before root Execution | ORCHESTRATION/AGENTIC/INFERENCE entry paths gated in qualification suite; legacy harness entries explicitly classified | GR-2-R3 tests; independent audit pending | Not every historical launcher path enterprise-qualified |
 | **AGENT_DECISION** | **COVERED** | Governance | `RuntimePolicyEngine.evaluate_decision` | `UAEPExecutor` / interrupt handler — `GovernanceResolution.should_block_execution` | **AGENTIC** primary; INFERENCE N/A | UAEP regression gates | Custom hosts outside UAEP unqualified |
 | **INTERRUPT** | **COVERED** | Governance | `RuntimePolicyEngine.evaluate_interrupt` | `resolve_interrupt` / blocking interrupt composition | **AGENTIC** / **ORCHESTRATION** where interrupt path wired | Interrupt + HITL bridge tests | Inference-only runs typically N/A |
-| **PRE_MODEL** | **COVERED** | Governance | `PolicyEngine.evaluate_pre_llm` | `PlanningRunner`, `PolicyEnforcingLLMRouter` | **ORCHESTRATION**, **AGENTIC** (ACP) | Planning/agent LLM gates | Direct adapter bypass = host gap |
+| **PRE_MODEL** | **PARTIAL** → **QUALIFIED (INFERENCE identity)** | Governance | `PolicyEngine.evaluate_pre_llm` (`principal_id` required — [ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md); **GR-10-R2-C1** contract revision) | `PlanningRunner`, `PolicyEnforcingLLMRouter`, `enforce_pre_model_before_structured_inference` | **ORCHESTRATION**, **AGENTIC** (ACP); **INFERENCE** | Planning/agent/inference LLM gates; **GR-10-R2-R1** removes lineage/Evidence/Task principal fallbacks; live triple from `ActiveExecutionGovernanceIdentity` | Architecture identity source: `principal_id` + optional roster `agent_id` per ADR; projection consistency checks only; Evidence/Diagnostics do not supply principal; direct adapter bypass = host gap |
 | **TOOL_PLAN_OR_ACCESS** | **COVERED** | Governance | `ToolAccessPolicy` / bundle scope | `tool_runtime.execute_plan` | **ORCHESTRATION** | Tool runtime authority closure tests | Planners outside `tool_runtime` unqualified |
 | **TOOL_INVOCATION_AUTHORIZATION** | **COVERED** | Governance + tool runtime | `RuntimeToolInvoker` authorization gate | Pre-handler in `RuntimeToolInvoker` | **ORCHESTRATION**, **AGENTIC** | `test_tool_runtime_authority_closure` | — |
 | **TOOL_INVOCATION_POLICY** | **COVERED** | Governance | `DeclarativePolicyEnforcer` | `RuntimeToolInvoker` before handler | **ORCHESTRATION**, **AGENTIC** | Declarative policy regression | REQUIRE_HITL tool path host-qualified |
@@ -652,8 +652,8 @@ Status vocabulary: **COVERED** (wired enforcement on demonstrated production-cla
 | Inner guard / MSE spine (GR-3) | PARTIAL (identity on `InferenceExecutor`) | PARTIAL | PARTIAL (primary proofs) |
 | Tool invoke policy | NOT_APPLICABLE | COVERED | COVERED |
 | Decision-required MSE (GR-6) | NOT_APPLICABLE | QUALIFIED (MP-4R7 / governed contractor) | PARTIAL (External Work host) |
-| HITL continuation port (GR-5) | GAP | QUALIFIED (MP-4R7) | PARTIAL (orchestration HITL slices) |
-| Provider reliability boundary (GR-7) | GAP | QUALIFIED (governed contractor GR-7) | PARTIAL (External Work) |
+| HITL continuation port (GR-5) | NOT_APPLICABLE (no strategy-path REQUIRE_HUMAN) | QUALIFIED (MP-4R7) | PARTIAL (orchestration HITL slices) |
+| Provider reliability boundary (GR-7) | NOT_APPLICABLE (not a GR-7 external effect) | QUALIFIED (governed contractor GR-7) | PARTIAL (External Work) |
 
 ### Decision → Governance (GR-6 result model)
 

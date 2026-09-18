@@ -9,7 +9,11 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
+from intergrax.contracts.agent_execution_result import (
+    AgentExecutionResult,
+    AgentExecutionStatus,
+)
 from intergrax.contracts.resilience_policy import ResiliencePolicy
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.execution.execution_graph import (
@@ -19,12 +23,23 @@ from intergrax.runtime.nexus.execution.execution_graph import (
 )
 from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
-from intergrax.runtime.nexus.response.final_response_composer import FinalResponseComposer
-from intergrax.runtime.execution.attempt_lifecycle import AttemptLifecycleService, InMemoryAttemptLifecycleStore
-from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService, InMemoryExecutionTerminalStore
+from intergrax.runtime.nexus.response.final_response_composer import (
+    FinalResponseComposer,
+)
+from intergrax.runtime.execution.attempt_lifecycle import (
+    AttemptLifecycleService,
+    InMemoryAttemptLifecycleStore,
+)
+from intergrax.runtime.execution.execution_terminal import (
+    ExecutionTerminalService,
+    InMemoryExecutionTerminalStore,
+)
 from intergrax.runtime.nexus.retry.retry_engine import _resilience_policy_from_task
 from intergrax.runtime.task.task import TaskState
 from testing_support.builder import build_task_for_tests
+from testing_support.runtime_event_metric_scope_for_tests import (
+    open_runtime_event_metric_scope_for_tests,
+)
 from testing_support.graph_execution_context import bound_graph_execution_context
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
@@ -41,7 +56,9 @@ def test_resilience_policy_disallows_partial_result() -> None:
     ).model_copy(
         update={
             "metadata": {
-                "resilience_policy.v1": ResiliencePolicy(allow_partial_result=False).model_dump(),
+                "resilience_policy.v1": ResiliencePolicy(
+                    allow_partial_result=False
+                ).model_dump(),
             },
         }
     )
@@ -161,17 +178,30 @@ async def test_graph_runner_honors_allow_partial_result_lifecycle(
     )
     graph = _partial_multi_node_graph(task.task_id)
     runner = _build_runner(executions=_mixed_executions(), graph=graph)
+    run_id = mint_run_id()
+    runner.graph_executor.execution_identity = MagicMock()
+    runner.graph_executor.execution_identity.require.return_value = (
+        run_id,
+        mint_attempt_id(),
+    )
     lifecycle = TaskLifecycle()
     trace_emitter = MagicMock(spec=TaskTraceEmitter)
     plan = NexusPlan(task_id=task.task_id, classification="test")
-
-    with bound_graph_execution_context():
-        await runner.run(
-            task,
-            plan=plan,
-            graph=graph,
-            lifecycle=lifecycle,
-            trace_emitter=trace_emitter,
-        )
+    metric_scope = open_runtime_event_metric_scope_for_tests(
+        task_id=task.task_id,
+        run_id=run_id,
+    )
+    try:
+        with bound_graph_execution_context():
+            await runner.run(
+                task,
+                plan=plan,
+                graph=graph,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+                runtime_event_metric_scope=metric_scope,
+            )
+    finally:
+        metric_scope.close()
 
     assert task.state is expected_state

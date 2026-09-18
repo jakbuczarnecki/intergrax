@@ -70,6 +70,7 @@ async def assemble_iterative_tool_planner_messages(
         run_id=state.run_id,
         task_id=state.task_id,
         tenant_id=state.tenant_id,
+        workspace_id=state.request.workspace_id,
         assembly_scope="acp_step",
         objective=state.request.message or "",
         decision_profile=ContextDecisionSnapshot(),

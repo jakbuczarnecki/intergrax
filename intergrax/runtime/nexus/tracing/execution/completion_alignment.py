@@ -1,15 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Canonical completion alignment diagnostic contract (DS-E2E-15J-O2)."""
+"""Canonical completion alignment execution trace contract (DS-E2E-15J-O2)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Mapping
+from typing import Any, Mapping, cast
 
 from intergrax.contracts.execution_identity import RunId, validate_run_id
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+
+_INVALID_OPTIONAL_FIELD = object()
 
 
 class CompletionMode(StrEnum):
@@ -107,7 +109,7 @@ def _optional_str(payload: Mapping[str, object], key: str) -> str | None | objec
     if value is None:
         return None
     if not isinstance(value, str):
-        return object()
+        return _INVALID_OPTIONAL_FIELD
     return value
 
 
@@ -132,15 +134,18 @@ def decode_completion_alignment_diag_v1(
         or supported_state_present is None
     ):
         return None
-    mismatch_reason = _optional_str(payload, "mismatch_reason")
-    if mismatch_reason is object():
+    mismatch_reason_raw = _optional_str(payload, "mismatch_reason")
+    if mismatch_reason_raw is _INVALID_OPTIONAL_FIELD:
         return None
-    supported_hypothesis_id = _optional_str(payload, "supported_hypothesis_id")
-    if supported_hypothesis_id is object():
+    mismatch_reason = cast(str | None, mismatch_reason_raw)
+    supported_hypothesis_id_raw = _optional_str(payload, "supported_hypothesis_id")
+    if supported_hypothesis_id_raw is _INVALID_OPTIONAL_FIELD:
         return None
-    supported_resolution = _optional_str(payload, "supported_resolution")
-    if supported_resolution is object():
+    supported_hypothesis_id = cast(str | None, supported_hypothesis_id_raw)
+    supported_resolution_raw = _optional_str(payload, "supported_resolution")
+    if supported_resolution_raw is _INVALID_OPTIONAL_FIELD:
         return None
+    supported_resolution = cast(str | None, supported_resolution_raw)
     try:
         alignment_status = AlignmentStatus(alignment_status_raw)
         alignment_direction = AlignmentDirection(alignment_direction_raw)

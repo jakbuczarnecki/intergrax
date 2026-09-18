@@ -48,6 +48,8 @@ class CanonicalExecutionRuntimeAdapter(
             attempt_id=request.attempt_id,
             execution_id=request.execution_id,
             tenant_id=request.tenant_id,
+            workspace_id=request.workspace_id,
+            principal_id=request.principal_id,
             task_id=request.task_id,
             segment_predecessor_root_execution_id=request.segment_predecessor_root_execution_id,
         )

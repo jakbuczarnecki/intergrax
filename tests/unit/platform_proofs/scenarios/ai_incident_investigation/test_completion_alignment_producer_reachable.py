@@ -9,7 +9,7 @@ import pytest
 from intergrax.decision_system.completion_eligibility import CompletionEligibilityStatus
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
-from intergrax.runtime.diagnostics.completion_alignment_diag import (
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
     AlignmentDirection,
     AlignmentStatus,
     CompletionMode,

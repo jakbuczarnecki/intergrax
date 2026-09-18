@@ -302,6 +302,7 @@ async def test_simulated_unavailable_provider_materialization_is_blocked() -> No
 
 
 def test_real_mongodb_user_profile_qualification_not_certified_without_infra() -> None:
+    """Unit tier: real Mongo proof lives in external_proof integration suite (MEM-FINAL-AUDIT-5C)."""
     assert _real_mongodb_user_profile_qualification_status() is RealExternalProviderQualification.NOT_EXECUTED
 
 

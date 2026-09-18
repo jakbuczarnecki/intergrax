@@ -15,7 +15,7 @@ from intergrax.runtime.nexus.tracing.execution.reconciliation_phase import (
     ReconciliationPhaseDiagV1,
     ReconciliationPhaseValue,
 )
-from intergrax.runtime.diagnostics.completion_alignment_diag import (
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
     AlignmentDirection,
     AlignmentStatus,
 )

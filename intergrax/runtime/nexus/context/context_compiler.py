@@ -20,10 +20,13 @@ from intergrax.runtime.nexus.context.context_compiler_models import (
     ContextCompileResult,
     DegradationStepKind,
 )
-from intergrax.runtime.nexus.context.degradation_ladder import (
-    LADDER_ORDER,
-    apply_degradation_step,
+from intergrax.context.budget.contracts import ContextBudgetUnsatisfiableError
+from intergrax.context.budget.mandatory_base_messages import (
+    last_user_message_index,
+    mandatory_base_message_indices,
 )
+from intergrax.context.budget.degradation import ContextDegradationPolicy, DefaultContextDegradationPolicy
+from intergrax.runtime.nexus.context.degradation_ladder import apply_degradation_step
 
 
 def _default_count_tokens(text: str) -> int:
@@ -35,13 +38,6 @@ def _resolve_decision_profile(config: "RuntimeConfig") -> ContextDecisionProfile
     if raw:
         return ContextDecisionProfile.model_validate(raw)
     return ContextDecisionProfile()
-
-
-def _last_user_index(messages: Sequence[ChatMessage]) -> int:
-    for index in range(len(messages) - 1, -1, -1):
-        if messages[index].role == "user":
-            return index
-    return max(0, len(messages) - 1)
 
 
 _CE_CONTEXT_TAG = re.compile(
@@ -84,13 +80,14 @@ def classify_candidates(
     if not messages:
         return []
 
-    last_user = _last_user_index(messages)
+    last_user = last_user_message_index(messages)
+    mandatory_indices = mandatory_base_message_indices(messages)
     candidates: List[ContextCandidate] = []
 
     for index, message in enumerate(messages):
         content = message.content or ""
         token_estimate = count_tokens(content)
-        mandatory = index == last_user or (index == 0 and message.role == "system")
+        mandatory = index in mandatory_indices
 
         if index == last_user:
             source = ContextCandidateSource.USER_TURN
@@ -101,11 +98,9 @@ def classify_candidates(
         elif message.role == "system" and index < last_user:
             source = _detect_injection_source(content)
             score = 0.75
-            mandatory = False
         elif message.role in {"user", "assistant"}:
             source = ContextCandidateSource.SESSION_HISTORY
             score = 0.65
-            mandatory = index >= last_user - 1
         else:
             source = ContextCandidateSource.OTHER
             score = 0.5
@@ -130,13 +125,23 @@ class ContextCompiler:
       *,
       count_tokens: Callable[[str], int] | None = None,
       margin_tokens: int = 256,
+      degradation_policy: ContextDegradationPolicy | None = None,
   ) -> None:
       self._count_tokens = count_tokens or _default_count_tokens
       self._margin_tokens = margin_tokens
+      self._degradation_policy = degradation_policy or DefaultContextDegradationPolicy()
 
   def count_tokens(self, text: str) -> int:
       """Public token estimator for CE planning and compilation."""
       return self._count_tokens(text)
+
+  @property
+  def margin_tokens(self) -> int:
+      return self._margin_tokens
+
+  @property
+  def degradation_policy(self) -> ContextDegradationPolicy:
+      return self._degradation_policy
 
   def resolve_global_input_budget(
       self,
@@ -161,12 +166,13 @@ class ContextCompiler:
       config: "RuntimeConfig",
       *,
       max_output_tokens: Optional[int] = None,
+      input_budget_tokens: Optional[int] = None,
   ) -> ContextCompileResult:
       decision = _resolve_decision_profile(config)
 
       working = list(messages)
       if not decision.include_session_history:
-          last_user = _last_user_index(working)
+          last_user = last_user_message_index(working)
           preserved: List[ChatMessage] = []
           for index, message in enumerate(working):
               if index == 0 and message.role == "system":
@@ -177,10 +183,13 @@ class ContextCompiler:
                   preserved.append(message)
           working = preserved
 
-      budget_tokens = self.resolve_global_input_budget(
-          config,
-          max_output_tokens=max_output_tokens,
-      )
+      if input_budget_tokens is not None:
+          budget_tokens = input_budget_tokens
+      else:
+          budget_tokens = self.resolve_global_input_budget(
+              config,
+              max_output_tokens=max_output_tokens,
+          )
 
       candidates = classify_candidates(working, count_tokens=self._count_tokens)
       total_tokens = sum(candidate.token_estimate for candidate in candidates)
@@ -198,7 +207,7 @@ class ContextCompiler:
       bytes_removed = 0
       trimmed = False
 
-      for step in LADDER_ORDER:
+      for step in self._degradation_policy.ladder_order():
           if step == DegradationStepKind.FULL:
               continue
           if step == DegradationStepKind.REDUCE_INJECTION_BLOCKS:
@@ -232,12 +241,22 @@ class ContextCompiler:
       final_candidates = classify_candidates(working, count_tokens=self._count_tokens)
       final_tokens = sum(candidate.token_estimate for candidate in final_candidates)
 
+      if final_tokens > budget_tokens:
+          mandatory_tokens = sum(
+              candidate.token_estimate for candidate in final_candidates if candidate.mandatory
+          )
+          raise ContextBudgetUnsatisfiableError(
+              detail="compiled_context_exceeds_budget",
+              mandatory_tokens=mandatory_tokens,
+              available_tokens=budget_tokens,
+          )
+
       return ContextCompileResult(
           messages=working,
-          total_tokens=min(final_tokens, budget_tokens),
+          total_tokens=final_tokens,
           budget_tokens=budget_tokens,
           degradation_steps=tuple(applied_steps) if applied_steps else (DegradationStepKind.FULL.value,),
-          trimmed=trimmed or final_tokens > budget_tokens,
+          trimmed=trimmed,
           bytes_removed=bytes_removed,
       )
 
@@ -258,11 +277,33 @@ class ContextCompiler:
       if total(messages) <= budget_tokens:
           return messages
 
+      from intergrax.context.budget.mandatory_base_messages import (
+          estimate_mandatory_base_message_tokens,
+      )
+
+      last_user = last_user_message_index(messages)
+      last_user_tokens = self._count_tokens(messages[last_user].content or "")
+      if last_user_tokens > budget_tokens:
+          raise ContextBudgetUnsatisfiableError(
+              detail="mandatory_user_turn_exceeds_budget",
+              mandatory_tokens=last_user_tokens,
+              available_tokens=budget_tokens,
+          )
+      mandatory_base_tokens = estimate_mandatory_base_message_tokens(
+          messages,
+          count_text=self._count_tokens,
+      )
+      if mandatory_base_tokens > budget_tokens:
+          raise ContextBudgetUnsatisfiableError(
+              detail="mandatory_system_instructions_exceed_budget",
+              mandatory_tokens=mandatory_base_tokens,
+              available_tokens=budget_tokens,
+          )
+
       policy = ContextBudgetPolicy(
           max_chars=budget_tokens * 4,
           max_tokens_estimate=budget_tokens,
       )
-      last_user = _last_user_index(messages)
       trimmed: List[ChatMessage] = []
       for index, message in enumerate(messages):
           if index == last_user:

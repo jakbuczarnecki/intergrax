@@ -15,7 +15,6 @@ from intergrax.contracts.execution_continuation import (
     ExecutionContinuationResumeCommand,
     ExecutionContinuationResolutionCommand,
     ExecutionHumanVerdict,
-    ExecutionPauseRequest,
 )
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
@@ -34,8 +33,6 @@ from intergrax.runtime.execution.continuation.composition import (
 )
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
-from intergrax.runtime.hooks.hook_point import HookPoint
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
     canonical_allows_planning_progress_after_human_gate,
@@ -44,13 +41,14 @@ from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration i
     execution_continuation_identity_for_task,
 )
 from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
-from intergrax.runtime.nexus.orchestration.planning_runner import NexusPlanningRunner
-from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
 from testing_support.builder import canonical_task_id_for_tests
+from testing_support.runtime_event_metric_scope_for_tests import (
+    open_runtime_event_metric_scope_for_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -153,11 +151,16 @@ async def test_intake_stale_projection_cannot_promote_long_running(
         execution_identity=ActiveExecutionIdentity(),
         hitl_continuation=cap,
     )
-    await runner.run(
-        task,
-        lifecycle=TaskLifecycle(),
-        trace_emitter=TaskTraceEmitter(run_id=_RUN, attempt_id=_ATTEMPT),
-    )
+    metric_scope = open_runtime_event_metric_scope_for_tests(task_id=_TASK, run_id=_RUN)
+    try:
+        await runner.run(
+            task,
+            lifecycle=TaskLifecycle(),
+            trace_emitter=TaskTraceEmitter(run_id=_RUN, attempt_id=_ATTEMPT),
+            runtime_event_metric_scope=metric_scope,
+        )
+    finally:
+        metric_scope.close()
     assert task.state is TaskState.WAITING_FOR_HUMAN
 
 
@@ -195,32 +198,46 @@ async def test_intake_canonical_resume_syncs_long_running_projection(
         execution_identity=ActiveExecutionIdentity(),
         hitl_continuation=cap,
     )
-    await runner.run(
-        task,
-        lifecycle=TaskLifecycle(),
-        trace_emitter=TaskTraceEmitter(run_id=_RUN, attempt_id=_ATTEMPT),
+    metric_scope = open_runtime_event_metric_scope_for_tests(task_id=_TASK, run_id=_RUN)
+    try:
+        await runner.run(
+            task,
+            lifecycle=TaskLifecycle(),
+            trace_emitter=TaskTraceEmitter(run_id=_RUN, attempt_id=_ATTEMPT),
+            runtime_event_metric_scope=metric_scope,
+        )
+    finally:
+        metric_scope.close()
+    snapshot = cap.port.get_pending(
+        ExecutionContinuationLookup(continuation_id=_CONTINUATION)
     )
-    snapshot = cap.port.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION))
     assert snapshot.lifecycle_state is ExecutionContinuationLifecycleState.RESUMED
     assert task.state is TaskState.CREATED
 
 
-def test_task_projection_corruption_cannot_resume_planning(bound_identity: None) -> None:
+def test_task_projection_corruption_cannot_resume_planning(
+    bound_identity: None,
+) -> None:
     cap, task = _seed_waiting()
     task.runtime.governance.paused = False
     task.runtime.governance.hitl_resolution = None
     task.options.human.verdict = "approve"
     identity = _identity()
-    assert canonical_allows_planning_progress_after_human_gate(
-        cap,
-        identity=identity,
-        human_approval_required=True,
-    ) is False
+    assert (
+        canonical_allows_planning_progress_after_human_gate(
+            cap,
+            identity=identity,
+            human_approval_required=True,
+        )
+        is False
+    )
 
 
 def test_resume_authorized_blocks_planning(bound_identity: None) -> None:
     cap, task = _seed_waiting()
-    pending = cap.port.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION))
+    pending = cap.port.get_pending(
+        ExecutionContinuationLookup(continuation_id=_CONTINUATION)
+    )
     approved = cap.port.apply_resolution(
         ExecutionContinuationResolutionCommand(
             continuation_id=_CONTINUATION,
@@ -234,18 +251,26 @@ def test_resume_authorized_blocks_planning(bound_identity: None) -> None:
             resolved_at="2026-09-16T10:00:00Z",
         ),
     )
-    assert approved.lifecycle_state is ExecutionContinuationLifecycleState.RESUME_AUTHORIZED
+    assert (
+        approved.lifecycle_state
+        is ExecutionContinuationLifecycleState.RESUME_AUTHORIZED
+    )
     HumanPauseCoordinator.project_continuation(task, approved)
-    assert canonical_allows_planning_progress_after_human_gate(
-        cap,
-        identity=_identity(),
-        human_approval_required=True,
-    ) is False
+    assert (
+        canonical_allows_planning_progress_after_human_gate(
+            cap,
+            identity=_identity(),
+            human_approval_required=True,
+        )
+        is False
+    )
 
 
 def test_resumed_allows_planning_once(bound_identity: None) -> None:
     cap, task = _seed_waiting()
-    pending = cap.port.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION))
+    pending = cap.port.get_pending(
+        ExecutionContinuationLookup(continuation_id=_CONTINUATION)
+    )
     approved = cap.port.apply_resolution(
         ExecutionContinuationResolutionCommand(
             continuation_id=_CONTINUATION,
@@ -267,11 +292,14 @@ def test_resumed_allows_planning_once(bound_identity: None) -> None:
         ),
     )
     HumanPauseCoordinator.project_continuation(task, resumed)
-    assert canonical_allows_planning_progress_after_human_gate(
-        cap,
-        identity=_identity(),
-        human_approval_required=True,
-    ) is True
+    assert (
+        canonical_allows_planning_progress_after_human_gate(
+            cap,
+            identity=_identity(),
+            human_approval_required=True,
+        )
+        is True
+    )
 
 
 @pytest.mark.asyncio
@@ -285,7 +313,9 @@ async def test_intake_canonical_resume_owner(bound_identity: None) -> None:
     task.options.human.verdict = HumanResponseVerdict.APPROVE.value
     task.options.human.pause_id = _PAUSE
     task.options.human.human_request_id = _HR
-    task.options.human.approver = local_development_approver_evidence(actor_id="op", tenant_id="t1")
+    task.options.human.approver = local_development_approver_evidence(
+        actor_id="op", tenant_id="t1"
+    )
     from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 
     human_hooks = MagicMock()
@@ -298,12 +328,19 @@ async def test_intake_canonical_resume_owner(bound_identity: None) -> None:
         execution_identity=ActiveExecutionIdentity(),
         hitl_continuation=cap,
     )
-    await runner.run(
-        task,
-        lifecycle=TaskLifecycle(),
-        trace_emitter=TaskTraceEmitter(run_id=_RUN, attempt_id=_ATTEMPT),
+    metric_scope = open_runtime_event_metric_scope_for_tests(task_id=_TASK, run_id=_RUN)
+    try:
+        await runner.run(
+            task,
+            lifecycle=TaskLifecycle(),
+            trace_emitter=TaskTraceEmitter(run_id=_RUN, attempt_id=_ATTEMPT),
+            runtime_event_metric_scope=metric_scope,
+        )
+    finally:
+        metric_scope.close()
+    snapshot = cap.port.get_pending(
+        ExecutionContinuationLookup(continuation_id=_CONTINUATION)
     )
-    snapshot = cap.port.get_pending(ExecutionContinuationLookup(continuation_id=_CONTINUATION))
     assert snapshot.lifecycle_state is ExecutionContinuationLifecycleState.RESUMED
 
 

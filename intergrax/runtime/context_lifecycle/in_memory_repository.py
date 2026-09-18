@@ -20,17 +20,28 @@ from intergrax.runtime.context_lifecycle.contracts import (
     ContextOptimizationReasonCode,
     ReusableArtifactStatus,
     ReusableOptimizationArtifact,
+    UclArtifactOwnershipKind,
+    UclArtifactOwnershipScope,
 )
 from intergrax.runtime.context_lifecycle.repository import (
     ArtifactCreationCoordinationResult,
     OptimizationArtifactReference,
     OptimizationArtifactRepositoryCapabilities,
+    OptimizationArtifactScopedReferenceQuery,
+    RepositoryPartitionKey,
+    ScopedOptimizationArtifactListing,
     StoredOptimizationArtifact,
     build_optimization_artifact_reference,
+    partition_key_for_artifact_metadata,
+    partition_key_for_ownership_scope,
+    require_workspace_ownership_scope,
+    optimization_artifact_reference_matches_stored,
+    validate_supersession_ownership,
+    compute_repository_partition_key_from_reservation,
 )
 from intergrax.runtime.context_lifecycle.serialization import compute_artifact_lookup_key_hash
 
-TenantKeyHash: TypeAlias = tuple[str, str]
+TenantKeyHash: TypeAlias = RepositoryPartitionKey
 TenantArtifactId: TypeAlias = tuple[str, str]
 
 _CLOSED_ERROR = "Optimization artifact repository is closed"
@@ -58,6 +69,12 @@ def _require_stored_artifact(artifact: object) -> StoredOptimizationArtifact:
     if not isinstance(artifact, StoredOptimizationArtifact):
         raise ValueError("artifact must be StoredOptimizationArtifact")
     return artifact
+
+
+def _require_ownership_scope(value: object) -> UclArtifactOwnershipScope:
+    if not isinstance(value, UclArtifactOwnershipScope):
+        raise ValueError("ownership must be UclArtifactOwnershipScope")
+    return value
 
 
 def _require_non_empty(value: str, field_name: str) -> str:
@@ -140,11 +157,88 @@ class InMemoryOptimizationArtifactRepository:
             reference_only=True,
         )
 
-    def lookup(self, key: ArtifactLookupKey) -> StoredOptimizationArtifact | None:
-        lookup_key = _require_lookup_key(key)
+    def list_scoped_artifact_references(
+        self,
+        query: OptimizationArtifactScopedReferenceQuery,
+    ) -> tuple[ScopedOptimizationArtifactListing, ...]:
+        if not isinstance(query, OptimizationArtifactScopedReferenceQuery):
+            raise ValueError("query must be OptimizationArtifactScopedReferenceQuery")
+        tenant_id = query.tenant_id
+        workspace_id = query.workspace_id
+        context_scope_id = query.context_scope_id
+        source_ref = query.source_ref
+        limit = query.limit
+        include_historical = query.include_historical
+
         with self._lock:
             self._ensure_open()
-            return self._lookup_eligible_locked(lookup_key)
+            rows: list[ScopedOptimizationArtifactListing] = []
+            seen: set[tuple[str, str]] = set()
+
+            if include_historical:
+                candidates = list(self._artifacts_by_id.values())
+            else:
+                candidates = list(self._active_by_key.values())
+
+            for stored in candidates:
+                metadata = stored.metadata
+                lookup_key = metadata.lookup_key
+                ownership = metadata.ownership
+                if ownership.kind is not UclArtifactOwnershipKind.WORKSPACE:
+                    continue
+                ownership_scope = ownership.scope
+                if ownership_scope is None:
+                    continue
+                if ownership_scope.tenant_id != tenant_id:
+                    continue
+                if ownership_scope.workspace_id != workspace_id:
+                    continue
+                if lookup_key.tenant_id != tenant_id:
+                    continue
+                if lookup_key.context_scope_id != context_scope_id:
+                    continue
+                if source_ref is not None and source_ref not in lookup_key.source_refs:
+                    continue
+                if not include_historical:
+                    if metadata.status is not ReusableArtifactStatus.VALIDATED:
+                        continue
+                    if metadata.validation.status is not ArtifactValidationStatus.PASSED:
+                        continue
+                dedupe_key = (tenant_id, metadata.artifact_id)
+                if dedupe_key in seen:
+                    continue
+                seen.add(dedupe_key)
+                reference = build_optimization_artifact_reference(stored)
+                rows.append(
+                    ScopedOptimizationArtifactListing(
+                        reference=reference,
+                        context_scope_id=lookup_key.context_scope_id,
+                        lifecycle_status=metadata.status,
+                        source_refs=lookup_key.source_refs,
+                    )
+                )
+
+            rows.sort(
+                key=lambda row: (
+                    row.reference.artifact_id,
+                    row.reference.artifact_lookup_key_hash,
+                )
+            )
+            return tuple(rows[:limit])
+
+    def lookup(
+        self,
+        key: ArtifactLookupKey,
+        *,
+        ownership: UclArtifactOwnershipScope,
+    ) -> StoredOptimizationArtifact | None:
+        lookup_key = _require_lookup_key(key)
+        ownership_scope = _require_ownership_scope(ownership)
+        if ownership_scope.tenant_id != lookup_key.tenant_id:
+            raise ValueError("ownership.tenant_id must match lookup_key.tenant_id")
+        with self._lock:
+            self._ensure_open()
+            return self._lookup_eligible_locked(lookup_key, ownership=ownership_scope)
 
     def resolve(self, reference: OptimizationArtifactReference) -> StoredOptimizationArtifact | None:
         ref = _require_reference(reference)
@@ -156,20 +250,24 @@ class InMemoryOptimizationArtifactRepository:
         self,
         key: ArtifactLookupKey,
         *,
+        ownership: UclArtifactOwnershipScope,
         owner_operation_id: str,
         lease_seconds: int,
     ) -> ArtifactCreationCoordinationResult:
         lookup_key = _require_lookup_key(key)
+        ownership_scope = _require_ownership_scope(ownership)
+        if ownership_scope.tenant_id != lookup_key.tenant_id:
+            raise ValueError("ownership.tenant_id must match lookup_key.tenant_id")
         owner = _require_non_empty(owner_operation_id, "owner_operation_id")
         lease = _require_positive_int(lease_seconds, "lease_seconds")
         key_hash = compute_artifact_lookup_key_hash(lookup_key)
-        state_key = (lookup_key.tenant_id, key_hash)
+        state_key = partition_key_for_ownership_scope(ownership_scope, key_hash)
 
         with self._lock:
             self._ensure_open()
             state_version = self._state_version_locked(state_key)
 
-            existing_artifact = self._lookup_eligible_locked(lookup_key)
+            existing_artifact = self._lookup_eligible_locked(lookup_key, ownership=ownership_scope)
             if existing_artifact is not None:
                 reference = build_optimization_artifact_reference(existing_artifact)
                 return ArtifactCreationCoordinationResult(
@@ -218,6 +316,7 @@ class InMemoryOptimizationArtifactRepository:
                 reservation_id=reservation_id,
                 artifact_lookup_key_hash=key_hash,
                 tenant_id=lookup_key.tenant_id,
+                workspace_id=ownership_scope.workspace_id,
                 owner_operation_id=owner,
                 acquired_at=now,
                 lease_deadline=lease_deadline,
@@ -243,7 +342,12 @@ class InMemoryOptimizationArtifactRepository:
         metadata = stored_artifact.metadata
         lookup_key = metadata.lookup_key
         key_hash = compute_artifact_lookup_key_hash(lookup_key)
-        state_key = (lookup_key.tenant_id, key_hash)
+        if metadata.ownership.kind is not UclArtifactOwnershipKind.WORKSPACE:
+            raise ValueError("validated artifact store requires WORKSPACE ownership")
+        ownership_scope = require_workspace_ownership_scope(metadata)
+        if active_reservation.workspace_id != ownership_scope.workspace_id:
+            raise ValueError("reservation workspace_id must match artifact ownership workspace_id")
+        state_key = partition_key_for_ownership_scope(ownership_scope, key_hash)
 
         with self._lock:
             self._ensure_open()
@@ -280,6 +384,11 @@ class InMemoryOptimizationArtifactRepository:
                     ContextOptimizationReasonCode.ARTIFACT_CREATION_RESERVATION_CONFLICT.value
                 )
 
+            if metadata.supersedes_artifact_id is not None:
+                prior = self._artifacts_by_id.get((lookup_key.tenant_id, metadata.supersedes_artifact_id))
+                if prior is not None:
+                    validate_supersession_ownership(prior.metadata, metadata)
+
             artifact_id_key = (lookup_key.tenant_id, metadata.artifact_id)
             if artifact_id_key in self._artifacts_by_id:
                 raise RuntimeError(
@@ -304,10 +413,7 @@ class InMemoryOptimizationArtifactRepository:
         if reason_code is not None and not isinstance(reason_code, ContextOptimizationReasonCode):
             raise ValueError("reason_code must be ContextOptimizationReasonCode when provided")
 
-        state_key = (
-            active_reservation.tenant_id,
-            active_reservation.artifact_lookup_key_hash,
-        )
+        state_key = compute_repository_partition_key_from_reservation(active_reservation)
 
         with self._lock:
             self._ensure_open()
@@ -329,14 +435,18 @@ class InMemoryOptimizationArtifactRepository:
         self,
         key: ArtifactLookupKey,
         *,
+        ownership: UclArtifactOwnershipScope,
         observed_state_version: int,
         timeout_seconds: float,
     ) -> bool:
         lookup_key = _require_lookup_key(key)
+        ownership_scope = _require_ownership_scope(ownership)
+        if ownership_scope.tenant_id != lookup_key.tenant_id:
+            raise ValueError("ownership.tenant_id must match lookup_key.tenant_id")
         observed = _require_non_negative_int(observed_state_version, "observed_state_version")
         timeout = _require_timeout_seconds(timeout_seconds)
         key_hash = compute_artifact_lookup_key_hash(lookup_key)
-        state_key = (lookup_key.tenant_id, key_hash)
+        state_key = partition_key_for_ownership_scope(ownership_scope, key_hash)
 
         with self._lock:
             self._ensure_open()
@@ -403,6 +513,7 @@ class InMemoryOptimizationArtifactRepository:
             updated_metadata = ReusableOptimizationArtifact(
                 artifact_id=metadata.artifact_id,
                 lookup_key=metadata.lookup_key,
+                ownership=metadata.ownership,
                 artifact_content_hash=metadata.artifact_content_hash,
                 created_at=metadata.created_at,
                 created_by_executor=metadata.created_by_executor,
@@ -420,10 +531,9 @@ class InMemoryOptimizationArtifactRepository:
                 encoding=stored.encoding,
             )
 
-            tenant_id = metadata.lookup_key.tenant_id
             key_hash = compute_artifact_lookup_key_hash(metadata.lookup_key)
-            state_key = (tenant_id, key_hash)
-            artifact_id_key = (tenant_id, metadata.artifact_id)
+            state_key = partition_key_for_artifact_metadata(metadata, key_hash)
+            artifact_id_key = (metadata.lookup_key.tenant_id, metadata.artifact_id)
 
             self._artifacts_by_id[artifact_id_key] = updated
             if self._active_by_key.get(state_key) is stored:
@@ -433,9 +543,14 @@ class InMemoryOptimizationArtifactRepository:
             self._condition.notify_all()
             return updated
 
-    def _lookup_eligible_locked(self, lookup_key: ArtifactLookupKey) -> StoredOptimizationArtifact | None:
+    def _lookup_eligible_locked(
+        self,
+        lookup_key: ArtifactLookupKey,
+        *,
+        ownership: UclArtifactOwnershipScope,
+    ) -> StoredOptimizationArtifact | None:
         key_hash = compute_artifact_lookup_key_hash(lookup_key)
-        state_key = (lookup_key.tenant_id, key_hash)
+        state_key = partition_key_for_ownership_scope(ownership, key_hash)
         stored = self._active_by_key.get(state_key)
         if stored is None:
             return None
@@ -460,14 +575,7 @@ class InMemoryOptimizationArtifactRepository:
         stored = self._artifacts_by_id.get((reference.tenant_id, reference.artifact_id))
         if stored is None:
             return None
-
-        metadata = stored.metadata
-        lookup_hash = compute_artifact_lookup_key_hash(metadata.lookup_key)
-        if lookup_hash != reference.artifact_lookup_key_hash:
-            return None
-        if metadata.artifact_content_hash != reference.artifact_content_hash:
-            return None
-        if metadata.lookup_key.artifact_type != reference.artifact_type:
+        if not optimization_artifact_reference_matches_stored(reference, stored):
             return None
         return stored
 

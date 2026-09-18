@@ -52,6 +52,8 @@ class CanonicalExecutionIntakeRequest(Generic[PayloadT]):
     payload: PayloadT
     trusted_parent_execution_authority: ParentExecutionAuthority
     tenant_id: str
+    workspace_id: str
+    principal_id: str
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
     execution_id: ExecutionId | None = None
@@ -65,6 +67,10 @@ class CanonicalExecutionIntakeRequest(Generic[PayloadT]):
             )
         if not self.tenant_id.strip():
             raise ValueError("tenant_id must be non-empty")
+        if not self.workspace_id.strip():
+            raise ValueError("workspace_id must be non-empty")
+        if not self.principal_id.strip():
+            raise ValueError("principal_id must be non-empty")
         if self.run_id is not None:
             validate_run_id(self.run_id)
         if self.attempt_id is not None:

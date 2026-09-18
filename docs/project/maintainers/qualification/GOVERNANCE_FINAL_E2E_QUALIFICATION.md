@@ -62,6 +62,10 @@ Authoritative row list and pytest node IDs: `GOV_FINAL_4_SCENARIO_CATALOG` in `c
 
 ## Strategy qualification matrix
 
+### Historical snapshot (GOV-FINAL-4 baseline run)
+
+Preserved audit record from the 2026-09-17 qualification session — **not** current GR-10 INFERENCE applicability (superseded by GR-10-R1).
+
 | Capability | INFERENCE | AGENTIC | ORCHESTRATION |
 | ---------- | --------- | ------- | ------------- |
 | Root admission | PARTIAL | PARTIAL | PARTIAL |
@@ -71,7 +75,11 @@ Authoritative row list and pytest node IDs: `GOV_FINAL_4_SCENARIO_CATALOG` in `c
 | HITL | GAP | QUALIFIED (MP-4R7 + GR-5) | PARTIAL |
 | Reliability handoff | GAP | PARTIAL (GR-7 host) | PARTIAL |
 
-Honesty rule: **GAP** remains where no legal production entry point exists (see GOV-FINAL-3 § strategy coverage).
+### Current INFERENCE strategy semantics (GR-10-R1 SSOT)
+
+Authoritative applicability vs coverage: `GR10_INFERENCE_CAPABILITY_SEMANTICS` in `tests/qualification/governance/strategy/catalog.py` and architecture §9 matrix in `GOVERNED_EXECUTION.md`. **GR-10-FINAL (2026-09-18):** INFERENCE PRE_MODEL **QUALIFIED** on production `InferenceExecutor` path; active strategy-wide blockers are **partial matrix rows** (root admission WIRED_NOT_QUALIFIED, governance evidence adoption) and **AGENTIC GR-10-R3** (UAEP AGENT_DECISION authority semantics). HITL, Reliability, MSE, Continuation, and Decision-bound effect are **NOT_APPLICABLE** on the inference strategy path — not open gaps.
+
+Honesty rule: **GAP** remains where no legal production entry point exists for **applicable** capabilities (see GOV-FINAL-3 § strategy coverage).
 
 ## Failure matrix
 
@@ -102,11 +110,18 @@ Full pytest mapping: `GOV_FINAL_4_FAILURE_CATALOG` in `catalog.py`.
 
 Substitution rule: **contract + composition only** (no monkeypatch of private authority fields).
 
+## Current qualification status
+
+| Slice | Status | Notes |
+| ----- | ------ | ----- |
+| GR-8 | **CLOSED** | Public contract frozen — ADR-GR-8-001; spine CANDIDATE CLOSED after GR-8-R1 independent audit |
+| GR-10 | **PARTIAL** | **GR-10-FINAL** — typed matrix + qualification suite; INFERENCE PRE_MODEL qualified; AGENTIC policy **PARTIAL** (GR-10-R3); no strategy-wide CLOSED |
+
 ## Remaining gaps
 
 | ID | Status |
 | -- | ------ |
-| GR-8 | OPEN — governance evidence correlation incomplete |
+| GR-8 | **CLOSED** — see **Current qualification status** (historical runs may reference pre-R1 OPEN) |
 | GR-10 | **PARTIAL** — `tests/qualification/governance/strategy/`; matrix in `GOVERNED_EXECUTION.md` §9 |
 | GR-11 | OPEN — plugin enterprise certification |
 | GR-12 | GAP — control-plane mutation NOT QUALIFIED |

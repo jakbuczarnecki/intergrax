@@ -124,12 +124,23 @@ class AgentRunRequest(BaseModel):
     input: str | dict[str, Any]
     identity: RequestIdentity
     session_id: str | None = None
+    workspace_id: str | None = None
     correlation_id: str | None = None
     agent_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
     state: dict[str, Any] | None = None
     environment_overrides: AgentEnvironmentOverrides | None = None
     execution_options: AgentExecutionOptions | None = None
+
+    @field_validator("workspace_id")
+    @classmethod
+    def _workspace_id_non_empty_when_set(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("workspace_id must be non-empty when provided")
+        return stripped
 
 
 class AgentRunResult(BaseModel):

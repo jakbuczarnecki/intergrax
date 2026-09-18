@@ -133,6 +133,7 @@ class ContextPolicyPipeline(Protocol):
         request: ContextAssemblyRequest,
         *,
         strategies: ContextPolicyStrategies | None = None,
+        fragment_budget_tokens: int | None = None,
     ) -> ContextPolicyPipelineResult: ...
 
 

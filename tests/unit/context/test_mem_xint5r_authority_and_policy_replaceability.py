@@ -175,7 +175,7 @@ async def test_engine_respects_sentinel_pipeline_result() -> None:
     class EmptyPipeline:
         pipeline_id = "empty.test.v1"
 
-        def execute(self, fragments, request, *, strategies=None):
+        def execute(self, fragments, request, *, strategies=None, fragment_budget_tokens=None):
             return ContextPolicyPipelineResult(
                 fragments=(),
                 excluded=(),

@@ -820,6 +820,66 @@ class ArtifactSourceRange:
         object.__setattr__(self, "end_sequence", end)
 
 
+class UclArtifactOwnershipKind(StrEnum):
+    """Canonical UCL artifact workspace ownership classification."""
+
+    WORKSPACE = "workspace"
+    LEGACY_UNKNOWN = "legacy_unknown"
+
+
+@dataclass(frozen=True, slots=True)
+class UclArtifactOwnershipScope:
+    """Immutable workspace ownership scope for UCL optimization artifacts."""
+
+    tenant_id: str
+    workspace_id: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "tenant_id", _require_strict_non_empty_text(self.tenant_id, "tenant_id"))
+        object.__setattr__(
+            self,
+            "workspace_id",
+            _require_strict_non_empty_text(self.workspace_id, "workspace_id"),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class UclArtifactOwnership:
+    """Canonical persisted ownership fact for a reusable optimization artifact."""
+
+    kind: UclArtifactOwnershipKind
+    scope: UclArtifactOwnershipScope | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "kind",
+            _require_enum(self.kind, UclArtifactOwnershipKind, "kind"),
+        )
+        if self.kind is UclArtifactOwnershipKind.WORKSPACE:
+            if self.scope is None:
+                raise ValueError("WORKSPACE ownership requires scope")
+            object.__setattr__(
+                self,
+                "scope",
+                _require_instance(self.scope, UclArtifactOwnershipScope, "scope"),
+            )
+        elif self.kind is UclArtifactOwnershipKind.LEGACY_UNKNOWN:
+            if self.scope is not None:
+                raise ValueError("LEGACY_UNKNOWN ownership must not include scope")
+
+    @staticmethod
+    def for_workspace(scope: UclArtifactOwnershipScope) -> UclArtifactOwnership:
+        return UclArtifactOwnership(
+            kind=UclArtifactOwnershipKind.WORKSPACE,
+            scope=scope,
+        )
+
+    @staticmethod
+    def legacy_unknown() -> UclArtifactOwnership:
+        return UclArtifactOwnership(kind=UclArtifactOwnershipKind.LEGACY_UNKNOWN)
+
+
 @dataclass(frozen=True, slots=True)
 class ArtifactCompressionTarget:
     """Compression target specification for artifact identity."""
@@ -1175,6 +1235,7 @@ class ArtifactCreationReservation:
     reservation_id: str
     artifact_lookup_key_hash: str
     tenant_id: str
+    workspace_id: str
     owner_operation_id: str
     acquired_at: datetime
     lease_deadline: datetime
@@ -1191,6 +1252,11 @@ class ArtifactCreationReservation:
             _require_non_empty(self.artifact_lookup_key_hash, "artifact_lookup_key_hash"),
         )
         object.__setattr__(self, "tenant_id", _require_non_empty(self.tenant_id, "tenant_id"))
+        object.__setattr__(
+            self,
+            "workspace_id",
+            _require_strict_non_empty_text(self.workspace_id, "workspace_id"),
+        )
         object.__setattr__(
             self,
             "owner_operation_id",
@@ -1285,6 +1351,7 @@ class ReusableOptimizationArtifact:
 
     artifact_id: str
     lookup_key: ArtifactLookupKey
+    ownership: UclArtifactOwnership
     artifact_content_hash: str
     created_at: datetime
     created_by_executor: str
@@ -1302,6 +1369,15 @@ class ReusableOptimizationArtifact:
             "lookup_key",
             _require_instance(self.lookup_key, ArtifactLookupKey, "lookup_key"),
         )
+        object.__setattr__(
+            self,
+            "ownership",
+            _require_instance(self.ownership, UclArtifactOwnership, "ownership"),
+        )
+        if self.ownership.kind is UclArtifactOwnershipKind.WORKSPACE:
+            scope = self.ownership.scope
+            if scope is None or scope.tenant_id != self.lookup_key.tenant_id:
+                raise ValueError("ownership.scope.tenant_id must equal lookup_key.tenant_id")
         object.__setattr__(
             self,
             "validation",
@@ -1367,3 +1443,11 @@ class ReusableOptimizationArtifact:
             )
 
         object.__setattr__(self, "safe_metadata", _normalize_safe_metadata(self.safe_metadata))
+
+    @property
+    def workspace_id(self) -> str | None:
+        """Canonical workspace owner when persisted; None for legacy-unknown ownership."""
+        if self.ownership.kind is not UclArtifactOwnershipKind.WORKSPACE:
+            return None
+        scope = self.ownership.scope
+        return scope.workspace_id if scope is not None else None

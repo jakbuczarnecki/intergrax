@@ -373,6 +373,7 @@ class ContextPlan:
     optimization_required: bool
     artifact_requirement: ContextArtifactRequirement | None
     final_validation_requirements: tuple[str, ...]
+    degradation_steps: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         scope = _require_instance(self.execution_scope, ModelCallExecutionScope, "execution_scope")

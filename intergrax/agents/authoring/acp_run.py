@@ -318,8 +318,16 @@ async def _run_acp_session_bound(
             user_id=str(request.identity.user_id or ""),
         )
 
+    from intergrax.runtime.policy.pre_model_principal import (
+        principal_id_from_request_identity,
+        resolve_agentic_pre_model_scope,
+    )
+
+    session_principal_id = principal_id_from_request_identity(request.identity)
+
     kernel_ctx = StepKernelContext(
         agent_id=merged.agent_id,
+        principal_id=session_principal_id,
         run_id=run_id,
         task_id=task_id,
         tenant_id=merged.tenant_id,
@@ -416,10 +424,17 @@ async def _run_acp_session_bound(
     )
     from intergrax.runtime.policy.pre_model_policy_bridge import wrap_policy_enforcing_llm_router
 
+    agentic_scope = resolve_agentic_pre_model_scope(
+        tenant_id=merged.tenant_id,
+        workspace_id=request.workspace_id,
+        request_principal_id=session_principal_id,
+        production_mode=kernel_ctx_holder[0].production_mode,
+    )
     llm_router = wrap_policy_enforcing_llm_router(
         llm_router,
         policy_engine=kernel_ctx_holder[0].policy_engine or PolicyEngine(),
-        tenant_id=merged.tenant_id,
+        tenant_id=agentic_scope.tenant_id,
+        principal_id=agentic_scope.principal_id,
         agent_id=merged.agent_id,
     )
     if host is not None and host.runtime_profile is not None and host.runtime_profile.llm_routing_profile is not None:
@@ -484,6 +499,7 @@ async def _run_acp_session_bound(
         run_id=run_id,
         task_id=task_id,
         tenant_id=merged.tenant_id,
+        workspace_id=request.workspace_id,
         message=str(request.input or ""),
         step_kind=hints.step_kind if hints is not None else None,
         agent_id=merged.agent_id,

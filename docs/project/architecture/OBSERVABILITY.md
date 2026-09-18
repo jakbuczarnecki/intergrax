@@ -251,7 +251,7 @@ DIAGNOSTIC INTERPRETATION (Central Diagnostics — findings · Problems · opera
 
 **OBS-DIAG-CONFORMANCE-R1 (closed):** Evidence Plane exposes factual reconstruction through neutral read contract **`ExecutionReconstructionReader`** (`intergrax.contracts.execution_reconstruction`). Default implementation remains **`ExecutionReconstructor`**. Diagnostic consumers depend on the contract only; composition roots may still construct the default implementation.
 
-**Architecture gate:** `runtime.observability.reconstruction` MUST NOT import `runtime.diagnostics.*` (see `test_obs_reconstruction_1_architecture.py`). **Unrelated existing debt:** `qualification_runtime_trace.py` may still import DIAG for completion alignment — not reconstruction.
+**Architecture gate:** `runtime.observability.reconstruction` MUST NOT import `runtime.diagnostics.*` (see `test_obs_reconstruction_1_architecture.py`). The broader `runtime.observability` package MUST NOT import `runtime.diagnostics.*` (see `test_obs_completion_alignment_trace_boundary.py`). **OBS → DIAG completion alignment import debt = CLOSED** (**OBS-DIAG-RECERT-P2A-R2**).
 
 **TRACE-ASOF-3 / TRACE-ASOF-4 / TRACE-BITEMP-4:** Shared reconstruction **package** placement closed (**OBS-RECONSTRUCTION-1**). **OBS-ASOF-REBASE** closes the canonical **E-axis** historical execution query path (journal prefix + shared `ExecutionReconstructor` + optional `ExecutionLineageReader`). **OBS-BITEMP-REBASE** closes full **E/K/V/S** temporal composition without axis mixing (2026-09-15). **TRACE-ASOF-3** → **NOT REQUIRED** (conditional materialization; logical rebuild at E is sufficient). **TRACE-ASOF-4** unblocked for typed public query surfaces that delegate to the same canonical path.
 

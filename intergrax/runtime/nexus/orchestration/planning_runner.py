@@ -13,11 +13,15 @@ from intergrax.contracts.uaep_decision_record import DecisionRecord
 from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.reasoning_failure import ReasoningFailureKind
+from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
+from intergrax.runtime.nexus.orchestration.internal_finish_task_fn import (
+    NexusFinishTaskFn,
+)
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
     canonical_allows_planning_progress_after_human_gate,
@@ -26,7 +30,9 @@ from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration i
 from intergrax.runtime.nexus.orchestration.planning_coordination_advisory import (
     build_coordination_advisory_event,
 )
-from intergrax.runtime.nexus.planning.nexus_planner_protocol import NexusTaskPlannerProtocol
+from intergrax.runtime.nexus.planning.nexus_planner_protocol import (
+    NexusTaskPlannerProtocol,
+)
 from intergrax.runtime.nexus.observability.planning_metrics import (
     record_planning_failure,
     record_planner_fallback,
@@ -36,16 +42,24 @@ from intergrax.runtime.nexus.planning.plan_validator import validate_nexus_plan
 from intergrax.runtime.nexus.planning.task_planner import NexusPlan
 from intergrax.runtime.nexus.task_classifier_protocol import NexusTaskClassifierProtocol
 from intergrax.contracts.runtime_policy import PolicyAction
-from intergrax.contracts.runtime_policy_context import PreModelPhase, PreModelPolicyContext
+from intergrax.contracts.runtime_policy_context import (
+    PreModelPhase,
+    PreModelPolicyContext,
+)
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.policy.policy_engine import PolicyEngine
+from intergrax.runtime.policy.pre_model_policy_evaluation import (
+    PreModelPolicyConfigurationError,
+)
+from intergrax.runtime.policy.pre_model_principal import (
+    require_orchestration_pre_model_governance_scope,
+)
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
 
 PublishFn = Callable[[RuntimeEvent], Awaitable[None]]
-FinishFn = Callable[..., Awaitable[TaskResult]]
 CheckpointFn = Callable[..., Awaitable[None]]
 
 
@@ -63,7 +77,7 @@ class NexusPlanningRunner:
     registry: AgentRegistryRead
     hitl: NexusHitlRunner
     publish: PublishFn
-    finish_task: FinishFn
+    finish_task: NexusFinishTaskFn
     maybe_checkpoint: CheckpointFn
     policy_engine: PolicyEngine | None = None
     emit_coordination_advisory: bool = False
@@ -78,6 +92,7 @@ class NexusPlanningRunner:
         *,
         lifecycle: TaskLifecycle,
         trace_emitter: TaskTraceEmitter,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
     ) -> PlanningPhaseOutcome:
         hook_failure = await self.hitl.run_lifecycle_hook(
             before=True,
@@ -86,12 +101,15 @@ class NexusPlanningRunner:
             phase=ExecutionPhase.INTAKE,
             trace_emitter=trace_emitter,
             lifecycle=lifecycle,
+            runtime_event_metric_scope=runtime_event_metric_scope,
         )
         if hook_failure is not None:
             return PlanningPhaseOutcome(early_result=hook_failure)
 
         if self.execution_identity is None:
-            raise RuntimeError("active execution identity required for planning emission")
+            raise RuntimeError(
+                "active execution identity required for planning emission"
+            )
         run_id, attempt_id = self.execution_identity.require()
         await self.publish(
             runtime_event_from_task_state(
@@ -114,6 +132,7 @@ class NexusPlanningRunner:
             phase=ExecutionPhase.INTAKE,
             trace_emitter=trace_emitter,
             lifecycle=lifecycle,
+            runtime_event_metric_scope=runtime_event_metric_scope,
         )
         if hook_failure is not None:
             return PlanningPhaseOutcome(early_result=hook_failure)
@@ -125,6 +144,7 @@ class NexusPlanningRunner:
             phase=ExecutionPhase.CLASSIFICATION,
             trace_emitter=trace_emitter,
             lifecycle=lifecycle,
+            runtime_event_metric_scope=runtime_event_metric_scope,
         )
         if hook_failure is not None:
             return PlanningPhaseOutcome(early_result=hook_failure)
@@ -143,6 +163,7 @@ class NexusPlanningRunner:
             phase=ExecutionPhase.CLASSIFICATION,
             trace_emitter=trace_emitter,
             lifecycle=lifecycle,
+            runtime_event_metric_scope=runtime_event_metric_scope,
             extra={"classification": classification},
         )
         if hook_failure is not None:
@@ -170,6 +191,7 @@ class NexusPlanningRunner:
                     plan=None,
                     retry_records=[],
                     graph_id="",
+                    runtime_event_metric_scope=runtime_event_metric_scope,
                 ),
                 classification=classification,
             )
@@ -181,6 +203,7 @@ class NexusPlanningRunner:
             phase=ExecutionPhase.PLANNING,
             trace_emitter=trace_emitter,
             lifecycle=lifecycle,
+            runtime_event_metric_scope=runtime_event_metric_scope,
             extra={"classification": classification},
         )
         if hook_failure is not None:
@@ -188,9 +211,37 @@ class NexusPlanningRunner:
 
         planning_policy_action = PolicyAction.ALLOW.value
         if self.policy_engine is not None:
+            try:
+                governance_scope = require_orchestration_pre_model_governance_scope(
+                    task
+                )
+            except PreModelPolicyConfigurationError as exc:
+                failure_kind = ReasoningFailureKind.PLANNER_POLICY_BLOCKED
+                task.metadata["reasoning_failure_kind"] = failure_kind.value
+                record_planning_failure(kind=failure_kind.value)
+                task.sync_metadata()
+                lifecycle.transition(task, TaskState.FAILED)
+                return PlanningPhaseOutcome(
+                    early_result=await self.finish_task(
+                        task,
+                        trace_emitter,
+                        answer="",
+                        executions=[],
+                        validation=ValidationResult(
+                            valid=False,
+                            errors=[str(exc)],
+                        ),
+                        plan=None,
+                        retry_records=[],
+                        graph_id="",
+                        runtime_event_metric_scope=runtime_event_metric_scope,
+                    ),
+                    classification=classification,
+                )
             policy_decision = self.policy_engine.evaluate_pre_llm(
-                tenant_id=task.tenant_id,
-                agent_id=task.agent_id or "",
+                tenant_id=governance_scope.tenant_id,
+                principal_id=governance_scope.principal_id,
+                agent_id=task.agent_id,
                 message_count=1,
                 context=PreModelPolicyContext(
                     phase=PreModelPhase.NEXUS_PLANNING,
@@ -213,11 +264,14 @@ class NexusPlanningRunner:
                         executions=[],
                         validation=ValidationResult(
                             valid=False,
-                            errors=[policy_decision.reason or "planning_blocked_by_policy"],
+                            errors=[
+                                policy_decision.reason or "planning_blocked_by_policy"
+                            ],
                         ),
                         plan=None,
                         retry_records=[],
                         graph_id="",
+                        runtime_event_metric_scope=runtime_event_metric_scope,
                     ),
                     classification=classification,
                 )
@@ -238,6 +292,7 @@ class NexusPlanningRunner:
                     plan=plan,
                     retry_records=[],
                     graph_id="",
+                    runtime_event_metric_scope=runtime_event_metric_scope,
                 ),
                 classification=classification,
             )
@@ -312,6 +367,7 @@ class NexusPlanningRunner:
             phase=ExecutionPhase.PLANNING,
             trace_emitter=trace_emitter,
             lifecycle=lifecycle,
+            runtime_event_metric_scope=runtime_event_metric_scope,
             extra={"plan_id": plan.plan_id, "step_count": len(plan.steps)},
         )
         if hook_failure is not None:
@@ -332,7 +388,10 @@ class NexusPlanningRunner:
                 human_approval_required=True,
             ):
                 hook_failure = await self.hitl.run_before_human_pause(
-                    task, trace_emitter, lifecycle
+                    task,
+                    trace_emitter,
+                    lifecycle,
+                    runtime_event_metric_scope=runtime_event_metric_scope,
                 )
                 if hook_failure is not None:
                     return PlanningPhaseOutcome(early_result=hook_failure)
@@ -355,6 +414,7 @@ class NexusPlanningRunner:
                         plan=plan,
                         retry_records=[],
                         graph_id="",
+                        runtime_event_metric_scope=runtime_event_metric_scope,
                     ),
                     plan=plan,
                     classification=classification,

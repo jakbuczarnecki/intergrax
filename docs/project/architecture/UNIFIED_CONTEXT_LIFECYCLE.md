@@ -968,6 +968,20 @@ Canonical artifact compatibility identity: `tenant_id`, `context_scope_id`, `art
 
 Metadata-only reusable artifact record: `artifact_id`, `lookup_key`, `artifact_content_hash`, `created_at`, `created_by_executor`, `validation` (`ArtifactValidationSummary`), `status`, `invalidation_reason`, `supersedes_artifact_id`, `receipt_ref`, `safe_metadata`. No raw payload. Persisted by Memory/Session catalog (**CTX-UCL-2**); created by Token Optimization only on `CREATE_ARTIFACT`.
 
+### 9.10a MP-5F-B3 — scoped lifecycle reference read (**CLOSED** — enterprise workspace-scoped read)
+
+**Ownership:** UCL owns artifact lifecycle, revisions, validity and durability. **Canonical workspace ownership** lives on `UclArtifactOwnership` / `UclArtifactOwnershipScope` attached to `ReusableOptimizationArtifact` (not on `ArtifactLookupKey`). Workspace authorization must use persisted ownership, not `context_scope_id`.
+
+**`context_scope_id` ≠ `workspace_id` ≠ artifact compatibility identity:** `context_scope_id` remains the UCL lifecycle / compatibility scope on `ArtifactLookupKey`. `workspace_id` is a separate Collaborative Work resource dimension. `artifact_lookup_key_hash` is unchanged by workspace ownership; repository **partitioning** uses `(tenant_id, workspace_id, lookup_key_hash)` for active slots and creation reservations.
+
+**MP-5F-B3A (CLOSED / RECERTIFIED):** typed `UclArtifactOwnershipScope`, persistence (in-memory + SQLite), serialization round-trip, cross-workspace active-slot and reservation isolation, supersession ownership guard. **MP-5F-B3A-C2:** typed `workspace_id` propagates through all production `ContextAssemblyRequest` builders (`RuntimeExecutionContext` / `AgentStepContext` / intake contracts); metadata and `context_scope_id` are not workspace authority sources.
+
+**MP-5F-B3 / B3B (CLOSED; B3B-C1 resource scope):** workspace-scoped read is enforced from persisted artifact ownership. Flow: request scope → binding → `OptimizationArtifactScopedReferenceQuery` (tenant, workspace, context_scope, optional `source_ref`) → repository applies the full scope before limit → deterministic order → validated canonical projection (reference-only). `resource` / `source_ref` is part of the catalog scope, not a post-limit reader filter. `context_scope_id` is independent; `LEGACY_UNKNOWN` ownership is excluded from workspace-scoped results.
+
+**Anti-substitution:** ContextView ≠ UCL artifact. ContextView does not replace UCL lifecycle. MP-5 does not determine active revision.
+
+**Public surface:** `UclReferenceReadPort` / `UclReferenceReadScope` / `UclOptimizationArtifactCanonicalRef` in `intergrax/ucl/contracts/ucl_reference_read.py`. Default scoped catalog projection (no payload hydration): `DefaultUclReferenceReader` over `OptimizationArtifactScopedReferenceCatalog`. **MP-5D source ports are sync; UCL B3 reference-read is async — B5 requires explicit integration.**
+
 ### 9.11 `ModelCallExecutionScope`
 
 `PRIMARY_MODEL_CALL`, `INTERNAL_OPTIMIZATION_CALL`. Implemented in **CTX-UCL-1**.

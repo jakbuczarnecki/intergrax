@@ -30,6 +30,7 @@ Intergrax RAG addresses that gap with a native path from **authorized sources** 
 | **Scope / policy** | Tenant + namespace + workspace isolation; source ownership; generation visibility; host/policy gates on retrieve |
 | **Context Engineering** | Consumes retrieval hits as fragments; owns final model-context assembly and budgeting |
 | **Memory** | Parallel domain - session/LTM/episodic recall; `knowledge` index domain is RAG-owned |
+| **ContextView source (MP-5F)** | RAG exposes scoped **reference-read** port (`KnowledgeReferenceReadPort`) — B2 **CLOSED**; adapters **BLOCKED** until B3…B5 |
 | **Maturity** | Four-axis statement in [Current maturity](#current-maturity) - **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [pipeline satellite](satellites/RAG_pipelines_detail.md) · [plan](../maintainers/plans/RAG.md) · [proofs](../proofs/PROOFS.md) |
 
@@ -260,6 +261,10 @@ Catalog: [`docs/project/proofs/PROOFS.md`](../proofs/PROOFS.md) · LKW detail: [
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 
 The accepted RAG-PROD-13 result and the closed RAG-PROD-14 production handoff are recorded here and in the linked qualification artifacts.
+
+**Knowledge/RAG owns retrieval, ranking, indexing and provider semantics.** The public reference-read capability (`KnowledgeReferenceReadPort` in `intergrax/knowledge/contracts/knowledge_reference_read.py`) exposes scoped canonical references only via retrieval projection (`DefaultKnowledgeReferenceReader` in `intergrax/rag/default_knowledge_reference_reader.py`). MP-5 adapters consume it but do not own retrieval. **MP-5D source ports are sync; Memory B1 reference-read is async — B5 requires explicit sync/async integration for each domain.**
+
+**MP-5F-B2 canonical identity (reference projection):** `KnowledgeChunkCanonicalRef.knowledge_ref` is the provider-neutral logical `vector_id` from the native vector-store ABI (`VectorStoreRecord` / `VectorStoreHit`); it is not interchangeable with `RetrievalChunk.id` (document identity on the typed retrieval path). `document_id` is the canonical owning document identity: `provenance.root_document_id` when lineage is present, otherwise `RetrievalChunk.id` when that field carries `KnowledgeDocumentIdentity.document_id`. Missing `vector_id`, missing document identity, or provenance that contradicts the hit’s canonical locator fails closed (`KnowledgeReferenceProjectionError` → read outcome `UNAVAILABLE` with `identity_projection:*`); in-scope hits are not silently dropped and there is no `vector_id or chunk.id` fallback. Rank and relevance score do not affect `knowledge_ref`.
 
 ### Navigation and documentation inventory
 

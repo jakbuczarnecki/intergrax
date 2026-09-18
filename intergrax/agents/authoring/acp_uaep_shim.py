@@ -122,6 +122,7 @@ def attach_acp_catalog_exec_ctx(
         message=str(request.input or step_ctx.message or ""),
         task_id=resolved_task_id,
         run_id=resolved_run_id,
+        workspace_id=request.workspace_id or step_ctx.workspace_id,
         metadata=dict(request.metadata),
     )
     runtime_request.metadata.setdefault("run_id", resolved_run_id)
@@ -134,6 +135,7 @@ def attach_acp_catalog_exec_ctx(
         execution_id=execution_id,
         agent_id=contract.id,
         contract=contract,
+        workspace_id=runtime_request.workspace_id,
         request=runtime_request,
     )
     runtime_context = build_agent_runtime_context(
@@ -206,9 +208,15 @@ def build_step_context_from_uaep(
     raw_state = exec_ctx.metadata.get(ACP_STATE_KEY)
     if isinstance(raw_state, dict):
         state_root = {ACP_STATE_KEY: dict(raw_state)}
+    tenant_id = "default"
+    if isinstance(exec_ctx.request, RuntimeRequest):
+        tenant_id = str(exec_ctx.request.tenant_id or "default")
     return AgentStepContext(
         step_index=step.step_index,
         run_id=exec_ctx.run_id,
+        task_id=exec_ctx.task_id,
+        tenant_id=tenant_id,
+        workspace_id=exec_ctx.workspace_id,
         agent_id=exec_ctx.agent_id,
         contract_id=exec_ctx.contract.id if exec_ctx.contract else exec_ctx.agent_id,
         state_snapshot=state_root,

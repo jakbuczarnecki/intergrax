@@ -104,7 +104,9 @@ def test_evaluate_decision_normal_allows():
 @pytest.mark.gate
 def test_evaluate_pre_llm_empty_context_denies():
     engine = PolicyEngine()
-    result = engine.evaluate_pre_llm(tenant_id="t1", agent_id="a1", message_count=0)
+    result = engine.evaluate_pre_llm(
+        tenant_id="t1", principal_id="p1", agent_id="a1", message_count=0
+    )
     assert result.action == PolicyAction.DENY
     assert result.reason == "pre_llm_empty_context"
 
@@ -115,6 +117,7 @@ def test_evaluate_pre_llm_denied_planning_model():
     engine = PolicyEngine()
     result = engine.evaluate_pre_llm(
         tenant_id="t1",
+        principal_id="p1",
         agent_id="a1",
         message_count=1,
         context=PreModelPolicyContext(
@@ -133,6 +136,7 @@ def test_evaluate_pre_llm_allowed_planning_model():
     engine = PolicyEngine()
     result = engine.evaluate_pre_llm(
         tenant_id="t1",
+        principal_id="p1",
         agent_id="a1",
         message_count=1,
         context=PreModelPolicyContext(

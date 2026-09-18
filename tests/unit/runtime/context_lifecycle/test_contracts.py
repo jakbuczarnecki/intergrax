@@ -32,6 +32,8 @@ from intergrax.runtime.context_lifecycle import (
     OptimizationExecutionGuard,
     ReusableArtifactStatus,
     ReusableOptimizationArtifact,
+    UclArtifactOwnership,
+    UclArtifactOwnershipScope,
     assess_durable_compaction_eligibility,
     compute_durable_compaction_policy_hash,
     compute_durable_compaction_source_identity_hash,
@@ -93,6 +95,9 @@ def _reusable_artifact(**overrides: object) -> ReusableOptimizationArtifact:
     defaults: dict[str, object] = {
         "artifact_id": "artifact-1",
         "lookup_key": _lookup_key_with_refs(),
+        "ownership": UclArtifactOwnership.for_workspace(
+            UclArtifactOwnershipScope(tenant_id="tenant-1", workspace_id="workspace-1")
+        ),
         "artifact_content_hash": "content-hash",
         "created_at": datetime(2026, 8, 2, 12, 0, 0, tzinfo=UTC),
         "created_by_executor": "executor.message_sequence",
@@ -516,6 +521,7 @@ def test_artifact_creation_reservation_valid_timezone_aware() -> None:
         reservation_id="res-1",
         artifact_lookup_key_hash="hash-1",
         tenant_id="tenant-1",
+        workspace_id="workspace-1",
         owner_operation_id="op-1",
         acquired_at=acquired,
         lease_deadline=deadline,
@@ -531,6 +537,7 @@ def test_artifact_creation_reservation_rejects_naive_datetime() -> None:
             reservation_id="res-1",
             artifact_lookup_key_hash="hash-1",
             tenant_id="tenant-1",
+            workspace_id="workspace-1",
             owner_operation_id="op-1",
             acquired_at=acquired,
             lease_deadline=deadline,
@@ -544,6 +551,7 @@ def test_artifact_creation_reservation_rejects_equal_deadline() -> None:
             reservation_id="res-1",
             artifact_lookup_key_hash="hash-1",
             tenant_id="tenant-1",
+            workspace_id="workspace-1",
             owner_operation_id="op-1",
             acquired_at=acquired,
             lease_deadline=acquired,
@@ -558,6 +566,7 @@ def test_artifact_creation_reservation_rejects_deadline_before_acquired() -> Non
             reservation_id="res-1",
             artifact_lookup_key_hash="hash-1",
             tenant_id="tenant-1",
+            workspace_id="workspace-1",
             owner_operation_id="op-1",
             acquired_at=acquired,
             lease_deadline=deadline,
@@ -566,13 +575,14 @@ def test_artifact_creation_reservation_rejects_deadline_before_acquired() -> Non
 
 @pytest.mark.parametrize(
     "field_name",
-    ["reservation_id", "artifact_lookup_key_hash", "tenant_id", "owner_operation_id"],
+    ["reservation_id", "artifact_lookup_key_hash", "tenant_id", "workspace_id", "owner_operation_id"],
 )
 def test_artifact_creation_reservation_rejects_empty_identifiers(field_name: str) -> None:
     values = {
         "reservation_id": "res-1",
         "artifact_lookup_key_hash": "hash-1",
         "tenant_id": "tenant-1",
+        "workspace_id": "workspace-1",
         "owner_operation_id": "op-1",
         "acquired_at": datetime(2026, 8, 2, 12, 0, 0, tzinfo=UTC),
         "lease_deadline": datetime(2026, 8, 2, 12, 1, 0, tzinfo=UTC),

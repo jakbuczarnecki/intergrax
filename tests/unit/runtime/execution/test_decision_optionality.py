@@ -45,7 +45,10 @@ from intergrax.runtime.execution import (
 )
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.facade import Execution
-from intergrax.runtime.execution.inference import InferenceExecutor
+from testing_support.inference_governance_wiring import (
+    governed_inference_executor,
+    governed_root_execution_options,
+)
 from intergrax.runtime.execution.orchestration import (
     execute_root_task,
     resolve_root_task_identity,
@@ -175,10 +178,7 @@ class RecordingAgentEngine:
 
 
 def _root_options(*, run_id: RunId | None = None) -> RootExecutionOptions:
-    return RootExecutionOptions(
-        authority=ParentExecutionAuthority.unrestricted_root(),
-        run_id=run_id,
-    )
+    return governed_root_execution_options(run_id=run_id)
 
 
 def _inference_execution_stack(
@@ -191,7 +191,7 @@ def _inference_execution_stack(
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=InferenceExecutor(adapter))
+    ](inference_executor=governed_inference_executor(adapter))
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
         ExecutionResult[RiskAssessment],

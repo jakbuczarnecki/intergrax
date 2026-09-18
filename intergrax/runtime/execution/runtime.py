@@ -82,6 +82,11 @@ from intergrax.runtime.execution.lineage.root_activation import (
     merge_lineage_root_admission_hooks,
     validate_root_lineage_inputs,
 )
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    ActiveExecutionGovernanceIdentity,
+    bind_active_execution_governance_identity,
+    reset_active_execution_governance_identity,
+)
 from intergrax.runtime.execution.identity_authority import (
     RootTaskIdentity,
     mint_root_execution_identity,
@@ -109,6 +114,8 @@ class RootExecutionContext:
     execution_id: ExecutionId
     authority: ParentExecutionAuthority
     tenant_id: str | None = None
+    workspace_id: str | None = None
+    principal_id: str | None = None
     task_id: TaskId | None = None
     segment_predecessor_root_execution_id: ExecutionId | None = None
 
@@ -122,6 +129,8 @@ class RootExecutionOptions:
     attempt_id: AttemptId | None = None
     execution_id: ExecutionId | None = None
     tenant_id: str | None = None
+    workspace_id: str | None = None
+    principal_id: str | None = None
     task_id: TaskId | None = None
     segment_predecessor_root_execution_id: ExecutionId | None = None
     resume_checkpoint: TaskCheckpoint | None = None
@@ -188,6 +197,8 @@ def resolve_root_execution_context(
         execution_id=identity.execution_id,
         authority=options.authority,
         tenant_id=options.tenant_id,
+        workspace_id=options.workspace_id,
+        principal_id=options.principal_id,
         task_id=options.task_id,
         segment_predecessor_root_execution_id=options.segment_predecessor_root_execution_id,
     )
@@ -355,6 +366,19 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         finalization_token = None
         work_port_token = None
         evidence_token = None
+        governance_identity_token = None
+        if (
+            root_context.tenant_id is not None
+            and root_context.workspace_id is not None
+            and root_context.principal_id is not None
+        ):
+            governance_identity_token = bind_active_execution_governance_identity(
+                ActiveExecutionGovernanceIdentity(
+                    tenant_id=root_context.tenant_id,
+                    workspace_id=root_context.workspace_id,
+                    principal_id=root_context.principal_id,
+                ),
+            )
         if self._failure_evidence_recorder is not None:
             if root_context.tenant_id is None or root_context.task_id is None:
                 raise ValueError(
@@ -398,6 +422,8 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 reset_active_execution_continuation_state_store(continuation_token)
             if evidence_token is not None:
                 reset_active_execution_evidence_context(evidence_token)
+            if governance_identity_token is not None:
+                reset_active_execution_governance_identity(governance_identity_token)
             if lineage_token is not None and degradation_token is not None:
                 deactivate_root_execution_lineage(lineage_token, degradation_token)
             if work_port_token is not None:

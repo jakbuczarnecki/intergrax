@@ -12,6 +12,11 @@ from typing import Callable, Iterator
 from intergrax.context.contracts import ContextProviderDescriptor
 from intergrax.context.errors import ContextProviderRegistrationError
 from intergrax.context.provider_descriptor import resolve_provider_descriptor
+from intergrax.context.budget.compaction import ContextCompactionStrategy, NoOpContextCompactionStrategy
+from intergrax.context.budget.default_model_budget_policy import DefaultContextModelBudgetPolicy
+from intergrax.context.budget.degradation import ContextDegradationPolicy, DefaultContextDegradationPolicy
+from intergrax.context.budget.model_budget_policy import ContextModelBudgetPolicy
+from intergrax.context.budget.token_counter import CharEstimateContextTokenCounter, ContextTokenCounter
 from intergrax.context.protocols import (
     ContextBudgetAllocator,
     ContextConflictResolver,
@@ -49,6 +54,10 @@ class ContextPluginRegistry:
     _conflict_resolver: ContextConflictResolver | None = None
     _formatter: ContextFormatter | None = None
     _validator: ContextValidator | None = None
+    _token_counter: ContextTokenCounter | None = None
+    _compaction_strategy: ContextCompactionStrategy | None = None
+    _model_budget_policy: ContextModelBudgetPolicy | None = None
+    _degradation_policy: ContextDegradationPolicy | None = None
     _lock: threading.RLock = field(default_factory=threading.RLock, repr=False)
 
     def add_provider(
@@ -160,6 +169,22 @@ class ContextPluginRegistry:
         with self._lock:
             self._validator = validator
 
+    def set_token_counter(self, counter: ContextTokenCounter | None) -> None:
+        with self._lock:
+            self._token_counter = counter
+
+    def set_compaction_strategy(self, strategy: ContextCompactionStrategy | None) -> None:
+        with self._lock:
+            self._compaction_strategy = strategy
+
+    def set_model_budget_policy(self, policy: ContextModelBudgetPolicy | None) -> None:
+        with self._lock:
+            self._model_budget_policy = policy
+
+    def set_degradation_policy(self, policy: ContextDegradationPolicy | None) -> None:
+        with self._lock:
+            self._degradation_policy = policy
+
     @property
     def ranker(self) -> ContextRanker | None:
         with self._lock:
@@ -194,6 +219,40 @@ class ContextPluginRegistry:
     def validator(self) -> ContextValidator | None:
         with self._lock:
             return self._validator
+
+    @property
+    def token_counter(self) -> ContextTokenCounter | None:
+        with self._lock:
+            return self._token_counter
+
+    @property
+    def compaction_strategy(self) -> ContextCompactionStrategy:
+        with self._lock:
+            if self._compaction_strategy is None:
+                return NoOpContextCompactionStrategy()
+            return self._compaction_strategy
+
+    @property
+    def model_budget_policy(self) -> ContextModelBudgetPolicy | None:
+        with self._lock:
+            return self._model_budget_policy
+
+    @property
+    def degradation_policy(self) -> ContextDegradationPolicy | None:
+        with self._lock:
+            return self._degradation_policy
+
+    def resolved_token_counter(self) -> ContextTokenCounter:
+        with self._lock:
+            return self._token_counter or CharEstimateContextTokenCounter()
+
+    def resolved_model_budget_policy(self) -> ContextModelBudgetPolicy:
+        with self._lock:
+            return self._model_budget_policy or DefaultContextModelBudgetPolicy()
+
+    def resolved_degradation_policy(self) -> ContextDegradationPolicy:
+        with self._lock:
+            return self._degradation_policy or DefaultContextDegradationPolicy()
 
 
 @dataclass(frozen=True)

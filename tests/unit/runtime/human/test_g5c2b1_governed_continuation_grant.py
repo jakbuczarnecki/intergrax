@@ -24,8 +24,9 @@ from intergrax.contracts.governed_continuation import (
     ContinuationReason,
     GovernedContinuationRequest,
 )
-from intergrax.contracts.governed_continuation_correlation import GovernedContinuationCorrelation
-from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
+from intergrax.contracts.governed_continuation_grant import (
+    GovernedContinuationApprovalGrant,
+)
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.human.governed_continuation_bridge import (
     bridge_governed_continuation_to_execution_result,
@@ -36,12 +37,20 @@ from intergrax.runtime.human.governed_continuation_grant import (
 )
 from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.runtime.human.models import HumanResponseVerdict
-from intergrax.runtime.human.pause import HumanApprovalResolutionError, HumanPauseCoordinator
-from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
+from intergrax.runtime.human.pause import (
+    HumanApprovalResolutionError,
+    HumanPauseCoordinator,
+)
 from intergrax.runtime.task.task import Task
-from intergrax.runtime.task.task_contract import HumanApprovalResolution, TaskPauseRecord
+from intergrax.runtime.task.task_contract import (
+    HumanApprovalResolution,
+    TaskPauseRecord,
+)
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
+from testing_support.runtime_event_metric_scope_for_tests import (
+    open_runtime_event_metric_scope_for_tests,
+)
 from tests.unit.runtime.human.test_g5b_hitl_resolution import (
     _build_intake_runner_with_hitl,
     _patch_hitl_runtime_events,
@@ -221,7 +230,9 @@ def test_run_mismatch_fails_closed() -> None:
         human_request_id=pause.human_request_id,
         run_id=RUN_OTHER,
     )
-    with pytest.raises(GovernedContinuationGrantError, match="continuation run_id mismatch"):
+    with pytest.raises(
+        GovernedContinuationGrantError, match="continuation run_id mismatch"
+    ):
         GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
     assert task.runtime.governance.governed_continuation_grant is None
 
@@ -260,7 +271,9 @@ def test_task_mismatch_fails_closed() -> None:
         human_request_id=pause.human_request_id,
         run_id=RUN_ID,
     )
-    with pytest.raises(GovernedContinuationGrantError, match="continuation task_id mismatch"):
+    with pytest.raises(
+        GovernedContinuationGrantError, match="continuation task_id mismatch"
+    ):
         GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
     assert task.runtime.governance.governed_continuation_grant is None
 
@@ -551,13 +564,27 @@ async def test_intake_runner_approve_creates_grant_before_pause_clear(
             pause_id=pause.pause_id,
             human_request_id=pause.human_request_id,
         )
-        await runner.run(task, lifecycle=lifecycle, trace_emitter=trace_emitter)
+        metric_scope = open_runtime_event_metric_scope_for_tests(
+            task_id=TASK_ID,
+            run_id=RUN_ID,
+        )
+        try:
+            await runner.run(
+                task,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+                runtime_event_metric_scope=metric_scope,
+            )
+        finally:
+            metric_scope.close()
 
     grant = task.runtime.governance.governed_continuation_grant
     assert grant is not None
     assert grant.side_effect_scope_id == SCOPE_1
     assert task.runtime.governance.hitl_resolution is not None
-    assert task.runtime.governance.hitl_resolution.verdict is HumanResponseVerdict.APPROVE
+    assert (
+        task.runtime.governance.hitl_resolution.verdict is HumanResponseVerdict.APPROVE
+    )
 
 
 @pytest.mark.asyncio
@@ -582,24 +609,26 @@ async def test_intake_runner_reject_clears_grant(
             continuation,
             capability=runner.hitl_continuation,
         )
-        task.runtime.governance.governed_continuation_grant = GovernedContinuationApprovalGrant(
-            grant_id="gcg_stale",
-            continuation_request_id=CONTINUATION_1,
-            side_effect_scope_id=SCOPE_1,
-            side_effect_scope_digest=None,
-            task_id=TASK_ID,
-            run_id=RUN_ID,
-            attempt_id=ATTEMPT_ID,
-            execution_id=EXECUTION_ID,
-            operation_id=OPERATION,
-            resource_scope=RESOURCE,
-            policy_rule_id=POLICY_RULE,
-            policy_bundle_id=BUNDLE_ID,
-            policy_bundle_version=BUNDLE_VERSION,
-            policy_bundle_digest=BUNDLE_DIGEST,
-            pause_id=PAUSE_A,
-            human_request_id=HR_A,
-            approved_at="2026-08-18T00:00:00+00:00",
+        task.runtime.governance.governed_continuation_grant = (
+            GovernedContinuationApprovalGrant(
+                grant_id="gcg_stale",
+                continuation_request_id=CONTINUATION_1,
+                side_effect_scope_id=SCOPE_1,
+                side_effect_scope_digest=None,
+                task_id=TASK_ID,
+                run_id=RUN_ID,
+                attempt_id=ATTEMPT_ID,
+                execution_id=EXECUTION_ID,
+                operation_id=OPERATION,
+                resource_scope=RESOURCE,
+                policy_rule_id=POLICY_RULE,
+                policy_bundle_id=BUNDLE_ID,
+                policy_bundle_version=BUNDLE_VERSION,
+                policy_bundle_digest=BUNDLE_DIGEST,
+                pause_id=PAUSE_A,
+                human_request_id=HR_A,
+                approved_at="2026-08-18T00:00:00+00:00",
+            )
         )
         _set_human_response(
             task,
@@ -608,6 +637,18 @@ async def test_intake_runner_reject_clears_grant(
             pause_id=pause.pause_id,
             human_request_id=pause.human_request_id,
         )
-        outcome = await runner.run(task, lifecycle=lifecycle, trace_emitter=AsyncMock())
+        metric_scope = open_runtime_event_metric_scope_for_tests(
+            task_id=TASK_ID,
+            run_id=RUN_ID,
+        )
+        try:
+            outcome = await runner.run(
+                task,
+                lifecycle=lifecycle,
+                trace_emitter=AsyncMock(),
+                runtime_event_metric_scope=metric_scope,
+            )
+        finally:
+            metric_scope.close()
     assert outcome.early_result is not None
     assert task.runtime.governance.governed_continuation_grant is None

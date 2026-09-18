@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 from intergrax.integrations.contracts.document_store import DocumentRecord, DocumentStore
+from intergrax.memory.contracts.provider_admission import MemoryProviderDurability
+from intergrax.memory.contracts.provider_qualification import MemoryProviderQualificationStatus
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
 from intergrax.memory.user_profile_serialization import user_profile_from_json, user_profile_to_json
 from intergrax.memory.user_profile_store import UserProfileStore
@@ -22,6 +24,26 @@ class DocumentStoreUserProfileStore(UserProfileStore):
 
     def __init__(self, document_store: DocumentStore) -> None:
         self._document_store = document_store
+
+    @property
+    def memory_provider_id(self) -> str:
+        return "document_store.user_profile"
+
+    @property
+    def memory_provider_durability(self) -> MemoryProviderDurability:
+        return MemoryProviderDurability.DURABLE
+
+    @property
+    def memory_provider_reference_only(self) -> bool:
+        return False
+
+    @property
+    def memory_provider_declared_qualification_status(self) -> MemoryProviderQualificationStatus:
+        return MemoryProviderQualificationStatus.NOT_QUALIFIED
+
+    @property
+    def memory_provider_version(self) -> str | None:
+        return None
 
     async def get_profile(
         self,

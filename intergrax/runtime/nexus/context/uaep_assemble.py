@@ -35,6 +35,7 @@ def build_uaep_assembly_request(
         run_id=run_id,
         task_id=task_id,
         tenant_id=str(request.tenant_id or request.metadata.get("tenant_id") or "default"),
+        workspace_id=request.workspace_id,
         assembly_scope="uaep_turn",
         objective=request.message or "",
         decision_profile=ContextDecisionSnapshot(),

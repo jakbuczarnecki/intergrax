@@ -49,6 +49,7 @@ def build_acp_assembly_request(
         run_id=step_ctx.run_id or step_ctx.task_id,
         task_id=step_ctx.task_id,
         tenant_id=step_ctx.tenant_id,
+        workspace_id=step_ctx.workspace_id,
         assembly_scope="acp_step",
         objective=objective or step_ctx.message,
         decision_profile=ContextDecisionSnapshot(),

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from intergrax.contracts.execution_identity import mint_run_id
-from intergrax.runtime.diagnostics.completion_alignment_diag import (
+from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
     AlignmentDirection,
     AlignmentStatus,
     CompletionAlignmentDiagV1,

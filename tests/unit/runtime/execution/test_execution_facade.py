@@ -28,7 +28,10 @@ from intergrax.runtime.execution import (
 )
 from intergrax.runtime.execution.active_execution_budget import peek_active_execution_budget
 from intergrax.runtime.execution.boundary import ExecutionBoundary
-from intergrax.runtime.execution.inference import InferenceExecutor
+from testing_support.inference_governance_wiring import (
+    governed_inference_executor,
+    governed_root_execution_options,
+)
 from intergrax.runtime.execution.runtime import ExecutionRuntime
 from intergrax.runtime.execution.strategy import StrategyResolver
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
@@ -266,7 +269,7 @@ async def test_facade_mints_platform_execution_id_not_supplied_by_caller() -> No
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=InferenceExecutor(adapter))
+    ](inference_executor=governed_inference_executor(adapter))
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
         ExecutionResult[RiskAssessment],
@@ -277,7 +280,7 @@ async def test_facade_mints_platform_execution_id_not_supplied_by_caller() -> No
         output_type=RiskAssessment,
     )
 
-    await execution.execute(request, options=_root_options())
+    await execution.execute(request, options=governed_root_execution_options())
 
     execution_id = adapter.probe["execution_id"]
     assert validate_execution_id(execution_id)
@@ -298,7 +301,7 @@ async def test_facade_two_invocations_same_run_attempt_get_distinct_execution_id
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=InferenceExecutor(capturing_adapter))
+    ](inference_executor=governed_inference_executor(capturing_adapter))
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
         ExecutionResult[RiskAssessment],
@@ -308,7 +311,10 @@ async def test_facade_two_invocations_same_run_attempt_get_distinct_execution_id
         input=(ChatMessage(role="user", content="probe"),),
         output_type=RiskAssessment,
     )
-    options = _root_options(run_id=mint_run_id(), attempt_id=mint_attempt_id())
+    options = governed_root_execution_options(
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
 
     await execution.execute(request, options=options)
     await execution.execute(request, options=options)
@@ -328,7 +334,7 @@ async def test_facade_root_budget_and_authority_visible_before_strategy() -> Non
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=InferenceExecutor(adapter))
+    ](inference_executor=governed_inference_executor(adapter))
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], RiskAssessment],
         ExecutionResult[RiskAssessment],
@@ -343,7 +349,7 @@ async def test_facade_root_budget_and_authority_visible_before_strategy() -> Non
 
     result = await execution.execute(
         request,
-        options=_root_options(tenant_id="tenant-1", authority=authority),
+        options=governed_root_execution_options(tenant_id="tenant-1", authority=authority),
     )
 
     assert result.status is ExecutionStatus.COMPLETED
