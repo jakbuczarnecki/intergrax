@@ -235,7 +235,7 @@ def test_gate_detects_root_execution_options_construction() -> None:
 def test_gate_detects_direct_intake_construction() -> None:
     source = (
         "def bypass():\n"
-        "    CanonicalExecutionIntakeRequest(payload=object(), trusted_parent_execution_authority=object(), tenant_id='t')\n"
+        "    CanonicalExecutionIntakeRequest(payload=object(), trusted_parent_execution_authority=object(), tenant_id='t', workspace_id='w', principal_id='p')\n"
     )
     _, tree, rel = _parse_fixture(source)
     violations = collect_forbidden_root_construction_calls(tree, rel_path=rel)

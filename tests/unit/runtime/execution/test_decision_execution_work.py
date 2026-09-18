@@ -38,7 +38,10 @@ from intergrax.runtime.execution.execution_work_port import (
     ExecutionWorkPort,
     child_execution_work_port,
 )
-from intergrax.runtime.execution.inference import InferenceExecutor
+from testing_support.inference_governance_wiring import (
+    governed_inference_executor,
+    governed_root_execution_options,
+)
 from intergrax.runtime.execution.orchestration import OrchestrationExecutor
 from intergrax.runtime.execution.request import ExecutionRequest as NeutralExecutionRequest
 from intergrax.runtime.execution.result import ExecutionResult
@@ -265,7 +268,7 @@ class RootProbeResult:
 
 def _root_context() -> RootExecutionContext:
     return resolve_root_execution_context(
-        RootExecutionOptions(authority=ParentExecutionAuthority.unrestricted_root()),
+        governed_root_execution_options(),
     )
 
 
@@ -359,7 +362,7 @@ async def test_inference_child_work_does_not_require_orchestration_backend() -> 
         tuple[ChatMessage, ...],
         RiskAssessment,
         ExecutionResult[RiskAssessment],
-    ](inference_executor=InferenceExecutor(adapter))
+    ](inference_executor=governed_inference_executor(adapter))
     work_port = child_execution_work_port(router, ledger=_UNLIMITED_LEDGER)
     work_port_binding = ActiveExecutionWorkPortBinding.for_port(work_port)
 

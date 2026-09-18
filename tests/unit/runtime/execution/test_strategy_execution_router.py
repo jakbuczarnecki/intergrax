@@ -27,7 +27,11 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.runtime.execution import ExecutionCapability, ExecutionRequest, ExecutionStatus
 from intergrax.runtime.execution.agentic import AgentExecutor
-from intergrax.runtime.execution.inference import InferenceExecutor
+from testing_support.inference_governance_wiring import (
+    bind_test_inference_governance_identity,
+    governed_inference_executor,
+    reset_test_inference_governance_identity,
+)
 from intergrax.runtime.execution.orchestration import (
     OrchestrationExecutor,
     TaskBoundOrchestrationDelegate,
@@ -131,7 +135,7 @@ def _reset_agent_engine_calls() -> None:
 @pytest.mark.asyncio
 async def test_inference_router_delegates_only_to_inference_executor() -> None:
     adapter = StructuredInferenceAdapter()
-    inference = InferenceExecutor[RiskAssessment](adapter)
+    inference = governed_inference_executor(adapter)
     agent = AgentExecutor(RecordingAgentEngine())
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock()
@@ -163,9 +167,11 @@ async def test_inference_router_delegates_only_to_inference_executor() -> None:
     assert StrategyResolver().resolve(request) is ExecutionStrategy.INFERENCE
 
     token = _identity_token()
+    governance_token = bind_test_inference_governance_identity()
     try:
         result = await router.execute(request)
     finally:
+        reset_test_inference_governance_identity(governance_token)
         reset_active_execution_identity(token)
 
     assert result.status is ExecutionStatus.COMPLETED
@@ -177,7 +183,7 @@ async def test_inference_router_delegates_only_to_inference_executor() -> None:
 @pytest.mark.asyncio
 async def test_agentic_router_delegates_only_to_agent_executor() -> None:
     adapter = StructuredInferenceAdapter()
-    inference = InferenceExecutor[RiskAssessment](adapter)
+    inference = governed_inference_executor(adapter)
     agent = AgentExecutor(RecordingAgentEngine())
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock()
@@ -236,7 +242,7 @@ async def test_agentic_router_delegates_only_to_agent_executor() -> None:
 @pytest.mark.asyncio
 async def test_orchestration_router_delegates_only_to_orchestration_executor() -> None:
     adapter = StructuredInferenceAdapter()
-    inference = InferenceExecutor[RiskAssessment](adapter)
+    inference = governed_inference_executor(adapter)
     agent = AgentExecutor(RecordingAgentEngine())
     nexus_loop = MagicMock()
     nexus_loop.handle_task = AsyncMock(

@@ -32,6 +32,9 @@ _HOST_TASK = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
 _NEXUS_HOST = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "nexus_host_execution.py"
 _HOST_WIRING = _REPO_ROOT / "intergrax" / "applications" / "_shared" / "host_task_execution_wiring.py"
 _INFERENCE = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "inference.py"
+_INFERENCE_EXEC = (
+    _REPO_ROOT / "tests" / "unit" / "runtime" / "execution" / "test_inference_executor.py"
+)
 
 _FORBIDDEN_SERVICE_LOCATOR_NAMES = frozenset(
     {
@@ -203,11 +206,45 @@ def test_gr10_not_applicable_capabilities_are_not_enterprise_blockers() -> None:
             assert row.coverage is None
 
 
-def test_gr10_inf_d_honest_about_inference_executor_pre_model_gap() -> None:
-    inf_d = next(entry for entry in GR10_SCENARIO_CATALOG if entry.scenario_id == "INF-D")
-    assert inf_d.expected_status is Gr10CoverageStatus.PARTIAL
-    assert "InferenceExecutor" in inf_d.title
-    assert "agentic" in inf_d.title.lower()
+def test_gr10_inference_executor_enforces_pre_model_before_provider_ast() -> None:
+    source = _INFERENCE.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source, filename=str(_INFERENCE))
+    executor_class = next(
+        node
+        for node in tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "InferenceExecutor"
+    )
+    execute_fn = next(
+        node
+        for node in executor_class.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "execute"
+    )
+    policy_index = None
+    invoke_index = None
+    for index, node in enumerate(execute_fn.body):
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call):
+            func = node.value.func
+            if isinstance(func, ast.Name) and func.id == "enforce_pre_model_before_structured_inference":
+                policy_index = index
+        if isinstance(node, ast.FunctionDef) and node.name == "_invoke":
+            invoke_index = index
+    assert policy_index is not None
+    assert invoke_index is not None
+    assert policy_index < invoke_index
+    assert "RuntimePolicyEngine" not in source
+    assert "PolicyEngine()" not in source
+
+
+def test_gr10_inf_premodel_scenarios_reference_inference_executor() -> None:
+    allow = next(
+        entry for entry in GR10_SCENARIO_CATALOG if entry.scenario_id == "INF-PREMODEL-ALLOW"
+    )
+    deny = next(
+        entry for entry in GR10_SCENARIO_CATALOG if entry.scenario_id == "INF-PREMODEL-DENY"
+    )
+    assert allow.expected_status is Gr10CoverageStatus.QUALIFIED
+    assert deny.expected_status is Gr10CoverageStatus.QUALIFIED
+    assert _INFERENCE_EXEC.name in allow.pytest_node_ids[0]
 
 
 _QUAL_DOC = (

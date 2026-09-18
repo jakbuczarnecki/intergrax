@@ -20,6 +20,11 @@ from intergrax.runtime.execution.inference_profile import (
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.result import ExecutionResult, ExecutionStatus
+from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
+from intergrax.runtime.policy.policy_engine import PolicyEngine
+from intergrax.runtime.policy.pre_model_policy_evaluation import (
+    enforce_pre_model_before_structured_inference,
+)
 
 OutputT = TypeVar("OutputT")
 
@@ -27,16 +32,25 @@ OutputT = TypeVar("OutputT")
 class InferenceExecutor(Generic[OutputT]):
     """Structured direct inference backend behind :class:`ExecutionBoundary`."""
 
-    __slots__ = ("_default_adapter", "_profile_resolver")
+    __slots__ = (
+        "_default_adapter",
+        "_profile_resolver",
+        "_policy_engine",
+        "_governance_evidence_recorder",
+    )
 
     def __init__(
         self,
         adapter: LLMAdapter,
         *,
         profile_resolver: InferenceProfileResolver | None = None,
+        policy_engine: PolicyEngine | None = None,
+        governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
     ) -> None:
         self._default_adapter = adapter
         self._profile_resolver = profile_resolver
+        self._policy_engine = policy_engine
+        self._governance_evidence_recorder = governance_evidence_recorder
 
     def _select_adapter(
         self,
@@ -71,6 +85,14 @@ class InferenceExecutor(Generic[OutputT]):
 
         if not adapter.supports_structured_output():
             raise RuntimeError("inference adapter does not support structured output")
+
+        enforce_pre_model_before_structured_inference(
+            self._policy_engine,
+            self._governance_evidence_recorder,
+            adapter=adapter,
+            messages=request.input,
+            inference_profile_id=request.inference_profile_id,
+        )
 
         def _invoke() -> OutputT:
             structured = adapter.generate_structured(

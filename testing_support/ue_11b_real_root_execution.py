@@ -72,7 +72,10 @@ from intergrax.runtime.execution.budget.ledger import (
 )
 from intergrax.runtime.execution.budget.models import BudgetUsageTotals
 from intergrax.runtime.execution.facade import Execution
-from intergrax.runtime.execution.inference import InferenceExecutor
+from testing_support.inference_governance_wiring import (
+    governed_inference_executor,
+    governed_root_execution_options,
+)
 from intergrax.runtime.execution.orchestration import (
     OrchestrationExecutor,
     TaskBoundOrchestrationDelegate,
@@ -223,10 +226,7 @@ def resolve_native_ollama_adapter() -> NativeOllamaAdapter:
 
 
 def _root_options() -> RootExecutionOptions:
-    return RootExecutionOptions(
-        authority=ParentExecutionAuthority.unrestricted_root(),
-        tenant_id=UE_11B_TENANT_ID,
-    )
+    return governed_root_execution_options(tenant_id=UE_11B_TENANT_ID)
 
 
 def _harness_tool_surface() -> tuple[ToolRegistry, ToolWiringContext]:
@@ -249,7 +249,7 @@ def build_inference_stack() -> Ue11bInferenceStack:
         tuple[ChatMessage, ...],
         TextCategoryClassification,
         ExecutionResult[TextCategoryClassification],
-    ](inference_executor=InferenceExecutor(adapter))
+    ](inference_executor=governed_inference_executor(adapter))
     runtime = ExecutionRuntime[
         ExecutionRequest[tuple[ChatMessage, ...], TextCategoryClassification],
         ExecutionResult[TextCategoryClassification],

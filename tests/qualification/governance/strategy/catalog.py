@@ -98,9 +98,9 @@ GR10_INFERENCE_CAPABILITY_SEMANTICS: tuple[Gr10InferenceCapabilitySemantics, ...
     Gr10InferenceCapabilitySemantics(
         "Policy evaluation",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "PRE_MODEL (evaluate_pre_llm) required before model invocation; InferenceExecutor "
-        "calls LLMAdapter.generate_structured without PRE_MODEL seam.",
+        Gr10CoverageStatus.QUALIFIED,
+        "InferenceExecutor enforces PRE_MODEL (evaluate_pre_llm) before "
+        "LLMAdapter.generate_structured; qualification proofs on executor seam.",
     ),
     Gr10InferenceCapabilitySemantics(
         "MSE",
@@ -139,9 +139,9 @@ GR10_INFERENCE_CAPABILITY_SEMANTICS: tuple[Gr10InferenceCapabilitySemantics, ...
     Gr10InferenceCapabilitySemantics(
         "Governance Evidence",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.WIRED_NOT_QUALIFIED,
-        "ROOT_EXECUTION_ADMISSION wired on launcher path; PRE_MODEL evidence not emitted from "
-        "InferenceExecutor until PRE_MODEL remediation.",
+        Gr10CoverageStatus.PARTIAL,
+        "ROOT_EXECUTION_ADMISSION wired on launcher path; PRE_MODEL evidence emitted from "
+        "InferenceExecutor on structured inference path (full enterprise matrix still open).",
     ),
 )
 
@@ -206,7 +206,7 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("Policy evaluation"),
         Gr10CoverageStatus.QUALIFIED,
         Gr10CoverageStatus.QUALIFIED,
-        "PRE_MODEL on agentic LLM router; InferenceExecutor skips PRE_MODEL.",
+        "PRE_MODEL on agentic router and InferenceExecutor structured path.",
     ),
     Gr10CapabilityCell(
         "MSE",
@@ -283,13 +283,31 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
         Gr10CoverageStatus.QUALIFIED,
     ),
     Gr10ScenarioEvidence(
+        "INF-PREMODEL-ALLOW",
+        "INFERENCE",
+        "PRE_MODEL ALLOW on InferenceExecutor invokes provider once",
+        (
+            _nid(_INFERENCE_EXEC, "test_inference_pre_model_allow_invokes_provider_once"),
+        ),
+        Gr10CoverageStatus.QUALIFIED,
+    ),
+    Gr10ScenarioEvidence(
+        "INF-PREMODEL-DENY",
+        "INFERENCE",
+        "PRE_MODEL DENY on InferenceExecutor blocks provider",
+        (
+            _nid(_INFERENCE_EXEC, "test_inference_pre_model_deny_blocks_provider"),
+        ),
+        Gr10CoverageStatus.QUALIFIED,
+    ),
+    Gr10ScenarioEvidence(
         "INF-D",
         "INFERENCE",
-        "PRE_MODEL reference proof on agentic LLM router; InferenceExecutor seam still open",
+        "PRE_MODEL reference proof on agentic LLM router (semantics reference)",
         (
             _nid(_G3B, "test_pre_model_policy_blocks_provider_before_complete"),
         ),
-        Gr10CoverageStatus.PARTIAL,
+        Gr10CoverageStatus.QUALIFIED,
     ),
     Gr10ScenarioEvidence(
         "INF-E",
