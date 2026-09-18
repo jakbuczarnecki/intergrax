@@ -524,10 +524,13 @@ jobs:
       github.event_name == 'workflow_dispatch' &&
       github.event.inputs.profile == 'diagnostics_full'
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 130
 
     env:
       QUALIFICATION_SHA: ${{ github.event.inputs.qualification_sha }}
+      PYTEST_QUALIFICATION_CMD: >-
+        .venv/bin/python -m pytest tests/unit/runtime/diagnostics -q --durations=40
+        --junitxml=build/qualification/diagnostics-full.xml
 
     steps:
       - name: Validate qualification SHA (fail closed)
@@ -574,6 +577,8 @@ jobs:
           set -euo pipefail
           grep -q 'diagnostics-full-qualification:' .github/workflows/unit-tests.yml
           grep -q 'diagnostics_full' .github/workflows/unit-tests.yml
+          grep -q 'github.workflow_sha' .github/workflows/unit-tests.yml
+          grep -q 'github.workflow_ref' .github/workflows/unit-tests.yml
 
       - name: Install uv
         uses: astral-sh/setup-uv@v6
@@ -587,38 +592,113 @@ jobs:
       - name: Environment conformance (CI profile)
         run: uv run --frozen python scripts/maintenance/check_environment_conformance.py --profile ci
 
-      - name: Full diagnostics qualification (single pytest invocation)
-        id: diagnostics_full_pytest
-        continue-on-error: true
+      - name: Create qualification start metadata
         shell: bash
         run: |
-          set -uo pipefail
+          set -euo pipefail
           mkdir -p build/qualification
-          START_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          START_EPOCH="$(date -u +%s)"
-          PYTEST_CMD=".venv/bin/python -m pytest tests/unit/runtime/diagnostics -q --durations=40 --junitxml=build/qualification/diagnostics-full.xml"
-          set -o pipefail
-          ${PYTEST_CMD} 2>&1 | tee build/qualification/full-diag.log
-          PYTEST_EXIT=${PIPESTATUS[0]}
-          END_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          END_EPOCH="$(date -u +%s)"
-          WALL_SEC=$((END_EPOCH - START_EPOCH))
           ACTUAL_SHA="$(git rev-parse HEAD)"
+          START_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           {
             echo "qualification_sha=${QUALIFICATION_SHA}"
             echo "actual_head_sha=${ACTUAL_SHA}"
+            echo "github_workflow_ref=${{ github.workflow_ref }}"
+            echo "github_workflow_sha=${{ github.workflow_sha }}"
+            echo "github_ref=${{ github.ref }}"
+            echo "github_ref_name=${{ github.ref_name }}"
+            echo "github_repository=${{ github.repository }}"
             echo "github_run_id=${{ github.run_id }}"
             echo "github_run_attempt=${{ github.run_attempt }}"
             echo "runner_os=${RUNNER_OS}"
             echo "python_version=$(.venv/bin/python -V 2>&1)"
             echo "start_timestamp=${START_TS}"
-            echo "end_timestamp=${END_TS}"
-            echo "wall_clock_seconds=${WALL_SEC}"
-            echo "pytest_exit_code=${PYTEST_EXIT}"
-            echo "command=${PYTEST_CMD}"
+            echo "command=${PYTEST_QUALIFICATION_CMD}"
+            echo "status=STARTED"
+            echo "qualification_status=STARTED"
           } > build/qualification/meta.txt
+
+      - name: Full diagnostics qualification (single pytest invocation)
+        id: diagnostics_full_pytest
+        timeout-minutes: 120
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -uo pipefail
+          echo "full_diagnostics_invocations=1" >> build/qualification/meta.txt
+          set -o pipefail
+          ${PYTEST_QUALIFICATION_CMD} 2>&1 | tee build/qualification/full-diag.log
+          PYTEST_EXIT=${PIPESTATUS[0]}
           echo "${PYTEST_EXIT}" > build/qualification/pytest.exit
           exit "${PYTEST_EXIT}"
+
+      - name: Finalize qualification metadata
+        if: always()
+        shell: bash
+        env:
+          PYTEST_STEP_OUTCOME: ${{ steps.diagnostics_full_pytest.outcome }}
+        run: |
+          set -euo pipefail
+          META="build/qualification/meta.txt"
+          if [ ! -f "${META}" ]; then
+            echo "Missing qualification start metadata — evidence pipeline broken"
+            exit 1
+          fi
+          START_TS="$(grep '^start_timestamp=' "${META}" | head -1 | cut -d= -f2- || true)"
+          END_TS="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          END_EPOCH="$(date -u +%s)"
+          WALL_SEC=""
+          if [ -n "${START_TS}" ]; then
+            START_EPOCH="$(date -u -d "${START_TS}" +%s 2>/dev/null || true)"
+            if [ -n "${START_EPOCH}" ]; then
+              WALL_SEC="$((END_EPOCH - START_EPOCH))"
+            fi
+          fi
+          PYTEST_EXIT_CODE="UNKNOWN"
+          PYTEST_COMPLETED="false"
+          if [ -f build/qualification/pytest.exit ]; then
+            PYTEST_EXIT_CODE="$(tr -d '[:space:]' < build/qualification/pytest.exit)"
+            PYTEST_COMPLETED="true"
+          fi
+          JUNIT_PRESENT="false"
+          if [ -f build/qualification/diagnostics-full.xml ]; then
+            JUNIT_PRESENT="true"
+          fi
+          LOG_PRESENT="false"
+          if [ -f build/qualification/full-diag.log ]; then
+            LOG_PRESENT="true"
+          fi
+          TIMEOUT_STATUS="false"
+          QUALIFICATION_STATUS="ABORTED"
+          STATUS="INTERRUPTED"
+          if [ "${PYTEST_COMPLETED}" = "true" ]; then
+            if [ "${PYTEST_EXIT_CODE}" = "0" ]; then
+              QUALIFICATION_STATUS="COMPLETED_PASS"
+              STATUS="COMPLETED"
+            else
+              QUALIFICATION_STATUS="COMPLETED_FAIL"
+              STATUS="FAILED"
+            fi
+          elif [ "${PYTEST_STEP_OUTCOME}" = "failure" ] && [ -n "${WALL_SEC}" ] && [ "${WALL_SEC}" -ge 7000 ]; then
+            QUALIFICATION_STATUS="TIMED_OUT"
+            STATUS="TIMED_OUT"
+            TIMEOUT_STATUS="true"
+          elif [ "${PYTEST_STEP_OUTCOME}" = "failure" ]; then
+            QUALIFICATION_STATUS="ABORTED"
+            STATUS="INTERRUPTED"
+          fi
+          {
+            cat "${META}"
+            echo "end_timestamp=${END_TS}"
+            echo "wall_clock_seconds=${WALL_SEC}"
+            echo "pytest_exit_code=${PYTEST_EXIT_CODE}"
+            echo "pytest_completed=${PYTEST_COMPLETED}"
+            echo "junit_present=${JUNIT_PRESENT}"
+            echo "log_present=${LOG_PRESENT}"
+            echo "timeout_status=${TIMEOUT_STATUS}"
+            echo "qualification_status=${QUALIFICATION_STATUS}"
+            echo "status=${STATUS}"
+          } > "${META}.tmp"
+          mv "${META}.tmp" "${META}"
 
       - name: Upload qualification artifacts
         if: always()
@@ -627,15 +707,25 @@ jobs:
           name: diagnostics-full-qualification-${{ github.event.inputs.qualification_sha }}
           path: build/qualification/
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: error
 
       - name: Qualification pytest exit status
         if: always()
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f build/qualification/pytest.exit ]; then
-            echo "Missing pytest exit file — qualification aborted before pytest completed"
+          if [ -f build/qualification/pytest.exit ]; then
+            exit "$(tr -d '[:space:]' < build/qualification/pytest.exit)"
+          fi
+          if [ ! -f build/qualification/meta.txt ]; then
+            echo "Missing qualification metadata — cannot propagate status"
             exit 1
           fi
-          exit "$(cat build/qualification/pytest.exit)"
+          QUAL_STATUS="$(grep '^qualification_status=' build/qualification/meta.txt | tail -1 | cut -d= -f2-)"
+          case "${QUAL_STATUS}" in
+            COMPLETED_PASS) exit 0 ;;
+            *)
+              echo "Qualification did not pass (${QUAL_STATUS})"
+              exit 1
+              ;;
+          esac
