@@ -23,6 +23,8 @@ from intergrax.runtime.context_lifecycle import (
     ReusableArtifactStatus,
     ReusableOptimizationArtifact,
     StoredOptimizationArtifact,
+    UclArtifactOwnership,
+    UclArtifactOwnershipScope,
     build_optimization_artifact_reference,
     compute_artifact_content_hash,
 )
@@ -94,20 +96,20 @@ def _identity(
 def _scope(
     *,
     tenant_id: str = "tenant-a",
-    context_scope_id: str = "ws-a",
-    workspace_id: str | None = None,
+    workspace_id: str = "ws-a",
+    context_scope_id: str = "ctx-a",
 ) -> UclReferenceReadScope:
     return UclReferenceReadScope(
         tenant_id=tenant_id,
-        context_scope_id=context_scope_id,
         workspace_id=workspace_id,
+        context_scope_id=context_scope_id,
     )
 
 
 def _lookup_key(**overrides: object) -> ArtifactLookupKey:
     defaults: dict[str, object] = {
         "tenant_id": "tenant-a",
-        "context_scope_id": "ws-a",
+        "context_scope_id": "ctx-a",
         "artifact_type": OptimizationArtifactType.MESSAGE_SEQUENCE,
         "source_content_hash": "hash-abc",
         "strategy_id": "strategy.summarize",
@@ -127,12 +129,17 @@ def _stored(
     artifact_id: str = "artifact-1",
     payload: bytes = b"payload-bytes",
     lookup_key: ArtifactLookupKey | None = None,
+    workspace_id: str = "ws-a",
     status: ReusableArtifactStatus = ReusableArtifactStatus.VALIDATED,
 ) -> StoredOptimizationArtifact:
     key = lookup_key or _lookup_key()
+    ownership = UclArtifactOwnership.for_workspace(
+        UclArtifactOwnershipScope(tenant_id=key.tenant_id, workspace_id=workspace_id),
+    )
     metadata = ReusableOptimizationArtifact(
         artifact_id=artifact_id,
         lookup_key=key,
+        ownership=ownership,
         artifact_content_hash=compute_artifact_content_hash(payload),
         created_at=_BASE_TIME,
         created_by_executor="executor.message_sequence",
@@ -154,8 +161,11 @@ def _seed_repo(*artifacts: StoredOptimizationArtifact) -> InMemoryOptimizationAr
     repo = InMemoryOptimizationArtifactRepository()
     for artifact in artifacts:
         key = artifact.metadata.lookup_key
+        ownership_scope = artifact.metadata.ownership.scope
+        assert ownership_scope is not None
         reservation = repo.try_acquire_creation_reservation(
             key,
+            ownership=ownership_scope,
             owner_operation_id="op-seed",
             lease_seconds=60,
         )
@@ -171,12 +181,14 @@ def _reader(
     repo: InMemoryOptimizationArtifactRepository,
     *,
     tenant_id: str = "tenant-a",
-    context_scope_id: str = "ws-a",
+    workspace_id: str = "ws-a",
+    context_scope_id: str = "ctx-a",
 ) -> DefaultUclReferenceReader:
     return DefaultUclReferenceReader(
         catalog=repo,
         capability_binding=UclReferenceReadCapabilityBinding(
             tenant_id=tenant_id,
+            workspace_id=workspace_id,
             context_scope_id=context_scope_id,
         ),
     )
@@ -189,16 +201,18 @@ def test_contract_request_immutability_and_query_bounds() -> None:
     with pytest.raises(UclReferenceReadScopeError):
         UclReferenceReadQuery(limit=UCL_REFERENCE_READ_MAX_LIMIT + 1)
     with pytest.raises(UclReferenceReadScopeError):
-        UclReferenceReadScope(tenant_id="", context_scope_id="ws")
+        UclReferenceReadScope(tenant_id="", workspace_id="ws", context_scope_id="ctx")
     with pytest.raises(UclReferenceReadScopeError):
-        UclReferenceReadScope(tenant_id="t", context_scope_id="")
+        UclReferenceReadScope(tenant_id="t", workspace_id="ws", context_scope_id="")
     scope = UclReferenceReadScope(
         tenant_id="t",
-        context_scope_id="context-77",
         workspace_id="ws-1",
+        context_scope_id="context-77",
     )
     assert scope.workspace_id == "ws-1"
     assert scope.context_scope_id == "context-77"
+    with pytest.raises(UclReferenceReadScopeError):
+        UclReferenceReadScope(tenant_id="t", workspace_id="", context_scope_id="ctx")
 
 
 def test_validate_identity_tenant_mismatch_scope_rejected() -> None:
@@ -213,7 +227,8 @@ def test_validate_identity_tenant_mismatch_scope_rejected() -> None:
 def test_result_reference_only_no_payload_fields() -> None:
     ref = UclOptimizationArtifactCanonicalRef(
         tenant_id="tenant-a",
-        context_scope_id="ws-a",
+        workspace_id="ws-a",
+        context_scope_id="ctx-a",
         artifact_id="art-1",
         artifact_lookup_key_hash="key-hash",
         artifact_content_hash="content-hash",
@@ -232,6 +247,7 @@ def test_canonical_identity_requires_artifact_and_lookup_hash() -> None:
     with pytest.raises(UclReferenceReadScopeError):
         UclOptimizationArtifactCanonicalRef(
             tenant_id="t",
+            workspace_id="ws",
             context_scope_id="s",
             artifact_id="",
             artifact_lookup_key_hash="h",
@@ -242,6 +258,7 @@ def test_canonical_identity_requires_artifact_and_lookup_hash() -> None:
     with pytest.raises(UclReferenceReadScopeError):
         UclOptimizationArtifactCanonicalRef(
             tenant_id="t",
+            workspace_id="ws",
             context_scope_id="s",
             artifact_id="a",
             artifact_lookup_key_hash="",
@@ -254,6 +271,7 @@ def test_canonical_identity_requires_artifact_and_lookup_hash() -> None:
 def test_non_ok_result_cannot_carry_references() -> None:
     ref = UclOptimizationArtifactCanonicalRef(
         tenant_id="t",
+        workspace_id="ws",
         context_scope_id="s",
         artifact_id="a",
         artifact_lookup_key_hash="k",
@@ -316,22 +334,22 @@ async def test_cross_tenant_scope_rejected() -> None:
 @pytest.mark.asyncio
 async def test_wrong_context_scope_rejected_via_binding() -> None:
     repo = _seed_repo(_stored())
-    reader = _reader(repo, context_scope_id="ws-other")
+    reader = _reader(repo, context_scope_id="ctx-other")
     result = await reader.read_references(
         _identity(),
-        UclReferenceReadRequest(scope=_scope(context_scope_id="ws-a")),
+        UclReferenceReadRequest(scope=_scope(context_scope_id="ctx-a")),
     )
     assert result.outcome is UclReferenceReadOutcome.SCOPE_REJECTED
 
 
 @pytest.mark.asyncio
 async def test_artifact_in_other_scope_not_returned() -> None:
-    stored = _stored(lookup_key=_lookup_key(context_scope_id="ws-b"))
+    stored = _stored(lookup_key=_lookup_key(context_scope_id="ctx-b"))
     repo = _seed_repo(stored)
-    reader = _reader(repo, context_scope_id="ws-a")
+    reader = _reader(repo, context_scope_id="ctx-a")
     result = await reader.read_references(
         _identity(),
-        UclReferenceReadRequest(scope=_scope(context_scope_id="ws-a")),
+        UclReferenceReadRequest(scope=_scope(context_scope_id="ctx-a")),
     )
     assert result.outcome is UclReferenceReadOutcome.OK
     assert result.references == ()
@@ -344,7 +362,8 @@ async def test_resource_scope_mismatch_filters_to_empty() -> None:
     reader = _reader(repo)
     scope = UclReferenceReadScope(
         tenant_id="tenant-a",
-        context_scope_id="ws-a",
+        workspace_id="ws-a",
+        context_scope_id="ctx-a",
         resource=UclScopedResourceRef(resource_kind="source_ref", resource_id="missing"),
     )
     result = await reader.read_references(
@@ -356,88 +375,36 @@ async def test_resource_scope_mismatch_filters_to_empty() -> None:
 
 
 @pytest.mark.asyncio
-async def test_workspace_request_fail_closed_even_when_equal_to_context_scope() -> None:
-    """Matching strings do not confer workspace authority without UCL ownership."""
-    repo = _seed_repo(_stored())
-    reader = _reader(repo)
-    scope = UclReferenceReadScope(
-        tenant_id="tenant-a",
-        context_scope_id="scope-1",
-        workspace_id="scope-1",
+async def test_same_string_workspace_and_context_scope_is_not_special_cased() -> None:
+    """Equal strings do not trigger alternate security semantics."""
+    stored = _stored(
+        lookup_key=_lookup_key(context_scope_id="same"),
+        workspace_id="same",
     )
-    result = await reader.read_references(
-        _identity(),
-        UclReferenceReadRequest(scope=scope),
-    )
-    assert result.outcome is UclReferenceReadOutcome.SCOPE_REJECTED
-    assert result.reason == "ucl_workspace_ownership_unavailable"
-
-
-@pytest.mark.asyncio
-async def test_workspace_request_fail_closed_when_ids_differ() -> None:
-    repo = _seed_repo(_stored())
-    reader = _reader(repo)
-    scope = UclReferenceReadScope(
-        tenant_id="tenant-a",
-        context_scope_id="context-77",
-        workspace_id="ws-1",
-    )
-    result = await reader.read_references(
-        _identity(),
-        UclReferenceReadRequest(scope=scope),
-    )
-    assert result.outcome is UclReferenceReadOutcome.SCOPE_REJECTED
-    assert result.reason == "ucl_workspace_ownership_unavailable"
-
-
-@pytest.mark.asyncio
-async def test_lifecycle_read_without_workspace_uses_context_scope_only() -> None:
-    stored = _stored(lookup_key=_lookup_key(context_scope_id="context-77"))
     repo = _seed_repo(stored)
-    reader = _reader(repo, context_scope_id="context-77")
-    scope = UclReferenceReadScope(
-        tenant_id="tenant-a",
-        context_scope_id="context-77",
-        workspace_id=None,
-    )
+    reader = _reader(repo, workspace_id="same", context_scope_id="same")
     result = await reader.read_references(
         _identity(),
-        UclReferenceReadRequest(scope=scope),
+        UclReferenceReadRequest(
+            scope=UclReferenceReadScope(
+                tenant_id="tenant-a",
+                workspace_id="same",
+                context_scope_id="same",
+            ),
+        ),
     )
     assert result.outcome is UclReferenceReadOutcome.OK
     assert len(result.references) == 1
 
 
 @pytest.mark.asyncio
-async def test_same_context_scope_different_workspace_requests_both_fail_closed() -> None:
-    repo = _seed_repo(_stored())
-    reader = _reader(repo)
-    for workspace in ("ws-a", "ws-b"):
-        scope = UclReferenceReadScope(
-            tenant_id="tenant-a",
-            context_scope_id="ws-a",
-            workspace_id=workspace,
-        )
-        result = await reader.read_references(
-            _identity(),
-            UclReferenceReadRequest(scope=scope),
-        )
-        assert result.outcome is UclReferenceReadOutcome.SCOPE_REJECTED
-
-
-@pytest.mark.asyncio
-async def test_cross_context_isolation_with_workspace_unspecified() -> None:
+async def test_cross_context_isolation_within_workspace() -> None:
     stored = _stored(lookup_key=_lookup_key(context_scope_id="ctx-b"))
     repo = _seed_repo(stored)
     reader = _reader(repo, context_scope_id="ctx-a")
     result = await reader.read_references(
         _identity(),
-        UclReferenceReadRequest(
-            scope=UclReferenceReadScope(
-                tenant_id="tenant-a",
-                context_scope_id="ctx-a",
-            ),
-        ),
+        UclReferenceReadRequest(scope=_scope(context_scope_id="ctx-a")),
     )
     assert result.outcome is UclReferenceReadOutcome.OK
     assert result.references == ()
@@ -454,7 +421,8 @@ async def test_unsupported_resource_kind_rejected() -> None:
     reader = _reader(repo)
     scope = UclReferenceReadScope(
         tenant_id="tenant-a",
-        context_scope_id="ws-a",
+        workspace_id="ws-a",
+        context_scope_id="ctx-a",
         resource=UclScopedResourceRef(resource_kind="work_item", resource_id="wi-1"),
     )
     result = await reader.read_references(
@@ -518,6 +486,7 @@ class _CustomUclReferenceReader:
             )
         ref = UclOptimizationArtifactCanonicalRef(
             tenant_id=request.scope.tenant_id,
+            workspace_id=request.scope.workspace_id,
             context_scope_id=request.scope.context_scope_id,
             artifact_id="custom-artifact",
             artifact_lookup_key_hash="custom-key",

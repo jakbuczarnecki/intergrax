@@ -164,6 +164,7 @@ class InMemoryOptimizationArtifactRepository:
         if not isinstance(query, OptimizationArtifactScopedReferenceQuery):
             raise ValueError("query must be OptimizationArtifactScopedReferenceQuery")
         tenant_id = query.tenant_id
+        workspace_id = query.workspace_id
         context_scope_id = query.context_scope_id
         limit = query.limit
         include_historical = query.include_historical
@@ -181,6 +182,16 @@ class InMemoryOptimizationArtifactRepository:
             for stored in candidates:
                 metadata = stored.metadata
                 lookup_key = metadata.lookup_key
+                ownership = metadata.ownership
+                if ownership.kind is not UclArtifactOwnershipKind.WORKSPACE:
+                    continue
+                ownership_scope = ownership.scope
+                if ownership_scope is None:
+                    continue
+                if ownership_scope.tenant_id != tenant_id:
+                    continue
+                if ownership_scope.workspace_id != workspace_id:
+                    continue
                 if lookup_key.tenant_id != tenant_id:
                     continue
                 if lookup_key.context_scope_id != context_scope_id:

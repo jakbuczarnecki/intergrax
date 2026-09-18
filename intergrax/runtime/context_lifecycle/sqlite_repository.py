@@ -35,6 +35,8 @@ from intergrax.runtime.context_lifecycle.repository import (
     ArtifactCreationCoordinationResult,
     OptimizationArtifactReference,
     OptimizationArtifactRepositoryCapabilities,
+    OptimizationArtifactScopedReferenceQuery,
+    ScopedOptimizationArtifactListing,
     StoredOptimizationArtifact,
     build_optimization_artifact_reference,
     compute_repository_partition_key_from_reservation,
@@ -185,6 +187,81 @@ class SQLiteOptimizationArtifactRepository:
             supports_bounded_wait=True,
             reference_only=False,
         )
+
+    def list_scoped_artifact_references(
+        self,
+        query: OptimizationArtifactScopedReferenceQuery,
+    ) -> tuple[ScopedOptimizationArtifactListing, ...]:
+        if not isinstance(query, OptimizationArtifactScopedReferenceQuery):
+            raise ValueError("query must be OptimizationArtifactScopedReferenceQuery")
+        tenant_id = query.tenant_id
+        workspace_id = query.workspace_id
+        context_scope_id = query.context_scope_id
+        limit = query.limit
+        include_historical = query.include_historical
+
+        with self._lock:
+            self._ensure_open()
+            if include_historical:
+                sql = """
+                    SELECT * FROM optimization_artifacts
+                    WHERE tenant_id = ?
+                      AND ownership_kind = ?
+                      AND workspace_id = ?
+                      AND json_extract(lookup_key_json, '$.context_scope_id') = ?
+                """
+                params: tuple[object, ...] = (
+                    tenant_id,
+                    UclArtifactOwnershipKind.WORKSPACE.value,
+                    workspace_id,
+                    context_scope_id,
+                )
+            else:
+                sql = """
+                    SELECT * FROM optimization_artifacts
+                    WHERE tenant_id = ?
+                      AND ownership_kind = ?
+                      AND workspace_id = ?
+                      AND json_extract(lookup_key_json, '$.context_scope_id') = ?
+                      AND status = ?
+                      AND validation_status = ?
+                """
+                params = (
+                    tenant_id,
+                    UclArtifactOwnershipKind.WORKSPACE.value,
+                    workspace_id,
+                    context_scope_id,
+                    ReusableArtifactStatus.VALIDATED.value,
+                    ArtifactValidationStatus.PASSED.value,
+                )
+            rows = self._connection.execute(sql, params).fetchall()
+
+        rows_sorted = sorted(
+            rows,
+            key=lambda row: (str(row[1]), str(row[2])),
+        )
+        listings: list[ScopedOptimizationArtifactListing] = []
+        seen: set[tuple[str, str]] = set()
+        for row in rows_sorted:
+            stored = self._row_to_artifact(row)
+            metadata = stored.metadata
+            lookup_key = metadata.lookup_key
+            dedupe_key = (tenant_id, metadata.artifact_id)
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
+            reference = build_optimization_artifact_reference(stored)
+            listings.append(
+                ScopedOptimizationArtifactListing(
+                    reference=reference,
+                    context_scope_id=lookup_key.context_scope_id,
+                    lifecycle_status=metadata.status,
+                    source_refs=lookup_key.source_refs,
+                )
+            )
+            if len(listings) >= limit:
+                break
+        return tuple(listings)
 
     def lookup(
         self,

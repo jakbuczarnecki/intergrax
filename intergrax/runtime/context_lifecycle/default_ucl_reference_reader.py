@@ -34,19 +34,24 @@ class UclReferenceReadConfigurationError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class UclReferenceReadCapabilityBinding:
-    """Authoritative tenant/context-scope binding for a configured artifact catalog."""
+    """Authoritative tenant/workspace/context-scope binding for a configured catalog."""
 
     tenant_id: str
+    workspace_id: str
     context_scope_id: str
 
     def __post_init__(self) -> None:
         tenant = (self.tenant_id or "").strip()
+        workspace = (self.workspace_id or "").strip()
         scope = (self.context_scope_id or "").strip()
         if not tenant:
             raise UclReferenceReadConfigurationError("tenant_id must be non-empty")
+        if not workspace:
+            raise UclReferenceReadConfigurationError("workspace_id must be non-empty")
         if not scope:
             raise UclReferenceReadConfigurationError("context_scope_id must be non-empty")
         object.__setattr__(self, "tenant_id", tenant)
+        object.__setattr__(self, "workspace_id", workspace)
         object.__setattr__(self, "context_scope_id", scope)
 
 
@@ -59,13 +64,21 @@ def _binding_rejects_request(
         return True
     if binding.tenant_id != request.scope.tenant_id:
         return True
+    if binding.workspace_id != request.scope.workspace_id:
+        return True
     return binding.context_scope_id != request.scope.context_scope_id
 
 
 def _to_canonical_ref(listing: ScopedOptimizationArtifactListing) -> UclOptimizationArtifactCanonicalRef:
     reference = listing.reference
+    workspace_id = reference.workspace_id
+    if workspace_id is None:
+        raise UclReferenceReadConfigurationError(
+            "scoped listing reference requires canonical workspace_id"
+        )
     return UclOptimizationArtifactCanonicalRef(
         tenant_id=reference.tenant_id,
+        workspace_id=workspace_id,
         context_scope_id=listing.context_scope_id,
         artifact_id=reference.artifact_id,
         artifact_lookup_key_hash=reference.artifact_lookup_key_hash,
@@ -110,12 +123,6 @@ class DefaultUclReferenceReader:
                 reason="capability_binding_missing",
             )
 
-        if request.scope.workspace_id is not None:
-            return UclReferenceReadResult(
-                outcome=UclReferenceReadOutcome.SCOPE_REJECTED,
-                reason="ucl_workspace_ownership_unavailable",
-            )
-
         if _binding_rejects_request(binding, identity, request):
             return UclReferenceReadResult(
                 outcome=UclReferenceReadOutcome.SCOPE_REJECTED,
@@ -137,6 +144,7 @@ class DefaultUclReferenceReader:
             listings = self.catalog.list_scoped_artifact_references(
                 OptimizationArtifactScopedReferenceQuery(
                     tenant_id=request.scope.tenant_id,
+                    workspace_id=request.scope.workspace_id,
                     context_scope_id=request.scope.context_scope_id,
                     limit=request.query.limit,
                     include_historical=include_historical,

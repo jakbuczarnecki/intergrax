@@ -10,7 +10,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-5F — BLOCKED** (source adapters / integration — **MP-5F-B1 — CLOSED**; **MP-5F-B2 — CLOSED**; **MP-5F-B3A — CLOSED / RECERTIFIED** (C2 typed workspace propagation); **MP-5F-B3 — BLOCKED** (workspace-scoped read certification pending **MP-5F-B3B**); **MP-5F-B4 — WAITING**). MP-5E **`ContextViewComposer`** / **`DefaultContextViewComposer`** — **APPROVED / CLOSED** (`intergrax/contracts/context_view_composition.py`).
+**Current active task:** **MP-5F — BLOCKED** (source adapters / integration — **MP-5F-B1 — CLOSED**; **MP-5F-B2 — CLOSED**; **MP-5F-B3A — CLOSED / RECERTIFIED** (C2 typed workspace propagation); **MP-5F-B3 — CLOSED** (B3B workspace-scoped UCL reference read certified); **MP-5F-B4 — WAITING**). MP-5E **`ContextViewComposer`** / **`DefaultContextViewComposer`** — **APPROVED / CLOSED** (`intergrax/contracts/context_view_composition.py`).
 **Previous:** **MP-5C — APPROVED / CLOSED** — principal visibility policy (`intergrax/contracts/context_view_visibility_policy.py`)
 
 ---

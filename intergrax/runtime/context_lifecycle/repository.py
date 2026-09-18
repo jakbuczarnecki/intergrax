@@ -423,12 +423,18 @@ class OptimizationArtifactScopedReferenceQuery:
     """Least-context catalog query for scoped reference enumeration (MP-5F-B3)."""
 
     tenant_id: str
+    workspace_id: str
     context_scope_id: str
     limit: int
     include_historical: bool = False
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "tenant_id", _require_non_empty(self.tenant_id, "tenant_id"))
+        object.__setattr__(
+            self,
+            "workspace_id",
+            _require_non_empty(self.workspace_id, "workspace_id"),
+        )
         object.__setattr__(
             self,
             "context_scope_id",

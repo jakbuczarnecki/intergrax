@@ -9,8 +9,8 @@ and no ContextView / MP-5 types.
 Artifact identity is ``artifact_id`` (immutable stored record). Compatibility
 and reuse identity is ``artifact_lookup_key_hash``. ``context_scope_id`` is the
 canonical UCL lifecycle scope on ``ArtifactLookupKey``. It is not workspace_id;
-workspace authorization requires canonical workspace ownership on UCL artifacts
-(not yet modeled — workspace-bound reads fail closed).
+workspace-scoped reads enforce canonical persisted ``UclArtifactOwnership`` via
+the scoped reference catalog (tenant, workspace, and context_scope are independent).
 """
 
 from __future__ import annotations
@@ -83,18 +83,16 @@ class UclScopedResourceRef:
 class UclReferenceReadScope:
     """UCL-owned least-context boundary for lifecycle reference enumeration.
 
-    ``tenant_id`` and ``context_scope_id`` are mandatory. ``context_scope_id`` is
-    the canonical UCL lifecycle scope on optimization artifacts
-    (``ArtifactLookupKey``). Optional ``workspace_id`` is a consumer-declared
-    workspace boundary for MP-5 integration; it is validated only against
-    canonical UCL workspace ownership when that ownership exists on artifacts.
-    Equal ``workspace_id`` and ``context_scope_id`` strings do not imply
-    workspace authority.
+    ``tenant_id``, ``workspace_id``, and ``context_scope_id`` are mandatory for
+    workspace-scoped reference read. ``context_scope_id`` is the canonical UCL
+    lifecycle scope on optimization artifacts (``ArtifactLookupKey``); it is not
+    workspace authority. Equal ``workspace_id`` and ``context_scope_id`` strings
+    do not imply workspace authority.
     """
 
     tenant_id: str
+    workspace_id: str
     context_scope_id: str
-    workspace_id: str | None = None
     resource: UclScopedResourceRef | None = None
 
     def __post_init__(self) -> None:
@@ -104,11 +102,9 @@ class UclReferenceReadScope:
             raise UclReferenceReadScopeError("tenant_id must be non-empty")
         if not context_scope:
             raise UclReferenceReadScopeError("context_scope_id must be non-empty")
-        workspace = self.workspace_id
-        if workspace is not None:
-            workspace = workspace.strip()
-            if not workspace:
-                raise UclReferenceReadScopeError("workspace_id when set must be non-empty")
+        workspace = (self.workspace_id or "").strip()
+        if not workspace:
+            raise UclReferenceReadScopeError("workspace_id must be non-empty")
         object.__setattr__(self, "tenant_id", tenant)
         object.__setattr__(self, "context_scope_id", context_scope)
         object.__setattr__(self, "workspace_id", workspace)
@@ -152,6 +148,7 @@ class UclOptimizationArtifactCanonicalRef:
     """
 
     tenant_id: str
+    workspace_id: str
     context_scope_id: str
     artifact_id: str
     artifact_lookup_key_hash: str
@@ -161,6 +158,7 @@ class UclOptimizationArtifactCanonicalRef:
 
     def __post_init__(self) -> None:
         tenant = (self.tenant_id or "").strip()
+        workspace = (self.workspace_id or "").strip()
         scope = (self.context_scope_id or "").strip()
         artifact_id = (self.artifact_id or "").strip()
         key_hash = (self.artifact_lookup_key_hash or "").strip()
@@ -169,6 +167,8 @@ class UclOptimizationArtifactCanonicalRef:
         lifecycle_status = (self.lifecycle_status or "").strip()
         if not tenant:
             raise UclReferenceReadScopeError("tenant_id must be non-empty")
+        if not workspace:
+            raise UclReferenceReadScopeError("workspace_id must be non-empty")
         if not scope:
             raise UclReferenceReadScopeError("context_scope_id must be non-empty")
         if not artifact_id:
@@ -182,6 +182,7 @@ class UclOptimizationArtifactCanonicalRef:
         if not lifecycle_status:
             raise UclReferenceReadScopeError("lifecycle_status must be non-empty")
         object.__setattr__(self, "tenant_id", tenant)
+        object.__setattr__(self, "workspace_id", workspace)
         object.__setattr__(self, "context_scope_id", scope)
         object.__setattr__(self, "artifact_id", artifact_id)
         object.__setattr__(self, "artifact_lookup_key_hash", key_hash)
