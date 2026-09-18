@@ -968,6 +968,14 @@ Canonical artifact compatibility identity: `tenant_id`, `context_scope_id`, `art
 
 Metadata-only reusable artifact record: `artifact_id`, `lookup_key`, `artifact_content_hash`, `created_at`, `created_by_executor`, `validation` (`ArtifactValidationSummary`), `status`, `invalidation_reason`, `supersedes_artifact_id`, `receipt_ref`, `safe_metadata`. No raw payload. Persisted by Memory/Session catalog (**CTX-UCL-2**); created by Token Optimization only on `CREATE_ARTIFACT`.
 
+### 9.10a MP-5F-B3 — scoped lifecycle reference read (CLOSED)
+
+**Ownership:** UCL owns artifact lifecycle, revisions, validity and durability. The public reference-read capability exposes scoped canonical lifecycle references only. MP-5 adapters consume those refs but do not own UCL lifecycle semantics.
+
+**Anti-substitution:** ContextView ≠ UCL artifact. ContextView does not replace UCL lifecycle. MP-5 does not determine active revision.
+
+**Public surface:** `UclReferenceReadPort` / `UclReferenceReadScope` / `UclOptimizationArtifactCanonicalRef` in `intergrax/ucl/contracts/ucl_reference_read.py`. Default scoped catalog projection (no payload hydration): `DefaultUclReferenceReader` in `intergrax/runtime/context_lifecycle/default_ucl_reference_reader.py` over `OptimizationArtifactScopedReferenceCatalog`. Scoped isolation uses canonical `context_scope_id` on `ArtifactLookupKey` (workspace-aligned consumers must pass matching `workspace_id` when set). **MP-5D source ports are sync; UCL B3 reference-read is async — B5 requires explicit integration.**
+
 ### 9.11 `ModelCallExecutionScope`
 
 `PRIMARY_MODEL_CALL`, `INTERNAL_OPTIMIZATION_CALL`. Implemented in **CTX-UCL-1**.

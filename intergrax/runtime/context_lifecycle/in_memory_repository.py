@@ -25,6 +25,8 @@ from intergrax.runtime.context_lifecycle.repository import (
     ArtifactCreationCoordinationResult,
     OptimizationArtifactReference,
     OptimizationArtifactRepositoryCapabilities,
+    OptimizationArtifactScopedReferenceQuery,
+    ScopedOptimizationArtifactListing,
     StoredOptimizationArtifact,
     build_optimization_artifact_reference,
 )
@@ -139,6 +141,61 @@ class InMemoryOptimizationArtifactRepository:
             supports_bounded_wait=True,
             reference_only=True,
         )
+
+    def list_scoped_artifact_references(
+        self,
+        query: OptimizationArtifactScopedReferenceQuery,
+    ) -> tuple[ScopedOptimizationArtifactListing, ...]:
+        if not isinstance(query, OptimizationArtifactScopedReferenceQuery):
+            raise ValueError("query must be OptimizationArtifactScopedReferenceQuery")
+        tenant_id = query.tenant_id
+        context_scope_id = query.context_scope_id
+        limit = query.limit
+        include_historical = query.include_historical
+
+        with self._lock:
+            self._ensure_open()
+            rows: list[ScopedOptimizationArtifactListing] = []
+            seen: set[tuple[str, str]] = set()
+
+            if include_historical:
+                candidates = list(self._artifacts_by_id.values())
+            else:
+                candidates = list(self._active_by_key.values())
+
+            for stored in candidates:
+                metadata = stored.metadata
+                lookup_key = metadata.lookup_key
+                if lookup_key.tenant_id != tenant_id:
+                    continue
+                if lookup_key.context_scope_id != context_scope_id:
+                    continue
+                if not include_historical:
+                    if metadata.status is not ReusableArtifactStatus.VALIDATED:
+                        continue
+                    if metadata.validation.status is not ArtifactValidationStatus.PASSED:
+                        continue
+                dedupe_key = (tenant_id, metadata.artifact_id)
+                if dedupe_key in seen:
+                    continue
+                seen.add(dedupe_key)
+                reference = build_optimization_artifact_reference(stored)
+                rows.append(
+                    ScopedOptimizationArtifactListing(
+                        reference=reference,
+                        context_scope_id=lookup_key.context_scope_id,
+                        lifecycle_status=metadata.status,
+                        source_refs=lookup_key.source_refs,
+                    )
+                )
+
+            rows.sort(
+                key=lambda row: (
+                    row.reference.artifact_id,
+                    row.reference.artifact_lookup_key_hash,
+                )
+            )
+            return tuple(rows[:limit])
 
     def lookup(self, key: ArtifactLookupKey) -> StoredOptimizationArtifact | None:
         lookup_key = _require_lookup_key(key)

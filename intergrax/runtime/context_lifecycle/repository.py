@@ -282,6 +282,75 @@ class ArtifactCreationCoordinationResult:
                 )
 
 
+@dataclass(frozen=True, slots=True)
+class OptimizationArtifactScopedReferenceQuery:
+    """Least-context catalog query for scoped reference enumeration (MP-5F-B3)."""
+
+    tenant_id: str
+    context_scope_id: str
+    limit: int
+    include_historical: bool = False
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "tenant_id", _require_non_empty(self.tenant_id, "tenant_id"))
+        object.__setattr__(
+            self,
+            "context_scope_id",
+            _require_non_empty(self.context_scope_id, "context_scope_id"),
+        )
+        limit = _require_int(self.limit, "limit")
+        if limit <= 0:
+            raise ValueError("limit must be > 0")
+        object.__setattr__(self, "limit", limit)
+        object.__setattr__(
+            self,
+            "include_historical",
+            _require_bool(self.include_historical, "include_historical"),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class ScopedOptimizationArtifactListing:
+    """Reference-only scoped listing row — no payload."""
+
+    reference: OptimizationArtifactReference
+    context_scope_id: str
+    lifecycle_status: ReusableArtifactStatus
+    source_refs: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "reference",
+            _require_instance(self.reference, OptimizationArtifactReference, "reference"),
+        )
+        object.__setattr__(
+            self,
+            "context_scope_id",
+            _require_non_empty(self.context_scope_id, "context_scope_id"),
+        )
+        object.__setattr__(
+            self,
+            "lifecycle_status",
+            _require_instance(self.lifecycle_status, ReusableArtifactStatus, "lifecycle_status"),
+        )
+        refs = tuple(self.source_refs)
+        if any(not ref for ref in refs):
+            raise ValueError("source_refs must not contain empty values")
+        object.__setattr__(self, "source_refs", refs)
+
+
+@runtime_checkable
+class OptimizationArtifactScopedReferenceCatalog(Protocol):
+    """Provider-neutral scoped reference catalog — complements exact lookup by key."""
+
+    def list_scoped_artifact_references(
+        self,
+        query: OptimizationArtifactScopedReferenceQuery,
+    ) -> tuple[ScopedOptimizationArtifactListing, ...]:
+        """Return deterministic reference rows for the requested scope and lifecycle projection."""
+
+
 @runtime_checkable
 class OptimizationArtifactRepository(Protocol):
     """Backend-neutral optimization artifact repository port."""

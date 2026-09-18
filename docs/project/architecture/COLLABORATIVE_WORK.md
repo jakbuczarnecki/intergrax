@@ -199,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-5F — BLOCKED** (B1 Memory read boundary **CLOSED**; **MP-5F-B2 Knowledge read boundary CLOSED**; **MP-5F-B3 — NEXT**). **MP-5E — APPROVED / CLOSED** (ADR-MP-006).
+**Next task:** **MP-5F — BLOCKED** (B1 Memory **CLOSED**; B2 Knowledge **CLOSED**; **MP-5F-B3 UCL read boundary CLOSED**; **MP-5F-B4 — NEXT**). **MP-5E — APPROVED / CLOSED** (ADR-MP-006).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 

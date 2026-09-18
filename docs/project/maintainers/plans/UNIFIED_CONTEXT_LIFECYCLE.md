@@ -277,6 +277,14 @@ TOKEN-10E-CLOSEOUT-1 → ready for review
 
 ---
 
+### MP-5F-B3 — scoped UCL lifecycle reference read boundary (CLOSED)
+
+**Status:** **CLOSED** (public contract + in-memory scoped catalog + default reader). **Next:** MP-5F-B4 (Collaborative Work read boundary). **MP-5F** remains **BLOCKED** until B4 + B5 adapter integration.
+
+UCL owns optimization artifact lifecycle semantics. Public surface: `UclReferenceReadPort` in `intergrax/ucl/contracts/ucl_reference_read.py`; scoped catalog port `OptimizationArtifactScopedReferenceCatalog` in `intergrax/runtime/context_lifecycle/repository.py`; default reader `DefaultUclReferenceReader`. No ContextView types in UCL contracts; no MP-5 adapter in this slice.
+
+---
+
 ## Next step
 
-Independent audit of **TOKEN-10E-CLOSEOUT-1** (public contract freeze). **TOKEN-10E-1…4** and **TOKEN-10E** are **ACCEPTED / CLOSED**; durable activation is implemented; rollback execution remains outside scope.
+Independent audit of **TOKEN-10E-CLOSEOUT-1** (public contract freeze). **MP-5F-B4** Collaborative Work read boundary is next for Multiplayer source integration. **TOKEN-10E-1…4** and **TOKEN-10E** are **ACCEPTED / CLOSED**; durable activation is implemented; rollback execution remains outside scope.
