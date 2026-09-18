@@ -355,7 +355,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Status** | **MP-6A — CLOSED / RECERTIFIED** |
-| **Proof** | ADR-MP-007; `test_mp6a_collaborative_activity_architecture_gates.py`; `test_mp6a_documentation_regression_gates.py`; `test_mp6a_c1_identity_extensibility_ordering_gates.py` |
+| **Proof** | ADR-MP-007; `test_mp6a_collaborative_activity_architecture_gates.py`; `test_mp6a_documentation_regression_gates.py`; `test_mp6a_c1_identity_extensibility_ordering_gates.py`; `test_mp6a_c1_r1_append_ownership_gates.py` |
 | **Next step** | **MP-6B — NEXT** |
 
 ### MP-6A-C1 — identity / extensibility / timeline semantics
@@ -364,6 +364,13 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 |-------|-------|
 | **Status** | **CLOSED** (subject to independent audit) |
 | **Scope** | Tenant/workspace idempotency; `CollaborativeActivityTypeId` / `CollaborativeActivitySourceId`; opaque pagination cursor vs event time |
+
+### MP-6A-C1-R1 — atomic append ownership
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED** (subject to independent audit) |
+| **Scope** | Append-store atomic idempotency + per-workspace `append_position` / `recorded_at` materialization; publication is append input |
 
 ---
 

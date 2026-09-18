@@ -15,6 +15,9 @@ Distinct from:
 
 MP-6A-C1 hardens scoped idempotency identity, namespaced extensible type/source
 identifiers, and event-time vs append-pagination ordering semantics.
+MP-6A-C1-R1 assigns ``append_position`` and ``recorded_at`` only on materialized
+``CollaborativeActivity`` at the atomic ``CollaborativeActivityAppendStore`` boundary
+(producers never supply sequencing or materialization timestamps).
 Persistence ships in MP-6D+.
 """
 
@@ -615,8 +618,17 @@ class CollaborativeActivity(BaseModel):
     target: CollaborativeActivityTargetRef
     outcome: CollaborativeActivityOutcome
     occurred_at: datetime
-    recorded_at: datetime
-    append_position: int = Field(ge=1, description="Monotonic workspace append order — MP-6 assigns")
+    recorded_at: datetime = Field(
+        description="Durable materialization time at append-store acceptance — not on publication",
+    )
+    append_position: int = Field(
+        ge=1,
+        description=(
+            "Monotonic unique append order within (tenant_id, workspace_id) — "
+            "assigned once by the configured append-store at durable materialization; "
+            "not a producer input"
+        ),
+    )
     provenance_refs: tuple[CollaborativeActivityProvenanceRef, ...] = ()
     correlation: CollaborativeActivityCorrelation | None = None
     caused_by_activity_id: str | None = None
@@ -753,7 +765,12 @@ class CollaborativeActivityPublicationPort(Protocol):
 
 
 class CollaborativeActivityWritePort(Protocol):
-    """Internal MP-6 service append boundary after policy validation (MP-6C)."""
+    """Internal MP-6 service boundary after policy validation (MP-6C).
+
+    Delegates durable sequencing and materialization timestamps to
+    ``CollaborativeActivityAppendStore`` — callers must not pre-build
+    materialized ``CollaborativeActivity`` records for append.
+    """
 
     def append(self, publication: CollaborativeActivityPublication) -> CollaborativeActivity: ...
 
@@ -765,11 +782,26 @@ class CollaborativeActivityReadPort(Protocol):
 
 
 class CollaborativeActivityAppendStore(Protocol):
-    """Replaceable persistence seam (MP-6D) — append + idempotent get-by-key only."""
+    """Replaceable persistence seam (MP-6D) — atomic append materialization.
+
+    ``append_idempotent`` atomically resolves duplicate idempotency keys,
+    assigns workspace ``append_position`` for new activities only,
+    assigns ``recorded_at`` at durable acceptance, and persists the
+    materialized ``CollaborativeActivity``. Duplicate keys return the
+    original materialized record without allocating a new position.
+
+    Implementations must not require a service-level check-then-insert
+    sequence; idempotency, position allocation, timestamp assignment, and
+    durable append form one consistent semantic operation.
+
+    Policy (authority, namespace authorization, target semantics) is
+    out of scope — validated ``CollaborativeActivityPublication`` is the
+    append input; the store owns persistence semantics only.
+    """
 
     def append_idempotent(
         self,
-        activity: CollaborativeActivity,
+        publication: CollaborativeActivityPublication,
     ) -> CollaborativeActivity: ...
 
     def get_by_idempotency_key(

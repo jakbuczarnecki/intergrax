@@ -93,3 +93,9 @@ def test_mp6a_public_ports_declared() -> None:
         "CollaborativeActivityAppendStore",
     ):
         assert f"class {name}" in text
+
+
+def test_mp6a_c1_r1_append_store_atomic_semantics_documented() -> None:
+    text = _read_contract()
+    assert "atomically resolves duplicate idempotency keys" in text
+    assert "publication: CollaborativeActivityPublication" in text
