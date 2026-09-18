@@ -16,8 +16,9 @@ from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
+    build_production_runtime_tool_invoker,
+)
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
 from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
@@ -53,12 +54,13 @@ def build_declarative_invoker_from_tool_wiring(
         if idempotency_store is not None
         else None
     )
-    invoker = RuntimeToolInvoker(
+    invoker = build_production_runtime_tool_invoker(
         registry=tool_wiring.registry,
-        executor=RegistryToolExecutor(tool_wiring.registry),
         pre_effect_coordinator=coordinator,
+        idempotency_store=idempotency_store,
         sandbox_availability=sandbox_availability_provider(tool_wiring.wiring_context),
         agent_runtime_governance=agent_runtime_governance,
+        production_mode=production_mode,
     )
     return CatalogDeclarativeToolInvoker(
         tool_invoker=invoker,

@@ -14,7 +14,9 @@ from intergrax.runtime.nexus.artifacts.models import Artifact, ArtifactRef
 from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
 from intergrax.runtime.nexus.tools import RegistryToolExecutor
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
+    build_production_runtime_tool_invoker,
+)
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.persistence.integration_profile_wiring import open_trace_store_from_profile
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
@@ -348,13 +350,14 @@ class RuntimeContext:
 
         from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
 
-        base_invoker = RuntimeToolInvoker(
+        base_invoker = build_production_runtime_tool_invoker(
             registry=registry,
             executor=executor,
             scope_policy=config.tool_scope_policy,
             pre_effect_coordinator=pre_effect_coordinator,
             sandbox_availability=sandbox_availability_provider(wiring_ctx),
             agent_runtime_governance=config.agent_runtime_governance,
+            production_mode=config.production_mode,
         )
 
         from intergrax.runtime.nexus.tools.planner_bootstrap import wire_catalog_tool_planner_if_enabled
