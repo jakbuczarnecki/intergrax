@@ -95,7 +95,7 @@ def _scope(
     *,
     tenant_id: str = "tenant-a",
     context_scope_id: str = "ws-a",
-    workspace_id: str | None = "ws-a",
+    workspace_id: str | None = None,
 ) -> UclReferenceReadScope:
     return UclReferenceReadScope(
         tenant_id=tenant_id,
@@ -192,12 +192,13 @@ def test_contract_request_immutability_and_query_bounds() -> None:
         UclReferenceReadScope(tenant_id="", context_scope_id="ws")
     with pytest.raises(UclReferenceReadScopeError):
         UclReferenceReadScope(tenant_id="t", context_scope_id="")
-    with pytest.raises(UclReferenceReadScopeError):
-        UclReferenceReadScope(
-            tenant_id="t",
-            context_scope_id="ws-a",
-            workspace_id="ws-b",
-        )
+    scope = UclReferenceReadScope(
+        tenant_id="t",
+        context_scope_id="context-77",
+        workspace_id="ws-1",
+    )
+    assert scope.workspace_id == "ws-1"
+    assert scope.context_scope_id == "context-77"
 
 
 def test_validate_identity_tenant_mismatch_scope_rejected() -> None:
@@ -344,7 +345,6 @@ async def test_resource_scope_mismatch_filters_to_empty() -> None:
     scope = UclReferenceReadScope(
         tenant_id="tenant-a",
         context_scope_id="ws-a",
-        workspace_id="ws-a",
         resource=UclScopedResourceRef(resource_kind="source_ref", resource_id="missing"),
     )
     result = await reader.read_references(
@@ -356,13 +356,105 @@ async def test_resource_scope_mismatch_filters_to_empty() -> None:
 
 
 @pytest.mark.asyncio
+async def test_workspace_request_fail_closed_even_when_equal_to_context_scope() -> None:
+    """Matching strings do not confer workspace authority without UCL ownership."""
+    repo = _seed_repo(_stored())
+    reader = _reader(repo)
+    scope = UclReferenceReadScope(
+        tenant_id="tenant-a",
+        context_scope_id="scope-1",
+        workspace_id="scope-1",
+    )
+    result = await reader.read_references(
+        _identity(),
+        UclReferenceReadRequest(scope=scope),
+    )
+    assert result.outcome is UclReferenceReadOutcome.SCOPE_REJECTED
+    assert result.reason == "ucl_workspace_ownership_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_workspace_request_fail_closed_when_ids_differ() -> None:
+    repo = _seed_repo(_stored())
+    reader = _reader(repo)
+    scope = UclReferenceReadScope(
+        tenant_id="tenant-a",
+        context_scope_id="context-77",
+        workspace_id="ws-1",
+    )
+    result = await reader.read_references(
+        _identity(),
+        UclReferenceReadRequest(scope=scope),
+    )
+    assert result.outcome is UclReferenceReadOutcome.SCOPE_REJECTED
+    assert result.reason == "ucl_workspace_ownership_unavailable"
+
+
+@pytest.mark.asyncio
+async def test_lifecycle_read_without_workspace_uses_context_scope_only() -> None:
+    stored = _stored(lookup_key=_lookup_key(context_scope_id="context-77"))
+    repo = _seed_repo(stored)
+    reader = _reader(repo, context_scope_id="context-77")
+    scope = UclReferenceReadScope(
+        tenant_id="tenant-a",
+        context_scope_id="context-77",
+        workspace_id=None,
+    )
+    result = await reader.read_references(
+        _identity(),
+        UclReferenceReadRequest(scope=scope),
+    )
+    assert result.outcome is UclReferenceReadOutcome.OK
+    assert len(result.references) == 1
+
+
+@pytest.mark.asyncio
+async def test_same_context_scope_different_workspace_requests_both_fail_closed() -> None:
+    repo = _seed_repo(_stored())
+    reader = _reader(repo)
+    for workspace in ("ws-a", "ws-b"):
+        scope = UclReferenceReadScope(
+            tenant_id="tenant-a",
+            context_scope_id="ws-a",
+            workspace_id=workspace,
+        )
+        result = await reader.read_references(
+            _identity(),
+            UclReferenceReadRequest(scope=scope),
+        )
+        assert result.outcome is UclReferenceReadOutcome.SCOPE_REJECTED
+
+
+@pytest.mark.asyncio
+async def test_cross_context_isolation_with_workspace_unspecified() -> None:
+    stored = _stored(lookup_key=_lookup_key(context_scope_id="ctx-b"))
+    repo = _seed_repo(stored)
+    reader = _reader(repo, context_scope_id="ctx-a")
+    result = await reader.read_references(
+        _identity(),
+        UclReferenceReadRequest(
+            scope=UclReferenceReadScope(
+                tenant_id="tenant-a",
+                context_scope_id="ctx-a",
+            ),
+        ),
+    )
+    assert result.outcome is UclReferenceReadOutcome.OK
+    assert result.references == ()
+
+
+def test_contract_does_not_equate_workspace_with_context_scope() -> None:
+    source = _CONTRACT.read_text(encoding="utf-8")
+    assert "must equal context_scope_id" not in source
+
+
+@pytest.mark.asyncio
 async def test_unsupported_resource_kind_rejected() -> None:
     repo = _seed_repo(_stored())
     reader = _reader(repo)
     scope = UclReferenceReadScope(
         tenant_id="tenant-a",
         context_scope_id="ws-a",
-        workspace_id="ws-a",
         resource=UclScopedResourceRef(resource_kind="work_item", resource_id="wi-1"),
     )
     result = await reader.read_references(

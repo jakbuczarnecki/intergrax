@@ -104,7 +104,17 @@ class DefaultUclReferenceReader:
             )
 
         binding = self.capability_binding
-        assert binding is not None
+        if binding is None:
+            return UclReferenceReadResult(
+                outcome=UclReferenceReadOutcome.UNAVAILABLE,
+                reason="capability_binding_missing",
+            )
+
+        if request.scope.workspace_id is not None:
+            return UclReferenceReadResult(
+                outcome=UclReferenceReadOutcome.SCOPE_REJECTED,
+                reason="ucl_workspace_ownership_unavailable",
+            )
 
         if _binding_rejects_request(binding, identity, request):
             return UclReferenceReadResult(

@@ -277,11 +277,13 @@ TOKEN-10E-CLOSEOUT-1 → ready for review
 
 ---
 
-### MP-5F-B3 — scoped UCL lifecycle reference read boundary (CLOSED)
+### MP-5F-B3 — scoped UCL lifecycle reference read boundary (**BLOCKED** — canonical workspace ownership)
 
-**Status:** **CLOSED** (public contract + in-memory scoped catalog + default reader). **Next:** MP-5F-B4 (Collaborative Work read boundary). **MP-5F** remains **BLOCKED** until B4 + B5 adapter integration.
+**Status:** **BLOCKED** for enterprise certification. Tenant + `context_scope_id` lifecycle read boundary exists; **canonical workspace ownership on UCL optimization artifacts does not** (`ArtifactLookupKey` has no `workspace_id`). Do not treat `context_scope_id` as workspace. Workspace-bound reads fail closed until a dedicated ownership slice lands.
 
-UCL owns optimization artifact lifecycle semantics. Public surface: `UclReferenceReadPort` in `intergrax/ucl/contracts/ucl_reference_read.py`; scoped catalog port `OptimizationArtifactScopedReferenceCatalog` in `intergrax/runtime/context_lifecycle/repository.py`; default reader `DefaultUclReferenceReader`. No ContextView types in UCL contracts; no MP-5 adapter in this slice.
+**Delivered in correction:** removed `workspace_id == context_scope_id` ABI; default reader rejects `workspace_id` requests without UCL workspace authority; no assert-based security guard.
+
+**Next after unblock:** canonical workspace field + scoped catalog enforcement, then re-certify B3. **MP-5F-B4** remains waiting. **MP-5F** stays **BLOCKED**.
 
 ---
 

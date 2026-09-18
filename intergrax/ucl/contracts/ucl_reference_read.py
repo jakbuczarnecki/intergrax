@@ -8,8 +8,9 @@ and no ContextView / MP-5 types.
 
 Artifact identity is ``artifact_id`` (immutable stored record). Compatibility
 and reuse identity is ``artifact_lookup_key_hash``. ``context_scope_id`` is the
-canonical tenant-local lifecycle scope carried on ``ArtifactLookupKey`` (session
-/ workspace binding in hosting profiles).
+canonical UCL lifecycle scope on ``ArtifactLookupKey``. It is not workspace_id;
+workspace authorization requires canonical workspace ownership on UCL artifacts
+(not yet modeled — workspace-bound reads fail closed).
 """
 
 from __future__ import annotations
@@ -83,9 +84,12 @@ class UclReferenceReadScope:
     """UCL-owned least-context boundary for lifecycle reference enumeration.
 
     ``tenant_id`` and ``context_scope_id`` are mandatory. ``context_scope_id`` is
-    the canonical scope on optimization artifacts (``ArtifactLookupKey``). When
-    ``workspace_id`` is set it must equal ``context_scope_id`` so workspace-bound
-    consumers cannot widen scope implicitly.
+    the canonical UCL lifecycle scope on optimization artifacts
+    (``ArtifactLookupKey``). Optional ``workspace_id`` is a consumer-declared
+    workspace boundary for MP-5 integration; it is validated only against
+    canonical UCL workspace ownership when that ownership exists on artifacts.
+    Equal ``workspace_id`` and ``context_scope_id`` strings do not imply
+    workspace authority.
     """
 
     tenant_id: str
@@ -105,10 +109,6 @@ class UclReferenceReadScope:
             workspace = workspace.strip()
             if not workspace:
                 raise UclReferenceReadScopeError("workspace_id when set must be non-empty")
-            if workspace != context_scope:
-                raise UclReferenceReadScopeError(
-                    "workspace_id must equal context_scope_id when set"
-                )
         object.__setattr__(self, "tenant_id", tenant)
         object.__setattr__(self, "context_scope_id", context_scope)
         object.__setattr__(self, "workspace_id", workspace)
